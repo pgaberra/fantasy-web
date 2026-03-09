@@ -1,0 +1,24 @@
+.draft-projection {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #1a1a2e;
+}
+
+.page-header {
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #0f3460;
+  margin: 0 0 0.4rem;
+}
+
+.subtitle {
+  color: #555;
+  margin: 0;
+  font-size: 0.95rem;
+}

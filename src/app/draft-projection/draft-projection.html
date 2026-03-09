@@ -1,0 +1,26 @@
+@if (!projection()) {
+  <h2>Loading</h2>
+} @else {
+  <div class="draft-projection">
+    <div class="page-header">
+      <h1>Draft Projection Tool</h1>
+      <p class="subtitle">Customize your league settings and edit player projections below.</p>
+    </div>
+
+    <app-scoring-type-section [scoringType]="projection()!.scoringType" (scoringTypeChange)="onScoringTypeChange($event)" />
+
+    <app-league-stats-section [(activeScoringColumns)]="activeScoringColumns" />
+
+    <app-projection-settings-section [(activeUtilityColumns)]="activeUtilityColumns" />
+
+    <app-player-projections-table
+      [projection]="projection()!"
+      [players]="players()"
+      [activeScoringColumns]="activeScoringColumns()"
+      [activeUtilityColumns]="activeUtilityColumns()"
+      (statUpdated)="onStatUpdated($event)"
+      (weightUpdated)="onWeightUpdated($event)"
+    />
+  </div>
+}
+

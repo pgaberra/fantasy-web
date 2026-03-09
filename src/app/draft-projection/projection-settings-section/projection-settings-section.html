@@ -1,0 +1,17 @@
+<section class="settings-section">
+  <h2>Projection Settings</h2>
+  <p class="hint">Configure additional options for your player projections:</p>
+  <div class="projection-settings-list">
+    @for (key of ALL_UTILITY_STAT_KEYS(); track key) {
+      <label class="setting-row">
+        <div class="setting-info">
+          <span class="setting-name">{{ key | utilityStatLabel }}</span>
+          <span class="setting-desc">{{ key | statDesc }}</span>
+        </div>
+        <div class="toggle-switch" [class.on]="activeUtilityColumns().has(key)" (click)="toggle(key)">
+          <div class="toggle-thumb"></div>
+        </div>
+      </label>
+    }
+  </div>
+</section>

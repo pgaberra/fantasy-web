@@ -1,0 +1,19 @@
+<section class="settings-section">
+  <h2>Scoring Type</h2>
+  <div class="toggle-group">
+    <button
+      class="toggle-btn"
+      [class.active]="scoringType() === 'points'"
+      (click)="select('points')"
+    >
+      Points League
+    </button>
+    <button
+      class="toggle-btn"
+      [class.active]="scoringType() === 'category'"
+      (click)="select('category')"
+    >
+      Category League
+    </button>
+  </div>
+</section>

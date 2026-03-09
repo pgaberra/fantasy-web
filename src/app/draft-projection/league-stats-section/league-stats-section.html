@@ -1,0 +1,12 @@
+<section class="settings-section">
+  <h2>League Stats</h2>
+  <p class="hint">Select the stats used in your league:</p>
+  <div class="stat-checkboxes">
+    @for (key of ALL_SCORING_STAT_KEYS(); track key) {
+      <label class="stat-checkbox-label">
+        <input type="checkbox" [checked]="activeScoringColumns().has(key)" (change)="toggle(key)" />
+        {{ key | statLabel }}
+      </label>
+    }
+  </div>
+</section>
