@@ -1,9 +1,14 @@
-import { Component, computed, inject, input, output } from '@angular/core';
+import { Component, computed, inject, input, model } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import { Player, ScoringStatKey, StatKey, UtilityStatKey } from '../../models/player.model';
-import { PlayerProjection, Projection } from '../model';
+import {
+  Player,
+  SCORING_STAT_KEYS,
+  ScoringStatKey,
+  StatKey,
+  UtilityStatKey,
+} from '../../models/player.model';
+import { PlayerProjection, ScoringType } from '../model';
 import { StatLabelPipe } from '../../pipes/stat-label.pipe';
-import { StatUpdateEvent, WeightUpdateEvent } from './model';
 import { ProjectionCalculationService } from '../../services/projection-calculation.service';
 
 @Component({
@@ -15,29 +20,27 @@ import { ProjectionCalculationService } from '../../services/projection-calculat
 export class PlayerProjectionsTableComponent {
   protected readonly Array = Array;
 
-  projection = input.required<Projection>();
+  scoringType = input.required<ScoringType>();
+  playerProjections = model.required<PlayerProjection[]>();
+  statWeights = model.required<Record<ScoringStatKey, number>>();
   players = input.required<Player[]>();
   activeScoringColumns = input.required<Set<ScoringStatKey>>();
   activeUtilityColumns = input.required<Set<UtilityStatKey>>();
 
-  statUpdated = output<StatUpdateEvent>();
-  weightUpdated = output<WeightUpdateEvent>();
-
   private projectionCalculationService = inject(ProjectionCalculationService);
 
-  scoringType = computed(() => this.projection().scoringType);
   summaryLabel = computed(() => (this.scoringType() === 'points' ? '⭐ Fan Pts' : '⭐ Z-Score'));
 
-  private readonly playerProjections = computed((): PlayerProjection[] => {
-    const projections = this.projection().playerProjections;
-    const statWeights = this.projection().statWeights;
+  private readonly computedPlayerProjections = computed((): PlayerProjection[] => {
+    const projections = this.playerProjections();
+    const statWeights = this.statWeights();
     const activeScoringColumns = this.activeScoringColumns();
 
     const fantasyPoints = projections.map((pp) =>
       this.projectionCalculationService.computeTotalPoints(
         pp.stats.scoring,
         statWeights,
-        activeScoringColumns
+        activeScoringColumns,
       ),
     );
     const zScores = this.projectionCalculationService.computeZScores(fantasyPoints);
@@ -45,15 +48,17 @@ export class PlayerProjectionsTableComponent {
     return projections.map((pp, i) => ({
       ...pp,
       fantasyPoints: fantasyPoints[i],
-      zScore: zScores[i]
+      zScore: zScores[i],
     }));
   });
 
   sortedPlayerProjections = computed((): PlayerProjection[] => {
-    const projections = this.playerProjections();
+    const projections = this.computedPlayerProjections();
     const scoringType = this.scoringType();
 
-    return [...projections].sort(scoringType === 'points' ? this.sortByPointsDesc : this.sortByZScoreDesc);
+    return [...projections].sort(
+      scoringType === 'points' ? this.sortByPointsDesc : this.sortByZScoreDesc,
+    );
   });
 
   private sortByPointsDesc(a: PlayerProjection, b: PlayerProjection) {
@@ -72,11 +77,20 @@ export class PlayerProjectionsTableComponent {
 
   onStatInput(playerId: number, key: StatKey, event: Event): void {
     const value = Number((event.target as HTMLInputElement).value);
-    this.statUpdated.emit({ playerId, key, value });
+    this.playerProjections.update((playerProjections) =>
+      playerProjections.map((pp) => {
+        if (pp.playerId !== playerId) return pp;
+        const isScoring = (SCORING_STAT_KEYS as readonly string[]).includes(key);
+        const stats = isScoring
+          ? { ...pp.stats, scoring: { ...pp.stats.scoring, [key]: value } }
+          : { ...pp.stats, utility: { ...pp.stats.utility, [key]: value } };
+        return { ...pp, stats };
+      }),
+    );
   }
 
   onWeightInput(key: ScoringStatKey, event: Event): void {
     const value = Number((event.target as HTMLInputElement).value);
-    this.weightUpdated.emit({ key, value });
+    this.statWeights.update((weights) => ({ ...weights, [key]: value }));
   }
 }
