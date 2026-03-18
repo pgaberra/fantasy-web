@@ -10,6 +10,7 @@ import {
 import { PlayerProjection, ScoringType } from '../model';
 import { StatLabelPipe } from '../../pipes/stat-label.pipe';
 import { ProjectionCalculationService } from '../../services/projection-calculation.service';
+import { ToiService } from '../../services/toi.service';
 
 @Component({
   selector: 'app-player-projections-table',
@@ -28,6 +29,7 @@ export class PlayerProjectionsTableComponent {
   activeUtilityColumns = input.required<Set<UtilityStatKey>>();
 
   private projectionCalculationService = inject(ProjectionCalculationService);
+  protected toiService = inject(ToiService);
 
   summaryLabel = computed(() => (this.scoringType() === 'points' ? '⭐ Fan Pts' : '⭐ Z-Score'));
 
@@ -75,8 +77,24 @@ export class PlayerProjectionsTableComponent {
     return this.playerMap().get(playerId)!;
   }
 
+
+  onToiKeydown(playerId: number, event: KeyboardEvent): void {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+    event.preventDefault();
+    const delta = event.key === 'ArrowUp' ? 1 : -1;
+    this.playerProjections.update((playerProjections) =>
+      playerProjections.map((pp) => {
+        if (pp.playerId !== playerId) return pp;
+        const current = pp.stats.utility.toiPerGame;
+        const updated = Math.max(0, current + delta);
+        return { ...pp, stats: { ...pp.stats, utility: { ...pp.stats.utility, toiPerGame: updated } } };
+      }),
+    );
+  }
+
   onStatInput(playerId: number, key: StatKey, event: Event): void {
-    const value = Number((event.target as HTMLInputElement).value);
+    const raw = (event.target as HTMLInputElement).value;
+    const value = key === 'toiPerGame' ? this.toiService.parseToi(raw) : Number(raw);
     this.playerProjections.update((playerProjections) =>
       playerProjections.map((pp) => {
         if (pp.playerId !== playerId) return pp;
