@@ -47,7 +47,7 @@
                   <input
                     type="text"
                     class="stat-input"
-                    [value]="toiService.formatToi(projection.stats.utility[col])"
+                    [value]="projection.stats.utility[col] | formatToi"
                     (input)="onStatInput(projection.playerId, col, $event)"
                     (keydown)="onToiKeydown(projection.playerId, $event)"
                   />

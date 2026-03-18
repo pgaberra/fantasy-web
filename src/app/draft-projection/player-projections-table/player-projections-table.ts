@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, model } from '@angular/core';
+import { Component, computed, inject, input, model, Signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import {
   Player,
@@ -9,12 +9,13 @@ import {
 } from '../../models/player.model';
 import { PlayerProjection, ScoringType } from '../model';
 import { StatLabelPipe } from '../../pipes/stat-label.pipe';
+import { FormatToiPipe } from '../../pipes/format-toi.pipe';
 import { ProjectionCalculationService } from '../../services/projection-calculation.service';
 import { ToiService } from '../../services/toi.service';
 
 @Component({
   selector: 'app-player-projections-table',
-  imports: [DecimalPipe, StatLabelPipe],
+  imports: [DecimalPipe, StatLabelPipe, FormatToiPipe],
   templateUrl: './player-projections-table.html',
   styleUrl: './player-projections-table.css',
 })
@@ -28,10 +29,10 @@ export class PlayerProjectionsTableComponent {
   activeScoringColumns = input.required<Set<ScoringStatKey>>();
   activeUtilityColumns = input.required<Set<UtilityStatKey>>();
 
-  private projectionCalculationService = inject(ProjectionCalculationService);
-  protected toiService = inject(ToiService);
+  private readonly projectionCalculationService = inject(ProjectionCalculationService);
+  private readonly toiService = inject(ToiService);
 
-  summaryLabel = computed(() => (this.scoringType() === 'points' ? '⭐ Fan Pts' : '⭐ Z-Score'));
+  summaryLabel: Signal<string> = computed(() => this.scoringType() === 'points' ? 'Fan Pts' : 'Z-Score');
 
   private readonly computedPlayerProjections = computed((): PlayerProjection[] => {
     const projections = this.playerProjections();

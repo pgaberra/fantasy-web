@@ -4,7 +4,7 @@ import { PlayerProjectionsTableComponent } from './player-projections-table';
 import { Player, ScoringStatKey, UtilityStatKey } from '../../models/player.model';
 import { PlayerProjection, ScoringType } from '../model';
 import { StatLabelPipe } from '../../pipes/stat-label.pipe';
-import { ToiService } from '../../services/toi.service';
+import { FormatToiPipe } from '../../pipes/format-toi.pipe';
 
 describe('PlayerProjectionsTableComponent', () => {
   const mockPlayers: Player[] = [
@@ -37,7 +37,7 @@ describe('PlayerProjectionsTableComponent', () => {
     goals: 4.5, assists: 3, sog: 0.5, hits: 0.33, blocks: 0.5, gwg: 0.5, pim: 0.5, ppg: 0.5, ppa: 0.5, shg: 0.5, sha: 0.5, shPct: 0.5, fw: 0.5, fl: 0.5, plusMinus: 0.5,
   };
 
-  beforeEach(() => MockBuilder(PlayerProjectionsTableComponent).keep(StatLabelPipe).keep(ToiService));
+  beforeEach(() => MockBuilder(PlayerProjectionsTableComponent).keep(StatLabelPipe).keep(FormatToiPipe));
 
   const getComponent = (overrides: Partial<{
     players: Player[];
