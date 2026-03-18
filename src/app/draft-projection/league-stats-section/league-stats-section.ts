@@ -1,4 +1,4 @@
-import { Component, model, signal } from '@angular/core';
+import { Component, model } from '@angular/core';
 import { SCORING_STAT_KEYS, ScoringStatKey } from '../../models/player.model';
 import { StatLabelPipe } from '../../pipes/stat-label.pipe';
 
@@ -9,9 +9,6 @@ import { StatLabelPipe } from '../../pipes/stat-label.pipe';
   imports: [StatLabelPipe],
 })
 export class LeagueStatsSectionComponent {
-  readonly ALL_SCORING_STAT_KEYS = signal<Set<ScoringStatKey>>(
-    new Set(SCORING_STAT_KEYS),
-  ).asReadonly();
   activeScoringColumns = model.required<Set<ScoringStatKey>>();
 
   toggle(key: ScoringStatKey): void {
@@ -24,4 +21,6 @@ export class LeagueStatsSectionComponent {
       return new Set(columns);
     });
   }
+
+  protected readonly SCORING_STAT_KEYS = SCORING_STAT_KEYS;
 }

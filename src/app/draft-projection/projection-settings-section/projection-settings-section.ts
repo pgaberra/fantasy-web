@@ -12,10 +12,6 @@ import { ScaleConfig } from './model';
   imports: [UtilityStatLabelPipe, StatDescPipe, StatLabelPipe],
 })
 export class ProjectionSettingsSectionComponent {
-  readonly ALL_UTILITY_STAT_KEYS = signal<Set<UtilityStatKey>>(
-    new Set(UTILITY_STAT_KEYS),
-  ).asReadonly();
-
   activeUtilityColumns = model.required<Set<UtilityStatKey>>();
   activeScoringColumns = input.required<Set<ScoringStatKey>>();
 
@@ -70,4 +66,6 @@ export class ProjectionSettingsSectionComponent {
   isAdvancedVisible(utilityKey: UtilityStatKey): boolean {
     return this.showAdvancedScaleOptions()[utilityKey];
   }
+
+  protected readonly UTILITY_STAT_KEYS = UTILITY_STAT_KEYS;
 }
