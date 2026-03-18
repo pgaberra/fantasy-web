@@ -11,7 +11,11 @@
 
     <app-league-stats-section [(activeScoringColumns)]="activeScoringColumns" />
 
-    <app-projection-settings-section [(activeUtilityColumns)]="activeUtilityColumns" />
+    <app-projection-settings-section
+      [(activeUtilityColumns)]="activeUtilityColumns"
+      [activeScoringColumns]="activeScoringColumns()"
+      [(scaleSettings)]="scaleSettings"
+    />
 
     <app-player-projections-table
       [scoringType]="scoringType()"
@@ -20,6 +24,7 @@
       [players]="players()"
       [activeScoringColumns]="activeScoringColumns()"
       [activeUtilityColumns]="activeUtilityColumns()"
+      [scaleSettings]="scaleSettings()"
     />
   </div>
 }

@@ -1,17 +1,30 @@
-import { Component, computed, model, signal } from '@angular/core';
+import { Component, input, model, signal } from '@angular/core';
 import { UtilityStatLabelPipe } from '../../pipes/utility-stat-label.pipe';
 import { StatDescPipe } from '../../pipes/stat-desc.pipe';
-import { UTILITY_STAT_KEYS, UtilityStatKey } from '../../models/player.model';
+import { StatLabelPipe } from '../../pipes/stat-label.pipe';
+import { ScoringStatKey, UTILITY_STAT_KEYS, UtilityStatKey } from '../../models/player.model';
+import { ScaleConfig } from './model';
 
 @Component({
   selector: 'app-projection-settings-section',
   templateUrl: './projection-settings-section.html',
   styleUrl: './projection-settings-section.css',
-  imports: [UtilityStatLabelPipe, StatDescPipe],
+  imports: [UtilityStatLabelPipe, StatDescPipe, StatLabelPipe],
 })
 export class ProjectionSettingsSectionComponent {
-  readonly ALL_UTILITY_STAT_KEYS = signal<Set<UtilityStatKey>>(new Set(UTILITY_STAT_KEYS));
+  readonly ALL_UTILITY_STAT_KEYS = signal<Set<UtilityStatKey>>(
+    new Set(UTILITY_STAT_KEYS),
+  ).asReadonly();
+
   activeUtilityColumns = model.required<Set<UtilityStatKey>>();
+  activeScoringColumns = input.required<Set<ScoringStatKey>>();
+
+  scaleSettings = model.required<Record<UtilityStatKey, ScaleConfig>>();
+  private readonly showAdvancedScaleOptions = signal<Record<UtilityStatKey, boolean>>({
+    gp: false,
+    toiPerGame: false,
+  });
+
   toggle(key: UtilityStatKey): void {
     this.activeUtilityColumns.update((columns) => {
       if (columns.has(key)) {
@@ -21,5 +34,40 @@ export class ProjectionSettingsSectionComponent {
       }
       return new Set(columns);
     });
+  }
+
+  toggleScale(key: UtilityStatKey): void {
+    this.scaleSettings.update((settings) => ({
+      ...settings,
+      [key]: { ...settings[key], scale: !settings[key].scale },
+    }));
+  }
+
+  isScaleActive(key: UtilityStatKey): boolean {
+    return this.scaleSettings()[key].scale;
+  }
+
+  toggleScaleStat(statKey: ScoringStatKey, utilityKey: UtilityStatKey): void {
+    this.scaleSettings.update((settings) => {
+      const scalableStats = new Set(settings[utilityKey].scalableStats);
+      if (scalableStats.has(statKey)) {
+        scalableStats.delete(statKey);
+      } else {
+        scalableStats.add(statKey);
+      }
+      return { ...settings, [utilityKey]: { ...settings[utilityKey], scalableStats } };
+    });
+  }
+
+  isScaleStatActive(statKey: ScoringStatKey, utilityKey: UtilityStatKey): boolean {
+    return this.scaleSettings()[utilityKey].scalableStats.has(statKey);
+  }
+
+  toggleAdvanced(utilityKey: UtilityStatKey): void {
+    this.showAdvancedScaleOptions.update((opts) => ({ ...opts, [utilityKey]: !opts[utilityKey] }));
+  }
+
+  isAdvancedVisible(utilityKey: UtilityStatKey): boolean {
+    return this.showAdvancedScaleOptions()[utilityKey];
   }
 }

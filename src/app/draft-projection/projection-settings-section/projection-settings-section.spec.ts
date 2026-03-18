@@ -1,12 +1,17 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { ProjectionSettingsSectionComponent } from './projection-settings-section';
-import { UtilityStatKey } from '../../models/player.model';
+import { ScoringStatKey, UtilityStatKey } from '../../models/player.model';
 
 describe('ProjectionSettingsSectionComponent', () => {
   beforeEach(() => MockBuilder(ProjectionSettingsSectionComponent));
 
-  const getComponent = (activeUtilityColumns: Set<UtilityStatKey> = new Set(['gp', 'toiPerGame'])) =>
-    MockRender(ProjectionSettingsSectionComponent, { activeUtilityColumns }).point.componentInstance;
+  const defaultActiveScoringColumns = new Set<ScoringStatKey>(['goals', 'assists', 'sog', 'hits', 'blocks']);
+
+  const getComponent = (
+    activeUtilityColumns: Set<UtilityStatKey> = new Set(['gp', 'toiPerGame']),
+    activeScoringColumns: Set<ScoringStatKey> = defaultActiveScoringColumns,
+  ) =>
+    MockRender(ProjectionSettingsSectionComponent, { activeUtilityColumns, activeScoringColumns }).point.componentInstance;
 
   describe('toggle', () => {
     it('should remove an active utility column when toggled', () => {
@@ -39,14 +44,18 @@ describe('ProjectionSettingsSectionComponent', () => {
     it('should render a toggle for each utility stat key', () => {
       const component = getComponent();
       const toggles = ngMocks.findAll('.toggle-switch');
-      expect(toggles.length).toEqual(component.ALL_UTILITY_STAT_KEYS().size);
+      // Each utility stat has a main toggle; each active utility stat also has a scale sub-toggle.
+      // Per-stat toggles are hidden by default (advanced options collapsed).
+      const expected = component.ALL_UTILITY_STAT_KEYS().size + component.activeUtilityColumns().size;
+      expect(toggles.length).toEqual(expected);
     });
 
     it('should apply the "on" class to active utility column toggles', () => {
       getComponent(new Set<UtilityStatKey>(['gp']));
       const toggles = ngMocks.findAll('.toggle-switch');
       const onToggles = toggles.filter(t => t.classes['on']);
-      expect(onToggles.length).toEqual(1);
+      // gp main toggle is "on" + gp scale sub-toggle is "on" (defaults to true); advanced panel collapsed
+      expect(onToggles.length).toEqual(2);
     });
 
     it('should not apply the "on" class when no utility columns are active', () => {

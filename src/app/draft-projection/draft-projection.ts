@@ -7,6 +7,7 @@ import { ScoringTypeSectionComponent } from './scoring-type-section/scoring-type
 import { LeagueStatsSectionComponent } from './league-stats-section/league-stats-section';
 import { ProjectionSettingsSectionComponent } from './projection-settings-section/projection-settings-section';
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
+import { DEFAULT_SCALE_SETTINGS, ScaleConfig } from './projection-settings-section/model';
 
 const DEFAULT_STAT_WEIGHTS: Record<ScoringStatKey, number> = {
   goals: 4.5,
@@ -50,6 +51,7 @@ export class DraftProjectionComponent implements OnInit {
     new Set<ScoringStatKey>(['goals', 'assists', 'sog', 'hits', 'blocks']),
   );
   activeUtilityColumns = signal(new Set<UtilityStatKey>(['gp', 'toiPerGame']));
+  scaleSettings = signal<Record<UtilityStatKey, ScaleConfig>>(DEFAULT_SCALE_SETTINGS);
 
   ngOnInit(): void {
     this.playerService

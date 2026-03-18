@@ -12,6 +12,7 @@ import { StatLabelPipe } from '../../pipes/stat-label.pipe';
 import { FormatToiPipe } from '../../pipes/format-toi.pipe';
 import { ProjectionCalculationService } from '../../services/projection-calculation.service';
 import { ToiService } from '../../services/toi.service';
+import { DEFAULT_SCALE_SETTINGS, ScaleConfig } from '../projection-settings-section/model';
 
 @Component({
   selector: 'app-player-projections-table',
@@ -28,11 +29,14 @@ export class PlayerProjectionsTableComponent {
   players = input.required<Player[]>();
   activeScoringColumns = input.required<Set<ScoringStatKey>>();
   activeUtilityColumns = input.required<Set<UtilityStatKey>>();
+  scaleSettings = input<Record<UtilityStatKey, ScaleConfig>>(DEFAULT_SCALE_SETTINGS);
 
   private readonly projectionCalculationService = inject(ProjectionCalculationService);
   private readonly toiService = inject(ToiService);
 
-  summaryLabel: Signal<string> = computed(() => this.scoringType() === 'points' ? 'Fan Pts' : 'Z-Score');
+  summaryLabel: Signal<string> = computed(() =>
+    this.scoringType() === 'points' ? 'Fan Pts' : 'Z-Score',
+  );
 
   private readonly computedPlayerProjections = computed((): PlayerProjection[] => {
     const projections = this.playerProjections();
@@ -78,6 +82,19 @@ export class PlayerProjectionsTableComponent {
     return this.playerMap().get(playerId)!;
   }
 
+  private scaleScoring(
+    scoring: Record<ScoringStatKey, number>,
+    ratio: number,
+    scalable: Set<ScoringStatKey>,
+  ): Record<ScoringStatKey, number> {
+    const scaled = { ...scoring };
+    SCORING_STAT_KEYS.forEach((key) => {
+      if (scalable.has(key)) {
+        scaled[key] = scoring[key] * ratio;
+      }
+    });
+    return scaled;
+  }
 
   onToiKeydown(playerId: number, event: KeyboardEvent): void {
     if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
@@ -86,9 +103,17 @@ export class PlayerProjectionsTableComponent {
     this.playerProjections.update((playerProjections) =>
       playerProjections.map((pp) => {
         if (pp.playerId !== playerId) return pp;
-        const current = pp.stats.utility.toiPerGame;
-        const updated = Math.max(0, current + delta);
-        return { ...pp, stats: { ...pp.stats, utility: { ...pp.stats.utility, toiPerGame: updated } } };
+        const oldToi = pp.stats.utility.toiPerGame;
+        const newToi = Math.max(0, oldToi + delta);
+        const toiSettings = this.scaleSettings().toiPerGame;
+        const shouldScale = toiSettings.scale && oldToi > 0;
+        const scoring = shouldScale
+          ? this.scaleScoring(pp.stats.scoring, newToi / oldToi, toiSettings.scalableStats)
+          : pp.stats.scoring;
+        return {
+          ...pp,
+          stats: { ...pp.stats, scoring, utility: { ...pp.stats.utility, toiPerGame: newToi } },
+        };
       }),
     );
   }
@@ -100,10 +125,21 @@ export class PlayerProjectionsTableComponent {
       playerProjections.map((pp) => {
         if (pp.playerId !== playerId) return pp;
         const isScoring = (SCORING_STAT_KEYS as readonly string[]).includes(key);
-        const stats = isScoring
-          ? { ...pp.stats, scoring: { ...pp.stats.scoring, [key]: value } }
-          : { ...pp.stats, utility: { ...pp.stats.utility, [key]: value } };
-        return { ...pp, stats };
+        if (isScoring) {
+          return { ...pp, stats: { ...pp.stats, scoring: { ...pp.stats.scoring, [key]: value } } };
+        }
+        const oldValue = pp.stats.utility[key as UtilityStatKey];
+        const utilityKey = key as UtilityStatKey;
+        const settings = this.scaleSettings()[utilityKey];
+        const shouldScale = settings ? settings.scale && oldValue > 0 : false;
+        const scalable = settings ? settings.scalableStats : new Set<ScoringStatKey>();
+        const scoring = shouldScale
+          ? this.scaleScoring(pp.stats.scoring, value / oldValue, scalable)
+          : pp.stats.scoring;
+        return {
+          ...pp,
+          stats: { ...pp.stats, scoring, utility: { ...pp.stats.utility, [key]: value } },
+        };
       }),
     );
   }

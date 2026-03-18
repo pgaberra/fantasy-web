@@ -12,6 +12,40 @@
           <div class="toggle-thumb"></div>
         </div>
       </label>
+      @if (activeUtilityColumns().has(key)) {
+        <label class="setting-row setting-row--sub">
+          <div class="setting-info">
+            <span class="setting-name">Scale scoring on {{ key | utilityStatLabel }} change</span>
+            <span class="setting-desc">Automatically scale all scoring stats proportionally when {{ key | utilityStatLabel }} is updated.</span>
+          </div>
+          <div class="toggle-switch" [class.on]="isScaleActive(key)" (click)="toggleScale(key)">
+            <div class="toggle-thumb"></div>
+          </div>
+        </label>
+        @if (isScaleActive(key)) {
+          <label class="setting-row setting-row--sub setting-row--advanced">
+            <div class="setting-info">
+              <span class="setting-name">Customize scaled stats</span>
+              <span class="setting-desc">Choose which scoring stats are affected by scaling.</span>
+            </div>
+            <button class="advanced-toggle-btn" (click)="toggleAdvanced(key)">
+              {{ isAdvancedVisible(key) ? 'Hide' : 'Show' }}
+            </button>
+          </label>
+          @if (isAdvancedVisible(key)) {
+            @for (statKey of activeScoringColumns(); track statKey) {
+              <label class="setting-row setting-row--sub setting-row--stat">
+                <div class="setting-info">
+                  <span class="setting-name">{{ statKey | statLabel }}</span>
+                </div>
+                <div class="toggle-switch" [class.on]="isScaleStatActive(statKey, key)" (click)="toggleScaleStat(statKey, key)">
+                  <div class="toggle-thumb"></div>
+                </div>
+              </label>
+            }
+          }
+        }
+      }
     }
   </div>
 </section>
