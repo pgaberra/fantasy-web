@@ -2,6 +2,15 @@
   <h2>Projection Settings</h2>
   <p class="hint">Configure additional options for your player projections:</p>
   <div class="projection-settings-list">
+    <label class="setting-row">
+      <div class="setting-info">
+        <span class="setting-name">Show decimals row</span>
+        <span class="setting-desc">Display a row in the projections table to configure decimal places per stat.</span>
+      </div>
+      <div class="toggle-switch" [class.on]="showDecimalRow()" (click)="toggleShowDecimalRow()">
+        <div class="toggle-thumb"></div>
+      </div>
+    </label>
     @for (key of UTILITY_STAT_KEYS; track key) {
       <label class="setting-row">
         <div class="setting-info">

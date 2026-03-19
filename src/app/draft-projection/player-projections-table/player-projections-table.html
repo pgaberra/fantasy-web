@@ -35,6 +35,41 @@
             <th class="summary-pts-col"></th>
           </tr>
         }
+        @if (showDecimalRow()) {
+          <tr class="decimal-row">
+            <th class="col-rank"></th>
+            <th class="col-name"><span class="decimal-label">Decimals</span></th>
+            @for (col of activeUtilityColumns(); track col) {
+              <th class="col-{{ col }}">
+                @if (col !== 'toiPerGame') {
+                  <input
+                    type="number"
+                    class="decimal-input"
+                    [value]="decimalSettings()[col]"
+                    min="0"
+                    [max]="MAX_DECIMAL_SETTING"
+                    step="1"
+                    (input)="onDecimalInput(col, $event)"
+                  />
+                }
+              </th>
+            }
+            @for (col of activeScoringColumns(); track col) {
+              <th>
+                <input
+                  type="number"
+                  class="decimal-input"
+                  [value]="decimalSettings()[col]"
+                  min="0"
+                  [max]="MAX_DECIMAL_SETTING"
+                  step="1"
+                  (input)="onDecimalInput(col, $event)"
+                />
+              </th>
+            }
+            <th class="summary-pts-col"></th>
+          </tr>
+        }
       </thead>
       <tbody>
         @for (projection of sortedPlayerProjections(); track projection.playerId; let i = $index) {
@@ -55,7 +90,7 @@
                   <input
                     type="number"
                     class="stat-input"
-                    [value]="projection.stats.utility[col]"
+                    [value]="formatStat(projection.stats.utility[col], col)"
                     (input)="onStatInput(projection.playerId, col, $event)"
                   />
                 }
@@ -66,7 +101,7 @@
                 <input
                   type="number"
                   class="stat-input"
-                  [value]="projection.stats.scoring[col]"
+                  [value]="formatStat(projection.stats.scoring[col], col)"
                   (input)="onStatInput(projection.playerId, col, $event)"
                 />
               </td>

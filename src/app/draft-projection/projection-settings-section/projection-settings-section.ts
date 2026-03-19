@@ -16,6 +16,7 @@ export class ProjectionSettingsSectionComponent {
   activeScoringColumns = input.required<Set<ScoringStatKey>>();
 
   scaleSettings = model.required<Record<UtilityStatKey, ScaleConfig>>();
+  showDecimalRow = model<boolean>(false);
   private readonly showAdvancedScaleOptions = signal<Record<UtilityStatKey, boolean>>({
     gp: false,
     toiPerGame: false,
@@ -53,6 +54,10 @@ export class ProjectionSettingsSectionComponent {
       }
       return { ...settings, [utilityKey]: { ...settings[utilityKey], scalableStats } };
     });
+  }
+
+  toggleShowDecimalRow(): void {
+    this.showDecimalRow.update((show) => !show);
   }
 
   isScaleStatActive(statKey: ScoringStatKey, utilityKey: UtilityStatKey): boolean {

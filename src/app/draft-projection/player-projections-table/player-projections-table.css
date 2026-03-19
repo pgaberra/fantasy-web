@@ -181,3 +181,45 @@ thead tr.weight-row th {
 .gp-input {
   width: 52px;
 }
+
+thead tr.decimal-row th {
+  background: #22395e;
+  padding: 0.3rem 0.25rem;
+}
+
+.decimal-label {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.decimal-input {
+  width: 40px;
+  padding: 0.2rem 0.25rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 0.8rem;
+  color: #fff;
+  transition: border-color 0.15s, background 0.15s;
+  -moz-appearance: textfield;
+}
+
+.decimal-input:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.decimal-input:focus {
+  outline: none;
+  border-color: #e6b84a;
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 0 2px rgba(230, 184, 74, 0.35);
+}
+
+.decimal-input::-webkit-outer-spin-button,
+.decimal-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}

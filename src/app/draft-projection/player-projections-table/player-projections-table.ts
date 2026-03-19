@@ -12,7 +12,7 @@ import { StatLabelPipe } from '../../pipes/stat-label.pipe';
 import { FormatToiPipe } from '../../pipes/format-toi.pipe';
 import { ProjectionCalculationService } from '../../services/projection-calculation.service';
 import { ToiService } from '../../services/toi.service';
-import { DEFAULT_SCALE_SETTINGS, ScaleConfig } from '../projection-settings-section/model';
+import { DEFAULT_DECIMAL_SETTINGS, DEFAULT_SCALE_SETTINGS, DecimalStatKey, ScaleConfig } from '../projection-settings-section/model';
 
 @Component({
   selector: 'app-player-projections-table',
@@ -22,6 +22,7 @@ import { DEFAULT_SCALE_SETTINGS, ScaleConfig } from '../projection-settings-sect
 })
 export class PlayerProjectionsTableComponent {
   protected readonly Array = Array;
+  protected readonly MAX_DECIMAL_SETTING = 3;
 
   scoringType = input.required<ScoringType>();
   playerProjections = model.required<PlayerProjection[]>();
@@ -30,6 +31,8 @@ export class PlayerProjectionsTableComponent {
   activeScoringColumns = input.required<Set<ScoringStatKey>>();
   activeUtilityColumns = input.required<Set<UtilityStatKey>>();
   scaleSettings = input<Record<UtilityStatKey, ScaleConfig>>(DEFAULT_SCALE_SETTINGS);
+  decimalSettings = model<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
+  showDecimalRow = input<boolean>(false);
 
   private readonly projectionCalculationService = inject(ProjectionCalculationService);
   private readonly toiService = inject(ToiService);
@@ -43,13 +46,17 @@ export class PlayerProjectionsTableComponent {
     const statWeights = this.statWeights();
     const activeScoringColumns = this.activeScoringColumns();
 
-    const fantasyPoints = projections.map((pp) =>
-      this.projectionCalculationService.computeTotalPoints(
-        pp.stats.scoring,
+    const fantasyPoints = projections.map((pp) => {
+      const roundedScoring = { ...pp.stats.scoring };
+      SCORING_STAT_KEYS.forEach((key) => {
+        roundedScoring[key] = this.roundStat(roundedScoring[key], key);
+      });
+      return this.projectionCalculationService.computeTotalPoints(
+        roundedScoring,
         statWeights,
         activeScoringColumns,
-      ),
-    );
+      );
+    });
     const zScores = this.projectionCalculationService.computeZScores(fantasyPoints);
 
     return projections.map((pp, i) => ({
@@ -96,6 +103,10 @@ export class PlayerProjectionsTableComponent {
     return scaled;
   }
 
+  private roundStat(value: number, key: DecimalStatKey): number {
+    return parseFloat(value.toFixed(this.decimalSettings()[key]));
+  }
+
   onToiKeydown(playerId: number, event: KeyboardEvent): void {
     if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
     event.preventDefault();
@@ -120,7 +131,9 @@ export class PlayerProjectionsTableComponent {
 
   onStatInput(playerId: number, key: StatKey, event: Event): void {
     const raw = (event.target as HTMLInputElement).value;
-    const value = key === 'toiPerGame' ? this.toiService.parseToi(raw) : Number(raw);
+    const parsed = key === 'toiPerGame' ? this.toiService.parseToi(raw) : Number(raw);
+    const decimals = this.decimalSettings();
+    const value = key in decimals ? this.roundStat(parsed, key as DecimalStatKey) : parsed;
     this.playerProjections.update((playerProjections) =>
       playerProjections.map((pp) => {
         if (pp.playerId !== playerId) return pp;
@@ -147,5 +160,15 @@ export class PlayerProjectionsTableComponent {
   onWeightInput(key: ScoringStatKey, event: Event): void {
     const value = Number((event.target as HTMLInputElement).value);
     this.statWeights.update((weights) => ({ ...weights, [key]: value }));
+  }
+
+  onDecimalInput(key: DecimalStatKey, event: Event): void {
+    const value = Math.max(0, Math.min(this.MAX_DECIMAL_SETTING, Number((event.target as HTMLInputElement).value)));
+    this.decimalSettings.update((settings) => ({ ...settings, [key]: value }));
+  }
+
+  formatStat(value: number, key: DecimalStatKey): string {
+    const decimals = this.decimalSettings()[key];
+    return parseFloat(value.toFixed(decimals)).toString();
   }
 }
