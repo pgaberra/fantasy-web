@@ -34,78 +34,25 @@
   cursor: pointer;
 }
 
-.setting-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.setting-name {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #1a1a2e;
-}
-
-.setting-desc {
-  font-size: 0.8rem;
-  color: #777;
-}
-
-.toggle-switch {
-  flex-shrink: 0;
-  width: 44px;
-  height: 24px;
-  border-radius: 12px;
-  background: #c8d0e0;
-  position: relative;
-  transition: background 0.2s;
-  cursor: pointer;
-}
-
-.toggle-switch.on {
-  background: #0f3460;
-}
-
-.toggle-thumb {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #fff;
-  transition: transform 0.2s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.toggle-switch.on .toggle-thumb {
-  transform: translateX(20px);
-}
-
 .setting-row--sub {
   padding-left: 1.25rem;
   border-left: 2px solid #e0e4ef;
   margin-top: -0.2rem;
 }
 
-.setting-row--sub .setting-name {
-  font-weight: 500;
-  color: #444;
+app-setting-row.setting-row--sub {
+  --setting-name-weight: 500;
+  --setting-name-color: #444;
 }
 
-.setting-row--sub .toggle-switch.on {
-  background: #2a6496;
+.setting-row--sub app-toggle-switch {
+  --toggle-on-color: #2a6496;
 }
 
 .setting-row--advanced {
   padding-left: 1.25rem;
   border-left: 2px solid #e0e4ef;
   margin-top: -0.2rem;
-}
-
-.setting-row--advanced .setting-name {
-  font-weight: 500;
-  color: #444;
 }
 
 .advanced-toggle-btn {
@@ -132,23 +79,16 @@
   margin-top: -0.2rem;
 }
 
-.setting-row--stat .setting-name {
-  font-weight: 400;
-  color: #555;
-  font-size: 0.85rem;
+app-setting-row.setting-row--stat {
+  --setting-name-weight: 400;
+  --setting-name-color: #555;
+  --setting-name-size: 0.85rem;
 }
 
-.setting-row--stat .toggle-switch {
-  width: 36px;
-  height: 20px;
-  border-radius: 10px;
-}
-
-.setting-row--stat .toggle-thumb {
-  width: 14px;
-  height: 14px;
-}
-
-.setting-row--stat .toggle-switch.on .toggle-thumb {
-  transform: translateX(16px);
+.setting-row--stat app-toggle-switch {
+  --toggle-width: 36px;
+  --toggle-height: 20px;
+  --toggle-border-radius: 10px;
+  --toggle-thumb-size: 14px;
+  --toggle-thumb-translate: 16px;
 }

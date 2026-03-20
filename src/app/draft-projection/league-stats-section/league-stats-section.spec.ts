@@ -1,6 +1,6 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { LeagueStatsSectionComponent } from './league-stats-section';
-import { ScoringStatKey } from '../../models/player.model';
+import { SCORING_STAT_KEYS, ScoringStatKey } from '../../models/player.model';
 
 describe('LeagueStatsSectionComponent', () => {
   beforeEach(() => MockBuilder(LeagueStatsSectionComponent));
@@ -37,9 +37,9 @@ describe('LeagueStatsSectionComponent', () => {
 
   describe('template', () => {
     it('should render a checkbox for each scoring stat key', () => {
-      const component = getComponent();
+      getComponent(new Set(SCORING_STAT_KEYS));
       const checkboxes = ngMocks.findAll('input[type="checkbox"]');
-      expect(checkboxes.length).toEqual(component.ALL_SCORING_STAT_KEYS().size);
+      expect(checkboxes.length).toEqual(SCORING_STAT_KEYS.length);
     });
 
     it('should check the checkbox for active columns', () => {

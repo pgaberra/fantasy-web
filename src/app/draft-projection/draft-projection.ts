@@ -1,8 +1,8 @@
-import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PlayerService } from '../services/player.service';
 import { Player, ScoringStatKey, UtilityStatKey } from '../models/player.model';
-import { PlayerProjection, ScoringType } from './model';
+import { ActiveColumns, PlayerProjection, ScoringType } from './model';
 import { ScoringTypeSectionComponent } from './scoring-type-section/scoring-type-section';
 import { LeagueStatsSectionComponent } from './league-stats-section/league-stats-section';
 import { ProjectionSettingsSectionComponent } from './projection-settings-section/projection-settings-section';
@@ -51,6 +51,10 @@ export class DraftProjectionComponent implements OnInit {
     new Set<ScoringStatKey>(['goals', 'assists', 'sog', 'hits', 'blocks']),
   );
   activeUtilityColumns = signal(new Set<UtilityStatKey>(['gp']));
+  activeColumns = computed<ActiveColumns>(() => ({
+    scoringColumns: this.activeScoringColumns(),
+    utilityColumns: this.activeUtilityColumns(),
+  }));
   scaleSettings = signal<Record<UtilityStatKey, ScaleConfig>>(DEFAULT_SCALE_SETTINGS);
   decimalSettings = signal<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
   showDecimalRow = signal<boolean>(false);
@@ -63,17 +67,12 @@ export class DraftProjectionComponent implements OnInit {
   }
 
   private initializeProjection(players: Player[]): void {
-    const playerProjections: PlayerProjection[] = players.map((player) => {
-      return {
-        playerId: player.id,
-        stats: {
-          scoring: player.stats.scoring,
-          utility: player.stats.utility,
-        },
-        fantasyPoints: 0,
-        zScore: 0,
-      };
-    });
+    const playerProjections: PlayerProjection[] = players.map((player) => ({
+      playerId: player.id,
+      stats: player.stats,
+      fantasyPoints: 0,
+      zScore: 0,
+    }));
 
     this.players.set(players);
     this.playerProjections.set(playerProjections);

@@ -1,9 +1,16 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { ProjectionSettingsSectionComponent } from './projection-settings-section';
-import { ScoringStatKey, UtilityStatKey } from '../../models/player.model';
+import { ScoringStatKey, UTILITY_STAT_KEYS, UtilityStatKey } from '../../models/player.model';
+import { DEFAULT_SCALE_SETTINGS } from './model';
+import { ToggleSwitchComponent } from './toggle-switch/toggle-switch';
+import { SettingRowComponent } from './setting-row/setting-row';
 
 describe('ProjectionSettingsSectionComponent', () => {
-  beforeEach(() => MockBuilder(ProjectionSettingsSectionComponent));
+  beforeEach(() =>
+    MockBuilder(ProjectionSettingsSectionComponent)
+      .keep(ToggleSwitchComponent)
+      .keep(SettingRowComponent),
+  );
 
   const defaultActiveScoringColumns = new Set<ScoringStatKey>(['goals', 'assists', 'sog', 'hits', 'blocks']);
 
@@ -11,31 +18,35 @@ describe('ProjectionSettingsSectionComponent', () => {
     activeUtilityColumns: Set<UtilityStatKey> = new Set(['gp', 'toiPerGame']),
     activeScoringColumns: Set<ScoringStatKey> = defaultActiveScoringColumns,
   ) =>
-    MockRender(ProjectionSettingsSectionComponent, { activeUtilityColumns, activeScoringColumns }).point.componentInstance;
+    MockRender(ProjectionSettingsSectionComponent, {
+      activeUtilityColumns,
+      activeScoringColumns,
+      scaleSettings: DEFAULT_SCALE_SETTINGS,
+    }).point.componentInstance;
 
   describe('toggle', () => {
     it('should remove an active utility column when toggled', () => {
       const component = getComponent(new Set(['gp', 'toiPerGame']));
-      component.toggle('gp');
+      component.toggleActiveUtilityColumn('gp');
       expect(component.activeUtilityColumns().has('gp')).toEqual(false);
     });
 
     it('should add an inactive utility column when toggled', () => {
       const component = getComponent(new Set<UtilityStatKey>(['toiPerGame']));
-      component.toggle('gp');
+      component.toggleActiveUtilityColumn('gp');
       expect(component.activeUtilityColumns().has('gp')).toEqual(true);
     });
 
     it('should return to the original state after two toggles', () => {
       const component = getComponent(new Set(['gp', 'toiPerGame']));
-      component.toggle('gp');
-      component.toggle('gp');
+      component.toggleActiveUtilityColumn('gp');
+      component.toggleActiveUtilityColumn('gp');
       expect(component.activeUtilityColumns().has('gp')).toEqual(true);
     });
 
     it('should only affect the targeted column', () => {
       const component = getComponent(new Set(['gp', 'toiPerGame']));
-      component.toggle('gp');
+      component.toggleActiveUtilityColumn('gp');
       expect(component.activeUtilityColumns().has('toiPerGame')).toEqual(true);
     });
   });
@@ -45,8 +56,9 @@ describe('ProjectionSettingsSectionComponent', () => {
       const component = getComponent();
       const toggles = ngMocks.findAll('.toggle-switch');
       // Each utility stat has a main toggle; each active utility stat also has a scale sub-toggle.
+      // There is also one toggle for the "Show decimals row" setting.
       // Per-stat toggles are hidden by default (advanced options collapsed).
-      const expected = component.ALL_UTILITY_STAT_KEYS().size + component.activeUtilityColumns().size;
+      const expected = UTILITY_STAT_KEYS.length + component.activeUtilityColumns().size + 1;
       expect(toggles.length).toEqual(expected);
     });
 
@@ -66,8 +78,9 @@ describe('ProjectionSettingsSectionComponent', () => {
 
     it('should call toggle() when a toggle switch is clicked', () => {
       const component = getComponent(new Set<UtilityStatKey>(['gp', 'toiPerGame']));
-      const toggle = ngMocks.find('.toggle-switch');
-      ngMocks.click(toggle);
+      const toggles = ngMocks.findAll('.toggle-switch');
+      const firstUtilityToggle = toggles[1]; // index 0 is the "Show decimals row" toggle
+      ngMocks.click(firstUtilityToggle);
       expect(component.activeUtilityColumns().size).not.toEqual(2);
     });
   });

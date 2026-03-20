@@ -1,4 +1,6 @@
 import { Component, input, model, signal } from '@angular/core';
+import { SettingRowComponent } from './setting-row/setting-row';
+import { ToggleSwitchComponent } from './toggle-switch/toggle-switch';
 import { UtilityStatLabelPipe } from '../../pipes/utility-stat-label.pipe';
 import { StatDescPipe } from '../../pipes/stat-desc.pipe';
 import { StatLabelPipe } from '../../pipes/stat-label.pipe';
@@ -9,7 +11,7 @@ import { ScaleConfig } from './model';
   selector: 'app-projection-settings-section',
   templateUrl: './projection-settings-section.html',
   styleUrl: './projection-settings-section.css',
-  imports: [UtilityStatLabelPipe, StatDescPipe, StatLabelPipe],
+  imports: [UtilityStatLabelPipe, StatDescPipe, StatLabelPipe, ToggleSwitchComponent, SettingRowComponent],
 })
 export class ProjectionSettingsSectionComponent {
   activeUtilityColumns = model.required<Set<UtilityStatKey>>();
@@ -22,7 +24,7 @@ export class ProjectionSettingsSectionComponent {
     toiPerGame: false,
   });
 
-  toggle(key: UtilityStatKey): void {
+  toggleActiveUtilityColumn(key: UtilityStatKey): void {
     this.activeUtilityColumns.update((columns) => {
       if (columns.has(key)) {
         columns.delete(key);

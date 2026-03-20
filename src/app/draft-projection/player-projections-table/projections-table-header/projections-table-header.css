@@ -1,0 +1,120 @@
+th {
+  background: #0f3460;
+  color: #fff;
+  padding: 0.6rem 0.5rem;
+  text-align: center;
+  font-weight: 600;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+}
+
+th.col-name {
+  text-align: left;
+  padding-left: 0.75rem;
+}
+
+.col-rank {
+  width: 2rem;
+  min-width: 2rem;
+  text-align: center;
+  color: #7a8baa;
+  font-weight: 500;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.col-utility {
+  min-width: 60px;
+}
+
+th.summary-pts-col {
+  background: #c8860a;
+  color: #fff;
+  border-left: 3px solid #a06800;
+  min-width: 72px;
+}
+
+tr.weight-row th {
+  background: #1a4a80;
+  padding: 0.3rem 0.25rem;
+}
+
+.weight-label {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.weight-input {
+  width: 52px;
+  padding: 0.2rem 0.25rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 0.8rem;
+  color: #fff;
+  transition: border-color 0.15s, background 0.15s;
+  -moz-appearance: textfield;
+}
+
+.weight-input:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.weight-input:focus {
+  outline: none;
+  border-color: #e6b84a;
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 0 2px rgba(230, 184, 74, 0.35);
+}
+
+.weight-input::-webkit-outer-spin-button,
+.weight-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+tr.decimal-row th {
+  background: #22395e;
+  padding: 0.3rem 0.25rem;
+}
+
+.decimal-label {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.decimal-input {
+  width: 40px;
+  padding: 0.2rem 0.25rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 0.8rem;
+  color: #fff;
+  transition: border-color 0.15s, background 0.15s;
+  -moz-appearance: textfield;
+}
+
+.decimal-input:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.decimal-input:focus {
+  outline: none;
+  border-color: #e6b84a;
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 0 2px rgba(230, 184, 74, 0.35);
+}
+
+.decimal-input::-webkit-outer-spin-button,
+.decimal-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}

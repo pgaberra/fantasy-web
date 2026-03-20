@@ -2,55 +2,39 @@
   <h2>Projection Settings</h2>
   <p class="hint">Configure additional options for your player projections:</p>
   <div class="projection-settings-list">
-    <label class="setting-row">
-      <div class="setting-info">
-        <span class="setting-name">Show decimals row</span>
-        <span class="setting-desc">Display a row in the projections table to configure decimal places per stat.</span>
-      </div>
-      <div class="toggle-switch" [class.on]="showDecimalRow()" (click)="toggleShowDecimalRow()">
-        <div class="toggle-thumb"></div>
-      </div>
-    </label>
+    <app-setting-row
+      name="Show decimals row"
+      desc="Display a row in the projections table to configure decimal places per stat."
+    >
+      <app-toggle-switch [on]="showDecimalRow()" (toggled)="toggleShowDecimalRow()" />
+    </app-setting-row>
     @for (key of UTILITY_STAT_KEYS; track key) {
-      <label class="setting-row">
-        <div class="setting-info">
-          <span class="setting-name">{{ key | utilityStatLabel }}</span>
-          <span class="setting-desc">{{ key | statDesc }}</span>
-        </div>
-        <div class="toggle-switch" [class.on]="activeUtilityColumns().has(key)" (click)="toggle(key)">
-          <div class="toggle-thumb"></div>
-        </div>
-      </label>
+      <app-setting-row [name]="key | utilityStatLabel" [desc]="key | statDesc">
+        <app-toggle-switch [on]="activeUtilityColumns().has(key)" (toggled)="toggleActiveUtilityColumn(key)" />
+      </app-setting-row>
       @if (activeUtilityColumns().has(key)) {
-        <label class="setting-row setting-row--sub">
-          <div class="setting-info">
-            <span class="setting-name">Scale scoring on {{ key | utilityStatLabel }} change</span>
-            <span class="setting-desc">Automatically scale all scoring stats proportionally when {{ key | utilityStatLabel }} is updated.</span>
-          </div>
-          <div class="toggle-switch" [class.on]="isScaleActive(key)" (click)="toggleScale(key)">
-            <div class="toggle-thumb"></div>
-          </div>
-        </label>
+        <app-setting-row
+          class="setting-row--sub"
+          [name]="'Scale scoring on ' + (key | utilityStatLabel) + ' change'"
+          [desc]="'Automatically scale all scoring stats proportionally when ' + (key | utilityStatLabel) + ' is updated.'"
+        >
+          <app-toggle-switch [on]="isScaleActive(key)" (toggled)="toggleScale(key)" />
+        </app-setting-row>
         @if (isScaleActive(key)) {
-          <label class="setting-row setting-row--sub setting-row--advanced">
-            <div class="setting-info">
-              <span class="setting-name">Customize scaled stats</span>
-              <span class="setting-desc">Choose which scoring stats are affected by scaling.</span>
-            </div>
+          <app-setting-row
+            class="setting-row--sub setting-row--advanced"
+            name="Customize scaled stats"
+            desc="Choose which scoring stats are affected by scaling."
+          >
             <button class="advanced-toggle-btn" (click)="toggleAdvanced(key)">
               {{ isAdvancedVisible(key) ? 'Hide' : 'Show' }}
             </button>
-          </label>
+          </app-setting-row>
           @if (isAdvancedVisible(key)) {
             @for (statKey of activeScoringColumns(); track statKey) {
-              <label class="setting-row setting-row--sub setting-row--stat">
-                <div class="setting-info">
-                  <span class="setting-name">{{ statKey | statLabel }}</span>
-                </div>
-                <div class="toggle-switch" [class.on]="isScaleStatActive(statKey, key)" (click)="toggleScaleStat(statKey, key)">
-                  <div class="toggle-thumb"></div>
-                </div>
-              </label>
+              <app-setting-row class="setting-row--sub setting-row--stat" [name]="statKey | statLabel">
+                <app-toggle-switch [on]="isScaleStatActive(statKey, key)" (toggled)="toggleScaleStat(statKey, key)" />
+              </app-setting-row>
             }
           }
         }

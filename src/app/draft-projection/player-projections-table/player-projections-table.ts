@@ -1,5 +1,4 @@
-import { Component, computed, inject, input, model, Signal } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { Component, computed, inject, input, model } from '@angular/core';
 import {
   Player,
   SCORING_STAT_KEYS,
@@ -7,44 +6,36 @@ import {
   StatKey,
   UtilityStatKey,
 } from '../../models/player.model';
-import { PlayerProjection, ScoringType } from '../model';
-import { StatLabelPipe } from '../../pipes/stat-label.pipe';
-import { FormatToiPipe } from '../../pipes/format-toi.pipe';
+import { ActiveColumns, PlayerProjection, ScoringType } from '../model';
 import { ProjectionCalculationService } from '../../services/projection-calculation.service';
 import { ToiService } from '../../services/toi.service';
 import { DEFAULT_DECIMAL_SETTINGS, DEFAULT_SCALE_SETTINGS, DecimalStatKey, ScaleConfig } from '../projection-settings-section/model';
+import { ProjectionsTableHeaderComponent } from './projections-table-header/projections-table-header';
+import { ProjectionPlayerRowComponent } from './projection-player-row/projection-player-row';
 
 @Component({
   selector: 'app-player-projections-table',
-  imports: [DecimalPipe, StatLabelPipe, FormatToiPipe],
+  imports: [ProjectionsTableHeaderComponent, ProjectionPlayerRowComponent],
   templateUrl: './player-projections-table.html',
   styleUrl: './player-projections-table.css',
 })
 export class PlayerProjectionsTableComponent {
-  protected readonly Array = Array;
-  protected readonly MAX_DECIMAL_SETTING = 3;
-
   scoringType = input.required<ScoringType>();
   playerProjections = model.required<PlayerProjection[]>();
   statWeights = model.required<Record<ScoringStatKey, number>>();
   players = input.required<Player[]>();
-  activeScoringColumns = input.required<Set<ScoringStatKey>>();
-  activeUtilityColumns = input.required<Set<UtilityStatKey>>();
+  activeColumns = input.required<ActiveColumns>();
   scaleSettings = input<Record<UtilityStatKey, ScaleConfig>>(DEFAULT_SCALE_SETTINGS);
   decimalSettings = model<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
-  showDecimalRow = input<boolean>(false);
+  showDecimalRow = input.required<boolean>();
 
   private readonly projectionCalculationService = inject(ProjectionCalculationService);
   private readonly toiService = inject(ToiService);
 
-  summaryLabel: Signal<string> = computed(() =>
-    this.scoringType() === 'points' ? 'Fan Pts' : 'Z-Score',
-  );
-
   private readonly computedPlayerProjections = computed((): PlayerProjection[] => {
     const projections = this.playerProjections();
     const statWeights = this.statWeights();
-    const activeScoringColumns = this.activeScoringColumns();
+    const activeScoringColumns = this.activeColumns().scoringColumns;
 
     const fantasyPoints = projections.map((pp) => {
       const roundedScoring = { ...pp.stats.scoring };
@@ -75,13 +66,11 @@ export class PlayerProjectionsTableComponent {
     );
   });
 
-  private sortByPointsDesc(a: PlayerProjection, b: PlayerProjection) {
-    return b.fantasyPoints - a.fantasyPoints;
-  }
+  private readonly sortByPointsDesc = (a: PlayerProjection, b: PlayerProjection) =>
+    b.fantasyPoints - a.fantasyPoints;
 
-  private sortByZScoreDesc(a: PlayerProjection, b: PlayerProjection) {
-    return b.zScore - a.zScore;
-  }
+  private readonly sortByZScoreDesc = (a: PlayerProjection, b: PlayerProjection) =>
+    b.zScore - a.zScore;
 
   private readonly playerMap = computed(() => new Map(this.players().map((p) => [p.id, p])));
 
@@ -141,8 +130,8 @@ export class PlayerProjectionsTableComponent {
         if (isScoring) {
           return { ...pp, stats: { ...pp.stats, scoring: { ...pp.stats.scoring, [key]: value } } };
         }
-        const oldValue = pp.stats.utility[key as UtilityStatKey];
         const utilityKey = key as UtilityStatKey;
+        const oldValue = pp.stats.utility[utilityKey];
         const settings = this.scaleSettings()[utilityKey];
         const shouldScale = settings ? settings.scale && oldValue > 0 : false;
         const scalable = settings ? settings.scalableStats : new Set<ScoringStatKey>();
@@ -155,20 +144,5 @@ export class PlayerProjectionsTableComponent {
         };
       }),
     );
-  }
-
-  onWeightInput(key: ScoringStatKey, event: Event): void {
-    const value = Number((event.target as HTMLInputElement).value);
-    this.statWeights.update((weights) => ({ ...weights, [key]: value }));
-  }
-
-  onDecimalInput(key: DecimalStatKey, event: Event): void {
-    const value = Math.max(0, Math.min(this.MAX_DECIMAL_SETTING, Number((event.target as HTMLInputElement).value)));
-    this.decimalSettings.update((settings) => ({ ...settings, [key]: value }));
-  }
-
-  formatStat(value: number, key: DecimalStatKey): string {
-    const decimals = this.decimalSettings()[key];
-    return parseFloat(value.toFixed(decimals)).toString();
   }
 }

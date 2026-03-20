@@ -2,114 +2,27 @@
   <h2>Player Projections</h2>
   <div class="table-wrapper">
     <table>
-      <thead>
-        <tr>
-          <th class="col-rank">#</th>
-          <th class="col-name">Player</th>
-          @for (col of activeUtilityColumns(); track col) {
-            <th class="col-utility">{{ col | statLabel }}</th>
-          }
-          @for (col of activeScoringColumns(); track col) {
-            <th>{{ col | statLabel }}</th>
-          }
-          <th class="summary-pts-col">{{ summaryLabel() }}</th>
-        </tr>
-        @if (scoringType() === 'points') {
-          <tr class="weight-row">
-            <th class="col-rank"></th>
-            <th class="col-name"><span class="weight-label">Stat weights (pts)</span></th>
-            @for (col of activeUtilityColumns(); track col) {
-              <th class="col-{{ col }}"></th>
-            }
-            @for (col of activeScoringColumns(); track col) {
-              <th>
-                <input
-                  type="number"
-                  class="weight-input"
-                  [value]="statWeights()[col]"
-                  step="0.01"
-                  (input)="onWeightInput(col, $event)"
-                />
-              </th>
-            }
-            <th class="summary-pts-col"></th>
-          </tr>
-        }
-        @if (showDecimalRow()) {
-          <tr class="decimal-row">
-            <th class="col-rank"></th>
-            <th class="col-name"><span class="decimal-label">Decimals</span></th>
-            @for (col of activeUtilityColumns(); track col) {
-              <th class="col-{{ col }}">
-                @if (col !== 'toiPerGame') {
-                  <input
-                    type="number"
-                    class="decimal-input"
-                    [value]="decimalSettings()[col]"
-                    min="0"
-                    [max]="MAX_DECIMAL_SETTING"
-                    step="1"
-                    (input)="onDecimalInput(col, $event)"
-                  />
-                }
-              </th>
-            }
-            @for (col of activeScoringColumns(); track col) {
-              <th>
-                <input
-                  type="number"
-                  class="decimal-input"
-                  [value]="decimalSettings()[col]"
-                  min="0"
-                  [max]="MAX_DECIMAL_SETTING"
-                  step="1"
-                  (input)="onDecimalInput(col, $event)"
-                />
-              </th>
-            }
-            <th class="summary-pts-col"></th>
-          </tr>
-        }
-      </thead>
+      <thead
+        app-projections-table-header
+        [activeColumns]="activeColumns()"
+        [scoringType]="scoringType()"
+        [(statWeights)]="statWeights"
+        [showDecimalRow]="showDecimalRow()"
+        [(decimalSettings)]="decimalSettings"
+      ></thead>
       <tbody>
         @for (projection of sortedPlayerProjections(); track projection.playerId; let i = $index) {
-          <tr>
-            <td class="col-rank">{{ i + 1 }}</td>
-            <td class="col-name player-name">{{ getPlayer(projection.playerId).name }} ({{ Array.from(getPlayer(projection.playerId).positions).join(', ') }})</td>
-            @for (col of activeUtilityColumns(); track col) {
-              <td class="col-{{ col }}">
-                @if (col === 'toiPerGame') {
-                  <input
-                    type="text"
-                    class="stat-input"
-                    [value]="projection.stats.utility[col] | formatToi"
-                    (input)="onStatInput(projection.playerId, col, $event)"
-                    (keydown)="onToiKeydown(projection.playerId, $event)"
-                  />
-                } @else {
-                  <input
-                    type="number"
-                    class="stat-input"
-                    [value]="formatStat(projection.stats.utility[col], col)"
-                    (input)="onStatInput(projection.playerId, col, $event)"
-                  />
-                }
-              </td>
-            }
-            @for (col of activeScoringColumns(); track col) {
-              <td>
-                <input
-                  type="number"
-                  class="stat-input"
-                  [value]="formatStat(projection.stats.scoring[col], col)"
-                  (input)="onStatInput(projection.playerId, col, $event)"
-                />
-              </td>
-            }
-            <td class="fan-pts-col fan-pts-cell">
-              {{ (scoringType() === 'category' ? projection.zScore : projection.fantasyPoints) | number : '1.0-2' }}
-            </td>
-          </tr>
+          <tr
+            app-projection-player-row
+            [rank]="i + 1"
+            [projection]="projection"
+            [player]="getPlayer(projection.playerId)"
+            [activeColumns]="activeColumns()"
+            [scoringType]="scoringType()"
+            [decimalSettings]="decimalSettings()"
+            (statInput)="onStatInput($event.playerId, $event.key, $event.event)"
+            (toiKeydown)="onToiKeydown($event.playerId, $event.event)"
+          ></tr>
         }
       </tbody>
     </table>

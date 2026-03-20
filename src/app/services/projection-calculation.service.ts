@@ -11,7 +11,7 @@ export class ProjectionCalculationService {
     activeScoringColumns: Set<ScoringStatKey>,
   ): number {
     return Object.entries(statWeights)
-      .filter(([key, _]) => activeScoringColumns.has(key as ScoringStatKey))
+      .filter(([key]) => activeScoringColumns.has(key as ScoringStatKey))
       .reduce((sum, [key, weight]) => sum + stats[key as ScoringStatKey] * weight, 0);
   }
 

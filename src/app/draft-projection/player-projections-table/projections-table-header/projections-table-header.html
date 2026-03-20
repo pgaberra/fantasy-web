@@ -1,0 +1,67 @@
+<tr>
+  <th class="col-rank">#</th>
+  <th class="col-name">Player</th>
+  @for (col of activeColumns().utilityColumns; track col) {
+    <th class="col-utility">{{ col | statLabel }}</th>
+  }
+  @for (col of activeColumns().scoringColumns; track col) {
+    <th>{{ col | statLabel }}</th>
+  }
+  <th class="summary-pts-col">{{ summaryLabel() }}</th>
+</tr>
+@if (scoringType() === 'points') {
+  <tr class="weight-row">
+    <th class="col-rank"></th>
+    <th class="col-name"><span class="weight-label">Stat weights (pts)</span></th>
+    @for (col of activeColumns().utilityColumns; track col) {
+      <th class="col-{{ col }}"></th>
+    }
+    @for (col of activeColumns().scoringColumns; track col) {
+      <th>
+        <input
+          type="number"
+          class="weight-input"
+          [value]="statWeights()[col]"
+          step="0.01"
+          (input)="onWeightInput(col, $event)"
+        />
+      </th>
+    }
+    <th class="summary-pts-col"></th>
+  </tr>
+}
+@if (showDecimalRow()) {
+  <tr class="decimal-row">
+    <th class="col-rank"></th>
+    <th class="col-name"><span class="decimal-label">Decimals</span></th>
+    @for (col of activeColumns().utilityColumns; track col) {
+      <th class="col-{{ col }}">
+        @if (col === 'gp') {
+          <input
+            type="number"
+            class="decimal-input"
+            [value]="gpDecimalSetting()"
+            min="0"
+            [max]="MAX_DECIMAL_SETTING"
+            step="1"
+            (input)="onDecimalInput(col, $event)"
+          />
+        }
+      </th>
+    }
+    @for (col of activeColumns().scoringColumns; track col) {
+      <th>
+        <input
+          type="number"
+          class="decimal-input"
+          [value]="decimalSettings()[col]"
+          min="0"
+          [max]="MAX_DECIMAL_SETTING"
+          step="1"
+          (input)="onDecimalInput(col, $event)"
+        />
+      </th>
+    }
+    <th class="summary-pts-col"></th>
+  </tr>
+}

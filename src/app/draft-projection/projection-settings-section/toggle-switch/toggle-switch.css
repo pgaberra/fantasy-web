@@ -1,0 +1,30 @@
+.toggle-switch {
+  flex-shrink: 0;
+  width: var(--toggle-width, 44px);
+  height: var(--toggle-height, 24px);
+  border-radius: var(--toggle-border-radius, 12px);
+  background: #c8d0e0;
+  position: relative;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.toggle-switch.on {
+  background: var(--toggle-on-color, #0f3460);
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: var(--toggle-thumb-size, 18px);
+  height: var(--toggle-thumb-size, 18px);
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch.on .toggle-thumb {
+  transform: translateX(var(--toggle-thumb-translate, 20px));
+}
