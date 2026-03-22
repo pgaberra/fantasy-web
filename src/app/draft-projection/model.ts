@@ -12,9 +12,12 @@ export interface ProjectedStats {
   utility: Record<UtilityStatKey, number>;
 }
 
-export type PlayerProjection = {
-  playerId: number;
-  stats: ProjectedStats;
+export interface PlayerScore {
   fantasyPoints: number;
   zScore: number;
+}
+
+export interface PlayerProjection {
+  playerId: number;
+  stats: ProjectedStats;
 }

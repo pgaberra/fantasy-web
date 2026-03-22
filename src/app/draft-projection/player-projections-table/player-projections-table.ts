@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, model, Signal, signal } from '@angular/core';
+import { Component, computed, inject, input, model, OnInit, Signal, signal } from '@angular/core';
 import {
   Player,
   SCORING_STAT_KEYS,
@@ -6,7 +6,7 @@ import {
   StatKey,
   UtilityStatKey,
 } from '../../models/player.model';
-import { ActiveColumns, PlayerProjection, ScoringType } from '../model';
+import { ActiveColumns, PlayerProjection, PlayerScore, ScoringType } from '../model';
 import { ProjectionCalculationService } from '../../services/projection-calculation.service';
 import { ToiService } from '../../services/toi.service';
 import { DEFAULT_DECIMAL_SETTINGS, DEFAULT_SCALE_SETTINGS, DecimalStatKey, ScaleConfig } from '../projection-settings-section/model';
@@ -19,20 +19,20 @@ import { ProjectionPlayerRowComponent } from './projection-player-row/projection
   templateUrl: './player-projections-table.html',
   styleUrl: './player-projections-table.css',
 })
-export class PlayerProjectionsTableComponent {
-  scoringType = input.required<ScoringType>();
-  playerProjections = model.required<PlayerProjection[]>(); // TODO merge this with computedPlayerProjections
-  statWeights = model.required<Record<ScoringStatKey, number>>();
-  players = input.required<Player[]>();
-  activeColumns = input.required<ActiveColumns>();
-  scaleSettings = input<Record<UtilityStatKey, ScaleConfig>>(DEFAULT_SCALE_SETTINGS);
-  decimalSettings = model<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
-  useDefaultDecimals = input.required<boolean>();
+export class PlayerProjectionsTableComponent implements OnInit {
+  readonly scoringType = input.required<ScoringType>();
+  readonly playerProjections = signal<PlayerProjection[]>([]);
+  readonly statWeights = model.required<Record<ScoringStatKey, number>>();
+  readonly players = input.required<Player[]>();
+  readonly activeColumns = input.required<ActiveColumns>();
+  readonly scaleSettings = input<Record<UtilityStatKey, ScaleConfig>>(DEFAULT_SCALE_SETTINGS);
+  readonly decimalSettings = model<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
+  readonly useDefaultDecimals = input.required<boolean>();
 
   private readonly projectionCalculationService = inject(ProjectionCalculationService);
   private readonly toiService = inject(ToiService);
 
-  private readonly computedPlayerProjections = computed((): PlayerProjection[] => {
+  readonly playerScores = computed((): Map<number, PlayerScore> => {
     const projections = this.playerProjections();
     const statWeights = this.statWeights();
     const activeScoringColumns = this.activeColumns().scoringColumns;
@@ -50,21 +50,26 @@ export class PlayerProjectionsTableComponent {
     });
     const zScores = this.projectionCalculationService.computeZScores(fantasyPoints);
 
-    return projections.map((pp, i) => ({
-      ...pp,
-      fantasyPoints: fantasyPoints[i],
-      zScore: zScores[i],
-    }));
+    return new Map(
+      projections.map((pp, i) => [pp.playerId, { fantasyPoints: fantasyPoints[i], zScore: zScores[i] }]),
+    );
   });
 
   editingPlayerId = signal<number | null>(null);
   private readonly lockedOrder = signal<number[]>([]);
 
+  ngOnInit(): void {
+    this.initializeProjection();
+  }
+
   private readonly realTimeSortedProjections = computed((): PlayerProjection[] => {
-    const projections = this.computedPlayerProjections();
+    const projections = this.playerProjections();
+    const scores = this.playerScores();
     const scoringType = this.scoringType();
     return [...projections].sort(
-      scoringType === 'points' ? this.sortByPointsDesc : this.sortByZScoreDesc,
+      scoringType === 'points'
+        ? (a, b) => (scores.get(b.playerId)?.fantasyPoints ?? 0) - (scores.get(a.playerId)?.fantasyPoints ?? 0)
+        : (a, b) => (scores.get(b.playerId)?.zScore ?? 0) - (scores.get(a.playerId)?.zScore ?? 0),
     );
   });
 
@@ -73,7 +78,7 @@ export class PlayerProjectionsTableComponent {
       return this.realTimeSortedProjections();
     }
 
-    const projections = this.computedPlayerProjections();
+    const projections = this.playerProjections();
     return this.lockedOrder().map(
       (playerId) => projections.find((pp) => pp.playerId === playerId)!,
     );
@@ -83,16 +88,19 @@ export class PlayerProjectionsTableComponent {
     return new Map(this.realTimeSortedProjections().map((pp, i) => [pp.playerId, i + 1]));
   });
 
-  private readonly sortByPointsDesc = (a: PlayerProjection, b: PlayerProjection) =>
-    b.fantasyPoints - a.fantasyPoints;
-
-  private readonly sortByZScoreDesc = (a: PlayerProjection, b: PlayerProjection) =>
-    b.zScore - a.zScore;
-
   private readonly playerMap = computed(() => new Map(this.players().map((p) => [p.id, p])));
 
   getPlayer(playerId: number): Player {
     return this.playerMap().get(playerId)!;
+  }
+
+  private initializeProjection(): void {
+    const playerProjections: PlayerProjection[] = this.players().map((player) => ({
+      playerId: player.id,
+      stats: player.stats,
+    }));
+
+    this.playerProjections.set(playerProjections);
   }
 
   private scaleScoring(

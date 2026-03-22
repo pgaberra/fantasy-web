@@ -1,7 +1,7 @@
 import { Component, computed, input, output } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { Player, StatKey } from '../../../models/player.model';
-import { ActiveColumns, PlayerProjection, ScoringType } from '../../model';
+import { ActiveColumns, PlayerProjection, PlayerScore, ScoringType } from '../../model';
 import { FormatToiPipe } from '../../../pipes/format-toi.pipe';
 import { DecimalStatKey } from '../../projection-settings-section/model';
 
@@ -17,6 +17,7 @@ import { DecimalStatKey } from '../../projection-settings-section/model';
 export class ProjectionPlayerRowComponent {
   rank = input.required<number>();
   projection = input.required<PlayerProjection>();
+  playerScore = input.required<PlayerScore>();
   player = input.required<Player>();
   activeColumns = input.required<ActiveColumns>();
   scoringType = input.required<ScoringType>();

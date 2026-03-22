@@ -2,12 +2,17 @@ import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angula
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PlayerService } from '../services/player.service';
 import { Player, ScoringStatKey, UtilityStatKey } from '../models/player.model';
-import { ActiveColumns, PlayerProjection, ScoringType } from './model';
+import { ActiveColumns, ScoringType } from './model';
 import { ScoringTypeSectionComponent } from './scoring-type-section/scoring-type-section';
 import { ScoringStatsSectionComponent } from './scoring-stats-section/scoring-stats-section';
 import { ProjectionSettingsSectionComponent } from './projection-settings-section/projection-settings-section';
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
-import { DEFAULT_DECIMAL_SETTINGS, DEFAULT_SCALE_SETTINGS, DecimalStatKey, ScaleConfig } from './projection-settings-section/model';
+import {
+  DecimalStatKey,
+  DEFAULT_DECIMAL_SETTINGS,
+  DEFAULT_SCALE_SETTINGS,
+  ScaleConfig,
+} from './projection-settings-section/model';
 
 const DEFAULT_STAT_WEIGHTS: Record<ScoringStatKey, number> = {
   goals: 4.5,
@@ -43,7 +48,6 @@ export class DraftProjectionComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   scoringType = signal<ScoringType>('points');
-  playerProjections = signal<PlayerProjection[]>([]);
   statWeights = signal<Record<ScoringStatKey, number>>(DEFAULT_STAT_WEIGHTS);
   players = signal<Player[]>([]);
 
@@ -63,18 +67,6 @@ export class DraftProjectionComponent implements OnInit {
     this.playerService
       .getPlayers()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((players) => this.initializeProjection(players));
-  }
-
-  private initializeProjection(players: Player[]): void {
-    const playerProjections: PlayerProjection[] = players.map((player) => ({
-      playerId: player.id,
-      stats: player.stats,
-      fantasyPoints: 0,
-      zScore: 0,
-    }));
-
-    this.players.set(players);
-    this.playerProjections.set(playerProjections);
+      .subscribe((players) => this.players.set(players));
   }
 }

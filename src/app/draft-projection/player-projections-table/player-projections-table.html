@@ -16,6 +16,7 @@
             app-projection-player-row
             [rank]="realTimeRanks().get(projection.playerId)!"
             [projection]="projection"
+            [playerScore]="playerScores().get(projection.playerId)!"
             [player]="getPlayer(projection.playerId)"
             [activeColumns]="activeColumns()"
             [scoringType]="scoringType()"
