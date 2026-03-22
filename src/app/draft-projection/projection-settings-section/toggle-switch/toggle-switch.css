@@ -1,3 +1,12 @@
+:host {
+  --toggle-width: 44px;
+  --toggle-height: 24px;
+  --toggle-border-radius: 12px;
+  --toggle-on-color: #0f3460;
+  --toggle-thumb-size: 18px;
+  --toggle-thumb-translate: 20px;
+}
+
 .toggle-switch {
   flex-shrink: 0;
   width: var(--toggle-width, 44px);

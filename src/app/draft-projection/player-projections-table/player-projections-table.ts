@@ -27,7 +27,7 @@ export class PlayerProjectionsTableComponent {
   activeColumns = input.required<ActiveColumns>();
   scaleSettings = input<Record<UtilityStatKey, ScaleConfig>>(DEFAULT_SCALE_SETTINGS);
   decimalSettings = model<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
-  showDecimalRow = input.required<boolean>();
+  useDefaultDecimals = input.required<boolean>();
 
   private readonly projectionCalculationService = inject(ProjectionCalculationService);
   private readonly toiService = inject(ToiService);

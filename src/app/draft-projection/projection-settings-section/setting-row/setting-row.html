@@ -1,7 +1,12 @@
 <div class="setting-info">
-  <span class="setting-name">{{ name() }}</span>
-  @if (desc()) {
-    <span class="setting-desc">{{ desc() }}</span>
-  }
+  <div class="setting-header">
+    <span class="setting-name">{{ name() }}</span>
+    @if (desc()) {
+      <div class="tooltip-container">
+        <span class="info-icon">ⓘ</span>
+        <div class="tooltip-content">{{ desc() }}</div>
+      </div>
+    }
+  </div>
 </div>
 <ng-content />

@@ -30,7 +30,7 @@
     <th class="summary-pts-col"></th>
   </tr>
 }
-@if (showDecimalRow()) {
+@if (!useDefaultDecimals()) {
   <tr class="decimal-row">
     <th class="col-rank"></th>
     <th class="col-name"><span class="decimal-label">Decimals</span></th>

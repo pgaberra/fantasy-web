@@ -1,12 +1,12 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
-import { LeagueStatsSectionComponent } from './league-stats-section';
+import { ScoringStatsSectionComponent } from './scoring-stats-section';
 import { SCORING_STAT_KEYS, ScoringStatKey } from '../../models/player.model';
 
 describe('LeagueStatsSectionComponent', () => {
-  beforeEach(() => MockBuilder(LeagueStatsSectionComponent));
+  beforeEach(() => MockBuilder(ScoringStatsSectionComponent));
 
   const getComponent = (activeScoringColumns: Set<ScoringStatKey> = new Set(['goals', 'assists'])) =>
-    MockRender(LeagueStatsSectionComponent, { activeScoringColumns }).point.componentInstance;
+    MockRender(ScoringStatsSectionComponent, { activeScoringColumns }).point.componentInstance;
 
   describe('toggle', () => {
     it('should remove an active column when toggled', () => {

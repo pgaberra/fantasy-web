@@ -9,13 +9,13 @@
 
     <app-scoring-type-section [(scoringType)]="scoringType" />
 
-    <app-league-stats-section [(activeScoringColumns)]="activeScoringColumns" />
+    <app-scoring-stats-section [(activeScoringColumns)]="activeScoringColumns" />
 
     <app-projection-settings-section
       [(activeUtilityColumns)]="activeUtilityColumns"
       [activeScoringColumns]="activeScoringColumns()"
       [(scaleSettings)]="scaleSettings"
-      [(showDecimalRow)]="showDecimalRow"
+      [(useDefaultDecimals)]="useDefaultDecimals"
     />
 
     <app-player-projections-table
@@ -26,7 +26,7 @@
       [activeColumns]="activeColumns()"
       [scaleSettings]="scaleSettings()"
       [(decimalSettings)]="decimalSettings"
-      [showDecimalRow]="showDecimalRow()"
+      [useDefaultDecimals]="useDefaultDecimals()"
     />
   </div>
 }

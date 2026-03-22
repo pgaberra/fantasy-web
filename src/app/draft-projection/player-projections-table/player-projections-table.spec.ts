@@ -55,7 +55,7 @@ describe('PlayerProjectionsTableComponent', () => {
     playerProjections: PlayerProjection[];
     statWeights: Record<ScoringStatKey, number>;
     activeColumns: ActiveColumns;
-    showDecimalRow: boolean;
+    useDefaultDecimals: boolean;
   }> = {}) =>
     MockRender(PlayerProjectionsTableComponent, {
       players: mockPlayers,
@@ -63,7 +63,7 @@ describe('PlayerProjectionsTableComponent', () => {
       playerProjections: mockPlayerProjections,
       statWeights: mockStatWeights,
       activeColumns: { scoringColumns: new Set<ScoringStatKey>(['goals', 'assists']), utilityColumns: new Set<UtilityStatKey>(['gp']) } as ActiveColumns,
-      showDecimalRow: false,
+      useDefaultDecimals: true,
       ...overrides,
     }).point.componentInstance;
 

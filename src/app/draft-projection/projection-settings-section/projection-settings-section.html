@@ -2,43 +2,71 @@
   <h2>Projection Settings</h2>
   <p class="hint">Configure additional options for your player projections:</p>
   <div class="projection-settings-list">
-    <app-setting-row
-      name="Show decimals row"
-      desc="Display a row in the projections table to configure decimal places per stat."
-    >
-      <app-toggle-switch [on]="showDecimalRow()" (toggled)="toggleShowDecimalRow()" />
-    </app-setting-row>
-    @for (key of UTILITY_STAT_KEYS; track key) {
-      <app-setting-row [name]="key | utilityStatLabel" [desc]="key | statDesc">
-        <app-toggle-switch [on]="activeUtilityColumns().has(key)" (toggled)="toggleActiveUtilityColumn(key)" />
-      </app-setting-row>
-      @if (activeUtilityColumns().has(key)) {
+    <div class="settings-group">
+      <div class="settings-group-header" (click)="toggleGeneralVisible()">
+        <h3 class="settings-group-title">General</h3>
+        <span class="advanced-toggle-icon" [class.open]="isGeneralVisible()"></span>
+      </div>
+      @if (isGeneralVisible()) {
         <app-setting-row
-          class="setting-row--sub"
-          [name]="'Scale scoring on ' + (key | utilityStatLabel) + ' change'"
-          [desc]="'Automatically scale all scoring stats proportionally when ' + (key | utilityStatLabel) + ' is updated.'"
+          name="Use default decimal places"
+          desc="By default, stats are rounded to whole numbers (except SH% which has 1 decimal). Disable to customize decimals per stat."
         >
-          <app-toggle-switch [on]="isScaleActive(key)" (toggled)="toggleScale(key)" />
+          <app-toggle-switch [on]="useDefaultDecimals()" (toggled)="toggleUseDefaultDecimals()" />
         </app-setting-row>
-        @if (isScaleActive(key)) {
-          <app-setting-row
-            class="setting-row--sub setting-row--advanced"
-            name="Customize scaled stats"
-            desc="Choose which scoring stats are affected by scaling."
-          >
-            <button class="advanced-toggle-btn" (click)="toggleAdvanced(key)">
-              {{ isAdvancedVisible(key) ? 'Hide' : 'Show' }}
-            </button>
+      }
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-header" (click)="toggleUtilityStatsVisible()">
+        <h3 class="settings-group-title">Utility Stats</h3>
+        <div class="tooltip-container">
+          <span class="info-icon">ⓘ</span>
+          <div class="tooltip-content">
+            Stats that are not directly included in any league scoring but can be useful to predict because they may affect the performance of scoring stats.
+          </div>
+        </div>
+        <span class="advanced-toggle-icon" [class.open]="isUtilityStatsVisible()"></span>
+      </div>
+      @if (isUtilityStatsVisible()) {
+        @for (key of UTILITY_STAT_KEYS; track key) {
+          <app-setting-row [name]="key | utilityStatLabel" [desc]="key | statDesc">
+            <app-toggle-switch [on]="activeUtilityColumns().has(key)" (toggled)="toggleActiveUtilityColumn(key)" />
           </app-setting-row>
-          @if (isAdvancedVisible(key)) {
-            @for (statKey of activeScoringColumns(); track statKey) {
-              <app-setting-row class="setting-row--sub setting-row--stat" [name]="statKey | statLabel">
-                <app-toggle-switch [on]="isScaleStatActive(statKey, key)" (toggled)="toggleScaleStat(statKey, key)" />
+          @if (activeUtilityColumns().has(key)) {
+            <app-setting-row
+              class="setting-row--sub"
+              name="Auto-scale scoring stats"
+              [desc]="'Automatically scale all scoring stats proportionally when ' + (key | utilityStatLabel) + ' is updated.'"
+            >
+              <app-toggle-switch [on]="isScaleActive(key)" (toggled)="toggleScale(key)" />
+            </app-setting-row>
+            @if (isScaleActive(key)) {
+              <app-setting-row
+                class="setting-row--sub setting-row--advanced"
+                name="Stats to scale"
+                [desc]="`Select which individual scoring stats are automatically adjusted when ${key | statLabel} is changed.`"
+                (click)="toggleAdvanced(key)"
+              >
+                <span class="advanced-toggle-icon" [class.open]="isAdvancedVisible(key)"></span>
               </app-setting-row>
+              @if (isAdvancedVisible(key)) {
+                <div class="stat-checkboxes">
+                  @for (statKey of activeScoringColumnsSorted(); track statKey) {
+                    <label class="stat-checkbox-label">
+                      <input
+                        type="checkbox"
+                        [checked]="isScaleStatActive(statKey, key)"
+                        (change)="toggleScaleStat(statKey, key)"
+                      />
+                      {{ statKey | statLabel }}
+                    </label>
+                  }
+                </div>
+              }
             }
           }
         }
       }
-    }
+    </div>
   </div>
 </section>

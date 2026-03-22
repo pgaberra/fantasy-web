@@ -52,11 +52,17 @@ describe('ProjectionSettingsSectionComponent', () => {
   });
 
   describe('template', () => {
+    it('should render a "General" header', () => {
+      getComponent();
+      const titles = ngMocks.findAll('.settings-group-title');
+      expect(titles.some(t => t.nativeElement.textContent.trim() === 'General')).toEqual(true);
+    });
+
     it('should render a toggle for each utility stat key', () => {
       const component = getComponent();
       const toggles = ngMocks.findAll('.toggle-switch');
       // Each utility stat has a main toggle; each active utility stat also has a scale sub-toggle.
-      // There is also one toggle for the "Show decimals row" setting.
+      // There is also one toggle for the "Use default decimal places" setting.
       // Per-stat toggles are hidden by default (advanced options collapsed).
       const expected = UTILITY_STAT_KEYS.length + component.activeUtilityColumns().size + 1;
       expect(toggles.length).toEqual(expected);
@@ -66,22 +72,108 @@ describe('ProjectionSettingsSectionComponent', () => {
       getComponent(new Set<UtilityStatKey>(['gp']));
       const toggles = ngMocks.findAll('.toggle-switch');
       const onToggles = toggles.filter(t => t.classes['on']);
-      // gp main toggle is "on" + gp scale sub-toggle is "on" (defaults to true); advanced panel collapsed
-      expect(onToggles.length).toEqual(2);
+      // useDefaultDecimals is on (default true) + gp main toggle is "on" + gp scale sub-toggle is "on" (defaults to true)
+      expect(onToggles.length).toEqual(3);
     });
 
-    it('should not apply the "on" class when no utility columns are active', () => {
+    it('should only apply the "on" class to the decimals toggle when no utility columns are active', () => {
       getComponent(new Set<UtilityStatKey>());
       const toggles = ngMocks.findAll('.toggle-switch');
-      expect(toggles.every(t => !t.classes['on'])).toEqual(true);
+      const onToggles = toggles.filter(t => t.classes['on']);
+      expect(onToggles.length).toEqual(1);
+      expect(toggles[0].classes['on']).toBe(true);
     });
 
     it('should call toggle() when a toggle switch is clicked', () => {
       const component = getComponent(new Set<UtilityStatKey>(['gp', 'toiPerGame']));
       const toggles = ngMocks.findAll('.toggle-switch');
-      const firstUtilityToggle = toggles[1]; // index 0 is the "Show decimals row" toggle
+      const firstUtilityToggle = toggles[1]; // index 0 is the "Use default decimal places" toggle
       ngMocks.click(firstUtilityToggle);
       expect(component.activeUtilityColumns().size).not.toEqual(2);
+    });
+
+    it('should render checkboxes for individual scoring stats when advanced options are expanded', () => {
+      const fixture = MockRender(ProjectionSettingsSectionComponent, {
+        activeUtilityColumns: new Set<UtilityStatKey>(['gp']),
+        activeScoringColumns: defaultActiveScoringColumns,
+        scaleSettings: DEFAULT_SCALE_SETTINGS,
+      });
+      const component = fixture.point.componentInstance;
+      component.toggleAdvanced('gp');
+      fixture.detectChanges();
+
+      const checkboxes = ngMocks.findAll('input[type="checkbox"]');
+      expect(checkboxes.length).toEqual(defaultActiveScoringColumns.size);
+    });
+
+    it('should call toggleScaleStat() when a checkbox is clicked', () => {
+      const fixture = MockRender(ProjectionSettingsSectionComponent, {
+        activeUtilityColumns: new Set<UtilityStatKey>(['gp']),
+        activeScoringColumns: defaultActiveScoringColumns,
+        scaleSettings: DEFAULT_SCALE_SETTINGS,
+      });
+      const component = fixture.point.componentInstance;
+      component.toggleAdvanced('gp');
+      fixture.detectChanges();
+
+      const checkboxes = ngMocks.findAll<HTMLInputElement>('input[type="checkbox"]');
+      const initialState = component.isScaleStatActive('goals', 'gp');
+      checkboxes[0].nativeElement.dispatchEvent(new Event('change'));
+      expect(component.isScaleStatActive('goals', 'gp')).not.toEqual(initialState);
+    });
+  });
+
+  describe('visibility toggles', () => {
+    it('should toggle general visibility', () => {
+      const component = getComponent();
+      expect(component.isGeneralVisible()).toEqual(true);
+      component.toggleGeneralVisible();
+      expect(component.isGeneralVisible()).toEqual(false);
+    });
+
+    it('should toggle utility stats visibility', () => {
+      const component = getComponent();
+      expect(component.isUtilityStatsVisible()).toEqual(true);
+      component.toggleUtilityStatsVisible();
+      expect(component.isUtilityStatsVisible()).toEqual(false);
+    });
+
+    it('should hide general settings when isGeneralVisible is false', () => {
+      const fixture = MockRender(ProjectionSettingsSectionComponent, {
+        activeUtilityColumns: new Set<UtilityStatKey>(['gp']),
+        activeScoringColumns: defaultActiveScoringColumns,
+        scaleSettings: DEFAULT_SCALE_SETTINGS,
+      });
+      const component = fixture.point.componentInstance;
+
+      let settingRows = ngMocks.findAll(SettingRowComponent);
+      expect(settingRows.some(r => r.componentInstance.name() === 'Use default decimal places')).toBe(true);
+
+      component.toggleGeneralVisible();
+      fixture.detectChanges();
+
+      settingRows = ngMocks.findAll(SettingRowComponent);
+      expect(settingRows.some(r => r.componentInstance.name() === 'Use default decimal places')).toBe(false);
+    });
+
+    it('should hide utility stat settings when isUtilityStatsVisible is false', () => {
+      const fixture = MockRender(ProjectionSettingsSectionComponent, {
+        activeUtilityColumns: new Set<UtilityStatKey>(['gp']),
+        activeScoringColumns: defaultActiveScoringColumns,
+        scaleSettings: DEFAULT_SCALE_SETTINGS,
+      });
+      const component = fixture.point.componentInstance;
+
+      let settingRows = ngMocks.findAll(SettingRowComponent);
+      // GP and its scale toggle are active and should be visible
+      expect(settingRows.length).toBeGreaterThan(1);
+
+      component.toggleUtilityStatsVisible();
+      fixture.detectChanges();
+
+      settingRows = ngMocks.findAll(SettingRowComponent);
+      // Only "Use default decimal places" should be visible (if it's not toggled off)
+      expect(settingRows.every(r => r.componentInstance.name() === 'Use default decimal places')).toBe(true);
     });
   });
 });

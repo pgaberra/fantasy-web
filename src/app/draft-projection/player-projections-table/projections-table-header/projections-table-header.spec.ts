@@ -17,7 +17,7 @@ describe('ProjectionsTableHeaderComponent', () => {
         [activeColumns]="activeColumns"
         [scoringType]="scoringType"
         [(statWeights)]="statWeights"
-        [showDecimalRow]="showDecimalRow"
+        [useDefaultDecimals]="useDefaultDecimals"
         [(decimalSettings)]="decimalSettings"
       ></thead>
     </table>
@@ -32,7 +32,7 @@ describe('ProjectionsTableHeaderComponent', () => {
       activeColumns: { scoringColumns: new Set<ScoringStatKey>(['goals', 'assists']), utilityColumns: new Set<UtilityStatKey>(['gp']) } as ActiveColumns,
       scoringType: 'category' as ScoringType,
       statWeights: mockStatWeights,
-      showDecimalRow: false,
+      useDefaultDecimals: true,
       decimalSettings: DEFAULT_DECIMAL_SETTINGS,
       maxDecimalSetting: 3,
       ...overrides,
@@ -139,14 +139,14 @@ describe('ProjectionsTableHeaderComponent', () => {
       expect(ngMocks.findAll('.decimal-row')).toHaveLength(0);
     });
 
-    it('should render the decimal-row when showDecimalRow is true', () => {
-      getFixture({ showDecimalRow: true });
+    it('should render the decimal-row when useDefaultDecimals is false', () => {
+      getFixture({ useDefaultDecimals: false });
       expect(ngMocks.findAll('.decimal-row')).toHaveLength(1);
     });
 
     it('should render one decimal input per active scoring column in the decimal-row', () => {
       getFixture({
-        showDecimalRow: true,
+        useDefaultDecimals: false,
         activeColumns: { scoringColumns: new Set<ScoringStatKey>(['goals', 'assists']), utilityColumns: new Set<UtilityStatKey>() } as ActiveColumns,
       });
       expect(ngMocks.findAll('.decimal-row input')).toHaveLength(2);
@@ -154,7 +154,7 @@ describe('ProjectionsTableHeaderComponent', () => {
 
     it('should update decimalSettings when a scoring decimal input changes', () => {
       const fixture = getFixture({
-        showDecimalRow: true,
+        useDefaultDecimals: false,
         activeColumns: { scoringColumns: new Set<ScoringStatKey>(['goals']), utilityColumns: new Set<UtilityStatKey>() } as ActiveColumns,
       });
       const component = ngMocks.find(fixture.debugElement, ProjectionsTableHeaderComponent).componentInstance;
@@ -166,7 +166,7 @@ describe('ProjectionsTableHeaderComponent', () => {
 
     it('should render a decimal input for the gp utility column in the decimal-row', () => {
       getFixture({
-        showDecimalRow: true,
+        useDefaultDecimals: false,
         activeColumns: { scoringColumns: new Set<ScoringStatKey>(), utilityColumns: new Set<UtilityStatKey>(['gp']) } as ActiveColumns,
       });
       expect(ngMocks.findAll('.decimal-row input')).toHaveLength(1);
@@ -174,7 +174,7 @@ describe('ProjectionsTableHeaderComponent', () => {
 
     it('should update decimalSettings when the gp decimal input changes', () => {
       const fixture = getFixture({
-        showDecimalRow: true,
+        useDefaultDecimals: false,
         activeColumns: { scoringColumns: new Set<ScoringStatKey>(), utilityColumns: new Set<UtilityStatKey>(['gp']) } as ActiveColumns,
       });
       const component = ngMocks.find(fixture.debugElement, ProjectionsTableHeaderComponent).componentInstance;

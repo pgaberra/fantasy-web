@@ -1,28 +1,53 @@
-import { Component, input, model, signal } from '@angular/core';
+import { Component, computed, input, model, signal } from '@angular/core';
 import { SettingRowComponent } from './setting-row/setting-row';
 import { ToggleSwitchComponent } from './toggle-switch/toggle-switch';
 import { UtilityStatLabelPipe } from '../../pipes/utility-stat-label.pipe';
 import { StatDescPipe } from '../../pipes/stat-desc.pipe';
 import { StatLabelPipe } from '../../pipes/stat-label.pipe';
-import { ScoringStatKey, UTILITY_STAT_KEYS, UtilityStatKey } from '../../models/player.model';
+import {
+  SCORING_STAT_KEYS,
+  ScoringStatKey,
+  UTILITY_STAT_KEYS,
+  UtilityStatKey,
+} from '../../models/player.model';
 import { ScaleConfig } from './model';
 
 @Component({
   selector: 'app-projection-settings-section',
   templateUrl: './projection-settings-section.html',
   styleUrl: './projection-settings-section.css',
-  imports: [UtilityStatLabelPipe, StatDescPipe, StatLabelPipe, ToggleSwitchComponent, SettingRowComponent],
+  imports: [
+    UtilityStatLabelPipe,
+    StatDescPipe,
+    StatLabelPipe,
+    ToggleSwitchComponent,
+    SettingRowComponent,
+  ],
 })
 export class ProjectionSettingsSectionComponent {
   activeUtilityColumns = model.required<Set<UtilityStatKey>>();
   activeScoringColumns = input.required<Set<ScoringStatKey>>();
+  activeScoringColumnsSorted = computed(() => {
+    return Array.from(this.activeScoringColumns())
+      .sort((a, b) => SCORING_STAT_KEYS.indexOf(a) - SCORING_STAT_KEYS.indexOf(b));
+  });
 
   scaleSettings = model.required<Record<UtilityStatKey, ScaleConfig>>();
-  showDecimalRow = model<boolean>(false);
+  useDefaultDecimals = model<boolean>(true);
+  isGeneralVisible = signal<boolean>(true);
+  isUtilityStatsVisible = signal<boolean>(true);
   private readonly showAdvancedScaleOptions = signal<Record<UtilityStatKey, boolean>>({
     gp: false,
     toiPerGame: false,
   });
+
+  toggleGeneralVisible(): void {
+    this.isGeneralVisible.update((visible) => !visible);
+  }
+
+  toggleUtilityStatsVisible(): void {
+    this.isUtilityStatsVisible.update((visible) => !visible);
+  }
 
   toggleActiveUtilityColumn(key: UtilityStatKey): void {
     this.activeUtilityColumns.update((columns) => {
@@ -58,8 +83,8 @@ export class ProjectionSettingsSectionComponent {
     });
   }
 
-  toggleShowDecimalRow(): void {
-    this.showDecimalRow.update((show) => !show);
+  toggleUseDefaultDecimals(): void {
+    this.useDefaultDecimals.update((show) => !show);
   }
 
   isScaleStatActive(statKey: ScoringStatKey, utilityKey: UtilityStatKey): boolean {

@@ -15,7 +15,7 @@ export class ProjectionsTableHeaderComponent {
   activeColumns = input.required<ActiveColumns>();
   scoringType = input.required<ScoringType>();
   statWeights = model.required<Record<ScoringStatKey, number>>();
-  showDecimalRow = input<boolean>(false);
+  useDefaultDecimals = input<boolean>(false);
   decimalSettings = model.required<Record<DecimalStatKey, number>>();
   summaryLabel = computed(() => (this.scoringType() === 'points' ? 'Fan Pts' : 'Z-Score'));
 

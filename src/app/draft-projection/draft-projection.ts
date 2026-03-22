@@ -4,7 +4,7 @@ import { PlayerService } from '../services/player.service';
 import { Player, ScoringStatKey, UtilityStatKey } from '../models/player.model';
 import { ActiveColumns, PlayerProjection, ScoringType } from './model';
 import { ScoringTypeSectionComponent } from './scoring-type-section/scoring-type-section';
-import { LeagueStatsSectionComponent } from './league-stats-section/league-stats-section';
+import { ScoringStatsSectionComponent } from './league-stats-section/scoring-stats-section';
 import { ProjectionSettingsSectionComponent } from './projection-settings-section/projection-settings-section';
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
 import { DEFAULT_DECIMAL_SETTINGS, DEFAULT_SCALE_SETTINGS, DecimalStatKey, ScaleConfig } from './projection-settings-section/model';
@@ -31,7 +31,7 @@ const DEFAULT_STAT_WEIGHTS: Record<ScoringStatKey, number> = {
   selector: 'app-draft-projection',
   imports: [
     ScoringTypeSectionComponent,
-    LeagueStatsSectionComponent,
+    ScoringStatsSectionComponent,
     ProjectionSettingsSectionComponent,
     PlayerProjectionsTableComponent,
   ],
@@ -57,7 +57,7 @@ export class DraftProjectionComponent implements OnInit {
   }));
   scaleSettings = signal<Record<UtilityStatKey, ScaleConfig>>(DEFAULT_SCALE_SETTINGS);
   decimalSettings = signal<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
-  showDecimalRow = signal<boolean>(false);
+  useDefaultDecimals = signal<boolean>(true);
 
   ngOnInit(): void {
     this.playerService

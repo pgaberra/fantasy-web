@@ -3,12 +3,12 @@ import { SCORING_STAT_KEYS, ScoringStatKey } from '../../models/player.model';
 import { StatLabelPipe } from '../../pipes/stat-label.pipe';
 
 @Component({
-  selector: 'app-league-stats-section',
-  templateUrl: './league-stats-section.html',
-  styleUrl: './league-stats-section.css',
+  selector: 'app-scoring-stats-section',
+  templateUrl: './scoring-stats-section.html',
+  styleUrl: './scoring-stats-section.css',
   imports: [StatLabelPipe],
 })
-export class LeagueStatsSectionComponent {
+export class ScoringStatsSectionComponent {
   activeScoringColumns = model.required<Set<ScoringStatKey>>();
 
   toggle(key: ScoringStatKey): void {
