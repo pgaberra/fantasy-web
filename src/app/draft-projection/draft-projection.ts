@@ -4,7 +4,7 @@ import { PlayerService } from '../services/player.service';
 import { Player, ScoringStatKey, UtilityStatKey } from '../models/player.model';
 import { ActiveColumns, PlayerProjection, ScoringType } from './model';
 import { ScoringTypeSectionComponent } from './scoring-type-section/scoring-type-section';
-import { ScoringStatsSectionComponent } from './league-stats-section/scoring-stats-section';
+import { ScoringStatsSectionComponent } from './scoring-stats-section/scoring-stats-section';
 import { ProjectionSettingsSectionComponent } from './projection-settings-section/projection-settings-section';
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
 import { DEFAULT_DECIMAL_SETTINGS, DEFAULT_SCALE_SETTINGS, DecimalStatKey, ScaleConfig } from './projection-settings-section/model';
