@@ -70,3 +70,35 @@ td.col-name {
 :host(:hover) .fan-pts-cell {
   background: #fde68a;
 }
+
+:host(.editing-row) {
+  background: #eef3fb;
+  outline: 2px solid #0f3460;
+  outline-offset: -2px;
+  position: relative;
+  z-index: 1;
+}
+
+:host(.editing-row) td {
+  border-bottom-color: transparent;
+}
+
+:host(.editing-row) .player-name {
+  color: #0f3460;
+}
+
+:host(.editing-row) .player-name::before {
+  content: '✎ ';
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+
+:host(.editing-row) .fan-pts-cell {
+  background: #fde68a;
+  border-left-color: #c89000;
+}
+
+:host(.editing-row) .col-rank {
+  color: #0f3460;
+  font-weight: 700;
+}

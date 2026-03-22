@@ -11,15 +11,18 @@
         [(decimalSettings)]="decimalSettings"
       ></thead>
       <tbody>
-        @for (projection of sortedPlayerProjections(); track projection.playerId; let i = $index) {
+        @for (projection of sortedPlayerProjectionsExcludingCurrentPlayerEdit(); track projection.playerId) {
           <tr
             app-projection-player-row
-            [rank]="i + 1"
+            [rank]="realTimeRanks().get(projection.playerId)!"
             [projection]="projection"
             [player]="getPlayer(projection.playerId)"
             [activeColumns]="activeColumns()"
             [scoringType]="scoringType()"
             [decimalSettings]="decimalSettings()"
+            [isEditing]="editingPlayerId() === projection.playerId"
+            (focusin)="onRowFocusIn(projection.playerId)"
+            (focusout)="onRowFocusOut($event)"
             (statInput)="onStatInput($event.playerId, $event.key, $event.event)"
             (toiKeydown)="onToiKeydown($event.playerId, $event.event)"
           ></tr>

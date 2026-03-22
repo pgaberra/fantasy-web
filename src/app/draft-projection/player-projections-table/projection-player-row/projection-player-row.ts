@@ -10,6 +10,9 @@ import { DecimalStatKey } from '../../projection-settings-section/model';
   imports: [DecimalPipe, FormatToiPipe],
   templateUrl: './projection-player-row.html',
   styleUrl: './projection-player-row.css',
+  host: {
+    '[class.editing-row]': 'isEditing()',
+  },
 })
 export class ProjectionPlayerRowComponent {
   rank = input.required<number>();
@@ -18,6 +21,7 @@ export class ProjectionPlayerRowComponent {
   activeColumns = input.required<ActiveColumns>();
   scoringType = input.required<ScoringType>();
   decimalSettings = input.required<Record<DecimalStatKey, number>>();
+  isEditing = input<boolean>(false);
 
   statInput = output<{ playerId: number; key: StatKey; event: Event }>();
   toiKeydown = output<{ playerId: number; event: KeyboardEvent }>();

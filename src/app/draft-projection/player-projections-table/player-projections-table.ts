@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, model } from '@angular/core';
+import { Component, computed, inject, input, model, Signal, signal } from '@angular/core';
 import {
   Player,
   SCORING_STAT_KEYS,
@@ -21,7 +21,7 @@ import { ProjectionPlayerRowComponent } from './projection-player-row/projection
 })
 export class PlayerProjectionsTableComponent {
   scoringType = input.required<ScoringType>();
-  playerProjections = model.required<PlayerProjection[]>();
+  playerProjections = model.required<PlayerProjection[]>(); // TODO merge this with computedPlayerProjections
   statWeights = model.required<Record<ScoringStatKey, number>>();
   players = input.required<Player[]>();
   activeColumns = input.required<ActiveColumns>();
@@ -57,13 +57,30 @@ export class PlayerProjectionsTableComponent {
     }));
   });
 
-  sortedPlayerProjections = computed((): PlayerProjection[] => {
+  editingPlayerId = signal<number | null>(null);
+  private readonly lockedOrder = signal<number[]>([]);
+
+  private readonly realTimeSortedProjections = computed((): PlayerProjection[] => {
     const projections = this.computedPlayerProjections();
     const scoringType = this.scoringType();
-
     return [...projections].sort(
       scoringType === 'points' ? this.sortByPointsDesc : this.sortByZScoreDesc,
     );
+  });
+
+  sortedPlayerProjectionsExcludingCurrentPlayerEdit: Signal<PlayerProjection[]> = computed(() => {
+    if (!this.editingPlayerId()) {
+      return this.realTimeSortedProjections();
+    }
+
+    const projections = this.computedPlayerProjections();
+    return this.lockedOrder().map(
+      (playerId) => projections.find((pp) => pp.playerId === playerId)!,
+    );
+  });
+
+  realTimeRanks: Signal<Map<number, number>> = computed(() => {
+    return new Map(this.realTimeSortedProjections().map((pp, i) => [pp.playerId, i + 1]));
   });
 
   private readonly sortByPointsDesc = (a: PlayerProjection, b: PlayerProjection) =>
@@ -94,6 +111,19 @@ export class PlayerProjectionsTableComponent {
 
   private roundStat(value: number, key: DecimalStatKey): number {
     return parseFloat(value.toFixed(this.decimalSettings()[key]));
+  }
+
+  onRowFocusIn(playerId: number): void {
+    if (this.editingPlayerId() === playerId) return;
+    this.lockedOrder.set(this.realTimeSortedProjections().map((pp) => pp.playerId));
+    this.editingPlayerId.set(playerId);
+  }
+
+  onRowFocusOut(event: FocusEvent): void {
+    const relatedTarget = event.relatedTarget as HTMLElement | null;
+    const currentTarget = event.currentTarget as HTMLElement;
+    if (relatedTarget && currentTarget.contains(relatedTarget)) return;
+    this.editingPlayerId.set(null);
   }
 
   onToiKeydown(playerId: number, event: KeyboardEvent): void {

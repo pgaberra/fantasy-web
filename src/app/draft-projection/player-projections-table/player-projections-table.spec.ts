@@ -143,11 +143,11 @@ describe('PlayerProjectionsTableComponent', () => {
   describe('statWeights updates', () => {
     it('should recompute projections when statWeights changes', () => {
       const component = getComponent({ scoringType: 'points' });
-      const initialPoints = component.sortedPlayerProjections()[0].fantasyPoints;
+      const initialPoints = component.sortedPlayerProjectionsExcludingCurrentPlayerEdit()[0].fantasyPoints;
 
       component.statWeights.update(weights => ({ ...weights, goals: weights.goals * 2 }));
 
-      const updatedPoints = component.sortedPlayerProjections()[0].fantasyPoints;
+      const updatedPoints = component.sortedPlayerProjectionsExcludingCurrentPlayerEdit()[0].fantasyPoints;
       expect(updatedPoints).not.toEqual(initialPoints);
     });
   });
