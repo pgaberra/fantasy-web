@@ -8,6 +8,7 @@ import {
 } from '../../models/player.model';
 import { ActiveColumns, PlayerProjection, PlayerScore, ScoringType } from '../model';
 import { ProjectionCalculationService } from '../../services/projection-calculation.service';
+import { ProjectionUpdateService } from '../../services/projection-update.service';
 import { ToiService } from '../../services/toi.service';
 import { DEFAULT_DECIMAL_SETTINGS, DEFAULT_SCALE_SETTINGS, DecimalStatKey, ScaleConfig } from '../projection-settings-section/model';
 import { ProjectionsTableHeaderComponent } from './projections-table-header/projections-table-header';
@@ -30,6 +31,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly useDefaultDecimals = input.required<boolean>();
 
   private readonly projectionCalculationService = inject(ProjectionCalculationService);
+  private readonly projectionUpdateService = inject(ProjectionUpdateService);
   private readonly toiService = inject(ToiService);
 
   readonly playerScores = computed((): Map<number, PlayerScore> => {
@@ -103,20 +105,6 @@ export class PlayerProjectionsTableComponent implements OnInit {
     this.playerProjections.set(playerProjections);
   }
 
-  private scaleScoring(
-    scoring: Record<ScoringStatKey, number>,
-    ratio: number,
-    scalable: Set<ScoringStatKey>,
-  ): Record<ScoringStatKey, number> {
-    const scaled = { ...scoring };
-    SCORING_STAT_KEYS.forEach((key) => {
-      if (scalable.has(key)) {
-        scaled[key] = scoring[key] * ratio;
-      }
-    });
-    return scaled;
-  }
-
   private roundStat(value: number, key: DecimalStatKey): number {
     return parseFloat(value.toFixed(this.decimalSettings()[key]));
   }
@@ -139,20 +127,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
     event.preventDefault();
     const delta = event.key === 'ArrowUp' ? 1 : -1;
     this.playerProjections.update((playerProjections) =>
-      playerProjections.map((pp) => {
-        if (pp.playerId !== playerId) return pp;
-        const oldToi = pp.stats.utility.toiPerGame;
-        const newToi = Math.max(0, oldToi + delta);
-        const toiSettings = this.scaleSettings().toiPerGame;
-        const shouldScale = toiSettings.scale && oldToi > 0;
-        const scoring = shouldScale
-          ? this.scaleScoring(pp.stats.scoring, newToi / oldToi, toiSettings.scalableStats)
-          : pp.stats.scoring;
-        return {
-          ...pp,
-          stats: { ...pp.stats, scoring, utility: { ...pp.stats.utility, toiPerGame: newToi } },
-        };
-      }),
+      this.projectionUpdateService.applyToiDelta(playerProjections, playerId, delta, this.scaleSettings()),
     );
   }
 
@@ -162,25 +137,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
     const decimals = this.decimalSettings();
     const value = key in decimals ? this.roundStat(parsed, key as DecimalStatKey) : parsed;
     this.playerProjections.update((playerProjections) =>
-      playerProjections.map((pp) => {
-        if (pp.playerId !== playerId) return pp;
-        const isScoring = (SCORING_STAT_KEYS as readonly string[]).includes(key);
-        if (isScoring) {
-          return { ...pp, stats: { ...pp.stats, scoring: { ...pp.stats.scoring, [key]: value } } };
-        }
-        const utilityKey = key as UtilityStatKey;
-        const oldValue = pp.stats.utility[utilityKey];
-        const settings = this.scaleSettings()[utilityKey];
-        const shouldScale = settings ? settings.scale && oldValue > 0 : false;
-        const scalable = settings ? settings.scalableStats : new Set<ScoringStatKey>();
-        const scoring = shouldScale
-          ? this.scaleScoring(pp.stats.scoring, value / oldValue, scalable)
-          : pp.stats.scoring;
-        return {
-          ...pp,
-          stats: { ...pp.stats, scoring, utility: { ...pp.stats.utility, [key]: value } },
-        };
-      }),
+      this.projectionUpdateService.applyStatValue(playerProjections, playerId, key, value, this.scaleSettings()),
     );
   }
 }

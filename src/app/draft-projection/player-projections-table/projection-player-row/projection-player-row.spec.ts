@@ -2,7 +2,7 @@ import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { vi } from 'vitest';
 import { ProjectionPlayerRowComponent } from './projection-player-row';
 import { Player, ScoringStatKey, UtilityStatKey } from '../../../models/player.model';
-import { ActiveColumns, PlayerProjection, ScoringType } from '../../model';
+import { ActiveColumns, PlayerProjection, PlayerScore, ScoringType } from '../../model';
 import { DEFAULT_DECIMAL_SETTINGS } from '../../projection-settings-section/model';
 import { DecimalPipe } from '@angular/common';
 import { FormatToiPipe } from '../../../pipes/format-toi.pipe';
@@ -20,15 +20,15 @@ describe('ProjectionPlayerRowComponent', () => {
   const mockProjection: PlayerProjection = {
     playerId: 1,
     stats: { scoring: mockPlayer.stats.scoring, utility: mockPlayer.stats.utility },
-    fantasyPoints: 42.5,
-    zScore: 1.23,
   };
+  const mockPlayerScore: PlayerScore = { fantasyPoints: 42.5, zScore: 1.23 };
 
   const rowTemplate = `
     <table><tbody>
       <tr app-projection-player-row
         [rank]="rank"
         [projection]="projection"
+        [playerScore]="playerScore"
         [player]="player"
         [activeColumns]="activeColumns"
         [scoringType]="scoringType"
@@ -47,6 +47,7 @@ describe('ProjectionPlayerRowComponent', () => {
     MockRender(rowTemplate, {
       rank: 1,
       projection: mockProjection,
+      playerScore: mockPlayerScore,
       player: mockPlayer,
       activeColumns: { scoringColumns: new Set<ScoringStatKey>(['goals', 'assists']), utilityColumns: new Set<UtilityStatKey>(['gp']) } as ActiveColumns,
       scoringType: 'category' as ScoringType,

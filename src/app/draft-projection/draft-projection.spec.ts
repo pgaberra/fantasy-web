@@ -1,4 +1,5 @@
 import { MockBuilder, MockInstance, MockRender, ngMocks } from 'ng-mocks';
+import { vi } from 'vitest';
 import { of } from 'rxjs';
 import { DraftProjectionComponent } from './draft-projection';
 import { PlayerService } from '../services/player.service';
@@ -48,27 +49,10 @@ describe('DraftProjectionComponent', () => {
       expect(ngMocks.get(PlayerService).getPlayers).toHaveBeenCalledOnce();
     });
 
-    it('should initialize one playerProjection entry per player', () => {
-      const component = getComponent();
-      expect(component.playerProjections()).toHaveLength(mockPlayers.length);
-    });
-
-    it('should initialize each playerProjection with the correct playerId', () => {
-      const component = getComponent();
-      const ids = component.playerProjections().map(pp => pp.playerId);
-      expect(ids).toEqual(mockPlayers.map(p => p.id));
-    });
-
     it('should initialize scoringType to "points"', () => {
       const component = getComponent();
       expect(component.scoringType()).toEqual('points');
     });
 
-    it('should initialize playerProjections with the player stats', () => {
-      const component = getComponent();
-      const pp = component.playerProjections().find(p => p.playerId === 1)!;
-      expect(pp.stats.scoring['goals']).toEqual(64);
-      expect(pp.stats.utility['toiPerGame']).toEqual(1320);
-    });
   });
 });

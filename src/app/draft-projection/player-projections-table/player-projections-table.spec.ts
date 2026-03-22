@@ -32,8 +32,8 @@ describe('PlayerProjectionsTableComponent', () => {
   ];
 
   const mockPlayerProjections: PlayerProjection[] = [
-    { playerId: 1, stats: { scoring: mockPlayers[0].stats.scoring, utility: mockPlayers[0].stats.utility }, fantasyPoints: 1.5, zScore: 1 },
-    { playerId: 2, stats: { scoring: mockPlayers[1].stats.scoring, utility: mockPlayers[1].stats.utility }, fantasyPoints: 0.8, zScore: -1 },
+    { playerId: 1, stats: { scoring: mockPlayers[0].stats.scoring, utility: mockPlayers[0].stats.utility } },
+    { playerId: 2, stats: { scoring: mockPlayers[1].stats.scoring, utility: mockPlayers[1].stats.utility } },
   ];
 
   const mockStatWeights: Record<ScoringStatKey, number> = {
@@ -143,11 +143,13 @@ describe('PlayerProjectionsTableComponent', () => {
   describe('statWeights updates', () => {
     it('should recompute projections when statWeights changes', () => {
       const component = getComponent({ scoringType: 'points' });
-      const initialPoints = component.sortedPlayerProjectionsExcludingCurrentPlayerEdit()[0].fantasyPoints;
+      const firstId = component.sortedPlayerProjectionsExcludingCurrentPlayerEdit()[0].playerId;
+      const initialPoints = component.playerScores().get(firstId)?.fantasyPoints;
 
       component.statWeights.update(weights => ({ ...weights, goals: weights.goals * 2 }));
 
-      const updatedPoints = component.sortedPlayerProjectionsExcludingCurrentPlayerEdit()[0].fantasyPoints;
+      const updatedId = component.sortedPlayerProjectionsExcludingCurrentPlayerEdit()[0].playerId;
+      const updatedPoints = component.playerScores().get(updatedId)?.fantasyPoints;
       expect(updatedPoints).not.toEqual(initialPoints);
     });
   });
