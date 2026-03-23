@@ -15,13 +15,11 @@ th.col-name {
 }
 
 .col-rank {
-  width: 2rem;
-  min-width: 2rem;
   text-align: center;
   color: #7a8baa;
   font-weight: 500;
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
+  padding-left: 0.125rem;
+  padding-right: 0.125rem;
 }
 
 .col-utility {

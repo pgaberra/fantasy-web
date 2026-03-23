@@ -16,6 +16,7 @@ import { DecimalStatKey } from '../../projection-settings-section/model';
 })
 export class ProjectionPlayerRowComponent {
   rank = input.required<number>();
+  totalRank = input<number | null>(null);
   projection = input.required<PlayerProjection>();
   playerScore = input.required<PlayerScore>();
   player = input.required<Player>();

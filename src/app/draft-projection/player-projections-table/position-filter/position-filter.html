@@ -1,0 +1,8 @@
+<div class="filter-control">
+  <label for="position-filter">Position</label>
+  <select id="position-filter" [value]="value()" (change)="onChange($event)">
+    @for (option of options(); track option.value) {
+      <option [value]="option.value">{{ option.label }}</option>
+    }
+  </select>
+</div>

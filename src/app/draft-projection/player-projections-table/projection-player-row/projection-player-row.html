@@ -1,4 +1,4 @@
-<td class="col-rank">{{ rank() }}</td>
+<td class="col-rank">{{ rank() }}@if (totalRank() !== null) { ({{ totalRank() }})}</td>
 <td class="col-name player-name">{{ player().name }} ({{ playerPosition() }})</td>
 @for (col of activeColumns().utilityColumns; track col) {
   <td class="col-{{ col }}">

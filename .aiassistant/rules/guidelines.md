@@ -15,6 +15,7 @@ All AI-generated code must follow these conventions.
 - Prefer **simple, readable, and maintainable solutions**.
 - Follow the **latest Angular recommendations** rather than legacy patterns.
 - Try to keep components small and neat for cleaner and more understandable code
+- Avoid using legacy patterns such as [ngModel] and (ngModelChange)
 
 ---
 

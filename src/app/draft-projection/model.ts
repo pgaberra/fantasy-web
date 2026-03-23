@@ -1,6 +1,7 @@
 import { ScoringStatKey, UtilityStatKey } from '../models/player.model';
 
 export type ScoringType = 'category' | 'points';
+export type PositionFilter = 'ALL' | 'LW' | 'C' | 'RW' | 'D';
 
 export interface ActiveColumns {
   scoringColumns: Set<ScoringStatKey>;

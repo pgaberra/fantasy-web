@@ -1,5 +1,8 @@
 <section class="table-section">
-  <h2>Player Projections</h2>
+  <div class="table-header">
+    <h2>Player Projections</h2>
+    <app-position-filter [(value)]="positionFilter" />
+  </div>
   <div class="table-wrapper">
     <table>
       <thead
@@ -11,10 +14,11 @@
         [(decimalSettings)]="decimalSettings"
       ></thead>
       <tbody>
-        @for (projection of sortedPlayerProjectionsExcludingCurrentPlayerEdit(); track projection.playerId) {
+        @for (projection of filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit(); track projection.playerId) {
           <tr
             app-projection-player-row
-            [rank]="realTimeRanks().get(projection.playerId)!"
+            [rank]="positionRanks().get(projection.playerId)!"
+            [totalRank]="positionFilter() !== 'ALL' ? (realTimeRanks().get(projection.playerId) ?? null) : null"
             [projection]="projection"
             [playerScore]="playerScores().get(projection.playerId)!"
             [player]="getPlayer(projection.playerId)"
