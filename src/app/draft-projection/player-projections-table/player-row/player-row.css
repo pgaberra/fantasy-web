@@ -12,7 +12,8 @@ td.col-name {
   text-align: center;
   white-space: nowrap;
   color: #7a8baa;
-  font-weight: 500;
+  font-weight: 700;
+  width: 2.5rem;
   padding-left: 0.125rem;
   padding-right: 0.125rem;
 }
@@ -71,5 +72,4 @@ td.col-name {
 
 :host(.editing-row) .col-rank {
   color: #0f3460;
-  font-weight: 700;
 }
