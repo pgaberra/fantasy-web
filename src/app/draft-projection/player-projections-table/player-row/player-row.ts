@@ -19,7 +19,7 @@ export class PlayerRowComponent {
   positionRank = input.required<number>();
   totalRank = input.required<number | null>();
   rank: Signal<string> = computed(() => {
-    if (this.totalRank() === null || this.totalRank() === this.positionRank()) {
+    if (this.totalRank() === null) {
       return this.positionRank().toString();
     }
 
