@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { Player } from '../models/player.model';
+import { Goalie, Skater } from '../models/player.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class PlayerService {
-  private readonly mockPlayers: Player[] = [
+  private readonly mockSkaters: Skater[] = [
     {
+      type: 'skater',
       id: 1,
       name: 'Connor McDavid',
       positions: new Set(['C']),
@@ -33,6 +34,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 2,
       name: 'Nathan MacKinnon',
       positions: new Set(['C']),
@@ -58,6 +60,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 3,
       name: 'Auston Matthews',
       positions: new Set(['C']),
@@ -83,6 +86,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 4,
       name: 'Leon Draisaitl',
       positions: new Set(['C', 'LW']),
@@ -108,6 +112,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 5,
       name: 'David Pastrnak',
       positions: new Set(['RW']),
@@ -133,6 +138,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 6,
       name: 'Nikita Kucherov',
       positions: new Set(['RW']),
@@ -158,6 +164,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 7,
       name: 'Cale Makar',
       positions: new Set(['D']),
@@ -183,6 +190,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 8,
       name: 'Erik Karlsson',
       positions: new Set(['D']),
@@ -208,6 +216,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 9,
       name: 'Roman Josi',
       positions: new Set(['D']),
@@ -233,6 +242,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 10,
       name: 'Quinn Hughes',
       positions: new Set(['D']),
@@ -258,6 +268,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 11,
       name: 'Brayden Point',
       positions: new Set(['C']),
@@ -283,6 +294,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 12,
       name: 'Jason Robertson',
       positions: new Set(['LW', 'RW']),
@@ -308,6 +320,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 13,
       name: 'Mitch Marner',
       positions: new Set(['RW']),
@@ -333,6 +346,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 14,
       name: 'Aleksander Barkov',
       positions: new Set(['C']),
@@ -358,6 +372,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 15,
       name: 'Bo Horvat',
       positions: new Set(['C']),
@@ -383,6 +398,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 16,
       name: 'Kirill Kaprizov',
       positions: new Set(['LW']),
@@ -408,6 +424,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 17,
       name: 'Sebastian Aho',
       positions: new Set(['C', 'LW']),
@@ -433,6 +450,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 18,
       name: 'Jake Guentzel',
       positions: new Set(['LW']),
@@ -458,6 +476,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 19,
       name: 'Mark Scheifele',
       positions: new Set(['C']),
@@ -483,6 +502,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 20,
       name: 'Tage Thompson',
       positions: new Set(['C']),
@@ -508,6 +528,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 21,
       name: 'Artemi Panarin',
       positions: new Set(['LW']),
@@ -533,6 +554,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 22,
       name: 'Matthew Tkachuk',
       positions: new Set(['LW']),
@@ -558,6 +580,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 23,
       name: 'Brady Tkachuk',
       positions: new Set(['LW']),
@@ -583,6 +606,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 24,
       name: 'Clayton Keller',
       positions: new Set(['C', 'RW']),
@@ -608,6 +632,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 25,
       name: 'Elias Pettersson',
       positions: new Set(['C']),
@@ -633,6 +658,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 26,
       name: 'Kyle Connor',
       positions: new Set(['LW']),
@@ -658,6 +684,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 27,
       name: 'Aleksander Romanov',
       positions: new Set(['D']),
@@ -683,6 +710,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 28,
       name: 'Adam Fox',
       positions: new Set(['D']),
@@ -708,6 +736,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 29,
       name: 'Rasmus Dahlin',
       positions: new Set(['D']),
@@ -733,6 +762,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 30,
       name: 'Dougie Hamilton',
       positions: new Set(['D']),
@@ -758,6 +788,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 31,
       name: 'Victor Hedman',
       positions: new Set(['D']),
@@ -783,6 +814,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 32,
       name: 'Miro Heiskanen',
       positions: new Set(['D']),
@@ -808,6 +840,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 33,
       name: 'John Carlson',
       positions: new Set(['D']),
@@ -833,6 +866,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 34,
       name: 'Alex Pietrangelo',
       positions: new Set(['D']),
@@ -858,6 +892,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 35,
       name: 'Cam Atkinson',
       positions: new Set(['RW']),
@@ -883,6 +918,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 36,
       name: 'Jonathan Huberdeau',
       positions: new Set(['LW']),
@@ -908,6 +944,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 37,
       name: 'Mikko Rantanen',
       positions: new Set(['RW']),
@@ -933,6 +970,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 38,
       name: 'Sean Couturier',
       positions: new Set(['C']),
@@ -958,6 +996,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 39,
       name: 'Anze Kopitar',
       positions: new Set(['C']),
@@ -983,6 +1022,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 40,
       name: 'Steven Stamkos',
       positions: new Set(['C']),
@@ -1008,6 +1048,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 41,
       name: 'Gabriel Landeskog',
       positions: new Set(['LW']),
@@ -1033,6 +1074,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 42,
       name: 'Patrice Bergeron',
       positions: new Set(['C']),
@@ -1058,6 +1100,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 43,
       name: 'Alex Ovechkin',
       positions: new Set(['LW']),
@@ -1083,6 +1126,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 44,
       name: 'Sidney Crosby',
       positions: new Set(['C']),
@@ -1108,6 +1152,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 45,
       name: 'Jonathan Toews',
       positions: new Set(['C']),
@@ -1133,6 +1178,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 46,
       name: 'Evgeni Malkin',
       positions: new Set(['C']),
@@ -1158,6 +1204,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 47,
       name: 'Claude Giroux',
       positions: new Set(['C', 'LW']),
@@ -1183,6 +1230,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 48,
       name: "Ryan O'Reilly",
       positions: new Set(['C']),
@@ -1208,6 +1256,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 49,
       name: 'Vincent Trocheck',
       positions: new Set(['C']),
@@ -1233,6 +1282,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 50,
       name: 'Sam Reinhart',
       positions: new Set(['C', 'RW']),
@@ -1258,6 +1308,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 51,
       name: 'Roope Hintz',
       positions: new Set(['C']),
@@ -1283,6 +1334,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 52,
       name: 'Nazem Kadri',
       positions: new Set(['C']),
@@ -1308,6 +1360,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 53,
       name: 'Jordan Kyrou',
       positions: new Set(['RW']),
@@ -1333,6 +1386,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 54,
       name: 'Rickard Rakell',
       positions: new Set(['C', 'LW']),
@@ -1358,6 +1412,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 55,
       name: 'Rickard Gudas',
       positions: new Set(['D']),
@@ -1383,6 +1438,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 56,
       name: 'Shea Theodore',
       positions: new Set(['D']),
@@ -1408,6 +1464,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 57,
       name: 'Morgan Rielly',
       positions: new Set(['D']),
@@ -1433,6 +1490,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 58,
       name: 'Darnell Nurse',
       positions: new Set(['D']),
@@ -1458,6 +1516,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 59,
       name: 'Matt Dumba',
       positions: new Set(['D']),
@@ -1483,6 +1542,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 60,
       name: 'Zach Werenski',
       positions: new Set(['D']),
@@ -1508,6 +1568,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 61,
       name: 'Brent Burns',
       positions: new Set(['D']),
@@ -1533,6 +1594,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 62,
       name: 'Drew Doughty',
       positions: new Set(['D']),
@@ -1558,6 +1620,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 63,
       name: 'Filip Forsberg',
       positions: new Set(['LW']),
@@ -1583,6 +1646,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 64,
       name: 'Aleksander Barkov Jr',
       positions: new Set(['C']),
@@ -1608,6 +1672,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 65,
       name: 'Warren Foegele',
       positions: new Set(['LW']),
@@ -1633,6 +1698,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 66,
       name: 'William Nylander',
       positions: new Set(['RW', 'C']),
@@ -1658,6 +1724,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 67,
       name: 'Alex DeBrincat',
       positions: new Set(['LW']),
@@ -1683,6 +1750,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 68,
       name: 'Nick Suzuki',
       positions: new Set(['C']),
@@ -1708,6 +1776,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 69,
       name: 'Ilya Mikheyev',
       positions: new Set(['RW']),
@@ -1733,6 +1802,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 70,
       name: 'Ryan Nugent-Hopkins',
       positions: new Set(['C', 'LW']),
@@ -1758,6 +1828,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 71,
       name: 'Elias Lindholm',
       positions: new Set(['C', 'RW']),
@@ -1783,6 +1854,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 72,
       name: 'Chris Kreider',
       positions: new Set(['LW']),
@@ -1808,6 +1880,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 73,
       name: 'Mark Stone',
       positions: new Set(['RW']),
@@ -1833,6 +1906,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 74,
       name: 'Tomas Hertl',
       positions: new Set(['C']),
@@ -1858,6 +1932,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 75,
       name: 'Kevin Hayes',
       positions: new Set(['C']),
@@ -1883,6 +1958,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 76,
       name: 'Oliver Bjorkstrand',
       positions: new Set(['RW']),
@@ -1908,6 +1984,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 77,
       name: 'Patrik Laine',
       positions: new Set(['LW', 'RW']),
@@ -1933,6 +2010,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 78,
       name: 'Evander Kane',
       positions: new Set(['LW']),
@@ -1958,6 +2036,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 79,
       name: 'Jonathan Marchessault',
       positions: new Set(['LW', 'RW']),
@@ -1983,6 +2062,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 80,
       name: 'Brock Nelson',
       positions: new Set(['C']),
@@ -2008,6 +2088,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 81,
       name: 'Jakub Voracek',
       positions: new Set(['RW']),
@@ -2033,6 +2114,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 82,
       name: 'Carter Verhaeghe',
       positions: new Set(['LW', 'C']),
@@ -2058,6 +2140,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 83,
       name: 'Tom Wilson',
       positions: new Set(['RW']),
@@ -2083,6 +2166,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 84,
       name: 'Rickard Rakell',
       positions: new Set(['LW', 'C']),
@@ -2108,6 +2192,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 85,
       name: 'Tyler Toffoli',
       positions: new Set(['RW']),
@@ -2133,6 +2218,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 86,
       name: 'Tyler Bertuzzi',
       positions: new Set(['LW']),
@@ -2158,6 +2244,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 87,
       name: 'Jesperi Kotkaniemi',
       positions: new Set(['C']),
@@ -2183,6 +2270,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 88,
       name: 'Jake DeBrusk',
       positions: new Set(['LW', 'RW']),
@@ -2208,6 +2296,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 89,
       name: 'Anthony Cirelli',
       positions: new Set(['C']),
@@ -2233,6 +2322,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 90,
       name: 'Nico Hischier',
       positions: new Set(['C']),
@@ -2258,6 +2348,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 91,
       name: 'Nino Niederreiter',
       positions: new Set(['RW']),
@@ -2283,6 +2374,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 92,
       name: 'Michael Bunting',
       positions: new Set(['LW']),
@@ -2308,6 +2400,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 93,
       name: 'Drake Batherson',
       positions: new Set(['RW', 'C']),
@@ -2333,6 +2426,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 94,
       name: 'Pierre-Luc Dubois',
       positions: new Set(['C']),
@@ -2358,6 +2452,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 95,
       name: 'Josh Anderson',
       positions: new Set(['RW']),
@@ -2383,6 +2478,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 96,
       name: 'Jack Quinn',
       positions: new Set(['RW']),
@@ -2408,6 +2504,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 97,
       name: 'Dawson Mercer',
       positions: new Set(['C', 'RW']),
@@ -2433,6 +2530,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 98,
       name: 'Tanner Jeannot',
       positions: new Set(['LW']),
@@ -2458,6 +2556,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 99,
       name: 'Rickard Henriksson',
       positions: new Set(['C']),
@@ -2483,6 +2582,7 @@ export class PlayerService {
       },
     },
     {
+      type: 'skater',
       id: 100,
       name: 'Cole Perfetti',
       positions: new Set(['C', 'LW']),
@@ -2509,7 +2609,52 @@ export class PlayerService {
     },
   ];
 
-  getPlayers(): Observable<Player[]> {
-    return of(this.mockPlayers);
+  private readonly mockGoalies: Goalie[] = [
+    {
+      type: 'goalie',
+      id: 101,
+      name: 'Igor Shesterkin',
+      stats: {
+        utility: { gp: 58 },
+        scoring: {
+          gs: 58,
+          w: 36,
+          l: 17,
+          sho: 3,
+          sa: 1720,
+          sv: 1565,
+          ga: 155,
+          gaa: 2.67,
+          svPct: 0.91,
+        },
+      },
+    },
+    {
+      type: 'goalie',
+      id: 102,
+      name: 'Connor Hellebuyck',
+      stats: {
+        utility: { gp: 60 },
+        scoring: {
+          gs: 60,
+          w: 37,
+          l: 19,
+          sho: 5,
+          sa: 1850,
+          sv: 1705,
+          ga: 145,
+          gaa: 2.42,
+          svPct: 0.922,
+        },
+      },
+    },
+  ];
+
+  getPlayers(): Observable<Skater[]> {
+    return of(this.mockSkaters);
+  }
+
+  getGoalies(): Observable<Goalie[]> {
+    return of(this.mockGoalies);
   }
 }

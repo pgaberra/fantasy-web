@@ -18,14 +18,16 @@
       [(useDefaultDecimals)]="useDefaultDecimals"
     />
 
-    <app-player-projections-table
-      [scoringType]="scoringType()"
-      [(statWeights)]="statWeights"
-      [players]="players()"
-      [activeColumns]="activeColumns()"
-      [scaleSettings]="scaleSettings()"
-      [(decimalSettings)]="decimalSettings"
-      [useDefaultDecimals]="useDefaultDecimals()"
-    />
+    <div class="projections-tables">
+      <app-player-projections-table
+        [scoringType]="scoringType()"
+        [(statWeights)]="statWeights"
+        [players]="players()"
+        [activeColumns]="activeColumns()"
+        [scaleSettings]="scaleSettings()"
+        [(decimalSettings)]="decimalSettings"
+        [useDefaultDecimals]="useDefaultDecimals()"
+      />
+    </div>
   </div>
 }

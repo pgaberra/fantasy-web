@@ -1,40 +1,40 @@
 import { Injectable } from '@angular/core';
-import { SCORING_STAT_KEYS, ScoringStatKey, StatKey, UtilityStatKey } from '../models/player.model';
-import { PlayerProjection } from '../draft-projection/model';
+import {
+  GoalieProjection,
+  GoalieScoringStats,
+  Projection,
+  SkaterProjection,
+  SkaterScoringStats,
+} from '../models/projection.model';
 import { ScaleConfig } from '../draft-projection/projection-settings-section/model';
+import {
+  GOALIE_SCORING_STAT_KEYS,
+  GoalieStatKey,
+  SKATER_SCORING_STAT_KEYS,
+  SkaterStatKey,
+  SkaterUtilityStatKey,
+  ScoringStatKey,
+  StatKey,
+} from '../models/stat-key.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ProjectionUpdateService {
-  scaleScoring(
-    scoring: Record<ScoringStatKey, number>,
-    ratio: number,
-    scalable: Set<ScoringStatKey>,
-  ): Record<ScoringStatKey, number> {
-    const scaled = { ...scoring };
-    SCORING_STAT_KEYS.forEach((key) => {
-      if (scalable.has(key)) {
-        scaled[key] = scoring[key] * ratio;
-      }
-    });
-    return scaled;
-  }
-
   applyToiDelta(
-    playerProjections: PlayerProjection[],
+    projections: Projection[],
     playerId: number,
     delta: number,
-    scaleSettings: Record<UtilityStatKey, ScaleConfig>,
-  ): PlayerProjection[] {
-    return playerProjections.map((pp) => {
-      if (pp.playerId !== playerId) return pp;
+    scaleSettings: Record<SkaterUtilityStatKey, ScaleConfig>,
+  ): Projection[] {
+    return projections.map((pp) => {
+      if (pp.playerId !== playerId || !this.isSkaterProjection(pp)) return pp;
       const oldToi = pp.stats.utility.toiPerGame;
       const newToi = Math.max(0, oldToi + delta);
       const toiSettings = scaleSettings.toiPerGame;
       const shouldScale = toiSettings.scale && oldToi > 0;
       const scoring = shouldScale
-        ? this.scaleScoring(pp.stats.scoring, newToi / oldToi, toiSettings.scalableStats)
+        ? this.scaleSkaterScoring(pp.stats.scoring, newToi / oldToi, toiSettings.scalableStats)
         : pp.stats.scoring;
       return {
         ...pp,
@@ -44,30 +44,96 @@ export class ProjectionUpdateService {
   }
 
   applyStatValue(
-    playerProjections: PlayerProjection[],
+    projections: Projection[],
     playerId: number,
     key: StatKey,
     value: number,
-    scaleSettings: Record<UtilityStatKey, ScaleConfig>,
-  ): PlayerProjection[] {
-    return playerProjections.map((pp) => {
+    scaleSettings: Record<SkaterUtilityStatKey, ScaleConfig>,
+  ): Projection[] {
+    return projections.map((pp) => {
       if (pp.playerId !== playerId) return pp;
-      const isScoring = (SCORING_STAT_KEYS as readonly string[]).includes(key);
-      if (isScoring) {
-        return { ...pp, stats: { ...pp.stats, scoring: { ...pp.stats.scoring, [key]: value } } };
+      if (this.isSkaterProjection(pp)) {
+        return this.applySkaterStatValue(pp, key as SkaterStatKey, value, scaleSettings);
       }
-      const utilityKey = key as UtilityStatKey;
-      const oldValue = pp.stats.utility[utilityKey];
-      const settings = scaleSettings[utilityKey];
-      const shouldScale = settings ? settings.scale && oldValue > 0 : false;
-      const scalable = settings ? settings.scalableStats : new Set<ScoringStatKey>();
-      const scoring = shouldScale
-        ? this.scaleScoring(pp.stats.scoring, value / oldValue, scalable)
-        : pp.stats.scoring;
-      return {
-        ...pp,
-        stats: { ...pp.stats, scoring, utility: { ...pp.stats.utility, [key]: value } },
-      };
+      return this.applyGoalieStatValue(pp, key as GoalieStatKey, value, scaleSettings);
     });
+  }
+
+  private applySkaterStatValue(
+    projection: SkaterProjection,
+    key: SkaterStatKey,
+    value: number,
+    scaleSettings: Record<SkaterUtilityStatKey, ScaleConfig>,
+  ): SkaterProjection {
+    const isScoring = (SKATER_SCORING_STAT_KEYS as readonly string[]).includes(key);
+    if (isScoring) {
+      return { ...projection, stats: { ...projection.stats, scoring: { ...projection.stats.scoring, [key]: value } } };
+    }
+    const utilityKey = key as SkaterUtilityStatKey;
+    const oldValue = projection.stats.utility[utilityKey];
+    const settings = scaleSettings[utilityKey];
+    const shouldScale = settings.scale && oldValue > 0;
+    const scoring = shouldScale
+      ? this.scaleSkaterScoring(projection.stats.scoring, value / oldValue, settings.scalableStats)
+      : projection.stats.scoring;
+    return {
+      ...projection,
+      stats: { ...projection.stats, scoring, utility: { ...projection.stats.utility, [utilityKey]: value } },
+    };
+  }
+
+  private applyGoalieStatValue(
+    projection: GoalieProjection,
+    key: GoalieStatKey,
+    value: number,
+    scaleSettings: Record<SkaterUtilityStatKey, ScaleConfig>,
+  ): GoalieProjection {
+    const isScoring = (GOALIE_SCORING_STAT_KEYS as readonly string[]).includes(key);
+    if (isScoring) {
+      return { ...projection, stats: { ...projection.stats, scoring: { ...projection.stats.scoring, [key]: value } } };
+    }
+    const utilityKey = key as SkaterUtilityStatKey;
+    const oldValue = projection.stats.utility[utilityKey as 'gp'];
+    const settings = scaleSettings[utilityKey];
+    const shouldScale = settings.scale && oldValue > 0;
+    const scoring = shouldScale
+      ? this.scaleGoalieScoring(projection.stats.scoring, value / oldValue, settings.scalableStats)
+      : projection.stats.scoring;
+    return {
+      ...projection,
+      stats: { ...projection.stats, scoring, utility: { ...projection.stats.utility, [utilityKey]: value } },
+    };
+  }
+
+  private isSkaterProjection(projection: Projection): projection is SkaterProjection {
+    return projection.type === 'skater';
+  }
+
+  private scaleSkaterScoring(
+    scoring: SkaterScoringStats,
+    ratio: number,
+    scalable: Set<ScoringStatKey>,
+  ): SkaterScoringStats {
+    const scaled = { ...scoring };
+    SKATER_SCORING_STAT_KEYS.forEach((key) => {
+      if (scalable.has(key)) {
+        scaled[key] = scoring[key] * ratio;
+      }
+    });
+    return scaled;
+  }
+
+  private scaleGoalieScoring(
+    scoring: GoalieScoringStats,
+    ratio: number,
+    scalable: Set<ScoringStatKey>,
+  ): GoalieScoringStats {
+    const scaled = { ...scoring };
+    GOALIE_SCORING_STAT_KEYS.forEach((key) => {
+      if (scalable.has(key)) {
+        scaled[key] = scoring[key] * ratio;
+      }
+    });
+    return scaled;
   }
 }

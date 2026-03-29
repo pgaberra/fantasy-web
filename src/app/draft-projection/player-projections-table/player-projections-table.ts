@@ -1,24 +1,42 @@
 import { Component, computed, inject, input, model, OnInit, Signal, signal } from '@angular/core';
+import { Player } from '../../models/player.model';
 import {
-  Player,
-  SCORING_STAT_KEYS,
-  ScoringStatKey,
-  StatKey,
-  UtilityStatKey,
-} from '../../models/player.model';
-import { ActiveColumns, PlayerProjection, PlayerScore, PositionFilter, ScoringType } from '../model';
+  ActiveColumns,
+  GoalieScoringStats,
+  PlayerScore,
+  PositionFilter,
+  Projection,
+  ScoringType,
+  SkaterScoringStats,
+} from '../../models/projection.model';
 import { ProjectionCalculationService } from '../../services/projection-calculation.service';
 import { ProjectionUpdateService } from '../../services/projection-update.service';
 import { ToiService } from '../../services/toi.service';
 import { PositionFilterService } from '../../services/position-filter.service';
-import { DEFAULT_DECIMAL_SETTINGS, DEFAULT_SCALE_SETTINGS, DecimalStatKey, ScaleConfig } from '../projection-settings-section/model';
+import {
+  DecimalStatKey,
+  DEFAULT_DECIMAL_SETTINGS,
+  DEFAULT_SCALE_SETTINGS,
+  ScaleConfig,
+} from '../projection-settings-section/model';
 import { ProjectionsTableHeaderComponent } from './projections-table-header/projections-table-header';
-import { ProjectionPlayerRowComponent } from './projection-player-row/projection-player-row';
+import { PlayerRowComponent } from './player-row/player-row';
 import { PositionFilterComponent } from './position-filter/position-filter';
+import {
+  GOALIE_SCORING_STAT_KEYS,
+  ScoringStatKey,
+  SKATER_SCORING_STAT_KEYS,
+  StatKey,
+  UtilityStatKey,
+} from '../../models/stat-key.model';
 
 @Component({
   selector: 'app-player-projections-table',
-  imports: [ProjectionsTableHeaderComponent, ProjectionPlayerRowComponent, PositionFilterComponent],
+  imports: [
+    ProjectionsTableHeaderComponent,
+    PlayerRowComponent,
+    PositionFilterComponent,
+  ],
   templateUrl: './player-projections-table.html',
   styleUrl: './player-projections-table.css',
 })
@@ -31,8 +49,8 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly decimalSettings = model<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
   readonly useDefaultDecimals = input.required<boolean>();
 
-  readonly playerProjections = signal<PlayerProjection[]>([]);
-  private readonly realTimeSortedProjections = computed((): PlayerProjection[] => {
+  readonly playerProjections = signal<Projection[]>([]);
+  private readonly realTimeSortedProjections = computed((): Projection[] => {
     const projections = this.playerProjections();
     const scores = this.playerScores();
     const scoringType = this.scoringType();
@@ -44,23 +62,29 @@ export class PlayerProjectionsTableComponent implements OnInit {
         : (a, b) => (scores.get(b.playerId)?.zScore ?? 0) - (scores.get(a.playerId)?.zScore ?? 0),
     );
   });
-  readonly filteredAndSortedProjections: Signal<PlayerProjection[]> = computed(() => {
+  readonly filteredAndSortedProjections: Signal<Projection[]> = computed(() => {
     const projections = this.realTimeSortedProjections();
     const filter = this.positionFilter();
     return this.positionFilterService.filterByPosition(projections, this.playerMap(), filter);
   });
-  filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit: Signal<PlayerProjection[]> = computed(() => {
-    if (!this.editingPlayerId()) {
-      return this.filteredAndSortedProjections();
-    }
+  filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit: Signal<Projection[]> = computed(
+    () => {
+      if (!this.editingPlayerId()) {
+        return this.filteredAndSortedProjections();
+      }
 
-    const projections = this.playerProjections();
-    const filter = this.positionFilter();
-    const lockedProjections = this.lockedOrder().map(
-      (playerId) => projections.find((pp) => pp.playerId === playerId)!,
-    );
-    return this.positionFilterService.filterByPosition(lockedProjections, this.playerMap(), filter);
-  });
+      const projections = this.playerProjections();
+      const filter = this.positionFilter();
+      const lockedProjections = this.lockedOrder().map(
+        (playerId) => projections.find((pp) => pp.playerId === playerId)!,
+      );
+      return this.positionFilterService.filterByPosition(
+        lockedProjections,
+        this.playerMap(),
+        filter,
+      );
+    },
+  );
 
   private readonly projectionCalculationService = inject(ProjectionCalculationService);
   private readonly projectionUpdateService = inject(ProjectionUpdateService);
@@ -70,14 +94,25 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly playerScores = computed((): Map<number, PlayerScore> => {
     const projections = this.playerProjections();
     const statWeights = this.statWeights();
-    const activeScoringColumns = this.activeColumns().scoringColumns;
+    const activeScoringColumns = this.activeColumns().scoring;
 
     const fantasyPoints = projections.map((pp) => {
-      const roundedScoring = { ...pp.stats.scoring };
-      SCORING_STAT_KEYS.forEach((key) => {
-        roundedScoring[key] = this.roundStat(roundedScoring[key], key);
+      if (pp.type === 'skater') {
+        const roundedScoring: SkaterScoringStats = { ...pp.stats.scoring };
+        SKATER_SCORING_STAT_KEYS.forEach((key) => {
+          roundedScoring[key] = this.roundStat(roundedScoring[key], key as DecimalStatKey);
+        });
+        return this.projectionCalculationService.computeSkaterTotalPoints(
+          roundedScoring,
+          statWeights,
+          activeScoringColumns,
+        );
+      }
+      const roundedScoring: GoalieScoringStats = { ...pp.stats.scoring };
+      GOALIE_SCORING_STAT_KEYS.forEach((key) => {
+        roundedScoring[key] = this.roundStat(roundedScoring[key], key as DecimalStatKey);
       });
-      return this.projectionCalculationService.computeTotalPoints(
+      return this.projectionCalculationService.computeGoalieTotalPoints(
         roundedScoring,
         statWeights,
         activeScoringColumns,
@@ -117,12 +152,23 @@ export class PlayerProjectionsTableComponent implements OnInit {
   }
 
   private initializeProjection(): void {
-    const playerProjections: PlayerProjection[] = this.players().map((player) => ({
-      playerId: player.id,
-      stats: player.stats,
-    }));
+    const projections: Projection[] = this.players().map((player) => {
+      if (player.type === 'skater') {
+        return {
+          type: 'skater',
+          playerId: player.id,
+          stats: player.stats,
+        };
+      } else {
+        return {
+          type: 'goalie',
+          playerId: player.id,
+          stats: player.stats,
+        };
+      }
+    });
 
-    this.playerProjections.set(playerProjections);
+    this.playerProjections.set(projections);
   }
 
   private roundStat(value: number, key: DecimalStatKey): number {

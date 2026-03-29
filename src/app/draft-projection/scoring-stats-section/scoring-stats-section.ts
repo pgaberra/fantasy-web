@@ -1,5 +1,9 @@
 import { Component, model } from '@angular/core';
-import { SCORING_STAT_KEYS, ScoringStatKey } from '../../models/player.model';
+import {
+  GOALIE_SCORING_STAT_KEYS,
+  SKATER_SCORING_STAT_KEYS,
+  ScoringStatKey,
+} from '../../models/stat-key.model';
 import { StatLabelPipe } from '../../pipes/stat-label.pipe';
 
 @Component({
@@ -22,5 +26,6 @@ export class ScoringStatsSectionComponent {
     });
   }
 
-  protected readonly SCORING_STAT_KEYS = SCORING_STAT_KEYS;
+  protected readonly SKATER_SCORING_STAT_KEYS = SKATER_SCORING_STAT_KEYS;
+  protected readonly GOALIE_SCORING_STAT_KEYS = GOALIE_SCORING_STAT_KEYS;
 }

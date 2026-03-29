@@ -5,11 +5,15 @@ import { UtilityStatLabelPipe } from '../../pipes/utility-stat-label.pipe';
 import { StatDescPipe } from '../../pipes/stat-desc.pipe';
 import { StatLabelPipe } from '../../pipes/stat-label.pipe';
 import {
+  GOALIE_SCORING_STAT_KEYS,
+  GOALIE_UTILITY_STAT_KEYS,
   SCORING_STAT_KEYS,
   ScoringStatKey,
+  SKATER_SCORING_STAT_KEYS,
+  SKATER_UTILITY_STAT_KEYS,
   UTILITY_STAT_KEYS,
   UtilityStatKey,
-} from '../../models/player.model';
+} from '../../models/stat-key.model';
 import { ScaleConfig } from './model';
 
 @Component({
@@ -28,8 +32,9 @@ export class ProjectionSettingsSectionComponent {
   activeUtilityColumns = model.required<Set<UtilityStatKey>>();
   activeScoringColumns = input.required<Set<ScoringStatKey>>();
   activeScoringColumnsSorted = computed(() => {
-    return Array.from(this.activeScoringColumns())
-      .sort((a, b) => SCORING_STAT_KEYS.indexOf(a) - SCORING_STAT_KEYS.indexOf(b));
+    return Array.from(this.activeScoringColumns()).sort(
+      (a, b) => SCORING_STAT_KEYS.indexOf(a) - SCORING_STAT_KEYS.indexOf(b),
+    );
   });
 
   scaleSettings = model.required<Record<UtilityStatKey, ScaleConfig>>();
@@ -97,6 +102,24 @@ export class ProjectionSettingsSectionComponent {
 
   isAdvancedVisible(utilityKey: UtilityStatKey): boolean {
     return this.showAdvancedScaleOptions()[utilityKey];
+  }
+
+  getAvailableScoringStats(key: UtilityStatKey): ScoringStatKey[] {
+    const active = this.activeScoringColumnsSorted();
+    if (
+      (GOALIE_UTILITY_STAT_KEYS as readonly string[]).includes(key) &&
+      (SKATER_UTILITY_STAT_KEYS as readonly string[]).includes(key)
+    ) {
+      return active;
+    }
+
+    if ((GOALIE_UTILITY_STAT_KEYS as readonly string[]).includes(key)) {
+      return active.filter((scoringKey) =>
+        (GOALIE_SCORING_STAT_KEYS as readonly string[]).includes(scoringKey));
+    }
+    
+    return active.filter((scoringKey) =>
+      (SKATER_SCORING_STAT_KEYS as readonly string[]).includes(scoringKey));
   }
 
   protected readonly UTILITY_STAT_KEYS = UTILITY_STAT_KEYS;

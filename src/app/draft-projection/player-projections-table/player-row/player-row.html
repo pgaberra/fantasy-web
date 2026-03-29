@@ -1,0 +1,30 @@
+<td class="col-rank">{{ rank() }}</td>
+<td class="col-name player-name">{{ player().name }} ({{ playerPosition() }})</td>
+@for (col of activeColumns().utility; track col) {
+  <td class="col-{{ col }}">
+    <app-stat-input
+      [isStatApplicable]="isStatApplicable(col)"
+      [playerId]="projection().playerId"
+      [key]="col"
+      [value]="getStatValue(col)"
+      [decimalSettings]="decimalSettings()"
+      (statInput)="statInput.emit($event)"
+      (toiKeydown)="toiKeydown.emit($event)"
+    />
+  </td>
+}
+@for (col of activeColumns().scoring; track col) {
+  <td>
+    <app-stat-input
+      [isStatApplicable]="isStatApplicable(col)"
+      [playerId]="projection().playerId"
+      [key]="col"
+      [value]="getStatValue(col)"
+      [decimalSettings]="decimalSettings()"
+      (statInput)="statInput.emit($event)"
+    />
+  </td>
+}
+<td class="fan-pts-col fan-pts-cell">
+  {{ (scoringType() === 'category' ? playerScore().zScore : playerScore().fantasyPoints) | number : '1.0-2' }}
+</td>

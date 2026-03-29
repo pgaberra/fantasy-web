@@ -24,36 +24,6 @@ td.col-name {
   color: #0f3460;
 }
 
-.stat-input {
-  width: 62px;
-  padding: 0.25rem 0.3rem;
-  text-align: center;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  background: transparent;
-  font-size: 0.875rem;
-  color: #1a1a2e;
-  transition: border-color 0.15s, background 0.15s;
-  -moz-appearance: textfield;
-}
-
-.stat-input:hover {
-  border-color: #b0b8d4;
-  background: #fff;
-}
-
-.stat-input:focus {
-  outline: none;
-  border-color: #0f3460;
-  background: #fff;
-  box-shadow: 0 0 0 2px rgba(15, 52, 96, 0.15);
-}
-
-.stat-input::-webkit-outer-spin-button,
-.stat-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-}
-
 .fan-pts-cell {
   background: #fff8e6;
   color: #7a5000;

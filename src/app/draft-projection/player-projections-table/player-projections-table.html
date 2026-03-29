@@ -16,8 +16,8 @@
       <tbody>
         @for (projection of filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit(); track projection.playerId) {
           <tr
-            app-projection-player-row
-            [rank]="positionRanks().get(projection.playerId)!"
+            app-player-row
+            [positionRank]="positionRanks().get(projection.playerId)!"
             [totalRank]="positionFilter() !== 'ALL' ? (realTimeRanks().get(projection.playerId) ?? null) : null"
             [projection]="projection"
             [playerScore]="playerScores().get(projection.playerId)!"

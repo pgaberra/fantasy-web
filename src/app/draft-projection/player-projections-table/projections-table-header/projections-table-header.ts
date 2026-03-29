@@ -1,6 +1,6 @@
 import { Component, computed, input, model } from '@angular/core';
-import { ScoringStatKey } from '../../../models/player.model';
-import { ActiveColumns, ScoringType } from '../../model';
+import { ScoringStatKey } from '../../../models/stat-key.model';
+import { ActiveColumns, ScoringType } from '../../../models/projection.model';
 import { StatLabelPipe } from '../../../pipes/stat-label.pipe';
 import { DecimalStatKey } from '../../projection-settings-section/model';
 

@@ -1,8 +1,10 @@
 import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin } from 'rxjs';
 import { PlayerService } from '../services/player.service';
-import { Player, ScoringStatKey, UtilityStatKey } from '../models/player.model';
-import { ActiveColumns, ScoringType } from './model';
+import { Player } from '../models/player.model';
+import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
+import { ActiveColumns, ScoringType } from '../models/projection.model';
 import { ScoringTypeSectionComponent } from './scoring-type-section/scoring-type-section';
 import { ScoringStatsSectionComponent } from './scoring-stats-section/scoring-stats-section';
 import { ProjectionSettingsSectionComponent } from './projection-settings-section/projection-settings-section';
@@ -30,6 +32,15 @@ const DEFAULT_STAT_WEIGHTS: Record<ScoringStatKey, number> = {
   fw: 0.5,
   fl: 0.5,
   plusMinus: 0.5,
+  gs: 0,
+  w: 4,
+  l: 0,
+  sho: 3,
+  sa: 0,
+  sv: 0.2,
+  ga: -1,
+  gaa: 0,
+  svPct: 0,
 };
 
 @Component({
@@ -52,21 +63,23 @@ export class DraftProjectionComponent implements OnInit {
   players = signal<Player[]>([]);
 
   activeScoringColumns = signal(
-    new Set<ScoringStatKey>(['goals', 'assists', 'sog', 'hits', 'blocks']),
+    new Set<ScoringStatKey>(['goals', 'assists', 'sog', 'hits', 'blocks', 'gaa', 'svPct', 'w']),
   );
-  activeUtilityColumns = signal(new Set<UtilityStatKey>(['gp']));
+  activeUtilityColumns = signal(new Set<SkaterUtilityStatKey>(['gp']));
   activeColumns = computed<ActiveColumns>(() => ({
-    scoringColumns: this.activeScoringColumns(),
-    utilityColumns: this.activeUtilityColumns(),
+    scoring: this.activeScoringColumns(),
+    utility: this.activeUtilityColumns(),
   }));
-  scaleSettings = signal<Record<UtilityStatKey, ScaleConfig>>(DEFAULT_SCALE_SETTINGS);
+  scaleSettings = signal<Record<SkaterUtilityStatKey, ScaleConfig>>(DEFAULT_SCALE_SETTINGS);
   decimalSettings = signal<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
   useDefaultDecimals = signal<boolean>(true);
 
   ngOnInit(): void {
-    this.playerService
-      .getPlayers()
+    forkJoin({
+      skaters: this.playerService.getPlayers(),
+      goalies: this.playerService.getGoalies(),
+    })
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((players) => this.players.set(players));
+      .subscribe(({ skaters, goalies }) => this.players.set([...skaters, ...goalies]));
   }
 }

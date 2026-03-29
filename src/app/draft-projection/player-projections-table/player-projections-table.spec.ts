@@ -1,68 +1,179 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
-import { vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PlayerProjectionsTableComponent } from './player-projections-table';
-import { Player, ScoringStatKey, UtilityStatKey } from '../../models/player.model';
-import { ActiveColumns, PlayerProjection, ScoringType } from '../model';
+import { Goalie, Player, Skater } from '../../models/player.model';
+import { ScoringStatKey, SkaterUtilityStatKey } from '../../models/stat-key.model';
+import {
+  ActiveColumns,
+  Projection,
+  ScoringType,
+  SkaterProjection,
+} from '../../models/projection.model';
 import { StatLabelPipe } from '../../pipes/stat-label.pipe';
 import { FormatToiPipe } from '../../pipes/format-toi.pipe';
 import { DecimalPipe } from '@angular/common';
 import { ProjectionsTableHeaderComponent } from './projections-table-header/projections-table-header';
-import { ProjectionPlayerRowComponent } from './projection-player-row/projection-player-row';
+import { PlayerRowComponent } from './player-row/player-row';
+import { StatInputComponent } from './player-row/stat-input/stat-input';
 
 describe('PlayerProjectionsTableComponent', () => {
   const mockPlayers: Player[] = [
     {
       id: 1,
+      type: 'skater',
       name: 'Connor McDavid',
       positions: new Set(['C']),
       stats: {
         utility: { gp: 82, toiPerGame: 1320 },
-        scoring: { goals: 64, assists: 89, plusMinus: 33, pim: 36, ppg: 22, ppa: 38, shg: 1, sha: 0, gwg: 8, sog: 348, shPct: 18.4, fw: 812, fl: 623, hits: 42, blocks: 28 },
+        scoring: {
+          goals: 64,
+          assists: 89,
+          plusMinus: 33,
+          pim: 36,
+          ppg: 22,
+          ppa: 38,
+          shg: 1,
+          sha: 0,
+          gwg: 8,
+          sog: 348,
+          shPct: 18.4,
+          fw: 812,
+          fl: 623,
+          hits: 42,
+          blocks: 28,
+        },
       },
     },
     {
       id: 2,
+      type: 'skater',
       name: 'Leon Draisaitl',
       positions: new Set(['C', 'LW']),
       stats: {
         utility: { gp: 80, toiPerGame: 1260 },
-        scoring: { goals: 52, assists: 76, plusMinus: 18, pim: 58, ppg: 21, ppa: 34, shg: 1, sha: 2, gwg: 6, sog: 298, shPct: 17.4, fw: 367, fl: 298, hits: 51, blocks: 19 },
+        scoring: {
+          goals: 52,
+          assists: 76,
+          plusMinus: 18,
+          pim: 58,
+          ppg: 21,
+          ppa: 34,
+          shg: 1,
+          sha: 2,
+          gwg: 6,
+          sog: 298,
+          shPct: 17.4,
+          fw: 367,
+          fl: 298,
+          hits: 51,
+          blocks: 19,
+        },
+      },
+    },
+    {
+      id: 3,
+      type: 'goalie',
+      name: 'Connor Hellebuyck',
+      stats: {
+        utility: { gp: 64 },
+        scoring: {
+          gs: 64,
+          w: 37,
+          l: 22,
+          sho: 5,
+          sa: 1890,
+          sv: 1740,
+          ga: 150,
+          gaa: 2.39,
+          svPct: 0.921,
+        },
       },
     },
   ];
 
-  const mockPlayerProjections: PlayerProjection[] = [
-    { playerId: 1, stats: { scoring: mockPlayers[0].stats.scoring, utility: mockPlayers[0].stats.utility } },
-    { playerId: 2, stats: { scoring: mockPlayers[1].stats.scoring, utility: mockPlayers[1].stats.utility } },
+  const mockPlayerProjections: Projection[] = [
+    {
+      type: 'skater',
+      playerId: 1,
+      stats: {
+        scoring: (mockPlayers[0] as Skater).stats.scoring,
+        utility: (mockPlayers[0] as Skater).stats.utility,
+      },
+    },
+    {
+      type: 'skater',
+      playerId: 2,
+      stats: {
+        scoring: (mockPlayers[1] as Skater).stats.scoring,
+        utility: (mockPlayers[1] as Skater).stats.utility,
+      },
+    },
+    {
+      type: 'goalie',
+      playerId: 3,
+      stats: {
+        scoring: (mockPlayers[2] as Goalie).stats.scoring,
+        utility: (mockPlayers[2] as Goalie).stats.utility,
+      },
+    },
   ];
 
   const mockStatWeights: Record<ScoringStatKey, number> = {
-    goals: 4.5, assists: 3, sog: 0.5, hits: 0.33, blocks: 0.5, gwg: 0.5, pim: 0.5, ppg: 0.5, ppa: 0.5, shg: 0.5, sha: 0.5, shPct: 0.5, fw: 0.5, fl: 0.5, plusMinus: 0.5,
+    goals: 4.5,
+    assists: 3,
+    sog: 0.5,
+    hits: 0.33,
+    blocks: 0.5,
+    gwg: 0.5,
+    pim: 0.5,
+    ppg: 0.5,
+    ppa: 0.5,
+    shg: 0.5,
+    sha: 0.5,
+    shPct: 0.5,
+    fw: 0.5,
+    fl: 0.5,
+    plusMinus: 0.5,
+    gs: 0,
+    w: 4,
+    l: 0,
+    sho: 3,
+    sa: 0,
+    sv: 0.2,
+    ga: -1,
+    gaa: 0,
+    svPct: 0,
   };
 
   beforeEach(() =>
     MockBuilder(PlayerProjectionsTableComponent)
       .keep(ProjectionsTableHeaderComponent)
-      .keep(ProjectionPlayerRowComponent)
+      .keep(PlayerRowComponent)
+      .keep(StatInputComponent)
       .keep(StatLabelPipe)
       .keep(FormatToiPipe)
       .keep(DecimalPipe),
   );
 
-  const getComponent = (overrides: Partial<{
-    players: Player[];
-    scoringType: ScoringType;
-    playerProjections: PlayerProjection[];
-    statWeights: Record<ScoringStatKey, number>;
-    activeColumns: ActiveColumns;
-    useDefaultDecimals: boolean;
-  }> = {}) =>
+  const getComponent = (
+    overrides: Partial<{
+      players: Player[];
+      scoringType: ScoringType;
+      playerProjections: Projection[];
+      statWeights: Record<ScoringStatKey, number>;
+      activeColumns: ActiveColumns;
+      useDefaultDecimals: boolean;
+    }> = {},
+  ) =>
     MockRender(PlayerProjectionsTableComponent, {
       players: mockPlayers,
       scoringType: 'category' as ScoringType,
       playerProjections: mockPlayerProjections,
       statWeights: mockStatWeights,
-      activeColumns: { scoringColumns: new Set<ScoringStatKey>(['goals', 'assists']), utilityColumns: new Set<UtilityStatKey>(['gp']) } as ActiveColumns,
+      activeColumns: {
+        scoring: new Set<ScoringStatKey>(['goals', 'assists']),
+        utility: new Set<SkaterUtilityStatKey>(['gp']),
+      } as ActiveColumns,
       useDefaultDecimals: true,
       ...overrides,
     }).point.componentInstance;
@@ -72,83 +183,143 @@ describe('PlayerProjectionsTableComponent', () => {
       const component = getComponent();
       const event = { target: { value: '70' } } as unknown as Event;
       component.onStatInput(1, 'goals', event);
-      expect(component.playerProjections().find(p => p.playerId === 1)!.stats.scoring['goals']).toEqual(70);
+      expect(
+        (component.playerProjections().find((p) => p.playerId === 1) as SkaterProjection).stats
+          .scoring.goals,
+      ).toEqual(70);
     });
 
     it('should parse a plain number for non-toiPerGame utility stats', () => {
       const component = getComponent();
       const event = { target: { value: '42' } } as unknown as Event;
       component.onStatInput(1, 'gp', event);
-      expect(component.playerProjections().find(p => p.playerId === 1)!.stats.utility['gp']).toEqual(42);
+      expect(
+        (component.playerProjections().find((p) => p.playerId === 1) as SkaterProjection).stats
+          .utility.gp,
+      ).toEqual(42);
     });
 
     it('should parse mm:ss format for toiPerGame', () => {
       const component = getComponent();
       const event = { target: { value: '25:55' } } as unknown as Event;
       component.onStatInput(1, 'toiPerGame', event);
-      expect(component.playerProjections().find(p => p.playerId === 1)!.stats.utility['toiPerGame']).toEqual(1555);
+      expect(
+        (component.playerProjections().find((p) => p.playerId === 1) as SkaterProjection).stats
+          .utility.toiPerGame,
+      ).toEqual(1555);
     });
 
     it('should not modify other players when updating a stat', () => {
       const component = getComponent();
-      const before = component.playerProjections().find(p => p.playerId === 2)!.stats.scoring['goals'];
+      const before = (
+        component.playerProjections().find((p) => p.playerId === 2) as SkaterProjection
+      ).stats.scoring.goals;
       component.onStatInput(1, 'goals', { target: { value: '99' } } as unknown as Event);
-      expect(component.playerProjections().find(p => p.playerId === 2)!.stats.scoring['goals']).toEqual(before);
+      expect(
+        (component.playerProjections().find((p) => p.playerId === 2) as SkaterProjection).stats
+          .scoring.goals,
+      ).toEqual(before);
     });
   });
 
   describe('onToiKeydown', () => {
     it('should increment toiPerGame by 1 second on ArrowUp', () => {
-      const component = getComponent({ activeColumns: { scoringColumns: new Set<ScoringStatKey>(['goals', 'assists']), utilityColumns: new Set<UtilityStatKey>(['toiPerGame']) } as ActiveColumns });
+      const component = getComponent({
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['goals', 'assists']),
+          utility: new Set<SkaterUtilityStatKey>(['toiPerGame']),
+        } as ActiveColumns,
+      });
       const event = new KeyboardEvent('keydown', { key: 'ArrowUp' });
       vi.spyOn(event, 'preventDefault');
       component.onToiKeydown(1, event);
-      expect(component.playerProjections().find(p => p.playerId === 1)!.stats.utility['toiPerGame']).toEqual(1321);
+      expect(
+        (component.playerProjections().find((p) => p.playerId === 1) as SkaterProjection).stats
+          .utility.toiPerGame,
+      ).toEqual(1321);
       expect(event.preventDefault).toHaveBeenCalled();
     });
 
     it('should decrement toiPerGame by 1 second on ArrowDown', () => {
-      const component = getComponent({ activeColumns: { scoringColumns: new Set<ScoringStatKey>(['goals', 'assists']), utilityColumns: new Set<UtilityStatKey>(['toiPerGame']) } as ActiveColumns });
+      const component = getComponent({
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['goals', 'assists']),
+          utility: new Set<SkaterUtilityStatKey>(['toiPerGame']),
+        } as ActiveColumns,
+      });
       const event = new KeyboardEvent('keydown', { key: 'ArrowDown' });
       vi.spyOn(event, 'preventDefault');
       component.onToiKeydown(1, event);
-      expect(component.playerProjections().find(p => p.playerId === 1)!.stats.utility['toiPerGame']).toEqual(1319);
+      expect(
+        (component.playerProjections().find((p) => p.playerId === 1) as SkaterProjection).stats
+          .utility.toiPerGame,
+      ).toEqual(1319);
       expect(event.preventDefault).toHaveBeenCalled();
     });
 
     it('should not go below 0 seconds on ArrowDown', () => {
-      const component = getComponent({ activeColumns: { scoringColumns: new Set<ScoringStatKey>(['goals', 'assists']), utilityColumns: new Set<UtilityStatKey>(['toiPerGame']) } as ActiveColumns });
+      const component = getComponent({
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['goals', 'assists']),
+          utility: new Set<SkaterUtilityStatKey>(['toiPerGame']),
+        } as ActiveColumns,
+      });
       // Set toiPerGame to 0 first
       component.onStatInput(1, 'toiPerGame', { target: { value: '0:00' } } as unknown as Event);
       const event = new KeyboardEvent('keydown', { key: 'ArrowDown' });
       component.onToiKeydown(1, event);
-      expect(component.playerProjections().find(p => p.playerId === 1)!.stats.utility['toiPerGame']).toEqual(0);
+      expect(
+        (component.playerProjections().find((p) => p.playerId === 1) as SkaterProjection).stats
+          .utility.toiPerGame,
+      ).toEqual(0);
     });
 
     it('should not modify other players on ArrowUp', () => {
-      const component = getComponent({ activeColumns: { scoringColumns: new Set<ScoringStatKey>(['goals', 'assists']), utilityColumns: new Set<UtilityStatKey>(['toiPerGame']) } as ActiveColumns });
-      const before = component.playerProjections().find(p => p.playerId === 2)!.stats.utility['toiPerGame'];
+      const component = getComponent({
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['goals', 'assists']),
+          utility: new Set<SkaterUtilityStatKey>(['toiPerGame']),
+        } as ActiveColumns,
+      });
+      const before = (
+        component.playerProjections().find((p) => p.playerId === 2) as SkaterProjection
+      ).stats.utility.toiPerGame;
       component.onToiKeydown(1, new KeyboardEvent('keydown', { key: 'ArrowUp' }));
-      expect(component.playerProjections().find(p => p.playerId === 2)!.stats.utility['toiPerGame']).toEqual(before);
+      expect(
+        (component.playerProjections().find((p) => p.playerId === 2) as SkaterProjection).stats
+          .utility.toiPerGame,
+      ).toEqual(before);
     });
 
     it('should ignore non-arrow keys', () => {
-      const component = getComponent({ activeColumns: { scoringColumns: new Set<ScoringStatKey>(['goals', 'assists']), utilityColumns: new Set<UtilityStatKey>(['toiPerGame']) } as ActiveColumns });
-      const before = component.playerProjections().find(p => p.playerId === 1)!.stats.utility['toiPerGame'];
+      const component = getComponent({
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['goals', 'assists']),
+          utility: new Set<SkaterUtilityStatKey>(['toiPerGame']),
+        } as ActiveColumns,
+      });
+      const before = (
+        component.playerProjections().find((p) => p.playerId === 1) as SkaterProjection
+      ).stats.utility.toiPerGame;
       component.onToiKeydown(1, new KeyboardEvent('keydown', { key: 'Enter' }));
-      expect(component.playerProjections().find(p => p.playerId === 1)!.stats.utility['toiPerGame']).toEqual(before);
+      expect(
+        (component.playerProjections().find((p) => p.playerId === 1) as SkaterProjection).stats
+          .utility.toiPerGame,
+      ).toEqual(before);
     });
   });
 
   describe('statWeights updates', () => {
     it('should recompute projections when statWeights changes', () => {
       const component = getComponent({ scoringType: 'points' });
-      const firstId = component.filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit()[0].playerId;
+      const firstId =
+        component.filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit()[0].playerId;
       const initialPoints = component.playerScores().get(firstId)?.fantasyPoints;
 
-      component.statWeights.update(weights => ({ ...weights, goals: weights.goals * 2 }));
+      component.statWeights.update((weights) => ({ ...weights, goals: weights.goals * 2 }));
 
-      const updatedId = component.filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit()[0].playerId;
+      const updatedId =
+        component.filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit()[0].playerId;
       const updatedPoints = component.playerScores().get(updatedId)?.fantasyPoints;
       expect(updatedPoints).not.toEqual(initialPoints);
     });
@@ -169,33 +340,43 @@ describe('PlayerProjectionsTableComponent', () => {
 
     it('should render a column header for each active scoring column', () => {
       getComponent();
-      const headers = ngMocks.findAll('thead th').map(th => th.nativeElement.textContent.trim());
+      const headers = ngMocks.findAll('thead th').map((th) => th.nativeElement.textContent.trim());
       expect(headers).toContain('Goals');
       expect(headers).toContain('Assists');
     });
 
     it('should show utility column headers for active utility columns', () => {
-      getComponent({ activeColumns: { scoringColumns: new Set<ScoringStatKey>(['goals', 'assists']), utilityColumns: new Set<UtilityStatKey>(['gp']) } as ActiveColumns });
-      const headers = ngMocks.findAll('thead th').map(th => th.nativeElement.textContent.trim());
+      getComponent({
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['goals', 'assists']),
+          utility: new Set<SkaterUtilityStatKey>(['gp']),
+        } as ActiveColumns,
+      });
+      const headers = ngMocks.findAll('thead th').map((th) => th.nativeElement.textContent.trim());
       expect(headers).toContain('GP');
     });
 
     it('should hide utility columns when activeUtilityColumns is empty', () => {
-      getComponent({ activeColumns: { scoringColumns: new Set<ScoringStatKey>(['goals', 'assists']), utilityColumns: new Set<UtilityStatKey>() } as ActiveColumns });
-      const headers = ngMocks.findAll('thead th').map(th => th.nativeElement.textContent.trim());
+      getComponent({
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['goals', 'assists']),
+          utility: new Set<SkaterUtilityStatKey>(),
+        } as ActiveColumns,
+      });
+      const headers = ngMocks.findAll('thead th').map((th) => th.nativeElement.textContent.trim());
       expect(headers).not.toContain('GP');
     });
 
     it('should show the Fan Pts column header when scoringType is "points"', () => {
       getComponent({ scoringType: 'points' });
-      const headers = ngMocks.findAll('thead th').map(th => th.nativeElement.textContent.trim());
-      expect(headers.some(h => h.includes('Fan Pts'))).toEqual(true);
+      const headers = ngMocks.findAll('thead th').map((th) => th.nativeElement.textContent.trim());
+      expect(headers.some((h) => h.includes('Fan Pts'))).toEqual(true);
     });
 
     it('should hide the Fan Pts column header when scoringType is "category"', () => {
       getComponent({ scoringType: 'category' });
-      const headers = ngMocks.findAll('thead th').map(th => th.nativeElement.textContent.trim());
-      expect(headers.some(h => h.includes('Fan Pts'))).toEqual(false);
+      const headers = ngMocks.findAll('thead th').map((th) => th.nativeElement.textContent.trim());
+      expect(headers.some((h) => h.includes('Fan Pts'))).toEqual(false);
     });
 
     it('should render the weight input row when scoringType is "points"', () => {
@@ -209,14 +390,24 @@ describe('PlayerProjectionsTableComponent', () => {
     });
 
     it('should render the toiPerGame input as type="text" with mm:ss format', () => {
-      getComponent({ activeColumns: { scoringColumns: new Set<ScoringStatKey>(['goals', 'assists']), utilityColumns: new Set<UtilityStatKey>(['toiPerGame']) } as ActiveColumns });
+      getComponent({
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['goals', 'assists']),
+          utility: new Set<SkaterUtilityStatKey>(['toiPerGame']),
+        } as ActiveColumns,
+      });
       const toiInput = ngMocks.find('.col-toiPerGame input').nativeElement as HTMLInputElement;
       expect(toiInput.type).toEqual('text');
       expect(toiInput.value).toEqual('22:00');
     });
 
     it('should render a non-toiPerGame utility input as type="number"', () => {
-      getComponent({ activeColumns: { scoringColumns: new Set<ScoringStatKey>(['goals', 'assists']), utilityColumns: new Set<UtilityStatKey>(['gp']) } as ActiveColumns });
+      getComponent({
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['goals', 'assists']),
+          utility: new Set<SkaterUtilityStatKey>(['gp']),
+        } as ActiveColumns,
+      });
       const gpInput = ngMocks.find('.col-gp input').nativeElement as HTMLInputElement;
       expect(gpInput.type).toEqual('number');
     });

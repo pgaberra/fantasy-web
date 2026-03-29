@@ -1,0 +1,11 @@
+@if (isStatApplicable()) {
+  <input
+    [type]="isToi() ? 'text' : 'number'"
+    class="stat-input"
+    [value]="formattedValue()"
+    (input)="onInput($event)"
+    (keydown)="onKeydown($event)"
+  />
+} @else {
+  <span class="stat-placeholder">-</span>
+}

@@ -51,7 +51,7 @@
               </app-setting-row>
               @if (isAdvancedVisible(key)) {
                 <div class="stat-checkboxes">
-                  @for (statKey of activeScoringColumnsSorted(); track statKey) {
+                  @for (statKey of getAvailableScoringStats(key); track statKey) {
                     <label class="stat-checkbox-label">
                       <input
                         type="checkbox"

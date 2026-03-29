@@ -1,18 +1,33 @@
 import { Injectable } from '@angular/core';
-import { ScoringStatKey } from '../models/player.model';
+import {
+  GoalieScoringStatKey,
+  ScoringStatKey,
+  SkaterScoringStatKey,
+} from '../models/stat-key.model';
+import { GoalieScoringStats, SkaterScoringStats, StatWeights } from '../models/projection.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ProjectionCalculationService {
-  computeTotalPoints(
-    stats: Record<ScoringStatKey, number>,
-    statWeights: Record<ScoringStatKey, number>,
+  computeSkaterTotalPoints(
+    stats: SkaterScoringStats,
+    statWeights: StatWeights,
     activeScoringColumns: Set<ScoringStatKey>,
   ): number {
     return Object.entries(statWeights)
       .filter(([key]) => activeScoringColumns.has(key as ScoringStatKey))
-      .reduce((sum, [key, weight]) => sum + stats[key as ScoringStatKey] * weight, 0);
+      .reduce((sum, [key, weight]) => sum + (stats[key as SkaterScoringStatKey] ?? 0) * weight, 0);
+  }
+
+  computeGoalieTotalPoints(
+    stats: GoalieScoringStats,
+    statWeights: StatWeights,
+    activeScoringColumns: Set<ScoringStatKey>,
+  ): number {
+    return Object.entries(statWeights)
+      .filter(([key]) => activeScoringColumns.has(key as ScoringStatKey))
+      .reduce((sum, [key, weight]) => sum + (stats[key as GoalieScoringStatKey] ?? 0) * weight, 0);
   }
 
   // TODO this has to be rewritten

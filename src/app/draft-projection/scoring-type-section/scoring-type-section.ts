@@ -1,5 +1,5 @@
 import { Component, model } from '@angular/core';
-import { ScoringType } from '../model';
+import { ScoringType } from '../../models/projection.model';
 
 @Component({
   selector: 'app-scoring-type-section',

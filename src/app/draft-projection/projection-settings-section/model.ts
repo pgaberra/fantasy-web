@@ -1,11 +1,13 @@
-import { SCORING_STAT_KEYS, ScoringStatKey, UtilityStatKey } from '../../models/player.model';
+import { SCORING_STAT_KEYS, ScoringStatKey, UtilityStatKey } from '../../models/stat-key.model';
 
 export interface ScaleConfig {
   scale: boolean;
   scalableStats: Set<ScoringStatKey>;
 }
 
-const DEFAULT_SCALABLE_STATS = new Set(SCORING_STAT_KEYS.filter((k) => k !== 'shPct'));
+const DEFAULT_SCALABLE_STATS = new Set<ScoringStatKey>(
+  SCORING_STAT_KEYS.filter((k) => k !== 'shPct' && k !== 'svPct' && k !== 'gaa'),
+);
 
 export const DEFAULT_SCALE_SETTINGS: Record<UtilityStatKey, ScaleConfig> = {
   gp: { scale: true, scalableStats: DEFAULT_SCALABLE_STATS },
@@ -31,4 +33,13 @@ export const DEFAULT_DECIMAL_SETTINGS: Record<DecimalStatKey, number> = {
   fl: 0,
   hits: 0,
   blocks: 0,
+  gs: 0,
+  w: 0,
+  l: 0,
+  sho: 0,
+  sa: 0,
+  sv: 0,
+  ga: 0,
+  gaa: 2,
+  svPct: 3,
 };

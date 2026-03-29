@@ -32,7 +32,7 @@ All AI-generated code must follow these conventions.
 - If a lamba function only has one parameter, avoid the parentheses.
 
 ## Types and interfaces
-- Types and interfaces that are to be exported should be placed in a separate file called model.ts, and that file should be placed in the same folder as its component.
+- Never use property existence checks (e.g. `'someKey' in obj`) to discriminate between union types. Always use an explicit discriminant field (e.g. `type: 'skater' | 'goalie'`) to narrow union types safely, as property-based checks can silently break if a type gains that property in the future.
 
 ## Comments and documentation
 - Don't write any code comments or documentation unless specifically asked to do so.

@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { StatKey } from '../models/player.model';
+import { StatKey } from '../models/stat-key.model';
 
 const STAT_LABELS: Record<StatKey, string> = {
   goals: 'Goals',
@@ -18,7 +18,16 @@ const STAT_LABELS: Record<StatKey, string> = {
   hits: 'Hits',
   blocks: 'Blocks',
   gp: 'GP',
-  toiPerGame: 'TOI/G'
+  toiPerGame: 'TOI/G',
+  gs: 'Games Started',
+  w: 'Wins',
+  l: 'Losses',
+  sho: 'Shutouts',
+  sa: 'SA',
+  sv: 'SV',
+  ga: 'GA',
+  gaa: 'GAA',
+  svPct: 'SV%'
 };
 
 @Pipe({

@@ -1,12 +1,26 @@
 <section class="settings-section">
   <h2>Scoring Stats</h2>
   <p class="hint">Select the stats used in your league:</p>
-  <div class="stat-checkboxes">
-    @for (key of SCORING_STAT_KEYS; track key) {
-      <label class="stat-checkbox-label">
-        <input type="checkbox" [checked]="activeScoringColumns().has(key)" (change)="toggle(key)" />
-        {{ key | statLabel }}
-      </label>
-    }
+  <div class="stat-group">
+    <h3>Skater Stats</h3>
+    <div class="stat-checkboxes">
+      @for (key of SKATER_SCORING_STAT_KEYS; track key) {
+        <label class="stat-checkbox-label">
+          <input type="checkbox" [checked]="activeScoringColumns().has(key)" (change)="toggle(key)" />
+          {{ key | statLabel }}
+        </label>
+      }
+    </div>
+  </div>
+  <div class="stat-group">
+    <h3>Goalie Stats</h3>
+    <div class="stat-checkboxes">
+      @for (key of GOALIE_SCORING_STAT_KEYS; track key) {
+        <label class="stat-checkbox-label">
+          <input type="checkbox" [checked]="activeScoringColumns().has(key)" (change)="toggle(key)" />
+          {{ key | statLabel }}
+        </label>
+      }
+    </div>
   </div>
 </section>

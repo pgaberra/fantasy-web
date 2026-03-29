@@ -1,6 +1,6 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { ScoringStatsSectionComponent } from './scoring-stats-section';
-import { SCORING_STAT_KEYS, ScoringStatKey } from '../../models/player.model';
+import { SCORING_STAT_KEYS, ScoringStatKey } from '../../models/stat-key.model';
 
 describe('LeagueStatsSectionComponent', () => {
   beforeEach(() => MockBuilder(ScoringStatsSectionComponent));
