@@ -54,12 +54,14 @@ td.col-name {
 
 :host(.editing-row) .player-name {
   color: #0f3460;
+  position: relative;
 }
 
 :host(.editing-row) .player-name::before {
-  content: '✎ ';
   font-size: 0.8em;
   opacity: 0.7;
+  position: absolute;
+  left: 0.1rem;
 }
 
 :host(.editing-row) .fan-pts-cell {
