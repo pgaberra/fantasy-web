@@ -2,17 +2,15 @@ import { Component, computed, inject, input, output } from '@angular/core';
 import { StatKey } from '../../../../models/stat-key.model';
 import { StatInfoService } from '../../../../services/stat-info.service';
 import { DecimalStatKey } from '../../../projection-settings-section/model';
-import { FormatToiPipe } from '../../../../pipes/format-toi.pipe';
+import { ToiInputComponent } from './toi-input/toi-input';
 
 @Component({
   selector: 'app-stat-input',
-  imports: [],
-  providers: [FormatToiPipe],
+  imports: [ToiInputComponent],
   templateUrl: './stat-input.html',
   styleUrl: './stat-input.css',
 })
 export class StatInputComponent {
-  private readonly formatToiPipe = inject(FormatToiPipe);
   private readonly statInfoService = inject(StatInfoService);
 
   isStatApplicable = input.required<boolean>();
@@ -29,16 +27,11 @@ export class StatInputComponent {
   isPercentage = computed(() => this.statInfoService.isPercentageStat(this.key()));
 
   formattedValue = computed(() => {
-    if (this.isToi()) {
-      return this.formatToiPipe.transform(this.value());
-    }
-
     const decimals = this.decimalSettings()[this.key() as DecimalStatKey] ?? 0;
     return parseFloat(this.value().toFixed(decimals)).toString();
   });
 
   onKeydown(event: KeyboardEvent) {
-    if (!this.isToi()) return;
     this.toiKeydown.emit({ playerId: this.playerId(), event });
   }
 

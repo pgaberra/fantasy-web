@@ -1,0 +1,9 @@
+<input
+  #inputEl
+  type="text"
+  class="stat-input"
+  [value]="formattedValue()"
+  (input)="onInput($event)"
+  (keydown)="onKeydown($event)"
+  (blur)="onBlur()"
+/>

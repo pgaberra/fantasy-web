@@ -1,11 +1,9 @@
 @if (isStatApplicable()) {
   @if (isToi()) {
-    <input
-      type="text"
-      class="stat-input"
-      [value]="formattedValue()"
-      (input)="onInput($event)"
-      (keydown)="onKeydown($event)"
+    <app-toi-input
+      [toiInSeconds]="value()"
+      (toiInput)="onInput($event)"
+      (toiKeydown)="onKeydown($event)"
     />
   } @else {
     <input

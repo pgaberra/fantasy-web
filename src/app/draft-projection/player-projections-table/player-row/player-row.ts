@@ -43,7 +43,7 @@ export class PlayerRowComponent {
 
   getStatValue(key: StatKey): number {
     const p = this.projection();
-    const stats = { ...p.stats.utility, ...p.stats.scoring } as Record<string, number>;
+    const stats = { ...p.stats.utility, ...p.stats.scoring } as Record<StatKey, number>;
     return stats[key];
   }
 

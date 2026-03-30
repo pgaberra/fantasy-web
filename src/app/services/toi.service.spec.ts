@@ -18,5 +18,21 @@ describe('ToiService', () => {
     it('should return 0 for 0:00', () => {
       expect(getService().parseToi('0:00')).toEqual(0);
     });
+
+    it('should return 0 for invalid input', () => {
+      expect(getService().parseToi('random')).toEqual(0);
+    });
+
+    it('should return 0 for empty string', () => {
+      expect(getService().parseToi('')).toEqual(0);
+    });
+
+    it('should return 0 for seconds with too many digits', () => {
+      expect(getService().parseToi('0:00000000000000000000')).toEqual(0);
+    });
+
+    it('should return 0 for time with trailing invalid characters', () => {
+      expect(getService().parseToi('5:35dsadasdassad')).toEqual(0);
+    });
   });
 });

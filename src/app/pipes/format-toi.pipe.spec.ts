@@ -18,4 +18,14 @@ describe('FormatToiPipe', () => {
     const fixture = MockRender('{{ value | formatToi }}', { value: 1203 });
     expect(fixture.nativeElement.textContent).toEqual('20:03');
   });
+
+  it('should handle NaN by returning 0:00', () => {
+    const fixture = MockRender('{{ value | formatToi }}', { value: NaN });
+    expect(fixture.nativeElement.textContent).toEqual('0:00');
+  });
+
+  it('should handle 0 by returning 0:00', () => {
+    const fixture = MockRender('{{ value | formatToi }}', { value: 0 });
+    expect(fixture.nativeElement.textContent).toEqual('0:00');
+  });
 });

@@ -5,14 +5,17 @@ import { Injectable } from '@angular/core';
 })
 export class ToiService {
   parseToi(toi: string): number {
-    const parts = toi.split(':');
-    if (parts.length === 2) {
-      const minutes = parseInt(parts[0], 10);
-      const seconds = parseInt(parts[1], 10);
-      if (!isNaN(minutes) && !isNaN(seconds)) {
+    if (!toi || !toi.trim()) return 0;
+    const colonMatch = toi.match(/^(\d+):(\d{1,2})$/);
+    if (colonMatch) {
+      const minutes = parseInt(colonMatch[1], 10);
+      const seconds = parseInt(colonMatch[2], 10);
+      if (seconds < 60) {
         return minutes * 60 + seconds;
       }
+      return 0;
     }
-    return Number(toi);
+    const result = Number(toi);
+    return isNaN(result) ? 0 : result;
   }
 }
