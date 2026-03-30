@@ -13,6 +13,7 @@ export class PositionFilterService {
   ): Projection[] {
     if (filter === 'ALL') return projections;
     return projections.filter((pp) => {
+      if (filter === 'SKATER') return pp.type === 'skater';
       if (filter === 'G') return pp.type === 'goalie';
       const player = playerMap.get(pp.playerId);
       if (!player || player.type !== 'skater') return false;

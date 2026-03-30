@@ -11,6 +11,7 @@ export class PositionFilterComponent {
   readonly value = model.required<PositionFilter>();
   readonly options = signal<PositionFilterOption[]>([
     { value: 'ALL', label: 'All players' },
+    { value: 'SKATER', label: 'Forwards/Defensemen' },
     { value: 'LW', label: 'LW' },
     { value: 'C', label: 'C' },
     { value: 'RW', label: 'RW' },

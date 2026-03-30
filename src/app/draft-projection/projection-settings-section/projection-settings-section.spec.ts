@@ -92,7 +92,7 @@ describe('ProjectionSettingsSectionComponent', () => {
       const toggles = ngMocks.findAll('.toggle-switch');
       const onToggles = toggles.filter(t => t.classes['on']);
       expect(onToggles.length).toEqual(1);
-      expect(toggles[0].classes['on']).toBe(true);
+      expect(toggles[0].classes['on']).toEqual(true);
     });
 
     it('should call toggle() when a toggle switch is clicked', () => {
@@ -200,13 +200,13 @@ describe('ProjectionSettingsSectionComponent', () => {
       const component = fixture.point.componentInstance;
 
       let settingRows = ngMocks.findAll(SettingRowComponent);
-      expect(settingRows.some(r => r.componentInstance.name() === 'Use default decimal places')).toBe(true);
+      expect(settingRows.some(r => r.componentInstance.name() === 'Use default decimal places')).toEqual(true);
 
       component.toggleGeneralVisible();
       fixture.detectChanges();
 
       settingRows = ngMocks.findAll(SettingRowComponent);
-      expect(settingRows.some(r => r.componentInstance.name() === 'Use default decimal places')).toBe(false);
+      expect(settingRows.some(r => r.componentInstance.name() === 'Use default decimal places')).toEqual(false);
     });
 
     it('should hide utility stat settings when isUtilityStatsVisible is false', () => {
@@ -226,7 +226,7 @@ describe('ProjectionSettingsSectionComponent', () => {
 
       settingRows = ngMocks.findAll(SettingRowComponent);
       // Only "Use default decimal places" should be visible (if it's not toggled off)
-      expect(settingRows.every(r => r.componentInstance.name() === 'Use default decimal places')).toBe(true);
+      expect(settingRows.every(r => r.componentInstance.name() === 'Use default decimal places')).toEqual(true);
     });
   });
 });

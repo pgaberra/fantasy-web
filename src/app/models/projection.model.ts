@@ -7,7 +7,7 @@ import {
 } from './stat-key.model';
 
 export type ScoringType = 'category' | 'points';
-export type PositionFilter = 'ALL' | 'LW' | 'C' | 'RW' | 'D' | 'G';
+export type PositionFilter = 'ALL' | 'LW' | 'C' | 'RW' | 'D' | 'G' | 'SKATER';
 
 export interface ActiveColumns {
   scoring: Set<ScoringStatKey>;

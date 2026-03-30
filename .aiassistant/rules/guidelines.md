@@ -16,6 +16,7 @@ All AI-generated code must follow these conventions.
 - Follow the **latest Angular recommendations** rather than legacy patterns.
 - Try to keep components small and neat for cleaner and more understandable code
 - Avoid using legacy patterns such as [ngModel] and (ngModelChange)
+- Always make sure that the changes made passes our linting
 
 ---
 
@@ -40,6 +41,7 @@ All AI-generated code must follow these conventions.
 ## Tests
 - Unit test classes should use ngMocks for easier dependency injection and mocking in the test classes.
 - Prefer using .toEqual over .toBe
+- Never use `any` in tests (avoid `{} as any`). Use proper type-safe mocks instead.
 
 ## External components and libraries
 - If necessary, feel free to import reliable 3rd party components and/or libraries that you think could improve the app.
