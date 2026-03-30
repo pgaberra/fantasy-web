@@ -7,7 +7,7 @@
     <table>
       <thead
         app-projections-table-header
-        [activeColumns]="activeColumns()"
+        [activeColumns]="filteredActiveColumns()"
         [scoringType]="scoringType()"
         [(statWeights)]="statWeights"
         [useDefaultDecimals]="useDefaultDecimals()"
@@ -22,7 +22,7 @@
             [projection]="projection"
             [playerScore]="playerScores().get(projection.playerId)!"
             [player]="getPlayer(projection.playerId)"
-            [activeColumns]="activeColumns()"
+            [activeColumns]="filteredActiveColumns()"
             [scoringType]="scoringType()"
             [decimalSettings]="decimalSettings()"
             [isEditing]="editingPlayerId() === projection.playerId"

@@ -13,6 +13,7 @@ import { ProjectionCalculationService } from '../../services/projection-calculat
 import { ProjectionUpdateService } from '../../services/projection-update.service';
 import { ToiService } from '../../services/toi.service';
 import { PositionFilterService } from '../../services/position-filter.service';
+import { ActiveColumnsService } from '../../services/active-columns.service';
 import {
   DecimalStatKey,
   DEFAULT_DECIMAL_SETTINGS,
@@ -45,6 +46,10 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly statWeights = model.required<Record<ScoringStatKey, number>>();
   readonly players = input.required<Player[]>();
   readonly activeColumns = input.required<ActiveColumns>();
+
+  readonly filteredActiveColumns = computed<ActiveColumns>(() =>
+    this.activeColumnsService.filterActiveColumns(this.activeColumns(), this.positionFilter()),
+  );
   readonly scaleSettings = input.required<Record<UtilityStatKey, ScaleConfig>>();
   readonly decimalSettings = model<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
   readonly useDefaultDecimals = input.required<boolean>();
@@ -90,6 +95,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
   private readonly projectionUpdateService = inject(ProjectionUpdateService);
   private readonly toiService = inject(ToiService);
   private readonly positionFilterService = inject(PositionFilterService);
+  private readonly activeColumnsService = inject(ActiveColumnsService);
   private readonly statInfoService = inject(StatInfoService);
 
   readonly playerScores = computed((): Map<number, PlayerScore> => {

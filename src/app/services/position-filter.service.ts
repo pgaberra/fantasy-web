@@ -6,6 +6,21 @@ import { PositionFilter, Projection } from '../models/projection.model';
   providedIn: 'root',
 })
 export class PositionFilterService {
+  getFilterType(filter: PositionFilter): 'skater' | 'goalie' | 'all' {
+    switch (filter) {
+      case 'ALL':
+        return 'all';
+      case 'G':
+        return 'goalie';
+      case 'SKATER':
+      case 'C':
+      case 'D':
+      case 'LW':
+      case 'RW':
+        return 'skater';
+    }
+  }
+
   filterByPosition(
     projections: Projection[],
     playerMap: Map<number, Player>,

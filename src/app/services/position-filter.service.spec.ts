@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it } from 'vitest';
 import { PositionFilterService } from './position-filter.service';
 import { Player } from '../models/player.model';
 import { GoalieStats, Projection, SkaterStats } from '../models/projection.model';
@@ -107,5 +108,23 @@ describe('PositionFilterService', () => {
     const result = service.filterByPosition(projections, playerMap, 'D');
     expect(result.length).toEqual(1);
     expect(result[0].playerId).toEqual(2);
+  });
+
+  describe('getFilterType', () => {
+    it('should return "all" for ALL filter', () => {
+      expect(service.getFilterType('ALL')).toEqual('all');
+    });
+
+    it('should return "goalie" for G filter', () => {
+      expect(service.getFilterType('G')).toEqual('goalie');
+    });
+
+    it('should return "skater" for skater positions', () => {
+      expect(service.getFilterType('LW')).toEqual('skater');
+      expect(service.getFilterType('C')).toEqual('skater');
+      expect(service.getFilterType('RW')).toEqual('skater');
+      expect(service.getFilterType('D')).toEqual('skater');
+      expect(service.getFilterType('SKATER')).toEqual('skater');
+    });
   });
 });

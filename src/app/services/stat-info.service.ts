@@ -1,5 +1,13 @@
 import { Injectable } from '@angular/core';
-import { StatKey } from '../models/stat-key.model';
+import {
+  GOALIE_SCORING_STAT_KEYS,
+  GOALIE_UTILITY_STAT_KEYS,
+  ScoringStatKey,
+  SKATER_SCORING_STAT_KEYS,
+  SKATER_UTILITY_STAT_KEYS,
+  SkaterUtilityStatKey,
+  StatKey,
+} from '../models/stat-key.model';
 
 const PERCENTAGE_STAT_KEYS = ['shPct', 'svPct'] as const;
 type PercentageStatKey = (typeof PERCENTAGE_STAT_KEYS)[number];
@@ -25,5 +33,21 @@ export class StatInfoService {
 
   canStatBeNegative(key: StatKey): boolean {
     return key === 'plusMinus';
+  }
+
+  isGoalieScoringStat(key: ScoringStatKey): boolean {
+    return (GOALIE_SCORING_STAT_KEYS as readonly string[]).includes(key);
+  }
+
+  isSkaterScoringStat(key: ScoringStatKey): boolean {
+    return (SKATER_SCORING_STAT_KEYS as readonly string[]).includes(key);
+  }
+
+  isGoalieUtilityStat(key: SkaterUtilityStatKey): boolean {
+    return (GOALIE_UTILITY_STAT_KEYS as readonly string[]).includes(key);
+  }
+
+  isSkaterUtilityStat(key: SkaterUtilityStatKey): boolean {
+    return (SKATER_UTILITY_STAT_KEYS as readonly string[]).includes(key);
   }
 }
