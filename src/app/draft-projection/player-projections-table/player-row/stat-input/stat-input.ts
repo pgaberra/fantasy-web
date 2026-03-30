@@ -23,6 +23,7 @@ export class StatInputComponent {
   toiKeydown = output<{ playerId: number; event: KeyboardEvent }>();
 
   isToi = computed(() => this.key() === 'toiPerGame');
+  isPlusMinus = computed(() => this.key() === 'plusMinus');
 
   formattedValue = computed(() => {
     if (this.isToi()) {

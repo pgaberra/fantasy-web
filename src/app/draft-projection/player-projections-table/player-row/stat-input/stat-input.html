@@ -5,6 +5,7 @@
     [value]="formattedValue()"
     (input)="onInput($event)"
     (keydown)="onKeydown($event)"
+    [attr.min]="!isToi() && !isPlusMinus() ? 0 : null"
   />
 } @else {
   <span class="stat-placeholder">-</span>

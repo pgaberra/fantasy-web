@@ -206,7 +206,8 @@ export class PlayerProjectionsTableComponent implements OnInit {
     const raw = (event.target as HTMLInputElement).value;
     const parsed = key === 'toiPerGame' ? this.toiService.parseToi(raw) : Number(raw);
     const decimals = this.decimalSettings();
-    const value = key in decimals ? this.roundStat(parsed, key as DecimalStatKey) : parsed;
+    const rounded = key in decimals ? this.roundStat(parsed, key as DecimalStatKey) : parsed;
+    const value = key === 'plusMinus' ? rounded : Math.max(0, rounded);
     this.playerProjections.update((playerProjections) =>
       this.projectionUpdateService.applyStatValue(
         playerProjections,
