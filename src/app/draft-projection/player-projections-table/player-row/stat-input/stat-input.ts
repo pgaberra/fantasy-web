@@ -1,5 +1,6 @@
 import { Component, computed, inject, input, output } from '@angular/core';
 import { StatKey } from '../../../../models/stat-key.model';
+import { StatInfoService } from '../../../../services/stat-info.service';
 import { DecimalStatKey } from '../../../projection-settings-section/model';
 import { FormatToiPipe } from '../../../../pipes/format-toi.pipe';
 
@@ -12,6 +13,7 @@ import { FormatToiPipe } from '../../../../pipes/format-toi.pipe';
 })
 export class StatInputComponent {
   private readonly formatToiPipe = inject(FormatToiPipe);
+  private readonly statInfoService = inject(StatInfoService);
 
   isStatApplicable = input.required<boolean>();
   playerId = input.required<number>();
@@ -22,8 +24,9 @@ export class StatInputComponent {
   statInput = output<{ playerId: number; key: StatKey; event: Event }>();
   toiKeydown = output<{ playerId: number; event: KeyboardEvent }>();
 
-  isToi = computed(() => this.key() === 'toiPerGame');
-  isPlusMinus = computed(() => this.key() === 'plusMinus');
+  isToi = computed(() => this.statInfoService.isToiStat(this.key()));
+  canStatBeNegative = computed(() => this.statInfoService.canStatBeNegative(this.key()));
+  isPercentage = computed(() => this.statInfoService.isPercentageStat(this.key()));
 
   formattedValue = computed(() => {
     if (this.isToi()) {

@@ -1,4 +1,5 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { ProjectionSettingsSectionComponent } from './projection-settings-section';
 import {
   GOALIE_SCORING_STAT_KEYS,
@@ -7,7 +8,7 @@ import {
   SKATER_UTILITY_STAT_KEYS,
   SkaterUtilityStatKey,
 } from '../../models/stat-key.model';
-import { DEFAULT_SCALE_SETTINGS } from './model';
+import { ScaleConfig } from './model';
 import { ToggleSwitchComponent } from './toggle-switch/toggle-switch';
 import { SettingRowComponent } from './setting-row/setting-row';
 
@@ -19,6 +20,10 @@ describe('ProjectionSettingsSectionComponent', () => {
   );
 
   const defaultActiveScoringColumns = new Set<ScoringStatKey>(['goals', 'assists', 'sog', 'hits', 'blocks']);
+  const MOCK_SCALE_SETTINGS: Record<SkaterUtilityStatKey, ScaleConfig> = {
+    gp: { scale: true, scalableStats: defaultActiveScoringColumns },
+    toiPerGame: { scale: true, scalableStats: defaultActiveScoringColumns },
+  };
 
   const getComponent = (
     activeUtilityColumns: Set<SkaterUtilityStatKey> = new Set(['gp', 'toiPerGame']),
@@ -27,7 +32,7 @@ describe('ProjectionSettingsSectionComponent', () => {
     MockRender(ProjectionSettingsSectionComponent, {
       activeUtilityColumns,
       activeScoringColumns,
-      scaleSettings: DEFAULT_SCALE_SETTINGS,
+      scaleSettings: MOCK_SCALE_SETTINGS,
     }).point.componentInstance;
 
   describe('toggle', () => {
@@ -102,7 +107,7 @@ describe('ProjectionSettingsSectionComponent', () => {
       const fixture = MockRender(ProjectionSettingsSectionComponent, {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
         activeScoringColumns: defaultActiveScoringColumns,
-        scaleSettings: DEFAULT_SCALE_SETTINGS,
+        scaleSettings: MOCK_SCALE_SETTINGS,
       });
       const component = fixture.point.componentInstance;
       component.toggleAdvanced('gp');
@@ -116,7 +121,7 @@ describe('ProjectionSettingsSectionComponent', () => {
       const fixture = MockRender(ProjectionSettingsSectionComponent, {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
         activeScoringColumns: defaultActiveScoringColumns,
-        scaleSettings: DEFAULT_SCALE_SETTINGS,
+        scaleSettings: MOCK_SCALE_SETTINGS,
       });
       const component = fixture.point.componentInstance;
       component.toggleAdvanced('gp');
@@ -136,7 +141,7 @@ describe('ProjectionSettingsSectionComponent', () => {
       const fixture = MockRender(ProjectionSettingsSectionComponent, {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['toiPerGame']),
         activeScoringColumns,
-        scaleSettings: DEFAULT_SCALE_SETTINGS,
+        scaleSettings: MOCK_SCALE_SETTINGS,
       });
       const component = fixture.point.componentInstance;
       component.toggleAdvanced('toiPerGame');
@@ -160,7 +165,7 @@ describe('ProjectionSettingsSectionComponent', () => {
       const fixture = MockRender(ProjectionSettingsSectionComponent, {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
         activeScoringColumns,
-        scaleSettings: DEFAULT_SCALE_SETTINGS,
+        scaleSettings: MOCK_SCALE_SETTINGS,
       });
       const component = fixture.point.componentInstance;
       component.toggleAdvanced('gp');
@@ -190,7 +195,7 @@ describe('ProjectionSettingsSectionComponent', () => {
       const fixture = MockRender(ProjectionSettingsSectionComponent, {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
         activeScoringColumns: defaultActiveScoringColumns,
-        scaleSettings: DEFAULT_SCALE_SETTINGS,
+        scaleSettings: MOCK_SCALE_SETTINGS,
       });
       const component = fixture.point.componentInstance;
 
@@ -208,7 +213,7 @@ describe('ProjectionSettingsSectionComponent', () => {
       const fixture = MockRender(ProjectionSettingsSectionComponent, {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
         activeScoringColumns: defaultActiveScoringColumns,
-        scaleSettings: DEFAULT_SCALE_SETTINGS,
+        scaleSettings: MOCK_SCALE_SETTINGS,
       });
       const component = fixture.point.componentInstance;
 

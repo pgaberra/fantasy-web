@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
 import { PlayerService } from '../services/player.service';
 import { Player } from '../models/player.model';
-import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
+import { ScoringStatKey, SkaterUtilityStatKey, SCORING_STAT_KEYS } from '../models/stat-key.model';
 import { ActiveColumns, ScoringType } from '../models/projection.model';
 import { ScoringTypeSectionComponent } from './scoring-type-section/scoring-type-section';
 import { ScoringStatsSectionComponent } from './scoring-stats-section/scoring-stats-section';
@@ -12,9 +12,9 @@ import { PlayerProjectionsTableComponent } from './player-projections-table/play
 import {
   DecimalStatKey,
   DEFAULT_DECIMAL_SETTINGS,
-  DEFAULT_SCALE_SETTINGS,
   ScaleConfig,
 } from './projection-settings-section/model';
+import { StatInfoService } from '../services/stat-info.service';
 
 const DEFAULT_STAT_WEIGHTS: Record<ScoringStatKey, number> = {
   goals: 4.5,
@@ -57,6 +57,7 @@ const DEFAULT_STAT_WEIGHTS: Record<ScoringStatKey, number> = {
 export class DraftProjectionComponent implements OnInit {
   private readonly playerService = inject(PlayerService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly statInfoService = inject(StatInfoService);
 
   scoringType = signal<ScoringType>('points');
   statWeights = signal<Record<ScoringStatKey, number>>(DEFAULT_STAT_WEIGHTS);
@@ -70,7 +71,7 @@ export class DraftProjectionComponent implements OnInit {
     scoring: this.activeScoringColumns(),
     utility: this.activeUtilityColumns(),
   }));
-  scaleSettings = signal<Record<SkaterUtilityStatKey, ScaleConfig>>(DEFAULT_SCALE_SETTINGS);
+  scaleSettings = signal<Record<SkaterUtilityStatKey, ScaleConfig>>(this.createDefaultScaleSettings());
   decimalSettings = signal<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
   useDefaultDecimals = signal<boolean>(true);
 
@@ -81,5 +82,15 @@ export class DraftProjectionComponent implements OnInit {
     })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(({ skaters, goalies }) => this.players.set([...skaters, ...goalies]));
+  }
+
+  private createDefaultScaleSettings(): Record<SkaterUtilityStatKey, ScaleConfig> {
+    const scalableStats = new Set<ScoringStatKey>(
+      SCORING_STAT_KEYS.filter((k) => !this.statInfoService.isRateStat(k)),
+    );
+    return {
+      gp: { scale: true, scalableStats },
+      toiPerGame: { scale: true, scalableStats },
+    };
   }
 }

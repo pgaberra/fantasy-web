@@ -16,7 +16,6 @@ import { PositionFilterService } from '../../services/position-filter.service';
 import {
   DecimalStatKey,
   DEFAULT_DECIMAL_SETTINGS,
-  DEFAULT_SCALE_SETTINGS,
   ScaleConfig,
 } from '../projection-settings-section/model';
 import { ProjectionsTableHeaderComponent } from './projections-table-header/projections-table-header';
@@ -29,6 +28,7 @@ import {
   StatKey,
   UtilityStatKey,
 } from '../../models/stat-key.model';
+import { StatInfoService } from '../../services/stat-info.service';
 
 @Component({
   selector: 'app-player-projections-table',
@@ -45,7 +45,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly statWeights = model.required<Record<ScoringStatKey, number>>();
   readonly players = input.required<Player[]>();
   readonly activeColumns = input.required<ActiveColumns>();
-  readonly scaleSettings = input<Record<UtilityStatKey, ScaleConfig>>(DEFAULT_SCALE_SETTINGS);
+  readonly scaleSettings = input.required<Record<UtilityStatKey, ScaleConfig>>();
   readonly decimalSettings = model<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
   readonly useDefaultDecimals = input.required<boolean>();
 
@@ -90,6 +90,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
   private readonly projectionUpdateService = inject(ProjectionUpdateService);
   private readonly toiService = inject(ToiService);
   private readonly positionFilterService = inject(PositionFilterService);
+  private readonly statInfoService = inject(StatInfoService);
 
   readonly playerScores = computed((): Map<number, PlayerScore> => {
     const projections = this.playerProjections();
@@ -204,10 +205,15 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   onStatInput(playerId: number, key: StatKey, event: Event): void {
     const raw = (event.target as HTMLInputElement).value;
-    const parsed = key === 'toiPerGame' ? this.toiService.parseToi(raw) : Number(raw);
+    const parsed = this.statInfoService.isToiStat(key)
+      ? this.toiService.parseToi(raw)
+      : Number(raw);
     const decimals = this.decimalSettings();
     const rounded = key in decimals ? this.roundStat(parsed, key as DecimalStatKey) : parsed;
-    const value = key === 'plusMinus' ? rounded : Math.max(0, rounded);
+    let value = this.statInfoService.canStatBeNegative(key) ? rounded : Math.max(0, rounded);
+    if (this.statInfoService.isPercentageStat(key)) {
+      value = Math.min(100, value);
+    }
     this.playerProjections.update((playerProjections) =>
       this.projectionUpdateService.applyStatValue(
         playerProjections,

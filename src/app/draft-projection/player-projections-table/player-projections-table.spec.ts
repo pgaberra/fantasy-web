@@ -1,10 +1,12 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PlayerProjectionsTableComponent } from './player-projections-table';
 import { Goalie, Player, Skater } from '../../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../../models/stat-key.model';
+import { StatInfoService } from '../../services/stat-info.service';
 import {
   ActiveColumns,
+  GoalieProjection,
   Projection,
   ScoringType,
   SkaterProjection,
@@ -15,6 +17,7 @@ import { DecimalPipe } from '@angular/common';
 import { ProjectionsTableHeaderComponent } from './projections-table-header/projections-table-header';
 import { PlayerRowComponent } from './player-row/player-row';
 import { StatInputComponent } from './player-row/stat-input/stat-input';
+import { ScaleConfig } from '../projection-settings-section/model';
 
 describe('PlayerProjectionsTableComponent', () => {
   const mockPlayers: Player[] = [
@@ -145,6 +148,11 @@ describe('PlayerProjectionsTableComponent', () => {
     svPct: 0,
   };
 
+  const mockScaleSettings: Record<string, ScaleConfig> = {
+    gp: { scale: true, scalableStats: new Set(['goals', 'assists']) },
+    toiPerGame: { scale: true, scalableStats: new Set(['goals', 'assists']) },
+  };
+
   beforeEach(() =>
     MockBuilder(PlayerProjectionsTableComponent)
       .keep(ProjectionsTableHeaderComponent)
@@ -152,7 +160,8 @@ describe('PlayerProjectionsTableComponent', () => {
       .keep(StatInputComponent)
       .keep(StatLabelPipe)
       .keep(FormatToiPipe)
-      .keep(DecimalPipe),
+      .keep(DecimalPipe)
+      .keep(StatInfoService),
   );
 
   const getComponent = (
@@ -162,6 +171,7 @@ describe('PlayerProjectionsTableComponent', () => {
       playerProjections: Projection[];
       statWeights: Record<ScoringStatKey, number>;
       activeColumns: ActiveColumns;
+      scaleSettings: Record<string, ScaleConfig>;
       useDefaultDecimals: boolean;
     }> = {},
   ) =>
@@ -174,6 +184,7 @@ describe('PlayerProjectionsTableComponent', () => {
         scoring: new Set<ScoringStatKey>(['goals', 'assists']),
         utility: new Set<SkaterUtilityStatKey>(['gp']),
       } as ActiveColumns,
+      scaleSettings: mockScaleSettings,
       useDefaultDecimals: true,
       ...overrides,
     }).point.componentInstance;
@@ -219,6 +230,25 @@ describe('PlayerProjectionsTableComponent', () => {
         (component.playerProjections().find((p) => p.playerId === 2) as SkaterProjection).stats
           .scoring.goals,
       ).toEqual(before);
+    });
+
+    it('should clamp shPct to 100', () => {
+      const component = getComponent();
+      const event = { target: { value: '110' } } as unknown as Event;
+      component.onStatInput(1, 'shPct', event);
+      expect(
+        (component.playerProjections().find((p) => p.playerId === 1) as SkaterProjection).stats
+          .scoring.shPct,
+      ).toEqual(100);
+    });
+
+    it('should clamp svPct to 100', () => {
+      const component = getComponent();
+      const event = { target: { value: '110' } } as unknown as Event;
+      component.onStatInput(3, 'svPct', event);
+      expect(
+        (component.playerProjections().find((p) => p.playerId === 3) as GoalieProjection).stats.scoring.svPct,
+      ).toEqual(100);
     });
   });
 
@@ -410,6 +440,28 @@ describe('PlayerProjectionsTableComponent', () => {
       });
       const gpInput = ngMocks.find('.col-gp input').nativeElement as HTMLInputElement;
       expect(gpInput.type).toEqual('number');
+    });
+
+    it('should have max="100" for shPct input', () => {
+      getComponent({
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['shPct']),
+          utility: new Set<SkaterUtilityStatKey>(),
+        } as ActiveColumns,
+      });
+      const shPctInput = ngMocks.find('app-stat-input input').nativeElement as HTMLInputElement;
+      expect(shPctInput.getAttribute('max')).toEqual('100');
+    });
+
+    it('should have max="100" for svPct input', () => {
+      getComponent({
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['svPct']),
+          utility: new Set<SkaterUtilityStatKey>(),
+        } as ActiveColumns,
+      });
+      const svPctInput = ngMocks.find('app-stat-input input').nativeElement as HTMLInputElement;
+      expect(svPctInput.getAttribute('max')).toEqual('100');
     });
   });
 });

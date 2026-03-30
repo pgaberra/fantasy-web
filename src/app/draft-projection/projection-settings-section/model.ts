@@ -1,18 +1,9 @@
-import { SCORING_STAT_KEYS, ScoringStatKey, UtilityStatKey } from '../../models/stat-key.model';
+import { ScoringStatKey } from '../../models/stat-key.model';
 
 export interface ScaleConfig {
   scale: boolean;
   scalableStats: Set<ScoringStatKey>;
 }
-
-const DEFAULT_SCALABLE_STATS = new Set<ScoringStatKey>(
-  SCORING_STAT_KEYS.filter((k) => k !== 'shPct' && k !== 'svPct' && k !== 'gaa'),
-);
-
-export const DEFAULT_SCALE_SETTINGS: Record<UtilityStatKey, ScaleConfig> = {
-  gp: { scale: true, scalableStats: DEFAULT_SCALABLE_STATS },
-  toiPerGame: { scale: true, scalableStats: DEFAULT_SCALABLE_STATS },
-};
 
 export type DecimalStatKey = ScoringStatKey | 'gp';
 

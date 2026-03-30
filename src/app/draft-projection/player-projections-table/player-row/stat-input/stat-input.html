@@ -1,12 +1,22 @@
 @if (isStatApplicable()) {
-  <input
-    [type]="isToi() ? 'text' : 'number'"
-    class="stat-input"
-    [value]="formattedValue()"
-    (input)="onInput($event)"
-    (keydown)="onKeydown($event)"
-    [attr.min]="!isToi() && !isPlusMinus() ? 0 : null"
-  />
+  @if (isToi()) {
+    <input
+      type="text"
+      class="stat-input"
+      [value]="formattedValue()"
+      (input)="onInput($event)"
+      (keydown)="onKeydown($event)"
+    />
+  } @else {
+    <input
+      type="number"
+      class="stat-input"
+      [value]="formattedValue()"
+      (input)="onInput($event)"
+      [attr.min]="canStatBeNegative() ? null : 0"
+      [attr.max]="isPercentage() ? 100 : null"
+    />
+  }
 } @else {
   <span class="stat-placeholder">-</span>
 }
