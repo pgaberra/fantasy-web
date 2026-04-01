@@ -48,7 +48,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly activeColumns = input.required<ActiveColumns>();
 
   readonly filteredActiveColumns = computed<ActiveColumns>(() =>
-    this.activeColumnsService.filterActiveColumns(this.activeColumns(), this.positionFilter()),
+    this.activeColumnsService.filterAndSortActiveColumns(this.activeColumns(), this.positionFilter()),
   );
   readonly scaleSettings = input.required<Record<UtilityStatKey, ScaleConfig>>();
   readonly decimalSettings = model<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
