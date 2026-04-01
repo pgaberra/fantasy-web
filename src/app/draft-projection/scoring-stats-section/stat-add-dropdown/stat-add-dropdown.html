@@ -1,0 +1,16 @@
+<div class="add-stat-dropdown-container">
+  <button
+    class="add-stat-btn"
+    (click)="dropdownOpen.set(!dropdownOpen())"
+    [disabled]="availableStats().length === 0"
+  >
+    + Add stat
+  </button>
+  @if (dropdownOpen()) {
+    <div class="add-stat-dropdown">
+      @for (stat of availableStats(); track stat) {
+        <button class="dropdown-item" (click)="selectStat(stat)">{{ stat | statLabel }}</button>
+      }
+    </div>
+  }
+</div>

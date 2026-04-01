@@ -1,0 +1,12 @@
+<div class="stat-group">
+  <h3>{{ title() }}</h3>
+  <div class="stat-chips">
+    @for (stat of activeStats(); track stat) {
+      <span class="stat-chip">
+        {{ stat | statLabel }}
+        <button class="chip-remove" (click)="statRemoved.emit(stat)" aria-label="Remove">✕</button>
+      </span>
+    }
+    <app-stat-add-dropdown [availableStats]="availableStats()" (statSelected)="statAdded.emit($event)" />
+  </div>
+</div>

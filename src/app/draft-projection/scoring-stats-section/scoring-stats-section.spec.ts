@@ -1,8 +1,9 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { ScoringStatsSectionComponent } from './scoring-stats-section';
-import { SCORING_STAT_KEYS, ScoringStatKey } from '../../models/stat-key.model';
+import { StatGroupComponent } from './stat-group/stat-group';
+import { ScoringStatKey } from '../../models/stat-key.model';
 
-describe('LeagueStatsSectionComponent', () => {
+describe('ScoringStatsSectionComponent', () => {
   beforeEach(() => MockBuilder(ScoringStatsSectionComponent));
 
   const getComponent = (activeScoringColumns: Set<ScoringStatKey> = new Set(['goals', 'assists'])) =>
@@ -36,24 +37,35 @@ describe('LeagueStatsSectionComponent', () => {
   });
 
   describe('template', () => {
-    it('should render a checkbox for each scoring stat key', () => {
-      getComponent(new Set(SCORING_STAT_KEYS));
-      const checkboxes = ngMocks.findAll('input[type="checkbox"]');
-      expect(checkboxes.length).toEqual(SCORING_STAT_KEYS.length);
+    it('should render two stat-group components', () => {
+      getComponent();
+      expect(ngMocks.findAll(StatGroupComponent).length).toEqual(2);
     });
 
-    it('should check the checkbox for active columns', () => {
-      getComponent(new Set<ScoringStatKey>(['goals', 'assists']));
-      const checkboxes = ngMocks.findAll<HTMLInputElement>('input[type="checkbox"]');
-      const checked = checkboxes.filter(cb => cb.nativeElement.checked).length;
-      expect(checked).toEqual(2);
+    it('should pass skater active stats to the first stat-group', () => {
+      getComponent(new Set<ScoringStatKey>(['goals', 'assists', 'w']));
+      const skaterGroup = ngMocks.findAll(StatGroupComponent)[0];
+      expect(ngMocks.input(skaterGroup, 'activeStats')).toEqual(['goals', 'assists']);
     });
 
-    it('should toggle a column when its checkbox changes', () => {
+    it('should pass goalie active stats to the second stat-group', () => {
+      getComponent(new Set<ScoringStatKey>(['goals', 'w']));
+      const goalieGroup = ngMocks.findAll(StatGroupComponent)[1];
+      expect(ngMocks.input(goalieGroup, 'activeStats')).toEqual(['w']);
+    });
+
+    it('should call toggle when statRemoved fires from a stat-group', () => {
       const component = getComponent(new Set<ScoringStatKey>(['goals', 'assists']));
-      const checkboxes = ngMocks.findAll('input[type="checkbox"]');
-      checkboxes[0].nativeElement.dispatchEvent(new Event('change'));
-      expect(component.activeScoringColumns().size).not.toEqual(2);
+      const skaterGroup = ngMocks.findAll(StatGroupComponent)[0];
+      ngMocks.output(skaterGroup, 'statRemoved').emit('goals' as ScoringStatKey);
+      expect(component.activeScoringColumns().has('goals')).toEqual(false);
+    });
+
+    it('should call toggle when statAdded fires from a stat-group', () => {
+      const component = getComponent(new Set<ScoringStatKey>(['goals']));
+      const skaterGroup = ngMocks.findAll(StatGroupComponent)[0];
+      ngMocks.output(skaterGroup, 'statAdded').emit('assists' as ScoringStatKey);
+      expect(component.activeScoringColumns().has('assists')).toEqual(true);
     });
   });
 });

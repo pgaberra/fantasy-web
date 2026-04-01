@@ -1,0 +1,45 @@
+.stat-group {
+  margin-bottom: 1.2rem;
+}
+
+.stat-group h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f3460;
+  margin: 0 0 0.6rem;
+}
+
+.stat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #e8edf8;
+  color: #0f3460;
+  border-radius: 20px;
+  padding: 0.25rem 0.6rem 0.25rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.chip-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #0f3460;
+  font-size: 0.75rem;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.chip-remove:hover {
+  opacity: 1;
+}
