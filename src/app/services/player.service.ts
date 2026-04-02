@@ -2650,7 +2650,7 @@ export class PlayerService {
     },
   ];
 
-  getPlayers(): Observable<Skater[]> {
+  getSkaters(): Observable<Skater[]> {
     return of(this.mockSkaters);
   }
 

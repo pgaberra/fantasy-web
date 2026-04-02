@@ -77,7 +77,7 @@ export class DraftProjectionComponent implements OnInit {
 
   ngOnInit(): void {
     forkJoin({
-      skaters: this.playerService.getPlayers(),
+      skaters: this.playerService.getSkaters(),
       goalies: this.playerService.getGoalies(),
     })
       .pipe(takeUntilDestroyed(this.destroyRef))

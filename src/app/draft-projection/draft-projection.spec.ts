@@ -56,7 +56,7 @@ describe('DraftProjectionComponent', () => {
     ];
 
     return MockBuilder(DraftProjectionComponent).mock(PlayerService, {
-      getPlayers: () => of(mockPlayers),
+      getSkaters: () => of(mockPlayers),
       getGoalies: () => of(mockGoalies),
     });
   });
@@ -70,10 +70,10 @@ describe('DraftProjectionComponent', () => {
     });
 
     it('should call getPlayers and getGoalies on the PlayerService', () => {
-      MockInstance(PlayerService, 'getPlayers', vi.fn().mockReturnValue(of(mockPlayers)));
+      MockInstance(PlayerService, 'getSkaters', vi.fn().mockReturnValue(of(mockPlayers)));
       MockInstance(PlayerService, 'getGoalies', vi.fn().mockReturnValue(of(mockGoalies)));
       getComponent();
-      expect(ngMocks.get(PlayerService).getPlayers).toHaveBeenCalledOnce();
+      expect(ngMocks.get(PlayerService).getSkaters).toHaveBeenCalledOnce();
       expect(ngMocks.get(PlayerService).getGoalies).toHaveBeenCalledOnce();
     });
 
