@@ -3,10 +3,14 @@
     <span class="app-logo">🏒 Fantasy Hockey</span>
     <nav class="app-nav">
       <a routerLink="/draft-projection" routerLinkActive="active">Draft Projection</a>
+      @if (authService.isLoggedIn()) {
+        <button class="btn-logout" (click)="authService.logout()">Sign Out</button>
+      } @else {
+        <a routerLink="/login" routerLinkActive="active">Sign In</a>
+      }
     </nav>
   </div>
 </header>
-
 <main class="app-main">
   <router-outlet />
 </main>
