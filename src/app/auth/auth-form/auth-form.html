@@ -1,0 +1,56 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <h1 class="auth-title">{{ title() }}</h1>
+    <p class="auth-subtitle">{{ subtitle() }}</p>
+
+    <form (submit)="handleSubmit($event)" novalidate>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          [formField]="authForm.email"
+          placeholder="you@example.com"
+          [class.invalid]="authForm.email().invalid() && authForm.email().touched()"
+        />
+        @if (authForm.email().touched()) {
+          @for (error of authForm.email().errors(); track error.kind) {
+            <span class="field-error">{{ error.message }}</span>
+          }
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          id="password"
+          type="password"
+          [formField]="authForm.password"
+          placeholder="••••••••"
+          [class.invalid]="authForm.password().invalid() && authForm.password().touched()"
+        />
+        @if (authForm.password().touched()) {
+          @for (error of authForm.password().errors(); track error.kind) {
+            <span class="field-error">{{ error.message }}</span>
+          }
+        }
+      </div>
+
+      @if (errorMessage()) {
+        <div class="error-banner">{{ errorMessage() }}</div>
+      }
+
+      <button type="submit" class="btn-primary" [disabled]="isLoading()">
+        @if (isLoading()) {
+          {{ loadingLabel() }}
+        } @else {
+          {{ submitLabel() }}
+        }
+      </button>
+    </form>
+
+    <p class="auth-footer">
+      {{ footerText() }} <a [routerLink]="footerLinkRoute()">{{ footerLinkLabel() }}</a>
+    </p>
+  </div>
+</div>
