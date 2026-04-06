@@ -3,9 +3,9 @@
 
 import { Stats } from '../models/stats';
 export interface SkaterResponse {
-  id?: number;
-  name?: string;
-  positions?: Array<string>;
-  stats?: Stats;
-  type?: string;
+  id: number;
+  name: string;
+  positions: Array<string>;
+  stats: Stats;
+  type: 'skater' | 'goalie';
 }

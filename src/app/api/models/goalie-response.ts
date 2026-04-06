@@ -3,8 +3,8 @@
 
 import { Stats } from '../models/stats';
 export interface GoalieResponse {
-  id?: number;
-  name?: string;
-  stats?: Stats;
-  type?: string;
+  id: number;
+  name: string;
+  stats: Stats;
+  type: 'skater' | 'goalie';
 }

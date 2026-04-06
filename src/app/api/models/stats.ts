@@ -4,6 +4,6 @@
 import { ScoringStats } from '../models/scoring-stats';
 import { UtilityStats } from '../models/utility-stats';
 export interface Stats {
-  scoring?: ScoringStats;
-  utility?: UtilityStats;
+  scoring: ScoringStats;
+  utility: UtilityStats;
 }
