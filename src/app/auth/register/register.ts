@@ -21,7 +21,7 @@ export class RegisterComponent {
 
     this.authService.register(credentials).subscribe({
       error: () => {
-        this.errorMessage.set('Registration failed. The email may already be in use.');
+        this.errorMessage.set('Registration failed.');
         this.isLoading.set(false);
       },
     });
