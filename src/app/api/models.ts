@@ -3,9 +3,12 @@
 
 export type { AuthResponse } from './models/auth-response';
 export type { GoalieResponse } from './models/goalie-response';
+export type { GoalieScoringStats } from './models/goalie-scoring-stats';
+export type { GoalieStats } from './models/goalie-stats';
+export type { GoalieUtilityStats } from './models/goalie-utility-stats';
 export type { LoginRequest } from './models/login-request';
 export type { RegisterRequest } from './models/register-request';
-export type { ScoringStats } from './models/scoring-stats';
 export type { SkaterResponse } from './models/skater-response';
-export type { Stats } from './models/stats';
-export type { UtilityStats } from './models/utility-stats';
+export type { SkaterScoringStats } from './models/skater-scoring-stats';
+export type { SkaterStats } from './models/skater-stats';
+export type { SkaterUtilityStats } from './models/skater-utility-stats';
