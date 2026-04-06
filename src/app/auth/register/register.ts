@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
-import { AuthCredentials, AuthFormComponent } from '../auth-form/auth-form';
+import { AuthFormComponent } from '../auth-form/auth-form';
+import { AuthCredentials } from '../auth-form/model';
 
 @Component({
   selector: 'app-register',

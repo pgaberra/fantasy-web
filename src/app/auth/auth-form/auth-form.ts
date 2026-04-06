@@ -1,11 +1,7 @@
 import { Component, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormField, email, form, minLength, required, schema, submit } from '@angular/forms/signals';
-
-export interface AuthCredentials {
-  email: string;
-  password: string;
-}
+import { AuthCredentials } from './model';
 
 @Component({
   selector: 'app-auth-form',
