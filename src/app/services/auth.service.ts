@@ -21,7 +21,7 @@ export class AuthService {
       tap(response => {
         if (response.token) localStorage.setItem(this.tokenKey, response.token);
         this.isLoggedIn.set(true);
-        this.router.navigate(['/draft-projection']);
+        void this.router.navigate(['/draft-projection']);
       }),
     );
   }
