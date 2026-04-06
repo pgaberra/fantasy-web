@@ -34,11 +34,10 @@ export class AuthFormComponent {
     });
   }));
 
-  async handleSubmit(event: Event) {
+  onSubmit(event: Event) {
     event.preventDefault();
-    const isValid = await submit(this.authForm);
-    if (isValid) {
+    void submit(this.authForm, async () => {
       this.formSubmit.emit(this.authFormModel());
-    }
+    });
   }
 }

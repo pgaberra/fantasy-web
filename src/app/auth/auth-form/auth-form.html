@@ -3,7 +3,7 @@
     <h1 class="auth-title">{{ title() }}</h1>
     <p class="auth-subtitle">{{ subtitle() }}</p>
 
-    <form (submit)="handleSubmit($event)" novalidate>
+    <form (submit)="onSubmit($event)" novalidate>
       <div class="form-group">
         <label for="email">Email</label>
         <input
