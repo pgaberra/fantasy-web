@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { tap } from 'rxjs';
 import { AuthResponse, LoginRequest, RegisterRequest } from '../api/models';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -11,7 +12,7 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
 
-  private readonly baseUrl = 'http://localhost:8080/api/v1/auth';
+  private readonly baseUrl = `${environment.apiUrl}/auth`;
   private readonly tokenKey = 'auth_token';
 
   readonly isLoggedIn = signal<boolean>(!!localStorage.getItem(this.tokenKey));
