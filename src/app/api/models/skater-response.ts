@@ -5,7 +5,6 @@ import { SkaterStats } from '../models/skater-stats';
 export interface SkaterResponse {
   id: number;
   name: string;
-  positions: Array<string>;
+  positions: Array<'LW' | 'C' | 'RW' | 'D'>;
   stats: SkaterStats;
-  type: 'skater' | 'goalie';
 }

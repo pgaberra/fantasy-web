@@ -6,5 +6,4 @@ export interface GoalieResponse {
   id: number;
   name: string;
   stats: GoalieStats;
-  type: 'skater' | 'goalie';
 }
