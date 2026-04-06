@@ -28,7 +28,7 @@ export class AuthService {
 
   register(request: RegisterRequest) {
     return this.http.post<void>(`${this.baseUrl}/register`, request).pipe(
-      tap(() => this.router.navigate(['/login'])),
+      tap(() => void this.router.navigate(['/login'])),
     );
   }
 
