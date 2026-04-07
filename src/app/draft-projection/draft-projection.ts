@@ -1,6 +1,6 @@
 import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { delay, forkJoin } from 'rxjs';
+import { forkJoin } from 'rxjs';
 import { PlayerService } from '../services/player.service';
 import { Player } from '../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey, SCORING_STAT_KEYS } from '../models/stat-key.model';
@@ -9,6 +9,7 @@ import { ScoringTypeSectionComponent } from './scoring-type-section/scoring-type
 import { ScoringStatsSectionComponent } from './scoring-stats-section/scoring-stats-section';
 import { ProjectionSettingsSectionComponent } from './projection-settings-section/projection-settings-section';
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
+import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import {
   DecimalStatKey,
   DEFAULT_DECIMAL_SETTINGS,
@@ -50,6 +51,7 @@ const DEFAULT_STAT_WEIGHTS: Record<ScoringStatKey, number> = {
     ScoringStatsSectionComponent,
     ProjectionSettingsSectionComponent,
     PlayerProjectionsTableComponent,
+    LoadingIndicatorComponent,
   ],
   templateUrl: './draft-projection.html',
   styleUrl: './draft-projection.css',
