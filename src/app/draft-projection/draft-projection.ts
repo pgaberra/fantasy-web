@@ -1,6 +1,6 @@
 import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { forkJoin } from 'rxjs';
+import { delay, forkJoin } from 'rxjs';
 import { PlayerService } from '../services/player.service';
 import { Player } from '../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey, SCORING_STAT_KEYS } from '../models/stat-key.model';
@@ -75,13 +75,21 @@ export class DraftProjectionComponent implements OnInit {
   decimalSettings = signal<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
   useDefaultDecimals = signal<boolean>(true);
 
+  isLoading = signal<boolean>(true);
+
   ngOnInit(): void {
     forkJoin({
       skaters: this.playerService.getSkaters(),
       goalies: this.playerService.getGoalies(),
     })
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(({ skaters, goalies }) => this.players.set([...skaters, ...goalies]));
+      .subscribe({
+        next: ({ skaters, goalies }) => {
+          this.players.set([...skaters, ...goalies]);
+          this.isLoading.set(false);
+        },
+        error: () => this.isLoading.set(false),
+      });
   }
 
   private createDefaultScaleSettings(): Record<SkaterUtilityStatKey, ScaleConfig> {
