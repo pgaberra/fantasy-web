@@ -3,6 +3,8 @@
 
 export type { Register$Params as Register$Params } from './fn/authentication/register';
 export { register as register } from './fn/authentication/register';
+export type { Refresh$Params as Refresh$Params } from './fn/authentication/refresh';
+export { refresh as refresh } from './fn/authentication/refresh';
 export type { Login$Params as Login$Params } from './fn/authentication/login';
 export { login as login } from './fn/authentication/login';
 export type { GetSkaters$Params as GetSkaters$Params } from './fn/players/get-skaters';

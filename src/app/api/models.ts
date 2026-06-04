@@ -7,6 +7,7 @@ export type { GoalieScoringStats } from './models/goalie-scoring-stats';
 export type { GoalieStats } from './models/goalie-stats';
 export type { GoalieUtilityStats } from './models/goalie-utility-stats';
 export type { LoginRequest } from './models/login-request';
+export type { RefreshRequest } from './models/refresh-request';
 export type { RegisterRequest } from './models/register-request';
 export type { SkaterResponse } from './models/skater-response';
 export type { SkaterScoringStats } from './models/skater-scoring-stats';
