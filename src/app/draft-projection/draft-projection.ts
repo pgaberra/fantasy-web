@@ -9,6 +9,7 @@ import { ScoringTypeSectionComponent } from './scoring-type-section/scoring-type
 import { ScoringStatsSectionComponent } from './scoring-stats-section/scoring-stats-section';
 import { ProjectionSettingsSectionComponent } from './projection-settings-section/projection-settings-section';
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
+import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import {
   DecimalStatKey,
   DEFAULT_DECIMAL_SETTINGS,
@@ -50,6 +51,7 @@ const DEFAULT_STAT_WEIGHTS: Record<ScoringStatKey, number> = {
     ScoringStatsSectionComponent,
     ProjectionSettingsSectionComponent,
     PlayerProjectionsTableComponent,
+    LoadingIndicatorComponent,
   ],
   templateUrl: './draft-projection.html',
   styleUrl: './draft-projection.css',
@@ -75,13 +77,21 @@ export class DraftProjectionComponent implements OnInit {
   decimalSettings = signal<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
   useDefaultDecimals = signal<boolean>(true);
 
+  isLoading = signal<boolean>(true);
+
   ngOnInit(): void {
     forkJoin({
       skaters: this.playerService.getSkaters(),
       goalies: this.playerService.getGoalies(),
     })
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(({ skaters, goalies }) => this.players.set([...skaters, ...goalies]));
+      .subscribe({
+        next: ({ skaters, goalies }) => {
+          this.players.set([...skaters, ...goalies]);
+          this.isLoading.set(false);
+        },
+        error: () => this.isLoading.set(false),
+      });
   }
 
   private createDefaultScaleSettings(): Record<SkaterUtilityStatKey, ScaleConfig> {

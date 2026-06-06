@@ -1,5 +1,5 @@
-@if (!players().length) {
-  <h2>Loading</h2>
+@if (isLoading()) {
+  <app-loading-indicator />
 } @else {
   <div class="draft-projection">
     <div class="page-header">

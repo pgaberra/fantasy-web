@@ -41,6 +41,23 @@
   border-bottom-color: #e94560;
 }
 
+.btn-logout {
+  background: none;
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.8);
+  border-radius: 6px;
+  padding: 0.2rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.btn-logout:hover {
+  color: #fff;
+  border-color: #fff;
+}
+
 .app-main {
   min-height: calc(100vh - 56px);
   background: #f0f2f8;

@@ -1,0 +1,12 @@
+<app-auth-form
+  title="Sign In"
+  subtitle="Welcome back to Fantasy Hockey"
+  submitLabel="Sign In"
+  loadingLabel="Signing in…"
+  footerText="Don't have an account?"
+  footerLinkLabel="Register"
+  footerLinkRoute="/register"
+  [errorMessage]="errorMessage()"
+  [isLoading]="isLoading()"
+  (formSubmit)="onSubmit($event)"
+/>
