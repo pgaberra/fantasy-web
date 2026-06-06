@@ -8,7 +8,9 @@
   background: transparent;
   font-size: 0.875rem;
   color: #1a1a2e;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
   display: inline-block;
 }
 

@@ -2,7 +2,12 @@ import { Component, computed, input, output, Signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { Player } from '../../../models/player.model';
 import { GOALIE_STAT_KEYS, SKATER_STAT_KEYS, StatKey } from '../../../models/stat-key.model';
-import { ActiveColumns, PlayerScore, Projection, ScoringType } from '../../../models/projection.model';
+import {
+  ActiveColumns,
+  PlayerScore,
+  Projection,
+  ScoringType,
+} from '../../../models/projection.model';
 import { DecimalStatKey } from '../../projection-settings-section/model';
 import { StatInputComponent } from './stat-input/stat-input';
 

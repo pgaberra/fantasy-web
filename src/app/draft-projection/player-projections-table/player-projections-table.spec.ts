@@ -247,7 +247,8 @@ describe('PlayerProjectionsTableComponent', () => {
       const event = { target: { value: '110' } } as unknown as Event;
       component.onStatInput(3, 'svPct', event);
       expect(
-        (component.playerProjections().find((p) => p.playerId === 3) as GoalieProjection).stats.scoring.svPct,
+        (component.playerProjections().find((p) => p.playerId === 3) as GoalieProjection).stats
+          .scoring.svPct,
       ).toEqual(100);
     });
   });

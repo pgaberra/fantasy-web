@@ -11,22 +11,25 @@ import { AuthResponse } from '../../models/auth-response';
 import { RefreshRequest } from '../../models/refresh-request';
 
 export interface Refresh$Params {
-      body: RefreshRequest
+  body: RefreshRequest;
 }
 
-export function refresh(http: HttpClient, rootUrl: string, params: Refresh$Params, context?: HttpContext): Observable<StrictHttpResponse<AuthResponse>> {
+export function refresh(
+  http: HttpClient,
+  rootUrl: string,
+  params: Refresh$Params,
+  context?: HttpContext,
+): Observable<StrictHttpResponse<AuthResponse>> {
   const rb = new RequestBuilder(rootUrl, refresh.PATH, 'post');
   if (params) {
     rb.body(params.body, 'application/json');
   }
 
-  return http.request(
-    rb.build({ responseType: 'json', accept: 'application/json', context })
-  ).pipe(
+  return http.request(rb.build({ responseType: 'json', accept: 'application/json', context })).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return r as StrictHttpResponse<AuthResponse>;
-    })
+    }),
   );
 }
 

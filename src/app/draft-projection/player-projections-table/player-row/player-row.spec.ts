@@ -3,7 +3,12 @@ import { PlayerRowComponent } from './player-row';
 import { StatInputComponent } from './stat-input/stat-input';
 import { Goalie, Player, Skater } from '../../../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../../../models/stat-key.model';
-import { ActiveColumns, PlayerScore, Projection, ScoringType } from '../../../models/projection.model';
+import {
+  ActiveColumns,
+  PlayerScore,
+  Projection,
+  ScoringType,
+} from '../../../models/projection.model';
 import { FormatToiPipe } from '../../../pipes/format-toi.pipe';
 import { DecimalPipe } from '@angular/common';
 import { DecimalStatKey, DEFAULT_DECIMAL_SETTINGS } from '../../projection-settings-section/model';

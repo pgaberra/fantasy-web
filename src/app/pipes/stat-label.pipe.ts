@@ -27,7 +27,7 @@ const STAT_LABELS: Record<StatKey, string> = {
   sv: 'SV',
   ga: 'GA',
   gaa: 'GAA',
-  svPct: 'SV%'
+  svPct: 'SV%',
 };
 
 @Pipe({

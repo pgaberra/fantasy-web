@@ -26,5 +26,8 @@
   </td>
 }
 <td class="fan-pts-col fan-pts-cell">
-  {{ (scoringType() === 'category' ? playerScore().zScore : playerScore().fantasyPoints) | number : '1.0-2' }}
+  {{
+    (scoringType() === 'category' ? playerScore().zScore : playerScore().fantasyPoints)
+      | number: '1.0-2'
+  }}
 </td>

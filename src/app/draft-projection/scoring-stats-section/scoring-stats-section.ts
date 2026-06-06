@@ -16,23 +16,23 @@ export class ScoringStatsSectionComponent {
   activeScoringColumns = model.required<Set<ScoringStatKey>>();
 
   activeSkaterStats = computed(() =>
-    SKATER_SCORING_STAT_KEYS.filter(key => this.activeScoringColumns().has(key))
+    SKATER_SCORING_STAT_KEYS.filter((key) => this.activeScoringColumns().has(key)),
   );
 
   activeGoalieStats = computed(() =>
-    GOALIE_SCORING_STAT_KEYS.filter(key => this.activeScoringColumns().has(key))
+    GOALIE_SCORING_STAT_KEYS.filter((key) => this.activeScoringColumns().has(key)),
   );
 
   availableSkaterStats = computed(() =>
-    SKATER_SCORING_STAT_KEYS.filter(key => !this.activeScoringColumns().has(key))
+    SKATER_SCORING_STAT_KEYS.filter((key) => !this.activeScoringColumns().has(key)),
   );
 
   availableGoalieStats = computed(() =>
-    GOALIE_SCORING_STAT_KEYS.filter(key => !this.activeScoringColumns().has(key))
+    GOALIE_SCORING_STAT_KEYS.filter((key) => !this.activeScoringColumns().has(key)),
   );
 
   toggle(key: ScoringStatKey): void {
-    this.activeScoringColumns.update(columns => {
+    this.activeScoringColumns.update((columns) => {
       if (columns.has(key)) {
         columns.delete(key);
       } else {

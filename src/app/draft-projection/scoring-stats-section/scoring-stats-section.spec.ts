@@ -6,8 +6,9 @@ import { ScoringStatKey } from '../../models/stat-key.model';
 describe('ScoringStatsSectionComponent', () => {
   beforeEach(() => MockBuilder(ScoringStatsSectionComponent));
 
-  const getComponent = (activeScoringColumns: Set<ScoringStatKey> = new Set(['goals', 'assists'])) =>
-    MockRender(ScoringStatsSectionComponent, { activeScoringColumns }).point.componentInstance;
+  const getComponent = (
+    activeScoringColumns: Set<ScoringStatKey> = new Set(['goals', 'assists']),
+  ) => MockRender(ScoringStatsSectionComponent, { activeScoringColumns }).point.componentInstance;
 
   describe('toggle', () => {
     it('should remove an active column when toggled', () => {

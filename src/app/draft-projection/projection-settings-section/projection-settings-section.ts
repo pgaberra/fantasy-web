@@ -115,11 +115,13 @@ export class ProjectionSettingsSectionComponent {
 
     if ((GOALIE_UTILITY_STAT_KEYS as readonly string[]).includes(key)) {
       return active.filter((scoringKey) =>
-        (GOALIE_SCORING_STAT_KEYS as readonly string[]).includes(scoringKey));
+        (GOALIE_SCORING_STAT_KEYS as readonly string[]).includes(scoringKey),
+      );
     }
-    
+
     return active.filter((scoringKey) =>
-      (SKATER_SCORING_STAT_KEYS as readonly string[]).includes(scoringKey));
+      (SKATER_SCORING_STAT_KEYS as readonly string[]).includes(scoringKey),
+    );
   }
 
   protected readonly UTILITY_STAT_KEYS = UTILITY_STAT_KEYS;

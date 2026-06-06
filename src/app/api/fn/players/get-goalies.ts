@@ -9,21 +9,23 @@ import { RequestBuilder } from '../../request-builder';
 
 import { GoalieResponse } from '../../models/goalie-response';
 
-export interface GetGoalies$Params {
-}
+export interface GetGoalies$Params {}
 
-export function getGoalies(http: HttpClient, rootUrl: string, params?: GetGoalies$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<GoalieResponse>>> {
+export function getGoalies(
+  http: HttpClient,
+  rootUrl: string,
+  params?: GetGoalies$Params,
+  context?: HttpContext,
+): Observable<StrictHttpResponse<Array<GoalieResponse>>> {
   const rb = new RequestBuilder(rootUrl, getGoalies.PATH, 'get');
   if (params) {
   }
 
-  return http.request(
-    rb.build({ responseType: 'json', accept: 'application/json', context })
-  ).pipe(
+  return http.request(rb.build({ responseType: 'json', accept: 'application/json', context })).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return r as StrictHttpResponse<Array<GoalieResponse>>;
-    })
+    }),
   );
 }
 

@@ -1,6 +1,14 @@
 import { Component, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { FormField, email, form, minLength, required, schema, submit } from '@angular/forms/signals';
+import {
+  FormField,
+  email,
+  form,
+  minLength,
+  required,
+  schema,
+  submit,
+} from '@angular/forms/signals';
 import { AuthCredentials } from './model';
 
 @Component({
@@ -25,14 +33,17 @@ export class AuthFormComponent {
 
   private readonly authFormModel = signal<AuthCredentials>({ email: '', password: '' });
 
-  readonly authForm = form(this.authFormModel, schema(fields => {
-    required(fields.email, { message: 'Email is required.' });
-    email(fields.email, { message: 'Enter a valid email address.' });
-    required(fields.password, { message: 'Password is required.' });
-    minLength(fields.password, () => this.passwordMinLength(), {
-      message: 'Password must be at least 8 characters.',
-    });
-  }));
+  readonly authForm = form(
+    this.authFormModel,
+    schema((fields) => {
+      required(fields.email, { message: 'Email is required.' });
+      email(fields.email, { message: 'Enter a valid email address.' });
+      required(fields.password, { message: 'Password is required.' });
+      minLength(fields.password, () => this.passwordMinLength(), {
+        message: 'Password must be at least 8 characters.',
+      });
+    }),
+  );
 
   onSubmit(event: Event) {
     event.preventDefault();
