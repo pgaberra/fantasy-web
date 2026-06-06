@@ -22,7 +22,7 @@ export class AuthService {
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return from(this.api.invoke(login, { body: credentials })).pipe(
-      tap(response => this.storeTokens(response)),
+      tap((response) => this.storeTokens(response)),
     );
   }
 
@@ -36,7 +36,7 @@ export class AuthService {
     const refreshToken = this.getRefreshToken();
     const body: RefreshRequest = { refreshToken: refreshToken ?? '' };
     return from(this.api.invoke(refresh, { body })).pipe(
-      tap(response => this.storeTokens(response)),
+      tap((response) => this.storeTokens(response)),
     );
   }
 

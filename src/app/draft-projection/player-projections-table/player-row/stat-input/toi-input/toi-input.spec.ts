@@ -5,8 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('ToiInputComponent', () => {
   beforeEach(() => {
-    return MockBuilder(ToiInputComponent)
-      .keep(FormatToiPipe);
+    return MockBuilder(ToiInputComponent).keep(FormatToiPipe);
   });
 
   it('should create', () => {

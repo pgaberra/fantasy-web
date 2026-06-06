@@ -67,7 +67,10 @@ export class ProjectionUpdateService {
   ): SkaterProjection {
     const isScoring = (SKATER_SCORING_STAT_KEYS as readonly string[]).includes(key);
     if (isScoring) {
-      return { ...projection, stats: { ...projection.stats, scoring: { ...projection.stats.scoring, [key]: value } } };
+      return {
+        ...projection,
+        stats: { ...projection.stats, scoring: { ...projection.stats.scoring, [key]: value } },
+      };
     }
     const utilityKey = key as SkaterUtilityStatKey;
     const oldValue = projection.stats.utility[utilityKey];
@@ -78,7 +81,11 @@ export class ProjectionUpdateService {
       : projection.stats.scoring;
     return {
       ...projection,
-      stats: { ...projection.stats, scoring, utility: { ...projection.stats.utility, [utilityKey]: value } },
+      stats: {
+        ...projection.stats,
+        scoring,
+        utility: { ...projection.stats.utility, [utilityKey]: value },
+      },
     };
   }
 
@@ -90,7 +97,10 @@ export class ProjectionUpdateService {
   ): GoalieProjection {
     const isScoring = (GOALIE_SCORING_STAT_KEYS as readonly string[]).includes(key);
     if (isScoring) {
-      return { ...projection, stats: { ...projection.stats, scoring: { ...projection.stats.scoring, [key]: value } } };
+      return {
+        ...projection,
+        stats: { ...projection.stats, scoring: { ...projection.stats.scoring, [key]: value } },
+      };
     }
     const utilityKey = key as SkaterUtilityStatKey;
     const oldValue = projection.stats.utility[utilityKey as 'gp'];
@@ -101,7 +111,11 @@ export class ProjectionUpdateService {
       : projection.stats.scoring;
     return {
       ...projection,
-      stats: { ...projection.stats, scoring, utility: { ...projection.stats.utility, [utilityKey]: value } },
+      stats: {
+        ...projection.stats,
+        scoring,
+        utility: { ...projection.stats.utility, [utilityKey]: value },
+      },
     };
   }
 

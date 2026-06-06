@@ -73,7 +73,9 @@ export class DraftProjectionComponent implements OnInit {
     scoring: this.activeScoringColumns(),
     utility: this.activeUtilityColumns(),
   }));
-  scaleSettings = signal<Record<SkaterUtilityStatKey, ScaleConfig>>(this.createDefaultScaleSettings());
+  scaleSettings = signal<Record<SkaterUtilityStatKey, ScaleConfig>>(
+    this.createDefaultScaleSettings(),
+  );
   decimalSettings = signal<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
   useDefaultDecimals = signal<boolean>(true);
 

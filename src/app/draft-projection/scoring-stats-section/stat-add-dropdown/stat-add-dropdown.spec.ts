@@ -42,7 +42,9 @@ describe('StatAddDropdownComponent', () => {
     });
 
     it('should render a dropdown item for each available stat when open', () => {
-      const fixture = MockRender(StatAddDropdownComponent, { availableStats: ['goals', 'assists'] as ScoringStatKey[] });
+      const fixture = MockRender(StatAddDropdownComponent, {
+        availableStats: ['goals', 'assists'] as ScoringStatKey[],
+      });
       fixture.point.componentInstance.dropdownOpen.set(true);
       fixture.detectChanges();
       expect(ngMocks.findAll('.dropdown-item').length).toEqual(2);
@@ -53,7 +55,7 @@ describe('StatAddDropdownComponent', () => {
     it('should emit statSelected with the chosen key', () => {
       const component = getComponent(['goals', 'assists']);
       const emitted: ScoringStatKey[] = [];
-      component.statSelected.subscribe(key => emitted.push(key));
+      component.statSelected.subscribe((key) => emitted.push(key));
       component.selectStat('goals');
       expect(emitted).toEqual(['goals']);
     });

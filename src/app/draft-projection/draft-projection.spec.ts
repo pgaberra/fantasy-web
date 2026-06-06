@@ -18,7 +18,23 @@ describe('DraftProjectionComponent', () => {
         positions: new Set(['C']),
         stats: {
           utility: { gp: 82, toiPerGame: 1320 },
-          scoring: { goals: 64, assists: 89, plusMinus: 33, pim: 36, ppg: 22, ppa: 38, shg: 1, sha: 0, gwg: 8, sog: 348, shPct: 18.4, fw: 812, fl: 623, hits: 42, blocks: 28 },
+          scoring: {
+            goals: 64,
+            assists: 89,
+            plusMinus: 33,
+            pim: 36,
+            ppg: 22,
+            ppa: 38,
+            shg: 1,
+            sha: 0,
+            gwg: 8,
+            sog: 348,
+            shPct: 18.4,
+            fw: 812,
+            fl: 623,
+            hits: 42,
+            blocks: 28,
+          },
         },
       },
       {
@@ -28,7 +44,23 @@ describe('DraftProjectionComponent', () => {
         positions: new Set(['C', 'LW']),
         stats: {
           utility: { gp: 80, toiPerGame: 1260 },
-          scoring: { goals: 52, assists: 76, plusMinus: 18, pim: 58, ppg: 21, ppa: 34, shg: 1, sha: 2, gwg: 6, sog: 298, shPct: 17.4, fw: 367, fl: 298, hits: 51, blocks: 19 },
+          scoring: {
+            goals: 52,
+            assists: 76,
+            plusMinus: 18,
+            pim: 58,
+            ppg: 21,
+            ppa: 34,
+            shg: 1,
+            sha: 2,
+            gwg: 6,
+            sog: 298,
+            shPct: 17.4,
+            fw: 367,
+            fl: 298,
+            hits: 51,
+            blocks: 19,
+          },
         },
       },
     ];
@@ -81,6 +113,5 @@ describe('DraftProjectionComponent', () => {
       const component = getComponent();
       expect(component.scoringType()).toEqual('points');
     });
-
   });
 });

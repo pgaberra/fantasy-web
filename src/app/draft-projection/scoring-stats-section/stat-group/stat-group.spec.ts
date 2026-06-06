@@ -5,8 +5,12 @@ import { ScoringStatKey } from '../../../models/stat-key.model';
 describe('StatGroupComponent', () => {
   beforeEach(() => MockBuilder(StatGroupComponent));
 
-  const getComponent = (activeStats: ScoringStatKey[] = ['goals', 'assists'], availableStats: ScoringStatKey[] = ['plusMinus']) =>
-    MockRender(StatGroupComponent, { title: 'Skater Stats', activeStats, availableStats }).point.componentInstance;
+  const getComponent = (
+    activeStats: ScoringStatKey[] = ['goals', 'assists'],
+    availableStats: ScoringStatKey[] = ['plusMinus'],
+  ) =>
+    MockRender(StatGroupComponent, { title: 'Skater Stats', activeStats, availableStats }).point
+      .componentInstance;
 
   describe('template', () => {
     it('should render the group title', () => {
@@ -29,7 +33,7 @@ describe('StatGroupComponent', () => {
     it('should emit statRemoved when a chip remove button is clicked', () => {
       const component = getComponent(['goals', 'assists'], []);
       const emitted: ScoringStatKey[] = [];
-      component.statRemoved.subscribe(key => emitted.push(key));
+      component.statRemoved.subscribe((key) => emitted.push(key));
       ngMocks.findAll('.chip-remove')[0].nativeElement.click();
       expect(emitted).toEqual(['goals']);
     });
@@ -39,8 +43,10 @@ describe('StatGroupComponent', () => {
     it('should emit statAdded when statSelected fires from the dropdown', () => {
       const component = getComponent(['goals'], ['assists']);
       const emitted: ScoringStatKey[] = [];
-      component.statAdded.subscribe(key => emitted.push(key));
-      ngMocks.output(ngMocks.find('app-stat-add-dropdown'), 'statSelected').emit('assists' as ScoringStatKey);
+      component.statAdded.subscribe((key) => emitted.push(key));
+      ngMocks
+        .output(ngMocks.find('app-stat-add-dropdown'), 'statSelected')
+        .emit('assists' as ScoringStatKey);
       expect(emitted).toEqual(['assists']);
     });
   });

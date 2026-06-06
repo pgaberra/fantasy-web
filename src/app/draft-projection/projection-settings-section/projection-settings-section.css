@@ -69,11 +69,13 @@ app-setting-row.setting-row--sub {
   align-items: center;
   justify-content: center;
   color: #64748b;
-  transition: color 0.2s, transform 0.2s;
+  transition:
+    color 0.2s,
+    transform 0.2s;
 }
 
 .advanced-toggle-icon::after {
-  content: "";
+  content: '';
   width: 7px;
   height: 7px;
   border-right: 2px solid currentColor;
@@ -206,7 +208,7 @@ app-setting-row.setting-row--sub {
 }
 
 .tooltip-content::after {
-  content: "";
+  content: '';
   position: absolute;
   top: 100%;
   left: 50%;

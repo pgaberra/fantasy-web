@@ -14,11 +14,16 @@
         [(decimalSettings)]="decimalSettings"
       ></thead>
       <tbody>
-        @for (projection of filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit(); track projection.playerId) {
+        @for (
+          projection of filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit();
+          track projection.playerId
+        ) {
           <tr
             app-player-row
             [positionRank]="positionRanks().get(projection.playerId)!"
-            [totalRank]="positionFilter() !== 'ALL' ? (realTimeRanks().get(projection.playerId) ?? null) : null"
+            [totalRank]="
+              positionFilter() !== 'ALL' ? (realTimeRanks().get(projection.playerId) ?? null) : null
+            "
             [projection]="projection"
             [playerScore]="playerScores().get(projection.playerId)!"
             [player]="getPlayer(projection.playerId)"

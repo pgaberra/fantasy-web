@@ -16,13 +16,13 @@ export class PlayerService {
 
   getSkaters(): Observable<Skater[]> {
     return from(this.api.invoke(getSkaters)).pipe(
-      map(skaters => skaters.map(skaterResponseToSkater))
+      map((skaters) => skaters.map(skaterResponseToSkater)),
     );
   }
 
   getGoalies(): Observable<Goalie[]> {
     return from(this.api.invoke(getGoalies)).pipe(
-      map(goalies => goalies.map(goalieResponseToGoalie))
+      map((goalies) => goalies.map(goalieResponseToGoalie)),
     );
   }
 }

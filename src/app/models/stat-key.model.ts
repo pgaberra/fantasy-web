@@ -53,17 +53,11 @@ export const SCORING_STAT_KEYS = [
 
 export type ScoringStatKey = (typeof SCORING_STAT_KEYS)[number];
 
-export const SKATER_STAT_KEYS = [
-  ...SKATER_UTILITY_STAT_KEYS,
-  ...SKATER_SCORING_STAT_KEYS,
-] as const;
+export const SKATER_STAT_KEYS = [...SKATER_UTILITY_STAT_KEYS, ...SKATER_SCORING_STAT_KEYS] as const;
 
 export type SkaterStatKey = (typeof SKATER_STAT_KEYS)[number];
 
-export const GOALIE_STAT_KEYS = [
-  ...GOALIE_UTILITY_STAT_KEYS,
-  ...GOALIE_SCORING_STAT_KEYS,
-] as const;
+export const GOALIE_STAT_KEYS = [...GOALIE_UTILITY_STAT_KEYS, ...GOALIE_SCORING_STAT_KEYS] as const;
 
 export type GoalieStatKey = (typeof GOALIE_STAT_KEYS)[number];
 

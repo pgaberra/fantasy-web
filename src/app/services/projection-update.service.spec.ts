@@ -124,7 +124,10 @@ describe('ProjectionUpdateService', () => {
 
     it('should not modify goalie projections in a mixed list', () => {
       const service = getService();
-      const projections: Projection[] = [makeSkaterProjection(1, 1200), makeGoalieProjection(2, 60)];
+      const projections: Projection[] = [
+        makeSkaterProjection(1, 1200),
+        makeGoalieProjection(2, 60),
+      ];
       const result = service.applyToiDelta(projections, 2, 60, skaterScaleSettings);
       expect(result[1].stats.utility.gp).toEqual(60);
     });
@@ -142,7 +145,13 @@ describe('ProjectionUpdateService', () => {
     it('should update a utility stat and scale scoring when scale is enabled', () => {
       const service = getService();
       const projections = [makeSkaterProjection(1, 1200)];
-      const result = service.applyStatValue(projections, 1, 'toiPerGame', 1800, skaterScaleSettings);
+      const result = service.applyStatValue(
+        projections,
+        1,
+        'toiPerGame',
+        1800,
+        skaterScaleSettings,
+      );
       const ratio = 1800 / 1200;
       expect((result[0] as SkaterProjection).stats.utility.toiPerGame).toEqual(1800);
       expect((result[0] as SkaterProjection).stats.scoring.goals).toBeCloseTo(10 * ratio);
@@ -152,7 +161,13 @@ describe('ProjectionUpdateService', () => {
     it('should update a utility stat without scaling when scale is disabled', () => {
       const service = getService();
       const projections = [makeSkaterProjection(1, 1200)];
-      const result = service.applyStatValue(projections, 1, 'toiPerGame', 1800, skaterNoScaleSettings);
+      const result = service.applyStatValue(
+        projections,
+        1,
+        'toiPerGame',
+        1800,
+        skaterNoScaleSettings,
+      );
       expect((result[0] as SkaterProjection).stats.utility.toiPerGame).toEqual(1800);
       expect((result[0] as SkaterProjection).stats.scoring.goals).toEqual(10);
     });
@@ -160,7 +175,13 @@ describe('ProjectionUpdateService', () => {
     it('should not scale when the old utility value is 0', () => {
       const service = getService();
       const projections = [makeSkaterProjection(1, 0)];
-      const result = service.applyStatValue(projections, 1, 'toiPerGame', 1200, skaterScaleSettings);
+      const result = service.applyStatValue(
+        projections,
+        1,
+        'toiPerGame',
+        1200,
+        skaterScaleSettings,
+      );
       expect((result[0] as SkaterProjection).stats.scoring.goals).toEqual(10);
     });
 
@@ -174,7 +195,13 @@ describe('ProjectionUpdateService', () => {
     it('should not scale stats outside the scalable set when updating a utility stat', () => {
       const service = getService();
       const projections = [makeSkaterProjection(1, 1200)];
-      const result = service.applyStatValue(projections, 1, 'toiPerGame', 2400, skaterScaleSettings);
+      const result = service.applyStatValue(
+        projections,
+        1,
+        'toiPerGame',
+        2400,
+        skaterScaleSettings,
+      );
       expect((result[0] as SkaterProjection).stats.scoring.shPct).toEqual(10);
     });
   });

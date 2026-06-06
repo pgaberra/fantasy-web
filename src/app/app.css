@@ -32,7 +32,9 @@
   font-weight: 500;
   padding: 0.25rem 0;
   border-bottom: 2px solid transparent;
-  transition: color 0.2s, border-color 0.2s;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
 }
 
 .app-nav a:hover,
@@ -50,7 +52,9 @@
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
-  transition: color 0.2s, border-color 0.2s;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
 }
 
 .btn-logout:hover {

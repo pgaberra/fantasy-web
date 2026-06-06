@@ -2,7 +2,12 @@ import { inject, Injectable } from '@angular/core';
 import { ActiveColumns, PositionFilter } from '../models/projection.model';
 import { PositionFilterService } from './position-filter.service';
 import { StatInfoService } from './stat-info.service';
-import { ScoringStatKey, SCORING_STAT_KEYS, SkaterUtilityStatKey, UTILITY_STAT_KEYS } from '../models/stat-key.model';
+import {
+  ScoringStatKey,
+  SCORING_STAT_KEYS,
+  SkaterUtilityStatKey,
+  UTILITY_STAT_KEYS,
+} from '../models/stat-key.model';
 
 @Injectable({
   providedIn: 'root',
@@ -19,7 +24,7 @@ export class ActiveColumnsService {
     }
 
     const filteredScoring = new Set<ScoringStatKey>(
-      [...activeColumns.scoring].filter(key => {
+      [...activeColumns.scoring].filter((key) => {
         if (filterType === 'goalie') {
           return this.statInfoService.isGoalieScoringStat(key);
         }
@@ -31,7 +36,7 @@ export class ActiveColumnsService {
     );
 
     const filteredUtility = new Set<SkaterUtilityStatKey>(
-      [...activeColumns.utility].filter(key => {
+      [...activeColumns.utility].filter((key) => {
         if (filterType === 'goalie') {
           return this.statInfoService.isGoalieUtilityStat(key);
         }

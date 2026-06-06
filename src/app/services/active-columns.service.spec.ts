@@ -6,9 +6,9 @@ import { StatInfoService } from './stat-info.service';
 import { ActiveColumns } from '../models/projection.model';
 
 describe('ActiveColumnsService', () => {
-  beforeEach(() => MockBuilder(ActiveColumnsService)
-    .mock(PositionFilterService)
-    .mock(StatInfoService));
+  beforeEach(() =>
+    MockBuilder(ActiveColumnsService).mock(PositionFilterService).mock(StatInfoService),
+  );
 
   it('should be created', () => {
     const service = ngMocks.findInstance(ActiveColumnsService);
@@ -40,8 +40,8 @@ describe('ActiveColumnsService', () => {
       utility: new Set(['gp', 'toiPerGame']),
     };
     vi.spyOn(positionFilterService, 'getFilterType').mockReturnValue('goalie');
-    vi.spyOn(statInfoService, 'isGoalieScoringStat').mockImplementation(key => key === 'w');
-    vi.spyOn(statInfoService, 'isGoalieUtilityStat').mockImplementation(key => key === 'gp');
+    vi.spyOn(statInfoService, 'isGoalieScoringStat').mockImplementation((key) => key === 'w');
+    vi.spyOn(statInfoService, 'isGoalieUtilityStat').mockImplementation((key) => key === 'gp');
 
     const result = service.filterAndSortActiveColumns(activeColumns, 'G');
 
@@ -61,8 +61,10 @@ describe('ActiveColumnsService', () => {
       utility: new Set(['gp', 'toiPerGame']),
     };
     vi.spyOn(positionFilterService, 'getFilterType').mockReturnValue('skater');
-    vi.spyOn(statInfoService, 'isSkaterScoringStat').mockImplementation(key => key === 'goals');
-    vi.spyOn(statInfoService, 'isSkaterUtilityStat').mockImplementation(key => key === 'gp' || key === 'toiPerGame');
+    vi.spyOn(statInfoService, 'isSkaterScoringStat').mockImplementation((key) => key === 'goals');
+    vi.spyOn(statInfoService, 'isSkaterUtilityStat').mockImplementation(
+      (key) => key === 'gp' || key === 'toiPerGame',
+    );
 
     const result = service.filterAndSortActiveColumns(activeColumns, 'SKATER');
 

@@ -33,11 +33,7 @@ import { StatInfoService } from '../../services/stat-info.service';
 
 @Component({
   selector: 'app-player-projections-table',
-  imports: [
-    ProjectionsTableHeaderComponent,
-    PlayerRowComponent,
-    PositionFilterComponent,
-  ],
+  imports: [ProjectionsTableHeaderComponent, PlayerRowComponent, PositionFilterComponent],
   templateUrl: './player-projections-table.html',
   styleUrl: './player-projections-table.css',
 })
@@ -48,7 +44,10 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly activeColumns = input.required<ActiveColumns>();
 
   readonly filteredActiveColumns = computed<ActiveColumns>(() =>
-    this.activeColumnsService.filterAndSortActiveColumns(this.activeColumns(), this.positionFilter()),
+    this.activeColumnsService.filterAndSortActiveColumns(
+      this.activeColumns(),
+      this.positionFilter(),
+    ),
   );
   readonly scaleSettings = input.required<Record<UtilityStatKey, ScaleConfig>>();
   readonly decimalSettings = model<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);

@@ -51,4 +51,3 @@ export interface GoalieProjection extends BaseProjection {
 }
 
 export type Projection = SkaterProjection | GoalieProjection;
-
