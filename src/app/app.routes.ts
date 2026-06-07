@@ -3,10 +3,11 @@ import { DraftProjectionComponent } from './draft-projection/draft-projection';
 import { LoginComponent } from './auth/login/login';
 import { RegisterComponent } from './auth/register/register';
 import { LandingComponent } from './landing/landing';
+import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   { path: '', component: LandingComponent },
-  { path: 'draft-projection', component: DraftProjectionComponent },
+  { path: 'draft-projection', component: DraftProjectionComponent, canActivate: [authGuard] },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
 ];

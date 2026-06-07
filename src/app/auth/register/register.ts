@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
 import { AuthFormComponent } from '../auth-form/auth-form';
 import { AuthCredentials } from '../auth-form/model';
@@ -20,10 +21,21 @@ export class RegisterComponent {
     this.errorMessage.set(null);
 
     this.authService.register(credentials).subscribe({
-      error: () => {
-        this.errorMessage.set('Registration failed.');
+      error: (err: unknown) => {
+        this.errorMessage.set(this.toErrorMessage(err));
         this.isLoading.set(false);
       },
     });
+  }
+
+  private toErrorMessage(err: unknown): string {
+    if (err instanceof HttpErrorResponse) {
+      if (err.status === 409) {
+        return 'An account with this email already exists.';
+      }
+      const message = (err.error as { message?: string })?.message;
+      if (message) return message;
+    }
+    return 'Registration failed. Please try again.';
   }
 }
