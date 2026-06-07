@@ -8,6 +8,7 @@ import {
   SKATER_UTILITY_STAT_KEYS,
   SkaterUtilityStatKey,
 } from '../../models/stat-key.model';
+import { ScoringType } from '../../models/projection.model';
 import { ScaleConfig } from './model';
 import { ToggleSwitchComponent } from './toggle-switch/toggle-switch';
 import { SettingRowComponent } from './setting-row/setting-row';
@@ -34,11 +35,13 @@ describe('ProjectionSettingsSectionComponent', () => {
   const getComponent = (
     activeUtilityColumns: Set<SkaterUtilityStatKey> = new Set(['gp', 'toiPerGame']),
     activeScoringColumns: Set<ScoringStatKey> = defaultActiveScoringColumns,
+    scoringType: ScoringType = 'points',
   ) =>
     MockRender(ProjectionSettingsSectionComponent, {
       activeUtilityColumns,
       activeScoringColumns,
       scaleSettings: MOCK_SCALE_SETTINGS,
+      scoringType,
     }).point.componentInstance;
 
   describe('toggle', () => {
@@ -114,6 +117,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
         activeScoringColumns: defaultActiveScoringColumns,
         scaleSettings: MOCK_SCALE_SETTINGS,
+        scoringType: 'points' as ScoringType,
       });
       const component = fixture.point.componentInstance;
       component.toggleAdvanced('gp');
@@ -128,6 +132,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
         activeScoringColumns: defaultActiveScoringColumns,
         scaleSettings: MOCK_SCALE_SETTINGS,
+        scoringType: 'points' as ScoringType,
       });
       const component = fixture.point.componentInstance;
       component.toggleAdvanced('gp');
@@ -148,6 +153,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['toiPerGame']),
         activeScoringColumns,
         scaleSettings: MOCK_SCALE_SETTINGS,
+        scoringType: 'points' as ScoringType,
       });
       const component = fixture.point.componentInstance;
       component.toggleAdvanced('toiPerGame');
@@ -172,6 +178,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
         activeScoringColumns,
         scaleSettings: MOCK_SCALE_SETTINGS,
+        scoringType: 'points' as ScoringType,
       });
       const component = fixture.point.componentInstance;
       component.toggleAdvanced('gp');
@@ -202,6 +209,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
         activeScoringColumns: defaultActiveScoringColumns,
         scaleSettings: MOCK_SCALE_SETTINGS,
+        scoringType: 'points' as ScoringType,
       });
       const component = fixture.point.componentInstance;
 
@@ -224,6 +232,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
         activeScoringColumns: defaultActiveScoringColumns,
         scaleSettings: MOCK_SCALE_SETTINGS,
+        scoringType: 'points' as ScoringType,
       });
       const component = fixture.point.componentInstance;
 
@@ -235,10 +244,9 @@ describe('ProjectionSettingsSectionComponent', () => {
       fixture.detectChanges();
 
       settingRows = ngMocks.findAll(SettingRowComponent);
-      // Only "Use default decimal places" should be visible (if it's not toggled off)
-      expect(
-        settingRows.every((r) => r.componentInstance.name() === 'Use default decimal places'),
-      ).toEqual(true);
+      // Only General settings ("League Type" and "Use default decimal places") should remain
+      const names = settingRows.map((r) => r.componentInstance.name());
+      expect(names).toEqual(['League Type', 'Use default decimal places']);
     });
   });
 });
