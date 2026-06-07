@@ -56,10 +56,10 @@ export class ProjectionSettingsSectionComponent {
 
   scaleSettings = model.required<Record<UtilityStatKey, ScaleConfig>>();
   useDefaultDecimals = model<boolean>(true);
-  isSectionVisible = signal<boolean>(true);
-  isGeneralVisible = signal<boolean>(true);
-  isScoringStatsVisible = signal<boolean>(true);
-  isUtilityStatsVisible = signal<boolean>(true);
+  isSectionVisible = signal<boolean>(false);
+  isGeneralVisible = signal<boolean>(false);
+  isScoringStatsVisible = signal<boolean>(false);
+  isUtilityStatsVisible = signal<boolean>(false);
   private readonly showAdvancedScaleOptions = signal<Record<UtilityStatKey, boolean>>({
     gp: false,
     toiPerGame: false,
