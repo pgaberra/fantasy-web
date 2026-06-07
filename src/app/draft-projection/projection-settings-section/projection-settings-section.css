@@ -267,3 +267,78 @@ app-setting-row.setting-row--sub {
   border-style: solid;
   border-color: #1e293b transparent transparent transparent;
 }
+
+/* Utility stat cards */
+
+.utility-stat-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.utility-stat-card {
+  border: 1px solid #e0e4ef;
+  border-radius: 8px;
+  transition: border-color 0.2s;
+}
+
+.utility-stat-card--active {
+  border-color: #b8cbe8;
+}
+
+.utility-stat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.utility-stat-card--active .utility-stat-header {
+  background: #f5f8ff;
+  border-radius: 8px 8px 0 0;
+}
+
+.utility-stat-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.utility-stat-chip {
+  display: inline-flex;
+  align-items: center;
+  background: #e8edf8;
+  color: #0f3460;
+  border-radius: 20px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.utility-stat-options {
+  border-top: 1px solid #e0e4ef;
+  padding: 0.25rem 0;
+}
+
+/* Give setting rows inside the card horizontal padding to match the header */
+.utility-stat-options .setting-row {
+  padding: 0.35rem 0.75rem;
+}
+
+/* Strip the left-indent decoration from the advanced row — the card provides containment */
+.utility-stat-options .setting-row--advanced {
+  margin-left: 0;
+  padding-left: 0.75rem;
+  border-left: none;
+  border-radius: 0;
+}
+
+/* Strip left-indent from the checkbox list too */
+.utility-stat-options .stat-checkboxes {
+  margin-left: 0;
+  padding: 0.25rem 0.75rem 0.5rem;
+  border-left: none;
+}

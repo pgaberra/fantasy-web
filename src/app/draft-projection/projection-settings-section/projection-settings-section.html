@@ -79,51 +79,75 @@
           <span class="advanced-toggle-icon" [class.open]="isUtilityStatsVisible()"></span>
         </div>
         @if (isUtilityStatsVisible()) {
-          @for (key of UTILITY_STAT_KEYS; track key) {
-            <app-setting-row [name]="key | utilityStatLabel" [desc]="key | statDesc">
-              <app-toggle-switch
-                [on]="activeUtilityColumns().has(key)"
-                (toggled)="toggleActiveUtilityColumn(key)"
-              />
-            </app-setting-row>
-            @if (activeUtilityColumns().has(key)) {
-              <app-setting-row
-                class="setting-row--sub"
-                name="Auto-scale scoring stats"
-                [desc]="
-                  'Automatically scale all scoring stats proportionally when ' +
-                  (key | utilityStatLabel) +
-                  ' is updated.'
-                "
+          <div class="utility-stat-cards">
+            @for (key of UTILITY_STAT_KEYS; track key) {
+              <div
+                class="utility-stat-card"
+                [class.utility-stat-card--active]="activeUtilityColumns().has(key)"
               >
-                <app-toggle-switch [on]="isScaleActive(key)" (toggled)="toggleScale(key)" />
-              </app-setting-row>
-              @if (isScaleActive(key)) {
-                <app-setting-row
-                  class="setting-row--sub setting-row--advanced"
-                  name="Stats to scale"
-                  [desc]="`Select which individual scoring stats are automatically adjusted when ${(key | statLabel)} is changed.`"
-                  (click)="toggleAdvanced(key)"
-                >
-                  <span class="advanced-toggle-icon" [class.open]="isAdvancedVisible(key)"></span>
-                </app-setting-row>
-                @if (isAdvancedVisible(key)) {
-                  <div class="stat-checkboxes">
-                    @for (statKey of getAvailableScoringStats(key); track statKey) {
-                      <label class="stat-checkbox-label">
-                        <input
-                          type="checkbox"
-                          [checked]="isScaleStatActive(statKey, key)"
-                          (change)="toggleScaleStat(statKey, key)"
-                        />
-                        {{ statKey | statLabel }}
-                      </label>
+                <div class="utility-stat-header">
+                  <div class="utility-stat-label">
+                    <span class="utility-stat-chip">{{ key | utilityStatLabel }}</span>
+                    @if (key | statDesc) {
+                      <div class="tooltip-container">
+                        <span class="info-icon">ⓘ</span>
+                        <div class="tooltip-content">{{ key | statDesc }}</div>
+                      </div>
+                    }
+                  </div>
+                  <app-toggle-switch
+                    [on]="activeUtilityColumns().has(key)"
+                    (toggled)="toggleActiveUtilityColumn(key)"
+                  />
+                </div>
+                @if (activeUtilityColumns().has(key)) {
+                  <div class="utility-stat-options">
+                    <app-setting-row
+                      name="Auto-scale scoring stats"
+                      [desc]="
+                        'Automatically scale all scoring stats proportionally when ' +
+                        (key | utilityStatLabel) +
+                        ' is updated.'
+                      "
+                    >
+                      <app-toggle-switch [on]="isScaleActive(key)" (toggled)="toggleScale(key)" />
+                    </app-setting-row>
+                    @if (isScaleActive(key)) {
+                      <app-setting-row
+                        class="setting-row--advanced"
+                        name="Stats to scale"
+                        [desc]="
+                          'Select which individual scoring stats are automatically adjusted when ' +
+                          (key | statLabel) +
+                          ' is changed.'
+                        "
+                        (click)="toggleAdvanced(key)"
+                      >
+                        <span
+                          class="advanced-toggle-icon"
+                          [class.open]="isAdvancedVisible(key)"
+                        ></span>
+                      </app-setting-row>
+                      @if (isAdvancedVisible(key)) {
+                        <div class="stat-checkboxes">
+                          @for (statKey of getAvailableScoringStats(key); track statKey) {
+                            <label class="stat-checkbox-label">
+                              <input
+                                type="checkbox"
+                                [checked]="isScaleStatActive(statKey, key)"
+                                (change)="toggleScaleStat(statKey, key)"
+                              />
+                              {{ statKey | statLabel }}
+                            </label>
+                          }
+                        </div>
+                      }
                     }
                   </div>
                 }
-              }
+              </div>
             }
-          }
+          </div>
         }
       </div>
     </div>
