@@ -39,6 +39,13 @@ jobs:
       - name: Unit tests with coverage
         run: npm run test:coverage
 
+      - name: Debug coverage output
+        run: |
+          echo "=== coverage dir ==="
+          ls -la coverage/ 2>/dev/null || echo "no coverage/ dir"
+          echo "=== any json files ==="
+          find . -name "coverage-summary.json" -o -name "coverage-final.json" 2>/dev/null | head
+
       - name: Publish coverage report
         uses: davelosert/vitest-coverage-report-action@v2
         if: github.event_name == 'pull_request'
