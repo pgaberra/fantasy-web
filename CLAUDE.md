@@ -42,6 +42,8 @@ CI runs (and must pass): `lint`, `format:check`, `test`, `build`.
 
 ## Conventions
 
+@.aiassistant/rules/guidelines.md
+
 - Prefer standalone components and signals (Angular 21 style).
 - Never hand-edit `src/app/api/**` — it's generated.
 - Run `npm run format` before committing; `format:check` is enforced in CI.
@@ -52,24 +54,9 @@ CI runs (and must pass): `lint`, `format:check`, `test`, `build`.
 
 - `.github/workflows/pr-checks.yml`: Node 22, runs lint + format:check + test + build
   on PRs to `master`.
-- Branch → push → PR → checks pass → **squash merge** to `master`.
 - `@claude` mentions on issues/PRs trigger `.github/workflows/claude.yml`.
 
-### Merging PRs
-
-GitHub squash merge uses the **PR title** as the commit message — the individual
-branch commits are ignored. Before merging:
-
-1. Ensure the PR title is a proper commit message (e.g. `feat: add X`, `fix: correct Y`).
-   Rename it first with `gh pr edit <n> --title "..."` if needed.
-2. Merge with an explicit subject so the commit message is never left to chance:
-   ```
-   gh pr merge <n> --squash --delete-branch \
-     --subject "feat: describe the change (#<n>)" \
-     --body "Optional longer description."
-   ```
-
-Never merge a PR titled "wip", "draft", or similar.
+See root `CLAUDE.md` for the PR merge convention and commit message rules.
 
 ## Deployment
 
@@ -77,8 +64,3 @@ Never merge a PR titled "wip", "draft", or similar.
   `environment.prod.ts` via the `API_URL` env var, publishes
   `dist/fantasy-web/browser`, with SPA rewrite `/* → /index.html`.
   See `DEPLOYMENT.md`.
-
-## Commit messages
-
-No attribution trailers. `attribution.commit` and `attribution.pr` are set to `""` in
-`~/.claude/settings.json` — this is enforced at the tool level.
