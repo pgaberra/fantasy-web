@@ -6,6 +6,9 @@ on:
   push:
     branches: [master]
 
+permissions:
+  pull-requests: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -32,8 +35,12 @@ jobs:
       - name: Check formatting
         run: npm run format:check
 
-      - name: Unit tests
-        run: npm test
+      - name: Unit tests with coverage
+        run: npm run test:coverage
+
+      - name: Publish coverage report
+        uses: davelosert/vitest-coverage-report-action@v2
+        if: github.event_name == 'pull_request'
 
       - name: Build
         run: npm run build
