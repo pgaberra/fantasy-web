@@ -55,6 +55,22 @@ CI runs (and must pass): `lint`, `format:check`, `test`, `build`.
 - Branch → push → PR → checks pass → **squash merge** to `master`.
 - `@claude` mentions on issues/PRs trigger `.github/workflows/claude.yml`.
 
+### Merging PRs
+
+GitHub squash merge uses the **PR title** as the commit message — the individual
+branch commits are ignored. Before merging:
+
+1. Ensure the PR title is a proper commit message (e.g. `feat: add X`, `fix: correct Y`).
+   Rename it first with `gh pr edit <n> --title "..."` if needed.
+2. Merge with an explicit subject so the commit message is never left to chance:
+   ```
+   gh pr merge <n> --squash --delete-branch \
+     --subject "feat: describe the change (#<n>)" \
+     --body "Optional longer description."
+   ```
+
+Never merge a PR titled "wip", "draft", or similar.
+
 ## Deployment
 
 - Deployed to Render as a static site. Build injects the BFF URL into
@@ -67,5 +83,5 @@ CI runs (and must pass): `lint`, `format:check`, `test`, `build`.
 End commit messages with:
 
 ```
-Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 ```
