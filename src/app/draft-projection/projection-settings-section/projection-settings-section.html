@@ -4,128 +4,128 @@
     <span class="advanced-toggle-icon" [class.open]="isSectionVisible()"></span>
   </div>
   @if (isSectionVisible()) {
-  <p class="hint">Configure additional options for your player projections:</p>
-  <div class="projection-settings-list">
-    <div class="settings-group">
-      <div class="settings-group-header" (click)="toggleGeneralVisible()">
-        <h3 class="settings-group-title">General</h3>
-        <span class="advanced-toggle-icon" [class.open]="isGeneralVisible()"></span>
-      </div>
-      @if (isGeneralVisible()) {
-        <app-setting-row name="League Type">
-          <div class="radio-group">
-            <label class="radio-label">
-              <input
-                type="radio"
-                name="scoringType"
-                value="points"
-                [checked]="scoringType() === 'points'"
-                (change)="selectScoringType('points')"
-              />
-              Points
-            </label>
-            <label class="radio-label">
-              <input
-                type="radio"
-                name="scoringType"
-                value="category"
-                [checked]="scoringType() === 'category'"
-                (change)="selectScoringType('category')"
-              />
-              Category
-            </label>
-          </div>
-        </app-setting-row>
-        <app-setting-row
-          name="Use default decimal places"
-          desc="By default, stats are rounded to whole numbers (except SH% which has 1 decimal). Disable to customize decimals per stat."
-        >
-          <app-toggle-switch [on]="useDefaultDecimals()" (toggled)="toggleUseDefaultDecimals()" />
-        </app-setting-row>
-      }
-    </div>
-    <div class="settings-group">
-      <div class="settings-group-header" (click)="toggleScoringStatsVisible()">
-        <h3 class="settings-group-title">Scoring Stats</h3>
-        <span class="advanced-toggle-icon" [class.open]="isScoringStatsVisible()"></span>
-      </div>
-      @if (isScoringStatsVisible()) {
-        <app-stat-group
-          title="Skater Stats"
-          [activeStats]="activeSkaterStats()"
-          [availableStats]="availableSkaterStats()"
-          (statRemoved)="toggleStat($event)"
-          (statAdded)="toggleStat($event)"
-        />
-        <app-stat-group
-          title="Goalie Stats"
-          [activeStats]="activeGoalieStats()"
-          [availableStats]="availableGoalieStats()"
-          (statRemoved)="toggleStat($event)"
-          (statAdded)="toggleStat($event)"
-        />
-      }
-    </div>
-    <div class="settings-group">
-      <div class="settings-group-header" (click)="toggleUtilityStatsVisible()">
-        <h3 class="settings-group-title">Utility Stats</h3>
-        <div class="tooltip-container">
-          <span class="info-icon">ⓘ</span>
-          <div class="tooltip-content">
-            Stats that are not directly included in any league scoring but can be useful to predict
-            because they may affect the performance of scoring stats.
-          </div>
+    <p class="hint">Configure additional options for your player projections:</p>
+    <div class="projection-settings-list">
+      <div class="settings-group">
+        <div class="settings-group-header" (click)="toggleGeneralVisible()">
+          <h3 class="settings-group-title">General</h3>
+          <span class="advanced-toggle-icon" [class.open]="isGeneralVisible()"></span>
         </div>
-        <span class="advanced-toggle-icon" [class.open]="isUtilityStatsVisible()"></span>
-      </div>
-      @if (isUtilityStatsVisible()) {
-        @for (key of UTILITY_STAT_KEYS; track key) {
-          <app-setting-row [name]="key | utilityStatLabel" [desc]="key | statDesc">
-            <app-toggle-switch
-              [on]="activeUtilityColumns().has(key)"
-              (toggled)="toggleActiveUtilityColumn(key)"
-            />
+        @if (isGeneralVisible()) {
+          <app-setting-row name="League Type">
+            <div class="radio-group">
+              <label class="radio-label">
+                <input
+                  type="radio"
+                  name="scoringType"
+                  value="points"
+                  [checked]="scoringType() === 'points'"
+                  (change)="selectScoringType('points')"
+                />
+                Points
+              </label>
+              <label class="radio-label">
+                <input
+                  type="radio"
+                  name="scoringType"
+                  value="category"
+                  [checked]="scoringType() === 'category'"
+                  (change)="selectScoringType('category')"
+                />
+                Category
+              </label>
+            </div>
           </app-setting-row>
-          @if (activeUtilityColumns().has(key)) {
-            <app-setting-row
-              class="setting-row--sub"
-              name="Auto-scale scoring stats"
-              [desc]="
-                'Automatically scale all scoring stats proportionally when ' +
-                (key | utilityStatLabel) +
-                ' is updated.'
-              "
-            >
-              <app-toggle-switch [on]="isScaleActive(key)" (toggled)="toggleScale(key)" />
+          <app-setting-row
+            name="Use default decimal places"
+            desc="By default, stats are rounded to whole numbers (except SH% which has 1 decimal). Disable to customize decimals per stat."
+          >
+            <app-toggle-switch [on]="useDefaultDecimals()" (toggled)="toggleUseDefaultDecimals()" />
+          </app-setting-row>
+        }
+      </div>
+      <div class="settings-group">
+        <div class="settings-group-header" (click)="toggleScoringStatsVisible()">
+          <h3 class="settings-group-title">Scoring Stats</h3>
+          <span class="advanced-toggle-icon" [class.open]="isScoringStatsVisible()"></span>
+        </div>
+        @if (isScoringStatsVisible()) {
+          <app-stat-group
+            title="Skater Stats"
+            [activeStats]="activeSkaterStats()"
+            [availableStats]="availableSkaterStats()"
+            (statRemoved)="toggleStat($event)"
+            (statAdded)="toggleStat($event)"
+          />
+          <app-stat-group
+            title="Goalie Stats"
+            [activeStats]="activeGoalieStats()"
+            [availableStats]="availableGoalieStats()"
+            (statRemoved)="toggleStat($event)"
+            (statAdded)="toggleStat($event)"
+          />
+        }
+      </div>
+      <div class="settings-group">
+        <div class="settings-group-header" (click)="toggleUtilityStatsVisible()">
+          <h3 class="settings-group-title">Utility Stats</h3>
+          <div class="tooltip-container">
+            <span class="info-icon">ⓘ</span>
+            <div class="tooltip-content">
+              Stats that are not directly included in any league scoring but can be useful to
+              predict because they may affect the performance of scoring stats.
+            </div>
+          </div>
+          <span class="advanced-toggle-icon" [class.open]="isUtilityStatsVisible()"></span>
+        </div>
+        @if (isUtilityStatsVisible()) {
+          @for (key of UTILITY_STAT_KEYS; track key) {
+            <app-setting-row [name]="key | utilityStatLabel" [desc]="key | statDesc">
+              <app-toggle-switch
+                [on]="activeUtilityColumns().has(key)"
+                (toggled)="toggleActiveUtilityColumn(key)"
+              />
             </app-setting-row>
-            @if (isScaleActive(key)) {
+            @if (activeUtilityColumns().has(key)) {
               <app-setting-row
-                class="setting-row--sub setting-row--advanced"
-                name="Stats to scale"
-                [desc]="`Select which individual scoring stats are automatically adjusted when ${(key | statLabel)} is changed.`"
-                (click)="toggleAdvanced(key)"
+                class="setting-row--sub"
+                name="Auto-scale scoring stats"
+                [desc]="
+                  'Automatically scale all scoring stats proportionally when ' +
+                  (key | utilityStatLabel) +
+                  ' is updated.'
+                "
               >
-                <span class="advanced-toggle-icon" [class.open]="isAdvancedVisible(key)"></span>
+                <app-toggle-switch [on]="isScaleActive(key)" (toggled)="toggleScale(key)" />
               </app-setting-row>
-              @if (isAdvancedVisible(key)) {
-                <div class="stat-checkboxes">
-                  @for (statKey of getAvailableScoringStats(key); track statKey) {
-                    <label class="stat-checkbox-label">
-                      <input
-                        type="checkbox"
-                        [checked]="isScaleStatActive(statKey, key)"
-                        (change)="toggleScaleStat(statKey, key)"
-                      />
-                      {{ statKey | statLabel }}
-                    </label>
-                  }
-                </div>
+              @if (isScaleActive(key)) {
+                <app-setting-row
+                  class="setting-row--sub setting-row--advanced"
+                  name="Stats to scale"
+                  [desc]="`Select which individual scoring stats are automatically adjusted when ${(key | statLabel)} is changed.`"
+                  (click)="toggleAdvanced(key)"
+                >
+                  <span class="advanced-toggle-icon" [class.open]="isAdvancedVisible(key)"></span>
+                </app-setting-row>
+                @if (isAdvancedVisible(key)) {
+                  <div class="stat-checkboxes">
+                    @for (statKey of getAvailableScoringStats(key); track statKey) {
+                      <label class="stat-checkbox-label">
+                        <input
+                          type="checkbox"
+                          [checked]="isScaleStatActive(statKey, key)"
+                          (change)="toggleScaleStat(statKey, key)"
+                        />
+                        {{ statKey | statLabel }}
+                      </label>
+                    }
+                  </div>
+                }
               }
             }
           }
         }
-      }
+      </div>
     </div>
-  </div>
   }
 </section>
