@@ -1,4 +1,4 @@
-import { Component, computed, input, model, signal } from '@angular/core';
+import { Component, computed, model, signal } from '@angular/core';
 import { SettingRowComponent } from './setting-row/setting-row';
 import { ToggleSwitchComponent } from './toggle-switch/toggle-switch';
 import { UtilityStatLabelPipe } from '../../pipes/utility-stat-label.pipe';
@@ -15,6 +15,8 @@ import {
   UtilityStatKey,
 } from '../../models/stat-key.model';
 import { ScaleConfig } from './model';
+import { ScoringType } from '../../models/projection.model';
+import { StatGroupComponent } from './stat-group/stat-group';
 
 @Component({
   selector: 'app-projection-settings-section',
@@ -26,32 +28,72 @@ import { ScaleConfig } from './model';
     StatLabelPipe,
     ToggleSwitchComponent,
     SettingRowComponent,
+    StatGroupComponent,
   ],
 })
 export class ProjectionSettingsSectionComponent {
+  scoringType = model.required<ScoringType>();
   activeUtilityColumns = model.required<Set<UtilityStatKey>>();
-  activeScoringColumns = input.required<Set<ScoringStatKey>>();
+  activeScoringColumns = model.required<Set<ScoringStatKey>>();
   activeScoringColumnsSorted = computed(() => {
     return Array.from(this.activeScoringColumns()).sort(
       (a, b) => SCORING_STAT_KEYS.indexOf(a) - SCORING_STAT_KEYS.indexOf(b),
     );
   });
 
+  activeSkaterStats = computed(() =>
+    SKATER_SCORING_STAT_KEYS.filter((key) => this.activeScoringColumns().has(key)),
+  );
+  activeGoalieStats = computed(() =>
+    GOALIE_SCORING_STAT_KEYS.filter((key) => this.activeScoringColumns().has(key)),
+  );
+  availableSkaterStats = computed(() =>
+    SKATER_SCORING_STAT_KEYS.filter((key) => !this.activeScoringColumns().has(key)),
+  );
+  availableGoalieStats = computed(() =>
+    GOALIE_SCORING_STAT_KEYS.filter((key) => !this.activeScoringColumns().has(key)),
+  );
+
   scaleSettings = model.required<Record<UtilityStatKey, ScaleConfig>>();
   useDefaultDecimals = model<boolean>(true);
+  isSectionVisible = signal<boolean>(true);
   isGeneralVisible = signal<boolean>(true);
+  isScoringStatsVisible = signal<boolean>(true);
   isUtilityStatsVisible = signal<boolean>(true);
   private readonly showAdvancedScaleOptions = signal<Record<UtilityStatKey, boolean>>({
     gp: false,
     toiPerGame: false,
   });
 
+  toggleSectionVisible(): void {
+    this.isSectionVisible.update((visible) => !visible);
+  }
+
+  selectScoringType(type: ScoringType): void {
+    this.scoringType.set(type);
+  }
+
   toggleGeneralVisible(): void {
     this.isGeneralVisible.update((visible) => !visible);
   }
 
+  toggleScoringStatsVisible(): void {
+    this.isScoringStatsVisible.update((visible) => !visible);
+  }
+
   toggleUtilityStatsVisible(): void {
     this.isUtilityStatsVisible.update((visible) => !visible);
+  }
+
+  toggleStat(key: ScoringStatKey): void {
+    this.activeScoringColumns.update((columns) => {
+      if (columns.has(key)) {
+        columns.delete(key);
+      } else {
+        columns.add(key);
+      }
+      return new Set(columns);
+    });
   }
 
   toggleActiveUtilityColumn(key: UtilityStatKey): void {

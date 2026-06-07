@@ -1,6 +1,6 @@
 import { Component, input, output, signal } from '@angular/core';
-import { ScoringStatKey } from '../../../models/stat-key.model';
-import { StatLabelPipe } from '../../../pipes/stat-label.pipe';
+import { ScoringStatKey } from '../../../../models/stat-key.model';
+import { StatLabelPipe } from '../../../../pipes/stat-label.pipe';
 
 @Component({
   selector: 'app-stat-add-dropdown',

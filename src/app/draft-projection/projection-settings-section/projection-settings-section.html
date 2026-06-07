@@ -1,5 +1,9 @@
 <section class="settings-section">
-  <h2>Projection Settings</h2>
+  <div class="section-header" (click)="toggleSectionVisible()">
+    <h2>Projection Settings</h2>
+    <span class="advanced-toggle-icon" [class.open]="isSectionVisible()"></span>
+  </div>
+  @if (isSectionVisible()) {
   <p class="hint">Configure additional options for your player projections:</p>
   <div class="projection-settings-list">
     <div class="settings-group">
@@ -8,12 +12,58 @@
         <span class="advanced-toggle-icon" [class.open]="isGeneralVisible()"></span>
       </div>
       @if (isGeneralVisible()) {
+        <app-setting-row name="League Type">
+          <div class="radio-group">
+            <label class="radio-label">
+              <input
+                type="radio"
+                name="scoringType"
+                value="points"
+                [checked]="scoringType() === 'points'"
+                (change)="selectScoringType('points')"
+              />
+              Points
+            </label>
+            <label class="radio-label">
+              <input
+                type="radio"
+                name="scoringType"
+                value="category"
+                [checked]="scoringType() === 'category'"
+                (change)="selectScoringType('category')"
+              />
+              Category
+            </label>
+          </div>
+        </app-setting-row>
         <app-setting-row
           name="Use default decimal places"
           desc="By default, stats are rounded to whole numbers (except SH% which has 1 decimal). Disable to customize decimals per stat."
         >
           <app-toggle-switch [on]="useDefaultDecimals()" (toggled)="toggleUseDefaultDecimals()" />
         </app-setting-row>
+      }
+    </div>
+    <div class="settings-group">
+      <div class="settings-group-header" (click)="toggleScoringStatsVisible()">
+        <h3 class="settings-group-title">Scoring Stats</h3>
+        <span class="advanced-toggle-icon" [class.open]="isScoringStatsVisible()"></span>
+      </div>
+      @if (isScoringStatsVisible()) {
+        <app-stat-group
+          title="Skater Stats"
+          [activeStats]="activeSkaterStats()"
+          [availableStats]="availableSkaterStats()"
+          (statRemoved)="toggleStat($event)"
+          (statAdded)="toggleStat($event)"
+        />
+        <app-stat-group
+          title="Goalie Stats"
+          [activeStats]="activeGoalieStats()"
+          [availableStats]="availableGoalieStats()"
+          (statRemoved)="toggleStat($event)"
+          (statAdded)="toggleStat($event)"
+        />
       }
     </div>
     <div class="settings-group">
@@ -77,4 +127,5 @@
       }
     </div>
   </div>
+  }
 </section>

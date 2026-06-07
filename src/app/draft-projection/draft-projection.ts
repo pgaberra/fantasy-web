@@ -5,8 +5,6 @@ import { PlayerService } from '../services/player.service';
 import { Player } from '../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey, SCORING_STAT_KEYS } from '../models/stat-key.model';
 import { ActiveColumns, ScoringType } from '../models/projection.model';
-import { ScoringTypeSectionComponent } from './scoring-type-section/scoring-type-section';
-import { ScoringStatsSectionComponent } from './scoring-stats-section/scoring-stats-section';
 import { ProjectionSettingsSectionComponent } from './projection-settings-section/projection-settings-section';
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
@@ -47,8 +45,6 @@ const DEFAULT_STAT_WEIGHTS: Record<ScoringStatKey, number> = {
 @Component({
   selector: 'app-draft-projection',
   imports: [
-    ScoringTypeSectionComponent,
-    ScoringStatsSectionComponent,
     ProjectionSettingsSectionComponent,
     PlayerProjectionsTableComponent,
     LoadingIndicatorComponent,
