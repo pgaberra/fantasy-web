@@ -22,15 +22,19 @@ npm run lint           # eslint src/**/*.ts
 npm run format         # prettier --write
 npm run format:check   # prettier --check (CI uses this — must pass)
 npm run build          # production build → dist/fantasy-web/browser
-npm run generate:api   # regenerate src/app/api from BFF OpenAPI spec
+npm run generate:api   # generate src/app/api from specs/bff-openapi.yaml
 ```
 
-CI runs (and must pass): `lint`, `format:check`, `test`, `build`.
+CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`.
+
+> **After cloning, run `npm run generate:api` once** — `src/app/api` is generated,
+> not committed, so lint/test/build will fail until it exists.
 
 ## Architecture (`src/app/`)
 
-- `api/` — **generated** client (`fn/`, `models/`). Do not hand-edit; regenerate
-  with `npm run generate:api` against the BFF's OpenAPI spec.
+- `api/` — **generated** client (`fn/`, `models/`), **not committed** (gitignored).
+  Generated from the pinned `specs/bff-openapi.yaml` via `npm run generate:api`
+  (CI runs this after `npm ci`). Do not hand-edit.
 - `auth/` — `login`, `register`, shared `auth-form`
 - `draft-projection/` — main feature: `projection-settings-section`,
   `scoring-type-section`, `scoring-stats-section`, `player-projections-table`
@@ -52,8 +56,14 @@ CI runs (and must pass): `lint`, `format:check`, `test`, `build`.
 
 ## CI / workflow
 
-- `.github/workflows/pr-checks.yml`: Node 22, runs lint + format:check + test + build
-  on PRs to `master`.
+- `.github/workflows/pr-checks.yml`: Node 22, generates the API client then runs
+  lint + format:check + test + build on PRs to `master`.
+- A **spec drift check** runs first: it fetches `fantasy-bff`'s `specs/bff-openapi.yaml`
+  from `master` and fails if the pinned `specs/bff-openapi.yaml` differs. Needs a repo
+  secret `SPEC_READ_TOKEN` — a fine-grained PAT with read access to `fantasy-bff`.
+- `specs/bff-openapi.yaml` is a **verbatim pinned copy** of the BFF's spec. To update
+  after a BFF API change: copy the new `fantasy-bff/specs/bff-openapi.yaml` over it and
+  run `npm run generate:api`.
 - `@claude` mentions on issues/PRs trigger `.github/workflows/claude.yml`.
 
 See root `CLAUDE.md` for the PR merge convention and commit message rules.

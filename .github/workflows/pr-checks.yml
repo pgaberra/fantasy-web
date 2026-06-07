@@ -21,6 +21,17 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Verify pinned BFF spec is in sync
+        env:
+          GH_TOKEN: ${{ secrets.SPEC_READ_TOKEN }}
+        run: |
+          gh api repos/pgaberra/fantasy-bff/contents/specs/bff-openapi.yaml \
+            -H "Accept: application/vnd.github.raw" > /tmp/bff-openapi.yaml
+          if ! diff -u specs/bff-openapi.yaml /tmp/bff-openapi.yaml; then
+            echo "::error::Pinned BFF spec is stale. Copy fantasy-bff/specs/bff-openapi.yaml into specs/bff-openapi.yaml and run npm run generate:api."
+            exit 1
+          fi
+
       - name: Set up Node
         uses: actions/setup-node@v5
         with:
@@ -29,6 +40,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Generate API client
+        run: npm run generate:api
 
       - name: Lint
         run: npm run lint

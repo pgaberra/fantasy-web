@@ -6,6 +6,9 @@
 /out-tsc
 /bazel-out
 
+# Generated API client (regenerated from specs/bff-openapi.yaml at build time)
+/src/app/api
+
 # Node
 /node_modules
 npm-debug.log
