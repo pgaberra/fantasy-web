@@ -1,0 +1,237 @@
+<div class="landing">
+  <!-- ── Navigation ───────────────────────────────────────── -->
+  <nav class="landing-nav">
+    <div class="nav-inner">
+      <a class="nav-logo" routerLink="/">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <ellipse cx="12" cy="14" rx="10" ry="5" fill="#e94560" opacity="0.9" />
+          <ellipse cx="12" cy="12" rx="10" ry="5" fill="#0f3460" />
+          <ellipse
+            cx="12"
+            cy="12"
+            rx="10"
+            ry="5"
+            fill="none"
+            stroke="rgba(255,255,255,0.25)"
+            stroke-width="1"
+          />
+        </svg>
+        <span>Fantasy Hockey</span>
+      </a>
+      <div class="nav-actions">
+        <a routerLink="/login" class="nav-link">Sign In</a>
+        <a routerLink="/register" class="btn-nav-cta">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Hero ─────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="hero-decoration" aria-hidden="true">
+      <div class="ice-ring ice-ring--1"></div>
+      <div class="ice-ring ice-ring--2"></div>
+      <div class="ice-ring ice-ring--3"></div>
+    </div>
+
+    <div class="hero-inner">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="badge-pulse"></span>
+          Draft Season 2025–26
+        </div>
+
+        <h1 class="hero-headline">
+          Win your league with<br />
+          <span class="hero-highlight">smarter draft picks</span>
+        </h1>
+
+        <p class="hero-sub">
+          Customise your scoring settings, explore player projections, and rank every skater exactly
+          by your league's rules — before draft day.
+        </p>
+
+        <div class="hero-actions">
+          <a routerLink="/register" class="btn-primary">
+            Get Started — Free
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path
+                fill-rule="evenodd"
+                d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </a>
+          <a routerLink="/login" class="btn-ghost">Sign In</a>
+        </div>
+      </div>
+
+      <!-- Mock stats card -->
+      <div class="hero-visual" aria-hidden="true">
+        <div class="stats-card">
+          <div class="stats-card-header">
+            <div class="stats-card-title">
+              <svg viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
+                <path
+                  fill-rule="evenodd"
+                  d="M.664 10.59a1.651 1.651 0 010-1.186A10.004 10.004 0 0110 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0110 17c-4.257 0-7.893-2.66-9.336-6.41zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Top Projected Players
+            </div>
+            <span class="stats-season-badge">2025–26</span>
+          </div>
+          <div class="stats-table">
+            <div class="stats-row stats-row--head">
+              <span class="col-player">Player</span>
+              <span class="col-stat">G</span>
+              <span class="col-stat">A</span>
+              <span class="col-stat col-pts">PTS</span>
+            </div>
+            @for (player of mockPlayers; track player.name; let i = $index) {
+              <div class="stats-row" [class.stats-row--top]="i === 0">
+                <span class="col-player">
+                  <span class="player-rank">{{ i + 1 }}</span>
+                  <span class="player-info">
+                    <span class="player-name">{{ player.name }}</span>
+                    <span class="player-team">{{ player.team }}</span>
+                  </span>
+                </span>
+                <span class="col-stat">{{ player.g }}</span>
+                <span class="col-stat">{{ player.a }}</span>
+                <span class="col-stat col-pts">{{ player.pts }}</span>
+              </div>
+            }
+          </div>
+          <div class="stats-card-footer">
+            <span>Adjusted for your scoring settings</span>
+            <svg viewBox="0 0 20 20" fill="currentColor">
+              <path
+                fill-rule="evenodd"
+                d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H3.989a.75.75 0 00-.75.75v4.242a.75.75 0 001.5 0v-2.43l.31.31a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm1.23-3.723a.75.75 0 00.219-.53V2.929a.75.75 0 00-1.5 0V5.36l-.31-.31A7 7 0 003.239 8.188a.75.75 0 101.448.389A5.5 5.5 0 0113.89 6.11l.311.31h-2.432a.75.75 0 000 1.5h4.243a.75.75 0 00.53-.219z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Features ──────────────────────────────────────────── -->
+  <section class="features">
+    <div class="section-inner">
+      <div class="section-label">Why Fantasy Hockey</div>
+      <h2 class="section-title">Everything you need to draft smarter</h2>
+      <p class="section-sub">
+        Built for serious fantasy managers who want a real edge over their league-mates.
+      </p>
+
+      <div class="feature-grid">
+        @for (feature of features; track feature.title) {
+          <div class="feature-card">
+            <div class="feature-icon-wrap">
+              @if (feature.icon === 'scoring') {
+                <svg
+                  class="feature-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  aria-hidden="true"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"
+                  />
+                </svg>
+              }
+              @if (feature.icon === 'projections') {
+                <svg
+                  class="feature-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  aria-hidden="true"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zm6.75-9.75c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v16.5c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V3.375zm6.75 7.5c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v9c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125v-9z"
+                  />
+                </svg>
+              }
+              @if (feature.icon === 'draft') {
+                <svg
+                  class="feature-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  aria-hidden="true"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0"
+                  />
+                </svg>
+              }
+            </div>
+            <h3 class="feature-title">{{ feature.title }}</h3>
+            <p class="feature-desc">{{ feature.desc }}</p>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ── How it works ──────────────────────────────────────── -->
+  <section class="how-it-works">
+    <div class="section-inner">
+      <div class="section-label section-label--light">How it works</div>
+      <h2 class="section-title section-title--light">Up and running in minutes</h2>
+
+      <div class="steps">
+        @for (step of steps; track step.number) {
+          <div class="step">
+            <div class="step-number">{{ step.number }}</div>
+            <div class="step-content">
+              <h3 class="step-title">{{ step.title }}</h3>
+              <p class="step-desc">{{ step.desc }}</p>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA ───────────────────────────────────────────────── -->
+  <section class="cta-section">
+    <div class="cta-inner">
+      <h2 class="cta-headline">Ready to dominate your draft?</h2>
+      <p class="cta-sub">Free to use. No credit card required.</p>
+      <a routerLink="/register" class="btn-primary btn-primary--large">
+        Create Free Account
+        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path
+            fill-rule="evenodd"
+            d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z"
+            clip-rule="evenodd"
+          />
+        </svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- ── Footer ────────────────────────────────────────────── -->
+  <footer class="landing-footer">
+    <div class="footer-inner">
+      <span class="footer-brand">Fantasy Hockey</span>
+      <span class="footer-copy">© 2025 — Built for managers who mean business</span>
+    </div>
+  </footer>
+</div>
