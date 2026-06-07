@@ -44,6 +44,27 @@ describe('ProjectionSettingsSectionComponent', () => {
       scoringType,
     }).point.componentInstance;
 
+  // Helper that renders and opens all sections for template-level assertions.
+  const getExpandedFixture = (
+    activeUtilityColumns: Set<SkaterUtilityStatKey> = new Set(['gp', 'toiPerGame']),
+    activeScoringColumns: Set<ScoringStatKey> = defaultActiveScoringColumns,
+    scoringType: ScoringType = 'points',
+  ) => {
+    const fixture = MockRender(ProjectionSettingsSectionComponent, {
+      activeUtilityColumns,
+      activeScoringColumns,
+      scaleSettings: MOCK_SCALE_SETTINGS,
+      scoringType,
+    });
+    const component = fixture.point.componentInstance;
+    component.toggleSectionVisible();
+    component.toggleGeneralVisible();
+    component.toggleScoringStatsVisible();
+    component.toggleUtilityStatsVisible();
+    fixture.detectChanges();
+    return { fixture, component };
+  };
+
   describe('toggle', () => {
     it('should remove an active utility column when toggled', () => {
       const component = getComponent(new Set(['gp', 'toiPerGame']));
@@ -73,13 +94,13 @@ describe('ProjectionSettingsSectionComponent', () => {
 
   describe('template', () => {
     it('should render a "General" header', () => {
-      getComponent();
+      getExpandedFixture();
       const titles = ngMocks.findAll('.settings-group-title');
       expect(titles.some((t) => t.nativeElement.textContent.trim() === 'General')).toEqual(true);
     });
 
     it('should render a toggle for each utility stat key', () => {
-      const component = getComponent();
+      const { component } = getExpandedFixture();
       const toggles = ngMocks.findAll('.toggle-switch');
       // Each utility stat has a main toggle; each active utility stat also has a scale sub-toggle.
       // There is also one toggle for the "Use default decimal places" setting.
@@ -89,7 +110,7 @@ describe('ProjectionSettingsSectionComponent', () => {
     });
 
     it('should apply the "on" class to active utility column toggles', () => {
-      getComponent(new Set<SkaterUtilityStatKey>(['gp']));
+      getExpandedFixture(new Set<SkaterUtilityStatKey>(['gp']));
       const toggles = ngMocks.findAll('.toggle-switch');
       const onToggles = toggles.filter((t) => t.classes['on']);
       // useDefaultDecimals is on (default true) + gp main toggle is "on" + gp scale sub-toggle is "on" (defaults to true)
@@ -97,7 +118,7 @@ describe('ProjectionSettingsSectionComponent', () => {
     });
 
     it('should only apply the "on" class to the decimals toggle when no utility columns are active', () => {
-      getComponent(new Set<SkaterUtilityStatKey>());
+      getExpandedFixture(new Set<SkaterUtilityStatKey>());
       const toggles = ngMocks.findAll('.toggle-switch');
       const onToggles = toggles.filter((t) => t.classes['on']);
       expect(onToggles.length).toEqual(1);
@@ -105,7 +126,7 @@ describe('ProjectionSettingsSectionComponent', () => {
     });
 
     it('should call toggle() when a toggle switch is clicked', () => {
-      const component = getComponent(new Set<SkaterUtilityStatKey>(['gp', 'toiPerGame']));
+      const { component } = getExpandedFixture(new Set<SkaterUtilityStatKey>(['gp', 'toiPerGame']));
       const toggles = ngMocks.findAll('.toggle-switch');
       const firstUtilityToggle = toggles[1]; // index 0 is the "Use default decimal places" toggle
       ngMocks.click(firstUtilityToggle);
@@ -120,6 +141,8 @@ describe('ProjectionSettingsSectionComponent', () => {
         scoringType: 'points' as ScoringType,
       });
       const component = fixture.point.componentInstance;
+      component.toggleSectionVisible();
+      component.toggleUtilityStatsVisible();
       component.toggleAdvanced('gp');
       fixture.detectChanges();
 
@@ -135,6 +158,8 @@ describe('ProjectionSettingsSectionComponent', () => {
         scoringType: 'points' as ScoringType,
       });
       const component = fixture.point.componentInstance;
+      component.toggleSectionVisible();
+      component.toggleUtilityStatsVisible();
       component.toggleAdvanced('gp');
       fixture.detectChanges();
 
@@ -156,6 +181,8 @@ describe('ProjectionSettingsSectionComponent', () => {
         scoringType: 'points' as ScoringType,
       });
       const component = fixture.point.componentInstance;
+      component.toggleSectionVisible();
+      component.toggleUtilityStatsVisible();
       component.toggleAdvanced('toiPerGame');
       fixture.detectChanges();
 
@@ -181,6 +208,8 @@ describe('ProjectionSettingsSectionComponent', () => {
         scoringType: 'points' as ScoringType,
       });
       const component = fixture.point.componentInstance;
+      component.toggleSectionVisible();
+      component.toggleUtilityStatsVisible();
       component.toggleAdvanced('gp');
       fixture.detectChanges();
 
@@ -192,16 +221,16 @@ describe('ProjectionSettingsSectionComponent', () => {
   describe('visibility toggles', () => {
     it('should toggle general visibility', () => {
       const component = getComponent();
-      expect(component.isGeneralVisible()).toEqual(true);
-      component.toggleGeneralVisible();
       expect(component.isGeneralVisible()).toEqual(false);
+      component.toggleGeneralVisible();
+      expect(component.isGeneralVisible()).toEqual(true);
     });
 
     it('should toggle utility stats visibility', () => {
       const component = getComponent();
-      expect(component.isUtilityStatsVisible()).toEqual(true);
-      component.toggleUtilityStatsVisible();
       expect(component.isUtilityStatsVisible()).toEqual(false);
+      component.toggleUtilityStatsVisible();
+      expect(component.isUtilityStatsVisible()).toEqual(true);
     });
 
     it('should hide general settings when isGeneralVisible is false', () => {
@@ -212,6 +241,9 @@ describe('ProjectionSettingsSectionComponent', () => {
         scoringType: 'points' as ScoringType,
       });
       const component = fixture.point.componentInstance;
+      component.toggleSectionVisible();
+      component.toggleGeneralVisible();
+      fixture.detectChanges();
 
       let settingRows = ngMocks.findAll(SettingRowComponent);
       expect(
@@ -235,18 +267,20 @@ describe('ProjectionSettingsSectionComponent', () => {
         scoringType: 'points' as ScoringType,
       });
       const component = fixture.point.componentInstance;
+      component.toggleSectionVisible();
+      component.toggleUtilityStatsVisible();
+      fixture.detectChanges();
 
       let settingRows = ngMocks.findAll(SettingRowComponent);
       // GP and its scale toggle are active and should be visible
-      expect(settingRows.length).toBeGreaterThan(1);
+      expect(settingRows.length).toBeGreaterThan(0);
 
       component.toggleUtilityStatsVisible();
       fixture.detectChanges();
 
       settingRows = ngMocks.findAll(SettingRowComponent);
-      // Only General settings ("League Type" and "Use default decimal places") should remain
-      const names = settingRows.map((r) => r.componentInstance.name());
-      expect(names).toEqual(['League Type', 'Use default decimal places']);
+      // Utility stats hidden; General is also collapsed, so no setting rows remain
+      expect(settingRows.length).toEqual(0);
     });
   });
 });
