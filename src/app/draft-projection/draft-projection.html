@@ -7,13 +7,10 @@
       <p class="subtitle">Customize your league settings and edit player projections below.</p>
     </div>
 
-    <app-scoring-type-section [(scoringType)]="scoringType" />
-
-    <app-scoring-stats-section [(activeScoringColumns)]="activeScoringColumns" />
-
     <app-projection-settings-section
+      [(scoringType)]="scoringType"
+      [(activeScoringColumns)]="activeScoringColumns"
       [(activeUtilityColumns)]="activeUtilityColumns"
-      [activeScoringColumns]="activeScoringColumns()"
       [(scaleSettings)]="scaleSettings"
       [(useDefaultDecimals)]="useDefaultDecimals"
     />
