@@ -66,7 +66,34 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   run `npm run generate:api`.
 - `@claude` mentions on issues/PRs trigger `.github/workflows/claude.yml`.
 
-See root `CLAUDE.md` for the PR merge convention and commit message rules.
+## Monorepo conventions
+
+Shared across all four repos (`fantasy-web` → `fantasy-bff` → `fantasy-db-service` +
+`fantasy-nhl-service`). The web talks only to the BFF.
+
+### Secrets
+
+**Never commit a password, API key, token, or any secret to git — in any environment**,
+not even throwaway local-dev credentials. Secrets and environment-specific values come from
+build-/run-time env vars (e.g. the BFF URL is injected via `API_URL` into
+`environment.prod.ts` at build time), never hardcoded in committed config.
+
+### Merging PRs
+
+Branch → push → PR → checks pass → **squash merge** to `master`. GitHub squash uses the
+**PR title** as the commit message, so make it a proper message (`feat: …`, `fix: …`), then
+merge with an explicit subject:
+```
+gh pr merge <n> --squash --delete-branch \
+  --subject "feat: describe the change (#<n>)" \
+  --body "Optional longer description."
+```
+Never merge a PR titled "wip"/"draft".
+
+### Commit messages
+
+No attribution trailers (`attribution.commit` / `attribution.pr` are `""` in
+`~/.claude/settings.json`, enforced at the tool level).
 
 ## Deployment
 
