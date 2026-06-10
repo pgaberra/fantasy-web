@@ -8,6 +8,7 @@ services:
     # e.g. https://fantasy-bff-staging.onrender.com
     buildCommand: >-
       npm ci &&
+      npm run generate:api &&
       sed -i "s#http://PLACEHOLDER_FOR_PROD_URL#$API_URL#g" src/environments/environment.prod.ts &&
       npm run build
     staticPublishPath: ./dist/fantasy-web/browser
