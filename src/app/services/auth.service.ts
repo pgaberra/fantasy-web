@@ -26,9 +26,9 @@ export class AuthService {
     );
   }
 
-  register(request: RegisterRequest): Observable<void> {
+  register(request: RegisterRequest): Observable<AuthResponse> {
     return from(this.api.invoke(register, { body: request })).pipe(
-      tap(() => void this.router.navigate(['/login'])),
+      tap((response) => this.storeTokens(response)),
     );
   }
 
