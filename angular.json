@@ -55,6 +55,17 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "staging": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.staging.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -67,6 +78,9 @@
             },
             "development": {
               "buildTarget": "fantasy-web:build:development"
+            },
+            "staging": {
+              "buildTarget": "fantasy-web:build:staging"
             }
           },
           "defaultConfiguration": "development"
