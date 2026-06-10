@@ -5,29 +5,35 @@ import { AuthService } from '../services/auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
+  const isAuthEndpoint = req.url.includes('/api/v1/auth/');
   const token = authService.getToken();
-  const authReq = token ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;
+  const authReq =
+    token && !isAuthEndpoint
+      ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
+      : req;
 
   return next(authReq).pipe(
     catchError((error) => {
-      if (error.status === HttpStatusCode.Unauthorized && authService.getRefreshToken()) {
-        return authService.refresh().pipe(
-          switchMap((response) => {
-            const retryReq = req.clone({
-              setHeaders: { Authorization: `Bearer ${response.token}` },
-            });
-            return next(retryReq);
-          }),
-          catchError((refreshError) => {
-            authService.logout();
-            return throwError(() => refreshError);
-          }),
-        );
+      const isUnauthorized = error.status === HttpStatusCode.Unauthorized;
+
+      if (!isUnauthorized || isAuthEndpoint) {
+        return throwError(() => error);
       }
-      if (error.status === HttpStatusCode.Unauthorized) {
+
+      if (!authService.getRefreshToken()) {
         authService.logout();
+        return throwError(() => error);
       }
-      return throwError(() => error);
+
+      return authService.refresh().pipe(
+        switchMap((response) =>
+          next(req.clone({ setHeaders: { Authorization: `Bearer ${response.token}` } })),
+        ),
+        catchError((refreshError) => {
+          authService.logout();
+          return throwError(() => refreshError);
+        }),
+      );
     }),
   );
 };
