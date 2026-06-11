@@ -1,6 +1,11 @@
-import { Component, computed, input, model } from '@angular/core';
+import { Component, computed, input, model, output } from '@angular/core';
 import { ScoringStatKey } from '../../../models/stat-key.model';
-import { ActiveColumns, ScoringType } from '../../../models/projection.model';
+import {
+  ActiveColumns,
+  ScoringType,
+  SortColumn,
+  SortDirection,
+} from '../../../models/projection.model';
 import { StatLabelPipe } from '../../../pipes/stat-label.pipe';
 import { DecimalStatKey } from '../../projection-settings-section/model';
 
@@ -17,7 +22,17 @@ export class ProjectionsTableHeaderComponent {
   statWeights = model.required<Record<ScoringStatKey, number>>();
   useDefaultDecimals = input<boolean>(false);
   decimalSettings = model.required<Record<DecimalStatKey, number>>();
-  summaryLabel = computed(() => (this.scoringType() === 'points' ? 'Fan Pts' : 'Z-Score'));
+  sortColumn = input.required<SortColumn>();
+  sortDirection = input.required<SortDirection>();
+  readonly sort = output<SortColumn>();
+  summaryLabel = computed(() => (this.scoringType() === 'points' ? 'Total Points' : 'Z-Score'));
+
+  sortIndicator(column: SortColumn): string {
+    if (this.sortColumn() !== column) {
+      return '';
+    }
+    return this.sortDirection() === 'asc' ? '▲' : '▼';
+  }
 
   gpDecimalSetting = computed(() => this.decimalSettings().gp);
 

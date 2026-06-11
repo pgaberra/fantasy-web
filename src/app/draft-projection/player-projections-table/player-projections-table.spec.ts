@@ -356,6 +356,46 @@ describe('PlayerProjectionsTableComponent', () => {
     });
   });
 
+  describe('column sorting', () => {
+    it('defaults to the summary column, descending', () => {
+      const component = getComponent();
+      expect(component.sortColumn()).toEqual('summary');
+      expect(component.sortDirection()).toEqual('desc');
+    });
+
+    it('sorts by an individual stat descending when that column is chosen', () => {
+      const component = getComponent();
+
+      component.onSort('hits');
+
+      expect(component.sortColumn()).toEqual('hits');
+      expect(component.sortDirection()).toEqual('desc');
+      // Draisaitl 51 > McDavid 42 > Hellebuyck (goalie, no hits) 0
+      expect(component.visibleProjections().map((p) => p.playerId)).toEqual([2, 1, 3]);
+    });
+
+    it('toggles direction when the same column is chosen again', () => {
+      const component = getComponent();
+
+      component.onSort('hits');
+      component.onSort('hits');
+
+      expect(component.sortDirection()).toEqual('asc');
+      expect(component.visibleProjections().map((p) => p.playerId)).toEqual([3, 1, 2]);
+    });
+
+    it('resets to descending when switching to a different column', () => {
+      const component = getComponent();
+
+      component.onSort('hits');
+      component.onSort('hits');
+      component.onSort('goals');
+
+      expect(component.sortColumn()).toEqual('goals');
+      expect(component.sortDirection()).toEqual('desc');
+    });
+  });
+
   describe('search and pagination', () => {
     it('should return all projections when the search term is empty', () => {
       const component = getComponent();
@@ -452,16 +492,16 @@ describe('PlayerProjectionsTableComponent', () => {
       expect(headers).not.toContain('GP');
     });
 
-    it('should show the Fan Pts column header when scoringType is "points"', () => {
+    it('should show the Total Points column header when scoringType is "points"', () => {
       getComponent({ scoringType: 'points' });
       const headers = ngMocks.findAll('thead th').map((th) => th.nativeElement.textContent.trim());
-      expect(headers.some((h) => h.includes('Fan Pts'))).toEqual(true);
+      expect(headers.some((h) => h.includes('Total Points'))).toEqual(true);
     });
 
-    it('should hide the Fan Pts column header when scoringType is "category"', () => {
+    it('should hide the Total Points column header when scoringType is "category"', () => {
       getComponent({ scoringType: 'category' });
       const headers = ngMocks.findAll('thead th').map((th) => th.nativeElement.textContent.trim());
-      expect(headers.some((h) => h.includes('Fan Pts'))).toEqual(false);
+      expect(headers.some((h) => h.includes('Total Points'))).toEqual(false);
     });
 
     it('should render the weight input row when scoringType is "points"', () => {
