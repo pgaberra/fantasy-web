@@ -18,6 +18,7 @@ export class StatInputComponent {
   key = input.required<StatKey>();
   value = input.required<number>();
   decimalSettings = input.required<Record<DecimalStatKey, number>>();
+  warning = input<string | null>(null);
 
   statInput = output<{ playerId: number; key: StatKey; event: Event }>();
   toiKeydown = output<{ playerId: number; event: KeyboardEvent }>();

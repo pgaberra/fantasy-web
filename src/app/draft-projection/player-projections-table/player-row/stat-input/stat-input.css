@@ -30,6 +30,17 @@
   box-shadow: 0 0 0 2px rgba(15, 52, 96, 0.15);
 }
 
+.stat-input.has-warning {
+  border-color: #e6a700;
+  background: #fff8e6;
+  cursor: help;
+}
+
+.stat-input.has-warning:focus {
+  border-color: #e6a700;
+  box-shadow: 0 0 0 2px rgba(230, 167, 0, 0.3);
+}
+
 .stat-input::-webkit-outer-spin-button,
 .stat-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
