@@ -20,12 +20,15 @@ const skater = (
     scoring: {
       goals: 30,
       assists: 30,
+      points: 60,
       plusMinus: 0,
       pim: 0,
       ppg: 0,
       ppa: 0,
+      ppp: 0,
       shg: 0,
       sha: 0,
+      shp: 0,
       gwg: 0,
       sog: 200,
       shPct: 0,
@@ -80,6 +83,22 @@ describe('StatWarningService', () => {
   it('warns when goals exceed shots on goal', () => {
     expect(service.warningsFor(skater({ goals: 50, sog: 40 })).has('goals')).toEqual(true);
     expect(service.warningsFor(skater({ goals: 30, sog: 200 })).has('goals')).toEqual(false);
+  });
+
+  it('warns when P does not equal goals + assists', () => {
+    expect(
+      service.warningsFor(skater({ goals: 20, assists: 25, points: 45 })).has('points'),
+    ).toEqual(false);
+    expect(
+      service.warningsFor(skater({ goals: 20, assists: 25, points: 40 })).has('points'),
+    ).toEqual(true);
+  });
+
+  it('warns when PPP / SHP do not equal their goals + assists', () => {
+    expect(service.warningsFor(skater({ ppg: 10, ppa: 15, ppp: 25 })).has('ppp')).toEqual(false);
+    expect(service.warningsFor(skater({ ppg: 10, ppa: 15, ppp: 20 })).has('ppp')).toEqual(true);
+    expect(service.warningsFor(skater({ shg: 2, sha: 3, shp: 5 })).has('shp')).toEqual(false);
+    expect(service.warningsFor(skater({ shg: 2, sha: 3, shp: 6 })).has('shp')).toEqual(true);
   });
 
   it('warns on impossible goalie lines', () => {

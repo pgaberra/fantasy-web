@@ -4,6 +4,7 @@ import { StatKey } from '../models/stat-key.model';
 
 const SEASON_GAMES = 82;
 const MAX_TOI_SECONDS = 60 * 60;
+const POINTS_TOLERANCE = 0.01;
 
 @Injectable({
   providedIn: 'root',
@@ -38,6 +39,15 @@ export class StatWarningService {
       }
       if (scoring.goals > scoring.sog) {
         warnings.set('goals', 'More goals than shots on goal');
+      }
+      if (Math.abs(scoring.goals + scoring.assists - scoring.points) > POINTS_TOLERANCE) {
+        warnings.set('points', "Doesn't equal Goals + Assists");
+      }
+      if (Math.abs(scoring.ppg + scoring.ppa - scoring.ppp) > POINTS_TOLERANCE) {
+        warnings.set('ppp', "Doesn't equal PPG + PPA");
+      }
+      if (Math.abs(scoring.shg + scoring.sha - scoring.shp) > POINTS_TOLERANCE) {
+        warnings.set('shp', "Doesn't equal SHG + SHA");
       }
     } else {
       const { scoring, utility } = projection.stats;
