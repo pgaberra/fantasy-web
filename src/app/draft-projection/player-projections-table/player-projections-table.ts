@@ -1,4 +1,14 @@
-import { Component, computed, inject, input, model, OnInit, Signal, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  model,
+  OnInit,
+  Signal,
+  signal,
+} from '@angular/core';
 import { Player } from '../../models/player.model';
 import {
   ActiveColumns,
@@ -30,6 +40,8 @@ import {
   UtilityStatKey,
 } from '../../models/stat-key.model';
 import { StatInfoService } from '../../services/stat-info.service';
+
+const PLAYERS_PER_PAGE = 250;
 
 @Component({
   selector: 'app-player-projections-table',
@@ -136,6 +148,33 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   readonly positionFilter = signal<PositionFilter>('ALL');
 
+  readonly searchTerm = signal('');
+
+  readonly searchedProjections = computed<Projection[]>(() => {
+    const term = this.searchTerm().trim().toLowerCase();
+    const projections = this.filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit();
+    if (!term) {
+      return projections;
+    }
+    const players = this.playerMap();
+    return projections.filter((projection) =>
+      players.get(projection.playerId)!.name.toLowerCase().includes(term),
+    );
+  });
+
+  readonly matchingCount = computed(() => this.searchedProjections().length);
+
+  readonly visibleCount = linkedSignal({
+    source: () => ({ term: this.searchTerm(), position: this.positionFilter() }),
+    computation: () => PLAYERS_PER_PAGE,
+  });
+
+  readonly visibleProjections = computed<Projection[]>(() =>
+    this.searchedProjections().slice(0, this.visibleCount()),
+  );
+
+  readonly hasMore = computed(() => this.visibleCount() < this.matchingCount());
+
   editingPlayerId = signal<number | null>(null);
   private readonly lockedOrder = signal<number[]>([]);
 
@@ -155,6 +194,14 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   getPlayer(playerId: number): Player {
     return this.playerMap().get(playerId)!;
+  }
+
+  onSearchInput(event: Event): void {
+    this.searchTerm.set((event.target as HTMLInputElement).value);
+  }
+
+  showMore(): void {
+    this.visibleCount.update((count) => count + PLAYERS_PER_PAGE);
   }
 
   private initializeProjection(): void {

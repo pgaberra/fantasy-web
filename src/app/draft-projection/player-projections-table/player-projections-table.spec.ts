@@ -356,6 +356,60 @@ describe('PlayerProjectionsTableComponent', () => {
     });
   });
 
+  describe('search and pagination', () => {
+    it('should return all projections when the search term is empty', () => {
+      const component = getComponent();
+      expect(component.visibleProjections()).toHaveLength(mockPlayers.length);
+    });
+
+    it('should filter projections by player name, case-insensitively', () => {
+      const component = getComponent();
+      component.searchTerm.set('draisaitl');
+      expect(component.visibleProjections().map((p) => p.playerId)).toEqual([2]);
+    });
+
+    it('should match a substring across multiple players', () => {
+      const component = getComponent();
+      component.searchTerm.set('connor');
+      expect(component.matchingCount()).toEqual(2);
+    });
+
+    it('should report no matches for a search that hits nobody', () => {
+      const component = getComponent();
+      component.searchTerm.set('nobody');
+      expect(component.matchingCount()).toEqual(0);
+      expect(component.visibleProjections()).toHaveLength(0);
+    });
+
+    it('should cap the visible projections at the visible count and expose hasMore', () => {
+      const component = getComponent();
+      component.visibleCount.set(1);
+      expect(component.visibleProjections()).toHaveLength(1);
+      expect(component.hasMore()).toEqual(true);
+    });
+
+    it('should grow the visible count by one page on showMore', () => {
+      const component = getComponent();
+      component.visibleCount.set(1);
+      component.showMore();
+      expect(component.visibleCount()).toEqual(251);
+    });
+
+    it('should reset the visible count when the search term changes', () => {
+      const component = getComponent();
+      component.visibleCount.set(500);
+      component.searchTerm.set('connor');
+      expect(component.visibleCount()).toEqual(250);
+    });
+
+    it('should reset the visible count when the position filter changes', () => {
+      const component = getComponent();
+      component.visibleCount.set(500);
+      component.positionFilter.set('C');
+      expect(component.visibleCount()).toEqual(250);
+    });
+  });
+
   describe('template', () => {
     it('should render one row per player in the table body', () => {
       getComponent();

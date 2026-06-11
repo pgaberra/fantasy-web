@@ -1,7 +1,19 @@
 <section class="table-section">
   <div class="table-header">
     <h2>Player Projections</h2>
-    <app-position-filter [(value)]="positionFilter" />
+    <div class="table-controls">
+      <div class="search-control">
+        <label for="player-search">Search</label>
+        <input
+          id="player-search"
+          type="search"
+          placeholder="Search player…"
+          [value]="searchTerm()"
+          (input)="onSearchInput($event)"
+        />
+      </div>
+      <app-position-filter [(value)]="positionFilter" />
+    </div>
   </div>
   <div class="table-wrapper">
     <table>
@@ -14,10 +26,7 @@
         [(decimalSettings)]="decimalSettings"
       ></thead>
       <tbody>
-        @for (
-          projection of filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit();
-          track projection.playerId
-        ) {
+        @for (projection of visibleProjections(); track projection.playerId) {
           <tr
             app-player-row
             [positionRank]="positionRanks().get(projection.playerId)!"
@@ -40,4 +49,16 @@
       </tbody>
     </table>
   </div>
+  @if (matchingCount() === 0) {
+    <p class="table-empty">No players match your search.</p>
+  } @else {
+    <div class="table-footer">
+      <span class="result-count"
+        >Showing {{ visibleProjections().length }} of {{ matchingCount() }}</span
+      >
+      @if (hasMore()) {
+        <button type="button" class="show-more-button" (click)="showMore()">Show more</button>
+      }
+    </div>
+  }
 </section>
