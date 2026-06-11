@@ -1,0 +1,9 @@
+<div class="filter-control">
+  <label for="team-filter">Team</label>
+  <select id="team-filter" [value]="value()" (change)="onChange($event)">
+    <option value="ALL">All teams</option>
+    @for (team of teams(); track team) {
+      <option [value]="team">{{ team }}</option>
+    }
+  </select>
+</div>

@@ -32,6 +32,8 @@ function skaterResponseToSkater(skater: SkaterResponse): Skater {
     type: 'skater',
     id: skater.id,
     name: skater.name,
+    teamAbbrev: skater.teamAbbrev,
+    headshot: skater.headshot,
     positions: new Set(skater.positions),
     stats: skater.stats,
   };
@@ -42,6 +44,8 @@ function goalieResponseToGoalie(goalie: GoalieResponse): Goalie {
     type: 'goalie',
     id: goalie.id,
     name: goalie.name,
+    teamAbbrev: goalie.teamAbbrev,
+    headshot: goalie.headshot,
     stats: goalie.stats,
   };
 }

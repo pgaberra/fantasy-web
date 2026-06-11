@@ -13,6 +13,9 @@
         />
       </div>
       <app-position-filter [(value)]="positionFilter" />
+      @if (availableTeams().length) {
+        <app-team-filter [teams]="availableTeams()" [(value)]="teamFilter" />
+      }
     </div>
   </div>
   <div class="table-wrapper">

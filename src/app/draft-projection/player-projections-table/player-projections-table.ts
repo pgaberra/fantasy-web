@@ -34,6 +34,7 @@ import {
 import { ProjectionsTableHeaderComponent } from './projections-table-header/projections-table-header';
 import { PlayerRowComponent } from './player-row/player-row';
 import { PositionFilterComponent } from './position-filter/position-filter';
+import { TeamFilterComponent } from './team-filter/team-filter';
 import {
   GOALIE_SCORING_STAT_KEYS,
   ScoringStatKey,
@@ -54,7 +55,12 @@ function statValueOf(projection: Projection, key: StatKey): number {
 
 @Component({
   selector: 'app-player-projections-table',
-  imports: [ProjectionsTableHeaderComponent, PlayerRowComponent, PositionFilterComponent],
+  imports: [
+    ProjectionsTableHeaderComponent,
+    PlayerRowComponent,
+    PositionFilterComponent,
+    TeamFilterComponent,
+  ],
   templateUrl: './player-projections-table.html',
   styleUrl: './player-projections-table.css',
 })
@@ -81,18 +87,32 @@ export class PlayerProjectionsTableComponent implements OnInit {
   private readonly realTimeSortedProjections = computed((): Projection[] => {
     const projections = this.playerProjections();
     const scores = this.playerScores();
+    const column = this.sortColumn();
     const sign = this.sortDirection() === 'asc' ? 1 : -1;
-    const valueOf = this.sortValueResolver(this.sortColumn(), scores);
     const summaryValueOf = this.sortValueResolver('summary', scores);
+    const tieBreak = (a: Projection, b: Projection): number =>
+      summaryValueOf(b) - summaryValueOf(a);
+
+    if (column === 'team') {
+      const players = this.playerMap();
+      const teamOf = (projection: Projection): string =>
+        players.get(projection.playerId)?.teamAbbrev ?? '';
+      return [...projections].sort((a, b) => {
+        const primary = sign * teamOf(a).localeCompare(teamOf(b));
+        return primary !== 0 ? primary : tieBreak(a, b);
+      });
+    }
+
+    const valueOf = this.sortValueResolver(column, scores);
     return [...projections].sort((a, b) => {
       const primary = sign * (valueOf(a) - valueOf(b));
       // Ties fall back to fantasy value (desc) so equal-stat players stay meaningfully ordered.
-      return primary !== 0 ? primary : summaryValueOf(b) - summaryValueOf(a);
+      return primary !== 0 ? primary : tieBreak(a, b);
     });
   });
 
   private sortValueResolver(
-    column: SortColumn,
+    column: Exclude<SortColumn, 'team'>,
     scores: Map<number, PlayerScore>,
   ): (projection: Projection) => number {
     if (column === 'summary') {
@@ -114,7 +134,12 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly filteredAndSortedProjections: Signal<Projection[]> = computed(() => {
     const projections = this.realTimeSortedProjections();
     const filter = this.positionFilter();
-    return this.positionFilterService.filterByPosition(projections, this.playerMap(), filter);
+    const byPosition = this.positionFilterService.filterByPosition(
+      projections,
+      this.playerMap(),
+      filter,
+    );
+    return this.filterByTeam(byPosition);
   });
   filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit: Signal<Projection[]> = computed(
     () => {
@@ -127,11 +152,12 @@ export class PlayerProjectionsTableComponent implements OnInit {
       const lockedProjections = this.lockedOrder().map(
         (playerId) => projections.find((pp) => pp.playerId === playerId)!,
       );
-      return this.positionFilterService.filterByPosition(
+      const byPosition = this.positionFilterService.filterByPosition(
         lockedProjections,
         this.playerMap(),
         filter,
       );
+      return this.filterByTeam(byPosition);
     },
   );
 
@@ -181,6 +207,28 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   readonly positionFilter = signal<PositionFilter>('ALL');
 
+  readonly teamFilter = signal<string>('ALL');
+  readonly availableTeams = computed<string[]>(() => {
+    const teams = new Set<string>();
+    for (const player of this.players()) {
+      if (player.teamAbbrev) {
+        teams.add(player.teamAbbrev);
+      }
+    }
+    return [...teams].sort((a, b) => a.localeCompare(b));
+  });
+
+  private filterByTeam(projections: Projection[]): Projection[] {
+    const team = this.teamFilter();
+    if (team === 'ALL') {
+      return projections;
+    }
+    const players = this.playerMap();
+    return projections.filter(
+      (projection) => players.get(projection.playerId)?.teamAbbrev === team,
+    );
+  }
+
   readonly searchTerm = signal('');
 
   readonly searchedProjections = computed<Projection[]>(() => {
@@ -201,6 +249,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
     source: () => ({
       term: this.searchTerm(),
       position: this.positionFilter(),
+      team: this.teamFilter(),
       sortColumn: this.sortColumn(),
       sortDirection: this.sortDirection(),
     }),

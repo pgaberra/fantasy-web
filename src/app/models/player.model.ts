@@ -4,6 +4,8 @@ import { SkaterPosition } from './position.model';
 interface BasePlayer {
   id: number;
   name: string;
+  teamAbbrev?: string;
+  headshot?: string;
 }
 
 export interface Skater extends BasePlayer {
