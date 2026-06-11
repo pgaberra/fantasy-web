@@ -14,6 +14,35 @@ th.col-name {
   padding-left: 0.75rem;
 }
 
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+th.sortable:hover {
+  background: #1a4a80;
+}
+
+th.summary-pts-col.sortable:hover {
+  background: #b87908;
+}
+
+th.sortable.sorted {
+  background: #1a4a80;
+}
+
+th.summary-pts-col.sortable.sorted {
+  background: #b87908;
+}
+
+.sort-arrow {
+  display: inline-block;
+  width: 0.75em;
+  margin-left: 0.15em;
+  font-size: 0.7em;
+  color: #e6b84a;
+}
+
 .col-rank {
   text-align: center;
   color: #7a8baa;

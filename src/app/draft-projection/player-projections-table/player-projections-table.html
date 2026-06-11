@@ -24,6 +24,9 @@
         [(statWeights)]="statWeights"
         [useDefaultDecimals]="useDefaultDecimals()"
         [(decimalSettings)]="decimalSettings"
+        [sortColumn]="sortColumn()"
+        [sortDirection]="sortDirection()"
+        (sort)="onSort($event)"
       ></thead>
       <tbody>
         @for (projection of visibleProjections(); track projection.playerId) {

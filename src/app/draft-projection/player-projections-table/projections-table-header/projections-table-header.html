@@ -2,12 +2,22 @@
   <th class="col-rank">#</th>
   <th class="col-name">Player</th>
   @for (col of activeColumns().utility; track col) {
-    <th class="col-utility">{{ col | statLabel }}</th>
+    <th class="col-utility sortable" [class.sorted]="sortColumn() === col" (click)="sort.emit(col)">
+      {{ col | statLabel }}<span class="sort-arrow">{{ sortIndicator(col) }}</span>
+    </th>
   }
   @for (col of activeColumns().scoring; track col) {
-    <th>{{ col | statLabel }}</th>
+    <th class="sortable" [class.sorted]="sortColumn() === col" (click)="sort.emit(col)">
+      {{ col | statLabel }}<span class="sort-arrow">{{ sortIndicator(col) }}</span>
+    </th>
   }
-  <th class="summary-pts-col">{{ summaryLabel() }}</th>
+  <th
+    class="summary-pts-col sortable"
+    [class.sorted]="sortColumn() === 'summary'"
+    (click)="sort.emit('summary')"
+  >
+    {{ summaryLabel() }}<span class="sort-arrow">{{ sortIndicator('summary') }}</span>
+  </th>
 </tr>
 @if (scoringType() === 'points') {
   <tr class="weight-row">

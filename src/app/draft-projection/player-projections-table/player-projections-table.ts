@@ -18,6 +18,8 @@ import {
   Projection,
   ScoringType,
   SkaterScoringStats,
+  SortColumn,
+  SortDirection,
 } from '../../models/projection.model';
 import { ProjectionCalculationService } from '../../services/projection-calculation.service';
 import { ProjectionUpdateService } from '../../services/projection-update.service';
@@ -43,6 +45,13 @@ import { StatInfoService } from '../../services/stat-info.service';
 
 const PLAYERS_PER_PAGE = 250;
 
+function statValueOf(projection: Projection, key: StatKey): number {
+  const scoring = projection.stats.scoring as Record<string, number>;
+  const utility = projection.stats.utility as Record<string, number>;
+  const value = scoring[key] ?? utility[key];
+  return typeof value === 'number' ? value : 0;
+}
+
 @Component({
   selector: 'app-player-projections-table',
   imports: [ProjectionsTableHeaderComponent, PlayerRowComponent, PositionFilterComponent],
@@ -65,19 +74,43 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly decimalSettings = model<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
   readonly useDefaultDecimals = input.required<boolean>();
 
+  readonly sortColumn = signal<SortColumn>('summary');
+  readonly sortDirection = signal<SortDirection>('desc');
+
   readonly playerProjections = signal<Projection[]>([]);
   private readonly realTimeSortedProjections = computed((): Projection[] => {
     const projections = this.playerProjections();
     const scores = this.playerScores();
-    const scoringType = this.scoringType();
-    return [...projections].sort(
-      scoringType === 'points'
-        ? (a, b) =>
-            (scores.get(b.playerId)?.fantasyPoints ?? 0) -
-            (scores.get(a.playerId)?.fantasyPoints ?? 0)
-        : (a, b) => (scores.get(b.playerId)?.zScore ?? 0) - (scores.get(a.playerId)?.zScore ?? 0),
-    );
+    const sign = this.sortDirection() === 'asc' ? 1 : -1;
+    const valueOf = this.sortValueResolver(this.sortColumn(), scores);
+    const summaryValueOf = this.sortValueResolver('summary', scores);
+    return [...projections].sort((a, b) => {
+      const primary = sign * (valueOf(a) - valueOf(b));
+      // Ties fall back to fantasy value (desc) so equal-stat players stay meaningfully ordered.
+      return primary !== 0 ? primary : summaryValueOf(b) - summaryValueOf(a);
+    });
   });
+
+  private sortValueResolver(
+    column: SortColumn,
+    scores: Map<number, PlayerScore>,
+  ): (projection: Projection) => number {
+    if (column === 'summary') {
+      return this.scoringType() === 'points'
+        ? (projection) => scores.get(projection.playerId)?.fantasyPoints ?? 0
+        : (projection) => scores.get(projection.playerId)?.zScore ?? 0;
+    }
+    return (projection) => statValueOf(projection, column);
+  }
+
+  onSort(column: SortColumn): void {
+    if (this.sortColumn() === column) {
+      this.sortDirection.update((direction) => (direction === 'desc' ? 'asc' : 'desc'));
+    } else {
+      this.sortColumn.set(column);
+      this.sortDirection.set('desc');
+    }
+  }
   readonly filteredAndSortedProjections: Signal<Projection[]> = computed(() => {
     const projections = this.realTimeSortedProjections();
     const filter = this.positionFilter();
@@ -165,7 +198,12 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly matchingCount = computed(() => this.searchedProjections().length);
 
   readonly visibleCount = linkedSignal({
-    source: () => ({ term: this.searchTerm(), position: this.positionFilter() }),
+    source: () => ({
+      term: this.searchTerm(),
+      position: this.positionFilter(),
+      sortColumn: this.sortColumn(),
+      sortDirection: this.sortDirection(),
+    }),
     computation: () => PLAYERS_PER_PAGE,
   });
 

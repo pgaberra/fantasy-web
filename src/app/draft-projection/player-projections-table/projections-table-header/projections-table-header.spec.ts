@@ -41,6 +41,8 @@ describe('ProjectionsTableHeaderComponent', () => {
         [(statWeights)]="statWeights"
         [useDefaultDecimals]="useDefaultDecimals"
         [(decimalSettings)]="decimalSettings"
+        [sortColumn]="sortColumn"
+        [sortDirection]="sortDirection"
       ></thead>
     </table>
   `;
@@ -58,6 +60,8 @@ describe('ProjectionsTableHeaderComponent', () => {
       useDefaultDecimals: true,
       decimalSettings: DEFAULT_DECIMAL_SETTINGS,
       maxDecimalSetting: 3,
+      sortColumn: 'summary',
+      sortDirection: 'desc',
       ...overrides,
     });
 
@@ -66,12 +70,32 @@ describe('ProjectionsTableHeaderComponent', () => {
       .componentInstance;
 
   describe('summaryLabel', () => {
-    it('should return "Fan Pts" when scoringType is "points"', () => {
-      expect(getComponent({ scoringType: 'points' }).summaryLabel()).toEqual('Fan Pts');
+    it('should return "Total Points" when scoringType is "points"', () => {
+      expect(getComponent({ scoringType: 'points' }).summaryLabel()).toEqual('Total Points');
     });
 
     it('should return "Z-Score" when scoringType is "category"', () => {
       expect(getComponent({ scoringType: 'category' }).summaryLabel()).toEqual('Z-Score');
+    });
+  });
+
+  describe('sortIndicator', () => {
+    it('shows a down arrow for the descending sorted column', () => {
+      expect(
+        getComponent({ sortColumn: 'goals', sortDirection: 'desc' }).sortIndicator('goals'),
+      ).toEqual('▼');
+    });
+
+    it('shows an up arrow for the ascending sorted column', () => {
+      expect(
+        getComponent({ sortColumn: 'goals', sortDirection: 'asc' }).sortIndicator('goals'),
+      ).toEqual('▲');
+    });
+
+    it('shows nothing for a column that is not the sorted one', () => {
+      expect(
+        getComponent({ sortColumn: 'goals', sortDirection: 'desc' }).sortIndicator('assists'),
+      ).toEqual('');
     });
   });
 
@@ -135,13 +159,32 @@ describe('ProjectionsTableHeaderComponent', () => {
     it('should show "Z-Score" in the summary column when scoringType is "category"', () => {
       getFixture({ scoringType: 'category' });
       const headers = ngMocks.findAll('th').map((th) => th.nativeElement.textContent.trim());
-      expect(headers).toContain('Z-Score');
+      expect(headers.some((h) => h.includes('Z-Score'))).toEqual(true);
     });
 
-    it('should show "Fan Pts" in the summary column when scoringType is "points"', () => {
+    it('should show "Total Points" in the summary column when scoringType is "points"', () => {
       getFixture({ scoringType: 'points' });
       const headers = ngMocks.findAll('th').map((th) => th.nativeElement.textContent.trim());
-      expect(headers.some((h) => h.includes('Fan Pts'))).toEqual(true);
+      expect(headers.some((h) => h.includes('Total Points'))).toEqual(true);
+    });
+
+    it('should emit the column key when a sortable header is clicked', () => {
+      const fixture = getFixture({
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['goals']),
+          utility: new Set<SkaterUtilityStatKey>(),
+        } as ActiveColumns,
+      });
+      const component = ngMocks.find(
+        fixture.debugElement,
+        ProjectionsTableHeaderComponent,
+      ).componentInstance;
+      const emit = vi.spyOn(component.sort, 'emit');
+      const goalsHeader = ngMocks
+        .findAll('th.sortable')
+        .find((th) => th.nativeElement.textContent.includes('Goals'))!;
+      goalsHeader.nativeElement.dispatchEvent(new Event('click'));
+      expect(emit).toHaveBeenCalledWith('goals');
     });
 
     it('should render the weight-row when scoringType is "points"', () => {
