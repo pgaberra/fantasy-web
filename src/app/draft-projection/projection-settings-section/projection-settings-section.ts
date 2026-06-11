@@ -1,4 +1,4 @@
-import { Component, computed, model, signal } from '@angular/core';
+import { Component, computed, inject, model, signal } from '@angular/core';
 import { SettingRowComponent } from './setting-row/setting-row';
 import { ToggleSwitchComponent } from './toggle-switch/toggle-switch';
 import { UtilityStatLabelPipe } from '../../pipes/utility-stat-label.pipe';
@@ -17,6 +17,7 @@ import {
 import { ScaleConfig } from './model';
 import { ScoringType } from '../../models/projection.model';
 import { StatGroupComponent } from './stat-group/stat-group';
+import { StatInfoService } from '../../services/stat-info.service';
 
 @Component({
   selector: 'app-projection-settings-section',
@@ -32,6 +33,8 @@ import { StatGroupComponent } from './stat-group/stat-group';
   ],
 })
 export class ProjectionSettingsSectionComponent {
+  private readonly statInfoService = inject(StatInfoService);
+
   scoringType = model.required<ScoringType>();
   activeUtilityColumns = model.required<Set<UtilityStatKey>>();
   activeScoringColumns = model.required<Set<ScoringStatKey>>();
@@ -147,7 +150,9 @@ export class ProjectionSettingsSectionComponent {
   }
 
   getAvailableScoringStats(key: UtilityStatKey): ScoringStatKey[] {
-    const active = this.activeScoringColumnsSorted();
+    const active = this.activeScoringColumnsSorted().filter(
+      (scoringKey) => !this.statInfoService.isRateStat(scoringKey),
+    );
     if (
       (GOALIE_UTILITY_STAT_KEYS as readonly string[]).includes(key) &&
       (SKATER_UTILITY_STAT_KEYS as readonly string[]).includes(key)
