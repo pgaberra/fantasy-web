@@ -12,12 +12,14 @@ import { ScoringType } from '../../models/projection.model';
 import { ScaleConfig } from './model';
 import { ToggleSwitchComponent } from './toggle-switch/toggle-switch';
 import { SettingRowComponent } from './setting-row/setting-row';
+import { StatInfoService } from '../../services/stat-info.service';
 
 describe('ProjectionSettingsSectionComponent', () => {
   beforeEach(() =>
     MockBuilder(ProjectionSettingsSectionComponent)
       .keep(ToggleSwitchComponent)
-      .keep(SettingRowComponent),
+      .keep(SettingRowComponent)
+      .keep(StatInfoService),
   );
 
   const defaultActiveScoringColumns = new Set<ScoringStatKey>([
@@ -148,6 +150,18 @@ describe('ProjectionSettingsSectionComponent', () => {
 
       const checkboxes = ngMocks.findAll('input[type="checkbox"]');
       expect(checkboxes.length).toEqual(defaultActiveScoringColumns.size);
+    });
+
+    it('should exclude percentage and average stats from the scaling options', () => {
+      const activeScoringColumns = new Set<ScoringStatKey>(['goals', 'shPct', 'svPct', 'gaa']);
+      const component = getComponent(new Set<SkaterUtilityStatKey>(['gp']), activeScoringColumns);
+
+      const available = component.getAvailableScoringStats('gp');
+
+      expect(available).toContain('goals');
+      expect(available).not.toContain('shPct');
+      expect(available).not.toContain('svPct');
+      expect(available).not.toContain('gaa');
     });
 
     it('should call toggleScaleStat() when a checkbox is clicked', () => {
