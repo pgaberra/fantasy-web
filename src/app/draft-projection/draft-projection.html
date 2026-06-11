@@ -7,6 +7,16 @@
       <p class="subtitle">Customize your league settings and edit player projections below.</p>
     </div>
 
+    <app-projection-manager
+      [savedProjections]="savedProjections()"
+      [loadedName]="loadedProjectionName()"
+      [isBusy]="isBusy()"
+      (loadProjection)="onLoad($event)"
+      (save)="onSave()"
+      (saveAs)="onSaveAs($event)"
+      (deleteCurrent)="onDeleteCurrent()"
+    />
+
     <app-projection-settings-section
       [(scoringType)]="scoringType"
       [(activeScoringColumns)]="activeScoringColumns"

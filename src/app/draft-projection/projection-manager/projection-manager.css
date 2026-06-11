@@ -1,0 +1,73 @@
+.projection-manager {
+  background: #fff;
+  border: 1px solid #e0e4ef;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.projection-manager h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: #0f3460;
+}
+
+.pm-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  align-items: flex-end;
+}
+
+.pm-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pm-group label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #7a8baa;
+}
+
+.pm-group select,
+.pm-group input {
+  font-size: 0.875rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid #e0e4ef;
+  border-radius: 6px;
+  background: #fff;
+  color: #0f3460;
+}
+
+.pm-group button {
+  font-size: 0.875rem;
+  padding: 0.3rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  background: #0f3460;
+  color: #fff;
+  cursor: pointer;
+}
+
+.pm-group button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pm-current {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pm-loaded {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f3460;
+}
+
+.pm-delete {
+  background: #b3261e !important;
+}

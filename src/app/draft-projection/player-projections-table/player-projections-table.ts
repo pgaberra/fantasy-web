@@ -269,6 +269,11 @@ export class PlayerProjectionsTableComponent implements OnInit {
     this.initializeProjection();
   }
 
+  loadProjections(projections: Projection[]): void {
+    this.editingPlayerId.set(null);
+    this.playerProjections.set(projections);
+  }
+
   realTimeRanks: Signal<Map<number, number>> = computed(() => {
     return new Map(this.realTimeSortedProjections().map((pp, i) => [pp.playerId, i + 1]));
   });
