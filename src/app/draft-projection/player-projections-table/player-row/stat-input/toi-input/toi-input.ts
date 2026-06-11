@@ -12,6 +12,7 @@ export class ToiInputComponent {
   private readonly formatToiPipe = inject(FormatToiPipe);
 
   toiInSeconds = input.required<number>();
+  warning = input<string | null>(null);
 
   toiInput = output<Event>();
   toiKeydown = output<KeyboardEvent>();

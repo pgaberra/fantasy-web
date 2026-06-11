@@ -2,6 +2,7 @@
   @if (isToi()) {
     <app-toi-input
       [toiInSeconds]="value()"
+      [warning]="warning()"
       (toiInput)="onInput($event)"
       (toiKeydown)="onKeydown($event)"
     />
@@ -9,6 +10,8 @@
     <input
       type="number"
       class="stat-input"
+      [class.has-warning]="!!warning()"
+      [attr.title]="warning()"
       [value]="formattedValue()"
       (input)="onInput($event)"
       [attr.min]="canStatBeNegative() ? null : 0"
