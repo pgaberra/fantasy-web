@@ -20,6 +20,7 @@ const skater = (
     scoring: {
       goals: 30,
       assists: 30,
+      points: 60,
       plusMinus: 0,
       pim: 0,
       ppg: 0,
@@ -82,6 +83,15 @@ describe('StatWarningService', () => {
   it('warns when goals exceed shots on goal', () => {
     expect(service.warningsFor(skater({ goals: 50, sog: 40 })).has('goals')).toEqual(true);
     expect(service.warningsFor(skater({ goals: 30, sog: 200 })).has('goals')).toEqual(false);
+  });
+
+  it('warns when P does not equal goals + assists', () => {
+    expect(
+      service.warningsFor(skater({ goals: 20, assists: 25, points: 45 })).has('points'),
+    ).toEqual(false);
+    expect(
+      service.warningsFor(skater({ goals: 20, assists: 25, points: 40 })).has('points'),
+    ).toEqual(true);
   });
 
   it('warns when PPP / SHP do not equal their goals + assists', () => {

@@ -31,6 +31,7 @@ describe('PlayerProjectionsTableComponent', () => {
         scoring: {
           goals: 64,
           assists: 89,
+          points: 153,
           plusMinus: 33,
           pim: 36,
           ppg: 22,
@@ -59,6 +60,7 @@ describe('PlayerProjectionsTableComponent', () => {
         scoring: {
           goals: 52,
           assists: 76,
+          points: 128,
           plusMinus: 18,
           pim: 58,
           ppg: 21,
@@ -128,6 +130,7 @@ describe('PlayerProjectionsTableComponent', () => {
   const mockStatWeights: Record<ScoringStatKey, number> = {
     goals: 4.5,
     assists: 3,
+    points: 0,
     sog: 0.5,
     hits: 0.33,
     blocks: 0.5,

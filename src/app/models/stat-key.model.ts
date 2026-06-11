@@ -15,6 +15,7 @@ export type UtilityStatKey = (typeof UTILITY_STAT_KEYS)[number];
 export const SKATER_SCORING_STAT_KEYS = [
   'goals',
   'assists',
+  'points',
   'plusMinus',
   'pim',
   'ppg',

@@ -21,6 +21,7 @@ describe('DraftProjectionComponent', () => {
           scoring: {
             goals: 64,
             assists: 89,
+            points: 153,
             plusMinus: 33,
             pim: 36,
             ppg: 22,
@@ -49,6 +50,7 @@ describe('DraftProjectionComponent', () => {
           scoring: {
             goals: 52,
             assists: 76,
+            points: 128,
             plusMinus: 18,
             pim: 58,
             ppg: 21,

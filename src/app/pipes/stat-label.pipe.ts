@@ -4,6 +4,7 @@ import { StatKey } from '../models/stat-key.model';
 const STAT_LABELS: Record<StatKey, string> = {
   goals: 'Goals',
   assists: 'Assists',
+  points: 'P',
   plusMinus: '+/-',
   pim: 'PIM',
   ppg: 'PPG',

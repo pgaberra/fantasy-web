@@ -27,6 +27,7 @@ describe('PlayerRowComponent', () => {
       scoring: {
         goals: 64,
         assists: 89,
+        points: 153,
         plusMinus: 33,
         pim: 36,
         ppg: 22,

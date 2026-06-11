@@ -18,6 +18,7 @@ import { StatInfoService } from '../services/stat-info.service';
 const DEFAULT_STAT_WEIGHTS: Record<ScoringStatKey, number> = {
   goals: 4.5,
   assists: 3,
+  points: 0,
   sog: 0.5,
   hits: 0.33,
   blocks: 0.5,

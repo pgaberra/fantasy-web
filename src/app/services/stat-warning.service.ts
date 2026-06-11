@@ -40,6 +40,9 @@ export class StatWarningService {
       if (scoring.goals > scoring.sog) {
         warnings.set('goals', 'More goals than shots on goal');
       }
+      if (Math.abs(scoring.goals + scoring.assists - scoring.points) > POINTS_TOLERANCE) {
+        warnings.set('points', "Doesn't equal Goals + Assists");
+      }
       if (Math.abs(scoring.ppg + scoring.ppa - scoring.ppp) > POINTS_TOLERANCE) {
         warnings.set('ppp', "Doesn't equal PPG + PPA");
       }

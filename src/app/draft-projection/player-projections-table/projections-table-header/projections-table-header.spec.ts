@@ -9,6 +9,7 @@ describe('ProjectionsTableHeaderComponent', () => {
   const mockStatWeights: Record<ScoringStatKey, number> = {
     goals: 4.5,
     assists: 3,
+    points: 0,
     sog: 0.5,
     hits: 0.33,
     blocks: 0.5,

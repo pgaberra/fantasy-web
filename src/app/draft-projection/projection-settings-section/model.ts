@@ -11,6 +11,7 @@ export const DEFAULT_DECIMAL_SETTINGS: Record<DecimalStatKey, number> = {
   gp: 0,
   goals: 0,
   assists: 0,
+  points: 0,
   plusMinus: 0,
   pim: 0,
   ppg: 0,

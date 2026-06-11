@@ -11,6 +11,7 @@ const makeSkaterProjection = (playerId: number, toiPerGame = 1200, gp = 82): Ska
     scoring: {
       goals: 10,
       assists: 20,
+      points: 30,
       plusMinus: 5,
       pim: 2,
       ppg: 3,
