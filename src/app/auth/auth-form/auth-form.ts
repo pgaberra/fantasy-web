@@ -4,12 +4,16 @@ import {
   FormField,
   email,
   form,
+  maxLength,
   minLength,
   required,
   schema,
   submit,
 } from '@angular/forms/signals';
 import { AuthCredentials } from './model';
+
+const EMAIL_MAX_LENGTH = 254;
+const PASSWORD_MAX_LENGTH = 72;
 
 @Component({
   selector: 'app-auth-form',
@@ -38,9 +42,13 @@ export class AuthFormComponent {
     schema((fields) => {
       required(fields.email, { message: 'Email is required.' });
       email(fields.email, { message: 'Enter a valid email address.' });
+      maxLength(fields.email, EMAIL_MAX_LENGTH, { message: 'Email is too long.' });
       required(fields.password, { message: 'Password is required.' });
       minLength(fields.password, () => this.passwordMinLength(), {
         message: 'Password must be at least 8 characters.',
+      });
+      maxLength(fields.password, PASSWORD_MAX_LENGTH, {
+        message: 'Password must be at most 72 characters.',
       });
     }),
   );
