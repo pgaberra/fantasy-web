@@ -85,6 +85,14 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
 Shared across all four repos (`fantasy-web` → `fantasy-bff` → `fantasy-db-service` +
 `fantasy-nhl-service`). The web talks only to the BFF.
 
+### Input validation
+
+**Every service validates its own inbound data independently** — never trust an upstream
+caller. The web's form validation (e.g. `maxLength` on the auth fields, mirroring the BFF's
+`@Size` caps) is a UX convenience, **not** a security boundary: the BFF re-validates every
+request server-side regardless. Keep the two in sync so users get a friendly message before
+the server rejects an oversized value.
+
 ### Secrets
 
 **Never commit a password, API key, token, or any secret to git — in any environment**,
