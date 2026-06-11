@@ -42,7 +42,7 @@
 
       <button type="submit" class="btn-primary" [disabled]="isLoading()">
         @if (isLoading()) {
-          {{ loadingLabel() }}
+          <span>{{ loadingLabel() }}<span class="loading-dots" aria-hidden="true"></span></span>
         } @else {
           {{ submitLabel() }}
         }
