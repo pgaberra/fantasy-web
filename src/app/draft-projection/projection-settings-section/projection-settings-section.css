@@ -342,3 +342,17 @@ app-setting-row.setting-row--sub {
   padding: 0.25rem 0.75rem 0.5rem;
   border-left: none;
 }
+
+@media (max-width: 640px) {
+  .settings-section {
+    padding: 1rem;
+  }
+
+  .stat-checkboxes {
+    margin-left: 1rem;
+  }
+
+  .radio-group {
+    flex-wrap: wrap;
+  }
+}
