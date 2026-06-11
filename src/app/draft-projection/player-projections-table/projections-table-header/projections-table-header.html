@@ -1,6 +1,12 @@
 <tr>
   <th class="col-rank">#</th>
-  <th class="col-name">Player</th>
+  <th
+    class="col-name sortable"
+    [class.sorted]="sortColumn() === 'team'"
+    (click)="sort.emit('team')"
+  >
+    Player<span class="sort-arrow">{{ sortIndicator('team') }}</span>
+  </th>
   @for (col of activeColumns().utility; track col) {
     <th class="col-utility sortable" [class.sorted]="sortColumn() === col" (click)="sort.emit(col)">
       {{ col | statLabel }}<span class="sort-arrow">{{ sortIndicator(col) }}</span>

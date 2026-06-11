@@ -25,6 +25,7 @@ describe('PlayerProjectionsTableComponent', () => {
       id: 1,
       type: 'skater',
       name: 'Connor McDavid',
+      teamAbbrev: 'EDM',
       positions: new Set(['C']),
       stats: {
         utility: { gp: 82, toiPerGame: 1320 },
@@ -54,6 +55,7 @@ describe('PlayerProjectionsTableComponent', () => {
       id: 2,
       type: 'skater',
       name: 'Leon Draisaitl',
+      teamAbbrev: 'COL',
       positions: new Set(['C', 'LW']),
       stats: {
         utility: { gp: 80, toiPerGame: 1260 },
@@ -83,6 +85,7 @@ describe('PlayerProjectionsTableComponent', () => {
       id: 3,
       type: 'goalie',
       name: 'Connor Hellebuyck',
+      teamAbbrev: 'WPG',
       stats: {
         utility: { gp: 64 },
         scoring: {
@@ -435,6 +438,24 @@ describe('PlayerProjectionsTableComponent', () => {
       component.visibleCount.set(1);
       expect(component.visibleProjections()).toHaveLength(1);
       expect(component.hasMore()).toEqual(true);
+    });
+
+    it('should expose the available teams sorted alphabetically', () => {
+      const component = getComponent();
+      expect(component.availableTeams()).toEqual(['COL', 'EDM', 'WPG']);
+    });
+
+    it('should filter projections by team', () => {
+      const component = getComponent();
+      component.teamFilter.set('EDM');
+      expect(component.visibleProjections().map((p) => p.playerId)).toEqual([1]);
+    });
+
+    it('should sort projections by team', () => {
+      const component = getComponent();
+      component.onSort('team');
+      component.sortDirection.set('asc');
+      expect(component.visibleProjections().map((p) => p.playerId)).toEqual([2, 1, 3]);
     });
 
     it('should grow the visible count by one page on showMore', () => {

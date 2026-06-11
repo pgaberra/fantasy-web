@@ -11,7 +11,7 @@ export type ScoringType = 'category' | 'points';
 export type PositionFilter = 'ALL' | 'LW' | 'C' | 'RW' | 'D' | 'G' | 'SKATER';
 
 // 'summary' = the Fan Pts / Z-Score column (the default sort); otherwise an individual stat.
-export type SortColumn = StatKey | 'summary';
+export type SortColumn = StatKey | 'summary' | 'team';
 export type SortDirection = 'asc' | 'desc';
 
 export interface ActiveColumns {
