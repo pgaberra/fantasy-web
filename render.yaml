@@ -3,13 +3,16 @@ services:
     runtime: static
     name: fantasy-web-staging
     autoDeploy: true
-    # Inject the staging BFF URL into environment.prod.ts before building.
-    # API_URL must be the BFF base origin (no trailing slash, no /api/v1),
-    # e.g. https://fantasy-bff-staging.onrender.com
+    # Inject build-time config into environment.prod.ts before building:
+    #  - API_URL: the BFF base origin (no trailing slash, no /api/v1),
+    #    e.g. https://fantasy-bff-staging.onrender.com
+    #  - RETRY_TRANSIENT_ERRORS: 'true' on this free-tier staging deploy so the web
+    #    waits out cold starts; left unset (→ false) for a real production deploy.
     buildCommand: >-
       npm ci &&
       npm run generate:api &&
       sed -i "s#http://PLACEHOLDER_FOR_PROD_URL#$API_URL#g" src/environments/environment.prod.ts &&
+      sed -i "s#__RETRY_TRANSIENT_ERRORS__#${RETRY_TRANSIENT_ERRORS:-false}#g" src/environments/environment.prod.ts &&
       npm run build
     staticPublishPath: ./dist/fantasy-web/browser
     # SPA: serve index.html for client-side routes (/login, /draft-projection, ...)
@@ -20,3 +23,7 @@ services:
     envVars:
       - key: API_URL
         sync: false
+      # This staging deploy runs against Render's free tier (services spin down), so
+      # retry transient cold-start errors. Omit/false on a real production deploy.
+      - key: RETRY_TRANSIENT_ERRORS
+        value: 'true'

@@ -43,9 +43,12 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
 - `interceptors/` — HTTP interceptors: `authInterceptor` attaches the JWT and refreshes
   once on 401 (all environments). `retryInterceptor` (outermost) retries transient
   gateway/connection errors (status 0/502/503/504) with backoff so a Render free-tier
-  cold start is waited through instead of failing — **staging only**, gated by
-  `environment.retryTransientErrors` (true only in `environment.staging.ts`); never wired
-  in dev or production.
+  cold start is waited through instead of failing. Gated by
+  `environment.retryTransientErrors`, on **only where a deploy opts in**: `true` in
+  `environment.staging.ts` (local `npm run start:staging`) and injected as `'true'` into
+  `environment.prod.ts` for the **deployed free-tier staging** site (the
+  `RETRY_TRANSIENT_ERRORS` build var in `render.yaml`). It stays **off** in dev and in a
+  real production build (placeholder unset → `false`).
 - `models/`, `pipes/`, `shared/` (e.g. `loading-indicator`)
 - `environments/` — `environment.ts` (dev: `apiUrl: http://localhost:8080/api/v1`),
   `environment.staging.ts` (points at the staging BFF on Render; used by
