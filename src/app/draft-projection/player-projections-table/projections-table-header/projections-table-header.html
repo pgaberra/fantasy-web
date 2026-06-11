@@ -2,10 +2,10 @@
   <th class="col-rank">#</th>
   <th
     class="col-name sortable"
-    [class.sorted]="sortColumn() === 'team'"
-    (click)="sort.emit('team')"
+    [class.sorted]="sortColumn() === 'name'"
+    (click)="sort.emit('name')"
   >
-    Player<span class="sort-arrow">{{ sortIndicator('team') }}</span>
+    Player<span class="sort-arrow">{{ sortIndicator('name') }}</span>
   </th>
   @for (col of activeColumns().utility; track col) {
     <th class="col-utility sortable" [class.sorted]="sortColumn() === col" (click)="sort.emit(col)">

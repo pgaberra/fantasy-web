@@ -93,12 +93,12 @@ export class PlayerProjectionsTableComponent implements OnInit {
     const tieBreak = (a: Projection, b: Projection): number =>
       summaryValueOf(b) - summaryValueOf(a);
 
-    if (column === 'team') {
+    if (column === 'name') {
       const players = this.playerMap();
-      const teamOf = (projection: Projection): string =>
-        players.get(projection.playerId)?.teamAbbrev ?? '';
+      const nameOf = (projection: Projection): string =>
+        players.get(projection.playerId)?.name ?? '';
       return [...projections].sort((a, b) => {
-        const primary = sign * teamOf(a).localeCompare(teamOf(b));
+        const primary = sign * nameOf(a).localeCompare(nameOf(b));
         return primary !== 0 ? primary : tieBreak(a, b);
       });
     }
@@ -112,7 +112,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
   });
 
   private sortValueResolver(
-    column: Exclude<SortColumn, 'team'>,
+    column: Exclude<SortColumn, 'name'>,
     scores: Map<number, PlayerScore>,
   ): (projection: Projection) => number {
     if (column === 'summary') {
