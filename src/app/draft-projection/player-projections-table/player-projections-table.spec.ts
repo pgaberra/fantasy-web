@@ -451,11 +451,11 @@ describe('PlayerProjectionsTableComponent', () => {
       expect(component.visibleProjections().map((p) => p.playerId)).toEqual([1]);
     });
 
-    it('should sort projections by team', () => {
+    it('should sort projections alphabetically by player name', () => {
       const component = getComponent();
-      component.onSort('team');
+      component.onSort('name');
       component.sortDirection.set('asc');
-      expect(component.visibleProjections().map((p) => p.playerId)).toEqual([2, 1, 3]);
+      expect(component.visibleProjections().map((p) => p.playerId)).toEqual([3, 1, 2]);
     });
 
     it('should grow the visible count by one page on showMore', () => {
