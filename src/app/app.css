@@ -66,3 +66,17 @@
   min-height: calc(100vh - 56px);
   background: #f0f2f8;
 }
+
+@media (max-width: 640px) {
+  .app-header {
+    padding: 0 1rem;
+  }
+
+  .app-nav {
+    gap: 1rem;
+  }
+
+  .app-logo {
+    font-size: 1.05rem;
+  }
+}
