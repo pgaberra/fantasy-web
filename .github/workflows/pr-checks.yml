@@ -19,7 +19,7 @@ jobs:
     name: Lint, Test & Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Verify pinned BFF spec is in sync
         if: github.actor != 'dependabot[bot]'
@@ -42,7 +42,7 @@ jobs:
           fi
 
       - name: Set up Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
