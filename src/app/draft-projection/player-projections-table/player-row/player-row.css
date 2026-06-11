@@ -23,6 +23,24 @@ td.col-name {
   white-space: nowrap;
   padding-left: 0.75rem;
   color: #0f3460;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.player-headshot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #e6e9f2;
+  flex-shrink: 0;
+}
+
+.player-team {
+  color: #7a8baa;
+  font-size: 0.8em;
+  font-weight: 700;
 }
 
 .fan-pts-cell {

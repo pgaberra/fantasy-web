@@ -1,5 +1,13 @@
 <td class="col-rank">{{ rank() }}</td>
-<td class="col-name player-name">{{ player().name }} ({{ playerPosition() }})</td>
+<td class="col-name player-name">
+  @if (player().headshot) {
+    <img class="player-headshot" [src]="player().headshot" [alt]="player().name" loading="lazy" />
+  }
+  <span class="player-name-text">{{ player().name }} ({{ playerPosition() }})</span>
+  @if (player().teamAbbrev) {
+    <span class="player-team">{{ player().teamAbbrev }}</span>
+  }
+</td>
 @for (col of activeColumns().utility; track col) {
   <td class="col-{{ col }}">
     <app-stat-input
