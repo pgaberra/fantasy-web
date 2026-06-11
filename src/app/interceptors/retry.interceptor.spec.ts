@@ -36,10 +36,10 @@ describe('retryInterceptor logic', () => {
     });
   });
 
-  it('retries enough times to cover a ~60s+ cold start', () => {
+  it('retries over a ~200s window to cover a compounded cold start', () => {
     const totalWindowMs = Array.from({ length: MAX_RETRIES }, (_, i) =>
       retryBackoffMs(i + 1),
     ).reduce((sum, ms) => sum + ms, 0);
-    expect(totalWindowMs).toBeGreaterThanOrEqual(60000);
+    expect(totalWindowMs).toBeGreaterThanOrEqual(200000);
   });
 });
