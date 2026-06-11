@@ -2,7 +2,9 @@ import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { retry, throwError, timer } from 'rxjs';
 
 export const TRANSIENT_STATUSES = [0, 502, 503, 504];
-export const MAX_RETRIES = 10;
+// ~205s total backoff window (1+2+4+8s ramp, then 10s steps) — enough to ride out a
+// compounded Render free-tier cold start where the BFF and db-service wake in sequence.
+export const MAX_RETRIES = 23;
 const MAX_DELAY_MS = 10000;
 
 export function isTransientError(error: unknown): boolean {
