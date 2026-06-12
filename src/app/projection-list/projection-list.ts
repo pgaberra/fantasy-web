@@ -4,10 +4,11 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
+import { ProjectionCardComponent } from './projection-card/projection-card';
 
 @Component({
   selector: 'app-projection-list',
-  imports: [LoadingIndicatorComponent],
+  imports: [LoadingIndicatorComponent, ProjectionCardComponent],
   templateUrl: './projection-list.html',
   styleUrl: './projection-list.css',
 })

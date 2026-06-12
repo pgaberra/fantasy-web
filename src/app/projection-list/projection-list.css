@@ -44,8 +44,7 @@
   color: #0f3460;
 }
 
-.create-row button,
-.card-actions button {
+.create-row button {
   font-size: 0.875rem;
   padding: 0.45rem 1rem;
   border: none;
@@ -73,39 +72,4 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-}
-
-.card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #fff;
-  border: 1px solid #e0e4ef;
-  border-radius: 8px;
-  padding: 0.85rem 1.1rem;
-}
-
-.card-main {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.card-name {
-  font-weight: 600;
-  color: #0f3460;
-}
-
-.card-meta {
-  font-size: 0.8rem;
-  color: #7a8baa;
-}
-
-.card-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.card-actions .delete {
-  background: #b3261e;
 }

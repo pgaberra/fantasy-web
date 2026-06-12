@@ -27,16 +27,12 @@
   } @else {
     <ul class="cards">
       @for (projection of projections(); track projection.id) {
-        <li class="card">
-          <div class="card-main">
-            <span class="card-name">{{ projection.name }}</span>
-            <span class="card-meta">{{ projection.season }}</span>
-          </div>
-          <div class="card-actions">
-            <button type="button" class="edit" (click)="edit(projection.id)">Edit</button>
-            <button type="button" class="delete" (click)="remove(projection.id)">Delete</button>
-          </div>
-        </li>
+        <li
+          app-projection-card
+          [projection]="projection"
+          (edit)="edit(projection.id)"
+          (remove)="remove(projection.id)"
+        ></li>
       }
     </ul>
   }
