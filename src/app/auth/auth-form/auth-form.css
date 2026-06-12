@@ -112,6 +112,23 @@
     animation: none;
   }
 }
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #999;
+  font-size: 0.8rem;
+  margin: 1.5rem 0;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #e3e3e3;
+}
+.auth-divider span {
+  padding: 0 0.75rem;
+}
 .auth-footer {
   text-align: center;
   margin-top: 1.5rem;

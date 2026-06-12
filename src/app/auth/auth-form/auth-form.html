@@ -49,6 +49,11 @@
       </button>
     </form>
 
+    @if (googleEnabled) {
+      <div class="auth-divider"><span>or</span></div>
+      <app-google-sign-in-button (credential)="googleSubmit.emit($event)" />
+    }
+
     <p class="auth-footer">
       {{ footerText() }} <a [routerLink]="footerLinkRoute()">{{ footerLinkLabel() }}</a>
     </p>
