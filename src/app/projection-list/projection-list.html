@@ -1,0 +1,39 @@
+<div class="projection-list">
+  <div class="page-header">
+    <h1>My Projections</h1>
+    <p class="subtitle">Create a new projection or pick one to keep editing.</p>
+  </div>
+
+  <div class="create-card">
+    <label for="new-projection-name">New projection</label>
+    <div class="create-row">
+      <input
+        id="new-projection-name"
+        type="text"
+        maxlength="100"
+        placeholder="Projection name"
+        [value]="newName()"
+        (input)="onNameInput($event)"
+        (keyup.enter)="createNew()"
+      />
+      <button type="button" [disabled]="!newName().trim()" (click)="createNew()">Create</button>
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <app-loading-indicator />
+  } @else if (projections().length === 0) {
+    <p class="empty">You don't have any saved projections yet.</p>
+  } @else {
+    <ul class="cards">
+      @for (projection of projections(); track projection.id) {
+        <li
+          app-projection-card
+          [projection]="projection"
+          (edit)="edit(projection.id)"
+          (remove)="remove(projection.id)"
+        ></li>
+      }
+    </ul>
+  }
+</div>

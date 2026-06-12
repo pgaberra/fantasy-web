@@ -59,6 +59,6 @@ export class AuthService {
     localStorage.setItem(this.tokenKey, response.token);
     localStorage.setItem(this.refreshTokenKey, response.refreshToken);
     this.isLoggedIn.set(true);
-    void this.router.navigate(['/draft-projection']);
+    void this.router.navigate(['/projections']);
   }
 }

@@ -3,8 +3,18 @@
 } @else {
   <div class="draft-projection">
     <div class="page-header">
-      <h1>Draft Projection Tool</h1>
-      <p class="subtitle">Customize your league settings and edit player projections below.</p>
+      <a routerLink="/projections" class="back-link">← My projections</a>
+      <h1>{{ projectionName() }}</h1>
+      <span class="save-status">
+        @switch (saveStatus()) {
+          @case ('saving') {
+            Saving…
+          }
+          @case ('saved') {
+            Saved
+          }
+        }
+      </span>
     </div>
 
     <app-projection-settings-section
@@ -20,6 +30,7 @@
         [scoringType]="scoringType()"
         [(statWeights)]="statWeights"
         [players]="players()"
+        [initialProjections]="loadedProjections()"
         [activeColumns]="activeColumns()"
         [scaleSettings]="scaleSettings()"
         [(decimalSettings)]="decimalSettings"

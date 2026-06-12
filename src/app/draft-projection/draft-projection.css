@@ -23,6 +23,27 @@
   font-size: 0.95rem;
 }
 
+.back-link {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: #7a8baa;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: #0f3460;
+}
+
+.save-status {
+  display: inline-block;
+  margin-left: 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #7a8baa;
+  vertical-align: middle;
+}
+
 @media (max-width: 640px) {
   .draft-projection {
     padding: 1rem;
