@@ -70,7 +70,11 @@
       [(activeUtilityColumns)]="activeUtilityColumns"
       [(scaleSettings)]="scaleSettings"
       [(useDefaultDecimals)]="useDefaultDecimals"
+      [showDecimalsSetting]="false"
+      [showUtilityStats]="false"
+      [initiallyExpanded]="true"
     />
+    <p class="settings-note">All settings can be changed at any time while editing.</p>
 
     <button type="button" class="create-button" [disabled]="!canCreate()" (click)="create()">
       {{ isCreating() ? 'Creating…' : 'Create projection' }}

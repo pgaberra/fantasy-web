@@ -64,6 +64,12 @@
   margin-top: 0.6rem;
 }
 
+.settings-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: #7a8baa;
+}
+
 .create-button {
   margin-top: 1.5rem;
   font-size: 0.95rem;
