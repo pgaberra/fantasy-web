@@ -102,8 +102,8 @@ describe('ProjectionSettingsSectionComponent', () => {
       const text = fixture.nativeElement.textContent;
       expect(text).toContain('League Type');
       expect(text).toContain('Points');
-      expect(text).toContain('Scoring Stats');
       expect(text).not.toContain('General');
+      expect(text).not.toContain('Scoring Stats');
       expect(fixture.nativeElement.querySelectorAll('.settings-group-header').length).toEqual(0);
       expect(fixture.nativeElement.querySelectorAll('app-stat-group').length).toEqual(2);
     });
