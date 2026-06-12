@@ -68,6 +68,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly scoringType = input.required<ScoringType>();
   readonly statWeights = model.required<Record<ScoringStatKey, number>>();
   readonly players = input.required<Player[]>();
+  readonly initialProjections = input<Projection[] | null>(null);
   readonly activeColumns = input.required<ActiveColumns>();
 
   readonly filteredActiveColumns = computed<ActiveColumns>(() =>
@@ -297,6 +298,12 @@ export class PlayerProjectionsTableComponent implements OnInit {
   }
 
   private initializeProjection(): void {
+    const initial = this.initialProjections();
+    if (initial) {
+      this.playerProjections.set(initial);
+      return;
+    }
+
     const projections: Projection[] = this.players().map((player) => {
       if (player.type === 'skater') {
         return {

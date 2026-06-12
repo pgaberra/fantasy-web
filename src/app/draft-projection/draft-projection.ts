@@ -1,13 +1,14 @@
 import { Component, computed, DestroyRef, inject, OnInit, signal, viewChild } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { forkJoin } from 'rxjs';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Location } from '@angular/common';
+import { debounceTime, forkJoin } from 'rxjs';
 import { PlayerService } from '../services/player.service';
 import { Player } from '../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey, SCORING_STAT_KEYS } from '../models/stat-key.model';
-import { ActiveColumns, ScoringType } from '../models/projection.model';
+import { ActiveColumns, Projection, ScoringType } from '../models/projection.model';
 import { ProjectionSettingsSectionComponent } from './projection-settings-section/projection-settings-section';
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
-import { ProjectionManagerComponent } from './projection-manager/projection-manager';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import {
   DecimalStatKey,
@@ -21,7 +22,6 @@ import {
   ProjectionState,
   toProjectionData,
 } from '../services/projection-serializer';
-import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 
 const DEFAULT_STAT_WEIGHTS: Record<ScoringStatKey, number> = {
   goals: 4.5,
@@ -53,13 +53,15 @@ const DEFAULT_STAT_WEIGHTS: Record<ScoringStatKey, number> = {
   svPct: 0,
 };
 
+const AUTOSAVE_DEBOUNCE_MS = 1200;
+
 @Component({
   selector: 'app-draft-projection',
   imports: [
     ProjectionSettingsSectionComponent,
     PlayerProjectionsTableComponent,
-    ProjectionManagerComponent,
     LoadingIndicatorComponent,
+    RouterLink,
   ],
   templateUrl: './draft-projection.html',
   styleUrl: './draft-projection.css',
@@ -69,13 +71,18 @@ export class DraftProjectionComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly statInfoService = inject(StatInfoService);
   private readonly projectionStorage = inject(ProjectionStorageService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly location = inject(Location);
 
   private readonly table = viewChild(PlayerProjectionsTableComponent);
 
-  readonly savedProjections = signal<ProjectionSummaryResponse[]>([]);
-  readonly loadedProjectionId = signal<string | null>(null);
-  readonly loadedProjectionName = signal<string | null>(null);
-  readonly isBusy = signal<boolean>(false);
+  readonly projectionName = signal<string>('');
+  readonly saveStatus = signal<'idle' | 'saving' | 'saved'>('idle');
+  readonly loadedProjections = signal<Projection[] | null>(null);
+  private readonly projectionId = signal<string | null>(null);
+  private readonly autosaveEnabled = signal<boolean>(false);
+  private lastSavedJson = '';
 
   scoringType = signal<ScoringType>('points');
   statWeights = signal<Record<ScoringStatKey, number>>(DEFAULT_STAT_WEIGHTS);
@@ -97,7 +104,55 @@ export class DraftProjectionComponent implements OnInit {
 
   isLoading = signal<boolean>(true);
 
+  private readonly serializedState = computed(() =>
+    this.autosaveEnabled() ? JSON.stringify(toProjectionData(this.buildState())) : '',
+  );
+
+  constructor() {
+    toObservable(this.serializedState)
+      .pipe(debounceTime(AUTOSAVE_DEBOUNCE_MS), takeUntilDestroyed())
+      .subscribe(() => this.autosave());
+  }
+
   ngOnInit(): void {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      this.openExisting(id);
+      return;
+    }
+
+    const name = (history.state as { name?: string }).name?.trim();
+    if (!name) {
+      void this.router.navigate(['/projections']);
+      return;
+    }
+    this.createNew(name);
+  }
+
+  private openExisting(id: string): void {
+    forkJoin({
+      skaters: this.playerService.getSkaters(),
+      goalies: this.playerService.getGoalies(),
+      projection: this.projectionStorage.loadProjection(id),
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ skaters, goalies, projection }) => {
+          this.players.set([...skaters, ...goalies]);
+          this.projectionId.set(projection.id);
+          this.projectionName.set(projection.name);
+          const state = fromProjectionData(projection.data);
+          this.applyState(state);
+          this.lastSavedJson = JSON.stringify(toProjectionData(state));
+          this.isLoading.set(false);
+          this.autosaveEnabled.set(true);
+        },
+        error: () => this.router.navigate(['/projections']),
+      });
+  }
+
+  private createNew(name: string): void {
+    this.projectionName.set(name);
     forkJoin({
       skaters: this.playerService.getSkaters(),
       goalies: this.playerService.getGoalies(),
@@ -105,23 +160,34 @@ export class DraftProjectionComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: ({ skaters, goalies }) => {
-          this.players.set([...skaters, ...goalies]);
-          this.isLoading.set(false);
+          const players = [...skaters, ...goalies];
+          this.players.set(players);
+          this.loadedProjections.set(this.buildDefaultProjections(players));
+          const data = toProjectionData(this.buildState());
+          this.projectionStorage
+            .createProjection({ name, data })
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+              next: (projection) => {
+                this.projectionId.set(projection.id);
+                this.lastSavedJson = JSON.stringify(data);
+                this.location.replaceState(`/projections/${projection.id}`);
+                this.isLoading.set(false);
+                this.autosaveEnabled.set(true);
+              },
+              error: () => this.router.navigate(['/projections']),
+            });
         },
-        error: () => this.isLoading.set(false),
+        error: () => this.router.navigate(['/projections']),
       });
-
-    this.refreshProjections();
   }
 
-  private refreshProjections(): void {
-    this.projectionStorage
-      .listProjections()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (projections) => this.savedProjections.set(projections),
-        error: () => undefined,
-      });
+  private buildDefaultProjections(players: Player[]): Projection[] {
+    return players.map((player) =>
+      player.type === 'skater'
+        ? { type: 'skater', playerId: player.id, stats: player.stats }
+        : { type: 'goalie', playerId: player.id, stats: player.stats },
+    );
   }
 
   private buildState(): ProjectionState {
@@ -133,7 +199,7 @@ export class DraftProjectionComponent implements OnInit {
       scaleSettings: this.scaleSettings(),
       decimalSettings: this.decimalSettings(),
       useDefaultDecimals: this.useDefaultDecimals(),
-      playerProjections: this.table()?.playerProjections() ?? [],
+      playerProjections: this.table()?.playerProjections?.() ?? this.loadedProjections() ?? [],
     };
   }
 
@@ -145,77 +211,27 @@ export class DraftProjectionComponent implements OnInit {
     this.scaleSettings.set(state.scaleSettings);
     this.decimalSettings.set(state.decimalSettings);
     this.useDefaultDecimals.set(state.useDefaultDecimals);
-    this.table()?.loadProjections(state.playerProjections);
+    this.loadedProjections.set(state.playerProjections);
   }
 
-  onLoad(id: string): void {
-    this.isBusy.set(true);
-    this.projectionStorage
-      .loadProjection(id)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (projection) => {
-          this.applyState(fromProjectionData(projection.data));
-          this.loadedProjectionId.set(projection.id);
-          this.loadedProjectionName.set(projection.name);
-          this.isBusy.set(false);
-        },
-        error: () => this.isBusy.set(false),
-      });
-  }
-
-  onSaveAs(name: string): void {
-    this.isBusy.set(true);
-    this.projectionStorage
-      .createProjection({ name, data: toProjectionData(this.buildState()) })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (projection) => {
-          this.loadedProjectionId.set(projection.id);
-          this.loadedProjectionName.set(projection.name);
-          this.isBusy.set(false);
-          this.refreshProjections();
-        },
-        error: () => this.isBusy.set(false),
-      });
-  }
-
-  onSave(): void {
-    const id = this.loadedProjectionId();
-    const name = this.loadedProjectionName();
-    if (!id || !name) {
+  private autosave(): void {
+    const id = this.projectionId();
+    if (!this.autosaveEnabled() || !id) {
       return;
     }
-    this.isBusy.set(true);
-    this.projectionStorage
-      .updateProjection(id, { name, data: toProjectionData(this.buildState()) })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.isBusy.set(false);
-          this.refreshProjections();
-        },
-        error: () => this.isBusy.set(false),
-      });
-  }
-
-  onDeleteCurrent(): void {
-    const id = this.loadedProjectionId();
-    if (!id) {
+    const data = toProjectionData(this.buildState());
+    const json = JSON.stringify(data);
+    if (json === this.lastSavedJson) {
       return;
     }
-    this.isBusy.set(true);
+    this.lastSavedJson = json;
+    this.saveStatus.set('saving');
     this.projectionStorage
-      .deleteProjection(id)
+      .updateProjection(id, { name: this.projectionName(), data })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => {
-          this.loadedProjectionId.set(null);
-          this.loadedProjectionName.set(null);
-          this.isBusy.set(false);
-          this.refreshProjections();
-        },
-        error: () => this.isBusy.set(false),
+        next: () => this.saveStatus.set('saved'),
+        error: () => this.saveStatus.set('idle'),
       });
   }
 
