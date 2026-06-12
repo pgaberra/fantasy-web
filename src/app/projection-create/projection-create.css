@@ -45,19 +45,44 @@
   color: #0f3460;
 }
 
+.field-hint {
+  margin: -0.2rem 0 0.6rem;
+  font-size: 0.8rem;
+  color: #7a8baa;
+}
+
 .radio-group {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.6rem;
 }
 
-.radio-group label {
+.radio-option {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  align-items: flex-start;
+  gap: 0.6rem;
+  cursor: pointer;
+}
+
+.radio-option input[type='radio'] {
+  margin-top: 0.15rem;
+}
+
+.radio-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.radio-title {
   font-size: 0.9rem;
+  font-weight: 500;
   color: #0f3460;
-  font-weight: 400;
+}
+
+.radio-desc {
+  font-size: 0.8rem;
+  color: #7a8baa;
 }
 
 .copy-select {

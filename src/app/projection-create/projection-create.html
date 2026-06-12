@@ -21,34 +21,44 @@
     </div>
 
     <div class="field">
-      <span class="field-label">Initial data</span>
+      <span class="field-label">Starting point</span>
+      <p class="field-hint">Where each player's stats begin — you can edit them all afterwards.</p>
       <div class="radio-group">
-        <label>
+        <label class="radio-option">
           <input
             type="radio"
             name="data-source"
             [checked]="dataSource() === 'last-season'"
             (change)="dataSource.set('last-season')"
           />
-          Last season's stats
+          <span class="radio-text">
+            <span class="radio-title">Last season's stats</span>
+            <span class="radio-desc">Start from each player's real numbers from last season.</span>
+          </span>
         </label>
-        <label>
+        <label class="radio-option">
           <input
             type="radio"
             name="data-source"
             [checked]="dataSource() === 'blank'"
             (change)="dataSource.set('blank')"
           />
-          Blank — every stat starts at 0
+          <span class="radio-text">
+            <span class="radio-title">From scratch</span>
+            <span class="radio-desc">Every stat starts at 0, so you fill in your own numbers.</span>
+          </span>
         </label>
-        <label>
+        <label class="radio-option">
           <input
             type="radio"
             name="data-source"
             [checked]="dataSource() === 'copy'"
             (change)="dataSource.set('copy')"
           />
-          Based on an existing projection
+          <span class="radio-text">
+            <span class="radio-title">A copy of another projection</span>
+            <span class="radio-desc">Start from the numbers in one you've already made.</span>
+          </span>
         </label>
       </div>
       @if (dataSource() === 'copy') {
