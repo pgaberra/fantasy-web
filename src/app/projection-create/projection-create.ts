@@ -78,6 +78,7 @@ export class ProjectionCreateComponent implements OnInit {
         next: ({ skaters, goalies, projections }) => {
           this.players.set([...skaters, ...goalies]);
           this.existingProjections.set(projections);
+          this.name.set(this.defaultName(projections));
           this.isLoading.set(false);
         },
         error: () => this.isLoading.set(false),
@@ -86,6 +87,22 @@ export class ProjectionCreateComponent implements OnInit {
 
   onNameInput(event: Event): void {
     this.name.set((event.target as HTMLInputElement).value);
+  }
+
+  onNameFocus(event: Event): void {
+    (event.target as HTMLInputElement).select();
+  }
+
+  private defaultName(projections: ProjectionSummaryResponse[]): string {
+    const takenNames = new Set(projections.map((projection) => projection.name));
+    if (!takenNames.has('My Projection')) {
+      return 'My Projection';
+    }
+    let suffix = 2;
+    while (takenNames.has(`My Projection ${suffix}`)) {
+      suffix++;
+    }
+    return `My Projection ${suffix}`;
   }
 
   onCopyFromChange(event: Event): void {

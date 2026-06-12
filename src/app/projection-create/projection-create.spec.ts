@@ -1,4 +1,4 @@
-import { MockBuilder, MockRender } from 'ng-mocks';
+import { MockBuilder, MockInstance, MockRender } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of } from 'rxjs';
 import { Router } from '@angular/router';
@@ -10,8 +10,11 @@ import { Skater } from '../models/player.model';
 import { SkaterScoringStats } from '../models/projection.model';
 import { SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
 import { ProjectionResponse } from '../api/models/projection-response';
+import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 
 describe('ProjectionCreateComponent', () => {
+  MockInstance.scope();
+
   const skater: Skater = {
     id: 1,
     type: 'skater',
@@ -34,6 +37,14 @@ describe('ProjectionCreateComponent', () => {
     data: { settings: {} as never, players: [] },
   };
 
+  const summary: ProjectionSummaryResponse = {
+    id: 'p1',
+    name: 'My Projection',
+    season: '20262027',
+    createdAt: '2026-06-01T00:00:00Z',
+    updatedAt: '2026-06-01T00:00:00Z',
+  };
+
   const navigate = vi.fn();
   const createProjection = vi.fn(() => of(created));
 
@@ -54,11 +65,29 @@ describe('ProjectionCreateComponent', () => {
     expect(component.isLoading()).toEqual(false);
   });
 
-  it('requires a name before it can create', () => {
+  it('prefills the name with a suggestion and requires one to create', () => {
     const component = getComponent();
-    expect(component.canCreate()).toEqual(false);
-    component.name.set('Dynasty');
+    expect(component.name()).toEqual('My Projection');
     expect(component.canCreate()).toEqual(true);
+    component.name.set('   ');
+    expect(component.canCreate()).toEqual(false);
+  });
+
+  it('suffixes the suggested name when it is already taken', () => {
+    MockInstance(
+      ProjectionStorageService,
+      'listProjections',
+      vi.fn(() =>
+        of([
+          { ...summary, id: 'p1', name: 'My Projection' },
+          { ...summary, id: 'p2', name: 'My Projection 2' },
+        ]),
+      ),
+    );
+
+    const component = getComponent();
+
+    expect(component.name()).toEqual('My Projection 3');
   });
 
   it('creates a projection and navigates to edit mode', () => {
