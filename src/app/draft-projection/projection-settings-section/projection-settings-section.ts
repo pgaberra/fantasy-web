@@ -62,10 +62,15 @@ export class ProjectionSettingsSectionComponent {
   showDecimalsSetting = input<boolean>(true);
   showUtilityStats = input<boolean>(true);
   initiallyExpanded = input<boolean>(false);
+  collapsibleGroups = input<boolean>(true);
   isSectionVisible = linkedSignal(() => this.initiallyExpanded());
   isGeneralVisible = signal<boolean>(false);
   isScoringStatsVisible = signal<boolean>(false);
   isUtilityStatsVisible = signal<boolean>(false);
+  readonly isGeneralExpanded = computed(() => !this.collapsibleGroups() || this.isGeneralVisible());
+  readonly isScoringStatsExpanded = computed(
+    () => !this.collapsibleGroups() || this.isScoringStatsVisible(),
+  );
   private readonly showAdvancedScaleOptions = signal<Record<UtilityStatKey, boolean>>({
     gp: false,
     toiPerGame: false,

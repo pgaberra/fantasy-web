@@ -7,11 +7,13 @@
     <p class="hint">Configure additional options for your player projections:</p>
     <div class="projection-settings-list">
       <div class="settings-group">
-        <div class="settings-group-header" (click)="toggleGeneralVisible()">
-          <h3 class="settings-group-title">General</h3>
-          <span class="advanced-toggle-icon" [class.open]="isGeneralVisible()"></span>
-        </div>
-        @if (isGeneralVisible()) {
+        @if (collapsibleGroups()) {
+          <div class="settings-group-header" (click)="toggleGeneralVisible()">
+            <h3 class="settings-group-title">General</h3>
+            <span class="advanced-toggle-icon" [class.open]="isGeneralVisible()"></span>
+          </div>
+        }
+        @if (isGeneralExpanded()) {
           <app-setting-row name="League Type">
             <div class="radio-group">
               <label class="radio-label">
@@ -50,11 +52,15 @@
         }
       </div>
       <div class="settings-group">
-        <div class="settings-group-header" (click)="toggleScoringStatsVisible()">
+        @if (collapsibleGroups()) {
+          <div class="settings-group-header" (click)="toggleScoringStatsVisible()">
+            <h3 class="settings-group-title">Scoring Stats</h3>
+            <span class="advanced-toggle-icon" [class.open]="isScoringStatsVisible()"></span>
+          </div>
+        } @else {
           <h3 class="settings-group-title">Scoring Stats</h3>
-          <span class="advanced-toggle-icon" [class.open]="isScoringStatsVisible()"></span>
-        </div>
-        @if (isScoringStatsVisible()) {
+        }
+        @if (isScoringStatsExpanded()) {
           <app-stat-group
             title="Skater Stats"
             [activeStats]="activeSkaterStats()"

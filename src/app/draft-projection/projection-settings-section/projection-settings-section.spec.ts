@@ -86,6 +86,27 @@ describe('ProjectionSettingsSectionComponent', () => {
       expect(text).not.toContain('Utility Stats');
       expect(text).not.toContain('Use default decimal places');
     });
+
+    it('shows the groups expanded and non-collapsible when collapsibleGroups is false', () => {
+      const fixture = MockRender(ProjectionSettingsSectionComponent, {
+        activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
+        activeScoringColumns: defaultActiveScoringColumns,
+        scaleSettings: MOCK_SCALE_SETTINGS,
+        scoringType: 'points' as ScoringType,
+        showUtilityStats: false,
+        initiallyExpanded: true,
+        collapsibleGroups: false,
+      });
+      fixture.detectChanges();
+
+      const text = fixture.nativeElement.textContent;
+      expect(text).toContain('League Type');
+      expect(text).toContain('Points');
+      expect(text).toContain('Scoring Stats');
+      expect(text).not.toContain('General');
+      expect(fixture.nativeElement.querySelectorAll('.settings-group-header').length).toEqual(0);
+      expect(fixture.nativeElement.querySelectorAll('app-stat-group').length).toEqual(2);
+    });
   });
 
   describe('toggle', () => {
