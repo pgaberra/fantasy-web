@@ -21,6 +21,10 @@ services:
         source: /*
         destination: /index.html
     envVars:
+      # Angular 22's CLI requires Node >= 22.22.3; pin the Node 22 line so the
+      # Render build doesn't fall back to an older default.
+      - key: NODE_VERSION
+        value: '22'
       - key: API_URL
         sync: false
       # This staging deploy runs against Render's free tier (services spin down), so
