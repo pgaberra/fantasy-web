@@ -26,4 +26,16 @@ export class LoginComponent {
       },
     });
   }
+
+  onGoogleSubmit(idToken: string) {
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+
+    this.authService.googleLogin(idToken).subscribe({
+      error: () => {
+        this.errorMessage.set('Google sign-in failed. Please try again.');
+        this.isLoading.set(false);
+      },
+    });
+  }
 }

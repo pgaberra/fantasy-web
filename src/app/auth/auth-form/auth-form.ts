@@ -11,17 +11,21 @@ import {
   submit,
 } from '@angular/forms/signals';
 import { AuthCredentials } from './model';
+import { GoogleSignInButtonComponent } from '../google-sign-in-button/google-sign-in-button';
+import { environment } from '../../../environments/environment';
 
 const EMAIL_MAX_LENGTH = 254;
 const PASSWORD_MAX_LENGTH = 72;
 
 @Component({
   selector: 'app-auth-form',
-  imports: [FormField, RouterLink],
+  imports: [FormField, RouterLink, GoogleSignInButtonComponent],
   templateUrl: './auth-form.html',
   styleUrl: './auth-form.css',
 })
 export class AuthFormComponent {
+  readonly googleEnabled = !!environment.googleClientId;
+
   readonly title = input.required<string>();
   readonly subtitle = input.required<string>();
   readonly submitLabel = input.required<string>();
@@ -34,6 +38,7 @@ export class AuthFormComponent {
   readonly isLoading = input(false);
 
   readonly formSubmit = output<AuthCredentials>();
+  readonly googleSubmit = output<string>();
 
   private readonly authFormModel = signal<AuthCredentials>({ email: '', password: '' });
 

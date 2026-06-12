@@ -6,6 +6,7 @@ import { Api } from '../api/api';
 import { login } from '../api/fn/authentication/login';
 import { register } from '../api/fn/authentication/register';
 import { refresh } from '../api/fn/authentication/refresh';
+import { googleLogin } from '../api/fn/authentication/google-login';
 import { AuthResponse, LoginRequest, RefreshRequest, RegisterRequest } from '../api/models';
 
 @Injectable({
@@ -28,6 +29,12 @@ export class AuthService {
 
   register(request: RegisterRequest): Observable<AuthResponse> {
     return from(this.api.invoke(register, { body: request })).pipe(
+      tap((response) => this.storeTokens(response)),
+    );
+  }
+
+  googleLogin(idToken: string): Observable<AuthResponse> {
+    return from(this.api.invoke(googleLogin, { body: { idToken } })).pipe(
       tap((response) => this.storeTokens(response)),
     );
   }
