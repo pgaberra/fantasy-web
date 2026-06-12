@@ -4,21 +4,7 @@
     <p class="subtitle">Create a new projection or pick one to keep editing.</p>
   </div>
 
-  <div class="create-card">
-    <label for="new-projection-name">New projection</label>
-    <div class="create-row">
-      <input
-        id="new-projection-name"
-        type="text"
-        maxlength="100"
-        placeholder="Projection name"
-        [value]="newName()"
-        (input)="onNameInput($event)"
-        (keyup.enter)="createNew()"
-      />
-      <button type="button" [disabled]="!newName().trim()" (click)="createNew()">Create</button>
-    </div>
-  </div>
+  <button type="button" class="create-button" (click)="createNew()">+ Create new projection</button>
 
   @if (isLoading()) {
     <app-loading-indicator />

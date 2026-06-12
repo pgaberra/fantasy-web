@@ -1,0 +1,82 @@
+.projection-create {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: #7a8baa;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: #0f3460;
+}
+
+.page-header h1 {
+  margin: 0 0 1.5rem;
+  color: #0f3460;
+}
+
+.field {
+  margin-bottom: 1.5rem;
+}
+
+.field > label,
+.field-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #7a8baa;
+  margin-bottom: 0.4rem;
+}
+
+.field input[type='text'],
+.copy-select {
+  width: 100%;
+  max-width: 380px;
+  font-size: 0.9rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #e0e4ef;
+  border-radius: 6px;
+  color: #0f3460;
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #0f3460;
+  font-weight: 400;
+}
+
+.copy-select {
+  margin-top: 0.6rem;
+}
+
+.create-button {
+  margin-top: 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.6rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  background: #0f3460;
+  color: #fff;
+  cursor: pointer;
+}
+
+.create-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

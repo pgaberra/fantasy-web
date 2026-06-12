@@ -1,0 +1,79 @@
+@if (isLoading()) {
+  <app-loading-indicator />
+} @else {
+  <div class="projection-create">
+    <div class="page-header">
+      <a routerLink="/projections" class="back-link">← My projections</a>
+      <h1>New projection</h1>
+    </div>
+
+    <div class="field">
+      <label for="projection-name">Name</label>
+      <input
+        id="projection-name"
+        type="text"
+        maxlength="100"
+        placeholder="Projection name"
+        [value]="name()"
+        (input)="onNameInput($event)"
+      />
+    </div>
+
+    <div class="field">
+      <span class="field-label">Initial data</span>
+      <div class="radio-group">
+        <label>
+          <input
+            type="radio"
+            name="data-source"
+            [checked]="dataSource() === 'last-season'"
+            (change)="dataSource.set('last-season')"
+          />
+          Last season's stats
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="data-source"
+            [checked]="dataSource() === 'blank'"
+            (change)="dataSource.set('blank')"
+          />
+          Blank — every stat starts at 0
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="data-source"
+            [checked]="dataSource() === 'copy'"
+            (change)="dataSource.set('copy')"
+          />
+          Based on an existing projection
+        </label>
+      </div>
+      @if (dataSource() === 'copy') {
+        <select
+          class="copy-select"
+          [value]="copyFromId() ?? ''"
+          (change)="onCopyFromChange($event)"
+        >
+          <option value="">Choose a projection…</option>
+          @for (projection of existingProjections(); track projection.id) {
+            <option [value]="projection.id">{{ projection.name }} ({{ projection.season }})</option>
+          }
+        </select>
+      }
+    </div>
+
+    <app-projection-settings-section
+      [(scoringType)]="scoringType"
+      [(activeScoringColumns)]="activeScoringColumns"
+      [(activeUtilityColumns)]="activeUtilityColumns"
+      [(scaleSettings)]="scaleSettings"
+      [(useDefaultDecimals)]="useDefaultDecimals"
+    />
+
+    <button type="button" class="create-button" [disabled]="!canCreate()" (click)="create()">
+      {{ isCreating() ? 'Creating…' : 'Create projection' }}
+    </button>
+  </div>
+}
