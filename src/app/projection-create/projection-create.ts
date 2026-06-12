@@ -11,6 +11,7 @@ import { GoalieStats, Projection, ScoringType, SkaterStats } from '../models/pro
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { ProjectionSettingsSectionComponent } from '../draft-projection/projection-settings-section/projection-settings-section';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
+import { InfoTooltipComponent } from '../shared/info-tooltip/info-tooltip';
 import {
   DecimalStatKey,
   DEFAULT_DECIMAL_SETTINGS,
@@ -32,7 +33,12 @@ type DataSource = 'last-season' | 'blank' | 'copy';
 
 @Component({
   selector: 'app-projection-create',
-  imports: [ProjectionSettingsSectionComponent, LoadingIndicatorComponent, RouterLink],
+  imports: [
+    ProjectionSettingsSectionComponent,
+    LoadingIndicatorComponent,
+    InfoTooltipComponent,
+    RouterLink,
+  ],
   templateUrl: './projection-create.html',
   styleUrl: './projection-create.css',
 })

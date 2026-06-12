@@ -31,10 +31,8 @@
             [checked]="dataSource() === 'last-season'"
             (change)="dataSource.set('last-season')"
           />
-          <span class="radio-text">
-            <span class="radio-title">Last season's stats</span>
-            <span class="radio-desc">Start from each player's real numbers from last season.</span>
-          </span>
+          <span class="radio-title">Last season's stats</span>
+          <app-info-tooltip text="Start from each player's real numbers from last season." />
         </label>
         <label class="radio-option">
           <input
@@ -43,10 +41,8 @@
             [checked]="dataSource() === 'blank'"
             (change)="dataSource.set('blank')"
           />
-          <span class="radio-text">
-            <span class="radio-title">From scratch</span>
-            <span class="radio-desc">Every stat starts at 0, so you fill in your own numbers.</span>
-          </span>
+          <span class="radio-title">From scratch</span>
+          <app-info-tooltip text="Every stat starts at 0, so you fill in your own numbers." />
         </label>
         <label class="radio-option">
           <input
@@ -55,10 +51,8 @@
             [checked]="dataSource() === 'copy'"
             (change)="dataSource.set('copy')"
           />
-          <span class="radio-text">
-            <span class="radio-title">A copy of another projection</span>
-            <span class="radio-desc">Start from the numbers in one you've already made.</span>
-          </span>
+          <span class="radio-title">A copy of another projection</span>
+          <app-info-tooltip text="Start from the numbers in one you've already made." />
         </label>
       </div>
       @if (dataSource() === 'copy') {
