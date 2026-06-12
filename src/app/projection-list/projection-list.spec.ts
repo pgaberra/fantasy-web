@@ -37,11 +37,10 @@ describe('ProjectionListComponent', () => {
     expect(component.isLoading()).toEqual(false);
   });
 
-  it('navigates to create a new named projection', () => {
+  it('navigates to the create page', () => {
     const component = getComponent();
-    component.newName.set('Dynasty');
     component.createNew();
-    expect(navigate).toHaveBeenCalledWith(['/projections/new'], { state: { name: 'Dynasty' } });
+    expect(navigate).toHaveBeenCalledWith(['/projections/new']);
   });
 
   it('navigates to edit an existing projection', () => {

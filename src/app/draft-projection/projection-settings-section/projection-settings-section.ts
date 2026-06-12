@@ -1,4 +1,4 @@
-import { Component, computed, inject, model, signal } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal, model, signal } from '@angular/core';
 import { SettingRowComponent } from './setting-row/setting-row';
 import { ToggleSwitchComponent } from './toggle-switch/toggle-switch';
 import { UtilityStatLabelPipe } from '../../pipes/utility-stat-label.pipe';
@@ -59,10 +59,18 @@ export class ProjectionSettingsSectionComponent {
 
   scaleSettings = model.required<Record<UtilityStatKey, ScaleConfig>>();
   useDefaultDecimals = model<boolean>(true);
-  isSectionVisible = signal<boolean>(false);
+  showDecimalsSetting = input<boolean>(true);
+  showUtilityStats = input<boolean>(true);
+  initiallyExpanded = input<boolean>(false);
+  collapsibleGroups = input<boolean>(true);
+  isSectionVisible = linkedSignal(() => this.initiallyExpanded());
   isGeneralVisible = signal<boolean>(false);
   isScoringStatsVisible = signal<boolean>(false);
   isUtilityStatsVisible = signal<boolean>(false);
+  readonly isGeneralExpanded = computed(() => !this.collapsibleGroups() || this.isGeneralVisible());
+  readonly isScoringStatsExpanded = computed(
+    () => !this.collapsibleGroups() || this.isScoringStatsVisible(),
+  );
   private readonly showAdvancedScaleOptions = signal<Record<UtilityStatKey, boolean>>({
     gp: false,
     toiPerGame: false,

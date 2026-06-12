@@ -67,6 +67,48 @@ describe('ProjectionSettingsSectionComponent', () => {
     return { fixture, component };
   };
 
+  describe('slimmed-down mode', () => {
+    it('hides the utility stats group and decimals setting when disabled', () => {
+      const fixture = MockRender(ProjectionSettingsSectionComponent, {
+        activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
+        activeScoringColumns: defaultActiveScoringColumns,
+        scaleSettings: MOCK_SCALE_SETTINGS,
+        scoringType: 'points' as ScoringType,
+        showDecimalsSetting: false,
+        showUtilityStats: false,
+        initiallyExpanded: true,
+      });
+      fixture.point.componentInstance.toggleGeneralVisible();
+      fixture.detectChanges();
+
+      const text = fixture.nativeElement.textContent;
+      expect(text).toContain('League Type');
+      expect(text).not.toContain('Utility Stats');
+      expect(text).not.toContain('Use default decimal places');
+    });
+
+    it('shows the groups expanded and non-collapsible when collapsibleGroups is false', () => {
+      const fixture = MockRender(ProjectionSettingsSectionComponent, {
+        activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
+        activeScoringColumns: defaultActiveScoringColumns,
+        scaleSettings: MOCK_SCALE_SETTINGS,
+        scoringType: 'points' as ScoringType,
+        showUtilityStats: false,
+        initiallyExpanded: true,
+        collapsibleGroups: false,
+      });
+      fixture.detectChanges();
+
+      const text = fixture.nativeElement.textContent;
+      expect(text).toContain('League Type');
+      expect(text).toContain('Points');
+      expect(text).not.toContain('General');
+      expect(text).not.toContain('Scoring Stats');
+      expect(fixture.nativeElement.querySelectorAll('.settings-group-header').length).toEqual(0);
+      expect(fixture.nativeElement.querySelectorAll('app-stat-group').length).toEqual(2);
+    });
+  });
+
   describe('toggle', () => {
     it('should remove an active utility column when toggled', () => {
       const component = getComponent(new Set(['gp', 'toiPerGame']));

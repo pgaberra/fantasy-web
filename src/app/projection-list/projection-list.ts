@@ -19,7 +19,6 @@ export class ProjectionListComponent implements OnInit {
 
   readonly projections = signal<ProjectionSummaryResponse[]>([]);
   readonly isLoading = signal<boolean>(true);
-  readonly newName = signal<string>('');
 
   ngOnInit(): void {
     this.refresh();
@@ -39,16 +38,8 @@ export class ProjectionListComponent implements OnInit {
       });
   }
 
-  onNameInput(event: Event): void {
-    this.newName.set((event.target as HTMLInputElement).value);
-  }
-
   createNew(): void {
-    const name = this.newName().trim();
-    if (!name) {
-      return;
-    }
-    void this.router.navigate(['/projections/new'], { state: { name } });
+    void this.router.navigate(['/projections/new']);
   }
 
   edit(id: string): void {
