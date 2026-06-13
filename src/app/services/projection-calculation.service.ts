@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import {
   GOALIE_SCORING_STAT_KEYS,
   GoalieScoringStatKey,
+  LOWER_IS_BETTER_SCORING_STAT_KEYS,
   ScoringStatKey,
   SKATER_SCORING_STAT_KEYS,
   SkaterScoringStatKey,
@@ -41,7 +42,6 @@ export class ProjectionCalculationService {
 
   computeZScores(
     projections: Projection[],
-    statWeights: StatWeights,
     activeScoringColumns: Set<ScoringStatKey>,
   ): Map<number, number> {
     const zScoreByPlayer = new Map<number, number>();
@@ -59,7 +59,6 @@ export class ProjectionCalculationService {
         skaters,
         key,
         (projection) => projection.stats.scoring[key],
-        statWeights,
         activeScoringColumns,
         zScoreByPlayer,
       );
@@ -69,7 +68,6 @@ export class ProjectionCalculationService {
         goalies,
         key,
         (projection) => projection.stats.scoring[key],
-        statWeights,
         activeScoringColumns,
         zScoreByPlayer,
       );
@@ -81,12 +79,10 @@ export class ProjectionCalculationService {
     group: P[],
     key: ScoringStatKey,
     valueOf: (projection: P) => number,
-    statWeights: StatWeights,
     activeScoringColumns: Set<ScoringStatKey>,
     zScoreByPlayer: Map<number, number>,
   ): void {
-    const weight = statWeights[key] ?? 0;
-    if (group.length === 0 || !activeScoringColumns.has(key) || weight === 0) {
+    if (group.length === 0 || !activeScoringColumns.has(key)) {
       return;
     }
 
@@ -98,10 +94,11 @@ export class ProjectionCalculationService {
       return;
     }
 
+    const direction = LOWER_IS_BETTER_SCORING_STAT_KEYS.has(key) ? -1 : 1;
     group.forEach((projection, index) => {
       const standardized = (values[index] - mean) / stdDev;
       const current = zScoreByPlayer.get(projection.playerId) ?? 0;
-      zScoreByPlayer.set(projection.playerId, current + weight * standardized);
+      zScoreByPlayer.set(projection.playerId, current + direction * standardized);
     });
   }
 }

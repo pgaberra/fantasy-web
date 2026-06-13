@@ -198,7 +198,6 @@ export class PlayerProjectionsTableComponent implements OnInit {
     });
     const zScoreByPlayer = this.projectionCalculationService.computeZScores(
       projections,
-      statWeights,
       activeScoringColumns,
     );
 

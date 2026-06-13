@@ -1,20 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ProjectionCalculationService } from './projection-calculation.service';
-import { GoalieProjection, SkaterProjection, StatWeights } from '../models/projection.model';
+import { GoalieProjection, SkaterProjection } from '../models/projection.model';
 import {
-  SCORING_STAT_KEYS,
   ScoringStatKey,
   SKATER_SCORING_STAT_KEYS,
   SkaterScoringStatKey,
   GOALIE_SCORING_STAT_KEYS,
   GoalieScoringStatKey,
 } from '../models/stat-key.model';
-
-const weightsWith = (overrides: Partial<Record<ScoringStatKey, number>>): StatWeights =>
-  ({
-    ...Object.fromEntries(SCORING_STAT_KEYS.map((key) => [key, 0])),
-    ...overrides,
-  }) as StatWeights;
 
 const skater = (
   playerId: number,
@@ -53,10 +46,9 @@ describe('ProjectionCalculationService.computeZScores', () => {
     service = new ProjectionCalculationService();
   });
 
-  it('standardizes an active category across the skater pool, weighted', () => {
+  it('standardizes an active category across the skater pool', () => {
     const result = service.computeZScores(
       [skater(1, { goals: 10 }), skater(2, { goals: 20 })],
-      weightsWith({ goals: 1 }),
       new Set<ScoringStatKey>(['goals']),
     );
 
@@ -64,11 +56,20 @@ describe('ProjectionCalculationService.computeZScores', () => {
     expect(result.get(2)).toBeCloseTo(1);
   });
 
-  it('inverts the direction for a negatively weighted category', () => {
+  it('weights every active category equally, regardless of any stat weight', () => {
     const result = service.computeZScores(
-      [skater(1, { goals: 10 }), skater(2, { goals: 20 })],
-      weightsWith({ goals: -1 }),
-      new Set<ScoringStatKey>(['goals']),
+      [skater(1, { goals: 10, assists: 10 }), skater(2, { goals: 20, assists: 20 })],
+      new Set<ScoringStatKey>(['goals', 'assists']),
+    );
+
+    expect(result.get(1)).toBeCloseTo(-2);
+    expect(result.get(2)).toBeCloseTo(2);
+  });
+
+  it('inverts a lower-is-better category so the lower value scores higher', () => {
+    const result = service.computeZScores(
+      [goalie(1, { gaa: 2.0 }), goalie(2, { gaa: 3.0 })],
+      new Set<ScoringStatKey>(['gaa']),
     );
 
     expect(result.get(1)).toBeCloseTo(1);
@@ -83,7 +84,6 @@ describe('ProjectionCalculationService.computeZScores', () => {
         goalie(3, { w: 30 }),
         goalie(4, { w: 40 }),
       ],
-      weightsWith({ goals: 1, w: 1 }),
       new Set<ScoringStatKey>(['goals', 'w']),
     );
 
@@ -93,10 +93,9 @@ describe('ProjectionCalculationService.computeZScores', () => {
     expect(result.get(4)).toBeCloseTo(1);
   });
 
-  it('ignores inactive and zero-weight categories', () => {
+  it('ignores inactive categories', () => {
     const result = service.computeZScores(
       [skater(1, { goals: 10, assists: 100 }), skater(2, { goals: 20, assists: 0 })],
-      weightsWith({ goals: 1, assists: 5 }),
       new Set<ScoringStatKey>(['goals']),
     );
 
@@ -107,7 +106,6 @@ describe('ProjectionCalculationService.computeZScores', () => {
   it('contributes nothing for a category with no spread', () => {
     const result = service.computeZScores(
       [skater(1, { goals: 15 }), skater(2, { goals: 15 })],
-      weightsWith({ goals: 1 }),
       new Set<ScoringStatKey>(['goals']),
     );
 
@@ -116,7 +114,7 @@ describe('ProjectionCalculationService.computeZScores', () => {
   });
 
   it('returns an empty map for no projections', () => {
-    const result = service.computeZScores([], weightsWith({ goals: 1 }), new Set(['goals']));
+    const result = service.computeZScores([], new Set(['goals']));
 
     expect(result.size).toEqual(0);
   });
