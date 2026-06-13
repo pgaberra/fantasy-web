@@ -1,7 +1,16 @@
-import { Component, computed, DestroyRef, inject, OnInit, signal, viewChild } from '@angular/core';
-import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import {
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  inject,
+  OnInit,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { rxResource, takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { debounceTime, forkJoin } from 'rxjs';
+import { debounceTime } from 'rxjs';
 import { PlayerService } from '../services/player.service';
 import { Player } from '../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
@@ -55,12 +64,18 @@ export class DraftProjectionComponent implements OnInit {
   readonly saveStatus = signal<'idle' | 'saving' | 'saved'>('idle');
   readonly loadedProjections = signal<Projection[] | null>(null);
   private readonly projectionId = signal<string | null>(null);
+  private readonly projectionLoaded = signal<boolean>(false);
   private readonly autosaveEnabled = signal<boolean>(false);
   private lastSavedJson = '';
 
+  private readonly playersResource = rxResource({
+    stream: () => this.playerService.getPlayers(),
+    defaultValue: [] as Player[],
+  });
+  readonly players = computed(() => this.playersResource.value());
+
   scoringType = signal<ScoringType>('points');
   statWeights = signal<Record<ScoringStatKey, number>>(DEFAULT_STAT_WEIGHTS);
-  players = signal<Player[]>([]);
 
   activeScoringColumns = signal(new Set<ScoringStatKey>(DEFAULT_SCORING_COLUMNS));
   activeUtilityColumns = signal(new Set<SkaterUtilityStatKey>(DEFAULT_UTILITY_COLUMNS));
@@ -74,13 +89,18 @@ export class DraftProjectionComponent implements OnInit {
   decimalSettings = signal<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
   useDefaultDecimals = signal<boolean>(true);
 
-  isLoading = signal<boolean>(true);
+  readonly isLoading = computed(() => this.playersResource.isLoading() || !this.projectionLoaded());
 
   private readonly serializedState = computed(() =>
     this.autosaveEnabled() ? JSON.stringify(toProjectionData(this.buildState())) : '',
   );
 
   constructor() {
+    effect(() => {
+      if (this.playersResource.error()) {
+        void this.router.navigate(['/projections']);
+      }
+    });
     toObservable(this.serializedState)
       .pipe(debounceTime(AUTOSAVE_DEBOUNCE_MS), takeUntilDestroyed())
       .subscribe(() => this.autosave());
@@ -96,21 +116,17 @@ export class DraftProjectionComponent implements OnInit {
   }
 
   private openExisting(id: string): void {
-    forkJoin({
-      skaters: this.playerService.getSkaters(),
-      goalies: this.playerService.getGoalies(),
-      projection: this.projectionStorage.loadProjection(id),
-    })
+    this.projectionStorage
+      .loadProjection(id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: ({ skaters, goalies, projection }) => {
-          this.players.set([...skaters, ...goalies]);
+        next: (projection) => {
           this.projectionId.set(projection.id);
           this.projectionName.set(projection.name);
           const state = fromProjectionData(projection.data);
           this.applyState(state);
           this.lastSavedJson = JSON.stringify(toProjectionData(state));
-          this.isLoading.set(false);
+          this.projectionLoaded.set(true);
           this.autosaveEnabled.set(true);
         },
         error: () => this.router.navigate(['/projections']),

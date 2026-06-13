@@ -53,27 +53,29 @@ describe('ProjectionCreateComponent', () => {
     createProjection.mockClear();
     return MockBuilder(ProjectionCreateComponent)
       .keep(StatInfoService)
-      .mock(PlayerService, { getSkaters: () => of([skater]), getGoalies: () => of([]) })
+      .mock(PlayerService, { getPlayers: () => of([skater]) })
       .mock(ProjectionStorageService, { listProjections: () => of([]), createProjection })
       .provide({ provide: Router, useValue: { navigate } });
   });
 
-  const getComponent = () => MockRender(ProjectionCreateComponent).point.componentInstance;
-
-  it('loads players and existing projections', () => {
-    const component = getComponent();
-    expect(component.isLoading()).toEqual(false);
+  it('loads players and existing projections', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    expect(fixture.point.componentInstance.isLoading()).toEqual(false);
   });
 
-  it('prefills the name with a suggestion and requires one to create', () => {
-    const component = getComponent();
+  it('prefills the name with a suggestion and requires one to create', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
     expect(component.name()).toEqual('My Projection');
     expect(component.canCreate()).toEqual(true);
     component.name.set('   ');
     expect(component.canCreate()).toEqual(false);
   });
 
-  it('suffixes the suggested name when it is already taken', () => {
+  it('suffixes the suggested name when it is already taken', async () => {
     MockInstance(
       ProjectionStorageService,
       'listProjections',
@@ -85,15 +87,20 @@ describe('ProjectionCreateComponent', () => {
       ),
     );
 
-    const component = getComponent();
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
 
-    expect(component.name()).toEqual('My Projection 3');
+    expect(fixture.point.componentInstance.name()).toEqual('My Projection 3');
   });
 
-  it('creates a projection and navigates to edit mode', () => {
-    const component = getComponent();
+  it('creates a projection and navigates to edit mode', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
     component.name.set('Dynasty');
     component.create();
+
     expect(createProjection).toHaveBeenCalledOnce();
     expect(navigate).toHaveBeenCalledWith(['/projections', 'new-id']);
   });
