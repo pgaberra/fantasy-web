@@ -3,6 +3,12 @@
   <span class="card-meta">{{ projection().season }}</span>
 </div>
 <div class="card-actions">
-  <button type="button" class="edit" (click)="edit.emit()">Edit</button>
-  <button type="button" class="delete" (click)="remove.emit()">Delete</button>
+  @if (confirmingDelete()) {
+    <span class="confirm-text">Delete “{{ projection().name }}”?</span>
+    <button type="button" class="delete" (click)="confirmDelete()">Yes, delete</button>
+    <button type="button" class="cancel" (click)="cancelDelete()">Cancel</button>
+  } @else {
+    <button type="button" class="edit" (click)="edit.emit()">Edit</button>
+    <button type="button" class="delete" (click)="startDelete()">Delete</button>
+  }
 </div>
