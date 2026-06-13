@@ -1,6 +1,6 @@
-import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, linkedSignal, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
 import { PlayerService } from '../services/player.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
@@ -42,21 +42,30 @@ type DataSource = 'last-season' | 'blank' | 'copy';
   templateUrl: './projection-create.html',
   styleUrl: './projection-create.css',
 })
-export class ProjectionCreateComponent implements OnInit {
+export class ProjectionCreateComponent {
   private readonly playerService = inject(PlayerService);
   private readonly projectionStorage = inject(ProjectionStorageService);
   private readonly statInfoService = inject(StatInfoService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly name = signal<string>('');
+  private readonly dataResource = rxResource({
+    stream: () =>
+      forkJoin({
+        players: this.playerService.getPlayers(),
+        projections: this.projectionStorage.listProjections(),
+      }),
+    defaultValue: { players: [] as Player[], projections: [] as ProjectionSummaryResponse[] },
+  });
+
   readonly dataSource = signal<DataSource>('last-season');
   readonly copyFromId = signal<string | null>(null);
-  readonly existingProjections = signal<ProjectionSummaryResponse[]>([]);
-  readonly isLoading = signal<boolean>(true);
+  readonly existingProjections = computed(() => this.dataResource.value().projections);
+  readonly isLoading = this.dataResource.isLoading;
   readonly isCreating = signal<boolean>(false);
+  readonly name = linkedSignal(() => this.defaultName(this.dataResource.value().projections));
 
-  private readonly players = signal<Player[]>([]);
+  private readonly players = computed(() => this.dataResource.value().players);
 
   scoringType = signal<ScoringType>('points');
   activeScoringColumns = signal(new Set<ScoringStatKey>(DEFAULT_SCORING_COLUMNS));
@@ -72,24 +81,6 @@ export class ProjectionCreateComponent implements OnInit {
       this.name().trim().length > 0 &&
       (this.dataSource() !== 'copy' || !!this.copyFromId()),
   );
-
-  ngOnInit(): void {
-    forkJoin({
-      skaters: this.playerService.getSkaters(),
-      goalies: this.playerService.getGoalies(),
-      projections: this.projectionStorage.listProjections(),
-    })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: ({ skaters, goalies, projections }) => {
-          this.players.set([...skaters, ...goalies]);
-          this.existingProjections.set(projections);
-          this.name.set(this.defaultName(projections));
-          this.isLoading.set(false);
-        },
-        error: () => this.isLoading.set(false),
-      });
-  }
 
   onNameInput(event: Event): void {
     this.name.set((event.target as HTMLInputElement).value);

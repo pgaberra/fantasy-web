@@ -68,8 +68,7 @@ describe('DraftProjectionComponent', () => {
   beforeEach(() =>
     MockBuilder(DraftProjectionComponent)
       .mock(PlayerService, {
-        getSkaters: () => of(mockSkaters),
-        getGoalies: () => of(mockGoalies),
+        getPlayers: () => of([...mockSkaters, ...mockGoalies]),
       })
       .mock(ProjectionStorageService, {
         loadProjection: () => of(mockProjection),
@@ -82,17 +81,17 @@ describe('DraftProjectionComponent', () => {
       .provide({ provide: Location, useValue: { replaceState: () => undefined } }),
   );
 
-  const getComponent = () => MockRender(DraftProjectionComponent).point.componentInstance;
-
-  it('loads the projection named in the route into edit mode', () => {
-    const component = getComponent();
+  it('loads the projection named in the route into edit mode', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
 
     expect(component.projectionName()).toEqual('My league');
     expect(component.players()).toEqual([...mockSkaters, ...mockGoalies]);
   });
 
   it('applies the loaded projection settings', () => {
-    const component = getComponent();
+    const component = MockRender(DraftProjectionComponent).point.componentInstance;
 
     expect(component.scoringType()).toEqual('category');
     expect(component.activeScoringColumns().has('goals')).toEqual(true);
