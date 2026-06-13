@@ -17,7 +17,7 @@ based on their league/scoring settings. Talks only to `fantasy-bff`.
 ```bash
 npm ci                 # install (use this, not npm install, for clean state)
 npm start              # ng serve → http://localhost:4200 (talks to a local BFF on :8080)
-npm run start:staging  # ng serve locally but point apiUrl at the staging BFF on Render
+npm run start:staging  # ng serve locally but point apiUrl at the staging BFF (api.staging.slapstat.com)
 npm test               # Vitest run
 npm run lint           # eslint src/**/*.ts
 npm run format         # prettier --write
@@ -41,22 +41,20 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   `scoring-type-section`, `scoring-stats-section`, `player-projections-table`
 - `services/` — app services (auth, projections, etc.)
 - `interceptors/` — HTTP interceptors: `authInterceptor` attaches the JWT and refreshes
-  once on 401 (all environments). `retryInterceptor` (outermost) retries transient
-  gateway/connection errors (status 0/502/503/504) with backoff so a Render free-tier
-  cold start is waited through instead of failing. Gated by
-  `environment.retryTransientErrors`, on **only where a deploy opts in**: `true` in
-  `environment.staging.ts` (local `npm run start:staging`) and injected as `'true'` into
-  `environment.prod.ts` for the **deployed free-tier staging** site (the
-  `RETRY_TRANSIENT_ERRORS` build var in `render.yaml`). It stays **off** in dev and in a
-  real production build (placeholder unset → `false`).
+  once on 401 (all environments). `retryInterceptor` (outermost) is a small **always-on**
+  safety net: it retries transient gateway/connection errors (status 0/502/503/504) just
+  twice with a short backoff (~250ms, 500ms) to absorb a momentary blip. It deliberately
+  does **not** try to ride out a full service restart — that's the job of zero-downtime
+  deploys, not a long client-side wait.
 - `models/`, `pipes/`, `shared/` (e.g. `loading-indicator`)
 - `environments/` — `environment.ts` (dev: `apiUrl: http://localhost:8080/api/v1`),
-  `environment.staging.ts` (points at the staging BFF on Render; used by
+  `environment.staging.ts` (points at the staging BFF `api.staging.slapstat.com`; used by
   `npm run start:staging` via the `staging` build/serve configs in `angular.json`),
-  and `environment.prod.ts` (API URL injected at build time on Render via `API_URL`).
-  `start:staging` lets you run the web locally against staging without booting the
-  backend services — it requires the staging BFF to allow `http://localhost:4200` as a
-  CORS origin (configured in `fantasy-bff`'s `application-staging.yaml`).
+  and `environment.prod.ts` (API URL injected at build time via the `API_URL` build arg —
+  see `Dockerfile`). `start:staging` lets you run the web locally against staging without
+  booting the backend services — it requires the staging BFF to allow
+  `http://localhost:4200` as a CORS origin (configured in `fantasy-bff`'s
+  `application-staging.yaml`).
 
 ## Conventions
 
@@ -119,7 +117,9 @@ No attribution trailers (`attribution.commit` / `attribution.pr` are `""` in
 
 ## Deployment
 
-- Deployed to Render as a static site. Build injects the BFF URL into
-  `environment.prod.ts` via the `API_URL` env var, publishes
-  `dist/fantasy-web/browser`, with SPA rewrite `/* → /index.html`.
-  See `DEPLOYMENT.md`.
+- Deployed via **Coolify** (Hetzner) using the multi-stage `Dockerfile`: a Node build
+  stage produces `dist/fantasy-web/browser`, served by nginx (SPA rewrite `/* →
+  /index.html`, see `nginx.conf`). The BFF URL + Google Client ID are injected into
+  `environment.prod.ts` at build time via the `API_URL` / `GOOGLE_CLIENT_ID` build args.
+  production = `slapstat.com` (`api.slapstat.com`), staging = `staging.slapstat.com`
+  (`api.staging.slapstat.com`). See `DEPLOYMENT.md`.

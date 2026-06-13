@@ -8,15 +8,14 @@ import { authInterceptor } from './interceptors/auth.interceptor';
 import { provideApiConfiguration } from './api/api-configuration';
 import { environment } from '../environments/environment';
 
-const interceptors = environment.retryTransientErrors
-  ? [retryInterceptor, authInterceptor]
-  : [authInterceptor];
-
+// retryInterceptor is outermost so it wraps authInterceptor (a retried request still
+// gets a fresh Authorization header). It is a small always-on safety net for transient
+// gateway/connection blips — see retry.interceptor.ts.
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
-    provideHttpClient(withInterceptors(interceptors)),
+    provideHttpClient(withInterceptors([retryInterceptor, authInterceptor])),
     provideApiConfiguration(environment.rootUrl),
   ],
 };

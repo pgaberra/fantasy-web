@@ -1,41 +1,38 @@
-# Deployment — fantasy-web (Render staging)
+# Deployment — fantasy-web
 
-The Angular app is deployed to Render as a **static site** defined by
-[`render.yaml`](./render.yaml). The backend (BFF) URL is baked into the bundle
-at build time, since this is a client-side SPA with no runtime env access.
+The Angular app is deployed via **Coolify** (self-hosted on Hetzner) using the
+multi-stage [`Dockerfile`](./Dockerfile): a `node:22-alpine` build stage produces the
+static bundle, which an `nginx:alpine` stage serves. The backend (BFF) URL is baked into
+the bundle at **build time**, since this is a client-side SPA with no runtime env access.
+
+| Environment | URL | BFF (`API_URL`) |
+|---|---|---|
+| production | `https://slapstat.com` (+ `www`) | `https://api.slapstat.com` |
+| staging | `https://staging.slapstat.com` | `https://api.staging.slapstat.com` |
 
 ## How it builds
 
-| Aspect | Value |
-|---|---|
-| Build command | `npm ci` → substitute BFF URL into `environment.prod.ts` → `npm run build` |
-| Publish path | `dist/fantasy-web/browser` |
-| Routing | Rewrite `/*` → `/index.html` so client-side routes work on refresh |
-| Auto-deploy | On every push to `master` |
+The Dockerfile runs `npm ci` → `npm run generate:api` → injects build args into
+`environment.prod.ts` → `npm run build`, then serves `dist/fantasy-web/browser` with
+nginx (SPA rewrite `/* → /index.html`, see [`nginx.conf`](./nginx.conf)). Coolify passes
+the build args below as Docker `--build-arg` from the app's build-time env vars.
 
-The build replaces the `http://PLACEHOLDER_FOR_PROD_URL` token in
-`src/environments/environment.prod.ts` with the `API_URL` env var. Because
-`apiUrl` is `<placeholder>/api/v1`, set `API_URL` to the BFF **base origin only**.
-
-## Environment variables
-
-| Key | Set by | Example |
+| Build arg | Purpose | Example |
 |---|---|---|
-| `API_URL` | **You, in the dashboard** | `https://fantasy-bff-staging.onrender.com` (no trailing slash, no `/api/v1`) |
+| `API_URL` | BFF **base origin only** (no trailing slash, no `/api/v1`) — replaces the `http://PLACEHOLDER_FOR_PROD_URL` token; `apiUrl` is `<API_URL>/api/v1` | `https://api.slapstat.com` |
+| `GOOGLE_CLIENT_ID` | Public Google OAuth Client ID (not a secret). Empty → the "Sign in with Google" button is hidden | `404846934195-…apps.googleusercontent.com` |
 
-## First-time setup
+## Coolify setup (per environment)
 
-1. Deploy the BFF first (see fantasy-bff `DEPLOYMENT.md`) and copy its URL.
-2. Render → **New → Blueprint** → connect this repo. It reads `render.yaml` and
-   creates the `fantasy-web-staging` site.
-3. Set **`API_URL`** = the BFF URL from step 1. Deploy.
-4. Copy the site URL and set it as `WEB_ORIGIN` on the BFF service (for CORS),
-   then redeploy the BFF.
-5. Open the site and log in with the mock user (`mock@example.com` /
-   `mockpassword123`).
+1. Deploy the BFF first and note its origin (the `API_URL` above).
+2. Create an application from this repo (GitHub App source, **Dockerfile** build pack),
+   set the **Domains** (e.g. `https://staging.slapstat.com`) and the build-time env vars
+   `API_URL` + `GOOGLE_CLIENT_ID` (both marked build-time), then deploy.
+3. Ensure the BFF's `WEB_ORIGIN` equals this site's origin (for CORS) and redeploy the
+   BFF if it changed.
+4. DNS: a Cloudflare **A record (DNS only / grey cloud)** for the domain → the server IP,
+   so Coolify's Let's Encrypt (HTTP-01) can provision TLS.
 
-## If the blueprint rejects `runtime: static`
-
-Render's static-site schema changes occasionally. Fallback: create the site
-manually in the dashboard with the same **build command**, **publish path**, and
-a **Rewrite** rule (`/*` → `/index.html`) under the site's Redirects/Rewrites.
+> Local dev against a deployed backend: `npm run start:staging` serves the app locally
+> pointed at the staging BFF (`environment.staging.ts`) — no need to boot the backend
+> services. The staging BFF must allow `http://localhost:4200` as a CORS origin.
