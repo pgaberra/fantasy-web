@@ -118,4 +118,22 @@ describe('ProjectionCalculationService.computeZScores', () => {
 
     expect(result.size).toEqual(0);
   });
+
+  it('caps the standardization baseline at the pool size, ignoring the fringe', () => {
+    const elite = [
+      skater(1, { goals: 50 }),
+      skater(2, { goals: 40 }),
+      skater(3, { goals: 30 }),
+      skater(4, { goals: 20 }),
+      skater(5, { goals: 10 }),
+    ];
+    const fringe = (count: number): SkaterProjection[] =>
+      Array.from({ length: count }, (_unused, index) => skater(1000 + index, { goals: 0 }));
+
+    const smallField = service.computeZScores([...elite, ...fringe(175)], new Set(['goals']));
+    const largeField = service.computeZScores([...elite, ...fringe(400)], new Set(['goals']));
+
+    expect(largeField.get(1)).toBeCloseTo(smallField.get(1) ?? 0, 5);
+    expect(largeField.get(1) ?? 0).toBeGreaterThan(0);
+  });
 });
