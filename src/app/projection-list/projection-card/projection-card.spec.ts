@@ -34,14 +34,37 @@ describe('ProjectionCardComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('20262027');
   });
 
-  it('emits edit and remove when the buttons are clicked', () => {
+  it('emits edit when Edit is clicked', () => {
     render();
 
-    const buttons = ngMocks.findAll<HTMLButtonElement>('button');
-    buttons[0].nativeElement.click();
-    buttons[1].nativeElement.click();
+    ngMocks.find<HTMLButtonElement>('.edit').nativeElement.click();
 
     expect(onEdit).toHaveBeenCalledOnce();
+  });
+
+  it('asks for confirmation before removing, then emits on confirm', () => {
+    const fixture = render();
+
+    ngMocks.find<HTMLButtonElement>('.delete').nativeElement.click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Delete “My league”?');
+    expect(onRemove).not.toHaveBeenCalled();
+
+    ngMocks.find<HTMLButtonElement>('.delete').nativeElement.click();
+
     expect(onRemove).toHaveBeenCalledOnce();
+  });
+
+  it('does not remove when the confirmation is cancelled', () => {
+    const fixture = render();
+
+    ngMocks.find<HTMLButtonElement>('.delete').nativeElement.click();
+    fixture.detectChanges();
+    ngMocks.find<HTMLButtonElement>('.cancel').nativeElement.click();
+    fixture.detectChanges();
+
+    expect(onRemove).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('Edit');
   });
 });

@@ -26,7 +26,13 @@
 
 .card-actions {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
+}
+
+.card-actions .confirm-text {
+  font-size: 0.85rem;
+  color: #0f3460;
 }
 
 .card-actions button {
@@ -41,4 +47,10 @@
 
 .card-actions .delete {
   background: #b3261e;
+}
+
+.card-actions .cancel {
+  background: #fff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
 }
