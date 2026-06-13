@@ -9,6 +9,7 @@ import {
   required,
   schema,
   submit,
+  validate,
 } from '@angular/forms/signals';
 import { AuthCredentials } from './model';
 import { GoogleSignInButtonComponent } from '../google-sign-in-button/google-sign-in-button';
@@ -16,6 +17,10 @@ import { environment } from '../../../environments/environment';
 
 const EMAIL_MAX_LENGTH = 254;
 const PASSWORD_MAX_LENGTH = 72;
+
+interface AuthFormValue extends AuthCredentials {
+  confirmPassword: string;
+}
 
 @Component({
   selector: 'app-auth-form',
@@ -34,13 +39,18 @@ export class AuthFormComponent {
   readonly footerLinkLabel = input.required<string>();
   readonly footerLinkRoute = input.required<string>();
   readonly passwordMinLength = input<number | undefined>(undefined);
+  readonly requireConfirmPassword = input(false);
   readonly errorMessage = input<string | null>(null);
   readonly isLoading = input(false);
 
   readonly formSubmit = output<AuthCredentials>();
   readonly googleSubmit = output<string>();
 
-  private readonly authFormModel = signal<AuthCredentials>({ email: '', password: '' });
+  private readonly authFormModel = signal<AuthFormValue>({
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
 
   readonly authForm = form(
     this.authFormModel,
@@ -55,13 +65,26 @@ export class AuthFormComponent {
       maxLength(fields.password, PASSWORD_MAX_LENGTH, {
         message: 'Password must be at most 72 characters.',
       });
+      validate(fields.confirmPassword, ({ value, valueOf }) => {
+        if (!this.requireConfirmPassword()) {
+          return undefined;
+        }
+        if (value().length === 0) {
+          return { kind: 'required', message: 'Please confirm your password.' };
+        }
+        if (value() !== valueOf(fields.password)) {
+          return { kind: 'passwordMismatch', message: 'Passwords do not match.' };
+        }
+        return undefined;
+      });
     }),
   );
 
   onSubmit(event: Event) {
     event.preventDefault();
     void submit(this.authForm, async () => {
-      this.formSubmit.emit(this.authFormModel());
+      const { email: emailValue, password } = this.authFormModel();
+      this.formSubmit.emit({ email: emailValue, password });
     });
   }
 }
