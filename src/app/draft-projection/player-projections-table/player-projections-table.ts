@@ -196,12 +196,16 @@ export class PlayerProjectionsTableComponent implements OnInit {
         activeScoringColumns,
       );
     });
-    const zScores = this.projectionCalculationService.computeZScores(fantasyPoints);
+    const zScoreByPlayer = this.projectionCalculationService.computeZScores(
+      projections,
+      statWeights,
+      activeScoringColumns,
+    );
 
     return new Map(
       projections.map((pp, i) => [
         pp.playerId,
-        { fantasyPoints: fantasyPoints[i], zScore: zScores[i] },
+        { fantasyPoints: fantasyPoints[i], zScore: zScoreByPlayer.get(pp.playerId) ?? 0 },
       ]),
     );
   });
