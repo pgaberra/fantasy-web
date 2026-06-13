@@ -6,13 +6,15 @@
 
   <button type="button" class="create-button" (click)="createNew()">+ Create new projection</button>
 
-  @if (isLoading()) {
+  @if (projectionsResource.isLoading()) {
     <app-loading-indicator />
-  } @else if (projections().length === 0) {
+  } @else if (projectionsResource.error()) {
+    <p class="empty">Couldn't load your projections. Please try again.</p>
+  } @else if (projectionsResource.value().length === 0) {
     <p class="empty">You don't have any saved projections yet.</p>
   } @else {
     <ul class="cards">
-      @for (projection of projections(); track projection.id) {
+      @for (projection of projectionsResource.value(); track projection.id) {
         <li
           app-projection-card
           [projection]="projection"

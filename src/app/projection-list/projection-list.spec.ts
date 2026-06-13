@@ -18,34 +18,48 @@ describe('ProjectionListComponent', () => {
   ];
 
   const navigate = vi.fn();
+  const listProjections = vi.fn(() => of(summaries));
+  const deleteProjection = vi.fn(() => of(undefined));
 
   beforeEach(() => {
     navigate.mockClear();
+    listProjections.mockClear();
+    deleteProjection.mockClear();
     return MockBuilder(ProjectionListComponent)
-      .mock(ProjectionStorageService, {
-        listProjections: () => of(summaries),
-        deleteProjection: () => of(undefined),
-      })
+      .mock(ProjectionStorageService, { listProjections, deleteProjection })
       .provide({ provide: Router, useValue: { navigate } });
   });
 
-  const getComponent = () => MockRender(ProjectionListComponent).point.componentInstance;
+  it('loads the saved projections', async () => {
+    const fixture = MockRender(ProjectionListComponent);
+    await fixture.whenStable();
 
-  it('loads the saved projections', () => {
-    const component = getComponent();
-    expect(component.projections()).toEqual(summaries);
-    expect(component.isLoading()).toEqual(false);
+    const component = fixture.point.componentInstance;
+    expect(component.projectionsResource.value()).toEqual(summaries);
+    expect(component.projectionsResource.isLoading()).toEqual(false);
   });
 
   it('navigates to the create page', () => {
-    const component = getComponent();
+    const component = MockRender(ProjectionListComponent).point.componentInstance;
     component.createNew();
     expect(navigate).toHaveBeenCalledWith(['/projections/new']);
   });
 
   it('navigates to edit an existing projection', () => {
-    const component = getComponent();
+    const component = MockRender(ProjectionListComponent).point.componentInstance;
     component.edit('p1');
     expect(navigate).toHaveBeenCalledWith(['/projections', 'p1']);
+  });
+
+  it('reloads the list after a delete', async () => {
+    const fixture = MockRender(ProjectionListComponent);
+    await fixture.whenStable();
+    expect(listProjections).toHaveBeenCalledTimes(1);
+
+    await fixture.point.componentInstance.remove('p1');
+    await fixture.whenStable();
+
+    expect(deleteProjection).toHaveBeenCalledWith('p1');
+    expect(listProjections).toHaveBeenCalledTimes(2);
   });
 });

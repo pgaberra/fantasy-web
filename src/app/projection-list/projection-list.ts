@@ -1,8 +1,8 @@
-import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { firstValueFrom } from 'rxjs';
 import { ProjectionStorageService } from '../services/projection-storage.service';
-import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ProjectionCardComponent } from './projection-card/projection-card';
 
@@ -12,31 +12,14 @@ import { ProjectionCardComponent } from './projection-card/projection-card';
   templateUrl: './projection-list.html',
   styleUrl: './projection-list.css',
 })
-export class ProjectionListComponent implements OnInit {
+export class ProjectionListComponent {
   private readonly storage = inject(ProjectionStorageService);
   private readonly router = inject(Router);
-  private readonly destroyRef = inject(DestroyRef);
 
-  readonly projections = signal<ProjectionSummaryResponse[]>([]);
-  readonly isLoading = signal<boolean>(true);
-
-  ngOnInit(): void {
-    this.refresh();
-  }
-
-  private refresh(): void {
-    this.isLoading.set(true);
-    this.storage
-      .listProjections()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (projections) => {
-          this.projections.set(projections);
-          this.isLoading.set(false);
-        },
-        error: () => this.isLoading.set(false),
-      });
-  }
+  readonly projectionsResource = rxResource({
+    stream: () => this.storage.listProjections(),
+    defaultValue: [],
+  });
 
   createNew(): void {
     void this.router.navigate(['/projections/new']);
@@ -46,13 +29,11 @@ export class ProjectionListComponent implements OnInit {
     void this.router.navigate(['/projections', id]);
   }
 
-  remove(id: string): void {
-    this.storage
-      .deleteProjection(id)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => this.refresh(),
-        error: () => undefined,
-      });
+  remove(id: string): Promise<void> {
+    return firstValueFrom(this.storage.deleteProjection(id))
+      .then(() => {
+        this.projectionsResource.reload();
+      })
+      .catch(() => undefined);
   }
 }
