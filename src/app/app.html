@@ -1,6 +1,8 @@
 <header class="app-header">
   <div class="app-header-inner">
-    <span class="app-logo">🏒 Fantasy Hockey</span>
+    <a routerLink="/" class="app-logo" aria-label="SlapStat home">
+      <img src="slapstat-logo.png" alt="SlapStat" />
+    </a>
     <nav class="app-nav">
       <a routerLink="/draft-projection" routerLinkActive="active">Draft Projection</a>
       @if (authService.isLoggedIn()) {
