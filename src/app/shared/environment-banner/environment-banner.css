@@ -1,4 +1,10 @@
+.env-banner-wrap {
+  position: relative;
+}
+
 .env-banner {
+  display: block;
+  width: 100%;
   background: #b45309;
   color: #fff;
   text-align: center;
@@ -8,5 +14,95 @@
   line-height: 1;
   padding: 0.3rem 0.5rem;
   text-transform: uppercase;
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
   user-select: none;
+  transition: background 0.2s;
+}
+
+.env-banner:hover {
+  background: #a1490a;
+}
+
+.env-banner::after {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-left: 0.5rem;
+  vertical-align: 1px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.2s;
+}
+
+.env-banner.open::after {
+  transform: rotate(-135deg);
+}
+
+.version-panel {
+  position: absolute;
+  top: 100%;
+  right: 1rem;
+  margin-top: 4px;
+  min-width: 250px;
+  background: #fff;
+  color: #1a1a2e;
+  border: 1px solid #e0e4ef;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  padding: 0.4rem;
+  z-index: 200;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.version-status {
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.version-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.version-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+.version-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.version-dot.up {
+  background: #16a34a;
+}
+
+.version-dot.down {
+  background: #dc2626;
+}
+
+.version-name {
+  color: #334155;
+  font-weight: 500;
+}
+
+.version-value {
+  margin-left: auto;
+  color: #0f3460;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }

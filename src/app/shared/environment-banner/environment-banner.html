@@ -1,3 +1,38 @@
 @if (visible()) {
-  <div class="env-banner" role="status">{{ label() }}</div>
+  <div class="env-banner-wrap">
+    <button
+      type="button"
+      class="env-banner"
+      [class.open]="open()"
+      [attr.aria-expanded]="open()"
+      aria-haspopup="dialog"
+      (click)="toggle()"
+    >
+      {{ label() }}
+    </button>
+    @if (open()) {
+      <div class="version-panel" role="dialog" aria-label="Service versions">
+        @if (versionsResource.isLoading()) {
+          <p class="version-status">Loading versions…</p>
+        } @else if (versionsResource.error()) {
+          <p class="version-status">Could not load versions</p>
+        } @else {
+          <ul class="version-list">
+            @for (service of versionsResource.value(); track service.name) {
+              <li class="version-row">
+                <span
+                  class="version-dot"
+                  [class.up]="service.up"
+                  [class.down]="!service.up"
+                  [attr.title]="service.up ? 'Reachable' : 'Unreachable'"
+                ></span>
+                <span class="version-name">{{ service.name }}</span>
+                <span class="version-value">{{ service.version ?? '—' }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    }
+  </div>
 }
