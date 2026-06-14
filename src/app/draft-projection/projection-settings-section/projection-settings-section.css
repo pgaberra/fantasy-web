@@ -60,21 +60,6 @@
   gap: 1rem;
 }
 
-.setting-row--sub {
-  padding-left: 1.25rem;
-  border-left: 2px solid #e0e4ef;
-  margin-top: -0.2rem;
-}
-
-app-setting-row.setting-row--sub {
-  --setting-name-weight: 500;
-  --setting-name-color: #444;
-}
-
-.setting-row--sub app-toggle-switch {
-  --toggle-on-color: #2a6496;
-}
-
 .setting-row--advanced {
   margin-left: 1.25rem;
   padding: 0.4rem 0.75rem 0.4rem 1.25rem;

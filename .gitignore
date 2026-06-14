@@ -47,3 +47,6 @@ __screenshots__/
 Thumbs.db
 
 .ai
+
+# Local test output artifact
+test-output.txt
