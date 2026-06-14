@@ -356,14 +356,20 @@ describe('PlayerProjectionsTableComponent', () => {
     it('should recompute projections when statWeights changes', () => {
       const component = getComponent({ scoringType: 'points' });
       const firstId =
-        component.filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit()[0].playerId;
-      const initialPoints = component.playerScores().get(firstId)?.fantasyPoints;
+        component.filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit()[0].projection
+          .playerId;
+      const initialPoints = component
+        .scoredProjections()
+        .find((sp) => sp.projection.playerId === firstId)?.score.fantasyPoints;
 
       component.statWeights.update((weights) => ({ ...weights, goals: weights.goals * 2 }));
 
       const updatedId =
-        component.filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit()[0].playerId;
-      const updatedPoints = component.playerScores().get(updatedId)?.fantasyPoints;
+        component.filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit()[0].projection
+          .playerId;
+      const updatedPoints = component
+        .scoredProjections()
+        .find((sp) => sp.projection.playerId === updatedId)?.score.fantasyPoints;
       expect(updatedPoints).not.toEqual(initialPoints);
     });
   });
@@ -383,7 +389,7 @@ describe('PlayerProjectionsTableComponent', () => {
       expect(component.sortColumn()).toEqual('hits');
       expect(component.sortDirection()).toEqual('desc');
       // Draisaitl 51 > McDavid 42 > Hellebuyck (goalie, no hits) 0
-      expect(component.visibleProjections().map((p) => p.playerId)).toEqual([2, 1, 3]);
+      expect(component.visibleProjections().map((sp) => sp.projection.playerId)).toEqual([2, 1, 3]);
     });
 
     it('toggles direction when the same column is chosen again', () => {
@@ -393,7 +399,7 @@ describe('PlayerProjectionsTableComponent', () => {
       component.onSort('hits');
 
       expect(component.sortDirection()).toEqual('asc');
-      expect(component.visibleProjections().map((p) => p.playerId)).toEqual([3, 1, 2]);
+      expect(component.visibleProjections().map((sp) => sp.projection.playerId)).toEqual([3, 1, 2]);
     });
 
     it('resets to descending when switching to a different column', () => {
@@ -417,7 +423,7 @@ describe('PlayerProjectionsTableComponent', () => {
     it('should filter projections by player name, case-insensitively', () => {
       const component = getComponent();
       component.searchTerm.set('draisaitl');
-      expect(component.visibleProjections().map((p) => p.playerId)).toEqual([2]);
+      expect(component.visibleProjections().map((sp) => sp.projection.playerId)).toEqual([2]);
     });
 
     it('should match a substring across multiple players', () => {
@@ -448,14 +454,14 @@ describe('PlayerProjectionsTableComponent', () => {
     it('should filter projections by team', () => {
       const component = getComponent();
       component.teamFilter.set('EDM');
-      expect(component.visibleProjections().map((p) => p.playerId)).toEqual([1]);
+      expect(component.visibleProjections().map((sp) => sp.projection.playerId)).toEqual([1]);
     });
 
     it('should sort projections alphabetically by player name', () => {
       const component = getComponent();
       component.onSort('name');
       component.sortDirection.set('asc');
-      expect(component.visibleProjections().map((p) => p.playerId)).toEqual([3, 1, 2]);
+      expect(component.visibleProjections().map((sp) => sp.projection.playerId)).toEqual([3, 1, 2]);
     });
 
     it('should grow the visible count by one page on showMore', () => {

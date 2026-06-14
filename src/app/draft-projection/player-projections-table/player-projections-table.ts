@@ -13,9 +13,9 @@ import { Player } from '../../models/player.model';
 import {
   ActiveColumns,
   GoalieScoringStats,
-  PlayerScore,
   PositionFilter,
   Projection,
+  ScoredProjection,
   ScoringType,
   SkaterScoringStats,
   SortColumn,
@@ -85,27 +85,26 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly sortDirection = signal<SortDirection>('desc');
 
   readonly playerProjections = signal<Projection[]>([]);
-  private readonly realTimeSortedProjections = computed((): Projection[] => {
-    const projections = this.playerProjections();
-    const scores = this.playerScores();
+  private readonly realTimeSortedProjections = computed((): ScoredProjection[] => {
+    const scored = this.scoredProjections();
     const column = this.sortColumn();
     const sign = this.sortDirection() === 'asc' ? 1 : -1;
-    const summaryValueOf = this.sortValueResolver('summary', scores);
-    const tieBreak = (a: Projection, b: Projection): number =>
+    const summaryValueOf = this.sortValueResolver('summary');
+    const tieBreak = (a: ScoredProjection, b: ScoredProjection): number =>
       summaryValueOf(b) - summaryValueOf(a);
 
     if (column === 'name') {
       const players = this.playerMap();
-      const nameOf = (projection: Projection): string =>
-        players.get(projection.playerId)?.name ?? '';
-      return [...projections].sort((a, b) => {
+      const nameOf = (scoredProjection: ScoredProjection): string =>
+        players.get(scoredProjection.projection.playerId)?.name ?? '';
+      return [...scored].sort((a, b) => {
         const primary = sign * nameOf(a).localeCompare(nameOf(b));
         return primary !== 0 ? primary : tieBreak(a, b);
       });
     }
 
-    const valueOf = this.sortValueResolver(column, scores);
-    return [...projections].sort((a, b) => {
+    const valueOf = this.sortValueResolver(column);
+    return [...scored].sort((a, b) => {
       const primary = sign * (valueOf(a) - valueOf(b));
       // Ties fall back to fantasy value (desc) so equal-stat players stay meaningfully ordered.
       return primary !== 0 ? primary : tieBreak(a, b);
@@ -114,14 +113,13 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   private sortValueResolver(
     column: Exclude<SortColumn, 'name'>,
-    scores: Map<number, PlayerScore>,
-  ): (projection: Projection) => number {
+  ): (scoredProjection: ScoredProjection) => number {
     if (column === 'summary') {
       return this.scoringType() === 'points'
-        ? (projection) => scores.get(projection.playerId)?.fantasyPoints ?? 0
-        : (projection) => scores.get(projection.playerId)?.zScore ?? 0;
+        ? (scoredProjection) => scoredProjection.score.fantasyPoints
+        : (scoredProjection) => scoredProjection.score.zScore;
     }
-    return (projection) => statValueOf(projection, column);
+    return (scoredProjection) => statValueOf(scoredProjection.projection, column);
   }
 
   onSort(column: SortColumn): void {
@@ -132,35 +130,32 @@ export class PlayerProjectionsTableComponent implements OnInit {
       this.sortDirection.set('desc');
     }
   }
-  readonly filteredAndSortedProjections: Signal<Projection[]> = computed(() => {
-    const projections = this.realTimeSortedProjections();
+  readonly filteredAndSortedProjections: Signal<ScoredProjection[]> = computed(() => {
+    const scored = this.realTimeSortedProjections();
     const filter = this.positionFilter();
-    const byPosition = this.positionFilterService.filterByPosition(
-      projections,
-      this.playerMap(),
-      filter,
+    const players = this.playerMap();
+    const byPosition = scored.filter((sp) =>
+      this.positionFilterService.matches(sp.projection, players, filter),
     );
     return this.filterByTeam(byPosition);
   });
-  filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit: Signal<Projection[]> = computed(
-    () => {
+  filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit: Signal<ScoredProjection[]> =
+    computed(() => {
       if (!this.editingPlayerId()) {
         return this.filteredAndSortedProjections();
       }
 
-      const projections = this.playerProjections();
+      const scored = this.scoredProjections();
       const filter = this.positionFilter();
+      const players = this.playerMap();
       const lockedProjections = this.lockedOrder().map(
-        (playerId) => projections.find((pp) => pp.playerId === playerId)!,
+        (playerId) => scored.find((sp) => sp.projection.playerId === playerId)!,
       );
-      const byPosition = this.positionFilterService.filterByPosition(
-        lockedProjections,
-        this.playerMap(),
-        filter,
+      const byPosition = lockedProjections.filter((sp) =>
+        this.positionFilterService.matches(sp.projection, players, filter),
       );
       return this.filterByTeam(byPosition);
-    },
-  );
+    });
 
   private readonly projectionCalculationService = inject(ProjectionCalculationService);
   private readonly projectionUpdateService = inject(ProjectionUpdateService);
@@ -169,7 +164,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
   private readonly activeColumnsService = inject(ActiveColumnsService);
   private readonly statInfoService = inject(StatInfoService);
 
-  readonly playerScores = computed((): Map<number, PlayerScore> => {
+  readonly scoredProjections = computed((): ScoredProjection[] => {
     const projections = this.playerProjections();
     const statWeights = this.statWeights();
     const activeScoringColumns = this.activeColumns().scoring;
@@ -196,17 +191,15 @@ export class PlayerProjectionsTableComponent implements OnInit {
         activeScoringColumns,
       );
     });
-    const zScoreByPlayer = this.projectionCalculationService.computeZScores(
+    const zScores = this.projectionCalculationService.computeZScores(
       projections,
       activeScoringColumns,
     );
 
-    return new Map(
-      projections.map((pp, i) => [
-        pp.playerId,
-        { fantasyPoints: fantasyPoints[i], zScore: zScoreByPlayer.get(pp.playerId) ?? 0 },
-      ]),
-    );
+    return projections.map((projection, i) => ({
+      projection,
+      score: { fantasyPoints: fantasyPoints[i], zScore: zScores[i] },
+    }));
   });
 
   readonly positionFilter = signal<PositionFilter>('ALL');
@@ -222,28 +215,26 @@ export class PlayerProjectionsTableComponent implements OnInit {
     return [...teams].sort((a, b) => a.localeCompare(b));
   });
 
-  private filterByTeam(projections: Projection[]): Projection[] {
+  private filterByTeam(scored: ScoredProjection[]): ScoredProjection[] {
     const team = this.teamFilter();
     if (team === 'ALL') {
-      return projections;
+      return scored;
     }
     const players = this.playerMap();
-    return projections.filter(
-      (projection) => players.get(projection.playerId)?.teamAbbrev === team,
-    );
+    return scored.filter((sp) => players.get(sp.projection.playerId)?.teamAbbrev === team);
   }
 
   readonly searchTerm = signal('');
 
-  readonly searchedProjections = computed<Projection[]>(() => {
+  readonly searchedProjections = computed<ScoredProjection[]>(() => {
     const term = this.searchTerm().trim().toLowerCase();
-    const projections = this.filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit();
+    const scored = this.filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit();
     if (!term) {
-      return projections;
+      return scored;
     }
     const players = this.playerMap();
-    return projections.filter((projection) =>
-      players.get(projection.playerId)!.name.toLowerCase().includes(term),
+    return scored.filter((sp) =>
+      players.get(sp.projection.playerId)!.name.toLowerCase().includes(term),
     );
   });
 
@@ -260,7 +251,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
     computation: () => PLAYERS_PER_PAGE,
   });
 
-  readonly visibleProjections = computed<Projection[]>(() =>
+  readonly visibleProjections = computed<ScoredProjection[]>(() =>
     this.searchedProjections().slice(0, this.visibleCount()),
   );
 
@@ -279,11 +270,15 @@ export class PlayerProjectionsTableComponent implements OnInit {
   }
 
   realTimeRanks: Signal<Map<number, number>> = computed(() => {
-    return new Map(this.realTimeSortedProjections().map((pp, i) => [pp.playerId, i + 1]));
+    return new Map(
+      this.realTimeSortedProjections().map((sp, i) => [sp.projection.playerId, i + 1]),
+    );
   });
 
   positionRanks: Signal<Map<number, number>> = computed(() => {
-    return new Map(this.filteredAndSortedProjections().map((pp, i) => [pp.playerId, i + 1]));
+    return new Map(
+      this.filteredAndSortedProjections().map((sp, i) => [sp.projection.playerId, i + 1]),
+    );
   });
 
   private readonly playerMap = computed(() => new Map(this.players().map((p) => [p.id, p])));
@@ -332,7 +327,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   onRowFocusIn(playerId: number): void {
     if (this.editingPlayerId() === playerId) return;
-    this.lockedOrder.set(this.realTimeSortedProjections().map((pp) => pp.playerId));
+    this.lockedOrder.set(this.realTimeSortedProjections().map((sp) => sp.projection.playerId));
     this.editingPlayerId.set(playerId);
   }
 

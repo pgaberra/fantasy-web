@@ -52,8 +52,8 @@ describe('ProjectionCalculationService.computeZScores', () => {
       new Set<ScoringStatKey>(['goals']),
     );
 
-    expect(result.get(1)).toBeCloseTo(-1);
-    expect(result.get(2)).toBeCloseTo(1);
+    expect(result[0]).toBeCloseTo(-1);
+    expect(result[1]).toBeCloseTo(1);
   });
 
   it('weights every active category equally, regardless of any stat weight', () => {
@@ -62,8 +62,8 @@ describe('ProjectionCalculationService.computeZScores', () => {
       new Set<ScoringStatKey>(['goals', 'assists']),
     );
 
-    expect(result.get(1)).toBeCloseTo(-2);
-    expect(result.get(2)).toBeCloseTo(2);
+    expect(result[0]).toBeCloseTo(-2);
+    expect(result[1]).toBeCloseTo(2);
   });
 
   it('inverts a lower-is-better category so the lower value scores higher', () => {
@@ -72,8 +72,8 @@ describe('ProjectionCalculationService.computeZScores', () => {
       new Set<ScoringStatKey>(['gaa']),
     );
 
-    expect(result.get(1)).toBeCloseTo(1);
-    expect(result.get(2)).toBeCloseTo(-1);
+    expect(result[0]).toBeCloseTo(1);
+    expect(result[1]).toBeCloseTo(-1);
   });
 
   it('standardizes skater and goalie categories in separate pools', () => {
@@ -87,10 +87,10 @@ describe('ProjectionCalculationService.computeZScores', () => {
       new Set<ScoringStatKey>(['goals', 'w']),
     );
 
-    expect(result.get(1)).toBeCloseTo(-1);
-    expect(result.get(2)).toBeCloseTo(1);
-    expect(result.get(3)).toBeCloseTo(-1);
-    expect(result.get(4)).toBeCloseTo(1);
+    expect(result[0]).toBeCloseTo(-1);
+    expect(result[1]).toBeCloseTo(1);
+    expect(result[2]).toBeCloseTo(-1);
+    expect(result[3]).toBeCloseTo(1);
   });
 
   it('ignores inactive categories', () => {
@@ -99,8 +99,8 @@ describe('ProjectionCalculationService.computeZScores', () => {
       new Set<ScoringStatKey>(['goals']),
     );
 
-    expect(result.get(1)).toBeCloseTo(-1);
-    expect(result.get(2)).toBeCloseTo(1);
+    expect(result[0]).toBeCloseTo(-1);
+    expect(result[1]).toBeCloseTo(1);
   });
 
   it('contributes nothing for a category with no spread', () => {
@@ -109,14 +109,14 @@ describe('ProjectionCalculationService.computeZScores', () => {
       new Set<ScoringStatKey>(['goals']),
     );
 
-    expect(result.get(1)).toEqual(0);
-    expect(result.get(2)).toEqual(0);
+    expect(result[0]).toEqual(0);
+    expect(result[1]).toEqual(0);
   });
 
-  it('returns an empty map for no projections', () => {
+  it('returns an empty array for no projections', () => {
     const result = service.computeZScores([], new Set(['goals']));
 
-    expect(result.size).toEqual(0);
+    expect(result.length).toEqual(0);
   });
 
   it('caps the standardization baseline at the pool size, ignoring the fringe', () => {
@@ -133,7 +133,7 @@ describe('ProjectionCalculationService.computeZScores', () => {
     const smallField = service.computeZScores([...elite, ...fringe(175)], new Set(['goals']));
     const largeField = service.computeZScores([...elite, ...fringe(400)], new Set(['goals']));
 
-    expect(largeField.get(1)).toBeCloseTo(smallField.get(1) ?? 0, 5);
-    expect(largeField.get(1) ?? 0).toBeGreaterThan(0);
+    expect(largeField[0]).toBeCloseTo(smallField[0], 5);
+    expect(largeField[0]).toBeGreaterThan(0);
   });
 });

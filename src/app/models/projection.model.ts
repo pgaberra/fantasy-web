@@ -41,6 +41,11 @@ export interface PlayerScore {
   zScore: number;
 }
 
+export interface ScoredProjection {
+  projection: Projection;
+  score: PlayerScore;
+}
+
 interface BaseProjection {
   playerId: number;
 }

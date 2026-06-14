@@ -32,21 +32,23 @@
         (sort)="onSort($event)"
       ></thead>
       <tbody>
-        @for (projection of visibleProjections(); track projection.playerId) {
+        @for (sp of visibleProjections(); track sp.projection.playerId) {
           <tr
             app-player-row
-            [positionRank]="positionRanks().get(projection.playerId)!"
+            [positionRank]="positionRanks().get(sp.projection.playerId)!"
             [totalRank]="
-              positionFilter() !== 'ALL' ? (realTimeRanks().get(projection.playerId) ?? null) : null
+              positionFilter() !== 'ALL'
+                ? (realTimeRanks().get(sp.projection.playerId) ?? null)
+                : null
             "
-            [projection]="projection"
-            [playerScore]="playerScores().get(projection.playerId)!"
-            [player]="getPlayer(projection.playerId)"
+            [projection]="sp.projection"
+            [playerScore]="sp.score"
+            [player]="getPlayer(sp.projection.playerId)"
             [activeColumns]="filteredActiveColumns()"
             [scoringType]="scoringType()"
             [decimalSettings]="decimalSettings()"
-            [isEditing]="editingPlayerId() === projection.playerId"
-            (focusin)="onRowFocusIn(projection.playerId)"
+            [isEditing]="editingPlayerId() === sp.projection.playerId"
+            (focusin)="onRowFocusIn(sp.projection.playerId)"
             (focusout)="onRowFocusOut($event)"
             (statInput)="onStatInput($event.playerId, $event.key, $event.event)"
             (toiKeydown)="onToiKeydown($event.playerId, $event.event)"
