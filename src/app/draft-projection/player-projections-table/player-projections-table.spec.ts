@@ -374,6 +374,27 @@ describe('PlayerProjectionsTableComponent', () => {
     });
   });
 
+  describe('loading a saved projection', () => {
+    it('drops saved entries whose player is no longer in the roster', () => {
+      const missing: Projection = { ...mockPlayerProjections[0], playerId: 999 };
+      const fixture = MockRender(PlayerProjectionsTableComponent, {
+        players: mockPlayers,
+        scoringType: 'category' as ScoringType,
+        initialProjections: [mockPlayerProjections[0], missing],
+        statWeights: mockStatWeights,
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['goals', 'assists']),
+          utility: new Set<SkaterUtilityStatKey>(['gp']),
+        } as ActiveColumns,
+        scaleSettings: mockScaleSettings,
+        useDefaultDecimals: true,
+      });
+
+      const ids = fixture.point.componentInstance.playerProjections().map((pp) => pp.playerId);
+      expect(ids).toEqual([1]);
+    });
+  });
+
   describe('column sorting', () => {
     it('defaults to the summary column, descending', () => {
       const component = getComponent();
