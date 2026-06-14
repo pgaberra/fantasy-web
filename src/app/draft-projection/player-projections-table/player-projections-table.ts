@@ -298,7 +298,8 @@ export class PlayerProjectionsTableComponent implements OnInit {
   private initializeProjection(): void {
     const initial = this.initialProjections();
     if (initial) {
-      this.playerProjections.set(initial);
+      const players = this.playerMap();
+      this.playerProjections.set(initial.filter((projection) => players.has(projection.playerId)));
       return;
     }
 
