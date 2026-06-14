@@ -23,23 +23,21 @@ describe('retryInterceptor logic', () => {
   });
 
   describe('retryBackoffMs', () => {
-    it('grows exponentially from 1s', () => {
-      expect(retryBackoffMs(1)).toEqual(1000);
-      expect(retryBackoffMs(2)).toEqual(2000);
-      expect(retryBackoffMs(3)).toEqual(4000);
-      expect(retryBackoffMs(4)).toEqual(8000);
+    it('grows exponentially from 250ms', () => {
+      expect(retryBackoffMs(1)).toEqual(250);
+      expect(retryBackoffMs(2)).toEqual(500);
     });
 
-    it('caps the delay at 10s', () => {
-      expect(retryBackoffMs(5)).toEqual(10000);
-      expect(retryBackoffMs(MAX_RETRIES)).toEqual(10000);
+    it('caps the delay at 1s', () => {
+      expect(retryBackoffMs(3)).toEqual(1000);
+      expect(retryBackoffMs(MAX_RETRIES + 5)).toEqual(1000);
     });
   });
 
-  it('retries over a ~200s window to cover a compounded cold start', () => {
+  it('keeps the total retry window short — a couple of quick attempts, not a cold-start wait', () => {
     const totalWindowMs = Array.from({ length: MAX_RETRIES }, (_, i) =>
       retryBackoffMs(i + 1),
     ).reduce((sum, ms) => sum + ms, 0);
-    expect(totalWindowMs).toBeGreaterThanOrEqual(200000);
+    expect(totalWindowMs).toBeLessThanOrEqual(2000);
   });
 });
