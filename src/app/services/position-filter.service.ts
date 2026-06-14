@@ -27,12 +27,15 @@ export class PositionFilterService {
     filter: PositionFilter,
   ): Projection[] {
     if (filter === 'ALL') return projections;
-    return projections.filter((pp) => {
-      if (filter === 'SKATER') return pp.type === 'skater';
-      if (filter === 'G') return pp.type === 'goalie';
-      const player = playerMap.get(pp.playerId);
-      if (!player || player.type !== 'skater') return false;
-      return player.positions.has(filter);
-    });
+    return projections.filter((pp) => this.matches(pp, playerMap, filter));
+  }
+
+  matches(projection: Projection, playerMap: Map<number, Player>, filter: PositionFilter): boolean {
+    if (filter === 'ALL') return true;
+    if (filter === 'SKATER') return projection.type === 'skater';
+    if (filter === 'G') return projection.type === 'goalie';
+    const player = playerMap.get(projection.playerId);
+    if (!player || player.type !== 'skater') return false;
+    return player.positions.has(filter);
   }
 }
