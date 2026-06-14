@@ -13,14 +13,20 @@ RUN npm run generate:api
 
 # Build-time config, passed by Coolify as --build-arg from the app's build env vars.
 # API_URL is the BFF origin (no trailing slash); GOOGLE_CLIENT_ID is public (shipped to
-# the browser by design).
+# the browser by design). APP_ENV marks the deployed environment (set to "staging" on the
+# staging app to show the env banner; left as "production" otherwise); APP_VERSION is the
+# optional version label shown alongside it.
 ARG API_URL=http://localhost:8080
 ARG GOOGLE_CLIENT_ID=
+ARG APP_ENV=production
+ARG APP_VERSION=
 
 # Inject the values into environment.prod.ts (replaces the committed placeholders).
 RUN sed -i \
   -e "s|http://PLACEHOLDER_FOR_PROD_URL|${API_URL}|g" \
   -e "s|__GOOGLE_CLIENT_ID__|${GOOGLE_CLIENT_ID}|g" \
+  -e "s|__APP_ENV__|${APP_ENV}|g" \
+  -e "s|__APP_VERSION__|${APP_VERSION}|g" \
   src/environments/environment.prod.ts
 
 RUN npm run build

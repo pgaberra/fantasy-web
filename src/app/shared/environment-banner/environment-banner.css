@@ -1,0 +1,12 @@
+.env-banner {
+  background: #b45309;
+  color: #fff;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  padding: 0.3rem 0.5rem;
+  text-transform: uppercase;
+  user-select: none;
+}

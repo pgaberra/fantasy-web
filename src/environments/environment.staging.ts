@@ -1,5 +1,7 @@
 export const environment = {
   production: false,
+  environmentName: 'staging' as string,
+  version: 'local' as string,
   rootUrl: 'https://api.staging.slapstat.com',
   apiUrl: 'https://api.staging.slapstat.com/api/v1',
   // Public Google OAuth Client ID (not a secret — shipped to the browser by design).
