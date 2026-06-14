@@ -1,7 +1,6 @@
 import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { of } from 'rxjs';
-import { Location } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { DraftProjectionComponent } from './draft-projection';
 import { PlayerService } from '../services/player.service';
@@ -77,8 +76,7 @@ describe('DraftProjectionComponent', () => {
       .provide({
         provide: ActivatedRoute,
         useValue: { snapshot: { paramMap: { get: () => 'p1' } } },
-      })
-      .provide({ provide: Location, useValue: { replaceState: () => undefined } }),
+      }),
   );
 
   it('loads the projection named in the route into edit mode', async () => {
