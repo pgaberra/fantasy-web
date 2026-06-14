@@ -1,5 +1,7 @@
 export const environment = {
   production: false,
+  environmentName: 'development' as string,
+  version: 'local' as string,
   rootUrl: 'http://localhost:8080',
   apiUrl: 'http://localhost:8080/api/v1',
   // Public Google OAuth Client ID (not a secret — shipped to the browser by design).
