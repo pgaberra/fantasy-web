@@ -1,8 +1,8 @@
 .app-header {
-  background: #0f3460;
-  color: #fff;
+  background: #fff;
+  color: #0f3460;
   padding: 0 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .app-header-inner {
@@ -15,9 +15,14 @@
 }
 
 .app-logo {
-  font-size: 1.2rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+}
+
+.app-logo img {
+  display: block;
+  height: 30px;
+  width: auto;
 }
 
 .app-nav {
@@ -26,7 +31,7 @@
 }
 
 .app-nav a {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(15, 52, 96, 0.65);
   text-decoration: none;
   font-size: 0.9rem;
   font-weight: 500;
@@ -39,14 +44,14 @@
 
 .app-nav a:hover,
 .app-nav a.active {
-  color: #fff;
-  border-bottom-color: #e94560;
+  color: #0f3460;
+  border-bottom-color: #1e6bff;
 }
 
 .btn-logout {
   background: none;
-  border: 1.5px solid rgba(255, 255, 255, 0.6);
-  color: rgba(255, 255, 255, 0.8);
+  border: 1.5px solid rgba(15, 52, 96, 0.3);
+  color: rgba(15, 52, 96, 0.75);
   border-radius: 6px;
   padding: 0.2rem 0.75rem;
   font-size: 0.9rem;
@@ -58,8 +63,8 @@
 }
 
 .btn-logout:hover {
-  color: #fff;
-  border-color: #fff;
+  color: #0f3460;
+  border-color: #0f3460;
 }
 
 .app-main {
@@ -76,7 +81,7 @@
     gap: 1rem;
   }
 
-  .app-logo {
-    font-size: 1.05rem;
+  .app-logo img {
+    height: 26px;
   }
 }
