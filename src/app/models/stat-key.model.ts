@@ -56,6 +56,12 @@ export const SCORING_STAT_KEYS = [
 
 export type ScoringStatKey = (typeof SCORING_STAT_KEYS)[number];
 
+export const LOWER_IS_BETTER_SCORING_STAT_KEYS: ReadonlySet<ScoringStatKey> = new Set([
+  'ga',
+  'gaa',
+  'l',
+]);
+
 export const SKATER_STAT_KEYS = [...SKATER_UTILITY_STAT_KEYS, ...SKATER_SCORING_STAT_KEYS] as const;
 
 export type SkaterStatKey = (typeof SKATER_STAT_KEYS)[number];

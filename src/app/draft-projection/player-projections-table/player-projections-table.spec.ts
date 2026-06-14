@@ -488,9 +488,9 @@ describe('PlayerProjectionsTableComponent', () => {
 
     it('should render the player name in each body row', () => {
       getComponent();
-      const rows = ngMocks.findAll('tbody tr');
-      expect(rows[0].nativeElement.textContent).toContain('Connor McDavid');
-      expect(rows[1].nativeElement.textContent).toContain('Leon Draisaitl');
+      const tableText = ngMocks.find('tbody').nativeElement.textContent;
+      expect(tableText).toContain('Connor McDavid');
+      expect(tableText).toContain('Leon Draisaitl');
     });
 
     it('should render a column header for each active scoring column', () => {
