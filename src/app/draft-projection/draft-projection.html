@@ -4,7 +4,54 @@
   <div class="draft-projection">
     <div class="page-header">
       <a routerLink="/projections" class="back-link">← My projections</a>
-      <h1>{{ projectionName() }}</h1>
+      @if (isRenaming()) {
+        <div class="rename-row">
+          <input
+            #renameInput
+            class="rename-input"
+            type="text"
+            maxlength="100"
+            [value]="renameValue()"
+            [disabled]="renameSaving()"
+            (input)="onRenameInput($event)"
+            (keydown.enter)="saveRename()"
+            (keydown.escape)="cancelRename()"
+            aria-label="Projection name"
+          />
+          <button
+            type="button"
+            class="rename-save"
+            [disabled]="renameSaving()"
+            (click)="saveRename()"
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            class="rename-cancel"
+            [disabled]="renameSaving()"
+            (click)="cancelRename()"
+          >
+            Cancel
+          </button>
+        </div>
+        @if (renameError()) {
+          <p class="rename-error">{{ renameError() }}</p>
+        }
+      } @else {
+        <h1 class="projection-title">
+          <button
+            type="button"
+            class="rename-trigger"
+            title="Rename projection"
+            aria-label="Rename projection"
+            (click)="startRename()"
+          >
+            {{ projectionName() }}
+            <span class="rename-icon" aria-hidden="true">✎</span>
+          </button>
+        </h1>
+      }
       <span class="save-status">
         @switch (saveStatus()) {
           @case ('saving') {

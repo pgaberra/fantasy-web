@@ -1,6 +1,7 @@
-import { MockBuilder, MockRender } from 'ng-mocks';
-import { describe, it, expect, beforeEach } from 'vitest';
-import { of } from 'rxjs';
+import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { of, throwError } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
 import { DraftProjectionComponent } from './draft-projection';
 import { PlayerService } from '../services/player.service';
@@ -94,5 +95,56 @@ describe('DraftProjectionComponent', () => {
     expect(component.scoringType()).toEqual('category');
     expect(component.activeScoringColumns().has('goals')).toEqual(true);
     expect(component.loadedProjections()?.length).toEqual(1);
+  });
+
+  it('renames the projection and persists the new name', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    const updateSpy = vi.spyOn(ngMocks.findInstance(ProjectionStorageService), 'updateProjection');
+
+    component.startRename();
+    component.renameValue.set('Renamed league');
+    component.saveRename();
+    await fixture.whenStable();
+
+    expect(updateSpy).toHaveBeenCalledWith(
+      'p1',
+      expect.objectContaining({ name: 'Renamed league' }),
+    );
+    expect(component.projectionName()).toEqual('Renamed league');
+    expect(component.isRenaming()).toEqual(false);
+  });
+
+  it('reports a conflict and keeps the old name when the name is taken', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    vi.spyOn(ngMocks.findInstance(ProjectionStorageService), 'updateProjection').mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 409 })),
+    );
+
+    component.startRename();
+    component.renameValue.set('Taken name');
+    component.saveRename();
+    await fixture.whenStable();
+
+    expect(component.renameError()).toContain('already exists');
+    expect(component.projectionName()).toEqual('My league');
+    expect(component.isRenaming()).toEqual(true);
+  });
+
+  it('rejects an empty name without calling the API', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    const updateSpy = vi.spyOn(ngMocks.findInstance(ProjectionStorageService), 'updateProjection');
+
+    component.startRename();
+    component.renameValue.set('   ');
+    component.saveRename();
+
+    expect(component.renameError()).toContain('empty');
+    expect(updateSpy).not.toHaveBeenCalled();
   });
 });
