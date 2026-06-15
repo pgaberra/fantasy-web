@@ -15,6 +15,20 @@ describe('ProjectionListComponent', () => {
       createdAt: '2026-06-01T00:00:00Z',
       updatedAt: '2026-06-01T00:00:00Z',
     },
+    {
+      id: 'p2',
+      name: 'Newest league',
+      season: '20262027',
+      createdAt: '2026-06-02T00:00:00Z',
+      updatedAt: '2026-06-10T00:00:00Z',
+    },
+    {
+      id: 'p3',
+      name: 'Middle league',
+      season: '20262027',
+      createdAt: '2026-06-03T00:00:00Z',
+      updatedAt: '2026-06-05T00:00:00Z',
+    },
   ];
 
   const navigate = vi.fn();
@@ -37,6 +51,16 @@ describe('ProjectionListComponent', () => {
     const component = fixture.point.componentInstance;
     expect(component.projectionsResource.value()).toEqual(summaries);
     expect(component.projectionsResource.isLoading()).toEqual(false);
+  });
+
+  it('sorts the projections newest-updated first', async () => {
+    const fixture = MockRender(ProjectionListComponent);
+    await fixture.whenStable();
+
+    const order = fixture.point.componentInstance
+      .sortedProjections()
+      .map((projection) => projection.id);
+    expect(order).toEqual(['p2', 'p3', 'p1']);
   });
 
   it('navigates to the create page', () => {

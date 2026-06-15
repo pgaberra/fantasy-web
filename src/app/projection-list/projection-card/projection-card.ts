@@ -1,8 +1,10 @@
 import { Component, input, output, signal } from '@angular/core';
 import { ProjectionSummaryResponse } from '../../api/models/projection-summary-response';
+import { RelativeTimePipe } from '../../pipes/relative-time.pipe';
 
 @Component({
   selector: 'li[app-projection-card]',
+  imports: [RelativeTimePipe],
   templateUrl: './projection-card.html',
   styleUrl: './projection-card.css',
 })
