@@ -1,0 +1,41 @@
+name: Staging access (open / lock)
+
+# Manually open the staging server's HTTPS firewall (the pre-launch IP gate) so you can reach
+# https://staging.slapstat.com from any device — e.g. a phone on mobile data — or re-lock it to
+# the owner IP afterwards. Runs over a RESTRICTED SSH key whose only allowed action is
+# /root/staging_access_forced.sh on the staging server (no shell, no other commands).
+# Requires the secret STAGING_ACCESS_SSH_KEY (the restricted key's PRIVATE half).
+# One-time setup is documented in staging-access-setup.md (monorepo root).
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "open = expose staging to everyone; lock = restore the owner-IP lockdown"
+        required: true
+        type: choice
+        options:
+          - open
+          - lock
+
+concurrency: staging-access
+
+jobs:
+  toggle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Toggle the staging firewall (restricted SSH forced command)
+        env:
+          ACCESS_KEY: ${{ secrets.STAGING_ACCESS_SSH_KEY }}
+          MODE: ${{ inputs.mode }}
+        run: |
+          if [ -z "$ACCESS_KEY" ]; then
+            echo "::error::Secret STAGING_ACCESS_SSH_KEY is not set — see staging-access-setup.md."
+            exit 1
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$ACCESS_KEY" > ~/.ssh/id_staging_access
+          chmod 600 ~/.ssh/id_staging_access
+          printf '%s\n' '62.238.17.178 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH9wW3pT4VmX2Y3ny5//zQUa/JFR/6l8b7WGQ70Jhsqh' > ~/.ssh/known_hosts
+          echo "Setting staging access to: $MODE"
+          ssh -i ~/.ssh/id_staging_access -o IdentitiesOnly=yes -o UserKnownHostsFile=~/.ssh/known_hosts \
+            root@62.238.17.178 "$MODE"
