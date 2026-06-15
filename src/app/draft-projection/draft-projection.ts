@@ -3,11 +3,13 @@ import {
   computed,
   DestroyRef,
   effect,
+  ElementRef,
   inject,
   OnInit,
   signal,
   viewChild,
 } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { rxResource, takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { debounceTime } from 'rxjs';
@@ -59,8 +61,13 @@ export class DraftProjectionComponent implements OnInit {
   private readonly router = inject(Router);
 
   private readonly table = viewChild(PlayerProjectionsTableComponent);
+  private readonly renameInput = viewChild<ElementRef<HTMLInputElement>>('renameInput');
 
   readonly projectionName = signal<string>('');
+  readonly isRenaming = signal<boolean>(false);
+  readonly renameValue = signal<string>('');
+  readonly renameSaving = signal<boolean>(false);
+  readonly renameError = signal<string | null>(null);
   readonly saveStatus = signal<'idle' | 'saving' | 'saved'>('idle');
   readonly loadedProjections = signal<Projection[] | null>(null);
   private readonly projectionId = signal<string | null>(null);
@@ -99,6 +106,11 @@ export class DraftProjectionComponent implements OnInit {
     effect(() => {
       if (this.playersResource.error()) {
         void this.router.navigate(['/projections']);
+      }
+    });
+    effect(() => {
+      if (this.isRenaming()) {
+        this.renameInput()?.nativeElement.focus();
       }
     });
     toObservable(this.serializedState)
@@ -175,6 +187,61 @@ export class DraftProjectionComponent implements OnInit {
       .subscribe({
         next: () => this.saveStatus.set('saved'),
         error: () => this.saveStatus.set('idle'),
+      });
+  }
+
+  startRename(): void {
+    this.renameValue.set(this.projectionName());
+    this.renameError.set(null);
+    this.isRenaming.set(true);
+  }
+
+  cancelRename(): void {
+    this.isRenaming.set(false);
+    this.renameError.set(null);
+  }
+
+  onRenameInput(event: Event): void {
+    this.renameValue.set((event.target as HTMLInputElement).value);
+  }
+
+  saveRename(): void {
+    const newName = this.renameValue().trim();
+    const id = this.projectionId();
+    if (!id || this.renameSaving()) {
+      return;
+    }
+    if (!newName) {
+      this.renameError.set('Name cannot be empty.');
+      return;
+    }
+    if (newName === this.projectionName()) {
+      this.cancelRename();
+      return;
+    }
+
+    const data = toProjectionData(this.buildState());
+    this.renameSaving.set(true);
+    this.renameError.set(null);
+    this.projectionStorage
+      .updateProjection(id, { name: newName, data })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.projectionName.set(newName);
+          this.lastSavedJson = JSON.stringify(data);
+          this.renameSaving.set(false);
+          this.isRenaming.set(false);
+        },
+        error: (error: unknown) => {
+          this.renameSaving.set(false);
+          const conflict = error instanceof HttpErrorResponse && error.status === 409;
+          this.renameError.set(
+            conflict
+              ? 'A projection with that name already exists.'
+              : 'Could not rename the projection.',
+          );
+        },
       });
   }
 }
