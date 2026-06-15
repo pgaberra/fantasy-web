@@ -38,6 +38,19 @@
               </label>
             </div>
           </app-setting-row>
+          <app-setting-row
+            name="Number of teams"
+            desc="The number of teams in your league. Drives how deep the ranking pool goes when computing Z-scores."
+          >
+            <input
+              type="number"
+              class="league-size-input"
+              min="2"
+              max="30"
+              [value]="leagueSize()"
+              (input)="onLeagueSizeInput($event)"
+            />
+          </app-setting-row>
           @if (showDecimalsSetting()) {
             <app-setting-row
               name="Use default decimal places"

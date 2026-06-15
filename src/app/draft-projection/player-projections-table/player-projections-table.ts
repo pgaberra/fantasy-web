@@ -70,6 +70,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly players = input.required<Player[]>();
   readonly initialProjections = input<Projection[] | null>(null);
   readonly activeColumns = input.required<ActiveColumns>();
+  readonly leagueSize = input<number>(12);
 
   readonly filteredActiveColumns = computed<ActiveColumns>(() =>
     this.activeColumnsService.filterAndSortActiveColumns(
@@ -194,6 +195,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
     const zScores = this.projectionCalculationService.computeZScores(
       projections,
       activeScoringColumns,
+      this.leagueSize(),
     );
 
     return projections.map((projection, i) => ({

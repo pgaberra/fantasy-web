@@ -11,6 +11,8 @@ import {
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
 import { DecimalStatKey, ScaleConfig } from '../draft-projection/projection-settings-section/model';
 
+export const DEFAULT_LEAGUE_SIZE = 12;
+
 export interface ProjectionState {
   scoringType: ScoringType;
   statWeights: Record<ScoringStatKey, number>;
@@ -19,6 +21,7 @@ export interface ProjectionState {
   scaleSettings: Record<SkaterUtilityStatKey, ScaleConfig>;
   decimalSettings: Record<DecimalStatKey, number>;
   useDefaultDecimals: boolean;
+  leagueSize: number;
   playerProjections: Projection[];
 }
 
@@ -36,6 +39,7 @@ export function toProjectionData(state: ProjectionState): ProjectionData {
       scaleSettings,
       decimalSettings: { ...state.decimalSettings },
       useDefaultDecimals: state.useDefaultDecimals,
+      leagueSize: state.leagueSize,
     },
     players: state.playerProjections.map((projection) => ({
       playerId: projection.playerId,
@@ -64,6 +68,7 @@ export function fromProjectionData(data: ProjectionData): ProjectionState {
     scaleSettings,
     decimalSettings: data.settings.decimalSettings as Record<DecimalStatKey, number>,
     useDefaultDecimals: data.settings.useDefaultDecimals,
+    leagueSize: data.settings.leagueSize ?? DEFAULT_LEAGUE_SIZE,
     playerProjections: data.players.map(toProjection),
   };
 }

@@ -119,6 +119,33 @@ describe('ProjectionCalculationService.computeZScores', () => {
     expect(result.length).toEqual(0);
   });
 
+  it('scales the standardization pool by league size', () => {
+    const elite = [
+      skater(1, { goals: 50 }),
+      skater(2, { goals: 40 }),
+      skater(3, { goals: 30 }),
+      skater(4, { goals: 20 }),
+      skater(5, { goals: 10 }),
+    ];
+    const fringe = Array.from({ length: 175 }, (_unused, index) =>
+      skater(1000 + index, { goals: 0 }),
+    );
+    const field = [...elite, ...fringe];
+
+    const twelveTeams = service.computeZScores(field, new Set(['goals']), 12);
+    const twoTeams = service.computeZScores(field, new Set(['goals']), 2);
+
+    expect(twoTeams[0]).not.toBeCloseTo(twelveTeams[0], 5);
+  });
+
+  it('treats an omitted league size as the 12-team default', () => {
+    const field = [skater(1, { goals: 10 }), skater(2, { goals: 20 })];
+
+    expect(service.computeZScores(field, new Set(['goals']))).toEqual(
+      service.computeZScores(field, new Set(['goals']), 12),
+    );
+  });
+
   it('caps the standardization baseline at the pool size, ignoring the fringe', () => {
     const elite = [
       skater(1, { goals: 50 }),

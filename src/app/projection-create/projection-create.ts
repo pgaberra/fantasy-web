@@ -74,6 +74,7 @@ export class ProjectionCreateComponent {
     createDefaultScaleSettings((key) => this.statInfoService.isRateStat(key)),
   );
   useDefaultDecimals = signal<boolean>(true);
+  leagueSize = signal<number>(12);
 
   readonly canCreate = computed(
     () =>
@@ -146,6 +147,7 @@ export class ProjectionCreateComponent {
       scaleSettings: this.scaleSettings(),
       decimalSettings: DEFAULT_DECIMAL_SETTINGS as Record<DecimalStatKey, number>,
       useDefaultDecimals: this.useDefaultDecimals(),
+      leagueSize: this.leagueSize(),
       playerProjections,
     };
   }

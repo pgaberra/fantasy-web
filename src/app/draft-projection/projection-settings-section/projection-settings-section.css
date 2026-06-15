@@ -193,6 +193,22 @@
   cursor: pointer;
 }
 
+.league-size-input {
+  width: 4rem;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.9rem;
+  color: #374151;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.league-size-input:focus {
+  outline: none;
+  border-color: #1e6bff;
+  box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
+}
+
 .settings-group-title {
   font-size: 1rem;
   font-weight: 600;

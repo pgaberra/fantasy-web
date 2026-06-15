@@ -95,6 +95,7 @@ export class DraftProjectionComponent implements OnInit {
   );
   decimalSettings = signal<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
   useDefaultDecimals = signal<boolean>(true);
+  leagueSize = signal<number>(12);
 
   readonly isLoading = computed(() => this.playersResource.isLoading() || !this.projectionLoaded());
 
@@ -154,6 +155,7 @@ export class DraftProjectionComponent implements OnInit {
       scaleSettings: this.scaleSettings(),
       decimalSettings: this.decimalSettings(),
       useDefaultDecimals: this.useDefaultDecimals(),
+      leagueSize: this.leagueSize(),
       playerProjections: this.table()?.playerProjections?.() ?? this.loadedProjections() ?? [],
     };
   }
@@ -166,6 +168,7 @@ export class DraftProjectionComponent implements OnInit {
     this.scaleSettings.set(state.scaleSettings);
     this.decimalSettings.set(state.decimalSettings);
     this.useDefaultDecimals.set(state.useDefaultDecimals);
+    this.leagueSize.set(state.leagueSize);
     this.loadedProjections.set(state.playerProjections);
   }
 
