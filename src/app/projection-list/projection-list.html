@@ -14,7 +14,7 @@
     <p class="empty">You don't have any saved projections yet.</p>
   } @else {
     <ul class="cards">
-      @for (projection of projectionsResource.value(); track projection.id) {
+      @for (projection of sortedProjections(); track projection.id) {
         <li
           app-projection-card
           [projection]="projection"

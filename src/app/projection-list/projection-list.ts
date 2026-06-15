@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -20,6 +20,12 @@ export class ProjectionListComponent {
     stream: () => this.storage.listProjections(),
     defaultValue: [],
   });
+
+  readonly sortedProjections = computed(() =>
+    [...this.projectionsResource.value()].sort((first, second) =>
+      second.updatedAt.localeCompare(first.updatedAt),
+    ),
+  );
 
   createNew(): void {
     void this.router.navigate(['/projections/new']);
