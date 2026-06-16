@@ -39,7 +39,7 @@ export function toProjectionData(state: ProjectionState): ProjectionData {
       scaleSettings,
       decimalSettings: { ...state.decimalSettings },
       useDefaultDecimals: state.useDefaultDecimals,
-      leagueSize: state.leagueSize,
+      leagueSize: state.scoringType === 'category' ? state.leagueSize : undefined,
     },
     players: state.playerProjections.map((projection) => ({
       playerId: projection.playerId,

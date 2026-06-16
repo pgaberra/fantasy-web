@@ -20,7 +20,7 @@ function fullRecord<T extends string>(keys: readonly T[], value: number): Record
 }
 
 const sampleState: ProjectionState = {
-  scoringType: 'points',
+  scoringType: 'category',
   statWeights: fullRecord(SCORING_STAT_KEYS, 1),
   activeScoringColumns: new Set<ScoringStatKey>(['goals', 'assists', 'sog']),
   activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp', 'toiPerGame']),
@@ -72,5 +72,11 @@ describe('projection-serializer', () => {
     delete data.settings.leagueSize;
 
     expect(fromProjectionData(data).leagueSize).toEqual(12);
+  });
+
+  it('omits leagueSize for points leagues', () => {
+    const pointsState: ProjectionState = { ...sampleState, scoringType: 'points' };
+
+    expect(toProjectionData(pointsState).settings.leagueSize).toBeUndefined();
   });
 });
