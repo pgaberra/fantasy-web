@@ -18,7 +18,8 @@
 }
 
 .back-link {
-  display: inline-block;
+  display: block;
+  width: fit-content;
   margin-bottom: 0.5rem;
   font-size: 0.875rem;
   color: #7a8baa;
