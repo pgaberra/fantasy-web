@@ -1,9 +1,9 @@
 th {
-  background: #0f3460;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-text-on-dark);
   padding: 0.6rem 0.5rem;
   text-align: center;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   white-space: nowrap;
   position: sticky;
   top: 0;
@@ -11,7 +11,7 @@ th {
 
 th.col-name {
   text-align: left;
-  padding-left: 0.75rem;
+  padding-left: var(--space-3);
 }
 
 th.sortable {
@@ -20,7 +20,7 @@ th.sortable {
 }
 
 th.sortable:hover {
-  background: #1a4a80;
+  background: var(--color-primary-hover);
 }
 
 th.summary-pts-col.sortable:hover {
@@ -28,7 +28,7 @@ th.summary-pts-col.sortable:hover {
 }
 
 th.sortable.sorted {
-  background: #1a4a80;
+  background: var(--color-primary-hover);
 }
 
 th.summary-pts-col.sortable.sorted {
@@ -40,13 +40,13 @@ th.summary-pts-col.sortable.sorted {
   width: 0.75em;
   margin-left: 0.15em;
   font-size: 0.7em;
-  color: #e6b84a;
+  color: var(--color-gold);
 }
 
 .col-rank {
   text-align: center;
-  color: #7a8baa;
-  font-weight: 500;
+  color: var(--color-text-subtle);
+  font-weight: var(--weight-medium);
   padding-left: 0.125rem;
   padding-right: 0.125rem;
 }
@@ -56,19 +56,19 @@ th.summary-pts-col.sortable.sorted {
 }
 
 th.summary-pts-col {
-  background: #c8860a;
-  color: #fff;
+  background: var(--color-gold-strong);
+  color: var(--color-text-on-dark);
   border-left: 3px solid #a06800;
   min-width: 72px;
 }
 
 tr.weight-row th {
-  background: #1a4a80;
+  background: var(--color-primary-hover);
   padding: 0.3rem 0.25rem;
 }
 
 .weight-label {
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   color: rgba(255, 255, 255, 0.75);
   font-weight: 400;
   white-space: nowrap;
@@ -82,10 +82,10 @@ tr.weight-row th {
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.12);
   font-size: 0.8rem;
-  color: #fff;
+  color: var(--color-text-on-dark);
   transition:
-    border-color 0.15s,
-    background 0.15s;
+    border-color var(--transition-fast),
+    background var(--transition-fast);
   -moz-appearance: textfield;
 }
 
@@ -96,7 +96,7 @@ tr.weight-row th {
 
 .weight-input:focus {
   outline: none;
-  border-color: #e6b84a;
+  border-color: var(--color-gold);
   background: rgba(255, 255, 255, 0.25);
   box-shadow: 0 0 0 2px rgba(230, 184, 74, 0.35);
 }
@@ -112,7 +112,7 @@ tr.decimal-row th {
 }
 
 .decimal-label {
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   color: rgba(255, 255, 255, 0.75);
   font-weight: 400;
   white-space: nowrap;
@@ -126,10 +126,10 @@ tr.decimal-row th {
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.12);
   font-size: 0.8rem;
-  color: #fff;
+  color: var(--color-text-on-dark);
   transition:
-    border-color 0.15s,
-    background 0.15s;
+    border-color var(--transition-fast),
+    background var(--transition-fast);
   -moz-appearance: textfield;
 }
 
@@ -140,7 +140,7 @@ tr.decimal-row th {
 
 .decimal-input:focus {
   outline: none;
-  border-color: #e6b84a;
+  border-color: var(--color-gold);
   background: rgba(255, 255, 255, 0.25);
   box-shadow: 0 0 0 2px rgba(230, 184, 74, 0.35);
 }
