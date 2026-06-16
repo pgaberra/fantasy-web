@@ -6,11 +6,11 @@
   border: 1px solid transparent;
   border-radius: 4px;
   background: transparent;
-  font-size: 0.875rem;
-  color: #1a1a2e;
+  font-size: var(--text-sm);
+  color: var(--color-text);
   transition:
-    border-color 0.15s,
-    background 0.15s;
+    border-color var(--transition-fast),
+    background var(--transition-fast);
   display: inline-block;
 }
 
@@ -20,13 +20,13 @@
 
 .stat-input:hover {
   border-color: #b0b8d4;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .stat-input:focus {
   outline: none;
-  border-color: #0f3460;
-  background: #fff;
+  border-color: var(--color-primary);
+  background: var(--color-surface);
   box-shadow: 0 0 0 2px rgba(15, 52, 96, 0.15);
 }
 

@@ -4,14 +4,14 @@
 
 .add-stat-btn {
   background: none;
-  border: 1.5px dashed #0f3460;
-  border-radius: 20px;
-  color: #0f3460;
-  font-size: 0.85rem;
+  border: 1.5px dashed var(--color-primary);
+  border-radius: var(--radius-pill);
+  color: var(--color-primary);
+  font-size: var(--text-sm);
   padding: 0.25rem 0.8rem;
   cursor: pointer;
   opacity: 0.7;
-  transition: opacity 0.15s;
+  transition: opacity var(--transition-fast);
 }
 
 .add-stat-btn:hover:not(:disabled) {
@@ -27,11 +27,11 @@
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  background: #fff;
-  border: 1px solid #e0e4ef;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 10;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-dropdown);
   min-width: 140px;
   max-height: 220px;
   overflow-y: auto;
@@ -45,11 +45,11 @@
   border: none;
   text-align: left;
   padding: 0.4rem 0.9rem;
-  font-size: 0.85rem;
-  color: #0f3460;
+  font-size: var(--text-sm);
+  color: var(--color-primary);
   cursor: pointer;
 }
 
 .dropdown-item:hover {
-  background: #e8edf8;
+  background: var(--color-surface-hover);
 }
