@@ -1,3 +1,69 @@
+:root {
+  --color-primary: #0f3460;
+  --color-primary-hover: #1a4a80;
+  --color-primary-contrast: #ffffff;
+  --color-accent: #1e6bff;
+  --color-gold: #e6b84a;
+  --color-gold-strong: #c8860a;
+
+  --color-text: #1a1a2e;
+  --color-text-muted: #64748b;
+  --color-text-subtle: #7a8baa;
+  --color-text-on-dark: #ffffff;
+
+  --color-bg: #f0f2f8;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f4f6fb;
+  --color-surface-hover: #e8edf7;
+  --color-surface-dark: #1e293b;
+
+  --color-border: #e0e4ef;
+  --color-border-strong: #cbd5e1;
+  --color-border-header: #e2e8f0;
+
+  --color-error: #e94560;
+  --color-danger: #b3261e;
+  --color-danger-hover: #8f1d17;
+  --color-warning: #e6b84a;
+  --color-success: #16a34a;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 2px rgba(15, 52, 96, 0.06);
+  --shadow-md: 0 2px 8px rgba(15, 52, 96, 0.08);
+  --shadow-lg: 0 8px 24px rgba(15, 52, 96, 0.12);
+
+  --font-sans: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.6rem;
+  --text-2xl: 2rem;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-banner: 30;
+  --z-modal: 50;
+
+  --focus-ring-color: #1e6bff;
+  --transition-fast: 150ms ease;
+  --transition: 200ms ease;
+}
+
 *,
 *::before,
 *::after {
@@ -7,7 +73,31 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: #f0f2f8;
-  color: #1a1a2e;
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+a:focus-visible,
+button:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+[role='switch']:focus-visible,
+[role='button']:focus-visible,
+[tabindex]:not([tabindex='-1']):focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
