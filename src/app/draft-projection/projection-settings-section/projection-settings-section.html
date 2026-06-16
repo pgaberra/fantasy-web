@@ -1,5 +1,13 @@
 <section class="settings-section">
-  <div class="section-header" (click)="toggleSectionVisible()">
+  <div
+    class="section-header"
+    role="button"
+    tabindex="0"
+    [attr.aria-expanded]="isSectionVisible()"
+    (click)="toggleSectionVisible()"
+    (keydown.enter)="toggleSectionVisible()"
+    (keydown.space)="toggleSectionVisible(); $event.preventDefault()"
+  >
     <h2>Projection Settings</h2>
     <span class="advanced-toggle-icon" [class.open]="isSectionVisible()"></span>
   </div>
@@ -8,7 +16,15 @@
     <div class="projection-settings-list">
       <div class="settings-group">
         @if (collapsibleGroups()) {
-          <div class="settings-group-header" (click)="toggleGeneralVisible()">
+          <div
+            class="settings-group-header"
+            role="button"
+            tabindex="0"
+            [attr.aria-expanded]="isGeneralVisible()"
+            (click)="toggleGeneralVisible()"
+            (keydown.enter)="toggleGeneralVisible()"
+            (keydown.space)="toggleGeneralVisible(); $event.preventDefault()"
+          >
             <h3 class="settings-group-title">General</h3>
             <span class="advanced-toggle-icon" [class.open]="isGeneralVisible()"></span>
           </div>
@@ -61,7 +77,15 @@
       </div>
       <div class="settings-group">
         @if (collapsibleGroups()) {
-          <div class="settings-group-header" (click)="toggleScoringStatsVisible()">
+          <div
+            class="settings-group-header"
+            role="button"
+            tabindex="0"
+            [attr.aria-expanded]="isScoringStatsVisible()"
+            (click)="toggleScoringStatsVisible()"
+            (keydown.enter)="toggleScoringStatsVisible()"
+            (keydown.space)="toggleScoringStatsVisible(); $event.preventDefault()"
+          >
             <h3 class="settings-group-title">Scoring Stats</h3>
             <span class="advanced-toggle-icon" [class.open]="isScoringStatsVisible()"></span>
           </div>
@@ -85,7 +109,15 @@
       </div>
       @if (showUtilityStats()) {
         <div class="settings-group">
-          <div class="settings-group-header" (click)="toggleUtilityStatsVisible()">
+          <div
+            class="settings-group-header"
+            role="button"
+            tabindex="0"
+            [attr.aria-expanded]="isUtilityStatsVisible()"
+            (click)="toggleUtilityStatsVisible()"
+            (keydown.enter)="toggleUtilityStatsVisible()"
+            (keydown.space)="toggleUtilityStatsVisible(); $event.preventDefault()"
+          >
             <h3 class="settings-group-title">Utility Stats</h3>
             <div class="tooltip-container">
               <span class="info-icon">ⓘ</span>
