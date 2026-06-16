@@ -2,55 +2,45 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #fff;
-  border: 1px solid #e0e4ef;
-  border-radius: 8px;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 0.85rem 1.1rem;
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition);
+}
+
+:host(:hover) {
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-sm);
 }
 
 .card-main {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+  min-width: 0;
 }
 
 .card-name {
-  font-weight: 600;
-  color: #0f3460;
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
 }
 
 .card-meta {
-  font-size: 0.8rem;
-  color: #7a8baa;
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
 }
 
 .card-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .card-actions .confirm-text {
-  font-size: 0.85rem;
-  color: #0f3460;
-}
-
-.card-actions button {
-  font-size: 0.875rem;
-  padding: 0.45rem 1rem;
-  border: none;
-  border-radius: 6px;
-  background: #0f3460;
-  color: #fff;
-  cursor: pointer;
-}
-
-.card-actions .delete {
-  background: #b3261e;
-}
-
-.card-actions .cancel {
-  background: #fff;
-  color: #475569;
-  border: 1px solid #cbd5e1;
+  font-size: var(--text-sm);
+  color: var(--color-primary);
 }

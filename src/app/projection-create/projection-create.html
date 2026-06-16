@@ -85,7 +85,12 @@
     />
     <p class="settings-note">All settings can be changed at any time while editing.</p>
 
-    <button type="button" class="create-button" [disabled]="!canCreate()" (click)="create()">
+    <button
+      type="button"
+      class="create-button btn btn-primary btn-lg"
+      [disabled]="!canCreate()"
+      (click)="create()"
+    >
       {{ isCreating() ? 'Creating…' : 'Create projection' }}
     </button>
   </div>

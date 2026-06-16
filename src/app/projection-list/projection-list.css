@@ -6,30 +6,22 @@
 
 .page-header h1 {
   margin: 0;
-  color: #0f3460;
+  color: var(--color-primary);
 }
 
 .subtitle {
-  color: #7a8baa;
-  margin: 0.25rem 0 1.5rem;
+  color: var(--color-text-subtle);
+  margin: var(--space-1) 0 var(--space-5);
 }
 
 .create-button {
-  font-size: 0.9rem;
-  font-weight: 600;
-  padding: 0.55rem 1.25rem;
-  margin-bottom: 1.5rem;
-  border: none;
-  border-radius: 6px;
-  background: #0f3460;
-  color: #fff;
-  cursor: pointer;
+  margin-bottom: var(--space-5);
 }
 
 .empty {
-  color: #7a8baa;
+  color: var(--color-text-subtle);
   text-align: center;
-  padding: 2rem 0;
+  padding: var(--space-6) 0;
 }
 
 .cards {
