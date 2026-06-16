@@ -230,7 +230,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
     if (!isCategory || projection.type !== 'goalie') {
       return true;
     }
-    return (projection.stats.utility.gp ?? 0) >= minGames;
+    return projection.stats.utility.gp >= minGames;
   }
 
   readonly positionFilter = signal<PositionFilter>('ALL');
