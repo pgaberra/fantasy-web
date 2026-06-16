@@ -52,6 +52,7 @@
             >
               <app-toggle-switch
                 [on]="useDefaultDecimals()"
+                ariaLabel="Use default decimal places"
                 (toggled)="toggleUseDefaultDecimals()"
               />
             </app-setting-row>
@@ -114,6 +115,7 @@
                     </div>
                     <app-toggle-switch
                       [on]="activeUtilityColumns().has(key)"
+                      [ariaLabel]="'Track ' + (key | utilityStatLabel) + ' as a utility stat'"
                       (toggled)="toggleActiveUtilityColumn(key)"
                     />
                   </div>
@@ -127,7 +129,13 @@
                           ' is updated.'
                         "
                       >
-                        <app-toggle-switch [on]="isScaleActive(key)" (toggled)="toggleScale(key)" />
+                        <app-toggle-switch
+                          [on]="isScaleActive(key)"
+                          [ariaLabel]="
+                            'Auto-scale scoring stats when ' + (key | utilityStatLabel) + ' changes'
+                          "
+                          (toggled)="toggleScale(key)"
+                        />
                       </app-setting-row>
                       @if (isScaleActive(key)) {
                         <app-setting-row

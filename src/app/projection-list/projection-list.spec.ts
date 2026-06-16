@@ -39,6 +39,8 @@ describe('ProjectionListComponent', () => {
     navigate.mockClear();
     listProjections.mockClear();
     deleteProjection.mockClear();
+    listProjections.mockReturnValue(of(summaries));
+    deleteProjection.mockReturnValue(of(undefined));
     return MockBuilder(ProjectionListComponent)
       .mock(ProjectionStorageService, { listProjections, deleteProjection })
       .provide({ provide: Router, useValue: { navigate } });
@@ -73,6 +75,26 @@ describe('ProjectionListComponent', () => {
     const component = MockRender(ProjectionListComponent).point.componentInstance;
     component.edit('p1');
     expect(navigate).toHaveBeenCalledWith(['/projections', 'p1']);
+  });
+
+  it('shows the empty state when there are no saved projections', async () => {
+    listProjections.mockReturnValue(of([]));
+    const fixture = MockRender(ProjectionListComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('No projections yet');
+  });
+
+  it('reloads the list when retry is called', async () => {
+    const fixture = MockRender(ProjectionListComponent);
+    await fixture.whenStable();
+    expect(listProjections).toHaveBeenCalledTimes(1);
+
+    fixture.point.componentInstance.retry();
+    await fixture.whenStable();
+
+    expect(listProjections).toHaveBeenCalledTimes(2);
   });
 
   it('reloads the list after a delete', async () => {

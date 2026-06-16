@@ -27,6 +27,10 @@ export class ProjectionListComponent {
     ),
   );
 
+  retry(): void {
+    this.projectionsResource.reload();
+  }
+
   createNew(): void {
     void this.router.navigate(['/projections/new']);
   }

@@ -6,30 +6,53 @@
 
 .page-header h1 {
   margin: 0;
-  color: #0f3460;
+  color: var(--color-primary);
 }
 
 .subtitle {
-  color: #7a8baa;
-  margin: 0.25rem 0 1.5rem;
+  color: var(--color-text-subtle);
+  margin: var(--space-1) 0 var(--space-5);
 }
 
 .create-button {
-  font-size: 0.9rem;
-  font-weight: 600;
-  padding: 0.55rem 1.25rem;
-  margin-bottom: 1.5rem;
-  border: none;
-  border-radius: 6px;
-  background: #0f3460;
-  color: #fff;
-  cursor: pointer;
+  margin-bottom: var(--space-5);
 }
 
-.empty {
-  color: #7a8baa;
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  padding: 2rem 0;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  color: var(--color-text-muted);
+}
+
+.state-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--color-text-subtle);
+}
+
+.state--error .state-icon {
+  color: var(--color-danger);
+}
+
+.state-title {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.state-message {
+  margin: 0;
+  font-size: var(--text-sm);
+  max-width: 40ch;
+}
+
+.state .btn {
+  margin-top: var(--space-2);
 }
 
 .cards {

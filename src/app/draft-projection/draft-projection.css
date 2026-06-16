@@ -93,36 +93,10 @@
   box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
 }
 
-.rename-save,
-.rename-cancel {
-  font-size: 0.85rem;
-  font-weight: 600;
-  padding: 0.35rem 0.85rem;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.rename-save {
-  background: #0f3460;
-  color: #fff;
-  border: 1px solid #0f3460;
-}
-
-.rename-save:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.rename-cancel {
-  background: none;
-  color: #5f6b85;
-  border: 1px solid #d3d9e6;
-}
-
 .rename-error {
   margin: 0 0 0.4rem;
-  font-size: 0.8rem;
-  color: #dc2626;
+  font-size: var(--text-xs);
+  color: var(--color-error);
 }
 
 @media (max-width: 640px) {
