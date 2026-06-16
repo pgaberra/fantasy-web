@@ -28,10 +28,12 @@ import {
 import {
   createDefaultScaleSettings,
   DEFAULT_LEAGUE_SIZE,
+  DEFAULT_ROSTER_SLOTS,
   DEFAULT_SCORING_COLUMNS,
   DEFAULT_STAT_WEIGHTS,
   DEFAULT_UTILITY_COLUMNS,
 } from './projection-defaults';
+import { RosterSlots } from '../api/models/roster-slots';
 import { StatInfoService } from '../services/stat-info.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import {
@@ -97,6 +99,7 @@ export class DraftProjectionComponent implements OnInit {
   decimalSettings = signal<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
   useDefaultDecimals = signal<boolean>(true);
   leagueSize = signal<number>(DEFAULT_LEAGUE_SIZE);
+  rosterSlots = signal<RosterSlots>(DEFAULT_ROSTER_SLOTS);
 
   readonly isLoading = computed(() => this.playersResource.isLoading() || !this.projectionLoaded());
 
@@ -157,6 +160,7 @@ export class DraftProjectionComponent implements OnInit {
       decimalSettings: this.decimalSettings(),
       useDefaultDecimals: this.useDefaultDecimals(),
       leagueSize: this.leagueSize(),
+      rosterSlots: this.rosterSlots(),
       playerProjections: this.table()?.playerProjections?.() ?? this.loadedProjections() ?? [],
     };
   }
@@ -170,6 +174,7 @@ export class DraftProjectionComponent implements OnInit {
     this.decimalSettings.set(state.decimalSettings);
     this.useDefaultDecimals.set(state.useDefaultDecimals);
     this.leagueSize.set(state.leagueSize);
+    this.rosterSlots.set(state.rosterSlots);
     this.loadedProjections.set(state.playerProjections);
   }
 

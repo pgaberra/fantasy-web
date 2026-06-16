@@ -209,6 +209,71 @@
   box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
 }
 
+.roster-editor {
+  margin-top: 0.6rem;
+}
+
+.roster-editor-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.roster-editor-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.roster-editor-hint {
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.roster-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.roster-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.roster-slot-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.roster-slot input {
+  width: 3rem;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.9rem;
+  color: #374151;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.roster-slot input:focus {
+  outline: none;
+  border-color: #1e6bff;
+  box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
+}
+
+.roster-summary {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: #0f3460;
+  font-weight: 500;
+}
+
 .settings-group-title {
   font-size: 1rem;
   font-weight: 600;

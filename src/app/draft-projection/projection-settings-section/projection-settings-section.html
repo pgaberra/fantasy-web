@@ -52,6 +52,30 @@
                 (input)="onLeagueSizeInput($event)"
               />
             </app-setting-row>
+            <div class="roster-editor">
+              <div class="roster-editor-header">
+                <span class="roster-editor-title">Roster slots (per team)</span>
+                <span class="roster-editor-hint">Bench (BN) and Util count as skaters</span>
+              </div>
+              <div class="roster-grid">
+                @for (slot of ROSTER_POSITIONS; track slot.key) {
+                  <label class="roster-slot">
+                    <span class="roster-slot-label">{{ slot.label }}</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="50"
+                      [value]="rosterSlots()[slot.key]"
+                      (input)="onRosterSlotInput(slot.key, $event)"
+                    />
+                  </label>
+                }
+              </div>
+              <p class="roster-summary">
+                → {{ rosterSummary().skaters }} skaters, {{ rosterSummary().goalies }} goalies per
+                team
+              </p>
+            </div>
           }
           @if (showDecimalsSetting()) {
             <app-setting-row

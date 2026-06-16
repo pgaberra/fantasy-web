@@ -20,10 +20,12 @@ import {
 import {
   createDefaultScaleSettings,
   DEFAULT_LEAGUE_SIZE,
+  DEFAULT_ROSTER_SLOTS,
   DEFAULT_SCORING_COLUMNS,
   DEFAULT_STAT_WEIGHTS,
   DEFAULT_UTILITY_COLUMNS,
 } from '../draft-projection/projection-defaults';
+import { RosterSlots } from '../api/models/roster-slots';
 import {
   fromProjectionData,
   ProjectionState,
@@ -76,6 +78,7 @@ export class ProjectionCreateComponent {
   );
   useDefaultDecimals = signal<boolean>(true);
   leagueSize = signal<number>(DEFAULT_LEAGUE_SIZE);
+  rosterSlots = signal<RosterSlots>(DEFAULT_ROSTER_SLOTS);
 
   readonly canCreate = computed(
     () =>
@@ -149,6 +152,7 @@ export class ProjectionCreateComponent {
       decimalSettings: DEFAULT_DECIMAL_SETTINGS as Record<DecimalStatKey, number>,
       useDefaultDecimals: this.useDefaultDecimals(),
       leagueSize: this.leagueSize(),
+      rosterSlots: this.rosterSlots(),
       playerProjections,
     };
   }
