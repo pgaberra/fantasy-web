@@ -39,56 +39,11 @@
             </div>
           </app-setting-row>
           @if (scoringType() === 'category') {
-            <app-setting-row
-              name="Number of teams"
-              desc="Used to optimize how players are ranked (their Z-scores) for your league."
-            >
-              <input
-                type="number"
-                class="league-size-input"
-                min="2"
-                max="30"
-                [value]="leagueSize()"
-                (input)="onLeagueSizeInput($event)"
-              />
-            </app-setting-row>
-            <div class="roster-editor">
-              <div class="roster-editor-header">
-                <span class="roster-editor-title">Roster slots (per team)</span>
-                <span class="roster-editor-hint">Bench (BN) and Util count as skaters</span>
-              </div>
-              <div class="roster-grid">
-                @for (slot of ROSTER_POSITIONS; track slot.key) {
-                  <label class="roster-slot">
-                    <span class="roster-slot-label">{{ slot.label }}</span>
-                    <input
-                      type="number"
-                      min="0"
-                      max="50"
-                      [value]="rosterSlots()[slot.key]"
-                      (input)="onRosterSlotInput(slot.key, $event)"
-                    />
-                  </label>
-                }
-              </div>
-              <p class="roster-summary">
-                → {{ rosterSummary().skaters }} skaters, {{ rosterSummary().goalies }} goalies per
-                team
-              </p>
-            </div>
-            <app-setting-row
-              name="Minimum goalie games"
-              desc="Goalies projected for fewer games than this are ranked last, so a tiny-sample goalie with elite rate stats can't top the rankings."
-            >
-              <input
-                type="number"
-                class="min-goalie-games-input"
-                min="0"
-                max="82"
-                [value]="minGoalieGames()"
-                (input)="onMinGoalieGamesInput($event)"
-              />
-            </app-setting-row>
+            <app-category-settings
+              [(leagueSize)]="leagueSize"
+              [(rosterSlots)]="rosterSlots"
+              [(minGoalieGames)]="minGoalieGames"
+            />
           }
           @if (showDecimalsSetting()) {
             <app-setting-row

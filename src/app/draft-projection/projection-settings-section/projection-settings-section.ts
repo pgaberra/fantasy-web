@@ -23,6 +23,7 @@ import {
 } from '../projection-defaults';
 import { RosterSlots } from '../../api/models/roster-slots';
 import { StatGroupComponent } from './stat-group/stat-group';
+import { CategorySettingsComponent } from './category-settings/category-settings';
 import { StatInfoService } from '../../services/stat-info.service';
 
 @Component({
@@ -36,6 +37,7 @@ import { StatInfoService } from '../../services/stat-info.service';
     ToggleSwitchComponent,
     SettingRowComponent,
     StatGroupComponent,
+    CategorySettingsComponent,
   ],
 })
 export class ProjectionSettingsSectionComponent {
@@ -68,22 +70,6 @@ export class ProjectionSettingsSectionComponent {
   leagueSize = model<number>(DEFAULT_LEAGUE_SIZE);
   rosterSlots = model<RosterSlots>(DEFAULT_ROSTER_SLOTS);
   minGoalieGames = model<number>(DEFAULT_MIN_GOALIE_GAMES);
-  readonly rosterSummary = computed(() => {
-    const slots = this.rosterSlots();
-    return {
-      skaters: slots.c + slots.lw + slots.rw + slots.d + slots.util + slots.bn,
-      goalies: slots.g,
-    };
-  });
-  protected readonly ROSTER_POSITIONS: { key: keyof RosterSlots; label: string }[] = [
-    { key: 'c', label: 'C' },
-    { key: 'lw', label: 'LW' },
-    { key: 'rw', label: 'RW' },
-    { key: 'd', label: 'D' },
-    { key: 'util', label: 'Util' },
-    { key: 'bn', label: 'BN' },
-    { key: 'g', label: 'G' },
-  ];
   showDecimalsSetting = input<boolean>(true);
   showUtilityStats = input<boolean>(true);
   initiallyExpanded = input<boolean>(false);
@@ -107,28 +93,6 @@ export class ProjectionSettingsSectionComponent {
 
   selectScoringType(type: ScoringType): void {
     this.scoringType.set(type);
-  }
-
-  onLeagueSizeInput(event: Event): void {
-    const parsed = Number((event.target as HTMLInputElement).value);
-    if (Number.isFinite(parsed)) {
-      this.leagueSize.set(Math.min(30, Math.max(2, Math.round(parsed))));
-    }
-  }
-
-  onRosterSlotInput(position: keyof RosterSlots, event: Event): void {
-    const parsed = Number((event.target as HTMLInputElement).value);
-    if (Number.isFinite(parsed)) {
-      const clamped = Math.min(50, Math.max(0, Math.round(parsed)));
-      this.rosterSlots.update((slots) => ({ ...slots, [position]: clamped }));
-    }
-  }
-
-  onMinGoalieGamesInput(event: Event): void {
-    const parsed = Number((event.target as HTMLInputElement).value);
-    if (Number.isFinite(parsed)) {
-      this.minGoalieGames.set(Math.min(82, Math.max(0, Math.round(parsed))));
-    }
   }
 
   toggleGeneralVisible(): void {
