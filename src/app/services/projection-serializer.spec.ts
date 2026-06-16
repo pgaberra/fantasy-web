@@ -20,7 +20,7 @@ function fullRecord<T extends string>(keys: readonly T[], value: number): Record
 }
 
 const sampleState: ProjectionState = {
-  scoringType: 'points',
+  scoringType: 'category',
   statWeights: fullRecord(SCORING_STAT_KEYS, 1),
   activeScoringColumns: new Set<ScoringStatKey>(['goals', 'assists', 'sog']),
   activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp', 'toiPerGame']),
@@ -30,6 +30,7 @@ const sampleState: ProjectionState = {
   } as Record<SkaterUtilityStatKey, ScaleConfig>,
   decimalSettings: fullRecord([...SCORING_STAT_KEYS, 'gp'] as DecimalStatKey[], 0),
   useDefaultDecimals: true,
+  leagueSize: 10,
   playerProjections: [
     {
       type: 'skater',
@@ -63,5 +64,19 @@ describe('projection-serializer', () => {
     expect(data.settings.activeScoringColumns).toEqual(['goals', 'assists', 'sog']);
     expect(data.settings.scaleSettings['gp'].scalableStats).toEqual(['goals', 'assists']);
     expect(data.players[1].type).toEqual('goalie');
+    expect(data.settings.leagueSize).toEqual(10);
+  });
+
+  it('defaults leagueSize to 12 for older projections that omit it', () => {
+    const data = toProjectionData(sampleState);
+    delete data.settings.leagueSize;
+
+    expect(fromProjectionData(data).leagueSize).toEqual(12);
+  });
+
+  it('omits leagueSize for points leagues', () => {
+    const pointsState: ProjectionState = { ...sampleState, scoringType: 'points' };
+
+    expect(toProjectionData(pointsState).settings.leagueSize).toBeUndefined();
   });
 });

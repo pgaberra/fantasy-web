@@ -19,6 +19,7 @@ import {
 } from '../draft-projection/projection-settings-section/model';
 import {
   createDefaultScaleSettings,
+  DEFAULT_LEAGUE_SIZE,
   DEFAULT_SCORING_COLUMNS,
   DEFAULT_STAT_WEIGHTS,
   DEFAULT_UTILITY_COLUMNS,
@@ -74,6 +75,7 @@ export class ProjectionCreateComponent {
     createDefaultScaleSettings((key) => this.statInfoService.isRateStat(key)),
   );
   useDefaultDecimals = signal<boolean>(true);
+  leagueSize = signal<number>(DEFAULT_LEAGUE_SIZE);
 
   readonly canCreate = computed(
     () =>
@@ -146,6 +148,7 @@ export class ProjectionCreateComponent {
       scaleSettings: this.scaleSettings(),
       decimalSettings: DEFAULT_DECIMAL_SETTINGS as Record<DecimalStatKey, number>,
       useDefaultDecimals: this.useDefaultDecimals(),
+      leagueSize: this.leagueSize(),
       playerProjections,
     };
   }

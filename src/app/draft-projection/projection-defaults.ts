@@ -44,6 +44,8 @@ export const DEFAULT_SCORING_COLUMNS: ScoringStatKey[] = [
 
 export const DEFAULT_UTILITY_COLUMNS: SkaterUtilityStatKey[] = ['gp'];
 
+export const DEFAULT_LEAGUE_SIZE = 12;
+
 export function createDefaultScaleSettings(
   isRateStat: (key: ScoringStatKey) => boolean,
 ): Record<SkaterUtilityStatKey, ScaleConfig> {
