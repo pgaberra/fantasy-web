@@ -3,16 +3,16 @@
   width: 4rem;
   padding: 0.3rem 0.5rem;
   font-size: 0.9rem;
-  color: #374151;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
   text-align: center;
 }
 
 .league-size-input:focus,
 .min-goalie-games-input:focus {
   outline: none;
-  border-color: #1e6bff;
+  border-color: var(--color-accent);
   box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
 }
 
@@ -23,20 +23,20 @@
 .roster-editor-header {
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
+  gap: var(--space-2);
   flex-wrap: wrap;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-2);
 }
 
 .roster-editor-title {
   font-size: 0.9rem;
-  font-weight: 600;
-  color: #374151;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
 }
 
 .roster-editor-hint {
-  font-size: 0.78rem;
-  color: #94a3b8;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
 }
 
 .roster-grid {
@@ -53,30 +53,30 @@
 }
 
 .roster-slot-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #64748b;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
 }
 
 .roster-slot input {
   width: 3rem;
   padding: 0.3rem 0.4rem;
   font-size: 0.9rem;
-  color: #374151;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
   text-align: center;
 }
 
 .roster-slot input:focus {
   outline: none;
-  border-color: #1e6bff;
+  border-color: var(--color-accent);
   box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
 }
 
 .roster-summary {
-  margin: 0.5rem 0 0;
-  font-size: 0.8rem;
-  color: #0f3460;
-  font-weight: 500;
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-primary);
+  font-weight: var(--weight-medium);
 }

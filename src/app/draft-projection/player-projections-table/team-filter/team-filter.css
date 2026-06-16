@@ -1,21 +1,21 @@
 .filter-control {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .filter-control label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #0f3460;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
 }
 
 .filter-control select {
-  font-size: 0.875rem;
-  padding: 0.25rem 0.5rem;
-  border: 1px solid #e0e4ef;
-  border-radius: 6px;
-  background: #fff;
-  color: #0f3460;
+  font-size: var(--text-sm);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-primary);
   cursor: pointer;
 }

@@ -4,8 +4,8 @@
 
 .stat-group h3 {
   font-size: 0.95rem;
-  font-weight: 600;
-  color: #0f3460;
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
   margin: 0 0 0.6rem;
 }
 
@@ -13,31 +13,31 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .stat-chip {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  background: #e8edf8;
-  color: #0f3460;
-  border-radius: 20px;
+  background: var(--color-surface-hover);
+  color: var(--color-primary);
+  border-radius: var(--radius-pill);
   padding: 0.25rem 0.6rem 0.25rem 0.8rem;
-  font-size: 0.85rem;
-  font-weight: 500;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
 }
 
 .chip-remove {
   background: none;
   border: none;
   cursor: pointer;
-  color: #0f3460;
+  color: var(--color-primary);
   font-size: 0.75rem;
   padding: 0;
   line-height: 1;
   opacity: 0.6;
-  transition: opacity 0.15s;
+  transition: opacity var(--transition-fast);
 }
 
 .chip-remove:hover {
