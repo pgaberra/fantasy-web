@@ -43,7 +43,7 @@
   --shadow-md: 0 2px 8px rgba(15, 52, 96, 0.08);
   --shadow-lg: 0 8px 24px rgba(15, 52, 96, 0.12);
 
-  --font-sans: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --font-sans: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;
