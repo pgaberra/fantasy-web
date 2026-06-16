@@ -27,6 +27,7 @@ import {
 } from './projection-settings-section/model';
 import {
   createDefaultScaleSettings,
+  DEFAULT_LEAGUE_SIZE,
   DEFAULT_SCORING_COLUMNS,
   DEFAULT_STAT_WEIGHTS,
   DEFAULT_UTILITY_COLUMNS,
@@ -95,7 +96,7 @@ export class DraftProjectionComponent implements OnInit {
   );
   decimalSettings = signal<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
   useDefaultDecimals = signal<boolean>(true);
-  leagueSize = signal<number>(12);
+  leagueSize = signal<number>(DEFAULT_LEAGUE_SIZE);
 
   readonly isLoading = computed(() => this.playersResource.isLoading() || !this.projectionLoaded());
 

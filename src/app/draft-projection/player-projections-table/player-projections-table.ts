@@ -31,6 +31,7 @@ import {
   DEFAULT_DECIMAL_SETTINGS,
   ScaleConfig,
 } from '../projection-settings-section/model';
+import { DEFAULT_LEAGUE_SIZE } from '../projection-defaults';
 import { ProjectionsTableHeaderComponent } from './projections-table-header/projections-table-header';
 import { PlayerRowComponent } from './player-row/player-row';
 import { PositionFilterComponent } from './position-filter/position-filter';
@@ -70,7 +71,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly players = input.required<Player[]>();
   readonly initialProjections = input<Projection[] | null>(null);
   readonly activeColumns = input.required<ActiveColumns>();
-  readonly leagueSize = input<number>(12);
+  readonly leagueSize = input<number>(DEFAULT_LEAGUE_SIZE);
 
   readonly filteredActiveColumns = computed<ActiveColumns>(() =>
     this.activeColumnsService.filterAndSortActiveColumns(

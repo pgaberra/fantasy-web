@@ -16,6 +16,7 @@ import {
 } from '../../models/stat-key.model';
 import { ScaleConfig } from './model';
 import { ScoringType } from '../../models/projection.model';
+import { DEFAULT_LEAGUE_SIZE } from '../projection-defaults';
 import { StatGroupComponent } from './stat-group/stat-group';
 import { StatInfoService } from '../../services/stat-info.service';
 
@@ -59,7 +60,7 @@ export class ProjectionSettingsSectionComponent {
 
   scaleSettings = model.required<Record<UtilityStatKey, ScaleConfig>>();
   useDefaultDecimals = model<boolean>(true);
-  leagueSize = model<number>(12);
+  leagueSize = model<number>(DEFAULT_LEAGUE_SIZE);
   showDecimalsSetting = input<boolean>(true);
   showUtilityStats = input<boolean>(true);
   initiallyExpanded = input<boolean>(false);

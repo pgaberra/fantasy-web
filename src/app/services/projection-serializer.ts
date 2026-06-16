@@ -10,8 +10,7 @@ import {
 } from '../models/projection.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
 import { DecimalStatKey, ScaleConfig } from '../draft-projection/projection-settings-section/model';
-
-export const DEFAULT_LEAGUE_SIZE = 12;
+import { DEFAULT_LEAGUE_SIZE } from '../draft-projection/projection-defaults';
 
 export interface ProjectionState {
   scoringType: ScoringType;
