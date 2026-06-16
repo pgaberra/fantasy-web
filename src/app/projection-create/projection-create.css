@@ -6,31 +6,31 @@
 
 .back-link {
   display: inline-block;
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
-  color: #7a8baa;
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
   text-decoration: none;
 }
 
 .back-link:hover {
-  color: #0f3460;
+  color: var(--color-primary);
 }
 
 .page-header h1 {
-  margin: 0 0 1.5rem;
-  color: #0f3460;
+  margin: 0 0 var(--space-5);
+  color: var(--color-primary);
 }
 
 .field {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-5);
 }
 
 .field > label,
 .field-label {
   display: block;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #7a8baa;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
   margin-bottom: 0.4rem;
 }
 
@@ -38,17 +38,24 @@
 .copy-select {
   width: 100%;
   max-width: 380px;
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
   padding: 0.45rem 0.6rem;
-  border: 1px solid #e0e4ef;
-  border-radius: 6px;
-  color: #0f3460;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+}
+
+.field input[type='text']:focus,
+.copy-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
 }
 
 .field-hint {
   margin: -0.2rem 0 0.6rem;
-  font-size: 0.8rem;
-  color: #7a8baa;
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
 }
 
 .radio-group {
@@ -65,9 +72,9 @@
 }
 
 .radio-title {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #0f3460;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
 }
 
 .copy-select {
@@ -75,24 +82,11 @@
 }
 
 .settings-note {
-  margin: 0.5rem 0 0;
-  font-size: 0.8rem;
-  color: #7a8baa;
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
 }
 
 .create-button {
-  margin-top: 1.5rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  padding: 0.6rem 1.5rem;
-  border: none;
-  border-radius: 6px;
-  background: #0f3460;
-  color: #fff;
-  cursor: pointer;
-}
-
-.create-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  margin-top: var(--space-5);
 }

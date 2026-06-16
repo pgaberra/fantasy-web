@@ -60,7 +60,7 @@
         <div class="error-banner">{{ errorMessage() }}</div>
       }
 
-      <button type="submit" class="btn-primary" [disabled]="isLoading()">
+      <button type="submit" class="btn btn-primary btn-block btn-lg" [disabled]="isLoading()">
         @if (isLoading()) {
           <span>{{ loadingLabel() }}<span class="loading-dots" aria-hidden="true"></span></span>
         } @else {
