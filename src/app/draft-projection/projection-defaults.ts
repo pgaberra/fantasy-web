@@ -47,6 +47,8 @@ export const DEFAULT_UTILITY_COLUMNS: SkaterUtilityStatKey[] = ['gp'];
 
 export const DEFAULT_LEAGUE_SIZE = 12;
 
+export const DEFAULT_MIN_GOALIE_GAMES = 30;
+
 export const DEFAULT_ROSTER_SLOTS: RosterSlots = {
   c: 2,
   lw: 2,

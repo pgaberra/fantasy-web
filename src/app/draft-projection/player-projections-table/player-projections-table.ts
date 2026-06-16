@@ -31,7 +31,11 @@ import {
   DEFAULT_DECIMAL_SETTINGS,
   ScaleConfig,
 } from '../projection-settings-section/model';
-import { DEFAULT_LEAGUE_SIZE, DEFAULT_ROSTER_SLOTS } from '../projection-defaults';
+import {
+  DEFAULT_LEAGUE_SIZE,
+  DEFAULT_MIN_GOALIE_GAMES,
+  DEFAULT_ROSTER_SLOTS,
+} from '../projection-defaults';
 import { RosterSlots } from '../../api/models/roster-slots';
 import { ProjectionsTableHeaderComponent } from './projections-table-header/projections-table-header';
 import { PlayerRowComponent } from './player-row/player-row';
@@ -74,6 +78,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly activeColumns = input.required<ActiveColumns>();
   readonly leagueSize = input<number>(DEFAULT_LEAGUE_SIZE);
   readonly rosterSlots = input<RosterSlots>(DEFAULT_ROSTER_SLOTS);
+  readonly minGoalieGames = input<number>(DEFAULT_MIN_GOALIE_GAMES);
 
   readonly filteredActiveColumns = computed<ActiveColumns>(() =>
     this.activeColumnsService.filterAndSortActiveColumns(
@@ -108,7 +113,11 @@ export class PlayerProjectionsTableComponent implements OnInit {
     }
 
     const valueOf = this.sortValueResolver(column);
+    const demoteUnqualified = column === 'summary';
     return [...scored].sort((a, b) => {
+      if (demoteUnqualified && a.qualified !== b.qualified) {
+        return a.qualified ? -1 : 1;
+      }
       const primary = sign * (valueOf(a) - valueOf(b));
       // Ties fall back to fantasy value (desc) so equal-stat players stay meaningfully ordered.
       return primary !== 0 ? primary : tieBreak(a, b);
@@ -207,11 +216,22 @@ export class PlayerProjectionsTableComponent implements OnInit {
       goaliePoolSize,
     );
 
+    const isCategory = this.scoringType() === 'category';
+    const minGames = this.minGoalieGames();
+
     return projections.map((projection, i) => ({
       projection,
       score: { fantasyPoints: fantasyPoints[i], zScore: zScores[i] },
+      qualified: this.isQualified(projection, isCategory, minGames),
     }));
   });
+
+  private isQualified(projection: Projection, isCategory: boolean, minGames: number): boolean {
+    if (!isCategory || projection.type !== 'goalie') {
+      return true;
+    }
+    return (projection.stats.utility.gp ?? 0) >= minGames;
+  }
 
   readonly positionFilter = signal<PositionFilter>('ALL');
 

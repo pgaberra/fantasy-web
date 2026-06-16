@@ -44,6 +44,7 @@ export interface PlayerScore {
 export interface ScoredProjection {
   projection: Projection;
   score: PlayerScore;
+  qualified: boolean;
 }
 
 interface BaseProjection {
