@@ -2,8 +2,8 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: #1a1a2e;
+  font-family: var(--font-sans);
+  color: var(--color-text);
 }
 
 .page-header {
