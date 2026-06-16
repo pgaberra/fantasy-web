@@ -16,7 +16,11 @@ import {
 } from '../../models/stat-key.model';
 import { ScaleConfig } from './model';
 import { ScoringType } from '../../models/projection.model';
-import { DEFAULT_LEAGUE_SIZE, DEFAULT_ROSTER_SLOTS } from '../projection-defaults';
+import {
+  DEFAULT_LEAGUE_SIZE,
+  DEFAULT_MIN_GOALIE_GAMES,
+  DEFAULT_ROSTER_SLOTS,
+} from '../projection-defaults';
 import { RosterSlots } from '../../api/models/roster-slots';
 import { StatGroupComponent } from './stat-group/stat-group';
 import { StatInfoService } from '../../services/stat-info.service';
@@ -63,6 +67,7 @@ export class ProjectionSettingsSectionComponent {
   useDefaultDecimals = model<boolean>(true);
   leagueSize = model<number>(DEFAULT_LEAGUE_SIZE);
   rosterSlots = model<RosterSlots>(DEFAULT_ROSTER_SLOTS);
+  minGoalieGames = model<number>(DEFAULT_MIN_GOALIE_GAMES);
   readonly rosterSummary = computed(() => {
     const slots = this.rosterSlots();
     return {
@@ -116,6 +121,13 @@ export class ProjectionSettingsSectionComponent {
     if (Number.isFinite(parsed)) {
       const clamped = Math.min(50, Math.max(0, Math.round(parsed)));
       this.rosterSlots.update((slots) => ({ ...slots, [position]: clamped }));
+    }
+  }
+
+  onMinGoalieGamesInput(event: Event): void {
+    const parsed = Number((event.target as HTMLInputElement).value);
+    if (Number.isFinite(parsed)) {
+      this.minGoalieGames.set(Math.min(82, Math.max(0, Math.round(parsed))));
     }
   }
 

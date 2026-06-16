@@ -7,6 +7,13 @@
   @if (player().teamAbbrev) {
     <span class="player-team">{{ player().teamAbbrev }}</span>
   }
+  @if (belowMinGames()) {
+    <span
+      class="below-min-games"
+      title="Projected for fewer games than the league's goalie minimum, so this goalie is ranked last."
+      >Below min. games</span
+    >
+  }
 </td>
 @for (col of activeColumns().utility; track col) {
   <td class="col-{{ col }}">

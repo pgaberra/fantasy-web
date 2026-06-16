@@ -10,7 +10,11 @@ import {
 } from '../models/projection.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
 import { DecimalStatKey, ScaleConfig } from '../draft-projection/projection-settings-section/model';
-import { DEFAULT_LEAGUE_SIZE, DEFAULT_ROSTER_SLOTS } from '../draft-projection/projection-defaults';
+import {
+  DEFAULT_LEAGUE_SIZE,
+  DEFAULT_MIN_GOALIE_GAMES,
+  DEFAULT_ROSTER_SLOTS,
+} from '../draft-projection/projection-defaults';
 import { RosterSlots } from '../api/models/roster-slots';
 
 export interface ProjectionState {
@@ -23,6 +27,7 @@ export interface ProjectionState {
   useDefaultDecimals: boolean;
   leagueSize: number;
   rosterSlots: RosterSlots;
+  minGoalieGames: number;
   playerProjections: Projection[];
 }
 
@@ -42,6 +47,7 @@ export function toProjectionData(state: ProjectionState): ProjectionData {
       useDefaultDecimals: state.useDefaultDecimals,
       leagueSize: state.scoringType === 'category' ? state.leagueSize : undefined,
       rosterSlots: state.scoringType === 'category' ? { ...state.rosterSlots } : undefined,
+      minGoalieGames: state.scoringType === 'category' ? state.minGoalieGames : undefined,
     },
     players: state.playerProjections.map((projection) => ({
       playerId: projection.playerId,
@@ -72,6 +78,7 @@ export function fromProjectionData(data: ProjectionData): ProjectionState {
     useDefaultDecimals: data.settings.useDefaultDecimals,
     leagueSize: data.settings.leagueSize ?? DEFAULT_LEAGUE_SIZE,
     rosterSlots: data.settings.rosterSlots ?? { ...DEFAULT_ROSTER_SLOTS },
+    minGoalieGames: data.settings.minGoalieGames ?? DEFAULT_MIN_GOALIE_GAMES,
     playerProjections: data.players.map(toProjection),
   };
 }

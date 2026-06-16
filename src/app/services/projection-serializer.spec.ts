@@ -32,6 +32,7 @@ const sampleState: ProjectionState = {
   useDefaultDecimals: true,
   leagueSize: 10,
   rosterSlots: { c: 1, lw: 1, rw: 1, d: 2, util: 1, bn: 2, g: 2 },
+  minGoalieGames: 25,
   playerProjections: [
     {
       type: 'skater',
@@ -75,12 +76,20 @@ describe('projection-serializer', () => {
     expect(fromProjectionData(data).leagueSize).toEqual(12);
   });
 
-  it('omits leagueSize and rosterSlots for points leagues', () => {
+  it('defaults minGoalieGames to 30 for older projections that omit it', () => {
+    const data = toProjectionData(sampleState);
+    delete data.settings.minGoalieGames;
+
+    expect(fromProjectionData(data).minGoalieGames).toEqual(30);
+  });
+
+  it('omits leagueSize, rosterSlots and minGoalieGames for points leagues', () => {
     const pointsState: ProjectionState = { ...sampleState, scoringType: 'points' };
     const settings = toProjectionData(pointsState).settings;
 
     expect(settings.leagueSize).toBeUndefined();
     expect(settings.rosterSlots).toBeUndefined();
+    expect(settings.minGoalieGames).toBeUndefined();
   });
 
   it('round-trips rosterSlots for category leagues', () => {

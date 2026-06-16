@@ -38,6 +38,7 @@ export class PlayerRowComponent {
   player = input.required<Player>();
   decimalSettings = input.required<Record<DecimalStatKey, number>>();
   isEditing = input<boolean>(false);
+  belowMinGames = input<boolean>(false);
 
   statInput = output<{ playerId: number; key: StatKey; event: Event }>();
   toiKeydown = output<{ playerId: number; event: KeyboardEvent }>();

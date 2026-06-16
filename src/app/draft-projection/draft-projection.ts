@@ -28,6 +28,7 @@ import {
 import {
   createDefaultScaleSettings,
   DEFAULT_LEAGUE_SIZE,
+  DEFAULT_MIN_GOALIE_GAMES,
   DEFAULT_ROSTER_SLOTS,
   DEFAULT_SCORING_COLUMNS,
   DEFAULT_STAT_WEIGHTS,
@@ -100,6 +101,7 @@ export class DraftProjectionComponent implements OnInit {
   useDefaultDecimals = signal<boolean>(true);
   leagueSize = signal<number>(DEFAULT_LEAGUE_SIZE);
   rosterSlots = signal<RosterSlots>(DEFAULT_ROSTER_SLOTS);
+  minGoalieGames = signal<number>(DEFAULT_MIN_GOALIE_GAMES);
 
   readonly isLoading = computed(() => this.playersResource.isLoading() || !this.projectionLoaded());
 
@@ -161,6 +163,7 @@ export class DraftProjectionComponent implements OnInit {
       useDefaultDecimals: this.useDefaultDecimals(),
       leagueSize: this.leagueSize(),
       rosterSlots: this.rosterSlots(),
+      minGoalieGames: this.minGoalieGames(),
       playerProjections: this.table()?.playerProjections?.() ?? this.loadedProjections() ?? [],
     };
   }
@@ -175,6 +178,7 @@ export class DraftProjectionComponent implements OnInit {
     this.useDefaultDecimals.set(state.useDefaultDecimals);
     this.leagueSize.set(state.leagueSize);
     this.rosterSlots.set(state.rosterSlots);
+    this.minGoalieGames.set(state.minGoalieGames);
     this.loadedProjections.set(state.playerProjections);
   }
 

@@ -43,6 +43,7 @@
             "
             [projection]="sp.projection"
             [playerScore]="sp.score"
+            [belowMinGames]="!sp.qualified"
             [player]="getPlayer(sp.projection.playerId)"
             [activeColumns]="filteredActiveColumns()"
             [scoringType]="scoringType()"

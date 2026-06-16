@@ -185,6 +185,7 @@ describe('PlayerProjectionsTableComponent', () => {
       activeColumns: ActiveColumns;
       scaleSettings: Record<string, ScaleConfig>;
       useDefaultDecimals: boolean;
+      minGoalieGames: number;
     }> = {},
   ) =>
     MockRender(PlayerProjectionsTableComponent, {
@@ -432,6 +433,72 @@ describe('PlayerProjectionsTableComponent', () => {
 
       expect(component.sortColumn()).toEqual('goals');
       expect(component.sortDirection()).toEqual('desc');
+    });
+  });
+
+  describe('goalie minimum games', () => {
+    const lowGpGoalie: Player = {
+      id: 4,
+      type: 'goalie',
+      name: 'Tiny Sample',
+      teamAbbrev: 'NYR',
+      stats: {
+        utility: { gp: 3 },
+        scoring: { gs: 3, w: 3, l: 0, sho: 1, sa: 90, sv: 89, ga: 1, gaa: 0.5, svPct: 0.989 },
+      },
+    };
+    const lowGpProjection: Projection = {
+      type: 'goalie',
+      playerId: 4,
+      stats: {
+        scoring: (lowGpGoalie as Goalie).stats.scoring,
+        utility: (lowGpGoalie as Goalie).stats.utility,
+      },
+    };
+    const ratingColumns = {
+      scoring: new Set<ScoringStatKey>(['w', 'gaa', 'svPct']),
+      utility: new Set<SkaterUtilityStatKey>(['gp']),
+    } as ActiveColumns;
+
+    it('ranks a goalie below the minimum games last in the summary sort', () => {
+      const component = getComponent({
+        players: [...mockPlayers, lowGpGoalie],
+        playerProjections: [...mockPlayerProjections, lowGpProjection],
+        activeColumns: ratingColumns,
+        minGoalieGames: 30,
+      });
+
+      const order = component.visibleProjections().map((sp) => sp.projection.playerId);
+      expect(order[order.length - 1]).toEqual(4);
+      expect(
+        component.scoredProjections().find((sp) => sp.projection.playerId === 4)?.qualified,
+      ).toEqual(false);
+    });
+
+    it('keeps the goalie qualified when its games meet the threshold', () => {
+      const component = getComponent({
+        players: [...mockPlayers, lowGpGoalie],
+        playerProjections: [...mockPlayerProjections, lowGpProjection],
+        activeColumns: ratingColumns,
+        minGoalieGames: 2,
+      });
+
+      expect(
+        component.scoredProjections().find((sp) => sp.projection.playerId === 4)?.qualified,
+      ).toEqual(true);
+    });
+
+    it('never disqualifies goalies in a points league', () => {
+      const component = getComponent({
+        players: [...mockPlayers, lowGpGoalie],
+        playerProjections: [...mockPlayerProjections, lowGpProjection],
+        scoringType: 'points',
+        minGoalieGames: 30,
+      });
+
+      expect(
+        component.scoredProjections().find((sp) => sp.projection.playerId === 4)?.qualified,
+      ).toEqual(true);
     });
   });
 
