@@ -1,5 +1,6 @@
 import { ScoringStatKey, SkaterUtilityStatKey, SCORING_STAT_KEYS } from '../models/stat-key.model';
 import { ScaleConfig } from './projection-settings-section/model';
+import { RosterSlots } from '../api/models/roster-slots';
 
 export const DEFAULT_STAT_WEIGHTS: Record<ScoringStatKey, number> = {
   goals: 4.5,
@@ -45,6 +46,16 @@ export const DEFAULT_SCORING_COLUMNS: ScoringStatKey[] = [
 export const DEFAULT_UTILITY_COLUMNS: SkaterUtilityStatKey[] = ['gp'];
 
 export const DEFAULT_LEAGUE_SIZE = 12;
+
+export const DEFAULT_ROSTER_SLOTS: RosterSlots = {
+  c: 2,
+  lw: 2,
+  rw: 2,
+  d: 4,
+  util: 0,
+  bn: 4,
+  g: 2,
+};
 
 export function createDefaultScaleSettings(
   isRateStat: (key: ScoringStatKey) => boolean,

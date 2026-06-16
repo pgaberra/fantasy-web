@@ -31,7 +31,8 @@ import {
   DEFAULT_DECIMAL_SETTINGS,
   ScaleConfig,
 } from '../projection-settings-section/model';
-import { DEFAULT_LEAGUE_SIZE } from '../projection-defaults';
+import { DEFAULT_LEAGUE_SIZE, DEFAULT_ROSTER_SLOTS } from '../projection-defaults';
+import { RosterSlots } from '../../api/models/roster-slots';
 import { ProjectionsTableHeaderComponent } from './projections-table-header/projections-table-header';
 import { PlayerRowComponent } from './player-row/player-row';
 import { PositionFilterComponent } from './position-filter/position-filter';
@@ -72,6 +73,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly initialProjections = input<Projection[] | null>(null);
   readonly activeColumns = input.required<ActiveColumns>();
   readonly leagueSize = input<number>(DEFAULT_LEAGUE_SIZE);
+  readonly rosterSlots = input<RosterSlots>(DEFAULT_ROSTER_SLOTS);
 
   readonly filteredActiveColumns = computed<ActiveColumns>(() =>
     this.activeColumnsService.filterAndSortActiveColumns(
@@ -193,10 +195,16 @@ export class PlayerProjectionsTableComponent implements OnInit {
         activeScoringColumns,
       );
     });
+    const roster = this.rosterSlots();
+    const teams = this.leagueSize();
+    const skaterPoolSize =
+      teams * (roster.c + roster.lw + roster.rw + roster.d + roster.util + roster.bn);
+    const goaliePoolSize = teams * roster.g;
     const zScores = this.projectionCalculationService.computeZScores(
       projections,
       activeScoringColumns,
-      this.leagueSize(),
+      skaterPoolSize,
+      goaliePoolSize,
     );
 
     return projections.map((projection, i) => ({

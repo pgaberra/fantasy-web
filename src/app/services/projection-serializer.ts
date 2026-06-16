@@ -10,7 +10,8 @@ import {
 } from '../models/projection.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
 import { DecimalStatKey, ScaleConfig } from '../draft-projection/projection-settings-section/model';
-import { DEFAULT_LEAGUE_SIZE } from '../draft-projection/projection-defaults';
+import { DEFAULT_LEAGUE_SIZE, DEFAULT_ROSTER_SLOTS } from '../draft-projection/projection-defaults';
+import { RosterSlots } from '../api/models/roster-slots';
 
 export interface ProjectionState {
   scoringType: ScoringType;
@@ -21,6 +22,7 @@ export interface ProjectionState {
   decimalSettings: Record<DecimalStatKey, number>;
   useDefaultDecimals: boolean;
   leagueSize: number;
+  rosterSlots: RosterSlots;
   playerProjections: Projection[];
 }
 
@@ -39,6 +41,7 @@ export function toProjectionData(state: ProjectionState): ProjectionData {
       decimalSettings: { ...state.decimalSettings },
       useDefaultDecimals: state.useDefaultDecimals,
       leagueSize: state.scoringType === 'category' ? state.leagueSize : undefined,
+      rosterSlots: state.scoringType === 'category' ? { ...state.rosterSlots } : undefined,
     },
     players: state.playerProjections.map((projection) => ({
       playerId: projection.playerId,
@@ -68,6 +71,7 @@ export function fromProjectionData(data: ProjectionData): ProjectionState {
     decimalSettings: data.settings.decimalSettings as Record<DecimalStatKey, number>,
     useDefaultDecimals: data.settings.useDefaultDecimals,
     leagueSize: data.settings.leagueSize ?? DEFAULT_LEAGUE_SIZE,
+    rosterSlots: data.settings.rosterSlots ?? { ...DEFAULT_ROSTER_SLOTS },
     playerProjections: data.players.map(toProjection),
   };
 }

@@ -16,9 +16,8 @@ import {
   StatWeights,
 } from '../models/projection.model';
 
-const BASELINE_TEAMS = 12;
-const BASELINE_SKATER_POOL_SIZE = 180;
-const BASELINE_GOALIE_POOL_SIZE = 32;
+const DEFAULT_SKATER_POOL_SIZE = 180;
+const DEFAULT_GOALIE_POOL_SIZE = 32;
 const MAX_POOL_ITERATIONS = 10;
 
 interface PoolEntry<P extends Projection> {
@@ -53,13 +52,10 @@ export class ProjectionCalculationService {
   computeZScores(
     projections: Projection[],
     activeScoringColumns: Set<ScoringStatKey>,
-    leagueSize?: number | null,
+    skaterPoolSize: number = DEFAULT_SKATER_POOL_SIZE,
+    goaliePoolSize: number = DEFAULT_GOALIE_POOL_SIZE,
   ): number[] {
     const zByIndex = projections.map(() => 0);
-
-    const teams = leagueSize && leagueSize > 0 ? leagueSize : BASELINE_TEAMS;
-    const skaterPoolSize = Math.round((BASELINE_SKATER_POOL_SIZE * teams) / BASELINE_TEAMS);
-    const goaliePoolSize = Math.round((BASELINE_GOALIE_POOL_SIZE * teams) / BASELINE_TEAMS);
 
     const skaters: PoolEntry<SkaterProjection>[] = [];
     const goalies: PoolEntry<GoalieProjection>[] = [];

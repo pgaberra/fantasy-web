@@ -119,7 +119,7 @@ describe('ProjectionCalculationService.computeZScores', () => {
     expect(result.length).toEqual(0);
   });
 
-  it('scales the standardization pool by league size', () => {
+  it('honors an explicit skater pool size', () => {
     const elite = [
       skater(1, { goals: 50 }),
       skater(2, { goals: 40 }),
@@ -132,17 +132,17 @@ describe('ProjectionCalculationService.computeZScores', () => {
     );
     const field = [...elite, ...fringe];
 
-    const twelveTeams = service.computeZScores(field, new Set(['goals']), 12);
-    const twoTeams = service.computeZScores(field, new Set(['goals']), 2);
+    const fullPool = service.computeZScores(field, new Set(['goals']), 180, 32);
+    const smallPool = service.computeZScores(field, new Set(['goals']), 30, 32);
 
-    expect(twoTeams[0]).not.toBeCloseTo(twelveTeams[0], 5);
+    expect(smallPool[0]).not.toBeCloseTo(fullPool[0], 5);
   });
 
-  it('treats an omitted league size as the 12-team default', () => {
+  it('defaults to the standard pool sizes when none are given', () => {
     const field = [skater(1, { goals: 10 }), skater(2, { goals: 20 })];
 
     expect(service.computeZScores(field, new Set(['goals']))).toEqual(
-      service.computeZScores(field, new Set(['goals']), 12),
+      service.computeZScores(field, new Set(['goals']), 180, 32),
     );
   });
 

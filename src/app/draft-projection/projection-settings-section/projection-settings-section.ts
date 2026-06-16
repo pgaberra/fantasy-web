@@ -16,7 +16,8 @@ import {
 } from '../../models/stat-key.model';
 import { ScaleConfig } from './model';
 import { ScoringType } from '../../models/projection.model';
-import { DEFAULT_LEAGUE_SIZE } from '../projection-defaults';
+import { DEFAULT_LEAGUE_SIZE, DEFAULT_ROSTER_SLOTS } from '../projection-defaults';
+import { RosterSlots } from '../../api/models/roster-slots';
 import { StatGroupComponent } from './stat-group/stat-group';
 import { StatInfoService } from '../../services/stat-info.service';
 
@@ -61,6 +62,23 @@ export class ProjectionSettingsSectionComponent {
   scaleSettings = model.required<Record<UtilityStatKey, ScaleConfig>>();
   useDefaultDecimals = model<boolean>(true);
   leagueSize = model<number>(DEFAULT_LEAGUE_SIZE);
+  rosterSlots = model<RosterSlots>(DEFAULT_ROSTER_SLOTS);
+  readonly rosterSummary = computed(() => {
+    const slots = this.rosterSlots();
+    return {
+      skaters: slots.c + slots.lw + slots.rw + slots.d + slots.util + slots.bn,
+      goalies: slots.g,
+    };
+  });
+  protected readonly ROSTER_POSITIONS: { key: keyof RosterSlots; label: string }[] = [
+    { key: 'c', label: 'C' },
+    { key: 'lw', label: 'LW' },
+    { key: 'rw', label: 'RW' },
+    { key: 'd', label: 'D' },
+    { key: 'util', label: 'Util' },
+    { key: 'bn', label: 'BN' },
+    { key: 'g', label: 'G' },
+  ];
   showDecimalsSetting = input<boolean>(true);
   showUtilityStats = input<boolean>(true);
   initiallyExpanded = input<boolean>(false);
@@ -90,6 +108,14 @@ export class ProjectionSettingsSectionComponent {
     const parsed = Number((event.target as HTMLInputElement).value);
     if (Number.isFinite(parsed)) {
       this.leagueSize.set(Math.min(30, Math.max(2, Math.round(parsed))));
+    }
+  }
+
+  onRosterSlotInput(position: keyof RosterSlots, event: Event): void {
+    const parsed = Number((event.target as HTMLInputElement).value);
+    if (Number.isFinite(parsed)) {
+      const clamped = Math.min(50, Math.max(0, Math.round(parsed)));
+      this.rosterSlots.update((slots) => ({ ...slots, [position]: clamped }));
     }
   }
 

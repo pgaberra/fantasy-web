@@ -31,6 +31,7 @@ const sampleState: ProjectionState = {
   decimalSettings: fullRecord([...SCORING_STAT_KEYS, 'gp'] as DecimalStatKey[], 0),
   useDefaultDecimals: true,
   leagueSize: 10,
+  rosterSlots: { c: 1, lw: 1, rw: 1, d: 2, util: 1, bn: 2, g: 2 },
   playerProjections: [
     {
       type: 'skater',
@@ -74,9 +75,17 @@ describe('projection-serializer', () => {
     expect(fromProjectionData(data).leagueSize).toEqual(12);
   });
 
-  it('omits leagueSize for points leagues', () => {
+  it('omits leagueSize and rosterSlots for points leagues', () => {
     const pointsState: ProjectionState = { ...sampleState, scoringType: 'points' };
+    const settings = toProjectionData(pointsState).settings;
 
-    expect(toProjectionData(pointsState).settings.leagueSize).toBeUndefined();
+    expect(settings.leagueSize).toBeUndefined();
+    expect(settings.rosterSlots).toBeUndefined();
+  });
+
+  it('round-trips rosterSlots for category leagues', () => {
+    const roundTripped = fromProjectionData(toProjectionData(sampleState));
+
+    expect(roundTripped.rosterSlots).toEqual({ c: 1, lw: 1, rw: 1, d: 2, util: 1, bn: 2, g: 2 });
   });
 });
