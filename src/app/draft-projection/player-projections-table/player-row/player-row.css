@@ -35,7 +35,7 @@ td.col-name {
   left: 4rem;
   z-index: 1;
   background: var(--color-surface);
-  box-shadow: 6px 0 8px -6px rgba(15, 52, 96, 0.25);
+  box-shadow: 1px 0 0 0 var(--color-border-strong);
 }
 
 :host(:nth-child(even)) .col-rank,
@@ -106,7 +106,6 @@ td.col-name {
   color: var(--color-primary);
   background: #eef3fb;
   box-shadow:
-    6px 0 8px -6px rgba(15, 52, 96, 0.25),
     inset 0 2px 0 var(--color-primary),
     inset 0 -2px 0 var(--color-primary);
 }
