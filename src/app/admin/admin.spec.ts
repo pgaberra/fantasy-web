@@ -8,15 +8,18 @@ describe('AdminComponent', () => {
   const yahooConnection = vi.fn();
   const connectYahoo = vi.fn();
   const triggerSync = vi.fn();
+  const syncRuns = vi.fn();
 
   beforeEach(() => {
     yahooConnection.mockReturnValue(of({ connected: true }));
     connectYahoo.mockReturnValue(of({ authorizeUrl: 'https://example.com/consent' }));
     triggerSync.mockReturnValue(of({ status: 'accepted' }));
+    syncRuns.mockReturnValue(of([]));
     return MockBuilder(AdminComponent).mock(AdminService, {
       yahooConnection,
       connectYahoo,
       triggerSync,
+      syncRuns,
     });
   });
 

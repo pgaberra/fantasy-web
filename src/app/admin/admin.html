@@ -52,10 +52,83 @@
       <p class="admin-success" role="status">{{ syncMessage() }}</p>
     }
 
+    @if (latestRun(); as run) {
+      <div class="run-latest" [class.run-failed]="run.status !== 'success'">
+        <div class="run-headline">
+          @if (run.status === 'success') {
+            <span class="status status-ok">● Last sync OK</span>
+          } @else {
+            <span class="status status-off">● Last sync failed</span>
+          }
+          <span class="run-when">{{ run.finishedAt ?? run.startedAt | relativeTime }}</span>
+        </div>
+        @if (run.status === 'success') {
+          <p class="run-counts">
+            {{ run.skaters ?? 0 }} skaters ({{ run.skatersMatched ?? 0 }} Yahoo-matched) ·
+            {{ run.goalies ?? 0 }} goalies ({{ run.goaliesMatched ?? 0 }} matched)
+          </p>
+          <p class="run-diff">
+            <span class="diff-added">+{{ run.addedCount }} added</span>
+            <span class="diff-removed">−{{ run.removedCount }} removed</span>
+            since the previous sync
+          </p>
+          @if (run.added.length || run.removed.length) {
+            <details class="run-details">
+              <summary>Show changes</summary>
+              @if (run.added.length) {
+                <p class="diff-added">Added</p>
+                <ul>
+                  @for (name of run.added; track name) {
+                    <li>{{ name }}</li>
+                  }
+                </ul>
+              }
+              @if (run.removed.length) {
+                <p class="diff-removed">Removed</p>
+                <ul>
+                  @for (name of run.removed; track name) {
+                    <li>{{ name }}</li>
+                  }
+                </ul>
+              }
+            </details>
+          }
+        } @else if (run.error) {
+          <p class="admin-error">{{ run.error }}</p>
+        }
+      </div>
+    } @else {
+      <p class="admin-card-desc run-empty">No syncs recorded yet.</p>
+    }
+
     <div class="admin-actions">
       <button type="button" class="btn btn-secondary" [disabled]="syncing()" (click)="runSync()">
-        {{ syncing() ? 'Starting…' : 'Run sync now' }}
+        {{ syncing() ? 'Syncing…' : 'Run sync now' }}
+      </button>
+      <button type="button" class="btn btn-ghost" [disabled]="syncing()" (click)="loadRuns()">
+        Refresh
       </button>
     </div>
+
+    @if (runs().length > 1) {
+      <details class="run-history">
+        <summary>Recent syncs</summary>
+        <ul>
+          @for (run of runs(); track run.id) {
+            <li>
+              <span [class]="run.status === 'success' ? 'status-ok' : 'status-off'">●</span>
+              <span class="run-when">{{ run.finishedAt ?? run.startedAt | relativeTime }}</span>
+              @if (run.status === 'success') {
+                <span class="run-history-diff"
+                  >+{{ run.addedCount }} / −{{ run.removedCount }}</span
+                >
+              } @else {
+                <span class="run-history-diff">failed</span>
+              }
+            </li>
+          }
+        </ul>
+      </details>
+    }
   </article>
 </section>
