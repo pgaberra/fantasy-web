@@ -105,9 +105,6 @@
       <button type="button" class="btn btn-secondary" [disabled]="syncing()" (click)="runSync()">
         {{ syncing() ? 'Syncing…' : 'Run sync now' }}
       </button>
-      <button type="button" class="btn btn-ghost" [disabled]="syncing()" (click)="loadRuns()">
-        Refresh
-      </button>
     </div>
 
     @if (runs().length > 1) {
