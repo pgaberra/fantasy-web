@@ -20,8 +20,10 @@ export class AuthService {
 
   private readonly tokenKey = 'auth_token';
   private readonly refreshTokenKey = 'refresh_token';
+  private readonly adminKey = 'is_admin';
 
   readonly isLoggedIn = signal<boolean>(!!localStorage.getItem(this.tokenKey));
+  readonly isAdmin = signal<boolean>(localStorage.getItem(this.adminKey) === 'true');
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return from(this.api.invoke(login, { body: credentials })).pipe(
@@ -60,7 +62,9 @@ export class AuthService {
   logout() {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.refreshTokenKey);
+    localStorage.removeItem(this.adminKey);
     this.isLoggedIn.set(false);
+    this.isAdmin.set(false);
     void this.router.navigate(['/login']);
   }
 
@@ -75,7 +79,9 @@ export class AuthService {
   private storeTokens(response: AuthResponse) {
     localStorage.setItem(this.tokenKey, response.token);
     localStorage.setItem(this.refreshTokenKey, response.refreshToken);
+    localStorage.setItem(this.adminKey, String(response.admin));
     this.isLoggedIn.set(true);
+    this.isAdmin.set(response.admin);
     void this.router.navigate(['/projections']);
   }
 }

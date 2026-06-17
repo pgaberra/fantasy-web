@@ -8,6 +8,9 @@
       <nav class="app-nav">
         @if (authService.isLoggedIn()) {
           <a routerLink="/projections" routerLinkActive="active">My projections</a>
+          @if (authService.isAdmin()) {
+            <a routerLink="/admin" routerLinkActive="active">Admin</a>
+          }
           <button class="btn-logout" (click)="authService.logout()">Sign Out</button>
         } @else {
           <a routerLink="/login" routerLinkActive="active">Sign In</a>
