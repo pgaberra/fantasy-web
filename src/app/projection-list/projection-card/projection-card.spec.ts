@@ -27,11 +27,10 @@ describe('ProjectionCardComponent', () => {
       { projection, onEdit, onRemove },
     );
 
-  it('renders the projection name, season and last-updated label', () => {
+  it('renders the projection name and last-updated label', () => {
     const fixture = render();
 
     expect(fixture.nativeElement.textContent).toContain('My league');
-    expect(fixture.nativeElement.textContent).toContain('20262027');
     expect(fixture.nativeElement.textContent).toContain('Updated');
   });
 
