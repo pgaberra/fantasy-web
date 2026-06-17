@@ -7,6 +7,8 @@ import { login } from '../api/fn/authentication/login';
 import { register } from '../api/fn/authentication/register';
 import { refresh } from '../api/fn/authentication/refresh';
 import { googleLogin } from '../api/fn/authentication/google-login';
+import { forgotPassword } from '../api/fn/authentication/forgot-password';
+import { resetPassword } from '../api/fn/authentication/reset-password';
 import { AuthResponse, LoginRequest, RefreshRequest, RegisterRequest } from '../api/models';
 
 @Injectable({
@@ -45,6 +47,14 @@ export class AuthService {
     return from(this.api.invoke(refresh, { body })).pipe(
       tap((response) => this.storeTokens(response)),
     );
+  }
+
+  forgotPassword(email: string): Observable<void> {
+    return from(this.api.invoke(forgotPassword, { body: { email } }));
+  }
+
+  resetPassword(token: string, newPassword: string): Observable<void> {
+    return from(this.api.invoke(resetPassword, { body: { token, newPassword } }));
   }
 
   logout() {

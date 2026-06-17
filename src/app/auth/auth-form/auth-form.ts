@@ -40,6 +40,7 @@ export class AuthFormComponent {
   readonly footerLinkRoute = input.required<string>();
   readonly passwordMinLength = input<number | undefined>(undefined);
   readonly requireConfirmPassword = input(false);
+  readonly showForgotPasswordLink = input(false);
   readonly errorMessage = input<string | null>(null);
   readonly isLoading = input(false);
 

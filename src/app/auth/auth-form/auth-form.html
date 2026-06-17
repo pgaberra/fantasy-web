@@ -56,6 +56,12 @@
         </div>
       }
 
+      @if (showForgotPasswordLink()) {
+        <div class="auth-forgot">
+          <a routerLink="/forgot-password">Forgot password?</a>
+        </div>
+      }
+
       @if (errorMessage()) {
         <div class="error-banner">{{ errorMessage() }}</div>
       }
