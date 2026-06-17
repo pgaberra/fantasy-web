@@ -4,7 +4,13 @@ import { Api } from '../api/api';
 import { connectYahooServiceAccount } from '../api/fn/admin/connect-yahoo-service-account';
 import { yahooServiceConnection } from '../api/fn/admin/yahoo-service-connection';
 import { triggerPlayerSync } from '../api/fn/admin/trigger-player-sync';
-import { AuthorizeUrlResponse, ConnectionResponse, SyncAcceptedResponse } from '../api/models';
+import { playerSyncRuns } from '../api/fn/admin/player-sync-runs';
+import {
+  AuthorizeUrlResponse,
+  ConnectionResponse,
+  SyncAcceptedResponse,
+  SyncRunResponse,
+} from '../api/models';
 
 @Injectable({
   providedIn: 'root',
@@ -22,5 +28,9 @@ export class AdminService {
 
   triggerSync(): Observable<SyncAcceptedResponse> {
     return from(this.api.invoke(triggerPlayerSync));
+  }
+
+  syncRuns(limit = 10): Observable<SyncRunResponse[]> {
+    return from(this.api.invoke(playerSyncRuns, { limit }));
   }
 }
