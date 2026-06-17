@@ -1,8 +1,6 @@
 <div class="card-main">
   <span class="card-name">{{ projection().name }}</span>
-  <span class="card-meta"
-    >{{ projection().season }} · Updated {{ projection().updatedAt | relativeTime }}</span
-  >
+  <span class="card-meta">Updated {{ projection().updatedAt | relativeTime }}</span>
 </div>
 <div class="card-actions">
   @if (confirmingDelete()) {
