@@ -13,9 +13,14 @@ td.col-name {
   white-space: nowrap;
   color: var(--color-text-subtle);
   font-weight: var(--weight-bold);
-  width: 2.5rem;
+  width: 4rem;
+  min-width: 4rem;
   padding-left: 0.125rem;
   padding-right: 0.125rem;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--color-surface);
 }
 
 .player-name {
@@ -26,6 +31,21 @@ td.col-name {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  position: sticky;
+  left: 4rem;
+  z-index: 1;
+  background: var(--color-surface);
+  box-shadow: 6px 0 8px -6px rgba(15, 52, 96, 0.25);
+}
+
+:host(:nth-child(even)) .col-rank,
+:host(:nth-child(even)) .player-name {
+  background: var(--color-surface-alt);
+}
+
+:host(:hover) .col-rank,
+:host(:hover) .player-name {
+  background: var(--color-surface-hover);
 }
 
 .player-headshot {
@@ -85,7 +105,7 @@ td.col-name {
 
 :host(.editing-row) .player-name {
   color: var(--color-primary);
-  position: relative;
+  background: #eef3fb;
 }
 
 :host(.editing-row) .player-name::before {
@@ -102,4 +122,5 @@ td.col-name {
 
 :host(.editing-row) .col-rank {
   color: var(--color-primary);
+  background: #eef3fb;
 }
