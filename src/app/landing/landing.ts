@@ -16,12 +16,17 @@ interface MockRow {
   rank: number;
   name: string;
   team: string;
+  headshot: string;
   goals: number;
   assists: number;
-  points: number;
+  ppp: number;
+  hits: number;
+  blocks: number;
   value: string;
   highlight?: boolean;
 }
+
+const HEADSHOT = 'https://assets.nhle.com/mugs/nhl/20242025';
 
 @Component({
   selector: 'app-landing',
@@ -78,27 +83,36 @@ export class LandingComponent {
       rank: 1,
       name: 'Nathan MacKinnon',
       team: 'COL',
+      headshot: `${HEADSHOT}/COL/8477492.png`,
       goals: 53,
       assists: 74,
-      points: 127,
+      ppp: 51,
+      hits: 42,
+      blocks: 33,
       value: '674',
     },
     {
       rank: 2,
       name: 'Connor McDavid',
       team: 'EDM',
+      headshot: `${HEADSHOT}/EDM/8478402.png`,
       goals: 48,
       assists: 90,
-      points: 138,
+      ppp: 56,
+      hits: 28,
+      blocks: 22,
       value: '667',
     },
     {
       rank: 3,
       name: 'Macklin Celebrini',
       team: 'SJS',
+      headshot: `${HEADSHOT}/SJS/8484801.png`,
       goals: 45,
       assists: 70,
-      points: 115,
+      ppp: 41,
+      hits: 53,
+      blocks: 29,
       value: '600',
       highlight: true,
     },
@@ -106,18 +120,24 @@ export class LandingComponent {
       rank: 4,
       name: 'Nikita Kucherov',
       team: 'TBL',
+      headshot: `${HEADSHOT}/TBL/8476453.png`,
       goals: 44,
       assists: 86,
-      points: 130,
+      ppp: 60,
+      hits: 26,
+      blocks: 31,
       value: '598',
     },
     {
       rank: 5,
       name: 'Jason Robertson',
       team: 'DAL',
+      headshot: `${HEADSHOT}/DAL/8480027.png`,
       goals: 45,
       assists: 51,
-      points: 96,
+      ppp: 37,
+      hits: 48,
+      blocks: 22,
       value: '535',
     },
   ];

@@ -42,7 +42,9 @@
                 <th class="lp-c-name">Player</th>
                 <th>G</th>
                 <th>A</th>
-                <th>PTS</th>
+                <th>PPP</th>
+                <th>Hits</th>
+                <th>Blocks</th>
                 <th class="lp-c-value">Z-Score</th>
               </tr>
             </thead>
@@ -51,13 +53,15 @@
                 <tr [class.lp-row-hl]="row.highlight">
                   <td class="lp-c-rank">{{ row.rank }}</td>
                   <td class="lp-c-name">
-                    <span class="lp-avatar"></span>
+                    <img class="lp-headshot" [src]="row.headshot" [alt]="row.name" loading="lazy" />
                     <span class="lp-pname">{{ row.name }}</span>
                     <span class="lp-team">{{ row.team }}</span>
                   </td>
                   <td>{{ row.goals }}</td>
                   <td>{{ row.assists }}</td>
-                  <td>{{ row.points }}</td>
+                  <td>{{ row.ppp }}</td>
+                  <td>{{ row.hits }}</td>
+                  <td>{{ row.blocks }}</td>
                   <td class="lp-c-value">{{ row.value }}</td>
                 </tr>
               }
