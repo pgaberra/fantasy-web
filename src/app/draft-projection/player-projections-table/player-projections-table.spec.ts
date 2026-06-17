@@ -502,6 +502,66 @@ describe('PlayerProjectionsTableComponent', () => {
     });
   });
 
+  describe('Z-Score consistency with displayed values (#91)', () => {
+    const makeGoalie = (id: number, name: string, team: string, wins: number): Goalie => ({
+      id,
+      type: 'goalie',
+      name,
+      teamAbbrev: team,
+      stats: {
+        utility: { gp: 60 },
+        scoring: {
+          gs: 60,
+          w: wins,
+          l: 20,
+          sho: 3,
+          sa: 1700,
+          sv: 1550,
+          ga: 150,
+          gaa: 2.6,
+          svPct: 0.91,
+        },
+      },
+    });
+    const toProjection = (g: Goalie): Projection => ({
+      type: 'goalie',
+      playerId: g.id,
+      stats: { scoring: { ...g.stats.scoring }, utility: { ...g.stats.utility } },
+    });
+
+    it('keeps a goalie zScore stable when a stat changes below the displayed precision', () => {
+      const goalies = [
+        makeGoalie(10, 'Top G', 'AAA', 35),
+        makeGoalie(11, 'Mid G', 'BBB', 30),
+        makeGoalie(12, 'Low G', 'CCC', 25),
+      ];
+      const component = getComponent({
+        players: goalies,
+        playerProjections: goalies.map(toProjection),
+        scoringType: 'category',
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['w']),
+          utility: new Set<SkaterUtilityStatKey>(['gp']),
+        } as ActiveColumns,
+      });
+
+      const zScoreOf = (id: number) =>
+        component.scoredProjections().find((sp) => sp.projection.playerId === id)!.score.zScore;
+      const before = zScoreOf(10);
+
+      // Wins shows 0 decimals, so a raw 35 -> 35.4 nudge leaves the displayed value at 35.
+      component.playerProjections.update((ps) =>
+        ps.map((p) =>
+          p.playerId === 10 && p.type === 'goalie'
+            ? { ...p, stats: { ...p.stats, scoring: { ...p.stats.scoring, w: 35.4 } } }
+            : p,
+        ),
+      );
+
+      expect(zScoreOf(10)).toEqual(before);
+    });
+  });
+
   describe('search and pagination', () => {
     it('should return all projections when the search term is empty', () => {
       const component = getComponent();
