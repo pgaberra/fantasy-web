@@ -1,0 +1,74 @@
+.admin {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.admin-header h1 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+.admin-sub {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.admin-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.admin-card h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.admin-card-desc {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.admin-status .status {
+  font-weight: var(--weight-semibold);
+}
+
+.status-ok {
+  color: var(--color-success, #15803d);
+}
+
+.status-off {
+  color: var(--color-danger, #b91c1c);
+}
+
+.status-loading {
+  color: var(--color-text-muted);
+}
+
+.admin-actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.admin-error {
+  color: var(--color-danger, #b91c1c);
+  margin: 0;
+}
+
+.admin-success {
+  color: var(--color-success, #15803d);
+  margin: 0;
+}

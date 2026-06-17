@@ -12,6 +12,7 @@ describe('authInterceptor', () => {
     refreshToken: 'new-refresh',
     expiresInSeconds: 900,
     refreshExpiresInSeconds: 2592000,
+    admin: false,
   };
 
   let authService: {
