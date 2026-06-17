@@ -1,9 +1,17 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import { ActivatedRouteSnapshot, CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
-export const landingRedirectGuard: CanActivateFn = () => {
+export const landingRedirectGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   const authService = inject(AuthService);
   const router = inject(Router);
-  return authService.isLoggedIn() ? router.createUrlTree(['/projections']) : true;
+  if (!authService.isLoggedIn()) {
+    return true;
+  }
+  // After the Yahoo callback the browser lands back here with ?yahoo=connected; send
+  // admins back to the admin panel (where they started the connect) instead of projections.
+  if (route.queryParams['yahoo'] === 'connected' && authService.isAdmin()) {
+    return router.createUrlTree(['/admin']);
+  }
+  return router.createUrlTree(['/projections']);
 };
