@@ -182,35 +182,42 @@ export class PlayerProjectionsTableComponent implements OnInit {
     const statWeights = this.statWeights();
     const activeScoringColumns = this.activeColumns().scoring;
 
-    const fantasyPoints = projections.map((pp) => {
+    const roundedProjections: Projection[] = projections.map((pp) => {
       if (pp.type === 'skater') {
         const roundedScoring: SkaterScoringStats = { ...pp.stats.scoring };
         SKATER_SCORING_STAT_KEYS.forEach((key) => {
           roundedScoring[key] = this.roundStat(roundedScoring[key], key as DecimalStatKey);
         });
-        return this.projectionCalculationService.computeSkaterTotalPoints(
-          roundedScoring,
-          statWeights,
-          activeScoringColumns,
-        );
+        return { ...pp, stats: { ...pp.stats, scoring: roundedScoring } };
       }
       const roundedScoring: GoalieScoringStats = { ...pp.stats.scoring };
       GOALIE_SCORING_STAT_KEYS.forEach((key) => {
         roundedScoring[key] = this.roundStat(roundedScoring[key], key as DecimalStatKey);
       });
-      return this.projectionCalculationService.computeGoalieTotalPoints(
-        roundedScoring,
-        statWeights,
-        activeScoringColumns,
-      );
+      return { ...pp, stats: { ...pp.stats, scoring: roundedScoring } };
     });
+
+    const fantasyPoints = roundedProjections.map((pp) =>
+      pp.type === 'skater'
+        ? this.projectionCalculationService.computeSkaterTotalPoints(
+            pp.stats.scoring,
+            statWeights,
+            activeScoringColumns,
+          )
+        : this.projectionCalculationService.computeGoalieTotalPoints(
+            pp.stats.scoring,
+            statWeights,
+            activeScoringColumns,
+          ),
+    );
+
     const roster = this.rosterSlots();
     const teams = this.leagueSize();
     const skaterPoolSize =
       teams * (roster.c + roster.lw + roster.rw + roster.d + roster.util + roster.bn);
     const goaliePoolSize = teams * roster.g;
     const zScores = this.projectionCalculationService.computeZScores(
-      projections,
+      roundedProjections,
       activeScoringColumns,
       skaterPoolSize,
       goaliePoolSize,
