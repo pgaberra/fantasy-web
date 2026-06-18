@@ -48,6 +48,15 @@
   margin: 0.4rem 0 0.75rem;
 }
 
+.settings-projected-slot {
+  margin-bottom: var(--space-4);
+}
+
+.settings-projected-slot:empty {
+  display: none;
+  margin: 0;
+}
+
 .projection-settings-list {
   display: flex;
   flex-direction: column;

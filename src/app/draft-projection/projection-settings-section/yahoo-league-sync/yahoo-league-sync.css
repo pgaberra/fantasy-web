@@ -12,35 +12,51 @@
   background: var(--color-surface-alt);
 }
 
-.yahoo-sync-status,
-.yahoo-sync-desc {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-  margin: 0;
+.yahoo-sync-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
 }
 
+.yahoo-sync-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+
+.yahoo-logo {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+  color: #6001d2;
+}
+
+.yahoo-sync-action,
 .yahoo-sync-controls {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-2);
 }
 
-.yahoo-sync-label {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  color: var(--color-primary);
-}
-
 .yahoo-sync-select {
   font-size: var(--text-sm);
   padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-primary);
-  flex: 1 1 12rem;
-  min-width: 0;
+  max-width: 14rem;
+}
+
+.yahoo-sync-status {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
 }
 
 .yahoo-sync-error {
