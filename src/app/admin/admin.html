@@ -11,8 +11,8 @@
   <article class="admin-card">
     <h2>Yahoo service account</h2>
     <p class="admin-card-desc">
-      The app uses one Yahoo account to fetch every player's fantasy eligible positions. Connect it
-      once; it stays connected until Yahoo revokes access.
+      The app uses one Yahoo account to fetch all player data (identity, eligible positions and
+      season stats). Connect it once; it stays connected until Yahoo revokes access.
     </p>
 
     <div class="admin-status">
@@ -44,8 +44,8 @@
   <article class="admin-card">
     <h2>Player data sync</h2>
     <p class="admin-card-desc">
-      Pull the latest NHL stats and Yahoo positions and rebuild the merged player list. Also runs
-      automatically on a daily schedule.
+      Pull the latest player data from Yahoo and rebuild the player list. Also runs automatically on
+      a daily schedule.
     </p>
 
     @if (syncMessage()) {
@@ -63,20 +63,7 @@
           <span class="run-when">{{ run.finishedAt ?? run.startedAt | relativeTime }}</span>
         </div>
         @if (run.status === 'success') {
-          <p class="run-counts">
-            {{ run.skaters ?? 0 }} skaters ({{ run.skatersMatched ?? 0 }} Yahoo-matched) ·
-            {{ run.goalies ?? 0 }} goalies ({{ run.goaliesMatched ?? 0 }} matched)
-          </p>
-          @if (run.unmatchedCount) {
-            <details class="run-details">
-              <summary>{{ run.unmatchedCount }} unmatched — fell back to the NHL position</summary>
-              <ul>
-                @for (name of run.unmatched; track name) {
-                  <li>{{ name }}</li>
-                }
-              </ul>
-            </details>
-          }
+          <p class="run-counts">{{ run.skaters ?? 0 }} skaters · {{ run.goalies ?? 0 }} goalies</p>
           <p class="run-diff">
             <span class="diff-added">+{{ run.addedCount }} added</span>
             <span class="diff-removed">−{{ run.removedCount }} removed</span>
