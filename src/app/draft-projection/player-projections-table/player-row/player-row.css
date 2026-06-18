@@ -23,6 +23,10 @@ td.col-name {
   white-space: nowrap;
   padding-left: var(--space-3);
   color: var(--color-primary);
+  vertical-align: middle;
+}
+
+.player-name-content {
   display: flex;
   align-items: center;
   gap: 0.4rem;

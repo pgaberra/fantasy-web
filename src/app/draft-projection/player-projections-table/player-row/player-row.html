@@ -1,19 +1,21 @@
 <td class="col-rank">{{ rank() }}</td>
 <td class="col-name player-name">
-  @if (player().headshot) {
-    <img class="player-headshot" [src]="player().headshot" [alt]="player().name" loading="lazy" />
-  }
-  <span class="player-name-text">{{ player().name }} ({{ playerPosition() }})</span>
-  @if (player().teamAbbrev) {
-    <span class="player-team">{{ player().teamAbbrev }}</span>
-  }
-  @if (belowMinGames()) {
-    <span
-      class="below-min-games"
-      title="Projected for fewer games than the league's goalie minimum, so this goalie is ranked last."
-      >Below min. games</span
-    >
-  }
+  <div class="player-name-content">
+    @if (player().headshot) {
+      <img class="player-headshot" [src]="player().headshot" [alt]="player().name" loading="lazy" />
+    }
+    <span class="player-name-text">{{ player().name }} ({{ playerPosition() }})</span>
+    @if (player().teamAbbrev) {
+      <span class="player-team">{{ player().teamAbbrev }}</span>
+    }
+    @if (belowMinGames()) {
+      <span
+        class="below-min-games"
+        title="Projected for fewer games than the league's goalie minimum, so this goalie is ranked last."
+        >Below min. games</span
+      >
+    }
+  </div>
 </td>
 @for (col of activeColumns().utility; track col) {
   <td class="col-{{ col }}">
