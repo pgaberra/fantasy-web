@@ -64,6 +64,8 @@
       </span>
     </div>
 
+    <app-yahoo-league-sync class="yahoo-sync-block" (synced)="applyYahooSettings($event)" />
+
     <app-projection-settings-section
       [(scoringType)]="scoringType"
       [(activeScoringColumns)]="activeScoringColumns"

@@ -69,6 +69,12 @@
       }
     </div>
 
+    <div class="field">
+      <span class="field-label">Sync from Yahoo</span>
+      <p class="field-hint">Copy your Yahoo league's scoring and roster settings.</p>
+      <app-yahoo-league-sync (synced)="applyYahooSettings($event)" />
+    </div>
+
     <app-projection-settings-section
       [(scoringType)]="scoringType"
       [(activeScoringColumns)]="activeScoringColumns"

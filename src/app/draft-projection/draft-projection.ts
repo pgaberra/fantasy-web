@@ -18,6 +18,8 @@ import { Player } from '../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
 import { ActiveColumns, Projection, ScoringType } from '../models/projection.model';
 import { ProjectionSettingsSectionComponent } from './projection-settings-section/projection-settings-section';
+import { YahooLeagueSyncComponent } from './projection-settings-section/yahoo-league-sync/yahoo-league-sync';
+import { MappedLeagueSettings } from '../services/yahoo-league-mapping';
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import {
@@ -49,6 +51,7 @@ const AUTOSAVE_DEBOUNCE_MS = 1200;
   selector: 'app-draft-projection',
   imports: [
     ProjectionSettingsSectionComponent,
+    YahooLeagueSyncComponent,
     PlayerProjectionsTableComponent,
     LoadingIndicatorComponent,
     RouterLink,
@@ -132,6 +135,19 @@ export class DraftProjectionComponent implements OnInit {
       return;
     }
     this.openExisting(id);
+  }
+
+  applyYahooSettings(mapped: MappedLeagueSettings): void {
+    this.scoringType.set(mapped.scoringType);
+    this.activeScoringColumns.set(new Set(mapped.activeScoringColumns));
+    this.activeUtilityColumns.set(new Set(mapped.activeUtilityColumns));
+    if (mapped.leagueSize !== null) {
+      this.leagueSize.set(mapped.leagueSize);
+    }
+    this.rosterSlots.set(mapped.rosterSlots);
+    if (mapped.statWeights) {
+      this.statWeights.set(mapped.statWeights);
+    }
   }
 
   private openExisting(id: string): void {

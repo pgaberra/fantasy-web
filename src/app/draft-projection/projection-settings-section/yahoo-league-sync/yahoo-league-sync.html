@@ -1,0 +1,67 @@
+<div class="yahoo-sync">
+  @switch (connected()) {
+    @case (null) {
+      <span class="yahoo-sync-status">Checking your Yahoo connection…</span>
+    }
+    @case (false) {
+      <p class="yahoo-sync-desc">
+        Connect your Yahoo account to copy a league's scoring and roster settings.
+      </p>
+      <button type="button" class="btn btn-secondary" [disabled]="connecting()" (click)="connect()">
+        {{ connecting() ? 'Connecting…' : 'Connect Yahoo account' }}
+      </button>
+    }
+    @default {
+      @if (loadingLeagues()) {
+        <span class="yahoo-sync-status">Loading your Yahoo leagues…</span>
+      } @else if (leagues().length === 0) {
+        <p class="yahoo-sync-desc">No NHL leagues found on your Yahoo account.</p>
+      } @else {
+        <div class="yahoo-sync-controls">
+          <label class="yahoo-sync-label" for="yahoo-league">Yahoo league</label>
+          <select id="yahoo-league" class="yahoo-sync-select" (change)="onLeagueChange($event)">
+            <option value="">Select a league…</option>
+            @for (league of leagues(); track league.leagueKey) {
+              <option [value]="league.leagueKey" [selected]="league.leagueKey === selectedKey()">
+                {{ league.name }}
+              </option>
+            }
+          </select>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            [disabled]="!selectedKey() || syncing()"
+            (click)="sync()"
+          >
+            {{ syncing() ? 'Syncing…' : 'Sync settings from league' }}
+          </button>
+        </div>
+      }
+    }
+  }
+
+  @if (error()) {
+    <p class="yahoo-sync-error" role="alert">{{ error() }}</p>
+  }
+  @if (headToHead()) {
+    <p class="yahoo-sync-note" role="status">Head-to-head leagues aren't supported for sync yet.</p>
+  }
+  @if (summary(); as result) {
+    <div class="yahoo-sync-summary" role="status">
+      <p>
+        Synced from <strong>{{ result.leagueName }}</strong> ({{ result.scoringType }} scoring).
+      </p>
+      @if (result.unsupportedStats.length) {
+        <p class="yahoo-sync-muted">
+          Not synced (no equivalent): {{ result.unsupportedStats.join(', ') }}
+        </p>
+      }
+      @if (result.unsupportedRosterCodes.length) {
+        <p class="yahoo-sync-muted">
+          Roster slots approximated or skipped: {{ result.unsupportedRosterCodes.join(', ') }}
+        </p>
+      }
+      <p class="yahoo-sync-muted">Minimum goalie games isn't set by Yahoo — left unchanged.</p>
+    </div>
+  }
+</div>
