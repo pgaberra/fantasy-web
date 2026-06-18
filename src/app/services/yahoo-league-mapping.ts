@@ -80,23 +80,33 @@ export interface MappedLeagueSettings {
 }
 
 export interface LeagueSyncResult {
-  /** Null when the league can't be synced yet (head-to-head). */
-  mapped: MappedLeagueSettings | null;
-  headToHead: boolean;
+  mapped: MappedLeagueSettings;
   /** Yahoo scoring categories with no projection equivalent (e.g. GTG). */
   unsupportedStats: string[];
   /** Yahoo roster codes dropped or approximated (e.g. IR, W). */
   unsupportedRosterCodes: string[];
 }
 
-function mapScoringType(yahoo: string): SyncableScoringType | null {
-  if (yahoo === 'points') {
+/**
+ * Yahoo bundles the matchup format (head-to-head vs season-long) and the scoring basis
+ * (points vs categories) into a single `scoring_type` string: head/headpoint/headone are
+ * head-to-head, roto/point are season-long; head/roto/headone are categories, point/
+ * headpoint are points. Only the scoring basis affects how players are valued, so we
+ * ignore the matchup dimension and collapse to points vs category. Unrecognised codes
+ * fall back to the structural signal — points leagues carry a per-stat pointValue,
+ * category/roto leagues don't.
+ */
+function scoringBasis(settings: LeagueSettingsResponse): SyncableScoringType {
+  const code = settings.scoringType?.trim().toLowerCase();
+  if (code === 'point' || code === 'headpoint') {
     return 'points';
   }
-  if (yahoo === 'category') {
+  if (code === 'head' || code === 'roto' || code === 'headone') {
     return 'category';
   }
-  return null;
+  return settings.statCategories.some((category) => typeof category.pointValue === 'number')
+    ? 'points'
+    : 'category';
 }
 
 function emptyRoster(): RosterSlots {
@@ -143,21 +153,14 @@ function clampLeagueSize(numTeams: number | undefined): number | null {
 
 /**
  * Translate a Yahoo league's settings into projection settings (replace semantics).
- * Head-to-head leagues are not supported yet (mapped = null, headToHead = true).
+ * Works for every league type: the head-to-head vs season-long distinction doesn't affect
+ * player valuation, so only the scoring basis (points vs category) is mapped.
  */
 export function mapLeagueSettings(
   settings: LeagueSettingsResponse,
   numTeams?: number,
 ): LeagueSyncResult {
-  const scoringType = mapScoringType(settings.scoringType);
-  if (scoringType === null) {
-    return {
-      mapped: null,
-      headToHead: settings.scoringType === 'head',
-      unsupportedStats: [],
-      unsupportedRosterCodes: [],
-    };
-  }
+  const scoringType = scoringBasis(settings);
 
   const activeScoringColumns: ScoringStatKey[] = [];
   const activeUtilityColumns: UtilityStatKey[] = [];
@@ -200,7 +203,6 @@ export function mapLeagueSettings(
       rosterSlots,
       leagueSize: clampLeagueSize(numTeams),
     },
-    headToHead: false,
     unsupportedStats,
     unsupportedRosterCodes: unsupported,
   };

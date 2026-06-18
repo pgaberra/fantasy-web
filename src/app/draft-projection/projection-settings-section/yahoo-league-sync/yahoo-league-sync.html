@@ -70,9 +70,6 @@
   @if (error()) {
     <p class="yahoo-sync-error" role="alert">{{ error() }}</p>
   }
-  @if (headToHead()) {
-    <p class="yahoo-sync-note" role="status">Head-to-head leagues aren't supported for sync yet.</p>
-  }
   @if (summary(); as result) {
     <div class="yahoo-sync-summary" role="status">
       <p>

@@ -31,7 +31,6 @@ export class YahooLeagueSyncComponent implements OnInit {
   readonly selectedKey = signal<string | null>(null);
   readonly syncing = signal(false);
   readonly error = signal<string | null>(null);
-  readonly headToHead = signal(false);
   readonly summary = signal<SyncSummary | null>(null);
 
   ngOnInit(): void {
@@ -63,7 +62,6 @@ export class YahooLeagueSyncComponent implements OnInit {
   onLeagueChange(event: Event): void {
     this.selectedKey.set((event.target as HTMLSelectElement).value || null);
     this.summary.set(null);
-    this.headToHead.set(false);
   }
 
   sync(): void {
@@ -74,19 +72,11 @@ export class YahooLeagueSyncComponent implements OnInit {
     const league = this.leagues().find((candidate) => candidate.leagueKey === key);
     this.syncing.set(true);
     this.error.set(null);
-    this.headToHead.set(false);
     this.summary.set(null);
     this.yahoo.leagueSettings(key).subscribe({
       next: (settings) => {
         this.syncing.set(false);
         const result = mapLeagueSettings(settings, league?.numTeams);
-        if (!result.mapped) {
-          this.headToHead.set(result.headToHead);
-          if (!result.headToHead) {
-            this.error.set('This league type is not supported for sync yet.');
-          }
-          return;
-        }
         this.synced.emit(result.mapped);
         this.summary.set({
           leagueName: settings.name,

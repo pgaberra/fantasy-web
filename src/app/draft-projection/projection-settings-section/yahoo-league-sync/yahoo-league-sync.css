@@ -65,12 +65,6 @@
   margin: 0;
 }
 
-.yahoo-sync-note {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
 .yahoo-sync-summary {
   font-size: var(--text-sm);
   color: var(--color-primary);

@@ -19,7 +19,7 @@ describe('YahooLeagueSyncComponent', () => {
   const pointsSettings: LeagueSettingsResponse = {
     leagueKey: 'nhl.l.123',
     name: 'My League',
-    scoringType: 'points',
+    scoringType: 'headpoint',
     rosterPositions: [
       { count: 2, position: 'C' },
       { count: 4, position: 'D' },
@@ -32,7 +32,14 @@ describe('YahooLeagueSyncComponent', () => {
     ],
   };
 
-  const headToHeadSettings: LeagueSettingsResponse = { ...pointsSettings, scoringType: 'head' };
+  const categorySettings: LeagueSettingsResponse = {
+    ...pointsSettings,
+    scoringType: 'head',
+    statCategories: [
+      { statId: 1, name: 'Goals' },
+      { statId: 2, name: 'Assists' },
+    ],
+  };
 
   const buildConnected = (settings: LeagueSettingsResponse = pointsSettings) =>
     MockBuilder(YahooLeagueSyncComponent).mock(YahooService, {
@@ -82,11 +89,10 @@ describe('YahooLeagueSyncComponent', () => {
     expect(emitted.length).toEqual(1);
     expect(emitted[0].scoringType).toEqual('points');
     expect(component.summary()?.leagueName).toEqual('My League');
-    expect(component.headToHead()).toEqual(false);
   });
 
-  it('does not emit and flags head-to-head leagues as unsupported', async () => {
-    await buildConnected(headToHeadSettings);
+  it('syncs a head-to-head categories league as a category projection', async () => {
+    await buildConnected(categorySettings);
     const fixture = MockRender(YahooLeagueSyncComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
@@ -96,9 +102,9 @@ describe('YahooLeagueSyncComponent', () => {
     component.sync();
     await fixture.whenStable();
 
-    expect(emitted.length).toEqual(0);
-    expect(component.headToHead()).toEqual(true);
-    expect(component.summary()).toEqual(null);
+    expect(emitted.length).toEqual(1);
+    expect(emitted[0].scoringType).toEqual('category');
+    expect(component.summary()?.scoringType).toEqual('category');
   });
 
   it('surfaces an error when league settings fail to load', async () => {
