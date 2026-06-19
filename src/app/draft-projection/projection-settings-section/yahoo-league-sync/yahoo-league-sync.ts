@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, output, signal } from '@angular/core';
 import { YahooService } from '../../../services/yahoo.service';
 import { LeagueSummary } from '../../../api/models/league-summary';
-import { mapLeagueSettings, MappedLeagueSettings } from '../../../services/yahoo-league-mapping';
+import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
 
 interface SyncSummary {
   leagueName: string;
@@ -22,7 +22,7 @@ interface SyncSummary {
 export class YahooLeagueSyncComponent implements OnInit {
   private readonly yahoo = inject(YahooService);
 
-  readonly synced = output<MappedLeagueSettings>();
+  readonly synced = output<LeagueProjectionSettingsResponse>();
 
   readonly connected = signal<boolean | null>(null);
   readonly connecting = signal(false);
@@ -73,16 +73,15 @@ export class YahooLeagueSyncComponent implements OnInit {
     this.syncing.set(true);
     this.error.set(null);
     this.summary.set(null);
-    this.yahoo.leagueSettings(key).subscribe({
+    this.yahoo.leagueProjectionSettings(key).subscribe({
       next: (settings) => {
         this.syncing.set(false);
-        const result = mapLeagueSettings(settings, league?.numTeams);
-        this.synced.emit(result.mapped);
+        this.synced.emit(settings);
         this.summary.set({
-          leagueName: settings.name,
-          scoringType: result.mapped.scoringType,
-          unsupportedStats: result.unsupportedStats,
-          unsupportedRosterCodes: result.unsupportedRosterCodes,
+          leagueName: league?.name ?? 'your league',
+          scoringType: settings.scoringType,
+          unsupportedStats: settings.unsupportedStats,
+          unsupportedRosterCodes: settings.unsupportedRosterCodes,
         });
       },
       error: () => {

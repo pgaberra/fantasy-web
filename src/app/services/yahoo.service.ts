@@ -4,11 +4,11 @@ import { Api } from '../api/api';
 import { connect } from '../api/fn/yahoo/connect';
 import { connection } from '../api/fn/yahoo/connection';
 import { leagues } from '../api/fn/yahoo/leagues';
-import { settings } from '../api/fn/yahoo/settings';
+import { projectionSettings } from '../api/fn/yahoo/projection-settings';
 import {
   AuthorizeUrlResponse,
   ConnectionResponse,
-  LeagueSettingsResponse,
+  LeagueProjectionSettingsResponse,
   LeaguesResponse,
 } from '../api/models';
 
@@ -31,7 +31,7 @@ export class YahooService {
     return from(this.api.invoke(leagues));
   }
 
-  leagueSettings(leagueKey: string): Observable<LeagueSettingsResponse> {
-    return from(this.api.invoke(settings, { leagueKey }));
+  leagueProjectionSettings(leagueKey: string): Observable<LeagueProjectionSettingsResponse> {
+    return from(this.api.invoke(projectionSettings, { leagueKey }));
   }
 }

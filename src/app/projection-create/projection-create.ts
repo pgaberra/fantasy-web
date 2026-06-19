@@ -11,7 +11,7 @@ import { GoalieStats, Projection, ScoringType, SkaterStats } from '../models/pro
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { ProjectionSettingsSectionComponent } from '../draft-projection/projection-settings-section/projection-settings-section';
 import { YahooLeagueSyncComponent } from '../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
-import { MappedLeagueSettings } from '../services/yahoo-league-mapping';
+import { LeagueProjectionSettingsResponse } from '../api/models/league-projection-settings-response';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { InfoTooltipComponent } from '../shared/info-tooltip/info-tooltip';
 import {
@@ -117,16 +117,16 @@ export class ProjectionCreateComponent {
     this.copyFromId.set((event.target as HTMLSelectElement).value || null);
   }
 
-  applyYahooSettings(mapped: MappedLeagueSettings): void {
+  applyYahooSettings(mapped: LeagueProjectionSettingsResponse): void {
     this.scoringType.set(mapped.scoringType);
-    this.activeScoringColumns.set(new Set(mapped.activeScoringColumns));
-    this.activeUtilityColumns.set(new Set(mapped.activeUtilityColumns));
-    if (mapped.leagueSize !== null) {
+    this.activeScoringColumns.set(new Set(mapped.activeScoringColumns as ScoringStatKey[]));
+    this.activeUtilityColumns.set(new Set(mapped.activeUtilityColumns as SkaterUtilityStatKey[]));
+    if (mapped.leagueSize != null) {
       this.leagueSize.set(mapped.leagueSize);
     }
     this.rosterSlots.set(mapped.rosterSlots);
     if (mapped.statWeights) {
-      this.statWeights.set(mapped.statWeights);
+      this.statWeights.set(mapped.statWeights as Record<ScoringStatKey, number>);
     }
   }
 
