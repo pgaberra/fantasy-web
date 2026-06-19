@@ -13,6 +13,9 @@
   </div>
   @if (isSectionVisible()) {
     <p class="hint">Configure additional options for your player projections:</p>
+    <div class="settings-projected-slot">
+      <ng-content />
+    </div>
     <div class="projection-settings-list">
       <div class="settings-group">
         @if (collapsibleGroups()) {

@@ -10,6 +10,8 @@ import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
 import { GoalieStats, Projection, ScoringType, SkaterStats } from '../models/projection.model';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { ProjectionSettingsSectionComponent } from '../draft-projection/projection-settings-section/projection-settings-section';
+import { YahooLeagueSyncComponent } from '../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
+import { LeagueProjectionSettingsResponse } from '../api/models/league-projection-settings-response';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { InfoTooltipComponent } from '../shared/info-tooltip/info-tooltip';
 import {
@@ -39,6 +41,7 @@ type DataSource = 'last-season' | 'blank' | 'copy';
   selector: 'app-projection-create',
   imports: [
     ProjectionSettingsSectionComponent,
+    YahooLeagueSyncComponent,
     LoadingIndicatorComponent,
     InfoTooltipComponent,
     RouterLink,
@@ -81,6 +84,7 @@ export class ProjectionCreateComponent {
   leagueSize = signal<number>(DEFAULT_LEAGUE_SIZE);
   rosterSlots = signal<RosterSlots>(DEFAULT_ROSTER_SLOTS);
   minGoalieGames = signal<number>(DEFAULT_MIN_GOALIE_GAMES);
+  statWeights = signal<Record<ScoringStatKey, number>>(DEFAULT_STAT_WEIGHTS);
 
   readonly canCreate = computed(
     () =>
@@ -111,6 +115,19 @@ export class ProjectionCreateComponent {
 
   onCopyFromChange(event: Event): void {
     this.copyFromId.set((event.target as HTMLSelectElement).value || null);
+  }
+
+  applyYahooSettings(mapped: LeagueProjectionSettingsResponse): void {
+    this.scoringType.set(mapped.scoringType);
+    this.activeScoringColumns.set(new Set(mapped.activeScoringColumns as ScoringStatKey[]));
+    this.activeUtilityColumns.set(new Set(mapped.activeUtilityColumns as SkaterUtilityStatKey[]));
+    if (mapped.leagueSize != null) {
+      this.leagueSize.set(mapped.leagueSize);
+    }
+    this.rosterSlots.set(mapped.rosterSlots);
+    if (mapped.statWeights) {
+      this.statWeights.set(mapped.statWeights as Record<ScoringStatKey, number>);
+    }
   }
 
   create(): void {
@@ -147,7 +164,7 @@ export class ProjectionCreateComponent {
   private buildState(playerProjections: Projection[]): ProjectionState {
     return {
       scoringType: this.scoringType(),
-      statWeights: DEFAULT_STAT_WEIGHTS,
+      statWeights: this.statWeights(),
       activeScoringColumns: this.activeScoringColumns(),
       activeUtilityColumns: this.activeUtilityColumns(),
       scaleSettings: this.scaleSettings(),

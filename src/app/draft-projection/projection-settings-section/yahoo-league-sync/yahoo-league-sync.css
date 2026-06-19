@@ -1,0 +1,79 @@
+:host {
+  display: block;
+}
+
+.yahoo-sync {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+}
+
+.yahoo-sync-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+}
+
+.yahoo-sync-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+
+.yahoo-logo {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+  color: #6001d2;
+}
+
+.yahoo-sync-action,
+.yahoo-sync-controls {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.yahoo-sync-select {
+  font-size: var(--text-sm);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  max-width: 14rem;
+}
+
+.yahoo-sync-status {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.yahoo-sync-error {
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+  margin: 0;
+}
+
+.yahoo-sync-summary {
+  font-size: var(--text-sm);
+  color: var(--color-primary);
+}
+
+.yahoo-sync-summary p {
+  margin: 0 0 var(--space-1);
+}
+
+.yahoo-sync-muted {
+  color: var(--color-text-muted);
+}
