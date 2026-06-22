@@ -1,7 +1,6 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { ProjectionsTableHeaderComponent } from './projections-table-header';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../../../models/stat-key.model';
-import { ActiveColumns, ScoringType } from '../../../models/projection.model';
 import { DEFAULT_DECIMAL_SETTINGS, DecimalStatKey } from '../../projection-settings-section/model';
 import { StatLabelPipe } from '../../../pipes/stat-label.pipe';
 
@@ -57,8 +56,8 @@ describe('ProjectionsTableHeaderComponent', () => {
       activeColumns: {
         scoring: new Set<ScoringStatKey>(['goals', 'assists']),
         utility: new Set<SkaterUtilityStatKey>(['gp']),
-      } as ActiveColumns,
-      scoringType: 'category' as ScoringType,
+      },
+      scoringType: 'category',
       statWeights: mockStatWeights,
       useDefaultDecimals: true,
       decimalSettings: DEFAULT_DECIMAL_SETTINGS,
@@ -141,7 +140,7 @@ describe('ProjectionsTableHeaderComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['goals', 'assists']),
           utility: new Set<SkaterUtilityStatKey>(['gp']),
-        } as ActiveColumns,
+        },
       });
       const headers = ngMocks.findAll('th').map((th) => th.nativeElement.textContent.trim());
       expect(headers).toContain('GP');
@@ -152,7 +151,7 @@ describe('ProjectionsTableHeaderComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['goals', 'assists']),
           utility: new Set<SkaterUtilityStatKey>(['gp']),
-        } as ActiveColumns,
+        },
       });
       const headers = ngMocks.findAll('th').map((th) => th.nativeElement.textContent.trim());
       expect(headers).toContain('Goals');
@@ -176,7 +175,7 @@ describe('ProjectionsTableHeaderComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['goals']),
           utility: new Set<SkaterUtilityStatKey>(),
-        } as ActiveColumns,
+        },
       });
       const component = ngMocks.find(
         fixture.debugElement,
@@ -206,7 +205,7 @@ describe('ProjectionsTableHeaderComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['goals']),
           utility: new Set<SkaterUtilityStatKey>(['gp']),
-        } as ActiveColumns,
+        },
       });
       const input = ngMocks.find('.weight-row input').nativeElement as HTMLInputElement;
       expect(input.value).toEqual('4.5');
@@ -218,7 +217,7 @@ describe('ProjectionsTableHeaderComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['goals']),
           utility: new Set<SkaterUtilityStatKey>(['gp']),
-        } as ActiveColumns,
+        },
       });
       const component = ngMocks.find(
         fixture.debugElement,
@@ -246,7 +245,7 @@ describe('ProjectionsTableHeaderComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['goals', 'assists']),
           utility: new Set<SkaterUtilityStatKey>(),
-        } as ActiveColumns,
+        },
       });
       expect(ngMocks.findAll('.decimal-row input')).toHaveLength(2);
     });
@@ -257,7 +256,7 @@ describe('ProjectionsTableHeaderComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['goals']),
           utility: new Set<SkaterUtilityStatKey>(),
-        } as ActiveColumns,
+        },
       });
       const component = ngMocks.find(
         fixture.debugElement,
@@ -275,7 +274,7 @@ describe('ProjectionsTableHeaderComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(),
           utility: new Set<SkaterUtilityStatKey>(['gp']),
-        } as ActiveColumns,
+        },
       });
       expect(ngMocks.findAll('.decimal-row input')).toHaveLength(1);
     });
@@ -286,7 +285,7 @@ describe('ProjectionsTableHeaderComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(),
           utility: new Set<SkaterUtilityStatKey>(['gp']),
-        } as ActiveColumns,
+        },
       });
       const component = ngMocks.find(
         fixture.debugElement,

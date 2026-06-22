@@ -164,7 +164,7 @@ export class DraftProjectionComponent implements OnInit {
           this.projectionLoaded.set(true);
           this.autosaveEnabled.set(true);
         },
-        error: () => this.router.navigate(['/projections']),
+        error: () => void this.router.navigate(['/projections']),
       });
   }
 

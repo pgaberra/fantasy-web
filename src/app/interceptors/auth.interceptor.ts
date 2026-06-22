@@ -1,5 +1,5 @@
 import { inject } from '@angular/core';
-import { HttpInterceptorFn, HttpStatusCode } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn, HttpStatusCode } from '@angular/common/http';
 import { catchError, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
@@ -13,8 +13,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       : req;
 
   return next(authReq).pipe(
-    catchError((error) => {
-      const isUnauthorized = error.status === HttpStatusCode.Unauthorized;
+    catchError((error: unknown) => {
+      const isUnauthorized =
+        error instanceof HttpErrorResponse && error.status === HttpStatusCode.Unauthorized;
 
       if (!isUnauthorized || isAuthEndpoint) {
         return throwError(() => error);
@@ -29,7 +30,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         switchMap((response) =>
           next(req.clone({ setHeaders: { Authorization: `Bearer ${response.token}` } })),
         ),
-        catchError((refreshError) => {
+        catchError((refreshError: unknown) => {
           authService.logout();
           return throwError(() => refreshError);
         }),

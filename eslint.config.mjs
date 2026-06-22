@@ -4,8 +4,11 @@ import angular from 'angular-eslint';
 
 export default tseslint.config(
   {
+    ignores: ['src/app/api/**'],
+  },
+  {
     files: ['**/*.ts'],
-    extends: [...tseslint.configs.recommended, ...angular.configs.tsRecommended],
+    extends: [...tseslint.configs.recommendedTypeChecked, ...angular.configs.tsRecommended],
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -14,6 +17,26 @@ export default tseslint.config(
     processor: angular.processInlineTemplates,
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
+      // require-await is a stylistic rule, not a defect detector, and false-positives
+      // on Promise-contract callbacks (e.g. @angular/forms/signals submit actions).
+      '@typescript-eslint/require-await': 'off',
+      // no-unsafe-enum-comparison false-positives on the idiomatic comparison of
+      // HttpErrorResponse.status (number) against the HttpStatusCode enum, which is safe.
+      '@typescript-eslint/no-unsafe-enum-comparison': 'off',
+    },
+  },
+  {
+    files: ['**/*.spec.ts'],
+    rules: {
+      // Angular's TestBed types fixture.nativeElement / inject() mocks as `any`,
+      // so the type-unsafe-flow rules fire on idiomatic test code. Explicit `any`
+      // stays banned via no-explicit-any (inherited).
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/unbound-method': 'off',
     },
   },
   {

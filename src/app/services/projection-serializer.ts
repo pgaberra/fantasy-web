@@ -69,7 +69,7 @@ export function fromProjectionData(data: ProjectionData): ProjectionState {
     };
   }
   return {
-    scoringType: data.settings.scoringType as ScoringType,
+    scoringType: data.settings.scoringType,
     statWeights: data.settings.statWeights as Record<ScoringStatKey, number>,
     activeScoringColumns: new Set(data.settings.activeScoringColumns as ScoringStatKey[]),
     activeUtilityColumns: new Set(data.settings.activeUtilityColumns as SkaterUtilityStatKey[]),
