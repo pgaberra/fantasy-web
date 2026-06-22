@@ -186,13 +186,13 @@ export class PlayerProjectionsTableComponent implements OnInit {
       if (pp.type === 'skater') {
         const roundedScoring: SkaterScoringStats = { ...pp.stats.scoring };
         SKATER_SCORING_STAT_KEYS.forEach((key) => {
-          roundedScoring[key] = this.roundStat(roundedScoring[key], key as DecimalStatKey);
+          roundedScoring[key] = this.roundStat(roundedScoring[key], key);
         });
         return { ...pp, stats: { ...pp.stats, scoring: roundedScoring } };
       }
       const roundedScoring: GoalieScoringStats = { ...pp.stats.scoring };
       GOALIE_SCORING_STAT_KEYS.forEach((key) => {
-        roundedScoring[key] = this.roundStat(roundedScoring[key], key as DecimalStatKey);
+        roundedScoring[key] = this.roundStat(roundedScoring[key], key);
       });
       return { ...pp, stats: { ...pp.stats, scoring: roundedScoring } };
     });

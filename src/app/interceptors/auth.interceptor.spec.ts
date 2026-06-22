@@ -45,7 +45,7 @@ describe('authInterceptor', () => {
 
     await run(new HttpRequest('GET', '/api/v1/players/skaters'), next);
 
-    const forwarded = next.mock.calls[0][0] as HttpRequest<unknown>;
+    const forwarded = next.mock.calls[0][0];
     expect(forwarded.headers.get('Authorization')).toEqual('Bearer access');
   });
 
@@ -55,7 +55,7 @@ describe('authInterceptor', () => {
 
     await run(new HttpRequest('POST', '/api/v1/auth/refresh', {}), next);
 
-    const forwarded = next.mock.calls[0][0] as HttpRequest<unknown>;
+    const forwarded = next.mock.calls[0][0];
     expect(forwarded.headers.get('Authorization')).toBeNull();
   });
 
@@ -71,7 +71,7 @@ describe('authInterceptor', () => {
     await run(new HttpRequest('GET', '/api/v1/players/skaters'), next);
 
     expect(authService.refresh).toHaveBeenCalledTimes(1);
-    const retried = next.mock.calls[1][0] as HttpRequest<unknown>;
+    const retried = next.mock.calls[1][0];
     expect(retried.headers.get('Authorization')).toEqual('Bearer new-access');
   });
 

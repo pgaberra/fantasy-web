@@ -50,11 +50,11 @@ export class ResetPasswordComponent {
       maxLength(fields.password, PASSWORD_MAX_LENGTH, {
         message: 'Password must be at most 72 characters.',
       });
-      validate(fields.confirmPassword, ({ value, valueOf }) => {
-        if (value().length === 0) {
+      validate(fields.confirmPassword, (ctx) => {
+        if (ctx.value().length === 0) {
           return { kind: 'required', message: 'Please confirm your password.' };
         }
-        if (value() !== valueOf(fields.password)) {
+        if (ctx.value() !== ctx.valueOf(fields.password)) {
           return { kind: 'passwordMismatch', message: 'Passwords do not match.' };
         }
         return undefined;

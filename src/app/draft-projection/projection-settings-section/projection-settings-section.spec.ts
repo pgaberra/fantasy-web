@@ -73,7 +73,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
         activeScoringColumns: defaultActiveScoringColumns,
         scaleSettings: MOCK_SCALE_SETTINGS,
-        scoringType: 'points' as ScoringType,
+        scoringType: 'points',
         showDecimalsSetting: false,
         showUtilityStats: false,
         initiallyExpanded: true,
@@ -92,7 +92,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
         activeScoringColumns: defaultActiveScoringColumns,
         scaleSettings: MOCK_SCALE_SETTINGS,
-        scoringType: 'points' as ScoringType,
+        scoringType: 'points',
         showUtilityStats: false,
         initiallyExpanded: true,
         collapsibleGroups: false,
@@ -182,7 +182,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
         activeScoringColumns: defaultActiveScoringColumns,
         scaleSettings: MOCK_SCALE_SETTINGS,
-        scoringType: 'points' as ScoringType,
+        scoringType: 'points',
       });
       const component = fixture.point.componentInstance;
       component.toggleSectionVisible();
@@ -211,7 +211,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
         activeScoringColumns: defaultActiveScoringColumns,
         scaleSettings: MOCK_SCALE_SETTINGS,
-        scoringType: 'points' as ScoringType,
+        scoringType: 'points',
       });
       const component = fixture.point.componentInstance;
       component.toggleSectionVisible();
@@ -234,7 +234,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['toiPerGame']),
         activeScoringColumns,
         scaleSettings: MOCK_SCALE_SETTINGS,
-        scoringType: 'points' as ScoringType,
+        scoringType: 'points',
       });
       const component = fixture.point.componentInstance;
       component.toggleSectionVisible();
@@ -261,7 +261,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
         activeScoringColumns,
         scaleSettings: MOCK_SCALE_SETTINGS,
-        scoringType: 'points' as ScoringType,
+        scoringType: 'points',
       });
       const component = fixture.point.componentInstance;
       component.toggleSectionVisible();
@@ -294,7 +294,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
         activeScoringColumns: defaultActiveScoringColumns,
         scaleSettings: MOCK_SCALE_SETTINGS,
-        scoringType: 'points' as ScoringType,
+        scoringType: 'points',
       });
       const component = fixture.point.componentInstance;
       component.toggleSectionVisible();
@@ -320,7 +320,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
         activeScoringColumns: defaultActiveScoringColumns,
         scaleSettings: MOCK_SCALE_SETTINGS,
-        scoringType: 'points' as ScoringType,
+        scoringType: 'points',
       });
       const component = fixture.point.componentInstance;
       component.toggleSectionVisible();

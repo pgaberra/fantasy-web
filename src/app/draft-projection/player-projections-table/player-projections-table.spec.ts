@@ -190,13 +190,13 @@ describe('PlayerProjectionsTableComponent', () => {
   ) =>
     MockRender(PlayerProjectionsTableComponent, {
       players: mockPlayers,
-      scoringType: 'category' as ScoringType,
+      scoringType: 'category',
       playerProjections: mockPlayerProjections,
       statWeights: mockStatWeights,
       activeColumns: {
         scoring: new Set<ScoringStatKey>(['goals', 'assists']),
         utility: new Set<SkaterUtilityStatKey>(['gp']),
-      } as ActiveColumns,
+      },
       scaleSettings: mockScaleSettings,
       useDefaultDecimals: true,
       ...overrides,
@@ -272,7 +272,7 @@ describe('PlayerProjectionsTableComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['goals', 'assists']),
           utility: new Set<SkaterUtilityStatKey>(['toiPerGame']),
-        } as ActiveColumns,
+        },
       });
       const event = new KeyboardEvent('keydown', { key: 'ArrowUp' });
       vi.spyOn(event, 'preventDefault');
@@ -289,7 +289,7 @@ describe('PlayerProjectionsTableComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['goals', 'assists']),
           utility: new Set<SkaterUtilityStatKey>(['toiPerGame']),
-        } as ActiveColumns,
+        },
       });
       const event = new KeyboardEvent('keydown', { key: 'ArrowDown' });
       vi.spyOn(event, 'preventDefault');
@@ -306,7 +306,7 @@ describe('PlayerProjectionsTableComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['goals', 'assists']),
           utility: new Set<SkaterUtilityStatKey>(['toiPerGame']),
-        } as ActiveColumns,
+        },
       });
       // Set toiPerGame to 0 first
       component.onStatInput(1, 'toiPerGame', { target: { value: '0:00' } } as unknown as Event);
@@ -323,7 +323,7 @@ describe('PlayerProjectionsTableComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['goals', 'assists']),
           utility: new Set<SkaterUtilityStatKey>(['toiPerGame']),
-        } as ActiveColumns,
+        },
       });
       const before = (
         component.playerProjections().find((p) => p.playerId === 2) as SkaterProjection
@@ -340,7 +340,7 @@ describe('PlayerProjectionsTableComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['goals', 'assists']),
           utility: new Set<SkaterUtilityStatKey>(['toiPerGame']),
-        } as ActiveColumns,
+        },
       });
       const before = (
         component.playerProjections().find((p) => p.playerId === 1) as SkaterProjection
@@ -380,13 +380,13 @@ describe('PlayerProjectionsTableComponent', () => {
       const missing: Projection = { ...mockPlayerProjections[0], playerId: 999 };
       const fixture = MockRender(PlayerProjectionsTableComponent, {
         players: mockPlayers,
-        scoringType: 'category' as ScoringType,
+        scoringType: 'category',
         initialProjections: [mockPlayerProjections[0], missing],
         statWeights: mockStatWeights,
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['goals', 'assists']),
           utility: new Set<SkaterUtilityStatKey>(['gp']),
-        } as ActiveColumns,
+        },
         scaleSettings: mockScaleSettings,
         useDefaultDecimals: true,
       });
@@ -451,14 +451,14 @@ describe('PlayerProjectionsTableComponent', () => {
       type: 'goalie',
       playerId: 4,
       stats: {
-        scoring: (lowGpGoalie as Goalie).stats.scoring,
-        utility: (lowGpGoalie as Goalie).stats.utility,
+        scoring: lowGpGoalie.stats.scoring,
+        utility: lowGpGoalie.stats.utility,
       },
     };
     const ratingColumns = {
       scoring: new Set<ScoringStatKey>(['w', 'gaa', 'svPct']),
       utility: new Set<SkaterUtilityStatKey>(['gp']),
-    } as ActiveColumns;
+    };
 
     it('ranks a goalie below the minimum games last in the summary sort', () => {
       const component = getComponent({
@@ -542,7 +542,7 @@ describe('PlayerProjectionsTableComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['w']),
           utility: new Set<SkaterUtilityStatKey>(['gp']),
-        } as ActiveColumns,
+        },
       });
 
       const zScoreOf = (id: number) =>
@@ -659,7 +659,7 @@ describe('PlayerProjectionsTableComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['goals', 'assists']),
           utility: new Set<SkaterUtilityStatKey>(['gp']),
-        } as ActiveColumns,
+        },
       });
       const headers = ngMocks.findAll('thead th').map((th) => th.nativeElement.textContent.trim());
       expect(headers).toContain('GP');
@@ -670,7 +670,7 @@ describe('PlayerProjectionsTableComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['goals', 'assists']),
           utility: new Set<SkaterUtilityStatKey>(),
-        } as ActiveColumns,
+        },
       });
       const headers = ngMocks.findAll('thead th').map((th) => th.nativeElement.textContent.trim());
       expect(headers).not.toContain('GP');
@@ -703,7 +703,7 @@ describe('PlayerProjectionsTableComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['goals', 'assists']),
           utility: new Set<SkaterUtilityStatKey>(['toiPerGame']),
-        } as ActiveColumns,
+        },
       });
       const toiInput = ngMocks.find('.col-toiPerGame input').nativeElement as HTMLInputElement;
       expect(toiInput.type).toEqual('text');
@@ -715,7 +715,7 @@ describe('PlayerProjectionsTableComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['goals', 'assists']),
           utility: new Set<SkaterUtilityStatKey>(['gp']),
-        } as ActiveColumns,
+        },
       });
       const gpInput = ngMocks.find('.col-gp input').nativeElement as HTMLInputElement;
       expect(gpInput.type).toEqual('number');
@@ -726,7 +726,7 @@ describe('PlayerProjectionsTableComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['shPct']),
           utility: new Set<SkaterUtilityStatKey>(),
-        } as ActiveColumns,
+        },
       });
       const shPctInput = ngMocks.find('app-stat-input input').nativeElement as HTMLInputElement;
       expect(shPctInput.getAttribute('max')).toEqual('100');
@@ -737,7 +737,7 @@ describe('PlayerProjectionsTableComponent', () => {
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['svPct']),
           utility: new Set<SkaterUtilityStatKey>(),
-        } as ActiveColumns,
+        },
       });
       const svPctInput = ngMocks.find('app-stat-input input').nativeElement as HTMLInputElement;
       expect(svPctInput.getAttribute('max')).toEqual('100');

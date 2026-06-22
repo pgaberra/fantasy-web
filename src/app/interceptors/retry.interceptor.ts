@@ -21,7 +21,7 @@ export const retryInterceptor: HttpInterceptorFn = (req, next) =>
   next(req).pipe(
     retry({
       count: MAX_RETRIES,
-      delay: (error, retryCount) =>
+      delay: (error: unknown, retryCount) =>
         isTransientError(error) ? timer(retryBackoffMs(retryCount)) : throwError(() => error),
     }),
   );

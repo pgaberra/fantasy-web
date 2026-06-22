@@ -15,7 +15,6 @@ import { LeagueProjectionSettingsResponse } from '../api/models/league-projectio
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { InfoTooltipComponent } from '../shared/info-tooltip/info-tooltip';
 import {
-  DecimalStatKey,
   DEFAULT_DECIMAL_SETTINGS,
   ScaleConfig,
 } from '../draft-projection/projection-settings-section/model';
@@ -168,7 +167,7 @@ export class ProjectionCreateComponent {
       activeScoringColumns: this.activeScoringColumns(),
       activeUtilityColumns: this.activeUtilityColumns(),
       scaleSettings: this.scaleSettings(),
-      decimalSettings: DEFAULT_DECIMAL_SETTINGS as Record<DecimalStatKey, number>,
+      decimalSettings: DEFAULT_DECIMAL_SETTINGS,
       useDefaultDecimals: this.useDefaultDecimals(),
       leagueSize: this.leagueSize(),
       rosterSlots: this.rosterSlots(),
@@ -198,8 +197,8 @@ export class ProjectionCreateComponent {
     const zero = (record: Record<string, number>): Record<string, number> =>
       Object.fromEntries(Object.keys(record).map((key) => [key, 0]));
     return {
-      utility: zero(stats.utility as Record<string, number>),
-      scoring: zero(stats.scoring as Record<string, number>),
+      utility: zero(stats.utility),
+      scoring: zero(stats.scoring),
     } as SkaterStats | GoalieStats;
   }
 }
