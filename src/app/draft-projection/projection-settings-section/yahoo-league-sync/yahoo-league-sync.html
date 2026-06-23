@@ -80,12 +80,6 @@
           Not synced (no equivalent): {{ result.unsupportedStats.join(', ') }}
         </p>
       }
-      @if (result.unsupportedRosterCodes.length) {
-        <p class="yahoo-sync-muted">
-          Roster slots approximated or skipped: {{ result.unsupportedRosterCodes.join(', ') }}
-        </p>
-      }
-      <p class="yahoo-sync-muted">Minimum goalie games isn't set by Yahoo — left unchanged.</p>
     </div>
   }
 </div>
