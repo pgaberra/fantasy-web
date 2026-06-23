@@ -60,9 +60,9 @@ describe('ProjectionSettingsSectionComponent', () => {
     });
     const component = fixture.point.componentInstance;
     component.toggleSectionVisible();
-    component.toggleGeneralVisible();
-    component.toggleScoringStatsVisible();
+    component.toggleLeagueSettingsVisible();
     component.toggleUtilityStatsVisible();
+    component.toggleAdditionalSettingsVisible();
     fixture.detectChanges();
     return { fixture, component };
   };
@@ -78,7 +78,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         showUtilityStats: false,
         initiallyExpanded: true,
       });
-      fixture.point.componentInstance.toggleGeneralVisible();
+      fixture.point.componentInstance.toggleLeagueSettingsVisible();
       fixture.detectChanges();
 
       const text = fixture.nativeElement.textContent;
@@ -102,8 +102,8 @@ describe('ProjectionSettingsSectionComponent', () => {
       const text = fixture.nativeElement.textContent;
       expect(text).toContain('League Type');
       expect(text).toContain('Points');
-      expect(text).not.toContain('General');
-      expect(text).not.toContain('Scoring Stats');
+      expect(text).not.toContain('League Settings');
+      expect(text).not.toContain('Additional Settings');
       expect(fixture.nativeElement.querySelectorAll('.settings-group-header').length).toEqual(0);
       expect(fixture.nativeElement.querySelectorAll('app-stat-group').length).toEqual(2);
     });
@@ -137,10 +137,12 @@ describe('ProjectionSettingsSectionComponent', () => {
   });
 
   describe('template', () => {
-    it('should render a "General" header', () => {
+    it('should render an "Additional Settings" header', () => {
       getExpandedFixture();
       const titles = ngMocks.findAll('.settings-group-title');
-      expect(titles.some((t) => t.nativeElement.textContent.trim() === 'General')).toEqual(true);
+      expect(
+        titles.some((t) => t.nativeElement.textContent.trim() === 'Additional Settings'),
+      ).toEqual(true);
     });
 
     it('should render a toggle for each utility stat key', () => {
@@ -166,13 +168,14 @@ describe('ProjectionSettingsSectionComponent', () => {
       const toggles = ngMocks.findAll('.toggle-switch');
       const onToggles = toggles.filter((t) => t.classes['on']);
       expect(onToggles.length).toEqual(1);
-      expect(toggles[0].classes['on']).toEqual(true);
+      // The decimals toggle now lives in the last group (Additional Settings).
+      expect(toggles[toggles.length - 1].classes['on']).toEqual(true);
     });
 
     it('should call toggle() when a toggle switch is clicked', () => {
       const { component } = getExpandedFixture(new Set<SkaterUtilityStatKey>(['gp', 'toiPerGame']));
       const toggles = ngMocks.findAll('.toggle-switch');
-      const firstUtilityToggle = toggles[1]; // index 0 is the "Use default decimal places" toggle
+      const firstUtilityToggle = toggles[0]; // utility main toggles come first; decimals is now last
       ngMocks.click(firstUtilityToggle);
       expect(component.activeUtilityColumns().size).not.toEqual(2);
     });
@@ -275,11 +278,11 @@ describe('ProjectionSettingsSectionComponent', () => {
   });
 
   describe('visibility toggles', () => {
-    it('should toggle general visibility', () => {
+    it('should toggle additional settings visibility', () => {
       const component = getComponent();
-      expect(component.isGeneralVisible()).toEqual(false);
-      component.toggleGeneralVisible();
-      expect(component.isGeneralVisible()).toEqual(true);
+      expect(component.isAdditionalSettingsVisible()).toEqual(false);
+      component.toggleAdditionalSettingsVisible();
+      expect(component.isAdditionalSettingsVisible()).toEqual(true);
     });
 
     it('should toggle utility stats visibility', () => {
@@ -289,7 +292,7 @@ describe('ProjectionSettingsSectionComponent', () => {
       expect(component.isUtilityStatsVisible()).toEqual(true);
     });
 
-    it('should hide general settings when isGeneralVisible is false', () => {
+    it('should hide additional settings when isAdditionalSettingsVisible is false', () => {
       const fixture = MockRender(ProjectionSettingsSectionComponent, {
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
         activeScoringColumns: defaultActiveScoringColumns,
@@ -298,7 +301,7 @@ describe('ProjectionSettingsSectionComponent', () => {
       });
       const component = fixture.point.componentInstance;
       component.toggleSectionVisible();
-      component.toggleGeneralVisible();
+      component.toggleAdditionalSettingsVisible();
       fixture.detectChanges();
 
       let settingRows = ngMocks.findAll(SettingRowComponent);
@@ -306,7 +309,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         settingRows.some((r) => r.componentInstance.name() === 'Use default decimal places'),
       ).toEqual(true);
 
-      component.toggleGeneralVisible();
+      component.toggleAdditionalSettingsVisible();
       fixture.detectChanges();
 
       settingRows = ngMocks.findAll(SettingRowComponent);
@@ -335,8 +338,24 @@ describe('ProjectionSettingsSectionComponent', () => {
       fixture.detectChanges();
 
       settingRows = ngMocks.findAll(SettingRowComponent);
-      // Utility stats hidden; General is also collapsed, so no setting rows remain
+      // Utility stats hidden; League Settings + Additional Settings are also collapsed,
+      // so no setting rows remain
       expect(settingRows.length).toEqual(0);
+    });
+  });
+
+  describe('min goalie games', () => {
+    it('clamps the minimum goalie games to 0..82', () => {
+      const component = getComponent();
+
+      component.onMinGoalieGamesInput({ target: { value: '-5' } } as unknown as Event);
+      expect(component.minGoalieGames()).toEqual(0);
+
+      component.onMinGoalieGamesInput({ target: { value: '100' } } as unknown as Event);
+      expect(component.minGoalieGames()).toEqual(82);
+
+      component.onMinGoalieGamesInput({ target: { value: '25' } } as unknown as Event);
+      expect(component.minGoalieGames()).toEqual(25);
     });
   });
 });

@@ -13,9 +13,6 @@
   </div>
   @if (isSectionVisible()) {
     <p class="hint">Configure additional options for your player projections:</p>
-    <div class="settings-projected-slot">
-      <ng-content />
-    </div>
     <div class="projection-settings-list">
       <div class="settings-group">
         @if (collapsibleGroups()) {
@@ -23,16 +20,19 @@
             class="settings-group-header"
             role="button"
             tabindex="0"
-            [attr.aria-expanded]="isGeneralVisible()"
-            (click)="toggleGeneralVisible()"
-            (keydown.enter)="toggleGeneralVisible()"
-            (keydown.space)="toggleGeneralVisible(); $event.preventDefault()"
+            [attr.aria-expanded]="isLeagueSettingsVisible()"
+            (click)="toggleLeagueSettingsVisible()"
+            (keydown.enter)="toggleLeagueSettingsVisible()"
+            (keydown.space)="toggleLeagueSettingsVisible(); $event.preventDefault()"
           >
-            <h3 class="settings-group-title">General</h3>
-            <span class="advanced-toggle-icon" [class.open]="isGeneralVisible()"></span>
+            <h3 class="settings-group-title">League Settings</h3>
+            <span class="advanced-toggle-icon" [class.open]="isLeagueSettingsVisible()"></span>
           </div>
         }
-        @if (isGeneralExpanded()) {
+        @if (isLeagueSettingsExpanded()) {
+          <div class="settings-projected-slot">
+            <ng-content />
+          </div>
           <app-setting-row name="League Type">
             <div class="radio-group">
               <label class="radio-label">
@@ -58,42 +58,8 @@
             </div>
           </app-setting-row>
           @if (scoringType() === 'category') {
-            <app-category-settings
-              [(leagueSize)]="leagueSize"
-              [(rosterSlots)]="rosterSlots"
-              [(minGoalieGames)]="minGoalieGames"
-            />
+            <app-category-settings [(leagueSize)]="leagueSize" [(rosterSlots)]="rosterSlots" />
           }
-          @if (showDecimalsSetting()) {
-            <app-setting-row
-              name="Use default decimal places"
-              desc="By default, stats are rounded to whole numbers (except SH% which has 1 decimal). Disable to customize decimals per stat."
-            >
-              <app-toggle-switch
-                [on]="useDefaultDecimals()"
-                ariaLabel="Use default decimal places"
-                (toggled)="toggleUseDefaultDecimals()"
-              />
-            </app-setting-row>
-          }
-        }
-      </div>
-      <div class="settings-group">
-        @if (collapsibleGroups()) {
-          <div
-            class="settings-group-header"
-            role="button"
-            tabindex="0"
-            [attr.aria-expanded]="isScoringStatsVisible()"
-            (click)="toggleScoringStatsVisible()"
-            (keydown.enter)="toggleScoringStatsVisible()"
-            (keydown.space)="toggleScoringStatsVisible(); $event.preventDefault()"
-          >
-            <h3 class="settings-group-title">Scoring Stats</h3>
-            <span class="advanced-toggle-icon" [class.open]="isScoringStatsVisible()"></span>
-          </div>
-        }
-        @if (isScoringStatsExpanded()) {
           <app-stat-group
             title="Skater Stats"
             [activeStats]="activeSkaterStats()"
@@ -211,6 +177,51 @@
           }
         </div>
       }
+      <div class="settings-group">
+        @if (collapsibleGroups()) {
+          <div
+            class="settings-group-header"
+            role="button"
+            tabindex="0"
+            [attr.aria-expanded]="isAdditionalSettingsVisible()"
+            (click)="toggleAdditionalSettingsVisible()"
+            (keydown.enter)="toggleAdditionalSettingsVisible()"
+            (keydown.space)="toggleAdditionalSettingsVisible(); $event.preventDefault()"
+          >
+            <h3 class="settings-group-title">Additional Settings</h3>
+            <span class="advanced-toggle-icon" [class.open]="isAdditionalSettingsVisible()"></span>
+          </div>
+        }
+        @if (isAdditionalSettingsExpanded()) {
+          @if (showDecimalsSetting()) {
+            <app-setting-row
+              name="Use default decimal places"
+              desc="By default, stats are rounded to whole numbers (except SH% which has 1 decimal). Disable to customize decimals per stat."
+            >
+              <app-toggle-switch
+                [on]="useDefaultDecimals()"
+                ariaLabel="Use default decimal places"
+                (toggled)="toggleUseDefaultDecimals()"
+              />
+            </app-setting-row>
+          }
+          @if (scoringType() === 'category') {
+            <app-setting-row
+              name="Minimum goalie games"
+              desc="Goalies projected for fewer games than this are ranked last, so a tiny-sample goalie with elite rate stats can't top the rankings."
+            >
+              <input
+                type="number"
+                class="min-goalie-games-input"
+                min="0"
+                max="82"
+                [value]="minGoalieGames()"
+                (input)="onMinGoalieGamesInput($event)"
+              />
+            </app-setting-row>
+          }
+        }
+      </div>
     </div>
   }
 </section>

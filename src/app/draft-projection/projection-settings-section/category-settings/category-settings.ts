@@ -1,11 +1,7 @@
 import { Component, computed, model } from '@angular/core';
 import { SettingRowComponent } from '../setting-row/setting-row';
 import { RosterSlots } from '../../../api/models/roster-slots';
-import {
-  DEFAULT_LEAGUE_SIZE,
-  DEFAULT_MIN_GOALIE_GAMES,
-  DEFAULT_ROSTER_SLOTS,
-} from '../../projection-defaults';
+import { DEFAULT_LEAGUE_SIZE, DEFAULT_ROSTER_SLOTS } from '../../projection-defaults';
 
 @Component({
   selector: 'app-category-settings',
@@ -16,7 +12,6 @@ import {
 export class CategorySettingsComponent {
   leagueSize = model<number>(DEFAULT_LEAGUE_SIZE);
   rosterSlots = model<RosterSlots>(DEFAULT_ROSTER_SLOTS);
-  minGoalieGames = model<number>(DEFAULT_MIN_GOALIE_GAMES);
 
   readonly rosterSummary = computed(() => {
     const slots = this.rosterSlots();
@@ -48,13 +43,6 @@ export class CategorySettingsComponent {
     if (Number.isFinite(parsed)) {
       const clamped = Math.min(50, Math.max(0, Math.round(parsed)));
       this.rosterSlots.update((slots) => ({ ...slots, [position]: clamped }));
-    }
-  }
-
-  onMinGoalieGamesInput(event: Event): void {
-    const parsed = Number((event.target as HTMLInputElement).value);
-    if (Number.isFinite(parsed)) {
-      this.minGoalieGames.set(Math.min(82, Math.max(0, Math.round(parsed))));
     }
   }
 }

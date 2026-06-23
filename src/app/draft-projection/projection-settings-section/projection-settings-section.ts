@@ -75,12 +75,14 @@ export class ProjectionSettingsSectionComponent {
   initiallyExpanded = input<boolean>(false);
   collapsibleGroups = input<boolean>(true);
   isSectionVisible = linkedSignal(() => this.initiallyExpanded());
-  isGeneralVisible = signal<boolean>(false);
-  isScoringStatsVisible = signal<boolean>(false);
+  isLeagueSettingsVisible = signal<boolean>(false);
   isUtilityStatsVisible = signal<boolean>(false);
-  readonly isGeneralExpanded = computed(() => !this.collapsibleGroups() || this.isGeneralVisible());
-  readonly isScoringStatsExpanded = computed(
-    () => !this.collapsibleGroups() || this.isScoringStatsVisible(),
+  isAdditionalSettingsVisible = signal<boolean>(false);
+  readonly isLeagueSettingsExpanded = computed(
+    () => !this.collapsibleGroups() || this.isLeagueSettingsVisible(),
+  );
+  readonly isAdditionalSettingsExpanded = computed(
+    () => !this.collapsibleGroups() || this.isAdditionalSettingsVisible(),
   );
   private readonly showAdvancedScaleOptions = signal<Record<UtilityStatKey, boolean>>({
     gp: false,
@@ -95,16 +97,16 @@ export class ProjectionSettingsSectionComponent {
     this.scoringType.set(type);
   }
 
-  toggleGeneralVisible(): void {
-    this.isGeneralVisible.update((visible) => !visible);
-  }
-
-  toggleScoringStatsVisible(): void {
-    this.isScoringStatsVisible.update((visible) => !visible);
+  toggleLeagueSettingsVisible(): void {
+    this.isLeagueSettingsVisible.update((visible) => !visible);
   }
 
   toggleUtilityStatsVisible(): void {
     this.isUtilityStatsVisible.update((visible) => !visible);
+  }
+
+  toggleAdditionalSettingsVisible(): void {
+    this.isAdditionalSettingsVisible.update((visible) => !visible);
   }
 
   toggleStat(key: ScoringStatKey): void {
@@ -154,6 +156,13 @@ export class ProjectionSettingsSectionComponent {
 
   toggleUseDefaultDecimals(): void {
     this.useDefaultDecimals.update((show) => !show);
+  }
+
+  onMinGoalieGamesInput(event: Event): void {
+    const parsed = Number((event.target as HTMLInputElement).value);
+    if (Number.isFinite(parsed)) {
+      this.minGoalieGames.set(Math.min(82, Math.max(0, Math.round(parsed))));
+    }
   }
 
   isScaleStatActive(statKey: ScoringStatKey, utilityKey: UtilityStatKey): boolean {

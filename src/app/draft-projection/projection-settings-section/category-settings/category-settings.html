@@ -34,16 +34,3 @@
     → {{ rosterSummary().skaters }} skaters, {{ rosterSummary().goalies }} goalies per team
   </p>
 </div>
-<app-setting-row
-  name="Minimum goalie games"
-  desc="Goalies projected for fewer games than this are ranked last, so a tiny-sample goalie with elite rate stats can't top the rankings."
->
-  <input
-    type="number"
-    class="min-goalie-games-input"
-    min="0"
-    max="82"
-    [value]="minGoalieGames()"
-    (input)="onMinGoalieGamesInput($event)"
-  />
-</app-setting-row>
