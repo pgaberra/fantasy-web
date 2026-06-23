@@ -1,20 +1,20 @@
-<app-setting-row
-  name="Number of teams"
-  desc="Used to optimize how players are ranked (their Z-scores) for your league."
->
-  <input
-    type="number"
-    class="league-size-input"
-    min="2"
-    max="30"
-    [value]="leagueSize()"
-    (input)="onLeagueSizeInput($event)"
-  />
+<p class="category-settings-hint">We use these to tune the rankings (Z-scores) to your league.</p>
+<app-setting-row name="League Size">
+  <span class="league-size-field">
+    <input
+      type="number"
+      class="league-size-input"
+      min="2"
+      max="30"
+      [value]="leagueSize()"
+      (input)="onLeagueSizeInput($event)"
+    />
+    <span class="league-size-unit">teams</span>
+  </span>
 </app-setting-row>
 <div class="roster-editor">
   <div class="roster-editor-header">
-    <span class="roster-editor-title">Roster slots (per team)</span>
-    <span class="roster-editor-hint">Bench (BN) and Util count as skaters</span>
+    <span class="roster-editor-title">Roster slots</span>
   </div>
   <div class="roster-grid">
     @for (slot of ROSTER_POSITIONS; track slot.key) {
@@ -30,7 +30,4 @@
       </label>
     }
   </div>
-  <p class="roster-summary">
-    → {{ rosterSummary().skaters }} skaters, {{ rosterSummary().goalies }} goalies per team
-  </p>
 </div>

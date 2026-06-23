@@ -1,3 +1,10 @@
+.category-settings-hint {
+  margin: 0 0 0.3rem;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
 .league-size-input {
   width: 4rem;
   padding: 0.3rem 0.5rem;
@@ -12,6 +19,17 @@
   outline: none;
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
+}
+
+.league-size-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.league-size-unit {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
 }
 
 .roster-editor {
@@ -30,11 +48,6 @@
   font-size: 0.9rem;
   font-weight: var(--weight-semibold);
   color: var(--color-text);
-}
-
-.roster-editor-hint {
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
 }
 
 .roster-grid {
@@ -70,11 +83,4 @@
   outline: none;
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
-}
-
-.roster-summary {
-  margin: var(--space-2) 0 0;
-  font-size: var(--text-sm);
-  color: var(--color-primary);
-  font-weight: var(--weight-medium);
 }
