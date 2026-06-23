@@ -1,6 +1,7 @@
 // @ts-check
 import tseslint from 'typescript-eslint';
 import angular from 'angular-eslint';
+import sonarjs from 'eslint-plugin-sonarjs';
 
 export default tseslint.config(
   {
@@ -23,6 +24,22 @@ export default tseslint.config(
       // no-unsafe-enum-comparison false-positives on the idiomatic comparison of
       // HttpErrorResponse.status (number) against the HttpStatusCode enum, which is safe.
       '@typescript-eslint/no-unsafe-enum-comparison': 'off',
+    },
+  },
+  {
+    ...sonarjs.configs.recommended,
+    files: ['**/*.ts'],
+    rules: {
+      ...sonarjs.configs.recommended.rules,
+      // Test-assertion style nit that fires across every spec — not a simplification.
+      'sonarjs/prefer-specific-assertions': 'off',
+      // FP: environment.prod.ts holds an http placeholder the Docker build replaces with
+      // the real https URL at build time.
+      'sonarjs/no-clear-text-protocols': 'off',
+      // FP: an Angular CanActivateFn legitimately returns boolean | UrlTree.
+      'sonarjs/function-return-type': 'off',
+      // Subjective complexity threshold; refactoring is beyond a simplification scan.
+      'sonarjs/cognitive-complexity': 'off',
     },
   },
   {

@@ -6,7 +6,7 @@ import { Injectable } from '@angular/core';
 export class ToiService {
   parseToi(toi: string): number {
     if (!toi || !toi.trim()) return 0;
-    const colonMatch = toi.match(/^(\d+):(\d{1,2})$/);
+    const colonMatch = /^(\d+):(\d{1,2})$/.exec(toi);
     if (colonMatch) {
       const minutes = parseInt(colonMatch[1], 10);
       const seconds = parseInt(colonMatch[2], 10);
