@@ -1,15 +1,18 @@
 <app-setting-row
-  name="Number of teams"
+  name="League Size"
   desc="Used to optimize how players are ranked (their Z-scores) for your league."
 >
-  <input
-    type="number"
-    class="league-size-input"
-    min="2"
-    max="30"
-    [value]="leagueSize()"
-    (input)="onLeagueSizeInput($event)"
-  />
+  <span class="league-size-field">
+    <input
+      type="number"
+      class="league-size-input"
+      min="2"
+      max="30"
+      [value]="leagueSize()"
+      (input)="onLeagueSizeInput($event)"
+    />
+    <span class="league-size-unit">teams</span>
+  </span>
 </app-setting-row>
 <div class="roster-editor">
   <div class="roster-editor-header">

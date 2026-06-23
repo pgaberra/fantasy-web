@@ -14,6 +14,17 @@
   box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
 }
 
+.league-size-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.league-size-unit {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
 .roster-editor {
   margin-top: 0.6rem;
 }
