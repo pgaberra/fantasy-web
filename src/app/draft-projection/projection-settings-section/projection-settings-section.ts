@@ -75,7 +75,7 @@ export class ProjectionSettingsSectionComponent {
   initiallyExpanded = input<boolean>(false);
   collapsibleGroups = input<boolean>(true);
   isSectionVisible = linkedSignal(() => this.initiallyExpanded());
-  isLeagueSettingsVisible = signal<boolean>(false);
+  isLeagueSettingsVisible = signal<boolean>(true);
   isUtilityStatsVisible = signal<boolean>(false);
   isAdditionalSettingsVisible = signal<boolean>(false);
   readonly isLeagueSettingsExpanded = computed(

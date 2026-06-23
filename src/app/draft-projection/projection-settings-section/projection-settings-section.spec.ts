@@ -60,7 +60,6 @@ describe('ProjectionSettingsSectionComponent', () => {
     });
     const component = fixture.point.componentInstance;
     component.toggleSectionVisible();
-    component.toggleLeagueSettingsVisible();
     component.toggleUtilityStatsVisible();
     component.toggleAdditionalSettingsVisible();
     fixture.detectChanges();
@@ -78,7 +77,6 @@ describe('ProjectionSettingsSectionComponent', () => {
         showUtilityStats: false,
         initiallyExpanded: true,
       });
-      fixture.point.componentInstance.toggleLeagueSettingsVisible();
       fixture.detectChanges();
 
       const text = fixture.nativeElement.textContent;
@@ -327,6 +325,7 @@ describe('ProjectionSettingsSectionComponent', () => {
       });
       const component = fixture.point.componentInstance;
       component.toggleSectionVisible();
+      component.toggleLeagueSettingsVisible();
       component.toggleUtilityStatsVisible();
       fixture.detectChanges();
 
