@@ -1,4 +1,4 @@
-import { Component, computed, model } from '@angular/core';
+import { Component, model } from '@angular/core';
 import { SettingRowComponent } from '../setting-row/setting-row';
 import { RosterSlots } from '../../../api/models/roster-slots';
 import { DEFAULT_LEAGUE_SIZE, DEFAULT_ROSTER_SLOTS } from '../../projection-defaults';
@@ -12,14 +12,6 @@ import { DEFAULT_LEAGUE_SIZE, DEFAULT_ROSTER_SLOTS } from '../../projection-defa
 export class CategorySettingsComponent {
   leagueSize = model<number>(DEFAULT_LEAGUE_SIZE);
   rosterSlots = model<RosterSlots>(DEFAULT_ROSTER_SLOTS);
-
-  readonly rosterSummary = computed(() => {
-    const slots = this.rosterSlots();
-    return {
-      skaters: slots.c + slots.lw + slots.rw + slots.d + slots.util + slots.bn,
-      goalies: slots.g,
-    };
-  });
 
   protected readonly ROSTER_POSITIONS: { key: keyof RosterSlots; label: string }[] = [
     { key: 'c', label: 'C' },

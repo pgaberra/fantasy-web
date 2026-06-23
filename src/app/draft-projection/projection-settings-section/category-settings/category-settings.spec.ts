@@ -48,12 +48,6 @@ describe('CategorySettingsComponent', () => {
     expect(component.leagueSize()).toEqual(12);
   });
 
-  it('summarises skater and goalie slots per team', () => {
-    const component = getComponent({ c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 });
-
-    expect(component.rosterSummary()).toEqual({ skaters: 15, goalies: 2 });
-  });
-
   it('renders the teams input and a slot per position', () => {
     getComponent();
 

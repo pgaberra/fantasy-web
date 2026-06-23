@@ -71,10 +71,3 @@
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
 }
-
-.roster-summary {
-  margin: var(--space-2) 0 0;
-  font-size: var(--text-sm);
-  color: var(--color-primary);
-  font-weight: var(--weight-medium);
-}
