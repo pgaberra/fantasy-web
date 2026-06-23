@@ -1,5 +1,4 @@
-.league-size-input,
-.min-goalie-games-input {
+.league-size-input {
   width: 4rem;
   padding: 0.3rem 0.5rem;
   font-size: 0.9rem;
@@ -9,8 +8,7 @@
   text-align: center;
 }
 
-.league-size-input:focus,
-.min-goalie-games-input:focus {
+.league-size-input:focus {
   outline: none;
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);

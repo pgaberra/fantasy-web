@@ -13,7 +13,6 @@ describe('CategorySettingsComponent', () => {
     MockRender(CategorySettingsComponent, {
       leagueSize: 12,
       rosterSlots,
-      minGoalieGames: 30,
     }).point.componentInstance;
 
   const inputEvent = (value: string) => ({ target: { value } }) as unknown as Event;
@@ -42,19 +41,6 @@ describe('CategorySettingsComponent', () => {
     expect(component.rosterSlots().bn).toEqual(50);
   });
 
-  it('clamps the minimum goalie games to 0..82', () => {
-    const component = getComponent();
-
-    component.onMinGoalieGamesInput(inputEvent('-5'));
-    expect(component.minGoalieGames()).toEqual(0);
-
-    component.onMinGoalieGamesInput(inputEvent('100'));
-    expect(component.minGoalieGames()).toEqual(82);
-
-    component.onMinGoalieGamesInput(inputEvent('25'));
-    expect(component.minGoalieGames()).toEqual(25);
-  });
-
   it('ignores non-numeric input', () => {
     const component = getComponent();
 
@@ -68,11 +54,10 @@ describe('CategorySettingsComponent', () => {
     expect(component.rosterSummary()).toEqual({ skaters: 15, goalies: 2 });
   });
 
-  it('renders the teams input, a slot per position, and the goalie-games input', () => {
+  it('renders the teams input and a slot per position', () => {
     getComponent();
 
     expect(ngMocks.find('.league-size-input')).toBeTruthy();
-    expect(ngMocks.find('.min-goalie-games-input')).toBeTruthy();
     expect(ngMocks.findAll('.roster-slot')).toHaveLength(7);
   });
 });
