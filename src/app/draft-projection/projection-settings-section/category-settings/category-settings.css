@@ -1,3 +1,10 @@
+.category-settings-hint {
+  margin: 0 0 0.3rem;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
 .league-size-input {
   width: 4rem;
   padding: 0.3rem 0.5rem;
