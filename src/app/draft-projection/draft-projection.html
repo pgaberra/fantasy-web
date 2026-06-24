@@ -92,5 +92,15 @@
         [useDefaultDecimals]="useDefaultDecimals()"
       />
     </div>
+
+    @if (diverged() && yahooSync(); as sync) {
+      <app-sync-warning-dialog
+        [leagueName]="sync.leagueName"
+        [reSyncing]="reSyncing()"
+        [error]="reSyncError()"
+        (reSync)="reSync()"
+        (confirm)="confirmUnsync()"
+      />
+    }
   </div>
 }
