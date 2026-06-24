@@ -3,9 +3,9 @@
 }
 
 .stat-group h3 {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: var(--weight-semibold);
-  color: var(--color-primary);
+  color: var(--color-text);
   margin: 0 0 0.6rem;
 }
 

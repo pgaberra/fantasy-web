@@ -10,7 +10,7 @@
 .settings-section h2 {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #0f3460;
+  color: var(--color-primary);
   margin: 0 0 1rem;
 }
 
