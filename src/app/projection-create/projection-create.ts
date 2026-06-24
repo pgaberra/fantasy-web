@@ -7,21 +7,12 @@ import { ProjectionStorageService } from '../services/projection-storage.service
 import { StatInfoService } from '../services/stat-info.service';
 import { Player } from '../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
-import { GoalieStats, Projection, ScoringType, SkaterStats } from '../models/projection.model';
+import { GoalieStats, Projection, SkaterStats } from '../models/projection.model';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
-import { ProjectionSettingsSectionComponent } from '../draft-projection/projection-settings-section/projection-settings-section';
-import {
-  YahooLeagueSyncComponent,
-  YahooSyncResult,
-} from '../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
-import { YahooSync } from '../api/models/yahoo-sync';
-import { SyncWarningDialogComponent } from '../draft-projection/sync-warning-dialog/sync-warning-dialog';
+import { ProjectionData } from '../api/models/projection-data';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { InfoTooltipComponent } from '../shared/info-tooltip/info-tooltip';
-import {
-  DEFAULT_DECIMAL_SETTINGS,
-  ScaleConfig,
-} from '../draft-projection/projection-settings-section/model';
+import { DEFAULT_DECIMAL_SETTINGS } from '../draft-projection/projection-settings-section/model';
 import {
   createDefaultScaleSettings,
   DEFAULT_LEAGUE_SIZE,
@@ -31,27 +22,13 @@ import {
   DEFAULT_STAT_WEIGHTS,
   DEFAULT_UTILITY_COLUMNS,
 } from '../draft-projection/projection-defaults';
-import { RosterSlots } from '../api/models/roster-slots';
-import {
-  fromProjectionData,
-  ProjectionState,
-  toProjectionData,
-} from '../services/projection-serializer';
-import { ProjectionSyncService } from '../services/projection-sync.service';
-import { YahooService } from '../services/yahoo.service';
+import { ProjectionState, toProjectionData } from '../services/projection-serializer';
 
 type DataSource = 'last-season' | 'blank' | 'copy';
 
 @Component({
   selector: 'app-projection-create',
-  imports: [
-    ProjectionSettingsSectionComponent,
-    YahooLeagueSyncComponent,
-    LoadingIndicatorComponent,
-    InfoTooltipComponent,
-    SyncWarningDialogComponent,
-    RouterLink,
-  ],
+  imports: [LoadingIndicatorComponent, InfoTooltipComponent, RouterLink],
   templateUrl: './projection-create.html',
   styleUrl: './projection-create.css',
 })
@@ -61,8 +38,6 @@ export class ProjectionCreateComponent {
   private readonly statInfoService = inject(StatInfoService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly yahoo = inject(YahooService);
-  private readonly projectionSync = inject(ProjectionSyncService);
 
   private readonly dataResource = rxResource({
     stream: () =>
@@ -81,40 +56,6 @@ export class ProjectionCreateComponent {
   readonly name = linkedSignal(() => this.defaultName(this.dataResource.value().projections));
 
   private readonly players = computed(() => this.dataResource.value().players);
-
-  scoringType = signal<ScoringType>('points');
-  activeScoringColumns = signal(new Set<ScoringStatKey>(DEFAULT_SCORING_COLUMNS));
-  activeUtilityColumns = signal(new Set<SkaterUtilityStatKey>(DEFAULT_UTILITY_COLUMNS));
-  scaleSettings = signal<Record<SkaterUtilityStatKey, ScaleConfig>>(
-    createDefaultScaleSettings((key) => this.statInfoService.isRateStat(key)),
-  );
-  useDefaultDecimals = signal<boolean>(true);
-  leagueSize = signal<number>(DEFAULT_LEAGUE_SIZE);
-  rosterSlots = signal<RosterSlots>(DEFAULT_ROSTER_SLOTS);
-  minGoalieGames = signal<number>(DEFAULT_MIN_GOALIE_GAMES);
-  statWeights = signal<Record<ScoringStatKey, number>>(DEFAULT_STAT_WEIGHTS);
-  yahooSync = signal<YahooSync | null>(null);
-
-  private readonly syncedSnapshot = signal<string | null>(null);
-  private readonly syncedSettingsKey = computed(() =>
-    this.projectionSync.settingsSignature({
-      scoringType: this.scoringType(),
-      activeScoringColumns: this.activeScoringColumns(),
-      activeUtilityColumns: this.activeUtilityColumns(),
-      leagueSize: this.leagueSize(),
-      rosterSlots: this.rosterSlots(),
-      statWeights: this.statWeights(),
-    }),
-  );
-  readonly diverged = computed(() =>
-    this.projectionSync.hasDiverged(
-      this.yahooSync(),
-      this.syncedSettingsKey(),
-      this.syncedSnapshot(),
-    ),
-  );
-  readonly reSyncing = signal<boolean>(false);
-  readonly reSyncError = signal<string | null>(null);
 
   readonly canCreate = computed(
     () =>
@@ -147,57 +88,6 @@ export class ProjectionCreateComponent {
     this.copyFromId.set((event.target as HTMLSelectElement).value || null);
   }
 
-  applyYahooSettings(result: YahooSyncResult): void {
-    const mapped = result.settings;
-    this.scoringType.set(mapped.scoringType);
-    this.activeScoringColumns.set(new Set(mapped.activeScoringColumns as ScoringStatKey[]));
-    this.activeUtilityColumns.set(new Set(mapped.activeUtilityColumns as SkaterUtilityStatKey[]));
-    if (mapped.leagueSize != null) {
-      this.leagueSize.set(mapped.leagueSize);
-    }
-    this.rosterSlots.set(mapped.rosterSlots);
-    if (mapped.statWeights) {
-      this.statWeights.set(mapped.statWeights as Record<ScoringStatKey, number>);
-    }
-    this.yahooSync.set({
-      leagueName: result.leagueName,
-      leagueKey: result.leagueKey,
-      syncedAt: new Date().toISOString(),
-    });
-    this.syncedSnapshot.set(this.syncedSettingsKey());
-  }
-
-  reSync(): void {
-    const sync = this.yahooSync();
-    if (!sync || this.reSyncing()) {
-      return;
-    }
-    this.reSyncing.set(true);
-    this.reSyncError.set(null);
-    this.yahoo
-      .leagueProjectionSettings(sync.leagueKey)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (settings) => {
-          this.applyYahooSettings({
-            settings,
-            leagueName: sync.leagueName,
-            leagueKey: sync.leagueKey,
-          });
-          this.reSyncing.set(false);
-        },
-        error: () => {
-          this.reSyncing.set(false);
-          this.reSyncError.set('Could not re-sync from Yahoo. Try again.');
-        },
-      });
-  }
-
-  confirmUnsync(): void {
-    this.yahooSync.set(null);
-    this.syncedSnapshot.set(null);
-  }
-
   create(): void {
     if (!this.canCreate()) {
       return;
@@ -209,17 +99,17 @@ export class ProjectionCreateComponent {
         .loadProjection(this.copyFromId()!)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: (projection) => this.persist(fromProjectionData(projection.data).playerProjections),
+          next: (projection) => this.persist(projection.data),
           error: () => this.isCreating.set(false),
         });
       return;
     }
 
-    this.persist(this.buildPlayerProjections(this.dataSource() === 'blank'));
+    const players = this.buildPlayerProjections(this.dataSource() === 'blank');
+    this.persist(toProjectionData(this.buildDefaultState(players)));
   }
 
-  private persist(playerProjections: Projection[]): void {
-    const data = toProjectionData(this.buildState(playerProjections));
+  private persist(data: ProjectionData): void {
     this.projectionStorage
       .createProjection({ name: this.name().trim(), data })
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -229,19 +119,19 @@ export class ProjectionCreateComponent {
       });
   }
 
-  private buildState(playerProjections: Projection[]): ProjectionState {
+  private buildDefaultState(playerProjections: Projection[]): ProjectionState {
     return {
-      scoringType: this.scoringType(),
-      statWeights: this.statWeights(),
-      activeScoringColumns: this.activeScoringColumns(),
-      activeUtilityColumns: this.activeUtilityColumns(),
-      scaleSettings: this.scaleSettings(),
+      scoringType: 'points',
+      statWeights: DEFAULT_STAT_WEIGHTS,
+      activeScoringColumns: new Set<ScoringStatKey>(DEFAULT_SCORING_COLUMNS),
+      activeUtilityColumns: new Set<SkaterUtilityStatKey>(DEFAULT_UTILITY_COLUMNS),
+      scaleSettings: createDefaultScaleSettings((key) => this.statInfoService.isRateStat(key)),
       decimalSettings: DEFAULT_DECIMAL_SETTINGS,
-      useDefaultDecimals: this.useDefaultDecimals(),
-      leagueSize: this.leagueSize(),
-      rosterSlots: this.rosterSlots(),
-      minGoalieGames: this.minGoalieGames(),
-      yahooSync: this.yahooSync(),
+      useDefaultDecimals: true,
+      leagueSize: DEFAULT_LEAGUE_SIZE,
+      rosterSlots: DEFAULT_ROSTER_SLOTS,
+      minGoalieGames: DEFAULT_MIN_GOALIE_GAMES,
+      yahooSync: null,
       playerProjections,
     };
   }

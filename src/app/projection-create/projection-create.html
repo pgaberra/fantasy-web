@@ -69,23 +69,7 @@
       }
     </div>
 
-    <app-projection-settings-section
-      [(scoringType)]="scoringType"
-      [(activeScoringColumns)]="activeScoringColumns"
-      [(activeUtilityColumns)]="activeUtilityColumns"
-      [(scaleSettings)]="scaleSettings"
-      [(useDefaultDecimals)]="useDefaultDecimals"
-      [(leagueSize)]="leagueSize"
-      [(rosterSlots)]="rosterSlots"
-      [(minGoalieGames)]="minGoalieGames"
-      [showDecimalsSetting]="false"
-      [showUtilityStats]="false"
-      [initiallyExpanded]="true"
-      [collapsibleGroups]="false"
-    >
-      <app-yahoo-league-sync [lastSync]="yahooSync()" (synced)="applyYahooSettings($event)" />
-    </app-projection-settings-section>
-    <p class="settings-note">All settings can be changed at any time while editing.</p>
+    <p class="settings-note">Scoring, roster and stat settings are configured in the editor.</p>
 
     <button
       type="button"
@@ -95,15 +79,5 @@
     >
       {{ isCreating() ? 'Creating…' : 'Create projection' }}
     </button>
-
-    @if (diverged() && yahooSync(); as sync) {
-      <app-sync-warning-dialog
-        [leagueName]="sync.leagueName"
-        [reSyncing]="reSyncing()"
-        [error]="reSyncError()"
-        (reSync)="reSync()"
-        (confirm)="confirmUnsync()"
-      />
-    }
   </div>
 }
