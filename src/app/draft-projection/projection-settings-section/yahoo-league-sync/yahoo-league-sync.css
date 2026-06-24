@@ -65,15 +65,30 @@
   margin: 0;
 }
 
-.yahoo-sync-summary {
+.yahoo-sync-synced {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
   font-size: var(--text-sm);
   color: var(--color-primary);
 }
 
-.yahoo-sync-summary p {
-  margin: 0 0 var(--space-1);
+.yahoo-sync-check {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  color: var(--color-success);
+}
+
+.yahoo-sync-time {
+  color: var(--color-text-muted);
+  font-weight: 400;
 }
 
 .yahoo-sync-muted {
+  margin: 0;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
 }

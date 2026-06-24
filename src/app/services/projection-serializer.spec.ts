@@ -27,6 +27,11 @@ const sampleState: ProjectionState = {
   leagueSize: 10,
   rosterSlots: { c: 1, lw: 1, rw: 1, d: 2, util: 1, bn: 2, g: 2 },
   minGoalieGames: 25,
+  yahooSync: {
+    leagueName: 'My League',
+    leagueKey: 'nhl.l.123',
+    syncedAt: '2026-06-20T12:00:00.000Z',
+  },
   playerProjections: [
     {
       type: 'skater',
@@ -75,6 +80,23 @@ describe('projection-serializer', () => {
     delete data.settings.minGoalieGames;
 
     expect(fromProjectionData(data).minGoalieGames).toEqual(30);
+  });
+
+  it('defaults yahooSync to null for projections never synced from Yahoo', () => {
+    const data = toProjectionData(sampleState);
+    delete data.settings.yahooSync;
+
+    expect(fromProjectionData(data).yahooSync).toBeNull();
+  });
+
+  it('round-trips the yahooSync metadata', () => {
+    const roundTripped = fromProjectionData(toProjectionData(sampleState));
+
+    expect(roundTripped.yahooSync).toEqual({
+      leagueName: 'My League',
+      leagueKey: 'nhl.l.123',
+      syncedAt: '2026-06-20T12:00:00.000Z',
+    });
   });
 
   it('omits leagueSize, rosterSlots and minGoalieGames for points leagues', () => {
