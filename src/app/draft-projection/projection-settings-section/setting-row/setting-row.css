@@ -1,7 +1,7 @@
 :host {
   --setting-name-size: 0.9rem;
   --setting-name-weight: 600;
-  --setting-name-color: #1a1a2e;
+  --setting-name-color: var(--color-text);
 }
 
 .setting-info {
