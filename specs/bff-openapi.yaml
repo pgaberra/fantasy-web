@@ -2,175 +2,175 @@ openapi: 3.1.0
 info:
   title: Fantasy Hockey BFF API
   description: Backend for Frontend aggregation layer for the Fantasy Hockey application
-  version: '1.0'
+  version: "1.0"
 servers:
-  - url: /
+- url: /
 security:
-  - bearerAuth: []
+- bearerAuth: []
 tags:
-  - name: Authentication
-    description: Register and login endpoints
-  - name: Admin
-    description: 'Admin-only: Yahoo service account + player sync'
-  - name: Yahoo
-    description: The authenticated user's Yahoo fantasy account and leagues
-  - name: Players
-    description: NHL player stats endpoints
-  - name: Projections
-    description: The authenticated user's saved player projections
-  - name: Versions
-    description: Deployed version and reachability of every service
+- name: Authentication
+  description: Register and login endpoints
+- name: Admin
+  description: "Admin-only: Yahoo service account + player sync"
+- name: Yahoo
+  description: The authenticated user's Yahoo fantasy account and leagues
+- name: Players
+  description: NHL player stats endpoints
+- name: Projections
+  description: The authenticated user's saved player projections
+- name: Versions
+  description: Deployed version and reachability of every service
 paths:
   /api/v1/projections/{id}:
     get:
       tags:
-        - Projections
+      - Projections
       summary: "Fetch one of the current user's saved projections, including its data"
       operationId: get
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
-        '200':
+        "200":
           description: Projection found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectionResponse'
-        '404':
+                $ref: "#/components/schemas/ProjectionResponse"
+        "404":
           description: No such projection for this user
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectionResponse'
+                $ref: "#/components/schemas/ProjectionResponse"
     put:
       tags:
-        - Projections
+      - Projections
       summary: Update one of the current user's saved projections
       operationId: update
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateProjectionRequest'
+              $ref: "#/components/schemas/UpdateProjectionRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: Projection updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectionResponse'
-        '400':
+                $ref: "#/components/schemas/ProjectionResponse"
+        "400":
           description: Validation failed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectionResponse'
-        '404':
+                $ref: "#/components/schemas/ProjectionResponse"
+        "404":
           description: No such projection for this user
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectionResponse'
-        '409':
+                $ref: "#/components/schemas/ProjectionResponse"
+        "409":
           description: Another projection with that name already exists
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectionResponse'
+                $ref: "#/components/schemas/ProjectionResponse"
     delete:
       tags:
-        - Projections
+      - Projections
       summary: Delete one of the current user's saved projections
       operationId: delete
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
-        '204':
+        "204":
           description: Projection deleted
-        '404':
+        "404":
           description: No such projection for this user
   /api/v1/yahoo/connect:
     post:
       tags:
-        - Yahoo
+      - Yahoo
       summary: Start connecting the user's Yahoo account
       description: Returns the Yahoo consent URL the web app should redirect the browser
         to.
       operationId: connect
       responses:
-        '200':
+        "200":
           description: Authorization URL created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthorizeUrlResponse'
+                $ref: "#/components/schemas/AuthorizeUrlResponse"
   /api/v1/projections:
     get:
       tags:
-        - Projections
+      - Projections
       summary: List the current user's saved projections (metadata only)
       operationId: list
       responses:
-        '200':
+        "200":
           description: "The user's projections, newest first"
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ProjectionSummaryResponse'
+                  $ref: "#/components/schemas/ProjectionSummaryResponse"
     post:
       tags:
-        - Projections
+      - Projections
       summary: Save a new projection for the current user
       operationId: create
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateProjectionRequest'
+              $ref: "#/components/schemas/CreateProjectionRequest"
         required: true
       responses:
-        '201':
+        "201":
           description: Projection created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectionResponse'
-        '400':
+                $ref: "#/components/schemas/ProjectionResponse"
+        "400":
           description: Validation failed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectionResponse'
-        '409':
+                $ref: "#/components/schemas/ProjectionResponse"
+        "409":
           description: A projection with that name already exists
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProjectionResponse'
+                $ref: "#/components/schemas/ProjectionResponse"
   /api/v1/auth/register:
     post:
       tags:
-        - Authentication
+      - Authentication
       summary: Register
       description: Create a new user account and return an authenticated session
       operationId: register
@@ -178,25 +178,25 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterRequest'
+              $ref: "#/components/schemas/RegisterRequest"
         required: true
       responses:
-        '201':
+        "201":
           description: User registered and logged in
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '400':
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
           description: Email already in use or validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
+                $ref: "#/components/schemas/AuthResponse"
   /api/v1/auth/refresh:
     post:
       tags:
-        - Authentication
+      - Authentication
       summary: Refresh tokens
       description: Exchange a valid refresh token for a new access token and refresh
         token pair
@@ -205,31 +205,31 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RefreshRequest'
+              $ref: "#/components/schemas/RefreshRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: Tokens refreshed successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '401':
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
           description: Invalid or expired refresh token
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '400':
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
+                $ref: "#/components/schemas/AuthResponse"
   /api/v1/auth/password/reset:
     post:
       tags:
-        - Authentication
+      - Authentication
       summary: Reset password with a token
       description: Consumes a single-use reset token from the email link and sets
         a new password.
@@ -238,17 +238,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ResetPasswordRequest'
+              $ref: "#/components/schemas/ResetPasswordRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: Password updated
-        '400':
-          description: 'Invalid or expired token, or validation error'
+        "400":
+          description: "Invalid or expired token, or validation error"
   /api/v1/auth/password/forgot:
     post:
       tags:
-        - Authentication
+      - Authentication
       summary: Request a password reset email
       description: "Always returns 200. To avoid revealing whether an account exists,\
         \ the response is identical whether or not a reset email was sent."
@@ -257,18 +257,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ForgotPasswordRequest'
+              $ref: "#/components/schemas/ForgotPasswordRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: Request accepted (an email is sent only if a matching password
             account exists)
-        '400':
+        "400":
           description: Validation error
   /api/v1/auth/login:
     post:
       tags:
-        - Authentication
+      - Authentication
       summary: Login
       description: Authenticate with email and password to receive a JWT
       operationId: login
@@ -276,31 +276,31 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginRequest'
+              $ref: "#/components/schemas/LoginRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: Login successful
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '401':
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
           description: Invalid credentials
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '400':
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
+                $ref: "#/components/schemas/AuthResponse"
   /api/v1/auth/google:
     post:
       tags:
-        - Authentication
+      - Authentication
       summary: Login with Google
       description: "Verify a Google ID token and log the user in, registering a new\
         \ account on first login"
@@ -309,237 +309,237 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GoogleLoginRequest'
+              $ref: "#/components/schemas/GoogleLoginRequest"
         required: true
       responses:
-        '200':
+        "200":
           description: Login successful
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '401':
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
           description: Invalid Google ID token or unverified email
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '400':
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
+                $ref: "#/components/schemas/AuthResponse"
   /api/v1/admin/yahoo/connect:
     post:
       tags:
-        - Admin
+      - Admin
       summary: Start connecting the Yahoo service account
       description: Returns the Yahoo consent URL to send the admin's browser to. The
         resulting token is stored under the reserved service-account id.
       operationId: connectYahooServiceAccount
       responses:
-        '200':
+        "200":
           description: Authorization URL created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthorizeUrlResponse'
+                $ref: "#/components/schemas/AuthorizeUrlResponse"
   /api/v1/admin/player/sync:
     post:
       tags:
-        - Admin
+      - Admin
       summary: Trigger a player sync
       description: Refreshes the cached player read model from Yahoo.
       operationId: triggerPlayerSync
       responses:
-        '200':
+        "200":
           description: Sync triggered
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SyncAcceptedResponse'
+                $ref: "#/components/schemas/SyncAcceptedResponse"
   /api/v1/yahoo/leagues:
     get:
       tags:
-        - Yahoo
+      - Yahoo
       summary: List the user's NHL fantasy leagues
       operationId: leagues
       responses:
-        '200':
+        "200":
           description: Leagues returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LeaguesResponse'
-        '404':
+                $ref: "#/components/schemas/LeaguesResponse"
+        "404":
           description: User has not connected Yahoo
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LeaguesResponse'
+                $ref: "#/components/schemas/LeaguesResponse"
   /api/v1/yahoo/leagues/{leagueKey}/projection-settings:
     get:
       tags:
-        - Yahoo
+      - Yahoo
       summary: Get a league's settings mapped to projection settings
       description: "Maps the Yahoo league's scoring basis (points vs category), active\
         \ stat columns, point weights, roster slots and size into the projection's\
         \ own shape."
       operationId: projectionSettings
       parameters:
-        - name: leagueKey
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: leagueKey
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        '200':
+        "200":
           description: Mapped settings returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LeagueProjectionSettingsResponse'
-        '404':
+                $ref: "#/components/schemas/LeagueProjectionSettingsResponse"
+        "404":
           description: User has not connected Yahoo
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LeagueProjectionSettingsResponse'
+                $ref: "#/components/schemas/LeagueProjectionSettingsResponse"
   /api/v1/yahoo/connection:
     get:
       tags:
-        - Yahoo
+      - Yahoo
       summary: Whether the user has connected their Yahoo account
       operationId: connection
       responses:
-        '200':
+        "200":
           description: Connection status returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ConnectionResponse'
+                $ref: "#/components/schemas/ConnectionResponse"
   /api/v1/versions:
     get:
       tags:
-        - Versions
+      - Versions
       summary: Get service versions
       description: Returns the deployed version and reachability of the BFF and each
         downstream service
       operationId: getVersions
       responses:
-        '200':
+        "200":
           description: Versions retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VersionsResponse'
+                $ref: "#/components/schemas/VersionsResponse"
   /api/v1/players/skaters:
     get:
       tags:
-        - Players
+      - Players
       summary: Get all skaters
       description: Returns all skaters with full season stats
       operationId: getSkaters
       responses:
-        '200':
+        "200":
           description: Skaters retrieved successfully
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/SkaterResponse'
-        '401':
+                  $ref: "#/components/schemas/SkaterResponse"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/SkaterResponse'
-        '502':
+                  $ref: "#/components/schemas/SkaterResponse"
+        "502":
           description: NHL service unavailable
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/SkaterResponse'
+                  $ref: "#/components/schemas/SkaterResponse"
       security:
-        - bearerAuth: []
+      - bearerAuth: []
   /api/v1/players/goalies:
     get:
       tags:
-        - Players
+      - Players
       summary: Get all goalies
       description: Returns all goalies with full season stats
       operationId: getGoalies
       responses:
-        '200':
+        "200":
           description: Goalies retrieved successfully
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/GoalieResponse'
-        '401':
+                  $ref: "#/components/schemas/GoalieResponse"
+        "401":
           description: Unauthorized
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/GoalieResponse'
-        '502':
+                  $ref: "#/components/schemas/GoalieResponse"
+        "502":
           description: NHL service unavailable
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/GoalieResponse'
+                  $ref: "#/components/schemas/GoalieResponse"
       security:
-        - bearerAuth: []
+      - bearerAuth: []
   /api/v1/admin/yahoo/connection:
     get:
       tags:
-        - Admin
+      - Admin
       summary: Whether the Yahoo service account is connected
       operationId: yahooServiceConnection
       responses:
-        '200':
+        "200":
           description: Connection status returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ConnectionResponse'
+                $ref: "#/components/schemas/ConnectionResponse"
   /api/v1/admin/player/sync/runs:
     get:
       tags:
-        - Admin
+      - Admin
       summary: Recent player sync runs
       description: Outcome (counts) and the diff (players added/removed) of the most
         recent syncs.
       operationId: playerSyncRuns
       parameters:
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int32
-            default: 10
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 10
       responses:
-        '200':
+        "200":
           description: Runs returned
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/SyncRunResponse'
+                  $ref: "#/components/schemas/SyncRunResponse"
 components:
   schemas:
     DraftPick:
@@ -551,20 +551,20 @@ components:
         by:
           type: string
           enum:
-            - me
-            - others
+          - me
+          - others
       required:
-        - by
-        - playerId
+      - by
+      - playerId
     DraftState:
       type: object
       properties:
         picks:
           type: array
           items:
-            $ref: '#/components/schemas/DraftPick'
+            $ref: "#/components/schemas/DraftPick"
       required:
-        - picks
+      - picks
     PlayerProjection:
       type: object
       properties:
@@ -574,14 +574,14 @@ components:
         type:
           type: string
           enum:
-            - skater
-            - goalie
+          - skater
+          - goalie
         stats:
-          $ref: '#/components/schemas/PlayerStats'
+          $ref: "#/components/schemas/PlayerStats"
       required:
-        - playerId
-        - stats
-        - type
+      - playerId
+      - stats
+      - type
     PlayerStats:
       type: object
       properties:
@@ -596,33 +596,33 @@ components:
             type: number
             format: double
       required:
-        - scoring
-        - utility
+      - scoring
+      - utility
     ProjectionData:
       type: object
       properties:
         settings:
-          $ref: '#/components/schemas/ProjectionSettings'
+          $ref: "#/components/schemas/ProjectionSettings"
         players:
           type: array
           items:
-            $ref: '#/components/schemas/PlayerProjection'
+            $ref: "#/components/schemas/PlayerProjection"
         draft:
-          $ref: '#/components/schemas/DraftState'
+          $ref: "#/components/schemas/DraftState"
         tings:
-          $ref: '#/components/schemas/ProjectionData'
+          $ref: "#/components/schemas/ProjectionData"
           writeOnly: true
       required:
-        - players
-        - settings
+      - players
+      - settings
     ProjectionSettings:
       type: object
       properties:
         scoringType:
           type: string
           enum:
-            - points
-            - category
+          - points
+          - category
         statWeights:
           type: object
           additionalProperties:
@@ -639,7 +639,7 @@ components:
         scaleSettings:
           type: object
           additionalProperties:
-            $ref: '#/components/schemas/ScaleConfig'
+            $ref: "#/components/schemas/ScaleConfig"
         decimalSettings:
           type: object
           additionalProperties:
@@ -653,22 +653,22 @@ components:
           maximum: 30
           minimum: 2
         rosterSlots:
-          $ref: '#/components/schemas/RosterSlots'
+          $ref: "#/components/schemas/RosterSlots"
         minGoalieGames:
           type: integer
           format: int32
           maximum: 82
           minimum: 0
         yahooSync:
-          $ref: '#/components/schemas/YahooSync'
+          $ref: "#/components/schemas/YahooSync"
       required:
-        - activeScoringColumns
-        - activeUtilityColumns
-        - decimalSettings
-        - scaleSettings
-        - scoringType
-        - statWeights
-        - useDefaultDecimals
+      - activeScoringColumns
+      - activeUtilityColumns
+      - decimalSettings
+      - scaleSettings
+      - scoringType
+      - statWeights
+      - useDefaultDecimals
     RosterSlots:
       type: object
       properties:
@@ -708,13 +708,13 @@ components:
           maximum: 50
           minimum: 0
       required:
-        - bn
-        - c
-        - d
-        - g
-        - lw
-        - rw
-        - util
+      - bn
+      - c
+      - d
+      - g
+      - lw
+      - rw
+      - util
     ScaleConfig:
       type: object
       properties:
@@ -725,8 +725,8 @@ components:
           items:
             type: string
       required:
-        - scalableStats
-        - scale
+      - scalableStats
+      - scale
     UpdateProjectionRequest:
       type: object
       properties:
@@ -735,10 +735,10 @@ components:
           maxLength: 100
           minLength: 0
         data:
-          $ref: '#/components/schemas/ProjectionData'
+          $ref: "#/components/schemas/ProjectionData"
       required:
-        - data
-        - name
+      - data
+      - name
     YahooSync:
       type: object
       properties:
@@ -754,9 +754,9 @@ components:
           type: string
           format: date-time
       required:
-        - leagueKey
-        - leagueName
-        - syncedAt
+      - leagueKey
+      - leagueName
+      - syncedAt
     ProjectionResponse:
       type: object
       properties:
@@ -767,12 +767,12 @@ components:
         season:
           type: string
           enum:
-            - '20252026'
-            - '20262027'
-            - '20272028'
-            - '20282029'
+          - "20252026"
+          - "20262027"
+          - "20272028"
+          - "20282029"
         data:
-          $ref: '#/components/schemas/ProjectionData'
+          $ref: "#/components/schemas/ProjectionData"
         createdAt:
           type: string
           format: date-time
@@ -780,19 +780,19 @@ components:
           type: string
           format: date-time
       required:
-        - createdAt
-        - data
-        - id
-        - name
-        - season
-        - updatedAt
+      - createdAt
+      - data
+      - id
+      - name
+      - season
+      - updatedAt
     AuthorizeUrlResponse:
       type: object
       properties:
         authorizeUrl:
           type: string
       required:
-        - authorizeUrl
+      - authorizeUrl
     CreateProjectionRequest:
       type: object
       properties:
@@ -801,10 +801,10 @@ components:
           maxLength: 100
           minLength: 0
         data:
-          $ref: '#/components/schemas/ProjectionData'
+          $ref: "#/components/schemas/ProjectionData"
       required:
-        - data
-        - name
+      - data
+      - name
     RegisterRequest:
       type: object
       properties:
@@ -818,8 +818,8 @@ components:
           maxLength: 72
           minLength: 8
       required:
-        - email
-        - password
+      - email
+      - password
     AuthResponse:
       type: object
       properties:
@@ -836,11 +836,11 @@ components:
         admin:
           type: boolean
       required:
-        - admin
-        - expiresInSeconds
-        - refreshExpiresInSeconds
-        - refreshToken
-        - token
+      - admin
+      - expiresInSeconds
+      - refreshExpiresInSeconds
+      - refreshToken
+      - token
     RefreshRequest:
       type: object
       properties:
@@ -849,7 +849,7 @@ components:
           maxLength: 4096
           minLength: 0
       required:
-        - refreshToken
+      - refreshToken
     ResetPasswordRequest:
       type: object
       properties:
@@ -862,8 +862,8 @@ components:
           maxLength: 72
           minLength: 8
       required:
-        - newPassword
-        - token
+      - newPassword
+      - token
     ForgotPasswordRequest:
       type: object
       properties:
@@ -873,7 +873,7 @@ components:
           maxLength: 254
           minLength: 0
       required:
-        - email
+      - email
     LoginRequest:
       type: object
       properties:
@@ -887,8 +887,8 @@ components:
           maxLength: 72
           minLength: 0
       required:
-        - email
-        - password
+      - email
+      - password
     GoogleLoginRequest:
       type: object
       properties:
@@ -898,14 +898,14 @@ components:
           maxLength: 4096
           minLength: 0
       required:
-        - idToken
+      - idToken
     SyncAcceptedResponse:
       type: object
       properties:
         status:
           type: string
       required:
-        - status
+      - status
     LeagueSummary:
       type: object
       properties:
@@ -922,25 +922,25 @@ components:
         scoringType:
           type: string
       required:
-        - leagueKey
-        - name
+      - leagueKey
+      - name
     LeaguesResponse:
       type: object
       properties:
         leagues:
           type: array
           items:
-            $ref: '#/components/schemas/LeagueSummary'
+            $ref: "#/components/schemas/LeagueSummary"
       required:
-        - leagues
+      - leagues
     LeagueProjectionSettingsResponse:
       type: object
       properties:
         scoringType:
           type: string
           enum:
-            - points
-            - category
+          - points
+          - category
         activeScoringColumns:
           type: array
           items:
@@ -957,7 +957,7 @@ components:
           description: Per-stat point weights for points leagues; null for category
             leagues.
         rosterSlots:
-          $ref: '#/components/schemas/RosterSlots'
+          $ref: "#/components/schemas/RosterSlots"
         leagueSize:
           type: integer
           format: int32
@@ -971,19 +971,19 @@ components:
           items:
             type: string
       required:
-        - activeScoringColumns
-        - activeUtilityColumns
-        - rosterSlots
-        - scoringType
-        - unsupportedRosterCodes
-        - unsupportedStats
+      - activeScoringColumns
+      - activeUtilityColumns
+      - rosterSlots
+      - scoringType
+      - unsupportedRosterCodes
+      - unsupportedStats
     ConnectionResponse:
       type: object
       properties:
         connected:
           type: boolean
       required:
-        - connected
+      - connected
     ServiceVersion:
       type: object
       properties:
@@ -995,17 +995,17 @@ components:
           type: string
           description: Deployed version; absent when the service is unreachable
       required:
-        - name
-        - up
+      - name
+      - up
     VersionsResponse:
       type: object
       properties:
         services:
           type: array
           items:
-            $ref: '#/components/schemas/ServiceVersion'
+            $ref: "#/components/schemas/ServiceVersion"
       required:
-        - services
+      - services
     ProjectionSummaryResponse:
       type: object
       properties:
@@ -1016,10 +1016,10 @@ components:
         season:
           type: string
           enum:
-            - '20252026'
-            - '20262027'
-            - '20272028'
-            - '20282029'
+          - "20252026"
+          - "20262027"
+          - "20272028"
+          - "20282029"
         createdAt:
           type: string
           format: date-time
@@ -1027,11 +1027,11 @@ components:
           type: string
           format: date-time
       required:
-        - createdAt
-        - id
-        - name
-        - season
-        - updatedAt
+      - createdAt
+      - id
+      - name
+      - season
+      - updatedAt
     SkaterResponse:
       type: object
       properties:
@@ -1049,18 +1049,18 @@ components:
           items:
             type: string
             enum:
-              - LW
-              - C
-              - RW
-              - D
+            - LW
+            - C
+            - RW
+            - D
           uniqueItems: true
         stats:
-          $ref: '#/components/schemas/SkaterStats'
+          $ref: "#/components/schemas/SkaterStats"
       required:
-        - id
-        - name
-        - positions
-        - stats
+      - id
+      - name
+      - positions
+      - stats
     SkaterScoringStats:
       type: object
       properties:
@@ -1119,34 +1119,34 @@ components:
           type: integer
           format: int32
       required:
-        - assists
-        - blocks
-        - fl
-        - fw
-        - goals
-        - gwg
-        - hits
-        - pim
-        - plusMinus
-        - points
-        - ppa
-        - ppg
-        - ppp
-        - shPct
-        - sha
-        - shg
-        - shp
-        - sog
+      - assists
+      - blocks
+      - fl
+      - fw
+      - goals
+      - gwg
+      - hits
+      - pim
+      - plusMinus
+      - points
+      - ppa
+      - ppg
+      - ppp
+      - shPct
+      - sha
+      - shg
+      - shp
+      - sog
     SkaterStats:
       type: object
       properties:
         utility:
-          $ref: '#/components/schemas/SkaterUtilityStats'
+          $ref: "#/components/schemas/SkaterUtilityStats"
         scoring:
-          $ref: '#/components/schemas/SkaterScoringStats'
+          $ref: "#/components/schemas/SkaterScoringStats"
       required:
-        - scoring
-        - utility
+      - scoring
+      - utility
     SkaterUtilityStats:
       type: object
       properties:
@@ -1157,8 +1157,8 @@ components:
           type: integer
           format: int32
       required:
-        - gp
-        - toiPerGame
+      - gp
+      - toiPerGame
     GoalieResponse:
       type: object
       properties:
@@ -1172,11 +1172,11 @@ components:
         headshot:
           type: string
         stats:
-          $ref: '#/components/schemas/GoalieStats'
+          $ref: "#/components/schemas/GoalieStats"
       required:
-        - id
-        - name
-        - stats
+      - id
+      - name
+      - stats
     GoalieScoringStats:
       type: object
       properties:
@@ -1208,25 +1208,25 @@ components:
           type: number
           format: double
       required:
-        - ga
-        - gaa
-        - gs
-        - l
-        - sa
-        - sho
-        - sv
-        - svPct
-        - w
+      - ga
+      - gaa
+      - gs
+      - l
+      - sa
+      - sho
+      - sv
+      - svPct
+      - w
     GoalieStats:
       type: object
       properties:
         utility:
-          $ref: '#/components/schemas/GoalieUtilityStats'
+          $ref: "#/components/schemas/GoalieUtilityStats"
         scoring:
-          $ref: '#/components/schemas/GoalieScoringStats'
+          $ref: "#/components/schemas/GoalieScoringStats"
       required:
-        - scoring
-        - utility
+      - scoring
+      - utility
     GoalieUtilityStats:
       type: object
       properties:
@@ -1234,7 +1234,7 @@ components:
           type: integer
           format: int32
       required:
-        - gp
+      - gp
     SyncRunResponse:
       type: object
       properties:
@@ -1272,13 +1272,13 @@ components:
         error:
           type: string
       required:
-        - added
-        - addedCount
-        - id
-        - removed
-        - removedCount
-        - startedAt
-        - status
+      - added
+      - addedCount
+      - id
+      - removed
+      - removedCount
+      - startedAt
+      - status
   securitySchemes:
     bearerAuth:
       type: http
