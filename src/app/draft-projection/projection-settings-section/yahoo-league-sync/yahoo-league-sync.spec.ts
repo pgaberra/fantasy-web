@@ -6,6 +6,7 @@ import { YahooService } from '../../../services/yahoo.service';
 import { ConnectionResponse } from '../../../api/models/connection-response';
 import { LeaguesResponse } from '../../../api/models/leagues-response';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
+import { YahooSync } from '../../../api/models/yahoo-sync';
 
 describe('YahooLeagueSyncComponent', () => {
   const connected: ConnectionResponse = { connected: true };
@@ -43,6 +44,24 @@ describe('YahooLeagueSyncComponent', () => {
     expect(component.connected()).toEqual(true);
     expect(component.leagues().length).toEqual(1);
     expect(component.selectedKey()).toEqual('nhl.l.123');
+  });
+
+  it('clears the selected league when the projection becomes unsynced', async () => {
+    await buildConnected();
+    const synced: YahooSync | null = {
+      leagueName: 'My League',
+      leagueKey: 'nhl.l.123',
+      syncedAt: 't',
+    };
+    const fixture = MockRender(YahooLeagueSyncComponent, { lastSync: synced });
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    expect(component.selectedKey()).toEqual('nhl.l.123');
+
+    (fixture.componentInstance as { lastSync: YahooSync | null }).lastSync = null;
+    fixture.detectChanges();
+    expect(component.selectedKey()).toBeNull();
   });
 
   it('shows the disconnected state when not connected', async () => {

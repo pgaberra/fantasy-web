@@ -1,4 +1,4 @@
-import { Component, inject, input, OnInit, output, signal } from '@angular/core';
+import { Component, inject, input, linkedSignal, OnInit, output, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { YahooService } from '../../../services/yahoo.service';
 import { LeagueSummary } from '../../../api/models/league-summary';
@@ -32,7 +32,7 @@ export class YahooLeagueSyncComponent implements OnInit {
   readonly connecting = signal(false);
   readonly leagues = signal<LeagueSummary[]>([]);
   readonly loadingLeagues = signal(false);
-  readonly selectedKey = signal<string | null>(null);
+  readonly selectedKey = linkedSignal<string | null>(() => this.lastSync()?.leagueKey ?? null);
   readonly syncing = signal(false);
   readonly error = signal<string | null>(null);
   readonly unsupportedStats = signal<string[]>([]);
@@ -99,10 +99,7 @@ export class YahooLeagueSyncComponent implements OnInit {
     this.yahoo.myLeagues().subscribe({
       next: (response) => {
         this.leagues.set(response.leagues);
-        const lastKey = this.lastSync()?.leagueKey;
-        if (lastKey && response.leagues.some((candidate) => candidate.leagueKey === lastKey)) {
-          this.selectedKey.set(lastKey);
-        } else if (response.leagues.length === 1) {
+        if (!this.lastSync() && response.leagues.length === 1) {
           this.selectedKey.set(response.leagues[0].leagueKey);
         }
         this.loadingLeagues.set(false);
