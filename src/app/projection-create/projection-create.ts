@@ -10,8 +10,11 @@ import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
 import { GoalieStats, Projection, ScoringType, SkaterStats } from '../models/projection.model';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { ProjectionSettingsSectionComponent } from '../draft-projection/projection-settings-section/projection-settings-section';
-import { YahooLeagueSyncComponent } from '../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
-import { LeagueProjectionSettingsResponse } from '../api/models/league-projection-settings-response';
+import {
+  YahooLeagueSyncComponent,
+  YahooSyncResult,
+} from '../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
+import { YahooSync } from '../api/models/yahoo-sync';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { InfoTooltipComponent } from '../shared/info-tooltip/info-tooltip';
 import {
@@ -84,6 +87,7 @@ export class ProjectionCreateComponent {
   rosterSlots = signal<RosterSlots>(DEFAULT_ROSTER_SLOTS);
   minGoalieGames = signal<number>(DEFAULT_MIN_GOALIE_GAMES);
   statWeights = signal<Record<ScoringStatKey, number>>(DEFAULT_STAT_WEIGHTS);
+  yahooSync = signal<YahooSync | null>(null);
 
   readonly canCreate = computed(
     () =>
@@ -116,7 +120,8 @@ export class ProjectionCreateComponent {
     this.copyFromId.set((event.target as HTMLSelectElement).value || null);
   }
 
-  applyYahooSettings(mapped: LeagueProjectionSettingsResponse): void {
+  applyYahooSettings(result: YahooSyncResult): void {
+    const mapped = result.settings;
     this.scoringType.set(mapped.scoringType);
     this.activeScoringColumns.set(new Set(mapped.activeScoringColumns as ScoringStatKey[]));
     this.activeUtilityColumns.set(new Set(mapped.activeUtilityColumns as SkaterUtilityStatKey[]));
@@ -127,6 +132,11 @@ export class ProjectionCreateComponent {
     if (mapped.statWeights) {
       this.statWeights.set(mapped.statWeights as Record<ScoringStatKey, number>);
     }
+    this.yahooSync.set({
+      leagueName: result.leagueName,
+      leagueKey: result.leagueKey,
+      syncedAt: new Date().toISOString(),
+    });
   }
 
   create(): void {
@@ -172,6 +182,7 @@ export class ProjectionCreateComponent {
       leagueSize: this.leagueSize(),
       rosterSlots: this.rosterSlots(),
       minGoalieGames: this.minGoalieGames(),
+      yahooSync: this.yahooSync(),
       playerProjections,
     };
   }

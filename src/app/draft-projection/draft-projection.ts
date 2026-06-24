@@ -18,8 +18,11 @@ import { Player } from '../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
 import { ActiveColumns, Projection, ScoringType } from '../models/projection.model';
 import { ProjectionSettingsSectionComponent } from './projection-settings-section/projection-settings-section';
-import { YahooLeagueSyncComponent } from './projection-settings-section/yahoo-league-sync/yahoo-league-sync';
-import { LeagueProjectionSettingsResponse } from '../api/models/league-projection-settings-response';
+import {
+  YahooLeagueSyncComponent,
+  YahooSyncResult,
+} from './projection-settings-section/yahoo-league-sync/yahoo-league-sync';
+import { YahooSync } from '../api/models/yahoo-sync';
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import {
@@ -105,6 +108,7 @@ export class DraftProjectionComponent implements OnInit {
   leagueSize = signal<number>(DEFAULT_LEAGUE_SIZE);
   rosterSlots = signal<RosterSlots>(DEFAULT_ROSTER_SLOTS);
   minGoalieGames = signal<number>(DEFAULT_MIN_GOALIE_GAMES);
+  yahooSync = signal<YahooSync | null>(null);
 
   readonly isLoading = computed(() => this.playersResource.isLoading() || !this.projectionLoaded());
 
@@ -137,7 +141,8 @@ export class DraftProjectionComponent implements OnInit {
     this.openExisting(id);
   }
 
-  applyYahooSettings(mapped: LeagueProjectionSettingsResponse): void {
+  applyYahooSettings(result: YahooSyncResult): void {
+    const mapped = result.settings;
     this.scoringType.set(mapped.scoringType);
     this.activeScoringColumns.set(new Set(mapped.activeScoringColumns as ScoringStatKey[]));
     this.activeUtilityColumns.set(new Set(mapped.activeUtilityColumns as SkaterUtilityStatKey[]));
@@ -148,6 +153,11 @@ export class DraftProjectionComponent implements OnInit {
     if (mapped.statWeights) {
       this.statWeights.set(mapped.statWeights as Record<ScoringStatKey, number>);
     }
+    this.yahooSync.set({
+      leagueName: result.leagueName,
+      leagueKey: result.leagueKey,
+      syncedAt: new Date().toISOString(),
+    });
   }
 
   private openExisting(id: string): void {
@@ -180,6 +190,7 @@ export class DraftProjectionComponent implements OnInit {
       leagueSize: this.leagueSize(),
       rosterSlots: this.rosterSlots(),
       minGoalieGames: this.minGoalieGames(),
+      yahooSync: this.yahooSync(),
       playerProjections: this.table()?.playerProjections?.() ?? this.loadedProjections() ?? [],
     };
   }
@@ -195,6 +206,7 @@ export class DraftProjectionComponent implements OnInit {
     this.leagueSize.set(state.leagueSize);
     this.rosterSlots.set(state.rosterSlots);
     this.minGoalieGames.set(state.minGoalieGames);
+    this.yahooSync.set(state.yahooSync);
     this.loadedProjections.set(state.playerProjections);
   }
 

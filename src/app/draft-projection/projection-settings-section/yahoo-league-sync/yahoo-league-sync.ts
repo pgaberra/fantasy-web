@@ -1,28 +1,32 @@
-import { Component, inject, OnInit, output, signal } from '@angular/core';
+import { Component, inject, input, OnInit, output, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { YahooService } from '../../../services/yahoo.service';
 import { LeagueSummary } from '../../../api/models/league-summary';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
+import { YahooSync } from '../../../api/models/yahoo-sync';
 
-interface SyncSummary {
+export interface YahooSyncResult {
+  settings: LeagueProjectionSettingsResponse;
   leagueName: string;
-  scoringType: string;
-  unsupportedStats: string[];
-  unsupportedRosterCodes: string[];
+  leagueKey: string;
 }
 
 /**
  * Connect a user's own Yahoo account and copy a chosen league's scoring + roster settings
- * into the projection. Emits the mapped settings; the parent applies them to its signals.
+ * into the projection. Emits the mapped settings plus the league identity; the parent
+ * applies them and persists which league was synced (and when) via the lastSync input.
  */
 @Component({
   selector: 'app-yahoo-league-sync',
+  imports: [DatePipe],
   templateUrl: './yahoo-league-sync.html',
   styleUrl: './yahoo-league-sync.css',
 })
 export class YahooLeagueSyncComponent implements OnInit {
   private readonly yahoo = inject(YahooService);
 
-  readonly synced = output<LeagueProjectionSettingsResponse>();
+  readonly lastSync = input<YahooSync | null>(null);
+  readonly synced = output<YahooSyncResult>();
 
   readonly connected = signal<boolean | null>(null);
   readonly connecting = signal(false);
@@ -31,7 +35,7 @@ export class YahooLeagueSyncComponent implements OnInit {
   readonly selectedKey = signal<string | null>(null);
   readonly syncing = signal(false);
   readonly error = signal<string | null>(null);
-  readonly summary = signal<SyncSummary | null>(null);
+  readonly unsupportedStats = signal<string[]>([]);
 
   ngOnInit(): void {
     this.yahoo.connectionStatus().subscribe({
@@ -61,7 +65,7 @@ export class YahooLeagueSyncComponent implements OnInit {
 
   onLeagueChange(event: Event): void {
     this.selectedKey.set((event.target as HTMLSelectElement).value || null);
-    this.summary.set(null);
+    this.unsupportedStats.set([]);
   }
 
   sync(): void {
@@ -72,17 +76,16 @@ export class YahooLeagueSyncComponent implements OnInit {
     const league = this.leagues().find((candidate) => candidate.leagueKey === key);
     this.syncing.set(true);
     this.error.set(null);
-    this.summary.set(null);
+    this.unsupportedStats.set([]);
     this.yahoo.leagueProjectionSettings(key).subscribe({
       next: (settings) => {
         this.syncing.set(false);
-        this.synced.emit(settings);
-        this.summary.set({
+        this.synced.emit({
+          settings,
           leagueName: league?.name ?? 'your league',
-          scoringType: settings.scoringType,
-          unsupportedStats: settings.unsupportedStats,
-          unsupportedRosterCodes: settings.unsupportedRosterCodes,
+          leagueKey: key,
         });
+        this.unsupportedStats.set(settings.unsupportedStats);
       },
       error: () => {
         this.syncing.set(false);
@@ -96,7 +99,10 @@ export class YahooLeagueSyncComponent implements OnInit {
     this.yahoo.myLeagues().subscribe({
       next: (response) => {
         this.leagues.set(response.leagues);
-        if (response.leagues.length === 1) {
+        const lastKey = this.lastSync()?.leagueKey;
+        if (lastKey && response.leagues.some((candidate) => candidate.leagueKey === lastKey)) {
+          this.selectedKey.set(lastKey);
+        } else if (response.leagues.length === 1) {
           this.selectedKey.set(response.leagues[0].leagueKey);
         }
         this.loadingLeagues.set(false);

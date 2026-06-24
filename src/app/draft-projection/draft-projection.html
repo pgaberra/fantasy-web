@@ -74,7 +74,7 @@
       [(rosterSlots)]="rosterSlots"
       [(minGoalieGames)]="minGoalieGames"
     >
-      <app-yahoo-league-sync (synced)="applyYahooSettings($event)" />
+      <app-yahoo-league-sync [lastSync]="yahooSync()" (synced)="applyYahooSettings($event)" />
     </app-projection-settings-section>
 
     <div class="projections-tables">

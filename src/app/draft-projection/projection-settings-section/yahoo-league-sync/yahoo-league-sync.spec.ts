@@ -1,7 +1,7 @@
 import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, it, expect } from 'vitest';
 import { of, throwError } from 'rxjs';
-import { YahooLeagueSyncComponent } from './yahoo-league-sync';
+import { YahooLeagueSyncComponent, YahooSyncResult } from './yahoo-league-sync';
 import { YahooService } from '../../../services/yahoo.service';
 import { ConnectionResponse } from '../../../api/models/connection-response';
 import { LeaguesResponse } from '../../../api/models/leagues-response';
@@ -60,21 +60,19 @@ describe('YahooLeagueSyncComponent', () => {
     expect(component.leagues().length).toEqual(0);
   });
 
-  it('emits the projection settings and builds a summary on sync', async () => {
+  it('emits the settings and league identity and tracks unsupported stats on sync', async () => {
     await buildConnected();
     const fixture = MockRender(YahooLeagueSyncComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
-    const emitted: LeagueProjectionSettingsResponse[] = [];
-    component.synced.subscribe((mapped) => emitted.push(mapped));
+    const emitted: YahooSyncResult[] = [];
+    component.synced.subscribe((result) => emitted.push(result));
 
     component.sync();
     await fixture.whenStable();
 
-    expect(emitted).toEqual([settings]);
-    expect(component.summary()?.leagueName).toEqual('My League');
-    expect(component.summary()?.scoringType).toEqual('points');
-    expect(component.summary()?.unsupportedStats).toEqual(['Game-Tying Goals']);
+    expect(emitted).toEqual([{ settings, leagueName: 'My League', leagueKey: 'nhl.l.123' }]);
+    expect(component.unsupportedStats()).toEqual(['Game-Tying Goals']);
   });
 
   it('surfaces an error when the settings fail to load', async () => {
