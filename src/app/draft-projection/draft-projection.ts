@@ -48,7 +48,7 @@ import {
   ProjectionState,
   toProjectionData,
 } from '../services/projection-serializer';
-import { createSyncGuard, syncedSettingsSignature } from '../services/projection-sync';
+import { ProjectionSyncService } from '../services/projection-sync.service';
 import { YahooService } from '../services/yahoo.service';
 
 const AUTOSAVE_DEBOUNCE_MS = 1200;
@@ -74,6 +74,7 @@ export class DraftProjectionComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly yahoo = inject(YahooService);
+  private readonly projectionSync = inject(ProjectionSyncService);
 
   private readonly table = viewChild(PlayerProjectionsTableComponent);
   private readonly renameInput = viewChild<ElementRef<HTMLInputElement>>('renameInput');
@@ -115,8 +116,9 @@ export class DraftProjectionComponent implements OnInit {
   minGoalieGames = signal<number>(DEFAULT_MIN_GOALIE_GAMES);
   yahooSync = signal<YahooSync | null>(null);
 
+  private readonly syncedSnapshot = signal<string | null>(null);
   private readonly syncedSettingsKey = computed(() =>
-    syncedSettingsSignature({
+    this.projectionSync.settingsSignature({
       scoringType: this.scoringType(),
       activeScoringColumns: this.activeScoringColumns(),
       activeUtilityColumns: this.activeUtilityColumns(),
@@ -125,8 +127,13 @@ export class DraftProjectionComponent implements OnInit {
       statWeights: this.statWeights(),
     }),
   );
-  private readonly syncGuard = createSyncGuard(this.yahooSync, this.syncedSettingsKey);
-  readonly diverged = this.syncGuard.diverged;
+  readonly diverged = computed(() =>
+    this.projectionSync.hasDiverged(
+      this.yahooSync(),
+      this.syncedSettingsKey(),
+      this.syncedSnapshot(),
+    ),
+  );
   readonly reSyncing = signal<boolean>(false);
   readonly reSyncError = signal<string | null>(null);
 
@@ -178,7 +185,7 @@ export class DraftProjectionComponent implements OnInit {
       leagueKey: result.leagueKey,
       syncedAt: new Date().toISOString(),
     });
-    this.syncGuard.markSynced();
+    this.syncedSnapshot.set(this.syncedSettingsKey());
   }
 
   reSync(): void {
@@ -209,7 +216,7 @@ export class DraftProjectionComponent implements OnInit {
 
   confirmUnsync(): void {
     this.yahooSync.set(null);
-    this.syncGuard.clear();
+    this.syncedSnapshot.set(null);
   }
 
   private openExisting(id: string): void {
@@ -260,7 +267,7 @@ export class DraftProjectionComponent implements OnInit {
     this.minGoalieGames.set(state.minGoalieGames);
     this.yahooSync.set(state.yahooSync);
     this.loadedProjections.set(state.playerProjections);
-    this.syncGuard.markSynced();
+    this.syncedSnapshot.set(this.syncedSettingsKey());
   }
 
   private autosave(): void {

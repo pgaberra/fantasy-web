@@ -6,6 +6,7 @@ import { ActivatedRoute } from '@angular/router';
 import { DraftProjectionComponent } from './draft-projection';
 import { PlayerService } from '../services/player.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
+import { ProjectionSyncService } from '../services/projection-sync.service';
 import { Goalie, Skater } from '../models/player.model';
 import { ProjectionResponse } from '../api/models/projection-response';
 
@@ -74,6 +75,7 @@ describe('DraftProjectionComponent', () => {
         loadProjection: () => of(mockProjection),
         updateProjection: () => of(mockProjection),
       })
+      .keep(ProjectionSyncService)
       .provide({
         provide: ActivatedRoute,
         useValue: { snapshot: { paramMap: { get: () => 'p1' } } },

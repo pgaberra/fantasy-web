@@ -37,7 +37,7 @@ import {
   ProjectionState,
   toProjectionData,
 } from '../services/projection-serializer';
-import { createSyncGuard, syncedSettingsSignature } from '../services/projection-sync';
+import { ProjectionSyncService } from '../services/projection-sync.service';
 import { YahooService } from '../services/yahoo.service';
 
 type DataSource = 'last-season' | 'blank' | 'copy';
@@ -62,6 +62,7 @@ export class ProjectionCreateComponent {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly yahoo = inject(YahooService);
+  private readonly projectionSync = inject(ProjectionSyncService);
 
   private readonly dataResource = rxResource({
     stream: () =>
@@ -94,8 +95,9 @@ export class ProjectionCreateComponent {
   statWeights = signal<Record<ScoringStatKey, number>>(DEFAULT_STAT_WEIGHTS);
   yahooSync = signal<YahooSync | null>(null);
 
+  private readonly syncedSnapshot = signal<string | null>(null);
   private readonly syncedSettingsKey = computed(() =>
-    syncedSettingsSignature({
+    this.projectionSync.settingsSignature({
       scoringType: this.scoringType(),
       activeScoringColumns: this.activeScoringColumns(),
       activeUtilityColumns: this.activeUtilityColumns(),
@@ -104,8 +106,13 @@ export class ProjectionCreateComponent {
       statWeights: this.statWeights(),
     }),
   );
-  private readonly syncGuard = createSyncGuard(this.yahooSync, this.syncedSettingsKey);
-  readonly diverged = this.syncGuard.diverged;
+  readonly diverged = computed(() =>
+    this.projectionSync.hasDiverged(
+      this.yahooSync(),
+      this.syncedSettingsKey(),
+      this.syncedSnapshot(),
+    ),
+  );
   readonly reSyncing = signal<boolean>(false);
   readonly reSyncError = signal<string | null>(null);
 
@@ -157,7 +164,7 @@ export class ProjectionCreateComponent {
       leagueKey: result.leagueKey,
       syncedAt: new Date().toISOString(),
     });
-    this.syncGuard.markSynced();
+    this.syncedSnapshot.set(this.syncedSettingsKey());
   }
 
   reSync(): void {
@@ -188,7 +195,7 @@ export class ProjectionCreateComponent {
 
   confirmUnsync(): void {
     this.yahooSync.set(null);
-    this.syncGuard.clear();
+    this.syncedSnapshot.set(null);
   }
 
   create(): void {
