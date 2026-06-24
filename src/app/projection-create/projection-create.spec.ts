@@ -37,6 +37,31 @@ describe('ProjectionCreateComponent', () => {
     data: { settings: {} as never, players: [] },
   };
 
+  const source: ProjectionResponse = {
+    id: 'src',
+    name: 'Source',
+    season: '20262027',
+    createdAt: '2026-06-01T00:00:00Z',
+    updatedAt: '2026-06-01T00:00:00Z',
+    data: {
+      settings: {
+        scoringType: 'category',
+        statWeights: { goals: 5 },
+        activeScoringColumns: ['goals'],
+        activeUtilityColumns: ['gp'],
+        scaleSettings: {},
+        decimalSettings: { goals: 0 },
+        useDefaultDecimals: false,
+        leagueSize: 10,
+        rosterSlots: { c: 1, lw: 1, rw: 1, d: 2, util: 1, bn: 2, g: 2 },
+        minGoalieGames: 25,
+      },
+      players: [
+        { playerId: 1, type: 'skater', stats: { utility: { gp: 82 }, scoring: { goals: 64 } } },
+      ],
+    },
+  };
+
   const summary: ProjectionSummaryResponse = {
     id: 'p1',
     name: 'My Projection',
@@ -54,7 +79,11 @@ describe('ProjectionCreateComponent', () => {
     return MockBuilder(ProjectionCreateComponent)
       .keep(StatInfoService)
       .mock(PlayerService, { getPlayers: () => of([skater]) })
-      .mock(ProjectionStorageService, { listProjections: () => of([]), createProjection })
+      .mock(ProjectionStorageService, {
+        listProjections: () => of([]),
+        createProjection,
+        loadProjection: () => of(source),
+      })
       .provide({ provide: Router, useValue: { navigate } });
   });
 
@@ -103,5 +132,32 @@ describe('ProjectionCreateComponent', () => {
 
     expect(createProjection).toHaveBeenCalledOnce();
     expect(navigate).toHaveBeenCalledWith(['/projections', 'new-id']);
+  });
+
+  it('creates from scratch with default (points) settings', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+
+    fixture.point.componentInstance.create();
+
+    expect(createProjection).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          settings: expect.objectContaining({ scoringType: 'points' }),
+        }),
+      }),
+    );
+  });
+
+  it('copies the source projection data (settings and players) verbatim', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.dataSource.set('copy');
+    component.copyFromId.set('src');
+    component.create();
+
+    expect(createProjection).toHaveBeenCalledWith(expect.objectContaining({ data: source.data }));
   });
 });
