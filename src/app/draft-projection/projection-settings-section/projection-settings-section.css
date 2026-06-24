@@ -221,7 +221,7 @@
 .settings-group-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--color-primary);
   margin: 0;
 }
 
