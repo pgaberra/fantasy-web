@@ -1,6 +1,18 @@
 <section class="table-section">
   <div class="table-header">
-    <h2>Player Projections</h2>
+    <div class="table-title">
+      <h2>Player Projections</h2>
+      <span class="save-status">
+        @switch (saveStatus()) {
+          @case ('saving') {
+            Saving…
+          }
+          @case ('saved') {
+            Saved
+          }
+        }
+      </span>
+    </div>
     <div class="table-controls">
       <div class="search-control">
         <label for="player-search">Search</label>

@@ -79,6 +79,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly leagueSize = input<number>(DEFAULT_LEAGUE_SIZE);
   readonly rosterSlots = input<RosterSlots>(DEFAULT_ROSTER_SLOTS);
   readonly minGoalieGames = input<number>(DEFAULT_MIN_GOALIE_GAMES);
+  readonly saveStatus = input<'idle' | 'saving' | 'saved'>('idle');
 
   readonly filteredActiveColumns = computed<ActiveColumns>(() =>
     this.activeColumnsService.filterAndSortActiveColumns(
