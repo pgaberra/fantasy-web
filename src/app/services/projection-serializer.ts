@@ -17,6 +17,7 @@ import {
 } from '../draft-projection/projection-defaults';
 import { RosterSlots } from '../api/models/roster-slots';
 import { YahooSync } from '../api/models/yahoo-sync';
+import { DraftPick } from '../api/models/draft-pick';
 
 export interface ProjectionState {
   scoringType: ScoringType;
@@ -31,6 +32,7 @@ export interface ProjectionState {
   minGoalieGames: number;
   playerProjections: Projection[];
   yahooSync: YahooSync | null;
+  draftPicks: DraftPick[];
 }
 
 export function toProjectionData(state: ProjectionState): ProjectionData {
@@ -60,6 +62,9 @@ export function toProjectionData(state: ProjectionState): ProjectionData {
         scoring: { ...(projection.stats.scoring as Record<string, number>) },
       },
     })),
+    draft: state.draftPicks.length
+      ? { picks: state.draftPicks.map((pick) => ({ ...pick })) }
+      : undefined,
   };
 }
 
@@ -83,6 +88,7 @@ export function fromProjectionData(data: ProjectionData): ProjectionState {
     rosterSlots: data.settings.rosterSlots ?? { ...DEFAULT_ROSTER_SLOTS },
     minGoalieGames: data.settings.minGoalieGames ?? DEFAULT_MIN_GOALIE_GAMES,
     yahooSync: data.settings.yahooSync ?? null,
+    draftPicks: data.draft?.picks ?? [],
     playerProjections: data.players.map(toProjection),
   };
 }

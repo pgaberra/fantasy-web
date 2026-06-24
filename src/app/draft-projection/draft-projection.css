@@ -34,6 +34,12 @@
   display: inline-block;
 }
 
+.draft-mode-link {
+  display: block;
+  width: fit-content;
+  margin-top: 0.75rem;
+}
+
 .rename-trigger {
   display: inline-flex;
   align-items: center;

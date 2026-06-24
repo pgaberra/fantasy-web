@@ -99,7 +99,7 @@ export class ProjectionCreateComponent {
         .loadProjection(this.copyFromId()!)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: (projection) => this.persist(projection.data),
+          next: (projection) => this.persist({ ...projection.data, draft: undefined }),
           error: () => this.isCreating.set(false),
         });
       return;
@@ -132,6 +132,7 @@ export class ProjectionCreateComponent {
       rosterSlots: DEFAULT_ROSTER_SLOTS,
       minGoalieGames: DEFAULT_MIN_GOALIE_GAMES,
       yahooSync: null,
+      draftPicks: [],
       playerProjections,
     };
   }
