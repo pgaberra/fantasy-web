@@ -23,6 +23,7 @@ import {
   YahooSyncResult,
 } from './projection-settings-section/yahoo-league-sync/yahoo-league-sync';
 import { YahooSync } from '../api/models/yahoo-sync';
+import { SyncWarningDialogComponent } from './sync-warning-dialog/sync-warning-dialog';
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import {
@@ -47,6 +48,8 @@ import {
   ProjectionState,
   toProjectionData,
 } from '../services/projection-serializer';
+import { createSyncGuard, syncedSettingsSignature } from '../services/projection-sync';
+import { YahooService } from '../services/yahoo.service';
 
 const AUTOSAVE_DEBOUNCE_MS = 1200;
 
@@ -57,6 +60,7 @@ const AUTOSAVE_DEBOUNCE_MS = 1200;
     YahooLeagueSyncComponent,
     PlayerProjectionsTableComponent,
     LoadingIndicatorComponent,
+    SyncWarningDialogComponent,
     RouterLink,
   ],
   templateUrl: './draft-projection.html',
@@ -69,6 +73,7 @@ export class DraftProjectionComponent implements OnInit {
   private readonly projectionStorage = inject(ProjectionStorageService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly yahoo = inject(YahooService);
 
   private readonly table = viewChild(PlayerProjectionsTableComponent);
   private readonly renameInput = viewChild<ElementRef<HTMLInputElement>>('renameInput');
@@ -109,6 +114,21 @@ export class DraftProjectionComponent implements OnInit {
   rosterSlots = signal<RosterSlots>(DEFAULT_ROSTER_SLOTS);
   minGoalieGames = signal<number>(DEFAULT_MIN_GOALIE_GAMES);
   yahooSync = signal<YahooSync | null>(null);
+
+  private readonly syncedSettingsKey = computed(() =>
+    syncedSettingsSignature({
+      scoringType: this.scoringType(),
+      activeScoringColumns: this.activeScoringColumns(),
+      activeUtilityColumns: this.activeUtilityColumns(),
+      leagueSize: this.leagueSize(),
+      rosterSlots: this.rosterSlots(),
+      statWeights: this.statWeights(),
+    }),
+  );
+  private readonly syncGuard = createSyncGuard(this.yahooSync, this.syncedSettingsKey);
+  readonly diverged = this.syncGuard.diverged;
+  readonly reSyncing = signal<boolean>(false);
+  readonly reSyncError = signal<string | null>(null);
 
   readonly isLoading = computed(() => this.playersResource.isLoading() || !this.projectionLoaded());
 
@@ -158,6 +178,38 @@ export class DraftProjectionComponent implements OnInit {
       leagueKey: result.leagueKey,
       syncedAt: new Date().toISOString(),
     });
+    this.syncGuard.markSynced();
+  }
+
+  reSync(): void {
+    const sync = this.yahooSync();
+    if (!sync || this.reSyncing()) {
+      return;
+    }
+    this.reSyncing.set(true);
+    this.reSyncError.set(null);
+    this.yahoo
+      .leagueProjectionSettings(sync.leagueKey)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (settings) => {
+          this.applyYahooSettings({
+            settings,
+            leagueName: sync.leagueName,
+            leagueKey: sync.leagueKey,
+          });
+          this.reSyncing.set(false);
+        },
+        error: () => {
+          this.reSyncing.set(false);
+          this.reSyncError.set('Could not re-sync from Yahoo. Try again.');
+        },
+      });
+  }
+
+  confirmUnsync(): void {
+    this.yahooSync.set(null);
+    this.syncGuard.clear();
   }
 
   private openExisting(id: string): void {
@@ -208,6 +260,7 @@ export class DraftProjectionComponent implements OnInit {
     this.minGoalieGames.set(state.minGoalieGames);
     this.yahooSync.set(state.yahooSync);
     this.loadedProjections.set(state.playerProjections);
+    this.syncGuard.markSynced();
   }
 
   private autosave(): void {

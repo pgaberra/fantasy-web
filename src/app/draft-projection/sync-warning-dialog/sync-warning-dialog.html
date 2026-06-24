@@ -1,0 +1,37 @@
+<div class="dialog-backdrop">
+  <div
+    class="dialog-card"
+    role="alertdialog"
+    aria-modal="true"
+    aria-labelledby="sync-warning-title"
+    aria-describedby="sync-warning-body"
+  >
+    <h2 id="sync-warning-title" class="dialog-title">No longer in sync</h2>
+    <p id="sync-warning-body" class="dialog-body">
+      Changing this setting will take this projection out of sync with
+      <strong>{{ leagueName() }}</strong
+      >. If the league's settings changed in Yahoo, re-sync to pull the latest instead.
+    </p>
+    @if (error()) {
+      <p class="dialog-error" role="alert">{{ error() }}</p>
+    }
+    <div class="dialog-actions">
+      <button
+        type="button"
+        class="btn btn-secondary btn-sm"
+        [disabled]="reSyncing()"
+        (click)="reSync.emit()"
+      >
+        {{ reSyncing() ? 'Re-syncing…' : 'Re-sync settings' }}
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary btn-sm"
+        [disabled]="reSyncing()"
+        (click)="confirm.emit()"
+      >
+        Ok
+      </button>
+    </div>
+  </div>
+</div>

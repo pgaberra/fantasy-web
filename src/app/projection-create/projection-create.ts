@@ -15,6 +15,7 @@ import {
   YahooSyncResult,
 } from '../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
 import { YahooSync } from '../api/models/yahoo-sync';
+import { SyncWarningDialogComponent } from '../draft-projection/sync-warning-dialog/sync-warning-dialog';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { InfoTooltipComponent } from '../shared/info-tooltip/info-tooltip';
 import {
@@ -36,6 +37,8 @@ import {
   ProjectionState,
   toProjectionData,
 } from '../services/projection-serializer';
+import { createSyncGuard, syncedSettingsSignature } from '../services/projection-sync';
+import { YahooService } from '../services/yahoo.service';
 
 type DataSource = 'last-season' | 'blank' | 'copy';
 
@@ -46,6 +49,7 @@ type DataSource = 'last-season' | 'blank' | 'copy';
     YahooLeagueSyncComponent,
     LoadingIndicatorComponent,
     InfoTooltipComponent,
+    SyncWarningDialogComponent,
     RouterLink,
   ],
   templateUrl: './projection-create.html',
@@ -57,6 +61,7 @@ export class ProjectionCreateComponent {
   private readonly statInfoService = inject(StatInfoService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly yahoo = inject(YahooService);
 
   private readonly dataResource = rxResource({
     stream: () =>
@@ -88,6 +93,21 @@ export class ProjectionCreateComponent {
   minGoalieGames = signal<number>(DEFAULT_MIN_GOALIE_GAMES);
   statWeights = signal<Record<ScoringStatKey, number>>(DEFAULT_STAT_WEIGHTS);
   yahooSync = signal<YahooSync | null>(null);
+
+  private readonly syncedSettingsKey = computed(() =>
+    syncedSettingsSignature({
+      scoringType: this.scoringType(),
+      activeScoringColumns: this.activeScoringColumns(),
+      activeUtilityColumns: this.activeUtilityColumns(),
+      leagueSize: this.leagueSize(),
+      rosterSlots: this.rosterSlots(),
+      statWeights: this.statWeights(),
+    }),
+  );
+  private readonly syncGuard = createSyncGuard(this.yahooSync, this.syncedSettingsKey);
+  readonly diverged = this.syncGuard.diverged;
+  readonly reSyncing = signal<boolean>(false);
+  readonly reSyncError = signal<string | null>(null);
 
   readonly canCreate = computed(
     () =>
@@ -137,6 +157,38 @@ export class ProjectionCreateComponent {
       leagueKey: result.leagueKey,
       syncedAt: new Date().toISOString(),
     });
+    this.syncGuard.markSynced();
+  }
+
+  reSync(): void {
+    const sync = this.yahooSync();
+    if (!sync || this.reSyncing()) {
+      return;
+    }
+    this.reSyncing.set(true);
+    this.reSyncError.set(null);
+    this.yahoo
+      .leagueProjectionSettings(sync.leagueKey)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (settings) => {
+          this.applyYahooSettings({
+            settings,
+            leagueName: sync.leagueName,
+            leagueKey: sync.leagueKey,
+          });
+          this.reSyncing.set(false);
+        },
+        error: () => {
+          this.reSyncing.set(false);
+          this.reSyncError.set('Could not re-sync from Yahoo. Try again.');
+        },
+      });
+  }
+
+  confirmUnsync(): void {
+    this.yahooSync.set(null);
+    this.syncGuard.clear();
   }
 
   create(): void {

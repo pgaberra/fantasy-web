@@ -147,4 +147,33 @@ describe('DraftProjectionComponent', () => {
     expect(component.renameError()).toContain('empty');
     expect(updateSpy).not.toHaveBeenCalled();
   });
+
+  it('warns when a synced setting changes and clears the sync on confirm', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.applyYahooSettings({
+      settings: {
+        scoringType: 'category',
+        activeScoringColumns: ['goals'],
+        activeUtilityColumns: ['gp'],
+        statWeights: { goals: 5 },
+        rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
+        leagueSize: 12,
+        unsupportedStats: [],
+        unsupportedRosterCodes: [],
+      },
+      leagueName: 'HHL',
+      leagueKey: 'nhl.l.1',
+    });
+    expect(component.diverged()).toEqual(false);
+
+    component.leagueSize.set(20);
+    expect(component.diverged()).toEqual(true);
+
+    component.confirmUnsync();
+    expect(component.yahooSync()).toBeNull();
+    expect(component.diverged()).toEqual(false);
+  });
 });
