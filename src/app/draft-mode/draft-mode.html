@@ -1,0 +1,122 @@
+@if (!loaded()) {
+  <app-loading-indicator />
+} @else {
+  <div class="draft-mode">
+    <div class="draft-header">
+      <a [routerLink]="['/projections', projectionId()]" class="back-link">← Exit draft mode</a>
+      <div class="draft-title">
+        <h1>{{ projectionName() }}</h1>
+        <span class="draft-tag">Draft mode</span>
+        @switch (saveStatus()) {
+          @case ('saving') {
+            <span class="save-status">Saving…</span>
+          }
+          @case ('saved') {
+            <span class="save-status">Saved</span>
+          }
+        }
+      </div>
+      <div class="draft-meta">
+        <span class="meta-stat"
+          ><strong>{{ filledCount() }}</strong> / {{ totalSlots() }} roster spots</span
+        >
+        <span class="meta-stat"
+          ><strong>{{ takenCount() }}</strong> taken by others</span
+        >
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          [disabled]="!canUndo()"
+          (click)="undoLast()"
+        >
+          Undo last pick
+        </button>
+      </div>
+    </div>
+
+    <div class="draft-layout">
+      <section class="roster-panel">
+        <h2>My roster</h2>
+        <div class="roster-grid">
+          @for (slot of roster().slots; track slot.id) {
+            <div class="roster-slot" [class.filled]="slot.playerId !== null">
+              <span class="slot-label">{{ slot.label }}</span>
+              @if (slot.playerId !== null) {
+                <button
+                  type="button"
+                  class="slot-player"
+                  (click)="release(slot.playerId)"
+                  title="Release player"
+                >
+                  <span class="slot-name">{{ playerName(slot.playerId) }}</span>
+                  <span class="slot-team">{{ playerTeam(slot.playerId) }}</span>
+                  <span class="release-x" aria-hidden="true">×</span>
+                </button>
+              } @else {
+                <span class="slot-empty">Empty</span>
+              }
+            </div>
+          }
+          @for (playerId of roster().unplaced; track playerId) {
+            <div class="roster-slot filled">
+              <span class="slot-label">Extra</span>
+              <button
+                type="button"
+                class="slot-player"
+                (click)="release(playerId)"
+                title="Release player"
+              >
+                <span class="slot-name">{{ playerName(playerId) }}</span>
+                <span class="release-x" aria-hidden="true">×</span>
+              </button>
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="available-panel">
+        <div class="available-header">
+          <h2>Available players</h2>
+          <input
+            type="search"
+            class="draft-search"
+            placeholder="Search player…"
+            [value]="searchTerm()"
+            (input)="onSearchInput($event)"
+          />
+        </div>
+        @if (available().length) {
+          <div class="available-list">
+            @for (sp of available(); track sp.projection.playerId; let i = $index) {
+              <div class="available-row">
+                <span class="row-rank">{{ i + 1 }}</span>
+                <span class="row-name">{{ playerName(sp.projection.playerId) }}</span>
+                <span class="row-pos">{{ playerPositions(sp.projection.playerId) }}</span>
+                <span class="row-team">{{ playerTeam(sp.projection.playerId) }}</span>
+                <span class="row-score">{{ scoreLabel(sp) }}</span>
+                <span class="row-actions">
+                  <button
+                    type="button"
+                    class="btn btn-primary btn-sm"
+                    (click)="draftMine(sp.projection.playerId)"
+                  >
+                    Draft
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm"
+                    (click)="markTaken(sp.projection.playerId)"
+                  >
+                    Taken
+                  </button>
+                </span>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="available-empty">No available players match.</p>
+        }
+      </section>
+    </div>
+  </div>
+}

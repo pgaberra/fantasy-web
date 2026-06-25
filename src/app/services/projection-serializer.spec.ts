@@ -32,6 +32,7 @@ const sampleState: ProjectionState = {
     leagueKey: 'nhl.l.123',
     syncedAt: '2026-06-20T12:00:00.000Z',
   },
+  draftPicks: [{ playerId: 1, by: 'me' }],
   playerProjections: [
     {
       type: 'skater',
@@ -57,6 +58,13 @@ describe('projection-serializer', () => {
     const roundTripped = fromProjectionData(toProjectionData(sampleState));
 
     expect(roundTripped).toEqual(sampleState);
+  });
+
+  it('defaults draftPicks to [] for projections without a draft', () => {
+    const data = toProjectionData(sampleState);
+    delete data.draft;
+
+    expect(fromProjectionData(data).draftPicks).toEqual([]);
   });
 
   it('serializes sets and nested scale settings to arrays', () => {
