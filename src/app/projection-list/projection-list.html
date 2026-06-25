@@ -62,6 +62,7 @@
           app-projection-card
           [projection]="projection"
           (edit)="edit(projection.id)"
+          (draft)="draft(projection.id)"
           (remove)="remove(projection.id)"
         ></li>
       }

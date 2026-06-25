@@ -13,6 +13,9 @@
     </button>
   } @else {
     <button type="button" class="btn btn-primary btn-sm edit" (click)="edit.emit()">Edit</button>
+    <button type="button" class="btn btn-secondary btn-sm draft" (click)="draft.emit()">
+      Draft mode
+    </button>
     <button type="button" class="btn btn-danger btn-sm delete" (click)="startDelete()">
       Delete
     </button>
