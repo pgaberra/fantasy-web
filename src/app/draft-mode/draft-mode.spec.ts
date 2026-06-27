@@ -7,6 +7,7 @@ import { ProjectionStorageService } from '../services/projection-storage.service
 import { PlayerService } from '../services/player.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { ProjectionCalculationService } from '../services/projection-calculation.service';
+import { PositionFilterService } from '../services/position-filter.service';
 import { Player } from '../models/player.model';
 import { SkaterStats } from '../models/projection.model';
 import { ProjectionResponse } from '../api/models/projection-response';
@@ -50,6 +51,7 @@ describe('DraftModeComponent', () => {
     return MockBuilder(DraftModeComponent)
       .keep(ProjectionRankingService)
       .keep(ProjectionCalculationService)
+      .keep(PositionFilterService)
       .mock(PlayerService, { getPlayers: () => of(players) })
       .mock(ProjectionStorageService, {
         loadProjection: () => of(projection),
