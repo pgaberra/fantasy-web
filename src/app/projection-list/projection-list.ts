@@ -39,6 +39,10 @@ export class ProjectionListComponent {
     void this.router.navigate(['/projections', id]);
   }
 
+  draft(id: string): void {
+    void this.router.navigate(['/projections', id, 'draft']);
+  }
+
   remove(id: string): Promise<void> {
     return firstValueFrom(this.storage.deleteProjection(id))
       .then(() => {

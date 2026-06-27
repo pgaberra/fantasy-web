@@ -11,6 +11,7 @@ import { RelativeTimePipe } from '../../pipes/relative-time.pipe';
 export class ProjectionCardComponent {
   readonly projection = input.required<ProjectionSummaryResponse>();
   readonly edit = output<void>();
+  readonly draft = output<void>();
   readonly remove = output<void>();
 
   readonly confirmingDelete = signal(false);
