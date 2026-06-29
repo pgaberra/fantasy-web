@@ -246,9 +246,7 @@
             <p class="modal-text">
               Removing <strong>{{ playerName(preview.playerId) }}</strong> ({{
                 preview.mine ? 'You' : preview.teamName
-              }}) shifts the {{ preview.changes.length }} later
-              {{ preview.changes.length === 1 ? 'pick' : 'picks' }} up — each re-attributes to its
-              new slot in the snake order:
+              }}) will affect the following subsequent picks:
             </p>
             <div class="modal-changes">
               @for (change of preview.changes; track change.oldOverall) {
