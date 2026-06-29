@@ -134,7 +134,7 @@ function sanitizeDraft(raw: DraftState | undefined): DraftState | null {
   if (new Set(raw.order).size !== ids.size || !raw.order.every((id) => ids.has(id))) {
     return null;
   }
-  if (!raw.picks.every((pick) => typeof pick.teamId === 'string' && ids.has(pick.teamId))) {
+  if (!raw.picks.every((pick) => ids.has(pick.teamId))) {
     return null;
   }
   return cloneDraft(raw);
