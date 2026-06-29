@@ -23,7 +23,7 @@ import {
   YahooSyncResult,
 } from './projection-settings-section/yahoo-league-sync/yahoo-league-sync';
 import { YahooSync } from '../api/models/yahoo-sync';
-import { DraftPick } from '../api/models/draft-pick';
+import { DraftState } from '../api/models/draft-state';
 import { SyncWarningDialogComponent } from './sync-warning-dialog/sync-warning-dialog';
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
@@ -116,7 +116,7 @@ export class DraftProjectionComponent implements OnInit {
   rosterSlots = signal<RosterSlots>(DEFAULT_ROSTER_SLOTS);
   minGoalieGames = signal<number>(DEFAULT_MIN_GOALIE_GAMES);
   yahooSync = signal<YahooSync | null>(null);
-  draftPicks = signal<DraftPick[]>([]);
+  draft = signal<DraftState | null>(null);
 
   private readonly syncedSnapshot = signal<string | null>(null);
   private readonly syncedSettingsKey = computed(() =>
@@ -252,7 +252,7 @@ export class DraftProjectionComponent implements OnInit {
       rosterSlots: this.rosterSlots(),
       minGoalieGames: this.minGoalieGames(),
       yahooSync: this.yahooSync(),
-      draftPicks: this.draftPicks(),
+      draft: this.draft(),
       playerProjections: this.table()?.playerProjections?.() ?? this.loadedProjections() ?? [],
     };
   }
@@ -269,7 +269,7 @@ export class DraftProjectionComponent implements OnInit {
     this.rosterSlots.set(state.rosterSlots);
     this.minGoalieGames.set(state.minGoalieGames);
     this.yahooSync.set(state.yahooSync);
-    this.draftPicks.set(state.draftPicks);
+    this.draft.set(state.draft);
     this.loadedProjections.set(state.playerProjections);
     this.syncedSnapshot.set(this.syncedSettingsKey());
   }

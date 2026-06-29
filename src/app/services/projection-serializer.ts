@@ -17,7 +17,7 @@ import {
 } from '../draft-projection/projection-defaults';
 import { RosterSlots } from '../api/models/roster-slots';
 import { YahooSync } from '../api/models/yahoo-sync';
-import { DraftPick } from '../api/models/draft-pick';
+import { DraftState } from '../api/models/draft-state';
 
 export interface ProjectionState {
   scoringType: ScoringType;
@@ -32,7 +32,7 @@ export interface ProjectionState {
   minGoalieGames: number;
   playerProjections: Projection[];
   yahooSync: YahooSync | null;
-  draftPicks: DraftPick[];
+  draft: DraftState | null;
 }
 
 export function toProjectionData(state: ProjectionState): ProjectionData {
@@ -62,9 +62,7 @@ export function toProjectionData(state: ProjectionState): ProjectionData {
         scoring: { ...(projection.stats.scoring as Record<string, number>) },
       },
     })),
-    draft: state.draftPicks.length
-      ? { picks: state.draftPicks.map((pick) => ({ ...pick })) }
-      : undefined,
+    draft: state.draft ? cloneDraft(state.draft) : undefined,
   };
 }
 
@@ -88,7 +86,7 @@ export function fromProjectionData(data: ProjectionData): ProjectionState {
     rosterSlots: data.settings.rosterSlots ?? { ...DEFAULT_ROSTER_SLOTS },
     minGoalieGames: data.settings.minGoalieGames ?? DEFAULT_MIN_GOALIE_GAMES,
     yahooSync: data.settings.yahooSync ?? null,
-    draftPicks: data.draft?.picks ?? [],
+    draft: sanitizeDraft(data.draft),
     playerProjections: data.players.map(toProjection),
   };
 }
@@ -112,4 +110,32 @@ function toProjection(player: ApiPlayerProjection): Projection {
       scoring: player.stats.scoring as GoalieScoringStats,
     },
   };
+}
+
+function cloneDraft(draft: DraftState): DraftState {
+  return {
+    teams: draft.teams.map((team) => ({ ...team })),
+    order: [...draft.order],
+    picks: draft.picks.map((pick) => ({ ...pick })),
+  };
+}
+
+function sanitizeDraft(raw: DraftState | undefined): DraftState | null {
+  if (!raw || !Array.isArray(raw.teams) || raw.teams.length === 0) {
+    return null;
+  }
+  if (!Array.isArray(raw.order) || !Array.isArray(raw.picks)) {
+    return null;
+  }
+  if (raw.teams.filter((team) => team.mine).length !== 1) {
+    return null;
+  }
+  const ids = new Set(raw.teams.map((team) => team.id));
+  if (new Set(raw.order).size !== ids.size || !raw.order.every((id) => ids.has(id))) {
+    return null;
+  }
+  if (!raw.picks.every((pick) => ids.has(pick.teamId))) {
+    return null;
+  }
+  return cloneDraft(raw);
 }

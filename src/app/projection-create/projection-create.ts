@@ -132,7 +132,7 @@ export class ProjectionCreateComponent {
       rosterSlots: DEFAULT_ROSTER_SLOTS,
       minGoalieGames: DEFAULT_MIN_GOALIE_GAMES,
       yahooSync: null,
-      draftPicks: [],
+      draft: null,
       playerProjections,
     };
   }
