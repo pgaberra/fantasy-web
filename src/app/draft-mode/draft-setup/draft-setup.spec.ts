@@ -35,7 +35,7 @@ describe('DraftSetupComponent', () => {
     const firstId = component.rows()[0].id;
     const secondId = component.rows()[1].id;
 
-    component.moveRow(0, 1);
+    component.reorder(0, 1);
 
     expect(component.rows()[0].id).toEqual(secondId);
     expect(component.rows()[1].id).toEqual(firstId);

@@ -2,6 +2,13 @@ import { Component, computed, input, OnInit, output, signal } from '@angular/cor
 import { DraftState } from '../../api/models/draft-state';
 import { DraftTeam } from '../../api/models/draft-team';
 import { DEFAULT_LEAGUE_SIZE } from '../../draft-projection/projection-defaults';
+import {
+  CdkDrag,
+  CdkDragDrop,
+  CdkDragHandle,
+  CdkDropList,
+  moveItemInArray,
+} from '@angular/cdk/drag-drop';
 
 interface SetupRow {
   id: string;
@@ -15,6 +22,7 @@ const MINE_ID = 'team-me';
 
 @Component({
   selector: 'app-draft-setup',
+  imports: [CdkDropList, CdkDrag, CdkDragHandle],
   templateUrl: './draft-setup.html',
   styleUrl: './draft-setup.css',
 })
@@ -55,14 +63,14 @@ export class DraftSetupComponent implements OnInit {
     this.rows.update((rows) => rows.map((row, i) => (i === index ? { ...row, name: value } : row)));
   }
 
-  moveRow(index: number, direction: -1 | 1): void {
-    const target = index + direction;
-    if (target < 0 || target >= this.rows().length) {
-      return;
-    }
+  drop(event: CdkDragDrop<SetupRow[]>): void {
+    this.reorder(event.previousIndex, event.currentIndex);
+  }
+
+  reorder(previousIndex: number, currentIndex: number): void {
     this.rows.update((rows) => {
       const next = [...rows];
-      [next[index], next[target]] = [next[target], next[index]];
+      moveItemInArray(next, previousIndex, currentIndex);
       return next;
     });
   }
