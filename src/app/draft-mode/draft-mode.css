@@ -127,6 +127,30 @@
   overflow-y: auto;
 }
 
+.feed-round {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0.1rem;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-subtle);
+}
+
+.feed-round:first-child {
+  margin-top: 0;
+}
+
+.feed-round::before,
+.feed-round::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
 .feed-row {
   display: flex;
   align-items: center;

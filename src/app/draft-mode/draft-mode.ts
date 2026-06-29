@@ -154,24 +154,34 @@ export class DraftModeComponent implements OnInit {
   readonly isMyPick = computed(() => !!this.onClockTeam()?.mine);
   readonly canUndo = computed(() => this.picks().length > 0);
 
-  readonly pickFeed = computed(() => {
+  readonly pickRounds = computed(() => {
     const teams = this.teamById();
     const teamCount = this.teams().length;
-    return this.picks()
-      .map((pick, index) => {
-        const overall = index + 1;
-        const round = teamCount ? Math.ceil(overall / teamCount) : 1;
-        const pickInRound = teamCount ? ((overall - 1) % teamCount) + 1 : overall;
-        const team = teams.get(pick.teamId);
-        return {
-          overall,
-          label: `${round}.${String(pickInRound).padStart(2, '0')}`,
-          teamName: team?.name ?? '',
-          mine: team?.mine ?? false,
-          playerId: pick.playerId,
-        };
-      })
-      .reverse();
+    if (teamCount === 0) {
+      return [];
+    }
+    const rounds: {
+      round: number;
+      picks: { overall: number; teamName: string; mine: boolean; playerId: number }[];
+    }[] = [];
+    this.picks().forEach((pick, index) => {
+      const overall = index + 1;
+      const round = Math.ceil(overall / teamCount);
+      const team = teams.get(pick.teamId);
+      const entry = {
+        overall,
+        teamName: team?.name ?? '',
+        mine: team?.mine ?? false,
+        playerId: pick.playerId,
+      };
+      const current = rounds[rounds.length - 1];
+      if (current && current.round === round) {
+        current.picks.push(entry);
+      } else {
+        rounds.push({ round, picks: [entry] });
+      }
+    });
+    return rounds;
   });
 
   ngOnInit(): void {

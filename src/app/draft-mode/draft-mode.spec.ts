@@ -128,7 +128,7 @@ describe('DraftModeComponent', () => {
     expect(component.pickNumber()).toEqual(2);
   });
 
-  it('builds a newest-first pick feed with team attribution', async () => {
+  it('groups picks into rounds in chronological order with overall numbers', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
@@ -136,12 +136,13 @@ describe('DraftModeComponent', () => {
 
     component.draftCurrent(1);
     component.draftCurrent(2);
+    component.draftCurrent(3);
 
-    const feed = component.pickFeed();
-    expect(feed.map((entry) => entry.playerId)).toEqual([2, 1]);
-    expect(feed[0].mine).toBe(false);
-    expect(feed[0].label).toEqual('1.02');
-    expect(feed[1].mine).toBe(true);
-    expect(feed[1].label).toEqual('1.01');
+    const rounds = component.pickRounds();
+    expect(rounds.map((round) => round.round)).toEqual([1, 2]);
+    expect(rounds[0].picks.map((entry) => entry.overall)).toEqual([1, 2]);
+    expect(rounds[1].picks.map((entry) => entry.overall)).toEqual([3]);
+    expect(rounds[0].picks[0].mine).toBe(true);
+    expect(rounds[0].picks[1].mine).toBe(false);
   });
 });

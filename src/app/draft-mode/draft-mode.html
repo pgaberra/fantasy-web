@@ -163,25 +163,28 @@
           <h2>
             Draft picks <span class="roster-count">{{ picks().length }}</span>
           </h2>
-          @if (pickFeed().length) {
-            <ol class="feed-list">
-              @for (entry of pickFeed(); track entry.overall) {
-                <li class="feed-row" [class.is-mine]="entry.mine">
-                  <span class="feed-pick">{{ entry.label }}</span>
-                  <span [class]="'avatar avatar-sm pos--' + primaryPosition(entry.playerId)">
-                    @if (playerHeadshot(entry.playerId); as headshot) {
-                      <img [src]="headshot" alt="" />
-                    } @else {
-                      {{ playerInitials(entry.playerId) }}
-                    }
-                  </span>
-                  <span class="feed-info">
-                    <span class="feed-player">{{ playerName(entry.playerId) }}</span>
-                    <span class="feed-team">{{ entry.mine ? 'You' : entry.teamName }}</span>
-                  </span>
-                </li>
+          @if (pickRounds().length) {
+            <div class="feed-list">
+              @for (round of pickRounds(); track round.round) {
+                <div class="feed-round">Round {{ round.round }}</div>
+                @for (entry of round.picks; track entry.overall) {
+                  <div class="feed-row" [class.is-mine]="entry.mine">
+                    <span class="feed-pick">{{ entry.overall }}</span>
+                    <span [class]="'avatar avatar-sm pos--' + primaryPosition(entry.playerId)">
+                      @if (playerHeadshot(entry.playerId); as headshot) {
+                        <img [src]="headshot" alt="" />
+                      } @else {
+                        {{ playerInitials(entry.playerId) }}
+                      }
+                    </span>
+                    <span class="feed-info">
+                      <span class="feed-player">{{ playerName(entry.playerId) }}</span>
+                      <span class="feed-team">{{ entry.mine ? 'You' : entry.teamName }}</span>
+                    </span>
+                  </div>
+                }
               }
-            </ol>
+            </div>
           } @else {
             <p class="available-empty">No picks yet.</p>
           }
