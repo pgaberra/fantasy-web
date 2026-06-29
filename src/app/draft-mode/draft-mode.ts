@@ -59,6 +59,7 @@ export class DraftModeComponent implements OnInit {
 
   readonly draft = signal<DraftState | null>(null);
   readonly setupOpen = signal<boolean>(false);
+  readonly editingPick = signal<number | null>(null);
 
   private readonly data = signal<ProjectionData | null>(null);
   private readonly allPlayers = signal<Player[]>([]);
@@ -188,6 +189,19 @@ export class DraftModeComponent implements OnInit {
     return rounds;
   });
 
+  readonly editingInfo = computed(() => {
+    const overall = this.editingPick();
+    if (overall === null) {
+      return null;
+    }
+    const pick = this.picks()[overall - 1];
+    if (!pick) {
+      return null;
+    }
+    const team = this.teamById().get(pick.teamId);
+    return { overall, teamName: team?.name ?? '', mine: team?.mine ?? false };
+  });
+
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
@@ -230,9 +244,32 @@ export class DraftModeComponent implements OnInit {
     this.mutate((draft) => ({ ...draft, picks: draft.picks.slice(0, -1) }));
   }
 
+  startEditPick(overall: number): void {
+    this.editingPick.set(overall);
+  }
+
+  cancelEditPick(): void {
+    this.editingPick.set(null);
+  }
+
+  replacePick(playerId: number): void {
+    const overall = this.editingPick();
+    if (overall === null || this.draftedIds().has(playerId)) {
+      return;
+    }
+    this.mutate((draft) => ({
+      ...draft,
+      picks: draft.picks.map((pick, index) =>
+        index + 1 === overall ? { ...pick, playerId } : pick,
+      ),
+    }));
+    this.editingPick.set(null);
+  }
+
   applySetup(next: DraftState): void {
     this.draft.set(next);
     this.setupOpen.set(false);
+    this.editingPick.set(null);
     this.save();
   }
 
@@ -243,6 +280,7 @@ export class DraftModeComponent implements OnInit {
   }
 
   editTeams(): void {
+    this.editingPick.set(null);
     this.setupOpen.set(true);
   }
 

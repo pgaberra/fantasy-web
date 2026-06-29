@@ -145,4 +145,22 @@ describe('DraftModeComponent', () => {
     expect(rounds[1].picks[0].mine).toBe(false);
     expect(rounds[1].picks[1].mine).toBe(true);
   });
+
+  it('replaces a player at a specific pick and frees the old one', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+
+    component.draftCurrent(1);
+    component.draftCurrent(2);
+
+    component.startEditPick(1);
+    component.replacePick(99);
+
+    expect(component.picks()[0]).toEqual({ playerId: 99, teamId: 'team-me' });
+    expect(component.picks()[1]).toEqual({ playerId: 2, teamId: 'team-1' });
+    expect(component.editingPick()).toBeNull();
+    expect(component.available().map((sp) => sp.projection.playerId)).toEqual([1]);
+  });
 });
