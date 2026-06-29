@@ -163,4 +163,23 @@ describe('DraftModeComponent', () => {
     expect(component.editingPick()).toBeNull();
     expect(component.available().map((sp) => sp.projection.playerId)).toEqual([1]);
   });
+
+  it('removes a pick and shifts later picks up, re-attributing by position', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+
+    component.draftCurrent(1);
+    component.draftCurrent(2);
+    component.draftCurrent(3);
+
+    component.removePick(1);
+
+    expect(component.picks()).toEqual([
+      { playerId: 2, teamId: 'team-me' },
+      { playerId: 3, teamId: 'team-1' },
+    ]);
+    expect(component.available().map((sp) => sp.projection.playerId)).toEqual([1]);
+  });
 });

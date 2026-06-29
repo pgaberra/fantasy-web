@@ -266,6 +266,23 @@ export class DraftModeComponent implements OnInit {
     this.editingPick.set(null);
   }
 
+  removePick(overall: number): void {
+    if (overall < 1 || overall > this.picks().length) {
+      return;
+    }
+    this.editingPick.set(null);
+    this.mutate((draft) => {
+      const remaining = draft.picks.filter((_, index) => index + 1 !== overall);
+      return {
+        ...draft,
+        picks: remaining.map((pick, index) => {
+          const slot = onClock(index + 1, draft.order);
+          return { playerId: pick.playerId, teamId: slot ? slot.teamId : pick.teamId };
+        }),
+      };
+    });
+  }
+
   applySetup(next: DraftState): void {
     this.draft.set(next);
     this.setupOpen.set(false);
