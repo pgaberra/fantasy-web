@@ -25,23 +25,18 @@
         (cancelled)="cancelSetup()"
       />
     } @else {
-      <div class="clock-bar" [class.my-pick]="isMyPick()">
-        @if (isComplete()) {
-          <span class="clock-team"><strong>Draft complete</strong></span>
-        } @else {
-          <span class="clock-team">
-            <strong>{{ onClockTeam()?.name }}</strong>
+      <div class="draft-toolbar">
+        <span class="draft-progress">
+          @if (isComplete()) {
+            Draft complete
+          } @else {
+            Up next: <strong>{{ onClockTeam()?.name }}</strong>
             @if (isMyPick()) {
-              <span class="clock-you">Your pick</span>
+              <span class="you-tag">· you</span>
             }
-          </span>
-          <span class="clock-meta">
-            Round {{ clock()?.round }}, Pick {{ clock()?.pickInRound }} · Overall #{{
-              clock()?.overallPick
-            }}
-          </span>
-        }
-        <span class="clock-actions">
+          }
+        </span>
+        <span class="toolbar-actions">
           <button
             type="button"
             class="btn btn-secondary btn-sm"
@@ -149,13 +144,11 @@
                   <span class="row-actions">
                     <button
                       type="button"
-                      class="btn btn-sm"
-                      [class.btn-primary]="isMyPick()"
-                      [class.btn-secondary]="!isMyPick()"
+                      class="btn btn-primary btn-sm"
                       [disabled]="isComplete()"
                       (click)="draftCurrent(sp.projection.playerId)"
                     >
-                      {{ isMyPick() ? 'Draft' : 'Draft for ' + onClockTeam()?.name }}
+                      Draft
                     </button>
                   </span>
                 </div>
