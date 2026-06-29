@@ -164,6 +164,14 @@ export class DraftModeComponent implements OnInit {
   readonly isMyPick = computed(() => !!this.onClockTeam()?.mine);
   readonly canUndo = computed(() => this.picks().length > 0);
 
+  readonly draftLabel = computed(() => {
+    if (this.isMyPick() || this.isComplete()) {
+      return 'Draft';
+    }
+    const team = this.onClockTeam()?.name;
+    return team ? `Draft for ${team}` : 'Draft';
+  });
+
   readonly pickRounds = computed(() => {
     const teams = this.teamById();
     const teamCount = this.teams().length;
