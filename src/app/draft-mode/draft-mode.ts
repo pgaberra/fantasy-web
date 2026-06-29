@@ -231,13 +231,16 @@ export class DraftModeComponent implements OnInit {
     const changes = positions.map((position) => {
       const oldSlot = onClock(position, order);
       const newSlot = onClock(position - 1, order);
+      const oldTeam = oldSlot ? teams.get(oldSlot.teamId) : undefined;
+      const newTeam = newSlot ? teams.get(newSlot.teamId) : undefined;
       return {
         playerId: picks[position - 1].playerId,
         oldOverall: position,
         newOverall: position - 1,
-        oldTeamName: oldSlot ? (teams.get(oldSlot.teamId)?.name ?? '') : '',
-        newTeamName: newSlot ? (teams.get(newSlot.teamId)?.name ?? '') : '',
+        oldTeamName: oldTeam?.name ?? '',
+        newTeamName: newTeam?.name ?? '',
         teamChanged: oldSlot?.teamId !== newSlot?.teamId,
+        affectsMine: !!oldTeam?.mine || !!newTeam?.mine,
       };
     });
     return {

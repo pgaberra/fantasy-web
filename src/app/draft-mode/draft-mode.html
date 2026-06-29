@@ -252,7 +252,11 @@
             </p>
             <div class="modal-changes">
               @for (change of preview.changes; track change.oldOverall) {
-                <div class="change-row" [class.team-changed]="change.teamChanged">
+                <div
+                  class="change-row"
+                  [class.team-changed]="change.teamChanged"
+                  [class.affects-mine]="change.affectsMine"
+                >
                   <span class="change-player">{{ playerName(change.playerId) }}</span>
                   <span class="change-move">
                     #{{ change.oldOverall }} {{ change.oldTeamName }}

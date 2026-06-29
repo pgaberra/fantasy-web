@@ -204,6 +204,8 @@ describe('DraftModeComponent', () => {
     expect(preview?.changes[0].newOverall).toEqual(1);
     expect(preview?.changes[0].oldTeamName).toEqual('Team 1');
     expect(preview?.changes[0].newTeamName).toEqual('My Team');
+    expect(preview?.changes[0].affectsMine).toBe(true);
+    expect(preview?.changes[1].affectsMine).toBe(false);
 
     component.confirmRemovePick();
 

@@ -337,6 +337,16 @@
   color: var(--color-primary);
 }
 
+.change-row.affects-mine {
+  background: var(--color-surface-hover);
+}
+
+.change-row.affects-mine .change-player,
+.change-row.affects-mine .change-move {
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+}
+
 .change-arrow {
   margin: 0 0.15rem;
 }
