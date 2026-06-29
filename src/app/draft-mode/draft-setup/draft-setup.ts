@@ -2,7 +2,6 @@ import { Component, computed, input, OnInit, output, signal } from '@angular/cor
 import { DraftState } from '../../api/models/draft-state';
 import { DraftTeam } from '../../api/models/draft-team';
 import { DEFAULT_LEAGUE_SIZE } from '../../draft-projection/projection-defaults';
-import { onClock } from '../draft-snake';
 
 interface SetupRow {
   id: string;
@@ -32,21 +31,6 @@ export class DraftSetupComponent implements OnInit {
   readonly canAdd = computed(() => this.rows().length < MAX_TEAMS);
   readonly canRemove = computed(() => this.rows().length > MIN_TEAMS);
   readonly canCancel = computed(() => this.initial() !== null);
-
-  private readonly mineId = computed(() => this.rows().find((row) => row.mine)?.id ?? MINE_ID);
-
-  readonly myPickNumbers = computed(() => {
-    const order = this.rows().map((row) => row.id);
-    const mine = this.mineId();
-    const numbers: number[] = [];
-    for (let pick = 1; pick <= order.length * 3; pick++) {
-      const slot = onClock(pick, order);
-      if (slot && slot.teamId === mine) {
-        numbers.push(pick);
-      }
-    }
-    return numbers;
-  });
 
   ngOnInit(): void {
     const existing = this.initial();

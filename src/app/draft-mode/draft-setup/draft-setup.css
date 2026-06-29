@@ -137,16 +137,6 @@
   cursor: default;
 }
 
-.snake-preview {
-  margin: 0 0 var(--space-4);
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.snake-preview strong {
-  color: var(--color-text);
-}
-
 .setup-actions {
   display: flex;
   justify-content: flex-end;

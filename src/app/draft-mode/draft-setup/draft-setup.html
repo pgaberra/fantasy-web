@@ -73,12 +73,6 @@
     </ol>
   </div>
 
-  @if (myPickNumbers().length) {
-    <p class="snake-preview">
-      Your first picks: <strong>{{ myPickNumbers().join(', ') }}</strong>
-    </p>
-  }
-
   <div class="setup-actions">
     @if (canCancel()) {
       <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">Cancel</button>
