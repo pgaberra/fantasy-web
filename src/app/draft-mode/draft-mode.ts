@@ -6,7 +6,13 @@ import { ProjectionStorageService } from '../services/projection-storage.service
 import { PlayerService } from '../services/player.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { Player } from '../models/player.model';
-import { Projection, ScoredProjection, StatWeights } from '../models/projection.model';
+import {
+  PositionFilter,
+  Projection,
+  ScoredProjection,
+  StatWeights,
+} from '../models/projection.model';
+import { PositionFilterService } from '../services/position-filter.service';
 import { ScoringStatKey } from '../models/stat-key.model';
 import { DraftPick } from '../api/models/draft-pick';
 import { ProjectionData } from '../api/models/projection-data';
@@ -32,12 +38,22 @@ export class DraftModeComponent implements OnInit {
   private readonly projectionStorage = inject(ProjectionStorageService);
   private readonly playerService = inject(PlayerService);
   private readonly ranking = inject(ProjectionRankingService);
+  private readonly positionFilterService = inject(PositionFilterService);
 
   readonly projectionId = signal<string | null>(null);
   readonly projectionName = signal<string>('');
   readonly loaded = signal<boolean>(false);
   readonly saveStatus = signal<'idle' | 'saving' | 'saved'>('idle');
   readonly searchTerm = signal<string>('');
+  readonly positionFilter = signal<PositionFilter>('ALL');
+  readonly positionFilters: { value: PositionFilter; label: string }[] = [
+    { value: 'ALL', label: 'All' },
+    { value: 'C', label: 'C' },
+    { value: 'LW', label: 'LW' },
+    { value: 'RW', label: 'RW' },
+    { value: 'D', label: 'D' },
+    { value: 'G', label: 'G' },
+  ];
 
   private readonly data = signal<ProjectionData | null>(null);
   private readonly allPlayers = signal<Player[]>([]);
@@ -84,9 +100,13 @@ export class DraftModeComponent implements OnInit {
   readonly available = computed<ScoredProjection[]>(() => {
     const drafted = this.draftedIds();
     const term = this.searchTerm().trim().toLowerCase();
+    const filter = this.positionFilter();
     const players = this.playerMap();
     return this.ranked().filter((scoredProjection) => {
       if (drafted.has(scoredProjection.projection.playerId)) {
+        return false;
+      }
+      if (!this.positionFilterService.matches(scoredProjection.projection, players, filter)) {
         return false;
       }
       if (!term) {
@@ -166,6 +186,48 @@ export class DraftModeComponent implements OnInit {
       return '';
     }
     return player.type === 'goalie' ? 'G' : [...player.positions].join('/');
+  }
+
+  playerHeadshot(playerId: number): string | undefined {
+    return this.playerMap().get(playerId)?.headshot;
+  }
+
+  playerInitials(playerId: number): string {
+    const name = this.playerMap().get(playerId)?.name ?? '';
+    return name
+      .split(/\s+/)
+      .filter((part) => part.length > 0)
+      .map((part) => part[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  }
+
+  primaryPosition(playerId: number): string {
+    const player = this.playerMap().get(playerId);
+    if (!player) {
+      return '';
+    }
+    if (player.type === 'goalie') {
+      return 'g';
+    }
+    if (player.positions.has('C')) {
+      return 'c';
+    }
+    if (player.positions.has('LW')) {
+      return 'lw';
+    }
+    if (player.positions.has('RW')) {
+      return 'rw';
+    }
+    if (player.positions.has('D')) {
+      return 'd';
+    }
+    return 'util';
+  }
+
+  setPositionFilter(filter: PositionFilter): void {
+    this.positionFilter.set(filter);
   }
 
   scoreLabel(scoredProjection: ScoredProjection): string {

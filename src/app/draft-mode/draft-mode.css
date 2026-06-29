@@ -65,7 +65,7 @@
 
 .draft-layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 340px 1fr;
   gap: var(--space-4);
   align-items: start;
 }
@@ -93,6 +93,75 @@
   color: var(--color-primary);
 }
 
+/* Position colour system (chips, avatars, labels) */
+.pos--c {
+  --pos: #1d4ed8;
+  --pos-bg: #eef2ff;
+}
+.pos--lw {
+  --pos: #15803d;
+  --pos-bg: #ecfdf3;
+}
+.pos--rw {
+  --pos: #c2410c;
+  --pos-bg: #fff5ed;
+}
+.pos--d {
+  --pos: #6d28d9;
+  --pos-bg: #f3effe;
+}
+.pos--g {
+  --pos: #b45309;
+  --pos-bg: #fdf6ec;
+}
+.pos--util,
+.pos--bn {
+  --pos: #64748b;
+  --pos-bg: #f1f5f9;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--pos, #475569);
+  background: var(--pos-bg, #f1f5f9);
+  overflow: hidden;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-sm {
+  width: 1.6rem;
+  height: 1.6rem;
+  font-size: 0.55rem;
+}
+
+.pos-chip,
+.slot-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--pos, #475569);
+  background: var(--pos-bg, #f1f5f9);
+  border-radius: var(--radius-sm);
+  padding: 0.1rem 0.35rem;
+}
+
+/* Roster panel */
 .roster-grid {
   display: flex;
   flex-direction: column;
@@ -113,33 +182,25 @@
   background: var(--color-surface);
 }
 
-.slot-label {
+.slot-chip {
   flex-shrink: 0;
   width: 2.6rem;
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  color: var(--color-text-muted);
+  height: 1.5rem;
 }
 
-.slot-empty {
-  font-size: var(--text-sm);
-  color: var(--color-text-subtle);
-}
-
-.slot-player {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font-size: var(--text-sm);
-  color: var(--color-text);
+.slot-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .slot-name {
+  font-size: var(--text-sm);
   font-weight: var(--weight-medium);
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .slot-team {
@@ -147,15 +208,28 @@
   color: var(--color-text-subtle);
 }
 
-.release-x {
+.slot-empty {
+  font-size: var(--text-sm);
   color: var(--color-text-subtle);
-  font-size: 0.9rem;
 }
 
-.slot-player:hover .release-x {
+.release-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0 0.2rem;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--color-text-subtle);
+}
+
+.release-btn:hover {
   color: var(--color-danger);
 }
 
+/* Available players */
 .available-header {
   display: flex;
   align-items: center;
@@ -177,6 +251,36 @@
   min-width: 12rem;
 }
 
+.pos-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: var(--space-3);
+}
+
+.pos-filter-chip {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pos-filter-chip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.pos-filter-chip.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
 .available-list {
   display: flex;
   flex-direction: column;
@@ -184,7 +288,7 @@
 
 .available-row {
   display: grid;
-  grid-template-columns: 2rem 1fr auto auto 3.5rem auto;
+  grid-template-columns: 1.6rem 2rem 1fr 3.2rem auto;
   align-items: center;
   gap: var(--space-2);
   padding: 0.4rem 0.25rem;
@@ -197,6 +301,12 @@
   text-align: right;
 }
 
+.row-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .row-name {
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
@@ -206,7 +316,12 @@
   white-space: nowrap;
 }
 
-.row-pos,
+.row-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .row-team {
   font-size: var(--text-xs);
   color: var(--color-text-muted);
