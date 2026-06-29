@@ -154,6 +154,26 @@ export class DraftModeComponent implements OnInit {
   readonly isMyPick = computed(() => !!this.onClockTeam()?.mine);
   readonly canUndo = computed(() => this.picks().length > 0);
 
+  readonly pickFeed = computed(() => {
+    const teams = this.teamById();
+    const teamCount = this.teams().length;
+    return this.picks()
+      .map((pick, index) => {
+        const overall = index + 1;
+        const round = teamCount ? Math.ceil(overall / teamCount) : 1;
+        const pickInRound = teamCount ? ((overall - 1) % teamCount) + 1 : overall;
+        const team = teams.get(pick.teamId);
+        return {
+          overall,
+          label: `${round}.${String(pickInRound).padStart(2, '0')}`,
+          teamName: team?.name ?? '',
+          mine: team?.mine ?? false,
+          playerId: pick.playerId,
+        };
+      })
+      .reverse();
+  });
+
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {

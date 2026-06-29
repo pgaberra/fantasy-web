@@ -127,4 +127,21 @@ describe('DraftModeComponent', () => {
     expect(component.available().map((sp) => sp.projection.playerId)).toEqual([2]);
     expect(component.pickNumber()).toEqual(2);
   });
+
+  it('builds a newest-first pick feed with team attribution', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+
+    component.draftCurrent(1);
+    component.draftCurrent(2);
+
+    const feed = component.pickFeed();
+    expect(feed.map((entry) => entry.playerId)).toEqual([2, 1]);
+    expect(feed[0].mine).toBe(false);
+    expect(feed[0].label).toEqual('1.02');
+    expect(feed[1].mine).toBe(true);
+    expect(feed[1].label).toEqual('1.01');
+  });
 });
