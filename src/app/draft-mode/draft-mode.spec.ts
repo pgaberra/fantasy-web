@@ -128,7 +128,7 @@ describe('DraftModeComponent', () => {
     expect(component.pickNumber()).toEqual(2);
   });
 
-  it('groups picks into rounds in chronological order with overall numbers', async () => {
+  it('groups picks into rounds, newest round and pick first', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
@@ -139,10 +139,10 @@ describe('DraftModeComponent', () => {
     component.draftCurrent(3);
 
     const rounds = component.pickRounds();
-    expect(rounds.map((round) => round.round)).toEqual([1, 2]);
-    expect(rounds[0].picks.map((entry) => entry.overall)).toEqual([1, 2]);
-    expect(rounds[1].picks.map((entry) => entry.overall)).toEqual([3]);
-    expect(rounds[0].picks[0].mine).toBe(true);
-    expect(rounds[0].picks[1].mine).toBe(false);
+    expect(rounds.map((round) => round.round)).toEqual([2, 1]);
+    expect(rounds[0].picks.map((entry) => entry.overall)).toEqual([3]);
+    expect(rounds[1].picks.map((entry) => entry.overall)).toEqual([2, 1]);
+    expect(rounds[1].picks[0].mine).toBe(false);
+    expect(rounds[1].picks[1].mine).toBe(true);
   });
 });

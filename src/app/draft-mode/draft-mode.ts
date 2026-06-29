@@ -181,6 +181,10 @@ export class DraftModeComponent implements OnInit {
         rounds.push({ round, picks: [entry] });
       }
     });
+    rounds.reverse();
+    rounds.forEach((group) => {
+      group.picks.reverse();
+    });
     return rounds;
   });
 
