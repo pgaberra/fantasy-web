@@ -53,9 +53,19 @@
 
       <div class="draft-layout">
         <section class="roster-panel">
-          <h2>
-            My roster <span class="roster-count">{{ filledCount() }} / {{ totalSlots() }}</span>
-          </h2>
+          <div class="roster-header">
+            <select
+              class="roster-select"
+              [value]="effectiveTeamId() ?? ''"
+              (change)="selectTeam($event)"
+              aria-label="View a team's roster"
+            >
+              @for (team of teams(); track team.id) {
+                <option [value]="team.id">{{ team.name }}{{ team.mine ? ' (You)' : '' }}</option>
+              }
+            </select>
+            <span class="roster-count">{{ filledCount() }} / {{ totalSlots() }}</span>
+          </div>
           <div class="roster-grid">
             @for (slot of roster().slots; track slot.id) {
               <div class="roster-slot" [class.filled]="slot.playerId !== null">

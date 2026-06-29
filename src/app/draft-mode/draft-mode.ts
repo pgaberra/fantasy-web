@@ -69,6 +69,7 @@ export class DraftModeComponent implements OnInit {
   readonly setupOpen = signal<boolean>(false);
   readonly editingPick = signal<number | null>(null);
   readonly pendingRemoval = signal<number | null>(null);
+  readonly viewedTeamId = signal<string | null>(null);
 
   private readonly data = signal<ProjectionData | null>(null);
   private readonly allPlayers = signal<Player[]>([]);
@@ -99,9 +100,16 @@ export class DraftModeComponent implements OnInit {
   private readonly myTeamId = computed(() => this.teams().find((team) => team.mine)?.id ?? null);
 
   private readonly draftedIds = computed(() => new Set(this.picks().map((pick) => pick.playerId)));
-  private readonly minePicks = computed(() => {
-    const mine = this.myTeamId();
-    return mine === null ? [] : picksForTeam(this.picks(), mine);
+  readonly effectiveTeamId = computed(() => {
+    const selected = this.viewedTeamId();
+    if (selected !== null && this.teams().some((team) => team.id === selected)) {
+      return selected;
+    }
+    return this.myTeamId();
+  });
+  private readonly viewedPicks = computed(() => {
+    const teamId = this.effectiveTeamId();
+    return teamId === null ? [] : picksForTeam(this.picks(), teamId);
   });
 
   private readonly ranked = computed<ScoredProjection[]>(() => {
@@ -142,7 +150,7 @@ export class DraftModeComponent implements OnInit {
   });
 
   readonly roster = computed(() =>
-    deriveRoster(this.minePicks(), this.playerMap(), this.rosterSlots()),
+    deriveRoster(this.viewedPicks(), this.playerMap(), this.rosterSlots()),
   );
   readonly filledCount = computed(
     () => this.roster().slots.filter((slot) => slot.playerId !== null).length,
@@ -375,6 +383,7 @@ export class DraftModeComponent implements OnInit {
     this.draft.set(next);
     this.setupOpen.set(false);
     this.editingPick.set(null);
+    this.viewedTeamId.set(null);
     this.save();
   }
 
@@ -395,6 +404,10 @@ export class DraftModeComponent implements OnInit {
 
   setPositionFilter(filter: PositionFilter): void {
     this.positionFilter.set(filter);
+  }
+
+  selectTeam(event: Event): void {
+    this.viewedTeamId.set((event.target as HTMLSelectElement).value);
   }
 
   playerName(playerId: number): string {

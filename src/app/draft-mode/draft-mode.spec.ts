@@ -130,6 +130,25 @@ describe('DraftModeComponent', () => {
     expect(component.pickNumber()).toEqual(2);
   });
 
+  it('shows another team roster when a different team is selected', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+
+    component.draftCurrent(1);
+    component.draftCurrent(2);
+
+    expect(component.roster().slots.find((slot) => slot.playerId === 1)).toBeDefined();
+    expect(component.roster().slots.find((slot) => slot.playerId === 2)).toBeUndefined();
+
+    component.viewedTeamId.set('team-1');
+
+    expect(component.effectiveTeamId()).toEqual('team-1');
+    expect(component.roster().slots.find((slot) => slot.playerId === 2)).toBeDefined();
+    expect(component.roster().slots.find((slot) => slot.playerId === 1)).toBeUndefined();
+  });
+
   it('groups picks into rounds, newest round and pick first', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
