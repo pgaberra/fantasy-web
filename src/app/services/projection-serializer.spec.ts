@@ -32,7 +32,14 @@ const sampleState: ProjectionState = {
     leagueKey: 'nhl.l.123',
     syncedAt: '2026-06-20T12:00:00.000Z',
   },
-  draftPicks: [{ playerId: 1, by: 'me' }],
+  draft: {
+    teams: [
+      { id: 'team-me', name: 'My Team', mine: true },
+      { id: 'team-1', name: 'Team 1', mine: false },
+    ],
+    order: ['team-me', 'team-1'],
+    picks: [{ playerId: 1, teamId: 'team-me' }],
+  },
   playerProjections: [
     {
       type: 'skater',
@@ -60,11 +67,32 @@ describe('projection-serializer', () => {
     expect(roundTripped).toEqual(sampleState);
   });
 
-  it('defaults draftPicks to [] for projections without a draft', () => {
+  it('defaults draft to null for projections without a draft', () => {
     const data = toProjectionData(sampleState);
     delete data.draft;
 
-    expect(fromProjectionData(data).draftPicks).toEqual([]);
+    expect(fromProjectionData(data).draft).toBeNull();
+  });
+
+  it('discards an invalid draft where no team is marked mine', () => {
+    const data = toProjectionData(sampleState);
+    data.draft = {
+      teams: [
+        { id: 'team-1', name: 'Team 1', mine: false },
+        { id: 'team-2', name: 'Team 2', mine: false },
+      ],
+      order: ['team-1', 'team-2'],
+      picks: [],
+    };
+
+    expect(fromProjectionData(data).draft).toBeNull();
+  });
+
+  it('discards a legacy draft that has no teams', () => {
+    const data = toProjectionData(sampleState);
+    data.draft = { teams: [], order: [], picks: [{ playerId: 1, teamId: 'gone' }] };
+
+    expect(fromProjectionData(data).draft).toBeNull();
   });
 
   it('serializes sets and nested scale settings to arrays', () => {

@@ -11,6 +11,7 @@ import { PositionFilterService } from '../services/position-filter.service';
 import { Player } from '../models/player.model';
 import { SkaterStats } from '../models/projection.model';
 import { ProjectionResponse } from '../api/models/projection-response';
+import { DraftState } from '../api/models/draft-state';
 
 describe('DraftModeComponent', () => {
   const players: Player[] = [
@@ -44,6 +45,15 @@ describe('DraftModeComponent', () => {
     },
   };
 
+  const draft: DraftState = {
+    teams: [
+      { id: 'team-me', name: 'My Team', mine: true },
+      { id: 'team-1', name: 'Team 1', mine: false },
+    ],
+    order: ['team-me', 'team-1'],
+    picks: [],
+  };
+
   const updateProjection = vi.fn(() => of(projection));
 
   beforeEach(() => {
@@ -63,32 +73,58 @@ describe('DraftModeComponent', () => {
       });
   });
 
-  it('drafts a player into the roster, removes them from available, and persists', async () => {
+  it('starts in setup when the projection has no draft', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
 
-    expect(component.available().length).toEqual(2);
+    expect(component.phase()).toEqual('setup');
+  });
 
-    component.draftMine(1);
+  it('applies a setup, enters the draft phase and persists', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.applySetup(draft);
+
+    expect(component.phase()).toEqual('draft');
+    expect(component.isMyPick()).toBe(true);
+    expect(updateProjection).toHaveBeenCalled();
+  });
+
+  it('drafts the on-clock pick, removes them from available and advances the clock', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+
+    component.draftCurrent(1);
 
     expect(component.roster().slots.find((slot) => slot.playerId === 1)?.slotKey).toEqual('c');
     expect(component.available().map((sp) => sp.projection.playerId)).toEqual([2]);
     expect(component.filledCount()).toEqual(1);
-    expect(updateProjection).toHaveBeenCalled();
+    expect(component.pickNumber()).toEqual(2);
+    expect(component.onClockTeam()?.id).toEqual('team-1');
+    expect(component.isMyPick()).toBe(false);
   });
 
-  it('marks a player taken by others and undoes the pick', async () => {
+  it('attributes a pick to the on-clock team and undoes the last pick', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
+    component.applySetup(draft);
 
-    component.markTaken(2);
-    expect(component.available().map((sp) => sp.projection.playerId)).toEqual([1]);
-    expect(component.takenCount()).toEqual(1);
+    component.draftCurrent(1);
+    component.draftCurrent(2);
+
+    expect(component.available().length).toEqual(0);
+    expect(component.filledCount()).toEqual(1);
+    expect(component.roster().slots.find((slot) => slot.playerId === 2)).toBeUndefined();
 
     component.undoLast();
-    expect(component.available().length).toEqual(2);
-    expect(component.takenCount()).toEqual(0);
+
+    expect(component.available().map((sp) => sp.projection.playerId)).toEqual([2]);
+    expect(component.pickNumber()).toEqual(2);
   });
 });

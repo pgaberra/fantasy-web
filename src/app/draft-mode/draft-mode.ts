@@ -5,6 +5,7 @@ import { forkJoin } from 'rxjs';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { PlayerService } from '../services/player.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
+import { PositionFilterService } from '../services/position-filter.service';
 import { Player } from '../models/player.model';
 import {
   PositionFilter,
@@ -12,9 +13,8 @@ import {
   ScoredProjection,
   StatWeights,
 } from '../models/projection.model';
-import { PositionFilterService } from '../services/position-filter.service';
 import { ScoringStatKey } from '../models/stat-key.model';
-import { DraftPick } from '../api/models/draft-pick';
+import { DraftState } from '../api/models/draft-state';
 import { ProjectionData } from '../api/models/projection-data';
 import { fromProjectionData } from '../services/projection-serializer';
 import {
@@ -24,10 +24,12 @@ import {
 } from '../draft-projection/projection-defaults';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { deriveRoster } from './draft-roster';
+import { isValidDraft, onClock, picksForTeam } from './draft-snake';
+import { DraftSetupComponent } from './draft-setup/draft-setup';
 
 @Component({
   selector: 'app-draft-mode',
-  imports: [RouterLink, LoadingIndicatorComponent],
+  imports: [RouterLink, LoadingIndicatorComponent, DraftSetupComponent],
   templateUrl: './draft-mode.html',
   styleUrl: './draft-mode.css',
 })
@@ -55,9 +57,11 @@ export class DraftModeComponent implements OnInit {
     { value: 'G', label: 'G' },
   ];
 
+  readonly draft = signal<DraftState | null>(null);
+  readonly setupOpen = signal<boolean>(false);
+
   private readonly data = signal<ProjectionData | null>(null);
   private readonly allPlayers = signal<Player[]>([]);
-  readonly picks = signal<DraftPick[]>([]);
 
   readonly playerMap = computed(
     () => new Map(this.allPlayers().map((player) => [player.id, player])),
@@ -72,12 +76,23 @@ export class DraftModeComponent implements OnInit {
   private readonly rosterSlots = computed(
     () => this.data()?.settings.rosterSlots ?? DEFAULT_ROSTER_SLOTS,
   );
-  private readonly draftedIds = computed(() => new Set(this.picks().map((pick) => pick.playerId)));
-  private readonly minePicks = computed(() =>
-    this.picks()
-      .filter((pick) => pick.by === 'me')
-      .map((pick) => pick.playerId),
+
+  readonly teams = computed(() => this.draft()?.teams ?? []);
+  readonly order = computed(() => this.draft()?.order ?? []);
+  readonly picks = computed(() => this.draft()?.picks ?? []);
+
+  readonly phase = computed<'setup' | 'draft'>(() =>
+    !isValidDraft(this.draft()) || this.setupOpen() ? 'setup' : 'draft',
   );
+
+  private readonly teamById = computed(() => new Map(this.teams().map((team) => [team.id, team])));
+  private readonly myTeamId = computed(() => this.teams().find((team) => team.mine)?.id ?? null);
+
+  private readonly draftedIds = computed(() => new Set(this.picks().map((pick) => pick.playerId)));
+  private readonly minePicks = computed(() => {
+    const mine = this.myTeamId();
+    return mine === null ? [] : picksForTeam(this.picks(), mine);
+  });
 
   private readonly ranked = computed<ScoredProjection[]>(() => {
     const data = this.data();
@@ -123,7 +138,20 @@ export class DraftModeComponent implements OnInit {
     () => this.roster().slots.filter((slot) => slot.playerId !== null).length,
   );
   readonly totalSlots = computed(() => this.roster().slots.length);
-  readonly takenCount = computed(() => this.picks().filter((pick) => pick.by === 'others').length);
+
+  readonly pickNumber = computed(() => this.picks().length + 1);
+  readonly totalPicks = computed(() => this.teams().length * this.totalSlots());
+  readonly isComplete = computed(
+    () => this.totalPicks() > 0 && this.picks().length >= this.totalPicks(),
+  );
+  readonly clock = computed(() =>
+    this.isComplete() ? null : onClock(this.pickNumber(), this.order()),
+  );
+  readonly onClockTeam = computed(() => {
+    const slot = this.clock();
+    return slot ? (this.teamById().get(slot.teamId) ?? null) : null;
+  });
+  readonly isMyPick = computed(() => !!this.onClockTeam()?.mine);
   readonly canUndo = computed(() => this.picks().length > 0);
 
   ngOnInit(): void {
@@ -143,33 +171,53 @@ export class DraftModeComponent implements OnInit {
           this.projectionName.set(projection.name);
           this.data.set(projection.data);
           this.allPlayers.set(players);
-          this.picks.set(projection.data.draft?.picks ?? []);
+          this.draft.set(fromProjectionData(projection.data).draft);
           this.loaded.set(true);
         },
         error: () => void this.router.navigate(['/projections']),
       });
   }
 
-  draftMine(playerId: number): void {
-    this.addPick(playerId, 'me');
-  }
-
-  markTaken(playerId: number): void {
-    this.addPick(playerId, 'others');
-  }
-
-  release(playerId: number): void {
-    this.picks.update((picks) => picks.filter((pick) => pick.playerId !== playerId));
-    this.save();
+  draftCurrent(playerId: number): void {
+    const slot = this.clock();
+    if (!slot || this.draftedIds().has(playerId)) {
+      return;
+    }
+    this.mutate((draft) => ({
+      ...draft,
+      picks: [...draft.picks, { playerId, teamId: slot.teamId }],
+    }));
   }
 
   undoLast(): void {
-    this.picks.update((picks) => picks.slice(0, -1));
+    if (!this.picks().length) {
+      return;
+    }
+    this.mutate((draft) => ({ ...draft, picks: draft.picks.slice(0, -1) }));
+  }
+
+  applySetup(next: DraftState): void {
+    this.draft.set(next);
+    this.setupOpen.set(false);
     this.save();
+  }
+
+  cancelSetup(): void {
+    if (isValidDraft(this.draft())) {
+      this.setupOpen.set(false);
+    }
+  }
+
+  editTeams(): void {
+    this.setupOpen.set(true);
   }
 
   onSearchInput(event: Event): void {
     this.searchTerm.set((event.target as HTMLInputElement).value);
+  }
+
+  setPositionFilter(filter: PositionFilter): void {
+    this.positionFilter.set(filter);
   }
 
   playerName(playerId: number): string {
@@ -226,18 +274,14 @@ export class DraftModeComponent implements OnInit {
     return 'util';
   }
 
-  setPositionFilter(filter: PositionFilter): void {
-    this.positionFilter.set(filter);
-  }
-
   scoreLabel(scoredProjection: ScoredProjection): string {
     return this.scoringType() === 'points'
       ? scoredProjection.score.fantasyPoints.toFixed(1)
       : scoredProjection.score.zScore.toFixed(2);
   }
 
-  private addPick(playerId: number, by: DraftPick['by']): void {
-    this.picks.update((picks) => [...picks, { playerId, by }]);
+  private mutate(fn: (draft: DraftState) => DraftState): void {
+    this.draft.update((draft) => (draft ? fn(draft) : draft));
     this.save();
   }
 
@@ -247,11 +291,8 @@ export class DraftModeComponent implements OnInit {
     if (!id || !data) {
       return;
     }
-    const picks = this.picks();
-    const updated: ProjectionData = {
-      ...data,
-      draft: picks.length ? { picks } : undefined,
-    };
+    const draft = this.draft();
+    const updated: ProjectionData = { ...data, draft: draft ?? undefined };
     this.saveStatus.set('saving');
     this.projectionStorage
       .updateProjection(id, { name: this.projectionName(), data: updated })
