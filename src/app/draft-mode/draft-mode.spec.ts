@@ -182,4 +182,51 @@ describe('DraftModeComponent', () => {
     ]);
     expect(component.available().map((sp) => sp.projection.playerId)).toEqual([1]);
   });
+
+  it('asks before removing an earlier pick and lists the shifts', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+
+    component.draftCurrent(1);
+    component.draftCurrent(2);
+    component.draftCurrent(3);
+
+    component.requestRemovePick(1);
+
+    expect(component.pendingRemoval()).toEqual(1);
+    expect(component.picks().length).toEqual(3);
+    const preview = component.removalPreview();
+    expect(preview?.changes.length).toEqual(2);
+    expect(preview?.changes[0].playerId).toEqual(2);
+    expect(preview?.changes[0].oldOverall).toEqual(2);
+    expect(preview?.changes[0].newOverall).toEqual(1);
+    expect(preview?.changes[0].oldTeamName).toEqual('Team 1');
+    expect(preview?.changes[0].newTeamName).toEqual('My Team');
+
+    component.confirmRemovePick();
+
+    expect(component.pendingRemoval()).toBeNull();
+    expect(component.picks()).toEqual([
+      { playerId: 2, teamId: 'team-me' },
+      { playerId: 3, teamId: 'team-1' },
+    ]);
+  });
+
+  it('removes the last pick directly without confirmation', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+
+    component.draftCurrent(1);
+    component.draftCurrent(2);
+    component.draftCurrent(3);
+
+    component.requestRemovePick(3);
+
+    expect(component.pendingRemoval()).toBeNull();
+    expect(component.picks().length).toEqual(2);
+  });
 });

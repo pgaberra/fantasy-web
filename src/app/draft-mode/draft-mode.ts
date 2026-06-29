@@ -1,4 +1,12 @@
-import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  DestroyRef,
+  HostListener,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
@@ -60,6 +68,7 @@ export class DraftModeComponent implements OnInit {
   readonly draft = signal<DraftState | null>(null);
   readonly setupOpen = signal<boolean>(false);
   readonly editingPick = signal<number | null>(null);
+  readonly pendingRemoval = signal<number | null>(null);
 
   private readonly data = signal<ProjectionData | null>(null);
   private readonly allPlayers = signal<Player[]>([]);
@@ -202,6 +211,44 @@ export class DraftModeComponent implements OnInit {
     return { overall, teamName: team?.name ?? '', mine: team?.mine ?? false };
   });
 
+  readonly removalPreview = computed(() => {
+    const overall = this.pendingRemoval();
+    if (overall === null) {
+      return null;
+    }
+    const picks = this.picks();
+    const target = picks[overall - 1];
+    if (!target) {
+      return null;
+    }
+    const order = this.order();
+    const teams = this.teamById();
+    const targetTeam = teams.get(target.teamId);
+    const positions = Array.from(
+      { length: picks.length - overall },
+      (_, index) => overall + 1 + index,
+    );
+    const changes = positions.map((position) => {
+      const oldSlot = onClock(position, order);
+      const newSlot = onClock(position - 1, order);
+      return {
+        playerId: picks[position - 1].playerId,
+        oldOverall: position,
+        newOverall: position - 1,
+        oldTeamName: oldSlot ? (teams.get(oldSlot.teamId)?.name ?? '') : '',
+        newTeamName: newSlot ? (teams.get(newSlot.teamId)?.name ?? '') : '',
+        teamChanged: oldSlot?.teamId !== newSlot?.teamId,
+      };
+    });
+    return {
+      overall,
+      playerId: target.playerId,
+      teamName: targetTeam?.name ?? '',
+      mine: targetTeam?.mine ?? false,
+      changes,
+    };
+  });
+
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
@@ -281,6 +328,36 @@ export class DraftModeComponent implements OnInit {
         }),
       };
     });
+  }
+
+  requestRemovePick(overall: number): void {
+    if (overall >= this.picks().length) {
+      this.removePick(overall);
+    } else {
+      this.editingPick.set(null);
+      this.pendingRemoval.set(overall);
+    }
+  }
+
+  confirmRemovePick(): void {
+    const overall = this.pendingRemoval();
+    if (overall !== null) {
+      this.removePick(overall);
+    }
+    this.pendingRemoval.set(null);
+  }
+
+  cancelRemovePick(): void {
+    this.pendingRemoval.set(null);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.pendingRemoval() !== null) {
+      this.cancelRemovePick();
+    } else if (this.editingPick() !== null) {
+      this.cancelEditPick();
+    }
   }
 
   applySetup(next: DraftState): void {

@@ -222,7 +222,7 @@
                       <button
                         type="button"
                         class="feed-remove"
-                        (click)="removePick(entry.overall)"
+                        (click)="requestRemovePick(entry.overall)"
                         aria-label="Remove pick"
                         title="Remove this pick"
                       >
@@ -238,6 +238,41 @@
           }
         </section>
       </div>
+
+      @if (removalPreview(); as preview) {
+        <div class="modal-overlay" (click)="cancelRemovePick()">
+          <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+            <h2 class="modal-title">Remove pick #{{ preview.overall }}?</h2>
+            <p class="modal-text">
+              Removing <strong>{{ playerName(preview.playerId) }}</strong> ({{
+                preview.mine ? 'You' : preview.teamName
+              }}) shifts the {{ preview.changes.length }} later
+              {{ preview.changes.length === 1 ? 'pick' : 'picks' }} up — each re-attributes to its
+              new slot in the snake order:
+            </p>
+            <div class="modal-changes">
+              @for (change of preview.changes; track change.oldOverall) {
+                <div class="change-row" [class.team-changed]="change.teamChanged">
+                  <span class="change-player">{{ playerName(change.playerId) }}</span>
+                  <span class="change-move">
+                    #{{ change.oldOverall }} {{ change.oldTeamName }}
+                    <span class="change-arrow">→</span>
+                    #{{ change.newOverall }} {{ change.newTeamName }}
+                  </span>
+                </div>
+              }
+            </div>
+            <div class="modal-actions">
+              <button type="button" class="btn btn-secondary" (click)="cancelRemovePick()">
+                Cancel
+              </button>
+              <button type="button" class="btn btn-remove" (click)="confirmRemovePick()">
+                Remove pick
+              </button>
+            </div>
+          </div>
+        </div>
+      }
     }
   </div>
 }
