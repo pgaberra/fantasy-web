@@ -12,7 +12,8 @@
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write \"src/**/*.{ts,html,css,json}\"",
     "format:check": "prettier --check \"src/**/*.{ts,html,css,json}\"",
-    "generate:api": "ng-openapi-gen"
+    "generate:api": "ng-openapi-gen",
+    "e2e": "playwright test"
   },
   "private": true,
   "packageManager": "npm@11.4.1",
@@ -34,6 +35,7 @@
     "@angular/build": "^22.0.4",
     "@angular/cli": "^22.0.4",
     "@angular/compiler-cli": "^22.0.2",
+    "@playwright/test": "^1.61.1",
     "@typescript-eslint/eslint-plugin": "^8.62.0",
     "@typescript-eslint/parser": "^8.62.0",
     "@vitest/coverage-v8": "^4.1.9",

@@ -48,5 +48,11 @@ Thumbs.db
 
 .ai
 
+# Playwright
+/playwright-report
+/test-results
+/blob-report
+/playwright/.cache
+
 # Local test output artifact
 test-output.txt
