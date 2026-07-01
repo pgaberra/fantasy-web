@@ -1,9 +1,10 @@
 import { Component, computed, ElementRef, inject, input, output, viewChild } from '@angular/core';
 import { FormatToiPipe } from '../../../../../pipes/format-toi.pipe';
+import { TooltipDirective } from '../../../../../shared/tooltip/tooltip.directive';
 
 @Component({
   selector: 'app-toi-input',
-  imports: [],
+  imports: [TooltipDirective],
   providers: [FormatToiPipe],
   templateUrl: './toi-input.html',
   styleUrl: '../stat-input.css',

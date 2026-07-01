@@ -11,7 +11,7 @@
       type="number"
       class="stat-input"
       [class.has-warning]="!!warning()"
-      [attr.title]="warning()"
+      [appTooltip]="warning()"
       [value]="formattedValue()"
       (input)="onInput($event)"
       [attr.min]="canStatBeNegative() ? null : 0"
