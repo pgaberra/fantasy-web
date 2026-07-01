@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { deriveRoster } from './draft-roster';
+import { DraftRosterService } from './draft-roster.service';
 import { Player } from '../models/player.model';
 import { SkaterPosition } from '../models/position.model';
 import { GoalieStats, SkaterStats } from '../models/projection.model';
 import { RosterSlots } from '../api/models/roster-slots';
 
+const service = new DraftRosterService();
 const roster: RosterSlots = { c: 1, lw: 1, rw: 1, d: 2, util: 1, bn: 1, g: 1 };
 
 function skater(id: number, positions: SkaterPosition[]): Player {
@@ -21,7 +22,7 @@ function goalie(id: number): Player {
   return { id, type: 'goalie', name: `G${id}`, stats: {} as GoalieStats };
 }
 
-describe('deriveRoster', () => {
+describe('DraftRosterService', () => {
   it('places players into their position slot, overflowing to util then bench', () => {
     const players = new Map<number, Player>([
       [1, skater(1, ['C'])],
@@ -29,7 +30,7 @@ describe('deriveRoster', () => {
       [3, goalie(3)],
     ]);
 
-    const result = deriveRoster([1, 2, 3], players, roster);
+    const result = service.deriveRoster([1, 2, 3], players, roster);
 
     expect(result.slots.find((slot) => slot.slotKey === 'c')?.playerId).toEqual(1);
     expect(result.slots.find((slot) => slot.slotKey === 'util')?.playerId).toEqual(2);
@@ -44,7 +45,7 @@ describe('deriveRoster', () => {
       [2, skater(2, ['C'])],
     ]);
 
-    const result = deriveRoster([1, 2], players, tight);
+    const result = service.deriveRoster([1, 2], players, tight);
 
     expect(result.slots.find((slot) => slot.slotKey === 'c')?.playerId).toEqual(1);
     expect(result.unplaced).toEqual([2]);

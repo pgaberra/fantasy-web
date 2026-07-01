@@ -32,7 +32,7 @@ import {
   DEFAULT_ROSTER_SLOTS,
 } from '../draft-projection/projection-defaults';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
-import { deriveRoster } from './draft-roster';
+import { DraftRosterService } from './draft-roster.service';
 import { DraftSnakeService } from './draft-snake.service';
 import { DraftSetupComponent } from './draft-setup/draft-setup';
 
@@ -54,6 +54,7 @@ export class DraftModeComponent implements OnInit {
   private readonly positionFilterService = inject(PositionFilterService);
   private readonly serializer = inject(ProjectionSerializerService);
   private readonly snake = inject(DraftSnakeService);
+  private readonly rosterService = inject(DraftRosterService);
 
   readonly projectionId = signal<string | null>(null);
   readonly projectionName = signal<string>('');
@@ -173,7 +174,7 @@ export class DraftModeComponent implements OnInit {
   readonly hasMoreAvailable = computed(() => this.visibleCount() < this.available().length);
 
   readonly roster = computed(() =>
-    deriveRoster(this.viewedPicks(), this.playerMap(), this.rosterSlots()),
+    this.rosterService.deriveRoster(this.viewedPicks(), this.playerMap(), this.rosterSlots()),
   );
   readonly filledCount = computed(
     () => this.roster().slots.filter((slot) => slot.playerId !== null).length,
