@@ -18,8 +18,8 @@ describe('EnvironmentBannerComponent', () => {
     }),
   );
 
-  const renderBanner = (environmentName: string, version = '') =>
-    MockRender(EnvironmentBannerComponent, { environmentName, version });
+  const renderBanner = (environmentName: string, version = '', isAdmin = false) =>
+    MockRender(EnvironmentBannerComponent, { environmentName, version, isAdmin });
 
   it('renders the staging banner with an uppercased label and version', () => {
     const fixture = renderBanner('staging', '0.1.5');
@@ -42,11 +42,24 @@ describe('EnvironmentBannerComponent', () => {
     expect(fixture.point.componentInstance.label()).toEqual('STAGING · local');
   });
 
-  it('renders nothing outside staging', () => {
+  it('stays hidden in production for non-admins', () => {
     expect(renderBanner('production', '0.1.5').nativeElement.querySelector('.env-banner')).toEqual(
       null,
     );
-    expect(renderBanner('development').nativeElement.querySelector('.env-banner')).toEqual(null);
+  });
+
+  it('shows in production for admins', () => {
+    const fixture = renderBanner('production', '0.1.5', true);
+    const banner = fixture.nativeElement.querySelector('.env-banner');
+
+    expect(banner).not.toEqual(null);
+    expect(banner.textContent.trim()).toEqual('PRODUCTION · v0.1.5');
+  });
+
+  it('stays hidden in development even for admins', () => {
+    expect(
+      renderBanner('development', '', true).nativeElement.querySelector('.env-banner'),
+    ).toEqual(null);
   });
 
   it('keeps the version panel closed until the banner is clicked', () => {

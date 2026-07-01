@@ -1,4 +1,8 @@
-<app-environment-banner [environmentName]="environmentName" [version]="appVersion" />
+<app-environment-banner
+  [environmentName]="environmentName"
+  [version]="appVersion"
+  [isAdmin]="authService.isAdmin()"
+/>
 @if (!isLandingRoute()) {
   <header class="app-header">
     <div class="app-header-inner">
