@@ -4,6 +4,7 @@ import {
   DestroyRef,
   HostListener,
   inject,
+  linkedSignal,
   OnInit,
   signal,
 } from '@angular/core';
@@ -35,6 +36,8 @@ import { deriveRoster } from './draft-roster';
 import { isValidDraft, onClock, picksForTeam } from './draft-snake';
 import { DraftSetupComponent } from './draft-setup/draft-setup';
 
+const DEFAULT_PAGE_SIZE = 100;
+
 @Component({
   selector: 'app-draft-mode',
   imports: [RouterLink, LoadingIndicatorComponent, DraftSetupComponent],
@@ -56,6 +59,13 @@ export class DraftModeComponent implements OnInit {
   readonly saveStatus = signal<'idle' | 'saving' | 'saved'>('idle');
   readonly searchTerm = signal<string>('');
   readonly positionFilter = signal<PositionFilter>('ALL');
+  readonly pageSize = signal<number>(DEFAULT_PAGE_SIZE);
+  readonly pageSizeOptions: { label: string; value: number }[] = [
+    { label: '100', value: 100 },
+    { label: '200', value: 200 },
+    { label: '300', value: 300 },
+    { label: 'All', value: Infinity },
+  ];
   readonly positionFilters: { value: PositionFilter; label: string }[] = [
     { value: 'ALL', label: 'All' },
     { value: 'C', label: 'C' },
@@ -148,6 +158,17 @@ export class DraftModeComponent implements OnInit {
       return players.get(scoredProjection.projection.playerId)?.name.toLowerCase().includes(term);
     });
   });
+
+  readonly visibleCount = linkedSignal({
+    source: () => ({
+      term: this.searchTerm(),
+      position: this.positionFilter(),
+      pageSize: this.pageSize(),
+    }),
+    computation: () => this.pageSize(),
+  });
+  readonly visibleAvailable = computed(() => this.available().slice(0, this.visibleCount()));
+  readonly hasMoreAvailable = computed(() => this.visibleCount() < this.available().length);
 
   readonly roster = computed(() =>
     deriveRoster(this.viewedPicks(), this.playerMap(), this.rosterSlots()),
@@ -404,6 +425,14 @@ export class DraftModeComponent implements OnInit {
 
   setPositionFilter(filter: PositionFilter): void {
     this.positionFilter.set(filter);
+  }
+
+  showMore(): void {
+    this.visibleCount.update((count) => count + this.pageSize());
+  }
+
+  onPageSizeChange(event: Event): void {
+    this.pageSize.set(Number((event.target as HTMLSelectElement).value));
   }
 
   selectTeam(event: Event): void {
