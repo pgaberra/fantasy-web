@@ -3,10 +3,11 @@ import { StatKey } from '../../../../models/stat-key.model';
 import { StatInfoService } from '../../../../services/stat-info.service';
 import { DecimalStatKey } from '../../../projection-settings-section/model';
 import { ToiInputComponent } from './toi-input/toi-input';
+import { TooltipDirective } from '../../../../shared/tooltip/tooltip.directive';
 
 @Component({
   selector: 'app-stat-input',
-  imports: [ToiInputComponent],
+  imports: [ToiInputComponent, TooltipDirective],
   templateUrl: './stat-input.html',
   styleUrl: './stat-input.css',
 })
