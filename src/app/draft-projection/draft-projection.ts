@@ -44,11 +44,8 @@ import {
 import { RosterSlots } from '../api/models/roster-slots';
 import { StatInfoService } from '../services/stat-info.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
-import {
-  fromProjectionData,
-  ProjectionState,
-  toProjectionData,
-} from '../services/projection-serializer';
+import { ProjectionState } from '../services/projection-serializer';
+import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import { ProjectionSyncService } from '../services/projection-sync.service';
 import { YahooService } from '../services/yahoo.service';
 
@@ -76,6 +73,7 @@ export class DraftProjectionComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly yahoo = inject(YahooService);
   private readonly projectionSync = inject(ProjectionSyncService);
+  private readonly serializer = inject(ProjectionSerializerService);
 
   private readonly table = viewChild(PlayerProjectionsTableComponent);
   private readonly renameInput = viewChild<ElementRef<HTMLInputElement>>('renameInput');
@@ -142,7 +140,9 @@ export class DraftProjectionComponent implements OnInit {
   readonly isLoading = computed(() => this.playersResource.isLoading() || !this.projectionLoaded());
 
   private readonly serializedState = computed(() =>
-    this.autosaveEnabled() ? JSON.stringify(toProjectionData(this.buildState())) : '',
+    this.autosaveEnabled()
+      ? JSON.stringify(this.serializer.toProjectionData(this.buildState()))
+      : '',
   );
 
   constructor() {
@@ -229,9 +229,9 @@ export class DraftProjectionComponent implements OnInit {
         next: (projection) => {
           this.projectionId.set(projection.id);
           this.projectionName.set(projection.name);
-          const state = fromProjectionData(projection.data);
+          const state = this.serializer.fromProjectionData(projection.data);
           this.applyState(state);
-          this.lastSavedJson = JSON.stringify(toProjectionData(state));
+          this.lastSavedJson = JSON.stringify(this.serializer.toProjectionData(state));
           this.projectionLoaded.set(true);
           this.autosaveEnabled.set(true);
         },
@@ -279,7 +279,7 @@ export class DraftProjectionComponent implements OnInit {
     if (!this.autosaveEnabled() || !id) {
       return;
     }
-    const data = toProjectionData(this.buildState());
+    const data = this.serializer.toProjectionData(this.buildState());
     const json = JSON.stringify(data);
     if (json === this.lastSavedJson) {
       return;
@@ -325,7 +325,7 @@ export class DraftProjectionComponent implements OnInit {
       return;
     }
 
-    const data = toProjectionData(this.buildState());
+    const data = this.serializer.toProjectionData(this.buildState());
     this.renameSaving.set(true);
     this.renameError.set(null);
     this.projectionStorage
