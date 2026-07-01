@@ -167,3 +167,38 @@ summary:focus-visible,
 .btn-sm {
   padding: 0.35rem 0.85rem;
 }
+
+.table-wrapper .col-rank,
+.table-wrapper .col-name {
+  position: sticky;
+  z-index: 1;
+}
+.table-wrapper .col-rank {
+  left: 0;
+  box-sizing: border-box;
+  width: 2.75rem;
+  min-width: 2.75rem;
+}
+.table-wrapper .col-name {
+  left: 2.75rem;
+  box-shadow: 6px 0 6px -5px rgba(15, 52, 96, 0.18);
+}
+.table-wrapper thead th {
+  z-index: 2;
+}
+.table-wrapper thead .col-rank,
+.table-wrapper thead .col-name {
+  z-index: 3;
+}
+.table-wrapper tbody td.col-rank,
+.table-wrapper tbody td.col-name {
+  background: var(--color-surface);
+}
+.table-wrapper tbody tr:nth-child(even) td.col-rank,
+.table-wrapper tbody tr:nth-child(even) td.col-name {
+  background: var(--color-surface-alt);
+}
+.table-wrapper tbody tr:hover td.col-rank,
+.table-wrapper tbody tr:hover td.col-name {
+  background: var(--color-surface-hover);
+}
