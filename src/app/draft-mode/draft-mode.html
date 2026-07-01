@@ -74,7 +74,7 @@
                 @if (slot.playerId !== null) {
                   <span [class]="'avatar avatar-sm pos--' + primaryPosition(slot.playerId)">
                     @if (playerHeadshot(slot.playerId); as headshot) {
-                      <img [src]="headshot" alt="" />
+                      <img [src]="headshot" alt="" loading="lazy" />
                     } @else {
                       {{ playerInitials(slot.playerId) }}
                     }
@@ -93,7 +93,7 @@
                 <span class="slot-chip pos--util">Extra</span>
                 <span [class]="'avatar avatar-sm pos--' + primaryPosition(playerId)">
                   @if (playerHeadshot(playerId); as headshot) {
-                    <img [src]="headshot" alt="" />
+                    <img [src]="headshot" alt="" loading="lazy" />
                   } @else {
                     {{ playerInitials(playerId) }}
                   }
@@ -142,12 +142,12 @@
           </div>
           @if (available().length) {
             <div class="available-list">
-              @for (sp of available(); track sp.projection.playerId; let i = $index) {
+              @for (sp of visibleAvailable(); track sp.projection.playerId; let i = $index) {
                 <div class="available-row">
                   <span class="row-rank">{{ i + 1 }}</span>
                   <span [class]="'avatar pos--' + primaryPosition(sp.projection.playerId)">
                     @if (playerHeadshot(sp.projection.playerId); as headshot) {
-                      <img [src]="headshot" alt="" />
+                      <img [src]="headshot" alt="" loading="lazy" />
                     } @else {
                       {{ playerInitials(sp.projection.playerId) }}
                     }
@@ -187,6 +187,11 @@
                 </div>
               }
             </div>
+            @if (hasMoreAvailable()) {
+              <button type="button" class="btn btn-secondary btn-sm show-more" (click)="showMore()">
+                Show more ({{ available().length - visibleAvailable().length }} more)
+              </button>
+            }
           } @else {
             <p class="available-empty">No available players match.</p>
           }
@@ -209,7 +214,7 @@
                     <span class="feed-pick">{{ entry.overall }}</span>
                     <span [class]="'avatar avatar-sm pos--' + primaryPosition(entry.playerId)">
                       @if (playerHeadshot(entry.playerId); as headshot) {
-                        <img [src]="headshot" alt="" />
+                        <img [src]="headshot" alt="" loading="lazy" />
                       } @else {
                         {{ playerInitials(entry.playerId) }}
                       }

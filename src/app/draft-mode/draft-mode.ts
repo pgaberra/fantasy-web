@@ -4,6 +4,7 @@ import {
   DestroyRef,
   HostListener,
   inject,
+  linkedSignal,
   OnInit,
   signal,
 } from '@angular/core';
@@ -34,6 +35,8 @@ import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-i
 import { deriveRoster } from './draft-roster';
 import { isValidDraft, onClock, picksForTeam } from './draft-snake';
 import { DraftSetupComponent } from './draft-setup/draft-setup';
+
+const AVAILABLE_PAGE_SIZE = 50;
 
 @Component({
   selector: 'app-draft-mode',
@@ -148,6 +151,13 @@ export class DraftModeComponent implements OnInit {
       return players.get(scoredProjection.projection.playerId)?.name.toLowerCase().includes(term);
     });
   });
+
+  readonly visibleCount = linkedSignal({
+    source: () => ({ term: this.searchTerm(), position: this.positionFilter() }),
+    computation: () => AVAILABLE_PAGE_SIZE,
+  });
+  readonly visibleAvailable = computed(() => this.available().slice(0, this.visibleCount()));
+  readonly hasMoreAvailable = computed(() => this.visibleCount() < this.available().length);
 
   readonly roster = computed(() =>
     deriveRoster(this.viewedPicks(), this.playerMap(), this.rosterSlots()),
@@ -404,6 +414,10 @@ export class DraftModeComponent implements OnInit {
 
   setPositionFilter(filter: PositionFilter): void {
     this.positionFilter.set(filter);
+  }
+
+  showMore(): void {
+    this.visibleCount.update((count) => count + AVAILABLE_PAGE_SIZE);
   }
 
   selectTeam(event: Event): void {

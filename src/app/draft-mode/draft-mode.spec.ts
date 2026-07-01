@@ -272,3 +272,94 @@ describe('DraftModeComponent', () => {
     expect(select.value).toEqual('team-me');
   });
 });
+
+describe('DraftModeComponent — available pagination', () => {
+  const manyPlayers: Player[] = Array.from({ length: 60 }, (_, i) => ({
+    id: i + 1,
+    type: 'skater',
+    name: `Player ${i + 1}`,
+    positions: new Set(['C']),
+    stats: {} as SkaterStats,
+  }));
+
+  const bigProjection: ProjectionResponse = {
+    id: 'p2',
+    name: 'Big Board',
+    season: '20262027',
+    createdAt: '2026-06-01T00:00:00Z',
+    updatedAt: '2026-06-01T00:00:00Z',
+    data: {
+      settings: {
+        scoringType: 'category',
+        statWeights: { goals: 5 },
+        activeScoringColumns: ['goals'],
+        activeUtilityColumns: ['gp'],
+        scaleSettings: {},
+        decimalSettings: { goals: 0 },
+        useDefaultDecimals: false,
+        leagueSize: 12,
+        rosterSlots: { c: 1, lw: 1, rw: 1, d: 1, util: 1, bn: 1, g: 1 },
+        minGoalieGames: 25,
+      },
+      players: manyPlayers.map((player, i) => ({
+        playerId: player.id,
+        type: 'skater' as const,
+        stats: { utility: { gp: 82 }, scoring: { goals: 60 - i } },
+      })),
+    },
+  };
+
+  const draft: DraftState = {
+    teams: [
+      { id: 'team-me', name: 'My Team', mine: true },
+      { id: 'team-1', name: 'Team 1', mine: false },
+    ],
+    order: ['team-me', 'team-1'],
+    picks: [],
+  };
+
+  beforeEach(() =>
+    MockBuilder(DraftModeComponent)
+      .keep(ProjectionRankingService)
+      .keep(ProjectionCalculationService)
+      .keep(PositionFilterService)
+      .mock(PlayerService, { getPlayers: () => of(manyPlayers) })
+      .mock(ProjectionStorageService, {
+        loadProjection: () => of(bigProjection),
+        updateProjection: vi.fn(() => of(bigProjection)),
+      })
+      .provide({
+        provide: ActivatedRoute,
+        useValue: { snapshot: { paramMap: { get: () => 'p2' } } },
+      }),
+  );
+
+  it('caps the available list at one page and reveals more on show more', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+
+    expect(component.available().length).toEqual(60);
+    expect(component.visibleAvailable().length).toEqual(50);
+    expect(component.hasMoreAvailable()).toBe(true);
+
+    component.showMore();
+
+    expect(component.visibleAvailable().length).toEqual(60);
+    expect(component.hasMoreAvailable()).toBe(false);
+  });
+
+  it('resets to the first page when the position filter changes', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+    component.showMore();
+    expect(component.visibleAvailable().length).toEqual(60);
+
+    component.setPositionFilter('C');
+
+    expect(component.visibleAvailable().length).toEqual(50);
+  });
+});
