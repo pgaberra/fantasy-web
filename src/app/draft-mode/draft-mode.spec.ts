@@ -94,7 +94,7 @@ describe('DraftModeComponent', () => {
     expect(updateProjection).toHaveBeenCalled();
   });
 
-  it('drafts the on-clock pick, removes them from available and advances the clock', async () => {
+  it('drafts the next pick, removes them from available and advances the order', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
@@ -106,12 +106,12 @@ describe('DraftModeComponent', () => {
     expect(component.available().map((sp) => sp.projection.playerId)).toEqual([2]);
     expect(component.filledCount()).toEqual(1);
     expect(component.pickNumber()).toEqual(2);
-    expect(component.onClockTeam()?.id).toEqual('team-1');
+    expect(component.upNextTeam()?.id).toEqual('team-1');
     expect(component.isMyPick()).toBe(false);
     expect(component.draftLabel()).toEqual('Draft for Team 1');
   });
 
-  it('attributes a pick to the on-clock team and undoes the last pick', async () => {
+  it('attributes a pick to the next team and undoes the last pick', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
