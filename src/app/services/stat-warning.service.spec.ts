@@ -49,7 +49,7 @@ const goalie = (
   playerId: 2,
   stats: {
     utility: { gp: 82, ...utility },
-    scoring: { gs: 0, w: 0, l: 0, sho: 0, sa: 100, sv: 0, ga: 0, gaa: 0, svPct: 0, ...scoring },
+    scoring: { gs: 0, w: 0, l: 0, sho: 0, sa: 0, sv: 0, ga: 0, gaa: 0, svPct: 0, ...scoring },
   },
 });
 
@@ -85,6 +85,11 @@ describe('StatWarningService', () => {
     expect(service.warningsFor(skater({ goals: 30, sog: 200 })).has('goals')).toEqual(false);
   });
 
+  it('warns when shooting percentage exceeds 100', () => {
+    expect(service.warningsFor(skater({ shPct: 101 })).has('shPct')).toEqual(true);
+    expect(service.warningsFor(skater({ shPct: 100 })).has('shPct')).toEqual(false);
+  });
+
   it('warns when P does not equal goals + assists', () => {
     expect(
       service.warningsFor(skater({ goals: 20, assists: 25, points: 45 })).has('points'),
@@ -110,6 +115,16 @@ describe('StatWarningService', () => {
     expect(warnings.has('l')).toEqual(true);
     expect(warnings.has('sv')).toEqual(true);
     expect(warnings.has('ga')).toEqual(true);
+  });
+
+  it('warns when saves + goals against do not equal shots against', () => {
+    expect(service.warningsFor(goalie({ sa: 100, sv: 90, ga: 10 })).has('sa')).toEqual(false);
+    expect(service.warningsFor(goalie({ sa: 100, sv: 90, ga: 5 })).has('sa')).toEqual(true);
+  });
+
+  it('warns when save percentage exceeds 100', () => {
+    expect(service.warningsFor(goalie({ svPct: 101 })).has('svPct')).toEqual(true);
+    expect(service.warningsFor(goalie({ svPct: 100 })).has('svPct')).toEqual(false);
   });
 
   it('produces no warnings for a plausible line', () => {
