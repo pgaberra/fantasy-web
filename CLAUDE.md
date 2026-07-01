@@ -66,6 +66,25 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
 - Keep API calls going through the generated client + a service wrapper, not raw
   `HttpClient` in components.
 
+## End-to-end tests (Playwright)
+
+`e2e/` holds Playwright E2E tests that drive a real browser against the **deployed
+staging** app (`https://staging.slapstat.com`), not a local build. They are **not**
+part of the PR gate — `pr-checks.yml` runs only the unit tests; a dedicated
+`e2e.yml` workflow runs the E2E suite **daily and on manual dispatch** (a PR's code
+isn't on staging until it merges and deploys).
+
+- Run locally: `npx playwright install chromium` (once), then `npm run e2e`.
+- The signed-in tests use a throwaway staging account: the signed-in test reads
+  `E2E_EMAIL` / `E2E_PASSWORD` (env locally, repo secrets in CI) and skips without
+  them; the happy-path registers a fresh account per run. See `e2e/README.md`.
+- `e2e/` lives outside `src/`, so lint / format:check / unit tests don't touch it.
+
+**Policy:** keep and grow the E2E suite as long as it stays cheap to maintain —
+prefer stable role/id selectors, keep tests independent, and retire a test that
+turns slow or flaky rather than letting it rot. E2E complements the unit tests, it
+doesn't replace them.
+
 ## CI / workflow
 
 - `.github/workflows/pr-checks.yml`: Node 22, generates the API client then runs

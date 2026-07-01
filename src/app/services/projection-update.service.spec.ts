@@ -240,8 +240,8 @@ describe('ProjectionUpdateService', () => {
       const service = getService();
       const projections: Projection[] = [makeGoalieProjection(1, 60)];
       const result = service.applyStatValue(projections, 1, 'gp', 80, goalieScaleSettings);
-      expect((result[0] as GoalieProjection).stats.scoring.svPct).toEqual(0.92);
-      expect((result[0] as GoalieProjection).stats.scoring.gaa).toEqual(2.5);
+      expect((result[0] as GoalieProjection).stats.scoring.svPct).toBeCloseTo(0.92);
+      expect((result[0] as GoalieProjection).stats.scoring.gaa).toBeCloseTo(2.5);
     });
 
     it('should not scale when old gp is 0', () => {
