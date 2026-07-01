@@ -4,6 +4,7 @@ import { StatKey } from '../models/stat-key.model';
 
 const SEASON_GAMES = 82;
 const MAX_TOI_SECONDS = 60 * 60;
+const MAX_PERCENTAGE = 100;
 const POINTS_TOLERANCE = 0.01;
 
 @Injectable({
@@ -49,6 +50,9 @@ export class StatWarningService {
       if (Math.abs(scoring.shg + scoring.sha - scoring.shp) > POINTS_TOLERANCE) {
         warnings.set('shp', "Doesn't equal SHG + SHA");
       }
+      if (scoring.shPct > MAX_PERCENTAGE) {
+        warnings.set('shPct', 'Over 100%');
+      }
     } else {
       const { scoring, utility } = projection.stats;
       if (scoring.gs > utility.gp) {
@@ -63,6 +67,12 @@ export class StatWarningService {
       }
       if (scoring.ga > scoring.sa) {
         warnings.set('ga', 'More than shots against');
+      }
+      if (Math.abs(scoring.sv + scoring.ga - scoring.sa) > POINTS_TOLERANCE) {
+        warnings.set('sa', "Doesn't equal Saves + Goals against");
+      }
+      if (scoring.svPct > MAX_PERCENTAGE) {
+        warnings.set('svPct', 'Over 100%');
       }
     }
 
