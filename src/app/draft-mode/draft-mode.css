@@ -648,3 +648,17 @@
   font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
+
+@media (max-width: 560px) {
+  .available-row {
+    grid-template-columns: 1.6rem 2rem 1fr auto;
+    row-gap: 0.4rem;
+  }
+  .available-row .row-actions {
+    grid-column: 1 / -1;
+    display: flex;
+  }
+  .available-row .row-actions .btn {
+    flex: 1;
+  }
+}
