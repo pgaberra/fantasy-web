@@ -33,7 +33,7 @@ import {
 } from '../draft-projection/projection-defaults';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { deriveRoster } from './draft-roster';
-import { isValidDraft, onClock, picksForTeam } from './draft-snake';
+import { DraftSnakeService } from './draft-snake.service';
 import { DraftSetupComponent } from './draft-setup/draft-setup';
 
 const DEFAULT_PAGE_SIZE = 100;
@@ -53,6 +53,7 @@ export class DraftModeComponent implements OnInit {
   private readonly ranking = inject(ProjectionRankingService);
   private readonly positionFilterService = inject(PositionFilterService);
   private readonly serializer = inject(ProjectionSerializerService);
+  private readonly snake = inject(DraftSnakeService);
 
   readonly projectionId = signal<string | null>(null);
   readonly projectionName = signal<string>('');
@@ -104,7 +105,7 @@ export class DraftModeComponent implements OnInit {
   readonly picks = computed(() => this.draft()?.picks ?? []);
 
   readonly phase = computed<'setup' | 'draft'>(() =>
-    !isValidDraft(this.draft()) || this.setupOpen() ? 'setup' : 'draft',
+    !this.snake.isValidDraft(this.draft()) || this.setupOpen() ? 'setup' : 'draft',
   );
 
   private readonly teamById = computed(() => new Map(this.teams().map((team) => [team.id, team])));
@@ -120,7 +121,7 @@ export class DraftModeComponent implements OnInit {
   });
   private readonly viewedPicks = computed(() => {
     const teamId = this.effectiveTeamId();
-    return teamId === null ? [] : picksForTeam(this.picks(), teamId);
+    return teamId === null ? [] : this.snake.picksForTeam(this.picks(), teamId);
   });
 
   private readonly ranked = computed<ScoredProjection[]>(() => {
@@ -184,21 +185,21 @@ export class DraftModeComponent implements OnInit {
   readonly isComplete = computed(
     () => this.totalPicks() > 0 && this.picks().length >= this.totalPicks(),
   );
-  readonly clock = computed(() =>
-    this.isComplete() ? null : onClock(this.pickNumber(), this.order()),
+  readonly currentSlot = computed(() =>
+    this.isComplete() ? null : this.snake.slotForPick(this.pickNumber(), this.order()),
   );
-  readonly onClockTeam = computed(() => {
-    const slot = this.clock();
+  readonly upNextTeam = computed(() => {
+    const slot = this.currentSlot();
     return slot ? (this.teamById().get(slot.teamId) ?? null) : null;
   });
-  readonly isMyPick = computed(() => !!this.onClockTeam()?.mine);
+  readonly isMyPick = computed(() => !!this.upNextTeam()?.mine);
   readonly canUndo = computed(() => this.picks().length > 0);
 
   readonly draftLabel = computed(() => {
     if (this.isMyPick() || this.isComplete()) {
       return 'Draft';
     }
-    const team = this.onClockTeam()?.name;
+    const team = this.upNextTeam()?.name;
     return team ? `Draft for ${team}` : 'Draft';
   });
 
@@ -267,8 +268,8 @@ export class DraftModeComponent implements OnInit {
       (_, index) => overall + 1 + index,
     );
     const changes = positions.map((position) => {
-      const oldSlot = onClock(position, order);
-      const newSlot = onClock(position - 1, order);
+      const oldSlot = this.snake.slotForPick(position, order);
+      const newSlot = this.snake.slotForPick(position - 1, order);
       const oldTeam = oldSlot ? teams.get(oldSlot.teamId) : undefined;
       const newTeam = newSlot ? teams.get(newSlot.teamId) : undefined;
       return {
@@ -315,7 +316,7 @@ export class DraftModeComponent implements OnInit {
   }
 
   draftCurrent(playerId: number): void {
-    const slot = this.clock();
+    const slot = this.currentSlot();
     if (!slot || this.draftedIds().has(playerId)) {
       return;
     }
@@ -364,7 +365,7 @@ export class DraftModeComponent implements OnInit {
       return {
         ...draft,
         picks: remaining.map((pick, index) => {
-          const slot = onClock(index + 1, draft.order);
+          const slot = this.snake.slotForPick(index + 1, draft.order);
           return { playerId: pick.playerId, teamId: slot ? slot.teamId : pick.teamId };
         }),
       };
@@ -410,7 +411,7 @@ export class DraftModeComponent implements OnInit {
   }
 
   cancelSetup(): void {
-    if (isValidDraft(this.draft())) {
+    if (this.snake.isValidDraft(this.draft())) {
       this.setupOpen.set(false);
     }
   }

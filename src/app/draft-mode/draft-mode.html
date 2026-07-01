@@ -30,7 +30,7 @@
           @if (isComplete()) {
             Draft complete
           } @else {
-            Up next: <strong>{{ onClockTeam()?.name }}</strong>
+            Up next: <strong>{{ upNextTeam()?.name }}</strong>
             @if (isMyPick()) {
               <span class="you-tag">· you</span>
             }
