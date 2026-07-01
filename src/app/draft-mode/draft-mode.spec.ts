@@ -274,7 +274,7 @@ describe('DraftModeComponent', () => {
 });
 
 describe('DraftModeComponent — available pagination', () => {
-  const manyPlayers: Player[] = Array.from({ length: 60 }, (_, i) => ({
+  const manyPlayers: Player[] = Array.from({ length: 120 }, (_, i) => ({
     id: i + 1,
     type: 'skater',
     name: `Player ${i + 1}`,
@@ -304,7 +304,7 @@ describe('DraftModeComponent — available pagination', () => {
       players: manyPlayers.map((player, i) => ({
         playerId: player.id,
         type: 'skater' as const,
-        stats: { utility: { gp: 82 }, scoring: { goals: 60 - i } },
+        stats: { utility: { gp: 82 }, scoring: { goals: 120 - i } },
       })),
     },
   };
@@ -334,19 +334,20 @@ describe('DraftModeComponent — available pagination', () => {
       }),
   );
 
-  it('caps the available list at one page and reveals more on show more', async () => {
+  it('defaults to 100 players per page and reveals more on show more', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
     component.applySetup(draft);
 
-    expect(component.available().length).toEqual(60);
-    expect(component.visibleAvailable().length).toEqual(50);
+    expect(component.available().length).toEqual(120);
+    expect(component.pageSize()).toEqual(100);
+    expect(component.visibleAvailable().length).toEqual(100);
     expect(component.hasMoreAvailable()).toBe(true);
 
     component.showMore();
 
-    expect(component.visibleAvailable().length).toEqual(60);
+    expect(component.visibleAvailable().length).toEqual(120);
     expect(component.hasMoreAvailable()).toBe(false);
   });
 
@@ -356,10 +357,25 @@ describe('DraftModeComponent — available pagination', () => {
     const component = fixture.point.componentInstance;
     component.applySetup(draft);
     component.showMore();
-    expect(component.visibleAvailable().length).toEqual(60);
+    expect(component.visibleAvailable().length).toEqual(120);
 
     component.setPositionFilter('C');
 
-    expect(component.visibleAvailable().length).toEqual(50);
+    expect(component.visibleAvailable().length).toEqual(100);
+  });
+
+  it('honors a user-chosen page size', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+
+    component.pageSize.set(200);
+    expect(component.visibleAvailable().length).toEqual(120);
+    expect(component.hasMoreAvailable()).toBe(false);
+
+    component.pageSize.set(100);
+    expect(component.visibleAvailable().length).toEqual(100);
+    expect(component.hasMoreAvailable()).toBe(true);
   });
 });

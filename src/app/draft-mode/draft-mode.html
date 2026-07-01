@@ -139,6 +139,20 @@
                 {{ filter.label }}
               </button>
             }
+            <label class="page-size">
+              Show
+              <select
+                class="page-size-select"
+                (change)="onPageSizeChange($event)"
+                aria-label="Players per page"
+              >
+                @for (option of pageSizeOptions; track option.value) {
+                  <option [value]="option.value" [selected]="option.value === pageSize()">
+                    {{ option.label }}
+                  </option>
+                }
+              </select>
+            </label>
           </div>
           @if (available().length) {
             <div class="available-list">

@@ -36,7 +36,7 @@ import { deriveRoster } from './draft-roster';
 import { isValidDraft, onClock, picksForTeam } from './draft-snake';
 import { DraftSetupComponent } from './draft-setup/draft-setup';
 
-const AVAILABLE_PAGE_SIZE = 50;
+const DEFAULT_PAGE_SIZE = 100;
 
 @Component({
   selector: 'app-draft-mode',
@@ -59,6 +59,13 @@ export class DraftModeComponent implements OnInit {
   readonly saveStatus = signal<'idle' | 'saving' | 'saved'>('idle');
   readonly searchTerm = signal<string>('');
   readonly positionFilter = signal<PositionFilter>('ALL');
+  readonly pageSize = signal<number>(DEFAULT_PAGE_SIZE);
+  readonly pageSizeOptions: { label: string; value: number }[] = [
+    { label: '100', value: 100 },
+    { label: '200', value: 200 },
+    { label: '300', value: 300 },
+    { label: 'All', value: Infinity },
+  ];
   readonly positionFilters: { value: PositionFilter; label: string }[] = [
     { value: 'ALL', label: 'All' },
     { value: 'C', label: 'C' },
@@ -153,8 +160,12 @@ export class DraftModeComponent implements OnInit {
   });
 
   readonly visibleCount = linkedSignal({
-    source: () => ({ term: this.searchTerm(), position: this.positionFilter() }),
-    computation: () => AVAILABLE_PAGE_SIZE,
+    source: () => ({
+      term: this.searchTerm(),
+      position: this.positionFilter(),
+      pageSize: this.pageSize(),
+    }),
+    computation: () => this.pageSize(),
   });
   readonly visibleAvailable = computed(() => this.available().slice(0, this.visibleCount()));
   readonly hasMoreAvailable = computed(() => this.visibleCount() < this.available().length);
@@ -417,7 +428,11 @@ export class DraftModeComponent implements OnInit {
   }
 
   showMore(): void {
-    this.visibleCount.update((count) => count + AVAILABLE_PAGE_SIZE);
+    this.visibleCount.update((count) => count + this.pageSize());
+  }
+
+  onPageSizeChange(event: Event): void {
+    this.pageSize.set(Number((event.target as HTMLSelectElement).value));
   }
 
   selectTeam(event: Event): void {
