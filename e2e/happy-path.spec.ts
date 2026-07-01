@@ -1,11 +1,12 @@
 import { test, expect } from '@playwright/test';
 
-// Walks the full normal flow through a fresh throwaway account:
-// register -> create projection -> edit a player -> edit a setting -> draft.
+// A realistic run through the editor and draft mode via a fresh throwaway account:
+// register -> create -> edit several players -> remove a scoring stat + switch
+// scoring type -> draft a small league all the way to completion.
 test.describe('happy path', () => {
-  test.setTimeout(90_000);
+  test.setTimeout(180_000);
 
-  test('register, create a projection, edit a player and settings, then draft', async ({
+  test('register, edit several players and settings, then draft a league to completion', async ({
     page,
   }) => {
     const email = `e2e-hp-${Date.now()}@slapstat.com`;
@@ -27,19 +28,29 @@ test.describe('happy path', () => {
     await page.getByRole('button', { name: /^create projection$/i }).click();
     await expect(page).toHaveURL(/\/projections\/[0-9a-f-]+$/i, { timeout: 20_000 });
 
-    // 3) Edit a player: change the first stat value in the top row.
-    const firstPlayerRow = page.locator('tr', { has: page.locator('.player-name-text') }).first();
-    const statInput = firstPlayerRow.locator('input.stat-input').first();
-    await statInput.fill('99');
-    await expect(statInput).toHaveValue('99');
+    // 3) Edit several players: raise some stats, clear another.
+    const rows = page.locator('tr', { has: page.locator('.player-name-text') });
+    const firstStat = rows.first().locator('input.stat-input').first();
+    await firstStat.fill('99');
+    await expect(firstStat).toHaveValue('99');
+    await rows.nth(1).locator('input.stat-input').first().fill('80');
+    await rows.nth(2).locator('input.stat-input').first().fill('0');
+    await rows.nth(3).locator('input.stat-input').first().fill('65');
 
-    // 4) Edit a setting: expand Projection Settings and switch scoring to Category.
+    // 4) Edit settings: expand the panel, remove a scoring stat, switch to Category.
     await page.getByRole('button', { name: /projection settings/i }).click();
     await expect(page.locator('.settings-section .hint')).toBeVisible();
     const categoryLabel = page.locator('label.radio-label', { hasText: 'Category' });
     if (!(await categoryLabel.isVisible())) {
       await page.getByRole('button', { name: /league settings/i }).click();
     }
+    const statChips = page.locator('.stat-chip');
+    const chipsBefore = await statChips.count();
+    await page
+      .getByRole('button', { name: /^remove /i })
+      .first()
+      .click();
+    await expect(statChips).toHaveCount(chipsBefore - 1);
     await categoryLabel.click();
     await expect(page.locator('input[name="scoringType"][value="category"]')).toBeChecked();
 
@@ -51,16 +62,29 @@ test.describe('happy path', () => {
     await page.getByRole('button', { name: /draft mode/i }).click();
     await expect(page).toHaveURL(/\/draft\/?$/, { timeout: 15_000 });
 
-    // 6) Start the draft with the default teams and order.
+    // 6) Shrink to the smallest league so a full draft stays quick.
+    const initialTeams = Number(
+      (await page.locator('.stepper-value').textContent())?.trim() ?? '12',
+    );
+    const removeTeam = page.getByRole('button', { name: /remove a team/i });
+    for (let i = 0; i < initialTeams - 2; i++) {
+      await removeTeam.click();
+    }
     await page.getByRole('button', { name: /start draft/i }).click();
 
-    // 7) Draft the first available player (pick 1 belongs to My Team).
-    const firstRow = page.locator('.available-row').first();
-    const draftedName = ((await firstRow.locator('.row-name').textContent()) ?? '').trim();
-    expect(draftedName).not.toEqual('');
-    await firstRow.getByRole('button', { name: /draft/i }).click();
+    // 7) Draft the top available player over and over until the draft is complete.
+    const draftComplete = page.getByText('Draft complete');
+    for (let i = 0; i < 80; i++) {
+      if (await draftComplete.isVisible().catch(() => false)) break;
+      const draftButton = page
+        .locator('.available-row')
+        .first()
+        .getByRole('button', { name: /draft/i });
+      if (!(await draftButton.isVisible().catch(() => false))) break;
+      await draftButton.click();
+    }
 
-    // 8) The drafted player shows up in my roster.
-    await expect(page.locator('.roster-slot.filled', { hasText: draftedName })).toBeVisible();
+    // 8) Every team's roster is filled — the draft is complete.
+    await expect(draftComplete).toBeVisible();
   });
 });
