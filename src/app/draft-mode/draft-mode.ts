@@ -25,7 +25,7 @@ import {
 import { ScoringStatKey } from '../models/stat-key.model';
 import { DraftState } from '../api/models/draft-state';
 import { ProjectionData } from '../api/models/projection-data';
-import { fromProjectionData } from '../services/projection-serializer';
+import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import {
   DEFAULT_LEAGUE_SIZE,
   DEFAULT_MIN_GOALIE_GAMES,
@@ -52,6 +52,7 @@ export class DraftModeComponent implements OnInit {
   private readonly playerService = inject(PlayerService);
   private readonly ranking = inject(ProjectionRankingService);
   private readonly positionFilterService = inject(PositionFilterService);
+  private readonly serializer = inject(ProjectionSerializerService);
 
   readonly projectionId = signal<string | null>(null);
   readonly projectionName = signal<string>('');
@@ -90,7 +91,7 @@ export class DraftModeComponent implements OnInit {
 
   private readonly projections = computed<Projection[]>(() => {
     const data = this.data();
-    return data ? fromProjectionData(data).playerProjections : [];
+    return data ? this.serializer.fromProjectionData(data).playerProjections : [];
   });
 
   private readonly scoringType = computed(() => this.data()?.settings.scoringType ?? 'points');
@@ -306,7 +307,7 @@ export class DraftModeComponent implements OnInit {
           this.projectionName.set(projection.name);
           this.data.set(projection.data);
           this.allPlayers.set(players);
-          this.draft.set(fromProjectionData(projection.data).draft);
+          this.draft.set(this.serializer.fromProjectionData(projection.data).draft);
           this.loaded.set(true);
         },
         error: () => void this.router.navigate(['/projections']),

@@ -22,7 +22,8 @@ import {
   DEFAULT_STAT_WEIGHTS,
   DEFAULT_UTILITY_COLUMNS,
 } from '../draft-projection/projection-defaults';
-import { ProjectionState, toProjectionData } from '../services/projection-serializer';
+import { ProjectionState } from '../services/projection-serializer';
+import { ProjectionSerializerService } from '../services/projection-serializer.service';
 
 type DataSource = 'last-season' | 'blank' | 'copy';
 
@@ -38,6 +39,7 @@ export class ProjectionCreateComponent {
   private readonly statInfoService = inject(StatInfoService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly serializer = inject(ProjectionSerializerService);
 
   private readonly dataResource = rxResource({
     stream: () =>
@@ -106,7 +108,7 @@ export class ProjectionCreateComponent {
     }
 
     const players = this.buildPlayerProjections(this.dataSource() === 'blank');
-    this.persist(toProjectionData(this.buildDefaultState(players)));
+    this.persist(this.serializer.toProjectionData(this.buildDefaultState(players)));
   }
 
   private persist(data: ProjectionData): void {

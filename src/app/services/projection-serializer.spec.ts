@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { fromProjectionData, ProjectionState, toProjectionData } from './projection-serializer';
+import { ProjectionState } from './projection-serializer';
+import { ProjectionSerializerService } from './projection-serializer.service';
 import {
   GOALIE_SCORING_STAT_KEYS,
   ScoringStatKey,
@@ -60,22 +61,24 @@ const sampleState: ProjectionState = {
   ],
 };
 
-describe('projection-serializer', () => {
+describe('ProjectionSerializerService', () => {
+  const service = new ProjectionSerializerService();
+
   it('round-trips a projection state through ProjectionData', () => {
-    const roundTripped = fromProjectionData(toProjectionData(sampleState));
+    const roundTripped = service.fromProjectionData(service.toProjectionData(sampleState));
 
     expect(roundTripped).toEqual(sampleState);
   });
 
   it('defaults draft to null for projections without a draft', () => {
-    const data = toProjectionData(sampleState);
+    const data = service.toProjectionData(sampleState);
     delete data.draft;
 
-    expect(fromProjectionData(data).draft).toBeNull();
+    expect(service.fromProjectionData(data).draft).toBeNull();
   });
 
   it('discards an invalid draft where no team is marked mine', () => {
-    const data = toProjectionData(sampleState);
+    const data = service.toProjectionData(sampleState);
     data.draft = {
       teams: [
         { id: 'team-1', name: 'Team 1', mine: false },
@@ -85,18 +88,18 @@ describe('projection-serializer', () => {
       picks: [],
     };
 
-    expect(fromProjectionData(data).draft).toBeNull();
+    expect(service.fromProjectionData(data).draft).toBeNull();
   });
 
   it('discards a legacy draft that has no teams', () => {
-    const data = toProjectionData(sampleState);
+    const data = service.toProjectionData(sampleState);
     data.draft = { teams: [], order: [], picks: [{ playerId: 1, teamId: 'gone' }] };
 
-    expect(fromProjectionData(data).draft).toBeNull();
+    expect(service.fromProjectionData(data).draft).toBeNull();
   });
 
   it('serializes sets and nested scale settings to arrays', () => {
-    const data = toProjectionData(sampleState);
+    const data = service.toProjectionData(sampleState);
 
     expect(data.settings.activeScoringColumns).toEqual(['goals', 'assists', 'sog']);
     expect(data.settings.scaleSettings['gp'].scalableStats).toEqual(['goals', 'assists']);
@@ -105,28 +108,28 @@ describe('projection-serializer', () => {
   });
 
   it('defaults leagueSize to 12 for older projections that omit it', () => {
-    const data = toProjectionData(sampleState);
+    const data = service.toProjectionData(sampleState);
     delete data.settings.leagueSize;
 
-    expect(fromProjectionData(data).leagueSize).toEqual(12);
+    expect(service.fromProjectionData(data).leagueSize).toEqual(12);
   });
 
   it('defaults minGoalieGames to 30 for older projections that omit it', () => {
-    const data = toProjectionData(sampleState);
+    const data = service.toProjectionData(sampleState);
     delete data.settings.minGoalieGames;
 
-    expect(fromProjectionData(data).minGoalieGames).toEqual(30);
+    expect(service.fromProjectionData(data).minGoalieGames).toEqual(30);
   });
 
   it('defaults yahooSync to null for projections never synced from Yahoo', () => {
-    const data = toProjectionData(sampleState);
+    const data = service.toProjectionData(sampleState);
     delete data.settings.yahooSync;
 
-    expect(fromProjectionData(data).yahooSync).toBeNull();
+    expect(service.fromProjectionData(data).yahooSync).toBeNull();
   });
 
   it('round-trips the yahooSync metadata', () => {
-    const roundTripped = fromProjectionData(toProjectionData(sampleState));
+    const roundTripped = service.fromProjectionData(service.toProjectionData(sampleState));
 
     expect(roundTripped.yahooSync).toEqual({
       leagueName: 'My League',
@@ -137,7 +140,7 @@ describe('projection-serializer', () => {
 
   it('omits leagueSize, rosterSlots and minGoalieGames for points leagues', () => {
     const pointsState: ProjectionState = { ...sampleState, scoringType: 'points' };
-    const settings = toProjectionData(pointsState).settings;
+    const settings = service.toProjectionData(pointsState).settings;
 
     expect(settings.leagueSize).toBeUndefined();
     expect(settings.rosterSlots).toBeUndefined();
@@ -145,7 +148,7 @@ describe('projection-serializer', () => {
   });
 
   it('round-trips rosterSlots for category leagues', () => {
-    const roundTripped = fromProjectionData(toProjectionData(sampleState));
+    const roundTripped = service.fromProjectionData(service.toProjectionData(sampleState));
 
     expect(roundTripped.rosterSlots).toEqual({ c: 1, lw: 1, rw: 1, d: 2, util: 1, bn: 2, g: 2 });
   });
