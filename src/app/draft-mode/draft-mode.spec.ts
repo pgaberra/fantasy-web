@@ -252,4 +252,23 @@ describe('DraftModeComponent', () => {
     expect(component.pendingRemoval()).toBeNull();
     expect(component.picks().length).toEqual(2);
   });
+
+  it('defaults the roster view to my team even when I am not first in the order', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup({
+      teams: [
+        { id: 'team-1', name: 'Team 1', mine: false },
+        { id: 'team-me', name: 'My Team', mine: true },
+      ],
+      order: ['team-1', 'team-me'],
+      picks: [],
+    });
+    fixture.detectChanges();
+
+    expect(component.effectiveTeamId()).toEqual('team-me');
+    const select = fixture.point.nativeElement.querySelector('.roster-select') as HTMLSelectElement;
+    expect(select.value).toEqual('team-me');
+  });
 });
