@@ -86,6 +86,23 @@ describe('ProjectionListComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('No projections yet');
   });
 
+  it('shows the create button only when there are no projections', async () => {
+    listProjections.mockReturnValue(of([]));
+    const fixture = MockRender(ProjectionListComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.create-button')).not.toBeNull();
+  });
+
+  it('hides the create button once a projection exists (one per user)', async () => {
+    const fixture = MockRender(ProjectionListComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.create-button')).toBeNull();
+  });
+
   it('reloads the list when retry is called', async () => {
     const fixture = MockRender(ProjectionListComponent);
     await fixture.whenStable();

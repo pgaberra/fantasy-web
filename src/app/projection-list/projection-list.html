@@ -4,9 +4,11 @@
     <p class="subtitle">Create a new projection or pick one to keep editing.</p>
   </div>
 
-  <button type="button" class="create-button btn btn-primary" (click)="createNew()">
-    + Create new projection
-  </button>
+  @if (!projectionsResource.isLoading() && projectionsResource.value().length === 0) {
+    <button type="button" class="create-button btn btn-primary" (click)="createNew()">
+      + Create new projection
+    </button>
+  }
 
   @if (projectionsResource.isLoading()) {
     <app-loading-indicator />
