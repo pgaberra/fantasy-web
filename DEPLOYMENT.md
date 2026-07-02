@@ -21,6 +21,7 @@ the build args below as Docker `--build-arg` from the app's build-time env vars.
 |---|---|---|
 | `API_URL` | BFF **base origin only** (no trailing slash, no `/api/v1`) — replaces the `http://PLACEHOLDER_FOR_PROD_URL` token; `apiUrl` is `<API_URL>/api/v1` | `https://api.slapstat.com` |
 | `GOOGLE_CLIENT_ID` | Public Google OAuth Client ID (not a secret). Empty → the "Sign in with Google" button is hidden | `404846934195-…apps.googleusercontent.com` |
+| `FACEBOOK_APP_ID` | Public Facebook App ID (not a secret). Empty → the "Continue with Facebook" button is hidden. The BFF needs the matching `FACEBOOK_APP_ID` + `FACEBOOK_APP_SECRET` | `000000000000000` |
 | `APP_ENV` | Which deployed environment this bundle is. Set to `staging` on the staging app to show the env banner; leave as `production` (the default) for prod, where no banner renders | `staging` |
 | `APP_VERSION` | Optional version label shown next to the env banner (only visible when `APP_ENV=staging`). Numeric values get a `v` prefix; empty → env name alone | `0.1.5` |
 
@@ -29,7 +30,8 @@ the build args below as Docker `--build-arg` from the app's build-time env vars.
 1. Deploy the BFF first and note its origin (the `API_URL` above).
 2. Create an application from this repo (GitHub App source, **Dockerfile** build pack),
    set the **Domains** (e.g. `https://staging.slapstat.com`) and the build-time env vars
-   `API_URL` + `GOOGLE_CLIENT_ID` (both marked build-time), then deploy. On the **staging**
+   `API_URL` + `GOOGLE_CLIENT_ID` (+ `FACEBOOK_APP_ID` once a Meta app exists), then deploy.
+   On the **staging**
    app also set `APP_ENV=staging` (and optionally `APP_VERSION`) so the env banner renders.
 3. Ensure the BFF's `WEB_ORIGIN` equals this site's origin (for CORS) and redeploy the
    BFF if it changed.
