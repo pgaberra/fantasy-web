@@ -44,16 +44,18 @@
           <span class="radio-title">From scratch</span>
           <app-info-tooltip text="Every stat starts at 0." />
         </label>
-        <label class="radio-option">
-          <input
-            type="radio"
-            name="data-source"
-            [checked]="dataSource() === 'copy'"
-            (change)="dataSource.set('copy')"
-          />
-          <span class="radio-title">A copy of another projection</span>
-          <app-info-tooltip text="Base your projection on a current one." />
-        </label>
+        @if (existingProjections().length) {
+          <label class="radio-option">
+            <input
+              type="radio"
+              name="data-source"
+              [checked]="dataSource() === 'copy'"
+              (change)="dataSource.set('copy')"
+            />
+            <span class="radio-title">A copy of another projection</span>
+            <app-info-tooltip text="Base your projection on a current one." />
+          </label>
+        }
       </div>
       @if (dataSource() === 'copy') {
         <select
