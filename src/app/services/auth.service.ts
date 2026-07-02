@@ -7,6 +7,7 @@ import { login } from '../api/fn/authentication/login';
 import { register } from '../api/fn/authentication/register';
 import { refresh } from '../api/fn/authentication/refresh';
 import { googleLogin } from '../api/fn/authentication/google-login';
+import { facebookLogin } from '../api/fn/authentication/facebook-login';
 import { forgotPassword } from '../api/fn/authentication/forgot-password';
 import { resetPassword } from '../api/fn/authentication/reset-password';
 import { AuthResponse, LoginRequest, RefreshRequest, RegisterRequest } from '../api/models';
@@ -39,6 +40,12 @@ export class AuthService {
 
   googleLogin(idToken: string): Observable<AuthResponse> {
     return from(this.api.invoke(googleLogin, { body: { idToken } })).pipe(
+      tap((response) => this.storeTokens(response)),
+    );
+  }
+
+  facebookLogin(accessToken: string): Observable<AuthResponse> {
+    return from(this.api.invoke(facebookLogin, { body: { accessToken } })).pipe(
       tap((response) => this.storeTokens(response)),
     );
   }
