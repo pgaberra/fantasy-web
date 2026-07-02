@@ -202,3 +202,27 @@ summary:focus-visible,
 .table-wrapper tbody tr:hover td.col-name {
   background: var(--color-surface-hover);
 }
+
+/* On narrow screens the sticky rank + player columns must stay compact so the
+   scrollable stat columns remain visible — cap the player column and truncate
+   long names instead of letting them push the stats off-screen. */
+@media (max-width: 640px) {
+  .table-wrapper td.col-name,
+  .table-wrapper th.col-name {
+    max-width: 9rem;
+    overflow: hidden;
+  }
+  .table-wrapper .col-name .player-name-content {
+    min-width: 0;
+    gap: 0.3rem;
+  }
+  .table-wrapper .col-name .player-name-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .table-wrapper .col-name .player-team {
+    display: none;
+  }
+}
