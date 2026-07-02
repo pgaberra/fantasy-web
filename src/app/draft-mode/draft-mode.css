@@ -644,6 +644,40 @@
   gap: 0.35rem;
 }
 
+.stats-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.stats-toggle input {
+  cursor: pointer;
+}
+
+.row-stats {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.6rem;
+  padding: 0.15rem 0 0.1rem;
+}
+
+.stat-chip {
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.stat-key {
+  color: var(--color-text-subtle);
+  font-weight: var(--weight-semibold);
+  margin-right: 0.1rem;
+}
+
 .available-empty {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
