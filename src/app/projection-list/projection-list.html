@@ -4,10 +4,20 @@
     <p class="subtitle">Create a new projection or pick one to keep editing.</p>
   </div>
 
-  @if (!projectionsResource.isLoading() && projectionsResource.value().length === 0) {
-    <button type="button" class="create-button btn btn-primary" (click)="createNew()">
-      + Create new projection
-    </button>
+  @if (!projectionsResource.isLoading()) {
+    <div class="create-row">
+      <button
+        type="button"
+        class="create-button btn btn-primary"
+        [disabled]="projectionsResource.value().length > 0"
+        (click)="createNew()"
+      >
+        + Create new projection
+      </button>
+      @if (projectionsResource.value().length > 0) {
+        <p class="create-note">You can have one projection per account for now.</p>
+      }
+    </div>
   }
 
   @if (projectionsResource.isLoading()) {
