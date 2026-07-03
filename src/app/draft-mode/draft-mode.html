@@ -139,27 +139,32 @@
                 {{ filter.label }}
               </button>
             }
-            <label class="stats-toggle">
-              <input type="checkbox" [checked]="showStats()" (change)="toggleStats($event)" />
-              Stats
-            </label>
-            <label class="page-size">
-              Show
-              <select
-                class="page-size-select"
-                (change)="onPageSizeChange($event)"
-                aria-label="Players per page"
-              >
-                @for (option of pageSizeOptions; track option.value) {
-                  <option [value]="option.value" [selected]="option.value === pageSize()">
-                    {{ option.label }}
-                  </option>
-                }
-              </select>
-            </label>
+            <div class="display-options">
+              <label class="stats-toggle">
+                <input type="checkbox" [checked]="showStats()" (change)="toggleStats($event)" />
+                Show stats
+              </label>
+              <label class="page-size">
+                Show
+                <select
+                  class="page-size-select"
+                  (change)="onPageSizeChange($event)"
+                  aria-label="Players per page"
+                >
+                  @for (option of pageSizeOptions; track option.value) {
+                    <option [value]="option.value" [selected]="option.value === pageSize()">
+                      {{ option.label }}
+                    </option>
+                  }
+                </select>
+              </label>
+            </div>
           </div>
           @if (available().length) {
             <div class="available-list">
+              <div class="available-list-head">
+                <span class="score-heading">{{ scoreHeading() }}</span>
+              </div>
               @for (sp of visibleAvailable(); track sp.projection.playerId; let i = $index) {
                 <div class="available-row">
                   <span class="row-rank">{{ i + 1 }}</span>
