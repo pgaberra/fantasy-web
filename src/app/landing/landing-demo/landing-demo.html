@@ -1,0 +1,48 @@
+<div class="demo-card">
+  <div class="demo-bar">
+    <span class="demo-dot"></span><span class="demo-dot"></span><span class="demo-dot"></span>
+    <span class="demo-bar-title">My Projection · 12-team league</span>
+    <span class="demo-live">● Live demo</span>
+  </div>
+
+  <div class="demo-toolbar">
+    <div class="demo-scoring" role="group" aria-label="Scoring type">
+      <button
+        type="button"
+        class="demo-seg"
+        [class.active]="scoringType() === 'category'"
+        [attr.aria-pressed]="scoringType() === 'category'"
+        (click)="setScoringType('category')"
+      >
+        Categories
+      </button>
+      <button
+        type="button"
+        class="demo-seg"
+        [class.active]="scoringType() === 'points'"
+        [attr.aria-pressed]="scoringType() === 'points'"
+        (click)="setScoringType('points')"
+      >
+        Points
+      </button>
+    </div>
+    <a routerLink="/register" class="btn btn-primary btn-sm demo-save">Save projection</a>
+  </div>
+
+  <p class="demo-hint">
+    Edit any projection or switch your scoring — the board re-ranks instantly.
+    <a routerLink="/register">Create a free account</a> to save your own.
+  </p>
+
+  <app-player-projections-table
+    [scoringType]="scoringType()"
+    [(statWeights)]="statWeights"
+    [players]="players"
+    [activeColumns]="activeColumns"
+    [scaleSettings]="scaleSettings"
+    [useDefaultDecimals]="true"
+    [leagueSize]="leagueSize"
+    [rosterSlots]="rosterSlots"
+    [minGoalieGames]="minGoalieGames"
+  />
+</div>
