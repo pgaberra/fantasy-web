@@ -89,7 +89,6 @@ td.col-name {
 
 :host(.editing-row) .player-name {
   color: var(--color-primary);
-  position: relative;
 }
 
 :host(.editing-row) .player-name::before {

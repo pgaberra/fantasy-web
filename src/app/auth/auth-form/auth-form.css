@@ -122,6 +122,12 @@
 .auth-divider span {
   padding: 0 var(--space-3);
 }
+.auth-social {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
 .auth-footer {
   text-align: center;
   margin-top: var(--space-5);

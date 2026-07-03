@@ -1,4 +1,5 @@
 import { Component, computed, DestroyRef, inject, linkedSignal, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
@@ -117,7 +118,13 @@ export class ProjectionCreateComponent {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (projection) => void this.router.navigate(['/projections', projection.id]),
-        error: () => this.isCreating.set(false),
+        error: (error: unknown) => {
+          this.isCreating.set(false);
+          // Each user may keep only one projection; the server rejects a second with 409.
+          if (error instanceof HttpErrorResponse && error.status === 409) {
+            void this.router.navigate(['/projections']);
+          }
+        },
       });
   }
 

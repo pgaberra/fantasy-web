@@ -38,4 +38,16 @@ export class RegisterComponent {
       },
     });
   }
+
+  onFacebookSubmit(accessToken: string) {
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+
+    this.authService.facebookLogin(accessToken).subscribe({
+      error: () => {
+        this.errorMessage.set('Facebook sign-in failed. Please try again.');
+        this.isLoading.set(false);
+      },
+    });
+  }
 }

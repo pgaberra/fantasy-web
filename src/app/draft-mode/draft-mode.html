@@ -139,6 +139,10 @@
                 {{ filter.label }}
               </button>
             }
+            <label class="stats-toggle">
+              <input type="checkbox" [checked]="showStats()" (change)="toggleStats($event)" />
+              Stats
+            </label>
             <label class="page-size">
               Show
               <select
@@ -198,6 +202,15 @@
                       </button>
                     }
                   </span>
+                  @if (showStats()) {
+                    <div class="row-stats">
+                      @for (stat of statStrip(sp.projection); track stat.key) {
+                        <span class="stat-chip">
+                          <span class="stat-key">{{ stat.key | statLabel }}</span> {{ stat.value }}
+                        </span>
+                      }
+                    </div>
+                  }
                 </div>
               }
             </div>

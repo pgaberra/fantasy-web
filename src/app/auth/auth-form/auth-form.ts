@@ -13,6 +13,7 @@ import {
 } from '@angular/forms/signals';
 import { AuthCredentials } from './model';
 import { GoogleSignInButtonComponent } from '../google-sign-in-button/google-sign-in-button';
+import { FacebookSignInButtonComponent } from '../facebook-sign-in-button/facebook-sign-in-button';
 import { environment } from '../../../environments/environment';
 
 const EMAIL_MAX_LENGTH = 254;
@@ -24,12 +25,13 @@ interface AuthFormValue extends AuthCredentials {
 
 @Component({
   selector: 'app-auth-form',
-  imports: [FormField, RouterLink, GoogleSignInButtonComponent],
+  imports: [FormField, RouterLink, GoogleSignInButtonComponent, FacebookSignInButtonComponent],
   templateUrl: './auth-form.html',
   styleUrl: './auth-form.css',
 })
 export class AuthFormComponent {
   readonly googleEnabled = !!environment.googleClientId;
+  readonly facebookEnabled = !!environment.facebookAppId;
 
   readonly title = input.required<string>();
   readonly subtitle = input.required<string>();
@@ -46,6 +48,7 @@ export class AuthFormComponent {
 
   readonly formSubmit = output<AuthCredentials>();
   readonly googleSubmit = output<string>();
+  readonly facebookSubmit = output<string>();
 
   private readonly authFormModel = signal<AuthFormValue>({
     email: '',

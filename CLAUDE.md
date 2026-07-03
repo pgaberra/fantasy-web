@@ -66,6 +66,20 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
 - Keep API calls going through the generated client + a service wrapper, not raw
   `HttpClient` in components.
 
+### Mobile / responsive layout
+
+Mobile users aren't our top priority, but they must still get an **at least
+acceptable** experience. For **every UI change, double-check it holds up on a narrow
+(phone) viewport** — never ship something that only works on desktop.
+
+- Sanity-check around **375px**; the app's responsive breakpoint is `max-width: 640px`
+  (media queries live in `styles.css` and the component CSS).
+- Quickest check: `npm run start:staging`, then screenshot the affected page at a
+  375px viewport (a throwaway Playwright script works well).
+- Common breakers: wide tables (the projections table especially — the sticky
+  rank/player columns must stay compact so the stat columns stay scroll-visible,
+  see #161), fixed widths, and horizontal overflow.
+
 ## End-to-end tests (Playwright)
 
 `e2e/` holds Playwright E2E tests that drive a real browser against the **deployed

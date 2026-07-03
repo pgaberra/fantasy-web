@@ -1,6 +1,7 @@
 import { MockBuilder, MockInstance, MockRender } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { ProjectionCreateComponent } from './projection-create';
 import { PlayerService } from '../services/player.service';
@@ -132,6 +133,18 @@ describe('ProjectionCreateComponent', () => {
 
     expect(createProjection).toHaveBeenCalledOnce();
     expect(navigate).toHaveBeenCalledWith(['/projections', 'new-id']);
+  });
+
+  it('redirects to the list when the server rejects a second projection (409)', async () => {
+    createProjection.mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 409 })));
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.name.set('Dynasty');
+    component.create();
+
+    expect(navigate).toHaveBeenCalledWith(['/projections']);
   });
 
   it('creates from scratch with default (points) settings', async () => {

@@ -14,8 +14,14 @@
   margin: var(--space-1) 0 var(--space-5);
 }
 
-.create-button {
+.create-row {
   margin-bottom: var(--space-5);
+}
+
+.create-note {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
 }
 
 .state {

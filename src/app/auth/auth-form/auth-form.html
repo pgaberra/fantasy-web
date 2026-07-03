@@ -75,9 +75,16 @@
       </button>
     </form>
 
-    @if (googleEnabled) {
+    @if (googleEnabled || facebookEnabled) {
       <div class="auth-divider"><span>or</span></div>
-      <app-google-sign-in-button (credential)="googleSubmit.emit($event)" />
+      <div class="auth-social">
+        @if (googleEnabled) {
+          <app-google-sign-in-button (credential)="googleSubmit.emit($event)" />
+        }
+        @if (facebookEnabled) {
+          <app-facebook-sign-in-button (accessToken)="facebookSubmit.emit($event)" />
+        }
+      </div>
     }
 
     <p class="auth-footer">

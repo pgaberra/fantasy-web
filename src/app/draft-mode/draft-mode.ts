@@ -15,6 +15,7 @@ import { ProjectionStorageService } from '../services/projection-storage.service
 import { PlayerService } from '../services/player.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { PositionFilterService } from '../services/position-filter.service';
+import { StatInfoService } from '../services/stat-info.service';
 import { Player } from '../models/player.model';
 import {
   PositionFilter,
@@ -22,7 +23,7 @@ import {
   ScoredProjection,
   StatWeights,
 } from '../models/projection.model';
-import { ScoringStatKey } from '../models/stat-key.model';
+import { GOALIE_STAT_KEYS, ScoringStatKey, SKATER_STAT_KEYS } from '../models/stat-key.model';
 import { DraftState } from '../api/models/draft-state';
 import { ProjectionData } from '../api/models/projection-data';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
@@ -32,6 +33,7 @@ import {
   DEFAULT_ROSTER_SLOTS,
 } from '../draft-projection/projection-defaults';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
+import { StatLabelPipe } from '../pipes/stat-label.pipe';
 import { DraftRosterService } from './draft-roster.service';
 import { DraftSnakeService } from './draft-snake.service';
 import { DraftSetupComponent } from './draft-setup/draft-setup';
@@ -40,7 +42,7 @@ const DEFAULT_PAGE_SIZE = 100;
 
 @Component({
   selector: 'app-draft-mode',
-  imports: [RouterLink, LoadingIndicatorComponent, DraftSetupComponent],
+  imports: [RouterLink, LoadingIndicatorComponent, DraftSetupComponent, StatLabelPipe],
   templateUrl: './draft-mode.html',
   styleUrl: './draft-mode.css',
 })
@@ -55,6 +57,7 @@ export class DraftModeComponent implements OnInit {
   private readonly serializer = inject(ProjectionSerializerService);
   private readonly snake = inject(DraftSnakeService);
   private readonly rosterService = inject(DraftRosterService);
+  private readonly statInfoService = inject(StatInfoService);
 
   readonly projectionId = signal<string | null>(null);
   readonly projectionName = signal<string>('');
@@ -63,6 +66,7 @@ export class DraftModeComponent implements OnInit {
   readonly searchTerm = signal<string>('');
   readonly positionFilter = signal<PositionFilter>('ALL');
   readonly pageSize = signal<number>(DEFAULT_PAGE_SIZE);
+  readonly showStats = signal<boolean>(false);
   readonly pageSizeOptions: { label: string; value: number }[] = [
     { label: '100', value: 100 },
     { label: '200', value: 200 },
@@ -97,6 +101,9 @@ export class DraftModeComponent implements OnInit {
   });
 
   private readonly scoringType = computed(() => this.data()?.settings.scoringType ?? 'points');
+  readonly statColumns = computed<ScoringStatKey[]>(
+    () => (this.data()?.settings.activeScoringColumns ?? []) as ScoringStatKey[],
+  );
   private readonly rosterSlots = computed(
     () => this.data()?.settings.rosterSlots ?? DEFAULT_ROSTER_SLOTS,
   );
@@ -500,6 +507,24 @@ export class DraftModeComponent implements OnInit {
     return this.scoringType() === 'points'
       ? scoredProjection.score.fantasyPoints.toFixed(1)
       : scoredProjection.score.zScore.toFixed(2);
+  }
+
+  toggleStats(event: Event): void {
+    this.showStats.set((event.target as HTMLInputElement).checked);
+  }
+
+  statStrip(projection: Projection): { key: ScoringStatKey; value: string }[] {
+    const stats = { ...projection.stats.utility, ...projection.stats.scoring } as Record<
+      string,
+      number
+    >;
+    const applicable = projection.type === 'skater' ? SKATER_STAT_KEYS : GOALIE_STAT_KEYS;
+    return this.statColumns()
+      .filter((key) => (applicable as readonly string[]).includes(key))
+      .map((key) => {
+        const decimals = this.statInfoService.isRateStat(key) ? 2 : 0;
+        return { key, value: (stats[key] ?? 0).toFixed(decimals) };
+      });
   }
 
   private mutate(fn: (draft: DraftState) => DraftState): void {

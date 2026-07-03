@@ -13,13 +13,8 @@ export class EnvironmentBannerComponent {
 
   readonly environmentName = input.required<string>();
   readonly version = input('');
-  readonly isAdmin = input(false);
 
-  readonly visible = computed(
-    () =>
-      this.environmentName() === 'staging' ||
-      (this.environmentName() === 'production' && this.isAdmin()),
-  );
+  readonly visible = computed(() => this.environmentName() === 'staging');
   readonly open = signal(false);
 
   readonly versionsResource = rxResource({
