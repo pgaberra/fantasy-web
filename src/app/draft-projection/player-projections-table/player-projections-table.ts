@@ -162,8 +162,8 @@ export class PlayerProjectionsTableComponent implements OnInit {
       const scored = this.scoredProjections();
       const filter = this.positionFilter();
       const players = this.playerMap();
-      const lockedProjections = this.lockedOrder().map(
-        (playerId) => scored.find((sp) => sp.projection.playerId === playerId)!,
+      const lockedProjections = this.lockedOrder().map((playerId) =>
+        scored.find((sp) => sp.projection.playerId === playerId)!,
       );
       const byPosition = lockedProjections.filter((sp) =>
         this.positionFilterService.matches(sp.projection, players, filter),
