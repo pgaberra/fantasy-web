@@ -24,6 +24,9 @@
   font-weight: var(--weight-semibold);
   color: var(--color-text-subtle);
 }
+.save-status--error {
+  color: var(--color-danger);
+}
 .table-section h2 {
   font-size: 1.1rem;
   font-weight: var(--weight-semibold);

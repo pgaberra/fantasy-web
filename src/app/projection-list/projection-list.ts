@@ -3,18 +3,21 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ProjectionStorageService } from '../services/projection-storage.service';
+import { NotificationService } from '../services/notification.service';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
+import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { ProjectionCardComponent } from './projection-card/projection-card';
 
 @Component({
   selector: 'app-projection-list',
-  imports: [LoadingIndicatorComponent, ProjectionCardComponent],
+  imports: [LoadingIndicatorComponent, ErrorStateComponent, ProjectionCardComponent],
   templateUrl: './projection-list.html',
   styleUrl: './projection-list.css',
 })
 export class ProjectionListComponent {
   private readonly storage = inject(ProjectionStorageService);
   private readonly router = inject(Router);
+  private readonly notification = inject(NotificationService);
 
   readonly projectionsResource = rxResource({
     stream: () => this.storage.listProjections(),
@@ -48,6 +51,6 @@ export class ProjectionListComponent {
       .then(() => {
         this.projectionsResource.reload();
       })
-      .catch(() => undefined);
+      .catch(() => this.notification.error("Couldn't delete the projection. Please try again."));
   }
 }

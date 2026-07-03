@@ -2,13 +2,16 @@
   <div class="table-header">
     <div class="table-title">
       <h2>Player Projections</h2>
-      <span class="save-status">
+      <span class="save-status" [class.save-status--error]="saveStatus() === 'error'">
         @switch (saveStatus()) {
           @case ('saving') {
             Saving…
           }
           @case ('saved') {
             Saved
+          }
+          @case ('error') {
+            Couldn't save — changes are unsaved
           }
         }
       </span>

@@ -1,5 +1,11 @@
 @if (isLoading()) {
   <app-loading-indicator />
+} @else if (loadError()) {
+  <app-error-state
+    title="Couldn't load the page"
+    message="We couldn't load your player data. Check your connection and try again."
+    (retry)="retryLoad()"
+  />
 } @else {
   <div class="projection-create">
     <div class="page-header">

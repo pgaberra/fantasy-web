@@ -40,10 +40,6 @@
   color: var(--color-text-subtle);
 }
 
-.state--error .state-icon {
-  color: var(--color-danger);
-}
-
 .state-title {
   margin: var(--space-2) 0 0;
   font-size: var(--text-lg);

@@ -56,6 +56,32 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   `http://localhost:4200` as a CORS origin (configured in `fantasy-bff`'s
   `application-staging.yaml`).
 
+## Error handling
+
+**Assume every call to the BFF can fail** — the BFF may be down, the network may drop, a
+request may time out. Never let a failed call fail silently; always surface it to the user.
+When you add or change a BFF call, handle its failure path with one of these patterns:
+
+- **Transient blips** are already absorbed by `retryInterceptor` (retries status
+  0/502/503/504 twice). Don't add your own retry loops on top.
+- **Page / data loads** (an `rxResource`, or a load in `ngOnInit`): render the shared
+  `app-error-state` component (`shared/error-state`) with a message and a **Try again**
+  button that reloads the resource — see `projection-list` / `projection-create`.
+- **Discrete user actions** (delete, create, open, connect): show a transient toast via
+  `NotificationService.error(...)` (rendered by `app-toast` at the app root), and reset any
+  `isLoading` / `isCreating` flag in the same error callback.
+- **Autosave** (stat-weight edits, draft picks): flip the inline save status to `'error'`
+  ("Couldn't save — changes are unsaved") instead of a toast, so repeated autosaves don't
+  spam notifications.
+- **Auth forms** (login / register / …): keep the inline `errorMessage`, and derive it with
+  `messageForError(error, causeMessage)` from `shared/http-error` so a server-down
+  (status 0 / 5xx) shows "can't reach the server" rather than a misleading
+  "invalid credentials".
+
+Every `.subscribe({…})` / `firstValueFrom(…)` / `rxResource` that reaches the BFF must have
+an error path ending in one of the above. A bare `error: () => {}` is acceptable only with a
+comment explaining why that particular failure genuinely isn't worth surfacing.
+
 ## Conventions
 
 @.aiassistant/rules/guidelines.md

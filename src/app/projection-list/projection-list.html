@@ -23,27 +23,7 @@
   @if (projectionsResource.isLoading()) {
     <app-loading-indicator />
   } @else if (projectionsResource.error()) {
-    <div class="state state--error">
-      <svg
-        class="state-icon"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.6"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <path
-          d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"
-        />
-        <line x1="12" y1="9" x2="12" y2="13" />
-        <line x1="12" y1="17" x2="12.01" y2="17" />
-      </svg>
-      <p class="state-title">Couldn't load your projections</p>
-      <p class="state-message">Something went wrong. Check your connection and try again.</p>
-      <button type="button" class="btn btn-secondary" (click)="retry()">Try again</button>
-    </div>
+    <app-error-state title="Couldn't load your projections" (retry)="retry()" />
   } @else if (projectionsResource.value().length === 0) {
     <div class="state">
       <svg

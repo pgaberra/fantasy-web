@@ -1,0 +1,32 @@
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  color: var(--color-text-muted);
+}
+
+.state-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--color-danger);
+}
+
+.state-title {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.state-message {
+  margin: 0;
+  font-size: var(--text-sm);
+  max-width: 40ch;
+}
+
+.state .btn {
+  margin-top: var(--space-2);
+}

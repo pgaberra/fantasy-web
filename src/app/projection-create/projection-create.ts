@@ -5,6 +5,7 @@ import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
 import { PlayerService } from '../services/player.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
+import { NotificationService } from '../services/notification.service';
 import { StatInfoService } from '../services/stat-info.service';
 import { Player } from '../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
@@ -12,6 +13,7 @@ import { GoalieStats, Projection, SkaterStats } from '../models/projection.model
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { ProjectionData } from '../api/models/projection-data';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
+import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { InfoTooltipComponent } from '../shared/info-tooltip/info-tooltip';
 import { DEFAULT_DECIMAL_SETTINGS } from '../draft-projection/projection-settings-section/model';
 import {
@@ -30,7 +32,7 @@ type DataSource = 'last-season' | 'blank' | 'copy';
 
 @Component({
   selector: 'app-projection-create',
-  imports: [LoadingIndicatorComponent, InfoTooltipComponent, RouterLink],
+  imports: [LoadingIndicatorComponent, ErrorStateComponent, InfoTooltipComponent, RouterLink],
   templateUrl: './projection-create.html',
   styleUrl: './projection-create.css',
 })
@@ -41,6 +43,7 @@ export class ProjectionCreateComponent {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly serializer = inject(ProjectionSerializerService);
+  private readonly notification = inject(NotificationService);
 
   private readonly dataResource = rxResource({
     stream: () =>
@@ -55,6 +58,7 @@ export class ProjectionCreateComponent {
   readonly copyFromId = signal<string | null>(null);
   readonly existingProjections = computed(() => this.dataResource.value().projections);
   readonly isLoading = this.dataResource.isLoading;
+  readonly loadError = computed(() => !!this.dataResource.error());
   readonly isCreating = signal<boolean>(false);
   readonly name = linkedSignal(() => this.defaultName(this.dataResource.value().projections));
 
@@ -91,6 +95,10 @@ export class ProjectionCreateComponent {
     this.copyFromId.set((event.target as HTMLSelectElement).value || null);
   }
 
+  retryLoad(): void {
+    this.dataResource.reload();
+  }
+
   create(): void {
     if (!this.canCreate()) {
       return;
@@ -103,7 +111,10 @@ export class ProjectionCreateComponent {
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (projection) => this.persist({ ...projection.data, draft: undefined }),
-          error: () => this.isCreating.set(false),
+          error: () => {
+            this.isCreating.set(false);
+            this.notification.error("Couldn't load the projection to copy. Please try again.");
+          },
         });
       return;
     }
@@ -123,6 +134,8 @@ export class ProjectionCreateComponent {
           // Each user may keep only one projection; the server rejects a second with 409.
           if (error instanceof HttpErrorResponse && error.status === 409) {
             void this.router.navigate(['/projections']);
+          } else {
+            this.notification.error("Couldn't create the projection. Please try again.");
           }
         },
       });

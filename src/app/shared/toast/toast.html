@@ -1,0 +1,17 @@
+@if (notifications().length) {
+  <div class="toast-stack">
+    @for (notification of notifications(); track notification.id) {
+      <div class="toast toast--{{ notification.type }}" role="alert" aria-live="assertive">
+        <span class="toast-message">{{ notification.message }}</span>
+        <button
+          type="button"
+          class="toast-close"
+          (click)="dismiss(notification.id)"
+          aria-label="Dismiss"
+        >
+          &times;
+        </button>
+      </div>
+    }
+  </div>
+}
