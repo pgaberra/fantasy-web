@@ -18,63 +18,22 @@
         Rank every NHL player for <span class="lp-accent">your</span> league.
       </h1>
       <p class="lp-subtitle">
-        SlapStat re-ranks player projections to your exact scoring settings — so you draft with a
-        real edge instead of someone else's generic cheat sheet.
+        Projections re-ranked to your exact scoring settings. Try the editor right here — no account
+        needed.
       </p>
       <div class="lp-cta-row">
         <a routerLink="/register" class="btn btn-primary btn-lg">Get started — it's free</a>
         <a routerLink="/login" class="btn btn-secondary btn-lg">Sign in</a>
       </div>
-      <p class="lp-cta-note">No credit card. Built for the 2026–27 season.</p>
     </div>
 
-    <div class="lp-container">
-      <div class="lp-preview" aria-hidden="true">
-        <div class="lp-preview-bar">
-          <span class="lp-dot"></span><span class="lp-dot"></span><span class="lp-dot"></span>
-          <span class="lp-preview-title">My Projection · Category league</span>
-        </div>
-        <div class="lp-preview-table">
-          <table>
-            <thead>
-              <tr>
-                <th class="lp-c-rank">#</th>
-                <th class="lp-c-name">Player</th>
-                <th>G</th>
-                <th>A</th>
-                <th>PPP</th>
-                <th>Hits</th>
-                <th>Blocks</th>
-                <th class="lp-c-value">Z-Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of mockRows; track row.rank) {
-                <tr [class.lp-row-hl]="row.highlight">
-                  <td class="lp-c-rank">{{ row.rank }}</td>
-                  <td class="lp-c-name">
-                    <img class="lp-headshot" [src]="row.headshot" [alt]="row.name" loading="lazy" />
-                    <span class="lp-pname">{{ row.name }}</span>
-                    <span class="lp-team">{{ row.team }}</span>
-                  </td>
-                  <td>{{ row.goals }}</td>
-                  <td>{{ row.assists }}</td>
-                  <td>{{ row.ppp }}</td>
-                  <td>{{ row.hits }}</td>
-                  <td>{{ row.blocks }}</td>
-                  <td class="lp-c-value">{{ row.value }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
+    <div class="lp-container lp-demo-wrap">
+      <app-landing-demo />
     </div>
   </section>
 
   <section class="lp-features">
     <div class="lp-container">
-      <h2 class="lp-section-title">Everything you need to win the draft</h2>
       <div class="lp-feature-grid">
         @for (feature of features; track feature.title) {
           <article class="lp-feature">
@@ -86,27 +45,12 @@
     </div>
   </section>
 
-  <section class="lp-steps">
-    <div class="lp-container">
-      <h2 class="lp-section-title">From settings to draft board in minutes</h2>
-      <ol class="lp-step-list">
-        @for (step of steps; track step.number) {
-          <li class="lp-step">
-            <span class="lp-step-num">{{ step.number }}</span>
-            <div>
-              <h3 class="lp-step-title">{{ step.title }}</h3>
-              <p class="lp-step-desc">{{ step.description }}</p>
-            </div>
-          </li>
-        }
-      </ol>
-    </div>
-  </section>
-
   <section class="lp-final">
     <div class="lp-container lp-final-inner">
       <h2 class="lp-final-title">Get your draft board ready.</h2>
-      <p class="lp-final-sub">Create a free account and build your first projection today.</p>
+      <p class="lp-final-sub">
+        Create a free account to save your projections and take them to draft day.
+      </p>
       <a routerLink="/register" class="btn btn-lg lp-btn-invert">Get started</a>
     </div>
   </section>
