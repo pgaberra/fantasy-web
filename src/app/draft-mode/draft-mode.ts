@@ -104,6 +104,9 @@ export class DraftModeComponent implements OnInit {
   readonly statColumns = computed<ScoringStatKey[]>(
     () => (this.data()?.settings.activeScoringColumns ?? []) as ScoringStatKey[],
   );
+  readonly scoreHeading = computed(() =>
+    this.scoringType() === 'points' ? 'Total Points' : 'Z-Score',
+  );
   private readonly rosterSlots = computed(
     () => this.data()?.settings.rosterSlots ?? DEFAULT_ROSTER_SLOTS,
   );
