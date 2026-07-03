@@ -77,14 +77,31 @@ td.col-name {
 
 :host(.editing-row) {
   background: #eef3fb;
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
-  position: relative;
-  z-index: 1;
 }
 
+/* Draw the highlight frame per cell (inset shadows) instead of an outline on the
+   row: outlines are painted under the sticky rank/name cells' own backgrounds, so
+   the border broke around those columns. Each cell paints its own top/bottom band
+   above its background; the first and last cells add the left/right edges. */
 :host(.editing-row) td {
   border-bottom-color: transparent;
+  box-shadow:
+    inset 0 2px 0 var(--color-primary),
+    inset 0 -2px 0 var(--color-primary);
+}
+
+:host(.editing-row) td.col-rank {
+  box-shadow:
+    inset 2px 0 0 var(--color-primary),
+    inset 0 2px 0 var(--color-primary),
+    inset 0 -2px 0 var(--color-primary);
+}
+
+:host(.editing-row) td.fan-pts-cell {
+  box-shadow:
+    inset -2px 0 0 var(--color-primary),
+    inset 0 2px 0 var(--color-primary),
+    inset 0 -2px 0 var(--color-primary);
 }
 
 :host(.editing-row) .player-name {
