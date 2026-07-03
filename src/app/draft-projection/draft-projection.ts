@@ -44,6 +44,7 @@ import {
 import { RosterSlots } from '../api/models/roster-slots';
 import { StatInfoService } from '../services/stat-info.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
+import { NotificationService } from '../services/notification.service';
 import { ProjectionState } from '../services/projection-serializer';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import { ProjectionSyncService } from '../services/projection-sync.service';
@@ -74,6 +75,7 @@ export class DraftProjectionComponent implements OnInit {
   private readonly yahoo = inject(YahooService);
   private readonly projectionSync = inject(ProjectionSyncService);
   private readonly serializer = inject(ProjectionSerializerService);
+  private readonly notification = inject(NotificationService);
 
   private readonly table = viewChild(PlayerProjectionsTableComponent);
   private readonly renameInput = viewChild<ElementRef<HTMLInputElement>>('renameInput');
@@ -83,7 +85,7 @@ export class DraftProjectionComponent implements OnInit {
   readonly renameValue = signal<string>('');
   readonly renameSaving = signal<boolean>(false);
   readonly renameError = signal<string | null>(null);
-  readonly saveStatus = signal<'idle' | 'saving' | 'saved'>('idle');
+  readonly saveStatus = signal<'idle' | 'saving' | 'saved' | 'error'>('idle');
   readonly loadedProjections = signal<Projection[] | null>(null);
   private readonly projectionId = signal<string | null>(null);
   private readonly projectionLoaded = signal<boolean>(false);
@@ -148,6 +150,7 @@ export class DraftProjectionComponent implements OnInit {
   constructor() {
     effect(() => {
       if (this.playersResource.error()) {
+        this.notification.error("Couldn't load player data. Please try again.");
         void this.router.navigate(['/projections']);
       }
     });
@@ -235,7 +238,10 @@ export class DraftProjectionComponent implements OnInit {
           this.projectionLoaded.set(true);
           this.autosaveEnabled.set(true);
         },
-        error: () => void this.router.navigate(['/projections']),
+        error: () => {
+          this.notification.error("Couldn't open the projection. Please try again.");
+          void this.router.navigate(['/projections']);
+        },
       });
   }
 
@@ -291,7 +297,7 @@ export class DraftProjectionComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => this.saveStatus.set('saved'),
-        error: () => this.saveStatus.set('idle'),
+        error: () => this.saveStatus.set('error'),
       });
   }
 

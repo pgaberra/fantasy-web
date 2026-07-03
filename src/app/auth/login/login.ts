@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { AuthFormComponent } from '../auth-form/auth-form';
 import { AuthCredentials } from '../auth-form/model';
+import { messageForError } from '../../shared/http-error';
 
 @Component({
   selector: 'app-login',
@@ -20,8 +21,10 @@ export class LoginComponent {
     this.errorMessage.set(null);
 
     this.authService.login(credentials).subscribe({
-      error: () => {
-        this.errorMessage.set('Invalid email or password. Please try again.');
+      error: (error: unknown) => {
+        this.errorMessage.set(
+          messageForError(error, 'Invalid email or password. Please try again.'),
+        );
         this.isLoading.set(false);
       },
     });
@@ -32,8 +35,8 @@ export class LoginComponent {
     this.errorMessage.set(null);
 
     this.authService.googleLogin(idToken).subscribe({
-      error: () => {
-        this.errorMessage.set('Google sign-in failed. Please try again.');
+      error: (error: unknown) => {
+        this.errorMessage.set(messageForError(error, 'Google sign-in failed. Please try again.'));
         this.isLoading.set(false);
       },
     });
@@ -44,8 +47,8 @@ export class LoginComponent {
     this.errorMessage.set(null);
 
     this.authService.facebookLogin(accessToken).subscribe({
-      error: () => {
-        this.errorMessage.set('Facebook sign-in failed. Please try again.');
+      error: (error: unknown) => {
+        this.errorMessage.set(messageForError(error, 'Facebook sign-in failed. Please try again.'));
         this.isLoading.set(false);
       },
     });

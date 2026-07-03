@@ -4,11 +4,12 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { AuthService } from './services/auth.service';
 import { EnvironmentBannerComponent } from './shared/environment-banner/environment-banner';
+import { ToastComponent } from './shared/toast/toast';
 import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, EnvironmentBannerComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, EnvironmentBannerComponent, ToastComponent],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })

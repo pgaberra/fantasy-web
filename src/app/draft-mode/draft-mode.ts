@@ -12,6 +12,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
 import { ProjectionStorageService } from '../services/projection-storage.service';
+import { NotificationService } from '../services/notification.service';
 import { PlayerService } from '../services/player.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { PositionFilterService } from '../services/position-filter.service';
@@ -51,6 +52,7 @@ export class DraftModeComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly projectionStorage = inject(ProjectionStorageService);
+  private readonly notification = inject(NotificationService);
   private readonly playerService = inject(PlayerService);
   private readonly ranking = inject(ProjectionRankingService);
   private readonly positionFilterService = inject(PositionFilterService);
@@ -62,7 +64,7 @@ export class DraftModeComponent implements OnInit {
   readonly projectionId = signal<string | null>(null);
   readonly projectionName = signal<string>('');
   readonly loaded = signal<boolean>(false);
-  readonly saveStatus = signal<'idle' | 'saving' | 'saved'>('idle');
+  readonly saveStatus = signal<'idle' | 'saving' | 'saved' | 'error'>('idle');
   readonly searchTerm = signal<string>('');
   readonly positionFilter = signal<PositionFilter>('ALL');
   readonly pageSize = signal<number>(DEFAULT_PAGE_SIZE);
@@ -322,7 +324,10 @@ export class DraftModeComponent implements OnInit {
           this.draft.set(this.serializer.fromProjectionData(projection.data).draft);
           this.loaded.set(true);
         },
-        error: () => void this.router.navigate(['/projections']),
+        error: () => {
+          this.notification.error("Couldn't load the draft. Please try again.");
+          void this.router.navigate(['/projections']);
+        },
       });
   }
 
@@ -549,7 +554,7 @@ export class DraftModeComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => this.saveStatus.set('saved'),
-        error: () => this.saveStatus.set('idle'),
+        error: () => this.saveStatus.set('error'),
       });
   }
 }

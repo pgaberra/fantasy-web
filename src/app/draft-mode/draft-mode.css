@@ -48,6 +48,9 @@
   font-weight: var(--weight-semibold);
   color: var(--color-text-subtle);
 }
+.save-status--error {
+  color: var(--color-danger);
+}
 
 .draft-toolbar {
   display: flex;
