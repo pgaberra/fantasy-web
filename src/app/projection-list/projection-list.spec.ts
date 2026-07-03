@@ -86,21 +86,26 @@ describe('ProjectionListComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('No projections yet');
   });
 
-  it('shows the create button only when there are no projections', async () => {
+  it('enables the create button when there are no projections', async () => {
     listProjections.mockReturnValue(of([]));
     const fixture = MockRender(ProjectionListComponent);
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.create-button')).not.toBeNull();
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector('.create-button');
+    expect(button).not.toBeNull();
+    expect(button.disabled).toEqual(false);
   });
 
-  it('hides the create button once a projection exists (one per user)', async () => {
+  it('disables the create button with a note once a projection exists (one per user)', async () => {
     const fixture = MockRender(ProjectionListComponent);
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.create-button')).toBeNull();
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector('.create-button');
+    expect(button).not.toBeNull();
+    expect(button.disabled).toEqual(true);
+    expect(fixture.nativeElement.textContent).toContain('one projection per account');
   });
 
   it('reloads the list when retry is called', async () => {
