@@ -21,7 +21,7 @@ describe('LandingDemoComponent', () => {
   it('mirrors the signed-in editor state: demo players and the real default columns', () => {
     const component = MockRender(LandingDemoComponent).point.componentInstance;
 
-    expect(component.scoringType()).toEqual('category');
+    expect(component.scoringType()).toEqual('points');
     expect(component.players.length).toEqual(DEMO_PLAYERS.length);
     expect(component.activeColumns().scoring.size).toEqual(DEFAULT_SCORING_COLUMNS.length);
     expect(component.activeColumns().utility.size).toEqual(DEFAULT_UTILITY_COLUMNS.length);

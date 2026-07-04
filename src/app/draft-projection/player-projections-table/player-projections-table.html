@@ -2,6 +2,7 @@
   <div class="table-header">
     <div class="table-title">
       <h2>Player Projections</h2>
+      <ng-content select="[table-actions]" />
       <span class="save-status" [class.save-status--error]="saveStatus() === 'error'">
         @switch (saveStatus()) {
           @case ('saving') {

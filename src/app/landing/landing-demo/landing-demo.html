@@ -1,17 +1,4 @@
 <div class="demo-card">
-  <div class="demo-bar">
-    <span class="demo-dot"></span><span class="demo-dot"></span><span class="demo-dot"></span>
-    <span class="demo-bar-title">My Projection · 12-team league</span>
-    <span class="demo-live">● Live demo</span>
-  </div>
-
-  <div class="demo-toolbar">
-    <p class="demo-hint">
-      Edit any projection or your scoring settings — the board re-ranks instantly.
-    </p>
-    <a routerLink="/register" class="btn btn-primary btn-sm demo-save">Save projection</a>
-  </div>
-
   <app-projection-settings-section
     [(scoringType)]="scoringType"
     [(activeScoringColumns)]="activeScoringColumns"
@@ -44,5 +31,9 @@
     [leagueSize]="leagueSize()"
     [rosterSlots]="rosterSlots()"
     [minGoalieGames]="minGoalieGames()"
-  />
+  >
+    <a table-actions routerLink="/register" class="btn btn-primary btn-sm demo-save"
+      >Save projection</a
+    >
+  </app-player-projections-table>
 </div>

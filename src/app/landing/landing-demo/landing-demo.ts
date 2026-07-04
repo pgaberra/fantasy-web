@@ -35,7 +35,7 @@ export class LandingDemoComponent {
 
   // Same editable state as the signed-in editor (draft-projection), so the demo IS the
   // real editor — the only difference is that saving requires an account.
-  readonly scoringType = signal<ScoringType>('category');
+  readonly scoringType = signal<ScoringType>('points');
   readonly statWeights = signal<Record<ScoringStatKey, number>>({ ...DEFAULT_STAT_WEIGHTS });
   readonly activeScoringColumns = signal(new Set<ScoringStatKey>(DEFAULT_SCORING_COLUMNS));
   readonly activeUtilityColumns = signal(new Set<SkaterUtilityStatKey>(DEFAULT_UTILITY_COLUMNS));
