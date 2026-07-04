@@ -1,39 +1,49 @@
-<div class="demo-card">
-  <app-projection-settings-section
-    [(scoringType)]="scoringType"
-    [(activeScoringColumns)]="activeScoringColumns"
-    [(activeUtilityColumns)]="activeUtilityColumns"
-    [(scaleSettings)]="scaleSettings"
-    [(useDefaultDecimals)]="useDefaultDecimals"
-    [(leagueSize)]="leagueSize"
-    [(rosterSlots)]="rosterSlots"
-    [(minGoalieGames)]="minGoalieGames"
-  >
-    <div class="demo-yahoo-gate">
-      <div class="demo-yahoo-text">
-        <span class="demo-yahoo-title">Sync your Yahoo league</span>
-        <span class="demo-yahoo-note"
-          >Import your league's exact scoring and roster in one click.</span
-        >
-      </div>
-      <a routerLink="/register" class="btn btn-secondary btn-sm">Sign in to connect Yahoo</a>
-    </div>
-  </app-projection-settings-section>
-
-  <app-player-projections-table
-    [scoringType]="scoringType()"
-    [(statWeights)]="statWeights"
-    [players]="players"
-    [activeColumns]="activeColumns()"
-    [scaleSettings]="scaleSettings()"
-    [(decimalSettings)]="decimalSettings"
-    [useDefaultDecimals]="useDefaultDecimals()"
-    [leagueSize]="leagueSize()"
-    [rosterSlots]="rosterSlots()"
-    [minGoalieGames]="minGoalieGames()"
-  >
-    <a table-actions routerLink="/register" class="btn btn-primary btn-sm demo-save"
-      >Save projection</a
+@if (playersResource.isLoading()) {
+  <app-loading-indicator />
+} @else if (playersResource.error()) {
+  <app-error-state
+    title="Couldn't load the demo"
+    message="We couldn't load the player data. Check your connection and try again."
+    (retry)="retryLoad()"
+  />
+} @else {
+  <div class="demo-card">
+    <app-projection-settings-section
+      [(scoringType)]="scoringType"
+      [(activeScoringColumns)]="activeScoringColumns"
+      [(activeUtilityColumns)]="activeUtilityColumns"
+      [(scaleSettings)]="scaleSettings"
+      [(useDefaultDecimals)]="useDefaultDecimals"
+      [(leagueSize)]="leagueSize"
+      [(rosterSlots)]="rosterSlots"
+      [(minGoalieGames)]="minGoalieGames"
     >
-  </app-player-projections-table>
-</div>
+      <div class="demo-yahoo-gate">
+        <div class="demo-yahoo-text">
+          <span class="demo-yahoo-title">Sync your Yahoo league</span>
+          <span class="demo-yahoo-note"
+            >Import your league's exact scoring and roster in one click.</span
+          >
+        </div>
+        <a routerLink="/register" class="btn btn-secondary btn-sm">Sign in to connect Yahoo</a>
+      </div>
+    </app-projection-settings-section>
+
+    <app-player-projections-table
+      [scoringType]="scoringType()"
+      [(statWeights)]="statWeights"
+      [players]="players()"
+      [activeColumns]="activeColumns()"
+      [scaleSettings]="scaleSettings()"
+      [(decimalSettings)]="decimalSettings"
+      [useDefaultDecimals]="useDefaultDecimals()"
+      [leagueSize]="leagueSize()"
+      [rosterSlots]="rosterSlots()"
+      [minGoalieGames]="minGoalieGames()"
+    >
+      <a table-actions routerLink="/register" class="btn btn-primary btn-sm demo-save"
+        >Save projection</a
+      >
+    </app-player-projections-table>
+  </div>
+}
