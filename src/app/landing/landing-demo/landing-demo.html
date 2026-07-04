@@ -6,43 +6,43 @@
   </div>
 
   <div class="demo-toolbar">
-    <div class="demo-scoring" role="group" aria-label="Scoring type">
-      <button
-        type="button"
-        class="demo-seg"
-        [class.active]="scoringType() === 'category'"
-        [attr.aria-pressed]="scoringType() === 'category'"
-        (click)="setScoringType('category')"
-      >
-        Categories
-      </button>
-      <button
-        type="button"
-        class="demo-seg"
-        [class.active]="scoringType() === 'points'"
-        [attr.aria-pressed]="scoringType() === 'points'"
-        (click)="setScoringType('points')"
-      >
-        Points
-      </button>
-    </div>
+    <p class="demo-hint">
+      Edit any projection or your scoring settings — the board re-ranks instantly.
+    </p>
     <a routerLink="/register" class="btn btn-primary btn-sm demo-save">Save projection</a>
   </div>
 
-  <p class="demo-hint">
-    Edit any projection or switch your scoring — the board re-ranks instantly.
-    <a routerLink="/register">Create a free account</a> to save your own.
-  </p>
+  <app-projection-settings-section
+    [(scoringType)]="scoringType"
+    [(activeScoringColumns)]="activeScoringColumns"
+    [(activeUtilityColumns)]="activeUtilityColumns"
+    [(scaleSettings)]="scaleSettings"
+    [(useDefaultDecimals)]="useDefaultDecimals"
+    [(leagueSize)]="leagueSize"
+    [(rosterSlots)]="rosterSlots"
+    [(minGoalieGames)]="minGoalieGames"
+  >
+    <div class="demo-yahoo-gate">
+      <div class="demo-yahoo-text">
+        <span class="demo-yahoo-title">Sync your Yahoo league</span>
+        <span class="demo-yahoo-note"
+          >Import your league's exact scoring and roster in one click.</span
+        >
+      </div>
+      <a routerLink="/register" class="btn btn-secondary btn-sm">Sign in to connect Yahoo</a>
+    </div>
+  </app-projection-settings-section>
 
   <app-player-projections-table
     [scoringType]="scoringType()"
     [(statWeights)]="statWeights"
     [players]="players"
-    [activeColumns]="activeColumns"
-    [scaleSettings]="scaleSettings"
-    [useDefaultDecimals]="true"
-    [leagueSize]="leagueSize"
-    [rosterSlots]="rosterSlots"
-    [minGoalieGames]="minGoalieGames"
+    [activeColumns]="activeColumns()"
+    [scaleSettings]="scaleSettings()"
+    [(decimalSettings)]="decimalSettings"
+    [useDefaultDecimals]="useDefaultDecimals()"
+    [leagueSize]="leagueSize()"
+    [rosterSlots]="rosterSlots()"
+    [minGoalieGames]="minGoalieGames()"
   />
 </div>
