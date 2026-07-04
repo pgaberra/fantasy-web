@@ -13,7 +13,7 @@ export const DEFAULT_STAT_WEIGHTS: Record<ScoringStatKey, number> = {
   pim: 0.5,
   ppg: 0.5,
   ppa: 0.5,
-  ppp: 0,
+  ppp: 0.5,
   shg: 0.5,
   sha: 0.5,
   shp: 0,
@@ -35,12 +35,12 @@ export const DEFAULT_STAT_WEIGHTS: Record<ScoringStatKey, number> = {
 export const DEFAULT_SCORING_COLUMNS: ScoringStatKey[] = [
   'goals',
   'assists',
-  'sog',
+  'ppp',
   'hits',
   'blocks',
-  'gaa',
-  'svPct',
   'w',
+  'sv',
+  'ga',
 ];
 
 export const DEFAULT_UTILITY_COLUMNS: SkaterUtilityStatKey[] = ['gp'];
