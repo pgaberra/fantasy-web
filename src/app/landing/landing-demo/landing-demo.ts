@@ -1,9 +1,14 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { PlayerProjectionsTableComponent } from '../../draft-projection/player-projections-table/player-projections-table';
 import { ProjectionSettingsSectionComponent } from '../../draft-projection/projection-settings-section/projection-settings-section';
+import { PlayerService } from '../../services/player.service';
 import { StatInfoService } from '../../services/stat-info.service';
+import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
+import { ErrorStateComponent } from '../../shared/error-state/error-state';
 import { ActiveColumns, ScoringType } from '../../models/projection.model';
+import { Player } from '../../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../../models/stat-key.model';
 import { RosterSlots } from '../../api/models/roster-slots';
 import {
@@ -20,18 +25,28 @@ import {
   DEFAULT_STAT_WEIGHTS,
   DEFAULT_UTILITY_COLUMNS,
 } from '../../draft-projection/projection-defaults';
-import { DEMO_PLAYERS } from '../demo-players';
 
 @Component({
   selector: 'app-landing-demo',
-  imports: [RouterLink, ProjectionSettingsSectionComponent, PlayerProjectionsTableComponent],
+  imports: [
+    RouterLink,
+    ProjectionSettingsSectionComponent,
+    PlayerProjectionsTableComponent,
+    LoadingIndicatorComponent,
+    ErrorStateComponent,
+  ],
   templateUrl: './landing-demo.html',
   styleUrl: './landing-demo.css',
 })
 export class LandingDemoComponent {
+  private readonly playerService = inject(PlayerService);
   private readonly statInfoService = inject(StatInfoService);
 
-  readonly players = DEMO_PLAYERS;
+  readonly playersResource = rxResource({
+    stream: () => this.playerService.getPlayers(),
+    defaultValue: [] as Player[],
+  });
+  readonly players = computed(() => this.playersResource.value());
 
   // Same editable state as the signed-in editor (draft-projection), so the demo IS the
   // real editor — the only difference is that saving requires an account.
@@ -51,4 +66,8 @@ export class LandingDemoComponent {
   readonly leagueSize = signal<number>(DEFAULT_LEAGUE_SIZE);
   readonly rosterSlots = signal<RosterSlots>(DEFAULT_ROSTER_SLOTS);
   readonly minGoalieGames = signal<number>(DEFAULT_MIN_GOALIE_GAMES);
+
+  retryLoad(): void {
+    this.playersResource.reload();
+  }
 }
