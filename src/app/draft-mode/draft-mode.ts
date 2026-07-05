@@ -35,6 +35,8 @@ import {
 } from '../draft-projection/projection-defaults';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { StatLabelPipe } from '../pipes/stat-label.pipe';
+import { StatTooltipPipe } from '../pipes/stat-tooltip.pipe';
+import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { DraftRosterService } from './draft-roster.service';
 import { DraftSnakeService } from './draft-snake.service';
 import { DraftSetupComponent } from './draft-setup/draft-setup';
@@ -43,7 +45,14 @@ const DEFAULT_PAGE_SIZE = 100;
 
 @Component({
   selector: 'app-draft-mode',
-  imports: [RouterLink, LoadingIndicatorComponent, DraftSetupComponent, StatLabelPipe],
+  imports: [
+    RouterLink,
+    LoadingIndicatorComponent,
+    DraftSetupComponent,
+    StatLabelPipe,
+    StatTooltipPipe,
+    TooltipDirective,
+  ],
   templateUrl: './draft-mode.html',
   styleUrl: './draft-mode.css',
 })
