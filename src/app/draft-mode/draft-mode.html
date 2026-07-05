@@ -25,6 +25,7 @@
       <app-draft-setup
         [initial]="draft()"
         [rosterSlots]="rosterSlots()"
+        [leagueSize]="leagueSize()"
         [lastSync]="yahooSync()"
         (confirmed)="onSetupConfirmed($event)"
         (cancelled)="cancelSetup()"
