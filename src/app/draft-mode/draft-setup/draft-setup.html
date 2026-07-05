@@ -7,7 +7,7 @@
   <app-yahoo-league-sync
     class="setup-yahoo"
     [lastSync]="lastSync()"
-    (synced)="yahooSynced.emit($event)"
+    (synced)="onYahooSynced($event)"
   />
 
   <div class="setup-field">

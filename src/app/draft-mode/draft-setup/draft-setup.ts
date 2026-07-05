@@ -1,8 +1,21 @@
-import { Component, computed, input, linkedSignal, OnInit, output, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  input,
+  linkedSignal,
+  OnInit,
+  output,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DraftState } from '../../api/models/draft-state';
 import { DraftTeam } from '../../api/models/draft-team';
+import { LeagueTeam } from '../../api/models/league-team';
 import { RosterSlots } from '../../api/models/roster-slots';
 import { YahooSync } from '../../api/models/yahoo-sync';
+import { YahooService } from '../../services/yahoo.service';
 import {
   DEFAULT_LEAGUE_SIZE,
   DEFAULT_ROSTER_SLOTS,
@@ -48,6 +61,9 @@ const MINE_ID = 'team-me';
   styleUrl: './draft-setup.css',
 })
 export class DraftSetupComponent implements OnInit {
+  private readonly yahoo = inject(YahooService);
+  private readonly destroyRef = inject(DestroyRef);
+
   readonly initial = input<DraftState | null>(null);
   readonly seedName = input<string>('My Team');
   readonly rosterSlots = input<RosterSlots>(DEFAULT_ROSTER_SLOTS);
@@ -128,6 +144,35 @@ export class DraftSetupComponent implements OnInit {
 
   teamHasPicks(id: string): boolean {
     return (this.initial()?.picks ?? []).some((pick) => pick.teamId === id);
+  }
+
+  onYahooSynced(result: YahooSyncResult): void {
+    this.yahooSynced.emit(result);
+    this.yahoo
+      .leagueTeams(result.leagueKey)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => this.applyTeams(response.teams),
+        // The scoring/roster sync already succeeded; pre-filling team names is a
+        // best-effort convenience, so a failure just leaves the manual rows as they are.
+        error: () => {},
+      });
+  }
+
+  private applyTeams(teams: LeagueTeam[]): void {
+    if (teams.length < MIN_TEAMS || (this.initial()?.picks ?? []).length > 0) {
+      return;
+    }
+    let mineAssigned = false;
+    const rows: SetupRow[] = teams.slice(0, MAX_TEAMS).map((team) => {
+      const mine = team.mine && !mineAssigned;
+      mineAssigned = mineAssigned || mine;
+      return { id: mine ? MINE_ID : crypto.randomUUID(), name: team.name, mine };
+    });
+    if (!mineAssigned) {
+      rows[0] = { ...rows[0], id: MINE_ID, mine: true };
+    }
+    this.rows.set(rows);
   }
 
   submit(): void {

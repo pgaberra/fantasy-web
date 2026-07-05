@@ -1,15 +1,38 @@
 import { MockBuilder, MockRender } from 'ng-mocks';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { of } from 'rxjs';
 import { DraftSetupComponent, DraftSetupResult } from './draft-setup';
+import { YahooSyncResult } from '../../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
+import { YahooService } from '../../services/yahoo.service';
 import { RosterSlots } from '../../api/models/roster-slots';
 import { DEFAULT_ROSTER_SLOTS } from '../../draft-projection/projection-defaults';
 
 describe('DraftSetupComponent', () => {
-  beforeEach(() => MockBuilder(DraftSetupComponent));
+  const leagueTeams = vi.fn();
+
+  beforeEach(() => {
+    leagueTeams.mockReturnValue(of({ teams: [] }));
+    return MockBuilder(DraftSetupComponent).mock(YahooService, { leagueTeams });
+  });
 
   function renderSetup(rosterSlots: RosterSlots = DEFAULT_ROSTER_SLOTS): DraftSetupComponent {
     return MockRender(DraftSetupComponent, { initial: null, seedName: 'My Team', rosterSlots })
       .point.componentInstance;
+  }
+
+  function syncResult(leagueKey: string): YahooSyncResult {
+    return {
+      leagueKey,
+      leagueName: 'HHL',
+      settings: {
+        scoringType: 'category',
+        activeScoringColumns: [],
+        activeUtilityColumns: [],
+        rosterSlots: DEFAULT_ROSTER_SLOTS,
+        unsupportedRosterCodes: [],
+        unsupportedStats: [],
+      },
+    };
   }
 
   it('seeds a default 12-team league with exactly one mine', () => {
@@ -69,5 +92,63 @@ describe('DraftSetupComponent', () => {
     component.submit();
 
     expect(emitted?.rosterSlots).toEqual(custom);
+  });
+
+  it('fills the team rows from a Yahoo sync, marking the owned team as mine', () => {
+    leagueTeams.mockReturnValue(
+      of({
+        teams: [
+          { name: 'Alpha', mine: false },
+          { name: 'Bravo', mine: true },
+          { name: 'Charlie', mine: false },
+        ],
+      }),
+    );
+    const component = renderSetup();
+
+    component.onYahooSynced(syncResult('nhl.l.1'));
+
+    expect(component.rows().map((row) => row.name)).toEqual(['Alpha', 'Bravo', 'Charlie']);
+    const mine = component.rows().filter((row) => row.mine);
+    expect(mine.length).toEqual(1);
+    expect(mine[0].name).toEqual('Bravo');
+  });
+
+  it('marks the first team as mine when Yahoo flags none', () => {
+    leagueTeams.mockReturnValue(
+      of({
+        teams: [
+          { name: 'Alpha', mine: false },
+          { name: 'Bravo', mine: false },
+        ],
+      }),
+    );
+    const component = renderSetup();
+
+    component.onYahooSynced(syncResult('nhl.l.1'));
+
+    const mine = component.rows().filter((row) => row.mine);
+    expect(mine.length).toEqual(1);
+    expect(mine[0].name).toEqual('Alpha');
+  });
+
+  it('keeps the existing teams when a draft already has picks', () => {
+    leagueTeams.mockReturnValue(of({ teams: [{ name: 'Alpha', mine: true }] }));
+    const component = MockRender(DraftSetupComponent, {
+      initial: {
+        teams: [
+          { id: 'team-me', name: 'My Team', mine: true },
+          { id: 'team-1', name: 'Team 1', mine: false },
+        ],
+        order: ['team-me', 'team-1'],
+        picks: [{ playerId: 1, teamId: 'team-me' }],
+      },
+      seedName: 'My Team',
+      rosterSlots: DEFAULT_ROSTER_SLOTS,
+    }).point.componentInstance;
+
+    component.onYahooSynced(syncResult('nhl.l.1'));
+
+    expect(component.rows().map((row) => row.name)).toEqual(['My Team', 'Team 1']);
   });
 });
