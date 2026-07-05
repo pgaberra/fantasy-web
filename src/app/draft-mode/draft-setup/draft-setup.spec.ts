@@ -132,6 +132,26 @@ describe('DraftSetupComponent', () => {
     expect(mine[0].name).toEqual('Alpha');
   });
 
+  it('loads the teams on init when the projection was already synced', () => {
+    leagueTeams.mockReturnValue(
+      of({
+        teams: [
+          { name: 'Alpha', mine: true },
+          { name: 'Bravo', mine: false },
+        ],
+      }),
+    );
+    const component = MockRender(DraftSetupComponent, {
+      initial: null,
+      seedName: 'My Team',
+      rosterSlots: DEFAULT_ROSTER_SLOTS,
+      lastSync: { leagueKey: 'nhl.l.1', leagueName: 'HHL', syncedAt: '2026-07-05T00:00:00Z' },
+    }).point.componentInstance;
+
+    expect(leagueTeams).toHaveBeenCalledWith('nhl.l.1');
+    expect(component.rows().map((row) => row.name)).toEqual(['Alpha', 'Bravo']);
+  });
+
   it('keeps the existing teams when a draft already has picks', () => {
     leagueTeams.mockReturnValue(of({ teams: [{ name: 'Alpha', mine: true }] }));
     const component = MockRender(DraftSetupComponent, {
