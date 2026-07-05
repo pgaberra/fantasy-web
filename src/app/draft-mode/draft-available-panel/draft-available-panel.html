@@ -1,0 +1,115 @@
+<section class="available-panel">
+  <div class="available-header">
+    @if (editingInfo(); as info) {
+      <span class="edit-banner">
+        Replacing pick #{{ info.overall }} ·
+        <strong>{{ info.mine ? 'You' : info.teamName }}</strong>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="cancelEdit.emit()">
+          Cancel
+        </button>
+      </span>
+    } @else {
+      <h2>Available players</h2>
+    }
+    <input
+      type="search"
+      class="draft-search"
+      placeholder="Search player…"
+      [value]="searchTerm()"
+      (input)="onSearchInput($event)"
+    />
+  </div>
+  <div class="pos-filter">
+    @for (filter of positionFilters(); track filter.value) {
+      <button
+        type="button"
+        class="pos-filter-chip"
+        [class.active]="positionFilter() === filter.value"
+        (click)="positionFilterChange.emit(filter.value)"
+      >
+        {{ filter.label }}
+      </button>
+    }
+    <div class="display-options">
+      <label class="stats-toggle">
+        <input type="checkbox" [checked]="showStats()" (change)="onStatsToggle($event)" />
+        Show stats
+      </label>
+      <label class="page-size">
+        Show
+        <select
+          class="page-size-select"
+          (change)="onPageSizeChange($event)"
+          aria-label="Players per page"
+        >
+          @for (option of pageSizeOptions(); track option.value) {
+            <option [value]="option.value" [selected]="option.value === pageSize()">
+              {{ option.label }}
+            </option>
+          }
+        </select>
+      </label>
+    </div>
+  </div>
+  @if (availableCount()) {
+    <div class="available-list">
+      <div class="available-list-head">
+        <span class="score-heading">{{ scoreHeading() }}</span>
+      </div>
+      @for (sp of visibleAvailable(); track sp.projection.playerId; let i = $index) {
+        <div class="available-row">
+          <span class="row-rank">{{ i + 1 }}</span>
+          <app-player-avatar [playerId]="sp.projection.playerId" />
+          <span class="row-info">
+            <span class="row-name">{{ lookup.name(sp.projection.playerId) }}</span>
+            <span class="row-sub">
+              <span [class]="'pos-chip pos--' + lookup.primaryPosition(sp.projection.playerId)">{{
+                lookup.positions(sp.projection.playerId)
+              }}</span>
+              <span class="row-team">{{ lookup.team(sp.projection.playerId) }}</span>
+            </span>
+          </span>
+          <span class="row-score">{{ scoreLabel(sp) }}</span>
+          <span class="row-actions">
+            @if (editingInfo()) {
+              <button
+                type="button"
+                class="btn btn-primary btn-sm"
+                (click)="replace.emit(sp.projection.playerId)"
+              >
+                Pick
+              </button>
+            } @else {
+              <button
+                type="button"
+                class="btn btn-sm"
+                [class.btn-primary]="isMyPick()"
+                [class.btn-secondary]="!isMyPick()"
+                [disabled]="isComplete()"
+                (click)="draft.emit(sp.projection.playerId)"
+              >
+                {{ draftLabel() }}
+              </button>
+            }
+          </span>
+          @if (showStats()) {
+            <div class="row-stats">
+              @for (stat of statStrip(sp.projection); track stat.key) {
+                <span class="stat-chip" [appTooltip]="stat.key | statTooltip">
+                  <span class="stat-key">{{ stat.key | statLabel }}</span> {{ stat.value }}
+                </span>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+    @if (hasMore()) {
+      <button type="button" class="btn btn-secondary btn-sm show-more" (click)="showMore.emit()">
+        Show more ({{ availableCount() - visibleAvailable().length }} more)
+      </button>
+    }
+  } @else {
+    <p class="available-empty">No available players match.</p>
+  }
+</section>

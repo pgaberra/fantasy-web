@@ -55,241 +55,49 @@
       </div>
 
       <div class="draft-layout">
-        <section class="roster-panel">
-          <div class="roster-header">
-            <select
-              class="roster-select"
-              (change)="selectTeam($event)"
-              aria-label="View a team's roster"
-            >
-              @for (team of teams(); track team.id) {
-                <option [value]="team.id" [selected]="team.id === effectiveTeamId()">
-                  {{ team.name }}{{ team.mine ? ' (You)' : '' }}
-                </option>
-              }
-            </select>
-            <span class="roster-count">{{ filledCount() }} / {{ totalSlots() }}</span>
-          </div>
-          <div class="roster-grid">
-            @for (slot of roster().slots; track slot.id) {
-              <div class="roster-slot" [class.filled]="slot.playerId !== null">
-                <span [class]="'slot-chip pos--' + slot.slotKey">{{ slot.label }}</span>
-                @if (slot.playerId !== null) {
-                  <span [class]="'avatar avatar-sm pos--' + primaryPosition(slot.playerId)">
-                    @if (playerHeadshot(slot.playerId); as headshot) {
-                      <img [src]="headshot" alt="" loading="lazy" />
-                    } @else {
-                      {{ playerInitials(slot.playerId) }}
-                    }
-                  </span>
-                  <span class="slot-info">
-                    <span class="slot-name">{{ playerName(slot.playerId) }}</span>
-                    <span class="slot-team">{{ playerTeam(slot.playerId) }}</span>
-                  </span>
-                } @else {
-                  <span class="slot-empty">Empty</span>
-                }
-              </div>
-            }
-            @for (playerId of roster().unplaced; track playerId) {
-              <div class="roster-slot filled">
-                <span class="slot-chip pos--util">Extra</span>
-                <span [class]="'avatar avatar-sm pos--' + primaryPosition(playerId)">
-                  @if (playerHeadshot(playerId); as headshot) {
-                    <img [src]="headshot" alt="" loading="lazy" />
-                  } @else {
-                    {{ playerInitials(playerId) }}
-                  }
-                </span>
-                <span class="slot-info">
-                  <span class="slot-name">{{ playerName(playerId) }}</span>
-                  <span class="slot-team">{{ playerTeam(playerId) }}</span>
-                </span>
-              </div>
-            }
-          </div>
-        </section>
+        <app-draft-roster-panel
+          [roster]="roster()"
+          [teams]="teams()"
+          [effectiveTeamId]="effectiveTeamId()"
+          [filledCount]="filledCount()"
+          [totalSlots]="totalSlots()"
+          (teamSelected)="viewedTeamId.set($event)"
+        />
 
-        <section class="available-panel">
-          <div class="available-header">
-            @if (editingInfo(); as info) {
-              <span class="edit-banner">
-                Replacing pick #{{ info.overall }} ·
-                <strong>{{ info.mine ? 'You' : info.teamName }}</strong>
-                <button type="button" class="btn btn-secondary btn-sm" (click)="cancelEditPick()">
-                  Cancel
-                </button>
-              </span>
-            } @else {
-              <h2>Available players</h2>
-            }
-            <input
-              type="search"
-              class="draft-search"
-              placeholder="Search player…"
-              [value]="searchTerm()"
-              (input)="onSearchInput($event)"
-            />
-          </div>
-          <div class="pos-filter">
-            @for (filter of positionFilters; track filter.value) {
-              <button
-                type="button"
-                class="pos-filter-chip"
-                [class.active]="positionFilter() === filter.value"
-                (click)="setPositionFilter(filter.value)"
-              >
-                {{ filter.label }}
-              </button>
-            }
-            <div class="display-options">
-              <label class="stats-toggle">
-                <input type="checkbox" [checked]="showStats()" (change)="toggleStats($event)" />
-                Show stats
-              </label>
-              <label class="page-size">
-                Show
-                <select
-                  class="page-size-select"
-                  (change)="onPageSizeChange($event)"
-                  aria-label="Players per page"
-                >
-                  @for (option of pageSizeOptions; track option.value) {
-                    <option [value]="option.value" [selected]="option.value === pageSize()">
-                      {{ option.label }}
-                    </option>
-                  }
-                </select>
-              </label>
-            </div>
-          </div>
-          @if (available().length) {
-            <div class="available-list">
-              <div class="available-list-head">
-                <span class="score-heading">{{ scoreHeading() }}</span>
-              </div>
-              @for (sp of visibleAvailable(); track sp.projection.playerId; let i = $index) {
-                <div class="available-row">
-                  <span class="row-rank">{{ i + 1 }}</span>
-                  <span [class]="'avatar pos--' + primaryPosition(sp.projection.playerId)">
-                    @if (playerHeadshot(sp.projection.playerId); as headshot) {
-                      <img [src]="headshot" alt="" loading="lazy" />
-                    } @else {
-                      {{ playerInitials(sp.projection.playerId) }}
-                    }
-                  </span>
-                  <span class="row-info">
-                    <span class="row-name">{{ playerName(sp.projection.playerId) }}</span>
-                    <span class="row-sub">
-                      <span [class]="'pos-chip pos--' + primaryPosition(sp.projection.playerId)">{{
-                        playerPositions(sp.projection.playerId)
-                      }}</span>
-                      <span class="row-team">{{ playerTeam(sp.projection.playerId) }}</span>
-                    </span>
-                  </span>
-                  <span class="row-score">{{ scoreLabel(sp) }}</span>
-                  <span class="row-actions">
-                    @if (editingInfo()) {
-                      <button
-                        type="button"
-                        class="btn btn-primary btn-sm"
-                        (click)="replacePick(sp.projection.playerId)"
-                      >
-                        Pick
-                      </button>
-                    } @else {
-                      <button
-                        type="button"
-                        class="btn btn-sm"
-                        [class.btn-primary]="isMyPick()"
-                        [class.btn-secondary]="!isMyPick()"
-                        [disabled]="isComplete()"
-                        (click)="draftCurrent(sp.projection.playerId)"
-                      >
-                        {{ draftLabel() }}
-                      </button>
-                    }
-                  </span>
-                  @if (showStats()) {
-                    <div class="row-stats">
-                      @for (stat of statStrip(sp.projection); track stat.key) {
-                        <span class="stat-chip" [appTooltip]="stat.key | statTooltip">
-                          <span class="stat-key">{{ stat.key | statLabel }}</span> {{ stat.value }}
-                        </span>
-                      }
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-            @if (hasMoreAvailable()) {
-              <button type="button" class="btn btn-secondary btn-sm show-more" (click)="showMore()">
-                Show more ({{ available().length - visibleAvailable().length }} more)
-              </button>
-            }
-          } @else {
-            <p class="available-empty">No available players match.</p>
-          }
-        </section>
+        <app-draft-available-panel
+          [editingInfo]="editingInfo()"
+          [searchTerm]="searchTerm()"
+          [positionFilters]="positionFilters"
+          [positionFilter]="positionFilter()"
+          [showStats]="showStats()"
+          [pageSizeOptions]="pageSizeOptions"
+          [pageSize]="pageSize()"
+          [scoreHeading]="scoreHeading()"
+          [visibleAvailable]="visibleAvailable()"
+          [availableCount]="available().length"
+          [hasMore]="hasMoreAvailable()"
+          [isMyPick]="isMyPick()"
+          [isComplete]="isComplete()"
+          [draftLabel]="draftLabel()"
+          [scoringType]="scoringType()"
+          [statColumns]="statColumns()"
+          (searchChange)="searchTerm.set($event)"
+          (positionFilterChange)="setPositionFilter($event)"
+          (statsToggle)="showStats.set($event)"
+          (pageSizeChange)="pageSize.set($event)"
+          (showMore)="showMore()"
+          (draft)="draftCurrent($event)"
+          (replace)="replacePick($event)"
+          (cancelEdit)="cancelEditPick()"
+        />
 
-        <section class="picks-panel">
-          <h2>
-            Draft picks <span class="roster-count">{{ picks().length }}</span>
-          </h2>
-          @if (pickRounds().length) {
-            <div class="feed-list">
-              @for (round of pickRounds(); track round.round) {
-                <div class="feed-round">Round {{ round.round }}</div>
-                @for (entry of round.picks; track entry.overall) {
-                  <div
-                    class="feed-row"
-                    [class.is-mine]="entry.mine"
-                    [class.is-editing]="editingPick() === entry.overall"
-                  >
-                    <span class="feed-pick">{{ entry.overall }}</span>
-                    <span [class]="'avatar avatar-sm pos--' + primaryPosition(entry.playerId)">
-                      @if (playerHeadshot(entry.playerId); as headshot) {
-                        <img [src]="headshot" alt="" loading="lazy" />
-                      } @else {
-                        {{ playerInitials(entry.playerId) }}
-                      }
-                    </span>
-                    <span class="feed-info">
-                      <span class="feed-player">{{ playerName(entry.playerId) }}</span>
-                      <span class="feed-team">{{ entry.mine ? 'You' : entry.teamName }}</span>
-                    </span>
-                    <span class="feed-actions">
-                      <button
-                        type="button"
-                        class="feed-change"
-                        (click)="startEditPick(entry.overall)"
-                        aria-label="Change pick"
-                        title="Change this pick"
-                      >
-                        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                          <path
-                            d="M12.146 1.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1 0 .708l-9 9a.5.5 0 0 1-.168.11l-3.5 1.5a.5.5 0 0 1-.65-.65l1.5-3.5a.5.5 0 0 1 .11-.168l9-9Z"
-                          />
-                        </svg>
-                      </button>
-                      <button
-                        type="button"
-                        class="feed-remove"
-                        (click)="requestRemovePick(entry.overall)"
-                        aria-label="Remove pick"
-                        title="Remove this pick"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  </div>
-                }
-              }
-            </div>
-          } @else {
-            <p class="available-empty">No picks yet.</p>
-          }
-        </section>
+        <app-draft-picks-panel
+          [pickRounds]="pickRounds()"
+          [editingPick]="editingPick()"
+          [picksCount]="picks().length"
+          (startEdit)="startEditPick($event)"
+          (requestRemove)="requestRemovePick($event)"
+        />
       </div>
 
       @if (removalPreview(); as preview) {
@@ -297,7 +105,7 @@
           <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
             <h2 class="modal-title">Remove pick #{{ preview.overall }}?</h2>
             <p class="modal-text">
-              Removing <strong>{{ playerName(preview.playerId) }}</strong> ({{
+              Removing <strong>{{ lookup.name(preview.playerId) }}</strong> ({{
                 preview.mine ? 'You' : preview.teamName
               }}) will affect the following picks:
             </p>
@@ -308,7 +116,7 @@
                   [class.team-changed]="change.teamChanged"
                   [class.affects-mine]="change.affectsMine"
                 >
-                  <span class="change-player">{{ playerName(change.playerId) }}</span>
+                  <span class="change-player">{{ lookup.name(change.playerId) }}</span>
                   <span class="change-move">
                     #{{ change.oldOverall }} {{ change.oldTeamName }}
                     <span class="change-arrow">→</span>

@@ -16,7 +16,6 @@ import { NotificationService } from '../services/notification.service';
 import { PlayerService } from '../services/player.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { PositionFilterService } from '../services/position-filter.service';
-import { StatInfoService } from '../services/stat-info.service';
 import { Player } from '../models/player.model';
 import {
   PositionFilter,
@@ -24,7 +23,7 @@ import {
   ScoredProjection,
   StatWeights,
 } from '../models/projection.model';
-import { GOALIE_STAT_KEYS, ScoringStatKey, SKATER_STAT_KEYS } from '../models/stat-key.model';
+import { ScoringStatKey } from '../models/stat-key.model';
 import { DraftState } from '../api/models/draft-state';
 import { ProjectionData } from '../api/models/projection-data';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
@@ -34,12 +33,13 @@ import {
   DEFAULT_ROSTER_SLOTS,
 } from '../draft-projection/projection-defaults';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
-import { StatLabelPipe } from '../pipes/stat-label.pipe';
-import { StatTooltipPipe } from '../pipes/stat-tooltip.pipe';
-import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { DraftRosterService } from './draft-roster.service';
 import { DraftSnakeService } from './draft-snake.service';
 import { DraftSetupComponent } from './draft-setup/draft-setup';
+import { DraftPlayerLookupService } from './draft-player-lookup.service';
+import { DraftRosterPanelComponent } from './draft-roster-panel/draft-roster-panel';
+import { DraftAvailablePanelComponent } from './draft-available-panel/draft-available-panel';
+import { DraftPicksPanelComponent } from './draft-picks-panel/draft-picks-panel';
 
 const DEFAULT_PAGE_SIZE = 100;
 
@@ -49,10 +49,11 @@ const DEFAULT_PAGE_SIZE = 100;
     RouterLink,
     LoadingIndicatorComponent,
     DraftSetupComponent,
-    StatLabelPipe,
-    StatTooltipPipe,
-    TooltipDirective,
+    DraftRosterPanelComponent,
+    DraftAvailablePanelComponent,
+    DraftPicksPanelComponent,
   ],
+  providers: [DraftPlayerLookupService],
   templateUrl: './draft-mode.html',
   styleUrl: './draft-mode.css',
 })
@@ -68,7 +69,7 @@ export class DraftModeComponent implements OnInit {
   private readonly serializer = inject(ProjectionSerializerService);
   private readonly snake = inject(DraftSnakeService);
   private readonly rosterService = inject(DraftRosterService);
-  private readonly statInfoService = inject(StatInfoService);
+  readonly lookup = inject(DraftPlayerLookupService);
 
   readonly projectionId = signal<string | null>(null);
   readonly projectionName = signal<string>('');
@@ -111,7 +112,7 @@ export class DraftModeComponent implements OnInit {
     return data ? this.serializer.fromProjectionData(data).playerProjections : [];
   });
 
-  private readonly scoringType = computed(() => this.data()?.settings.scoringType ?? 'points');
+  readonly scoringType = computed(() => this.data()?.settings.scoringType ?? 'points');
   readonly statColumns = computed<ScoringStatKey[]>(
     () => (this.data()?.settings.activeScoringColumns ?? []) as ScoringStatKey[],
   );
@@ -330,6 +331,7 @@ export class DraftModeComponent implements OnInit {
           this.projectionName.set(projection.name);
           this.data.set(projection.data);
           this.allPlayers.set(players);
+          this.lookup.setPlayers(players);
           this.draft.set(this.serializer.fromProjectionData(projection.data).draft);
           this.loaded.set(true);
         },
@@ -446,102 +448,12 @@ export class DraftModeComponent implements OnInit {
     this.setupOpen.set(true);
   }
 
-  onSearchInput(event: Event): void {
-    this.searchTerm.set((event.target as HTMLInputElement).value);
-  }
-
   setPositionFilter(filter: PositionFilter): void {
     this.positionFilter.set(filter);
   }
 
   showMore(): void {
     this.visibleCount.update((count) => count + this.pageSize());
-  }
-
-  onPageSizeChange(event: Event): void {
-    this.pageSize.set(Number((event.target as HTMLSelectElement).value));
-  }
-
-  selectTeam(event: Event): void {
-    this.viewedTeamId.set((event.target as HTMLSelectElement).value);
-  }
-
-  playerName(playerId: number): string {
-    return this.playerMap().get(playerId)?.name ?? '';
-  }
-
-  playerTeam(playerId: number): string {
-    return this.playerMap().get(playerId)?.teamAbbrev ?? '';
-  }
-
-  playerPositions(playerId: number): string {
-    const player = this.playerMap().get(playerId);
-    if (!player) {
-      return '';
-    }
-    return player.type === 'goalie' ? 'G' : [...player.positions].join('/');
-  }
-
-  playerHeadshot(playerId: number): string | undefined {
-    return this.playerMap().get(playerId)?.headshot;
-  }
-
-  playerInitials(playerId: number): string {
-    const name = this.playerMap().get(playerId)?.name ?? '';
-    return name
-      .split(/\s+/)
-      .filter((part) => part.length > 0)
-      .map((part) => part[0])
-      .slice(0, 2)
-      .join('')
-      .toUpperCase();
-  }
-
-  primaryPosition(playerId: number): string {
-    const player = this.playerMap().get(playerId);
-    if (!player) {
-      return '';
-    }
-    if (player.type === 'goalie') {
-      return 'g';
-    }
-    if (player.positions.has('C')) {
-      return 'c';
-    }
-    if (player.positions.has('LW')) {
-      return 'lw';
-    }
-    if (player.positions.has('RW')) {
-      return 'rw';
-    }
-    if (player.positions.has('D')) {
-      return 'd';
-    }
-    return 'util';
-  }
-
-  scoreLabel(scoredProjection: ScoredProjection): string {
-    return this.scoringType() === 'points'
-      ? scoredProjection.score.fantasyPoints.toFixed(1)
-      : scoredProjection.score.zScore.toFixed(2);
-  }
-
-  toggleStats(event: Event): void {
-    this.showStats.set((event.target as HTMLInputElement).checked);
-  }
-
-  statStrip(projection: Projection): { key: ScoringStatKey; value: string }[] {
-    const stats = { ...projection.stats.utility, ...projection.stats.scoring } as Record<
-      string,
-      number
-    >;
-    const applicable = projection.type === 'skater' ? SKATER_STAT_KEYS : GOALIE_STAT_KEYS;
-    return this.statColumns()
-      .filter((key) => (applicable as readonly string[]).includes(key))
-      .map((key) => {
-        const decimals = this.statInfoService.isRateStat(key) ? 2 : 0;
-        return { key, value: (stats[key] ?? 0).toFixed(decimals) };
-      });
   }
 
   private mutate(fn: (draft: DraftState) => DraftState): void {
