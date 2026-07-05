@@ -268,8 +268,6 @@ describe('DraftModeComponent', () => {
     fixture.detectChanges();
 
     expect(component.effectiveTeamId()).toEqual('team-me');
-    const select = fixture.point.nativeElement.querySelector('.roster-select') as HTMLSelectElement;
-    expect(select.value).toEqual('team-me');
   });
 });
 

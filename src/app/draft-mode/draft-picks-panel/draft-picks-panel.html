@@ -1,0 +1,52 @@
+<section class="picks-panel">
+  <h2>
+    Draft picks <span class="picks-count">{{ picksCount() }}</span>
+  </h2>
+  @if (pickRounds().length) {
+    <div class="feed-list">
+      @for (round of pickRounds(); track round.round) {
+        <div class="feed-round">Round {{ round.round }}</div>
+        @for (entry of round.picks; track entry.overall) {
+          <div
+            class="feed-row"
+            [class.is-mine]="entry.mine"
+            [class.is-editing]="editingPick() === entry.overall"
+          >
+            <span class="feed-pick">{{ entry.overall }}</span>
+            <app-player-avatar [playerId]="entry.playerId" [small]="true" />
+            <span class="feed-info">
+              <span class="feed-player">{{ lookup.name(entry.playerId) }}</span>
+              <span class="feed-team">{{ entry.mine ? 'You' : entry.teamName }}</span>
+            </span>
+            <span class="feed-actions">
+              <button
+                type="button"
+                class="feed-change"
+                (click)="startEdit.emit(entry.overall)"
+                aria-label="Change pick"
+                title="Change this pick"
+              >
+                <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                  <path
+                    d="M12.146 1.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1 0 .708l-9 9a.5.5 0 0 1-.168.11l-3.5 1.5a.5.5 0 0 1-.65-.65l1.5-3.5a.5.5 0 0 1 .11-.168l9-9Z"
+                  />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="feed-remove"
+                (click)="requestRemove.emit(entry.overall)"
+                aria-label="Remove pick"
+                title="Remove this pick"
+              >
+                ×
+              </button>
+            </span>
+          </div>
+        }
+      }
+    </div>
+  } @else {
+    <p class="feed-empty">No picks yet.</p>
+  }
+</section>

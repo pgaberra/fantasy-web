@@ -168,6 +168,34 @@ summary:focus-visible,
   padding: 0.35rem 0.85rem;
 }
 
+/* Position colour system — sets --pos / --pos-bg, consumed by player avatars and
+   position/slot chips (app-player-avatar and the draft panels). */
+.pos--c {
+  --pos: #1d4ed8;
+  --pos-bg: #eef2ff;
+}
+.pos--lw {
+  --pos: #15803d;
+  --pos-bg: #ecfdf3;
+}
+.pos--rw {
+  --pos: #c2410c;
+  --pos-bg: #fff5ed;
+}
+.pos--d {
+  --pos: #6d28d9;
+  --pos-bg: #f3effe;
+}
+.pos--g {
+  --pos: #b45309;
+  --pos-bg: #fdf6ec;
+}
+.pos--util,
+.pos--bn {
+  --pos: #64748b;
+  --pos-bg: #f1f5f9;
+}
+
 .table-wrapper .col-rank,
 .table-wrapper .col-name {
   position: sticky;

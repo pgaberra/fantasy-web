@@ -1,0 +1,38 @@
+<section class="roster-panel">
+  <div class="roster-header">
+    <select class="roster-select" (change)="onSelect($event)" aria-label="View a team's roster">
+      @for (team of teams(); track team.id) {
+        <option [value]="team.id" [selected]="team.id === effectiveTeamId()">
+          {{ team.name }}{{ team.mine ? ' (You)' : '' }}
+        </option>
+      }
+    </select>
+    <span class="roster-count">{{ filledCount() }} / {{ totalSlots() }}</span>
+  </div>
+  <div class="roster-grid">
+    @for (slot of roster().slots; track slot.id) {
+      <div class="roster-slot" [class.filled]="slot.playerId !== null">
+        <span [class]="'slot-chip pos--' + slot.slotKey">{{ slot.label }}</span>
+        @if (slot.playerId !== null) {
+          <app-player-avatar [playerId]="slot.playerId" [small]="true" />
+          <span class="slot-info">
+            <span class="slot-name">{{ lookup.name(slot.playerId) }}</span>
+            <span class="slot-team">{{ lookup.team(slot.playerId) }}</span>
+          </span>
+        } @else {
+          <span class="slot-empty">Empty</span>
+        }
+      </div>
+    }
+    @for (playerId of roster().unplaced; track playerId) {
+      <div class="roster-slot filled">
+        <span class="slot-chip pos--util">Extra</span>
+        <app-player-avatar [playerId]="playerId" [small]="true" />
+        <span class="slot-info">
+          <span class="slot-name">{{ lookup.name(playerId) }}</span>
+          <span class="slot-team">{{ lookup.team(playerId) }}</span>
+        </span>
+      </div>
+    }
+  </div>
+</section>
