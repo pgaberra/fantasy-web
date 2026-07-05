@@ -17,6 +17,23 @@
   margin: 0 0 0.4rem;
 }
 
+.page-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.page-header-row h1 {
+  margin: 0;
+}
+
+.draft-mode-link {
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
 .back-link {
   display: block;
   width: fit-content;

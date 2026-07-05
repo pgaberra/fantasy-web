@@ -87,7 +87,7 @@ export class DraftProjectionComponent implements OnInit {
   readonly renameError = signal<string | null>(null);
   readonly saveStatus = signal<'idle' | 'saving' | 'saved' | 'error'>('idle');
   readonly loadedProjections = signal<Projection[] | null>(null);
-  private readonly projectionId = signal<string | null>(null);
+  readonly projectionId = signal<string | null>(null);
   private readonly projectionLoaded = signal<boolean>(false);
   private readonly autosaveEnabled = signal<boolean>(false);
   private lastSavedJson = '';

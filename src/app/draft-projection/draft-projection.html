@@ -39,18 +39,26 @@
           <p class="rename-error">{{ renameError() }}</p>
         }
       } @else {
-        <h1 class="projection-title">
-          <button
-            type="button"
-            class="rename-trigger"
-            title="Rename projection"
-            aria-label="Rename projection"
-            (click)="startRename()"
+        <div class="page-header-row">
+          <h1 class="projection-title">
+            <button
+              type="button"
+              class="rename-trigger"
+              title="Rename projection"
+              aria-label="Rename projection"
+              (click)="startRename()"
+            >
+              {{ projectionName() }}
+              <span class="rename-icon" aria-hidden="true">✎</span>
+            </button>
+          </h1>
+          <a
+            [routerLink]="['/projections', projectionId(), 'draft']"
+            class="btn btn-primary draft-mode-link"
           >
-            {{ projectionName() }}
-            <span class="rename-icon" aria-hidden="true">✎</span>
-          </button>
-        </h1>
+            Draft mode
+          </a>
+        </div>
       }
     </div>
 
