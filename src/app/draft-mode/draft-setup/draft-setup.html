@@ -4,6 +4,12 @@
     Name the teams, set the league size and the draft order. You can edit this later.
   </p>
 
+  <app-yahoo-league-sync
+    class="setup-yahoo"
+    [lastSync]="lastSync()"
+    (synced)="yahooSynced.emit($event)"
+  />
+
   <div class="setup-field">
     <span class="setup-label">Number of teams</span>
     <div class="stepper">

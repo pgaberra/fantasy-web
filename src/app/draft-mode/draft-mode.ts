@@ -36,6 +36,7 @@ import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-i
 import { DraftRosterService } from './draft-roster.service';
 import { DraftSnakeService } from './draft-snake.service';
 import { DraftSetupComponent, DraftSetupResult } from './draft-setup/draft-setup';
+import { YahooSyncResult } from '../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
 import { DraftPlayerLookupService } from './draft-player-lookup.service';
 import { DraftRosterPanelComponent } from './draft-roster-panel/draft-roster-panel';
 import { DraftAvailablePanelComponent } from './draft-available-panel/draft-available-panel';
@@ -120,6 +121,7 @@ export class DraftModeComponent implements OnInit {
     this.scoringType() === 'points' ? 'Total Points' : 'Z-Score',
   );
   readonly rosterSlots = computed(() => this.data()?.settings.rosterSlots ?? DEFAULT_ROSTER_SLOTS);
+  readonly yahooSync = computed(() => this.data()?.settings.yahooSync ?? null);
 
   readonly teams = computed(() => this.draft()?.teams ?? []);
   readonly order = computed(() => this.draft()?.order ?? []);
@@ -432,6 +434,33 @@ export class DraftModeComponent implements OnInit {
       data ? { ...data, settings: { ...data.settings, rosterSlots: result.rosterSlots } } : data,
     );
     this.applySetup(result.draft);
+  }
+
+  applyYahooSync(result: YahooSyncResult): void {
+    const mapped = result.settings;
+    this.data.update((data) => {
+      if (!data) {
+        return data;
+      }
+      return {
+        ...data,
+        settings: {
+          ...data.settings,
+          scoringType: mapped.scoringType,
+          activeScoringColumns: [...mapped.activeScoringColumns],
+          activeUtilityColumns: [...mapped.activeUtilityColumns],
+          rosterSlots: mapped.rosterSlots,
+          ...(mapped.leagueSize != null ? { leagueSize: mapped.leagueSize } : {}),
+          ...(mapped.statWeights ? { statWeights: mapped.statWeights } : {}),
+          yahooSync: {
+            leagueName: result.leagueName,
+            leagueKey: result.leagueKey,
+            syncedAt: new Date().toISOString(),
+          },
+        },
+      };
+    });
+    this.save();
   }
 
   applySetup(next: DraftState): void {
