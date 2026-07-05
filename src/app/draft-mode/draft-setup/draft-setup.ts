@@ -99,6 +99,13 @@ export class DraftSetupComponent implements OnInit {
       rows.push({ id: crypto.randomUUID(), name: `Team ${index}`, mine: false });
     }
     this.rows.set(rows);
+
+    // A projection synced earlier (in the editor) carries its Yahoo league; pull that
+    // league's teams into a fresh setup so the user needn't re-sync just to load them.
+    const sync = this.lastSync();
+    if (sync) {
+      this.loadTeams(sync.leagueKey);
+    }
   }
 
   updateName(index: number, event: Event): void {
@@ -148,13 +155,17 @@ export class DraftSetupComponent implements OnInit {
 
   onYahooSynced(result: YahooSyncResult): void {
     this.yahooSynced.emit(result);
+    this.loadTeams(result.leagueKey);
+  }
+
+  private loadTeams(leagueKey: string): void {
     this.yahoo
-      .leagueTeams(result.leagueKey)
+      .leagueTeams(leagueKey)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => this.applyTeams(response.teams),
-        // The scoring/roster sync already succeeded; pre-filling team names is a
-        // best-effort convenience, so a failure just leaves the manual rows as they are.
+        // A synced projection already carries the scoring/roster; pre-filling team names is
+        // best-effort, so a failure just leaves the current rows as they are.
         error: () => {},
       });
   }
