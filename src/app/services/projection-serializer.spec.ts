@@ -138,18 +138,25 @@ describe('ProjectionSerializerService', () => {
     });
   });
 
-  it('omits leagueSize, rosterSlots and minGoalieGames for points leagues', () => {
+  it('omits leagueSize and minGoalieGames for points leagues but keeps rosterSlots', () => {
     const pointsState: ProjectionState = { ...sampleState, scoringType: 'points' };
     const settings = service.toProjectionData(pointsState).settings;
 
     expect(settings.leagueSize).toBeUndefined();
-    expect(settings.rosterSlots).toBeUndefined();
     expect(settings.minGoalieGames).toBeUndefined();
+    expect(settings.rosterSlots).toEqual({ c: 1, lw: 1, rw: 1, d: 2, util: 1, bn: 2, g: 2 });
   });
 
-  it('round-trips rosterSlots for category leagues', () => {
-    const roundTripped = service.fromProjectionData(service.toProjectionData(sampleState));
+  it('round-trips rosterSlots for both category and points leagues', () => {
+    const expected = { c: 1, lw: 1, rw: 1, d: 2, util: 1, bn: 2, g: 2 };
 
-    expect(roundTripped.rosterSlots).toEqual({ c: 1, lw: 1, rw: 1, d: 2, util: 1, bn: 2, g: 2 });
+    expect(service.fromProjectionData(service.toProjectionData(sampleState)).rosterSlots).toEqual(
+      expected,
+    );
+
+    const pointsState: ProjectionState = { ...sampleState, scoringType: 'points' };
+    expect(service.fromProjectionData(service.toProjectionData(pointsState)).rosterSlots).toEqual(
+      expected,
+    );
   });
 });

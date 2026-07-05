@@ -35,7 +35,10 @@ export class ProjectionSerializerService {
         decimalSettings: { ...state.decimalSettings },
         useDefaultDecimals: state.useDefaultDecimals,
         leagueSize: state.scoringType === 'category' ? state.leagueSize : undefined,
-        rosterSlots: state.scoringType === 'category' ? { ...state.rosterSlots } : undefined,
+        // Roster slots drive the draft's roster (and the draft-setup editor) for both league
+        // types, so they must persist regardless of scoring basis — unlike leagueSize /
+        // minGoalieGames, which only matter for category ranking.
+        rosterSlots: { ...state.rosterSlots },
         minGoalieGames: state.scoringType === 'category' ? state.minGoalieGames : undefined,
         yahooSync: state.yahooSync ?? undefined,
       },
