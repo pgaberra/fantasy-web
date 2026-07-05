@@ -35,7 +35,7 @@ import {
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { DraftRosterService } from './draft-roster.service';
 import { DraftSnakeService } from './draft-snake.service';
-import { DraftSetupComponent } from './draft-setup/draft-setup';
+import { DraftSetupComponent, DraftSetupResult } from './draft-setup/draft-setup';
 import { DraftPlayerLookupService } from './draft-player-lookup.service';
 import { DraftRosterPanelComponent } from './draft-roster-panel/draft-roster-panel';
 import { DraftAvailablePanelComponent } from './draft-available-panel/draft-available-panel';
@@ -119,9 +119,7 @@ export class DraftModeComponent implements OnInit {
   readonly scoreHeading = computed(() =>
     this.scoringType() === 'points' ? 'Total Points' : 'Z-Score',
   );
-  private readonly rosterSlots = computed(
-    () => this.data()?.settings.rosterSlots ?? DEFAULT_ROSTER_SLOTS,
-  );
+  readonly rosterSlots = computed(() => this.data()?.settings.rosterSlots ?? DEFAULT_ROSTER_SLOTS);
 
   readonly teams = computed(() => this.draft()?.teams ?? []);
   readonly order = computed(() => this.draft()?.order ?? []);
@@ -427,6 +425,13 @@ export class DraftModeComponent implements OnInit {
     } else if (this.editingPick() !== null) {
       this.cancelEditPick();
     }
+  }
+
+  onSetupConfirmed(result: DraftSetupResult): void {
+    this.data.update((data) =>
+      data ? { ...data, settings: { ...data.settings, rosterSlots: result.rosterSlots } } : data,
+    );
+    this.applySetup(result.draft);
   }
 
   applySetup(next: DraftState): void {

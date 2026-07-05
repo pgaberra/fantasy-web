@@ -63,6 +63,11 @@
     </ol>
   </div>
 
+  <div class="setup-field">
+    <span class="setup-label">Roster slots</span>
+    <app-roster-slots-editor [(rosterSlots)]="editableRosterSlots" />
+  </div>
+
   <div class="setup-actions">
     @if (canCancel()) {
       <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">Cancel</button>

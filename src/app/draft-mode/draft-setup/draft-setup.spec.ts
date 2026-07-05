@@ -1,14 +1,15 @@
 import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, it, expect, beforeEach } from 'vitest';
-import { DraftSetupComponent } from './draft-setup';
-import { DraftState } from '../../api/models/draft-state';
+import { DraftSetupComponent, DraftSetupResult } from './draft-setup';
+import { RosterSlots } from '../../api/models/roster-slots';
+import { DEFAULT_ROSTER_SLOTS } from '../../draft-projection/projection-defaults';
 
 describe('DraftSetupComponent', () => {
   beforeEach(() => MockBuilder(DraftSetupComponent));
 
-  function renderSetup(): DraftSetupComponent {
-    return MockRender(DraftSetupComponent, { initial: null, seedName: 'My Team' }).point
-      .componentInstance;
+  function renderSetup(rosterSlots: RosterSlots = DEFAULT_ROSTER_SLOTS): DraftSetupComponent {
+    return MockRender(DraftSetupComponent, { initial: null, seedName: 'My Team', rosterSlots })
+      .point.componentInstance;
   }
 
   it('seeds a default 12-team league with exactly one mine', () => {
@@ -41,18 +42,32 @@ describe('DraftSetupComponent', () => {
     expect(component.rows()[1].id).toEqual(firstId);
   });
 
-  it('emits a valid draft on submit', () => {
+  it('emits the draft and roster slots on submit', () => {
     const component = renderSetup();
-    let emitted: DraftState | undefined;
+    let emitted: DraftSetupResult | undefined;
     component.confirmed.subscribe((value) => {
       emitted = value;
     });
 
     component.submit();
 
-    expect(emitted?.teams.length).toEqual(12);
-    expect(emitted?.order.length).toEqual(12);
-    expect(emitted?.teams.filter((team) => team.mine).length).toEqual(1);
-    expect(emitted?.picks).toEqual([]);
+    expect(emitted?.draft.teams.length).toEqual(12);
+    expect(emitted?.draft.order.length).toEqual(12);
+    expect(emitted?.draft.teams.filter((team) => team.mine).length).toEqual(1);
+    expect(emitted?.draft.picks).toEqual([]);
+    expect(emitted?.rosterSlots).toEqual(DEFAULT_ROSTER_SLOTS);
+  });
+
+  it('emits the roster slots it was given', () => {
+    const custom: RosterSlots = { c: 3, lw: 3, rw: 3, d: 5, util: 1, bn: 2, g: 2 };
+    const component = renderSetup(custom);
+    let emitted: DraftSetupResult | undefined;
+    component.confirmed.subscribe((value) => {
+      emitted = value;
+    });
+
+    component.submit();
+
+    expect(emitted?.rosterSlots).toEqual(custom);
   });
 });
