@@ -24,7 +24,8 @@
     @if (phase() === 'setup') {
       <app-draft-setup
         [initial]="draft()"
-        (confirmed)="applySetup($event)"
+        [rosterSlots]="rosterSlots()"
+        (confirmed)="onSetupConfirmed($event)"
         (cancelled)="cancelSetup()"
       />
     } @else {

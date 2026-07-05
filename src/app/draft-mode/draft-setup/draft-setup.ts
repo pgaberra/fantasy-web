@@ -1,7 +1,12 @@
 import { Component, computed, input, OnInit, output, signal } from '@angular/core';
 import { DraftState } from '../../api/models/draft-state';
 import { DraftTeam } from '../../api/models/draft-team';
-import { DEFAULT_LEAGUE_SIZE } from '../../draft-projection/projection-defaults';
+import { RosterSlots } from '../../api/models/roster-slots';
+import {
+  DEFAULT_LEAGUE_SIZE,
+  DEFAULT_ROSTER_SLOTS,
+} from '../../draft-projection/projection-defaults';
+import { RosterSlotsEditorComponent } from '../../shared/roster-slots-editor/roster-slots-editor';
 import {
   CdkDrag,
   CdkDragDrop,
@@ -16,24 +21,31 @@ interface SetupRow {
   mine: boolean;
 }
 
+export interface DraftSetupResult {
+  draft: DraftState;
+  rosterSlots: RosterSlots;
+}
+
 const MIN_TEAMS = 2;
 const MAX_TEAMS = 32;
 const MINE_ID = 'team-me';
 
 @Component({
   selector: 'app-draft-setup',
-  imports: [CdkDropList, CdkDrag, CdkDragHandle],
+  imports: [CdkDropList, CdkDrag, CdkDragHandle, RosterSlotsEditorComponent],
   templateUrl: './draft-setup.html',
   styleUrl: './draft-setup.css',
 })
 export class DraftSetupComponent implements OnInit {
   readonly initial = input<DraftState | null>(null);
   readonly seedName = input<string>('My Team');
+  readonly rosterSlots = input<RosterSlots>(DEFAULT_ROSTER_SLOTS);
 
-  readonly confirmed = output<DraftState>();
+  readonly confirmed = output<DraftSetupResult>();
   readonly cancelled = output<void>();
 
   readonly rows = signal<SetupRow[]>([]);
+  readonly editableRosterSlots = signal<RosterSlots>(DEFAULT_ROSTER_SLOTS);
 
   readonly numTeams = computed(() => this.rows().length);
   readonly canAdd = computed(() => this.rows().length < MAX_TEAMS);
@@ -41,6 +53,7 @@ export class DraftSetupComponent implements OnInit {
   readonly canCancel = computed(() => this.initial() !== null);
 
   ngOnInit(): void {
+    this.editableRosterSlots.set(this.rosterSlots());
     const existing = this.initial();
     if (existing && existing.teams.length >= MIN_TEAMS) {
       this.rows.set(
@@ -111,6 +124,9 @@ export class DraftSetupComponent implements OnInit {
       mine: row.mine,
     }));
     const order = rows.map((row) => row.id);
-    this.confirmed.emit({ teams, order, picks: this.initial()?.picks ?? [] });
+    this.confirmed.emit({
+      draft: { teams, order, picks: this.initial()?.picks ?? [] },
+      rosterSlots: this.editableRosterSlots(),
+    });
   }
 }

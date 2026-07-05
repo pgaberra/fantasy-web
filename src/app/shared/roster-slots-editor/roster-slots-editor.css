@@ -1,0 +1,52 @@
+:host {
+  display: block;
+}
+
+.roster-editor-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-2);
+}
+
+.roster-editor-title {
+  font-size: 0.9rem;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.roster-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.roster-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.roster-slot-label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.roster-slot input {
+  width: 3rem;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.roster-slot input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
+}

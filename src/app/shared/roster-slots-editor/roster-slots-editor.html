@@ -1,0 +1,19 @@
+<div class="roster-editor">
+  <div class="roster-editor-header">
+    <span class="roster-editor-title">Roster Slots</span>
+  </div>
+  <div class="roster-grid">
+    @for (slot of ROSTER_POSITIONS; track slot.key) {
+      <label class="roster-slot">
+        <span class="roster-slot-label">{{ slot.label }}</span>
+        <input
+          type="number"
+          min="0"
+          max="50"
+          [value]="rosterSlots()[slot.key]"
+          (input)="onRosterSlotInput(slot.key, $event)"
+        />
+      </label>
+    }
+  </div>
+</div>
