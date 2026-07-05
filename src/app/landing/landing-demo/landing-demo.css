@@ -19,6 +19,20 @@
   background: var(--color-surface-alt);
 }
 
+.demo-yahoo-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.yahoo-logo {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+  color: #6001d2;
+}
+
 .demo-yahoo-text {
   display: flex;
   flex-direction: column;
