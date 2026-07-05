@@ -7,24 +7,22 @@ apply: always
 These guidelines define how code should be written and generated for this Angular project.  
 All AI-generated code must follow these conventions.
 
+For general Angular framework guidance (reactivity, forms, routing, SSR, accessibility,
+testing patterns), use the `angular-developer` skill. The rules below are this project's
+house style and deliberate deviations — always in force, whether or not that skill is loaded.
+
 ---
 
 ## General Principles
 
-- Use **modern Angular APIs and best practices**.
-- Prefer **simple, readable, and maintainable solutions**.
-- Follow the **latest Angular recommendations** rather than legacy patterns.
-- Try to keep components small and neat for cleaner and more understandable code
-- Avoid using legacy patterns such as [ngModel] and (ngModelChange)
-- Always make sure that the changes made passes our linting
+- Keep components small and focused.
+- Avoid legacy patterns such as `[ngModel]` / `(ngModelChange)`.
+- Make sure changes pass linting (`npm run lint`) and formatting (`npm run format`).
 
 ---
 
 ## Dependency Injection
 - Services must be injected using inject(). Do not use constructor injection.
-
-## Signals
-- Prefer **Angular Signals** for state management.
 
 ## Naming conventions
 - Prefer using proper names that give a description to the variable. Try to avoid names suchas list, val, value, key...

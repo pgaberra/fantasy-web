@@ -86,7 +86,6 @@ comment explaining why that particular failure genuinely isn't worth surfacing.
 
 @.aiassistant/rules/guidelines.md
 
-- Prefer standalone components and signals (Angular 21 style).
 - Never hand-edit `src/app/api/**` — it's generated.
 - Run `npm run format` before committing; `format:check` is enforced in CI.
 - Keep API calls going through the generated client + a service wrapper, not raw
