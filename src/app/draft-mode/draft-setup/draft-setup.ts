@@ -21,6 +21,7 @@ import {
   DEFAULT_ROSTER_SLOTS,
 } from '../../draft-projection/projection-defaults';
 import { RosterSlotsEditorComponent } from '../../shared/roster-slots-editor/roster-slots-editor';
+import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 import {
   YahooLeagueSyncComponent,
   YahooSyncResult,
@@ -56,6 +57,7 @@ const MINE_ID = 'team-me';
     CdkDragHandle,
     RosterSlotsEditorComponent,
     YahooLeagueSyncComponent,
+    LoadingIndicatorComponent,
   ],
   templateUrl: './draft-setup.html',
   styleUrl: './draft-setup.css',
@@ -74,6 +76,7 @@ export class DraftSetupComponent implements OnInit {
   readonly yahooSynced = output<YahooSyncResult>();
 
   readonly rows = signal<SetupRow[]>([]);
+  readonly loadingTeams = signal(false);
   // Tracks the roster-slots input so a Yahoo sync (which updates it upstream) flows in,
   // while still letting the user edit the slots locally before starting the draft.
   readonly editableRosterSlots = linkedSignal<RosterSlots>(() => this.rosterSlots());
@@ -159,14 +162,18 @@ export class DraftSetupComponent implements OnInit {
   }
 
   private loadTeams(leagueKey: string): void {
+    this.loadingTeams.set(true);
     this.yahoo
       .leagueTeams(leagueKey)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (response) => this.applyTeams(response.teams),
+        next: (response) => {
+          this.applyTeams(response.teams);
+          this.loadingTeams.set(false);
+        },
         // A synced projection already carries the scoring/roster; pre-filling team names is
-        // best-effort, so a failure just leaves the current rows as they are.
-        error: () => {},
+        // best-effort, so a failure just falls back to the rows already in place.
+        error: () => this.loadingTeams.set(false),
       });
   }
 

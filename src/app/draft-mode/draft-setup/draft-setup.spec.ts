@@ -1,6 +1,7 @@
 import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
+import { LeagueTeamsResponse } from '../../api/models/league-teams-response';
 import { DraftSetupComponent, DraftSetupResult } from './draft-setup';
 import { YahooSyncResult } from '../../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
 import { YahooService } from '../../services/yahoo.service';
@@ -150,6 +151,19 @@ describe('DraftSetupComponent', () => {
 
     expect(leagueTeams).toHaveBeenCalledWith('nhl.l.1');
     expect(component.rows().map((row) => row.name)).toEqual(['Alpha', 'Bravo']);
+    expect(component.loadingTeams()).toBe(false);
+  });
+
+  it('flags loadingTeams while the init fetch is still pending', () => {
+    leagueTeams.mockReturnValue(new Subject<LeagueTeamsResponse>());
+    const component = MockRender(DraftSetupComponent, {
+      initial: null,
+      seedName: 'My Team',
+      rosterSlots: DEFAULT_ROSTER_SLOTS,
+      lastSync: { leagueKey: 'nhl.l.1', leagueName: 'HHL', syncedAt: '2026-07-05T00:00:00Z' },
+    }).point.componentInstance;
+
+    expect(component.loadingTeams()).toBe(true);
   });
 
   it('keeps the existing teams when a draft already has picks', () => {
