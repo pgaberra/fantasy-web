@@ -1,12 +1,17 @@
-import { Component, computed, input, OnInit, output, signal } from '@angular/core';
+import { Component, computed, input, linkedSignal, OnInit, output, signal } from '@angular/core';
 import { DraftState } from '../../api/models/draft-state';
 import { DraftTeam } from '../../api/models/draft-team';
 import { RosterSlots } from '../../api/models/roster-slots';
+import { YahooSync } from '../../api/models/yahoo-sync';
 import {
   DEFAULT_LEAGUE_SIZE,
   DEFAULT_ROSTER_SLOTS,
 } from '../../draft-projection/projection-defaults';
 import { RosterSlotsEditorComponent } from '../../shared/roster-slots-editor/roster-slots-editor';
+import {
+  YahooLeagueSyncComponent,
+  YahooSyncResult,
+} from '../../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
 import {
   CdkDrag,
   CdkDragDrop,
@@ -32,7 +37,13 @@ const MINE_ID = 'team-me';
 
 @Component({
   selector: 'app-draft-setup',
-  imports: [CdkDropList, CdkDrag, CdkDragHandle, RosterSlotsEditorComponent],
+  imports: [
+    CdkDropList,
+    CdkDrag,
+    CdkDragHandle,
+    RosterSlotsEditorComponent,
+    YahooLeagueSyncComponent,
+  ],
   templateUrl: './draft-setup.html',
   styleUrl: './draft-setup.css',
 })
@@ -40,12 +51,16 @@ export class DraftSetupComponent implements OnInit {
   readonly initial = input<DraftState | null>(null);
   readonly seedName = input<string>('My Team');
   readonly rosterSlots = input<RosterSlots>(DEFAULT_ROSTER_SLOTS);
+  readonly lastSync = input<YahooSync | null>(null);
 
   readonly confirmed = output<DraftSetupResult>();
   readonly cancelled = output<void>();
+  readonly yahooSynced = output<YahooSyncResult>();
 
   readonly rows = signal<SetupRow[]>([]);
-  readonly editableRosterSlots = signal<RosterSlots>(DEFAULT_ROSTER_SLOTS);
+  // Tracks the roster-slots input so a Yahoo sync (which updates it upstream) flows in,
+  // while still letting the user edit the slots locally before starting the draft.
+  readonly editableRosterSlots = linkedSignal<RosterSlots>(() => this.rosterSlots());
 
   readonly numTeams = computed(() => this.rows().length);
   readonly canAdd = computed(() => this.rows().length < MAX_TEAMS);
@@ -53,7 +68,6 @@ export class DraftSetupComponent implements OnInit {
   readonly canCancel = computed(() => this.initial() !== null);
 
   ngOnInit(): void {
-    this.editableRosterSlots.set(this.rosterSlots());
     const existing = this.initial();
     if (existing && existing.teams.length >= MIN_TEAMS) {
       this.rows.set(

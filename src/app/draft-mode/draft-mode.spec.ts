@@ -94,6 +94,51 @@ describe('DraftModeComponent', () => {
     expect(updateProjection).toHaveBeenCalled();
   });
 
+  it('applies the roster slots chosen in setup', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.onSetupConfirmed({
+      draft,
+      rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+    });
+
+    expect(component.rosterSlots()).toEqual({ c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 });
+    expect(component.totalSlots()).toEqual(1);
+    expect(component.phase()).toEqual('draft');
+  });
+
+  it('applies a Yahoo sync to the settings and records it', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    updateProjection.mockClear();
+
+    component.applyYahooSync({
+      leagueName: 'My Yahoo League',
+      leagueKey: 'nhl.l.123',
+      settings: {
+        scoringType: 'category',
+        activeScoringColumns: ['goals', 'assists'],
+        activeUtilityColumns: ['gp'],
+        rosterSlots: { c: 3, lw: 3, rw: 3, d: 5, util: 1, bn: 2, g: 2 },
+        leagueSize: 10,
+        statWeights: { goals: 1 },
+        unsupportedRosterCodes: [],
+        unsupportedStats: [],
+      },
+    });
+
+    expect(component.rosterSlots()).toEqual({ c: 3, lw: 3, rw: 3, d: 5, util: 1, bn: 2, g: 2 });
+    expect(component.yahooSync()).toEqual({
+      leagueName: 'My Yahoo League',
+      leagueKey: 'nhl.l.123',
+      syncedAt: expect.any(String),
+    });
+    expect(updateProjection).toHaveBeenCalled();
+  });
+
   it('drafts the next pick, removes them from available and advances the order', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();

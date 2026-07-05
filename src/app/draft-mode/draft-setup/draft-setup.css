@@ -20,6 +20,11 @@
   color: var(--color-text-muted);
 }
 
+.setup-yahoo {
+  display: block;
+  margin-bottom: var(--space-4);
+}
+
 .setup-field {
   margin-bottom: var(--space-4);
 }
