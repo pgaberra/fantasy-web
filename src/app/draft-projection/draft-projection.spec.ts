@@ -91,6 +91,16 @@ describe('DraftProjectionComponent', () => {
     expect(component.players()).toEqual([...mockSkaters, ...mockGoalies]);
   });
 
+  it('shows a Draft mode link in the header', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const link = fixture.nativeElement.querySelector('.draft-mode-link');
+    expect(link).not.toBeNull();
+    expect(link.textContent).toContain('Draft mode');
+  });
+
   it('applies the loaded projection settings', () => {
     const component = MockRender(DraftProjectionComponent).point.componentInstance;
 
