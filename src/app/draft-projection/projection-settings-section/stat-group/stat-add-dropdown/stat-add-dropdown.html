@@ -9,7 +9,9 @@
   @if (dropdownOpen()) {
     <div class="add-stat-dropdown">
       @for (stat of availableStats(); track stat) {
-        <button class="dropdown-item" (click)="selectStat(stat)">{{ stat | statLabel }}</button>
+        <button class="dropdown-item" [appTooltip]="stat | statTooltip" (click)="selectStat(stat)">
+          {{ stat | statLabel }}
+        </button>
       }
     </div>
   }

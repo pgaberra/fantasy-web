@@ -1,7 +1,7 @@
 import { Pipe, PipeTransform } from '@angular/core';
 import { StatKey } from '../models/stat-key.model';
 
-const STAT_LABELS: Record<StatKey, string> = {
+export const STAT_LABELS: Record<StatKey, string> = {
   goals: 'Goals',
   assists: 'Assists',
   points: 'P',

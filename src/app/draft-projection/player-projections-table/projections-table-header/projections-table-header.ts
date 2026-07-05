@@ -7,11 +7,13 @@ import {
   SortDirection,
 } from '../../../models/projection.model';
 import { StatLabelPipe } from '../../../pipes/stat-label.pipe';
+import { StatTooltipPipe } from '../../../pipes/stat-tooltip.pipe';
+import { TooltipDirective } from '../../../shared/tooltip/tooltip.directive';
 import { DecimalStatKey } from '../../projection-settings-section/model';
 
 @Component({
   selector: 'thead[app-projections-table-header]',
-  imports: [StatLabelPipe],
+  imports: [StatLabelPipe, StatTooltipPipe, TooltipDirective],
   templateUrl: './projections-table-header.html',
   styleUrl: './projections-table-header.css',
 })

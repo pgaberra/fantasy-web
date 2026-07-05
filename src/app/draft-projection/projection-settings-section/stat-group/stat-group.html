@@ -2,7 +2,7 @@
   <h3>{{ title() }}</h3>
   <div class="stat-chips">
     @for (stat of activeStats(); track stat) {
-      <span class="stat-chip">
+      <span class="stat-chip" [appTooltip]="stat | statTooltip">
         {{ stat | statLabel }}
         <button
           class="chip-remove"

@@ -8,12 +8,22 @@
     Player<span class="sort-arrow">{{ sortIndicator('name') }}</span>
   </th>
   @for (col of activeColumns().utility; track col) {
-    <th class="col-utility sortable" [class.sorted]="sortColumn() === col" (click)="sort.emit(col)">
+    <th
+      class="col-utility sortable"
+      [class.sorted]="sortColumn() === col"
+      (click)="sort.emit(col)"
+      [appTooltip]="col | statTooltip"
+    >
       {{ col | statLabel }}<span class="sort-arrow">{{ sortIndicator(col) }}</span>
     </th>
   }
   @for (col of activeColumns().scoring; track col) {
-    <th class="sortable" [class.sorted]="sortColumn() === col" (click)="sort.emit(col)">
+    <th
+      class="sortable"
+      [class.sorted]="sortColumn() === col"
+      (click)="sort.emit(col)"
+      [appTooltip]="col | statTooltip"
+    >
       {{ col | statLabel }}<span class="sort-arrow">{{ sortIndicator(col) }}</span>
     </th>
   }
