@@ -121,6 +121,7 @@ export class DraftModeComponent implements OnInit {
     this.scoringType() === 'points' ? 'Total Points' : 'Z-Score',
   );
   readonly rosterSlots = computed(() => this.data()?.settings.rosterSlots ?? DEFAULT_ROSTER_SLOTS);
+  readonly leagueSize = computed(() => this.data()?.settings.leagueSize ?? DEFAULT_LEAGUE_SIZE);
   readonly yahooSync = computed(() => this.data()?.settings.yahooSync ?? null);
 
   readonly teams = computed(() => this.draft()?.teams ?? []);

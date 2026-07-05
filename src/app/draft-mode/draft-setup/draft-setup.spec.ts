@@ -45,6 +45,18 @@ describe('DraftSetupComponent', () => {
     expect(mine[0].name).toEqual('My Team');
   });
 
+  it('seeds the team count from the projection league size', () => {
+    const component = MockRender(DraftSetupComponent, {
+      initial: null,
+      seedName: 'My Team',
+      rosterSlots: DEFAULT_ROSTER_SLOTS,
+      leagueSize: 8,
+    }).point.componentInstance;
+
+    expect(component.numTeams()).toEqual(8);
+    expect(component.rows().filter((row) => row.mine).length).toEqual(1);
+  });
+
   it('adds and removes teams', () => {
     const component = renderSetup();
 

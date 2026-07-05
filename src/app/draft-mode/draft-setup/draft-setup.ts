@@ -69,6 +69,7 @@ export class DraftSetupComponent implements OnInit {
   readonly initial = input<DraftState | null>(null);
   readonly seedName = input<string>('My Team');
   readonly rosterSlots = input<RosterSlots>(DEFAULT_ROSTER_SLOTS);
+  readonly leagueSize = input<number>(DEFAULT_LEAGUE_SIZE);
   readonly lastSync = input<YahooSync | null>(null);
 
   readonly confirmed = output<DraftSetupResult>();
@@ -97,8 +98,9 @@ export class DraftSetupComponent implements OnInit {
       );
       return;
     }
+    const teamCount = Math.max(MIN_TEAMS, Math.min(MAX_TEAMS, this.leagueSize()));
     const rows: SetupRow[] = [{ id: MINE_ID, name: this.seedName(), mine: true }];
-    for (let index = 1; index < DEFAULT_LEAGUE_SIZE; index++) {
+    for (let index = 1; index < teamCount; index++) {
       rows.push({ id: crypto.randomUUID(), name: `Team ${index}`, mine: false });
     }
     this.rows.set(rows);
