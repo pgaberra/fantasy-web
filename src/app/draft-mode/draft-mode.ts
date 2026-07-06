@@ -103,6 +103,7 @@ export class DraftModeComponent implements OnInit {
   readonly pendingRemoval = signal<number | null>(null);
   readonly viewedTeamId = signal<string | null>(null);
   readonly showSummary = signal<boolean>(false);
+  readonly confirmingFinish = signal<boolean>(false);
 
   private readonly data = signal<ProjectionData | null>(null);
   private readonly allPlayers = signal<Player[]>([]);
@@ -450,7 +451,9 @@ export class DraftModeComponent implements OnInit {
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
-    if (this.pendingRemoval() !== null) {
+    if (this.confirmingFinish()) {
+      this.cancelFinish();
+    } else if (this.pendingRemoval() !== null) {
       this.cancelRemovePick();
     } else if (this.editingPick() !== null) {
       this.cancelEditPick();
@@ -511,7 +514,16 @@ export class DraftModeComponent implements OnInit {
     this.setupOpen.set(true);
   }
 
+  requestFinishDraft(): void {
+    this.confirmingFinish.set(true);
+  }
+
+  cancelFinish(): void {
+    this.confirmingFinish.set(false);
+  }
+
   finishDraft(): void {
+    this.confirmingFinish.set(false);
     this.showSummary.set(true);
   }
 

@@ -66,7 +66,7 @@
             class="btn btn-sm"
             [class.btn-primary]="isComplete()"
             [class.btn-secondary]="!isComplete()"
-            (click)="finishDraft()"
+            (click)="requestFinishDraft()"
           >
             Finish draft
           </button>
@@ -118,6 +118,31 @@
           (requestRemove)="requestRemovePick($event)"
         />
       </div>
+
+      @if (confirmingFinish()) {
+        <div class="modal-overlay" (click)="cancelFinish()">
+          <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+            <h2 class="modal-title">Finish the draft?</h2>
+            <p class="modal-text">
+              @if (isComplete()) {
+                You'll jump to the draft summary and league standings. You can head back to the
+                board anytime.
+              } @else {
+                The draft isn't finished yet — {{ picks().length }} of {{ totalPicks() }} picks
+                made. You can still finish and view the summary, then come back to keep drafting.
+              }
+            </p>
+            <div class="modal-actions">
+              <button type="button" class="btn btn-secondary" (click)="cancelFinish()">
+                Cancel
+              </button>
+              <button type="button" class="btn btn-primary" (click)="finishDraft()">
+                Finish draft
+              </button>
+            </div>
+          </div>
+        </div>
+      }
 
       @if (removalPreview(); as preview) {
         <div class="modal-overlay" (click)="cancelRemovePick()">
