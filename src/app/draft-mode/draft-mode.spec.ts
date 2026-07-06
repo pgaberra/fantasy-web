@@ -154,15 +154,25 @@ describe('DraftModeComponent', () => {
     expect(standings[0].total).toBeGreaterThan(standings[1].total);
   });
 
-  it('toggles the draft summary view', async () => {
+  it('confirms before finishing, then toggles the summary view', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
     component.applySetup(draft);
 
+    component.requestFinishDraft();
+    expect(component.confirmingFinish()).toBe(true);
     expect(component.showSummary()).toBe(false);
+
+    component.cancelFinish();
+    expect(component.confirmingFinish()).toBe(false);
+    expect(component.showSummary()).toBe(false);
+
+    component.requestFinishDraft();
     component.finishDraft();
+    expect(component.confirmingFinish()).toBe(false);
     expect(component.showSummary()).toBe(true);
+
     component.backToDraft();
     expect(component.showSummary()).toBe(false);
   });
