@@ -21,12 +21,12 @@ export class DraftPlayerLookupService {
     return this.playersById().get(playerId)?.teamAbbrev ?? '';
   }
 
-  positions(playerId: number): string {
+  positions(playerId: number): string[] {
     const player = this.playersById().get(playerId);
     if (!player) {
-      return '';
+      return [];
     }
-    return player.type === 'goalie' ? 'G' : [...player.positions].join('/');
+    return player.type === 'goalie' ? ['G'] : [...player.positions];
   }
 
   headshot(playerId: number): string | undefined {

@@ -178,6 +178,12 @@
   gap: 0.4rem;
 }
 
+.pos-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+}
+
 .row-team {
   font-size: var(--text-xs);
   color: var(--color-text-muted);
