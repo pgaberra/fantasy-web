@@ -41,6 +41,7 @@ import { DraftPlayerLookupService } from './draft-player-lookup.service';
 import { DraftRosterPanelComponent } from './draft-roster-panel/draft-roster-panel';
 import { DraftAvailablePanelComponent } from './draft-available-panel/draft-available-panel';
 import { DraftPicksPanelComponent } from './draft-picks-panel/draft-picks-panel';
+import { DraftSummaryComponent } from './draft-summary/draft-summary';
 
 const DEFAULT_PAGE_SIZE = 100;
 
@@ -53,6 +54,7 @@ const DEFAULT_PAGE_SIZE = 100;
     DraftRosterPanelComponent,
     DraftAvailablePanelComponent,
     DraftPicksPanelComponent,
+    DraftSummaryComponent,
   ],
   providers: [DraftPlayerLookupService],
   templateUrl: './draft-mode.html',
@@ -100,6 +102,7 @@ export class DraftModeComponent implements OnInit {
   readonly editingPick = signal<number | null>(null);
   readonly pendingRemoval = signal<number | null>(null);
   readonly viewedTeamId = signal<string | null>(null);
+  readonly showSummary = signal<boolean>(false);
 
   private readonly data = signal<ProjectionData | null>(null);
   private readonly allPlayers = signal<Player[]>([]);
@@ -195,6 +198,30 @@ export class DraftModeComponent implements OnInit {
   });
   readonly visibleAvailable = computed(() => this.available().slice(0, this.visibleCount()));
   readonly hasMoreAvailable = computed(() => this.visibleCount() < this.available().length);
+
+  private readonly scoreByPlayerId = computed(() => {
+    const isPoints = this.scoringType() === 'points';
+    return new Map(
+      this.ranked().map((scoredProjection) => [
+        scoredProjection.projection.playerId,
+        isPoints ? scoredProjection.score.fantasyPoints : scoredProjection.score.zScore,
+      ]),
+    );
+  });
+
+  readonly standings = computed(() => {
+    const scores = this.scoreByPlayerId();
+    return this.teams()
+      .map((team) => {
+        const players = this.picks()
+          .filter((pick) => pick.teamId === team.id)
+          .map((pick) => ({ playerId: pick.playerId, score: scores.get(pick.playerId) ?? 0 }))
+          .sort((a, b) => b.score - a.score);
+        const total = players.reduce((sum, player) => sum + player.score, 0);
+        return { team, players, total };
+      })
+      .sort((a, b) => b.total - a.total);
+  });
 
   readonly roster = computed(() =>
     this.rosterService.deriveRoster(this.viewedPicks(), this.playerMap(), this.rosterSlots()),
@@ -469,6 +496,7 @@ export class DraftModeComponent implements OnInit {
     this.setupOpen.set(false);
     this.editingPick.set(null);
     this.viewedTeamId.set(null);
+    this.showSummary.set(false);
     this.save();
   }
 
@@ -481,6 +509,14 @@ export class DraftModeComponent implements OnInit {
   editTeams(): void {
     this.editingPick.set(null);
     this.setupOpen.set(true);
+  }
+
+  finishDraft(): void {
+    this.showSummary.set(true);
+  }
+
+  backToDraft(): void {
+    this.showSummary.set(false);
   }
 
   setPositionFilter(filter: PositionFilter): void {
