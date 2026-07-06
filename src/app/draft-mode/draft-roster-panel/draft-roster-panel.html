@@ -18,9 +18,11 @@
           <span class="slot-info">
             <span class="slot-name">{{ lookup.name(slot.playerId) }}</span>
             <span class="slot-sub">
-              <span [class]="'pos-chip pos--' + lookup.primaryPosition(slot.playerId)">{{
-                lookup.positions(slot.playerId)
-              }}</span>
+              <span class="pos-chips">
+                @for (pos of lookup.positions(slot.playerId); track pos) {
+                  <span [class]="'pos-chip pos--' + pos.toLowerCase()">{{ pos }}</span>
+                }
+              </span>
               <span class="slot-team">{{ lookup.team(slot.playerId) }}</span>
             </span>
           </span>
@@ -36,9 +38,11 @@
         <span class="slot-info">
           <span class="slot-name">{{ lookup.name(playerId) }}</span>
           <span class="slot-sub">
-            <span [class]="'pos-chip pos--' + lookup.primaryPosition(playerId)">{{
-              lookup.positions(playerId)
-            }}</span>
+            <span class="pos-chips">
+              @for (pos of lookup.positions(playerId); track pos) {
+                <span [class]="'pos-chip pos--' + pos.toLowerCase()">{{ pos }}</span>
+              }
+            </span>
             <span class="slot-team">{{ lookup.team(playerId) }}</span>
           </span>
         </span>

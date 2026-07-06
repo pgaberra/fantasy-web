@@ -92,6 +92,12 @@
   min-width: 0;
 }
 
+.pos-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+}
+
 .pos-chip {
   display: inline-flex;
   align-items: center;
