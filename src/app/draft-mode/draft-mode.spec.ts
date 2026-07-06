@@ -139,6 +139,34 @@ describe('DraftModeComponent', () => {
     expect(updateProjection).toHaveBeenCalled();
   });
 
+  it('ranks teams by projected total in the standings', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+
+    component.draftCurrent(1);
+    component.draftCurrent(2);
+
+    const standings = component.standings();
+    expect(standings.map((entry) => entry.team.id)).toEqual(['team-me', 'team-1']);
+    expect(standings[0].players.map((player) => player.playerId)).toEqual([1]);
+    expect(standings[0].total).toBeGreaterThan(standings[1].total);
+  });
+
+  it('toggles the draft summary view', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+
+    expect(component.showSummary()).toBe(false);
+    component.finishDraft();
+    expect(component.showSummary()).toBe(true);
+    component.backToDraft();
+    expect(component.showSummary()).toBe(false);
+  });
+
   it('drafts the next pick, removes them from available and advances the order', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();

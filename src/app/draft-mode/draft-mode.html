@@ -31,6 +31,12 @@
         (cancelled)="cancelSetup()"
         (yahooSynced)="applyYahooSync($event)"
       />
+    } @else if (showSummary()) {
+      <app-draft-summary
+        [standings]="standings()"
+        [scoringType]="scoringType()"
+        (back)="backToDraft()"
+      />
     } @else {
       <div class="draft-toolbar">
         <span class="draft-progress">
@@ -54,6 +60,15 @@
           </button>
           <button type="button" class="btn btn-secondary btn-sm" (click)="editTeams()">
             Edit teams
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm"
+            [class.btn-primary]="isComplete()"
+            [class.btn-secondary]="!isComplete()"
+            (click)="finishDraft()"
+          >
+            Finish draft
           </button>
         </span>
       </div>
