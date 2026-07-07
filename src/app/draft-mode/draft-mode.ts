@@ -289,6 +289,51 @@ export class DraftModeComponent implements OnInit {
     return rounds;
   });
 
+  readonly resultRounds = computed(() => {
+    const teams = this.teamById();
+    const teamCount = this.teams().length;
+    if (teamCount === 0) {
+      return [];
+    }
+    const rounds: {
+      round: number;
+      picks: { pickInRound: number; playerId: number; teamName: string; mine: boolean }[];
+    }[] = [];
+    this.picks().forEach((pick, index) => {
+      const overall = index + 1;
+      const round = Math.ceil(overall / teamCount);
+      const pickInRound = overall - (round - 1) * teamCount;
+      const team = teams.get(pick.teamId);
+      const entry = {
+        pickInRound,
+        playerId: pick.playerId,
+        teamName: team?.name ?? '',
+        mine: team?.mine ?? false,
+      };
+      const current = rounds[rounds.length - 1];
+      if (current && current.round === round) {
+        current.picks.push(entry);
+      } else {
+        rounds.push({ round, picks: [entry] });
+      }
+    });
+    return rounds;
+  });
+
+  readonly resultTeams = computed(() => {
+    const picksByTeam = new Map<string, { overall: number; playerId: number }[]>();
+    this.picks().forEach((pick, index) => {
+      const list = picksByTeam.get(pick.teamId) ?? [];
+      list.push({ overall: index + 1, playerId: pick.playerId });
+      picksByTeam.set(pick.teamId, list);
+    });
+    const teams = this.teamById();
+    return this.order()
+      .map((teamId) => teams.get(teamId))
+      .filter((team) => team !== undefined)
+      .map((team) => ({ team, picks: picksByTeam.get(team.id) ?? [] }));
+  });
+
   readonly editingInfo = computed(() => {
     const overall = this.editingPick();
     if (overall === null) {

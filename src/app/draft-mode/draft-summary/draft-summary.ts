@@ -1,8 +1,13 @@
-import { Component, computed, inject, input, output } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { ScoringType } from '../../models/projection.model';
 import { DraftTeam } from '../../api/models/draft-team';
 import { DraftPlayerLookupService } from '../draft-player-lookup.service';
 import { PlayerAvatarComponent } from '../player-avatar/player-avatar';
+import {
+  DraftResultRound,
+  DraftResultTeam,
+  DraftResultsComponent,
+} from '../draft-results/draft-results';
 
 export interface DraftStandingPlayer {
   playerId: number;
@@ -17,7 +22,7 @@ export interface DraftStandingEntry {
 
 @Component({
   selector: 'app-draft-summary',
-  imports: [PlayerAvatarComponent],
+  imports: [PlayerAvatarComponent, DraftResultsComponent],
   templateUrl: './draft-summary.html',
   styleUrl: './draft-summary.css',
 })
@@ -26,7 +31,11 @@ export class DraftSummaryComponent {
 
   readonly standings = input.required<DraftStandingEntry[]>();
   readonly scoringType = input.required<ScoringType>();
+  readonly resultRounds = input.required<DraftResultRound[]>();
+  readonly resultTeams = input.required<DraftResultTeam[]>();
   readonly back = output<void>();
+
+  readonly activeTab = signal<'projection' | 'results'>('projection');
 
   readonly metricLabel = computed(() =>
     this.scoringType() === 'points' ? 'projected points' : 'projected Z-score',
