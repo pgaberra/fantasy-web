@@ -32,41 +32,14 @@
   @if (activeTab() === 'results') {
     <app-draft-results [rounds]="resultRounds()" [teams]="resultTeams()" />
   } @else {
-    <p class="summary-sub">Teams ranked by their roster's {{ metricLabel() }}.</p>
-
-    <ol class="standings">
-      @for (entry of standings(); track entry.team.id; let rank = $index) {
-        <li class="standing" [class.is-mine]="entry.team.mine">
-          <div class="standing-head">
-            <span class="standing-rank">{{ rank + 1 }}</span>
-            <span class="standing-team">
-              {{ entry.team.name }}
-              @if (entry.team.mine) {
-                <span class="you-badge">You</span>
-              }
-            </span>
-            <span class="standing-total">{{ format(entry.total) }}</span>
-          </div>
-          @if (entry.players.length) {
-            <ul class="standing-roster">
-              @for (player of entry.players; track player.playerId) {
-                <li class="roster-player">
-                  <app-player-avatar [playerId]="player.playerId" [small]="true" />
-                  <span class="roster-player-name">{{ lookup.name(player.playerId) }}</span>
-                  <span class="roster-player-pos">
-                    @for (pos of lookup.positions(player.playerId); track pos) {
-                      <span [class]="'pos-chip pos--' + pos.toLowerCase()">{{ pos }}</span>
-                    }
-                  </span>
-                  <span class="roster-player-score">{{ format(player.score) }}</span>
-                </li>
-              }
-            </ul>
-          } @else {
-            <p class="standing-empty">No players drafted yet.</p>
-          }
-        </li>
-      }
-    </ol>
+    <p class="summary-sub">
+      Every league team ranked by your projection. Sort any column — or switch to a per-position
+      breakdown — to see who's strongest where.
+    </p>
+    <app-league-projection-table
+      [data]="leagueProjection()"
+      [scoringType]="scoringType()"
+      [scoreHeading]="scoreHeading()"
+    />
   }
 </div>

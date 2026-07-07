@@ -42,6 +42,12 @@ import { DraftRosterPanelComponent } from './draft-roster-panel/draft-roster-pan
 import { DraftAvailablePanelComponent } from './draft-available-panel/draft-available-panel';
 import { DraftPicksPanelComponent } from './draft-picks-panel/draft-picks-panel';
 import { DraftSummaryComponent } from './draft-summary/draft-summary';
+import {
+  buildLeagueProjection,
+  LeagueProjectionData,
+  LeagueProjectionPlayer,
+  LeagueProjectionTeamInput,
+} from './league-projection';
 
 const DEFAULT_PAGE_SIZE = 100;
 
@@ -210,18 +216,36 @@ export class DraftModeComponent implements OnInit {
     );
   });
 
-  readonly standings = computed(() => {
+  readonly leagueProjection = computed<LeagueProjectionData>(() => {
     const scores = this.scoreByPlayerId();
-    return this.teams()
-      .map((team) => {
-        const players = this.picks()
-          .filter((pick) => pick.teamId === team.id)
-          .map((pick) => ({ playerId: pick.playerId, score: scores.get(pick.playerId) ?? 0 }))
-          .sort((a, b) => b.score - a.score);
-        const total = players.reduce((sum, player) => sum + player.score, 0);
-        return { team, players, total };
-      })
-      .sort((a, b) => b.total - a.total);
+    const projectionById = new Map(
+      this.ranked().map((scoredProjection) => [
+        scoredProjection.projection.playerId,
+        scoredProjection.projection,
+      ]),
+    );
+    const players = new Map<number, LeagueProjectionPlayer>();
+    const picksByTeam = new Map<string, number[]>();
+    this.picks().forEach((pick) => {
+      const list = picksByTeam.get(pick.teamId) ?? [];
+      list.push(pick.playerId);
+      picksByTeam.set(pick.teamId, list);
+      const projection = projectionById.get(pick.playerId);
+      if (projection && !players.has(pick.playerId)) {
+        players.set(pick.playerId, {
+          score: scores.get(pick.playerId) ?? 0,
+          projection,
+          positions: this.lookup.positions(pick.playerId),
+        });
+      }
+    });
+    const teams: LeagueProjectionTeamInput[] = this.teams().map((team) => ({
+      id: team.id,
+      name: team.name,
+      mine: team.mine,
+      playerIds: picksByTeam.get(team.id) ?? [],
+    }));
+    return buildLeagueProjection(teams, players, this.statColumns());
   });
 
   readonly roster = computed(() =>

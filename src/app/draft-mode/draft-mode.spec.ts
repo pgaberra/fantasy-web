@@ -12,6 +12,7 @@ import { Player } from '../models/player.model';
 import { SkaterStats } from '../models/projection.model';
 import { ProjectionResponse } from '../api/models/projection-response';
 import { DraftState } from '../api/models/draft-state';
+import { DraftPlayerLookupService } from './draft-player-lookup.service';
 
 describe('DraftModeComponent', () => {
   const players: Player[] = [
@@ -62,6 +63,7 @@ describe('DraftModeComponent', () => {
       .keep(ProjectionRankingService)
       .keep(ProjectionCalculationService)
       .keep(PositionFilterService)
+      .keep(DraftPlayerLookupService)
       .mock(PlayerService, { getPlayers: () => of(players) })
       .mock(ProjectionStorageService, {
         loadProjection: () => of(projection),
@@ -139,7 +141,7 @@ describe('DraftModeComponent', () => {
     expect(updateProjection).toHaveBeenCalled();
   });
 
-  it('ranks teams by projected total in the standings', async () => {
+  it('ranks teams by projected total in the league projection', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
@@ -148,10 +150,18 @@ describe('DraftModeComponent', () => {
     component.draftCurrent(1);
     component.draftCurrent(2);
 
-    const standings = component.standings();
-    expect(standings.map((entry) => entry.team.id)).toEqual(['team-me', 'team-1']);
-    expect(standings[0].players.map((player) => player.playerId)).toEqual([1]);
-    expect(standings[0].total).toBeGreaterThan(standings[1].total);
+    const projection = component.leagueProjection();
+    expect(projection.teams.map((team) => team.teamId)).toEqual(['team-me', 'team-1']);
+    expect(projection.teams[0].total).toBeGreaterThan(projection.teams[1].total);
+    expect(projection.teams[0].values['goals']).toEqual(60);
+    expect(projection.categoryColumns.map((column) => column.key)).toEqual(['goals']);
+    expect(projection.positionColumns.map((column) => column.key)).toEqual([
+      'C',
+      'LW',
+      'RW',
+      'D',
+      'G',
+    ]);
   });
 
   it('confirms before finishing, then toggles the summary view', async () => {
@@ -445,6 +455,7 @@ describe('DraftModeComponent — available pagination', () => {
       .keep(ProjectionRankingService)
       .keep(ProjectionCalculationService)
       .keep(PositionFilterService)
+      .keep(DraftPlayerLookupService)
       .mock(PlayerService, { getPlayers: () => of(manyPlayers) })
       .mock(ProjectionStorageService, {
         loadProjection: () => of(bigProjection),

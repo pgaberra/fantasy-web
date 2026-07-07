@@ -1,0 +1,75 @@
+@if (data().teams.length === 0) {
+  <p class="lp-empty">No teams yet.</p>
+} @else {
+  <div class="lp-toolbar">
+    <div class="lp-modes" role="tablist" aria-label="Breakdown">
+      <button
+        type="button"
+        role="tab"
+        class="lp-mode"
+        [class.active]="mode() === 'category'"
+        [attr.aria-selected]="mode() === 'category'"
+        (click)="setMode('category')"
+      >
+        By category
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="lp-mode"
+        [class.active]="mode() === 'position'"
+        [attr.aria-selected]="mode() === 'position'"
+        (click)="setMode('position')"
+      >
+        By position
+      </button>
+    </div>
+  </div>
+
+  <div class="lp-wrap">
+    <table class="lp-table">
+      <thead>
+        <tr>
+          <th class="col-rank">#</th>
+          <th class="col-team">Team</th>
+          <th
+            class="col-total sortable"
+            [class.sorted]="sortKey() === 'total'"
+            (click)="sortBy('total')"
+          >
+            {{ scoreHeading() }}<span class="sort-arrow">{{ sortIndicator('total') }}</span>
+          </th>
+          @for (column of columns(); track column.key) {
+            <th
+              class="sortable"
+              [class.sorted]="sortKey() === column.key"
+              [appTooltip]="column.tooltip"
+              (click)="sortBy(column.key, column.lowerIsBetter)"
+            >
+              {{ column.label }}<span class="sort-arrow">{{ sortIndicator(column.key) }}</span>
+            </th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (team of sortedTeams(); track team.teamId; let i = $index) {
+          <tr [class.mine]="team.mine">
+            <td class="col-rank">{{ i + 1 }}</td>
+            <td class="col-team">
+              <span class="lp-team-name">{{ team.name }}</span>
+              @if (team.mine) {
+                <span class="you-badge">You</span>
+              }
+            </td>
+            <td class="col-total">{{ formatTotal(team.total) }}</td>
+            @for (column of columns(); track column.key) {
+              <td class="lp-num" [style.background]="shade(column, team.values[column.key])">
+                {{ format(team.values[column.key], column.decimals) }}
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
