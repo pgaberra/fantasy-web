@@ -24,6 +24,7 @@
         By position
       </button>
     </div>
+    <span class="lp-hint">Tap a team to see its players by position</span>
   </div>
 
   <div class="lp-wrap">
@@ -53,7 +54,12 @@
       </thead>
       <tbody>
         @for (team of sortedTeams(); track team.teamId; let i = $index) {
-          <tr [class.mine]="team.mine">
+          <tr
+            class="lp-row"
+            [class.mine]="team.mine"
+            [class.selected]="team.teamId === selectedTeamId()"
+            (click)="selectTeam(team.teamId)"
+          >
             <td class="col-rank">{{ i + 1 }}</td>
             <td class="col-team">
               <span class="lp-team-name">{{ team.name }}</span>
@@ -72,4 +78,42 @@
       </tbody>
     </table>
   </div>
+
+  @if (selectedTeam(); as team) {
+    <div class="lp-breakdown">
+      <div class="lp-bd-head">
+        <span class="lp-bd-title">{{ team.name }} — roster by position</span>
+        <button
+          type="button"
+          class="lp-bd-close"
+          (click)="selectTeam(team.teamId)"
+          aria-label="Close breakdown"
+        >
+          ×
+        </button>
+      </div>
+      @if (breakdownGroups().length) {
+        <div class="lp-bd-groups">
+          @for (group of breakdownGroups(); track group.label) {
+            <div class="lp-bd-group">
+              <div class="lp-bd-group-head">
+                <span class="lp-bd-pos">{{ group.label }}</span>
+                <span class="lp-bd-sum">{{ format(group.sum, 1) }}</span>
+              </div>
+              <ul class="lp-bd-list">
+                @for (player of group.players; track $index) {
+                  <li class="lp-bd-player">
+                    <span class="lp-bd-name">{{ player.name }}</span>
+                    <span class="lp-bd-value">{{ format(player.value, 1) }}</span>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="lp-bd-empty">No players drafted yet.</p>
+      }
+    </div>
+  }
 }

@@ -26,6 +26,13 @@ describe('LeagueProjectionTableComponent', () => {
         mine: true,
         total: 20,
         values: { goals: 60, gaa: 2.8, C: 10, D: 5 },
+        positionBreakdown: {
+          C: [
+            { name: 'McDavid', value: 6 },
+            { name: 'Point', value: 4 },
+          ],
+          D: [{ name: 'Makar', value: 5 }],
+        },
       },
       {
         teamId: 'b',
@@ -33,6 +40,10 @@ describe('LeagueProjectionTableComponent', () => {
         mine: false,
         total: 30,
         values: { goals: 80, gaa: 2.4, C: 4, D: 12 },
+        positionBreakdown: {
+          C: [{ name: 'Crosby', value: 4 }],
+          D: [{ name: 'Josi', value: 12 }],
+        },
       },
     ],
   };
@@ -89,5 +100,24 @@ describe('LeagueProjectionTableComponent', () => {
 
     expect(component.columns().map((column) => column.key)).toEqual(['C', 'D']);
     expect(fixture.nativeElement.textContent as string).not.toContain('Goals');
+  });
+
+  it("reveals the selected team's roster grouped by position and toggles off", () => {
+    const fixture = render();
+    const component = fixture.point.componentInstance;
+
+    expect(component.selectedTeam()).toBeNull();
+
+    component.selectTeam('a');
+    fixture.detectChanges();
+
+    expect(component.selectedTeam()?.teamId).toEqual('a');
+    const groups = component.breakdownGroups();
+    expect(groups.map((group) => group.label)).toEqual(['C', 'D']);
+    expect(groups[0].players.map((entry) => entry.name)).toEqual(['McDavid', 'Point']);
+    expect(fixture.nativeElement.textContent as string).toContain('McDavid');
+
+    component.selectTeam('a');
+    expect(component.selectedTeam()).toBeNull();
   });
 });

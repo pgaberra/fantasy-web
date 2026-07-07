@@ -19,6 +19,7 @@ export class LeagueProjectionTableComponent {
   readonly mode = signal<BreakdownMode>('category');
   readonly sortKey = signal<string>('total');
   readonly sortDir = signal<'asc' | 'desc'>('desc');
+  readonly selectedTeamId = signal<string | null>(null);
 
   readonly columns = computed(() =>
     this.mode() === 'category' ? this.data().categoryColumns : this.data().positionColumns,
@@ -56,6 +57,28 @@ export class LeagueProjectionTableComponent {
       return descending ? secondValue - firstValue : firstValue - secondValue;
     });
   });
+
+  readonly selectedTeam = computed(
+    () => this.data().teams.find((team) => team.teamId === this.selectedTeamId()) ?? null,
+  );
+
+  readonly breakdownGroups = computed(() => {
+    const team = this.selectedTeam();
+    if (!team) {
+      return [];
+    }
+    return this.data()
+      .positionColumns.map((column) => ({
+        label: column.label,
+        sum: team.values[column.key],
+        players: team.positionBreakdown[column.key] ?? [],
+      }))
+      .filter((group) => group.players.length > 0);
+  });
+
+  selectTeam(teamId: string): void {
+    this.selectedTeamId.update((current) => (current === teamId ? null : teamId));
+  }
 
   setMode(mode: BreakdownMode): void {
     this.mode.set(mode);
