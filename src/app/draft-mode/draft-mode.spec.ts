@@ -263,10 +263,12 @@ describe('DraftModeComponent', () => {
     const rounds = component.resultRounds();
     expect(rounds.map((round) => round.round)).toEqual([1, 2]);
     expect(rounds[0].picks.map((pick) => pick.pickInRound)).toEqual([1, 2]);
+    expect(rounds[0].picks.map((pick) => pick.overall)).toEqual([1, 2]);
     expect(rounds[0].picks.map((pick) => pick.playerId)).toEqual([1, 2]);
     expect(rounds[0].picks[0].mine).toBe(true);
     expect(rounds[0].picks[1].teamName).toEqual('Team 1');
     expect(rounds[1].picks[0].pickInRound).toEqual(1);
+    expect(rounds[1].picks[0].overall).toEqual(3);
     expect(rounds[1].picks[0].playerId).toEqual(3);
   });
 

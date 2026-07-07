@@ -4,6 +4,7 @@ import { DraftPlayerLookupService } from '../draft-player-lookup.service';
 
 export interface DraftResultRoundPick {
   pickInRound: number;
+  overall: number;
   playerId: number;
   teamName: string;
   mine: boolean;

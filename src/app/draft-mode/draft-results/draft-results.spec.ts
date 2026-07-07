@@ -8,13 +8,13 @@ describe('DraftResultsComponent', () => {
     {
       round: 1,
       picks: [
-        { pickInRound: 1, playerId: 1, teamName: 'My Team', mine: true },
-        { pickInRound: 2, playerId: 2, teamName: 'Team 1', mine: false },
+        { pickInRound: 1, overall: 1, playerId: 1, teamName: 'My Team', mine: true },
+        { pickInRound: 2, overall: 2, playerId: 2, teamName: 'Team 1', mine: false },
       ],
     },
     {
       round: 2,
-      picks: [{ pickInRound: 1, playerId: 3, teamName: 'Team 1', mine: false }],
+      picks: [{ pickInRound: 1, overall: 3, playerId: 3, teamName: 'Team 1', mine: false }],
     },
   ];
 
@@ -47,6 +47,7 @@ describe('DraftResultsComponent', () => {
     expect(text).toContain('Round 2');
     expect(text).toContain('Player 1');
     expect(text).toContain('My Team');
+    expect(text).toContain('(3)');
   });
 
   it('switches to the team view showing overall pick numbers', () => {
