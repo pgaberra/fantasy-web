@@ -35,6 +35,8 @@
       <app-draft-summary
         [standings]="standings()"
         [scoringType]="scoringType()"
+        [resultRounds]="resultRounds()"
+        [resultTeams]="resultTeams()"
         (back)="backToDraft()"
       />
     } @else {

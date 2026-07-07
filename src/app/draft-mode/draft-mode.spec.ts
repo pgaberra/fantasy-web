@@ -250,6 +250,45 @@ describe('DraftModeComponent', () => {
     expect(rounds[1].picks[1].mine).toBe(true);
   });
 
+  it('builds ascending draft-result rounds with round-relative pick numbers', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+
+    component.draftCurrent(1);
+    component.draftCurrent(2);
+    component.draftCurrent(3);
+
+    const rounds = component.resultRounds();
+    expect(rounds.map((round) => round.round)).toEqual([1, 2]);
+    expect(rounds[0].picks.map((pick) => pick.pickInRound)).toEqual([1, 2]);
+    expect(rounds[0].picks.map((pick) => pick.playerId)).toEqual([1, 2]);
+    expect(rounds[0].picks[0].mine).toBe(true);
+    expect(rounds[0].picks[1].teamName).toEqual('Team 1');
+    expect(rounds[1].picks[0].pickInRound).toEqual(1);
+    expect(rounds[1].picks[0].playerId).toEqual(3);
+  });
+
+  it('groups draft results by team in draft order with overall pick numbers', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+
+    component.draftCurrent(1);
+    component.draftCurrent(2);
+    component.draftCurrent(3);
+
+    const teams = component.resultTeams();
+    expect(teams.map((entry) => entry.team.id)).toEqual(['team-me', 'team-1']);
+    expect(teams[0].picks).toEqual([{ overall: 1, playerId: 1 }]);
+    expect(teams[1].picks).toEqual([
+      { overall: 2, playerId: 2 },
+      { overall: 3, playerId: 3 },
+    ]);
+  });
+
   it('replaces a player at a specific pick and frees the old one', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();

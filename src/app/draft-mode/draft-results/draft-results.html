@@ -1,0 +1,73 @@
+<div class="results">
+  <div class="results-toggle" role="tablist" aria-label="Draft results view">
+    <button
+      type="button"
+      role="tab"
+      class="results-tab"
+      [class.active]="view() === 'round'"
+      [attr.aria-selected]="view() === 'round'"
+      (click)="view.set('round')"
+    >
+      Round
+    </button>
+    <button
+      type="button"
+      role="tab"
+      class="results-tab"
+      [class.active]="view() === 'team'"
+      [attr.aria-selected]="view() === 'team'"
+      (click)="view.set('team')"
+    >
+      Team
+    </button>
+  </div>
+
+  @if (view() === 'round') {
+    @if (rounds().length) {
+      <div class="result-grid">
+        @for (round of rounds(); track round.round) {
+          <div class="result-card">
+            <div class="result-card-head">Round {{ round.round }}</div>
+            <ol class="result-list">
+              @for (pick of round.picks; track pick.playerId) {
+                <li class="result-row" [class.is-mine]="pick.mine">
+                  <span class="result-num">{{ pick.pickInRound }}.</span>
+                  <span class="result-player">{{ lookup.name(pick.playerId) }}</span>
+                  <span class="result-team">{{ pick.teamName }}</span>
+                </li>
+              }
+            </ol>
+          </div>
+        }
+      </div>
+    } @else {
+      <p class="result-empty">No picks yet.</p>
+    }
+  } @else {
+    <div class="result-grid">
+      @for (entry of teams(); track entry.team.id) {
+        <div class="result-card" [class.is-mine]="entry.team.mine">
+          <div class="result-card-head">
+            {{ entry.team.name }}
+            @if (entry.team.mine) {
+              <span class="you-badge">You</span>
+            }
+          </div>
+          @if (entry.picks.length) {
+            <ol class="result-list">
+              @for (pick of entry.picks; track pick.overall; let i = $index) {
+                <li class="result-row">
+                  <span class="result-num">{{ i + 1 }}.</span>
+                  <span class="result-overall">({{ pick.overall }})</span>
+                  <span class="result-player">{{ lookup.name(pick.playerId) }}</span>
+                </li>
+              }
+            </ol>
+          } @else {
+            <p class="result-empty-card">No picks.</p>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>
