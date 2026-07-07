@@ -297,7 +297,13 @@ export class DraftModeComponent implements OnInit {
     }
     const rounds: {
       round: number;
-      picks: { pickInRound: number; playerId: number; teamName: string; mine: boolean }[];
+      picks: {
+        pickInRound: number;
+        overall: number;
+        playerId: number;
+        teamName: string;
+        mine: boolean;
+      }[];
     }[] = [];
     this.picks().forEach((pick, index) => {
       const overall = index + 1;
@@ -306,6 +312,7 @@ export class DraftModeComponent implements OnInit {
       const team = teams.get(pick.teamId);
       const entry = {
         pickInRound,
+        overall,
         playerId: pick.playerId,
         teamName: team?.name ?? '',
         mine: team?.mine ?? false,

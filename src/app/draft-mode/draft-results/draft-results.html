@@ -32,6 +32,7 @@
               @for (pick of round.picks; track pick.playerId) {
                 <li class="result-row" [class.is-mine]="pick.mine">
                   <span class="result-num">{{ pick.pickInRound }}.</span>
+                  <span class="result-overall">({{ pick.overall }})</span>
                   <span class="result-player">{{ lookup.name(pick.playerId) }}</span>
                   <span class="result-team">{{ pick.teamName }}</span>
                 </li>
