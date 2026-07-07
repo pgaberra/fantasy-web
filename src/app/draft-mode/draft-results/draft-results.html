@@ -33,6 +33,7 @@
                 <li class="result-row" [class.is-mine]="pick.mine">
                   <span class="result-num">{{ pick.pickInRound }}.</span>
                   <span class="result-overall">({{ pick.overall }})</span>
+                  <app-player-avatar [playerId]="pick.playerId" [small]="true" />
                   <span class="result-player">{{ lookup.name(pick.playerId) }}</span>
                   <span class="result-team">{{ pick.teamName }}</span>
                 </li>
@@ -60,6 +61,7 @@
                 <li class="result-row">
                   <span class="result-num">{{ i + 1 }}.</span>
                   <span class="result-overall">({{ pick.overall }})</span>
+                  <app-player-avatar [playerId]="pick.playerId" [small]="true" />
                   <span class="result-player">{{ lookup.name(pick.playerId) }}</span>
                 </li>
               }
