@@ -31,7 +31,7 @@
             <ol class="result-list">
               @for (pick of round.picks; track pick.playerId) {
                 <li class="result-row" [class.is-mine]="pick.mine">
-                  <span class="result-num">{{ pick.pickInRound }}.</span>
+                  <span class="result-num">{{ pick.pickInRound }}</span>
                   <span class="result-overall">({{ pick.overall }})</span>
                   <app-player-avatar [playerId]="pick.playerId" [small]="true" />
                   <span class="result-player">{{ lookup.name(pick.playerId) }}</span>
@@ -59,7 +59,7 @@
             <ol class="result-list">
               @for (pick of entry.picks; track pick.overall; let i = $index) {
                 <li class="result-row">
-                  <span class="result-num">{{ i + 1 }}.</span>
+                  <span class="result-num">{{ i + 1 }}</span>
                   <span class="result-overall">({{ pick.overall }})</span>
                   <app-player-avatar [playerId]="pick.playerId" [small]="true" />
                   <span class="result-player">{{ lookup.name(pick.playerId) }}</span>
