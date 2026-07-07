@@ -33,8 +33,9 @@
       />
     } @else if (showSummary()) {
       <app-draft-summary
-        [standings]="standings()"
+        [leagueProjection]="leagueProjection()"
         [scoringType]="scoringType()"
+        [scoreHeading]="scoreHeading()"
         [resultRounds]="resultRounds()"
         [resultTeams]="resultTeams()"
         (back)="backToDraft()"

@@ -1,0 +1,180 @@
+.lp-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
+}
+
+.lp-modes {
+  display: inline-flex;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+}
+
+.lp-mode {
+  appearance: none;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  padding: 0.35rem 0.9rem;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition:
+    color var(--transition),
+    background var(--transition);
+}
+
+.lp-mode.active {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.lp-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  background: var(--color-surface);
+}
+
+.lp-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: max-content;
+  min-width: 100%;
+  font-size: var(--text-sm);
+}
+
+.lp-table th,
+.lp-table td {
+  padding: 0.5rem 0.6rem;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.lp-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.lp-table thead th {
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.lp-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.lp-table th.sortable:hover {
+  color: var(--color-text);
+}
+
+.lp-table th.sorted {
+  color: var(--color-primary);
+}
+
+.sort-arrow {
+  font-size: 0.7em;
+  margin-left: 2px;
+}
+
+.col-rank {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  width: 2.5rem;
+  min-width: 2.5rem;
+  text-align: center;
+  color: var(--color-text-subtle);
+  font-weight: var(--weight-bold);
+}
+
+.col-team {
+  position: sticky;
+  left: 2.5rem;
+  z-index: 1;
+  text-align: left;
+  min-width: 9rem;
+  font-weight: var(--weight-semibold);
+  box-shadow: 6px 0 6px -5px rgba(15, 52, 96, 0.18);
+}
+
+.lp-table thead .col-rank,
+.lp-table thead .col-team {
+  z-index: 3;
+}
+
+.lp-table tbody td.col-rank,
+.lp-table tbody td.col-team {
+  background: var(--color-surface);
+}
+
+.lp-table tbody tr:nth-child(even) td.col-rank,
+.lp-table tbody tr:nth-child(even) td.col-team {
+  background: var(--color-surface-alt);
+}
+
+.lp-table tbody tr.mine td.col-rank,
+.lp-table tbody tr.mine td.col-team {
+  background: #e9eefb;
+}
+
+.lp-table tbody tr.mine td.col-rank {
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.you-badge {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--color-primary);
+  background: var(--color-surface-hover);
+  padding: 0.05rem 0.3rem;
+  border-radius: var(--radius-sm);
+  margin-left: 0.35rem;
+}
+
+.col-total {
+  font-weight: var(--weight-bold);
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.lp-num {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.lp-team-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lp-empty {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+  padding: var(--space-5) 0;
+}
+
+@media (max-width: 640px) {
+  .lp-table td.col-team,
+  .lp-table th.col-team {
+    max-width: 8rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
