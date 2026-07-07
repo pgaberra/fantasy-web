@@ -30,12 +30,18 @@ export interface LeagueProjectionColumn {
   decimals: number;
 }
 
+export interface LeagueProjectionBreakdownPlayer {
+  name: string;
+  value: number;
+}
+
 export interface LeagueProjectionTeamRow {
   teamId: string;
   name: string;
   mine: boolean;
   total: number;
   values: Record<string, number | null>;
+  positionBreakdown: Record<string, LeagueProjectionBreakdownPlayer[]>;
 }
 
 export interface LeagueProjectionData {
@@ -45,6 +51,7 @@ export interface LeagueProjectionData {
 }
 
 export interface LeagueProjectionPlayer {
+  name: string;
   score: number;
   projection: Projection;
   positions: string[];
@@ -108,13 +115,24 @@ export function buildLeagueProjection(
       }
     }
 
+    const positionBreakdown: Record<string, LeagueProjectionBreakdownPlayer[]> = {};
     for (const column of positionColumns) {
-      values[column.key] = players
+      const eligible = players
         .filter((player) => player.positions.includes(column.key))
-        .reduce((sum, player) => sum + player.score, 0);
+        .map((player) => ({ name: player.name, value: player.score }))
+        .sort((first, second) => second.value - first.value);
+      positionBreakdown[column.key] = eligible;
+      values[column.key] = eligible.reduce((sum, player) => sum + player.value, 0);
     }
 
-    return { teamId: team.id, name: team.name, mine: team.mine, total, values };
+    return {
+      teamId: team.id,
+      name: team.name,
+      mine: team.mine,
+      total,
+      values,
+      positionBreakdown,
+    };
   });
 
   teamRows.sort((first, second) => second.total - first.total);

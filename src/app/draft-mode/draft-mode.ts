@@ -233,6 +233,7 @@ export class DraftModeComponent implements OnInit {
       const projection = projectionById.get(pick.playerId);
       if (projection && !players.has(pick.playerId)) {
         players.set(pick.playerId, {
+          name: this.lookup.name(pick.playerId),
           score: scores.get(pick.playerId) ?? 0,
           projection,
           positions: this.lookup.positions(pick.playerId),

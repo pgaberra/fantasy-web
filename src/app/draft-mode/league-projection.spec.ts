@@ -43,8 +43,9 @@ function player(
   projection: Projection,
   score: number,
   positions: string[],
+  name = `Player ${projection.playerId}`,
 ): LeagueProjectionPlayer {
-  return { score, projection, positions };
+  return { name, score, projection, positions };
 }
 
 describe('buildLeagueProjection', () => {
@@ -103,6 +104,28 @@ describe('buildLeagueProjection', () => {
     expect(alpha.values['RW']).toEqual(0);
     expect(alpha.values['D']).toEqual(4);
     expect(alpha.values['G']).toEqual(7);
+    expect(alpha.positionBreakdown['C'].map((entry) => entry.name)).toEqual(['Player 1']);
+    expect(alpha.positionBreakdown['LW'].map((entry) => entry.name)).toEqual(['Player 1']);
+    expect(alpha.positionBreakdown['RW']).toEqual([]);
+    expect(alpha.positionBreakdown['G']).toEqual([{ name: 'Player 3', value: 7 }]);
+  });
+
+  it("sorts each position's contributing players by value descending", () => {
+    const players = new Map<number, LeagueProjectionPlayer>([
+      [1, player(skater(1, {}), 5, ['C'], 'Low')],
+      [2, player(skater(2, {}), 15, ['C'], 'High')],
+    ]);
+    const teams: LeagueProjectionTeamInput[] = [
+      { id: 'a', name: 'Alpha', mine: false, playerIds: [1, 2] },
+    ];
+
+    const data = buildLeagueProjection(teams, players, []);
+
+    expect(data.teams[0].positionBreakdown['C']).toEqual([
+      { name: 'High', value: 15 },
+      { name: 'Low', value: 5 },
+    ]);
+    expect(data.teams[0].values['C']).toEqual(20);
   });
 
   it('exposes category and position column metadata', () => {
