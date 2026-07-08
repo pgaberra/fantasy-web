@@ -5,11 +5,19 @@ import { filter, map } from 'rxjs';
 import { AuthService } from './services/auth.service';
 import { EnvironmentBannerComponent } from './shared/environment-banner/environment-banner';
 import { ToastComponent } from './shared/toast/toast';
+import { UnverifiedBannerComponent } from './shared/unverified-banner/unverified-banner';
 import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, EnvironmentBannerComponent, ToastComponent],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    EnvironmentBannerComponent,
+    ToastComponent,
+    UnverifiedBannerComponent,
+  ],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })

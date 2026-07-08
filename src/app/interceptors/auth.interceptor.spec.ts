@@ -13,6 +13,7 @@ describe('authInterceptor', () => {
     expiresInSeconds: 900,
     refreshExpiresInSeconds: 2592000,
     admin: false,
+    emailVerified: true,
   };
 
   let authService: {

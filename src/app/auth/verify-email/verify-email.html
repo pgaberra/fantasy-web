@@ -1,0 +1,35 @@
+<div class="auth-container">
+  <div class="auth-card">
+    @switch (status()) {
+      @case ('verifying') {
+        <h1 class="auth-title">Verifying your email</h1>
+        <p class="auth-subtitle">
+          One moment while we confirm your email address<span
+            class="loading-dots"
+            aria-hidden="true"
+          ></span>
+        </p>
+      }
+      @case ('succeeded') {
+        <h1 class="auth-title">Email verified</h1>
+        <p class="auth-subtitle">Thanks — your email address is confirmed. You're all set.</p>
+        <a routerLink="/projections" class="btn btn-primary btn-block btn-lg"
+          >Go to your projections</a
+        >
+      }
+      @case ('failed') {
+        <h1 class="auth-title">Verification failed</h1>
+        <p class="auth-subtitle">
+          This verification link is invalid or has expired. Sign in and use the banner to send a
+          fresh one.
+        </p>
+        <a routerLink="/login" class="btn btn-primary btn-block btn-lg">Go to sign in</a>
+      }
+      @case ('no-token') {
+        <h1 class="auth-title">Invalid link</h1>
+        <p class="auth-subtitle">This verification link is missing or invalid.</p>
+        <p class="auth-footer"><a routerLink="/login">Back to sign in</a></p>
+      }
+    }
+  </div>
+</div>
