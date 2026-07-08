@@ -1,0 +1,42 @@
+.unverified-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.625rem 1rem;
+  background: var(--color-warning);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.unverified-banner__text {
+  font-weight: 500;
+}
+
+.unverified-banner__button {
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  border-radius: 6px;
+  padding: 0.3rem 0.85rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 200ms ease;
+}
+
+.unverified-banner__button:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.unverified-banner__button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.unverified-banner__error {
+  color: var(--color-danger);
+  font-size: var(--text-xs);
+}
