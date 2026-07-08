@@ -25,6 +25,10 @@ interface PoolEntry<P extends Projection> {
   index: number;
 }
 
+function sumContributions(contributions: Record<string, number>): number {
+  return Object.values(contributions).reduce((sum, value) => sum + value, 0);
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -55,7 +59,27 @@ export class ProjectionCalculationService {
     skaterPoolSize: number = DEFAULT_SKATER_POOL_SIZE,
     goaliePoolSize: number = DEFAULT_GOALIE_POOL_SIZE,
   ): number[] {
-    const zByIndex = projections.map(() => 0);
+    return this.computeZScoreContributions(
+      projections,
+      activeScoringColumns,
+      skaterPoolSize,
+      goaliePoolSize,
+    ).map((contributions) => sumContributions(contributions));
+  }
+
+  /**
+   * Per-category z-score breakdown: for each projection, a map of active category → its z-score
+   * contribution (already sign-adjusted for lower-is-better stats). Summing a projection's map
+   * yields the same total {@link computeZScores} returns, so callers can attribute a player's
+   * z-score to individual categories without recomputing.
+   */
+  computeZScoreContributions(
+    projections: Projection[],
+    activeScoringColumns: Set<ScoringStatKey>,
+    skaterPoolSize: number = DEFAULT_SKATER_POOL_SIZE,
+    goaliePoolSize: number = DEFAULT_GOALIE_POOL_SIZE,
+  ): Record<string, number>[] {
+    const contributionsByIndex: Record<string, number>[] = projections.map(() => ({}));
 
     const skaters: PoolEntry<SkaterProjection>[] = [];
     const goalies: PoolEntry<GoalieProjection>[] = [];
@@ -73,7 +97,7 @@ export class ProjectionCalculationService {
       (projection, key) => projection.stats.scoring[key],
       activeScoringColumns,
       skaterPoolSize,
-      zByIndex,
+      contributionsByIndex,
     );
     this.applyPoolZScores(
       goalies,
@@ -81,10 +105,10 @@ export class ProjectionCalculationService {
       (projection, key) => projection.stats.scoring[key],
       activeScoringColumns,
       goaliePoolSize,
-      zByIndex,
+      contributionsByIndex,
     );
 
-    return zByIndex;
+    return contributionsByIndex;
   }
 
   private applyPoolZScores<P extends Projection, K extends ScoringStatKey>(
@@ -93,13 +117,13 @@ export class ProjectionCalculationService {
     valueOf: (projection: P, key: K) => number,
     activeScoringColumns: Set<ScoringStatKey>,
     poolSize: number,
-    zByIndex: number[],
+    contributionsByIndex: Record<string, number>[],
   ): void {
     if (entries.length === 0) {
       return;
     }
     let poolPositions = entries.map((_entry, position) => position);
-    let zScores = this.zScoresForEntries(
+    let contributions = this.contributionsForEntries(
       entries,
       poolPositions,
       categoryKeys,
@@ -110,13 +134,16 @@ export class ProjectionCalculationService {
     for (let iteration = 0; iteration < MAX_POOL_ITERATIONS; iteration++) {
       const nextPositions = entries
         .map((_entry, position) => position)
-        .sort((first, second) => zScores[second] - zScores[first])
+        .sort(
+          (first, second) =>
+            sumContributions(contributions[second]) - sumContributions(contributions[first]),
+        )
         .slice(0, poolSize);
       if (this.samePositions(nextPositions, poolPositions)) {
         break;
       }
       poolPositions = nextPositions;
-      zScores = this.zScoresForEntries(
+      contributions = this.contributionsForEntries(
         entries,
         poolPositions,
         categoryKeys,
@@ -126,20 +153,20 @@ export class ProjectionCalculationService {
     }
 
     entries.forEach((entry, position) => {
-      zByIndex[entry.index] = zScores[position];
+      contributionsByIndex[entry.index] = contributions[position];
     });
   }
 
-  private zScoresForEntries<P extends Projection, K extends ScoringStatKey>(
+  private contributionsForEntries<P extends Projection, K extends ScoringStatKey>(
     entries: PoolEntry<P>[],
     poolPositions: number[],
     categoryKeys: readonly K[],
     valueOf: (projection: P, key: K) => number,
     activeScoringColumns: Set<ScoringStatKey>,
-  ): number[] {
-    const zScores = entries.map(() => 0);
+  ): Record<string, number>[] {
+    const contributions: Record<string, number>[] = entries.map(() => ({}));
     if (poolPositions.length === 0) {
-      return zScores;
+      return contributions;
     }
 
     for (const key of categoryKeys) {
@@ -158,10 +185,11 @@ export class ProjectionCalculationService {
       }
       const direction = LOWER_IS_BETTER_SCORING_STAT_KEYS.has(key) ? -1 : 1;
       entries.forEach((entry, position) => {
-        zScores[position] += (direction * (valueOf(entry.projection, key) - mean)) / stdDev;
+        contributions[position][key] =
+          (direction * (valueOf(entry.projection, key) - mean)) / stdDev;
       });
     }
-    return zScores;
+    return contributions;
   }
 
   private samePositions(first: number[], second: number[]): boolean {

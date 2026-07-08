@@ -24,7 +24,7 @@
         By position
       </button>
     </div>
-    <span class="lp-hint">Tap a team to see its players by position</span>
+    <span class="lp-hint">Tap a team to expand its players</span>
   </div>
 
   <div class="lp-wrap">
@@ -45,7 +45,7 @@
               class="sortable"
               [class.sorted]="sortKey() === column.key"
               [appTooltip]="column.tooltip"
-              (click)="sortBy(column.key, column.lowerIsBetter)"
+              (click)="sortBy(column.key)"
             >
               {{ column.label }}<span class="sort-arrow">{{ sortIndicator(column.key) }}</span>
             </th>
@@ -57,20 +57,55 @@
           <tr
             class="lp-row"
             [class.mine]="team.mine"
-            [class.selected]="team.teamId === selectedTeamId()"
-            (click)="selectTeam(team.teamId)"
+            [class.expanded]="isExpanded(team.teamId)"
+            [attr.aria-expanded]="isExpanded(team.teamId)"
+            (click)="toggleExpand(team.teamId)"
           >
-            <td class="col-rank">{{ i + 1 }}</td>
+            <td class="col-rank">
+              <span class="lp-chevron">{{ isExpanded(team.teamId) ? '▾' : '▸' }}</span>
+              {{ i + 1 }}
+            </td>
             <td class="col-team">
-              <span class="lp-team-name">{{ team.name }}</span>
-              @if (team.mine) {
-                <span class="you-badge">You</span>
+              <div class="lp-team-head">
+                <span class="lp-team-name">{{ team.name }}</span>
+                @if (team.mine) {
+                  <span class="you-badge">You</span>
+                }
+              </div>
+              @if (isExpanded(team.teamId) && hasHiddenContributors()) {
+                <button
+                  type="button"
+                  class="lp-showall"
+                  (click)="$event.stopPropagation(); toggleShowAll()"
+                >
+                  {{ showAllPlayers() ? 'Show top 3' : 'Show all' }}
+                </button>
               }
             </td>
             <td class="col-total">{{ formatTotal(team.total) }}</td>
             @for (column of columns(); track column.key) {
-              <td class="lp-num" [style.background]="shade(column, team.values[column.key])">
-                {{ format(team.values[column.key], column.decimals) }}
+              <td
+                class="lp-num"
+                [class.expanded]="isExpanded(team.teamId)"
+                [style.background]="shade(column, team.values[column.key])"
+              >
+                <span class="lp-cell-value">{{
+                  format(team.values[column.key], column.decimals)
+                }}</span>
+                @if (isExpanded(team.teamId)) {
+                  <ul class="lp-cell-players">
+                    @for (player of cellPlayers(team, column); track player.name + $index) {
+                      <li>
+                        <span class="lp-cp-name">{{ player.name }}</span>
+                        <span class="lp-cp-val">{{
+                          format(player.value, column.rawDecimals)
+                        }}</span>
+                      </li>
+                    } @empty {
+                      <li class="lp-cp-empty">—</li>
+                    }
+                  </ul>
+                }
               </td>
             }
           </tr>
@@ -78,42 +113,4 @@
       </tbody>
     </table>
   </div>
-
-  @if (selectedTeam(); as team) {
-    <div class="lp-breakdown">
-      <div class="lp-bd-head">
-        <span class="lp-bd-title">{{ team.name }} — roster by position</span>
-        <button
-          type="button"
-          class="lp-bd-close"
-          (click)="selectTeam(team.teamId)"
-          aria-label="Close breakdown"
-        >
-          ×
-        </button>
-      </div>
-      @if (breakdownGroups().length) {
-        <div class="lp-bd-groups">
-          @for (group of breakdownGroups(); track group.label) {
-            <div class="lp-bd-group">
-              <div class="lp-bd-group-head">
-                <span class="lp-bd-pos">{{ group.label }}</span>
-                <span class="lp-bd-sum">{{ format(group.sum, 1) }}</span>
-              </div>
-              <ul class="lp-bd-list">
-                @for (player of group.players; track $index) {
-                  <li class="lp-bd-player">
-                    <span class="lp-bd-name">{{ player.name }}</span>
-                    <span class="lp-bd-value">{{ format(player.value, 1) }}</span>
-                  </li>
-                }
-              </ul>
-            </div>
-          }
-        </div>
-      } @else {
-        <p class="lp-bd-empty">No players drafted yet.</p>
-      }
-    </div>
-  }
 }

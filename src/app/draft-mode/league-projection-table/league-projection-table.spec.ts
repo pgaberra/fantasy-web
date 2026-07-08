@@ -6,18 +6,12 @@ import { LeagueProjectionData } from '../league-projection';
 describe('LeagueProjectionTableComponent', () => {
   const data: LeagueProjectionData = {
     categoryColumns: [
-      { key: 'goals', label: 'Goals', tooltip: null, lowerIsBetter: false, decimals: 0 },
-      {
-        key: 'gaa',
-        label: 'GAA',
-        tooltip: 'Goals Against Average',
-        lowerIsBetter: true,
-        decimals: 2,
-      },
+      { key: 'goals', label: 'Goals', tooltip: null, decimals: 2, rawDecimals: 0 },
+      { key: 'gaa', label: 'GAA', tooltip: 'Goals Against Average', decimals: 2, rawDecimals: 2 },
     ],
     positionColumns: [
-      { key: 'C', label: 'C', tooltip: 'Center', lowerIsBetter: false, decimals: 1 },
-      { key: 'D', label: 'D', tooltip: 'Defense', lowerIsBetter: false, decimals: 1 },
+      { key: 'C', label: 'C', tooltip: 'Center', decimals: 1, rawDecimals: 1 },
+      { key: 'D', label: 'D', tooltip: 'Defense', decimals: 1, rawDecimals: 1 },
     ],
     teams: [
       {
@@ -25,8 +19,17 @@ describe('LeagueProjectionTableComponent', () => {
         name: 'Alpha',
         mine: true,
         total: 20,
-        values: { goals: 60, gaa: 2.8, C: 10, D: 5 },
-        positionBreakdown: {
+        values: { goals: 6, gaa: -2, C: 10, D: 5 },
+        categoryContributors: {
+          goals: [
+            { name: 'McDavid', value: 40 },
+            { name: 'Point', value: 30 },
+            { name: 'Zacha', value: 20 },
+            { name: 'Nylander', value: 10 },
+          ],
+          gaa: [{ name: 'Oettinger', value: 2.4 }],
+        },
+        positionPlayers: {
           C: [
             { name: 'McDavid', value: 6 },
             { name: 'Point', value: 4 },
@@ -39,8 +42,12 @@ describe('LeagueProjectionTableComponent', () => {
         name: 'Bravo',
         mine: false,
         total: 30,
-        values: { goals: 80, gaa: 2.4, C: 4, D: 12 },
-        positionBreakdown: {
+        values: { goals: 8, gaa: -1, C: 4, D: 12 },
+        categoryContributors: {
+          goals: [{ name: 'Crosby', value: 35 }],
+          gaa: [{ name: 'Vasilevskiy', value: 2.2 }],
+        },
+        positionPlayers: {
           C: [{ name: 'Crosby', value: 4 }],
           D: [{ name: 'Josi', value: 12 }],
         },
@@ -69,24 +76,14 @@ describe('LeagueProjectionTableComponent', () => {
     expect(text).toContain('Z-Score');
   });
 
-  it('sorts by a category column and respects lower-is-better direction', () => {
+  it('sorts by a category column, defaulting to descending and toggling on repeat', () => {
     const component = render().point.componentInstance;
 
-    component.sortBy('goals', false);
+    component.sortBy('goals');
     expect(component.sortDir()).toEqual('desc');
     expect(component.sortedTeams().map((team) => team.teamId)).toEqual(['b', 'a']);
 
-    component.sortBy('gaa', true);
-    expect(component.sortDir()).toEqual('asc');
-    expect(component.sortedTeams().map((team) => team.teamId)).toEqual(['b', 'a']);
-  });
-
-  it('toggles sort direction when the same column is clicked twice', () => {
-    const component = render().point.componentInstance;
-
-    component.sortBy('goals', false);
-    component.sortBy('goals', false);
-
+    component.sortBy('goals');
     expect(component.sortDir()).toEqual('asc');
     expect(component.sortedTeams().map((team) => team.teamId)).toEqual(['a', 'b']);
   });
@@ -102,22 +99,49 @@ describe('LeagueProjectionTableComponent', () => {
     expect(fixture.nativeElement.textContent as string).not.toContain('Goals');
   });
 
-  it("reveals the selected team's roster grouped by position and toggles off", () => {
+  it('expands a row, caps category cells at the top contributors, then reveals all', () => {
     const fixture = render();
     const component = fixture.point.componentInstance;
+    const alpha = data.teams[0];
+    const goalsColumn = data.categoryColumns[0];
 
-    expect(component.selectedTeam()).toBeNull();
+    expect(component.isExpanded('a')).toBe(false);
 
-    component.selectTeam('a');
+    component.toggleExpand('a');
     fixture.detectChanges();
 
-    expect(component.selectedTeam()?.teamId).toEqual('a');
-    const groups = component.breakdownGroups();
-    expect(groups.map((group) => group.label)).toEqual(['C', 'D']);
-    expect(groups[0].players.map((entry) => entry.name)).toEqual(['McDavid', 'Point']);
+    expect(component.isExpanded('a')).toBe(true);
+    expect(component.hasHiddenContributors()).toBe(true);
+    expect(component.cellPlayers(alpha, goalsColumn).map((entry) => entry.name)).toEqual([
+      'McDavid',
+      'Point',
+      'Zacha',
+    ]);
     expect(fixture.nativeElement.textContent as string).toContain('McDavid');
 
-    component.selectTeam('a');
-    expect(component.selectedTeam()).toBeNull();
+    component.toggleShowAll();
+    expect(component.cellPlayers(alpha, goalsColumn).map((entry) => entry.name)).toEqual([
+      'McDavid',
+      'Point',
+      'Zacha',
+      'Nylander',
+    ]);
+
+    component.toggleExpand('a');
+    expect(component.isExpanded('a')).toBe(false);
+    expect(component.showAllPlayers()).toBe(false);
+  });
+
+  it('lists the players assigned to each position slot when expanded', () => {
+    const component = render().point.componentInstance;
+    const alpha = data.teams[0];
+
+    component.setMode('position');
+    component.toggleExpand('a');
+
+    expect(
+      component.cellPlayers(alpha, data.positionColumns[0]).map((entry) => entry.name),
+    ).toEqual(['McDavid', 'Point']);
+    expect(component.hasHiddenContributors()).toBe(false);
   });
 });

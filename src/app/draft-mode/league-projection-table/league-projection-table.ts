@@ -1,9 +1,16 @@
 import { Component, computed, input, signal } from '@angular/core';
 import { ScoringType } from '../../models/projection.model';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
-import { LeagueProjectionColumn, LeagueProjectionData } from '../league-projection';
+import {
+  LeagueProjectionColumn,
+  LeagueProjectionContributor,
+  LeagueProjectionData,
+  LeagueProjectionTeamRow,
+} from '../league-projection';
 
 type BreakdownMode = 'category' | 'position';
+
+const TOP_CONTRIBUTORS = 3;
 
 @Component({
   selector: 'app-league-projection-table',
@@ -19,7 +26,8 @@ export class LeagueProjectionTableComponent {
   readonly mode = signal<BreakdownMode>('category');
   readonly sortKey = signal<string>('total');
   readonly sortDir = signal<'asc' | 'desc'>('desc');
-  readonly selectedTeamId = signal<string | null>(null);
+  readonly expandedTeamId = signal<string | null>(null);
+  readonly showAllPlayers = signal<boolean>(false);
 
   readonly columns = computed(() =>
     this.mode() === 'category' ? this.data().categoryColumns : this.data().positionColumns,
@@ -29,7 +37,7 @@ export class LeagueProjectionTableComponent {
     const teams = this.data().teams;
     const ranges = new Map<string, { min: number; max: number }>();
     for (const column of this.columns()) {
-      const values = teams.map((team) => team.values[column.key]).filter((value) => value !== null);
+      const values = teams.map((team) => team.values[column.key]);
       if (values.length > 0) {
         ranges.set(column.key, { min: Math.min(...values), max: Math.max(...values) });
       }
@@ -40,48 +48,55 @@ export class LeagueProjectionTableComponent {
   readonly sortedTeams = computed(() => {
     const key = this.sortKey();
     const descending = this.sortDir() === 'desc';
-    const valueOf = (team: LeagueProjectionData['teams'][number]) =>
+    const valueOf = (team: LeagueProjectionTeamRow) =>
       key === 'total' ? team.total : team.values[key];
-    return [...this.data().teams].sort((first, second) => {
-      const firstValue = valueOf(first);
-      const secondValue = valueOf(second);
-      if (firstValue === null && secondValue === null) {
-        return 0;
-      }
-      if (firstValue === null) {
-        return 1;
-      }
-      if (secondValue === null) {
-        return -1;
-      }
-      return descending ? secondValue - firstValue : firstValue - secondValue;
-    });
+    return [...this.data().teams].sort((first, second) =>
+      descending ? valueOf(second) - valueOf(first) : valueOf(first) - valueOf(second),
+    );
   });
 
-  readonly selectedTeam = computed(
-    () => this.data().teams.find((team) => team.teamId === this.selectedTeamId()) ?? null,
-  );
-
-  readonly breakdownGroups = computed(() => {
-    const team = this.selectedTeam();
-    if (!team) {
-      return [];
+  /** Whether the expanded row has category cells with more contributors than the collapsed cap. */
+  readonly hasHiddenContributors = computed(() => {
+    if (this.mode() !== 'category') {
+      return false;
     }
-    return this.data()
-      .positionColumns.map((column) => ({
-        label: column.label,
-        sum: team.values[column.key],
-        players: team.positionBreakdown[column.key] ?? [],
-      }))
-      .filter((group) => group.players.length > 0);
+    const team = this.data().teams.find((row) => row.teamId === this.expandedTeamId());
+    if (!team) {
+      return false;
+    }
+    return this.columns().some(
+      (column) => (team.categoryContributors[column.key]?.length ?? 0) > TOP_CONTRIBUTORS,
+    );
   });
 
-  selectTeam(teamId: string): void {
-    this.selectedTeamId.update((current) => (current === teamId ? null : teamId));
+  isExpanded(teamId: string): boolean {
+    return this.expandedTeamId() === teamId;
+  }
+
+  /** Players to list inside a cell when its row is expanded. */
+  cellPlayers(
+    team: LeagueProjectionTeamRow,
+    column: LeagueProjectionColumn,
+  ): LeagueProjectionContributor[] {
+    if (this.mode() === 'position') {
+      return team.positionPlayers[column.key] ?? [];
+    }
+    const contributors = team.categoryContributors[column.key] ?? [];
+    return this.showAllPlayers() ? contributors : contributors.slice(0, TOP_CONTRIBUTORS);
+  }
+
+  toggleExpand(teamId: string): void {
+    this.expandedTeamId.update((current) => (current === teamId ? null : teamId));
+    this.showAllPlayers.set(false);
+  }
+
+  toggleShowAll(): void {
+    this.showAllPlayers.update((current) => !current);
   }
 
   setMode(mode: BreakdownMode): void {
     this.mode.set(mode);
+    this.showAllPlayers.set(false);
     if (
       this.sortKey() !== 'total' &&
       !this.columns().some((column) => column.key === this.sortKey())
@@ -91,12 +106,12 @@ export class LeagueProjectionTableComponent {
     }
   }
 
-  sortBy(key: string, lowerIsBetter = false): void {
+  sortBy(key: string): void {
     if (this.sortKey() === key) {
       this.sortDir.update((direction) => (direction === 'desc' ? 'asc' : 'desc'));
     } else {
       this.sortKey.set(key);
-      this.sortDir.set(lowerIsBetter ? 'asc' : 'desc');
+      this.sortDir.set('desc');
     }
   }
 
@@ -107,23 +122,20 @@ export class LeagueProjectionTableComponent {
     return this.sortDir() === 'desc' ? '▼' : '▲';
   }
 
-  shade(column: LeagueProjectionColumn, value: number | null): string {
-    if (value === null) {
+  shade(column: LeagueProjectionColumn, value: number | null | undefined): string {
+    if (value === null || value === undefined) {
       return 'transparent';
     }
     const range = this.ranges().get(column.key);
     if (!range || range.max === range.min) {
       return 'transparent';
     }
-    let intensity = (value - range.min) / (range.max - range.min);
-    if (column.lowerIsBetter) {
-      intensity = 1 - intensity;
-    }
+    const intensity = (value - range.min) / (range.max - range.min);
     return `rgba(30, 107, 255, ${(intensity * 0.16).toFixed(3)})`;
   }
 
-  format(value: number | null, decimals: number): string {
-    if (value === null) {
+  format(value: number | null | undefined, decimals: number): string {
+    if (value === null || value === undefined) {
       return '—';
     }
     return decimals > 0 ? value.toFixed(decimals) : Math.round(value).toString();

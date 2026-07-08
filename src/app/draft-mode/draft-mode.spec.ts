@@ -153,14 +153,19 @@ describe('DraftModeComponent', () => {
     const projection = component.leagueProjection();
     expect(projection.teams.map((team) => team.teamId)).toEqual(['team-me', 'team-1']);
     expect(projection.teams[0].total).toBeGreaterThan(projection.teams[1].total);
-    expect(projection.teams[0].values['goals']).toEqual(60);
+    // Category cells hold the z-score contribution (not the raw stat): McDavid's 60 goals is +1σ
+    // over the two-skater pool, and a team's category cells sum to its total.
+    expect(projection.teams[0].values['goals']).toBeCloseTo(1, 5);
+    expect(projection.teams[0].total).toBeCloseTo(projection.teams[0].values['goals'], 5);
     expect(projection.categoryColumns.map((column) => column.key)).toEqual(['goals']);
     expect(projection.positionColumns.map((column) => column.key)).toEqual([
       'C',
       'LW',
       'RW',
       'D',
+      'UTIL',
       'G',
+      'BN',
     ]);
   });
 

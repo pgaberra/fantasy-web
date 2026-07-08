@@ -8,6 +8,9 @@ import {
 } from '../models/stat-key.model';
 import { RosterSlots } from '../api/models/roster-slots';
 
+const SKATER_SCORING_STAT_KEY_SET: ReadonlySet<string> = new Set(SKATER_SCORING_STAT_KEYS);
+const GOALIE_SCORING_STAT_KEY_SET: ReadonlySet<string> = new Set(GOALIE_SCORING_STAT_KEYS);
+
 export interface RankingInput {
   projections: Projection[];
   scoringType: ScoringType;
@@ -40,6 +43,52 @@ export class ProjectionRankingService {
       }
       return valueOf(second) - valueOf(first);
     });
+  }
+
+  /**
+   * Per-player, per-category breakdown of the overall score, keyed by playerId. Each map's values
+   * sum to that player's {@link ScoredProjection} score (fantasy points or z-score), so a league
+   * table can attribute a team's total to individual categories. Points mode weights each category
+   * by its stat weight; category mode uses the z-score contribution. Rounding mirrors {@link score}
+   * so the per-category figures reconcile exactly with the ranked totals.
+   */
+  contributionsByPlayerId(input: RankingInput): Map<number, Record<string, number>> {
+    const rounded = input.projections.map((projection) =>
+      this.round(projection, input.decimalSettings),
+    );
+    const byPlayerId = new Map<number, Record<string, number>>();
+
+    if (input.scoringType === 'points') {
+      for (const projection of rounded) {
+        const scoring = projection.stats.scoring as Record<string, number>;
+        const typeKeys =
+          projection.type === 'skater' ? SKATER_SCORING_STAT_KEY_SET : GOALIE_SCORING_STAT_KEY_SET;
+        const contributions: Record<string, number> = {};
+        for (const [key, weight] of Object.entries(input.statWeights)) {
+          if (!input.activeScoringColumns.has(key as ScoringStatKey) || !typeKeys.has(key)) {
+            continue;
+          }
+          contributions[key] = (scoring[key] ?? 0) * weight;
+        }
+        byPlayerId.set(projection.playerId, contributions);
+      }
+      return byPlayerId;
+    }
+
+    const roster = input.rosterSlots;
+    const skaterPoolSize =
+      input.leagueSize * (roster.c + roster.lw + roster.rw + roster.d + roster.util + roster.bn);
+    const goaliePoolSize = input.leagueSize * roster.g;
+    const zContributions = this.calculation.computeZScoreContributions(
+      rounded,
+      input.activeScoringColumns,
+      skaterPoolSize,
+      goaliePoolSize,
+    );
+    rounded.forEach((projection, index) => {
+      byPlayerId.set(projection.playerId, zContributions[index]);
+    });
+    return byPlayerId;
   }
 
   private score(input: RankingInput): ScoredProjection[] {

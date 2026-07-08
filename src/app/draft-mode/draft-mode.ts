@@ -14,7 +14,7 @@ import { forkJoin } from 'rxjs';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { NotificationService } from '../services/notification.service';
 import { PlayerService } from '../services/player.service';
-import { ProjectionRankingService } from '../services/projection-ranking.service';
+import { ProjectionRankingService, RankingInput } from '../services/projection-ranking.service';
 import { PositionFilterService } from '../services/position-filter.service';
 import { Player } from '../models/player.model';
 import {
@@ -158,13 +158,13 @@ export class DraftModeComponent implements OnInit {
     return teamId === null ? [] : this.snake.picksForTeam(this.picks(), teamId);
   });
 
-  private readonly ranked = computed<ScoredProjection[]>(() => {
+  private readonly rankingInput = computed<RankingInput | null>(() => {
     const data = this.data();
     if (!data) {
-      return [];
+      return null;
     }
     const settings = data.settings;
-    return this.ranking.rankOverall({
+    return {
       projections: this.projections(),
       scoringType: settings.scoringType,
       statWeights: settings.statWeights as StatWeights,
@@ -173,7 +173,19 @@ export class DraftModeComponent implements OnInit {
       rosterSlots: settings.rosterSlots ?? DEFAULT_ROSTER_SLOTS,
       minGoalieGames: settings.minGoalieGames ?? DEFAULT_MIN_GOALIE_GAMES,
       decimalSettings: settings.decimalSettings,
-    });
+    };
+  });
+
+  private readonly ranked = computed<ScoredProjection[]>(() => {
+    const input = this.rankingInput();
+    return input ? this.ranking.rankOverall(input) : [];
+  });
+
+  private readonly contributionsByPlayerId = computed<Map<number, Record<string, number>>>(() => {
+    const input = this.rankingInput();
+    return input
+      ? this.ranking.contributionsByPlayerId(input)
+      : new Map<number, Record<string, number>>();
   });
 
   readonly available = computed<ScoredProjection[]>(() => {
@@ -218,6 +230,7 @@ export class DraftModeComponent implements OnInit {
 
   readonly leagueProjection = computed<LeagueProjectionData>(() => {
     const scores = this.scoreByPlayerId();
+    const contributions = this.contributionsByPlayerId();
     const projectionById = new Map(
       this.ranked().map((scoredProjection) => [
         scoredProjection.projection.playerId,
@@ -237,6 +250,7 @@ export class DraftModeComponent implements OnInit {
           score: scores.get(pick.playerId) ?? 0,
           projection,
           positions: this.lookup.positions(pick.playerId),
+          contributions: contributions.get(pick.playerId) ?? {},
         });
       }
     });
@@ -246,7 +260,13 @@ export class DraftModeComponent implements OnInit {
       mine: team.mine,
       playerIds: picksByTeam.get(team.id) ?? [],
     }));
-    return buildLeagueProjection(teams, players, this.statColumns());
+    return buildLeagueProjection(
+      teams,
+      players,
+      this.statColumns(),
+      this.rosterSlots(),
+      this.scoringType(),
+    );
   });
 
   readonly roster = computed(() =>
