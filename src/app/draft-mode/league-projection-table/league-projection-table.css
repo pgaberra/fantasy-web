@@ -153,14 +153,10 @@
   background: var(--color-surface-alt);
 }
 
-/* My team: a primary accent rail + subtle tint, applied consistently regardless of row position. */
-.lp-table tbody tr.mine td.col-rank,
-.lp-table tbody tr.mine td.col-team {
-  background: #eef2fc;
-}
-
-.lp-table tbody tr.mine td.col-rank {
-  box-shadow: inset 3px 0 0 var(--color-primary);
+/* My team is marked by the bold name + "You" badge alone — no cell tint or accent rail, so it
+   doesn't compete with the heat-shaded stat cells. */
+.lp-table tbody tr.mine .lp-team-name {
+  font-weight: var(--weight-bold);
 }
 
 .you-badge {
@@ -172,12 +168,21 @@
   border-radius: var(--radius-sm);
 }
 
+/* The show-all toggle sits on its own full-width row beneath the expanded team, so it clearly
+   governs the whole expanded block (its player lists span every stat column) rather than being
+   tucked inside the frozen team cell. Left-padded past the rank column so it reads as belonging
+   to that team and stays visible at the default scroll position. */
+.lp-showall-row td {
+  text-align: left;
+  padding: 0.35rem 0.6rem 0.6rem 2.7rem;
+  background: var(--color-surface-alt);
+}
+
 .lp-showall {
   appearance: none;
   border: none;
   background: none;
   padding: 0;
-  margin-top: 0.4rem;
   font-family: inherit;
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
@@ -189,10 +194,13 @@
   text-decoration: underline;
 }
 
+/* Total sits last, detached from the stat columns by a divider, and carries the same diverging
+   heat as the rest so the leader/laggard read is consistent across every column. */
 .col-total {
   font-weight: var(--weight-bold);
   color: var(--color-primary);
   font-variant-numeric: tabular-nums;
+  border-left: 1px solid var(--color-border);
 }
 
 .lp-num {

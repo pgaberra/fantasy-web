@@ -12,6 +12,18 @@ type BreakdownMode = 'category' | 'position';
 
 const TOP_CONTRIBUTORS = 3;
 
+/**
+ * Diverging heat scale for the stat and total cells: the column leader trends green, the laggard
+ * red, and the mid-pack stays clear — so a glance down any column shows who's strongest there.
+ * Every value is already "higher is better" (weighted-points / z-score contributions, direction
+ * included), so one direction works for every column. The RGB triples mirror --color-success /
+ * --color-error in styles.css; they're inlined because the per-cell alpha is computed, not static.
+ */
+const HEAT_LEADER_RGB = '22, 163, 74';
+const HEAT_LAGGARD_RGB = '233, 69, 96';
+const HEAT_LEADER_MAX_ALPHA = 0.22;
+const HEAT_LAGGARD_MAX_ALPHA = 0.2;
+
 @Component({
   selector: 'app-league-projection-table',
   imports: [TooltipDirective],
@@ -36,10 +48,10 @@ export class LeagueProjectionTableComponent {
   private readonly ranges = computed(() => {
     const teams = this.data().teams;
     const ranges = new Map<string, { min: number; max: number }>();
-    for (const column of this.columns()) {
-      const values = teams.map((team) => team.values[column.key]);
+    for (const key of [...this.columns().map((column) => column.key), 'total']) {
+      const values = teams.map((team) => (key === 'total' ? team.total : team.values[key]));
       if (values.length > 0) {
-        ranges.set(column.key, { min: Math.min(...values), max: Math.max(...values) });
+        ranges.set(key, { min: Math.min(...values), max: Math.max(...values) });
       }
     }
     return ranges;
@@ -122,16 +134,21 @@ export class LeagueProjectionTableComponent {
     return this.sortDir() === 'desc' ? '▼' : '▲';
   }
 
-  shade(column: LeagueProjectionColumn, value: number | null | undefined): string {
+  shade(key: string, value: number | null | undefined): string {
     if (value === null || value === undefined) {
       return 'transparent';
     }
-    const range = this.ranges().get(column.key);
+    const range = this.ranges().get(key);
     if (!range || range.max === range.min) {
       return 'transparent';
     }
     const intensity = (value - range.min) / (range.max - range.min);
-    return `rgba(30, 107, 255, ${(intensity * 0.16).toFixed(3)})`;
+    if (intensity >= 0.5) {
+      const alpha = (intensity - 0.5) * 2 * HEAT_LEADER_MAX_ALPHA;
+      return `rgba(${HEAT_LEADER_RGB}, ${alpha.toFixed(3)})`;
+    }
+    const alpha = (0.5 - intensity) * 2 * HEAT_LAGGARD_MAX_ALPHA;
+    return `rgba(${HEAT_LAGGARD_RGB}, ${alpha.toFixed(3)})`;
   }
 
   format(value: number | null | undefined, decimals: number): string {
