@@ -144,4 +144,19 @@ describe('LeagueProjectionTableComponent', () => {
     ).toEqual(['McDavid', 'Point']);
     expect(component.hasHiddenContributors()).toBe(false);
   });
+
+  it('shades cells on a diverging green-red scale, including the total column', () => {
+    const component = render().point.componentInstance;
+
+    // Column leader trends green, laggard red (goals: a=6 is the min, b=8 the max).
+    expect(component.shade('goals', 8)).toContain('rgba(22, 163, 74');
+    expect(component.shade('goals', 6)).toContain('rgba(233, 69, 96');
+
+    // The total column now carries the same heat (a.total=20 min, b.total=30 max).
+    expect(component.shade('total', 30)).toContain('rgba(22, 163, 74');
+    expect(component.shade('total', 20)).toContain('rgba(233, 69, 96');
+
+    // Missing values stay clear.
+    expect(component.shade('goals', null)).toEqual('transparent');
+  });
 });

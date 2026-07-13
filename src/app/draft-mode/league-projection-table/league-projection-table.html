@@ -33,13 +33,6 @@
         <tr>
           <th class="col-rank">#</th>
           <th class="col-team">Team</th>
-          <th
-            class="col-total sortable"
-            [class.sorted]="sortKey() === 'total'"
-            (click)="sortBy('total')"
-          >
-            {{ scoreHeading() }}<span class="sort-arrow">{{ sortIndicator('total') }}</span>
-          </th>
           @for (column of columns(); track column.key) {
             <th
               class="sortable"
@@ -50,6 +43,13 @@
               {{ column.label }}<span class="sort-arrow">{{ sortIndicator(column.key) }}</span>
             </th>
           }
+          <th
+            class="col-total sortable"
+            [class.sorted]="sortKey() === 'total'"
+            (click)="sortBy('total')"
+          >
+            {{ scoreHeading() }}<span class="sort-arrow">{{ sortIndicator('total') }}</span>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -72,22 +72,12 @@
                   <span class="you-badge">You</span>
                 }
               </div>
-              @if (isExpanded(team.teamId) && hasHiddenContributors()) {
-                <button
-                  type="button"
-                  class="lp-showall"
-                  (click)="$event.stopPropagation(); toggleShowAll()"
-                >
-                  {{ showAllPlayers() ? 'Show top 3' : 'Show all' }}
-                </button>
-              }
             </td>
-            <td class="col-total">{{ formatTotal(team.total) }}</td>
             @for (column of columns(); track column.key) {
               <td
                 class="lp-num"
                 [class.expanded]="isExpanded(team.teamId)"
-                [style.background]="shade(column, team.values[column.key])"
+                [style.background]="shade(column.key, team.values[column.key])"
               >
                 <span class="lp-cell-value">{{
                   format(team.values[column.key], column.decimals)
@@ -108,7 +98,19 @@
                 }
               </td>
             }
+            <td class="col-total" [style.background]="shade('total', team.total)">
+              {{ formatTotal(team.total) }}
+            </td>
           </tr>
+          @if (isExpanded(team.teamId) && hasHiddenContributors()) {
+            <tr class="lp-showall-row">
+              <td [attr.colspan]="columns().length + 3">
+                <button type="button" class="lp-showall" (click)="toggleShowAll()">
+                  {{ showAllPlayers() ? 'Show top 3' : 'Show all players' }}
+                </button>
+              </td>
+            </tr>
+          }
         }
       </tbody>
     </table>
