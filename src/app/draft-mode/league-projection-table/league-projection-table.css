@@ -85,8 +85,21 @@
   color: var(--color-text);
 }
 
-.lp-table th.sorted {
+/* Includes `thead` so it outranks `.lp-table thead th` (two type selectors) — otherwise the
+   default header colour/background wins the specificity tie and the sorted header looks unchanged. */
+.lp-table thead th.sorted {
   color: var(--color-primary);
+  background: var(--color-surface-hover);
+}
+
+/* The active sort column is framed top-to-bottom with accent side-rails (header cell included) so
+   it's obvious which column the table is ordered by. Rails are box-shadow rather than borders, so
+   they layer over the heat-shaded cell backgrounds and don't shift the column's width. */
+.lp-table th.sorted,
+.lp-table td.sorted {
+  box-shadow:
+    inset 1px 0 0 var(--color-primary),
+    inset -1px 0 0 var(--color-primary);
 }
 
 .sort-arrow {

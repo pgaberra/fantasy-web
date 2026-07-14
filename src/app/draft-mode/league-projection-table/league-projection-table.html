@@ -81,6 +81,7 @@
             @for (column of columns(); track column.key) {
               <td
                 class="lp-num"
+                [class.sorted]="sortKey() === column.key"
                 [class.expanded]="isExpanded(team.teamId) && !showsRosterRows()"
                 [style.background]="shade(column.key, team.values[column.key])"
               >
@@ -103,7 +104,11 @@
                 }
               </td>
             }
-            <td class="col-total" [style.background]="shade('total', team.total)">
+            <td
+              class="col-total"
+              [class.sorted]="sortKey() === 'total'"
+              [style.background]="shade('total', team.total)"
+            >
               {{ formatTotal(team.total) }}
             </td>
           </tr>
@@ -116,11 +121,13 @@
                   <span class="lp-player-name">{{ player.name }}</span>
                 </td>
                 @for (column of columns(); track column.key) {
-                  <td class="lp-num">
+                  <td class="lp-num" [class.sorted]="sortKey() === column.key">
                     {{ format(player.values[column.key], column.rawDecimals) }}
                   </td>
                 }
-                <td class="col-total">{{ formatTotal(player.total) }}</td>
+                <td class="col-total" [class.sorted]="sortKey() === 'total'">
+                  {{ formatTotal(player.total) }}
+                </td>
               </tr>
             }
             @if (hasHiddenPlayers(team)) {
