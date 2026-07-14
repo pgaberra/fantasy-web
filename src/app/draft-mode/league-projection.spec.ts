@@ -107,11 +107,32 @@ describe('buildLeagueProjection', () => {
     );
 
     // Each player appears exactly once, ordered by their overall value — not once per category.
+    // Raw stat values feed the display; direction-adjusted contributions feed per-column sorting.
     expect(data.teams[0].roster).toEqual([
-      { name: 'High', total: 5, values: { goals: 50, ga: null } },
-      { name: 'Low', total: 3, values: { goals: 30, ga: null } },
-      { name: 'Stingy', total: -2, values: { goals: null, ga: 150 } },
-      { name: 'Leaky', total: -4, values: { goals: null, ga: 200 } },
+      {
+        name: 'High',
+        total: 5,
+        values: { goals: 50, ga: null },
+        contributions: { goals: 5, ga: null },
+      },
+      {
+        name: 'Low',
+        total: 3,
+        values: { goals: 30, ga: null },
+        contributions: { goals: 3, ga: null },
+      },
+      {
+        name: 'Stingy',
+        total: -2,
+        values: { goals: null, ga: 150 },
+        contributions: { goals: null, ga: -2 },
+      },
+      {
+        name: 'Leaky',
+        total: -4,
+        values: { goals: null, ga: 200 },
+        contributions: { goals: null, ga: -4 },
+      },
     ]);
   });
 

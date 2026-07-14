@@ -40,6 +40,12 @@ export interface LeagueProjectionRosterRow {
   total: number;
   /** Raw stat value per category key; null where the stat doesn't apply to this player (a goalie has no hits). */
   values: Record<string, number | null>;
+  /**
+   * The player's direction-adjusted contribution per category key (higher is always better, mirroring
+   * how the team rows aggregate and sort) — used to order the roster when the table is sorted on a
+   * category column. Null where the stat doesn't apply, so those players sort to the bottom.
+   */
+  contributions: Record<string, number | null>;
 }
 
 export interface LeagueProjectionTeamRow {
@@ -309,11 +315,20 @@ export function buildLeagueProjection(
         const isSkater = entry.player.projection.type === 'skater';
         const scoring = entry.player.projection.stats.scoring as Record<string, number>;
         const rosterValues: Record<string, number | null> = {};
+        const rosterContributions: Record<string, number | null> = {};
         for (const column of categoryColumns) {
           const applies = SKATER_STAT_KEY_SET.has(column.key) === isSkater;
           rosterValues[column.key] = applies ? (scoring[column.key] ?? 0) : null;
+          rosterContributions[column.key] = applies
+            ? (entry.player.contributions[column.key] ?? 0)
+            : null;
         }
-        return { name: entry.player.name, total: entry.player.score, values: rosterValues };
+        return {
+          name: entry.player.name,
+          total: entry.player.score,
+          values: rosterValues,
+          contributions: rosterContributions,
+        };
       })
       .sort((first, second) => second.total - first.total);
 
