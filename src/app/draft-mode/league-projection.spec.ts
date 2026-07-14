@@ -72,6 +72,7 @@ describe('buildLeagueProjection', () => {
       ['goals', 'assists'],
       slots({ c: 2, lw: 2, d: 2, util: 1, g: 1, bn: 2 }),
       'points',
+      null,
     );
 
     expect(data.teams.map((team) => team.teamId)).toEqual(['a', 'b']);
@@ -102,6 +103,7 @@ describe('buildLeagueProjection', () => {
       ['goals', 'ga'],
       slots({ c: 2, g: 2, bn: 2 }),
       'points',
+      null,
     );
 
     const alpha = data.teams[0];
@@ -134,6 +136,7 @@ describe('buildLeagueProjection', () => {
       [],
       slots({ lw: 2, util: 1, bn: 1 }),
       'points',
+      null,
     );
 
     const alpha = data.teams[0];
@@ -155,7 +158,7 @@ describe('buildLeagueProjection', () => {
       { id: 'a', name: 'Alpha', mine: false, playerIds: [1, 2, 3] },
     ];
 
-    const data = buildLeagueProjection(teams, players, [], slots({ c: 1, lw: 1 }), 'points');
+    const data = buildLeagueProjection(teams, players, [], slots({ c: 1, lw: 1 }), 'points', null);
 
     const alpha = data.teams[0];
     // The dual player yields Center to the center-only player and starts at LW; the wing-only
@@ -172,11 +175,15 @@ describe('buildLeagueProjection', () => {
       ['goals', 'gaa'],
       slots({ c: 2, lw: 2, rw: 2, d: 4, util: 2, g: 2, bn: 3 }),
       'points',
+      { goals: 3, gaa: -1 },
     );
 
     expect(pointsData.categoryColumns.map((column) => column.key)).toEqual(['goals', 'gaa']);
     expect(pointsData.categoryColumns.map((column) => column.decimals)).toEqual([1, 1]);
     expect(pointsData.categoryColumns.map((column) => column.rawDecimals)).toEqual([0, 2]);
+    // A points league surfaces each stat's scoring weight; position columns never carry one.
+    expect(pointsData.categoryColumns.map((column) => column.weight)).toEqual([3, -1]);
+    expect(pointsData.positionColumns.every((column) => column.weight === null)).toBe(true);
     expect(pointsData.positionColumns.map((column) => column.key)).toEqual([
       'C',
       'LW',
@@ -193,9 +200,12 @@ describe('buildLeagueProjection', () => {
       ['goals'],
       slots({ c: 2, lw: 2, rw: 2, d: 4, g: 2 }),
       'category',
+      { goals: 3 },
     );
 
     expect(categoryData.categoryColumns[0].decimals).toEqual(2);
+    // A category/roto league scores on z-scores, so a stat weight would be misleading — omit it.
+    expect(categoryData.categoryColumns[0].weight).toBeNull();
     // No Util and no bench slots (and no overflow) → neither column is shown.
     expect(categoryData.positionColumns.map((column) => column.key)).toEqual([
       'C',

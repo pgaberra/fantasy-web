@@ -130,6 +130,9 @@ export class DraftModeComponent implements OnInit {
   readonly scoreHeading = computed(() =>
     this.scoringType() === 'points' ? 'Total Points' : 'Z-Score',
   );
+  private readonly statWeights = computed<StatWeights | null>(
+    () => (this.data()?.settings.statWeights as StatWeights | undefined) ?? null,
+  );
   readonly rosterSlots = computed(() => this.data()?.settings.rosterSlots ?? DEFAULT_ROSTER_SLOTS);
   readonly leagueSize = computed(() => this.data()?.settings.leagueSize ?? DEFAULT_LEAGUE_SIZE);
   readonly yahooSync = computed(() => this.data()?.settings.yahooSync ?? null);
@@ -266,6 +269,7 @@ export class DraftModeComponent implements OnInit {
       this.statColumns(),
       this.rosterSlots(),
       this.scoringType(),
+      this.statWeights(),
     );
   });
 
