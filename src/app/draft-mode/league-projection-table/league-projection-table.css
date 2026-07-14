@@ -94,7 +94,10 @@
   margin-left: 2px;
 }
 
-.col-rank {
+/* Prefixed with .lp-table so these outrank the blanket `.lp-table th, td { text-align: right }`
+   above — a bare `.col-rank` loses to it on specificity, which silently right-aligned the
+   frozen columns (the team name only looked left because .lp-team-head is a flex container). */
+.lp-table .col-rank {
   position: sticky;
   left: 0;
   z-index: 1;
@@ -111,7 +114,7 @@
   margin-right: 2px;
 }
 
-.col-team {
+.lp-table .col-team {
   position: sticky;
   left: 2.5rem;
   z-index: 1;
