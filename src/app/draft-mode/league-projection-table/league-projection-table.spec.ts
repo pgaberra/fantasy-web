@@ -27,14 +27,45 @@ describe('LeagueProjectionTableComponent', () => {
         mine: true,
         total: 20,
         values: { goals: 6, gaa: -2, C: 10, D: 5 },
-        // Six players — one more than the collapsed cap, so the "show all" toggle appears.
+        // Six players — one more than the collapsed cap, so the "show all" toggle appears. Zacha
+        // leads on goals despite a middling total, so sorting by Goals must reorder the rows.
         roster: [
-          { name: 'McDavid', total: 9, values: { goals: 40, gaa: null } },
-          { name: 'Point', total: 7, values: { goals: 30, gaa: null } },
-          { name: 'Zacha', total: 5, values: { goals: 20, gaa: null } },
-          { name: 'Nylander', total: 4, values: { goals: 10, gaa: null } },
-          { name: 'Makar', total: 3, values: { goals: 8, gaa: null } },
-          { name: 'Oettinger', total: 2, values: { goals: null, gaa: 2.4 } },
+          {
+            name: 'McDavid',
+            total: 9,
+            values: { goals: 40, gaa: null },
+            contributions: { goals: 40, gaa: null },
+          },
+          {
+            name: 'Point',
+            total: 7,
+            values: { goals: 30, gaa: null },
+            contributions: { goals: 30, gaa: null },
+          },
+          {
+            name: 'Zacha',
+            total: 5,
+            values: { goals: 55, gaa: null },
+            contributions: { goals: 55, gaa: null },
+          },
+          {
+            name: 'Nylander',
+            total: 4,
+            values: { goals: 10, gaa: null },
+            contributions: { goals: 10, gaa: null },
+          },
+          {
+            name: 'Makar',
+            total: 3,
+            values: { goals: 8, gaa: null },
+            contributions: { goals: 8, gaa: null },
+          },
+          {
+            name: 'Oettinger',
+            total: 2,
+            values: { goals: null, gaa: 2.4 },
+            contributions: { goals: null, gaa: -1 },
+          },
         ],
         positionPlayers: {
           C: [
@@ -51,8 +82,18 @@ describe('LeagueProjectionTableComponent', () => {
         total: 30,
         values: { goals: 8, gaa: -1, C: 4, D: 12 },
         roster: [
-          { name: 'Crosby', total: 6, values: { goals: 35, gaa: null } },
-          { name: 'Vasilevskiy', total: 4, values: { goals: null, gaa: 2.2 } },
+          {
+            name: 'Crosby',
+            total: 6,
+            values: { goals: 35, gaa: null },
+            contributions: { goals: 35, gaa: null },
+          },
+          {
+            name: 'Vasilevskiy',
+            total: 4,
+            values: { goals: null, gaa: 2.2 },
+            contributions: { goals: null, gaa: -1.5 },
+          },
         ],
         positionPlayers: {
           C: [{ name: 'Crosby', value: 4 }],
@@ -149,6 +190,38 @@ describe('LeagueProjectionTableComponent', () => {
     component.toggleExpand('a');
     expect(component.isExpanded('a')).toBe(false);
     expect(component.isShowingAll('a')).toBe(false);
+  });
+
+  it("orders each team's player rows by the column the table is sorted on", () => {
+    const component = render().point.componentInstance;
+    const alpha = data.teams[0];
+
+    component.toggleExpand('a');
+
+    // Default sort is total: rows lead with the highest-scoring player.
+    expect(component.rosterRows(alpha).map((row) => row.name)).toEqual([
+      'McDavid',
+      'Point',
+      'Zacha',
+      'Nylander',
+      'Makar',
+    ]);
+
+    // Sort by Goals (desc): Zacha leads on goals (55) despite a middling total, so he rises.
+    component.sortBy('goals');
+    expect(component.rosterRows(alpha).map((row) => row.name)).toEqual([
+      'Zacha',
+      'McDavid',
+      'Point',
+      'Nylander',
+      'Makar',
+    ]);
+
+    // Ascending flips the order; the goalie (no goals) still sinks to the very bottom.
+    component.toggleShowAll('a');
+    component.sortBy('goals');
+    const ascending = component.rosterRows(alpha).map((row) => row.name);
+    expect(ascending).toEqual(['Makar', 'Nylander', 'Point', 'McDavid', 'Zacha', 'Oettinger']);
   });
 
   it('expands teams independently, and keeps show-all scoped to the team it was toggled on', () => {

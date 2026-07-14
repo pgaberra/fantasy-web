@@ -93,9 +93,39 @@ export class LeagueProjectionTableComponent {
     return this.showsRosterRows() && team.roster.length > TOP_ROSTER_ROWS;
   }
 
-  /** The player rows shown under an expanded team, capped until its "show all" is toggled. */
+  /**
+   * The player rows shown under an expanded team, ordered by whichever column the table is sorted
+   * on — sort by Goals and each team's players lead with its top scorer — and capped until the
+   * team's own "show all" is toggled.
+   */
   rosterRows(team: LeagueProjectionTeamRow): LeagueProjectionRosterRow[] {
-    return this.isShowingAll(team.teamId) ? team.roster : team.roster.slice(0, TOP_ROSTER_ROWS);
+    const sorted = this.sortRoster(team.roster);
+    return this.isShowingAll(team.teamId) ? sorted : sorted.slice(0, TOP_ROSTER_ROWS);
+  }
+
+  private sortRoster(roster: readonly LeagueProjectionRosterRow[]): LeagueProjectionRosterRow[] {
+    const key = this.sortKey();
+    const descending = this.sortDir() === 'desc';
+    // Rank on the same basis the team rows sort on: overall value for the total column, and the
+    // direction-adjusted contribution for a category column (so lower-is-better stats still order
+    // best-first, matching the team ordering).
+    const rankOf = (row: LeagueProjectionRosterRow) =>
+      key === 'total' ? row.total : row.contributions[key];
+    return [...roster].sort((first, second) => {
+      const firstRank = rankOf(first);
+      const secondRank = rankOf(second);
+      // Players the sorted stat doesn't apply to (a goalie has no goals) sink to the bottom either way.
+      if (firstRank === null && secondRank === null) {
+        return 0;
+      }
+      if (firstRank === null) {
+        return 1;
+      }
+      if (secondRank === null) {
+        return -1;
+      }
+      return descending ? secondRank - firstRank : firstRank - secondRank;
+    });
   }
 
   /** Players listed inside a position cell when its row is expanded. */
