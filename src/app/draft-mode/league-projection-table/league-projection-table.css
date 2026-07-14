@@ -122,10 +122,21 @@
   font-weight: var(--weight-bold);
 }
 
+/* The expand/collapse affordance: a single chevron that rotates to point down and turns the
+   primary colour once its row is open, so expanded vs. collapsed reads at a glance. */
 .lp-chevron {
-  font-size: 0.6rem;
-  color: var(--color-text-subtle);
-  margin-right: 2px;
+  display: inline-block;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin-right: 3px;
+  transition:
+    transform var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.lp-chevron.expanded {
+  transform: rotate(90deg);
+  color: var(--color-primary);
 }
 
 .lp-table .col-team {
