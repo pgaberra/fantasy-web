@@ -86,7 +86,7 @@ describe('buildLeagueProjection', () => {
     expect(data.teams[1].values['goals']).toEqual(1);
   });
 
-  it("lists a category's contributors by contribution, honouring lower-is-better order, with raw values", () => {
+  it('lists the roster once per player, best first, with raw values and gaps where a stat does not apply', () => {
     const players = new Map<number, LeagueProjectionPlayer>([
       [1, player(skater(1, { goals: 30 }), 3, ['C'], { goals: 3 }, 'Low')],
       [2, player(skater(2, { goals: 50 }), 5, ['C'], { goals: 5 }, 'High')],
@@ -106,16 +106,12 @@ describe('buildLeagueProjection', () => {
       null,
     );
 
-    const alpha = data.teams[0];
-    expect(alpha.categoryContributors['goals']).toEqual([
-      { name: 'High', value: 50 },
-      { name: 'Low', value: 30 },
-    ]);
-    // Fewer goals against is the better contribution, so the stingier goalie is listed first
-    // even though its raw GA value is the lower number.
-    expect(alpha.categoryContributors['ga']).toEqual([
-      { name: 'Stingy', value: 150 },
-      { name: 'Leaky', value: 200 },
+    // Each player appears exactly once, ordered by their overall value — not once per category.
+    expect(data.teams[0].roster).toEqual([
+      { name: 'High', total: 5, values: { goals: 50, ga: null } },
+      { name: 'Low', total: 3, values: { goals: 30, ga: null } },
+      { name: 'Stingy', total: -2, values: { goals: null, ga: 150 } },
+      { name: 'Leaky', total: -4, values: { goals: null, ga: 200 } },
     ]);
   });
 

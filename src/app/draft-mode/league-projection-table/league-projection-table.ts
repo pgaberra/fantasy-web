@@ -5,12 +5,14 @@ import {
   LeagueProjectionColumn,
   LeagueProjectionContributor,
   LeagueProjectionData,
+  LeagueProjectionRosterRow,
   LeagueProjectionTeamRow,
 } from '../league-projection';
 
 type BreakdownMode = 'category' | 'position';
 
-const TOP_CONTRIBUTORS = 3;
+/** How many of a team's players an expanded category row shows before the "show all" toggle. */
+const TOP_ROSTER_ROWS = 5;
 
 /**
  * Diverging heat scale for the stat and total cells: the column leader trends green, the laggard
@@ -67,34 +69,40 @@ export class LeagueProjectionTableComponent {
     );
   });
 
-  /** Whether the expanded row has category cells with more contributors than the collapsed cap. */
-  readonly hasHiddenContributors = computed(() => {
-    if (this.mode() !== 'category') {
-      return false;
-    }
-    const team = this.data().teams.find((row) => row.teamId === this.expandedTeamId());
-    if (!team) {
-      return false;
-    }
-    return this.columns().some(
-      (column) => (team.categoryContributors[column.key]?.length ?? 0) > TOP_CONTRIBUTORS,
-    );
-  });
+  private readonly expandedTeam = computed(
+    () => this.data().teams.find((row) => row.teamId === this.expandedTeamId()) ?? null,
+  );
+
+  /**
+   * The category breakdown expands a team into one row per player; the position breakdown keeps
+   * its per-cell lists, because there each player belongs to exactly one slot column and so
+   * already appears only once.
+   */
+  readonly showsRosterRows = computed(
+    () => this.mode() === 'category' && this.expandedTeam() !== null,
+  );
+
+  readonly expandedRosterSize = computed(() => this.expandedTeam()?.roster.length ?? 0);
+
+  readonly hasHiddenPlayers = computed(
+    () => this.mode() === 'category' && this.expandedRosterSize() > TOP_ROSTER_ROWS,
+  );
 
   isExpanded(teamId: string): boolean {
     return this.expandedTeamId() === teamId;
   }
 
-  /** Players to list inside a cell when its row is expanded. */
+  /** The player rows shown under an expanded team, capped until "show all" is toggled. */
+  rosterRows(team: LeagueProjectionTeamRow): LeagueProjectionRosterRow[] {
+    return this.showAllPlayers() ? team.roster : team.roster.slice(0, TOP_ROSTER_ROWS);
+  }
+
+  /** Players listed inside a position cell when its row is expanded. */
   cellPlayers(
     team: LeagueProjectionTeamRow,
     column: LeagueProjectionColumn,
   ): LeagueProjectionContributor[] {
-    if (this.mode() === 'position') {
-      return team.positionPlayers[column.key] ?? [];
-    }
-    const contributors = team.categoryContributors[column.key] ?? [];
-    return this.showAllPlayers() ? contributors : contributors.slice(0, TOP_CONTRIBUTORS);
+    return team.positionPlayers[column.key] ?? [];
   }
 
   toggleExpand(teamId: string): void {

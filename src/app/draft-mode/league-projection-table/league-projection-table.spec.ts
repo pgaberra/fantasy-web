@@ -27,15 +27,15 @@ describe('LeagueProjectionTableComponent', () => {
         mine: true,
         total: 20,
         values: { goals: 6, gaa: -2, C: 10, D: 5 },
-        categoryContributors: {
-          goals: [
-            { name: 'McDavid', value: 40 },
-            { name: 'Point', value: 30 },
-            { name: 'Zacha', value: 20 },
-            { name: 'Nylander', value: 10 },
-          ],
-          gaa: [{ name: 'Oettinger', value: 2.4 }],
-        },
+        // Six players — one more than the collapsed cap, so the "show all" toggle appears.
+        roster: [
+          { name: 'McDavid', total: 9, values: { goals: 40, gaa: null } },
+          { name: 'Point', total: 7, values: { goals: 30, gaa: null } },
+          { name: 'Zacha', total: 5, values: { goals: 20, gaa: null } },
+          { name: 'Nylander', total: 4, values: { goals: 10, gaa: null } },
+          { name: 'Makar', total: 3, values: { goals: 8, gaa: null } },
+          { name: 'Oettinger', total: 2, values: { goals: null, gaa: 2.4 } },
+        ],
         positionPlayers: {
           C: [
             { name: 'McDavid', value: 6 },
@@ -50,10 +50,10 @@ describe('LeagueProjectionTableComponent', () => {
         mine: false,
         total: 30,
         values: { goals: 8, gaa: -1, C: 4, D: 12 },
-        categoryContributors: {
-          goals: [{ name: 'Crosby', value: 35 }],
-          gaa: [{ name: 'Vasilevskiy', value: 2.2 }],
-        },
+        roster: [
+          { name: 'Crosby', total: 6, values: { goals: 35, gaa: null } },
+          { name: 'Vasilevskiy', total: 4, values: { goals: null, gaa: 2.2 } },
+        ],
         positionPlayers: {
           C: [{ name: 'Crosby', value: 4 }],
           D: [{ name: 'Josi', value: 12 }],
@@ -106,50 +106,66 @@ describe('LeagueProjectionTableComponent', () => {
     expect(fixture.nativeElement.textContent as string).not.toContain('Goals');
   });
 
-  it('expands a row, caps category cells at the top contributors, then reveals all', () => {
+  it('expands a category row into one row per player, capped until show-all is toggled', () => {
     const fixture = render();
     const component = fixture.point.componentInstance;
     const alpha = data.teams[0];
-    const goalsColumn = data.categoryColumns[0];
 
     expect(component.isExpanded('a')).toBe(false);
+    expect(component.showsRosterRows()).toBe(false);
 
     component.toggleExpand('a');
     fixture.detectChanges();
 
     expect(component.isExpanded('a')).toBe(true);
-    expect(component.hasHiddenContributors()).toBe(true);
-    expect(component.cellPlayers(alpha, goalsColumn).map((entry) => entry.name)).toEqual([
-      'McDavid',
-      'Point',
-      'Zacha',
-    ]);
-    expect(fixture.nativeElement.textContent as string).toContain('McDavid');
+    expect(component.showsRosterRows()).toBe(true);
+    expect(component.hasHiddenPlayers()).toBe(true);
+    expect(component.expandedRosterSize()).toEqual(6);
 
-    component.toggleShowAll();
-    expect(component.cellPlayers(alpha, goalsColumn).map((entry) => entry.name)).toEqual([
+    // Capped at the top five, each player listed exactly once — not repeated per category.
+    expect(component.rosterRows(alpha).map((row) => row.name)).toEqual([
       'McDavid',
       'Point',
       'Zacha',
       'Nylander',
+      'Makar',
     ]);
+    const expandedText = fixture.nativeElement.textContent as string;
+    expect(expandedText).toContain('McDavid');
+    expect(expandedText).toContain('Show all 6 players');
+    expect(expandedText).not.toContain('Oettinger');
+
+    component.toggleShowAll();
+    fixture.detectChanges();
+
+    expect(component.rosterRows(alpha).map((row) => row.name)).toEqual([
+      'McDavid',
+      'Point',
+      'Zacha',
+      'Nylander',
+      'Makar',
+      'Oettinger',
+    ]);
+    expect(fixture.nativeElement.textContent as string).toContain('Oettinger');
 
     component.toggleExpand('a');
     expect(component.isExpanded('a')).toBe(false);
     expect(component.showAllPlayers()).toBe(false);
   });
 
-  it('lists the players assigned to each position slot when expanded', () => {
+  it('keeps the per-cell lists in the position breakdown, where a player owns one slot', () => {
     const component = render().point.componentInstance;
     const alpha = data.teams[0];
 
     component.setMode('position');
     component.toggleExpand('a');
 
+    // No roster rows here — each player already appears exactly once, inside their slot column.
+    expect(component.showsRosterRows()).toBe(false);
+    expect(component.hasHiddenPlayers()).toBe(false);
     expect(
       component.cellPlayers(alpha, data.positionColumns[0]).map((entry) => entry.name),
     ).toEqual(['McDavid', 'Point']);
-    expect(component.hasHiddenContributors()).toBe(false);
   });
 
   it('shows each stat weight under the column header in a points league, and never elsewhere', () => {
