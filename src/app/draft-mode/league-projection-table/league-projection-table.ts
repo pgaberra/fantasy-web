@@ -1,4 +1,12 @@
-import { Component, computed, input, signal } from '@angular/core';
+import {
+  afterRenderEffect,
+  Component,
+  computed,
+  ElementRef,
+  input,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { ScoringType } from '../../models/projection.model';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import {
@@ -31,6 +39,7 @@ const HEAT_LAGGARD_MAX_ALPHA = 0.2;
   imports: [TooltipDirective],
   templateUrl: './league-projection-table.html',
   styleUrl: './league-projection-table.css',
+  host: { '(window:resize)': 'onScroll()' },
 })
 export class LeagueProjectionTableComponent {
   readonly data = input.required<LeagueProjectionData>();
@@ -46,6 +55,39 @@ export class LeagueProjectionTableComponent {
   /** Which of those teams have their full roster revealed. Tracked per team, so "show all" on one
       team doesn't spill into another's list. */
   readonly showAllTeamIds = signal<ReadonlySet<string>>(new Set());
+
+  private readonly scrollWrap = viewChild<ElementRef<HTMLElement>>('scrollWrap');
+
+  /** True while more columns lie off the right edge — drives the "scroll for more" fade so a
+      clipped column (common in the wide position breakdown) reads as scrollable, not broken. */
+  readonly canScrollRight = signal<boolean>(false);
+
+  constructor() {
+    // Recompute the fade after each render that changes the table's width — expanding a team
+    // widens the position cells and pushes columns off-screen. Reading these signals makes the
+    // after-render effect re-run when they change; the idempotent set() avoids a render loop.
+    afterRenderEffect(() => {
+      this.mode();
+      this.expandedTeamIds();
+      this.showAllTeamIds();
+      this.data();
+      this.updateScrollEdge();
+    });
+  }
+
+  /** Bound to the scroll container's scroll event and to window resize. */
+  onScroll(): void {
+    this.updateScrollEdge();
+  }
+
+  private updateScrollEdge(): void {
+    const wrap = this.scrollWrap()?.nativeElement;
+    if (!wrap) {
+      return;
+    }
+    const maxScrollLeft = wrap.scrollWidth - wrap.clientWidth;
+    this.canScrollRight.set(maxScrollLeft > 1 && wrap.scrollLeft < maxScrollLeft - 1);
+  }
 
   readonly columns = computed(() =>
     this.mode() === 'category' ? this.data().categoryColumns : this.data().positionColumns,
