@@ -112,15 +112,13 @@ describe('LeagueProjectionTableComponent', () => {
     const alpha = data.teams[0];
 
     expect(component.isExpanded('a')).toBe(false);
-    expect(component.showsRosterRows()).toBe(false);
+    expect(component.showsRosterRows()).toBe(true);
 
     component.toggleExpand('a');
     fixture.detectChanges();
 
     expect(component.isExpanded('a')).toBe(true);
-    expect(component.showsRosterRows()).toBe(true);
-    expect(component.hasHiddenPlayers()).toBe(true);
-    expect(component.expandedRosterSize()).toEqual(6);
+    expect(component.hasHiddenPlayers(alpha)).toBe(true);
 
     // Capped at the top five, each player listed exactly once — not repeated per category.
     expect(component.rosterRows(alpha).map((row) => row.name)).toEqual([
@@ -135,7 +133,7 @@ describe('LeagueProjectionTableComponent', () => {
     expect(expandedText).toContain('Show all 6 players');
     expect(expandedText).not.toContain('Oettinger');
 
-    component.toggleShowAll();
+    component.toggleShowAll('a');
     fixture.detectChanges();
 
     expect(component.rosterRows(alpha).map((row) => row.name)).toEqual([
@@ -150,7 +148,35 @@ describe('LeagueProjectionTableComponent', () => {
 
     component.toggleExpand('a');
     expect(component.isExpanded('a')).toBe(false);
-    expect(component.showAllPlayers()).toBe(false);
+    expect(component.isShowingAll('a')).toBe(false);
+  });
+
+  it('expands teams independently, and keeps show-all scoped to the team it was toggled on', () => {
+    const fixture = render();
+    const component = fixture.point.componentInstance;
+    const [alpha, bravo] = data.teams;
+
+    component.toggleExpand('a');
+    component.toggleExpand('b');
+    fixture.detectChanges();
+
+    // Opening a second team must not close the first.
+    expect(component.isExpanded('a')).toBe(true);
+    expect(component.isExpanded('b')).toBe(true);
+
+    component.toggleShowAll('a');
+    fixture.detectChanges();
+
+    // Show-all belongs to Alpha alone — Bravo's list stays as it was.
+    expect(component.isShowingAll('a')).toBe(true);
+    expect(component.isShowingAll('b')).toBe(false);
+    expect(component.rosterRows(alpha).length).toEqual(6);
+    expect(component.rosterRows(bravo).map((row) => row.name)).toEqual(['Crosby', 'Vasilevskiy']);
+
+    // Collapsing Alpha leaves Bravo open.
+    component.toggleExpand('a');
+    expect(component.isExpanded('a')).toBe(false);
+    expect(component.isExpanded('b')).toBe(true);
   });
 
   it('keeps the per-cell lists in the position breakdown, where a player owns one slot', () => {
@@ -162,7 +188,7 @@ describe('LeagueProjectionTableComponent', () => {
 
     // No roster rows here — each player already appears exactly once, inside their slot column.
     expect(component.showsRosterRows()).toBe(false);
-    expect(component.hasHiddenPlayers()).toBe(false);
+    expect(component.hasHiddenPlayers(alpha)).toBe(false);
     expect(
       component.cellPlayers(alpha, data.positionColumns[0]).map((entry) => entry.name),
     ).toEqual(['McDavid', 'Point']);

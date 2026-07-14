@@ -40,8 +40,12 @@ export class LeagueProjectionTableComponent {
   readonly mode = signal<BreakdownMode>('category');
   readonly sortKey = signal<string>('total');
   readonly sortDir = signal<'asc' | 'desc'>('desc');
-  readonly expandedTeamId = signal<string | null>(null);
-  readonly showAllPlayers = signal<boolean>(false);
+
+  /** Teams are expanded independently — any number of them can be open at once. */
+  readonly expandedTeamIds = signal<ReadonlySet<string>>(new Set());
+  /** Which of those teams have their full roster revealed. Tracked per team, so "show all" on one
+      team doesn't spill into another's list. */
+  readonly showAllTeamIds = signal<ReadonlySet<string>>(new Set());
 
   readonly columns = computed(() =>
     this.mode() === 'category' ? this.data().categoryColumns : this.data().positionColumns,
@@ -69,32 +73,29 @@ export class LeagueProjectionTableComponent {
     );
   });
 
-  private readonly expandedTeam = computed(
-    () => this.data().teams.find((row) => row.teamId === this.expandedTeamId()) ?? null,
-  );
-
   /**
    * The category breakdown expands a team into one row per player; the position breakdown keeps
    * its per-cell lists, because there each player belongs to exactly one slot column and so
    * already appears only once.
    */
-  readonly showsRosterRows = computed(
-    () => this.mode() === 'category' && this.expandedTeam() !== null,
-  );
-
-  readonly expandedRosterSize = computed(() => this.expandedTeam()?.roster.length ?? 0);
-
-  readonly hasHiddenPlayers = computed(
-    () => this.mode() === 'category' && this.expandedRosterSize() > TOP_ROSTER_ROWS,
-  );
+  readonly showsRosterRows = computed(() => this.mode() === 'category');
 
   isExpanded(teamId: string): boolean {
-    return this.expandedTeamId() === teamId;
+    return this.expandedTeamIds().has(teamId);
   }
 
-  /** The player rows shown under an expanded team, capped until "show all" is toggled. */
+  isShowingAll(teamId: string): boolean {
+    return this.showAllTeamIds().has(teamId);
+  }
+
+  /** Whether this team has more players than an expanded row shows before the "show all" toggle. */
+  hasHiddenPlayers(team: LeagueProjectionTeamRow): boolean {
+    return this.showsRosterRows() && team.roster.length > TOP_ROSTER_ROWS;
+  }
+
+  /** The player rows shown under an expanded team, capped until its "show all" is toggled. */
   rosterRows(team: LeagueProjectionTeamRow): LeagueProjectionRosterRow[] {
-    return this.showAllPlayers() ? team.roster : team.roster.slice(0, TOP_ROSTER_ROWS);
+    return this.isShowingAll(team.teamId) ? team.roster : team.roster.slice(0, TOP_ROSTER_ROWS);
   }
 
   /** Players listed inside a position cell when its row is expanded. */
@@ -106,17 +107,32 @@ export class LeagueProjectionTableComponent {
   }
 
   toggleExpand(teamId: string): void {
-    this.expandedTeamId.update((current) => (current === teamId ? null : teamId));
-    this.showAllPlayers.set(false);
+    const expanded = new Set(this.expandedTeamIds());
+    if (!expanded.delete(teamId)) {
+      expanded.add(teamId);
+    }
+    this.expandedTeamIds.set(expanded);
+    // A collapsed team forgets it was showing its full roster, so re-expanding starts capped again.
+    this.setShowingAll(teamId, false);
   }
 
-  toggleShowAll(): void {
-    this.showAllPlayers.update((current) => !current);
+  toggleShowAll(teamId: string): void {
+    this.setShowingAll(teamId, !this.isShowingAll(teamId));
+  }
+
+  private setShowingAll(teamId: string, showAll: boolean): void {
+    const showingAll = new Set(this.showAllTeamIds());
+    if (showAll) {
+      showingAll.add(teamId);
+    } else {
+      showingAll.delete(teamId);
+    }
+    this.showAllTeamIds.set(showingAll);
   }
 
   setMode(mode: BreakdownMode): void {
     this.mode.set(mode);
-    this.showAllPlayers.set(false);
+    this.showAllTeamIds.set(new Set());
     if (
       this.sortKey() !== 'total' &&
       !this.columns().some((column) => column.key === this.sortKey())

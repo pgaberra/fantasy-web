@@ -121,15 +121,15 @@
                 <td class="col-total">{{ formatTotal(player.total) }}</td>
               </tr>
             }
-            @if (hasHiddenPlayers()) {
+            @if (hasHiddenPlayers(team)) {
               <tr class="lp-player-row">
                 <td class="col-rank"></td>
                 <td class="col-team">
-                  <button type="button" class="lp-showall" (click)="toggleShowAll()">
+                  <button type="button" class="lp-showall" (click)="toggleShowAll(team.teamId)">
                     {{
-                      showAllPlayers()
+                      isShowingAll(team.teamId)
                         ? 'Show top 5'
-                        : 'Show all ' + expandedRosterSize() + ' players'
+                        : 'Show all ' + team.roster.length + ' players'
                     }}
                   </button>
                 </td>
