@@ -29,6 +29,19 @@ export interface LeagueProjectionContributor {
   value: number;
 }
 
+/**
+ * One drafted player, as a row under an expanded team in the category breakdown. In that mode a
+ * player contributes to *every* category, so listing them per column would repeat the same names
+ * across the row — a player row keeps each of them exactly once and lets you read their whole line.
+ */
+export interface LeagueProjectionRosterRow {
+  name: string;
+  /** The player's overall projected value (fantasy points or z-score), matching the team total's basis. */
+  total: number;
+  /** Raw stat value per category key; null where the stat doesn't apply to this player (a goalie has no hits). */
+  values: Record<string, number | null>;
+}
+
 export interface LeagueProjectionTeamRow {
   teamId: string;
   name: string;
@@ -36,8 +49,8 @@ export interface LeagueProjectionTeamRow {
   total: number;
   /** Aggregated value per column key (weighted/z contribution for categories, summed score for positions). */
   values: Record<string, number>;
-  /** Per category key: the team's players, sorted by their contribution to that category, with raw stat values. */
-  categoryContributors: Record<string, LeagueProjectionContributor[]>;
+  /** The team's drafted players, best first — the rows shown when a category-mode team is expanded. */
+  roster: LeagueProjectionRosterRow[];
   /** Per position column key (incl. BN): the players assigned to that slot, sorted by projected value. */
   positionPlayers: Record<string, LeagueProjectionContributor[]>;
 }
@@ -265,7 +278,7 @@ export function buildLeagueProjection(
     mine: boolean;
     total: number;
     values: Record<string, number>;
-    categoryContributors: Record<string, LeagueProjectionContributor[]>;
+    roster: LeagueProjectionRosterRow[];
     byCol: Map<string, AssignablePlayer[]>;
     bench: AssignablePlayer[];
   }
@@ -280,24 +293,29 @@ export function buildLeagueProjection(
 
     const total = players.reduce((sum, entry) => sum + entry.player.score, 0);
 
+    // A category cell aggregates only the players the stat applies to — a goalie contributes no
+    // hits, a skater no saves — so each column sums over its own side of the roster.
     const values: Record<string, number> = {};
-    const categoryContributors: Record<string, LeagueProjectionContributor[]> = {};
     for (const column of categoryColumns) {
       const key = column.key;
       const wantsSkater = SKATER_STAT_KEY_SET.has(key);
-      const typed = players.filter(
-        (entry) => (entry.player.projection.type === 'skater') === wantsSkater,
-      );
-      values[key] = typed.reduce((sum, entry) => sum + (entry.player.contributions[key] ?? 0), 0);
-      categoryContributors[key] = typed
-        .map((entry) => ({
-          name: entry.player.name,
-          value: (entry.player.projection.stats.scoring as Record<string, number>)[key] ?? 0,
-          contribution: entry.player.contributions[key] ?? 0,
-        }))
-        .sort((first, second) => second.contribution - first.contribution)
-        .map(({ name, value }) => ({ name, value }));
+      values[key] = players
+        .filter((entry) => (entry.player.projection.type === 'skater') === wantsSkater)
+        .reduce((sum, entry) => sum + (entry.player.contributions[key] ?? 0), 0);
     }
+
+    const roster: LeagueProjectionRosterRow[] = players
+      .map((entry) => {
+        const isSkater = entry.player.projection.type === 'skater';
+        const scoring = entry.player.projection.stats.scoring as Record<string, number>;
+        const rosterValues: Record<string, number | null> = {};
+        for (const column of categoryColumns) {
+          const applies = SKATER_STAT_KEY_SET.has(column.key) === isSkater;
+          rosterValues[column.key] = applies ? (scoring[column.key] ?? 0) : null;
+        }
+        return { name: entry.player.name, total: entry.player.score, values: rosterValues };
+      })
+      .sort((first, second) => second.total - first.total);
 
     const assignables: AssignablePlayer[] = players.map((entry) => ({
       playerId: entry.id,
@@ -314,7 +332,7 @@ export function buildLeagueProjection(
       mine: team.mine,
       total,
       values,
-      categoryContributors,
+      roster,
       byCol,
       bench,
     };
@@ -341,7 +359,7 @@ export function buildLeagueProjection(
       mine: partial.mine,
       total: partial.total,
       values: partial.values,
-      categoryContributors: partial.categoryContributors,
+      roster: partial.roster,
       positionPlayers,
     };
   });

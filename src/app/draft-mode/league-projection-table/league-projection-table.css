@@ -185,13 +185,36 @@
   border-radius: var(--radius-sm);
 }
 
-/* The show-all toggle lives in the expanded team's name cell, right under the team name. */
+/* Expanding a team in the category breakdown drills down into its roster: one row per player,
+   aligned to the very same columns. The heat stays on the team rows — these sit on a flat, quiet
+   surface so the hierarchy (team vs. its players) reads instantly. */
+.lp-table tbody tr.lp-player-row td {
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  font-weight: var(--weight-medium);
+  cursor: default;
+}
+
+.lp-player-name {
+  display: block;
+  padding-left: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+}
+
+.lp-table tbody tr.lp-player-row td.col-total {
+  color: var(--color-text);
+  font-weight: var(--weight-semibold);
+}
+
+/* The show-all toggle closes the player list, sitting in the team column under the names. */
 .lp-showall {
   appearance: none;
   border: none;
   background: none;
-  padding: 0;
-  margin-top: 0.4rem;
+  padding: 0 0 0 1rem;
   font-family: inherit;
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);

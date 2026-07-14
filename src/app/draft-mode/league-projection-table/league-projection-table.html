@@ -75,26 +75,17 @@
                   <span class="you-badge">You</span>
                 }
               </div>
-              @if (isExpanded(team.teamId) && hasHiddenContributors()) {
-                <button
-                  type="button"
-                  class="lp-showall"
-                  (click)="$event.stopPropagation(); toggleShowAll()"
-                >
-                  {{ showAllPlayers() ? 'Show top 3' : 'Show all' }}
-                </button>
-              }
             </td>
             @for (column of columns(); track column.key) {
               <td
                 class="lp-num"
-                [class.expanded]="isExpanded(team.teamId)"
+                [class.expanded]="isExpanded(team.teamId) && !showsRosterRows()"
                 [style.background]="shade(column.key, team.values[column.key])"
               >
                 <span class="lp-cell-value">{{
                   format(team.values[column.key], column.decimals)
                 }}</span>
-                @if (isExpanded(team.teamId)) {
+                @if (isExpanded(team.teamId) && !showsRosterRows()) {
                   <ul class="lp-cell-players">
                     @for (player of cellPlayers(team, column); track player.name + $index) {
                       <li>
@@ -114,6 +105,38 @@
               {{ formatTotal(team.total) }}
             </td>
           </tr>
+
+          @if (isExpanded(team.teamId) && showsRosterRows()) {
+            @for (player of rosterRows(team); track player.name + $index) {
+              <tr class="lp-player-row">
+                <td class="col-rank"></td>
+                <td class="col-team">
+                  <span class="lp-player-name">{{ player.name }}</span>
+                </td>
+                @for (column of columns(); track column.key) {
+                  <td class="lp-num">
+                    {{ format(player.values[column.key], column.rawDecimals) }}
+                  </td>
+                }
+                <td class="col-total">{{ formatTotal(player.total) }}</td>
+              </tr>
+            }
+            @if (hasHiddenPlayers()) {
+              <tr class="lp-player-row">
+                <td class="col-rank"></td>
+                <td class="col-team">
+                  <button type="button" class="lp-showall" (click)="toggleShowAll()">
+                    {{
+                      showAllPlayers()
+                        ? 'Show top 5'
+                        : 'Show all ' + expandedRosterSize() + ' players'
+                    }}
+                  </button>
+                </td>
+                <td [attr.colspan]="columns().length + 1"></td>
+              </tr>
+            }
+          }
         }
       </tbody>
     </table>
