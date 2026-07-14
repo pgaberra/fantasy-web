@@ -72,6 +72,15 @@
                   <span class="you-badge">You</span>
                 }
               </div>
+              @if (isExpanded(team.teamId) && hasHiddenContributors()) {
+                <button
+                  type="button"
+                  class="lp-showall"
+                  (click)="$event.stopPropagation(); toggleShowAll()"
+                >
+                  {{ showAllPlayers() ? 'Show top 3' : 'Show all' }}
+                </button>
+              }
             </td>
             @for (column of columns(); track column.key) {
               <td
@@ -102,15 +111,6 @@
               {{ formatTotal(team.total) }}
             </td>
           </tr>
-          @if (isExpanded(team.teamId) && hasHiddenContributors()) {
-            <tr class="lp-showall-row">
-              <td [attr.colspan]="columns().length + 3">
-                <button type="button" class="lp-showall" (click)="toggleShowAll()">
-                  {{ showAllPlayers() ? 'Show top 3' : 'Show all players' }}
-                </button>
-              </td>
-            </tr>
-          }
         }
       </tbody>
     </table>
