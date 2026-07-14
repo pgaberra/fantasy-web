@@ -94,6 +94,20 @@
   margin-left: 2px;
 }
 
+/* Points-league scoring weight, under the column label — the multiplier behind every value in
+   that column. Opts out of the header's uppercase/letter-spacing so it reads as a value, not a
+   label. Absent in category/roto leagues and on the position columns. */
+.lp-weight {
+  display: block;
+  margin-top: 1px;
+  font-size: 0.65rem;
+  font-weight: var(--weight-medium);
+  color: var(--color-text-subtle);
+  text-transform: none;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Prefixed with .lp-table so these outrank the blanket `.lp-table th, td { text-align: right }`
    above — a bare `.col-rank` loses to it on specificity, which silently right-aligned the
    frozen columns (the team name only looked left because .lp-team-head is a flex container). */

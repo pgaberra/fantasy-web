@@ -41,6 +41,9 @@
               (click)="sortBy(column.key)"
             >
               {{ column.label }}<span class="sort-arrow">{{ sortIndicator(column.key) }}</span>
+              @if (column.weight !== null) {
+                <span class="lp-weight">×{{ formatWeight(column.weight) }}</span>
+              }
             </th>
           }
           <th

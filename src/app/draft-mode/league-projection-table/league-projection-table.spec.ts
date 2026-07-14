@@ -6,12 +6,19 @@ import { LeagueProjectionData } from '../league-projection';
 describe('LeagueProjectionTableComponent', () => {
   const data: LeagueProjectionData = {
     categoryColumns: [
-      { key: 'goals', label: 'Goals', tooltip: null, decimals: 2, rawDecimals: 0 },
-      { key: 'gaa', label: 'GAA', tooltip: 'Goals Against Average', decimals: 2, rawDecimals: 2 },
+      { key: 'goals', label: 'Goals', tooltip: null, decimals: 2, rawDecimals: 0, weight: null },
+      {
+        key: 'gaa',
+        label: 'GAA',
+        tooltip: 'Goals Against Average',
+        decimals: 2,
+        rawDecimals: 2,
+        weight: null,
+      },
     ],
     positionColumns: [
-      { key: 'C', label: 'C', tooltip: 'Center', decimals: 1, rawDecimals: 1 },
-      { key: 'D', label: 'D', tooltip: 'Defense', decimals: 1, rawDecimals: 1 },
+      { key: 'C', label: 'C', tooltip: 'Center', decimals: 1, rawDecimals: 1, weight: null },
+      { key: 'D', label: 'D', tooltip: 'Defense', decimals: 1, rawDecimals: 1, weight: null },
     ],
     teams: [
       {
@@ -143,6 +150,36 @@ describe('LeagueProjectionTableComponent', () => {
       component.cellPlayers(alpha, data.positionColumns[0]).map((entry) => entry.name),
     ).toEqual(['McDavid', 'Point']);
     expect(component.hasHiddenContributors()).toBe(false);
+  });
+
+  it('shows each stat weight under the column header in a points league, and never elsewhere', () => {
+    const pointsData: LeagueProjectionData = {
+      ...data,
+      categoryColumns: [
+        { key: 'goals', label: 'Goals', tooltip: null, decimals: 1, rawDecimals: 0, weight: 3 },
+        {
+          key: 'gaa',
+          label: 'GAA',
+          tooltip: 'Goals Against Average',
+          decimals: 1,
+          rawDecimals: 2,
+          weight: -1,
+        },
+      ],
+    };
+
+    const pointsText = MockRender(LeagueProjectionTableComponent, {
+      data: pointsData,
+      scoringType: 'points',
+      scoreHeading: 'Total Points',
+    }).nativeElement.textContent as string;
+
+    expect(pointsText).toContain('×3');
+    expect(pointsText).toContain('×-1');
+
+    // The shared fixture is a category league — the builder leaves its weights null, so no
+    // multiplier should be rendered at all.
+    expect(render().nativeElement.textContent as string).not.toContain('×');
   });
 
   it('shades cells on a diverging green-red scale, including the total column', () => {

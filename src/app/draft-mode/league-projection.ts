@@ -1,4 +1,4 @@
-import { Projection, ScoringType } from '../models/projection.model';
+import { Projection, ScoringType, StatWeights } from '../models/projection.model';
 import { ScoringStatKey, SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
 import { STAT_LABELS } from '../pipes/stat-label.pipe';
 import { STAT_FULL_NAMES } from '../pipes/stat-tooltip.pipe';
@@ -16,6 +16,12 @@ export interface LeagueProjectionColumn {
   decimals: number;
   /** Decimals for the per-player raw values listed when a row is expanded. */
   rawDecimals: number;
+  /**
+   * Points awarded per unit of this stat in a points league — the multiplier behind the cell
+   * values. Null for category/roto leagues (where the basis is a z-score, not a point value)
+   * and for position columns.
+   */
+  weight: number | null;
 }
 
 export interface LeagueProjectionContributor {
@@ -195,14 +201,17 @@ function assignRosterSlots(
 function categoryColumnsFor(
   activeScoringColumns: readonly ScoringStatKey[],
   scoringType: ScoringType,
+  statWeights: Partial<StatWeights> | null,
 ): LeagueProjectionColumn[] {
-  const aggregateDecimals = scoringType === 'points' ? 1 : 2;
+  const isPoints = scoringType === 'points';
+  const aggregateDecimals = isPoints ? 1 : 2;
   return activeScoringColumns.map((key) => ({
     key,
     label: STAT_LABELS[key],
     tooltip: STAT_FULL_NAMES[key] === STAT_LABELS[key] ? null : STAT_FULL_NAMES[key],
     decimals: aggregateDecimals,
     rawDecimals: RATE_STAT_KEYS.has(key) ? (RATE_DECIMALS[key] ?? 2) : 0,
+    weight: isPoints ? (statWeights?.[key] ?? null) : null,
   }));
 }
 
@@ -218,9 +227,17 @@ function positionColumnsFor(
     tooltip: def.full,
     decimals: 1,
     rawDecimals: 1,
+    weight: null,
   }));
   if (includeBench) {
-    columns.push({ key: BENCH_COL, label: 'BN', tooltip: 'Bench', decimals: 1, rawDecimals: 1 });
+    columns.push({
+      key: BENCH_COL,
+      label: 'BN',
+      tooltip: 'Bench',
+      decimals: 1,
+      rawDecimals: 1,
+      weight: null,
+    });
   }
   return columns;
 }
@@ -238,8 +255,9 @@ export function buildLeagueProjection(
   activeScoringColumns: readonly ScoringStatKey[],
   rosterSlots: RosterSlots,
   scoringType: ScoringType,
+  statWeights: Partial<StatWeights> | null,
 ): LeagueProjectionData {
-  const categoryColumns = categoryColumnsFor(activeScoringColumns, scoringType);
+  const categoryColumns = categoryColumnsFor(activeScoringColumns, scoringType, statWeights);
 
   interface PartialTeamRow {
     teamId: string;

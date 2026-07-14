@@ -151,6 +151,11 @@ export class LeagueProjectionTableComponent {
     return `rgba(${HEAT_LAGGARD_RGB}, ${alpha.toFixed(3)})`;
   }
 
+  /** The points-per-unit multiplier under a points-league column header (3, 0.5, -1, …). */
+  formatWeight(weight: number): string {
+    return parseFloat(weight.toFixed(2)).toString();
+  }
+
   format(value: number | null | undefined, decimals: number): string {
     if (value === null || value === undefined) {
       return '—';
