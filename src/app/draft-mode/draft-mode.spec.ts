@@ -208,7 +208,7 @@ describe('DraftModeComponent', () => {
     expect(component.showSummary()).toBe(true);
   });
 
-  it('finishes directly without a prompt when the board is complete', async () => {
+  it('confirms before finishing even when the board is complete', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
@@ -222,7 +222,11 @@ describe('DraftModeComponent', () => {
     expect(component.isComplete()).toBe(true);
 
     component.requestFinishDraft();
+    expect(component.confirmingFinish()).toBe(true);
+    expect(component.showSummary()).toBe(false);
+    expect(component.finished()).toBe(false);
 
+    component.finishDraft();
     expect(component.confirmingFinish()).toBe(false);
     expect(component.showSummary()).toBe(true);
     expect(component.finished()).toBe(true);
@@ -238,7 +242,7 @@ describe('DraftModeComponent', () => {
     });
     component.draftCurrent(1);
     component.draftCurrent(2);
-    component.requestFinishDraft();
+    component.finishDraft();
     expect(component.finished()).toBe(true);
 
     // Even a swap that leaves every slot filled reopens the draft.
