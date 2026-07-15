@@ -623,13 +623,9 @@ export class DraftModeComponent implements OnInit {
   }
 
   requestFinishDraft(): void {
-    // A full board needs no confirmation — jumping to the summary is reversible. Keep the
-    // prompt only for finishing early, where its "X of Y picks" warning is meaningful.
-    if (this.isComplete()) {
-      this.finishDraft();
-    } else {
-      this.confirmingFinish.set(true);
-    }
+    // Always confirm — finishing marks the draft done and changes where it opens next time,
+    // so it's worth an explicit "yes". The dialog's copy adapts to a full vs. early finish.
+    this.confirmingFinish.set(true);
   }
 
   cancelFinish(): void {
