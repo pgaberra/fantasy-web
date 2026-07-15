@@ -235,6 +235,22 @@ summary:focus-visible,
   background: #eef3fb;
 }
 
+/* On a wide enough screen, also pin the summary (Total Points / Z-Score) column to the
+   right edge — the key output stays in view while the stat columns scroll, mirroring the
+   sticky rank + player columns on the left. Skipped on narrower screens, where a third
+   sticky column would crush the scrollable stats. */
+@media (min-width: 1024px) {
+  .table-wrapper .summary-pts-col,
+  .table-wrapper .fan-pts-col {
+    position: sticky;
+    right: 0;
+    box-shadow: -6px 0 6px -5px rgba(15, 52, 96, 0.18);
+  }
+  .table-wrapper tbody td.fan-pts-col {
+    z-index: 1;
+  }
+}
+
 /* On narrow screens the sticky rank + player columns must stay compact so the
    scrollable stat columns remain visible — cap the player column and truncate
    long names instead of letting them push the stats off-screen. */
