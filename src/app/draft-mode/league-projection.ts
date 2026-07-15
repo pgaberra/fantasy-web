@@ -102,10 +102,15 @@ interface SlotDef {
 
 const BENCH_COL = 'BN';
 
-/** Starting (counting) lineup slots, in display and placement-priority order — named positions before Util. */
+/**
+ * Starting (counting) lineup slots, in display and placement-priority order. Forwards read
+ * left-to-right as they line up on the ice — LW, C, RW — then D, Util, G (named positions before
+ * Util). Reordering only shifts which slot a dual-eligible player is shown under; the
+ * maximum-matching in {@link assignRosterSlots} still starts the same set of players.
+ */
 const STARTING_SLOT_DEFS: SlotDef[] = [
-  { key: 'c', col: 'C', label: 'C', full: 'Center' },
   { key: 'lw', col: 'LW', label: 'LW', full: 'Left Wing' },
+  { key: 'c', col: 'C', label: 'C', full: 'Center' },
   { key: 'rw', col: 'RW', label: 'RW', full: 'Right Wing' },
   { key: 'd', col: 'D', label: 'D', full: 'Defense' },
   { key: 'util', col: 'UTIL', label: 'Util', full: 'Utility' },

@@ -201,9 +201,10 @@ describe('buildLeagueProjection', () => {
     // A points league surfaces each stat's scoring weight; position columns never carry one.
     expect(pointsData.categoryColumns.map((column) => column.weight)).toEqual([3, -1]);
     expect(pointsData.positionColumns.every((column) => column.weight === null)).toBe(true);
+    // Forwards read left-to-right as on the ice: LW, C, RW.
     expect(pointsData.positionColumns.map((column) => column.key)).toEqual([
-      'C',
       'LW',
+      'C',
       'RW',
       'D',
       'UTIL',
@@ -225,8 +226,8 @@ describe('buildLeagueProjection', () => {
     expect(categoryData.categoryColumns[0].weight).toBeNull();
     // No Util and no bench slots (and no overflow) → neither column is shown.
     expect(categoryData.positionColumns.map((column) => column.key)).toEqual([
-      'C',
       'LW',
+      'C',
       'RW',
       'D',
       'G',
