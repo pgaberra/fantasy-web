@@ -295,6 +295,7 @@ export class DraftModeComponent implements OnInit {
   });
   readonly isMyPick = computed(() => !!this.upNextTeam()?.mine);
   readonly canUndo = computed(() => this.picks().length > 0);
+  readonly finished = computed(() => !!this.draft()?.finishedAt);
 
   readonly draftLabel = computed(() => {
     if (this.isMyPick() || this.isComplete()) {
@@ -462,7 +463,13 @@ export class DraftModeComponent implements OnInit {
           this.data.set(projection.data);
           this.allPlayers.set(players);
           this.lookup.setPlayers(players);
-          this.draft.set(this.serializer.fromProjectionData(projection.data).draft);
+          const loadedDraft = this.serializer.fromProjectionData(projection.data).draft;
+          this.draft.set(loadedDraft);
+          // A finished draft opens straight to its summary — the board stays a click away
+          // via "Edit draft", and editing picks doesn't un-finish it.
+          if (loadedDraft?.finishedAt) {
+            this.showSummary.set(true);
+          }
           this.loaded.set(true);
         },
         error: () => {
@@ -616,7 +623,13 @@ export class DraftModeComponent implements OnInit {
   }
 
   requestFinishDraft(): void {
-    this.confirmingFinish.set(true);
+    // A full board needs no confirmation — jumping to the summary is reversible. Keep the
+    // prompt only for finishing early, where its "X of Y picks" warning is meaningful.
+    if (this.isComplete()) {
+      this.finishDraft();
+    } else {
+      this.confirmingFinish.set(true);
+    }
   }
 
   cancelFinish(): void {
@@ -625,6 +638,11 @@ export class DraftModeComponent implements OnInit {
 
   finishDraft(): void {
     this.confirmingFinish.set(false);
+    this.mutate((draft) => ({ ...draft, finishedAt: new Date().toISOString() }));
+    this.showSummary.set(true);
+  }
+
+  viewSummary(): void {
     this.showSummary.set(true);
   }
 

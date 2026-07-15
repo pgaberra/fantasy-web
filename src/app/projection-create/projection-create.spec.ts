@@ -66,6 +66,7 @@ describe('ProjectionCreateComponent', () => {
   const summary: ProjectionSummaryResponse = {
     id: 'p1',
     name: 'My Projection',
+    draftStatus: 'none',
     season: '20262027',
     createdAt: '2026-06-01T00:00:00Z',
     updatedAt: '2026-06-01T00:00:00Z',

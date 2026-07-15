@@ -7,6 +7,9 @@
       <div class="draft-title">
         <h1>{{ projectionName() }}</h1>
         <span class="draft-tag">Draft mode</span>
+        @if (finished()) {
+          <span class="draft-tag draft-tag--done">Finished</span>
+        }
         @switch (saveStatus()) {
           @case ('saving') {
             <span class="save-status">Saving…</span>
@@ -43,7 +46,7 @@
     } @else {
       <div class="draft-toolbar">
         <span class="draft-progress">
-          @if (isComplete()) {
+          @if (finished() || isComplete()) {
             Draft complete
           } @else {
             Up next: <strong>{{ upNextTeam()?.name }}</strong>
@@ -64,15 +67,21 @@
           <button type="button" class="btn btn-secondary btn-sm" (click)="editTeams()">
             Edit teams
           </button>
-          <button
-            type="button"
-            class="btn btn-sm"
-            [class.btn-primary]="isComplete()"
-            [class.btn-secondary]="!isComplete()"
-            (click)="requestFinishDraft()"
-          >
-            Finish draft
-          </button>
+          @if (finished()) {
+            <button type="button" class="btn btn-primary btn-sm" (click)="viewSummary()">
+              View summary
+            </button>
+          } @else {
+            <button
+              type="button"
+              class="btn btn-sm"
+              [class.btn-primary]="isComplete()"
+              [class.btn-secondary]="!isComplete()"
+              (click)="requestFinishDraft()"
+            >
+              Finish draft
+            </button>
+          }
         </span>
       </div>
 
@@ -127,12 +136,8 @@
           <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
             <h2 class="modal-title">Finish the draft?</h2>
             <p class="modal-text">
-              @if (isComplete()) {
-                You'll jump to the draft summary. You can head back to the board anytime.
-              } @else {
-                The draft isn't finished yet — {{ picks().length }} of {{ totalPicks() }} picks
-                made. You can still finish and view the summary, then come back to keep drafting.
-              }
+              The draft isn't finished yet — {{ picks().length }} of {{ totalPicks() }} picks made.
+              You can still finish and view the summary, then come back to keep drafting.
             </p>
             <div class="modal-actions">
               <button type="button" class="btn btn-secondary" (click)="cancelFinish()">

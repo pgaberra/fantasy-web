@@ -105,6 +105,9 @@ export class ProjectionSerializerService {
       teams: draft.teams.map((team) => ({ ...team })),
       order: [...draft.order],
       picks: draft.picks.map((pick) => ({ ...pick })),
+      // Carry the finished marker through every save/load round-trip; omit the key entirely
+      // while the draft is still in progress so the persisted JSON stays minimal.
+      ...(draft.finishedAt ? { finishedAt: draft.finishedAt } : {}),
     };
   }
 
