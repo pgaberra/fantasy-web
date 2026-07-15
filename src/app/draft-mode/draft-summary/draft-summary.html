@@ -32,10 +32,6 @@
   @if (activeTab() === 'results') {
     <app-draft-results [rounds]="resultRounds()" [teams]="resultTeams()" />
   } @else {
-    <p class="summary-sub">
-      Every league team ranked by your projection. Sort any column — or switch to a per-position
-      breakdown — to see who's strongest where.
-    </p>
     <app-league-projection-table
       [data]="leagueProjection()"
       [scoringType]="scoringType()"
