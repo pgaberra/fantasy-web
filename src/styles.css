@@ -244,10 +244,20 @@ summary:focus-visible,
   .table-wrapper .fan-pts-col {
     position: sticky;
     right: 0;
-    box-shadow: -6px 0 6px -5px rgba(15, 52, 96, 0.18);
   }
+  /* border-collapse paints a cell's left border on the scrolling table layer, not the
+     cell, so it's dropped once the column sticks. Redraw the gold edge with an inset
+     shadow that rides with the cell, plus a soft depth shadow over the scrolled content. */
   .table-wrapper tbody td.fan-pts-col {
     z-index: 1;
+    box-shadow:
+      inset 3px 0 0 0 var(--color-gold),
+      -6px 0 6px -5px rgba(15, 52, 96, 0.18);
+  }
+  .table-wrapper thead th.summary-pts-col {
+    box-shadow:
+      inset 3px 0 0 0 #a06800,
+      -6px 0 6px -5px rgba(15, 52, 96, 0.18);
   }
 }
 
