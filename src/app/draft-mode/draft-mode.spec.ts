@@ -228,6 +228,27 @@ describe('DraftModeComponent', () => {
     expect(component.finished()).toBe(true);
   });
 
+  it('reopens a finished draft on any pick edit, including a swap that stays full', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.onSetupConfirmed({
+      draft,
+      rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+    });
+    component.draftCurrent(1);
+    component.draftCurrent(2);
+    component.requestFinishDraft();
+    expect(component.finished()).toBe(true);
+
+    // Even a swap that leaves every slot filled reopens the draft.
+    component.startEditPick(1);
+    component.replacePick(99);
+    expect(component.isComplete()).toBe(true);
+    expect(component.finished()).toBe(false);
+    expect(component.draft()?.finishedAt).toBeFalsy();
+  });
+
   it('drafts the next pick, removes them from available and advances the order', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
@@ -631,5 +652,17 @@ describe('DraftModeComponent — finished draft', () => {
 
     expect(component.showSummary()).toBe(false);
     expect(component.finished()).toBe(true);
+  });
+
+  it('reopens the draft when a pick is removed after Edit draft', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.backToDraft();
+    component.undoLast();
+
+    expect(component.finished()).toBe(false);
+    expect(component.draft()?.finishedAt).toBeFalsy();
   });
 });
