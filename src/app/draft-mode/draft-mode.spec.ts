@@ -159,8 +159,8 @@ describe('DraftModeComponent', () => {
     expect(projection.teams[0].total).toBeCloseTo(projection.teams[0].values['goals'], 5);
     expect(projection.categoryColumns.map((column) => column.key)).toEqual(['goals']);
     expect(projection.positionColumns.map((column) => column.key)).toEqual([
-      'C',
       'LW',
+      'C',
       'RW',
       'D',
       'UTIL',
