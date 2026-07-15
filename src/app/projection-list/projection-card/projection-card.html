@@ -1,13 +1,11 @@
 <div class="card-main">
   <span class="card-name">{{ projection().name }}</span>
-  <span class="card-meta">
-    Updated {{ projection().updatedAt | relativeTime }}
-    @if (projection().draftStatus === 'finished') {
-      <span class="card-status card-status--done">Draft complete</span>
-    } @else if (projection().draftStatus === 'in_progress') {
-      <span class="card-status">Draft in progress</span>
-    }
-  </span>
+  <span class="card-meta">Updated {{ projection().updatedAt | relativeTime }}</span>
+  @if (projection().draftStatus === 'finished') {
+    <span class="card-status card-status--done">Draft complete</span>
+  } @else if (projection().draftStatus === 'in_progress') {
+    <span class="card-status">Draft in progress</span>
+  }
 </div>
 <div class="card-actions">
   @if (confirmingDelete()) {
