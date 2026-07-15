@@ -37,12 +37,37 @@
   box-shadow: var(--shadow-sm);
 }
 
+.lp-scroll {
+  position: relative;
+}
+
 .lp-wrap {
   overflow-x: auto;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   background: var(--color-surface);
+}
+
+/* A right-edge fade shown only while more columns lie off-screen (the wide position breakdown
+   overflows once rows are expanded), so the clipped edge reads as "scroll for more" rather than a
+   broken cut. Sits inside the wrap's 1px border and rounded corner. The transparent stop is white
+   (not the `transparent` keyword) so the gradient doesn't wash through grey; the surface is white. */
+.lp-fade-right {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  bottom: 1px;
+  width: 2.25rem;
+  pointer-events: none;
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0), var(--color-surface));
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.lp-fade-right.is-visible {
+  opacity: 1;
 }
 
 .lp-table {
