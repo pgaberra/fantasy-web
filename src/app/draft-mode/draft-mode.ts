@@ -638,7 +638,7 @@ export class DraftModeComponent implements OnInit {
 
   finishDraft(): void {
     this.confirmingFinish.set(false);
-    this.mutate((draft) => ({ ...draft, finishedAt: new Date().toISOString() }));
+    this.persistDraft((draft) => ({ ...draft, finishedAt: new Date().toISOString() }));
     this.showSummary.set(true);
   }
 
@@ -659,6 +659,18 @@ export class DraftModeComponent implements OnInit {
   }
 
   private mutate(fn: (draft: DraftState) => DraftState): void {
+    // Editing the board below a full roster reopens a finished draft — it's in progress
+    // again until the manager finishes it anew. A swap that keeps every slot filled stays
+    // finished, so post-draft tweaks don't drop you out of the summary.
+    this.persistDraft((draft) => {
+      const next = fn(draft);
+      return next.finishedAt && next.picks.length < this.totalPicks()
+        ? { ...next, finishedAt: undefined }
+        : next;
+    });
+  }
+
+  private persistDraft(fn: (draft: DraftState) => DraftState): void {
     this.draft.update((draft) => (draft ? fn(draft) : draft));
     this.save();
   }
