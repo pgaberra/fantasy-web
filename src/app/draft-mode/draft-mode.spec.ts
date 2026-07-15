@@ -228,7 +228,7 @@ describe('DraftModeComponent', () => {
     expect(component.finished()).toBe(true);
   });
 
-  it('keeps a finished draft finished on a swap but reopens it when a pick is removed', async () => {
+  it('reopens a finished draft on any pick edit, including a swap that stays full', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
@@ -241,15 +241,10 @@ describe('DraftModeComponent', () => {
     component.requestFinishDraft();
     expect(component.finished()).toBe(true);
 
-    // A swap that leaves every slot filled keeps the draft finished.
+    // Even a swap that leaves every slot filled reopens the draft.
     component.startEditPick(1);
     component.replacePick(99);
     expect(component.isComplete()).toBe(true);
-    expect(component.finished()).toBe(true);
-
-    // Removing a pick drops below a full board and reopens the draft.
-    component.removePick(2);
-    expect(component.isComplete()).toBe(false);
     expect(component.finished()).toBe(false);
     expect(component.draft()?.finishedAt).toBeFalsy();
   });

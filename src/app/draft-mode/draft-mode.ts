@@ -659,14 +659,13 @@ export class DraftModeComponent implements OnInit {
   }
 
   private mutate(fn: (draft: DraftState) => DraftState): void {
-    // Editing the board below a full roster reopens a finished draft — it's in progress
-    // again until the manager finishes it anew. A swap that keeps every slot filled stays
-    // finished, so post-draft tweaks don't drop you out of the summary.
+    // Any edit to the picks reopens a finished draft — it's in progress again until the
+    // manager finishes it anew (even a swap that leaves every slot filled). Finishing sets
+    // finishedAt via persistDraft, outside this path; merely opening the board to look
+    // doesn't touch the picks, so it stays finished.
     this.persistDraft((draft) => {
       const next = fn(draft);
-      return next.finishedAt && next.picks.length < this.totalPicks()
-        ? { ...next, finishedAt: undefined }
-        : next;
+      return next.finishedAt ? { ...next, finishedAt: undefined } : next;
     });
   }
 
