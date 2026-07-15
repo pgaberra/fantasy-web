@@ -192,6 +192,42 @@ describe('DraftModeComponent', () => {
     expect(component.showSummary()).toBe(false);
   });
 
+  it('stamps finishedAt and marks the draft finished on finish', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+
+    expect(component.finished()).toBe(false);
+
+    component.requestFinishDraft();
+    component.finishDraft();
+
+    expect(component.draft()?.finishedAt).toEqual(expect.any(String));
+    expect(component.finished()).toBe(true);
+    expect(component.showSummary()).toBe(true);
+  });
+
+  it('finishes directly without a prompt when the board is complete', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.onSetupConfirmed({
+      draft,
+      rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+    });
+
+    component.draftCurrent(1);
+    component.draftCurrent(2);
+    expect(component.isComplete()).toBe(true);
+
+    component.requestFinishDraft();
+
+    expect(component.confirmingFinish()).toBe(false);
+    expect(component.showSummary()).toBe(true);
+    expect(component.finished()).toBe(true);
+  });
+
   it('drafts the next pick, removes them from available and advances the order', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
@@ -515,5 +551,85 @@ describe('DraftModeComponent — available pagination', () => {
     component.pageSize.set(100);
     expect(component.visibleAvailable().length).toEqual(100);
     expect(component.hasMoreAvailable()).toBe(true);
+  });
+});
+
+describe('DraftModeComponent — finished draft', () => {
+  const players: Player[] = [
+    { id: 1, type: 'skater', name: 'McDavid', positions: new Set(['C']), stats: {} as SkaterStats },
+    { id: 2, type: 'skater', name: 'Makar', positions: new Set(['D']), stats: {} as SkaterStats },
+  ];
+
+  const finishedProjection: ProjectionResponse = {
+    id: 'p1',
+    name: 'My Projection',
+    season: '20262027',
+    createdAt: '2026-06-01T00:00:00Z',
+    updatedAt: '2026-06-01T00:00:00Z',
+    data: {
+      settings: {
+        scoringType: 'category',
+        statWeights: { goals: 5 },
+        activeScoringColumns: ['goals'],
+        activeUtilityColumns: ['gp'],
+        scaleSettings: {},
+        decimalSettings: { goals: 0 },
+        useDefaultDecimals: false,
+        leagueSize: 12,
+        rosterSlots: { c: 1, lw: 1, rw: 1, d: 1, util: 1, bn: 1, g: 1 },
+        minGoalieGames: 25,
+      },
+      players: [
+        { playerId: 1, type: 'skater', stats: { utility: { gp: 82 }, scoring: { goals: 60 } } },
+        { playerId: 2, type: 'skater', stats: { utility: { gp: 82 }, scoring: { goals: 20 } } },
+      ],
+      draft: {
+        teams: [
+          { id: 'team-me', name: 'My Team', mine: true },
+          { id: 'team-1', name: 'Team 1', mine: false },
+        ],
+        order: ['team-me', 'team-1'],
+        picks: [{ playerId: 1, teamId: 'team-me' }],
+        finishedAt: '2026-07-15T10:00:00.000Z',
+      },
+    },
+  };
+
+  beforeEach(() =>
+    MockBuilder(DraftModeComponent)
+      .keep(ProjectionRankingService)
+      .keep(ProjectionCalculationService)
+      .keep(PositionFilterService)
+      .keep(DraftPlayerLookupService)
+      .mock(PlayerService, { getPlayers: () => of(players) })
+      .mock(ProjectionStorageService, {
+        loadProjection: () => of(finishedProjection),
+        updateProjection: vi.fn(() => of(finishedProjection)),
+      })
+      .provide({
+        provide: ActivatedRoute,
+        useValue: { snapshot: { paramMap: { get: () => 'p1' } } },
+      }),
+  );
+
+  it('opens directly on the summary when the draft is already finished', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    expect(component.finished()).toBe(true);
+    expect(component.showSummary()).toBe(true);
+    expect(component.phase()).toEqual('draft');
+  });
+
+  it('edits the draft back on the board without un-finishing it', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.backToDraft();
+
+    expect(component.showSummary()).toBe(false);
+    expect(component.finished()).toBe(true);
   });
 });

@@ -141,6 +141,14 @@ export class DraftProjectionComponent implements OnInit {
 
   readonly isLoading = computed(() => this.playersResource.isLoading() || !this.projectionLoaded());
 
+  readonly draftLinkLabel = computed(() => {
+    const draft = this.draft();
+    if (!draft) {
+      return 'Draft mode';
+    }
+    return draft.finishedAt ? 'View draft summary' : 'Resume draft';
+  });
+
   private readonly serializedState = computed(() =>
     this.autosaveEnabled()
       ? JSON.stringify(this.serializer.toProjectionData(this.buildState()))

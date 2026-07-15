@@ -43,6 +43,10 @@
   border-radius: var(--radius-pill);
 }
 
+.draft-tag--done {
+  color: var(--color-success);
+}
+
 .save-status {
   font-size: 0.8rem;
   font-weight: var(--weight-semibold);

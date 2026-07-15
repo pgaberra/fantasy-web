@@ -70,6 +70,17 @@ describe('ProjectionSerializerService', () => {
     expect(roundTripped).toEqual(sampleState);
   });
 
+  it('carries the draft finishedAt marker through a save/load round-trip', () => {
+    const finishedState: ProjectionState = {
+      ...sampleState,
+      draft: { ...sampleState.draft!, finishedAt: '2026-07-15T10:00:00.000Z' },
+    };
+
+    const roundTripped = service.fromProjectionData(service.toProjectionData(finishedState));
+
+    expect(roundTripped.draft?.finishedAt).toEqual('2026-07-15T10:00:00.000Z');
+  });
+
   it('defaults draft to null for projections without a draft', () => {
     const data = service.toProjectionData(sampleState);
     delete data.draft;

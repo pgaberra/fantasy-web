@@ -1,6 +1,13 @@
 <div class="card-main">
   <span class="card-name">{{ projection().name }}</span>
-  <span class="card-meta">Updated {{ projection().updatedAt | relativeTime }}</span>
+  <span class="card-meta">
+    Updated {{ projection().updatedAt | relativeTime }}
+    @if (projection().draftStatus === 'finished') {
+      <span class="card-status card-status--done">Draft complete</span>
+    } @else if (projection().draftStatus === 'in_progress') {
+      <span class="card-status">Draft in progress</span>
+    }
+  </span>
 </div>
 <div class="card-actions">
   @if (confirmingDelete()) {
@@ -14,7 +21,7 @@
   } @else {
     <button type="button" class="btn btn-primary btn-sm edit" (click)="edit.emit()">Edit</button>
     <button type="button" class="btn btn-secondary btn-sm draft" (click)="draft.emit()">
-      Draft mode
+      {{ draftLabel() }}
     </button>
     <button type="button" class="btn btn-danger btn-sm delete" (click)="startDelete()">
       Delete

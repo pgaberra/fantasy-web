@@ -12,6 +12,7 @@ describe('ProjectionListComponent', () => {
     {
       id: 'p1',
       name: 'My league',
+      draftStatus: 'none',
       season: '20262027',
       createdAt: '2026-06-01T00:00:00Z',
       updatedAt: '2026-06-01T00:00:00Z',
@@ -19,6 +20,7 @@ describe('ProjectionListComponent', () => {
     {
       id: 'p2',
       name: 'Newest league',
+      draftStatus: 'none',
       season: '20262027',
       createdAt: '2026-06-02T00:00:00Z',
       updatedAt: '2026-06-10T00:00:00Z',
@@ -26,6 +28,7 @@ describe('ProjectionListComponent', () => {
     {
       id: 'p3',
       name: 'Middle league',
+      draftStatus: 'none',
       season: '20262027',
       createdAt: '2026-06-03T00:00:00Z',
       updatedAt: '2026-06-05T00:00:00Z',

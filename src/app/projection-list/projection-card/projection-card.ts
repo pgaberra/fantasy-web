@@ -1,4 +1,4 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
 import { ProjectionSummaryResponse } from '../../api/models/projection-summary-response';
 import { RelativeTimePipe } from '../../pipes/relative-time.pipe';
 
@@ -13,6 +13,17 @@ export class ProjectionCardComponent {
   readonly edit = output<void>();
   readonly draft = output<void>();
   readonly remove = output<void>();
+
+  readonly draftLabel = computed(() => {
+    switch (this.projection().draftStatus) {
+      case 'finished':
+        return 'View summary';
+      case 'in_progress':
+        return 'Resume draft';
+      default:
+        return 'Draft mode';
+    }
+  });
 
   readonly confirmingDelete = signal(false);
 
