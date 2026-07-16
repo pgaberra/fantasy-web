@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 // A realistic run through the editor and draft mode via a fresh throwaway account:
 // register -> create -> edit several players -> remove a scoring stat + switch

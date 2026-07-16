@@ -8,4 +8,8 @@ export const environment = {
   googleClientId: '404846934195-2840u7mkdapmstllgsiaft2gdgjb2c0g.apps.googleusercontent.com',
   // Public Facebook App ID (not a secret). Empty until a staging Meta app exists.
   facebookAppId: '',
+  // Empty on purpose: this file only backs `npm run start:staging` (the app served locally
+  // against the staging BFF). The deployed staging app builds from environment.prod.ts with
+  // POSTHOG_KEY injected, so leaving this empty keeps local dev out of staging's stats.
+  posthogKey: '',
 };

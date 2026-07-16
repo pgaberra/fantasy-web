@@ -10,4 +10,7 @@ export const environment = {
   // Public Facebook App ID (not a secret). Empty until a Meta app exists — that hides the
   // "Continue with Facebook" button. Set your dev app id (with localhost allowed) to test.
   facebookAppId: '',
+  // Public PostHog project key (not a secret). Empty disables analytics entirely — see
+  // AnalyticsService. Left empty in dev so local browsing never lands in the real stats.
+  posthogKey: '',
 };

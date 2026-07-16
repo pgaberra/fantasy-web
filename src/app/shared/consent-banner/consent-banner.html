@@ -1,0 +1,18 @@
+@if (isPending()) {
+  <div
+    class="consent-banner"
+    role="dialog"
+    aria-live="polite"
+    aria-label="Cookie consent"
+    data-testid="consent-banner"
+  >
+    <p class="consent-banner__text">
+      We use cookies to understand how SlapStat is used, so we can make it better. Decline and we'll
+      still count the visit, but without cookies and without tying it to you.
+    </p>
+    <div class="consent-banner__actions">
+      <button type="button" class="btn btn-secondary btn-sm" (click)="decline()">Decline</button>
+      <button type="button" class="btn btn-primary btn-sm" (click)="accept()">Accept</button>
+    </div>
+  </div>
+}

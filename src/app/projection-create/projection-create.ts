@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
+import { AnalyticsService } from '../services/analytics.service';
 import { PlayerService } from '../services/player.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { NotificationService } from '../services/notification.service';
@@ -44,6 +45,7 @@ export class ProjectionCreateComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly serializer = inject(ProjectionSerializerService);
   private readonly notification = inject(NotificationService);
+  private readonly analytics = inject(AnalyticsService);
 
   private readonly dataResource = rxResource({
     stream: () =>
@@ -128,7 +130,10 @@ export class ProjectionCreateComponent {
       .createProjection({ name: this.name().trim(), data })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (projection) => void this.router.navigate(['/projections', projection.id]),
+        next: (projection) => {
+          this.analytics.capture('projection_created');
+          void this.router.navigate(['/projections', projection.id]);
+        },
         error: (error: unknown) => {
           this.isCreating.set(false);
           // Each user may keep only one projection; the server rejects a second with 409.

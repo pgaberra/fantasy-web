@@ -13,6 +13,7 @@ import { resetPassword } from '../api/fn/authentication/reset-password';
 import { verifyEmail } from '../api/fn/authentication/verify-email';
 import { resendVerification } from '../api/fn/authentication/resend-verification';
 import { AuthResponse, LoginRequest, RefreshRequest, RegisterRequest } from '../api/models';
+import { AnalyticsService } from './analytics.service';
 
 @Injectable({
   providedIn: 'root',
@@ -20,6 +21,7 @@ import { AuthResponse, LoginRequest, RefreshRequest, RegisterRequest } from '../
 export class AuthService {
   private readonly api = inject(Api);
   private readonly router = inject(Router);
+  private readonly analytics = inject(AnalyticsService);
 
   private readonly tokenKey = 'auth_token';
   private readonly refreshTokenKey = 'refresh_token';
@@ -42,7 +44,10 @@ export class AuthService {
 
   register(request: RegisterRequest): Observable<AuthResponse> {
     return from(this.api.invoke(register, { body: request })).pipe(
-      tap((response) => this.storeTokens(response)),
+      tap((response) => {
+        this.storeTokens(response);
+        this.analytics.capture('user_registered');
+      }),
     );
   }
 
@@ -95,6 +100,8 @@ export class AuthService {
     this.isLoggedIn.set(false);
     this.isAdmin.set(false);
     this.isEmailVerified.set(true);
+    // Without this the next person to sign in on this browser inherits the previous identity.
+    this.analytics.reset();
     void this.router.navigate(['/login']);
   }
 
@@ -108,6 +115,21 @@ export class AuthService {
 
   /** The signed-in user's email, read from the JWT's `email` claim (null if absent/undecodable). */
   getEmail(): string | null {
+    const email = this.decodeClaims()?.email;
+    return typeof email === 'string' ? email : null;
+  }
+
+  /**
+   * The signed-in user's account UUID, read from the JWT's `sub` claim (null if
+   * absent/undecodable). This is the identifier analytics uses — the `email` claim lives in
+   * the same payload and must never be used in its place.
+   */
+  getUserId(): string | null {
+    const subject = this.decodeClaims()?.sub;
+    return typeof subject === 'string' ? subject : null;
+  }
+
+  private decodeClaims(): { sub?: string; email?: string } | null {
     const payload = this.getToken()?.split('.')[1];
     if (!payload) {
       return null;
@@ -118,8 +140,7 @@ export class AuthService {
         normalized.length + ((4 - (normalized.length % 4)) % 4),
         '=',
       );
-      const claims = JSON.parse(atob(padded)) as { email?: string };
-      return typeof claims.email === 'string' ? claims.email : null;
+      return JSON.parse(atob(padded)) as { sub?: string; email?: string };
     } catch {
       return null;
     }
@@ -133,6 +154,12 @@ export class AuthService {
     this.isLoggedIn.set(true);
     this.isAdmin.set(response.admin);
     this.isEmailVerified.set(response.emailVerified);
+    // Also runs on a silent token refresh, which is harmless: PostHog ignores a repeated
+    // identify with an unchanged distinct id.
+    const userId = this.getUserId();
+    if (userId) {
+      this.analytics.identify(userId);
+    }
     void this.router.navigate(['/projections']);
   }
 }

@@ -3,6 +3,7 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { AuthService } from './services/auth.service';
+import { ConsentBannerComponent } from './shared/consent-banner/consent-banner';
 import { EnvironmentBannerComponent } from './shared/environment-banner/environment-banner';
 import { ToastComponent } from './shared/toast/toast';
 import { UnverifiedBannerComponent } from './shared/unverified-banner/unverified-banner';
@@ -14,6 +15,7 @@ import { environment } from '../environments/environment';
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
+    ConsentBannerComponent,
     EnvironmentBannerComponent,
     ToastComponent,
     UnverifiedBannerComponent,
