@@ -343,6 +343,41 @@ describe('ProjectionSettingsSectionComponent', () => {
     });
   });
 
+  describe('projected League Settings slot', () => {
+    const renderWithProjectedContent = () =>
+      MockRender(
+        `<app-projection-settings-section
+          [scoringType]="scoringType"
+          [activeUtilityColumns]="activeUtilityColumns"
+          [activeScoringColumns]="activeScoringColumns"
+          [scaleSettings]="scaleSettings"
+          [initiallyExpanded]="true"
+        >
+          <span class="yahoo-sync-stub">Sync from your Yahoo league</span>
+        </app-projection-settings-section>`,
+        {
+          scoringType: 'points',
+          activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
+          activeScoringColumns: defaultActiveScoringColumns,
+          scaleSettings: MOCK_SCALE_SETTINGS,
+        },
+      );
+
+    it('keeps the projected content visible when League Settings is collapsed', () => {
+      const fixture = renderWithProjectedContent();
+      const component = ngMocks.findInstance(ProjectionSettingsSectionComponent);
+      expect(fixture.nativeElement.querySelector('.yahoo-sync-stub')).toBeTruthy();
+
+      component.toggleLeagueSettingsVisible();
+      fixture.detectChanges();
+
+      expect(component.isLeagueSettingsExpanded()).toEqual(false);
+      // The Yahoo sync fills in these settings, so it must outlive the collapse
+      expect(fixture.nativeElement.querySelector('.yahoo-sync-stub')).toBeTruthy();
+      expect(ngMocks.findAll(SettingRowComponent).length).toEqual(0);
+    });
+  });
+
   describe('min goalie games', () => {
     it('clamps the minimum goalie games to 0..82', () => {
       const component = getComponent();
