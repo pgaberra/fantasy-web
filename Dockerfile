@@ -12,15 +12,17 @@ COPY . .
 RUN npm run generate:api
 
 # Build-time config, passed by Coolify as --build-arg from the app's build env vars.
-# API_URL is the BFF origin (no trailing slash); GOOGLE_CLIENT_ID and FACEBOOK_APP_ID are
-# public (shipped to the browser by design). APP_ENV marks the deployed environment (set to
-# "staging" on the staging app to show the env banner; left as "production" otherwise);
-# APP_VERSION is the optional version label shown alongside it.
+# API_URL is the BFF origin (no trailing slash); GOOGLE_CLIENT_ID, FACEBOOK_APP_ID and
+# POSTHOG_KEY are public (shipped to the browser by design). APP_ENV marks the deployed
+# environment (set to "staging" on the staging app to show the env banner; left as
+# "production" otherwise); APP_VERSION is the optional version label shown alongside it.
+# POSTHOG_KEY empty disables analytics; staging and prod use different PostHog projects.
 ARG API_URL=http://localhost:8080
 ARG GOOGLE_CLIENT_ID=
 ARG FACEBOOK_APP_ID=
 ARG APP_ENV=production
 ARG APP_VERSION=
+ARG POSTHOG_KEY=
 
 # Inject the values into environment.prod.ts (replaces the committed placeholders).
 RUN sed -i \
@@ -29,6 +31,7 @@ RUN sed -i \
   -e "s|__FACEBOOK_APP_ID__|${FACEBOOK_APP_ID}|g" \
   -e "s|__APP_ENV__|${APP_ENV}|g" \
   -e "s|__APP_VERSION__|${APP_VERSION}|g" \
+  -e "s|__POSTHOG_KEY__|${POSTHOG_KEY}|g" \
   src/environments/environment.prod.ts
 
 RUN npm run build

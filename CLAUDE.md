@@ -82,6 +82,28 @@ Every `.subscribe({…})` / `firstValueFrom(…)` / `rxResource` that reaches th
 an error path ending in one of the above. A bare `error: () => {}` is acceptable only with a
 comment explaining why that particular failure genuinely isn't worth surfacing.
 
+## Analytics (PostHog)
+
+Usage analytics goes through `services/analytics.service.ts` — **nothing else may import
+`posthog-js`**. It's off unless `environment.posthogKey` is set (same pattern as an empty
+`googleClientId` hiding the Google button), so local dev and tests never fetch the library or
+send anything.
+
+Three constraints that aren't obvious from the code:
+
+- **Never send the email as the analytics identifier.** Use the account UUID from the JWT's
+  `sub` claim (`AuthService.getUserId()`). The `email` claim sits in the same token payload,
+  so it's an easy mistake, and it would stamp PII onto every event row.
+- **URLs are redacted before send.** `/reset-password?token=…` and `/verify-email?token=…`
+  carry live single-use tokens, and PostHog stamps the full URL onto `$current_url`. The
+  `before_send` hook strips them. If you add a route with a sensitive query param, add it to
+  `REDACTED_QUERY_PARAMS` — and keep the redaction general rather than allowlisting routes.
+- **`posthog-js` is imported dynamically, deliberately.** It's ~230 kB; a static import puts
+  the initial bundle within a few kB of the 1 MB budget error in `angular.json`.
+
+Autocapture and session replay are off. Turning either on is a deliberate step with its own
+privacy review (replay would otherwise record sign-up forms), not a default.
+
 ## Conventions
 
 @.aiassistant/rules/guidelines.md

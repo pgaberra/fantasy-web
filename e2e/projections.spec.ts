@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 const email = process.env.E2E_EMAIL;
 const password = process.env.E2E_PASSWORD;

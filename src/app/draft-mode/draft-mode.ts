@@ -13,6 +13,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { NotificationService } from '../services/notification.service';
+import { AnalyticsService } from '../services/analytics.service';
 import { PlayerService } from '../services/player.service';
 import { ProjectionRankingService, RankingInput } from '../services/projection-ranking.service';
 import { PositionFilterService } from '../services/position-filter.service';
@@ -72,6 +73,7 @@ export class DraftModeComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly projectionStorage = inject(ProjectionStorageService);
   private readonly notification = inject(NotificationService);
+  private readonly analytics = inject(AnalyticsService);
   private readonly playerService = inject(PlayerService);
   private readonly ranking = inject(ProjectionRankingService);
   private readonly positionFilterService = inject(PositionFilterService);
@@ -572,6 +574,7 @@ export class DraftModeComponent implements OnInit {
     this.data.update((data) =>
       data ? { ...data, settings: { ...data.settings, rosterSlots: result.rosterSlots } } : data,
     );
+    this.analytics.capture('draft_started');
     this.applySetup(result.draft);
   }
 
