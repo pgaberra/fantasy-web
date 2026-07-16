@@ -1,3 +1,16 @@
+/* The whole thead pins as one unit rather than each th individually — this component's
+   selector is `thead[app-projections-table-header]`, so :host is the thead itself.
+   A cell's sticky constraint rect is the TABLE, not its row, so per-cell `top: 0` made
+   every header row clamp to the same band once the wrapper scrolled; the z-index scale
+   discriminates by column rather than row, so the tie fell through to DOM order and the
+   weight row covered the column labels. One sticky box cannot overlap itself: the rows
+   keep their natural offsets at every scroll position, for any number of them. */
+:host {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
 th {
   background: var(--color-primary);
   color: var(--color-text-on-dark);
@@ -5,8 +18,6 @@ th {
   text-align: center;
   font-weight: var(--weight-semibold);
   white-space: nowrap;
-  position: sticky;
-  top: 0;
 }
 
 th.col-name {
