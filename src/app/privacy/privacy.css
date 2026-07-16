@@ -95,16 +95,6 @@
   color: var(--color-text-muted);
 }
 
-/* Marks the values the site owner must fill in before this page goes live. */
-.privacy__blank {
-  background: var(--color-warning);
-  color: var(--color-text);
-  border-radius: var(--radius-sm);
-  padding: 0 var(--space-2);
-  font-weight: var(--weight-semibold);
-  white-space: nowrap;
-}
-
 @media (max-width: 640px) {
   .privacy {
     padding: var(--space-5) var(--space-3);

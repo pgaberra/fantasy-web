@@ -53,17 +53,22 @@ describe('PrivacyComponent', () => {
     expect(text()).toContain('Integritetsskyddsmyndigheten');
   });
 
-  // The owner's legal name and contact address can't be filled in from the repo. They must
-  // stay visibly flagged rather than blend into the prose, so an unfinished policy is
-  // obvious on screen instead of quietly shipping as if it were complete.
-  it('keeps the owner-supplied details visibly flagged while unfilled', async () => {
+  // GDPR requires the controller to be identified with contact details. Both are the whole
+  // point of the page for anyone trying to exercise a right, so pin them.
+  it('names the controller and a way to reach them', async () => {
     await MockBuilder(PrivacyComponent);
     MockRender(PrivacyComponent);
 
-    const flagged = ngMocks.findAll('.privacy__blank');
-    expect(flagged.length).toBeGreaterThan(0);
-    flagged.forEach((el) =>
-      expect((el.nativeElement as HTMLElement).textContent).toMatch(/^\[.+\]$/),
-    );
+    expect(text()).toContain('Alexander Berglund');
+    expect(text()).toContain('privacy@slapstat.com');
+  });
+
+  // Resend is the one processor outside the EU, so the transfer has to be disclosed rather
+  // than buried in a table cell.
+  it('discloses that email delivery leaves the EU', async () => {
+    await MockBuilder(PrivacyComponent);
+    MockRender(PrivacyComponent);
+
+    expect(text()).toContain('leaves the EU');
   });
 });
