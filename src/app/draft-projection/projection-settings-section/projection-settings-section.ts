@@ -72,10 +72,12 @@ export class ProjectionSettingsSectionComponent {
   minGoalieGames = model<number>(DEFAULT_MIN_GOALIE_GAMES);
   showDecimalsSetting = input<boolean>(true);
   showUtilityStats = input<boolean>(true);
-  initiallyExpanded = input<boolean>(false);
+  initiallyExpanded = input<boolean>(true);
   collapsibleGroups = input<boolean>(true);
   isSectionVisible = linkedSignal(() => this.initiallyExpanded());
-  isLeagueSettingsVisible = signal<boolean>(true);
+  // Collapsed by default so the Yahoo sync — which fills these in for you — leads, and the
+  // manual controls stay one click away rather than dominating the section.
+  isLeagueSettingsVisible = signal<boolean>(false);
   isUtilityStatsVisible = signal<boolean>(false);
   isAdditionalSettingsVisible = signal<boolean>(false);
   readonly isLeagueSettingsExpanded = computed(
