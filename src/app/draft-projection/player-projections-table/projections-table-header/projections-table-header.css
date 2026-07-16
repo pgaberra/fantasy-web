@@ -58,7 +58,7 @@ th.summary-pts-col.sortable.sorted {
 th.summary-pts-col {
   background: var(--color-gold-strong);
   color: var(--color-text-on-dark);
-  border-left: 3px solid #a06800;
+  box-shadow: inset 3px 0 0 0 #a06800;
   min-width: 72px;
 }
 
