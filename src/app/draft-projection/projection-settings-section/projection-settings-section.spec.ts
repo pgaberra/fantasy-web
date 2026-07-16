@@ -59,9 +59,10 @@ describe('ProjectionSettingsSectionComponent', () => {
       scoringType,
     });
     const component = fixture.point.componentInstance;
-    component.toggleSectionVisible();
-    component.toggleUtilityStatsVisible();
-    component.toggleAdditionalSettingsVisible();
+    component.isSectionVisible.set(true);
+    component.isLeagueSettingsVisible.set(true);
+    component.isUtilityStatsVisible.set(true);
+    component.isAdditionalSettingsVisible.set(true);
     fixture.detectChanges();
     return { fixture, component };
   };
@@ -77,6 +78,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         showUtilityStats: false,
         initiallyExpanded: true,
       });
+      fixture.point.componentInstance.isLeagueSettingsVisible.set(true);
       fixture.detectChanges();
 
       const text = fixture.nativeElement.textContent;
@@ -186,7 +188,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         scoringType: 'points',
       });
       const component = fixture.point.componentInstance;
-      component.toggleSectionVisible();
+      component.isSectionVisible.set(true);
       component.toggleUtilityStatsVisible();
       component.toggleAdvanced('gp');
       fixture.detectChanges();
@@ -215,7 +217,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         scoringType: 'points',
       });
       const component = fixture.point.componentInstance;
-      component.toggleSectionVisible();
+      component.isSectionVisible.set(true);
       component.toggleUtilityStatsVisible();
       component.toggleAdvanced('gp');
       fixture.detectChanges();
@@ -238,7 +240,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         scoringType: 'points',
       });
       const component = fixture.point.componentInstance;
-      component.toggleSectionVisible();
+      component.isSectionVisible.set(true);
       component.toggleUtilityStatsVisible();
       component.toggleAdvanced('toiPerGame');
       fixture.detectChanges();
@@ -265,7 +267,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         scoringType: 'points',
       });
       const component = fixture.point.componentInstance;
-      component.toggleSectionVisible();
+      component.isSectionVisible.set(true);
       component.toggleUtilityStatsVisible();
       component.toggleAdvanced('gp');
       fixture.detectChanges();
@@ -298,7 +300,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         scoringType: 'points',
       });
       const component = fixture.point.componentInstance;
-      component.toggleSectionVisible();
+      component.isSectionVisible.set(true);
       component.toggleAdditionalSettingsVisible();
       fixture.detectChanges();
 
@@ -324,8 +326,8 @@ describe('ProjectionSettingsSectionComponent', () => {
         scoringType: 'points',
       });
       const component = fixture.point.componentInstance;
-      component.toggleSectionVisible();
-      component.toggleLeagueSettingsVisible();
+      component.isSectionVisible.set(true);
+      component.isLeagueSettingsVisible.set(false);
       component.toggleUtilityStatsVisible();
       fixture.detectChanges();
 
@@ -363,18 +365,45 @@ describe('ProjectionSettingsSectionComponent', () => {
         },
       );
 
-    it('keeps the projected content visible when League Settings is collapsed', () => {
+    it('keeps the projected content visible in both League Settings states', () => {
       const fixture = renderWithProjectedContent();
       const component = ngMocks.findInstance(ProjectionSettingsSectionComponent);
-      expect(fixture.nativeElement.querySelector('.yahoo-sync-stub')).toBeTruthy();
 
-      component.toggleLeagueSettingsVisible();
-      fixture.detectChanges();
-
+      // Collapsed is the default: the manual rows are gone but the Yahoo sync must remain
       expect(component.isLeagueSettingsExpanded()).toEqual(false);
-      // The Yahoo sync fills in these settings, so it must outlive the collapse
       expect(fixture.nativeElement.querySelector('.yahoo-sync-stub')).toBeTruthy();
       expect(ngMocks.findAll(SettingRowComponent).length).toEqual(0);
+
+      component.isLeagueSettingsVisible.set(true);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.yahoo-sync-stub')).toBeTruthy();
+      expect(ngMocks.findAll(SettingRowComponent).length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('default expansion', () => {
+    it('opens the section with League Settings collapsed so the Yahoo sync leads', () => {
+      const component = getComponent();
+
+      expect(component.isSectionVisible()).toEqual(true);
+      expect(component.isLeagueSettingsExpanded()).toEqual(false);
+      expect(component.isUtilityStatsVisible()).toEqual(false);
+      expect(component.isAdditionalSettingsVisible()).toEqual(false);
+    });
+
+    it('still honours an explicit initiallyExpanded=false', () => {
+      const fixture = MockRender(ProjectionSettingsSectionComponent, {
+        activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
+        activeScoringColumns: defaultActiveScoringColumns,
+        scaleSettings: MOCK_SCALE_SETTINGS,
+        scoringType: 'points',
+        initiallyExpanded: false,
+      });
+      fixture.detectChanges();
+
+      expect(fixture.point.componentInstance.isSectionVisible()).toEqual(false);
+      expect(fixture.nativeElement.textContent).not.toContain('League Settings');
     });
   });
 
