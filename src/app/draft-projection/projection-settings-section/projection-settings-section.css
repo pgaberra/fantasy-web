@@ -57,6 +57,11 @@
   margin: 0;
 }
 
+/* Collapsed League Settings leaves the slot last — drop the separator margin */
+.settings-projected-slot:last-child {
+  margin-bottom: 0;
+}
+
 .projection-settings-list {
   display: flex;
   flex-direction: column;
