@@ -62,6 +62,15 @@ th.summary-pts-col {
   min-width: 72px;
 }
 
+/* The weight/decimal rows paint their whole strip blue, and their `tr … th` selector
+   outranks the column's own rule — which punches a blue gap into the gold column. The
+   total has no weight or decimal input, so those cells are empty: keep them gold and let
+   the column read as one unbroken band. */
+tr.weight-row th.summary-pts-col,
+tr.decimal-row th.summary-pts-col {
+  background: var(--color-gold-strong);
+}
+
 tr.weight-row th {
   background: var(--color-primary-hover);
   padding: 0.3rem 0.25rem;
