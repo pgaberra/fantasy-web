@@ -1,4 +1,5 @@
 import { signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConsentBannerComponent } from './consent-banner';
@@ -26,6 +27,16 @@ describe('ConsentBannerComponent', () => {
     await setup();
     MockRender(ConsentBannerComponent);
     expect(ngMocks.findAll('.consent-banner').length).toEqual(1);
+  });
+
+  // Consent has to be informed to count, so the banner must always offer a way to read what
+  // it's asking about — a banner with no policy behind it is decoration.
+  it('links to the privacy policy', async () => {
+    await setup();
+    MockRender(ConsentBannerComponent);
+
+    const link = ngMocks.get(ngMocks.find('.consent-banner a'), RouterLink);
+    expect(link.routerLink).toEqual('/privacy');
   });
 
   it('renders nothing once consent is granted', async () => {

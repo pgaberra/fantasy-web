@@ -10,6 +10,7 @@ import { ResetPasswordComponent } from './auth/reset-password/reset-password';
 import { VerifyEmailComponent } from './auth/verify-email/verify-email';
 import { LandingComponent } from './landing/landing';
 import { AdminComponent } from './admin/admin';
+import { PrivacyComponent } from './privacy/privacy';
 import { landingRedirectGuard } from './guards/landing-redirect.guard';
 import { adminGuard } from './guards/admin.guard';
 
@@ -20,6 +21,9 @@ export const routes: Routes = [
   { path: 'projections/:id/draft', component: DraftModeComponent },
   { path: 'projections/:id', component: DraftProjectionComponent },
   { path: 'admin', component: AdminComponent, canActivate: [adminGuard] },
+  // Public and unguarded on purpose: consent has to be informed, so the policy must be
+  // reachable from the banner before anyone has agreed to anything.
+  { path: 'privacy', component: PrivacyComponent },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
