@@ -4,7 +4,7 @@
     <p class="subtitle">Create a new projection or pick one to keep editing.</p>
   </div>
 
-  @if (!projectionsResource.isLoading()) {
+  @if (!projectionsResource.isLoading() && !isSavingDemo()) {
     <div class="create-row">
       <button
         type="button"
@@ -20,7 +20,7 @@
     </div>
   }
 
-  @if (projectionsResource.isLoading()) {
+  @if (projectionsResource.isLoading() || isSavingDemo()) {
     <app-loading-indicator />
   } @else if (projectionsResource.error()) {
     <app-error-state title="Couldn't load your projections" (retry)="retry()" />

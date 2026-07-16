@@ -1,10 +1,13 @@
-import { Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, computed, inject, signal, viewChild } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { PlayerProjectionsTableComponent } from '../../draft-projection/player-projections-table/player-projections-table';
 import { ProjectionSettingsSectionComponent } from '../../draft-projection/projection-settings-section/projection-settings-section';
 import { PlayerService } from '../../services/player.service';
 import { StatInfoService } from '../../services/stat-info.service';
+import { PendingProjectionService } from '../../services/pending-projection.service';
+import { ProjectionSerializerService } from '../../services/projection-serializer.service';
+import { ProjectionState } from '../../services/projection-serializer';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../../shared/error-state/error-state';
 import { ActiveColumns, ScoringType } from '../../models/projection.model';
@@ -41,6 +44,11 @@ import {
 export class LandingDemoComponent {
   private readonly playerService = inject(PlayerService);
   private readonly statInfoService = inject(StatInfoService);
+  private readonly serializer = inject(ProjectionSerializerService);
+  private readonly pendingProjection = inject(PendingProjectionService);
+  private readonly router = inject(Router);
+
+  private readonly table = viewChild(PlayerProjectionsTableComponent);
 
   readonly playersResource = rxResource({
     stream: () => this.playerService.getPlayers(),
@@ -69,5 +77,33 @@ export class LandingDemoComponent {
 
   retryLoad(): void {
     this.playersResource.reload();
+  }
+
+  /**
+   * Hand the demo's edits off to the sign-up: stash them, then send the visitor to register.
+   * The projections list redeems the stash once they're authenticated, so the work they did
+   * here survives the round trip instead of dying with this component.
+   */
+  saveProjection(): void {
+    this.pendingProjection.stash(this.serializer.toProjectionData(this.buildState()));
+    void this.router.navigate(['/register']);
+  }
+
+  private buildState(): ProjectionState {
+    return {
+      scoringType: this.scoringType(),
+      statWeights: this.statWeights(),
+      activeScoringColumns: this.activeScoringColumns(),
+      activeUtilityColumns: this.activeUtilityColumns(),
+      scaleSettings: this.scaleSettings(),
+      decimalSettings: this.decimalSettings(),
+      useDefaultDecimals: this.useDefaultDecimals(),
+      leagueSize: this.leagueSize(),
+      rosterSlots: this.rosterSlots(),
+      minGoalieGames: this.minGoalieGames(),
+      yahooSync: null,
+      draft: null,
+      playerProjections: this.table()?.playerProjections?.() ?? [],
+    };
   }
 }
