@@ -1,11 +1,14 @@
 import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
+import { Router } from '@angular/router';
 import { LandingDemoComponent } from './landing-demo';
 import { PlayerProjectionsTableComponent } from '../../draft-projection/player-projections-table/player-projections-table';
 import { ProjectionSettingsSectionComponent } from '../../draft-projection/projection-settings-section/projection-settings-section';
 import { PlayerService } from '../../services/player.service';
 import { StatInfoService } from '../../services/stat-info.service';
+import { PendingProjectionService } from '../../services/pending-projection.service';
+import { ProjectionSerializerService } from '../../services/projection-serializer.service';
 import { Player } from '../../models/player.model';
 import { SkaterStats } from '../../models/projection.model';
 import { DEFAULT_SCORING_COLUMNS } from '../../draft-projection/projection-defaults';
@@ -23,15 +26,22 @@ describe('LandingDemoComponent', () => {
   ];
 
   const getPlayers = vi.fn(() => of(players));
+  const stash = vi.fn();
+  const navigate = vi.fn();
 
   beforeEach(() => {
     getPlayers.mockClear();
+    stash.mockClear();
+    navigate.mockClear();
     getPlayers.mockReturnValue(of(players));
     return MockBuilder(LandingDemoComponent)
       .mock(PlayerProjectionsTableComponent)
       .mock(ProjectionSettingsSectionComponent)
       .mock(PlayerService, { getPlayers })
-      .keep(StatInfoService);
+      .mock(PendingProjectionService, { stash })
+      .keep(StatInfoService)
+      .keep(ProjectionSerializerService)
+      .provide({ provide: Router, useValue: { navigate } });
   });
 
   it('loads the real player pool and mirrors the editor defaults', async () => {
@@ -50,6 +60,23 @@ describe('LandingDemoComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Save projection');
+  });
+
+  it('stashes the edited projection before sending the visitor to register', async () => {
+    const fixture = MockRender(LandingDemoComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const component = fixture.point.componentInstance;
+    component.scoringType.set('category');
+    component.leagueSize.set(14);
+
+    component.saveProjection();
+
+    expect(stash).toHaveBeenCalledOnce();
+    const stashed = stash.mock.calls[0][0];
+    expect(stashed.settings.scoringType).toEqual('category');
+    expect(stashed.settings.leagueSize).toEqual(14);
+    expect(navigate).toHaveBeenCalledWith(['/register']);
   });
 
   it('shows the Yahoo sync gated behind sign-in', async () => {

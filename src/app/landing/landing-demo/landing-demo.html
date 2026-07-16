@@ -54,9 +54,14 @@
       [rosterSlots]="rosterSlots()"
       [minGoalieGames]="minGoalieGames()"
     >
-      <a table-actions routerLink="/register" class="btn btn-primary btn-sm demo-save"
-        >Save projection</a
+      <button
+        table-actions
+        type="button"
+        class="btn btn-primary btn-sm demo-save"
+        (click)="saveProjection()"
       >
+        Save projection
+      </button>
     </app-player-projections-table>
   </div>
 }

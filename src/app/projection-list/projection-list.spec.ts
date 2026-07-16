@@ -5,7 +5,9 @@ import { Router } from '@angular/router';
 import { ProjectionListComponent } from './projection-list';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { NotificationService } from '../services/notification.service';
+import { PendingProjectionService } from '../services/pending-projection.service';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
+import { ProjectionData } from '../api/models/projection-data';
 
 describe('ProjectionListComponent', () => {
   const summaries: ProjectionSummaryResponse[] = [
@@ -35,21 +37,44 @@ describe('ProjectionListComponent', () => {
     },
   ];
 
+  const demoData: ProjectionData = {
+    settings: {
+      scoringType: 'points',
+      statWeights: { goals: 5 },
+      activeScoringColumns: ['goals'],
+      activeUtilityColumns: ['gp'],
+      scaleSettings: {},
+      decimalSettings: { goals: 0 },
+      useDefaultDecimals: true,
+    },
+    players: [
+      { playerId: 1, type: 'skater', stats: { utility: { gp: 82 }, scoring: { goals: 60 } } },
+    ],
+  };
+
   const navigate = vi.fn();
   const listProjections = vi.fn(() => of(summaries));
   const deleteProjection = vi.fn(() => of(undefined));
+  const createProjection = vi.fn();
   const notifyError = vi.fn();
+  const peek = vi.fn();
+  const clearPending = vi.fn();
 
   beforeEach(() => {
     navigate.mockClear();
     listProjections.mockClear();
     deleteProjection.mockClear();
+    createProjection.mockClear();
     notifyError.mockClear();
+    peek.mockClear();
+    clearPending.mockClear();
     listProjections.mockReturnValue(of(summaries));
     deleteProjection.mockReturnValue(of(undefined));
+    peek.mockReturnValue(null);
     return MockBuilder(ProjectionListComponent)
-      .mock(ProjectionStorageService, { listProjections, deleteProjection })
+      .mock(ProjectionStorageService, { listProjections, deleteProjection, createProjection })
       .mock(NotificationService, { error: notifyError })
+      .mock(PendingProjectionService, { peek, clear: clearPending })
       .provide({ provide: Router, useValue: { navigate } });
   });
 
@@ -82,6 +107,44 @@ describe('ProjectionListComponent', () => {
     const component = MockRender(ProjectionListComponent).point.componentInstance;
     component.edit('p1');
     expect(navigate).toHaveBeenCalledWith(['/projections', 'p1']);
+  });
+
+  it('saves a projection carried over from the demo and opens it in the editor', async () => {
+    listProjections.mockReturnValue(of([]));
+    peek.mockReturnValue(demoData);
+    createProjection.mockReturnValue(of({ id: 'new1' }));
+
+    const fixture = MockRender(ProjectionListComponent);
+    await fixture.whenStable();
+
+    expect(createProjection).toHaveBeenCalledWith({ name: 'My Projection', data: demoData });
+    expect(clearPending).toHaveBeenCalledOnce();
+    expect(navigate).toHaveBeenCalledWith(['/projections', 'new1']);
+  });
+
+  it('keeps an existing projection rather than overwriting it with the demo', async () => {
+    peek.mockReturnValue(demoData);
+
+    const fixture = MockRender(ProjectionListComponent);
+    await fixture.whenStable();
+
+    expect(createProjection).not.toHaveBeenCalled();
+    expect(clearPending).toHaveBeenCalledOnce();
+    expect(notifyError).toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['/projections', 'p1']);
+  });
+
+  it('keeps the demo stash when saving it fails, so it can be retried', async () => {
+    listProjections.mockReturnValue(of([]));
+    peek.mockReturnValue(demoData);
+    createProjection.mockReturnValue(throwError(() => new Error('bff down')));
+
+    const fixture = MockRender(ProjectionListComponent);
+    await fixture.whenStable();
+
+    expect(clearPending).not.toHaveBeenCalled();
+    expect(notifyError).toHaveBeenCalled();
+    expect(fixture.point.componentInstance.isSavingDemo()).toEqual(false);
   });
 
   it('shows the empty state when there are no saved projections', async () => {
