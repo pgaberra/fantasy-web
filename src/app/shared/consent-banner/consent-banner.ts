@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { AnalyticsService } from '../../services/analytics.service';
 
 /**
@@ -8,6 +9,7 @@ import { AnalyticsService } from '../../services/analytics.service';
  */
 @Component({
   selector: 'app-consent-banner',
+  imports: [RouterLink],
   templateUrl: './consent-banner.html',
   styleUrl: './consent-banner.css',
 })
