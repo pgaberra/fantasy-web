@@ -5,10 +5,10 @@ multi-stage [`Dockerfile`](./Dockerfile): a `node:22-alpine` build stage produce
 static bundle, which an `nginx:alpine` stage serves. The backend (BFF) URL is baked into
 the bundle at **build time**, since this is a client-side SPA with no runtime env access.
 
-| Environment | URL | BFF (`API_URL`) |
-|---|---|---|
-| production | `https://slapstat.com` (+ `www`) | `https://api.slapstat.com` |
-| staging | `https://staging.slapstat.com` | `https://api.staging.slapstat.com` |
+| Environment | URL                              | BFF (`API_URL`)                    |
+| ----------- | -------------------------------- | ---------------------------------- |
+| production  | `https://slapstat.com` (+ `www`) | `https://api.slapstat.com`         |
+| staging     | `https://staging.slapstat.com`   | `https://api.staging.slapstat.com` |
 
 ## How it builds
 
@@ -17,14 +17,15 @@ The Dockerfile runs `npm ci` → `npm run generate:api` → injects build args i
 nginx (SPA rewrite `/* → /index.html`, see [`nginx.conf`](./nginx.conf)). Coolify passes
 the build args below as Docker `--build-arg` from the app's build-time env vars.
 
-| Build arg | Purpose | Example |
-|---|---|---|
-| `API_URL` | BFF **base origin only** (no trailing slash, no `/api/v1`) — replaces the `http://PLACEHOLDER_FOR_PROD_URL` token; `apiUrl` is `<API_URL>/api/v1` | `https://api.slapstat.com` |
-| `GOOGLE_CLIENT_ID` | Public Google OAuth Client ID (not a secret). Empty → the "Sign in with Google" button is hidden | `404846934195-…apps.googleusercontent.com` |
-| `FACEBOOK_APP_ID` | Public Facebook App ID (not a secret). Empty → the "Continue with Facebook" button is hidden. The BFF needs the matching `FACEBOOK_APP_ID` + `FACEBOOK_APP_SECRET` | `000000000000000` |
-| `APP_ENV` | Which deployed environment this bundle is. Set to `staging` on the staging app to show the env banner; leave as `production` (the default) for prod, where no banner renders | `staging` |
-| `APP_VERSION` | Optional version label shown next to the env banner (only visible when `APP_ENV=staging`). Numeric values get a `v` prefix; empty → env name alone | `0.1.5` |
-| `POSTHOG_KEY` | Public PostHog project key (not a secret). Empty → analytics is off entirely and `posthog-js` is never even fetched. **Staging and production must use different keys** — they're separate PostHog projects, so our own testing never lands in the production numbers | `phc_…` |
+| Build arg             | Purpose                                                                                                                                                                                                                                                                                                                         | Example                                    |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `API_URL`             | BFF **base origin only** (no trailing slash, no `/api/v1`) — replaces the `http://PLACEHOLDER_FOR_PROD_URL` token; `apiUrl` is `<API_URL>/api/v1`                                                                                                                                                                               | `https://api.slapstat.com`                 |
+| `GOOGLE_CLIENT_ID`    | Public Google OAuth Client ID (not a secret). Empty → the "Sign in with Google" button is hidden                                                                                                                                                                                                                                | `404846934195-…apps.googleusercontent.com` |
+| `FACEBOOK_APP_ID`     | Public Facebook App ID (not a secret). Empty → the "Continue with Facebook" button is hidden. The BFF needs the matching `FACEBOOK_APP_ID` + `FACEBOOK_APP_SECRET`                                                                                                                                                              | `000000000000000`                          |
+| `APP_ENV`             | Which deployed environment this bundle is. Set to `staging` on the staging app to show the env banner; leave as `production` (the default) for prod, where no banner renders                                                                                                                                                    | `staging`                                  |
+| `APP_VERSION`         | Optional version label shown next to the env banner (only visible when `APP_ENV=staging`). Numeric values get a `v` prefix; empty → env name alone                                                                                                                                                                              | `0.1.5`                                    |
+| `POSTHOG_KEY`         | Public PostHog project key (not a secret). Empty → analytics is off entirely and `posthog-js` is never even fetched. **Staging and production must use different keys** — they're separate PostHog projects, so our own testing never lands in the production numbers                                                           | `phc_…`                                    |
+| `YAHOO_SYNC_DISABLED` | Manual **off-season switch**. `true` makes the Yahoo league-sync UI show an "available when the new season begins" note instead of its connect/sync controls (between NHL seasons Yahoo has no leagues to sync). Empty/anything-else → sync enabled. Flip it together with the yahoo-service `SYNC_YAHOO_DISABLED` runtime flag | `true`                                     |
 
 > **Both** staging and production build from `environment.prod.ts` (the Dockerfile seds it, and
 > `npm run build` uses the `production` configuration). `environment.staging.ts` only backs

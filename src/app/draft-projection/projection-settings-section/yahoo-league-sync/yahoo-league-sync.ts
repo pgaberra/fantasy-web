@@ -1,6 +1,7 @@
 import { Component, inject, input, linkedSignal, OnInit, output, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { YahooService } from '../../../services/yahoo.service';
+import { environment } from '../../../../environments/environment';
 import { LeagueSummary } from '../../../api/models/league-summary';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
 import { YahooSync } from '../../../api/models/yahoo-sync';
@@ -25,6 +26,13 @@ export interface YahooSyncResult {
 export class YahooLeagueSyncComponent implements OnInit {
   private readonly yahoo = inject(YahooService);
 
+  /**
+   * Manual off-season switch (build-time `YAHOO_SYNC_DISABLED`). Between NHL seasons Yahoo has
+   * no leagues to sync, so the template hides the connect/sync controls behind a plain note
+   * instead of letting users hit confusing "could not load your leagues" errors.
+   */
+  protected readonly syncDisabled = environment.yahooSyncDisabled;
+
   readonly lastSync = input<YahooSync | null>(null);
   readonly synced = output<YahooSyncResult>();
 
@@ -38,6 +46,9 @@ export class YahooLeagueSyncComponent implements OnInit {
   readonly unsupportedStats = signal<string[]>([]);
 
   ngOnInit(): void {
+    if (this.syncDisabled) {
+      return;
+    }
     this.yahoo.connectionStatus().subscribe({
       next: (status) => {
         this.connected.set(status.connected);
