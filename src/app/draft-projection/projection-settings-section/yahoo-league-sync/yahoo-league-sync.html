@@ -15,59 +15,66 @@
       Sync from your Yahoo league
     </span>
 
-    <span class="yahoo-sync-action">
-      @switch (connected()) {
-        @case (null) {
-          <span class="yahoo-sync-status">Checking…</span>
-        }
-        @case (false) {
-          <button
-            type="button"
-            class="btn btn-secondary btn-sm"
-            [disabled]="connecting()"
-            (click)="connect()"
-          >
-            {{ connecting() ? 'Connecting…' : 'Connect Yahoo account' }}
-          </button>
-        }
-        @default {
-          @if (loadingLeagues()) {
-            <span class="yahoo-sync-status">Loading your leagues…</span>
-          } @else if (leagues().length === 0) {
-            <span class="yahoo-sync-status">No NHL leagues found.</span>
-          } @else {
-            <span class="yahoo-sync-controls">
-              <select
-                class="yahoo-sync-select"
-                aria-label="Yahoo league"
-                (change)="onLeagueChange($event)"
-              >
-                <option value="">Select a league…</option>
-                @for (league of leagues(); track league.leagueKey) {
-                  <option
-                    [value]="league.leagueKey"
-                    [selected]="league.leagueKey === selectedKey()"
-                  >
-                    {{ league.name }}
-                  </option>
-                }
-              </select>
-              <button
-                type="button"
-                class="btn btn-secondary btn-sm"
-                [disabled]="!selectedKey() || syncing()"
-                (click)="sync()"
-              >
-                {{ syncing() ? 'Syncing…' : lastSync() ? 'Re-sync settings' : 'Sync settings' }}
-              </button>
-            </span>
+    @if (!syncDisabled) {
+      <span class="yahoo-sync-action">
+        @switch (connected()) {
+          @case (null) {
+            <span class="yahoo-sync-status">Checking…</span>
+          }
+          @case (false) {
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              [disabled]="connecting()"
+              (click)="connect()"
+            >
+              {{ connecting() ? 'Connecting…' : 'Connect Yahoo account' }}
+            </button>
+          }
+          @default {
+            @if (loadingLeagues()) {
+              <span class="yahoo-sync-status">Loading your leagues…</span>
+            } @else if (leagues().length === 0) {
+              <span class="yahoo-sync-status">No NHL leagues found.</span>
+            } @else {
+              <span class="yahoo-sync-controls">
+                <select
+                  class="yahoo-sync-select"
+                  aria-label="Yahoo league"
+                  (change)="onLeagueChange($event)"
+                >
+                  <option value="">Select a league…</option>
+                  @for (league of leagues(); track league.leagueKey) {
+                    <option
+                      [value]="league.leagueKey"
+                      [selected]="league.leagueKey === selectedKey()"
+                    >
+                      {{ league.name }}
+                    </option>
+                  }
+                </select>
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm"
+                  [disabled]="!selectedKey() || syncing()"
+                  (click)="sync()"
+                >
+                  {{ syncing() ? 'Syncing…' : lastSync() ? 'Re-sync settings' : 'Sync settings' }}
+                </button>
+              </span>
+            }
           }
         }
-      }
-    </span>
+      </span>
+    }
   </div>
 
-  @if (error()) {
+  @if (syncDisabled) {
+    <p class="yahoo-sync-muted">
+      Yahoo opens NHL leagues once the new season is live — usually a couple of months before the
+      first game. Sync will be back then.
+    </p>
+  } @else if (error()) {
     <p class="yahoo-sync-error" role="alert">{{ error() }}</p>
   }
   @if (lastSync(); as sync) {

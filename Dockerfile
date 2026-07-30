@@ -23,6 +23,9 @@ ARG FACEBOOK_APP_ID=
 ARG APP_ENV=production
 ARG APP_VERSION=
 ARG POSTHOG_KEY=
+# YAHOO_SYNC_DISABLED=true flips the Yahoo league-sync UI into its off-season note (between
+# NHL seasons there are no leagues to sync); anything else leaves sync enabled.
+ARG YAHOO_SYNC_DISABLED=
 
 # Inject the values into environment.prod.ts (replaces the committed placeholders).
 RUN sed -i \
@@ -32,6 +35,7 @@ RUN sed -i \
   -e "s|__APP_ENV__|${APP_ENV}|g" \
   -e "s|__APP_VERSION__|${APP_VERSION}|g" \
   -e "s|__POSTHOG_KEY__|${POSTHOG_KEY}|g" \
+  -e "s|__YAHOO_SYNC_DISABLED__|${YAHOO_SYNC_DISABLED}|g" \
   src/environments/environment.prod.ts
 
 RUN npm run build

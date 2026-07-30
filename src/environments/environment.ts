@@ -13,4 +13,8 @@ export const environment = {
   // Public PostHog project key (not a secret). Empty disables analytics entirely — see
   // AnalyticsService. Left empty in dev so local browsing never lands in the real stats.
   posthogKey: '',
+  // Manual off-season switch. When true the Yahoo league-sync UI shows an off-season note
+  // instead of its controls (see YahooLeagueSyncComponent). Off in local dev; the deployed
+  // builds inject it via the YAHOO_SYNC_DISABLED build arg.
+  yahooSyncDisabled: false,
 };

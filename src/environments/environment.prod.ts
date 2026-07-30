@@ -13,6 +13,11 @@ const posthogKeyFlag: string = '__POSTHOG_KEY__';
 const appEnvFlag: string = '__APP_ENV__';
 const appVersionFlag: string = '__APP_VERSION__';
 
+// Manual off-season switch. Only the literal "true" (via the YAHOO_SYNC_DISABLED build arg)
+// turns it on — the Yahoo league-sync UI then shows an off-season note instead of its
+// controls. Untouched or empty resolves to false, so sync stays enabled by default.
+const yahooSyncDisabledFlag: string = '__YAHOO_SYNC_DISABLED__';
+
 export const environment = {
   production: true,
   environmentName: appEnvFlag.startsWith('__APP_ENV') ? 'production' : appEnvFlag,
@@ -22,4 +27,5 @@ export const environment = {
   googleClientId: googleClientIdFlag.startsWith('__GOOGLE') ? '' : googleClientIdFlag,
   facebookAppId: facebookAppIdFlag.startsWith('__FACEBOOK') ? '' : facebookAppIdFlag,
   posthogKey: posthogKeyFlag.startsWith('__POSTHOG') ? '' : posthogKeyFlag,
+  yahooSyncDisabled: yahooSyncDisabledFlag === 'true',
 };
