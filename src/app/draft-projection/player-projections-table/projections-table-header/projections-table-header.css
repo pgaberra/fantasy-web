@@ -9,6 +9,12 @@
   position: sticky;
   top: 0;
   z-index: 2;
+  /* Paint the sticky thead's own background behind its rows. With border-collapse and a
+     sticky thead, a row boundary that lands on a fractional device pixel leaves a 1px
+     seam the two rows' snapped cell backgrounds don't cover — which otherwise reveals the
+     white table surface as a hairline (most visibly under the top header row). A background
+     on the sticky layer fills that seam; --color-primary matches the top row, so it vanishes. */
+  background: var(--color-primary);
 }
 
 th {
@@ -69,7 +75,11 @@ th.summary-pts-col.sortable.sorted {
 th.summary-pts-col {
   background: var(--color-gold-strong);
   color: var(--color-text-on-dark);
-  box-shadow: inset 3px 0 0 0 #a06800;
+  /* Second inset re-covers the row-boundary seam in the column's own gold so the thead's
+     blue backdrop can't show through as a hairline breaking the unbroken gold band. */
+  box-shadow:
+    inset 3px 0 0 0 #a06800,
+    inset 0 1px 0 0 var(--color-gold-strong);
   min-width: 72px;
 }
 
