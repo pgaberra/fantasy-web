@@ -31,7 +31,7 @@ interface AuthFormValue extends AuthCredentials {
 })
 export class AuthFormComponent {
   readonly googleEnabled = !!environment.googleClientId;
-  readonly facebookEnabled = !!environment.facebookAppId;
+  readonly facebookEnabled = !!environment.facebookAppId && environment.facebookLoginEnabled;
 
   readonly title = input.required<string>();
   readonly subtitle = input.required<string>();
