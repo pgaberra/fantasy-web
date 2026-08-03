@@ -37,9 +37,13 @@ test.describe('happy path', () => {
     await rows.nth(2).locator('input.stat-input').first().fill('0');
     await rows.nth(3).locator('input.stat-input').first().fill('65');
 
-    // 4) Edit settings: expand the panel, remove a scoring stat, switch to Category.
-    await page.getByRole('button', { name: /projection settings/i }).click();
-    await expect(page.locator('.settings-section .hint')).toBeVisible();
+    // 4) Ensure the Projection Settings panel is expanded (it's expanded by default now, but
+    //    stay robust to that default), then remove a scoring stat and switch to Category.
+    const settingsHint = page.locator('.settings-section .hint');
+    if (!(await settingsHint.isVisible())) {
+      await page.getByRole('button', { name: /projection settings/i }).click();
+    }
+    await expect(settingsHint).toBeVisible();
     const categoryLabel = page.locator('label.radio-label', { hasText: 'Category' });
     if (!(await categoryLabel.isVisible())) {
       await page.getByRole('button', { name: /league settings/i }).click();
