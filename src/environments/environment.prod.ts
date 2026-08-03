@@ -4,6 +4,12 @@
 const googleClientIdFlag: string = '__GOOGLE_CLIENT_ID__';
 const facebookAppIdFlag: string = '__FACEBOOK_APP_ID__';
 
+// Feature toggle for the "Continue with Facebook" button. Only the literal "true" (via the
+// FACEBOOK_LOGIN_ENABLED build arg) shows it; untouched or empty resolves to false, so the
+// button stays hidden even when a FACEBOOK_APP_ID is present. Lets the Meta app stay wired up
+// while Facebook login is held back (the Meta app is still in Development / not yet public).
+const facebookLoginEnabledFlag: string = '__FACEBOOK_LOGIN_ENABLED__';
+
 // Public PostHog project key. Untouched, it resolves to empty, which disables analytics.
 // Staging and production get different keys (separate PostHog projects) from Coolify.
 const posthogKeyFlag: string = '__POSTHOG_KEY__';
@@ -26,6 +32,7 @@ export const environment = {
   apiUrl: 'http://PLACEHOLDER_FOR_PROD_URL/api/v1',
   googleClientId: googleClientIdFlag.startsWith('__GOOGLE') ? '' : googleClientIdFlag,
   facebookAppId: facebookAppIdFlag.startsWith('__FACEBOOK') ? '' : facebookAppIdFlag,
+  facebookLoginEnabled: facebookLoginEnabledFlag === 'true',
   posthogKey: posthogKeyFlag.startsWith('__POSTHOG') ? '' : posthogKeyFlag,
   yahooSyncDisabled: yahooSyncDisabledFlag === 'true',
 };

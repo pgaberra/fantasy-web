@@ -8,8 +8,13 @@ export const environment = {
   // The same client allows the http://localhost:4200 JS origin, so local dev works.
   googleClientId: '404846934195-2840u7mkdapmstllgsiaft2gdgjb2c0g.apps.googleusercontent.com',
   // Public Facebook App ID (not a secret). Empty until a Meta app exists — that hides the
-  // "Continue with Facebook" button. Set your dev app id (with localhost allowed) to test.
+  // "Continue with Facebook" button. To test locally, set your dev app id (with localhost
+  // allowed) AND set facebookLoginEnabled below to true.
   facebookAppId: '',
+  // Feature toggle for the "Continue with Facebook" button. Off by default — the button shows
+  // only when this is true and a facebookAppId is set. Deployed builds drive it via the
+  // FACEBOOK_LOGIN_ENABLED build arg (see environment.prod.ts).
+  facebookLoginEnabled: false,
   // Public PostHog project key (not a secret). Empty disables analytics entirely — see
   // AnalyticsService. Left empty in dev so local browsing never lands in the real stats.
   posthogKey: '',

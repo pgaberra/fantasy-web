@@ -20,6 +20,9 @@ RUN npm run generate:api
 ARG API_URL=http://localhost:8080
 ARG GOOGLE_CLIENT_ID=
 ARG FACEBOOK_APP_ID=
+# FACEBOOK_LOGIN_ENABLED=true shows the "Continue with Facebook" button; empty/anything else
+# keeps it hidden even when FACEBOOK_APP_ID is set (Facebook login is paused for now).
+ARG FACEBOOK_LOGIN_ENABLED=
 ARG APP_ENV=production
 ARG APP_VERSION=
 ARG POSTHOG_KEY=
@@ -32,6 +35,7 @@ RUN sed -i \
   -e "s|http://PLACEHOLDER_FOR_PROD_URL|${API_URL}|g" \
   -e "s|__GOOGLE_CLIENT_ID__|${GOOGLE_CLIENT_ID}|g" \
   -e "s|__FACEBOOK_APP_ID__|${FACEBOOK_APP_ID}|g" \
+  -e "s|__FACEBOOK_LOGIN_ENABLED__|${FACEBOOK_LOGIN_ENABLED}|g" \
   -e "s|__APP_ENV__|${APP_ENV}|g" \
   -e "s|__APP_VERSION__|${APP_VERSION}|g" \
   -e "s|__POSTHOG_KEY__|${POSTHOG_KEY}|g" \

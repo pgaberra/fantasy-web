@@ -1,8 +1,10 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { AuthFormComponent } from './auth-form';
 import { AuthCredentials } from './model';
 import { GoogleSignInButtonComponent } from '../google-sign-in-button/google-sign-in-button';
+import { FacebookSignInButtonComponent } from '../facebook-sign-in-button/facebook-sign-in-button';
+import { environment } from '../../../environments/environment';
 
 describe('AuthFormComponent', () => {
   beforeEach(() => MockBuilder(AuthFormComponent));
@@ -110,5 +112,47 @@ describe('AuthFormComponent', () => {
     await fixture.whenStable();
 
     expect(emitted).toEqual({ email: 'manager@example.com', password: 'password1' });
+  });
+});
+
+describe('AuthFormComponent Facebook button visibility', () => {
+  const originalFacebookAppId = environment.facebookAppId;
+  const originalFacebookLoginEnabled = environment.facebookLoginEnabled;
+
+  beforeEach(() => MockBuilder(AuthFormComponent));
+
+  afterEach(() => {
+    environment.facebookAppId = originalFacebookAppId;
+    environment.facebookLoginEnabled = originalFacebookLoginEnabled;
+  });
+
+  const renderLogin = () =>
+    MockRender(AuthFormComponent, {
+      title: 'Sign In',
+      subtitle: 'Welcome back',
+      submitLabel: 'Sign In',
+      loadingLabel: 'Signing in',
+      footerText: "Don't have an account?",
+      footerLinkLabel: 'Register',
+      footerLinkRoute: '/register',
+      isLoading: false,
+    });
+
+  it('renders the Facebook button when an app id is set and the toggle is enabled', () => {
+    environment.facebookAppId = 'test-facebook-app-id';
+    environment.facebookLoginEnabled = true;
+
+    renderLogin();
+
+    expect(ngMocks.findAll(FacebookSignInButtonComponent)).toHaveLength(1);
+  });
+
+  it('hides the Facebook button when the toggle is disabled even if an app id is set', () => {
+    environment.facebookAppId = 'test-facebook-app-id';
+    environment.facebookLoginEnabled = false;
+
+    renderLogin();
+
+    expect(ngMocks.findAll(FacebookSignInButtonComponent)).toHaveLength(0);
   });
 });
