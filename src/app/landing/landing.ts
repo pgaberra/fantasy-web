@@ -18,17 +18,17 @@ export class LandingComponent {
     {
       title: 'Tuned to your scoring',
       description:
-        'Points or categories, any weights — every skater and goalie is projected against your exact league rules.',
+        "Start from last season's stats and set any weights — points or categories. Every skater and goalie is ranked to your exact league rules.",
+    },
+    {
+      title: 'Model the season you expect',
+      description:
+        "Think a player's due for more games or ice time? Adjust it and every projected stat — and their ranking — moves to match.",
     },
     {
       title: 'Real category Z-Score',
       description:
         'Category leagues are ranked by per-category Z-Score across a league-sized pool — not a generic points list.',
-    },
-    {
-      title: 'Built for draft day',
-      description:
-        'Edit projections live, filter by position or team, and walk in with a board only you have.',
     },
   ];
 }
