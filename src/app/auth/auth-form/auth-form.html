@@ -79,7 +79,7 @@
       <div class="auth-divider"><span>or</span></div>
       <div class="auth-social">
         @if (googleEnabled) {
-          <app-google-sign-in-button (credential)="googleSubmit.emit($event)" />
+          <app-google-sign-in-button (login)="googleLogin.emit()" />
         }
         @if (facebookEnabled) {
           <app-facebook-sign-in-button (accessToken)="facebookSubmit.emit($event)" />

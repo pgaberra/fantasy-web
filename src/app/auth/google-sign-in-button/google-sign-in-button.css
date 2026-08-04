@@ -1,5 +1,48 @@
-.google-button-host {
+/*
+ * Google-brand button chrome. The literal colours here are Google's "Sign in with Google"
+ * brand-guideline values (white surface, #747775 border, #1f1f1f text, the 4-colour G logo),
+ * not app theme tokens — so they're intentionally hard-coded rather than drawn from styles.css.
+ * Width is fluid (fills the container, capped) so it no longer overflows a narrow phone card.
+ */
+/* Fill the container so the button lines up with the full-width primary submit button
+ * above it (the host element is a flex item that would otherwise shrink to its content). */
+:host {
+  display: block;
+  width: 100%;
+}
+
+.google-btn {
   display: flex;
+  align-items: center;
   justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
   min-height: 44px;
+  padding: 0 1rem;
+  background: #fff;
+  color: #1f1f1f;
+  border: 1px solid #747775;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition:
+    background-color var(--transition),
+    box-shadow var(--transition);
+}
+
+.google-btn:hover {
+  background: #f7f8f8;
+  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.15);
+}
+
+.google-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.google-btn__icon {
+  display: inline-flex;
+  flex-shrink: 0;
 }

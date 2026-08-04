@@ -8,6 +8,7 @@ import { RegisterComponent } from './auth/register/register';
 import { ForgotPasswordComponent } from './auth/forgot-password/forgot-password';
 import { ResetPasswordComponent } from './auth/reset-password/reset-password';
 import { VerifyEmailComponent } from './auth/verify-email/verify-email';
+import { GoogleCallbackComponent } from './auth/google-callback/google-callback';
 import { LandingComponent } from './landing/landing';
 import { AdminComponent } from './admin/admin';
 import { PrivacyComponent } from './privacy/privacy';
@@ -26,6 +27,7 @@ export const routes: Routes = [
   { path: 'privacy', component: PrivacyComponent },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
+  { path: 'auth/google/callback', component: GoogleCallbackComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'reset-password', component: ResetPasswordComponent },
   { path: 'verify-email', component: VerifyEmailComponent },
