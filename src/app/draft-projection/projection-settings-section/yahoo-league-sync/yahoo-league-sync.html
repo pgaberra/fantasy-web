@@ -66,13 +66,24 @@
           }
         }
       </span>
+    } @else {
+      <span class="yahoo-sync-action">
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          disabled
+          title="Sync opens when the new NHL season goes live"
+        >
+          {{ lastSync() ? 'Re-sync settings' : 'Sync settings' }}
+        </button>
+      </span>
     }
   </div>
 
   @if (syncDisabled) {
+    <!-- Update the season label below when flipping YAHOO_SYNC_DISABLED for a new season. -->
     <p class="yahoo-sync-muted">
-      Yahoo opens NHL leagues once the new season is live — usually a couple of months before the
-      first game. Sync will be back then.
+      Sync will be available as soon as Yahoo opens up the 2026-27 Fantasy Hockey season.
     </p>
   } @else if (error()) {
     <p class="yahoo-sync-error" role="alert">{{ error() }}</p>

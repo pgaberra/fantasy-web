@@ -12,6 +12,7 @@ import { ProjectionSerializerService } from '../../services/projection-serialize
 import { Player } from '../../models/player.model';
 import { SkaterStats } from '../../models/projection.model';
 import { DEFAULT_SCORING_COLUMNS } from '../../draft-projection/projection-defaults';
+import { environment } from '../../../environments/environment';
 
 describe('LandingDemoComponent', () => {
   const players: Player[] = [
@@ -87,6 +88,25 @@ describe('LandingDemoComponent', () => {
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('Sync your Yahoo league');
     expect(text).toContain('Sign in to connect Yahoo');
+  });
+
+  it('disables the connect button and shows the off-season note when sync is disabled', async () => {
+    environment.yahooSyncDisabled = true;
+    try {
+      const fixture = MockRender(LandingDemoComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const button: HTMLButtonElement =
+        fixture.nativeElement.querySelector('.demo-yahoo-gate button');
+      expect(button.disabled).toEqual(true);
+
+      const text = fixture.nativeElement.textContent;
+      expect(text).toContain('2026-27 Fantasy Hockey season');
+      expect(text).not.toContain('one click');
+    } finally {
+      environment.yahooSyncDisabled = false;
+    }
   });
 
   it('shows an error state with retry when the player load fails', async () => {

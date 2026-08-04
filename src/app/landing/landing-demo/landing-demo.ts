@@ -28,6 +28,7 @@ import {
   DEFAULT_STAT_WEIGHTS,
   DEFAULT_UTILITY_COLUMNS,
 } from '../../draft-projection/projection-defaults';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-landing-demo',
@@ -47,6 +48,12 @@ export class LandingDemoComponent {
   private readonly serializer = inject(ProjectionSerializerService);
   private readonly pendingProjection = inject(PendingProjectionService);
   private readonly router = inject(Router);
+
+  /**
+   * Off-season switch (build-time `YAHOO_SYNC_DISABLED`). When true the demo's Yahoo gate shows a
+   * disabled button and an off-season note instead of the active sign-in-to-connect Yahoo call.
+   */
+  protected readonly syncDisabled = environment.yahooSyncDisabled;
 
   private readonly table = viewChild(PlayerProjectionsTableComponent);
 
