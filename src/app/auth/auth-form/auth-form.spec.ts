@@ -4,6 +4,7 @@ import { AuthFormComponent } from './auth-form';
 import { AuthCredentials } from './model';
 import { GoogleSignInButtonComponent } from '../google-sign-in-button/google-sign-in-button';
 import { FacebookSignInButtonComponent } from '../facebook-sign-in-button/facebook-sign-in-button';
+import { PasswordRequirementsComponent } from '../password-requirements/password-requirements';
 import { environment } from '../../../environments/environment';
 
 describe('AuthFormComponent', () => {
@@ -30,7 +31,7 @@ describe('AuthFormComponent', () => {
       footerText: 'Already have an account?',
       footerLinkLabel: 'Sign in',
       footerLinkRoute: '/login',
-      passwordMinLength: 8,
+      enforcePasswordPolicy: true,
       requireConfirmPassword: true,
       isLoading: false,
     });
@@ -87,8 +88,8 @@ describe('AuthFormComponent', () => {
     const fixture = renderRegister();
     const component = fixture.point.componentInstance;
 
-    component.authForm.password().value.set('password1');
-    component.authForm.confirmPassword().value.set('different1');
+    component.authForm.password().value.set('Password1');
+    component.authForm.confirmPassword().value.set('Different1');
     component.authForm.confirmPassword().markAsTouched();
     fixture.detectChanges();
 
@@ -100,8 +101,8 @@ describe('AuthFormComponent', () => {
     const component = fixture.point.componentInstance;
 
     component.authForm.email().value.set('manager@example.com');
-    component.authForm.password().value.set('password1');
-    component.authForm.confirmPassword().value.set('password1');
+    component.authForm.password().value.set('Password1');
+    component.authForm.confirmPassword().value.set('Password1');
     fixture.detectChanges();
 
     let emitted: AuthCredentials | undefined;
@@ -111,7 +112,39 @@ describe('AuthFormComponent', () => {
     component.onSubmit(new Event('submit'));
     await fixture.whenStable();
 
-    expect(emitted).toEqual({ email: 'manager@example.com', password: 'password1' });
+    expect(emitted).toEqual({ email: 'manager@example.com', password: 'Password1' });
+  });
+
+  it('shows the password requirements checklist on the register form', () => {
+    renderRegister();
+
+    expect(ngMocks.findAll(PasswordRequirementsComponent)).toHaveLength(1);
+  });
+
+  it('does not show the password requirements checklist on the login form', () => {
+    render(false);
+
+    expect(ngMocks.findAll(PasswordRequirementsComponent)).toHaveLength(0);
+  });
+
+  it('does not submit when the password does not meet the policy', async () => {
+    const fixture = renderRegister();
+    const component = fixture.point.componentInstance;
+
+    component.authForm.email().value.set('manager@example.com');
+    // Eight lowercase letters: satisfies length but misses the uppercase and number rules.
+    component.authForm.password().value.set('weakpass');
+    component.authForm.confirmPassword().value.set('weakpass');
+    fixture.detectChanges();
+
+    let emitted: AuthCredentials | undefined;
+    component.formSubmit.subscribe((value: AuthCredentials) => {
+      emitted = value;
+    });
+    component.onSubmit(new Event('submit'));
+    await fixture.whenStable();
+
+    expect(emitted).toBeUndefined();
   });
 });
 

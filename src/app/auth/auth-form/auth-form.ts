@@ -5,7 +5,6 @@ import {
   email,
   form,
   maxLength,
-  minLength,
   required,
   schema,
   submit,
@@ -14,10 +13,11 @@ import {
 import { AuthCredentials } from './model';
 import { GoogleSignInButtonComponent } from '../google-sign-in-button/google-sign-in-button';
 import { FacebookSignInButtonComponent } from '../facebook-sign-in-button/facebook-sign-in-button';
+import { PasswordRequirementsComponent } from '../password-requirements/password-requirements';
+import { PASSWORD_MAX_LENGTH, unmetPasswordRequirements } from '../password-policy';
 import { environment } from '../../../environments/environment';
 
 const EMAIL_MAX_LENGTH = 254;
-const PASSWORD_MAX_LENGTH = 72;
 
 interface AuthFormValue extends AuthCredentials {
   confirmPassword: string;
@@ -25,7 +25,13 @@ interface AuthFormValue extends AuthCredentials {
 
 @Component({
   selector: 'app-auth-form',
-  imports: [FormField, RouterLink, GoogleSignInButtonComponent, FacebookSignInButtonComponent],
+  imports: [
+    FormField,
+    RouterLink,
+    GoogleSignInButtonComponent,
+    FacebookSignInButtonComponent,
+    PasswordRequirementsComponent,
+  ],
   templateUrl: './auth-form.html',
   styleUrl: './auth-form.css',
 })
@@ -40,7 +46,7 @@ export class AuthFormComponent {
   readonly footerText = input.required<string>();
   readonly footerLinkLabel = input.required<string>();
   readonly footerLinkRoute = input.required<string>();
-  readonly passwordMinLength = input<number | undefined>(undefined);
+  readonly enforcePasswordPolicy = input(false);
   readonly requireConfirmPassword = input(false);
   readonly showForgotPasswordLink = input(false);
   readonly errorMessage = input<string | null>(null);
@@ -63,11 +69,20 @@ export class AuthFormComponent {
       email(fields.email, { message: 'Enter a valid email address.' });
       maxLength(fields.email, EMAIL_MAX_LENGTH, { message: 'Email is too long.' });
       required(fields.password, { message: 'Password is required.' });
-      minLength(fields.password, () => this.passwordMinLength(), {
-        message: 'Password must be at least 8 characters.',
-      });
       maxLength(fields.password, PASSWORD_MAX_LENGTH, {
         message: 'Password must be at most 72 characters.',
+      });
+      validate(fields.password, (ctx) => {
+        if (!this.enforcePasswordPolicy()) {
+          return undefined;
+        }
+        if (unmetPasswordRequirements(ctx.value()).length > 0) {
+          return {
+            kind: 'weakPassword',
+            message: 'Password does not meet the requirements below.',
+          };
+        }
+        return undefined;
       });
       validate(fields.confirmPassword, (ctx) => {
         if (!this.requireConfirmPassword()) {

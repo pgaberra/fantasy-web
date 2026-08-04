@@ -31,8 +31,13 @@
         />
         @if (authForm.password().touched()) {
           @for (error of authForm.password().errors(); track error.kind) {
-            <span class="field-error">{{ error.message }}</span>
+            @if (error.kind !== 'weakPassword') {
+              <span class="field-error">{{ error.message }}</span>
+            }
           }
+        }
+        @if (enforcePasswordPolicy()) {
+          <app-password-requirements [password]="authForm.password().value()" />
         }
       </div>
 

@@ -4,7 +4,6 @@ import {
   FormField,
   form,
   maxLength,
-  minLength,
   required,
   schema,
   submit,
@@ -12,9 +11,8 @@ import {
 } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
-
-const PASSWORD_MIN_LENGTH = 8;
-const PASSWORD_MAX_LENGTH = 72;
+import { PasswordRequirementsComponent } from '../password-requirements/password-requirements';
+import { PASSWORD_MAX_LENGTH, unmetPasswordRequirements } from '../password-policy';
 
 interface ResetFormValue {
   password: string;
@@ -23,7 +21,7 @@ interface ResetFormValue {
 
 @Component({
   selector: 'app-reset-password',
-  imports: [FormField, RouterLink],
+  imports: [FormField, RouterLink, PasswordRequirementsComponent],
   templateUrl: './reset-password.html',
   styleUrl: '../auth-page.css',
 })
@@ -44,11 +42,17 @@ export class ResetPasswordComponent {
     this.model,
     schema((fields) => {
       required(fields.password, { message: 'Password is required.' });
-      minLength(fields.password, PASSWORD_MIN_LENGTH, {
-        message: 'Password must be at least 8 characters.',
-      });
       maxLength(fields.password, PASSWORD_MAX_LENGTH, {
         message: 'Password must be at most 72 characters.',
+      });
+      validate(fields.password, (ctx) => {
+        if (unmetPasswordRequirements(ctx.value()).length > 0) {
+          return {
+            kind: 'weakPassword',
+            message: 'Password does not meet the requirements below.',
+          };
+        }
+        return undefined;
       });
       validate(fields.confirmPassword, (ctx) => {
         if (ctx.value().length === 0) {
