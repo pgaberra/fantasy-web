@@ -7,6 +7,7 @@ import { ConnectionResponse } from '../../../api/models/connection-response';
 import { LeaguesResponse } from '../../../api/models/leagues-response';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
 import { YahooSync } from '../../../api/models/yahoo-sync';
+import { environment } from '../../../../environments/environment';
 
 describe('YahooLeagueSyncComponent', () => {
   const connected: ConnectionResponse = { connected: true };
@@ -109,5 +110,21 @@ describe('YahooLeagueSyncComponent', () => {
     await fixture.whenStable();
 
     expect(component.error()).toBeTruthy();
+  });
+
+  it('shows a disabled sync button and off-season note when sync is disabled', async () => {
+    environment.yahooSyncDisabled = true;
+    try {
+      await buildConnected();
+      const fixture = MockRender(YahooLeagueSyncComponent);
+      await fixture.whenStable();
+
+      const button: HTMLButtonElement = fixture.nativeElement.querySelector('button');
+      expect(button.disabled).toEqual(true);
+      expect(button.textContent?.trim()).toEqual('Sync settings');
+      expect(fixture.nativeElement.textContent).toContain('2026-27 Fantasy Hockey season');
+    } finally {
+      environment.yahooSyncDisabled = false;
+    }
   });
 });

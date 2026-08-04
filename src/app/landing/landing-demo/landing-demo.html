@@ -33,12 +33,31 @@
           </svg>
           <div class="demo-yahoo-text">
             <span class="demo-yahoo-title">Sync your Yahoo league</span>
-            <span class="demo-yahoo-note"
-              >Import your league's exact scoring and roster in one click.</span
-            >
+            @if (syncDisabled) {
+              <!-- Update the season label when flipping YAHOO_SYNC_DISABLED for a new season. -->
+              <span class="demo-yahoo-note"
+                >Sync will be available as soon as Yahoo opens up the 2026-27 Fantasy Hockey
+                season.</span
+              >
+            } @else {
+              <span class="demo-yahoo-note"
+                >Import your league's exact scoring and roster in one click.</span
+              >
+            }
           </div>
         </div>
-        <a routerLink="/register" class="btn btn-secondary btn-sm">Sign in to connect Yahoo</a>
+        @if (syncDisabled) {
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            disabled
+            title="Sync opens when the new NHL season goes live"
+          >
+            Sign in to connect Yahoo
+          </button>
+        } @else {
+          <a routerLink="/register" class="btn btn-secondary btn-sm">Sign in to connect Yahoo</a>
+        }
       </div>
     </app-projection-settings-section>
 
