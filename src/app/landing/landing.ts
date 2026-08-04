@@ -16,19 +16,19 @@ interface Feature {
 export class LandingComponent {
   readonly features: Feature[] = [
     {
-      title: 'Tuned to your scoring',
+      title: 'Ditch the Excel Sheets',
       description:
-        'Points or categories, any weights — every skater and goalie is projected against your exact league rules.',
+        'Tailor projections directly to your league settings, whether you play points or categories. No more manual formulas or messy spreadsheets.',
     },
     {
-      title: 'Real category Z-Score',
+      title: 'Category Scoring, Solved',
       description:
-        'Category leagues are ranked by per-category Z-Score across a league-sized pool — not a generic points list.',
+        "Comparing player value in category leagues used to be guesswork. Our Z-Score ranking combines all your league's categories into a single, easy-to-read board.",
     },
     {
-      title: 'Built for draft day',
+      title: 'Built for Draft Day',
       description:
-        'Edit projections live, filter by position or team, and walk in with a board only you have.',
+        'Run your draft in real-time with an interactive draft board, track picks seamlessly, and see instant post-draft power rankings to compare every team.',
     },
   ];
 }
