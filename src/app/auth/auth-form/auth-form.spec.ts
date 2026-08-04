@@ -60,15 +60,15 @@ describe('AuthFormComponent', () => {
     expect(ngMocks.findAll(GoogleSignInButtonComponent)).toHaveLength(1);
   });
 
-  it('re-emits the Google credential as googleSubmit', () => {
+  it('re-emits the Google button login as googleLogin', () => {
     const fixture = render(false);
     const googleButton = ngMocks.find(GoogleSignInButtonComponent);
 
-    let emitted: string | undefined;
-    fixture.point.componentInstance.googleSubmit.subscribe((token: string) => (emitted = token));
-    ngMocks.output(googleButton, 'credential').emit('id-token-123');
+    let emitted = false;
+    fixture.point.componentInstance.googleLogin.subscribe(() => (emitted = true));
+    ngMocks.output(googleButton, 'login').emit();
 
-    expect(emitted).toEqual('id-token-123');
+    expect(emitted).toEqual(true);
   });
 
   it('does not render the confirm-password field on the login form', () => {

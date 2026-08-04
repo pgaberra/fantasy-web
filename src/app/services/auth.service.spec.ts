@@ -7,6 +7,7 @@ import { AuthService } from './auth.service';
 import { AnalyticsService } from './analytics.service';
 import { Api } from '../api/api';
 import { AuthResponse } from '../api/models';
+import { environment } from '../../environments/environment';
 
 const identify = vi.fn();
 const reset = vi.fn();
@@ -39,6 +40,7 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     localStorage.clear();
+    sessionStorage.clear();
     identify.mockClear();
     reset.mockClear();
     capture.mockClear();
@@ -103,5 +105,43 @@ describe('AuthService', () => {
     service.logout();
 
     expect(reset).toHaveBeenCalledTimes(1);
+  });
+
+  describe('Google OAuth redirect flow', () => {
+    it('builds a Google authorization URL with the code-flow parameters', () => {
+      const url = new URL(service.buildGoogleAuthUrl('state-xyz'));
+
+      expect(url.origin + url.pathname).toEqual('https://accounts.google.com/o/oauth2/v2/auth');
+      expect(url.searchParams.get('response_type')).toEqual('code');
+      expect(url.searchParams.get('scope')).toEqual('openid email profile');
+      expect(url.searchParams.get('state')).toEqual('state-xyz');
+      expect(url.searchParams.get('prompt')).toEqual('select_account');
+      expect(url.searchParams.get('client_id')).toEqual(environment.googleClientId);
+      expect(url.searchParams.get('redirect_uri')).toContain('/auth/google/callback');
+    });
+
+    it('rejects a mismatched state without calling the API', async () => {
+      sessionStorage.setItem('google_oauth_state', 'expected');
+
+      await expect(
+        firstValueFrom(service.completeGoogleLogin('auth-code', 'tampered')),
+      ).rejects.toThrow();
+      expect(invoke).not.toHaveBeenCalled();
+    });
+
+    it('exchanges the code and stores tokens when the state matches', async () => {
+      sessionStorage.setItem('google_oauth_state', 'match');
+      invoke.mockResolvedValue(
+        authResponse(jwtWith({ sub: 'account-uuid', email: 'g@example.com' })),
+      );
+
+      await firstValueFrom(service.completeGoogleLogin('auth-code', 'match'));
+
+      expect(invoke).toHaveBeenCalledTimes(1);
+      expect(identify).toHaveBeenCalledWith('account-uuid');
+      expect(localStorage.getItem('auth_token')).not.toEqual(null);
+      // The one-time state is consumed so it can't be replayed.
+      expect(sessionStorage.getItem('google_oauth_state')).toEqual(null);
+    });
   });
 });

@@ -30,16 +30,10 @@ export class LoginComponent {
     });
   }
 
-  onGoogleSubmit(idToken: string) {
-    this.isLoading.set(true);
+  onGoogleLogin() {
     this.errorMessage.set(null);
-
-    this.authService.googleLogin(idToken).subscribe({
-      error: (error: unknown) => {
-        this.errorMessage.set(messageForError(error, 'Google sign-in failed. Please try again.'));
-        this.isLoading.set(false);
-      },
-    });
+    // Navigates away to Google; completion is handled by GoogleCallbackComponent on return.
+    this.authService.startGoogleRedirect();
   }
 
   onFacebookSubmit(accessToken: string) {

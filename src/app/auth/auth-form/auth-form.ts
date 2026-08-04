@@ -47,7 +47,7 @@ export class AuthFormComponent {
   readonly isLoading = input(false);
 
   readonly formSubmit = output<AuthCredentials>();
-  readonly googleSubmit = output<string>();
+  readonly googleLogin = output<void>();
   readonly facebookSubmit = output<string>();
 
   private readonly authFormModel = signal<AuthFormValue>({

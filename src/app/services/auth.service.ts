@@ -1,12 +1,12 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { from, Observable } from 'rxjs';
+import { from, Observable, throwError } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Api } from '../api/api';
 import { login } from '../api/fn/authentication/login';
 import { register } from '../api/fn/authentication/register';
 import { refresh } from '../api/fn/authentication/refresh';
-import { googleLogin } from '../api/fn/authentication/google-login';
+import { googleCodeLogin } from '../api/fn/authentication/google-code-login';
 import { facebookLogin } from '../api/fn/authentication/facebook-login';
 import { forgotPassword } from '../api/fn/authentication/forgot-password';
 import { resetPassword } from '../api/fn/authentication/reset-password';
@@ -14,6 +14,7 @@ import { verifyEmail } from '../api/fn/authentication/verify-email';
 import { resendVerification } from '../api/fn/authentication/resend-verification';
 import { AuthResponse, LoginRequest, RefreshRequest, RegisterRequest } from '../api/models';
 import { AnalyticsService } from './analytics.service';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -27,6 +28,9 @@ export class AuthService {
   private readonly refreshTokenKey = 'refresh_token';
   private readonly adminKey = 'is_admin';
   private readonly emailVerifiedKey = 'email_verified';
+  private readonly googleStateKey = 'google_oauth_state';
+  private readonly googleCallbackPath = '/auth/google/callback';
+  private readonly googleAuthEndpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
 
   readonly isLoggedIn = signal<boolean>(!!localStorage.getItem(this.tokenKey));
   readonly isAdmin = signal<boolean>(localStorage.getItem(this.adminKey) === 'true');
@@ -51,10 +55,48 @@ export class AuthService {
     );
   }
 
-  googleLogin(idToken: string): Observable<AuthResponse> {
-    return from(this.api.invoke(googleLogin, { body: { idToken } })).pipe(
-      tap((response) => this.storeTokens(response)),
-    );
+  /**
+   * Starts "Continue with Google" as a top-level redirect to Google's OAuth authorization
+   * endpoint. Unlike Google's embedded button (a third-party script/iframe that iOS Safari's
+   * tracking prevention silently blocks), a top-level navigation always works. A random `state`
+   * persisted to sessionStorage guards the round-trip against CSRF.
+   */
+  startGoogleRedirect(): void {
+    const state = crypto.randomUUID();
+    sessionStorage.setItem(this.googleStateKey, state);
+    window.location.assign(this.buildGoogleAuthUrl(state));
+  }
+
+  buildGoogleAuthUrl(state: string): string {
+    const params = new URLSearchParams({
+      client_id: environment.googleClientId,
+      redirect_uri: this.googleRedirectUri(),
+      response_type: 'code',
+      scope: 'openid email profile',
+      state,
+      prompt: 'select_account',
+    });
+    return `${this.googleAuthEndpoint}?${params.toString()}`;
+  }
+
+  /**
+   * Completes the redirect: validates the returned `state` against the one we stored, then has
+   * the BFF exchange the authorization code for our token pair (the confidential code exchange
+   * happens server-side). A missing or mismatched state fails closed.
+   */
+  completeGoogleLogin(code: string, state: string): Observable<AuthResponse> {
+    const expectedState = sessionStorage.getItem(this.googleStateKey);
+    sessionStorage.removeItem(this.googleStateKey);
+    if (!expectedState || expectedState !== state) {
+      return throwError(() => new Error('Google sign-in could not be verified. Please try again.'));
+    }
+    return from(
+      this.api.invoke(googleCodeLogin, { body: { code, redirectUri: this.googleRedirectUri() } }),
+    ).pipe(tap((response) => this.storeTokens(response)));
+  }
+
+  private googleRedirectUri(): string {
+    return `${window.location.origin}${this.googleCallbackPath}`;
   }
 
   facebookLogin(accessToken: string): Observable<AuthResponse> {
