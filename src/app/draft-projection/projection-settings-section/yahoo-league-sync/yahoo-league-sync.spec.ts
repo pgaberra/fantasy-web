@@ -112,7 +112,7 @@ describe('YahooLeagueSyncComponent', () => {
     expect(component.error()).toBeTruthy();
   });
 
-  it('shows a disabled sync button and off-season note when sync is disabled', async () => {
+  it('shows a disabled sync button when sync is disabled', async () => {
     environment.yahooSyncDisabled = true;
     try {
       await buildConnected();
@@ -122,7 +122,8 @@ describe('YahooLeagueSyncComponent', () => {
       const button: HTMLButtonElement = fixture.nativeElement.querySelector('button');
       expect(button.disabled).toEqual(true);
       expect(button.textContent?.trim()).toEqual('Sync settings');
-      expect(fixture.nativeElement.textContent).toContain('2026-27 Fantasy Hockey season');
+      // The off-season note now lives only in the app-offseason-data-notice box, not here.
+      expect(fixture.nativeElement.textContent).not.toContain('2026-27');
     } finally {
       environment.yahooSyncDisabled = false;
     }

@@ -80,12 +80,7 @@
     }
   </div>
 
-  @if (syncDisabled) {
-    <!-- Update the season label below when flipping YAHOO_SYNC_DISABLED for a new season. -->
-    <p class="yahoo-sync-muted">
-      Sync will be available as soon as Yahoo opens up the 2026-27 Fantasy Hockey season.
-    </p>
-  } @else if (error()) {
+  @if (error()) {
     <p class="yahoo-sync-error" role="alert">{{ error() }}</p>
   }
   @if (lastSync(); as sync) {
