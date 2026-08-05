@@ -98,7 +98,7 @@ describe('LandingDemoComponent', () => {
     expect(text).toContain('Sign in to connect Yahoo');
   });
 
-  it('disables the connect button and shows the off-season note when sync is disabled', async () => {
+  it('disables the connect button when sync is disabled', async () => {
     environment.yahooSyncDisabled = true;
     try {
       const fixture = MockRender(LandingDemoComponent);
@@ -108,10 +108,8 @@ describe('LandingDemoComponent', () => {
       const button: HTMLButtonElement =
         fixture.nativeElement.querySelector('.demo-yahoo-gate button');
       expect(button.disabled).toEqual(true);
-
-      const text = fixture.nativeElement.textContent;
-      expect(text).toContain('2026-27 Fantasy Hockey season');
-      expect(text).not.toContain('one click');
+      // The off-season sync message now lives in the prominent app-offseason-data-notice box.
+      expect(fixture.nativeElement.textContent).not.toContain('one click');
     } finally {
       environment.yahooSyncDisabled = false;
     }
