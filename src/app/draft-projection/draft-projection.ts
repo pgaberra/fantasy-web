@@ -27,6 +27,7 @@ import { DraftState } from '../api/models/draft-state';
 import { SyncWarningDialogComponent } from './sync-warning-dialog/sync-warning-dialog';
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
+import { OffseasonDataNoticeComponent } from '../shared/offseason-data-notice/offseason-data-notice';
 import {
   DecimalStatKey,
   DEFAULT_DECIMAL_SETTINGS,
@@ -60,6 +61,7 @@ const AUTOSAVE_DEBOUNCE_MS = 1200;
     PlayerProjectionsTableComponent,
     LoadingIndicatorComponent,
     SyncWarningDialogComponent,
+    OffseasonDataNoticeComponent,
     RouterLink,
   ],
   templateUrl: './draft-projection.html',

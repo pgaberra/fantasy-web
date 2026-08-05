@@ -91,6 +91,14 @@ describe('DraftProjectionComponent', () => {
     expect(component.players()).toEqual([...mockSkaters, ...mockGoalies]);
   });
 
+  it('includes the off-season player-data notice', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('app-offseason-data-notice')).not.toBeNull();
+  });
+
   it('shows a Draft mode link in the header', async () => {
     const fixture = MockRender(DraftProjectionComponent);
     await fixture.whenStable();

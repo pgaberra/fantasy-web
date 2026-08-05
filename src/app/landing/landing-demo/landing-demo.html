@@ -8,6 +8,7 @@
   />
 } @else {
   <div class="demo-card">
+    <app-offseason-data-notice />
     <app-projection-settings-section
       [(scoringType)]="scoringType"
       [(activeScoringColumns)]="activeScoringColumns"
@@ -33,13 +34,7 @@
           </svg>
           <div class="demo-yahoo-text">
             <span class="demo-yahoo-title">Sync your Yahoo league</span>
-            @if (syncDisabled) {
-              <!-- Update the season label when flipping YAHOO_SYNC_DISABLED for a new season. -->
-              <span class="demo-yahoo-note"
-                >Sync will be available as soon as Yahoo opens up the 2026-27 Fantasy Hockey
-                season.</span
-              >
-            } @else {
+            @if (!syncDisabled) {
               <span class="demo-yahoo-note"
                 >Import your league's exact scoring and roster in one click.</span
               >

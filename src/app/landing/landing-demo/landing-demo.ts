@@ -10,6 +10,7 @@ import { ProjectionSerializerService } from '../../services/projection-serialize
 import { ProjectionState } from '../../services/projection-serializer';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../../shared/error-state/error-state';
+import { OffseasonDataNoticeComponent } from '../../shared/offseason-data-notice/offseason-data-notice';
 import { ActiveColumns, ScoringType } from '../../models/projection.model';
 import { Player } from '../../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../../models/stat-key.model';
@@ -38,6 +39,7 @@ import { environment } from '../../../environments/environment';
     PlayerProjectionsTableComponent,
     LoadingIndicatorComponent,
     ErrorStateComponent,
+    OffseasonDataNoticeComponent,
   ],
   templateUrl: './landing-demo.html',
   styleUrl: './landing-demo.css',

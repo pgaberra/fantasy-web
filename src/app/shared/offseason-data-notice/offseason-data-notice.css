@@ -1,0 +1,50 @@
+:host {
+  display: block;
+}
+
+.offseason-notice {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-gold-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+}
+
+.offseason-notice__icon {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  line-height: 1.45;
+  color: var(--color-gold-strong);
+}
+
+.offseason-notice__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.offseason-notice__title {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.offseason-notice__list {
+  margin: 0;
+  padding-left: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.offseason-notice__footer {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+}
