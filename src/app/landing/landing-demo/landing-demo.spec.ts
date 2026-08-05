@@ -80,6 +80,14 @@ describe('LandingDemoComponent', () => {
     expect(navigate).toHaveBeenCalledWith(['/register']);
   });
 
+  it('includes the off-season player-data notice', async () => {
+    const fixture = MockRender(LandingDemoComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('app-offseason-data-notice')).not.toBeNull();
+  });
+
   it('shows the Yahoo sync gated behind sign-in', async () => {
     const fixture = MockRender(LandingDemoComponent);
     await fixture.whenStable();
