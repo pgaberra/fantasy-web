@@ -37,14 +37,14 @@ describe('ResetPasswordComponent', () => {
     const fixture = MockRender(ResetPasswordComponent);
     const component = fixture.point.componentInstance;
 
-    component.resetForm.password().value.set('newsecret1');
-    component.resetForm.confirmPassword().value.set('newsecret1');
+    component.resetForm.password().value.set('Newsecret1');
+    component.resetForm.confirmPassword().value.set('Newsecret1');
     fixture.detectChanges();
     component.onSubmit(new Event('submit'));
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(resetPassword).toHaveBeenCalledWith('reset-token', 'newsecret1');
+    expect(resetPassword).toHaveBeenCalledWith('reset-token', 'Newsecret1');
     expect(component.succeeded()).toEqual(true);
   });
 
@@ -53,8 +53,24 @@ describe('ResetPasswordComponent', () => {
     const fixture = MockRender(ResetPasswordComponent);
     const component = fixture.point.componentInstance;
 
-    component.resetForm.password().value.set('newsecret1');
-    component.resetForm.confirmPassword().value.set('different1');
+    component.resetForm.password().value.set('Newsecret1');
+    component.resetForm.confirmPassword().value.set('Different1');
+    fixture.detectChanges();
+    component.onSubmit(new Event('submit'));
+    await fixture.whenStable();
+
+    expect(resetPassword).not.toHaveBeenCalled();
+    expect(component.succeeded()).toEqual(false);
+  });
+
+  it('does not reset when the password does not meet the policy', async () => {
+    await setup('reset-token');
+    const fixture = MockRender(ResetPasswordComponent);
+    const component = fixture.point.componentInstance;
+
+    // Matching confirmation, but the password misses the uppercase and number rules.
+    component.resetForm.password().value.set('weakpass');
+    component.resetForm.confirmPassword().value.set('weakpass');
     fixture.detectChanges();
     component.onSubmit(new Event('submit'));
     await fixture.whenStable();

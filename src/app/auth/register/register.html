@@ -6,7 +6,7 @@
   footerText="Already have an account?"
   footerLinkLabel="Sign in"
   footerLinkRoute="/login"
-  [passwordMinLength]="8"
+  [enforcePasswordPolicy]="true"
   [requireConfirmPassword]="true"
   [errorMessage]="errorMessage()"
   [isLoading]="isLoading()"
