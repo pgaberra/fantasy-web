@@ -28,6 +28,7 @@ export class App {
   private readonly router = inject(Router);
   protected readonly environmentName = environment.environmentName;
   protected readonly appVersion = environment.version;
+  protected readonly paymentsEnabled = environment.paymentsEnabled;
 
   private readonly isCurrentlyLanding = () => this.router.url.split(/[?#]/)[0] === '/';
   protected readonly isLandingRoute = toSignal(

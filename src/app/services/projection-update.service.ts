@@ -7,6 +7,7 @@ import {
   SkaterScoringStats,
 } from '../models/projection.model';
 import { ScaleConfig } from '../draft-projection/projection-settings-section/model';
+import { FULL_SEASON_GAMES, PREVIOUS_SEASON_GAMES } from '../draft-projection/projection-defaults';
 import {
   GOALIE_SCORING_STAT_KEYS,
   GoalieStatKey,
@@ -56,6 +57,52 @@ export class ProjectionUpdateService {
         return this.applySkaterStatValue(pp, key as SkaterStatKey, value, scaleSettings);
       }
       return this.applyGoalieStatValue(pp, key as GoalieStatKey, value, scaleSettings);
+    });
+  }
+
+  /**
+   * One-click "full season" bulk edit: sets every skater's games played to a full 84-game
+   * season and scales goalies proportionally (×84/82, keeping their share of the season),
+   * rescaling each player's scalable scoring stats by the same ratio the existing per-stat
+   * edit path uses. A single pass so it stays O(n) over the projections.
+   */
+  applyFullSeasonGames(
+    projections: Projection[],
+    scaleSettings: Record<SkaterUtilityStatKey, ScaleConfig>,
+  ): Projection[] {
+    const settings = scaleSettings.gp;
+    return projections.map((projection) => {
+      const oldGp = projection.stats.utility.gp;
+      const newGp =
+        projection.type === 'skater'
+          ? FULL_SEASON_GAMES
+          : Math.round((oldGp * FULL_SEASON_GAMES) / PREVIOUS_SEASON_GAMES);
+      const shouldScale = settings.scale && oldGp > 0;
+      const ratio = newGp / oldGp;
+      if (projection.type === 'skater') {
+        const scoring = shouldScale
+          ? this.scaleSkaterScoring(projection.stats.scoring, ratio, settings.scalableStats)
+          : projection.stats.scoring;
+        return {
+          ...projection,
+          stats: {
+            ...projection.stats,
+            scoring,
+            utility: { ...projection.stats.utility, gp: newGp },
+          },
+        };
+      }
+      const scoring = shouldScale
+        ? this.scaleGoalieScoring(projection.stats.scoring, ratio, settings.scalableStats)
+        : projection.stats.scoring;
+      return {
+        ...projection,
+        stats: {
+          ...projection.stats,
+          scoring,
+          utility: { ...projection.stats.utility, gp: newGp },
+        },
+      };
     });
   }
 

@@ -743,4 +743,22 @@ describe('PlayerProjectionsTableComponent', () => {
       expect(svPctInput.getAttribute('max')).toEqual('100');
     });
   });
+
+  describe('applyFullSeasonGames', () => {
+    it('sets skaters to 84 games and scales goalies proportionally', () => {
+      const component = getComponent();
+      component.applyFullSeasonGames();
+      const projections = component.playerProjections();
+      expect(
+        (projections.find((p) => p.playerId === 1) as SkaterProjection).stats.utility.gp,
+      ).toEqual(84);
+      expect(
+        (projections.find((p) => p.playerId === 2) as SkaterProjection).stats.utility.gp,
+      ).toEqual(84);
+      // Goalie gp 64 -> round(64 * 84 / 82) = 66
+      expect(
+        (projections.find((p) => p.playerId === 3) as GoalieProjection).stats.utility.gp,
+      ).toEqual(66);
+    });
+  });
 });

@@ -1,0 +1,33 @@
+<section class="pricing">
+  <header class="pricing-header">
+    <h1 class="pricing-title">SlapStat <span class="pricing-title-accent">Premium</span></h1>
+    <p class="pricing-sub">
+      Support SlapStat and unlock premium features as they roll out. Cancel anytime.
+    </p>
+  </header>
+
+  <article class="plan-card">
+    <span class="plan-badge">Premium</span>
+    <h2 class="plan-name">Monthly membership</h2>
+    <ul class="plan-perks">
+      <li>Everything in the free app</li>
+      <li>Premium features as they roll out</li>
+      <li>Support ongoing development</li>
+    </ul>
+
+    @if (authService.isLoggedIn()) {
+      <button
+        type="button"
+        class="btn btn-primary btn-lg btn-block"
+        [disabled]="starting()"
+        (click)="subscribe()"
+      >
+        {{ starting() ? 'Starting…' : 'Subscribe' }}
+      </button>
+    } @else {
+      <a routerLink="/login" class="btn btn-primary btn-lg btn-block">Sign in to subscribe</a>
+    }
+
+    <p class="plan-note">A secure checkout opens on the next step.</p>
+  </article>
+</section>

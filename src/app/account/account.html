@@ -1,0 +1,64 @@
+<section class="account">
+  <header class="account-header">
+    <h1>Your subscription</h1>
+    <p class="account-sub">Manage your SlapStat Premium membership.</p>
+  </header>
+
+  @if (justSubscribed()) {
+    <p class="account-success" role="status">
+      Thanks for subscribing! Your premium access is now active.
+    </p>
+  }
+
+  <article class="account-card">
+    @switch (entitlement.loadState()) {
+      @case ('loading') {
+        <p class="account-loading">Loading your subscription…</p>
+      }
+      @case ('error') {
+        <p class="account-error" role="alert">Couldn't load your subscription.</p>
+        <div class="account-actions">
+          <button type="button" class="btn btn-secondary" (click)="reload()">Try again</button>
+        </div>
+      }
+      @default {
+        @if (entitlement.premium()) {
+          <div class="plan-status"><span class="status status-ok">● Premium active</span></div>
+          @if (entitlement.cancelAtPeriodEnd()) {
+            @if (entitlement.currentPeriodEnd()) {
+              <p class="account-note">
+                Your subscription cancels on
+                {{ entitlement.currentPeriodEnd() | date: 'longDate' }} — you keep premium access
+                until then.
+              </p>
+            } @else {
+              <p class="account-note">
+                Your subscription is set to cancel — you keep premium access until the period ends.
+              </p>
+            }
+          } @else if (entitlement.currentPeriodEnd()) {
+            <p class="account-note">
+              Renews on {{ entitlement.currentPeriodEnd() | date: 'longDate' }}.
+            </p>
+          }
+          <div class="account-actions">
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="openingPortal()"
+              (click)="manageBilling()"
+            >
+              {{ openingPortal() ? 'Opening…' : 'Manage subscription' }}
+            </button>
+          </div>
+        } @else {
+          <div class="plan-status"><span class="status status-off">● Free plan</span></div>
+          <p class="account-note">You don't have an active subscription.</p>
+          <div class="account-actions">
+            <a routerLink="/pricing" class="btn btn-primary">See Premium</a>
+          </div>
+        }
+      }
+    }
+  </article>
+</section>

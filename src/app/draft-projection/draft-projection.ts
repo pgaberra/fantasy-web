@@ -18,13 +18,13 @@ import { Player } from '../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
 import { ActiveColumns, Projection, ScoringType } from '../models/projection.model';
 import { ProjectionSettingsSectionComponent } from './projection-settings-section/projection-settings-section';
-import {
-  YahooLeagueSyncComponent,
-  YahooSyncResult,
-} from './projection-settings-section/yahoo-league-sync/yahoo-league-sync';
+import { LeagueSyncComponent } from './projection-settings-section/league-sync/league-sync';
+import { YahooSyncResult } from './projection-settings-section/yahoo-league-sync/yahoo-league-sync';
+import { LeagueProjectionSettingsResponse } from '../api/models/league-projection-settings-response';
 import { YahooSync } from '../api/models/yahoo-sync';
 import { DraftState } from '../api/models/draft-state';
 import { SyncWarningDialogComponent } from './sync-warning-dialog/sync-warning-dialog';
+import { FullSeasonDialogComponent } from './full-season-dialog/full-season-dialog';
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { OffseasonDataNoticeComponent } from '../shared/offseason-data-notice/offseason-data-notice';
@@ -57,10 +57,11 @@ const AUTOSAVE_DEBOUNCE_MS = 1200;
   selector: 'app-draft-projection',
   imports: [
     ProjectionSettingsSectionComponent,
-    YahooLeagueSyncComponent,
+    LeagueSyncComponent,
     PlayerProjectionsTableComponent,
     LoadingIndicatorComponent,
     SyncWarningDialogComponent,
+    FullSeasonDialogComponent,
     OffseasonDataNoticeComponent,
     RouterLink,
   ],
@@ -140,6 +141,7 @@ export class DraftProjectionComponent implements OnInit {
   );
   readonly reSyncing = signal<boolean>(false);
   readonly reSyncError = signal<string | null>(null);
+  readonly showFullSeasonDialog = signal<boolean>(false);
 
   readonly isLoading = computed(() => this.playersResource.isLoading() || !this.projectionLoaded());
 
@@ -183,8 +185,7 @@ export class DraftProjectionComponent implements OnInit {
     this.openExisting(id);
   }
 
-  applyYahooSettings(result: YahooSyncResult): void {
-    const mapped = result.settings;
+  private applyLeagueSettings(mapped: LeagueProjectionSettingsResponse): void {
     this.scoringType.set(mapped.scoringType);
     this.activeScoringColumns.set(new Set(mapped.activeScoringColumns as ScoringStatKey[]));
     this.activeUtilityColumns.set(new Set(mapped.activeUtilityColumns as SkaterUtilityStatKey[]));
@@ -195,12 +196,24 @@ export class DraftProjectionComponent implements OnInit {
     if (mapped.statWeights) {
       this.statWeights.set(mapped.statWeights as Record<ScoringStatKey, number>);
     }
+  }
+
+  applyYahooSettings(result: YahooSyncResult): void {
+    this.applyLeagueSettings(result.settings);
     this.yahooSync.set({
       leagueName: result.leagueName,
       leagueKey: result.leagueKey,
       syncedAt: new Date().toISOString(),
     });
     this.syncedSnapshot.set(this.syncedSettingsKey());
+  }
+
+  applyEspnSettings(settings: LeagueProjectionSettingsResponse): void {
+    this.applyLeagueSettings(settings);
+    // ESPN provenance isn't persisted yet (that needs the projection's sync stamp to carry a
+    // provider), so clear any stale Yahoo stamp rather than mislabel these settings as Yahoo's.
+    this.yahooSync.set(null);
+    this.syncedSnapshot.set(null);
   }
 
   reSync(): void {
@@ -232,6 +245,19 @@ export class DraftProjectionComponent implements OnInit {
   confirmUnsync(): void {
     this.yahooSync.set(null);
     this.syncedSnapshot.set(null);
+  }
+
+  openFullSeasonDialog(): void {
+    this.showFullSeasonDialog.set(true);
+  }
+
+  cancelFullSeason(): void {
+    this.showFullSeasonDialog.set(false);
+  }
+
+  applyFullSeason(): void {
+    this.table()?.applyFullSeasonGames();
+    this.showFullSeasonDialog.set(false);
   }
 
   private openExisting(id: string): void {

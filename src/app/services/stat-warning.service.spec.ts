@@ -56,10 +56,10 @@ const goalie = (
 describe('StatWarningService', () => {
   const service = new StatWarningService();
 
-  it('warns when GP exceeds the 82-game season', () => {
-    expect(service.warningsFor(skater({}, { gp: 83 })).has('gp')).toEqual(true);
-    expect(service.warningsFor(skater({}, { gp: 82 })).has('gp')).toEqual(false);
-    expect(service.warningsFor(goalie({}, { gp: 83 })).has('gp')).toEqual(true);
+  it('warns when GP exceeds the 84-game season', () => {
+    expect(service.warningsFor(skater({}, { gp: 85 })).has('gp')).toEqual(true);
+    expect(service.warningsFor(skater({}, { gp: 84 })).has('gp')).toEqual(false);
+    expect(service.warningsFor(goalie({}, { gp: 85 })).has('gp')).toEqual(true);
   });
 
   it('warns when TOI/G exceeds 60 minutes', () => {

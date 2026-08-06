@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Projection } from '../models/projection.model';
 import { StatKey } from '../models/stat-key.model';
+import { FULL_SEASON_GAMES } from '../draft-projection/projection-defaults';
 
-const SEASON_GAMES = 82;
 const MAX_TOI_SECONDS = 60 * 60;
 const MAX_PERCENTAGE = 100;
 const POINTS_TOLERANCE = 0.01;
@@ -14,8 +14,8 @@ export class StatWarningService {
   warningsFor(projection: Projection): Map<StatKey, string> {
     const warnings = new Map<StatKey, string>();
 
-    if (projection.stats.utility.gp > SEASON_GAMES) {
-      warnings.set('gp', `Projected over the ${SEASON_GAMES}-game season`);
+    if (projection.stats.utility.gp > FULL_SEASON_GAMES) {
+      warnings.set('gp', `Projected over the ${FULL_SEASON_GAMES}-game season`);
     }
 
     if (projection.type === 'skater') {

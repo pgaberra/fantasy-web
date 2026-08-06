@@ -12,8 +12,12 @@ import { GoogleCallbackComponent } from './auth/google-callback/google-callback'
 import { LandingComponent } from './landing/landing';
 import { AdminComponent } from './admin/admin';
 import { PrivacyComponent } from './privacy/privacy';
+import { PricingComponent } from './pricing/pricing';
+import { AccountComponent } from './account/account';
 import { landingRedirectGuard } from './guards/landing-redirect.guard';
 import { adminGuard } from './guards/admin.guard';
+import { authGuard } from './guards/auth.guard';
+import { paymentsEnabledGuard } from './guards/payments-enabled.guard';
 
 export const routes: Routes = [
   { path: '', component: LandingComponent, canActivate: [landingRedirectGuard] },
@@ -25,6 +29,10 @@ export const routes: Routes = [
   // Public and unguarded on purpose: consent has to be informed, so the policy must be
   // reachable from the banner before anyone has agreed to anything.
   { path: 'privacy', component: PrivacyComponent },
+  // Payments UI stays dark until the PAYMENTS_ENABLED build flag is on — the guard redirects both
+  // routes home otherwise. Account additionally requires being signed in.
+  { path: 'pricing', component: PricingComponent, canActivate: [paymentsEnabledGuard] },
+  { path: 'account', component: AccountComponent, canActivate: [paymentsEnabledGuard, authGuard] },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
   { path: 'auth/google/callback', component: GoogleCallbackComponent },

@@ -1,0 +1,34 @@
+@if (espnEnabled) {
+  <div class="provider-picker" role="tablist" aria-label="Fantasy provider">
+    <button
+      type="button"
+      role="tab"
+      class="provider-tab"
+      [class.provider-tab--active]="provider() === 'yahoo'"
+      [attr.aria-selected]="provider() === 'yahoo'"
+      (click)="provider.set('yahoo')"
+    >
+      Yahoo
+    </button>
+    <button
+      type="button"
+      role="tab"
+      class="provider-tab"
+      [class.provider-tab--active]="provider() === 'espn'"
+      [attr.aria-selected]="provider() === 'espn'"
+      (click)="provider.set('espn')"
+    >
+      ESPN
+    </button>
+  </div>
+  @switch (provider()) {
+    @case ('espn') {
+      <app-espn-league-sync (synced)="espnSynced.emit($event)" />
+    }
+    @default {
+      <app-yahoo-league-sync [lastSync]="lastSync()" (synced)="yahooSynced.emit($event)" />
+    }
+  }
+} @else {
+  <app-yahoo-league-sync [lastSync]="lastSync()" (synced)="yahooSynced.emit($event)" />
+}

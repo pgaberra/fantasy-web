@@ -4,6 +4,7 @@ import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
 import { DraftProjectionComponent } from './draft-projection';
+import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
 import { PlayerService } from '../services/player.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { ProjectionSyncService } from '../services/projection-sync.service';
@@ -195,5 +196,46 @@ describe('DraftProjectionComponent', () => {
     component.confirmUnsync();
     expect(component.yahooSync()).toBeNull();
     expect(component.diverged()).toEqual(false);
+  });
+
+  describe('full-season bulk action', () => {
+    it('opens and cancels the confirmation dialog', async () => {
+      const fixture = MockRender(DraftProjectionComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      expect(component.showFullSeasonDialog()).toEqual(false);
+      component.openFullSeasonDialog();
+      expect(component.showFullSeasonDialog()).toEqual(true);
+      component.cancelFullSeason();
+      expect(component.showFullSeasonDialog()).toEqual(false);
+    });
+
+    it('applies the full season to the table and closes the dialog on confirm', async () => {
+      const fixture = MockRender(DraftProjectionComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+      const component = fixture.point.componentInstance;
+      const table = ngMocks.findInstance(PlayerProjectionsTableComponent);
+      const applySpy = vi.spyOn(table, 'applyFullSeasonGames');
+
+      component.openFullSeasonDialog();
+      component.applyFullSeason();
+
+      expect(applySpy).toHaveBeenCalled();
+      expect(component.showFullSeasonDialog()).toEqual(false);
+    });
+
+    it('renders the confirmation dialog only while it is open', async () => {
+      const fixture = MockRender(DraftProjectionComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('app-full-season-dialog')).toBeNull();
+
+      fixture.point.componentInstance.openFullSeasonDialog();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('app-full-season-dialog')).not.toBeNull();
+    });
   });
 });

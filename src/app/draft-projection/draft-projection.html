@@ -74,7 +74,11 @@
       [(rosterSlots)]="rosterSlots"
       [(minGoalieGames)]="minGoalieGames"
     >
-      <app-yahoo-league-sync [lastSync]="yahooSync()" (synced)="applyYahooSettings($event)" />
+      <app-league-sync
+        [lastSync]="yahooSync()"
+        (yahooSynced)="applyYahooSettings($event)"
+        (espnSynced)="applyEspnSettings($event)"
+      />
     </app-projection-settings-section>
 
     <div class="projections-tables">
@@ -91,7 +95,16 @@
         [scaleSettings]="scaleSettings()"
         [(decimalSettings)]="decimalSettings"
         [useDefaultDecimals]="useDefaultDecimals()"
-      />
+      >
+        <button
+          table-actions
+          type="button"
+          class="btn btn-secondary btn-sm"
+          (click)="openFullSeasonDialog()"
+        >
+          Full season (84 GP)
+        </button>
+      </app-player-projections-table>
     </div>
 
     @if (diverged() && yahooSync(); as sync) {
@@ -102,6 +115,10 @@
         (reSync)="reSync()"
         (confirm)="confirmUnsync()"
       />
+    }
+
+    @if (showFullSeasonDialog()) {
+      <app-full-season-dialog (confirm)="applyFullSeason()" (cancelled)="cancelFullSeason()" />
     }
   </div>
 }
