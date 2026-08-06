@@ -25,6 +25,7 @@ import {
 import { YahooSync } from '../api/models/yahoo-sync';
 import { DraftState } from '../api/models/draft-state';
 import { SyncWarningDialogComponent } from './sync-warning-dialog/sync-warning-dialog';
+import { FullSeasonDialogComponent } from './full-season-dialog/full-season-dialog';
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { OffseasonDataNoticeComponent } from '../shared/offseason-data-notice/offseason-data-notice';
@@ -61,6 +62,7 @@ const AUTOSAVE_DEBOUNCE_MS = 1200;
     PlayerProjectionsTableComponent,
     LoadingIndicatorComponent,
     SyncWarningDialogComponent,
+    FullSeasonDialogComponent,
     OffseasonDataNoticeComponent,
     RouterLink,
   ],
@@ -140,6 +142,7 @@ export class DraftProjectionComponent implements OnInit {
   );
   readonly reSyncing = signal<boolean>(false);
   readonly reSyncError = signal<string | null>(null);
+  readonly showFullSeasonDialog = signal<boolean>(false);
 
   readonly isLoading = computed(() => this.playersResource.isLoading() || !this.projectionLoaded());
 
@@ -232,6 +235,19 @@ export class DraftProjectionComponent implements OnInit {
   confirmUnsync(): void {
     this.yahooSync.set(null);
     this.syncedSnapshot.set(null);
+  }
+
+  openFullSeasonDialog(): void {
+    this.showFullSeasonDialog.set(true);
+  }
+
+  cancelFullSeason(): void {
+    this.showFullSeasonDialog.set(false);
+  }
+
+  applyFullSeason(): void {
+    this.table()?.applyFullSeasonGames();
+    this.showFullSeasonDialog.set(false);
   }
 
   private openExisting(id: string): void {
