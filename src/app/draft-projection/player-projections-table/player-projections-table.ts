@@ -70,6 +70,9 @@ function statValueOf(projection: Projection, key: StatKey): number {
   ],
   templateUrl: './player-projections-table.html',
   styleUrl: './player-projections-table.css',
+  host: {
+    '(document:keydown)': 'onHistoryKeydown($event)',
+  },
 })
 export class PlayerProjectionsTableComponent implements OnInit {
   readonly scoringType = input.required<ScoringType>();
@@ -98,6 +101,19 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly sortDirection = signal<SortDirection>('desc');
 
   readonly playerProjections = signal<Projection[]>([]);
+
+  // Undo/redo history for stat edits. Snapshots are pushed onto `undoStack` before each
+  // mutation; consecutive edits to the same cell (same `lastEditSignature`) coalesce into a
+  // single step so typing "25" is one undo, not two. Since `ProjectionUpdateService` only
+  // clones the changed player, each snapshot is a cheap array of mostly-shared references.
+  private static readonly MAX_HISTORY = 50;
+  private readonly undoStack = signal<Projection[][]>([]);
+  private readonly redoStack = signal<Projection[][]>([]);
+  private lastEditSignature: string | null = null;
+  private fullSeasonEditCounter = 0;
+  readonly canUndo = computed(() => this.undoStack().length > 0);
+  readonly canRedo = computed(() => this.redoStack().length > 0);
+
   private readonly realTimeSortedProjections = computed((): ScoredProjection[] => {
     const scored = this.scoredProjections();
     const column = this.sortColumn();
@@ -374,13 +390,16 @@ export class PlayerProjectionsTableComponent implements OnInit {
     const currentTarget = event.currentTarget as HTMLElement;
     if (relatedTarget && currentTarget.contains(relatedTarget)) return;
     this.editingPlayerId.set(null);
+    // Leaving the row ends the current edit run, so re-entering the same cell later starts a
+    // fresh undo step instead of coalescing onto the previous one.
+    this.lastEditSignature = null;
   }
 
   onToiKeydown(playerId: number, event: KeyboardEvent): void {
     if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
     event.preventDefault();
     const delta = event.key === 'ArrowUp' ? 1 : -1;
-    this.playerProjections.update((playerProjections) =>
+    this.commitEdit(`${playerId}:toiPerGame`, (playerProjections) =>
       this.projectionUpdateService.applyToiDelta(
         playerProjections,
         playerId,
@@ -401,7 +420,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
     if (this.statInfoService.isPercentageStat(key)) {
       value = Math.min(100, value);
     }
-    this.playerProjections.update((playerProjections) =>
+    this.commitEdit(`${playerId}:${key}`, (playerProjections) =>
       this.projectionUpdateService.applyStatValue(
         playerProjections,
         playerId,
@@ -413,7 +432,9 @@ export class PlayerProjectionsTableComponent implements OnInit {
   }
 
   applyFullSeasonGames(scaleStats: boolean, minGamesToScale: number): void {
-    this.playerProjections.update((playerProjections) =>
+    // A unique signature keeps each "Full season" bulk edit as its own undo step.
+    this.fullSeasonEditCounter += 1;
+    this.commitEdit(`full-season:${this.fullSeasonEditCounter}`, (playerProjections) =>
       this.projectionUpdateService.applyFullSeasonGames(
         playerProjections,
         this.scaleSettings(),
@@ -421,5 +442,61 @@ export class PlayerProjectionsTableComponent implements OnInit {
         minGamesToScale,
       ),
     );
+  }
+
+  private commitEdit(
+    signature: string,
+    mutate: (playerProjections: Projection[]) => Projection[],
+  ): void {
+    const current = this.playerProjections();
+    const coalesce = signature === this.lastEditSignature && this.undoStack().length > 0;
+    if (!coalesce) {
+      this.undoStack.update((stack) =>
+        [...stack, current].slice(-PlayerProjectionsTableComponent.MAX_HISTORY),
+      );
+    }
+    this.redoStack.set([]);
+    this.lastEditSignature = signature;
+    this.playerProjections.set(mutate(current));
+  }
+
+  undo(): void {
+    const stack = this.undoStack();
+    if (stack.length === 0) return;
+    this.redoStack.update((redo) => [...redo, this.playerProjections()]);
+    this.playerProjections.set(stack[stack.length - 1]);
+    this.undoStack.set(stack.slice(0, -1));
+    this.lastEditSignature = null;
+  }
+
+  redo(): void {
+    const stack = this.redoStack();
+    if (stack.length === 0) return;
+    this.undoStack.update((undo) => [...undo, this.playerProjections()]);
+    this.playerProjections.set(stack[stack.length - 1]);
+    this.redoStack.set(stack.slice(0, -1));
+    this.lastEditSignature = null;
+  }
+
+  onHistoryKeydown(event: KeyboardEvent): void {
+    if (!event.ctrlKey && !event.metaKey) return;
+    const key = event.key.toLowerCase();
+    const isUndo = key === 'z' && !event.shiftKey;
+    const isRedo = key === 'y' || (key === 'z' && event.shiftKey);
+    if (!isUndo && !isRedo) return;
+
+    // Preserve the browser's native text undo in other editable fields (rename, search).
+    // Our stat cells commit each keystroke straight into projection state, so there is no
+    // useful native undo to keep there — handle those ourselves.
+    const target = event.target as HTMLElement | null;
+    const editable = target?.closest('input, textarea, select, [contenteditable="true"]');
+    if (editable && !editable.closest('app-stat-input')) return;
+
+    event.preventDefault();
+    if (isUndo) {
+      this.undo();
+    } else {
+      this.redo();
+    }
   }
 }

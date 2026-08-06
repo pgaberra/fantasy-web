@@ -19,6 +19,25 @@
   gap: 0.75rem;
 }
 
+.history-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  align-self: center;
+}
+
+.history-btn {
+  min-width: 2rem;
+  padding: var(--space-1) var(--space-2);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.history-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .save-status {
   font-size: 0.8rem;
   font-weight: var(--weight-semibold);
