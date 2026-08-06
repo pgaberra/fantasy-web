@@ -32,6 +32,9 @@ ARG YAHOO_SYNC_DISABLED=
 # PAYMENTS_ENABLED=true turns on the subscription billing UI; empty/anything else keeps the
 # whole payments feature dark (default).
 ARG PAYMENTS_ENABLED=
+# ESPN_LEAGUES_ENABLED=true shows the ESPN provider in the projection's league-sync UI;
+# empty/anything else keeps it hidden (default), so ESPN stays dark until enabled per env.
+ARG ESPN_LEAGUES_ENABLED=
 
 # Inject the values into environment.prod.ts (replaces the committed placeholders).
 RUN sed -i \
@@ -44,6 +47,7 @@ RUN sed -i \
   -e "s|__POSTHOG_KEY__|${POSTHOG_KEY}|g" \
   -e "s|__YAHOO_SYNC_DISABLED__|${YAHOO_SYNC_DISABLED}|g" \
   -e "s|__PAYMENTS_ENABLED__|${PAYMENTS_ENABLED}|g" \
+  -e "s|__ESPN_LEAGUES_ENABLED__|${ESPN_LEAGUES_ENABLED}|g" \
   src/environments/environment.prod.ts
 
 RUN npm run build
