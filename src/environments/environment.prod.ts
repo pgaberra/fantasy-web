@@ -24,6 +24,10 @@ const appVersionFlag: string = '__APP_VERSION__';
 // controls. Untouched or empty resolves to false, so sync stays enabled by default.
 const yahooSyncDisabledFlag: string = '__YAHOO_SYNC_DISABLED__';
 
+// Subscription billing toggle. Only the literal "true" (via the PAYMENTS_ENABLED build arg)
+// turns it on; untouched or empty resolves to false, keeping payments dark by default.
+const paymentsEnabledFlag: string = '__PAYMENTS_ENABLED__';
+
 export const environment = {
   production: true,
   environmentName: appEnvFlag.startsWith('__APP_ENV') ? 'production' : appEnvFlag,
@@ -35,4 +39,5 @@ export const environment = {
   facebookLoginEnabled: facebookLoginEnabledFlag === 'true',
   posthogKey: posthogKeyFlag.startsWith('__POSTHOG') ? '' : posthogKeyFlag,
   yahooSyncDisabled: yahooSyncDisabledFlag === 'true',
+  paymentsEnabled: paymentsEnabledFlag === 'true',
 };

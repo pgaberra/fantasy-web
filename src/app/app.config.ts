@@ -14,6 +14,7 @@ import { provideApiConfiguration } from './api/api-configuration';
 import { environment } from '../environments/environment';
 import { AnalyticsService } from './services/analytics.service';
 import { AuthService } from './services/auth.service';
+import { EntitlementService } from './services/entitlement.service';
 
 // AuthService.storeTokens() only runs on an *active* sign-in, so a returning user whose token
 // is already in localStorage would otherwise stay anonymous — identify them here too. The
@@ -37,6 +38,15 @@ function initAnalytics() {
 // retryInterceptor is outermost so it wraps authInterceptor (a retried request still
 // gets a fresh Authorization header). It is a small always-on safety net for transient
 // gateway/connection blips — see retry.interceptor.ts.
+// Load the premium entitlement once at startup for a signed-in user (only when payments are on),
+// so guards and the nav can read `premium` without each waiting on its own fetch. Failures fall
+// back to non-premium inside EntitlementService, so bootstrap never blocks or breaks on this.
+function initEntitlements() {
+  if (environment.paymentsEnabled && inject(AuthService).isLoggedIn()) {
+    inject(EntitlementService).refresh();
+  }
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -44,5 +54,6 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([retryInterceptor, authInterceptor])),
     provideApiConfiguration(environment.rootUrl),
     provideAppInitializer(initAnalytics),
+    provideAppInitializer(initEntitlements),
   ],
 };

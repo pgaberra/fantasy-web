@@ -22,4 +22,7 @@ export const environment = {
   // instead of its controls (see YahooLeagueSyncComponent). Off in local dev; the deployed
   // builds inject it via the YAHOO_SYNC_DISABLED build arg.
   yahooSyncDisabled: false,
+  // Subscription billing. Off by default; deployed builds drive it via the PAYMENTS_ENABLED
+  // build arg. When false the pricing/account routes redirect away and no entitlement is fetched.
+  paymentsEnabled: false,
 };
