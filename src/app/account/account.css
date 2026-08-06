@@ -1,0 +1,72 @@
+.account {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.account-header h1 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+.account-sub {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.account-success {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-md);
+  background: #ecfdf3;
+  color: var(--color-success);
+}
+
+.account-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.plan-status .status {
+  font-weight: var(--weight-semibold);
+}
+
+.status-ok {
+  color: var(--color-success);
+}
+
+.status-off {
+  color: var(--color-text-muted);
+}
+
+.account-note {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.account-loading {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.account-error {
+  margin: 0;
+  color: var(--color-danger);
+}
+
+.account-actions {
+  display: flex;
+  gap: var(--space-3);
+}
