@@ -264,7 +264,7 @@ describe('ProjectionUpdateService', () => {
     it('sets every skater to a full 84-game season', () => {
       const service = getService();
       const projections = [makeSkaterProjection(1, 1200, 82), makeSkaterProjection(2, 1200, 70)];
-      const result = service.applyFullSeasonGames(projections, skaterScaleSettings);
+      const result = service.applyFullSeasonGames(projections, skaterScaleSettings, true, 0);
       expect((result[0] as SkaterProjection).stats.utility.gp).toEqual(84);
       expect((result[1] as SkaterProjection).stats.utility.gp).toEqual(84);
     });
@@ -272,7 +272,7 @@ describe('ProjectionUpdateService', () => {
     it("scales a skater's scalable stats by 84 / old GP", () => {
       const service = getService();
       const projections = [makeSkaterProjection(1, 1200, 82)];
-      const result = service.applyFullSeasonGames(projections, skaterScaleSettings);
+      const result = service.applyFullSeasonGames(projections, skaterScaleSettings, true, 0);
       const ratio = 84 / 82;
       expect((result[0] as SkaterProjection).stats.scoring.goals).toBeCloseTo(10 * ratio);
       expect((result[0] as SkaterProjection).stats.scoring.assists).toBeCloseTo(20 * ratio);
@@ -281,21 +281,21 @@ describe('ProjectionUpdateService', () => {
     it('leaves stats outside the scalable set untouched for skaters', () => {
       const service = getService();
       const projections = [makeSkaterProjection(1, 1200, 82)];
-      const result = service.applyFullSeasonGames(projections, skaterScaleSettings);
+      const result = service.applyFullSeasonGames(projections, skaterScaleSettings, true, 0);
       expect((result[0] as SkaterProjection).stats.scoring.shPct).toEqual(10);
     });
 
     it('scales goalie games proportionally (×84/82), rounded — 42 becomes 43', () => {
       const service = getService();
       const projections: Projection[] = [makeGoalieProjection(1, 42)];
-      const result = service.applyFullSeasonGames(projections, goalieScaleSettings);
+      const result = service.applyFullSeasonGames(projections, goalieScaleSettings, true, 0);
       expect((result[0] as GoalieProjection).stats.utility.gp).toEqual(43);
     });
 
     it("scales a goalie's scalable stats by the same games ratio", () => {
       const service = getService();
       const projections: Projection[] = [makeGoalieProjection(1, 42)];
-      const result = service.applyFullSeasonGames(projections, goalieScaleSettings);
+      const result = service.applyFullSeasonGames(projections, goalieScaleSettings, true, 0);
       const ratio = 43 / 42;
       expect((result[0] as GoalieProjection).stats.scoring.w).toBeCloseTo(30 * ratio);
       expect((result[0] as GoalieProjection).stats.scoring.sv).toBeCloseTo(1440 * ratio);
@@ -304,23 +304,41 @@ describe('ProjectionUpdateService', () => {
     it('leaves goalie rate stats untouched', () => {
       const service = getService();
       const projections: Projection[] = [makeGoalieProjection(1, 42)];
-      const result = service.applyFullSeasonGames(projections, goalieScaleSettings);
+      const result = service.applyFullSeasonGames(projections, goalieScaleSettings, true, 0);
       expect((result[0] as GoalieProjection).stats.scoring.svPct).toBeCloseTo(0.92);
       expect((result[0] as GoalieProjection).stats.scoring.gaa).toBeCloseTo(2.5);
     });
 
-    it('sets GP but does not scale stats when scaling is off', () => {
+    it('sets GP but does not scale any stats when scaleStats is off', () => {
       const service = getService();
       const projections = [makeSkaterProjection(1, 1200, 82)];
-      const result = service.applyFullSeasonGames(projections, skaterNoScaleSettings);
+      const result = service.applyFullSeasonGames(projections, skaterScaleSettings, false, 0);
       expect((result[0] as SkaterProjection).stats.utility.gp).toEqual(84);
       expect((result[0] as SkaterProjection).stats.scoring.goals).toEqual(10);
+    });
+
+    it('sets GP but skips scaling for players below the minimum games threshold', () => {
+      const service = getService();
+      const projections = [makeSkaterProjection(1, 1200, 15), makeSkaterProjection(2, 1200, 60)];
+      const result = service.applyFullSeasonGames(projections, skaterScaleSettings, true, 20);
+      // Player 1 (15 GP < 20) keeps its raw stats; player 2 (60 GP >= 20) scales.
+      expect((result[0] as SkaterProjection).stats.utility.gp).toEqual(84);
+      expect((result[0] as SkaterProjection).stats.scoring.goals).toEqual(10);
+      expect((result[1] as SkaterProjection).stats.utility.gp).toEqual(84);
+      expect((result[1] as SkaterProjection).stats.scoring.goals).toBeCloseTo(10 * (84 / 60));
+    });
+
+    it('scales a player exactly at the minimum games threshold', () => {
+      const service = getService();
+      const projections = [makeSkaterProjection(1, 1200, 20)];
+      const result = service.applyFullSeasonGames(projections, skaterScaleSettings, true, 20);
+      expect((result[0] as SkaterProjection).stats.scoring.goals).toBeCloseTo(10 * (84 / 20));
     });
 
     it('leaves a goalie with zero games at zero (no divide-by-zero)', () => {
       const service = getService();
       const projections: Projection[] = [makeGoalieProjection(1, 0)];
-      const result = service.applyFullSeasonGames(projections, goalieScaleSettings);
+      const result = service.applyFullSeasonGames(projections, goalieScaleSettings, true, 0);
       expect((result[0] as GoalieProjection).stats.utility.gp).toEqual(0);
       expect((result[0] as GoalieProjection).stats.scoring.w).toEqual(30);
     });
@@ -328,7 +346,7 @@ describe('ProjectionUpdateService', () => {
     it('sets a skater with zero games to 84 without scaling', () => {
       const service = getService();
       const projections = [makeSkaterProjection(1, 1200, 0)];
-      const result = service.applyFullSeasonGames(projections, skaterScaleSettings);
+      const result = service.applyFullSeasonGames(projections, skaterScaleSettings, true, 0);
       expect((result[0] as SkaterProjection).stats.utility.gp).toEqual(84);
       expect((result[0] as SkaterProjection).stats.scoring.goals).toEqual(10);
     });
@@ -339,7 +357,7 @@ describe('ProjectionUpdateService', () => {
         makeSkaterProjection(1, 1200, 82),
         makeGoalieProjection(2, 42),
       ];
-      const result = service.applyFullSeasonGames(projections, skaterScaleSettings);
+      const result = service.applyFullSeasonGames(projections, skaterScaleSettings, true, 0);
       expect((result[0] as SkaterProjection).stats.utility.gp).toEqual(84);
       expect((result[1] as GoalieProjection).stats.utility.gp).toEqual(43);
     });
@@ -347,7 +365,7 @@ describe('ProjectionUpdateService', () => {
     it('does not mutate the input projections', () => {
       const service = getService();
       const projections: Projection[] = [makeSkaterProjection(1, 1200, 82)];
-      service.applyFullSeasonGames(projections, skaterScaleSettings);
+      service.applyFullSeasonGames(projections, skaterScaleSettings, true, 0);
       expect((projections[0] as SkaterProjection).stats.utility.gp).toEqual(82);
       expect((projections[0] as SkaterProjection).stats.scoring.goals).toEqual(10);
     });

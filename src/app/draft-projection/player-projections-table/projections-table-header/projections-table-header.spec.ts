@@ -45,6 +45,7 @@ describe('ProjectionsTableHeaderComponent', () => {
         [(decimalSettings)]="decimalSettings"
         [sortColumn]="sortColumn"
         [sortDirection]="sortDirection"
+        [showFullSeasonButton]="showFullSeasonButton"
       ></thead>
     </table>
   `;
@@ -64,6 +65,7 @@ describe('ProjectionsTableHeaderComponent', () => {
       maxDecimalSetting: 3,
       sortColumn: 'summary',
       sortDirection: 'desc',
+      showFullSeasonButton: false,
       ...overrides,
     });
 
@@ -295,6 +297,35 @@ describe('ProjectionsTableHeaderComponent', () => {
       input.value = '1';
       input.dispatchEvent(new Event('input'));
       expect(component.decimalSettings().gp).toEqual(1);
+    });
+  });
+
+  describe('full-season pill', () => {
+    it('does not render the pill by default', () => {
+      getFixture();
+      expect(ngMocks.findAll('.full-season-pill')).toHaveLength(0);
+    });
+
+    it('renders the pill in the GP header when showFullSeasonButton is true', () => {
+      getFixture({ showFullSeasonButton: true });
+      const pills = ngMocks.findAll('.full-season-pill');
+      expect(pills).toHaveLength(1);
+      expect(pills[0].nativeElement.textContent.trim()).toContain('84');
+    });
+
+    it('emits fullSeason without sorting when the pill is clicked', () => {
+      const fixture = getFixture({ showFullSeasonButton: true });
+      const component = ngMocks.find(
+        fixture.debugElement,
+        ProjectionsTableHeaderComponent,
+      ).componentInstance;
+      const fullSeasonEmit = vi.spyOn(component.fullSeason, 'emit');
+      const sortEmit = vi.spyOn(component.sort, 'emit');
+      ngMocks
+        .find('.full-season-pill')
+        .nativeElement.dispatchEvent(new Event('click', { bubbles: true }));
+      expect(fullSeasonEmit).toHaveBeenCalled();
+      expect(sortEmit).not.toHaveBeenCalled();
     });
   });
 });

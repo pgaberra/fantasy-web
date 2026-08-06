@@ -45,7 +45,9 @@
         [(decimalSettings)]="decimalSettings"
         [sortColumn]="sortColumn()"
         [sortDirection]="sortDirection()"
+        [showFullSeasonButton]="showFullSeasonButton()"
         (sort)="onSort($event)"
+        (fullSeason)="fullSeasonRequested.emit()"
       ></thead>
       <tbody>
         @for (sp of visibleProjections(); track sp.projection.playerId) {
