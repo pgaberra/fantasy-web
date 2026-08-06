@@ -408,14 +408,14 @@ describe('ProjectionSettingsSectionComponent', () => {
   });
 
   describe('min goalie games', () => {
-    it('clamps the minimum goalie games to 0..82', () => {
+    it('clamps the minimum goalie games to 0..84', () => {
       const component = getComponent();
 
       component.onMinGoalieGamesInput({ target: { value: '-5' } } as unknown as Event);
       expect(component.minGoalieGames()).toEqual(0);
 
       component.onMinGoalieGamesInput({ target: { value: '100' } } as unknown as Event);
-      expect(component.minGoalieGames()).toEqual(82);
+      expect(component.minGoalieGames()).toEqual(84);
 
       component.onMinGoalieGamesInput({ target: { value: '25' } } as unknown as Event);
       expect(component.minGoalieGames()).toEqual(25);

@@ -216,7 +216,7 @@
                 type="number"
                 class="min-goalie-games-input"
                 min="0"
-                max="82"
+                [max]="FULL_SEASON_GAMES"
                 [value]="minGoalieGames()"
                 (input)="onMinGoalieGamesInput($event)"
               />

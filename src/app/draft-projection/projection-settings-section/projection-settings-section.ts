@@ -20,6 +20,7 @@ import {
   DEFAULT_LEAGUE_SIZE,
   DEFAULT_MIN_GOALIE_GAMES,
   DEFAULT_ROSTER_SLOTS,
+  FULL_SEASON_GAMES,
 } from '../projection-defaults';
 import { RosterSlots } from '../../api/models/roster-slots';
 import { StatGroupComponent } from './stat-group/stat-group';
@@ -163,7 +164,7 @@ export class ProjectionSettingsSectionComponent {
   onMinGoalieGamesInput(event: Event): void {
     const parsed = Number((event.target as HTMLInputElement).value);
     if (Number.isFinite(parsed)) {
-      this.minGoalieGames.set(Math.min(82, Math.max(0, Math.round(parsed))));
+      this.minGoalieGames.set(Math.min(FULL_SEASON_GAMES, Math.max(0, Math.round(parsed))));
     }
   }
 
@@ -202,4 +203,5 @@ export class ProjectionSettingsSectionComponent {
   }
 
   protected readonly UTILITY_STAT_KEYS = UTILITY_STAT_KEYS;
+  protected readonly FULL_SEASON_GAMES = FULL_SEASON_GAMES;
 }
