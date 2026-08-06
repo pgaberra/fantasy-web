@@ -2,6 +2,28 @@
   <div class="table-header">
     <div class="table-title">
       <h2>Player Projections</h2>
+      <div class="history-controls">
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm history-btn"
+          [disabled]="!canUndo()"
+          (click)="undo()"
+          title="Undo (Ctrl+Z)"
+          aria-label="Undo last change"
+        >
+          ↶
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm history-btn"
+          [disabled]="!canRedo()"
+          (click)="redo()"
+          title="Redo (Ctrl+Shift+Z)"
+          aria-label="Redo change"
+        >
+          ↷
+        </button>
+      </div>
       <ng-content select="[table-actions]" />
       <span class="save-status" [class.save-status--error]="saveStatus() === 'error'">
         @switch (saveStatus()) {

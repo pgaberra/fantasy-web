@@ -761,4 +761,211 @@ describe('PlayerProjectionsTableComponent', () => {
       ).toEqual(66);
     });
   });
+
+  describe('undo/redo', () => {
+    const goalsOf = (component: PlayerProjectionsTableComponent, playerId: number) =>
+      (component.playerProjections().find((p) => p.playerId === playerId) as SkaterProjection).stats
+        .scoring.goals;
+    const setStat = (
+      component: PlayerProjectionsTableComponent,
+      playerId: number,
+      key: string,
+      raw: string,
+    ) =>
+      component.onStatInput(playerId, key as never, { target: { value: raw } } as unknown as Event);
+
+    it('starts with no history', () => {
+      const component = getComponent();
+      expect(component.canUndo()).toEqual(false);
+      expect(component.canRedo()).toEqual(false);
+    });
+
+    it('undo restores the value the cell had before the edit and enables redo', () => {
+      const component = getComponent();
+      const original = goalsOf(component, 1);
+
+      setStat(component, 1, 'goals', '70');
+      expect(goalsOf(component, 1)).toEqual(70);
+      expect(component.canUndo()).toEqual(true);
+
+      component.undo();
+      expect(goalsOf(component, 1)).toEqual(original);
+      expect(component.canUndo()).toEqual(false);
+      expect(component.canRedo()).toEqual(true);
+    });
+
+    it('coalesces consecutive edits to the same cell into one undo step', () => {
+      const component = getComponent();
+      const original = goalsOf(component, 1);
+
+      // Simulates typing "7" then "70" into the same cell without leaving it.
+      setStat(component, 1, 'goals', '7');
+      setStat(component, 1, 'goals', '70');
+      expect(goalsOf(component, 1)).toEqual(70);
+
+      component.undo();
+      expect(goalsOf(component, 1)).toEqual(original);
+      expect(component.canUndo()).toEqual(false);
+    });
+
+    it('keeps edits to different cells as separate undo steps', () => {
+      const component = getComponent();
+      const originalGoals = goalsOf(component, 1);
+
+      setStat(component, 1, 'goals', '70');
+      setStat(component, 1, 'assists', '90');
+
+      component.undo();
+      expect(goalsOf(component, 1)).toEqual(70);
+      component.undo();
+      expect(goalsOf(component, 1)).toEqual(originalGoals);
+    });
+
+    it('starts a new undo step for the same cell after focus leaves the row', () => {
+      const component = getComponent();
+      const original = goalsOf(component, 1);
+
+      setStat(component, 1, 'goals', '70');
+      component.onRowFocusOut({ relatedTarget: null } as unknown as FocusEvent);
+      setStat(component, 1, 'goals', '75');
+
+      component.undo();
+      expect(goalsOf(component, 1)).toEqual(70);
+      component.undo();
+      expect(goalsOf(component, 1)).toEqual(original);
+    });
+
+    it('redo re-applies an undone edit', () => {
+      const component = getComponent();
+
+      setStat(component, 1, 'goals', '70');
+      component.undo();
+      component.redo();
+
+      expect(goalsOf(component, 1)).toEqual(70);
+      expect(component.canRedo()).toEqual(false);
+    });
+
+    it('clears the redo stack when a new edit is made after an undo', () => {
+      const component = getComponent();
+
+      setStat(component, 1, 'goals', '70');
+      component.undo();
+      expect(component.canRedo()).toEqual(true);
+
+      setStat(component, 1, 'assists', '90');
+      expect(component.canRedo()).toEqual(false);
+    });
+
+    it('records a Full season bulk edit as its own undo step', () => {
+      const component = getComponent();
+
+      setStat(component, 1, 'goals', '70');
+      component.applyFullSeasonGames(true, 0);
+      expect(
+        (component.playerProjections().find((p) => p.playerId === 1) as SkaterProjection).stats
+          .utility.gp,
+      ).toEqual(84);
+
+      component.undo();
+      expect(
+        (component.playerProjections().find((p) => p.playerId === 1) as SkaterProjection).stats
+          .utility.gp,
+      ).toEqual(82);
+      expect(goalsOf(component, 1)).toEqual(70);
+    });
+
+    it('undo and redo are no-ops when their stacks are empty', () => {
+      const component = getComponent();
+      const original = goalsOf(component, 1);
+
+      component.undo();
+      component.redo();
+
+      expect(goalsOf(component, 1)).toEqual(original);
+      expect(component.canUndo()).toEqual(false);
+      expect(component.canRedo()).toEqual(false);
+    });
+  });
+
+  describe('onHistoryKeydown', () => {
+    const dispatch = (
+      component: PlayerProjectionsTableComponent,
+      init: KeyboardEventInit,
+      target?: EventTarget,
+    ) => {
+      const event = new KeyboardEvent('keydown', init);
+      if (target) {
+        Object.defineProperty(event, 'target', { value: target });
+      }
+      vi.spyOn(event, 'preventDefault');
+      component.onHistoryKeydown(event);
+      return event;
+    };
+
+    it('undoes on Ctrl+Z', () => {
+      const component = getComponent();
+      component.onStatInput(1, 'goals', { target: { value: '70' } } as unknown as Event);
+
+      const event = dispatch(component, { key: 'z', ctrlKey: true });
+
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(
+        (component.playerProjections().find((p) => p.playerId === 1) as SkaterProjection).stats
+          .scoring.goals,
+      ).toEqual(64);
+    });
+
+    it('redoes on Ctrl+Shift+Z', () => {
+      const component = getComponent();
+      component.onStatInput(1, 'goals', { target: { value: '70' } } as unknown as Event);
+      component.undo();
+
+      dispatch(component, { key: 'z', ctrlKey: true, shiftKey: true });
+
+      expect(
+        (component.playerProjections().find((p) => p.playerId === 1) as SkaterProjection).stats
+          .scoring.goals,
+      ).toEqual(70);
+    });
+
+    it('redoes on Ctrl+Y', () => {
+      const component = getComponent();
+      component.onStatInput(1, 'goals', { target: { value: '70' } } as unknown as Event);
+      component.undo();
+
+      dispatch(component, { key: 'y', ctrlKey: true });
+
+      expect(
+        (component.playerProjections().find((p) => p.playerId === 1) as SkaterProjection).stats
+          .scoring.goals,
+      ).toEqual(70);
+    });
+
+    it('ignores the shortcut without a ctrl/meta modifier', () => {
+      const component = getComponent();
+      component.onStatInput(1, 'goals', { target: { value: '70' } } as unknown as Event);
+
+      dispatch(component, { key: 'z' });
+
+      expect(
+        (component.playerProjections().find((p) => p.playerId === 1) as SkaterProjection).stats
+          .scoring.goals,
+      ).toEqual(70);
+    });
+
+    it('leaves native undo alone in a non-stat input field', () => {
+      const component = getComponent();
+      component.onStatInput(1, 'goals', { target: { value: '70' } } as unknown as Event);
+      const renameInput = document.createElement('input');
+
+      const event = dispatch(component, { key: 'z', ctrlKey: true }, renameInput);
+
+      expect(event.preventDefault).not.toHaveBeenCalled();
+      expect(
+        (component.playerProjections().find((p) => p.playerId === 1) as SkaterProjection).stats
+          .scoring.goals,
+      ).toEqual(70);
+    });
+  });
 });
