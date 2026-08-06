@@ -1,0 +1,25 @@
+<div class="dialog-backdrop">
+  <div
+    class="dialog-card"
+    role="alertdialog"
+    aria-modal="true"
+    aria-labelledby="full-season-title"
+    aria-describedby="full-season-body"
+  >
+    <h2 id="full-season-title" class="dialog-title">Set a full 84-game season?</h2>
+    <p id="full-season-body" class="dialog-body">
+      Every skater's games played will be set to <strong>84</strong>, and goalies scaled
+      proportionally (×84/82) — a goalie who played 42 games becomes 43. Each player's counting
+      stats scale with their games played; rate stats like SH%, SV% and GAA are left unchanged. This
+      overwrites any games-played values you've edited by hand.
+    </p>
+    <div class="dialog-actions">
+      <button type="button" class="btn btn-secondary btn-sm" (click)="cancelled.emit()">
+        Cancel
+      </button>
+      <button type="button" class="btn btn-primary btn-sm" (click)="confirm.emit()">
+        Set to 84 games
+      </button>
+    </div>
+  </div>
+</div>

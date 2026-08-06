@@ -49,6 +49,16 @@ export const DEFAULT_LEAGUE_SIZE = 12;
 
 export const DEFAULT_MIN_GOALIE_GAMES = 30;
 
+/**
+ * NHL regular-season length. From 2026-27 the season expands from 82 to 84 games.
+ * The player stats we project from come from an 82-game season, so the one-click
+ * "full season" action scales goalie games by FULL_SEASON_GAMES / PREVIOUS_SEASON_GAMES
+ * (keeping their share of the season constant), while skaters — assumed to play the whole
+ * season — are set to 84 outright.
+ */
+export const FULL_SEASON_GAMES = 84;
+export const PREVIOUS_SEASON_GAMES = 82;
+
 export const DEFAULT_ROSTER_SLOTS: RosterSlots = {
   c: 2,
   lw: 2,

@@ -408,4 +408,10 @@ export class PlayerProjectionsTableComponent implements OnInit {
       ),
     );
   }
+
+  applyFullSeasonGames(): void {
+    this.playerProjections.update((playerProjections) =>
+      this.projectionUpdateService.applyFullSeasonGames(playerProjections, this.scaleSettings()),
+    );
+  }
 }
