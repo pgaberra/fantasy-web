@@ -1,5 +1,13 @@
 @if (espnEnabled) {
-  <div class="provider-picker" role="tablist" aria-label="Fantasy provider">
+  <div class="league-sync-header">
+    <span class="league-sync-title">Import league settings</span>
+    <span class="league-sync-optional">optional</span>
+  </div>
+  <p class="league-sync-hint">
+    On Yahoo or ESPN? Choose your platform to auto-fill scoring and roster settings from your
+    league. On another platform (like Fantrax)? Just set them manually below.
+  </p>
+  <div class="provider-picker" role="tablist" aria-label="Fantasy platform to import from">
     <button
       type="button"
       role="tab"
@@ -22,11 +30,11 @@
     </button>
   </div>
   @switch (provider()) {
+    @case ('yahoo') {
+      <app-yahoo-league-sync [lastSync]="lastSync()" (synced)="yahooSynced.emit($event)" />
+    }
     @case ('espn') {
       <app-espn-league-sync (synced)="espnSynced.emit($event)" />
-    }
-    @default {
-      <app-yahoo-league-sync [lastSync]="lastSync()" (synced)="yahooSynced.emit($event)" />
     }
   }
 } @else {
