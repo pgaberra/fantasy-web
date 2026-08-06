@@ -24,7 +24,10 @@ import { LeagueProjectionSettingsResponse } from '../api/models/league-projectio
 import { YahooSync } from '../api/models/yahoo-sync';
 import { DraftState } from '../api/models/draft-state';
 import { SyncWarningDialogComponent } from './sync-warning-dialog/sync-warning-dialog';
-import { FullSeasonDialogComponent } from './full-season-dialog/full-season-dialog';
+import {
+  FullSeasonConfig,
+  FullSeasonDialogComponent,
+} from './full-season-dialog/full-season-dialog';
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { OffseasonDataNoticeComponent } from '../shared/offseason-data-notice/offseason-data-notice';
@@ -255,8 +258,8 @@ export class DraftProjectionComponent implements OnInit {
     this.showFullSeasonDialog.set(false);
   }
 
-  applyFullSeason(): void {
-    this.table()?.applyFullSeasonGames();
+  applyFullSeason(config: FullSeasonConfig): void {
+    this.table()?.applyFullSeasonGames(config.scaleStats, config.minGamesToScale);
     this.showFullSeasonDialog.set(false);
   }
 

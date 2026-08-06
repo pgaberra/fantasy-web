@@ -179,3 +179,38 @@ tr.decimal-row th {
 .decimal-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
 }
+
+.full-season-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: var(--weight-semibold);
+  line-height: 1.5;
+  color: var(--color-text-on-dark);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  cursor: pointer;
+  vertical-align: middle;
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.full-season-pill:hover {
+  background: rgba(255, 255, 255, 0.26);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.full-season-pill:focus-visible {
+  outline: none;
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 2px rgba(230, 184, 74, 0.35);
+}
+
+.full-season-pill svg {
+  display: block;
+}

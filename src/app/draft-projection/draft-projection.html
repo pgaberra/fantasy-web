@@ -95,16 +95,9 @@
         [scaleSettings]="scaleSettings()"
         [(decimalSettings)]="decimalSettings"
         [useDefaultDecimals]="useDefaultDecimals()"
-      >
-        <button
-          table-actions
-          type="button"
-          class="btn btn-secondary btn-sm"
-          (click)="openFullSeasonDialog()"
-        >
-          Full season (84 GP)
-        </button>
-      </app-player-projections-table>
+        [showFullSeasonButton]="true"
+        (fullSeasonRequested)="openFullSeasonDialog()"
+      />
     </div>
 
     @if (diverged() && yahooSync(); as sync) {
@@ -118,7 +111,10 @@
     }
 
     @if (showFullSeasonDialog()) {
-      <app-full-season-dialog (confirm)="applyFullSeason()" (cancelled)="cancelFullSeason()" />
+      <app-full-season-dialog
+        (confirm)="applyFullSeason($event)"
+        (cancelled)="cancelFullSeason()"
+      />
     }
   </div>
 }

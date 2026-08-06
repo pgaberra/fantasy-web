@@ -27,6 +27,8 @@ export class ProjectionsTableHeaderComponent {
   sortColumn = input.required<SortColumn>();
   sortDirection = input.required<SortDirection>();
   readonly sort = output<SortColumn>();
+  readonly showFullSeasonButton = input<boolean>(false);
+  readonly fullSeason = output<void>();
   summaryLabel = computed(() => (this.scoringType() === 'points' ? 'Total Points' : 'Z-Score'));
 
   sortIndicator(column: SortColumn): string {

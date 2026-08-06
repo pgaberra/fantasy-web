@@ -747,7 +747,7 @@ describe('PlayerProjectionsTableComponent', () => {
   describe('applyFullSeasonGames', () => {
     it('sets skaters to 84 games and scales goalies proportionally', () => {
       const component = getComponent();
-      component.applyFullSeasonGames();
+      component.applyFullSeasonGames(true, 0);
       const projections = component.playerProjections();
       expect(
         (projections.find((p) => p.playerId === 1) as SkaterProjection).stats.utility.gp,

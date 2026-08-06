@@ -15,6 +15,31 @@
       [appTooltip]="col | statTooltip"
     >
       {{ col | statLabel }}<span class="sort-arrow">{{ sortIndicator(col) }}</span>
+      @if (showFullSeasonButton() && col === 'gp') {
+        <button
+          type="button"
+          class="full-season-pill"
+          appTooltip="Set all players to a full 84-game season"
+          (click)="$event.stopPropagation(); fullSeason.emit()"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 20v-11" />
+            <path d="M8 13l4 -4l4 4" />
+            <path d="M5 4h14" />
+          </svg>
+          84
+        </button>
+      }
     </th>
   }
   @for (col of activeColumns().scoring; track col) {

@@ -220,9 +220,9 @@ describe('DraftProjectionComponent', () => {
       const applySpy = vi.spyOn(table, 'applyFullSeasonGames');
 
       component.openFullSeasonDialog();
-      component.applyFullSeason();
+      component.applyFullSeason({ scaleStats: true, minGamesToScale: 20 });
 
-      expect(applySpy).toHaveBeenCalled();
+      expect(applySpy).toHaveBeenCalledWith(true, 20);
       expect(component.showFullSeasonDialog()).toEqual(false);
     });
 

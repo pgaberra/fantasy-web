@@ -9,15 +9,57 @@
     <h2 id="full-season-title" class="dialog-title">Set a full 84-game season?</h2>
     <p id="full-season-body" class="dialog-body">
       Every skater's games played will be set to <strong>84</strong>, and goalies scaled
-      proportionally (×84/82) — a goalie who played 42 games becomes 43. Each player's counting
-      stats scale with their games played; rate stats like SH%, SV% and GAA are left unchanged. This
-      overwrites any games-played values you've edited by hand.
+      proportionally (×84/82) — a goalie who played 42 games becomes 43.
     </p>
+
+    <div class="scale-option">
+      <label class="scale-toggle">
+        <input type="checkbox" [checked]="scaleStats()" (change)="toggleScaleStats()" />
+        <span>Scale each player's stats with games played</span>
+        <button
+          type="button"
+          class="info-icon"
+          [appTooltip]="scalingTooltip"
+          aria-label="What scaling does"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8h.01" />
+            <path d="M11 12h1v4h1" />
+          </svg>
+        </button>
+      </label>
+
+      @if (scaleStats()) {
+        <div class="min-games-row">
+          <label for="full-season-min-games">Only scale players with at least</label>
+          <input
+            id="full-season-min-games"
+            type="number"
+            min="0"
+            [value]="minGamesToScale()"
+            (input)="onMinGamesInput($event)"
+          />
+          <span>games played</span>
+        </div>
+      }
+    </div>
+
     <div class="dialog-actions">
       <button type="button" class="btn btn-secondary btn-sm" (click)="cancelled.emit()">
         Cancel
       </button>
-      <button type="button" class="btn btn-primary btn-sm" (click)="confirm.emit()">
+      <button type="button" class="btn btn-primary btn-sm" (click)="onConfirm()">
         Set to 84 games
       </button>
     </div>

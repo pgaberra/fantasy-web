@@ -62,13 +62,17 @@ export class ProjectionUpdateService {
 
   /**
    * One-click "full season" bulk edit: sets every skater's games played to a full 84-game
-   * season and scales goalies proportionally (×84/82, keeping their share of the season),
-   * rescaling each player's scalable scoring stats by the same ratio the existing per-stat
-   * edit path uses. A single pass so it stays O(n) over the projections.
+   * season and scales goalies proportionally (×84/82, keeping their share of the season).
+   * When scaleStats is on, each player's scalable scoring stats are rescaled by the same
+   * games ratio the existing per-stat edit path uses — but only for players who already
+   * played at least minGamesToScale games, so a tiny sample (e.g. 1 GP, 1 goal) isn't
+   * blown up into a full-season line. A single pass so it stays O(n) over the projections.
    */
   applyFullSeasonGames(
     projections: Projection[],
     scaleSettings: Record<SkaterUtilityStatKey, ScaleConfig>,
+    scaleStats: boolean,
+    minGamesToScale: number,
   ): Projection[] {
     const settings = scaleSettings.gp;
     return projections.map((projection) => {
@@ -77,7 +81,7 @@ export class ProjectionUpdateService {
         projection.type === 'skater'
           ? FULL_SEASON_GAMES
           : Math.round((oldGp * FULL_SEASON_GAMES) / PREVIOUS_SEASON_GAMES);
-      const shouldScale = settings.scale && oldGp > 0;
+      const shouldScale = scaleStats && oldGp >= minGamesToScale && oldGp > 0;
       const ratio = newGp / oldGp;
       if (projection.type === 'skater') {
         const scoring = shouldScale

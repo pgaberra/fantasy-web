@@ -6,6 +6,7 @@ import {
   linkedSignal,
   model,
   OnInit,
+  output,
   Signal,
   signal,
 } from '@angular/core';
@@ -80,6 +81,8 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly rosterSlots = input<RosterSlots>(DEFAULT_ROSTER_SLOTS);
   readonly minGoalieGames = input<number>(DEFAULT_MIN_GOALIE_GAMES);
   readonly saveStatus = input<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  readonly showFullSeasonButton = input<boolean>(false);
+  readonly fullSeasonRequested = output<void>();
 
   readonly filteredActiveColumns = computed<ActiveColumns>(() =>
     this.activeColumnsService.filterAndSortActiveColumns(
@@ -409,9 +412,14 @@ export class PlayerProjectionsTableComponent implements OnInit {
     );
   }
 
-  applyFullSeasonGames(): void {
+  applyFullSeasonGames(scaleStats: boolean, minGamesToScale: number): void {
     this.playerProjections.update((playerProjections) =>
-      this.projectionUpdateService.applyFullSeasonGames(playerProjections, this.scaleSettings()),
+      this.projectionUpdateService.applyFullSeasonGames(
+        playerProjections,
+        this.scaleSettings(),
+        scaleStats,
+        minGamesToScale,
+      ),
     );
   }
 }
