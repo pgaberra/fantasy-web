@@ -19,4 +19,6 @@ export const environment = {
   yahooSyncDisabled: false,
   // Off for local staging runs; the deployed builds set it via the PAYMENTS_ENABLED build arg.
   paymentsEnabled: false,
+  // Off for local staging runs; the deployed builds set it via the ESPN_LEAGUES_ENABLED build arg.
+  espnLeaguesEnabled: false,
 };
