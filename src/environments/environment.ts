@@ -25,4 +25,8 @@ export const environment = {
   // Subscription billing. Off by default; deployed builds drive it via the PAYMENTS_ENABLED
   // build arg. When false the pricing/account routes redirect away and no entitlement is fetched.
   paymentsEnabled: false,
+  // Feature toggle for ESPN league sync (the ESPN option in the projection's league-sync UI).
+  // Off by default; deployed builds drive it via the ESPN_LEAGUES_ENABLED build arg. Mirrors the
+  // facebookLoginEnabled pattern — the ESPN provider stays hidden until this is true.
+  espnLeaguesEnabled: false,
 };

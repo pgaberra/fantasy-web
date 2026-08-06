@@ -1,0 +1,117 @@
+<div class="espn-sync">
+  <div class="espn-sync-row">
+    <span class="espn-sync-brand">Sync from your ESPN league</span>
+  </div>
+
+  <div class="espn-sync-form">
+    <label class="espn-field">
+      <span class="espn-field-label">Season</span>
+      <input
+        class="espn-input espn-input--season"
+        type="number"
+        inputmode="numeric"
+        aria-label="ESPN season start year"
+        [value]="season()"
+        (input)="onSeasonInput($event)"
+      />
+    </label>
+    <label class="espn-field espn-field--grow">
+      <span class="espn-field-label">League ID</span>
+      <input
+        class="espn-input"
+        type="text"
+        inputmode="numeric"
+        placeholder="e.g. 123456"
+        aria-label="ESPN league id"
+        [value]="leagueId()"
+        (input)="onLeagueIdInput($event)"
+      />
+    </label>
+  </div>
+
+  <label class="espn-private-toggle">
+    <input type="checkbox" [checked]="isPrivate()" (change)="togglePrivate()" />
+    <span>My league is private</span>
+  </label>
+
+  @if (isPrivate()) {
+    <div class="espn-cookies">
+      @if (hasStoredCredentials()) {
+        <p class="espn-sync-muted" role="status">
+          Your ESPN cookies are saved — leave these blank to reuse them.
+        </p>
+      }
+      <label class="espn-field">
+        <span class="espn-field-label">espn_s2</span>
+        <input
+          class="espn-input"
+          type="password"
+          autocomplete="off"
+          aria-label="espn_s2 cookie"
+          [value]="espnS2()"
+          (input)="onEspnS2Input($event)"
+        />
+      </label>
+      <label class="espn-field">
+        <span class="espn-field-label">SWID</span>
+        <input
+          class="espn-input"
+          type="password"
+          autocomplete="off"
+          placeholder="{...}"
+          aria-label="SWID cookie"
+          [value]="swid()"
+          (input)="onSwidInput($event)"
+        />
+      </label>
+      <button type="button" class="espn-help-toggle" (click)="toggleHelp()">
+        {{ showHelp() ? 'Hide' : 'How do I find these?' }}
+      </button>
+      @if (showHelp()) {
+        <ol class="espn-help">
+          <li>Sign in at fantasy.espn.com in your browser.</li>
+          <li>
+            Open your browser's developer tools → Application (or Storage) → Cookies →
+            fantasy.espn.com.
+          </li>
+          <li>
+            Copy the values of <code>espn_s2</code> and <code>SWID</code> (include SWID's braces)
+            and paste them above.
+          </li>
+        </ol>
+      }
+    </div>
+  }
+
+  <div class="espn-sync-row">
+    <button
+      type="button"
+      class="btn btn-secondary btn-sm"
+      [disabled]="!leagueId().trim() || syncing()"
+      (click)="sync()"
+    >
+      {{ syncing() ? 'Syncing…' : syncedLeagueId() ? 'Re-sync settings' : 'Sync settings' }}
+    </button>
+  </div>
+
+  @if (error()) {
+    <p class="espn-sync-error" role="alert">{{ error() }}</p>
+  }
+  @if (syncedLeagueId(); as id) {
+    <p class="espn-sync-synced" role="status">
+      <svg class="espn-sync-check" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path
+          fill-rule="evenodd"
+          d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+          clip-rule="evenodd"
+        />
+      </svg>
+      <span
+        >Synced from ESPN league <strong>{{ id }}</strong></span
+      >
+    </p>
+  }
+  @if (unsupportedStats().length) {
+    <p class="espn-sync-muted">Not synced (no equivalent): {{ unsupportedStats().join(', ') }}</p>
+  }
+</div>
