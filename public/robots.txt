@@ -1,0 +1,13 @@
+# SlapStat - https://slapstat.com
+# Public marketing/auth pages are crawlable; private app areas and
+# token/code-bearing routes are kept out of search results.
+User-agent: *
+Allow: /
+
+Disallow: /projections
+Disallow: /admin
+Disallow: /auth/
+Disallow: /reset-password
+Disallow: /verify-email
+
+Sitemap: https://slapstat.com/sitemap.xml
