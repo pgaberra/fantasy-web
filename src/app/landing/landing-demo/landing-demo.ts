@@ -51,12 +51,11 @@ export class LandingDemoComponent {
   private readonly pendingProjection = inject(PendingProjectionService);
   private readonly router = inject(Router);
 
-  /**
-   * Off-season switch (build-time `YAHOO_SYNC_DISABLED`). When true the demo's Yahoo gate shows a
-   * disabled button and an off-season note instead of the active sign-in-to-connect Yahoo call.
-   */
-  protected readonly syncDisabled = environment.yahooSyncDisabled;
   protected readonly espnEnabled = environment.espnLeaguesEnabled;
+  // The teaser only goes dark when no platform can be synced at all — ESPN staying available
+  // through the Yahoo off-season keeps the call to action live.
+  protected readonly syncDisabled =
+    environment.yahooSyncDisabled && !environment.espnLeaguesEnabled;
 
   private readonly table = viewChild(PlayerProjectionsTableComponent);
 

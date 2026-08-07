@@ -1,50 +1,51 @@
-@if (espnEnabled) {
+@if (anyAvailable) {
   <div class="league-sync-header">
     <span class="league-sync-title">Import League Settings</span>
     <span class="league-sync-optional">optional</span>
   </div>
-  <p class="league-sync-hint">
-    On Yahoo or ESPN? Choose your platform to auto-fill scoring and roster settings from your
-    league.
-  </p>
+  <p class="league-sync-hint">{{ hint }}</p>
   <div class="provider-picker" role="tablist" aria-label="Fantasy platform to import from">
-    <button
-      type="button"
-      role="tab"
-      class="provider-tab"
-      [class.provider-tab--active]="provider() === 'yahoo'"
-      [attr.aria-selected]="provider() === 'yahoo'"
-      (click)="provider.set('yahoo')"
-    >
-      <svg
-        class="provider-mark provider-mark--yahoo"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        aria-hidden="true"
-        focusable="false"
+    @if (yahooAvailable) {
+      <button
+        type="button"
+        role="tab"
+        class="provider-tab"
+        [class.provider-tab--active]="provider() === 'yahoo'"
+        [attr.aria-selected]="provider() === 'yahoo'"
+        (click)="provider.set('yahoo')"
       >
-        <path
-          d="M18.86 1.56L14.27 11.87H19.4L24 1.56H18.86M0 6.71L5.15 18.27L3.3 22.44H7.83L14.69 6.71H10.19L7.39 13.44L4.62 6.71H0M15.62 12.87C13.95 12.87 12.71 14.12 12.71 15.58C12.71 17 13.91 18.19 15.5 18.19C17.18 18.19 18.43 16.96 18.43 15.5C18.43 14.03 17.23 12.87 15.62 12.87Z"
+        <svg
+          class="provider-mark provider-mark--yahoo"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path
+            d="M18.86 1.56L14.27 11.87H19.4L24 1.56H18.86M0 6.71L5.15 18.27L3.3 22.44H7.83L14.69 6.71H10.19L7.39 13.44L4.62 6.71H0M15.62 12.87C13.95 12.87 12.71 14.12 12.71 15.58C12.71 17 13.91 18.19 15.5 18.19C17.18 18.19 18.43 16.96 18.43 15.5C18.43 14.03 17.23 12.87 15.62 12.87Z"
+          />
+        </svg>
+        Yahoo
+      </button>
+    }
+    @if (espnAvailable) {
+      <button
+        type="button"
+        role="tab"
+        class="provider-tab"
+        [class.provider-tab--active]="provider() === 'espn'"
+        [attr.aria-selected]="provider() === 'espn'"
+        (click)="provider.set('espn')"
+      >
+        <img
+          class="provider-mark provider-mark--espn"
+          src="espn-logo.png"
+          alt=""
+          aria-hidden="true"
         />
-      </svg>
-      Yahoo
-    </button>
-    <button
-      type="button"
-      role="tab"
-      class="provider-tab"
-      [class.provider-tab--active]="provider() === 'espn'"
-      [attr.aria-selected]="provider() === 'espn'"
-      (click)="provider.set('espn')"
-    >
-      <img
-        class="provider-mark provider-mark--espn"
-        src="espn-logo.png"
-        alt=""
-        aria-hidden="true"
-      />
-      ESPN
-    </button>
+        ESPN
+      </button>
+    }
   </div>
   @switch (provider()) {
     @case ('yahoo') {
@@ -54,6 +55,4 @@
       <app-espn-league-sync (synced)="espnSynced.emit($event)" />
     }
   }
-} @else {
-  <app-yahoo-league-sync [lastSync]="lastSync()" (synced)="yahooSynced.emit($event)" />
 }
