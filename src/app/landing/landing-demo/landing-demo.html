@@ -33,7 +33,9 @@
             />
           </svg>
           <div class="demo-yahoo-text">
-            <span class="demo-yahoo-title">Sync your Yahoo league</span>
+            <span class="demo-yahoo-title">{{
+              espnEnabled ? 'Sync your Yahoo or ESPN league' : 'Sync your Yahoo league'
+            }}</span>
             @if (!syncDisabled) {
               <span class="demo-yahoo-note"
                 >Import your league's exact scoring and roster in one click.</span
@@ -48,10 +50,12 @@
             disabled
             title="Sync opens when the new NHL season goes live"
           >
-            Sign in to connect Yahoo
+            {{ espnEnabled ? 'Sign in to connect your league' : 'Sign in to connect Yahoo' }}
           </button>
         } @else {
-          <a routerLink="/register" class="btn btn-secondary btn-sm">Sign in to connect Yahoo</a>
+          <a routerLink="/register" class="btn btn-secondary btn-sm">{{
+            espnEnabled ? 'Sign in to connect your league' : 'Sign in to connect Yahoo'
+          }}</a>
         }
       </div>
     </app-projection-settings-section>

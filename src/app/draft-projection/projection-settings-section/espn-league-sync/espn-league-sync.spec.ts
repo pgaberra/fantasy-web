@@ -2,7 +2,7 @@ import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, it, expect } from 'vitest';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import { EspnLeagueSyncComponent } from './espn-league-sync';
+import { EspnLeagueSyncComponent, EspnSyncResult } from './espn-league-sync';
 import { EspnService } from '../../../services/espn.service';
 import { CredentialStatusResponse } from '../../../api/models/credential-status-response';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
@@ -45,14 +45,14 @@ describe('EspnLeagueSyncComponent', () => {
     const fixture = MockRender(EspnLeagueSyncComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
-    const emitted: LeagueProjectionSettingsResponse[] = [];
+    const emitted: EspnSyncResult[] = [];
     component.synced.subscribe((result) => emitted.push(result));
 
     component.leagueId.set('123456');
     component.sync();
     await fixture.whenStable();
 
-    expect(emitted).toEqual([settings]);
+    expect(emitted).toEqual([{ settings, leagueId: '123456', season: component.season() }]);
     expect(component.unsupportedStats()).toEqual(['Defensive Points']);
     expect(component.syncedLeagueId()).toEqual('123456');
   });
@@ -80,7 +80,7 @@ describe('EspnLeagueSyncComponent', () => {
     const fixture = MockRender(EspnLeagueSyncComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
-    const emitted: LeagueProjectionSettingsResponse[] = [];
+    const emitted: EspnSyncResult[] = [];
     component.synced.subscribe((result) => emitted.push(result));
 
     component.sync();

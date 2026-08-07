@@ -10,6 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Observable } from 'rxjs';
 import { DraftState } from '../../api/models/draft-state';
 import { DraftTeam } from '../../api/models/draft-team';
 import { LeagueTeam } from '../../api/models/league-team';
@@ -22,10 +23,10 @@ import {
 } from '../../draft-projection/projection-defaults';
 import { RosterSlotsEditorComponent } from '../../shared/roster-slots-editor/roster-slots-editor';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
-import {
-  YahooLeagueSyncComponent,
-  YahooSyncResult,
-} from '../../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
+import { YahooSyncResult } from '../../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
+import { EspnSyncResult } from '../../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
+import { LeagueSyncComponent } from '../../draft-projection/projection-settings-section/league-sync/league-sync';
+import { EspnService } from '../../services/espn.service';
 import {
   CdkDrag,
   CdkDragDrop,
@@ -56,7 +57,7 @@ const MINE_ID = 'team-me';
     CdkDrag,
     CdkDragHandle,
     RosterSlotsEditorComponent,
-    YahooLeagueSyncComponent,
+    LeagueSyncComponent,
     LoadingIndicatorComponent,
   ],
   templateUrl: './draft-setup.html',
@@ -64,6 +65,7 @@ const MINE_ID = 'team-me';
 })
 export class DraftSetupComponent implements OnInit {
   private readonly yahoo = inject(YahooService);
+  private readonly espn = inject(EspnService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly initial = input<DraftState | null>(null);
@@ -75,6 +77,7 @@ export class DraftSetupComponent implements OnInit {
   readonly confirmed = output<DraftSetupResult>();
   readonly cancelled = output<void>();
   readonly yahooSynced = output<YahooSyncResult>();
+  readonly espnSynced = output<EspnSyncResult>();
 
   readonly rows = signal<SetupRow[]>([]);
   readonly loadingTeams = signal(false);
@@ -109,7 +112,7 @@ export class DraftSetupComponent implements OnInit {
     // league's teams into a fresh setup so the user needn't re-sync just to load them.
     const sync = this.lastSync();
     if (sync) {
-      this.loadTeams(sync.leagueKey);
+      this.loadTeams(this.yahoo.leagueTeams(sync.leagueKey));
     }
   }
 
@@ -160,23 +163,25 @@ export class DraftSetupComponent implements OnInit {
 
   onYahooSynced(result: YahooSyncResult): void {
     this.yahooSynced.emit(result);
-    this.loadTeams(result.leagueKey);
+    this.loadTeams(this.yahoo.leagueTeams(result.leagueKey));
   }
 
-  private loadTeams(leagueKey: string): void {
+  onEspnSynced(result: EspnSyncResult): void {
+    this.espnSynced.emit(result);
+    this.loadTeams(this.espn.leagueTeams(result.leagueId, result.season));
+  }
+
+  private loadTeams(teams$: Observable<{ teams: LeagueTeam[] }>): void {
     this.loadingTeams.set(true);
-    this.yahoo
-      .leagueTeams(leagueKey)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => {
-          this.applyTeams(response.teams);
-          this.loadingTeams.set(false);
-        },
-        // A synced projection already carries the scoring/roster; pre-filling team names is
-        // best-effort, so a failure just falls back to the rows already in place.
-        error: () => this.loadingTeams.set(false),
-      });
+    teams$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (response) => {
+        this.applyTeams(response.teams);
+        this.loadingTeams.set(false);
+      },
+      // A synced projection already carries the scoring/roster; pre-filling team names is
+      // best-effort, so a failure just falls back to the rows already in place.
+      error: () => this.loadingTeams.set(false),
+    });
   }
 
   private applyTeams(teams: LeagueTeam[]): void {

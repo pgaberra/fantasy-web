@@ -4,10 +4,11 @@
     Name the teams, set the league size and the draft order. You can edit this later.
   </p>
 
-  <app-yahoo-league-sync
+  <app-league-sync
     class="setup-yahoo"
     [lastSync]="lastSync()"
-    (synced)="onYahooSynced($event)"
+    (yahooSynced)="onYahooSynced($event)"
+    (espnSynced)="onEspnSynced($event)"
   />
 
   @if (loadingTeams()) {

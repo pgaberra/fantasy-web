@@ -20,6 +20,7 @@ import { ActiveColumns, Projection, ScoringType } from '../models/projection.mod
 import { ProjectionSettingsSectionComponent } from './projection-settings-section/projection-settings-section';
 import { LeagueSyncComponent } from './projection-settings-section/league-sync/league-sync';
 import { YahooSyncResult } from './projection-settings-section/yahoo-league-sync/yahoo-league-sync';
+import { EspnSyncResult } from './projection-settings-section/espn-league-sync/espn-league-sync';
 import { LeagueProjectionSettingsResponse } from '../api/models/league-projection-settings-response';
 import { YahooSync } from '../api/models/yahoo-sync';
 import { DraftState } from '../api/models/draft-state';
@@ -211,8 +212,8 @@ export class DraftProjectionComponent implements OnInit {
     this.syncedSnapshot.set(this.syncedSettingsKey());
   }
 
-  applyEspnSettings(settings: LeagueProjectionSettingsResponse): void {
-    this.applyLeagueSettings(settings);
+  applyEspnSettings(result: EspnSyncResult): void {
+    this.applyLeagueSettings(result.settings);
     // ESPN provenance isn't persisted yet (that needs the projection's sync stamp to carry a
     // provider), so clear any stale Yahoo stamp rather than mislabel these settings as Yahoo's.
     this.yahooSync.set(null);

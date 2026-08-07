@@ -4,6 +4,12 @@ import { of, switchMap } from 'rxjs';
 import { EspnService } from '../../../services/espn.service';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
 
+export interface EspnSyncResult {
+  settings: LeagueProjectionSettingsResponse;
+  leagueId: string;
+  season: number;
+}
+
 /**
  * Sync a chosen ESPN league's scoring + roster settings into the projection. ESPN has no OAuth,
  * so instead of a connect flow the user gives a league id (+ season) and, for a private league,
@@ -18,7 +24,7 @@ import { LeagueProjectionSettingsResponse } from '../../../api/models/league-pro
 export class EspnLeagueSyncComponent implements OnInit {
   private readonly espn = inject(EspnService);
 
-  readonly synced = output<LeagueProjectionSettingsResponse>();
+  readonly synced = output<EspnSyncResult>();
 
   readonly season = signal<number>(this.currentSeasonStartYear());
   readonly leagueId = signal<string>('');
@@ -93,7 +99,7 @@ export class EspnLeagueSyncComponent implements OnInit {
         if (savingCookies) {
           this.hasStoredCredentials.set(true);
         }
-        this.synced.emit(settings);
+        this.synced.emit({ settings, leagueId, season });
       },
       error: (err: unknown) => {
         this.syncing.set(false);
