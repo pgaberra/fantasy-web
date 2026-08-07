@@ -18,15 +18,15 @@ describe('EspnService', () => {
     unsupportedRosterCodes: [],
   };
 
-  it('requests a league projection settings by id and season', async () => {
+  it('requests a league projection settings by id', async () => {
     const invoke = vi.fn().mockResolvedValue(settings);
     await MockBuilder(EspnService).mock(Api, { invoke });
     const service = TestBed.inject(EspnService);
 
-    const result = await firstValueFrom(service.leagueProjectionSettings('123', 2025));
+    const result = await firstValueFrom(service.leagueProjectionSettings('123'));
 
     expect(result).toEqual(settings);
-    expect(invoke).toHaveBeenCalledWith(projectionSettings1, { leagueId: '123', season: 2025 });
+    expect(invoke).toHaveBeenCalledWith(projectionSettings1, { leagueId: '123' });
   });
 
   it('saves credentials with the espn_s2 and SWID body', async () => {

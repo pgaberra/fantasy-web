@@ -35,14 +35,11 @@ export class EspnService {
     return from(this.api.invoke(deleteCredentialsFn));
   }
 
-  leagueProjectionSettings(
-    leagueId: string,
-    season: number,
-  ): Observable<LeagueProjectionSettingsResponse> {
-    return from(this.api.invoke(projectionSettings1, { leagueId, season }));
+  leagueProjectionSettings(leagueId: string): Observable<LeagueProjectionSettingsResponse> {
+    return from(this.api.invoke(projectionSettings1, { leagueId }));
   }
 
-  leagueTeams(leagueId: string, season: number): Observable<EspnLeagueTeamsResponse> {
-    return from(this.api.invoke(teams1, { leagueId, season }));
+  leagueTeams(leagueId: string): Observable<EspnLeagueTeamsResponse> {
+    return from(this.api.invoke(teams1, { leagueId }));
   }
 }
