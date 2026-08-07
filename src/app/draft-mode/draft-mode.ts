@@ -38,6 +38,7 @@ import { DraftRosterService } from './draft-roster.service';
 import { DraftSnakeService } from './draft-snake.service';
 import { DraftSetupComponent, DraftSetupResult } from './draft-setup/draft-setup';
 import { YahooSyncResult } from '../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
+import { EspnSyncResult } from '../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
 import { DraftPlayerLookupService } from './draft-player-lookup.service';
 import { DraftRosterPanelComponent } from './draft-roster-panel/draft-roster-panel';
 import { DraftAvailablePanelComponent } from './draft-available-panel/draft-available-panel';
@@ -576,6 +577,31 @@ export class DraftModeComponent implements OnInit {
     );
     this.analytics.capture('draft_started');
     this.applySetup(result.draft);
+  }
+
+  applyEspnSync(result: EspnSyncResult): void {
+    const mapped = result.settings;
+    this.data.update((data) => {
+      if (!data) {
+        return data;
+      }
+      return {
+        ...data,
+        settings: {
+          ...data.settings,
+          scoringType: mapped.scoringType,
+          activeScoringColumns: [...mapped.activeScoringColumns],
+          activeUtilityColumns: [...mapped.activeUtilityColumns],
+          rosterSlots: mapped.rosterSlots,
+          ...(mapped.leagueSize != null ? { leagueSize: mapped.leagueSize } : {}),
+          ...(mapped.statWeights ? { statWeights: mapped.statWeights } : {}),
+          // ESPN provenance isn't persisted yet (the sync stamp is Yahoo-shaped), so clear any
+          // stale Yahoo stamp rather than mislabel these settings as Yahoo's.
+          yahooSync: undefined,
+        },
+      };
+    });
+    this.save();
   }
 
   applyYahooSync(result: YahooSyncResult): void {

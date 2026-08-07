@@ -1,9 +1,8 @@
 import { Component, input, linkedSignal, output } from '@angular/core';
 import { environment } from '../../../../environments/environment';
 import { YahooSync } from '../../../api/models/yahoo-sync';
-import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
 import { YahooLeagueSyncComponent, YahooSyncResult } from '../yahoo-league-sync/yahoo-league-sync';
-import { EspnLeagueSyncComponent } from '../espn-league-sync/espn-league-sync';
+import { EspnLeagueSyncComponent, EspnSyncResult } from '../espn-league-sync/espn-league-sync';
 
 type Provider = 'none' | 'yahoo' | 'espn';
 
@@ -22,7 +21,7 @@ type Provider = 'none' | 'yahoo' | 'espn';
 export class LeagueSyncComponent {
   readonly lastSync = input<YahooSync | null>(null);
   readonly yahooSynced = output<YahooSyncResult>();
-  readonly espnSynced = output<LeagueProjectionSettingsResponse>();
+  readonly espnSynced = output<EspnSyncResult>();
 
   protected readonly espnEnabled = environment.espnLeaguesEnabled;
   // Nothing is pre-selected on a fresh projection — the user opts into a platform only if they

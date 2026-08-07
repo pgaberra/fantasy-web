@@ -56,6 +56,7 @@ export class LandingDemoComponent {
    * disabled button and an off-season note instead of the active sign-in-to-connect Yahoo call.
    */
   protected readonly syncDisabled = environment.yahooSyncDisabled;
+  protected readonly espnEnabled = environment.espnLeaguesEnabled;
 
   private readonly table = viewChild(PlayerProjectionsTableComponent);
 

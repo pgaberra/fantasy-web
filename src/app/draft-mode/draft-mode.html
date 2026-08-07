@@ -33,6 +33,7 @@
         (confirmed)="onSetupConfirmed($event)"
         (cancelled)="cancelSetup()"
         (yahooSynced)="applyYahooSync($event)"
+        (espnSynced)="applyEspnSync($event)"
       />
     } @else if (showSummary()) {
       <app-draft-summary
