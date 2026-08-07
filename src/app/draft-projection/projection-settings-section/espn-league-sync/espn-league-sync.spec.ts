@@ -52,7 +52,7 @@ describe('EspnLeagueSyncComponent', () => {
     component.sync();
     await fixture.whenStable();
 
-    expect(emitted).toEqual([{ settings, leagueId: '123456', season: component.season() }]);
+    expect(emitted).toEqual([{ settings, leagueId: '123456' }]);
     expect(component.unsupportedStats()).toEqual(['Defensive Points']);
     expect(component.syncedLeagueId()).toEqual('123456');
   });

@@ -168,7 +168,7 @@ export class DraftSetupComponent implements OnInit {
 
   onEspnSynced(result: EspnSyncResult): void {
     this.espnSynced.emit(result);
-    this.loadTeams(this.espn.leagueTeams(result.leagueId, result.season));
+    this.loadTeams(this.espn.leagueTeams(result.leagueId));
   }
 
   private loadTeams(teams$: Observable<{ teams: LeagueTeam[] }>): void {
