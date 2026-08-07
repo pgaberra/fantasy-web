@@ -29,12 +29,12 @@
             <span class="advanced-toggle-icon" [class.open]="isLeagueSettingsVisible()"></span>
           </div>
         }
-        <!-- Outside the collapse: the Yahoo sync fills in these very settings, so it stays
-             reachable without expanding the group first. -->
-        <div class="settings-projected-slot">
-          <ng-content />
-        </div>
         @if (isLeagueSettingsExpanded()) {
+          <!-- Inside the collapse: the league sync fills in these very settings, so it belongs
+               with them — collapsing the group hides both. -->
+          <div class="settings-projected-slot">
+            <ng-content />
+          </div>
           <app-setting-row name="League Type" class="setting-row--stacked">
             <div class="radio-group">
               <label class="radio-label">

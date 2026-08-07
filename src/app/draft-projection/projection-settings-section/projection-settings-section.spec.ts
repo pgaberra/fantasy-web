@@ -365,7 +365,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         },
       );
 
-    it('keeps the projected content visible in both League Settings states', () => {
+    it('collapses the projected league sync together with the League Settings rows', () => {
       const fixture = renderWithProjectedContent();
       const component = ngMocks.findInstance(ProjectionSettingsSectionComponent);
 
@@ -377,8 +377,8 @@ describe('ProjectionSettingsSectionComponent', () => {
       component.isLeagueSettingsVisible.set(false);
       fixture.detectChanges();
 
-      // Collapsing hides the manual rows but the league sync must remain
-      expect(fixture.nativeElement.querySelector('.yahoo-sync-stub')).toBeTruthy();
+      // The sync fills in these very settings, so collapsing the group hides it too
+      expect(fixture.nativeElement.querySelector('.yahoo-sync-stub')).toBeNull();
       expect(ngMocks.findAll(SettingRowComponent).length).toEqual(0);
     });
   });
