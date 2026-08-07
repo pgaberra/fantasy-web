@@ -40,6 +40,9 @@
 }
 
 .provider-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   padding: var(--space-1) var(--space-3);
   border: none;
   border-radius: var(--radius-pill);
@@ -48,6 +51,23 @@
   font-weight: var(--weight-semibold);
   color: var(--color-text-muted);
   cursor: pointer;
+}
+
+/* Brand marks keep their own colour so they stay recognisable on the active (filled) tab too. */
+.provider-mark {
+  flex-shrink: 0;
+}
+
+.provider-mark--yahoo {
+  width: 0.85rem;
+  height: 0.85rem;
+  color: #6001d2;
+}
+
+.provider-mark--espn {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 0.15rem;
 }
 
 .provider-tab:hover {
