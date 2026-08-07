@@ -1,6 +1,9 @@
 <div class="espn-sync">
   <div class="espn-sync-row">
-    <span class="espn-sync-brand">Sync from your ESPN league</span>
+    <span class="espn-sync-brand">
+      <img class="espn-logo" src="espn-logo.png" alt="" aria-hidden="true" />
+      Sync from your ESPN league
+    </span>
   </div>
 
   <div class="espn-sync-form">
@@ -58,7 +61,13 @@
       </button>
       @if (showHelp()) {
         <ol class="espn-help">
-          <li>Sign in at fantasy.espn.com in your browser.</li>
+          <li>
+            Sign in at
+            <a href="https://fantasy.espn.com" target="_blank" rel="noopener noreferrer"
+              >fantasy.espn.com</a
+            >
+            in your browser.
+          </li>
           <li>
             Open your browser's developer tools → Application (or Storage) → Cookies →
             fantasy.espn.com.

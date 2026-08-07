@@ -29,6 +29,13 @@
   color: var(--color-primary);
 }
 
+.espn-logo {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+  border-radius: 0.2rem;
+}
+
 .espn-sync-form {
   display: flex;
   flex-wrap: wrap;
@@ -105,6 +112,10 @@
 
 .espn-help code {
   font-size: var(--text-xs);
+}
+
+.espn-help a {
+  color: var(--color-primary);
 }
 
 .espn-sync-error {
