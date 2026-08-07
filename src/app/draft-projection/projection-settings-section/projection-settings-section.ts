@@ -76,9 +76,7 @@ export class ProjectionSettingsSectionComponent {
   initiallyExpanded = input<boolean>(true);
   collapsibleGroups = input<boolean>(true);
   isSectionVisible = linkedSignal(() => this.initiallyExpanded());
-  // Collapsed by default so the Yahoo sync — which fills these in for you — leads, and the
-  // manual controls stay one click away rather than dominating the section.
-  isLeagueSettingsVisible = signal<boolean>(false);
+  isLeagueSettingsVisible = signal<boolean>(true);
   isUtilityStatsVisible = signal<boolean>(false);
   isAdditionalSettingsVisible = signal<boolean>(false);
   readonly isLeagueSettingsExpanded = computed(

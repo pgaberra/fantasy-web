@@ -369,25 +369,26 @@ describe('ProjectionSettingsSectionComponent', () => {
       const fixture = renderWithProjectedContent();
       const component = ngMocks.findInstance(ProjectionSettingsSectionComponent);
 
-      // Collapsed is the default: the manual rows are gone but the Yahoo sync must remain
-      expect(component.isLeagueSettingsExpanded()).toEqual(false);
-      expect(fixture.nativeElement.querySelector('.yahoo-sync-stub')).toBeTruthy();
-      expect(ngMocks.findAll(SettingRowComponent).length).toEqual(0);
-
-      component.isLeagueSettingsVisible.set(true);
-      fixture.detectChanges();
-
+      // Expanded is the default: the manual rows show alongside the league sync
+      expect(component.isLeagueSettingsExpanded()).toEqual(true);
       expect(fixture.nativeElement.querySelector('.yahoo-sync-stub')).toBeTruthy();
       expect(ngMocks.findAll(SettingRowComponent).length).toBeGreaterThan(0);
+
+      component.isLeagueSettingsVisible.set(false);
+      fixture.detectChanges();
+
+      // Collapsing hides the manual rows but the league sync must remain
+      expect(fixture.nativeElement.querySelector('.yahoo-sync-stub')).toBeTruthy();
+      expect(ngMocks.findAll(SettingRowComponent).length).toEqual(0);
     });
   });
 
   describe('default expansion', () => {
-    it('opens the section with League Settings collapsed so the Yahoo sync leads', () => {
+    it('opens the section with League Settings expanded', () => {
       const component = getComponent();
 
       expect(component.isSectionVisible()).toEqual(true);
-      expect(component.isLeagueSettingsExpanded()).toEqual(false);
+      expect(component.isLeagueSettingsExpanded()).toEqual(true);
       expect(component.isUtilityStatsVisible()).toEqual(false);
       expect(component.isAdditionalSettingsVisible()).toEqual(false);
     });
