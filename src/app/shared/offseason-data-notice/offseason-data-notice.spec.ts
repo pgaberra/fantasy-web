@@ -12,16 +12,17 @@ describe('OffseasonDataNoticeComponent', () => {
     environment.yahooSyncDisabled = originalDisabled;
   });
 
-  it('shows the off-season sync and data caveats when Yahoo sync is disabled', () => {
+  it('shows the off-season data caveats when Yahoo sync is disabled', () => {
     environment.yahooSyncDisabled = true;
     const fixture = MockRender(OffseasonDataNoticeComponent);
 
     const text = (fixture.nativeElement.textContent as string).toLowerCase();
     expect(fixture.nativeElement.querySelector('.offseason-notice')).not.toBeNull();
-    expect(text).toContain('yahoo sync');
     expect(text).toContain('off-season');
     expect(text).toContain('rookie');
     expect(text).toContain('team affiliations');
+    // The unavailable sync is hidden rather than explained — nothing to caveat.
+    expect(text).not.toContain('yahoo sync');
   });
 
   it('renders nothing while Yahoo sync is enabled', () => {

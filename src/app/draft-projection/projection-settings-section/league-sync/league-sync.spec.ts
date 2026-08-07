@@ -1,5 +1,5 @@
 import { MockBuilder, MockRender } from 'ng-mocks';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { LeagueSyncComponent } from './league-sync';
 import { YahooLeagueSyncComponent } from '../yahoo-league-sync/yahoo-league-sync';
 import { EspnLeagueSyncComponent } from '../espn-league-sync/espn-league-sync';
@@ -7,64 +7,94 @@ import { YahooSync } from '../../../api/models/yahoo-sync';
 import { environment } from '../../../../environments/environment';
 
 describe('LeagueSyncComponent', () => {
-  const buildMocked = () =>
-    MockBuilder(LeagueSyncComponent).mock(YahooLeagueSyncComponent).mock(EspnLeagueSyncComponent);
+  const originalYahooDisabled = environment.yahooSyncDisabled;
+  const originalEspnEnabled = environment.espnLeaguesEnabled;
 
-  it('renders only the Yahoo sync when ESPN is disabled', async () => {
-    await buildMocked();
-    const fixture = MockRender(LeagueSyncComponent);
-
-    expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.provider-picker')).toBeNull();
+  afterEach(() => {
+    environment.yahooSyncDisabled = originalYahooDisabled;
+    environment.espnLeaguesEnabled = originalEspnEnabled;
   });
 
-  it('shows the picker with no platform pre-selected when enabled', async () => {
-    environment.espnLeaguesEnabled = true;
-    try {
-      await buildMocked();
-      const fixture = MockRender(LeagueSyncComponent);
+  const render = async (yahooDisabled: boolean, espnEnabled: boolean) => {
+    environment.yahooSyncDisabled = yahooDisabled;
+    environment.espnLeaguesEnabled = espnEnabled;
+    await MockBuilder(LeagueSyncComponent)
+      .mock(YahooLeagueSyncComponent)
+      .mock(EspnLeagueSyncComponent);
+    return MockRender(LeagueSyncComponent);
+  };
 
-      expect(fixture.nativeElement.querySelector('.provider-picker')).toBeTruthy();
-      // Nothing pre-selected — no sync widget until the user picks a platform.
-      expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeNull();
-      expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeNull();
-    } finally {
-      environment.espnLeaguesEnabled = false;
-    }
+  it('offers both platforms with none pre-selected when both are available', async () => {
+    const fixture = await render(false, true);
+
+    expect(fixture.nativeElement.querySelector('.league-sync-title')).toBeTruthy();
+    expect(fixture.nativeElement.querySelectorAll('.provider-tab').length).toEqual(2);
+    expect(fixture.nativeElement.textContent).toContain('On Yahoo or ESPN?');
+    // Nothing pre-selected — no sync widget until the user picks a platform.
+    expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeNull();
   });
 
   it('reveals the chosen platform sync once a tab is picked', async () => {
+    const fixture = await render(false, true);
+    const component = fixture.point.componentInstance;
+
+    component.provider.set('espn');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeNull();
+  });
+
+  it('hides the ESPN tab and names only Yahoo when ESPN is disabled', async () => {
+    const fixture = await render(false, false);
+
+    const tabs: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.provider-tab'));
+    expect(tabs.length).toEqual(1);
+    expect(tabs[0].textContent?.trim()).toContain('Yahoo');
+    expect(fixture.nativeElement.textContent).toContain('On Yahoo?');
+    expect(fixture.nativeElement.textContent).not.toContain('ESPN');
+  });
+
+  it('hides the Yahoo tab and names only ESPN during the Yahoo off-season', async () => {
+    const fixture = await render(true, true);
+
+    const tabs: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.provider-tab'));
+    expect(tabs.length).toEqual(1);
+    expect(tabs[0].textContent?.trim()).toContain('ESPN');
+    expect(fixture.nativeElement.textContent).toContain('On ESPN?');
+    expect(fixture.nativeElement.textContent).not.toContain('Yahoo');
+  });
+
+  it('hides the whole section when neither platform can be synced', async () => {
+    const fixture = await render(true, false);
+
+    expect(fixture.nativeElement.querySelector('.league-sync-title')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.provider-picker')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeNull();
+  });
+
+  it('does not default to Yahoo for an already-synced projection while Yahoo is off', async () => {
+    environment.yahooSyncDisabled = true;
     environment.espnLeaguesEnabled = true;
-    try {
-      await buildMocked();
-      const fixture = MockRender(LeagueSyncComponent);
-      const component = fixture.point.componentInstance;
+    await MockBuilder(LeagueSyncComponent)
+      .mock(YahooLeagueSyncComponent)
+      .mock(EspnLeagueSyncComponent);
+    const lastSync: YahooSync = { leagueName: 'My League', leagueKey: 'nhl.l.1', syncedAt: 't' };
+    const fixture = MockRender(LeagueSyncComponent, { lastSync });
 
-      component.provider.set('yahoo');
-      fixture.detectChanges();
-      expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeTruthy();
-      expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeNull();
-
-      component.provider.set('espn');
-      fixture.detectChanges();
-      expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeTruthy();
-      expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeNull();
-    } finally {
-      environment.espnLeaguesEnabled = false;
-    }
+    expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeNull();
   });
 
   it('defaults to Yahoo when the projection was already synced from Yahoo', async () => {
+    environment.yahooSyncDisabled = false;
     environment.espnLeaguesEnabled = true;
-    try {
-      await buildMocked();
-      const lastSync: YahooSync = { leagueName: 'My League', leagueKey: 'nhl.l.1', syncedAt: 't' };
-      const fixture = MockRender(LeagueSyncComponent, { lastSync });
+    await MockBuilder(LeagueSyncComponent)
+      .mock(YahooLeagueSyncComponent)
+      .mock(EspnLeagueSyncComponent);
+    const lastSync: YahooSync = { leagueName: 'My League', leagueKey: 'nhl.l.1', syncedAt: 't' };
+    const fixture = MockRender(LeagueSyncComponent, { lastSync });
 
-      expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeTruthy();
-    } finally {
-      environment.espnLeaguesEnabled = false;
-    }
+    expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeTruthy();
   });
 });

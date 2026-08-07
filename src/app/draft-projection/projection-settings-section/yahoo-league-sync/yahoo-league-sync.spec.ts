@@ -112,18 +112,17 @@ describe('YahooLeagueSyncComponent', () => {
     expect(component.error()).toBeTruthy();
   });
 
-  it('shows a disabled sync button when sync is disabled', async () => {
+  it('renders no sync controls when sync is disabled', async () => {
     environment.yahooSyncDisabled = true;
     try {
       await buildConnected();
       const fixture = MockRender(YahooLeagueSyncComponent);
       await fixture.whenStable();
 
-      const button: HTMLButtonElement = fixture.nativeElement.querySelector('button');
-      expect(button.disabled).toEqual(true);
-      expect(button.textContent?.trim()).toEqual('Sync settings');
-      // The off-season note now lives only in the app-offseason-data-notice box, not here.
-      expect(fixture.nativeElement.textContent).not.toContain('2026-27');
+      // The parent (app-league-sync) hides this component entirely when Yahoo sync is off; the
+      // component's own guard keeps it inert if it is ever rendered anyway.
+      expect(fixture.nativeElement.querySelector('button')).toBeNull();
+      expect(fixture.nativeElement.querySelector('select')).toBeNull();
     } finally {
       environment.yahooSyncDisabled = false;
     }
