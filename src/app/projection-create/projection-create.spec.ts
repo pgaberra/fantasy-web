@@ -1,33 +1,17 @@
 import { MockBuilder, MockInstance, MockRender } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { of, throwError } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { ProjectionCreateComponent } from './projection-create';
-import { PlayerService } from '../services/player.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { StatInfoService } from '../services/stat-info.service';
-import { Skater } from '../models/player.model';
-import { SkaterScoringStats } from '../models/projection.model';
-import { SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
+import { CreateProjectionRequest } from '../api/models/create-projection-request';
 import { ProjectionResponse } from '../api/models/projection-response';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 
 describe('ProjectionCreateComponent', () => {
   MockInstance.scope();
-
-  const skater: Skater = {
-    id: 1,
-    type: 'skater',
-    name: 'Connor McDavid',
-    positions: new Set(['C']),
-    stats: {
-      utility: { gp: 82, toiPerGame: 1320 },
-      scoring: Object.fromEntries(
-        SKATER_SCORING_STAT_KEYS.map((key) => [key, 1]),
-      ) as SkaterScoringStats,
-    },
-  };
 
   const created: ProjectionResponse = {
     id: 'new-id',
@@ -73,14 +57,15 @@ describe('ProjectionCreateComponent', () => {
   };
 
   const navigate = vi.fn();
-  const createProjection = vi.fn(() => of(created));
+  const createProjection = vi.fn<
+    (request: CreateProjectionRequest) => Observable<ProjectionResponse>
+  >(() => of(created));
 
   beforeEach(() => {
     navigate.mockClear();
     createProjection.mockClear();
     return MockBuilder(ProjectionCreateComponent)
       .keep(StatInfoService)
-      .mock(PlayerService, { getPlayers: () => of([skater]) })
       .mock(ProjectionStorageService, {
         listProjections: () => of([]),
         createProjection,
@@ -89,7 +74,7 @@ describe('ProjectionCreateComponent', () => {
       .provide({ provide: Router, useValue: { navigate } });
   });
 
-  it('loads players and existing projections', async () => {
+  it('loads the existing projections', async () => {
     const fixture = MockRender(ProjectionCreateComponent);
     await fixture.whenStable();
     expect(fixture.point.componentInstance.isLoading()).toEqual(false);
@@ -161,6 +146,43 @@ describe('ProjectionCreateComponent', () => {
         }),
       }),
     );
+  });
+
+  // The player rows are ~0.5 MB the client had just downloaded, and uploading them back was
+  // failing outright for at least one user in production. The server derives them from source.
+  it('asks the server to fill in the players instead of uploading them', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+
+    fixture.point.componentInstance.create();
+
+    const request = createProjection.mock.calls[0][0];
+    expect(request.source).toEqual('default');
+    expect(request.data.players).toEqual([]);
+  });
+
+  it('asks for zeroed players when creating a blank projection', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.dataSource.set('blank');
+    component.create();
+
+    expect(createProjection.mock.calls[0][0].source).toEqual('blank');
+  });
+
+  // A copy carries rows that only the client has, so it must keep sending them.
+  it('sends no source when copying an existing projection', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.dataSource.set('copy');
+    component.copyFromId.set('src');
+    component.create();
+
+    expect(createProjection.mock.calls[0][0].source).toBeUndefined();
   });
 
   it('copies the source projection data (settings and players) verbatim', async () => {
