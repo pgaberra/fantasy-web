@@ -27,6 +27,7 @@ import {
 import { ScoringStatKey } from '../models/stat-key.model';
 import { DraftState } from '../api/models/draft-state';
 import { ProjectionData } from '../api/models/projection-data';
+import { UpdateProjectionData } from '../api/models/update-projection-data';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import {
   DEFAULT_LEAGUE_SIZE,
@@ -705,8 +706,11 @@ export class DraftModeComponent implements OnInit {
     if (!id || !data) {
       return;
     }
+    // Draft mode only ever moves picks around, so the player rows are left out entirely and
+    // the server keeps the stored ones. They are ~0.5 MB, and re-uploading them on every pick
+    // made saving depend on an upload that fails outright on a slow connection.
     const draft = this.draft();
-    const updated: ProjectionData = { ...data, draft: draft ?? undefined };
+    const updated: UpdateProjectionData = { settings: data.settings, draft: draft ?? undefined };
     this.saveStatus.set('saving');
     this.projectionStorage
       .updateProjection(id, { name: this.projectionName(), data: updated })
