@@ -1,3 +1,8 @@
-# Keep committed OpenAPI specs LF-normalised so they diff cleanly between
-# Windows dev machines and Linux CI runners (the spec drift check uses diff).
+# Check every text file out with LF, on every platform. Without this, a Windows checkout gets
+# CRLF working copies and `npm run format` rewrites the whole tree — 250 files showing as
+# modified with no content change, which buries any real diff underneath.
+* text=auto eol=lf
+
+# Kept explicit: the committed OpenAPI specs must diff cleanly between Windows dev machines
+# and Linux CI runners, because the spec drift check compares them with diff.
 specs/*.yaml text eol=lf
