@@ -2,6 +2,13 @@ import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { retry, throwError, timer } from 'rxjs';
 
 export const TRANSIENT_STATUSES = [0, 502, 503, 504];
+// Status 0 is a connection-level failure: the request never completed. That is NOT the same
+// as "it never arrived" — the server may have processed it and only the response was lost.
+// Replaying a POST/PUT/DELETE on that basis risks duplicating work, and for a large body it
+// re-uploads everything over the link that just failed. So status 0 is retried only for
+// methods that are safe to repeat; the gateway statuses are real answers and stay retryable
+// for every method.
+export const IDEMPOTENT_METHODS = ['GET', 'HEAD', 'OPTIONS'];
 // A couple of quick retries smooth over a momentary gateway/connection blip (a brief
 // reverse-proxy reload, a dropped keep-alive) so a single hiccup doesn't surface as an
 // error. This is a small safety net, not a cold-start workaround: it deliberately does
@@ -9,8 +16,11 @@ export const TRANSIENT_STATUSES = [0, 502, 503, 504];
 export const MAX_RETRIES = 2;
 const MAX_DELAY_MS = 1000;
 
-export function isTransientError(error: unknown): boolean {
-  return error instanceof HttpErrorResponse && TRANSIENT_STATUSES.includes(error.status);
+export function isTransientError(error: unknown, method: string): boolean {
+  if (!(error instanceof HttpErrorResponse) || !TRANSIENT_STATUSES.includes(error.status)) {
+    return false;
+  }
+  return error.status !== 0 || IDEMPOTENT_METHODS.includes(method.toUpperCase());
 }
 
 export function retryBackoffMs(retryCount: number): number {
@@ -22,6 +32,8 @@ export const retryInterceptor: HttpInterceptorFn = (req, next) =>
     retry({
       count: MAX_RETRIES,
       delay: (error: unknown, retryCount) =>
-        isTransientError(error) ? timer(retryBackoffMs(retryCount)) : throwError(() => error),
+        isTransientError(error, req.method)
+          ? timer(retryBackoffMs(retryCount))
+          : throwError(() => error),
     }),
   );

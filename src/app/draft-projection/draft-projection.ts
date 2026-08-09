@@ -24,6 +24,8 @@ import { EspnSyncResult } from './projection-settings-section/espn-league-sync/e
 import { LeagueProjectionSettingsResponse } from '../api/models/league-projection-settings-response';
 import { YahooSync } from '../api/models/yahoo-sync';
 import { DraftState } from '../api/models/draft-state';
+import { ProjectionData } from '../api/models/projection-data';
+import { UpdateProjectionData } from '../api/models/update-projection-data';
 import { SyncWarningDialogComponent } from './sync-warning-dialog/sync-warning-dialog';
 import {
   FullSeasonConfig,
@@ -98,6 +100,7 @@ export class DraftProjectionComponent implements OnInit {
   private readonly projectionLoaded = signal<boolean>(false);
   private readonly autosaveEnabled = signal<boolean>(false);
   private lastSavedJson = '';
+  private lastSavedPlayersJson = '';
 
   private readonly playersResource = rxResource({
     stream: () => this.playerService.getPlayers(),
@@ -274,7 +277,9 @@ export class DraftProjectionComponent implements OnInit {
           this.projectionName.set(projection.name);
           const state = this.serializer.fromProjectionData(projection.data);
           this.applyState(state);
-          this.lastSavedJson = JSON.stringify(this.serializer.toProjectionData(state));
+          const loaded = this.serializer.toProjectionData(state);
+          this.lastSavedJson = JSON.stringify(loaded);
+          this.lastSavedPlayersJson = JSON.stringify(loaded.players);
           this.projectionLoaded.set(true);
           this.autosaveEnabled.set(true);
         },
@@ -333,12 +338,31 @@ export class DraftProjectionComponent implements OnInit {
     this.lastSavedJson = json;
     this.saveStatus.set('saving');
     this.projectionStorage
-      .updateProjection(id, { name: this.projectionName(), data })
+      .updateProjection(id, { name: this.projectionName(), data: this.payload(data) })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => this.saveStatus.set('saved'),
+        next: () => {
+          this.lastSavedPlayersJson = JSON.stringify(data.players);
+          this.saveStatus.set('saved');
+        },
         error: () => this.saveStatus.set('error'),
       });
+  }
+
+  /**
+   * The update to send. The player rows are ~0.5 MB and most edits — a stat weight, a column,
+   * a draft pick — leave them untouched, so they are sent only when they actually changed and
+   * the server keeps the stored ones otherwise.
+   *
+   * The baseline is advanced only once a save has succeeded. Advancing it optimistically would
+   * mean a failed save leaves the server holding the old rows while we believe it has the new
+   * ones, and the next save would omit them — losing the edit in silence.
+   */
+  private payload(data: ProjectionData): UpdateProjectionData {
+    if (JSON.stringify(data.players) === this.lastSavedPlayersJson) {
+      return { settings: data.settings, draft: data.draft };
+    }
+    return data;
   }
 
   startRename(): void {
@@ -375,11 +399,12 @@ export class DraftProjectionComponent implements OnInit {
     this.renameSaving.set(true);
     this.renameError.set(null);
     this.projectionStorage
-      .updateProjection(id, { name: newName, data })
+      .updateProjection(id, { name: newName, data: this.payload(data) })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
           this.projectionName.set(newName);
+          this.lastSavedPlayersJson = JSON.stringify(data.players);
           this.lastSavedJson = JSON.stringify(data);
           this.renameSaving.set(false);
           this.isRenaming.set(false);

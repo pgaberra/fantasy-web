@@ -2,16 +2,14 @@ import { Component, computed, DestroyRef, inject, linkedSignal, signal } from '@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { forkJoin } from 'rxjs';
 import { AnalyticsService } from '../services/analytics.service';
-import { PlayerService } from '../services/player.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { NotificationService } from '../services/notification.service';
 import { StatInfoService } from '../services/stat-info.service';
-import { Player } from '../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
-import { GoalieStats, Projection, SkaterStats } from '../models/projection.model';
+import { Projection } from '../models/projection.model';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
+import { CreateProjectionRequest } from '../api/models/create-projection-request';
 import { ProjectionData } from '../api/models/projection-data';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
@@ -38,7 +36,6 @@ type DataSource = 'last-season' | 'blank' | 'copy';
   styleUrl: './projection-create.css',
 })
 export class ProjectionCreateComponent {
-  private readonly playerService = inject(PlayerService);
   private readonly projectionStorage = inject(ProjectionStorageService);
   private readonly statInfoService = inject(StatInfoService);
   private readonly router = inject(Router);
@@ -47,24 +44,21 @@ export class ProjectionCreateComponent {
   private readonly notification = inject(NotificationService);
   private readonly analytics = inject(AnalyticsService);
 
+  // Only the existing projections are needed here: the player rows of a new projection are
+  // filled in server-side from `source`, so this page no longer downloads every player just
+  // to upload them straight back.
   private readonly dataResource = rxResource({
-    stream: () =>
-      forkJoin({
-        players: this.playerService.getPlayers(),
-        projections: this.projectionStorage.listProjections(),
-      }),
-    defaultValue: { players: [] as Player[], projections: [] as ProjectionSummaryResponse[] },
+    stream: () => this.projectionStorage.listProjections(),
+    defaultValue: [] as ProjectionSummaryResponse[],
   });
 
   readonly dataSource = signal<DataSource>('last-season');
   readonly copyFromId = signal<string | null>(null);
-  readonly existingProjections = computed(() => this.dataResource.value().projections);
+  readonly existingProjections = computed(() => this.dataResource.value());
   readonly isLoading = this.dataResource.isLoading;
   readonly loadError = computed(() => !!this.dataResource.error());
   readonly isCreating = signal<boolean>(false);
-  readonly name = linkedSignal(() => this.defaultName(this.dataResource.value().projections));
-
-  private readonly players = computed(() => this.dataResource.value().players);
+  readonly name = linkedSignal(() => this.defaultName(this.dataResource.value()));
 
   readonly canCreate = computed(
     () =>
@@ -121,13 +115,18 @@ export class ProjectionCreateComponent {
       return;
     }
 
-    const players = this.buildPlayerProjections(this.dataSource() === 'blank');
-    this.persist(this.serializer.toProjectionData(this.buildDefaultState(players)));
+    // No player rows: the server derives them from `source`, out of the same read model this
+    // page would otherwise have downloaded and sent straight back (~0.5 MB, and the upload
+    // that was failing in production).
+    this.persist(
+      this.serializer.toProjectionData(this.buildDefaultState([])),
+      this.dataSource() === 'blank' ? 'blank' : 'default',
+    );
   }
 
-  private persist(data: ProjectionData): void {
+  private persist(data: ProjectionData, source?: CreateProjectionRequest['source']): void {
     this.projectionStorage
-      .createProjection({ name: this.name().trim(), data })
+      .createProjection({ name: this.name().trim(), data, source })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (projection) => {
@@ -162,31 +161,5 @@ export class ProjectionCreateComponent {
       draft: null,
       playerProjections,
     };
-  }
-
-  private buildPlayerProjections(blank: boolean): Projection[] {
-    return this.players().map((player) => {
-      if (player.type === 'skater') {
-        return {
-          type: 'skater',
-          playerId: player.id,
-          stats: blank ? (this.zeroStats(player.stats) as SkaterStats) : player.stats,
-        };
-      }
-      return {
-        type: 'goalie',
-        playerId: player.id,
-        stats: blank ? (this.zeroStats(player.stats) as GoalieStats) : player.stats,
-      };
-    });
-  }
-
-  private zeroStats(stats: SkaterStats | GoalieStats): SkaterStats | GoalieStats {
-    const zero = (record: Record<string, number>): Record<string, number> =>
-      Object.fromEntries(Object.keys(record).map((key) => [key, 0]));
-    return {
-      utility: zero(stats.utility),
-      scoring: zero(stats.scoring),
-    } as SkaterStats | GoalieStats;
   }
 }
