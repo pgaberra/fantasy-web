@@ -52,8 +52,9 @@ export class LandingDemoComponent {
   private readonly router = inject(Router);
 
   protected readonly espnEnabled = environment.espnLeaguesEnabled;
-  // The teaser only goes dark when no platform can be synced at all — ESPN staying available
-  // through the Yahoo off-season keeps the call to action live.
+  // The teaser disappears entirely when no platform can be synced at all, mirroring
+  // app-league-sync in the signed-in editor rather than advertising a dead end. ESPN staying
+  // available through the Yahoo off-season keeps the call to action live.
   protected readonly syncDisabled =
     environment.yahooSyncDisabled && !environment.espnLeaguesEnabled;
 

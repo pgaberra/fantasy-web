@@ -98,20 +98,41 @@ describe('LandingDemoComponent', () => {
     expect(text).toContain('Sign in to connect Yahoo');
   });
 
-  it('disables the connect button when sync is disabled', async () => {
+  it('hides the sync teaser entirely when no platform can be synced', async () => {
+    const originalEspn = environment.espnLeaguesEnabled;
     environment.yahooSyncDisabled = true;
+    environment.espnLeaguesEnabled = false;
     try {
       const fixture = MockRender(LandingDemoComponent);
       await fixture.whenStable();
       fixture.detectChanges();
 
-      const button: HTMLButtonElement =
-        fixture.nativeElement.querySelector('.demo-yahoo-gate button');
-      expect(button.disabled).toEqual(true);
-      // The off-season sync message now lives in the prominent app-offseason-data-notice box.
-      expect(fixture.nativeElement.textContent).not.toContain('one click');
+      // Same behaviour as app-league-sync in the signed-in editor: with nothing to sync the
+      // section is absent rather than advertising a dead end behind a disabled button.
+      expect(fixture.nativeElement.querySelector('.demo-yahoo-gate')).toBeNull();
+      const text = fixture.nativeElement.textContent;
+      expect(text).not.toContain('Sync your Yahoo league');
+      expect(text).not.toContain('Sign in to connect Yahoo');
     } finally {
       environment.yahooSyncDisabled = false;
+      environment.espnLeaguesEnabled = originalEspn;
+    }
+  });
+
+  it('keeps the teaser while ESPN is still syncable, even with Yahoo off', async () => {
+    const originalEspn = environment.espnLeaguesEnabled;
+    environment.yahooSyncDisabled = true;
+    environment.espnLeaguesEnabled = true;
+    try {
+      const fixture = MockRender(LandingDemoComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.demo-yahoo-gate')).not.toBeNull();
+      expect(fixture.nativeElement.textContent).toContain('Sync your Yahoo or ESPN league');
+    } finally {
+      environment.yahooSyncDisabled = false;
+      environment.espnLeaguesEnabled = originalEspn;
     }
   });
 
