@@ -10,6 +10,7 @@ import { ProjectionStorageService } from '../services/projection-storage.service
 import { ProjectionSyncService } from '../services/projection-sync.service';
 import { Goalie, Skater } from '../models/player.model';
 import { ProjectionResponse } from '../api/models/projection-response';
+import { Projection } from '../models/projection.model';
 
 describe('DraftProjectionComponent', () => {
   const mockSkaters: Skater[] = [
@@ -135,6 +136,44 @@ describe('DraftProjectionComponent', () => {
     );
     expect(component.projectionName()).toEqual('Renamed league');
     expect(component.isRenaming()).toEqual(false);
+  });
+
+  // The player rows are ~0.5 MB and a rename does not touch them, so the server keeps the
+  // stored ones. Re-uploading them is what made saving fail outright on a slow connection.
+  it('leaves the player rows out of a save that did not change them', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    const updateSpy = vi.spyOn(ngMocks.findInstance(ProjectionStorageService), 'updateProjection');
+
+    component.startRename();
+    component.renameValue.set('Renamed league');
+    component.saveRename();
+    await fixture.whenStable();
+
+    expect(updateSpy.mock.calls[0][1].data.players).toBeUndefined();
+    expect(updateSpy.mock.calls[0][1].data.settings).toBeDefined();
+  });
+
+  it('sends the player rows when they have changed', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    const updateSpy = vi.spyOn(ngMocks.findInstance(ProjectionStorageService), 'updateProjection');
+
+    component.loadedProjections.set([
+      {
+        type: 'skater',
+        playerId: 1,
+        stats: { utility: { gp: 70, toiPerGame: 1200 }, scoring: { goals: 99 } },
+      } as Projection,
+    ]);
+    component.startRename();
+    component.renameValue.set('Renamed league');
+    component.saveRename();
+    await fixture.whenStable();
+
+    expect(updateSpy.mock.calls[0][1].data.players).toHaveLength(1);
   });
 
   it('reports a conflict and keeps the old name when the name is taken', async () => {

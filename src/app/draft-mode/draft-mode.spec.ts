@@ -1,6 +1,6 @@
 import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
 import { DraftModeComponent } from './draft-mode';
 import { ProjectionStorageService } from '../services/projection-storage.service';
@@ -11,6 +11,7 @@ import { PositionFilterService } from '../services/position-filter.service';
 import { Player } from '../models/player.model';
 import { SkaterStats } from '../models/projection.model';
 import { ProjectionResponse } from '../api/models/projection-response';
+import { UpdateProjectionRequest } from '../api/models/update-projection-request';
 import { DraftState } from '../api/models/draft-state';
 import { DraftPlayerLookupService } from './draft-player-lookup.service';
 
@@ -55,7 +56,9 @@ describe('DraftModeComponent', () => {
     picks: [],
   };
 
-  const updateProjection = vi.fn(() => of(projection));
+  const updateProjection = vi.fn<
+    (id: string, request: UpdateProjectionRequest) => Observable<ProjectionResponse>
+  >(() => of(projection));
 
   beforeEach(() => {
     updateProjection.mockClear();
@@ -94,6 +97,19 @@ describe('DraftModeComponent', () => {
     expect(component.isMyPick()).toBe(true);
     expect(component.draftLabel()).toEqual('Draft');
     expect(updateProjection).toHaveBeenCalled();
+  });
+
+  // Draft mode never edits a player's stats, so re-uploading ~0.5 MB of rows on every pick was
+  // pure waste — and the upload that fails on a slow connection.
+  it('persists the draft without re-sending the player rows', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+
+    fixture.point.componentInstance.applySetup(draft);
+
+    const sent = updateProjection.mock.calls[0][1];
+    expect(sent.data.players).toBeUndefined();
+    expect(sent.data.settings).toBeDefined();
   });
 
   it('applies the roster slots chosen in setup', async () => {
