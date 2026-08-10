@@ -43,7 +43,13 @@ test.describe('draft mode from a preset', () => {
     });
 
     // 3) Confirm the team setup if this run started a fresh draft, so it has a state to resume.
+    // Wait for the board to settle into one phase or the other first: the check below is a
+    // non-waiting isVisible(), so asking before either has rendered would silently skip the
+    // setup and leave the draft without a state to resume.
     const confirmSetup = page.getByRole('button', { name: /^start draft$/i });
+    await expect(page.locator('app-draft-setup, .draft-toolbar').first()).toBeVisible({
+      timeout: 30_000,
+    });
     if (await confirmSetup.isVisible().catch(() => false)) {
       await confirmSetup.click();
     }
