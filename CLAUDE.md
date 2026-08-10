@@ -49,6 +49,10 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   to the BFF's per-share Open Graph document, since they run no JavaScript and would otherwise
   unfurl every shared projection as the site-wide preview. The BFF origin is substituted into
   `nginx.conf` at image build time from the same `API_URL` build arg as the bundle.
+  The preview's image is the BFF's per-share card, proxied through this origin at
+  `/s/:token/og-image.png` so the tags and the image they point at share a host. That
+  location must stay above the static-asset location, which would otherwise claim any URL
+  ending in `.png` and 404 it.
 - `services/` — app services (auth, projections, etc.)
 - `interceptors/` — HTTP interceptors: `authInterceptor` attaches the JWT and refreshes
   once on 401 (all environments). `retryInterceptor` (outermost) is a small **always-on**
