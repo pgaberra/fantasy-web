@@ -10,6 +10,7 @@ import { ResetPasswordComponent } from './auth/reset-password/reset-password';
 import { VerifyEmailComponent } from './auth/verify-email/verify-email';
 import { GoogleCallbackComponent } from './auth/google-callback/google-callback';
 import { LandingComponent } from './landing/landing';
+import { SharedProjectionComponent } from './shared-projection/shared-projection';
 import { AdminComponent } from './admin/admin';
 import { PrivacyComponent } from './privacy/privacy';
 import { PricingComponent } from './pricing/pricing';
@@ -25,6 +26,10 @@ export const routes: Routes = [
   { path: 'projections/new', component: ProjectionCreateComponent },
   { path: 'projections/:id/draft', component: DraftModeComponent },
   { path: 'projections/:id', component: DraftProjectionComponent },
+  // Public and unguarded on purpose: a share link has to open for someone who has never signed
+  // in — that is the whole point of it. nginx serves crawlers an Open Graph document for this
+  // path instead, so a posted link unfurls as the projection rather than the site.
+  { path: 's/:token', component: SharedProjectionComponent },
   { path: 'admin', component: AdminComponent, canActivate: [adminGuard] },
   // Public and unguarded on purpose: consent has to be informed, so the policy must be
   // reachable from the banner before anyone has agreed to anything.

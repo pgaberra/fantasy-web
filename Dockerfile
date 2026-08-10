@@ -54,6 +54,10 @@ RUN npm run build
 
 # ---- Serve stage ----
 FROM nginx:alpine
+# Re-declared because ARGs do not cross stages. nginx needs the BFF origin server-side to fetch
+# the per-share Open Graph document for link-preview crawlers (see nginx.conf).
+ARG API_URL=http://localhost:8080
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+RUN sed -i "s|__API_ORIGIN__|${API_URL}|g" /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/fantasy-web/browser /usr/share/nginx/html
 EXPOSE 80

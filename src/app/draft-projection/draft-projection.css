@@ -29,6 +29,13 @@
   margin: 0;
 }
 
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
 .draft-mode-link {
   flex-shrink: 0;
   text-decoration: none;
