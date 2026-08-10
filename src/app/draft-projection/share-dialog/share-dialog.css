@@ -48,12 +48,6 @@
   border-radius: var(--radius-md);
 }
 
-.share-meta {
-  margin: 0 0 var(--space-4);
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
 .alias-label {
   display: block;
   margin-bottom: var(--space-1);
