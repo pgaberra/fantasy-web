@@ -8,6 +8,7 @@
       <nav class="app-nav">
         @if (authService.isLoggedIn()) {
           <a routerLink="/projections" routerLinkActive="active">My projections</a>
+          <a routerLink="/whos-hot" routerLinkActive="active">Who's hot</a>
           @if (paymentsEnabled) {
             <a routerLink="/account" routerLinkActive="active">Account</a>
           }
