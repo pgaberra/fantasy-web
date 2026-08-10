@@ -15,6 +15,7 @@ describe('ProjectionCreateComponent', () => {
 
   const created: ProjectionResponse = {
     id: 'new-id',
+    kind: 'projection',
     name: 'Dynasty',
     season: '20262027',
     createdAt: '2026-06-01T00:00:00Z',
@@ -24,6 +25,7 @@ describe('ProjectionCreateComponent', () => {
 
   const source: ProjectionResponse = {
     id: 'src',
+    kind: 'projection',
     name: 'Source',
     season: '20262027',
     createdAt: '2026-06-01T00:00:00Z',
@@ -49,6 +51,7 @@ describe('ProjectionCreateComponent', () => {
 
   const summary: ProjectionSummaryResponse = {
     id: 'p1',
+    kind: 'projection',
     name: 'My Projection',
     draftStatus: 'none',
     season: '20262027',

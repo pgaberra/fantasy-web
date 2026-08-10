@@ -1,0 +1,88 @@
+@if (sharedResource.isLoading()) {
+  <app-loading-indicator />
+} @else if (isGone()) {
+  <div class="shared-projection">
+    <div class="gone-card">
+      <h1 class="gone-title">This link isn't active</h1>
+      <p class="gone-body">
+        Whoever shared this projection has taken the link down, or it never existed. You can still
+        build your own — it's free to start.
+      </p>
+      <a routerLink="/" class="btn btn-primary">Make your own projection</a>
+    </div>
+  </div>
+} @else if (sharedResource.error()) {
+  <app-error-state
+    title="Couldn't load this projection"
+    message="Check your connection and try again."
+    (retry)="sharedResource.reload()"
+  />
+} @else if (shared(); as projection) {
+  <div class="shared-projection">
+    <header class="shared-header">
+      <p class="shared-eyebrow">Shared projection</p>
+      <h1 class="shared-title">{{ projection.name }}</h1>
+      <p class="shared-byline">
+        By {{ authorLabel() }} · {{ leagueSummary() }} · Ranked by {{ valueLabel() }}
+      </p>
+    </header>
+
+    <div class="table-scroll">
+      <table class="shared-table">
+        <thead>
+          <tr>
+            <th scope="col" class="col-rank">#</th>
+            <th scope="col" class="col-player">Player</th>
+            <th scope="col" class="col-pos">Pos</th>
+            <th scope="col" class="col-value">{{ valueLabel() }}</th>
+            @for (column of statColumns(); track column.key) {
+              <th scope="col">{{ column.label }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (player of players(); track player.playerId) {
+            <tr>
+              <td class="col-rank">{{ player.rank }}</td>
+              <td class="col-player">
+                <span class="player-name">{{ player.name }}</span>
+                @if (player.teamAbbrev) {
+                  <span class="player-team">{{ player.teamAbbrev }}</span>
+                }
+              </td>
+              <td class="col-pos">{{ positionLabel(player) }}</td>
+              <td class="col-value">{{ player.value | number: '1.1-1' }}</td>
+              @for (column of statColumns(); track column.key) {
+                @let value = statValue(player, column.key);
+                <td>
+                  @if (value !== null) {
+                    {{ value | number: '1.' + column.decimals + '-' + column.decimals }}
+                  } @else {
+                    <span class="empty">–</span>
+                  }
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <section class="cta">
+      <h2 class="cta-title">This is the top {{ players().length }} of one manager's board</h2>
+      <p class="cta-body">
+        Build your own projections, tuned to your league's scoring settings, and rank every player
+        the way this one does. Free to start.
+      </p>
+      <a routerLink="/register" class="btn btn-primary">Make your own projection</a>
+    </section>
+
+    <footer class="shared-footer">
+      <p>
+        Projections are the work of {{ authorLabel() }}, not SlapStat. Underlying data ©
+        <a href="https://moneypuck.com" rel="noopener noreferrer" target="_blank">MoneyPuck.com</a>
+        and the NHL.
+      </p>
+    </footer>
+  </div>
+}
