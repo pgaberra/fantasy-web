@@ -9,10 +9,11 @@ import {
   StatKey,
 } from '../models/stat-key.model';
 
-const PERCENTAGE_STAT_KEYS = ['shPct', 'svPct'] as const;
+const PERCENTAGE_STAT_KEYS = ['shPct', 'svPct', 'winPct'] as const;
 type PercentageStatKey = (typeof PERCENTAGE_STAT_KEYS)[number];
 
-const RATE_STAT_KEYS = ['shPct', 'svPct', 'gaa'] as const;
+// Rate stats describe a per-unit share, so scaling them by games played would be wrong.
+const RATE_STAT_KEYS = ['shPct', 'svPct', 'winPct', 'gaa'] as const;
 type RateStatKey = (typeof RATE_STAT_KEYS)[number];
 
 @Injectable({
@@ -27,8 +28,9 @@ export class StatInfoService {
     return (RATE_STAT_KEYS as readonly string[]).includes(key);
   }
 
+  /** Time on ice is held in seconds and shown as MM:SS, per game and for the season alike. */
   isToiStat(key: StatKey): boolean {
-    return key === 'toiPerGame';
+    return key === 'toiPerGame' || key === 'toi';
   }
 
   canStatBeNegative(key: StatKey): boolean {

@@ -13,6 +13,13 @@ describe('PositionFilterService', () => {
   const emptySkaterStats: SkaterStats = {
     utility: { gp: 0, toiPerGame: 0 },
     scoring: {
+      stpg: 0,
+      stpa: 0,
+      stp: 0,
+      hatTricks: 0,
+      defPoints: 0,
+      shifts: 0,
+      toi: 0,
       goals: 0,
       assists: 0,
       points: 0,
@@ -37,6 +44,9 @@ describe('PositionFilterService', () => {
   const emptyGoalieStats: GoalieStats = {
     utility: { gp: 0 },
     scoring: {
+      otl: 0,
+      winPct: 0,
+      toi: 0,
       gs: 0,
       w: 0,
       l: 0,

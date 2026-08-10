@@ -9,6 +9,13 @@ const makeSkaterProjection = (playerId: number, toiPerGame = 1200, gp = 82): Ska
   playerId,
   stats: {
     scoring: {
+      stpg: 0,
+      stpa: 0,
+      stp: 0,
+      hatTricks: 0,
+      defPoints: 0,
+      shifts: 0,
+      toi: 0,
       goals: 10,
       assists: 20,
       points: 30,
@@ -36,7 +43,20 @@ const makeGoalieProjection = (playerId: number, gp = 60): GoalieProjection => ({
   type: 'goalie',
   playerId,
   stats: {
-    scoring: { gs: 55, w: 30, l: 20, sho: 5, sa: 1500, sv: 1440, ga: 60, gaa: 2.5, svPct: 0.92 },
+    scoring: {
+      otl: 0,
+      winPct: 0,
+      toi: 0,
+      gs: 55,
+      w: 30,
+      l: 20,
+      sho: 5,
+      sa: 1500,
+      sv: 1440,
+      ga: 60,
+      gaa: 2.5,
+      svPct: 0.92,
+    },
     utility: { gp },
   },
 });

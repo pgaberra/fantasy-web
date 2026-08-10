@@ -22,6 +22,13 @@ describe('DraftProjectionComponent', () => {
       stats: {
         utility: { gp: 82, toiPerGame: 1320 },
         scoring: {
+          stpg: 0,
+          stpa: 0,
+          stp: 0,
+          hatTricks: 0,
+          defPoints: 0,
+          shifts: 0,
+          toi: 0,
           goals: 64,
           assists: 89,
           points: 153,
@@ -64,7 +71,23 @@ describe('DraftProjectionComponent', () => {
         useDefaultDecimals: false,
       },
       players: [
-        { playerId: 1, type: 'skater', stats: { utility: { gp: 82 }, scoring: { goals: 64 } } },
+        {
+          playerId: 1,
+          type: 'skater',
+          stats: {
+            utility: { gp: 82 },
+            scoring: {
+              stpg: 0,
+              stpa: 0,
+              stp: 0,
+              hatTricks: 0,
+              defPoints: 0,
+              shifts: 0,
+              toi: 0,
+              goals: 64,
+            },
+          },
+        },
       ],
     },
   };
@@ -166,7 +189,19 @@ describe('DraftProjectionComponent', () => {
       {
         type: 'skater',
         playerId: 1,
-        stats: { utility: { gp: 70, toiPerGame: 1200 }, scoring: { goals: 99 } },
+        stats: {
+          utility: { gp: 70, toiPerGame: 1200 },
+          scoring: {
+            stpg: 0,
+            stpa: 0,
+            stp: 0,
+            hatTricks: 0,
+            defPoints: 0,
+            shifts: 0,
+            toi: 0,
+            goals: 99,
+          },
+        },
       } as Projection,
     ]);
     component.startRename();

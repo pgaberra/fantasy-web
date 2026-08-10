@@ -30,6 +30,13 @@ describe('PlayerProjectionsTableComponent', () => {
       stats: {
         utility: { gp: 82, toiPerGame: 1320 },
         scoring: {
+          stpg: 0,
+          stpa: 0,
+          stp: 0,
+          hatTricks: 0,
+          defPoints: 0,
+          shifts: 0,
+          toi: 0,
           goals: 64,
           assists: 89,
           points: 153,
@@ -60,6 +67,13 @@ describe('PlayerProjectionsTableComponent', () => {
       stats: {
         utility: { gp: 80, toiPerGame: 1260 },
         scoring: {
+          stpg: 0,
+          stpa: 0,
+          stp: 0,
+          hatTricks: 0,
+          defPoints: 0,
+          shifts: 0,
+          toi: 0,
           goals: 52,
           assists: 76,
           points: 128,
@@ -89,6 +103,9 @@ describe('PlayerProjectionsTableComponent', () => {
       stats: {
         utility: { gp: 64 },
         scoring: {
+          otl: 0,
+          winPct: 0,
+          toi: 0,
           gs: 64,
           w: 37,
           l: 22,
@@ -131,6 +148,15 @@ describe('PlayerProjectionsTableComponent', () => {
   ];
 
   const mockStatWeights: Record<ScoringStatKey, number> = {
+    stpg: 0,
+    stpa: 0,
+    stp: 0,
+    hatTricks: 0,
+    defPoints: 0,
+    shifts: 0,
+    toi: 0,
+    otl: 0,
+    winPct: 0,
     goals: 4.5,
     assists: 3,
     points: 0,
@@ -444,7 +470,20 @@ describe('PlayerProjectionsTableComponent', () => {
       teamAbbrev: 'NYR',
       stats: {
         utility: { gp: 3 },
-        scoring: { gs: 3, w: 3, l: 0, sho: 1, sa: 90, sv: 89, ga: 1, gaa: 0.5, svPct: 0.989 },
+        scoring: {
+          otl: 0,
+          winPct: 0,
+          toi: 0,
+          gs: 3,
+          w: 3,
+          l: 0,
+          sho: 1,
+          sa: 90,
+          sv: 89,
+          ga: 1,
+          gaa: 0.5,
+          svPct: 0.989,
+        },
       },
     };
     const lowGpProjection: Projection = {
@@ -511,6 +550,9 @@ describe('PlayerProjectionsTableComponent', () => {
       stats: {
         utility: { gp: 60 },
         scoring: {
+          otl: 0,
+          winPct: 0,
+          toi: 0,
           gs: 60,
           w: wins,
           l: 20,
@@ -526,7 +568,12 @@ describe('PlayerProjectionsTableComponent', () => {
     const toProjection = (g: Goalie): Projection => ({
       type: 'goalie',
       playerId: g.id,
-      stats: { scoring: { ...g.stats.scoring }, utility: { ...g.stats.utility } },
+      stats: {
+        scoring: {
+          ...g.stats.scoring,
+        },
+        utility: { ...g.stats.utility },
+      },
     });
 
     it('keeps a goalie zScore stable when a stat changes below the displayed precision', () => {
@@ -553,7 +600,16 @@ describe('PlayerProjectionsTableComponent', () => {
       component.playerProjections.update((ps) =>
         ps.map((p) =>
           p.playerId === 10 && p.type === 'goalie'
-            ? { ...p, stats: { ...p.stats, scoring: { ...p.stats.scoring, w: 35.4 } } }
+            ? {
+                ...p,
+                stats: {
+                  ...p.stats,
+                  scoring: {
+                    ...p.stats.scoring,
+                    w: 35.4,
+                  },
+                },
+              }
             : p,
         ),
       );

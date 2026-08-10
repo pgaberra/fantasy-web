@@ -6,6 +6,15 @@ import { StatLabelPipe } from '../../../pipes/stat-label.pipe';
 
 describe('ProjectionsTableHeaderComponent', () => {
   const mockStatWeights: Record<ScoringStatKey, number> = {
+    stpg: 0,
+    stpa: 0,
+    stp: 0,
+    hatTricks: 0,
+    defPoints: 0,
+    shifts: 0,
+    toi: 0,
+    otl: 0,
+    winPct: 0,
     goals: 4.5,
     assists: 3,
     points: 0,

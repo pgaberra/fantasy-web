@@ -24,13 +24,20 @@ export const SKATER_SCORING_STAT_KEYS = [
   'shg',
   'sha',
   'shp',
+  'stpg',
+  'stpa',
+  'stp',
   'gwg',
+  'hatTricks',
   'sog',
   'shPct',
   'fw',
   'fl',
   'hits',
   'blocks',
+  'defPoints',
+  'shifts',
+  'toi',
 ] as const;
 
 export type SkaterScoringStatKey = (typeof SKATER_SCORING_STAT_KEYS)[number];
@@ -39,19 +46,23 @@ export const GOALIE_SCORING_STAT_KEYS = [
   'gs',
   'w',
   'l',
+  'otl',
   'sho',
   'sa',
   'sv',
   'ga',
   'gaa',
   'svPct',
+  'winPct',
+  'toi',
 ] as const;
 
 export type GoalieScoringStatKey = (typeof GOALIE_SCORING_STAT_KEYS)[number];
 
+// Time on ice is scored for skaters and goalies alike, so it appears in both lists — the
+// same reason gp does among the utility keys, and deduped the same way.
 export const SCORING_STAT_KEYS = [
-  ...SKATER_SCORING_STAT_KEYS,
-  ...GOALIE_SCORING_STAT_KEYS,
+  ...new Set([...SKATER_SCORING_STAT_KEYS, ...GOALIE_SCORING_STAT_KEYS]),
 ] as const;
 
 export type ScoringStatKey = (typeof SCORING_STAT_KEYS)[number];

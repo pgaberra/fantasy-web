@@ -129,7 +129,9 @@ describe('LandingDemoComponent', () => {
       fixture.detectChanges();
 
       expect(fixture.nativeElement.querySelector('.demo-yahoo-gate')).not.toBeNull();
-      expect(fixture.nativeElement.textContent).toContain('Sync your Yahoo or ESPN league');
+      // Naming Yahoo here would advertise a sync the editor doesn't offer.
+      expect(fixture.nativeElement.textContent).toContain('Sync your ESPN league');
+      expect(fixture.nativeElement.textContent).not.toContain('Yahoo league');
     } finally {
       environment.yahooSyncDisabled = false;
       environment.espnLeaguesEnabled = originalEspn;

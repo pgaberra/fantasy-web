@@ -17,6 +17,13 @@ const skater = (
   playerId,
   stats: {
     scoring: {
+      stpg: 0,
+      stpa: 0,
+      stp: 0,
+      hatTricks: 0,
+      defPoints: 0,
+      shifts: 0,
+      toi: 0,
       ...Object.fromEntries(SKATER_SCORING_STAT_KEYS.map((key) => [key, 0])),
       ...scoring,
     } as Record<SkaterScoringStatKey, number>,
@@ -32,6 +39,13 @@ const goalie = (
   playerId,
   stats: {
     scoring: {
+      stpg: 0,
+      stpa: 0,
+      stp: 0,
+      hatTricks: 0,
+      defPoints: 0,
+      shifts: 0,
+      toi: 0,
       ...Object.fromEntries(GOALIE_SCORING_STAT_KEYS.map((key) => [key, 0])),
       ...scoring,
     } as Record<GoalieScoringStatKey, number>,

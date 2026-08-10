@@ -52,6 +52,14 @@ export class LandingDemoComponent {
   private readonly router = inject(Router);
 
   protected readonly espnEnabled = environment.espnLeaguesEnabled;
+  // Naming a platform whose sync is turned off would advertise something the editor then
+  // doesn't offer, which is what happened on staging while Yahoo was down for the off-season.
+  protected readonly syncablePlatforms = [
+    environment.yahooSyncDisabled ? null : 'Yahoo',
+    environment.espnLeaguesEnabled ? 'ESPN' : null,
+  ]
+    .filter(Boolean)
+    .join(' or ');
   // The teaser disappears entirely when no platform can be synced at all, mirroring
   // app-league-sync in the signed-in editor rather than advertising a dead end. ESPN staying
   // available through the Yahoo off-season keeps the call to action live.
