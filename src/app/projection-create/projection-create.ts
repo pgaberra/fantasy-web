@@ -6,25 +6,13 @@ import { AnalyticsService } from '../services/analytics.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { NotificationService } from '../services/notification.service';
 import { StatInfoService } from '../services/stat-info.service';
-import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
-import { Projection } from '../models/projection.model';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { CreateProjectionRequest } from '../api/models/create-projection-request';
 import { ProjectionData } from '../api/models/projection-data';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { InfoTooltipComponent } from '../shared/info-tooltip/info-tooltip';
-import { DEFAULT_DECIMAL_SETTINGS } from '../draft-projection/projection-settings-section/model';
-import {
-  createDefaultScaleSettings,
-  DEFAULT_LEAGUE_SIZE,
-  DEFAULT_MIN_GOALIE_GAMES,
-  DEFAULT_ROSTER_SLOTS,
-  DEFAULT_SCORING_COLUMNS,
-  DEFAULT_STAT_WEIGHTS,
-  DEFAULT_UTILITY_COLUMNS,
-} from '../draft-projection/projection-defaults';
-import { ProjectionState } from '../services/projection-serializer';
+import { createDefaultProjectionState } from '../draft-projection/projection-defaults';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 
 type DataSource = 'last-season' | 'blank' | 'copy';
@@ -119,7 +107,9 @@ export class ProjectionCreateComponent {
     // page would otherwise have downloaded and sent straight back (~0.5 MB, and the upload
     // that was failing in production).
     this.persist(
-      this.serializer.toProjectionData(this.buildDefaultState([])),
+      this.serializer.toProjectionData(
+        createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
+      ),
       this.dataSource() === 'blank' ? 'blank' : 'default',
     );
   }
@@ -143,23 +133,5 @@ export class ProjectionCreateComponent {
           }
         },
       });
-  }
-
-  private buildDefaultState(playerProjections: Projection[]): ProjectionState {
-    return {
-      scoringType: 'points',
-      statWeights: DEFAULT_STAT_WEIGHTS,
-      activeScoringColumns: new Set<ScoringStatKey>(DEFAULT_SCORING_COLUMNS),
-      activeUtilityColumns: new Set<SkaterUtilityStatKey>(DEFAULT_UTILITY_COLUMNS),
-      scaleSettings: createDefaultScaleSettings((key) => this.statInfoService.isRateStat(key)),
-      decimalSettings: DEFAULT_DECIMAL_SETTINGS,
-      useDefaultDecimals: true,
-      leagueSize: DEFAULT_LEAGUE_SIZE,
-      rosterSlots: DEFAULT_ROSTER_SLOTS,
-      minGoalieGames: DEFAULT_MIN_GOALIE_GAMES,
-      yahooSync: null,
-      draft: null,
-      playerProjections,
-    };
   }
 }

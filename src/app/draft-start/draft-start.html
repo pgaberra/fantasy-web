@@ -1,0 +1,92 @@
+<div class="draft-start">
+  <div class="page-header">
+    <h1>Draft Mode</h1>
+    <p class="subtitle">
+      Draft against one of your own projections, or start straight from a preset.
+    </p>
+  </div>
+
+  @if (sourcesResource.isLoading()) {
+    <app-loading-indicator />
+  } @else if (sourcesResource.error()) {
+    <app-error-state title="Couldn't load your draft sources" (retry)="retry()" />
+  } @else {
+    <section class="source-group">
+      <h2 class="group-title">Your projections</h2>
+      @if (projections().length === 0) {
+        <p class="group-empty">
+          No projections yet.
+          <a routerLink="/projections/new">Create one</a> to draft against your own numbers.
+        </p>
+      } @else {
+        <ul class="cards">
+          @for (projection of projections(); track projection.id) {
+            <li class="card">
+              <div class="card-main">
+                <span class="card-name">{{ projection.name }}</span>
+                <span class="card-meta">Updated {{ projection.updatedAt | relativeTime }}</span>
+                @if (projection.draftStatus === 'finished') {
+                  <span class="card-status card-status--done">Draft complete</span>
+                } @else if (projection.draftStatus === 'in_progress') {
+                  <span class="card-status">Draft in progress</span>
+                }
+              </div>
+              <div class="card-actions">
+                <button
+                  type="button"
+                  class="btn btn-primary btn-sm"
+                  (click)="openDraft(projection.id)"
+                >
+                  {{ draftLabel(projection.draftStatus) }}
+                </button>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="source-group">
+      <h2 class="group-title">Presets</h2>
+      <ul class="cards">
+        <li class="card">
+          <div class="card-main">
+            <span class="card-name">{{ presetName }}</span>
+            <span class="card-meta">
+              Every player at last season's numbers, with the default scoring settings.
+            </span>
+            @if (presetDraft(); as preset) {
+              @if (preset.draftStatus === 'finished') {
+                <span class="card-status card-status--done">Draft complete</span>
+              } @else if (preset.draftStatus === 'in_progress') {
+                <span class="card-status">Draft in progress</span>
+              }
+            }
+          </div>
+          <div class="card-actions">
+            @if (isStarting()) {
+              <span class="card-busy">Starting…</span>
+            } @else if (confirmingRestart()) {
+              <span class="confirm-text">Discard this draft and start over?</span>
+              <button type="button" class="btn btn-danger btn-sm" (click)="confirmRestart()">
+                Yes, start over
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" (click)="cancelRestart()">
+                Cancel
+              </button>
+            } @else {
+              <button type="button" class="btn btn-primary btn-sm" (click)="startPreset()">
+                {{ presetLabel() }}
+              </button>
+              @if (presetDraft()) {
+                <button type="button" class="btn btn-secondary btn-sm" (click)="requestRestart()">
+                  Start over
+                </button>
+              }
+            }
+          </div>
+        </li>
+      </ul>
+    </section>
+  }
+</div>
