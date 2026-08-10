@@ -77,6 +77,16 @@ test.describe('happy path', () => {
     await page.getByRole('button', { name: /start draft/i }).click();
 
     // 7) Draft the top available player over and over until the draft is complete.
+    // The loop's own guard is a non-waiting isVisible(), so the first row has to be awaited
+    // here: confirming the setup only just switched the board out of its setup phase, and a
+    // guard that runs before the list renders reads "no players left" and ends the draft at
+    // zero picks.
+    const topDraftButton = page
+      .locator('.available-row')
+      .first()
+      .getByRole('button', { name: /draft/i });
+    await expect(topDraftButton).toBeVisible({ timeout: 30_000 });
+
     const draftComplete = page.getByText('Draft complete');
     for (let i = 0; i < 80; i++) {
       if (await draftComplete.isVisible().catch(() => false)) break;
