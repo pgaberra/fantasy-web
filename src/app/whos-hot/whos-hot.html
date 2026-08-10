@@ -1,0 +1,56 @@
+<div class="whos-hot">
+  <div class="page-header">
+    <h1>Who's hot</h1>
+    <p class="subtitle">
+      Pick a stretch of the {{ seasonLabel }} season and see who actually produced over it —
+      measured totals, scored the way your league scores.
+    </p>
+  </div>
+
+  <app-game-range-selector
+    [seasonLabel]="seasonLabel"
+    [scheduleLength]="scheduleLength"
+    [(fromGame)]="fromGame"
+    [(toGame)]="toGame"
+    [(perGame)]="perGame"
+    [(minGames)]="minGames"
+  />
+
+  <app-projection-settings-section
+    [(scoringType)]="scoringType"
+    [(activeScoringColumns)]="activeScoringColumns"
+    [(activeUtilityColumns)]="activeUtilityColumns"
+    [(scaleSettings)]="scaleSettings"
+    [(leagueSize)]="leagueSize"
+    [(rosterSlots)]="rosterSlots"
+    [(minGoalieGames)]="minGoalieGames"
+    [showUtilityStats]="false"
+    [showDecimalsSetting]="false"
+    [initiallyExpanded]="false"
+  >
+    <app-league-sync
+      [lastSync]="yahooSync()"
+      (yahooSynced)="applyYahooSettings($event)"
+      (espnSynced)="applyEspnSettings($event)"
+    />
+  </app-projection-settings-section>
+
+  @if (hasError()) {
+    <app-error-state title="Couldn't load the leaderboard" (retry)="retry()" />
+  } @else if (isLoading()) {
+    <app-loading-indicator />
+  } @else {
+    <app-hot-players-table
+      [hotPlayers]="hotPlayers()"
+      [players]="players()"
+      [activeColumns]="activeColumns()"
+      [scoringType]="scoringType()"
+      [(statWeights)]="statWeights"
+      [leagueSize]="leagueSize()"
+      [rosterSlots]="rosterSlots()"
+      [minGoalieGames]="minGoalieGames()"
+      [perGame]="perGame()"
+      [minGames]="minGames()"
+    />
+  }
+</div>
