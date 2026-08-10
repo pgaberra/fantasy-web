@@ -48,6 +48,7 @@ describe('DraftProjectionComponent', () => {
 
   const mockProjection: ProjectionResponse = {
     id: 'p1',
+    kind: 'projection',
     name: 'My league',
     season: '20262027',
     createdAt: '2026-06-01T00:00:00Z',

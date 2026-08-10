@@ -13,6 +13,7 @@ describe('ProjectionListComponent', () => {
   const summaries: ProjectionSummaryResponse[] = [
     {
       id: 'p1',
+      kind: 'projection',
       name: 'My league',
       draftStatus: 'none',
       season: '20262027',
@@ -21,6 +22,7 @@ describe('ProjectionListComponent', () => {
     },
     {
       id: 'p2',
+      kind: 'projection',
       name: 'Newest league',
       draftStatus: 'none',
       season: '20262027',
@@ -29,6 +31,7 @@ describe('ProjectionListComponent', () => {
     },
     {
       id: 'p3',
+      kind: 'projection',
       name: 'Middle league',
       draftStatus: 'none',
       season: '20262027',
