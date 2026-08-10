@@ -51,7 +51,23 @@ describe('ProjectionListComponent', () => {
       useDefaultDecimals: true,
     },
     players: [
-      { playerId: 1, type: 'skater', stats: { utility: { gp: 82 }, scoring: { goals: 60 } } },
+      {
+        playerId: 1,
+        type: 'skater',
+        stats: {
+          utility: { gp: 82 },
+          scoring: {
+            stpg: 0,
+            stpa: 0,
+            stp: 0,
+            hatTricks: 0,
+            defPoints: 0,
+            shifts: 0,
+            toi: 0,
+            goals: 60,
+          },
+        },
+      },
     ],
   };
 

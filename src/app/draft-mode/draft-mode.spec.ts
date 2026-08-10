@@ -42,8 +42,40 @@ describe('DraftModeComponent', () => {
         minGoalieGames: 25,
       },
       players: [
-        { playerId: 1, type: 'skater', stats: { utility: { gp: 82 }, scoring: { goals: 60 } } },
-        { playerId: 2, type: 'skater', stats: { utility: { gp: 82 }, scoring: { goals: 20 } } },
+        {
+          playerId: 1,
+          type: 'skater',
+          stats: {
+            utility: { gp: 82 },
+            scoring: {
+              stpg: 0,
+              stpa: 0,
+              stp: 0,
+              hatTricks: 0,
+              defPoints: 0,
+              shifts: 0,
+              toi: 0,
+              goals: 60,
+            },
+          },
+        },
+        {
+          playerId: 2,
+          type: 'skater',
+          stats: {
+            utility: { gp: 82 },
+            scoring: {
+              stpg: 0,
+              stpa: 0,
+              stp: 0,
+              hatTricks: 0,
+              defPoints: 0,
+              shifts: 0,
+              toi: 0,
+              goals: 20,
+            },
+          },
+        },
       ],
     },
   };
@@ -520,7 +552,19 @@ describe('DraftModeComponent — available pagination', () => {
       players: manyPlayers.map((player, i) => ({
         playerId: player.id,
         type: 'skater' as const,
-        stats: { utility: { gp: 82 }, scoring: { goals: 120 - i } },
+        stats: {
+          utility: { gp: 82 },
+          scoring: {
+            stpg: 0,
+            stpa: 0,
+            stp: 0,
+            hatTricks: 0,
+            defPoints: 0,
+            shifts: 0,
+            toi: 0,
+            goals: 120 - i,
+          },
+        },
       })),
     },
   };
@@ -624,8 +668,40 @@ describe('DraftModeComponent — finished draft', () => {
         minGoalieGames: 25,
       },
       players: [
-        { playerId: 1, type: 'skater', stats: { utility: { gp: 82 }, scoring: { goals: 60 } } },
-        { playerId: 2, type: 'skater', stats: { utility: { gp: 82 }, scoring: { goals: 20 } } },
+        {
+          playerId: 1,
+          type: 'skater',
+          stats: {
+            utility: { gp: 82 },
+            scoring: {
+              stpg: 0,
+              stpa: 0,
+              stp: 0,
+              hatTricks: 0,
+              defPoints: 0,
+              shifts: 0,
+              toi: 0,
+              goals: 60,
+            },
+          },
+        },
+        {
+          playerId: 2,
+          type: 'skater',
+          stats: {
+            utility: { gp: 82 },
+            scoring: {
+              stpg: 0,
+              stpa: 0,
+              stp: 0,
+              hatTricks: 0,
+              defPoints: 0,
+              shifts: 0,
+              toi: 0,
+              goals: 20,
+            },
+          },
+        },
       ],
       draft: {
         teams: [

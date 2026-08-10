@@ -23,13 +23,20 @@ const SKATER_STATS = {
   shg: 0,
   sha: 0,
   shp: 0,
+  stpg: 3,
+  stpa: 6,
+  stp: 9,
   gwg: 2,
+  hatTricks: 1,
   sog: 60,
   shPct: 16.7,
   fw: 100,
   fl: 80,
   hits: 24,
   blocks: 12,
+  defPoints: 0,
+  shifts: 900,
+  toi: 60000,
 };
 
 function skater(playerId: number, games: number, goals = 10): HotPlayer {

@@ -25,6 +25,13 @@ describe('PlayerRowComponent', () => {
     stats: {
       utility: { gp: 82, toiPerGame: 1320 },
       scoring: {
+        stpg: 0,
+        stpa: 0,
+        stp: 0,
+        hatTricks: 0,
+        defPoints: 0,
+        shifts: 0,
+        toi: 0,
         goals: 64,
         assists: 89,
         points: 153,
@@ -51,7 +58,9 @@ describe('PlayerRowComponent', () => {
     type: 'skater',
     playerId: 1,
     stats: {
-      scoring: { ...mockSkater.stats.scoring },
+      scoring: {
+        ...mockSkater.stats.scoring,
+      },
       utility: { ...mockSkater.stats.utility },
     },
   };
@@ -63,6 +72,9 @@ describe('PlayerRowComponent', () => {
     stats: {
       utility: { gp: 58 },
       scoring: {
+        otl: 0,
+        winPct: 0,
+        toi: 0,
         gs: 58,
         w: 36,
         l: 17,
@@ -80,7 +92,9 @@ describe('PlayerRowComponent', () => {
     type: 'goalie',
     playerId: 101,
     stats: {
-      scoring: { ...mockGoalie.stats.scoring },
+      scoring: {
+        ...mockGoalie.stats.scoring,
+      },
       utility: { ...mockGoalie.stats.utility },
     },
   };

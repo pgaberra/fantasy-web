@@ -18,6 +18,13 @@ const skater = (
   stats: {
     utility: { gp: 82, toiPerGame: 1200, ...utility },
     scoring: {
+      stpg: 0,
+      stpa: 0,
+      stp: 0,
+      hatTricks: 0,
+      defPoints: 0,
+      shifts: 0,
+      toi: 0,
       goals: 30,
       assists: 30,
       points: 60,
@@ -49,7 +56,21 @@ const goalie = (
   playerId: 2,
   stats: {
     utility: { gp: 82, ...utility },
-    scoring: { gs: 0, w: 0, l: 0, sho: 0, sa: 0, sv: 0, ga: 0, gaa: 0, svPct: 0, ...scoring },
+    scoring: {
+      otl: 0,
+      winPct: 0,
+      toi: 0,
+      gs: 0,
+      w: 0,
+      l: 0,
+      sho: 0,
+      sa: 0,
+      sv: 0,
+      ga: 0,
+      gaa: 0,
+      svPct: 0,
+      ...scoring,
+    },
   },
 });
 
