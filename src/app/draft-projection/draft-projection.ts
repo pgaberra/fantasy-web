@@ -305,6 +305,12 @@ export class DraftProjectionComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (projection) => {
+          // A preset draft is not a projection anyone edits — it only holds the picks of a
+          // draft started from a preset. Reaching this URL for one means the board is wanted.
+          if (projection.kind === 'preset_draft') {
+            void this.router.navigate(['/projections', projection.id, 'draft']);
+            return;
+          }
           this.projectionId.set(projection.id);
           this.projectionName.set(projection.name);
           const state = this.serializer.fromProjectionData(projection.data);

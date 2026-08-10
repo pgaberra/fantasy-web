@@ -4,6 +4,7 @@ import { ProjectionListComponent } from './projection-list/projection-list';
 import { ProjectionCreateComponent } from './projection-create/projection-create';
 import { DraftModeComponent } from './draft-mode/draft-mode';
 import { WhosHotComponent } from './whos-hot/whos-hot';
+import { DraftStartComponent } from './draft-start/draft-start';
 import { LoginComponent } from './auth/login/login';
 import { RegisterComponent } from './auth/register/register';
 import { ForgotPasswordComponent } from './auth/forgot-password/forgot-password';
@@ -23,6 +24,9 @@ import { paymentsEnabledGuard } from './guards/payments-enabled.guard';
 
 export const routes: Routes = [
   { path: '', component: LandingComponent, canActivate: [landingRedirectGuard] },
+  // Picking a draft source needs the user's own projections, so there is nothing to render
+  // for a signed-out visitor — send them to sign in rather than to a failed load.
+  { path: 'draft', component: DraftStartComponent, canActivate: [authGuard] },
   { path: 'projections', component: ProjectionListComponent },
   { path: 'projections/new', component: ProjectionCreateComponent },
   { path: 'projections/:id/draft', component: DraftModeComponent },

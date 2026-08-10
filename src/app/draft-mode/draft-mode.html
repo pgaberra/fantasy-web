@@ -3,7 +3,7 @@
 } @else {
   <div class="draft-mode">
     <div class="draft-header">
-      <a [routerLink]="['/projections', projectionId()]" class="back-link">← Exit draft mode</a>
+      <a [routerLink]="exitLink()" class="back-link">← Exit draft mode</a>
       <div class="draft-title">
         <h1>{{ projectionName() }}</h1>
         <span class="draft-tag">Draft mode</span>
