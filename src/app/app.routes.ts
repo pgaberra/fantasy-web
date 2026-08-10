@@ -1,53 +1,112 @@
 import { Routes } from '@angular/router';
-import { DraftProjectionComponent } from './draft-projection/draft-projection';
-import { ProjectionListComponent } from './projection-list/projection-list';
-import { ProjectionCreateComponent } from './projection-create/projection-create';
-import { DraftModeComponent } from './draft-mode/draft-mode';
-import { WhosHotComponent } from './whos-hot/whos-hot';
-import { DraftStartComponent } from './draft-start/draft-start';
-import { LoginComponent } from './auth/login/login';
-import { RegisterComponent } from './auth/register/register';
-import { ForgotPasswordComponent } from './auth/forgot-password/forgot-password';
-import { ResetPasswordComponent } from './auth/reset-password/reset-password';
-import { VerifyEmailComponent } from './auth/verify-email/verify-email';
-import { GoogleCallbackComponent } from './auth/google-callback/google-callback';
-import { LandingComponent } from './landing/landing';
-import { SharedProjectionComponent } from './shared-projection/shared-projection';
-import { AdminComponent } from './admin/admin';
-import { PrivacyComponent } from './privacy/privacy';
-import { PricingComponent } from './pricing/pricing';
-import { AccountComponent } from './account/account';
 import { landingRedirectGuard } from './guards/landing-redirect.guard';
 import { adminGuard } from './guards/admin.guard';
 import { authGuard } from './guards/auth.guard';
 import { paymentsEnabledGuard } from './guards/payments-enabled.guard';
 
+/**
+ * Every route is loaded on demand. Statically importing the components put each feature —
+ * the projections table, the draft board, Who's hot, the shared page — into the initial
+ * bundle, which was closing in on the 1 MB `maximumError` budget in `angular.json`. The
+ * guards stay eagerly imported: they are tiny and have to run before the chunk is fetched.
+ */
 export const routes: Routes = [
-  { path: '', component: LandingComponent, canActivate: [landingRedirectGuard] },
+  {
+    path: '',
+    loadComponent: () => import('./landing/landing').then((m) => m.LandingComponent),
+    canActivate: [landingRedirectGuard],
+  },
   // Picking a draft source needs the user's own projections, so there is nothing to render
   // for a signed-out visitor — send them to sign in rather than to a failed load.
-  { path: 'draft', component: DraftStartComponent, canActivate: [authGuard] },
-  { path: 'projections', component: ProjectionListComponent },
-  { path: 'projections/new', component: ProjectionCreateComponent },
-  { path: 'projections/:id/draft', component: DraftModeComponent },
-  { path: 'projections/:id', component: DraftProjectionComponent },
+  {
+    path: 'draft',
+    loadComponent: () => import('./draft-start/draft-start').then((m) => m.DraftStartComponent),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'projections',
+    loadComponent: () =>
+      import('./projection-list/projection-list').then((m) => m.ProjectionListComponent),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'projections/new',
+    loadComponent: () =>
+      import('./projection-create/projection-create').then((m) => m.ProjectionCreateComponent),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'projections/:id/draft',
+    loadComponent: () => import('./draft-mode/draft-mode').then((m) => m.DraftModeComponent),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'projections/:id',
+    loadComponent: () =>
+      import('./draft-projection/draft-projection').then((m) => m.DraftProjectionComponent),
+    canActivate: [authGuard],
+  },
   // Public and unguarded on purpose: a share link has to open for someone who has never signed
   // in — that is the whole point of it. nginx serves crawlers an Open Graph document for this
   // path instead, so a posted link unfurls as the projection rather than the site.
-  { path: 's/:token', component: SharedProjectionComponent },
-  { path: 'whos-hot', component: WhosHotComponent },
-  { path: 'admin', component: AdminComponent, canActivate: [adminGuard] },
+  {
+    path: 's/:token',
+    loadComponent: () =>
+      import('./shared-projection/shared-projection').then((m) => m.SharedProjectionComponent),
+  },
+  {
+    path: 'whos-hot',
+    loadComponent: () => import('./whos-hot/whos-hot').then((m) => m.WhosHotComponent),
+  },
+  {
+    path: 'admin',
+    loadComponent: () => import('./admin/admin').then((m) => m.AdminComponent),
+    canActivate: [adminGuard],
+  },
   // Public and unguarded on purpose: consent has to be informed, so the policy must be
   // reachable from the banner before anyone has agreed to anything.
-  { path: 'privacy', component: PrivacyComponent },
+  {
+    path: 'privacy',
+    loadComponent: () => import('./privacy/privacy').then((m) => m.PrivacyComponent),
+  },
   // Payments UI stays dark until the PAYMENTS_ENABLED build flag is on — the guard redirects both
   // routes home otherwise. Account additionally requires being signed in.
-  { path: 'pricing', component: PricingComponent, canActivate: [paymentsEnabledGuard] },
-  { path: 'account', component: AccountComponent, canActivate: [paymentsEnabledGuard, authGuard] },
-  { path: 'login', component: LoginComponent },
-  { path: 'register', component: RegisterComponent },
-  { path: 'auth/google/callback', component: GoogleCallbackComponent },
-  { path: 'forgot-password', component: ForgotPasswordComponent },
-  { path: 'reset-password', component: ResetPasswordComponent },
-  { path: 'verify-email', component: VerifyEmailComponent },
+  {
+    path: 'pricing',
+    loadComponent: () => import('./pricing/pricing').then((m) => m.PricingComponent),
+    canActivate: [paymentsEnabledGuard],
+  },
+  {
+    path: 'account',
+    loadComponent: () => import('./account/account').then((m) => m.AccountComponent),
+    canActivate: [paymentsEnabledGuard, authGuard],
+  },
+  {
+    path: 'login',
+    loadComponent: () => import('./auth/login/login').then((m) => m.LoginComponent),
+  },
+  {
+    path: 'register',
+    loadComponent: () => import('./auth/register/register').then((m) => m.RegisterComponent),
+  },
+  {
+    path: 'auth/google/callback',
+    loadComponent: () =>
+      import('./auth/google-callback/google-callback').then((m) => m.GoogleCallbackComponent),
+  },
+  {
+    path: 'forgot-password',
+    loadComponent: () =>
+      import('./auth/forgot-password/forgot-password').then((m) => m.ForgotPasswordComponent),
+  },
+  {
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./auth/reset-password/reset-password').then((m) => m.ResetPasswordComponent),
+  },
+  {
+    path: 'verify-email',
+    loadComponent: () =>
+      import('./auth/verify-email/verify-email').then((m) => m.VerifyEmailComponent),
+  },
 ];
