@@ -24,7 +24,6 @@ describe('ShareDialogComponent', () => {
     token: 'abc123',
     shareUrl: 'https://slapstat.com/s/abc123',
     authorAlias: 'Alex',
-    viewCount: 0,
     createdAt: '2026-08-01T10:00:00Z',
     updatedAt: '2026-08-01T10:00:00Z',
   };
@@ -64,7 +63,7 @@ describe('ShareDialogComponent', () => {
   });
 
   it('shows the existing link when the projection is already shared', async () => {
-    getShare.mockReturnValue(of({ ...link, viewCount: 7 }));
+    getShare.mockReturnValue(of(link));
 
     const fixture = render();
     await fixture.whenStable();
@@ -73,7 +72,6 @@ describe('ShareDialogComponent', () => {
     expect(fixture.point.componentInstance.share()?.shareUrl).toEqual(
       'https://slapstat.com/s/abc123',
     );
-    expect(fixture.nativeElement.textContent).toContain('7 views');
   });
 
   it('publishes the ranked rows and the alias', async () => {
