@@ -28,6 +28,8 @@ export class ProjectionsTableHeaderComponent {
   sortDirection = input.required<SortDirection>();
   readonly sort = output<SortColumn>();
   readonly showFullSeasonButton = input<boolean>(false);
+  // A shared page shows the same header, minus the rows that exist to change things.
+  readonly readonly = input<boolean>(false);
   readonly fullSeason = output<void>();
   summaryLabel = computed(() => (this.scoringType() === 'points' ? 'Total Points' : 'Z-Score'));
 

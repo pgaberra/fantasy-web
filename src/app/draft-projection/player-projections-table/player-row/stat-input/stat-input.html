@@ -1,5 +1,7 @@
 @if (isStatApplicable()) {
-  @if (isToi()) {
+  @if (readonly()) {
+    <span class="stat-readonly">{{ isToi() ? formattedToi() : formattedValue() }}</span>
+  } @else if (isToi()) {
     <app-toi-input
       [toiInSeconds]="value()"
       [warning]="warning()"

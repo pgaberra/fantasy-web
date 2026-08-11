@@ -50,7 +50,11 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
 - `shared-projection/` — the page behind a share link (`/s/:token`), public and unguarded: a
   share link has to open for someone who has never signed in. It renders the **snapshot** the
   owner published — the top rows with identity, rank and value frozen into them — so it needs
-  no player read model and no ranking of its own. Sharing is the marketing loop, so both ends
+  no player read model and no ranking of its own. It renders the editor's own `player-row` and
+  `projections-table-header` in a **read-only** mode, so a shared projection looks like the
+  table it was published from — but it does **not** reuse the scoring: those values were
+  computed against the owner's whole player pool, and recomputing them over the hundred
+  published rows would quietly print different numbers than were shared. Sharing is the marketing loop, so both ends
   are measured (`projection_shared`, `shared_projection_viewed`).
   Crawlers never reach this component: `nginx.conf` routes link-preview user agents for `/s/*`
   to the BFF's per-share Open Graph document, since they run no JavaScript and would otherwise

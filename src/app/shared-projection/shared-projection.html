@@ -22,54 +22,57 @@
     <header class="shared-header">
       <p class="shared-eyebrow">Shared projection</p>
       <h1 class="shared-title">{{ projection.name }}</h1>
-      <p class="shared-byline">
-        By {{ authorLabel() }} · {{ leagueSummary() }} · Ranked by {{ valueLabel() }}
-      </p>
+      <p class="shared-byline">By {{ authorLabel() }} · {{ leagueSummary() }}</p>
     </header>
 
-    <div class="table-scroll">
-      <table class="shared-table">
-        <thead>
-          <tr>
-            <th scope="col" class="col-rank">#</th>
-            <th scope="col" class="col-player">Player</th>
-            <th scope="col" class="col-pos">Pos</th>
-            <th scope="col" class="col-value">{{ valueLabel() }}</th>
-            @for (column of statColumns(); track column.key) {
-              <th scope="col">{{ column.label }}</th>
+    <section class="table-section">
+      <div class="table-header">
+        <div class="table-title">
+          <h2>Player Projections</h2>
+        </div>
+        <div class="table-controls">
+          <app-position-filter [(value)]="positionFilter" />
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead
+            app-projections-table-header
+            [activeColumns]="activeColumns()"
+            [scoringType]="scoringType()"
+            [statWeights]="statWeights()"
+            [useDefaultDecimals]="true"
+            [decimalSettings]="decimalSettings()"
+            [sortColumn]="sortColumn()"
+            [sortDirection]="sortDirection()"
+            [readonly]="true"
+            (sort)="onSort($event)"
+          ></thead>
+          <tbody>
+            @for (row of visibleRows(); track row.shared.playerId) {
+              <tr
+                app-player-row
+                [positionRank]="row.shared.rank"
+                [totalRank]="null"
+                [projection]="row.projection"
+                [playerScore]="row.score"
+                [player]="row.player"
+                [activeColumns]="activeColumns()"
+                [scoringType]="scoringType()"
+                [decimalSettings]="decimalSettings()"
+                [readonly]="true"
+              ></tr>
             }
-          </tr>
-        </thead>
-        <tbody>
-          @for (player of players(); track player.playerId) {
-            <tr>
-              <td class="col-rank">{{ player.rank }}</td>
-              <td class="col-player">
-                <span class="player-name">{{ player.name }}</span>
-                @if (player.teamAbbrev) {
-                  <span class="player-team">{{ player.teamAbbrev }}</span>
-                }
-              </td>
-              <td class="col-pos">{{ positionLabel(player) }}</td>
-              <td class="col-value">{{ player.value | number: '1.1-1' }}</td>
-              @for (column of statColumns(); track column.key) {
-                @let value = statValue(player, column.key);
-                <td>
-                  @if (value !== null) {
-                    {{ value | number: '1.' + column.decimals + '-' + column.decimals }}
-                  } @else {
-                    <span class="empty">–</span>
-                  }
-                </td>
-              }
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
     <section class="cta">
-      <h2 class="cta-title">This is the top {{ players().length }} of one manager's board</h2>
+      <h2 class="cta-title">
+        This is the top {{ projection.data.players.length }} of one manager's board
+      </h2>
       <p class="cta-body">
         Build your own projections, tuned to your league's scoring settings, and rank every player
         the way this one does. Free to start.

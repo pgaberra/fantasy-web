@@ -26,6 +26,7 @@
       [value]="getStatValue(col)"
       [decimalSettings]="decimalSettings()"
       [warning]="warningFor(col)"
+      [readonly]="readonly()"
       (statInput)="statInput.emit($event)"
       (toiKeydown)="toiKeydown.emit($event)"
     />
@@ -40,6 +41,7 @@
       [value]="getStatValue(col)"
       [decimalSettings]="decimalSettings()"
       [warning]="warningFor(col)"
+      [readonly]="readonly()"
       (statInput)="statInput.emit($event)"
     />
   </td>

@@ -60,7 +60,7 @@
     {{ summaryLabel() }}<span class="sort-arrow">{{ sortIndicator('summary') }}</span>
   </th>
 </tr>
-@if (scoringType() === 'points') {
+@if (scoringType() === 'points' && !readonly()) {
   <tr class="weight-row">
     <th class="col-rank"></th>
     <th class="col-name"><span class="weight-label">Stat weights (pts)</span></th>
@@ -81,7 +81,7 @@
     <th class="summary-pts-col"></th>
   </tr>
 }
-@if (!useDefaultDecimals()) {
+@if (!useDefaultDecimals() && !readonly()) {
   <tr class="decimal-row">
     <th class="col-rank"></th>
     <th class="col-name"><span class="decimal-label">Decimals</span></th>
