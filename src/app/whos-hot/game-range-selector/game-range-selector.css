@@ -1,3 +1,6 @@
+/* A control panel, not a data surface: capped so the track stays a length the eye can judge
+   at a glance. Stretched across a 1400px page, a handle at "game 53" lands hundreds of pixels
+   from anything that says so, and the drag stops feeling connected to the number. */
 .range-selector {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -5,6 +8,7 @@
   box-shadow: var(--shadow-sm);
   padding: var(--space-4) var(--space-5);
   margin-bottom: var(--space-4);
+  max-width: 64rem;
 }
 
 .range-header {
@@ -43,11 +47,19 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Picking the range and framing how it's scored are two jobs, so they sit side by side rather
+   than stacking into a tall column of full-width rows. */
+.range-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 19rem);
+  gap: var(--space-5);
+  margin-top: var(--space-3);
+}
+
 .presets {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-  margin-top: var(--space-3);
 }
 
 .preset {
@@ -71,27 +83,122 @@
   color: var(--color-primary-contrast);
 }
 
-.sliders {
-  display: grid;
-  gap: var(--space-2);
-  margin-top: var(--space-4);
-}
-
-.slider-row {
+/* ── The range slider ──────────────────────────────────────────────────────────────────
+   One rail carrying both handles. The two range inputs are stacked on top of each other and
+   made transparent to the pointer, except for the handles themselves — so a press lands on a
+   handle, and the rail and band underneath are ours to draw. */
+.range-slider {
   align-items: center;
   display: grid;
   gap: var(--space-3);
-  grid-template-columns: 5.5rem 1fr 4.5rem;
+  grid-template-columns: 3.5rem minmax(0, 1fr) 3.5rem;
+  margin-top: var(--space-4);
 }
 
-.slider-row label {
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
+.track {
+  --thumb-size: 1.05rem;
+  --rail-height: 0.375rem;
+
+  height: 1.5rem;
+  position: relative;
 }
 
-.slider-row input[type='range'] {
-  accent-color: var(--color-accent);
+.track-rail,
+.track-fill {
+  border-radius: var(--radius-pill);
+  height: var(--rail-height);
+  pointer-events: none;
+  position: absolute;
+  top: calc(50% - var(--rail-height) / 2);
+}
+
+.track-rail {
+  background: var(--color-border-strong);
+  left: 0;
+  right: 0;
+}
+
+/* Positioned by the component, which insets it to match where the handle centres actually
+   travel. */
+.track-fill {
+  background: var(--color-accent);
+}
+
+.thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  height: 1.5rem;
+  left: 0;
+  margin: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
   width: 100%;
+}
+
+.thumb--on-top {
+  z-index: 1;
+}
+
+.thumb::-webkit-slider-runnable-track {
+  background: none;
+  border: none;
+  height: 1.5rem;
+}
+
+.thumb::-moz-range-track {
+  background: none;
+  border: none;
+  height: 1.5rem;
+}
+
+.thumb::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--color-surface);
+  border: 2px solid var(--color-accent);
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+  cursor: grab;
+  height: var(--thumb-size);
+  pointer-events: auto;
+  width: var(--thumb-size);
+}
+
+.thumb::-moz-range-thumb {
+  background: var(--color-surface);
+  border: 2px solid var(--color-accent);
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+  cursor: grab;
+  height: var(--thumb-size);
+  pointer-events: auto;
+  width: var(--thumb-size);
+}
+
+.thumb:active::-webkit-slider-thumb {
+  background: var(--color-accent);
+  cursor: grabbing;
+}
+
+.thumb:active::-moz-range-thumb {
+  background: var(--color-accent);
+  cursor: grabbing;
+}
+
+/* The input is a transparent overlay, so the focus ring has to land on the handle to be seen
+   at all — which also keeps keyboard users told which of the two bounds they are moving. */
+.thumb:focus {
+  outline: none;
+}
+
+.thumb:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.35);
+}
+
+.thumb:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.35);
 }
 
 .game-number,
@@ -105,51 +212,68 @@
   width: 100%;
 }
 
+/* ── Scoring options ───────────────────────────────────────────────────────────────── */
 .range-options {
-  align-items: center;
-  border-top: 1px solid var(--color-border);
+  border-left: 1px solid var(--color-border);
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  margin-top: var(--space-4);
-  padding-top: var(--space-3);
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-left: var(--space-5);
 }
 
-.per-game-toggle {
+.option {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.option-hint {
+  color: var(--color-text-subtle);
+  font-size: var(--text-xs);
+  margin: 0;
+}
+
+/* A pill with a dot reads as a label with a bullet. A knob that slides reads as a thing you
+   can turn on, which is what this is. */
+.switch {
   align-items: center;
-  background: var(--color-surface-alt);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-pill);
+  background: none;
+  border: none;
+  color: var(--color-primary);
   cursor: pointer;
   display: inline-flex;
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
   gap: var(--space-2);
-  padding: var(--space-1) var(--space-3);
+  padding: 0;
 }
 
-.per-game-toggle--on {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-primary-contrast);
-}
-
-.per-game-dot {
+.switch-track {
   background: var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  flex: none;
+  height: 1.15rem;
+  padding: 0.15rem;
+  transition: background 120ms ease;
+  width: 2.1rem;
+}
+
+.switch-knob {
+  background: var(--color-surface);
   border-radius: 50%;
-  height: 0.5rem;
-  width: 0.5rem;
+  box-shadow: var(--shadow-sm);
+  display: block;
+  height: 0.85rem;
+  transition: transform 120ms ease;
+  width: 0.85rem;
 }
 
-.per-game-toggle--on .per-game-dot {
-  background: var(--color-gold);
+.switch[aria-checked='true'] .switch-track {
+  background: var(--color-accent);
 }
 
-.per-game-hint {
-  color: var(--color-text-subtle);
-  flex: 1 1 16rem;
-  font-size: var(--text-xs);
-  margin: 0;
+.switch[aria-checked='true'] .switch-knob {
+  transform: translateX(0.95rem);
 }
 
 .min-games {
@@ -168,9 +292,27 @@
   width: 4rem;
 }
 
-.min-games-hint {
-  color: var(--color-text-subtle);
-  font-size: var(--text-xs);
+/* Below the two-column threshold the options fall under the picker, and the divider moves
+   from the side to the top so it still separates them. */
+@media (max-width: 900px) {
+  .range-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+
+  .range-options {
+    border-left: none;
+    border-top: 1px solid var(--color-border);
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-5);
+    padding-left: 0;
+    padding-top: var(--space-4);
+  }
+
+  .option {
+    flex: 1 1 18rem;
+  }
 }
 
 @media (max-width: 640px) {
@@ -178,17 +320,22 @@
     padding: var(--space-3);
   }
 
-  .slider-row {
-    grid-template-columns: 4.5rem 1fr 3.5rem;
+  .range-slider {
     gap: var(--space-2);
+    grid-template-columns: 3rem minmax(0, 1fr) 3rem;
+  }
+
+  /* Fingers are blunter than cursors, and the band follows the handle size on its own. */
+  .track {
+    --thumb-size: 1.35rem;
   }
 
   .range-options {
-    align-items: flex-start;
     flex-direction: column;
   }
 
-  .min-games-hint {
-    display: none;
+  /* The basis above is a width for a row; in a column it would become a 18rem-tall option. */
+  .option {
+    flex: none;
   }
 }
