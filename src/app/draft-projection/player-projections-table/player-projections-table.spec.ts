@@ -214,6 +214,7 @@ describe('PlayerProjectionsTableComponent', () => {
       minGoalieGames: number;
       activeScoringColumns: Set<ScoringStatKey>;
       activeUtilityColumns: Set<SkaterUtilityStatKey>;
+      columnControls: boolean;
     }> = {},
   ) =>
     MockRender(PlayerProjectionsTableComponent, {
@@ -817,6 +818,21 @@ describe('PlayerProjectionsTableComponent', () => {
       expect(
         (projections.find((p) => p.playerId === 3) as GoalieProjection).stats.utility.gp,
       ).toEqual(66);
+    });
+  });
+
+  describe('header layout', () => {
+    it('keeps the title beside the controls while there is no league toolbar', () => {
+      getComponent();
+      expect(ngMocks.findAll('.table-header--stacked')).toHaveLength(0);
+      expect(ngMocks.findAll('.league-controls')).toHaveLength(0);
+    });
+
+    it('stacks the title above the toolbar once the league controls are there', () => {
+      // Side by side, the toolbar squeezes the heading onto two lines even on a wide screen.
+      getComponent({ columnControls: true });
+      expect(ngMocks.findAll('.table-header--stacked')).toHaveLength(1);
+      expect(ngMocks.findAll('.league-controls')).toHaveLength(1);
     });
   });
 
