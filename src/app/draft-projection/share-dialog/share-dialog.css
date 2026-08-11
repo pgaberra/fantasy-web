@@ -17,6 +17,28 @@
   box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.35);
 }
 
+.dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.dialog-close {
+  flex: none;
+  padding: 0 var(--space-1);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.dialog-close:hover {
+  color: var(--color-text);
+}
+
 .dialog-title {
   margin: 0 0 var(--space-2);
   font-size: 1.05rem;

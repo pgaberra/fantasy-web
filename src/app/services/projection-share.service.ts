@@ -3,7 +3,6 @@ import { Observable, from } from 'rxjs';
 import { Api } from '../api/api';
 import { getProjectionShare } from '../api/fn/projection-shares/get-projection-share';
 import { shareProjection } from '../api/fn/projection-shares/share-projection';
-import { unshareProjection } from '../api/fn/projection-shares/unshare-projection';
 import { getSharedProjection } from '../api/fn/shared-projections/get-shared-projection';
 import { ShareLinkResponse } from '../api/models/share-link-response';
 import { SharedPlayer } from '../api/models/shared-player';
@@ -30,10 +29,6 @@ export class ProjectionShareService {
 
   share(projectionId: string, players: SharedPlayer[]): Observable<ShareLinkResponse> {
     return from(this.api.invoke(shareProjection, { id: projectionId, body: { players } }));
-  }
-
-  unshare(projectionId: string): Observable<void> {
-    return from(this.api.invoke(unshareProjection, { id: projectionId }));
   }
 
   loadShared(token: string): Observable<SharedProjectionResponse> {
