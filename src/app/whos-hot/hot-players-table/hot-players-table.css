@@ -162,9 +162,24 @@ td.col-name {
   opacity: 0.65;
 }
 
-.summary-pts-col {
+/* From 1024px up, styles.css pins this column to the right edge (`.fan-pts-col`) so the
+   value stays in view while the stat columns scroll — and hands it the z-index and gold
+   edge there too. A pinned cell is lifted off the scrolling layer, so it has to paint its
+   own background: without one the stat columns underneath show straight through it, which
+   read as the total having stray digits appended to it. The row's own striping sits on the
+   `tr`, which a sticky cell does not inherit, so each state is repeated here. */
+tbody td.fan-pts-col {
+  background: #fff8e6;
+  color: #5a3a00;
   font-weight: var(--weight-bold);
-  color: var(--color-gold-strong);
+}
+
+tbody tr:nth-child(even) td.fan-pts-col {
+  background: #fef0c7;
+}
+
+tbody tr:hover td.fan-pts-col {
+  background: #fde68a;
 }
 
 .table-footer {

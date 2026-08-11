@@ -184,6 +184,16 @@ describe('HotPlayersTableComponent', () => {
     expect(firstRow.querySelectorAll('input')).toHaveLength(0);
   });
 
+  it('marks the summary cell as the pinned column so it paints over the scrolled stats', () => {
+    render([skater(1, 20)]);
+
+    // `fan-pts-col` is what styles.css pins to the right edge above 1024px, and what it
+    // hands the z-index and gold edge to. Renaming it leaves the cell sticky but flat and
+    // transparent, and the stat columns scroll visibly through the total.
+    const summary = ngMocks.find('tbody tr td:last-child').nativeElement as HTMLElement;
+    expect(summary.classList.contains('fan-pts-col')).toEqual(true);
+  });
+
   it('shows the empty state rather than a bare table when nothing qualifies', () => {
     render([skater(1, 2)], { minGames: 10 });
 
