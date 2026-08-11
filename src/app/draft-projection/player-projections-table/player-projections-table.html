@@ -87,6 +87,25 @@
             }
           </button>
 
+          <button type="button" class="btn btn-secondary btn-sm" [appPopover]="statsMenu">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="3" y="4" width="5.5" height="16" rx="1" />
+              <rect x="10.5" y="4" width="5.5" height="16" rx="1" />
+              <path d="M19.5 9v11M18 4h5" />
+            </svg>
+            Stats
+          </button>
+
           <ng-content select="[table-toolbar-actions]" />
         </div>
       }
@@ -123,7 +142,6 @@
         [showFullSeasonButton]="showFullSeasonButton()"
         [columnControls]="columnControls()"
         [allActiveScoringColumns]="activeScoringColumns()"
-        [allActiveUtilityColumns]="activeUtilityColumns()"
         [scaleSettings]="scaleSettings()"
         (sort)="onSort($event)"
         (sortDirected)="setSort($event.column, $event.direction)"
@@ -183,5 +201,14 @@
     [(rosterSlots)]="rosterSlots"
     [(minGoalieGames)]="minGoalieGames"
     [(useDefaultDecimals)]="useDefaultDecimals"
+  />
+</ng-template>
+
+<ng-template #statsMenu>
+  <app-add-column-menu
+    [activeScoringColumns]="activeScoringColumns()"
+    [activeUtilityColumns]="activeUtilityColumns()"
+    (scoringToggled)="toggleScoringColumn($event)"
+    (utilityToggled)="toggleUtilityColumn($event)"
   />
 </ng-template>

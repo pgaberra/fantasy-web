@@ -53,6 +53,7 @@ import { StatInfoService } from '../../services/stat-info.service';
 import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
 import { LeagueSettingsMenuComponent } from './league-settings-menu/league-settings-menu';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
+import { AddColumnMenuComponent } from './add-column-menu/add-column-menu';
 
 const PLAYERS_PER_PAGE = 250;
 
@@ -87,6 +88,7 @@ function statValueOf(projection: Projection, key: StatKey): number {
     TeamFilterComponent,
     PopoverTriggerDirective,
     LeagueSettingsMenuComponent,
+    AddColumnMenuComponent,
     TooltipDirective,
   ],
   templateUrl: './player-projections-table.html',

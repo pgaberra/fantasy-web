@@ -837,6 +837,15 @@ describe('PlayerProjectionsTableComponent', () => {
       expect(ngMocks.findAll('.league-setup-btn .sync-dot')).toHaveLength(1);
     });
 
+    it('keeps picking stats in the toolbar rather than in a scrolled-away column', () => {
+      getComponent({ columnControls: true });
+      expect(ngMocks.findAll('.col-add')).toHaveLength(0);
+      const toolbarButtons = ngMocks
+        .findAll('.league-controls .btn')
+        .map((button) => button.nativeElement.textContent.trim());
+      expect(toolbarButtons.some((label) => label.includes('Stats'))).toEqual(true);
+    });
+
     it('stacks the title above the toolbar once the league controls are there', () => {
       // Side by side, the toolbar squeezes the heading onto two lines even on a wide screen.
       getComponent({ columnControls: true });
