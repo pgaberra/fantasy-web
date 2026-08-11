@@ -1,17 +1,17 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AddColumnMenuComponent } from './add-column-menu';
+import { ColumnsMenuComponent } from './columns-menu';
 import { StatLabelPipe } from '../../../pipes/stat-label.pipe';
 import { ScoringStatKey, UtilityStatKey } from '../../../models/stat-key.model';
 
-describe('AddColumnMenuComponent', () => {
-  beforeEach(() => MockBuilder(AddColumnMenuComponent).keep(StatLabelPipe));
+describe('ColumnsMenuComponent', () => {
+  beforeEach(() => MockBuilder(ColumnsMenuComponent).keep(StatLabelPipe));
 
   const getComponent = (
     activeScoringColumns = new Set<ScoringStatKey>(['goals']),
     activeUtilityColumns = new Set<UtilityStatKey>(),
   ) =>
-    MockRender(AddColumnMenuComponent, { activeScoringColumns, activeUtilityColumns }).point
+    MockRender(ColumnsMenuComponent, { activeScoringColumns, activeUtilityColumns }).point
       .componentInstance;
 
   const inputEvent = (value: string) => ({ target: { value } }) as unknown as Event;
@@ -65,7 +65,7 @@ describe('AddColumnMenuComponent', () => {
   });
 
   it('drops the utility group when the surface does not track utility stats', () => {
-    const fixture = MockRender(AddColumnMenuComponent, {
+    const fixture = MockRender(ColumnsMenuComponent, {
       activeScoringColumns: new Set<ScoringStatKey>(),
       activeUtilityColumns: new Set<UtilityStatKey>(),
       showUtility: false,
@@ -73,5 +73,24 @@ describe('AddColumnMenuComponent', () => {
 
     expect(fixture.point.componentInstance.groups()).toEqual(['skater', 'goalie']);
     expect(ngMocks.findAll('.add-tab')).toHaveLength(2);
+  });
+
+  it('keeps the decimal-places setting with the columns it formats', () => {
+    const component = getComponent();
+    expect(ngMocks.findAll('#default-decimals-label')).toHaveLength(1);
+
+    component.toggleUseDefaultDecimals();
+
+    expect(component.useDefaultDecimals()).toEqual(false);
+  });
+
+  it('drops the decimal-places setting where no column menu can set them instead', () => {
+    MockRender(ColumnsMenuComponent, {
+      activeScoringColumns: new Set<ScoringStatKey>(),
+      activeUtilityColumns: new Set<UtilityStatKey>(),
+      showDecimalsSetting: false,
+    });
+
+    expect(ngMocks.findAll('#default-decimals-label')).toHaveLength(0);
   });
 });

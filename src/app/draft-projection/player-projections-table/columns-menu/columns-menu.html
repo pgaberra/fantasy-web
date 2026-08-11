@@ -52,3 +52,23 @@
     <p class="add-empty">No stats match your search.</p>
   }
 </div>
+
+@if (showDecimalsSetting()) {
+  <div class="menu-footer">
+    <div class="menu-field">
+      <label id="default-decimals-label">Use default decimal places</label>
+      <app-toggle-switch
+        [on]="useDefaultDecimals()"
+        ariaLabel="Use default decimal places"
+        (toggled)="toggleUseDefaultDecimals()"
+      />
+    </div>
+    <p class="menu-note">
+      @if (useDefaultDecimals()) {
+        Stats are rounded to whole numbers (except SH%, GAA and SV%).
+      } @else {
+        Set the decimals for a stat in that column's own menu.
+      }
+    </p>
+  </div>
+}

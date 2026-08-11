@@ -87,7 +87,7 @@
             }
           </button>
 
-          <button type="button" class="btn btn-secondary btn-sm" [appPopover]="statsMenu">
+          <button type="button" class="btn btn-secondary btn-sm" [appPopover]="columnsMenu">
             <svg
               width="15"
               height="15"
@@ -103,7 +103,7 @@
               <rect x="10.5" y="4" width="5.5" height="16" rx="1" />
               <path d="M19.5 9v11M18 4h5" />
             </svg>
-            Stats
+            Columns
           </button>
 
           <ng-content select="[table-toolbar-actions]" />
@@ -200,14 +200,14 @@
     [(leagueSize)]="leagueSize"
     [(rosterSlots)]="rosterSlots"
     [(minGoalieGames)]="minGoalieGames"
-    [(useDefaultDecimals)]="useDefaultDecimals"
   />
 </ng-template>
 
-<ng-template #statsMenu>
-  <app-add-column-menu
+<ng-template #columnsMenu>
+  <app-columns-menu
     [activeScoringColumns]="activeScoringColumns()"
     [activeUtilityColumns]="activeUtilityColumns()"
+    [(useDefaultDecimals)]="useDefaultDecimals"
     (scoringToggled)="toggleScoringColumn($event)"
     (utilityToggled)="toggleUtilityColumn($event)"
   />
