@@ -6,15 +6,13 @@ import { StatDescPipe } from '../../pipes/stat-desc.pipe';
 import { StatLabelPipe } from '../../pipes/stat-label.pipe';
 import {
   GOALIE_SCORING_STAT_KEYS,
-  GOALIE_UTILITY_STAT_KEYS,
   SCORING_STAT_KEYS,
   ScoringStatKey,
   SKATER_SCORING_STAT_KEYS,
-  SKATER_UTILITY_STAT_KEYS,
   UTILITY_STAT_KEYS,
   UtilityStatKey,
 } from '../../models/stat-key.model';
-import { ScaleConfig } from './model';
+import { ScaleConfig, scalableScoringStatsFor } from './model';
 import { ScoringType } from '../../models/projection.model';
 import {
   DEFAULT_LEAGUE_SIZE,
@@ -179,24 +177,8 @@ export class ProjectionSettingsSectionComponent {
   }
 
   getAvailableScoringStats(key: UtilityStatKey): ScoringStatKey[] {
-    const active = this.activeScoringColumnsSorted().filter(
-      (scoringKey) => !this.statInfoService.isRateStat(scoringKey),
-    );
-    if (
-      (GOALIE_UTILITY_STAT_KEYS as readonly string[]).includes(key) &&
-      (SKATER_UTILITY_STAT_KEYS as readonly string[]).includes(key)
-    ) {
-      return active;
-    }
-
-    if ((GOALIE_UTILITY_STAT_KEYS as readonly string[]).includes(key)) {
-      return active.filter((scoringKey) =>
-        (GOALIE_SCORING_STAT_KEYS as readonly string[]).includes(scoringKey),
-      );
-    }
-
-    return active.filter((scoringKey) =>
-      (SKATER_SCORING_STAT_KEYS as readonly string[]).includes(scoringKey),
+    return scalableScoringStatsFor(key, this.activeScoringColumnsSorted(), (statKey) =>
+      this.statInfoService.isRateStat(statKey),
     );
   }
 
