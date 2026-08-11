@@ -296,6 +296,18 @@ export class HotPlayersTableComponent {
   }
 
   /**
+   * A stat the player cannot have shows a dash rather than a zero. The split fills every key
+   * for every player because the ranking engine works on complete lines, so without this a
+   * skater's save percentage and a forward's defencemen points read as measured zeroes.
+   */
+  isApplicable(ranked: RankedPlayer, key: StatKey): boolean {
+    const player = this.playerMap().get(ranked.projection.playerId);
+    // Without the player we don't know their positions, and showing the number beats hiding
+    // a defenceman's points behind a dash.
+    return !player || this.statInfoService.isStatApplicable(key, player);
+  }
+
+  /**
    * Per-game counting stats need decimals to say anything — a rounded 0 goals per game is
    * indistinguishable from a rounded 0.4, which is a 33-goal pace.
    */

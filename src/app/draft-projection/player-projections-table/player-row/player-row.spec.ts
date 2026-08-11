@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { PlayerRowComponent } from './player-row';
 import { StatInputComponent } from './stat-input/stat-input';
 import { Goalie, Player, Skater } from '../../../models/player.model';
+import { SkaterPosition } from '../../../models/position.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../../../models/stat-key.model';
 import {
   ActiveColumns,
@@ -205,6 +206,22 @@ describe('PlayerRowComponent', () => {
     expect(tds[5].textContent.trim()).toEqual('-'); // assists
     expect(tds[6].querySelector('input')?.value).toEqual('36'); // w
     expect(tds[7].querySelector('input')?.value).toEqual('0.91'); // svPct
+  });
+
+  it('leaves defencemen points to defencemen — a forward has none of the category', () => {
+    const defenceColumns: ActiveColumns = {
+      utility: new Set<SkaterUtilityStatKey>(['gp']),
+      scoring: new Set<ScoringStatKey>(['defPoints']),
+    };
+
+    setInputs({ activeColumns: defenceColumns });
+    expect(fixture.nativeElement.querySelectorAll('td')[3].textContent.trim()).toEqual('-');
+
+    setInputs({
+      activeColumns: defenceColumns,
+      player: { ...mockSkater, positions: new Set<SkaterPosition>(['D']) },
+    });
+    expect(fixture.nativeElement.querySelectorAll('td')[3].querySelector('input')).not.toBeNull();
   });
 
   it('should emit statInput on input change', () => {

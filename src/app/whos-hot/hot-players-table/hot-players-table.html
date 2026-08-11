@@ -69,7 +69,9 @@
             </td>
             @for (col of filteredActiveColumns().utility; track col) {
               <td class="col-{{ col }}">
-                @if (isToi(col)) {
+                @if (!isApplicable(ranked, col)) {
+                  <span class="stat-placeholder">-</span>
+                } @else if (isToi(col)) {
                   {{ statValue(ranked, col) | formatToi }}
                 } @else {
                   {{ statValue(ranked, col) | number: decimalsFor(col) }}
@@ -77,7 +79,13 @@
               </td>
             }
             @for (col of filteredActiveColumns().scoring; track col) {
-              <td>{{ statValue(ranked, col) | number: decimalsFor(col) }}</td>
+              <td>
+                @if (isApplicable(ranked, col)) {
+                  {{ statValue(ranked, col) | number: decimalsFor(col) }}
+                } @else {
+                  <span class="stat-placeholder">-</span>
+                }
+              </td>
             }
             <td class="fan-pts-col">{{ summaryValue(ranked) | number: '1.0-2' }}</td>
           </tr>

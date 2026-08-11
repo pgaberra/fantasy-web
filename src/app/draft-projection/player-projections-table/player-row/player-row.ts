@@ -1,7 +1,7 @@
 import { Component, computed, inject, input, output, Signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { Player } from '../../../models/player.model';
-import { GOALIE_STAT_KEYS, SKATER_STAT_KEYS, StatKey } from '../../../models/stat-key.model';
+import { StatKey } from '../../../models/stat-key.model';
 import {
   ActiveColumns,
   PlayerScore,
@@ -11,6 +11,7 @@ import {
 import { DecimalStatKey } from '../../projection-settings-section/model';
 import { StatInputComponent } from './stat-input/stat-input';
 import { StatWarningService } from '../../../services/stat-warning.service';
+import { StatInfoService } from '../../../services/stat-info.service';
 
 @Component({
   selector: 'tr[app-player-row]',
@@ -45,6 +46,7 @@ export class PlayerRowComponent {
   toiKeydown = output<{ playerId: number; event: KeyboardEvent }>();
 
   private readonly statWarningService = inject(StatWarningService);
+  private readonly statInfoService = inject(StatInfoService);
   private readonly warnings = computed(() =>
     this.statWarningService.warningsFor(this.projection()),
   );
@@ -65,10 +67,6 @@ export class PlayerRowComponent {
   }
 
   isStatApplicable(key: StatKey): boolean {
-    const type = this.projection().type;
-    if (type === 'skater') {
-      return (SKATER_STAT_KEYS as readonly string[]).includes(key);
-    }
-    return (GOALIE_STAT_KEYS as readonly string[]).includes(key);
+    return this.statInfoService.isStatApplicable(key, this.player());
   }
 }
