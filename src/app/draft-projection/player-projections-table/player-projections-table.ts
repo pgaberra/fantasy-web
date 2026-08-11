@@ -52,6 +52,7 @@ import {
 import { StatInfoService } from '../../services/stat-info.service';
 import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
 import { LeagueSettingsMenuComponent } from './league-settings-menu/league-settings-menu';
+import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 
 const PLAYERS_PER_PAGE = 250;
 
@@ -86,6 +87,7 @@ function statValueOf(projection: Projection, key: StatKey): number {
     TeamFilterComponent,
     PopoverTriggerDirective,
     LeagueSettingsMenuComponent,
+    TooltipDirective,
   ],
   templateUrl: './player-projections-table.html',
   styleUrl: './player-projections-table.css',
@@ -111,6 +113,13 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   /** Turns on the column menus, the add-column cell and the league toolbar. */
   readonly columnControls = input<boolean>(false);
+  /**
+   * The league these settings were imported from, once there is one. Connecting a league is a
+   * call to action while it hasn't happened; afterwards it is provenance, so it moves off the
+   * toolbar and into the league menu rather than holding a button of its own forever.
+   */
+  readonly syncedLeagueName = input<string | null>(null);
+  readonly manageSyncRequested = output<void>();
   readonly activeScoringColumns = model<Set<ScoringStatKey>>(new Set<ScoringStatKey>());
   readonly activeUtilityColumns = model<Set<UtilityStatKey>>(new Set<UtilityStatKey>());
 

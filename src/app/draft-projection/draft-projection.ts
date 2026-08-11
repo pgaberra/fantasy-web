@@ -158,6 +158,11 @@ export class DraftProjectionComponent implements OnInit {
   readonly showFullSeasonDialog = signal<boolean>(false);
   readonly showShareDialog = signal<boolean>(false);
   readonly showSyncDialog = signal<boolean>(false);
+  /**
+   * ESPN provenance isn't persisted yet, so a Yahoo stamp is the only league we can name after
+   * a reload — an ESPN import reads as "not connected" until that stamp carries a provider.
+   */
+  readonly syncedLeagueName = computed(() => this.yahooSync()?.leagueName ?? null);
 
   /**
    * The rows a share would publish: the same ranking the table shows by default, frozen with the
