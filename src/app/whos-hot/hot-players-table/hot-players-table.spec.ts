@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { HotPlayersTableComponent } from './hot-players-table';
 import { HotPlayer } from '../../services/whos-hot.service';
 import { Player } from '../../models/player.model';
+import { SkaterPosition } from '../../models/position.model';
 import { ActiveColumns, ScoringType } from '../../models/projection.model';
 import { ScoringStatKey } from '../../models/stat-key.model';
 import { DEFAULT_STAT_WEIGHTS } from '../../draft-projection/projection-defaults';
@@ -57,13 +58,13 @@ function skater(playerId: number, games: number, goals = 10): HotPlayer {
   };
 }
 
-function player(playerId: number): Player {
+function player(playerId: number, positions: SkaterPosition[] = ['C']): Player {
   return {
     type: 'skater',
     id: playerId,
     name: `Skater ${playerId}`,
     teamAbbrev: 'EDM',
-    positions: new Set(['C']),
+    positions: new Set(positions),
     stats: { scoring: SKATER_STATS, utility: { gp: 82, toiPerGame: 1200 } },
   };
 }
@@ -199,5 +200,48 @@ describe('HotPlayersTableComponent', () => {
 
     expect(ngMocks.findAll('tbody tr')).toHaveLength(0);
     expect(ngMocks.find('.table-empty').nativeElement.textContent).toContain('No players match');
+  });
+
+  describe('stats the player cannot have', () => {
+    const withColumns = (scoring: ScoringStatKey[], positions: SkaterPosition[]) =>
+      MockRender(HotPlayersTableComponent, {
+        hotPlayers: [skater(1, 20)],
+        players: [player(1, positions)],
+        activeColumns: { scoring: new Set(scoring), utility: new Set(['gp']) },
+        scoringType: 'points',
+        statWeights: DEFAULT_STAT_WEIGHTS,
+        perGame: false,
+        minGames: 1,
+      });
+
+    const cellTexts = () =>
+      ngMocks.findAll('tbody tr td').map((cell) => cell.nativeElement.textContent!.trim());
+
+    it("shows a dash for a skater's goalie stats rather than a measured zero", () => {
+      withColumns(['goals', 'svPct'], ['C']);
+
+      // The split fills every key so the ranking engine gets a complete line; a zero here
+      // would claim this skater faced shots and stopped none of them.
+      expect(cellTexts()).toContain('-');
+      expect(ngMocks.findAll('tbody .stat-placeholder')).toHaveLength(1);
+    });
+
+    it('shows a dash for a forward on defencemen points', () => {
+      withColumns(['defPoints'], ['C']);
+
+      expect(ngMocks.findAll('tbody .stat-placeholder')).toHaveLength(1);
+    });
+
+    it('shows the number for a defenceman on the same column', () => {
+      withColumns(['defPoints'], ['D']);
+
+      expect(ngMocks.findAll('tbody .stat-placeholder')).toHaveLength(0);
+    });
+
+    it('keeps a stat both positions are scored on', () => {
+      withColumns(['goals'], ['C']);
+
+      expect(ngMocks.findAll('tbody .stat-placeholder')).toHaveLength(0);
+    });
   });
 });

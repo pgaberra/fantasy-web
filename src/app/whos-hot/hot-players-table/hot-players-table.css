@@ -157,6 +157,12 @@ td.col-name {
   padding: 0 var(--space-2);
 }
 
+/* A stat this player cannot have. Muted so the column reads as "not theirs" at a glance
+   rather than as a value that happens to be short. */
+.stat-placeholder {
+  color: var(--color-text-subtle);
+}
+
 .below-min-games {
   color: var(--color-warning);
   font-size: var(--text-xs);
