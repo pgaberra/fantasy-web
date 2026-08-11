@@ -6,10 +6,14 @@
   box-shadow: var(--shadow-md);
 }
 
+/* Search plus two filters don't fit beside the title on a tablet, and unlike the table they
+   have no wrapper to scroll inside — without wrapping they push the whole page sideways. */
 .table-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
   margin: 0 0 var(--space-4);
 }
 
@@ -39,7 +43,8 @@
 .table-controls {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
 }
 
 .search-control {

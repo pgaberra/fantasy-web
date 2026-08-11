@@ -21,6 +21,20 @@ describe('GameRangeSelectorComponent', () => {
   const inputEvent = (value: number): Event =>
     ({ target: { value: String(value) } }) as unknown as Event;
 
+  const TRACK_WIDTH = 400;
+
+  /** A hover a given fraction of the way along a track that starts at the viewport's left edge. */
+  const hoverAt = (fraction: number): PointerEvent => {
+    const track = {
+      getBoundingClientRect: () => ({ left: 0, width: TRACK_WIDTH }) as DOMRect,
+    } as HTMLElement;
+    return {
+      currentTarget: track,
+      clientX: fraction * TRACK_WIDTH,
+      buttons: 0,
+    } as unknown as PointerEvent;
+  };
+
   it('counts the span inclusively', () => {
     const component = render(50, 82);
 
@@ -101,5 +115,41 @@ describe('GameRangeSelectorComponent', () => {
     component.togglePerGame();
 
     expect(component.perGame()).toEqual(true);
+  });
+
+  it('draws the band between the two handles', () => {
+    const component = render(42, 82);
+
+    // 41 of the 81 steps in, and all the way to the end.
+    expect(component.fillStyle().left).toContain('50.617%');
+    expect(component.fillStyle().right).toContain('0.000%');
+  });
+
+  it('insets the band by half a handle so it stays under them at the ends', () => {
+    const full = render(1, 82).fillStyle();
+
+    // Both ends sit at 0%, yet the handle centres are half a handle inside the track — so the
+    // band has to be pushed in by the same amount rather than reaching the edges.
+    expect(full.left).toContain('0.5000 * var(--thumb-size)');
+    expect(full.right).toContain('0.5000 * var(--thumb-size)');
+  });
+
+  it('raises whichever handle the pointer is nearest, so a narrow range stays draggable', () => {
+    const component = render(40, 42);
+
+    component.onTrackHover(hoverAt(0.1));
+    expect(component.activeThumb()).toEqual('from');
+
+    component.onTrackHover(hoverAt(0.9));
+    expect(component.activeThumb()).toEqual('to');
+  });
+
+  it('leaves the handles alone mid-drag, when a press already owns the pointer', () => {
+    const component = render(40, 42);
+    component.onTrackHover(hoverAt(0.1));
+
+    component.onTrackHover({ ...hoverAt(0.9), buttons: 1 });
+
+    expect(component.activeThumb()).toEqual('from');
   });
 });
