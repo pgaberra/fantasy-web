@@ -40,20 +40,62 @@
       </span>
     </div>
     <div class="table-controls">
-      <div class="search-control">
-        <label for="player-search">Search</label>
-        <input
-          id="player-search"
-          type="search"
-          placeholder="Search player…"
-          [value]="searchTerm()"
-          (input)="onSearchInput($event)"
-        />
-      </div>
-      <app-position-filter [(value)]="positionFilter" />
-      @if (availableTeams().length) {
-        <app-team-filter [teams]="availableTeams()" [(value)]="teamFilter" />
+      @if (columnControls()) {
+        <div class="league-controls">
+          <div class="segmented" role="group" aria-label="League type">
+            <button
+              type="button"
+              [attr.aria-pressed]="scoringType() === 'points'"
+              (click)="selectScoringType('points')"
+            >
+              Points
+            </button>
+            <button
+              type="button"
+              [attr.aria-pressed]="scoringType() === 'category'"
+              (click)="selectScoringType('category')"
+            >
+              Category
+            </button>
+          </div>
+
+          <button type="button" class="btn btn-secondary btn-sm" [appPopover]="leagueMenu">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" />
+            </svg>
+            League setup
+          </button>
+
+          <ng-content select="[table-toolbar-actions]" />
+        </div>
       }
+
+      <div class="filter-controls">
+        <div class="search-control">
+          <label for="player-search">Search</label>
+          <input
+            id="player-search"
+            type="search"
+            placeholder="Search player…"
+            [value]="searchTerm()"
+            (input)="onSearchInput($event)"
+          />
+        </div>
+        <app-position-filter [(value)]="positionFilter" />
+        @if (availableTeams().length) {
+          <app-team-filter [teams]="availableTeams()" [(value)]="teamFilter" />
+        }
+      </div>
     </div>
   </div>
   <div class="table-wrapper">
@@ -68,7 +110,16 @@
         [sortColumn]="sortColumn()"
         [sortDirection]="sortDirection()"
         [showFullSeasonButton]="showFullSeasonButton()"
+        [columnControls]="columnControls()"
+        [allActiveScoringColumns]="activeScoringColumns()"
+        [allActiveUtilityColumns]="activeUtilityColumns()"
+        [scaleSettings]="scaleSettings()"
         (sort)="onSort($event)"
+        (sortDirected)="setSort($event.column, $event.direction)"
+        (scoringColumnToggled)="toggleScoringColumn($event)"
+        (utilityColumnToggled)="toggleUtilityColumn($event)"
+        (scaleToggled)="toggleScale($event)"
+        (scaleStatToggled)="toggleScaleStat($event.utilityKey, $event.statKey)"
         (fullSeason)="fullSeasonRequested.emit()"
       ></thead>
       <tbody>
@@ -111,3 +162,13 @@
     </div>
   }
 </section>
+
+<ng-template #leagueMenu>
+  <app-league-settings-menu
+    [scoringType]="scoringType()"
+    [(leagueSize)]="leagueSize"
+    [(rosterSlots)]="rosterSlots"
+    [(minGoalieGames)]="minGoalieGames"
+    [(useDefaultDecimals)]="useDefaultDecimals"
+  />
+</ng-template>

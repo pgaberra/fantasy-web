@@ -8,48 +8,86 @@
     Player<span class="sort-arrow">{{ sortIndicator('name') }}</span>
   </th>
   @for (col of activeColumns().utility; track col) {
-    <th
-      class="col-utility sortable"
-      [class.sorted]="sortColumn() === col"
-      (click)="sort.emit(col)"
-      [appTooltip]="col | statTooltip"
-    >
-      {{ col | statLabel }}<span class="sort-arrow">{{ sortIndicator(col) }}</span>
-      @if (showFullSeasonButton() && col === 'gp') {
+    <th class="col-utility col-stat" [class.sorted]="sortColumn() === col">
+      <span class="th-inner">
         <button
           type="button"
-          class="full-season-pill"
-          appTooltip="Set all players to a full 84-game season"
-          (click)="$event.stopPropagation(); fullSeason.emit()"
+          class="th-sort"
+          [appTooltip]="col | statTooltip"
+          (click)="sort.emit(col)"
         >
-          <svg
-            viewBox="0 0 24 24"
-            width="13"
-            height="13"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M12 20v-11" />
-            <path d="M8 13l4 -4l4 4" />
-            <path d="M5 4h14" />
-          </svg>
-          84
+          {{ col | statLabel }}<span class="sort-arrow">{{ sortIndicator(col) }}</span>
         </button>
-      }
+        @if (showFullSeasonButton() && col === 'gp') {
+          <button
+            type="button"
+            class="full-season-pill"
+            appTooltip="Set all players to a full 84-game season"
+            (click)="fullSeason.emit()"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="13"
+              height="13"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 20v-11" />
+              <path d="M8 13l4 -4l4 4" />
+              <path d="M5 4h14" />
+            </svg>
+            84
+          </button>
+        }
+        @if (columnControls()) {
+          <button
+            type="button"
+            class="th-menu"
+            [attr.aria-label]="'Column settings for ' + (col | statLabel)"
+            [appPopover]="columnMenu"
+            [popoverContext]="{ $implicit: col }"
+          >
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+              <circle cx="12" cy="5" r="1.7" />
+              <circle cx="12" cy="12" r="1.7" />
+              <circle cx="12" cy="19" r="1.7" />
+            </svg>
+          </button>
+        }
+      </span>
     </th>
   }
   @for (col of activeColumns().scoring; track col) {
-    <th
-      class="sortable"
-      [class.sorted]="sortColumn() === col"
-      (click)="sort.emit(col)"
-      [appTooltip]="col | statTooltip"
-    >
-      {{ col | statLabel }}<span class="sort-arrow">{{ sortIndicator(col) }}</span>
+    <th class="col-stat" [class.sorted]="sortColumn() === col">
+      <span class="th-inner">
+        <button
+          type="button"
+          class="th-sort"
+          [appTooltip]="col | statTooltip"
+          (click)="sort.emit(col)"
+        >
+          {{ col | statLabel }}<span class="sort-arrow">{{ sortIndicator(col) }}</span>
+        </button>
+        @if (columnControls()) {
+          <button
+            type="button"
+            class="th-menu"
+            [attr.aria-label]="'Column settings for ' + (col | statLabel)"
+            [appPopover]="columnMenu"
+            [popoverContext]="{ $implicit: col }"
+          >
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+              <circle cx="12" cy="5" r="1.7" />
+              <circle cx="12" cy="12" r="1.7" />
+              <circle cx="12" cy="19" r="1.7" />
+            </svg>
+          </button>
+        }
+      </span>
     </th>
   }
   <th
@@ -59,6 +97,30 @@
   >
     {{ summaryLabel() }}<span class="sort-arrow">{{ sortIndicator('summary') }}</span>
   </th>
+  @if (columnControls()) {
+    <th class="col-add">
+      <button
+        type="button"
+        class="add-col-btn"
+        aria-label="Add a stat column"
+        appTooltip="Add a stat column"
+        [appPopover]="addColumnMenu"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      </button>
+    </th>
+  }
 </tr>
 @if (scoringType() === 'points' && !readonly()) {
   <tr class="weight-row">
@@ -74,14 +136,20 @@
           class="weight-input"
           [value]="statWeights()[col]"
           step="0.01"
+          [attr.aria-label]="'Points per ' + (col | statLabel)"
           (input)="onWeightInput(col, $event)"
         />
       </th>
     }
     <th class="summary-pts-col"></th>
+    @if (columnControls()) {
+      <th class="col-add"></th>
+    }
   </tr>
 }
-@if (!useDefaultDecimals() && !readonly()) {
+<!-- With column menus the decimals live on the column itself; the standalone row is only for
+     the surfaces that still keep the settings panel — and never for a read-only shared page. -->
+@if (!useDefaultDecimals() && !readonly() && !columnControls()) {
   <tr class="decimal-row">
     <th class="col-rank"></th>
     <th class="col-name"><span class="decimal-label">Decimals</span></th>
@@ -116,3 +184,159 @@
     <th class="summary-pts-col"></th>
   </tr>
 }
+
+<ng-template #columnMenu let-col>
+  <div class="column-menu">
+    <p class="menu-title">{{ col | statTooltip }}</p>
+
+    <button
+      type="button"
+      class="menu-item"
+      (click)="sortDirected.emit({ column: col, direction: 'desc' })"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="15"
+        height="15"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M12 5v14M19 12l-7 7-7-7" />
+      </svg>
+      Sort highest first
+    </button>
+    <button
+      type="button"
+      class="menu-item"
+      (click)="sortDirected.emit({ column: col, direction: 'asc' })"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="15"
+        height="15"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M12 19V5M5 12l7-7 7 7" />
+      </svg>
+      Sort lowest first
+    </button>
+
+    @if (!isUtilityColumn(col) && scoringType() === 'points') {
+      <div class="menu-separator"></div>
+      <div class="menu-field">
+        <label [attr.for]="'menu-weight-' + col">Points per {{ col | statLabel }}</label>
+        <input
+          [id]="'menu-weight-' + col"
+          type="number"
+          step="0.01"
+          [value]="weightFor(col)"
+          (input)="onWeightInput(col, $event)"
+        />
+      </div>
+    }
+
+    @if (!useDefaultDecimals() && isDecimalColumn(col)) {
+      <div class="menu-field">
+        <label [attr.for]="'menu-decimals-' + col">Decimals</label>
+        <input
+          [id]="'menu-decimals-' + col"
+          type="number"
+          min="0"
+          [max]="MAX_DECIMAL_SETTING"
+          step="1"
+          [value]="decimalsFor(col)"
+          (input)="onDecimalInput(col, $event)"
+        />
+      </div>
+    }
+
+    @if (isUtilityColumn(col) && scaleSettings()) {
+      <div class="menu-separator"></div>
+      <div class="menu-field">
+        <label [id]="'menu-scale-' + col">Auto-scale scoring stats</label>
+        <app-toggle-switch
+          [on]="isScaleActive(col)"
+          [ariaLabel]="'Auto-scale scoring stats when ' + (col | statLabel) + ' changes'"
+          (toggled)="scaleToggled.emit(col)"
+        />
+      </div>
+      <p class="menu-note">
+        Scale every scoring stat proportionally when {{ col | statLabel }} is edited.
+      </p>
+      @if (isScaleActive(col)) {
+        <button
+          type="button"
+          class="menu-item"
+          [attr.aria-expanded]="expandedScaleList() === col"
+          (click)="toggleScaleList(col)"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="15"
+            height="15"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M4 20V10M10 20V4M16 20v-8M22 20V7" />
+          </svg>
+          Stats to scale
+          <span class="menu-item-value">{{ scaledStatSummary(col) }}</span>
+        </button>
+        @if (expandedScaleList() === col) {
+          <div class="scale-stat-list">
+            @for (statKey of scalableStatsFor(col); track statKey) {
+              <label class="scale-stat">
+                <input
+                  type="checkbox"
+                  [checked]="isScaleStatActive(statKey, col)"
+                  (change)="scaleStatToggled.emit({ utilityKey: col, statKey })"
+                />
+                {{ statKey | statLabel }}
+              </label>
+            }
+          </div>
+        }
+      }
+    }
+
+    <div class="menu-separator"></div>
+    <button type="button" class="menu-item menu-item--danger" (click)="removeColumn(col)">
+      <svg
+        viewBox="0 0 24 24"
+        width="15"
+        height="15"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+      </svg>
+      Remove column
+    </button>
+  </div>
+</ng-template>
+
+<ng-template #addColumnMenu>
+  <app-add-column-menu
+    [activeScoringColumns]="allActiveScoringColumns()"
+    [activeUtilityColumns]="allActiveUtilityColumns()"
+    (scoringToggled)="scoringColumnToggled.emit($event)"
+    (utilityToggled)="utilityColumnToggled.emit($event)"
+  />
+</ng-template>

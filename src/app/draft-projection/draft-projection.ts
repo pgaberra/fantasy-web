@@ -17,8 +17,8 @@ import { PlayerService } from '../services/player.service';
 import { Player } from '../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
 import { ActiveColumns, Projection, ScoringType } from '../models/projection.model';
-import { ProjectionSettingsSectionComponent } from './projection-settings-section/projection-settings-section';
 import { LeagueSyncComponent } from './projection-settings-section/league-sync/league-sync';
+import { LeagueSyncDialogComponent } from './league-sync-dialog/league-sync-dialog';
 import { YahooSyncResult } from './projection-settings-section/yahoo-league-sync/yahoo-league-sync';
 import { EspnSyncResult } from './projection-settings-section/espn-league-sync/espn-league-sync';
 import { LeagueProjectionSettingsResponse } from '../api/models/league-projection-settings-response';
@@ -66,8 +66,8 @@ const AUTOSAVE_DEBOUNCE_MS = 1200;
 @Component({
   selector: 'app-draft-projection',
   imports: [
-    ProjectionSettingsSectionComponent,
     LeagueSyncComponent,
+    LeagueSyncDialogComponent,
     PlayerProjectionsTableComponent,
     LoadingIndicatorComponent,
     SyncWarningDialogComponent,
@@ -157,6 +157,7 @@ export class DraftProjectionComponent implements OnInit {
   readonly reSyncError = signal<string | null>(null);
   readonly showFullSeasonDialog = signal<boolean>(false);
   readonly showShareDialog = signal<boolean>(false);
+  readonly showSyncDialog = signal<boolean>(false);
 
   /**
    * The rows a share would publish: the same ranking the table shows by default, frozen with the

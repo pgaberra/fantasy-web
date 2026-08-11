@@ -1,8 +1,44 @@
-import { ScoringStatKey } from '../../models/stat-key.model';
+import {
+  GOALIE_SCORING_STAT_KEYS,
+  GOALIE_UTILITY_STAT_KEYS,
+  ScoringStatKey,
+  SKATER_SCORING_STAT_KEYS,
+  SKATER_UTILITY_STAT_KEYS,
+  UtilityStatKey,
+} from '../../models/stat-key.model';
 
 export interface ScaleConfig {
   scale: boolean;
   scalableStats: Set<ScoringStatKey>;
+}
+
+/**
+ * Which of the active scoring stats a utility stat may scale. Rate stats are excluded (scaling
+ * SH% with games played is meaningless), and a skater-only utility stat can only reach skater
+ * scoring stats — GP belongs to both, so it reaches everything.
+ *
+ * Shared by the settings panel and the column menu that replaces it on the projection page.
+ */
+export function scalableScoringStatsFor(
+  utilityKey: UtilityStatKey,
+  activeScoringColumnsSorted: readonly ScoringStatKey[],
+  isRateStat: (statKey: ScoringStatKey) => boolean,
+): ScoringStatKey[] {
+  const scalable = activeScoringColumnsSorted.filter((statKey) => !isRateStat(statKey));
+  const isGoalieUtility = (GOALIE_UTILITY_STAT_KEYS as readonly string[]).includes(utilityKey);
+  const isSkaterUtility = (SKATER_UTILITY_STAT_KEYS as readonly string[]).includes(utilityKey);
+
+  if (isGoalieUtility && isSkaterUtility) {
+    return scalable;
+  }
+  if (isGoalieUtility) {
+    return scalable.filter((statKey) =>
+      (GOALIE_SCORING_STAT_KEYS as readonly string[]).includes(statKey),
+    );
+  }
+  return scalable.filter((statKey) =>
+    (SKATER_SCORING_STAT_KEYS as readonly string[]).includes(statKey),
+  );
 }
 
 export type DecimalStatKey = ScoringStatKey | 'gp';

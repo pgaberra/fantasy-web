@@ -212,6 +212,8 @@ describe('PlayerProjectionsTableComponent', () => {
       scaleSettings: Record<string, ScaleConfig>;
       useDefaultDecimals: boolean;
       minGoalieGames: number;
+      activeScoringColumns: Set<ScoringStatKey>;
+      activeUtilityColumns: Set<SkaterUtilityStatKey>;
     }> = {},
   ) =>
     MockRender(PlayerProjectionsTableComponent, {
@@ -834,6 +836,52 @@ describe('PlayerProjectionsTableComponent', () => {
       const component = getComponent();
       expect(component.canUndo()).toEqual(false);
       expect(component.canRedo()).toEqual(false);
+    });
+
+    it('undo brings back a column removed from its header menu', () => {
+      const component = getComponent({
+        activeScoringColumns: new Set<ScoringStatKey>(['goals', 'assists']),
+      });
+
+      component.toggleScoringColumn('goals');
+      expect([...component.activeScoringColumns()]).toEqual(['assists']);
+      expect(component.canUndo()).toEqual(true);
+
+      component.undo();
+      expect([...component.activeScoringColumns()]).toEqual(['goals', 'assists']);
+      expect(component.canRedo()).toEqual(true);
+
+      component.redo();
+      expect([...component.activeScoringColumns()]).toEqual(['assists']);
+    });
+
+    it('undo brings back a removed utility column', () => {
+      const component = getComponent({
+        activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
+      });
+
+      component.toggleUtilityColumn('gp');
+      expect([...component.activeUtilityColumns()]).toEqual([]);
+
+      component.undo();
+      expect([...component.activeUtilityColumns()]).toEqual(['gp']);
+    });
+
+    it('keeps a stat edit and a column removal as separate undo steps', () => {
+      const component = getComponent({
+        activeScoringColumns: new Set<ScoringStatKey>(['goals', 'assists']),
+      });
+      const original = goalsOf(component, 1);
+
+      setStat(component, 1, 'goals', '70');
+      component.toggleScoringColumn('assists');
+
+      component.undo();
+      expect([...component.activeScoringColumns()]).toEqual(['goals', 'assists']);
+      expect(goalsOf(component, 1)).toEqual(70);
+
+      component.undo();
+      expect(goalsOf(component, 1)).toEqual(original);
     });
 
     it('undo restores the value the cell had before the edit and enables redo', () => {
