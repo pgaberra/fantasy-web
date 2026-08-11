@@ -21,6 +21,14 @@
     <button type="button" class="btn btn-secondary btn-sm draft" (click)="draft.emit()">
       {{ draftLabel() }}
     </button>
+    <button
+      type="button"
+      class="btn btn-secondary btn-sm share"
+      [disabled]="isPreparingShare()"
+      (click)="share.emit()"
+    >
+      {{ isPreparingShare() ? 'Opening…' : 'Share' }}
+    </button>
     <button type="button" class="btn btn-danger btn-sm delete" (click)="startDelete()">
       Delete
     </button>

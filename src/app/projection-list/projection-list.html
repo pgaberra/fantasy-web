@@ -55,9 +55,19 @@
           [projection]="projection"
           (edit)="edit(projection.id)"
           (draft)="draft(projection.id)"
+          [isPreparingShare]="preparingShareFor() === projection.id"
+          (share)="share(projection.id)"
           (remove)="remove(projection.id)"
         ></li>
       }
     </ul>
+  }
+
+  @if (sharingProjectionId(); as projectionId) {
+    <app-share-dialog
+      [projectionId]="projectionId"
+      [players]="sharedPlayers()"
+      (closed)="closeShare()"
+    />
   }
 </div>
