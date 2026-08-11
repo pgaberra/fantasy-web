@@ -3,6 +3,20 @@ import { DEFAULT_DECIMAL_SETTINGS, ScaleConfig } from './projection-settings-sec
 import { RosterSlots } from '../api/models/roster-slots';
 import { ProjectionState } from '../services/projection-serializer';
 
+/**
+ * The weights a projection starts from. Only the stats in `DEFAULT_SCORING_COLUMNS` are scored
+ * at first, but every stat needs a usable weight: adding a column from the header menu should
+ * make it count for something, not silently contribute nothing.
+ *
+ * A stat left at 0 here is left there on purpose, for one of three reasons:
+ *
+ * - **Magnitude.** `toi` is held in seconds and `shifts` runs to four figures over a season, so
+ *   any per-unit weight in the range the other stats use would swamp every one of them.
+ * - **Rate, not a count.** `gaa`, `svPct` and `winPct` describe a share rather than something
+ *   accumulated, so points-per-unit is the wrong shape for them.
+ * - **Nothing earned.** `l`, `otl`, `sa` and `gs` happen to a player rather than being produced
+ *   by one; leagues that do score them set their own value.
+ */
 export const DEFAULT_STAT_WEIGHTS: Record<ScoringStatKey, number> = {
   goals: 4.5,
   assists: 3,
@@ -17,16 +31,20 @@ export const DEFAULT_STAT_WEIGHTS: Record<ScoringStatKey, number> = {
   ppp: 0.5,
   shg: 0.5,
   sha: 0.5,
-  shp: 0,
-  stpg: 0,
-  stpa: 0,
-  stp: 0,
-  hatTricks: 0,
+  // Points categories mirror their power-play equivalents: a shorthanded or special-teams point
+  // is the same kind of thing as a power-play point, and was only ever 0 because nothing set it.
+  shp: 0.5,
+  stpg: 0.5,
+  stpa: 0.5,
+  stp: 0.5,
+  // A hat trick is a bonus event, weighted like the other one we already score (gwg).
+  hatTricks: 0.5,
   shPct: 0.5,
   fw: 0.5,
   fl: 0.5,
   plusMinus: 0.5,
-  defPoints: 0,
+  // Points scored while eligible at defence — a points category, so it follows ppp.
+  defPoints: 0.5,
   shifts: 0,
   toi: 0,
   gs: 0,
