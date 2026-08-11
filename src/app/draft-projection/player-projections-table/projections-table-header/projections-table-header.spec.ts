@@ -465,6 +465,42 @@ describe('ProjectionsTableHeaderComponent', () => {
       expect(text).toContain('Utility');
     });
 
+    it('moves the full-season action out of the GP header and into its menu', () => {
+      const fixture = getFixture({ columnControls: true, showFullSeasonButton: true });
+      const component = ngMocks.find(
+        fixture.debugElement,
+        ProjectionsTableHeaderComponent,
+      ).componentInstance;
+      const fullSeasonEmit = vi.spyOn(component.fullSeason, 'emit');
+
+      // The GP cell would otherwise hold three targets: sort, the pill and the menu.
+      expect(ngMocks.findAll('.full-season-pill')).toHaveLength(0);
+
+      const gpMenu = ngMocks
+        .findAll('.th-menu')
+        .find((trigger) => trigger.nativeElement.getAttribute('aria-label')?.includes('GP'))!;
+      gpMenu.nativeElement.dispatchEvent(new Event('click', { bubbles: true }));
+
+      expect(overlayText()).toContain('Set a full 84-game season');
+      const action = [
+        ...document.querySelectorAll<HTMLButtonElement>('.cdk-overlay-container .menu-item'),
+      ].find((item) => item.textContent?.includes('84-game season'))!;
+      action.dispatchEvent(new Event('click', { bubbles: true }));
+
+      expect(fullSeasonEmit).toHaveBeenCalled();
+    });
+
+    it('offers the full-season action only on the GP column', () => {
+      getFixture({ columnControls: true, showFullSeasonButton: true });
+
+      const goalsMenu = ngMocks
+        .findAll('.th-menu')
+        .find((trigger) => trigger.nativeElement.getAttribute('aria-label')?.includes('Goals'))!;
+      goalsMenu.nativeElement.dispatchEvent(new Event('click', { bubbles: true }));
+
+      expect(overlayText()).not.toContain('84-game season');
+    });
+
     it('never renders editing controls on a read-only shared header', () => {
       getFixture({ columnControls: true, readonly: true });
 

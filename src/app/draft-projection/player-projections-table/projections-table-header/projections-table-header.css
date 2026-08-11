@@ -51,11 +51,16 @@ th.col-stat.sorted {
 }
 
 .th-inner {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
 }
 
+/* The label stays centred in its column: the menu trigger is taken out of flow, and the sort
+   button reserves the same room on both sides. In flow it pushed every label off-centre and
+   widened each stat column by its own width — across eight columns that is real table width. */
 .th-sort {
   flex: 1 1 auto;
   display: inline-flex;
@@ -63,7 +68,7 @@ th.col-stat.sorted {
   justify-content: center;
   gap: 0.1em;
   min-height: 2.4rem;
-  padding: 0.6rem 0.25rem 0.6rem 0.5rem;
+  padding: 0.6rem 0.5rem;
   background: none;
   border: none;
   font: inherit;
@@ -74,17 +79,25 @@ th.col-stat.sorted {
   user-select: none;
 }
 
+/* Only the columns that actually carry a menu reserve room for it. */
+th.has-menu .th-sort {
+  padding-left: 1.2rem;
+  padding-right: 1.2rem;
+}
+
 .th-sort:hover {
   background: rgba(255, 255, 255, 0.12);
 }
 
 .th-menu {
-  flex: none;
+  position: absolute;
+  right: 0.1rem;
+  top: 50%;
+  transform: translateY(-50%);
   display: grid;
   place-items: center;
-  width: 1.4rem;
-  min-height: 2.4rem;
-  margin-right: 0.15rem;
+  width: 1.3rem;
+  height: 2rem;
   padding: 0;
   background: none;
   border: none;

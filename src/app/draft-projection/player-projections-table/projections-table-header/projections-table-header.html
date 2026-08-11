@@ -8,7 +8,11 @@
     Player<span class="sort-arrow">{{ sortIndicator('name') }}</span>
   </th>
   @for (col of activeColumns().utility; track col) {
-    <th class="col-utility col-stat" [class.sorted]="sortColumn() === col">
+    <th
+      class="col-utility col-stat"
+      [class.sorted]="sortColumn() === col"
+      [class.has-menu]="showColumnControls()"
+    >
       <span class="th-inner">
         <button
           type="button"
@@ -18,7 +22,9 @@
         >
           {{ col | statLabel }}<span class="sort-arrow">{{ sortIndicator(col) }}</span>
         </button>
-        @if (showFullSeasonButton() && col === 'gp') {
+        <!-- Without column menus there is nowhere else for the bulk "full season" action to
+             live, so it stays a pill in the header for those surfaces. -->
+        @if (showFullSeasonButton() && col === 'gp' && !showColumnControls()) {
           <button
             type="button"
             class="full-season-pill"
@@ -62,7 +68,11 @@
     </th>
   }
   @for (col of activeColumns().scoring; track col) {
-    <th class="col-stat" [class.sorted]="sortColumn() === col">
+    <th
+      class="col-stat"
+      [class.sorted]="sortColumn() === col"
+      [class.has-menu]="showColumnControls()"
+    >
       <span class="th-inner">
         <button
           type="button"
@@ -188,6 +198,28 @@
 <ng-template #columnMenu let-col>
   <div class="column-menu">
     <p class="menu-title">{{ fullNameOf(col) }}</p>
+
+    @if (showFullSeasonButton() && col === 'gp') {
+      <button type="button" class="menu-item" (click)="fullSeason.emit()">
+        <svg
+          viewBox="0 0 24 24"
+          width="15"
+          height="15"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M12 20v-11" />
+          <path d="M8 13l4 -4l4 4" />
+          <path d="M5 4h14" />
+        </svg>
+        Set a full 84-game season
+      </button>
+      <div class="menu-separator"></div>
+    }
 
     <button
       type="button"
