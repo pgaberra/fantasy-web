@@ -4,6 +4,7 @@ import { of, throwError } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { SharedProjectionComponent } from './shared-projection';
+import { PlayerRowComponent } from '../draft-projection/player-projections-table/player-row/player-row';
 import { ProjectionShareService } from '../services/projection-share.service';
 import { SharedProjectionResponse } from '../api/models/shared-projection-response';
 
@@ -32,6 +33,7 @@ describe('SharedProjectionComponent', () => {
           name: 'Connor McDavid',
           teamAbbrev: 'EDM',
           positions: ['C'],
+          headshot: 'https://example.test/mcdavid.png',
           type: 'skater',
           rank: 1,
           value: 412.5,
@@ -55,12 +57,17 @@ describe('SharedProjectionComponent', () => {
   beforeEach(() => {
     loadShared.mockClear();
     loadShared.mockReturnValue(of(shared));
-    return MockBuilder(SharedProjectionComponent)
-      .mock(ProjectionShareService, { loadShared })
-      .provide({
-        provide: ActivatedRoute,
-        useValue: { snapshot: { paramMap: { get: () => 'abc123' } } },
-      });
+    return (
+      MockBuilder(SharedProjectionComponent)
+        // Kept real: the point of this page is that it renders the editor's own row, so a mocked
+        // stand-in would test nothing.
+        .keep(PlayerRowComponent)
+        .mock(ProjectionShareService, { loadShared })
+        .provide({
+          provide: ActivatedRoute,
+          useValue: { snapshot: { paramMap: { get: () => 'abc123' } } },
+        })
+    );
   });
 
   it('renders the published rows in the order they were shared', async () => {
@@ -69,11 +76,54 @@ describe('SharedProjectionComponent', () => {
     fixture.detectChanges();
 
     const component = fixture.point.componentInstance;
-    expect(component.players().map((player) => player.name)).toEqual([
+    expect(component.visibleRows().map((row) => row.player.name)).toEqual([
       'Connor McDavid',
       'Igor Shesterkin',
     ]);
+    expect(fixture.nativeElement.querySelector('img.player-headshot')).not.toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Connor McDavid');
+  });
+
+  it('carries the headshot into the row, so the page looks like the editor', async () => {
+    const fixture = MockRender(SharedProjectionComponent);
+    await fixture.whenStable();
+
+    expect(fixture.point.componentInstance.visibleRows()[0].player.headshot).toEqual(
+      'https://example.test/mcdavid.png',
+    );
+  });
+
+  it('renders the published value rather than recomputing it', async () => {
+    const fixture = MockRender(SharedProjectionComponent);
+    await fixture.whenStable();
+
+    const [first] = fixture.point.componentInstance.visibleRows();
+    expect(first.score.fantasyPoints).toEqual(412.5);
+    expect(first.score.zScore).toEqual(412.5);
+  });
+
+  it('filters by position without touching the published order', async () => {
+    const fixture = MockRender(SharedProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.positionFilter.set('G');
+
+    expect(component.visibleRows().map((row) => row.player.name)).toEqual(['Igor Shesterkin']);
+  });
+
+  it('sorts by a stat column when its header is clicked', async () => {
+    const fixture = MockRender(SharedProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.onSort('goals');
+
+    expect(component.visibleRows().map((row) => row.player.name)).toEqual([
+      'Connor McDavid',
+      'Igor Shesterkin',
+    ]);
+    expect(component.sortColumn()).toEqual('goals');
   });
 
   it("credits the owner's username", async () => {
@@ -81,30 +131,6 @@ describe('SharedProjectionComponent', () => {
     await fixture.whenStable();
 
     expect(fixture.point.componentInstance.authorLabel()).toEqual('alex');
-  });
-
-  it('labels the ranking column by the scoring type', async () => {
-    loadShared.mockReturnValue(
-      of({
-        ...shared,
-        data: { ...shared.data, settings: { ...shared.data.settings, scoringType: 'category' } },
-      }),
-    );
-
-    const fixture = MockRender(SharedProjectionComponent);
-    await fixture.whenStable();
-
-    expect(fixture.point.componentInstance.valueLabel()).toEqual('Z-Score');
-  });
-
-  it('shows the active scoring columns with their labels', async () => {
-    const fixture = MockRender(SharedProjectionComponent);
-    await fixture.whenStable();
-
-    expect(fixture.point.componentInstance.statColumns().map((column) => column.label)).toEqual([
-      'Goals',
-      'Assists',
-    ]);
   });
 
   it('treats a withdrawn link as gone rather than as a failure to retry', async () => {

@@ -45,3 +45,12 @@
 .stat-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
 }
+
+/* Sized like the input it replaces, so a read-only table lines up with the editable one. */
+.stat-readonly {
+  display: inline-block;
+  width: 100%;
+  padding: 0.25rem;
+  text-align: center;
+  color: var(--color-text);
+}

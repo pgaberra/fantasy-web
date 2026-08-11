@@ -52,6 +52,8 @@ export class ProjectionShareService {
         playerId: scored.projection.playerId,
         name: player?.name ?? `Player ${scored.projection.playerId}`,
         teamAbbrev: player?.teamAbbrev,
+        // Copied in so the public page can render a row without the player read model.
+        headshot: player?.headshot,
         positions: player?.type === 'skater' ? [...player.positions] : undefined,
         type: scored.projection.type,
         rank: index + 1,

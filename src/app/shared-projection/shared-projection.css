@@ -29,75 +29,6 @@
   color: var(--color-text-muted);
 }
 
-.table-scroll {
-  overflow-x: auto;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.shared-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--text-sm);
-}
-
-.shared-table th,
-.shared-table td {
-  padding: var(--space-2) var(--space-3);
-  text-align: right;
-  white-space: nowrap;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.shared-table th {
-  position: sticky;
-  top: 0;
-  background: var(--color-surface-alt);
-  color: var(--color-text-muted);
-  font-weight: var(--weight-semibold);
-}
-
-.shared-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.col-rank {
-  width: 3rem;
-  text-align: right;
-  color: var(--color-text-muted);
-}
-
-.col-player,
-th.col-player {
-  text-align: left;
-}
-
-.col-pos,
-th.col-pos {
-  text-align: left;
-  color: var(--color-text-muted);
-}
-
-.col-value {
-  font-weight: var(--weight-semibold);
-  color: var(--color-text);
-}
-
-.player-name {
-  color: var(--color-text);
-}
-
-.player-team {
-  margin-left: var(--space-2);
-  font-size: var(--text-xs);
-  color: var(--color-text-subtle);
-}
-
-.empty {
-  color: var(--color-text-subtle);
-}
-
 .cta {
   margin-top: var(--space-5);
   padding: var(--space-5);
@@ -158,9 +89,79 @@ th.col-pos {
   .shared-projection {
     padding: var(--space-4) var(--space-2);
   }
+}
 
-  .shared-table th,
-  .shared-table td {
-    padding: var(--space-2);
+/* The table shell mirrors the editor's (player-projections-table.css) so a shared projection
+   sits in the same frame as the table it was published from; the rows and header are literally
+   the same components. Component styles are scoped, which is why the shell is repeated rather
+   than imported. */
+.table-section {
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.table-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.table-section h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+  color: var(--color-text);
+}
+
+.table-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+@media (min-width: 641px) {
+  .table-wrapper {
+    overflow: auto;
+    max-height: calc(100vh - 16rem);
+  }
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+tbody tr:nth-child(even) {
+  background: var(--color-surface-alt);
+}
+
+tbody tr:hover {
+  background: var(--color-surface-hover);
+}
+
+@media (max-width: 640px) {
+  .table-section {
+    padding: var(--space-4);
+  }
+
+  .table-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
   }
 }
