@@ -1,17 +1,15 @@
 <div class="dialog-backdrop">
   <div class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="share-title">
-    <h2 id="share-title" class="dialog-title">Share this projection</h2>
+    <div class="dialog-header">
+      <h2 id="share-title" class="dialog-title">Share this projection</h2>
+      <button type="button" class="dialog-close" aria-label="Close" (click)="closed.emit()">
+        &times;
+      </button>
+    </div>
 
     @if (isLoading()) {
       <p class="dialog-body">Checking…</p>
     } @else if (share(); as activeShare) {
-      <p class="dialog-body">
-        Anyone with this link can see your top {{ sharedCount }} players and the scoring settings
-        they were ranked under — no account needed. It's credited to
-        <strong>{{ username() }}</strong
-        >; your email is never shown.
-      </p>
-
       <div class="link-row">
         <input
           class="link-input"
@@ -23,26 +21,6 @@
         <button type="button" class="btn btn-primary btn-sm" (click)="copyLink()">
           {{ copied() ? 'Copied!' : 'Copy' }}
         </button>
-      </div>
-
-      <div class="dialog-actions">
-        <button
-          type="button"
-          class="btn btn-secondary btn-sm"
-          [disabled]="isSaving()"
-          (click)="unshare()"
-        >
-          Stop sharing
-        </button>
-        <button
-          type="button"
-          class="btn btn-secondary btn-sm"
-          [disabled]="isSaving()"
-          (click)="publish()"
-        >
-          Update snapshot
-        </button>
-        <button type="button" class="btn btn-primary btn-sm" (click)="closed.emit()">Done</button>
       </div>
     } @else {
       @if (needsUsername()) {

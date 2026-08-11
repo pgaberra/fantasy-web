@@ -6,16 +6,14 @@ import { ShareLinkResponse } from '../../api/models/share-link-response';
 import { AccountService } from '../../services/account.service';
 import { AnalyticsService } from '../../services/analytics.service';
 import { NotificationService } from '../../services/notification.service';
-import {
-  ProjectionShareService,
-  SHARED_PLAYER_COUNT,
-} from '../../services/projection-share.service';
+import { ProjectionShareService } from '../../services/projection-share.service';
 import { USERNAME_PATTERN, USERNAME_MAX_LENGTH } from '../../models/username';
 import { messageForError } from '../../shared/http-error';
 
 /**
  * Publishing a projection as a public link. Opening the dialog only reads the current state —
- * nothing becomes public until the owner presses the button.
+ * nothing becomes public until the owner presses the button, and publishing is one-way: there
+ * is no way back from a published snapshot short of deleting the projection.
  *
  * A shared page credits the account's username, so an account without one has to pick a name
  * here first. That is deliberately the only place the choice is forced: signing up does not ask.
@@ -36,7 +34,6 @@ export class ShareDialogComponent implements OnInit {
   private readonly notification = inject(NotificationService);
   private readonly analytics = inject(AnalyticsService);
 
-  readonly sharedCount = SHARED_PLAYER_COUNT;
   readonly usernameMaxLength = USERNAME_MAX_LENGTH;
 
   private readonly accountLoaded = signal<boolean>(false);
@@ -119,22 +116,6 @@ export class ShareDialogComponent implements OnInit {
       return 'That name is taken — try another.';
     }
     return messageForError(error, "Couldn't share this projection.");
-  }
-
-  unshare(): void {
-    this.isSaving.set(true);
-    this.errorMessage.set(null);
-    this.shareService.unshare(this.projectionId()).subscribe({
-      next: () => {
-        this.share.set(null);
-        this.copied.set(false);
-        this.isSaving.set(false);
-      },
-      error: (error: unknown) => {
-        this.isSaving.set(false);
-        this.errorMessage.set(messageForError(error, "Couldn't take the link down."));
-      },
-    });
   }
 
   async copyLink(): Promise<void> {

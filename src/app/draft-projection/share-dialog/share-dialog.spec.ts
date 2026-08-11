@@ -35,7 +35,6 @@ describe('ShareDialogComponent', () => {
 
   const getShare = vi.fn();
   const share = vi.fn();
-  const unshare = vi.fn();
   const load = vi.fn();
   const setUsername = vi.fn();
   const notifyError = vi.fn();
@@ -44,16 +43,15 @@ describe('ShareDialogComponent', () => {
     throwError(() => new HttpErrorResponse({ status: 404, statusText: 'Not Found' }));
 
   beforeEach(() => {
-    for (const spy of [getShare, share, unshare, load, setUsername, notifyError]) {
+    for (const spy of [getShare, share, load, setUsername, notifyError]) {
       spy.mockReset();
     }
     getShare.mockReturnValue(notShared());
     share.mockReturnValue(of(link));
-    unshare.mockReturnValue(of(undefined));
     load.mockReturnValue(of(named));
     setUsername.mockReturnValue(of(named));
     return MockBuilder(ShareDialogComponent)
-      .mock(ProjectionShareService, { getShare, share, unshare })
+      .mock(ProjectionShareService, { getShare, share })
       .mock(AccountService, { load, setUsername, username: signal<string | null>('alex') })
       .mock(NotificationService, { error: notifyError });
   });
@@ -146,16 +144,5 @@ describe('ShareDialogComponent', () => {
     expect(fixture.point.componentInstance.share()?.shareUrl).toEqual(
       'https://slapstat.com/s/abc123',
     );
-  });
-
-  it('clears the link when the owner stops sharing', async () => {
-    getShare.mockReturnValue(of(link));
-
-    const fixture = render();
-    await fixture.whenStable();
-    fixture.point.componentInstance.unshare();
-
-    expect(unshare).toHaveBeenCalledWith('p1');
-    expect(fixture.point.componentInstance.share()).toBeNull();
   });
 });
