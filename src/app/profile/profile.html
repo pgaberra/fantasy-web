@@ -1,0 +1,57 @@
+@if (isLoading()) {
+  <app-loading-indicator />
+} @else if (loadFailed()) {
+  <app-error-state
+    title="Couldn't load your profile"
+    message="Check your connection and try again."
+    (retry)="load()"
+  />
+} @else {
+  <div class="profile">
+    <h1 class="profile-title">Profile</h1>
+
+    <section class="card">
+      <h2 class="card-title">Public name</h2>
+      <p class="card-body">
+        Shown on every projection you share, so people know whose board they're looking at. It's the
+        only thing about your account a reader sees — your email never appears.
+      </p>
+
+      <label class="field-label" for="profile-username">Username</label>
+      <input
+        id="profile-username"
+        class="field-input"
+        type="text"
+        autocomplete="username"
+        [attr.maxlength]="usernameMaxLength"
+        placeholder="e.g. beerleaguehero"
+        [value]="usernameInput()"
+        (input)="onUsernameInput($event)"
+      />
+      <p class="field-hint">{{ usernameRule }}</p>
+
+      <div class="card-actions">
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="isSaving() || !canSave()"
+          (click)="save()"
+        >
+          {{ isSaving() ? 'Saving…' : 'Save' }}
+        </button>
+        @if (justSaved()) {
+          <span class="saved-note">Saved</span>
+        }
+      </div>
+
+      @if (errorMessage()) {
+        <p class="field-error">{{ errorMessage() }}</p>
+      }
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">Sign-in</h2>
+      <p class="card-body">{{ email() }}</p>
+    </section>
+  </div>
+}

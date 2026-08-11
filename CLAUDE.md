@@ -60,6 +60,10 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   `/s/:token/og-image.png` so the tags and the image they point at share a host. That
   location must stay above the static-asset location, which would otherwise claim any URL
   ending in `.png` and 404 it.
+- `profile/` — the account's **public name** (`/profile`, signed-in only). Sharing forces the
+  choice, but a name has to be changeable afterwards: a shared page credits the current one.
+  `AccountService` caches it in a signal, because the share dialog and this page both need to
+  know whether a name exists without re-fetching.
 - `services/` — app services (auth, projections, etc.)
 - `interceptors/` — HTTP interceptors: `authInterceptor` attaches the JWT and refreshes
   once on 401 (all environments). `retryInterceptor` (outermost) is a small **always-on**

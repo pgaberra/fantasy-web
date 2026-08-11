@@ -7,7 +7,9 @@
     } @else if (share(); as activeShare) {
       <p class="dialog-body">
         Anyone with this link can see your top {{ sharedCount }} players and the scoring settings
-        they were ranked under — no account needed. Your email is never shown.
+        they were ranked under — no account needed. It's credited to
+        <strong>{{ username() }}</strong
+        >; your email is never shown.
       </p>
 
       <div class="link-row">
@@ -49,17 +51,27 @@
         it, and you can take the link down at any time.
       </p>
 
-      <label class="alias-label" for="share-alias">Credit it to (optional)</label>
-      <input
-        id="share-alias"
-        class="alias-input"
-        type="text"
-        maxlength="40"
-        placeholder="Your name or handle"
-        [value]="authorAlias()"
-        (input)="onAliasInput($event)"
-      />
-      <p class="alias-hint">Leave it empty to stay anonymous. Your email is never shown.</p>
+      @if (needsUsername()) {
+        <label class="alias-label" for="share-username">Pick a public name</label>
+        <input
+          id="share-username"
+          class="alias-input"
+          type="text"
+          autocomplete="username"
+          [attr.maxlength]="usernameMaxLength"
+          placeholder="e.g. beerleaguehero"
+          [value]="usernameInput()"
+          (input)="onUsernameInput($event)"
+        />
+        <p class="alias-hint">
+          Shown on every page you share, so people know whose board they're looking at. 3–20
+          characters: letters, digits and underscores. Your email is never shown.
+        </p>
+      } @else {
+        <p class="alias-hint">
+          Credited to <strong>{{ username() }}</strong> — change it on your profile.
+        </p>
+      }
 
       <div class="dialog-actions">
         <button type="button" class="btn btn-secondary btn-sm" (click)="closed.emit()">
@@ -68,7 +80,7 @@
         <button
           type="button"
           class="btn btn-primary btn-sm"
-          [disabled]="isSaving()"
+          [disabled]="isSaving() || !canPublish()"
           (click)="publish()"
         >
           {{ isSaving() ? 'Sharing…' : 'Create link' }}

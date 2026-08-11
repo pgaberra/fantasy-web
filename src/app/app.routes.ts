@@ -82,6 +82,11 @@ export const routes: Routes = [
     canActivate: [paymentsEnabledGuard, authGuard],
   },
   {
+    path: 'profile',
+    loadComponent: () => import('./profile/profile').then((m) => m.ProfileComponent),
+    canActivate: [authGuard],
+  },
+  {
     path: 'login',
     loadComponent: () => import('./auth/login/login').then((m) => m.LoginComponent),
   },
