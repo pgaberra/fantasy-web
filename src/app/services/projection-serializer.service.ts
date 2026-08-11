@@ -1,22 +1,46 @@
 import { Injectable } from '@angular/core';
 import { ProjectionData } from '../api/models/projection-data';
 import { PlayerProjection as ApiPlayerProjection } from '../api/models/player-projection';
+import { GoalieUtilityStats, Projection, SkaterUtilityStats } from '../models/projection.model';
 import {
-  GoalieScoringStats,
-  GoalieUtilityStats,
-  Projection,
-  SkaterScoringStats,
-  SkaterUtilityStats,
-} from '../models/projection.model';
-import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
-import { DecimalStatKey, ScaleConfig } from '../draft-projection/projection-settings-section/model';
+  GOALIE_SCORING_STAT_KEYS,
+  GoalieScoringStatKey,
+  ScoringStatKey,
+  SKATER_SCORING_STAT_KEYS,
+  SkaterScoringStatKey,
+  SkaterUtilityStatKey,
+} from '../models/stat-key.model';
+import {
+  DEFAULT_DECIMAL_SETTINGS,
+  ScaleConfig,
+} from '../draft-projection/projection-settings-section/model';
 import {
   DEFAULT_LEAGUE_SIZE,
   DEFAULT_MIN_GOALIE_GAMES,
   DEFAULT_ROSTER_SLOTS,
+  DEFAULT_STAT_WEIGHTS,
 } from '../draft-projection/projection-defaults';
 import { DraftState } from '../api/models/draft-state';
 import { ProjectionState } from './projection-serializer';
+
+/**
+ * A stat line holding every key the app knows about today, zero-filling the ones a stored
+ * projection predates.
+ *
+ * <p>Projections are saved as whatever the stat vocabulary was on the day they were written, so
+ * one saved before hat tricks and shifts existed carries neither. The types claim a complete
+ * record, and the table trusts that — it rounds every key, so a missing one threw and took the
+ * whole table down. Old projections are the normal case, not an edge case, so the shape is
+ * completed here at the boundary rather than guarded at each of the places that read it.
+ */
+function everyStat<K extends SkaterScoringStatKey | GoalieScoringStatKey>(
+  keys: readonly K[],
+  stored: { [key: string]: number },
+): Record<K, number> {
+  const complete = {} as Record<K, number>;
+  keys.forEach((key) => (complete[key] = stored[key] ?? 0));
+  return complete;
+}
 
 @Injectable({ providedIn: 'root' })
 export class ProjectionSerializerService {
@@ -64,11 +88,11 @@ export class ProjectionSerializerService {
     }
     return {
       scoringType: data.settings.scoringType,
-      statWeights: data.settings.statWeights as Record<ScoringStatKey, number>,
+      statWeights: { ...DEFAULT_STAT_WEIGHTS, ...data.settings.statWeights },
       activeScoringColumns: new Set(data.settings.activeScoringColumns as ScoringStatKey[]),
       activeUtilityColumns: new Set(data.settings.activeUtilityColumns as SkaterUtilityStatKey[]),
       scaleSettings,
-      decimalSettings: data.settings.decimalSettings as Record<DecimalStatKey, number>,
+      decimalSettings: { ...DEFAULT_DECIMAL_SETTINGS, ...data.settings.decimalSettings },
       useDefaultDecimals: data.settings.useDefaultDecimals,
       leagueSize: data.settings.leagueSize ?? DEFAULT_LEAGUE_SIZE,
       rosterSlots: data.settings.rosterSlots ?? { ...DEFAULT_ROSTER_SLOTS },
@@ -86,7 +110,7 @@ export class ProjectionSerializerService {
         playerId: player.playerId,
         stats: {
           utility: player.stats.utility as SkaterUtilityStats,
-          scoring: player.stats.scoring as SkaterScoringStats,
+          scoring: everyStat(SKATER_SCORING_STAT_KEYS, player.stats.scoring),
         },
       };
     }
@@ -95,7 +119,7 @@ export class ProjectionSerializerService {
       playerId: player.playerId,
       stats: {
         utility: player.stats.utility as GoalieUtilityStats,
-        scoring: player.stats.scoring as GoalieScoringStats,
+        scoring: everyStat(GOALIE_SCORING_STAT_KEYS, player.stats.scoring),
       },
     };
   }
