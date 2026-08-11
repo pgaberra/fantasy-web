@@ -436,6 +436,9 @@ describe('ProjectionsTableHeaderComponent', () => {
         .find((trigger) => trigger.nativeElement.getAttribute('aria-label')?.includes('Goals'))!;
       goalsMenu.nativeElement.dispatchEvent(new Event('click', { bubbles: true }));
 
+      // The heading is the full stat name even for stats whose label already spells it out —
+      // `statTooltip` returns null for those, which would have left the menu unheaded.
+      expect(overlayText()).toContain('Goals');
       expect(overlayText()).toContain('Remove column');
       expect(overlayText()).toContain('Sort highest first');
 

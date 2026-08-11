@@ -13,7 +13,7 @@ import {
   SortDirection,
 } from '../../../models/projection.model';
 import { StatLabelPipe } from '../../../pipes/stat-label.pipe';
-import { StatTooltipPipe } from '../../../pipes/stat-tooltip.pipe';
+import { STAT_FULL_NAMES, StatTooltipPipe } from '../../../pipes/stat-tooltip.pipe';
 import { TooltipDirective } from '../../../shared/tooltip/tooltip.directive';
 import { PopoverTriggerDirective } from '../../../shared/popover/popover-trigger.directive';
 import { ToggleSwitchComponent } from '../../projection-settings-section/toggle-switch/toggle-switch';
@@ -112,7 +112,14 @@ export class ProjectionsTableHeaderComponent {
   }
 
   isDecimalColumn(statKey: StatKey): statKey is DecimalStatKey {
-    return statKey in this.decimalSettings();
+    // Checked against the key list rather than `in decimalSettings`, so this stays a decision
+    // about which stats have decimals rather than about the shape of a runtime object.
+    return statKey === 'gp' || (SCORING_STAT_KEYS as readonly string[]).includes(statKey);
+  }
+
+  /** The column menu's own heading — always the full name, even where it matches the label. */
+  fullNameOf(statKey: StatKey): string {
+    return STAT_FULL_NAMES[statKey];
   }
 
   decimalsFor(statKey: StatKey): number {
