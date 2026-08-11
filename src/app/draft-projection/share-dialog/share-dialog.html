@@ -45,17 +45,13 @@
         <button type="button" class="btn btn-primary btn-sm" (click)="closed.emit()">Done</button>
       </div>
     } @else {
-      <p class="dialog-body">
-        Publish your top {{ sharedCount }} players as a page anyone can open — good for posting in a
-        Discord or a league chat. It's a snapshot: what you share stays as it is until you update
-        it, and you can take the link down at any time.
-      </p>
-
       @if (needsUsername()) {
-        <label class="alias-label" for="share-username">Pick a public name</label>
+        <p class="dialog-body">To share a projection you need to pick a username.</p>
+
+        <label class="username-label" for="share-username">Pick a username</label>
         <input
           id="share-username"
-          class="alias-input"
+          class="username-input"
           type="text"
           autocomplete="username"
           [attr.maxlength]="usernameMaxLength"
@@ -63,12 +59,8 @@
           [value]="usernameInput()"
           (input)="onUsernameInput($event)"
         />
-        <p class="alias-hint">
-          Shown on every page you share, so people know whose board they're looking at. 3–20
-          characters: letters, digits and underscores. Your email is never shown.
-        </p>
       } @else {
-        <p class="alias-hint">
+        <p class="username-hint">
           Credited to <strong>{{ username() }}</strong> — change it on your profile.
         </p>
       }
