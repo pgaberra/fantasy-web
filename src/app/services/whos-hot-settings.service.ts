@@ -3,6 +3,7 @@ import { ScoringType } from '../models/projection.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
 import { RosterSlots } from '../api/models/roster-slots';
 import { YahooSync } from '../api/models/yahoo-sync';
+import { DEFAULT_STAT_WEIGHTS } from '../draft-projection/projection-defaults';
 
 /**
  * Everything the Who's hot page remembers between visits: the span being looked at, how it is
@@ -29,13 +30,27 @@ export interface WhosHotSettings {
 
 const STORAGE_KEY = 'slapstat.whosHot.settings';
 
-/** Sets don't survive JSON, so the two column sets travel as arrays. */
+/**
+ * Bumped when what is stored stops meaning what it used to. Version 1 wrote every stat weight
+ * out in full, which froze whatever the defaults were on the day of the visit: correcting a
+ * default afterwards reached new visitors and nobody else. Those blobs are read for everything
+ * except their weights, which are dropped in favour of the current defaults.
+ */
+const SETTINGS_VERSION = 2;
+
+/**
+ * Sets don't survive JSON, so the two column sets travel as arrays — and the weights travel as
+ * only the ones the user actually changed. Storing the whole table would mean a default this
+ * page had never been told about could never reach anyone who had visited before.
+ */
 interface StoredSettings extends Omit<
   WhosHotSettings,
-  'activeScoringColumns' | 'activeUtilityColumns'
+  'activeScoringColumns' | 'activeUtilityColumns' | 'statWeights'
 > {
+  version?: number;
   activeScoringColumns: ScoringStatKey[];
   activeUtilityColumns: SkaterUtilityStatKey[];
+  statWeights: Partial<Record<ScoringStatKey, number>>;
 }
 
 @Injectable({
@@ -53,11 +68,16 @@ export class WhosHotSettingsService {
       return null;
     }
     try {
-      const stored = JSON.parse(raw) as StoredSettings;
+      // `version` describes the blob rather than the settings, so it is read here and left
+      // behind — the caller gets what they saved, not how it was stored.
+      const { version, statWeights, ...stored } = JSON.parse(raw) as StoredSettings;
+      const customised = version === SETTINGS_VERSION ? (statWeights ?? {}) : {};
       return {
         ...stored,
         activeScoringColumns: new Set(stored.activeScoringColumns ?? []),
         activeUtilityColumns: new Set(stored.activeUtilityColumns ?? []),
+        // Defaults first, so a stat this page learns to score later arrives on its own.
+        statWeights: { ...DEFAULT_STAT_WEIGHTS, ...customised },
       };
     } catch {
       this.clear();
@@ -68,8 +88,10 @@ export class WhosHotSettingsService {
   save(settings: WhosHotSettings): void {
     const stored: StoredSettings = {
       ...settings,
+      version: SETTINGS_VERSION,
       activeScoringColumns: [...settings.activeScoringColumns],
       activeUtilityColumns: [...settings.activeUtilityColumns],
+      statWeights: changedWeights(settings.statWeights),
     };
     // A browser with storage disabled or full must not take the page down with it — the
     // settings are a convenience, and the page works perfectly well without remembering them.
@@ -95,4 +117,17 @@ export class WhosHotSettingsService {
       return null;
     }
   }
+}
+
+/** Only the weights that differ from the defaults; the rest are the defaults' to decide. */
+function changedWeights(
+  weights: Record<ScoringStatKey, number>,
+): Partial<Record<ScoringStatKey, number>> {
+  const changed: Partial<Record<ScoringStatKey, number>> = {};
+  for (const [key, weight] of Object.entries(weights) as [ScoringStatKey, number][]) {
+    if (weight !== DEFAULT_STAT_WEIGHTS[key]) {
+      changed[key] = weight;
+    }
+  }
+  return changed;
 }

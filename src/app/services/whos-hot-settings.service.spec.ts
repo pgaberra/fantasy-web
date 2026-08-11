@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { WhosHotSettings, WhosHotSettingsService } from './whos-hot-settings.service';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
+import { DEFAULT_STAT_WEIGHTS } from '../draft-projection/projection-defaults';
 
 const settings: WhosHotSettings = {
   fromGame: 50,
@@ -8,7 +9,7 @@ const settings: WhosHotSettings = {
   perGame: true,
   minGames: 5,
   scoringType: 'category',
-  statWeights: { goals: 5, assists: 3 } as Record<ScoringStatKey, number>,
+  statWeights: { ...DEFAULT_STAT_WEIGHTS, goals: 9 },
   activeScoringColumns: new Set<ScoringStatKey>(['goals', 'hits']),
   activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
   leagueSize: 12,
@@ -72,5 +73,58 @@ describe('WhosHotSettingsService', () => {
     service.clear();
 
     expect(service.load()).toEqual(null);
+  });
+
+  describe('stat weights', () => {
+    const STORAGE_KEY = 'slapstat.whosHot.settings';
+
+    it('keeps a weight the visitor actually changed', () => {
+      service.save(settings);
+
+      expect(service.load()?.statWeights.goals).toEqual(9);
+    });
+
+    it('stores only what differs from the defaults', () => {
+      service.save(settings);
+
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!) as {
+        statWeights: Record<string, number>;
+      };
+
+      // Everything else is the defaults' to decide, and writing it down is what froze them.
+      expect(stored.statWeights).toEqual({ goals: 9 });
+    });
+
+    it('lets a corrected default reach someone who has already been here', () => {
+      // What version 1 wrote: every weight in full, including the zeros the ESPN-only
+      // categories had before they were given one.
+      const zeroed = Object.fromEntries(Object.keys(DEFAULT_STAT_WEIGHTS).map((key) => [key, 0]));
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          ...settings,
+          statWeights: zeroed,
+          activeScoringColumns: [],
+          activeUtilityColumns: [],
+        }),
+      );
+
+      const loaded = service.load();
+
+      expect(loaded?.statWeights.hatTricks).toEqual(DEFAULT_STAT_WEIGHTS.hatTricks);
+      expect(loaded?.statWeights.stp).toEqual(DEFAULT_STAT_WEIGHTS.stp);
+      // The rest of that blob is still theirs — only the weights were rewritten.
+      expect(loaded?.fromGame).toEqual(50);
+      expect(loaded?.perGame).toEqual(true);
+    });
+
+    it('fills in a stat the stored blob has never heard of', () => {
+      service.save({ ...settings, statWeights: { ...DEFAULT_STAT_WEIGHTS, goals: 9 } });
+
+      expect(service.load()?.statWeights.shifts).toEqual(DEFAULT_STAT_WEIGHTS.shifts);
+      expect(Object.keys(service.load()!.statWeights).sort((a, b) => a.localeCompare(b))).toEqual(
+        Object.keys(DEFAULT_STAT_WEIGHTS).sort((a, b) => a.localeCompare(b)),
+      );
+    });
   });
 });
