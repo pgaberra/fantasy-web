@@ -131,6 +131,181 @@ th:focus-within .th-menu,
   }
 }
 
+th.summary-pts-col.sortable:hover {
+  background: #b87908;
+}
+
+th.sortable.sorted {
+  background: var(--color-primary-hover);
+}
+
+th.summary-pts-col.sortable.sorted {
+  background: #b87908;
+}
+
+.sort-arrow {
+  display: inline-block;
+  width: 0.75em;
+  margin-left: 0.15em;
+  font-size: 0.7em;
+  color: var(--color-gold);
+}
+
+.col-rank {
+  text-align: center;
+  color: var(--color-text-subtle);
+  font-weight: var(--weight-medium);
+  padding-left: 0.125rem;
+  padding-right: 0.125rem;
+}
+
+.col-utility {
+  min-width: 60px;
+}
+
+th.summary-pts-col {
+  background: var(--color-gold-strong);
+  color: var(--color-text-on-dark);
+  /* Second inset re-covers the row-boundary seam in the column's own gold so the thead's
+     blue backdrop can't show through as a hairline breaking the unbroken gold band. */
+  box-shadow:
+    inset 3px 0 0 0 #a06800,
+    inset 0 1px 0 0 var(--color-gold-strong);
+  min-width: 72px;
+}
+
+/* The weight/decimal rows paint their whole strip blue, and their `tr … th` selector
+   outranks the column's own rule — which punches a blue gap into the gold column. The
+   total has no weight or decimal input, so those cells are empty: keep them gold and let
+   the column read as one unbroken band. */
+tr.weight-row th.summary-pts-col,
+tr.decimal-row th.summary-pts-col {
+  background: var(--color-gold-strong);
+}
+
+tr.weight-row th {
+  background: var(--color-primary-hover);
+  padding: 0.3rem 0.25rem;
+}
+
+.weight-label {
+  font-size: var(--text-xs);
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.weight-input {
+  width: 52px;
+  padding: 0.2rem 0.25rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 0.8rem;
+  color: var(--color-text-on-dark);
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast);
+  -moz-appearance: textfield;
+}
+
+.weight-input:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.weight-input:focus {
+  outline: none;
+  border-color: var(--color-gold);
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 0 2px rgba(230, 184, 74, 0.35);
+}
+
+.weight-input::-webkit-outer-spin-button,
+.weight-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+tr.decimal-row th {
+  background: #22395e;
+  padding: 0.3rem 0.25rem;
+}
+
+.decimal-label {
+  font-size: var(--text-xs);
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.decimal-input {
+  width: 40px;
+  padding: 0.2rem 0.25rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 0.8rem;
+  color: var(--color-text-on-dark);
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast);
+  -moz-appearance: textfield;
+}
+
+.decimal-input:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.decimal-input:focus {
+  outline: none;
+  border-color: var(--color-gold);
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 0 2px rgba(230, 184, 74, 0.35);
+}
+
+.decimal-input::-webkit-outer-spin-button,
+.decimal-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+.full-season-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: var(--weight-semibold);
+  line-height: 1.5;
+  color: var(--color-text-on-dark);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  cursor: pointer;
+  vertical-align: middle;
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.full-season-pill:hover {
+  background: rgba(255, 255, 255, 0.26);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.full-season-pill:focus-visible {
+  outline: none;
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 2px rgba(230, 184, 74, 0.35);
+}
+
+.full-season-pill svg {
+  display: block;
+}
+
 /* The column menu renders in a CDK overlay, outside the table's dark header — these rules still
    apply because the template is declared here, but the colours have to reset to the app surface. */
 .column-menu {
