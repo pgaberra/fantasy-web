@@ -1,0 +1,62 @@
+<p class="menu-title">League setup</p>
+
+@if (scoringType() === 'category') {
+  <div class="menu-field">
+    <label for="league-size-input">League size</label>
+    <span class="field-with-unit">
+      <input
+        id="league-size-input"
+        type="number"
+        min="2"
+        max="30"
+        [value]="leagueSize()"
+        (input)="onLeagueSizeInput($event)"
+      />
+      <span class="field-unit">teams</span>
+    </span>
+  </div>
+
+  <div class="menu-field">
+    <label for="min-goalie-games-input">Minimum goalie games</label>
+    <input
+      id="min-goalie-games-input"
+      type="number"
+      min="0"
+      [max]="FULL_SEASON_GAMES"
+      [value]="minGoalieGames()"
+      (input)="onMinGoalieGamesInput($event)"
+    />
+  </div>
+  <p class="menu-note">
+    Goalies projected for fewer games than this are ranked last, so a tiny-sample goalie with elite
+    rate stats can't top the rankings.
+  </p>
+
+  <div class="menu-separator"></div>
+  <app-roster-slots-editor [(rosterSlots)]="rosterSlots" />
+  <p class="menu-note">League size and roster slots tune the rankings for your league.</p>
+} @else {
+  <p class="menu-note">
+    League size, roster slots and the goalie games minimum shape the category rankings — switch this
+    projection to <strong>Category</strong> to set them.
+  </p>
+}
+
+@if (showDecimalsSetting()) {
+  <div class="menu-separator"></div>
+  <div class="menu-field">
+    <label id="default-decimals-label">Use default decimal places</label>
+    <app-toggle-switch
+      [on]="useDefaultDecimals()"
+      ariaLabel="Use default decimal places"
+      (toggled)="toggleUseDefaultDecimals()"
+    />
+  </div>
+  <p class="menu-note">
+    @if (useDefaultDecimals()) {
+      Stats are rounded to whole numbers (except SH%, GAA and SV%).
+    } @else {
+      Set the decimals for a stat in that column's own menu.
+    }
+  </p>
+}

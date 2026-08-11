@@ -50,8 +50,25 @@ import {
   UtilityStatKey,
 } from '../../models/stat-key.model';
 import { StatInfoService } from '../../services/stat-info.service';
+import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
+import { LeagueSettingsMenuComponent } from './league-settings-menu/league-settings-menu';
 
 const PLAYERS_PER_PAGE = 250;
+
+/** Everything one undo step restores: the projected stats and which columns were on screen. */
+interface TableSnapshot {
+  playerProjections: Projection[];
+  activeScoringColumns: Set<ScoringStatKey>;
+  activeUtilityColumns: Set<UtilityStatKey>;
+}
+
+function toggledSet<T>(members: ReadonlySet<T>, member: T): Set<T> {
+  const next = new Set(members);
+  if (!next.delete(member)) {
+    next.add(member);
+  }
+  return next;
+}
 
 function statValueOf(projection: Projection, key: StatKey): number {
   const scoring = projection.stats.scoring as Record<string, number>;
@@ -67,6 +84,8 @@ function statValueOf(projection: Projection, key: StatKey): number {
     PlayerRowComponent,
     PositionFilterComponent,
     TeamFilterComponent,
+    PopoverTriggerDirective,
+    LeagueSettingsMenuComponent,
   ],
   templateUrl: './player-projections-table.html',
   styleUrl: './player-projections-table.css',
@@ -75,17 +94,25 @@ function statValueOf(projection: Projection, key: StatKey): number {
   },
 })
 export class PlayerProjectionsTableComponent implements OnInit {
-  readonly scoringType = input.required<ScoringType>();
+  // The settings that used to sit in a separate panel are two-way here, so the projection page
+  // can hand ownership to the table without giving up the state it autosaves. Surfaces that
+  // still bind them one-way (the landing demo) are unaffected.
+  readonly scoringType = model.required<ScoringType>();
   readonly statWeights = model.required<Record<ScoringStatKey, number>>();
   readonly players = input.required<Player[]>();
   readonly initialProjections = input<Projection[] | null>(null);
   readonly activeColumns = input.required<ActiveColumns>();
-  readonly leagueSize = input<number>(DEFAULT_LEAGUE_SIZE);
-  readonly rosterSlots = input<RosterSlots>(DEFAULT_ROSTER_SLOTS);
-  readonly minGoalieGames = input<number>(DEFAULT_MIN_GOALIE_GAMES);
+  readonly leagueSize = model<number>(DEFAULT_LEAGUE_SIZE);
+  readonly rosterSlots = model<RosterSlots>(DEFAULT_ROSTER_SLOTS);
+  readonly minGoalieGames = model<number>(DEFAULT_MIN_GOALIE_GAMES);
   readonly saveStatus = input<'idle' | 'saving' | 'saved' | 'error'>('idle');
   readonly showFullSeasonButton = input<boolean>(false);
   readonly fullSeasonRequested = output<void>();
+
+  /** Turns on the column menus, the add-column cell and the league toolbar. */
+  readonly columnControls = input<boolean>(false);
+  readonly activeScoringColumns = model<Set<ScoringStatKey>>(new Set<ScoringStatKey>());
+  readonly activeUtilityColumns = model<Set<UtilityStatKey>>(new Set<UtilityStatKey>());
 
   readonly filteredActiveColumns = computed<ActiveColumns>(() =>
     this.activeColumnsService.filterAndSortActiveColumns(
@@ -93,22 +120,25 @@ export class PlayerProjectionsTableComponent implements OnInit {
       this.positionFilter(),
     ),
   );
-  readonly scaleSettings = input.required<Record<UtilityStatKey, ScaleConfig>>();
+  readonly scaleSettings = model.required<Record<UtilityStatKey, ScaleConfig>>();
   readonly decimalSettings = model<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
-  readonly useDefaultDecimals = input.required<boolean>();
+  readonly useDefaultDecimals = model.required<boolean>();
 
   readonly sortColumn = signal<SortColumn>('summary');
   readonly sortDirection = signal<SortDirection>('desc');
 
   readonly playerProjections = signal<Projection[]>([]);
 
-  // Undo/redo history for stat edits. Snapshots are pushed onto `undoStack` before each
-  // mutation; consecutive edits to the same cell (same `lastEditSignature`) coalesce into a
-  // single step so typing "25" is one undo, not two. Since `ProjectionUpdateService` only
+  // Undo/redo history for stat edits and column changes. Snapshots are pushed onto `undoStack`
+  // before each mutation; consecutive edits to the same cell (same `lastEditSignature`) coalesce
+  // into a single step so typing "25" is one undo, not two. Since `ProjectionUpdateService` only
   // clones the changed player, each snapshot is a cheap array of mostly-shared references.
+  //
+  // Columns belong in the same history as the stat edits: removing one is a single click in a
+  // menu, and it is only a cheap click if Ctrl+Z brings it straight back.
   private static readonly MAX_HISTORY = 50;
-  private readonly undoStack = signal<Projection[][]>([]);
-  private readonly redoStack = signal<Projection[][]>([]);
+  private readonly undoStack = signal<TableSnapshot[]>([]);
+  private readonly redoStack = signal<TableSnapshot[]>([]);
   private lastEditSignature: string | null = null;
   private fullSeasonEditCounter = 0;
   readonly canUndo = computed(() => this.undoStack().length > 0);
@@ -444,27 +474,80 @@ export class PlayerProjectionsTableComponent implements OnInit {
     );
   }
 
-  private commitEdit(
-    signature: string,
-    mutate: (playerProjections: Projection[]) => Projection[],
-  ): void {
-    const current = this.playerProjections();
+  private snapshot(): TableSnapshot {
+    return {
+      playerProjections: this.playerProjections(),
+      activeScoringColumns: this.activeScoringColumns(),
+      activeUtilityColumns: this.activeUtilityColumns(),
+    };
+  }
+
+  private restore(snapshot: TableSnapshot): void {
+    this.playerProjections.set(snapshot.playerProjections);
+    this.activeScoringColumns.set(snapshot.activeScoringColumns);
+    this.activeUtilityColumns.set(snapshot.activeUtilityColumns);
+  }
+
+  private pushHistory(signature: string): void {
     const coalesce = signature === this.lastEditSignature && this.undoStack().length > 0;
     if (!coalesce) {
       this.undoStack.update((stack) =>
-        [...stack, current].slice(-PlayerProjectionsTableComponent.MAX_HISTORY),
+        [...stack, this.snapshot()].slice(-PlayerProjectionsTableComponent.MAX_HISTORY),
       );
     }
     this.redoStack.set([]);
     this.lastEditSignature = signature;
-    this.playerProjections.set(mutate(current));
+  }
+
+  private commitEdit(
+    signature: string,
+    mutate: (playerProjections: Projection[]) => Projection[],
+  ): void {
+    this.pushHistory(signature);
+    this.playerProjections.set(mutate(this.playerProjections()));
+  }
+
+  toggleScoringColumn(statKey: ScoringStatKey): void {
+    this.pushHistory(`column:scoring:${statKey}`);
+    this.activeScoringColumns.update((columns) => toggledSet(columns, statKey));
+  }
+
+  toggleUtilityColumn(statKey: UtilityStatKey): void {
+    this.pushHistory(`column:utility:${statKey}`);
+    this.activeUtilityColumns.update((columns) => toggledSet(columns, statKey));
+  }
+
+  toggleScale(utilityKey: UtilityStatKey): void {
+    this.scaleSettings.update((settings) => ({
+      ...settings,
+      [utilityKey]: { ...settings[utilityKey], scale: !settings[utilityKey].scale },
+    }));
+  }
+
+  toggleScaleStat(utilityKey: UtilityStatKey, statKey: ScoringStatKey): void {
+    this.scaleSettings.update((settings) => ({
+      ...settings,
+      [utilityKey]: {
+        ...settings[utilityKey],
+        scalableStats: toggledSet(settings[utilityKey].scalableStats, statKey),
+      },
+    }));
+  }
+
+  setSort(column: SortColumn, direction: SortDirection): void {
+    this.sortColumn.set(column);
+    this.sortDirection.set(direction);
+  }
+
+  selectScoringType(type: ScoringType): void {
+    this.scoringType.set(type);
   }
 
   undo(): void {
     const stack = this.undoStack();
     if (stack.length === 0) return;
-    this.redoStack.update((redo) => [...redo, this.playerProjections()]);
-    this.playerProjections.set(stack[stack.length - 1]);
+    this.redoStack.update((redo) => [...redo, this.snapshot()]);
+    this.restore(stack[stack.length - 1]);
     this.undoStack.set(stack.slice(0, -1));
     this.lastEditSignature = null;
   }
@@ -472,8 +555,8 @@ export class PlayerProjectionsTableComponent implements OnInit {
   redo(): void {
     const stack = this.redoStack();
     if (stack.length === 0) return;
-    this.undoStack.update((undo) => [...undo, this.playerProjections()]);
-    this.playerProjections.set(stack[stack.length - 1]);
+    this.undoStack.update((undo) => [...undo, this.snapshot()]);
+    this.restore(stack[stack.length - 1]);
     this.redoStack.set(stack.slice(0, -1));
     this.lastEditSignature = null;
   }

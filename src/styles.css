@@ -285,3 +285,14 @@ summary:focus-visible,
     display: none;
   }
 }
+
+/* Panel chrome for popovers opened via `appPopover`. The pane element lives outside any
+   component, so it can't be styled from one; the content inside it still carries the
+   declaring component's styles. */
+.app-popover-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}

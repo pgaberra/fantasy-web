@@ -1,0 +1,54 @@
+<div class="add-tabs" role="tablist" aria-label="Stat group">
+  @for (group of groups(); track group) {
+    <button
+      type="button"
+      role="tab"
+      class="add-tab"
+      [attr.aria-selected]="this.group() === group"
+      (click)="selectGroup(group)"
+    >
+      {{ labelFor(group) }}
+    </button>
+  }
+</div>
+
+<div class="add-search">
+  <input
+    type="search"
+    aria-label="Search stats"
+    placeholder="Search stats…"
+    [value]="searchTerm()"
+    (input)="onSearchInput($event)"
+  />
+</div>
+
+<div class="add-list">
+  @for (option of visibleOptions(); track option.statKey) {
+    <button
+      type="button"
+      role="checkbox"
+      class="add-row"
+      [attr.aria-checked]="isActive(option)"
+      (click)="toggle(option)"
+    >
+      <span class="add-check" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          width="12"
+          height="12"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M20 6L9 17l-5-5" />
+        </svg>
+      </span>
+      <span class="add-key">{{ option.statKey | statLabel }}</span>
+      <span class="add-desc">{{ fullNameOf(option) }}</span>
+    </button>
+  } @empty {
+    <p class="add-empty">No stats match your search.</p>
+  }
+</div>
