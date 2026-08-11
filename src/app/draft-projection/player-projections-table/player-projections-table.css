@@ -13,10 +13,35 @@
   margin: 0 0 var(--space-4);
 }
 
+/*
+ * Title beside the controls only works while the controls are light (a search box and two
+ * selects). The league toolbar makes that side heavy enough to squeeze the heading into two
+ * lines even on a wide screen, so those surfaces get the title on its own row with the
+ * toolbar beneath it.
+ */
+.table-header--stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+}
+
 .table-title {
   display: flex;
   align-items: baseline;
   gap: 0.75rem;
+}
+
+.table-header--stacked .table-title {
+  align-items: center;
+  width: 100%;
+}
+
+.table-header--stacked .table-title h2 {
+  white-space: nowrap;
+}
+
+.table-header--stacked .save-status {
+  margin-left: auto;
 }
 
 .history-controls {
