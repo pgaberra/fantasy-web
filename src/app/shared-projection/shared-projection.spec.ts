@@ -11,7 +11,7 @@ describe('SharedProjectionComponent', () => {
   const shared: SharedProjectionResponse = {
     token: 'abc123',
     name: 'My league',
-    authorAlias: 'Alex',
+    authorUsername: 'alex',
     season: '20262027',
     createdAt: '2026-08-01T10:00:00Z',
     updatedAt: '2026-08-02T10:00:00Z',
@@ -76,20 +76,11 @@ describe('SharedProjectionComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Connor McDavid');
   });
 
-  it('credits the alias the owner chose', async () => {
+  it("credits the owner's username", async () => {
     const fixture = MockRender(SharedProjectionComponent);
     await fixture.whenStable();
 
-    expect(fixture.point.componentInstance.authorLabel()).toEqual('Alex');
-  });
-
-  it('falls back to an anonymous credit when no alias was set', async () => {
-    loadShared.mockReturnValue(of({ ...shared, authorAlias: undefined }));
-
-    const fixture = MockRender(SharedProjectionComponent);
-    await fixture.whenStable();
-
-    expect(fixture.point.componentInstance.authorLabel()).toEqual('a SlapStat user');
+    expect(fixture.point.componentInstance.authorLabel()).toEqual('alex');
   });
 
   it('labels the ranking column by the scoring type', async () => {

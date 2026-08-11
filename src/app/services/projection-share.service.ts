@@ -28,17 +28,8 @@ export class ProjectionShareService {
     return from(this.api.invoke(getProjectionShare, { id: projectionId }));
   }
 
-  share(
-    projectionId: string,
-    players: SharedPlayer[],
-    authorAlias?: string,
-  ): Observable<ShareLinkResponse> {
-    return from(
-      this.api.invoke(shareProjection, {
-        id: projectionId,
-        body: { authorAlias: authorAlias?.trim() || undefined, players },
-      }),
-    );
+  share(projectionId: string, players: SharedPlayer[]): Observable<ShareLinkResponse> {
+    return from(this.api.invoke(shareProjection, { id: projectionId, body: { players } }));
   }
 
   unshare(projectionId: string): Observable<void> {

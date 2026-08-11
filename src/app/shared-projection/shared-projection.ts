@@ -66,7 +66,7 @@ export class SharedProjectionComponent {
     return error instanceof HttpErrorResponse && error.status === 404;
   });
 
-  readonly authorLabel = computed(() => this.shared()?.authorAlias?.trim() || 'a SlapStat user');
+  readonly authorLabel = computed(() => this.shared()?.authorUsername ?? '');
 
   readonly valueLabel = computed(() =>
     this.shared()?.data.settings.scoringType === 'points' ? 'Fan Pts' : 'Z-Score',
