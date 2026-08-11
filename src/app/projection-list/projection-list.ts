@@ -1,7 +1,7 @@
 import { Component, computed, DestroyRef, effect, inject, signal } from '@angular/core';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, forkJoin } from 'rxjs';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { NotificationService } from '../services/notification.service';
 import { PendingProjectionService } from '../services/pending-projection.service';
@@ -9,10 +9,21 @@ import { ProjectionData } from '../api/models/projection-data';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { ProjectionCardComponent } from './projection-card/projection-card';
+import { ShareDialogComponent } from '../draft-projection/share-dialog/share-dialog';
+import { PlayerService } from '../services/player.service';
+import { ProjectionRankingService } from '../services/projection-ranking.service';
+import { ProjectionSerializerService } from '../services/projection-serializer.service';
+import { ProjectionShareService } from '../services/projection-share.service';
+import { SharedPlayer } from '../api/models/shared-player';
 
 @Component({
   selector: 'app-projection-list',
-  imports: [LoadingIndicatorComponent, ErrorStateComponent, ProjectionCardComponent],
+  imports: [
+    LoadingIndicatorComponent,
+    ErrorStateComponent,
+    ProjectionCardComponent,
+    ShareDialogComponent,
+  ],
   templateUrl: './projection-list.html',
   styleUrl: './projection-list.css',
 })
@@ -22,6 +33,10 @@ export class ProjectionListComponent {
   private readonly notification = inject(NotificationService);
   private readonly pendingProjection = inject(PendingProjectionService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly playerService = inject(PlayerService);
+  private readonly serializer = inject(ProjectionSerializerService);
+  private readonly ranking = inject(ProjectionRankingService);
+  private readonly projectionShare = inject(ProjectionShareService);
 
   readonly projectionsResource = rxResource({
     stream: () => this.storage.listProjections(),
@@ -31,6 +46,13 @@ export class ProjectionListComponent {
   // Holds the loading indicator up while a projection carried over from the landing demo is
   // being saved, so the visitor never sees an empty list flash before reaching the editor.
   readonly isSavingDemo = signal(false);
+
+  // Sharing needs the ranked rows, and ranking needs the projection plus the whole player pool
+  // — neither of which this page loads to list projections. Both are fetched on the click, so
+  // the list stays as light as it was for everyone who never presses Share.
+  readonly sharingProjectionId = signal<string | null>(null);
+  readonly sharedPlayers = signal<SharedPlayer[]>([]);
+  readonly preparingShareFor = signal<string | null>(null);
   private redeemAttempted = false;
 
   readonly sortedProjections = computed(() =>
@@ -103,6 +125,44 @@ export class ProjectionListComponent {
 
   draft(id: string): void {
     void this.router.navigate(['/projections', id, 'draft']);
+  }
+
+  share(id: string): void {
+    this.preparingShareFor.set(id);
+    forkJoin({
+      projection: this.storage.loadProjection(id),
+      players: this.playerService.getPlayers(),
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ projection, players }) => {
+          const state = this.serializer.fromProjectionData(projection.data);
+          const ranked = this.ranking.rankOverall({
+            projections: state.playerProjections,
+            scoringType: state.scoringType,
+            statWeights: state.statWeights,
+            activeScoringColumns: state.activeScoringColumns,
+            leagueSize: state.leagueSize,
+            rosterSlots: state.rosterSlots,
+            minGoalieGames: state.minGoalieGames,
+            decimalSettings: state.decimalSettings,
+          });
+          const playersById = new Map(players.map((player) => [player.id, player]));
+          this.sharedPlayers.set(
+            this.projectionShare.toSharedPlayers(ranked, playersById, state.scoringType),
+          );
+          this.preparingShareFor.set(null);
+          this.sharingProjectionId.set(id);
+        },
+        error: () => {
+          this.preparingShareFor.set(null);
+          this.notification.error("Couldn't open sharing for this projection. Please try again.");
+        },
+      });
+  }
+
+  closeShare(): void {
+    this.sharingProjectionId.set(null);
   }
 
   remove(id: string): Promise<void> {

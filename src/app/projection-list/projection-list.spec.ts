@@ -8,6 +8,10 @@ import { NotificationService } from '../services/notification.service';
 import { PendingProjectionService } from '../services/pending-projection.service';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { ProjectionData } from '../api/models/projection-data';
+import { PlayerService } from '../services/player.service';
+import { ProjectionRankingService } from '../services/projection-ranking.service';
+import { ProjectionShareService } from '../services/projection-share.service';
+import { SkaterStats } from '../models/projection.model';
 
 describe('ProjectionListComponent', () => {
   const summaries: ProjectionSummaryResponse[] = [
@@ -77,6 +81,10 @@ describe('ProjectionListComponent', () => {
   const createProjection = vi.fn();
   const notifyError = vi.fn();
   const peek = vi.fn();
+  const loadProjection = vi.fn();
+  const getPlayers = vi.fn();
+  const rankOverall = vi.fn();
+  const toSharedPlayers = vi.fn();
   const clearPending = vi.fn();
 
   beforeEach(() => {
@@ -90,8 +98,30 @@ describe('ProjectionListComponent', () => {
     listProjections.mockReturnValue(of(summaries));
     deleteProjection.mockReturnValue(of(undefined));
     peek.mockReturnValue(null);
+    loadProjection.mockReturnValue(of({ id: 'p1', name: 'My league', data: demoData }));
+    getPlayers.mockReturnValue(
+      of([
+        {
+          id: 1,
+          type: 'skater',
+          name: 'McDavid',
+          positions: new Set(['C']),
+          stats: {} as SkaterStats,
+        },
+      ]),
+    );
+    rankOverall.mockReturnValue([]);
+    toSharedPlayers.mockReturnValue([]);
     return MockBuilder(ProjectionListComponent)
-      .mock(ProjectionStorageService, { listProjections, deleteProjection, createProjection })
+      .mock(ProjectionStorageService, {
+        listProjections,
+        deleteProjection,
+        createProjection,
+        loadProjection,
+      })
+      .mock(PlayerService, { getPlayers })
+      .mock(ProjectionRankingService, { rankOverall })
+      .mock(ProjectionShareService, { toSharedPlayers })
       .mock(NotificationService, { error: notifyError })
       .mock(PendingProjectionService, { peek, clear: clearPending })
       .provide({ provide: Router, useValue: { navigate } });
@@ -231,5 +261,45 @@ describe('ProjectionListComponent', () => {
 
     expect(notifyError).toHaveBeenCalledOnce();
     expect(listProjections).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens sharing straight from the list, without visiting the projection', async () => {
+    const fixture = MockRender(ProjectionListComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.share('p1');
+    await fixture.whenStable();
+
+    expect(loadProjection).toHaveBeenCalledWith('p1');
+    expect(getPlayers).toHaveBeenCalled();
+    expect(component.sharingProjectionId()).toEqual('p1');
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('ranks the projection before opening, since a share publishes ranked rows', async () => {
+    const fixture = MockRender(ProjectionListComponent);
+    await fixture.whenStable();
+
+    fixture.point.componentInstance.share('p1');
+    await fixture.whenStable();
+
+    expect(rankOverall).toHaveBeenCalled();
+    expect(toSharedPlayers).toHaveBeenCalled();
+  });
+
+  it('surfaces a failure to prepare the share instead of opening an empty dialog', async () => {
+    loadProjection.mockReturnValue(throwError(() => new Error('boom')));
+
+    const fixture = MockRender(ProjectionListComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.share('p1');
+    await fixture.whenStable();
+
+    expect(component.sharingProjectionId()).toBeNull();
+    expect(component.preparingShareFor()).toBeNull();
+    expect(notifyError).toHaveBeenCalled();
   });
 });

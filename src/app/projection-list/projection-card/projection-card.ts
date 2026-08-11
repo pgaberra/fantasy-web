@@ -10,8 +10,12 @@ import { RelativeTimePipe } from '../../pipes/relative-time.pipe';
 })
 export class ProjectionCardComponent {
   readonly projection = input.required<ProjectionSummaryResponse>();
+  // Sharing has to fetch and rank before the dialog can open, which is long enough to
+  // need saying so on the button.
+  readonly isPreparingShare = input<boolean>(false);
   readonly edit = output<void>();
   readonly draft = output<void>();
+  readonly share = output<void>();
   readonly remove = output<void>();
 
   readonly draftLabel = computed(() => {
