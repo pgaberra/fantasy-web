@@ -7,7 +7,6 @@ import { DEFAULT_DECIMAL_SETTINGS, DecimalStatKey } from '../../projection-setti
 import { StatLabelPipe } from '../../../pipes/stat-label.pipe';
 import { StatTooltipPipe } from '../../../pipes/stat-tooltip.pipe';
 import { PopoverTriggerDirective } from '../../../shared/popover/popover-trigger.directive';
-import { AddColumnMenuComponent } from '../add-column-menu/add-column-menu';
 
 describe('ProjectionsTableHeaderComponent', () => {
   const mockStatWeights: Record<ScoringStatKey, number> = {
@@ -62,7 +61,6 @@ describe('ProjectionsTableHeaderComponent', () => {
         [showFullSeasonButton]="showFullSeasonButton"
         [columnControls]="columnControls"
         [allActiveScoringColumns]="allActiveScoringColumns"
-        [allActiveUtilityColumns]="allActiveUtilityColumns"
         [scaleSettings]="scaleSettings"
         [readonly]="readonly"
       ></thead>
@@ -73,8 +71,7 @@ describe('ProjectionsTableHeaderComponent', () => {
     MockBuilder(ProjectionsTableHeaderComponent)
       .keep(StatLabelPipe)
       .keep(StatTooltipPipe)
-      .keep(PopoverTriggerDirective)
-      .keep(AddColumnMenuComponent),
+      .keep(PopoverTriggerDirective),
   );
 
   const overlayText = () => {
@@ -98,7 +95,6 @@ describe('ProjectionsTableHeaderComponent', () => {
       showFullSeasonButton: false,
       columnControls: false,
       allActiveScoringColumns: new Set<ScoringStatKey>(['goals', 'assists']),
-      allActiveUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
       scaleSettings: null,
       readonly: false,
       ...overrides,
@@ -370,17 +366,18 @@ describe('ProjectionsTableHeaderComponent', () => {
       toiPerGame: { scale: false, scalableStats: new Set<ScoringStatKey>() },
     };
 
-    it('renders no menu triggers or add-column cell while they are off', () => {
+    it('renders no menu triggers while column controls are off', () => {
       getFixture();
       expect(ngMocks.findAll('.th-menu')).toHaveLength(0);
-      expect(ngMocks.findAll('.add-col-btn')).toHaveLength(0);
     });
 
-    it('renders a menu trigger per stat column plus one add-column button', () => {
+    it('renders a menu trigger per stat column and spends no column on adding one', () => {
       getFixture({ columnControls: true });
-      // Two scoring columns and one utility column, and the single add button.
+      // Two scoring columns and one utility column.
       expect(ngMocks.findAll('.th-menu')).toHaveLength(3);
-      expect(ngMocks.findAll('.add-col-btn')).toHaveLength(1);
+      // Picking stats lives in the toolbar: a header cell for it is only reachable after
+      // scrolling the table fully right.
+      expect(ngMocks.findAll('.col-add')).toHaveLength(0);
     });
 
     it('keeps the standalone decimal row for surfaces without column menus', () => {
@@ -452,19 +449,6 @@ describe('ProjectionsTableHeaderComponent', () => {
       expect(removed).toHaveBeenCalledWith('goals');
     });
 
-    it('opens the add-column picker from the trailing header cell', () => {
-      getFixture({ columnControls: true });
-
-      ngMocks
-        .find('.add-col-btn')
-        .nativeElement.dispatchEvent(new Event('click', { bubbles: true }));
-
-      const text = overlayText();
-      expect(text).toContain('Skater');
-      expect(text).toContain('Goalie');
-      expect(text).toContain('Utility');
-    });
-
     it('moves the full-season action out of the GP header and into its menu', () => {
       const fixture = getFixture({ columnControls: true, showFullSeasonButton: true });
       const component = ngMocks.find(
@@ -505,7 +489,6 @@ describe('ProjectionsTableHeaderComponent', () => {
       getFixture({ columnControls: true, readonly: true });
 
       expect(ngMocks.findAll('.th-menu')).toHaveLength(0);
-      expect(ngMocks.findAll('.add-col-btn')).toHaveLength(0);
     });
 
     it('expands one scale list at a time', () => {

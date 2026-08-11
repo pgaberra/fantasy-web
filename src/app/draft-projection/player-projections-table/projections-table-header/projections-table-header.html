@@ -107,30 +107,6 @@
   >
     {{ summaryLabel() }}<span class="sort-arrow">{{ sortIndicator('summary') }}</span>
   </th>
-  @if (showColumnControls()) {
-    <th class="col-add">
-      <button
-        type="button"
-        class="add-col-btn"
-        aria-label="Add a stat column"
-        appTooltip="Add a stat column"
-        [appPopover]="addColumnMenu"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          width="16"
-          height="16"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.4"
-          stroke-linecap="round"
-          aria-hidden="true"
-        >
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-      </button>
-    </th>
-  }
 </tr>
 @if (scoringType() === 'points' && !readonly()) {
   <tr class="weight-row">
@@ -152,9 +128,6 @@
       </th>
     }
     <th class="summary-pts-col"></th>
-    @if (showColumnControls()) {
-      <th class="col-add"></th>
-    }
   </tr>
 }
 <!-- With column menus the decimals live on the column itself; the standalone row is only for
@@ -362,13 +335,4 @@
       Remove column
     </button>
   </div>
-</ng-template>
-
-<ng-template #addColumnMenu>
-  <app-add-column-menu
-    [activeScoringColumns]="allActiveScoringColumns()"
-    [activeUtilityColumns]="allActiveUtilityColumns()"
-    (scoringToggled)="scoringColumnToggled.emit($event)"
-    (utilityToggled)="utilityColumnToggled.emit($event)"
-  />
 </ng-template>

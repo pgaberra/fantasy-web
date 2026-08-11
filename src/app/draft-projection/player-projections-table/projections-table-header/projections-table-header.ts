@@ -17,7 +17,6 @@ import { STAT_FULL_NAMES, StatTooltipPipe } from '../../../pipes/stat-tooltip.pi
 import { TooltipDirective } from '../../../shared/tooltip/tooltip.directive';
 import { PopoverTriggerDirective } from '../../../shared/popover/popover-trigger.directive';
 import { ToggleSwitchComponent } from '../../projection-settings-section/toggle-switch/toggle-switch';
-import { AddColumnMenuComponent } from '../add-column-menu/add-column-menu';
 import {
   DecimalStatKey,
   ScaleConfig,
@@ -33,7 +32,6 @@ import { StatInfoService } from '../../../services/stat-info.service';
     TooltipDirective,
     PopoverTriggerDirective,
     ToggleSwitchComponent,
-    AddColumnMenuComponent,
   ],
   templateUrl: './projections-table-header.html',
   styleUrl: './projections-table-header.css',
@@ -64,11 +62,10 @@ export class ProjectionsTableHeaderComponent {
    */
   readonly columnControls = input<boolean>(false);
   /**
-   * Unfiltered, unlike `activeColumns`: the add menu has to show what the projection actually
-   * tracks, not just what the current position filter leaves visible.
+   * Unfiltered, unlike `activeColumns`: which scoring stats a utility column may scale depends on
+   * what the projection tracks, not on what the current position filter leaves visible.
    */
   readonly allActiveScoringColumns = input<Set<ScoringStatKey>>(new Set<ScoringStatKey>());
-  readonly allActiveUtilityColumns = input<Set<UtilityStatKey>>(new Set<UtilityStatKey>());
   readonly scaleSettings = input<Record<UtilityStatKey, ScaleConfig> | null>(null);
 
   /**
