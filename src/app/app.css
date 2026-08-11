@@ -91,13 +91,17 @@
 
 .nav-menu-item {
   padding: 0.45rem 0.7rem;
+  /* Reserved on every item so marking one active never shifts its text sideways. */
+  border-left: 3px solid transparent;
   border-radius: var(--radius-sm);
   color: var(--color-text);
   text-decoration: none;
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
   cursor: pointer;
-  transition: background var(--transition);
+  transition:
+    background var(--transition),
+    border-color var(--transition);
 }
 
 .nav-menu-item:hover,
@@ -106,9 +110,16 @@
   color: var(--color-primary);
 }
 
+/*
+ * The accent bar is the same "you are here" signal the header links carry as an underline,
+ * so the menu marks the current page the way the rest of the nav does. Deliberately not a
+ * heavier font: weight changes the text's width, which made the item look misrendered rather
+ * than selected.
+ */
 .nav-menu-item.active {
+  border-left-color: var(--color-accent);
+  background: var(--color-surface-hover);
   color: var(--color-primary);
-  font-weight: var(--weight-semibold);
 }
 
 .btn-logout {

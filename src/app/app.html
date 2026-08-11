@@ -44,10 +44,21 @@
 }
 <ng-template #draftMenu>
   <div class="nav-menu" cdkMenu>
-    <a class="nav-menu-item" cdkMenuItem routerLink="/draft" routerLinkActive="active"
+    <a
+      class="nav-menu-item"
+      cdkMenuItem
+      routerLink="/draft"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
       >Draft Mode</a
     >
-    <a class="nav-menu-item" cdkMenuItem routerLink="/projections" routerLinkActive="active">
+    <a
+      class="nav-menu-item"
+      cdkMenuItem
+      routerLink="/projections"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+    >
       My Projections
     </a>
   </div>
