@@ -48,7 +48,7 @@
   border-radius: var(--radius-md);
 }
 
-.alias-label {
+.username-label {
   display: block;
   margin-bottom: var(--space-1);
   font-size: var(--text-sm);
@@ -56,8 +56,9 @@
   color: var(--color-text);
 }
 
-.alias-input {
+.username-input {
   width: 100%;
+  margin-bottom: var(--space-4);
   padding: var(--space-2);
   font-size: var(--text-sm);
   color: var(--color-text);
@@ -66,7 +67,7 @@
   border-radius: var(--radius-md);
 }
 
-.alias-hint {
+.username-hint {
   margin: var(--space-1) 0 var(--space-4);
   font-size: var(--text-sm);
   color: var(--color-text-muted);
