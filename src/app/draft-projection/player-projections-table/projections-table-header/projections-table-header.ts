@@ -71,6 +71,12 @@ export class ProjectionsTableHeaderComponent {
   readonly allActiveUtilityColumns = input<Set<UtilityStatKey>>(new Set<UtilityStatKey>());
   readonly scaleSettings = input<Record<UtilityStatKey, ScaleConfig> | null>(null);
 
+  /**
+   * A shared page renders this same header, so the two flags are resolved in one place: nothing
+   * that edits the projection may appear on a read-only surface, whatever it passes in.
+   */
+  readonly showColumnControls = computed(() => this.columnControls() && !this.readonly());
+
   readonly scoringColumnToggled = output<ScoringStatKey>();
   readonly utilityColumnToggled = output<UtilityStatKey>();
   readonly scaleToggled = output<UtilityStatKey>();

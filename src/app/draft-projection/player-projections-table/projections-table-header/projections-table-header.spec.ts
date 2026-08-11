@@ -64,6 +64,7 @@ describe('ProjectionsTableHeaderComponent', () => {
         [allActiveScoringColumns]="allActiveScoringColumns"
         [allActiveUtilityColumns]="allActiveUtilityColumns"
         [scaleSettings]="scaleSettings"
+        [readonly]="readonly"
       ></thead>
     </table>
   `;
@@ -99,6 +100,7 @@ describe('ProjectionsTableHeaderComponent', () => {
       allActiveScoringColumns: new Set<ScoringStatKey>(['goals', 'assists']),
       allActiveUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
       scaleSettings: null,
+      readonly: false,
       ...overrides,
     });
 
@@ -461,6 +463,13 @@ describe('ProjectionsTableHeaderComponent', () => {
       expect(text).toContain('Skater');
       expect(text).toContain('Goalie');
       expect(text).toContain('Utility');
+    });
+
+    it('never renders editing controls on a read-only shared header', () => {
+      getFixture({ columnControls: true, readonly: true });
+
+      expect(ngMocks.findAll('.th-menu')).toHaveLength(0);
+      expect(ngMocks.findAll('.add-col-btn')).toHaveLength(0);
     });
 
     it('expands one scale list at a time', () => {

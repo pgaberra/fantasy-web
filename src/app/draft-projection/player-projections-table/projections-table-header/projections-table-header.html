@@ -43,7 +43,7 @@
             84
           </button>
         }
-        @if (columnControls()) {
+        @if (showColumnControls()) {
           <button
             type="button"
             class="th-menu"
@@ -72,7 +72,7 @@
         >
           {{ col | statLabel }}<span class="sort-arrow">{{ sortIndicator(col) }}</span>
         </button>
-        @if (columnControls()) {
+        @if (showColumnControls()) {
           <button
             type="button"
             class="th-menu"
@@ -97,7 +97,7 @@
   >
     {{ summaryLabel() }}<span class="sort-arrow">{{ sortIndicator('summary') }}</span>
   </th>
-  @if (columnControls()) {
+  @if (showColumnControls()) {
     <th class="col-add">
       <button
         type="button"
@@ -142,14 +142,14 @@
       </th>
     }
     <th class="summary-pts-col"></th>
-    @if (columnControls()) {
+    @if (showColumnControls()) {
       <th class="col-add"></th>
     }
   </tr>
 }
 <!-- With column menus the decimals live on the column itself; the standalone row is only for
      the surfaces that still keep the settings panel — and never for a read-only shared page. -->
-@if (!useDefaultDecimals() && !readonly() && !columnControls()) {
+@if (!useDefaultDecimals() && !readonly() && !showColumnControls()) {
   <tr class="decimal-row">
     <th class="col-rank"></th>
     <th class="col-name"><span class="decimal-label">Decimals</span></th>
