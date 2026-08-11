@@ -215,6 +215,7 @@ describe('PlayerProjectionsTableComponent', () => {
       activeScoringColumns: Set<ScoringStatKey>;
       activeUtilityColumns: Set<SkaterUtilityStatKey>;
       columnControls: boolean;
+      syncedLeagueName: string | null;
     }> = {},
   ) =>
     MockRender(PlayerProjectionsTableComponent, {
@@ -826,6 +827,14 @@ describe('PlayerProjectionsTableComponent', () => {
       getComponent();
       expect(ngMocks.findAll('.table-header--stacked')).toHaveLength(0);
       expect(ngMocks.findAll('.league-controls')).toHaveLength(0);
+    });
+
+    it('marks the league button once settings came from a league', () => {
+      getComponent({ columnControls: true, syncedLeagueName: null });
+      expect(ngMocks.findAll('.league-setup-btn .sync-dot')).toHaveLength(0);
+
+      getComponent({ columnControls: true, syncedLeagueName: 'Puck Luck Dynasty' });
+      expect(ngMocks.findAll('.league-setup-btn .sync-dot')).toHaveLength(1);
     });
 
     it('stacks the title above the toolbar once the league controls are there', () => {

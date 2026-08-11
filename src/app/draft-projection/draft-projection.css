@@ -131,33 +131,3 @@
     font-size: 1.2rem;
   }
 }
-
-/* Projected into the table's toolbar. When a league is connected the button stops being a
-   call to action and becomes a status: which league these settings came from. */
-.league-sync-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  max-width: 16rem;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.league-sync-trigger--synced {
-  border-color: #bfe3cd;
-  background: #f2f9f4;
-  color: #17603a;
-}
-
-.league-sync-trigger--synced:hover:not(:disabled) {
-  border-color: #8ecaa8;
-}
-
-.sync-dot {
-  flex: none;
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 50%;
-  background: var(--color-success);
-}

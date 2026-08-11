@@ -1,4 +1,4 @@
-import { Component, input, model } from '@angular/core';
+import { Component, input, model, output } from '@angular/core';
 import { RosterSlotsEditorComponent } from '../../../shared/roster-slots-editor/roster-slots-editor';
 import { ToggleSwitchComponent } from '../../projection-settings-section/toggle-switch/toggle-switch';
 import { RosterSlots } from '../../../api/models/roster-slots';
@@ -24,6 +24,9 @@ import {
 export class LeagueSettingsMenuComponent {
   readonly scoringType = input.required<ScoringType>();
   readonly showDecimalsSetting = input<boolean>(true);
+  /** Set once a league has been imported — these settings then have a provenance worth stating. */
+  readonly syncedLeagueName = input<string | null>(null);
+  readonly manageSync = output<void>();
 
   readonly leagueSize = model<number>(DEFAULT_LEAGUE_SIZE);
   readonly rosterSlots = model<RosterSlots>(DEFAULT_ROSTER_SLOTS);

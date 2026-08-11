@@ -87,19 +87,19 @@
         [(decimalSettings)]="decimalSettings"
         [(useDefaultDecimals)]="useDefaultDecimals"
         [showFullSeasonButton]="true"
+        [syncedLeagueName]="syncedLeagueName()"
+        (manageSyncRequested)="showSyncDialog.set(true)"
         (fullSeasonRequested)="openFullSeasonDialog()"
       >
-        <button
-          table-toolbar-actions
-          type="button"
-          class="btn btn-secondary btn-sm league-sync-trigger"
-          [class.league-sync-trigger--synced]="yahooSync()"
-          (click)="showSyncDialog.set(true)"
-        >
-          @if (yahooSync(); as sync) {
-            <span class="sync-dot" aria-hidden="true"></span>
-            Yahoo · {{ sync.leagueName }}
-          } @else {
+        <!-- Only while there is no league to show: importing one is the fastest route to a
+             useful projection, so it earns a button of its own until it has been done. -->
+        @if (!syncedLeagueName()) {
+          <button
+            table-toolbar-actions
+            type="button"
+            class="btn btn-secondary btn-sm"
+            (click)="showSyncDialog.set(true)"
+          >
             <svg
               width="15"
               height="15"
@@ -115,8 +115,8 @@
               <path d="M21 3v5h-5M3 21v-5h5" />
             </svg>
             Import league
-          }
-        </button>
+          </button>
+        }
       </app-player-projections-table>
     </div>
 
