@@ -79,7 +79,7 @@
             @for (col of filteredActiveColumns().scoring; track col) {
               <td>{{ statValue(ranked, col) | number: decimalsFor(col) }}</td>
             }
-            <td class="summary-pts-col">{{ summaryValue(ranked) | number: '1.0-2' }}</td>
+            <td class="fan-pts-col">{{ summaryValue(ranked) | number: '1.0-2' }}</td>
           </tr>
         }
       </tbody>
