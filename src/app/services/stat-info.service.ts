@@ -8,16 +8,14 @@ import {
   SKATER_STAT_KEYS,
   SKATER_UTILITY_STAT_KEYS,
   SkaterUtilityStatKey,
+  RATE_STAT_KEYS,
+  RateStatKey,
   StatKey,
 } from '../models/stat-key.model';
 import { Player } from '../models/player.model';
 
 const PERCENTAGE_STAT_KEYS = ['shPct', 'svPct', 'winPct'] as const;
 type PercentageStatKey = (typeof PERCENTAGE_STAT_KEYS)[number];
-
-// Rate stats describe a per-unit share, so scaling them by games played would be wrong.
-const RATE_STAT_KEYS = ['shPct', 'svPct', 'winPct', 'gaa'] as const;
-type RateStatKey = (typeof RATE_STAT_KEYS)[number];
 
 @Injectable({
   providedIn: 'root',

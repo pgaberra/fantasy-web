@@ -9,6 +9,7 @@ import {
   SortColumn,
   SortDirection,
 } from '../../models/projection.model';
+import { compareStatValues, defaultSortDirection, statValueOf } from '../../models/sorting';
 import {
   GOALIE_SCORING_STAT_KEYS,
   ScoringStatKey,
@@ -40,13 +41,6 @@ const PLAYERS_PER_PAGE = 100;
 
 interface RankedPlayer extends ScoredProjection {
   hot: HotPlayer;
-}
-
-function statValueOf(projection: Projection, key: StatKey): number {
-  const scoring = projection.stats.scoring as Record<string, number>;
-  const utility = projection.stats.utility as Record<string, number>;
-  const value = scoring[key] ?? utility[key];
-  return typeof value === 'number' ? value : 0;
 }
 
 /**
@@ -199,9 +193,8 @@ export class HotPlayersTableComponent {
     const ranked = this.rankedPlayers();
     const column = this.sortColumn();
     const sign = this.sortDirection() === 'asc' ? 1 : -1;
-    const summaryValueOf = this.sortValueResolver('summary');
     const tieBreak = (a: RankedPlayer, b: RankedPlayer): number =>
-      summaryValueOf(b) - summaryValueOf(a);
+      this.summaryValue(b) - this.summaryValue(a);
 
     if (column === 'name') {
       return [...ranked].sort((a, b) => {
@@ -216,7 +209,7 @@ export class HotPlayersTableComponent {
       if (demoteUnqualified && a.qualified !== b.qualified) {
         return a.qualified ? -1 : 1;
       }
-      const primary = sign * (valueOf(a) - valueOf(b));
+      const primary = compareStatValues(valueOf(a), valueOf(b), sign);
       return primary !== 0 ? primary : tieBreak(a, b);
     });
   });
@@ -263,7 +256,7 @@ export class HotPlayersTableComponent {
       this.sortDirection.update((direction) => (direction === 'desc' ? 'asc' : 'desc'));
     } else {
       this.sortColumn.set(column);
-      this.sortDirection.set('desc');
+      this.sortDirection.set(defaultSortDirection(column));
     }
   }
 
@@ -287,8 +280,9 @@ export class HotPlayersTableComponent {
     return player?.type === 'skater' ? [...player.positions].join('/') : '—';
   }
 
+  /** Display only — `isApplicable` is what decides whether a dash is shown instead of this. */
   statValue(ranked: RankedPlayer, key: StatKey): number {
-    return statValueOf(ranked.projection, key);
+    return statValueOf(ranked.projection, key) ?? 0;
   }
 
   isToi(key: StatKey): boolean {
@@ -322,7 +316,9 @@ export class HotPlayersTableComponent {
     return this.scoringType() === 'category' ? ranked.score.zScore : ranked.score.fantasyPoints;
   }
 
-  private sortValueResolver(column: Exclude<SortColumn, 'name'>): (ranked: RankedPlayer) => number {
+  private sortValueResolver(
+    column: Exclude<SortColumn, 'name'>,
+  ): (ranked: RankedPlayer) => number | null {
     if (column === 'summary') {
       return (ranked) => this.summaryValue(ranked);
     }
