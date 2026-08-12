@@ -29,6 +29,9 @@
   display: flex;
   align-items: baseline;
   gap: 0.75rem;
+  /* "Couldn't save — changes are unsaved" is long enough to overrun this row on a phone; let the
+     cluster drop to its own line rather than spill out of the card. */
+  flex-wrap: wrap;
 }
 
 .table-header--stacked .table-title {
@@ -40,15 +43,21 @@
   white-space: nowrap;
 }
 
-.table-header--stacked .save-status {
-  margin-left: auto;
+/* Set off from the heading by a rule so the pair reads as its own group rather than as
+   decoration hanging off the title. */
+.doc-state {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  align-self: center;
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--color-border);
 }
 
 .history-controls {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  align-self: center;
 }
 
 .history-btn {
@@ -86,12 +95,16 @@
 }
 
 /* The settings that shape the whole projection sit to the left; the controls that only narrow
-   what is on screen stay together on the right. */
+   what is on screen stay together on the right.
+   Deliberately nowrap: letting this group fray one button at a time leaves the filters stranded
+   on the first row beside a two-row toolbar. Held together it can't shrink, so the wrap in
+   .table-controls moves the filters down as a unit and the break stays predictable. The phone
+   breakpoint below is the one place there isn't room for that. */
 .league-controls {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .filter-controls {
@@ -237,6 +250,11 @@ tbody tr:hover {
   }
 
   .table-controls {
+    flex-wrap: wrap;
+  }
+
+  /* No width to hold the group on one line here, and overflowing sideways is worse than wrapping. */
+  .league-controls {
     flex-wrap: wrap;
   }
 
