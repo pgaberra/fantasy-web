@@ -7,7 +7,27 @@
       </a>
       <nav class="app-nav">
         @if (authService.isLoggedIn()) {
-          <a routerLink="/projections" routerLinkActive="active">My projections</a>
+          <button
+            type="button"
+            class="nav-trigger"
+            [class.active]="isDraftSection()"
+            [cdkMenuTriggerFor]="draftMenu"
+          >
+            Draft
+            <svg
+              class="nav-caret"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+          <a routerLink="/whos-hot" routerLinkActive="active">Who's hot</a>
           @if (paymentsEnabled) {
             <a routerLink="/account" routerLinkActive="active">Account</a>
           }
@@ -22,6 +42,16 @@
     </div>
   </header>
 }
+<ng-template #draftMenu>
+  <div class="nav-menu" cdkMenu>
+    <a class="nav-menu-item" cdkMenuItem routerLink="/draft" routerLinkActive="active"
+      >Draft Mode</a
+    >
+    <a class="nav-menu-item" cdkMenuItem routerLink="/projections" routerLinkActive="active">
+      My Projections
+    </a>
+  </div>
+</ng-template>
 <app-unverified-banner />
 <main class="app-main">
   <router-outlet />

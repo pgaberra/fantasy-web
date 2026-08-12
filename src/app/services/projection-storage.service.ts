@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, from } from 'rxjs';
+import { Observable, from, map } from 'rxjs';
 import { Api } from '../api/api';
 import { list } from '../api/fn/projections/list';
 import { get } from '../api/fn/projections/get';
@@ -17,7 +17,18 @@ import { UpdateProjectionRequest } from '../api/models/update-projection-request
 export class ProjectionStorageService {
   private readonly api = inject(Api);
 
+  /**
+   * The projections the user made. A draft started from a preset is stored as a projection of
+   * its own kind, and is deliberately left out here — it is not their work to list, edit or
+   * delete. Use {@link listWithPresetDrafts} where that row is the point.
+   */
   listProjections(): Observable<ProjectionSummaryResponse[]> {
+    return this.listWithPresetDrafts().pipe(
+      map((projections) => projections.filter((projection) => projection.kind === 'projection')),
+    );
+  }
+
+  listWithPresetDrafts(): Observable<ProjectionSummaryResponse[]> {
     return from(this.api.invoke(list));
   }
 

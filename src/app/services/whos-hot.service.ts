@@ -1,0 +1,110 @@
+import { inject, Injectable } from '@angular/core';
+import { forkJoin, from, map, Observable } from 'rxjs';
+import { Api } from '../api/api';
+import { skaterSplits } from '../api/fn/projection-model/skater-splits';
+import { goalieSplits } from '../api/fn/projection-model/goalie-splits';
+import { PlayerSplitResponse } from '../api/models/player-split-response';
+import {
+  GOALIE_SCORING_STAT_KEYS,
+  GOALIE_UTILITY_STAT_KEYS,
+  SKATER_SCORING_STAT_KEYS,
+  SKATER_UTILITY_STAT_KEYS,
+} from '../models/stat-key.model';
+import { Projection } from '../models/projection.model';
+
+/** A stretch of a season's schedule, in team game numbers. Both bounds inclusive. */
+export interface GameSpan {
+  season: number;
+  fromGame: number;
+  toGame: number;
+}
+
+/**
+ * One player's measured production over a span, shaped as a {@link Projection} so the same
+ * fantasy-points and z-score engine that ranks a projection can rank these too.
+ */
+export interface HotPlayer {
+  projection: Projection;
+  name: string;
+  teamAbbrev?: string;
+  /** Games this player actually dressed for within the span, which is rarely the whole span. */
+  games: number;
+  firstTeamGame?: number;
+  lastTeamGame?: number;
+}
+
+/**
+ * The whole league, near enough — the page ranks everyone and filters client-side, and asking
+ * for fewer would silently cut off the tail of a position filter.
+ */
+const MAX_PLAYERS = 1000;
+
+@Injectable({
+  providedIn: 'root',
+})
+export class WhosHotService {
+  private readonly api = inject(Api);
+
+  splits(span: GameSpan): Observable<HotPlayer[]> {
+    const params = {
+      season: span.season,
+      fromGame: span.fromGame,
+      toGame: span.toGame,
+      limit: MAX_PLAYERS,
+    };
+    return forkJoin({
+      skaters: from(this.api.invoke(skaterSplits, params)),
+      goalies: from(this.api.invoke(goalieSplits, params)),
+    }).pipe(map(({ skaters, goalies }) => [...skaters.map(toSkater), ...goalies.map(toGoalie)]));
+  }
+}
+
+/**
+ * A stat the split doesn't mention is zero here rather than absent, because the ranking engine
+ * works on complete stat lines. The distinction that does survive is `games`: a player who
+ * dressed for none of the span shows zero games, and the per-game view leaves them out.
+ */
+function statsFrom<K extends string>(
+  keys: readonly K[],
+  stats: Record<string, number>,
+): Record<K, number> {
+  return keys.reduce((line, key) => ({ ...line, [key]: stats[key] ?? 0 }), {} as Record<K, number>);
+}
+
+function toSkater(split: PlayerSplitResponse): HotPlayer {
+  return {
+    ...identity(split),
+    projection: {
+      type: 'skater',
+      playerId: split.playerId,
+      stats: {
+        scoring: statsFrom(SKATER_SCORING_STAT_KEYS, split.stats),
+        utility: { ...statsFrom(SKATER_UTILITY_STAT_KEYS, split.stats), gp: split.games },
+      },
+    },
+  };
+}
+
+function toGoalie(split: PlayerSplitResponse): HotPlayer {
+  return {
+    ...identity(split),
+    projection: {
+      type: 'goalie',
+      playerId: split.playerId,
+      stats: {
+        scoring: statsFrom(GOALIE_SCORING_STAT_KEYS, split.stats),
+        utility: { ...statsFrom(GOALIE_UTILITY_STAT_KEYS, split.stats), gp: split.games },
+      },
+    },
+  };
+}
+
+function identity(split: PlayerSplitResponse): Omit<HotPlayer, 'projection'> {
+  return {
+    name: split.name,
+    teamAbbrev: split.teamAbbrev,
+    games: split.games,
+    firstTeamGame: split.firstTeamGame,
+    lastTeamGame: split.lastTeamGame,
+  };
+}

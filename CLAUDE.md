@@ -38,7 +38,24 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   (CI runs this after `npm ci`). Do not hand-edit.
 - `auth/` — `login`, `register`, shared `auth-form`
 - `draft-projection/` — main feature: `projection-settings-section`,
-  `scoring-type-section`, `scoring-stats-section`, `player-projections-table`
+  `scoring-type-section`, `scoring-stats-section`, `player-projections-table`,
+  `share-dialog` (publishing the projection as a public link)
+- `shared-projection/` — the page behind a share link (`/s/:token`), public and unguarded: a
+  share link has to open for someone who has never signed in. It renders the **snapshot** the
+  owner published — the top rows with identity, rank and value frozen into them — so it needs
+  no player read model and no ranking of its own. Sharing is the marketing loop, so both ends
+  are measured (`projection_shared`, `shared_projection_viewed`).
+  Crawlers never reach this component: `nginx.conf` routes link-preview user agents for `/s/*`
+  to the BFF's per-share Open Graph document, since they run no JavaScript and would otherwise
+  unfurl every shared projection as the site-wide preview. The BFF origin is substituted into
+  `nginx.conf` at image build time from the same `API_URL` build arg as the bundle.
+- `draft-start/` — the **Draft Mode** page (`/draft`): picks what a draft is drafted
+  against. Either one of the user's projections, or the "Last Season's Stats" preset.
+  A preset draft has no projection behind it, so starting one creates a projection of
+  kind `preset_draft` (seeded server-side via `source: default`) purely to hold the picks;
+  `ProjectionStorageService.listProjections()` filters that row out so it never shows up
+  as the user's own work, and `listWithPresetDrafts()` is the one place it is wanted.
+  Both sources then run the same board in `draft-mode/`.
 - `services/` — app services (auth, projections, etc.)
 - `interceptors/` — HTTP interceptors: `authInterceptor` attaches the JWT and refreshes
   once on 401 (all environments). `retryInterceptor` (outermost) is a small **always-on**

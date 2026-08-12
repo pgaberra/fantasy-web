@@ -1,6 +1,7 @@
 import { ScoringStatKey, SkaterUtilityStatKey, SCORING_STAT_KEYS } from '../models/stat-key.model';
-import { ScaleConfig } from './projection-settings-section/model';
+import { DEFAULT_DECIMAL_SETTINGS, ScaleConfig } from './projection-settings-section/model';
 import { RosterSlots } from '../api/models/roster-slots';
+import { ProjectionState } from '../services/projection-serializer';
 
 export const DEFAULT_STAT_WEIGHTS: Record<ScoringStatKey, number> = {
   goals: 4.5,
@@ -76,5 +77,34 @@ export function createDefaultScaleSettings(
   return {
     gp: { scale: true, scalableStats },
     toiPerGame: { scale: true, scalableStats },
+  };
+}
+
+/**
+ * The settings a projection starts from before anyone edits it. Shared by creating a
+ * projection and by starting a draft off a preset, so a preset draft ranks players exactly
+ * like a freshly created projection would.
+ *
+ * The player rows are left empty on purpose: the server fills them in from its own read model
+ * (see `CreateProjectionRequest.source`) rather than having the client upload ~1600 players it
+ * just downloaded.
+ */
+export function createDefaultProjectionState(
+  isRateStat: (key: ScoringStatKey) => boolean,
+): ProjectionState {
+  return {
+    scoringType: 'points',
+    statWeights: DEFAULT_STAT_WEIGHTS,
+    activeScoringColumns: new Set<ScoringStatKey>(DEFAULT_SCORING_COLUMNS),
+    activeUtilityColumns: new Set<SkaterUtilityStatKey>(DEFAULT_UTILITY_COLUMNS),
+    scaleSettings: createDefaultScaleSettings(isRateStat),
+    decimalSettings: DEFAULT_DECIMAL_SETTINGS,
+    useDefaultDecimals: true,
+    leagueSize: DEFAULT_LEAGUE_SIZE,
+    rosterSlots: DEFAULT_ROSTER_SLOTS,
+    minGoalieGames: DEFAULT_MIN_GOALIE_GAMES,
+    yahooSync: null,
+    draft: null,
+    playerProjections: [],
   };
 }

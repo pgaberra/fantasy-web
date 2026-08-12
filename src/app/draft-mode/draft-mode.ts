@@ -27,6 +27,7 @@ import {
 import { ScoringStatKey } from '../models/stat-key.model';
 import { DraftState } from '../api/models/draft-state';
 import { ProjectionData } from '../api/models/projection-data';
+import { ProjectionResponse } from '../api/models/projection-response';
 import { UpdateProjectionData } from '../api/models/update-projection-data';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import {
@@ -86,6 +87,7 @@ export class DraftModeComponent implements OnInit {
 
   readonly projectionId = signal<string | null>(null);
   readonly projectionName = signal<string>('');
+  readonly projectionKind = signal<ProjectionResponse['kind']>('projection');
   readonly loaded = signal<boolean>(false);
   readonly saveStatus = signal<'idle' | 'saving' | 'saved' | 'error'>('idle');
   readonly searchTerm = signal<string>('');
@@ -301,6 +303,12 @@ export class DraftModeComponent implements OnInit {
   readonly canUndo = computed(() => this.picks().length > 0);
   readonly finished = computed(() => !!this.draft()?.finishedAt);
 
+  // A preset draft has no projection to go back to — it exists only to hold these picks — so
+  // leaving it returns to where the draft was started from.
+  readonly exitLink = computed(() =>
+    this.projectionKind() === 'preset_draft' ? ['/draft'] : ['/projections', this.projectionId()],
+  );
+
   readonly draftLabel = computed(() => {
     if (this.isMyPick() || this.isComplete()) {
       return 'Draft';
@@ -464,6 +472,7 @@ export class DraftModeComponent implements OnInit {
         next: ({ projection, players }) => {
           this.projectionId.set(projection.id);
           this.projectionName.set(projection.name);
+          this.projectionKind.set(projection.kind);
           this.data.set(projection.data);
           this.allPlayers.set(players);
           this.lookup.setPlayers(players);

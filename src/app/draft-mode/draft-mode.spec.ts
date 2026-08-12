@@ -24,6 +24,7 @@ describe('DraftModeComponent', () => {
   const projection: ProjectionResponse = {
     id: 'p1',
     name: 'My Projection',
+    kind: 'projection',
     season: '20262027',
     createdAt: '2026-06-01T00:00:00Z',
     updatedAt: '2026-06-01T00:00:00Z',
@@ -499,6 +500,7 @@ describe('DraftModeComponent — available pagination', () => {
   const bigProjection: ProjectionResponse = {
     id: 'p2',
     name: 'Big Board',
+    kind: 'projection',
     season: '20262027',
     createdAt: '2026-06-01T00:00:00Z',
     updatedAt: '2026-06-01T00:00:00Z',
@@ -604,6 +606,7 @@ describe('DraftModeComponent — finished draft', () => {
   const finishedProjection: ProjectionResponse = {
     id: 'p1',
     name: 'My Projection',
+    kind: 'projection',
     season: '20262027',
     createdAt: '2026-06-01T00:00:00Z',
     updatedAt: '2026-06-01T00:00:00Z',

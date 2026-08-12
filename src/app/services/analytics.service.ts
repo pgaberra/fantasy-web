@@ -6,7 +6,12 @@ import { environment } from '../../environments/environment';
  * Business events worth measuring — the funnel we'll want in PostHog once there's traffic.
  * A union so call sites can't drift into `projectionCreated` next to `projection_created`.
  */
-export type AnalyticsEvent = 'user_registered' | 'projection_created' | 'draft_started';
+export type AnalyticsEvent =
+  | 'user_registered'
+  | 'projection_created'
+  | 'draft_started'
+  | 'projection_shared'
+  | 'shared_projection_viewed';
 
 /** Mirrors posthog's `get_explicit_consent_status()`. */
 export type ConsentDecision = 'granted' | 'denied' | 'pending';

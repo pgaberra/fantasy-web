@@ -1,0 +1,104 @@
+<section class="range-selector">
+  <header class="range-header">
+    <div class="range-title">
+      <h2>Game range</h2>
+      <span class="season-badge">{{ seasonLabel() }}</span>
+    </div>
+    <span class="range-summary">{{ summary() }}</span>
+  </header>
+
+  <div class="presets" role="group" aria-label="Quick ranges">
+    @for (preset of presets; track preset.label) {
+      <button
+        type="button"
+        class="preset"
+        [class.preset--active]="isPresetActive()(preset)"
+        [attr.aria-pressed]="isPresetActive()(preset)"
+        (click)="applyPreset(preset)"
+      >
+        {{ preset.label }}
+      </button>
+    }
+  </div>
+
+  <div class="sliders">
+    <div class="slider-row">
+      <label [attr.for]="'range-from'">From game</label>
+      <input
+        id="range-from"
+        type="range"
+        min="1"
+        [max]="scheduleLength()"
+        step="1"
+        [value]="fromGame()"
+        (input)="onFromInput($event)"
+      />
+      <input
+        class="game-number"
+        type="number"
+        min="1"
+        [max]="scheduleLength()"
+        step="1"
+        [value]="fromGame()"
+        aria-label="First game in the range"
+        (input)="onFromInput($event)"
+      />
+    </div>
+    <div class="slider-row">
+      <label [attr.for]="'range-to'">To game</label>
+      <input
+        id="range-to"
+        type="range"
+        min="1"
+        [max]="scheduleLength()"
+        step="1"
+        [value]="toGame()"
+        (input)="onToInput($event)"
+      />
+      <input
+        class="game-number"
+        type="number"
+        min="1"
+        [max]="scheduleLength()"
+        step="1"
+        [value]="toGame()"
+        aria-label="Last game in the range"
+        (input)="onToInput($event)"
+      />
+    </div>
+  </div>
+
+  <div class="range-options">
+    <button
+      type="button"
+      class="per-game-toggle"
+      [class.per-game-toggle--on]="perGame()"
+      [attr.aria-pressed]="perGame()"
+      (click)="togglePerGame()"
+    >
+      <span class="per-game-dot" aria-hidden="true"></span>
+      Per game
+    </button>
+    <p class="per-game-hint">
+      @if (perGame()) {
+        Totals divided by the games each player actually dressed for, so someone who missed half the
+        range isn't buried.
+      } @else {
+        Totals over the range. A player who missed games shows less, which is usually the point.
+      }
+    </p>
+    <div class="min-games">
+      <label for="min-games">Min. games</label>
+      <input
+        id="min-games"
+        type="number"
+        min="1"
+        [max]="spanLength()"
+        step="1"
+        [value]="minGames()"
+        (input)="onMinGamesInput($event)"
+      />
+      <span class="min-games-hint">Hide players with fewer appearances in the range.</span>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,87 @@
+<div class="dialog-backdrop">
+  <div class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="share-title">
+    <h2 id="share-title" class="dialog-title">Share this projection</h2>
+
+    @if (isLoading()) {
+      <p class="dialog-body">Checking…</p>
+    } @else if (share(); as activeShare) {
+      <p class="dialog-body">
+        Anyone with this link can see your top {{ sharedCount }} players and the scoring settings
+        they were ranked under — no account needed. Your email is never shown.
+      </p>
+
+      <div class="link-row">
+        <input
+          class="link-input"
+          type="text"
+          readonly
+          [value]="activeShare.shareUrl"
+          aria-label="Share link"
+        />
+        <button type="button" class="btn btn-primary btn-sm" (click)="copyLink()">
+          {{ copied() ? 'Copied!' : 'Copy' }}
+        </button>
+      </div>
+
+      <p class="share-meta">
+        {{ activeShare.viewCount }} {{ activeShare.viewCount === 1 ? 'view' : 'views' }} so far.
+      </p>
+
+      <div class="dialog-actions">
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          [disabled]="isSaving()"
+          (click)="unshare()"
+        >
+          Stop sharing
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          [disabled]="isSaving()"
+          (click)="publish()"
+        >
+          Update snapshot
+        </button>
+        <button type="button" class="btn btn-primary btn-sm" (click)="closed.emit()">Done</button>
+      </div>
+    } @else {
+      <p class="dialog-body">
+        Publish your top {{ sharedCount }} players as a page anyone can open — good for posting in a
+        Discord or a league chat. It's a snapshot: what you share stays as it is until you update
+        it, and you can take the link down at any time.
+      </p>
+
+      <label class="alias-label" for="share-alias">Credit it to (optional)</label>
+      <input
+        id="share-alias"
+        class="alias-input"
+        type="text"
+        maxlength="40"
+        placeholder="Your name or handle"
+        [value]="authorAlias()"
+        (input)="onAliasInput($event)"
+      />
+      <p class="alias-hint">Leave it empty to stay anonymous. Your email is never shown.</p>
+
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary btn-sm" (click)="closed.emit()">
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary btn-sm"
+          [disabled]="isSaving()"
+          (click)="publish()"
+        >
+          {{ isSaving() ? 'Sharing…' : 'Create link' }}
+        </button>
+      </div>
+    }
+
+    @if (errorMessage()) {
+      <p class="share-error">{{ errorMessage() }}</p>
+    }
+  </div>
+</div>

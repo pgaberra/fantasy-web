@@ -32,6 +32,7 @@ import {
   FullSeasonDialogComponent,
 } from './full-season-dialog/full-season-dialog';
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
+import { ShareDialogComponent } from './share-dialog/share-dialog';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { OffseasonDataNoticeComponent } from '../shared/offseason-data-notice/offseason-data-notice';
 import {
@@ -55,6 +56,9 @@ import { NotificationService } from '../services/notification.service';
 import { ProjectionState } from '../services/projection-serializer';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import { ProjectionSyncService } from '../services/projection-sync.service';
+import { ProjectionRankingService } from '../services/projection-ranking.service';
+import { ProjectionShareService } from '../services/projection-share.service';
+import { SharedPlayer } from '../api/models/shared-player';
 import { YahooService } from '../services/yahoo.service';
 
 const AUTOSAVE_DEBOUNCE_MS = 1200;
@@ -69,6 +73,7 @@ const AUTOSAVE_DEBOUNCE_MS = 1200;
     SyncWarningDialogComponent,
     FullSeasonDialogComponent,
     OffseasonDataNoticeComponent,
+    ShareDialogComponent,
     RouterLink,
   ],
   templateUrl: './draft-projection.html',
@@ -83,6 +88,8 @@ export class DraftProjectionComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly yahoo = inject(YahooService);
   private readonly projectionSync = inject(ProjectionSyncService);
+  private readonly ranking = inject(ProjectionRankingService);
+  private readonly projectionShare = inject(ProjectionShareService);
   private readonly serializer = inject(ProjectionSerializerService);
   private readonly notification = inject(NotificationService);
 
@@ -149,6 +156,31 @@ export class DraftProjectionComponent implements OnInit {
   readonly reSyncing = signal<boolean>(false);
   readonly reSyncError = signal<string | null>(null);
   readonly showFullSeasonDialog = signal<boolean>(false);
+  readonly showShareDialog = signal<boolean>(false);
+
+  /**
+   * The rows a share would publish: the same ranking the table shows by default, frozen with the
+   * player identity a public page has no way to look up. Computed lazily by the dialog's input
+   * binding, so the cost lands only when someone actually opens it.
+   */
+  readonly sharedPlayers = computed<SharedPlayer[]>(() => {
+    const projections = this.loadedProjections();
+    if (!projections) {
+      return [];
+    }
+    const ranked = this.ranking.rankOverall({
+      projections,
+      scoringType: this.scoringType(),
+      statWeights: this.statWeights(),
+      activeScoringColumns: this.activeScoringColumns(),
+      leagueSize: this.leagueSize(),
+      rosterSlots: this.rosterSlots(),
+      minGoalieGames: this.minGoalieGames(),
+      decimalSettings: this.decimalSettings(),
+    });
+    const playersById = new Map(this.players().map((player) => [player.id, player]));
+    return this.projectionShare.toSharedPlayers(ranked, playersById, this.scoringType());
+  });
 
   readonly isLoading = computed(() => this.playersResource.isLoading() || !this.projectionLoaded());
 
@@ -273,6 +305,12 @@ export class DraftProjectionComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (projection) => {
+          // A preset draft is not a projection anyone edits — it only holds the picks of a
+          // draft started from a preset. Reaching this URL for one means the board is wanted.
+          if (projection.kind === 'preset_draft') {
+            void this.router.navigate(['/projections', projection.id, 'draft']);
+            return;
+          }
           this.projectionId.set(projection.id);
           this.projectionName.set(projection.name);
           const state = this.serializer.fromProjectionData(projection.data);

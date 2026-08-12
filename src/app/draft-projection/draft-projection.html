@@ -52,12 +52,17 @@
               <span class="rename-icon" aria-hidden="true">✎</span>
             </button>
           </h1>
-          <a
-            [routerLink]="['/projections', projectionId(), 'draft']"
-            class="btn btn-primary draft-mode-link"
-          >
-            {{ draftLinkLabel() }}
-          </a>
+          <div class="page-header-actions">
+            <button type="button" class="btn btn-secondary" (click)="showShareDialog.set(true)">
+              Share
+            </button>
+            <a
+              [routerLink]="['/projections', projectionId(), 'draft']"
+              class="btn btn-primary draft-mode-link"
+            >
+              {{ draftLinkLabel() }}
+            </a>
+          </div>
         </div>
       }
     </div>
@@ -114,6 +119,14 @@
       <app-full-season-dialog
         (confirm)="applyFullSeason($event)"
         (cancelled)="cancelFullSeason()"
+      />
+    }
+
+    @if (showShareDialog() && projectionId()) {
+      <app-share-dialog
+        [projectionId]="projectionId()!"
+        [players]="sharedPlayers()"
+        (closed)="showShareDialog.set(false)"
       />
     }
   </div>
