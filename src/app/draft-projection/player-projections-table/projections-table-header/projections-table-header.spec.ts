@@ -449,6 +449,8 @@ describe('ProjectionsTableHeaderComponent', () => {
       // Sorting is what clicking the heading does; the menu does not repeat it.
       expect(overlayText()).not.toContain('Sort highest first');
       expect(overlayText()).not.toContain('Sort lowest first');
+      // Nor the weight, which has its own input in the row below, on screen at the same time.
+      expect(overlayText()).not.toContain('Points per');
 
       const removeItem = [
         ...document.querySelectorAll<HTMLButtonElement>('.cdk-overlay-container .menu-item'),
@@ -456,6 +458,20 @@ describe('ProjectionsTableHeaderComponent', () => {
       removeItem.dispatchEvent(new Event('click', { bubbles: true }));
 
       expect(removed).toHaveBeenCalledWith('goals');
+    });
+
+    it('leaves the weight row as the one place a weight is set', () => {
+      getFixture({ scoringType: 'points', columnControls: true });
+
+      const goalsMenu = ngMocks
+        .findAll('.th-menu')
+        .find((trigger) => trigger.nativeElement.getAttribute('aria-label')?.includes('Goals'))!;
+      goalsMenu.nativeElement.dispatchEvent(new Event('click', { bubbles: true }));
+
+      expect(document.querySelectorAll('.cdk-overlay-container #menu-weight-goals')).toHaveLength(
+        0,
+      );
+      expect(ngMocks.findAll('.weight-row .weight-input').length).toBeGreaterThan(0);
     });
 
     it('moves the full-season action out of the GP header and into its menu', () => {

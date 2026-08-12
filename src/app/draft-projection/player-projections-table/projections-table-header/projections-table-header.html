@@ -194,21 +194,9 @@
       <div class="menu-separator"></div>
     }
 
-    <!-- No sort commands here: clicking the column heading already sorts it best-first, and
-         clicking again flips it. Naming both directions in the menu only ever saved one click. -->
-
-    @if (!isUtilityColumn(col) && scoringType() === 'points') {
-      <div class="menu-field">
-        <label [attr.for]="'menu-weight-' + col">Points per {{ col | statLabel }}</label>
-        <input
-          [id]="'menu-weight-' + col"
-          type="number"
-          step="0.01"
-          [value]="weightFor(col)"
-          (input)="onWeightInput(col, $event)"
-        />
-      </div>
-    }
+    <!-- Nothing here for sorting or for the stat's weight: clicking the heading already sorts it
+         best-first, and the weight has its own input in the row two lines below, visible at the
+         same moment this menu is. What is left is what has nowhere else to be. -->
 
     @if (!useDefaultDecimals() && isDecimalColumn(col)) {
       <div class="menu-field">

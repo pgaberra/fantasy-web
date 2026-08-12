@@ -127,10 +127,6 @@ export class ProjectionsTableHeaderComponent {
     return this.isDecimalColumn(statKey) ? this.decimalSettings()[statKey] : 0;
   }
 
-  weightFor(statKey: StatKey): number {
-    return this.statWeights()[statKey as ScoringStatKey] ?? 0;
-  }
-
   removeColumn(statKey: StatKey): void {
     if (this.isUtilityColumn(statKey)) {
       this.utilityColumnToggled.emit(statKey);
