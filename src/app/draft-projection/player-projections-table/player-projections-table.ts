@@ -115,6 +115,15 @@ export class PlayerProjectionsTableComponent implements OnInit {
    * toolbar and into the league menu rather than holding a button of its own forever.
    */
   readonly syncedLeagueName = input<string | null>(null);
+
+  /**
+   * The League setup menu holds the category ranking inputs and, once a league has been imported,
+   * where it came from. A points league that has imported nothing leaves it empty — its scoring is
+   * the weight row in the table header — so the button is not offered at all.
+   */
+  readonly hasLeagueSetup = computed(
+    () => this.scoringType() === 'category' || !!this.syncedLeagueName(),
+  );
   readonly manageSyncRequested = output<void>();
   readonly activeScoringColumns = model<Set<ScoringStatKey>>(new Set<ScoringStatKey>());
   readonly activeUtilityColumns = model<Set<UtilityStatKey>>(new Set<UtilityStatKey>());

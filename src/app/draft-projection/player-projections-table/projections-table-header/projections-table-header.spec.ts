@@ -232,9 +232,11 @@ describe('ProjectionsTableHeaderComponent', () => {
       expect(ngMocks.findAll('.weight-row')).toHaveLength(0);
     });
 
-    it('leaves the weight-row to the League setup menu on surfaces that have one', () => {
+    it('keeps the weight-row on the surfaces with column menus too', () => {
+      // The inputs stand under the columns they weight, which beats any list in a popover for
+      // setting eight of them, so the toolbar does not take them over.
       getFixture({ scoringType: 'points', columnControls: true });
-      expect(ngMocks.findAll('.weight-row')).toHaveLength(0);
+      expect(ngMocks.findAll('.weight-row')).toHaveLength(1);
     });
 
     it('should populate weight inputs with the current stat weights', () => {

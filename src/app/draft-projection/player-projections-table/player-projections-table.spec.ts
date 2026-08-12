@@ -864,6 +864,26 @@ describe('PlayerProjectionsTableComponent', () => {
       expect(ngMocks.findAll('.league-setup-btn .sync-dot')).toHaveLength(1);
     });
 
+    it('does not offer League setup in a points league with nothing behind it', () => {
+      // Its scoring is the weight row in the header; the menu would open on an empty popover.
+      getComponent({ columnControls: true, scoringType: 'points', syncedLeagueName: null });
+      expect(ngMocks.findAll('.league-setup-btn')).toHaveLength(0);
+    });
+
+    it('offers it in a points league that has a league to re-sync', () => {
+      getComponent({
+        columnControls: true,
+        scoringType: 'points',
+        syncedLeagueName: 'Puck Luck Dynasty',
+      });
+      expect(ngMocks.findAll('.league-setup-btn')).toHaveLength(1);
+    });
+
+    it('offers it in a category league, which ranks by the settings it holds', () => {
+      getComponent({ columnControls: true, scoringType: 'category', syncedLeagueName: null });
+      expect(ngMocks.findAll('.league-setup-btn')).toHaveLength(1);
+    });
+
     it('keeps picking stats in the toolbar rather than in a scrolled-away column', () => {
       getComponent({ columnControls: true });
       expect(ngMocks.findAll('.col-add')).toHaveLength(0);
