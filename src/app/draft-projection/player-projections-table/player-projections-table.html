@@ -2,42 +2,46 @@
   <div class="table-header" [class.table-header--stacked]="columnControls()">
     <div class="table-title">
       <h2>Player Projections</h2>
-      <div class="history-controls">
-        <button
-          type="button"
-          class="btn btn-secondary btn-sm history-btn"
-          [disabled]="!canUndo()"
-          (click)="undo()"
-          title="Undo (Ctrl+Z)"
-          aria-label="Undo last change"
-        >
-          ↶
-        </button>
-        <button
-          type="button"
-          class="btn btn-secondary btn-sm history-btn"
-          [disabled]="!canRedo()"
-          (click)="redo()"
-          title="Redo (Ctrl+Shift+Z)"
-          aria-label="Redo change"
-        >
-          ↷
-        </button>
+      <!-- History and save status are both about the projection as a document rather than about
+           the table below, so they read as one cluster instead of two unrelated ends of the row. -->
+      <div class="doc-state">
+        <div class="history-controls">
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm history-btn"
+            [disabled]="!canUndo()"
+            (click)="undo()"
+            title="Undo (Ctrl+Z)"
+            aria-label="Undo last change"
+          >
+            ↶
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm history-btn"
+            [disabled]="!canRedo()"
+            (click)="redo()"
+            title="Redo (Ctrl+Shift+Z)"
+            aria-label="Redo change"
+          >
+            ↷
+          </button>
+        </div>
+        <span class="save-status" [class.save-status--error]="saveStatus() === 'error'">
+          @switch (saveStatus()) {
+            @case ('saving') {
+              Saving…
+            }
+            @case ('saved') {
+              Saved
+            }
+            @case ('error') {
+              Couldn't save — changes are unsaved
+            }
+          }
+        </span>
       </div>
       <ng-content select="[table-actions]" />
-      <span class="save-status" [class.save-status--error]="saveStatus() === 'error'">
-        @switch (saveStatus()) {
-          @case ('saving') {
-            Saving…
-          }
-          @case ('saved') {
-            Saved
-          }
-          @case ('error') {
-            Couldn't save — changes are unsaved
-          }
-        }
-      </span>
     </div>
     <div class="table-controls">
       @if (columnControls()) {
@@ -58,6 +62,10 @@
               Category
             </button>
           </div>
+
+          <!-- Ahead of the two menus: what this slot holds is the call to action for a projection
+               that has not been set up yet, and it stops rendering once it has been. -->
+          <ng-content select="[table-toolbar-actions]" />
 
           <button
             type="button"
@@ -105,8 +113,6 @@
             </svg>
             Columns
           </button>
-
-          <ng-content select="[table-toolbar-actions]" />
         </div>
       }
 

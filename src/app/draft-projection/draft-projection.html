@@ -92,12 +92,13 @@
         (fullSeasonRequested)="openFullSeasonDialog()"
       >
         <!-- Only while there is no league to show: importing one is the fastest route to a
-             useful projection, so it earns a button of its own until it has been done. -->
+             useful projection, so it earns a button of its own — and the toolbar's only primary —
+             until it has been done. -->
         @if (!syncedLeagueName()) {
           <button
             table-toolbar-actions
             type="button"
-            class="btn btn-secondary btn-sm"
+            class="btn btn-primary btn-sm"
             (click)="showSyncDialog.set(true)"
           >
             <svg
