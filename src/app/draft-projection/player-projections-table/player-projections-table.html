@@ -150,7 +150,6 @@
         [allActiveScoringColumns]="activeScoringColumns()"
         [scaleSettings]="scaleSettings()"
         (sort)="onSort($event)"
-        (sortDirected)="setSort($event.column, $event.direction)"
         (scoringColumnToggled)="toggleScoringColumn($event)"
         (utilityColumnToggled)="toggleUtilityColumn($event)"
         (scaleToggled)="toggleScale($event)"

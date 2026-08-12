@@ -49,8 +49,6 @@ export class ProjectionsTableHeaderComponent {
   sortColumn = input.required<SortColumn>();
   sortDirection = input.required<SortDirection>();
   readonly sort = output<SortColumn>();
-  /** The column menu names a direction outright, rather than toggling like a header click. */
-  readonly sortDirected = output<{ column: SortColumn; direction: SortDirection }>();
   readonly showFullSeasonButton = input<boolean>(false);
   // A shared page shows the same header, minus the rows that exist to change things.
   readonly readonly = input<boolean>(false);

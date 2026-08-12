@@ -73,6 +73,12 @@ export const LOWER_IS_BETTER_SCORING_STAT_KEYS: ReadonlySet<ScoringStatKey> = ne
   'l',
 ]);
 
+// Rate stats describe a per-unit share, so scaling them by games played would be wrong — and,
+// unlike a running total, a low one is low on its own merits rather than because the player
+// barely played.
+export const RATE_STAT_KEYS = ['shPct', 'svPct', 'winPct', 'gaa'] as const;
+export type RateStatKey = (typeof RATE_STAT_KEYS)[number];
+
 export const SKATER_STAT_KEYS = [...SKATER_UTILITY_STAT_KEYS, ...SKATER_SCORING_STAT_KEYS] as const;
 
 export type SkaterStatKey = (typeof SKATER_STAT_KEYS)[number];

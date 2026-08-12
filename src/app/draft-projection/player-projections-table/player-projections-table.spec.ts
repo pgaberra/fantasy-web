@@ -451,7 +451,9 @@ describe('PlayerProjectionsTableComponent', () => {
       component.onSort('hits');
 
       expect(component.sortDirection()).toEqual('asc');
-      expect(component.visibleProjections().map((sp) => sp.projection.playerId)).toEqual([3, 1, 2]);
+      // McDavid 42 then Draisaitl 51, and Hellebuyck last: a goalie has no hits at all, which is
+      // not the lowest hit total, so he stays at the bottom rather than heading the ascending sort.
+      expect(component.visibleProjections().map((sp) => sp.projection.playerId)).toEqual([1, 2, 3]);
     });
 
     it('resets to descending when switching to a different column', () => {
@@ -463,6 +465,31 @@ describe('PlayerProjectionsTableComponent', () => {
 
       expect(component.sortColumn()).toEqual('goals');
       expect(component.sortDirection()).toEqual('desc');
+    });
+
+    it('opens a lower-is-better stat at its good end instead of its bad one', () => {
+      const component = getComponent();
+
+      component.onSort('gaa');
+
+      expect(component.sortDirection()).toEqual('asc');
+    });
+
+    it('still flips a lower-is-better stat on a second click', () => {
+      const component = getComponent();
+
+      component.onSort('gaa');
+      component.onSort('gaa');
+
+      expect(component.sortDirection()).toEqual('desc');
+    });
+
+    it('sorts players alphabetically when their column is chosen', () => {
+      const component = getComponent();
+
+      component.onSort('name');
+
+      expect(component.sortDirection()).toEqual('asc');
     });
   });
 

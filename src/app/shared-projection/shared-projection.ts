@@ -15,6 +15,7 @@ import {
   SortDirection,
 } from '../models/projection.model';
 import { GoalieStats, SkaterStats } from '../models/projection.model';
+import { compareStatValues, defaultSortDirection } from '../models/sorting';
 import { ScoringStatKey, SkaterUtilityStatKey, StatKey } from '../models/stat-key.model';
 import {
   DecimalStatKey,
@@ -138,7 +139,7 @@ export class SharedProjectionComponent {
     const filtered = this.rows().filter((row) => this.matchesFilter(row));
     const column = this.sortColumn();
     const sign = this.sortDirection() === 'asc' ? 1 : -1;
-    return [...filtered].sort((first, second) => sign * this.compare(first, second, column));
+    return [...filtered].sort((first, second) => this.compare(first, second, column, sign));
   });
 
   onSort(column: SortColumn): void {
@@ -147,26 +148,32 @@ export class SharedProjectionComponent {
       return;
     }
     this.sortColumn.set(column);
-    this.sortDirection.set(column === 'name' ? 'asc' : 'desc');
+    this.sortDirection.set(defaultSortDirection(column));
   }
 
-  private compare(first: SharedRow, second: SharedRow, column: SortColumn): number {
+  private compare(first: SharedRow, second: SharedRow, column: SortColumn, sign: number): number {
     if (column === 'name') {
-      return second.player.name.localeCompare(first.player.name);
+      return sign * first.player.name.localeCompare(second.player.name);
     }
     if (column === 'summary') {
-      // The published order, which is what the ranking said when it was shared.
-      return second.shared.rank - first.shared.rank;
+      // The published order, which is what the ranking said when it was shared. Reversed against
+      // the others because rank counts the good way down: rank 1 is the top of the table.
+      return sign * (second.shared.rank - first.shared.rank);
     }
-    return this.statValue(first.shared, column) - this.statValue(second.shared, column);
+    return compareStatValues(
+      this.statValue(first.shared, column),
+      this.statValue(second.shared, column),
+      sign,
+    );
   }
 
-  private statValue(shared: SharedPlayer, key: StatKey): number {
+  /** Null rather than a sentinel low value, so a stat the player cannot have sorts last either way. */
+  private statValue(shared: SharedPlayer, key: StatKey): number | null {
     const stats: Record<string, number | undefined> = {
       ...shared.stats.utility,
       ...shared.stats.scoring,
     };
-    return stats[key] ?? Number.NEGATIVE_INFINITY;
+    return stats[key] ?? null;
   }
 
   private matchesFilter(row: SharedRow): boolean {

@@ -444,7 +444,9 @@ describe('ProjectionsTableHeaderComponent', () => {
       // `statTooltip` returns null for those, which would have left the menu unheaded.
       expect(overlayText()).toContain('Goals');
       expect(overlayText()).toContain('Remove column');
-      expect(overlayText()).toContain('Sort highest first');
+      // Sorting is what clicking the heading does; the menu does not repeat it.
+      expect(overlayText()).not.toContain('Sort highest first');
+      expect(overlayText()).not.toContain('Sort lowest first');
 
       const removeItem = [
         ...document.querySelectorAll<HTMLButtonElement>('.cdk-overlay-container .menu-item'),

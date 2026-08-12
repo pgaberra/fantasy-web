@@ -22,6 +22,7 @@ import {
   SortColumn,
   SortDirection,
 } from '../../models/projection.model';
+import { compareStatValues, defaultSortDirection, statValueOf } from '../../models/sorting';
 import { ProjectionCalculationService } from '../../services/projection-calculation.service';
 import { ProjectionUpdateService } from '../../services/projection-update.service';
 import { ToiService } from '../../services/toi.service';
@@ -70,13 +71,6 @@ function toggledSet<T>(members: ReadonlySet<T>, member: T): Set<T> {
     next.add(member);
   }
   return next;
-}
-
-function statValueOf(projection: Projection, key: StatKey): number {
-  const scoring = projection.stats.scoring as Record<string, number>;
-  const utility = projection.stats.utility as Record<string, number>;
-  const value = scoring[key] ?? utility[key];
-  return typeof value === 'number' ? value : 0;
 }
 
 @Component({
@@ -159,7 +153,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
     const scored = this.scoredProjections();
     const column = this.sortColumn();
     const sign = this.sortDirection() === 'asc' ? 1 : -1;
-    const summaryValueOf = this.sortValueResolver('summary');
+    const summaryValueOf = this.summaryValueResolver();
     const tieBreak = (a: ScoredProjection, b: ScoredProjection): number =>
       summaryValueOf(b) - summaryValueOf(a);
 
@@ -179,7 +173,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
       if (demoteUnqualified && a.qualified !== b.qualified) {
         return a.qualified ? -1 : 1;
       }
-      const primary = sign * (valueOf(a) - valueOf(b));
+      const primary = compareStatValues(valueOf(a), valueOf(b), sign);
       // Ties fall back to fantasy value (desc) so equal-stat players stay meaningfully ordered.
       return primary !== 0 ? primary : tieBreak(a, b);
     });
@@ -187,13 +181,18 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   private sortValueResolver(
     column: Exclude<SortColumn, 'name'>,
-  ): (scoredProjection: ScoredProjection) => number {
+  ): (scoredProjection: ScoredProjection) => number | null {
     if (column === 'summary') {
-      return this.scoringType() === 'points'
-        ? (scoredProjection) => scoredProjection.score.fantasyPoints
-        : (scoredProjection) => scoredProjection.score.zScore;
+      return this.summaryValueResolver();
     }
     return (scoredProjection) => statValueOf(scoredProjection.projection, column);
+  }
+
+  /** Every player has a summary value, so this one never resolves to null. */
+  private summaryValueResolver(): (scoredProjection: ScoredProjection) => number {
+    return this.scoringType() === 'points'
+      ? (scoredProjection) => scoredProjection.score.fantasyPoints
+      : (scoredProjection) => scoredProjection.score.zScore;
   }
 
   onSort(column: SortColumn): void {
@@ -201,7 +200,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
       this.sortDirection.update((direction) => (direction === 'desc' ? 'asc' : 'desc'));
     } else {
       this.sortColumn.set(column);
-      this.sortDirection.set('desc');
+      this.sortDirection.set(defaultSortDirection(column));
     }
   }
   readonly filteredAndSortedProjections: Signal<ScoredProjection[]> = computed(() => {
@@ -543,11 +542,6 @@ export class PlayerProjectionsTableComponent implements OnInit {
         scalableStats: toggledSet(settings[utilityKey].scalableStats, statKey),
       },
     }));
-  }
-
-  setSort(column: SortColumn, direction: SortDirection): void {
-    this.sortColumn.set(column);
-    this.sortDirection.set(direction);
   }
 
   selectScoringType(type: ScoringType): void {
