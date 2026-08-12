@@ -108,7 +108,10 @@
     {{ summaryLabel() }}<span class="sort-arrow">{{ sortIndicator('summary') }}</span>
   </th>
 </tr>
-@if (scoringType() === 'points' && !readonly()) {
+
+<!-- Where the toolbar exists the weights live in its League setup menu, which can label them and
+     hold them all in one list; the row stays for the surfaces without that menu. -->
+@if (scoringType() === 'points' && !readonly() && !showColumnControls()) {
   <tr class="weight-row">
     <th class="col-rank"></th>
     <th class="col-name"><span class="weight-label">Stat weights (pts)</span></th>
