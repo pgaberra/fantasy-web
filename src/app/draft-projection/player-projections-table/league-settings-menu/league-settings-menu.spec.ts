@@ -1,12 +1,9 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LeagueSettingsMenuComponent } from './league-settings-menu';
-import { ScoringStatKey } from '../../../models/stat-key.model';
-import { StatLabelPipe } from '../../../pipes/stat-label.pipe';
 
 describe('LeagueSettingsMenuComponent', () => {
-  // The weight list is asserted by the labels it renders, so the pipe has to be the real one.
-  beforeEach(() => MockBuilder(LeagueSettingsMenuComponent).keep(StatLabelPipe));
+  beforeEach(() => MockBuilder(LeagueSettingsMenuComponent));
 
   const getFixture = (overrides: object = {}) =>
     MockRender(LeagueSettingsMenuComponent, {
@@ -45,68 +42,11 @@ describe('LeagueSettingsMenuComponent', () => {
     expect(ngMocks.findAll('#min-goalie-games-input')).toHaveLength(0);
   });
 
-  it('offers a weight for every stat the points league scores, in column order', () => {
-    getFixture({
-      scoringType: 'points',
-      activeScoringColumns: new Set<ScoringStatKey>(['assists', 'goals', 'w']),
-      statWeights: { goals: 6, assists: 4, w: 5 } as Record<ScoringStatKey, number>,
-    });
-
-    const labels = ngMocks
-      .findAll('.weight-list label')
-      .map((label) => label.nativeElement.textContent.trim());
-    expect(labels).toEqual(['Goals', 'Assists', 'Wins']);
-  });
-
-  it('leaves the stats it does not score out of the weight list', () => {
-    getFixture({
-      scoringType: 'points',
-      activeScoringColumns: new Set<ScoringStatKey>(['goals']),
-      statWeights: { goals: 6, assists: 4 } as Record<ScoringStatKey, number>,
-    });
-
-    expect(ngMocks.findAll('.weight-list label')).toHaveLength(1);
-    expect(ngMocks.findAll('#league-weight-assists')).toHaveLength(0);
-  });
-
-  it('says where to add stats when the projection scores none', () => {
-    getFixture({ scoringType: 'points', activeScoringColumns: new Set<ScoringStatKey>() });
-
-    const list = ngMocks.find('.weight-list');
-    expect(list.nativeElement.textContent).toContain('Columns');
-  });
-
-  it('keeps the other weights untouched when one is edited', () => {
-    const component = getFixture({
-      scoringType: 'points',
-      activeScoringColumns: new Set<ScoringStatKey>(['goals', 'assists']),
-      statWeights: { goals: 6, assists: 4 } as Record<ScoringStatKey, number>,
-    }).point.componentInstance;
-
-    component.onWeightInput('goals', { target: { value: '9.5' } } as unknown as Event);
-
-    expect(component.statWeights()).toEqual({ goals: 9.5, assists: 4 });
-  });
-
-  it('ignores a weight edit that is not a number, rather than storing NaN', () => {
-    const component = getFixture({
-      scoringType: 'points',
-      activeScoringColumns: new Set<ScoringStatKey>(['goals']),
-      statWeights: { goals: 6 } as Record<ScoringStatKey, number>,
-    }).point.componentInstance;
-
-    component.onWeightInput('goals', { target: { value: 'abc' } } as unknown as Event);
-
-    expect(component.statWeights()).toEqual({ goals: 6 });
-  });
-
-  it('shows no weights in a category league, where they do not score anything', () => {
-    getFixture({
-      scoringType: 'category',
-      activeScoringColumns: new Set<ScoringStatKey>(['goals', 'assists']),
-    });
+  it('does not carry the stat weights, which are set in the header row instead', () => {
+    getFixture({ scoringType: 'points' });
 
     expect(ngMocks.findAll('.weight-list')).toHaveLength(0);
+    expect(ngMocks.findAll('input[type="number"]')).toHaveLength(0);
   });
 
   it('clamps league size and the goalie games minimum to their allowed range', () => {

@@ -42,13 +42,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Roughly seven rows before it scrolls, which keeps the menu shorter than a laptop viewport even
-   for a league that scores every stat. */
-.weight-list {
-  max-height: 17.5rem;
-  overflow-y: auto;
-}
-
 .field-with-unit {
   display: inline-flex;
   align-items: center;

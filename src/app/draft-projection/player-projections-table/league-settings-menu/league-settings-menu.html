@@ -25,29 +25,7 @@
   <div class="menu-separator"></div>
 }
 
-@if (scoringType() === 'points') {
-  <p class="menu-note">How many fantasy points each stat is worth in your league.</p>
-  <!-- A league can score a dozen stats, which is taller than a popover should get. -->
-  <div class="weight-list">
-    @for (statKey of weightedStats(); track statKey) {
-      <div class="menu-field">
-        <label [attr.for]="'league-weight-' + statKey">{{ statKey | statLabel }}</label>
-        <input
-          [id]="'league-weight-' + statKey"
-          type="number"
-          step="0.01"
-          [value]="weightFor(statKey)"
-          (input)="onWeightInput(statKey, $event)"
-        />
-      </div>
-    } @empty {
-      <p class="menu-note">
-        This projection scores no stats yet — add some in <strong>Columns</strong> and they will
-        show up here to be weighted.
-      </p>
-    }
-  </div>
-} @else {
+@if (scoringType() === 'category') {
   <div class="menu-field">
     <label for="league-size-input">League size</label>
     <span class="field-with-unit">

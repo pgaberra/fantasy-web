@@ -67,33 +67,38 @@
                that has not been set up yet, and it stops rendering once it has been. -->
           <ng-content select="[table-toolbar-actions]" />
 
-          <button
-            type="button"
-            class="btn btn-secondary btn-sm league-setup-btn"
-            [appPopover]="leagueMenu"
-          >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
+          <!-- A points league sets its scoring in the weight row under the column headings, so
+               there is nothing behind this button unless the projection ranks by category or has
+               a league to re-sync. An affordance with an empty menu behind it is worse than none. -->
+          @if (hasLeagueSetup()) {
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm league-setup-btn"
+              [appPopover]="leagueMenu"
             >
-              <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" />
-            </svg>
-            League setup
-            @if (syncedLeagueName(); as leagueName) {
-              <span
-                class="sync-dot"
-                [attr.aria-label]="'Imported from ' + leagueName"
-                appTooltip="Settings imported from {{ leagueName }}"
-              ></span>
-            }
-          </button>
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" />
+              </svg>
+              League setup
+              @if (syncedLeagueName(); as leagueName) {
+                <span
+                  class="sync-dot"
+                  [attr.aria-label]="'Imported from ' + leagueName"
+                  appTooltip="Settings imported from {{ leagueName }}"
+                ></span>
+              }
+            </button>
+          }
 
           <button type="button" class="btn btn-secondary btn-sm" [appPopover]="columnsMenu">
             <svg
@@ -205,8 +210,6 @@
     [(leagueSize)]="leagueSize"
     [(rosterSlots)]="rosterSlots"
     [(minGoalieGames)]="minGoalieGames"
-    [(statWeights)]="statWeights"
-    [activeScoringColumns]="activeScoringColumns()"
   />
 </ng-template>
 
