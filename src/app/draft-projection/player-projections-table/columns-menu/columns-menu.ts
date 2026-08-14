@@ -1,4 +1,4 @@
-import { Component, computed, input, model, output, signal } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
 import {
   GOALIE_SCORING_STAT_KEYS,
   ScoringStatKey,
@@ -9,7 +9,6 @@ import {
 } from '../../../models/stat-key.model';
 import { StatLabelPipe } from '../../../pipes/stat-label.pipe';
 import { STAT_FULL_NAMES } from '../../../pipes/stat-tooltip.pipe';
-import { ToggleSwitchComponent } from '../../projection-settings-section/toggle-switch/toggle-switch';
 
 export type StatGroup = 'skater' | 'goalie' | 'utility';
 
@@ -25,25 +24,24 @@ const GROUP_LABELS: Record<StatGroup, string> = {
 };
 
 /**
- * Everything about the columns themselves: which ones are on screen, and how their numbers are
- * formatted. The counterpart to removing a column from its own header menu — it picks what to
- * add, grouped the way the settings panel it replaces grouped it, and deliberately stays open
- * while several are ticked, since adding one stat per dropdown round-trip was the slowest part
- * of the old panel.
+ * Which columns are on screen. The counterpart to removing a column from its own header menu — it
+ * picks what to add, grouped the way the settings panel it replaces grouped it, and deliberately
+ * stays open while several are ticked, since adding one stat per dropdown round-trip was the
+ * slowest part of the old panel.
+ *
+ * How a column's numbers are formatted is not here: decimals belong to the column they format, and
+ * live in that column's own menu.
  */
 @Component({
   selector: 'app-columns-menu',
   templateUrl: './columns-menu.html',
   styleUrl: './columns-menu.css',
-  imports: [StatLabelPipe, ToggleSwitchComponent],
+  imports: [StatLabelPipe],
 })
 export class ColumnsMenuComponent {
   readonly activeScoringColumns = input.required<Set<ScoringStatKey>>();
   readonly activeUtilityColumns = input.required<Set<UtilityStatKey>>();
   readonly showUtility = input<boolean>(true);
-  /** Off where a column's own menu isn't there to set the decimals the toggle hands over to. */
-  readonly showDecimalsSetting = input<boolean>(true);
-  readonly useDefaultDecimals = model<boolean>(true);
 
   readonly scoringToggled = output<ScoringStatKey>();
   readonly utilityToggled = output<UtilityStatKey>();
@@ -105,9 +103,5 @@ export class ColumnsMenuComponent {
 
   labelFor(group: StatGroup): string {
     return GROUP_LABELS[group];
-  }
-
-  toggleUseDefaultDecimals(): void {
-    this.useDefaultDecimals.update((useDefaults) => !useDefaults);
   }
 }

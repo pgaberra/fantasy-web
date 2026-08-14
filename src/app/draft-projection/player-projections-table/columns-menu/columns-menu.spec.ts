@@ -75,22 +75,10 @@ describe('ColumnsMenuComponent', () => {
     expect(ngMocks.findAll('.add-tab')).toHaveLength(2);
   });
 
-  it('keeps the decimal-places setting with the columns it formats', () => {
-    const component = getComponent();
-    expect(ngMocks.findAll('#default-decimals-label')).toHaveLength(1);
-
-    component.toggleUseDefaultDecimals();
-
-    expect(component.useDefaultDecimals()).toEqual(false);
-  });
-
-  it('drops the decimal-places setting where no column menu can set them instead', () => {
-    MockRender(ColumnsMenuComponent, {
-      activeScoringColumns: new Set<ScoringStatKey>(),
-      activeUtilityColumns: new Set<UtilityStatKey>(),
-      showDecimalsSetting: false,
-    });
+  it('says nothing about decimals, which belong to the column they format', () => {
+    getComponent();
 
     expect(ngMocks.findAll('#default-decimals-label')).toHaveLength(0);
+    expect(ngMocks.findAll('app-toggle-switch')).toHaveLength(0);
   });
 });
