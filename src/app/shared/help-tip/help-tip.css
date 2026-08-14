@@ -13,9 +13,7 @@
   border: none;
   border-radius: 50%;
   background: none;
-  font: inherit;
-  font-size: 0.8rem;
-  line-height: 1;
+  line-height: 0;
   color: var(--color-text-subtle);
   cursor: help;
 }
