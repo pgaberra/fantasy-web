@@ -162,6 +162,7 @@
         <app-league-sync
           [lastSync]="yahooSync()"
           [lastEspnLeagueId]="espnSync()?.leagueId ?? null"
+          [lastEspnSyncedAt]="espnSync()?.syncedAt ?? null"
           (yahooSynced)="applyYahooSettings($event)"
           (espnSynced)="applyEspnSettings($event)"
         />

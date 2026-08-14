@@ -6,6 +6,10 @@
     </span>
   </div>
 
+  @if (lastSyncedAt(); as syncedAt) {
+    <p class="espn-sync-muted">Last synced {{ syncedAt | date: 'd MMM y, HH:mm' }}</p>
+  }
+
   <div class="espn-sync-form">
     <label class="espn-field espn-field--grow">
       <span class="espn-field-label">League ID</span>

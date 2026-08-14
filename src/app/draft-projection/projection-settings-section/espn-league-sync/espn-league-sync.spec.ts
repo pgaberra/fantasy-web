@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, it, expect } from 'vitest';
 import { of, throwError } from 'rxjs';
@@ -22,11 +23,15 @@ describe('EspnLeagueSyncComponent', () => {
   const noCredentials: CredentialStatusResponse = { hasCredentials: false };
 
   const buildDefault = () =>
-    MockBuilder(EspnLeagueSyncComponent).mock(EspnService, {
-      credentialStatus: () => of(noCredentials),
-      saveCredentials: () => of(undefined),
-      leagueProjectionSettings: () => of(settings),
-    });
+    MockBuilder(EspnLeagueSyncComponent)
+      .mock(EspnService, {
+        credentialStatus: () => of(noCredentials),
+        saveCredentials: () => of(undefined),
+        leagueProjectionSettings: () => of(settings),
+      })
+      // Left real: a mocked DatePipe renders nothing, which is exactly what the "last synced"
+      // line is asserting about.
+      .keep(DatePipe);
 
   it('reflects stored credentials from the status probe on init', async () => {
     await MockBuilder(EspnLeagueSyncComponent).mock(EspnService, {
@@ -98,6 +103,25 @@ describe('EspnLeagueSyncComponent', () => {
     expect(fixture.point.componentInstance.leagueId()).toEqual('123456');
     const input = fixture.nativeElement.querySelector('.espn-input') as HTMLInputElement;
     expect(input.value).toEqual('123456');
+  });
+
+  it('says when the league was last synced', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent, {
+      lastLeagueId: '123456',
+      lastSyncedAt: '2026-08-14T17:12:00.000Z',
+    });
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.textContent).toContain('Last synced 14 Aug 2026');
+  });
+
+  it('says nothing about a previous sync when there has not been one', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent);
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.textContent).not.toContain('Last synced');
   });
 
   it('opens the private section for a user whose cookies are already on file', async () => {
