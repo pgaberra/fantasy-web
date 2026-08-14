@@ -91,7 +91,7 @@ export class ProjectionsTableHeaderComponent {
    * permanent chrome the two-column group has no room for.
    */
   utilityTooltip(statKey: UtilityStatKey): string {
-    return `${STAT_FULL_NAMES[statKey]} — a utility stat: it scores no points itself, but it can scale the stats that do.`;
+    return `${STAT_FULL_NAMES[statKey]} — a Utility Stat that can be used to scale and project other stats.`;
   }
 
   /** Which column's "stats to scale" list is expanded; only one menu is open at a time. */
