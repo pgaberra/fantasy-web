@@ -930,11 +930,26 @@ describe('PlayerProjectionsTableComponent', () => {
       getComponent({ columnControls: true });
       expect(ngMocks.findAll('.col-add')).toHaveLength(0);
       const toolbarButtons = ngMocks
-        .findAll('.league-controls .btn')
+        .findAll('.table-controls .btn')
         .map((button) => button.nativeElement.textContent.trim());
       // Named for what it decides — which stats the projection scores — not for the column each
       // one happens to occupy.
       expect(toolbarButtons.some((label) => label.includes('Stats'))).toEqual(true);
+    });
+
+    it('groups the stat picker with the filters, not with the league settings', () => {
+      // Both decide what the table shows; the league group decides what the projection is.
+      getComponent({ columnControls: true });
+
+      const viewButtons = ngMocks
+        .findAll('.view-controls .btn')
+        .map((button) => button.nativeElement.textContent.trim());
+      expect(viewButtons.some((label) => label.includes('Stats'))).toEqual(true);
+      expect(
+        ngMocks
+          .findAll('.league-controls .btn')
+          .some((button) => button.nativeElement.textContent.includes('Stats')),
+      ).toEqual(false);
     });
 
     it('stacks the title above the toolbar once the league controls are there', () => {
