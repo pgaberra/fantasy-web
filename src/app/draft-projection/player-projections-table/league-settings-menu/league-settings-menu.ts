@@ -1,4 +1,5 @@
 import { Component, input, model, output } from '@angular/core';
+import { HelpTipComponent } from '../../../shared/help-tip/help-tip';
 import { RosterSlotsEditorComponent } from '../../../shared/roster-slots-editor/roster-slots-editor';
 import { RosterSlots } from '../../../api/models/roster-slots';
 import { ScoringType } from '../../../models/projection.model';
@@ -23,7 +24,7 @@ import {
   selector: 'app-league-settings-menu',
   templateUrl: './league-settings-menu.html',
   styleUrl: './league-settings-menu.css',
-  imports: [RosterSlotsEditorComponent],
+  imports: [HelpTipComponent, RosterSlotsEditorComponent],
 })
 export class LeagueSettingsMenuComponent {
   readonly scoringType = input.required<ScoringType>();

@@ -1,0 +1,10 @@
+<button
+  #tip="appTooltip"
+  type="button"
+  class="help-trigger"
+  [appTooltip]="text()"
+  [attr.aria-label]="label()"
+  (click)="tip.toggle()"
+>
+  ⓘ
+</button>

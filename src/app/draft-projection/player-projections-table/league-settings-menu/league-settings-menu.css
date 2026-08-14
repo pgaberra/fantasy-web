@@ -29,6 +29,12 @@
   color: var(--color-text-muted);
 }
 
+.field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
 .menu-field input[type='number'] {
   width: 4.5rem;
   font: inherit;

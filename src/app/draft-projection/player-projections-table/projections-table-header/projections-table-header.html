@@ -216,16 +216,23 @@
     @if (isUtilityColumn(col) && scaleSettings()) {
       <div class="menu-separator"></div>
       <div class="menu-field">
-        <label [id]="'menu-scale-' + col">Auto-scale scoring stats</label>
+        <span class="menu-field-label">
+          <label [id]="'menu-scale-' + col">Auto-scale scoring stats</label>
+          <app-help-tip
+            label="What auto-scaling does"
+            [text]="
+              'Scale the selected scoring stats proportionally when ' +
+              (col | statLabel) +
+              ' is edited.'
+            "
+          />
+        </span>
         <app-toggle-switch
           [on]="isScaleActive(col)"
           [ariaLabel]="'Auto-scale scoring stats when ' + (col | statLabel) + ' changes'"
           (toggled)="scaleToggled.emit(col)"
         />
       </div>
-      <p class="menu-note">
-        Scale every scoring stat proportionally when {{ col | statLabel }} is edited.
-      </p>
       @if (isScaleActive(col)) {
         <button
           type="button"

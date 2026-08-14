@@ -26,6 +26,7 @@ const TOOLTIP_POSITIONS: ConnectedPosition[] = [
 
 @Directive({
   selector: '[appTooltip]',
+  exportAs: 'appTooltip',
   host: {
     '(mouseenter)': 'show()',
     '(mouseleave)': 'hide()',
@@ -73,6 +74,18 @@ export class TooltipDirective {
     this.overlayRef?.dispose();
     this.overlayRef = null;
     this.bubbleRef = null;
+  }
+
+  /**
+   * For a trigger that must also answer a tap: a touch device fires no hover, and Safari does not
+   * focus a button when it is tapped, so neither of the host listeners above ever runs there.
+   */
+  toggle(): void {
+    if (this.overlayRef) {
+      this.hide();
+    } else {
+      this.show();
+    }
   }
 
   private syncTo(text: string | null): void {
