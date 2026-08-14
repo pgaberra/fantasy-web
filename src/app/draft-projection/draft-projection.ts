@@ -24,6 +24,7 @@ import { EspnSyncResult } from './projection-settings-section/espn-league-sync/e
 import { LeagueProjectionSettingsResponse } from '../api/models/league-projection-settings-response';
 import { YahooSync } from '../api/models/yahoo-sync';
 import { EspnSync } from '../api/models/espn-sync';
+import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { DraftState } from '../api/models/draft-state';
 import { ProjectionData } from '../api/models/projection-data';
 import { UpdateProjectionData } from '../api/models/update-projection-data';
@@ -76,6 +77,7 @@ const AUTOSAVE_DEBOUNCE_MS = 1200;
     OffseasonDataNoticeComponent,
     ShareDialogComponent,
     RouterLink,
+    TooltipDirective,
   ],
   templateUrl: './draft-projection.html',
   styleUrl: './draft-projection.css',

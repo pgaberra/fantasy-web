@@ -303,6 +303,33 @@ describe('DraftProjectionComponent', () => {
     expect(component.espnSync()?.leagueId).toEqual('123456');
   });
 
+  it('turns the import action into a report of which league is synced', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    expect(fixture.nativeElement.textContent).toContain('Import league');
+
+    component.applyEspnSettings({
+      settings: {
+        scoringType: 'category',
+        activeScoringColumns: ['goals'],
+        activeUtilityColumns: ['gp'],
+        rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
+        unsupportedStats: [],
+        unsupportedRosterCodes: [],
+      },
+      leagueId: '123456',
+      leagueName: 'Puck Luck Dynasty',
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Synced with Puck Luck Dynasty');
+    // Same slot, same dialog behind it — the import is still one click away.
+    expect(fixture.nativeElement.textContent).not.toContain('Import league');
+    expect(fixture.nativeElement.querySelector('.synced-league .synced-dot')).toBeTruthy();
+  });
+
   it('falls back to the id when ESPN returns a league with no name', async () => {
     const fixture = MockRender(DraftProjectionComponent);
     await fixture.whenStable();

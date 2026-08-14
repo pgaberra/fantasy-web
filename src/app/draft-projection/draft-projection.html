@@ -91,10 +91,22 @@
         (manageSyncRequested)="showSyncDialog.set(true)"
         (fullSeasonRequested)="openFullSeasonDialog()"
       >
-        <!-- Only while there is no league to show: importing one is the fastest route to a
-             useful projection, so it earns a button of its own — and the toolbar's only primary —
-             until it has been done. -->
-        @if (!syncedLeagueName()) {
+        <!-- The same slot says two different things. With no league yet, importing one is the
+             fastest route to a useful projection, so it earns the toolbar's only primary button.
+             Once there is one, the button stops asking and starts reporting — same place, same
+             dialog behind it, so re-syncing or switching league is still one click. -->
+        @if (syncedLeagueName(); as leagueName) {
+          <button
+            table-toolbar-actions
+            type="button"
+            class="btn btn-secondary btn-sm synced-league"
+            [appTooltip]="'Imported from ' + leagueName + ' — click to re-sync or change league'"
+            (click)="showSyncDialog.set(true)"
+          >
+            <span class="synced-dot" aria-hidden="true"></span>
+            <span class="synced-label">Synced with {{ leagueName }}</span>
+          </button>
+        } @else {
           <button
             table-toolbar-actions
             type="button"
