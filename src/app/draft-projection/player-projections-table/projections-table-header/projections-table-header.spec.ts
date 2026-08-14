@@ -460,6 +460,21 @@ describe('ProjectionsTableHeaderComponent', () => {
       expect(removed).toHaveBeenCalledWith('goals');
     });
 
+    it('offers a column its decimals without a mode being turned on first', () => {
+      // useDefaultDecimals defaults to true — the setting used to be hidden behind turning that
+      // off, which only ever hid the control: the table always formats from decimalSettings.
+      getFixture({ columnControls: true });
+
+      const goalsMenu = ngMocks
+        .findAll('.th-menu')
+        .find((trigger) => trigger.nativeElement.getAttribute('aria-label')?.includes('Goals'))!;
+      goalsMenu.nativeElement.dispatchEvent(new Event('click', { bubbles: true }));
+
+      expect(document.querySelectorAll('.cdk-overlay-container #menu-decimals-goals')).toHaveLength(
+        1,
+      );
+    });
+
     it('leaves the weight row as the one place a weight is set', () => {
       getFixture({ scoringType: 'points', columnControls: true });
 

@@ -198,7 +198,7 @@
          best-first, and the weight has its own input in the row two lines below, visible at the
          same moment this menu is. What is left is what has nowhere else to be. -->
 
-    @if (!useDefaultDecimals() && isDecimalColumn(col)) {
+    @if (isDecimalColumn(col)) {
       <div class="menu-field">
         <label [attr.for]="'menu-decimals-' + col">Decimals</label>
         <input
