@@ -92,10 +92,6 @@
             </button>
           </div>
 
-          <!-- Ahead of the two menus: what this slot holds is the call to action for a projection
-               that has not been set up yet, and it stops rendering once it has been. -->
-          <ng-content select="[table-toolbar-actions]" />
-
           <!-- A points league sets its scoring in the weight row under the column headings, so
                there is nothing behind this button unless the projection ranks by category or has
                a league to re-sync. An affordance with an empty menu behind it is worse than none. -->
@@ -122,6 +118,18 @@
             </button>
           }
 
+          <!-- Last in the group, and deliberately: this slot is a call to action while no league
+               has been imported and the league's name afterwards, so it is the one item here whose
+               width changes. Ahead of the buttons it would shove them sideways the moment a league
+               was connected or renamed. -->
+          <ng-content select="[table-toolbar-actions]" />
+        </div>
+      }
+
+      <div class="view-controls">
+        <!-- Which stats are shown is the same kind of decision as which players are shown, so the
+             column picker belongs with the filters rather than with the league settings. -->
+        @if (columnControls()) {
           <button type="button" class="btn btn-secondary btn-sm" [appPopover]="columnsMenu">
             <svg
               width="15"
@@ -140,10 +148,8 @@
             </svg>
             Stats
           </button>
-        </div>
-      }
+        }
 
-      <div class="filter-controls">
         <div class="search-control">
           <label for="player-search">Search</label>
           <input

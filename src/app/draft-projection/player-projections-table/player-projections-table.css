@@ -88,15 +88,20 @@
   margin: 0;
 }
 
+/* space-between rather than a margin-left:auto on the right-hand group, so that the two groups sit
+   at opposite ends while they share a line and both start at the card's left edge once they don't.
+   Pushed right on its own row, the filters read as a stray line rather than as the second half of
+   the toolbar. */
 .table-controls {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-4);
   flex-wrap: wrap;
 }
 
-/* The settings that shape the whole projection sit to the left; the controls that only narrow
-   what is on screen stay together on the right.
+/* The settings that shape the whole projection sit to the left; the controls that only change what
+   is on screen — which stat columns, which players — stay together on the right.
    Deliberately nowrap: letting this group fray one button at a time leaves the filters stranded
    on the first row beside a two-row toolbar. Held together it can't shrink, so the wrap in
    .table-controls moves the filters down as a unit and the break stays predictable. The phone
@@ -108,15 +113,14 @@
   flex-wrap: nowrap;
 }
 
-.filter-controls {
+.view-controls {
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  margin-left: auto;
   flex-wrap: wrap;
 }
 
-.league-controls .btn svg {
+.table-controls .btn svg {
   flex: none;
   margin-right: 0.35rem;
   vertical-align: -2px;
@@ -268,13 +272,15 @@ tbody tr:hover {
     flex-wrap: wrap;
   }
 
-  .filter-controls {
-    margin-left: 0;
+  .view-controls {
     gap: var(--space-2);
   }
 
+  /* A basis narrow enough to sit beside the Stats button rather than pushing it onto a line of its
+     own, and min-width:0 so the wrap is decided on that basis instead of on the input's own width. */
   .search-control {
-    flex: 1 1 auto;
+    flex: 1 1 10rem;
+    min-width: 0;
   }
 
   .search-control input {
