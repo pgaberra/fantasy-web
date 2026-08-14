@@ -1,4 +1,5 @@
 import { Component, inject, input, linkedSignal, OnInit, output, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { of, switchMap } from 'rxjs';
 import { EspnService } from '../../../services/espn.service';
@@ -28,6 +29,7 @@ export interface EspnSyncResult {
  */
 @Component({
   selector: 'app-espn-league-sync',
+  imports: [DatePipe],
   templateUrl: './espn-league-sync.html',
   styleUrl: './espn-league-sync.css',
 })
@@ -36,6 +38,8 @@ export class EspnLeagueSyncComponent implements OnInit {
 
   /** The league this projection was last synced from, so a re-sync isn't retyped from memory. */
   readonly lastLeagueId = input<string | null>(null);
+  /** When that sync ran — the answer to "are these settings still the league's?". */
+  readonly lastSyncedAt = input<string | null>(null);
   readonly synced = output<EspnSyncResult>();
 
   readonly leagueId = linkedSignal<string>(() => this.lastLeagueId() ?? '');

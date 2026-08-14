@@ -100,6 +100,25 @@ describe('EspnLeagueSyncComponent', () => {
     expect(input.value).toEqual('123456');
   });
 
+  it('says when the league was last synced', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent, {
+      lastLeagueId: '123456',
+      lastSyncedAt: '2026-08-14T17:12:00.000Z',
+    });
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.textContent).toContain('Last synced 14 Aug 2026');
+  });
+
+  it('says nothing about a previous sync when there has not been one', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent);
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.textContent).not.toContain('Last synced');
+  });
+
   it('opens the private section for a user whose cookies are already on file', async () => {
     await MockBuilder(EspnLeagueSyncComponent).mock(EspnService, {
       credentialStatus: () => of<CredentialStatusResponse>({ hasCredentials: true }),

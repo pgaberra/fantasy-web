@@ -54,6 +54,7 @@
     @case ('espn') {
       <app-espn-league-sync
         [lastLeagueId]="lastEspnLeagueId()"
+        [lastSyncedAt]="lastEspnSyncedAt()"
         (synced)="espnSynced.emit($event)"
       />
     }
