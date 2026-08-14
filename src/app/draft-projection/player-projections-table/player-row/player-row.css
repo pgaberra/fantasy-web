@@ -1,6 +1,10 @@
+/* Stat cells are right-aligned with fixed-width digits so a column of numbers can be compared
+   down its ones column — the ranking is read by scanning, not by reading one row. The rank and
+   name columns override this below; everything else in a row is a number. */
 td {
-  padding: 0.35rem 0.3rem;
-  text-align: center;
+  padding: 0.35rem var(--stat-cell-pad-x);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -65,6 +69,8 @@ td.col-name {
    the column sits at its natural position again. A shadow is painted by the cell itself,
    so it rides along in every scroll position. */
 .fan-pts-cell {
+  /* Matches th.summary-pts-col's padding so the total lines up with its own heading. */
+  padding-right: 0.5rem;
   background: #fff8e6;
   color: #5a3a00;
   font-weight: var(--weight-bold);

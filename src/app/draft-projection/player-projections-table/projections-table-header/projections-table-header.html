@@ -5,14 +5,10 @@
     [class.sorted]="sortColumn() === 'name'"
     (click)="sort.emit('name')"
   >
-    Player<span class="sort-arrow">{{ sortIndicator('name') }}</span>
+    Player<span class="sort-arrow sort-arrow--trailing">{{ sortIndicator('name') }}</span>
   </th>
   @for (col of activeColumns().utility; track col) {
-    <th
-      class="col-utility col-stat"
-      [class.sorted]="sortColumn() === col"
-      [class.has-menu]="showColumnControls()"
-    >
+    <th class="col-utility col-stat" [class.sorted]="sortColumn() === col">
       <span class="th-inner">
         <button
           type="button"
@@ -20,7 +16,8 @@
           [appTooltip]="col | statTooltip"
           (click)="sort.emit(col)"
         >
-          {{ col | statLabel }}<span class="sort-arrow">{{ sortIndicator(col) }}</span>
+          <span class="sort-arrow">{{ sortIndicator(col) }}</span
+          >{{ col | statLabel }}
         </button>
         <!-- Without column menus there is nowhere else for the bulk "full season" action to
              live, so it stays a pill in the header for those surfaces. -->
@@ -68,11 +65,7 @@
     </th>
   }
   @for (col of activeColumns().scoring; track col) {
-    <th
-      class="col-stat"
-      [class.sorted]="sortColumn() === col"
-      [class.has-menu]="showColumnControls()"
-    >
+    <th class="col-stat" [class.sorted]="sortColumn() === col">
       <span class="th-inner">
         <button
           type="button"
@@ -80,7 +73,8 @@
           [appTooltip]="col | statTooltip"
           (click)="sort.emit(col)"
         >
-          {{ col | statLabel }}<span class="sort-arrow">{{ sortIndicator(col) }}</span>
+          <span class="sort-arrow">{{ sortIndicator(col) }}</span
+          >{{ col | statLabel }}
         </button>
         @if (showColumnControls()) {
           <button
@@ -105,7 +99,8 @@
     [class.sorted]="sortColumn() === 'summary'"
     (click)="sort.emit('summary')"
   >
-    {{ summaryLabel() }}<span class="sort-arrow">{{ sortIndicator('summary') }}</span>
+    <span class="sort-arrow">{{ sortIndicator('summary') }}</span
+    >{{ summaryLabel() }}
   </th>
 </tr>
 @if (scoringType() === 'points' && !readonly()) {

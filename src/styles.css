@@ -62,6 +62,14 @@
   --focus-ring-color: #1e6bff;
   --transition-fast: 150ms ease;
   --transition: 200ms ease;
+
+  /* A stat column in the projections table is right-aligned, so its heading and its values
+     have to end on the same vertical line — but they are styled in three different components
+     (the header, the row's cell, the value input). Without a shared inset they drift apart on
+     the next edit and the heading stops lining up with the numbers under it. The inset also has
+     to clear the column's ⋮ menu trigger, which is absolutely positioned in that same gutter. */
+  --stat-cell-pad-x: 0.3rem;
+  --stat-value-inset: 1.2rem;
 }
 
 *,

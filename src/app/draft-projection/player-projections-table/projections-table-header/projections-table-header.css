@@ -58,17 +58,18 @@ th.col-stat.sorted {
   width: 100%;
 }
 
-/* The label stays centred in its column: the menu trigger is taken out of flow, and the sort
-   button reserves the same room on both sides. In flow it pushed every label off-centre and
-   widened each stat column by its own width — across eight columns that is real table width. */
+/* Stat values are right-aligned, so the label ends on the same line they do — hence the shared
+   --stat-value-inset rather than a number picked here. The menu trigger stays out of flow in the
+   gutter that inset reserves; in flow it would push every label off its line and widen each stat
+   column by its own width, which across eight columns is real table width. */
 .th-sort {
   flex: 1 1 auto;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   gap: 0.1em;
   min-height: 2.4rem;
-  padding: 0.6rem 0.5rem;
+  padding: 0.6rem var(--stat-value-inset) 0.6rem 0.5rem;
   background: none;
   border: none;
   font: inherit;
@@ -79,24 +80,19 @@ th.col-stat.sorted {
   user-select: none;
 }
 
-/* Only the columns that actually carry a menu reserve room for it. */
-th.has-menu .th-sort {
-  padding-left: 1.2rem;
-  padding-right: 1.2rem;
-}
-
 .th-sort:hover {
   background: rgba(255, 255, 255, 0.12);
 }
 
 .th-menu {
   position: absolute;
-  right: 0.1rem;
+  /* Sits flush in the gutter --stat-value-inset reserves, so it never overlaps the label. */
+  right: 0;
   top: 50%;
   transform: translateY(-50%);
   display: grid;
   place-items: center;
-  width: 1.3rem;
+  width: 1.15rem;
   height: 2rem;
   padding: 0;
   background: none;
@@ -104,9 +100,11 @@ th.has-menu .th-sort {
   border-radius: var(--radius-sm);
   color: rgba(255, 255, 255, 0.55);
   cursor: pointer;
-  /* Hidden until the column is hovered or focused so the header keeps its scanning density;
-     a device without hover gets it permanently (see the coarse-pointer query below). */
-  opacity: 0;
+  /* Permanently visible, just dimmed. Revealing it on hover kept the header dense but left the
+     only way to configure a column undiscoverable — nothing suggested the header was clickable
+     at all. The gutter is reserved either way, so showing it costs no width. It brightens on
+     hover/focus, and the same treatment now applies to touch devices, which have no hover. */
+  opacity: 0.45;
   transition:
     opacity var(--transition-fast),
     background var(--transition-fast),
@@ -125,12 +123,6 @@ th:focus-within .th-menu,
   color: var(--color-text-on-dark);
 }
 
-@media (hover: none) {
-  .th-menu {
-    opacity: 1;
-  }
-}
-
 th.summary-pts-col.sortable:hover {
   background: #b87908;
 }
@@ -143,12 +135,22 @@ th.summary-pts-col.sortable.sorted {
   background: #b87908;
 }
 
+/* The slot is reserved whether or not the column is sorted, so the label doesn't jump sideways
+   when sorting is toggled. On a right-aligned column that means the arrow has to lead the label:
+   trailing, its reserved width would sit between the label and the column's right edge and push
+   the heading out of line with the values below it. The one left-aligned heading (Player) keeps
+   the arrow trailing, where the same reasoning puts it on the outside. */
 .sort-arrow {
   display: inline-block;
   width: 0.75em;
-  margin-left: 0.15em;
+  margin-right: 0.15em;
   font-size: 0.7em;
   color: var(--color-gold);
+}
+
+.sort-arrow--trailing {
+  margin-right: 0;
+  margin-left: 0.15em;
 }
 
 .col-rank {
@@ -166,6 +168,10 @@ th.summary-pts-col.sortable.sorted {
 th.summary-pts-col {
   background: var(--color-gold-strong);
   color: var(--color-text-on-dark);
+  /* Right-aligned like the stat columns, but this one carries no menu, so its values sit at the
+     plain cell padding rather than behind a gutter — .fan-pts-cell matches this padding. */
+  text-align: right;
+  padding-right: 0.5rem;
   /* Second inset re-covers the row-boundary seam in the column's own gold so the thead's
      blue backdrop can't show through as a hairline breaking the unbroken gold band. */
   box-shadow:
@@ -183,9 +189,24 @@ tr.decimal-row th.summary-pts-col {
   background: var(--color-gold-strong);
 }
 
+/* The weight and decimal boxes line their right edge up with the value box in the column below,
+   so a right-aligned stat column reads as one stack rather than three differently-placed things. */
+tr.weight-row th,
+tr.decimal-row th {
+  text-align: right;
+  padding-right: var(--stat-cell-pad-x);
+}
+
+/* This selector outranks th.col-name's own `text-align: left`, so the row's label has to be
+   put back — it is prose, not a value in a stat column. */
+tr.weight-row th.col-name,
+tr.decimal-row th.col-name {
+  text-align: left;
+}
+
 tr.weight-row th {
   background: var(--color-primary-hover);
-  padding: 0.3rem 0.25rem;
+  padding: 0.3rem var(--stat-cell-pad-x) 0.3rem 0.25rem;
 }
 
 .weight-label {
@@ -229,7 +250,7 @@ tr.weight-row th {
 
 tr.decimal-row th {
   background: #22395e;
-  padding: 0.3rem 0.25rem;
+  padding: 0.3rem var(--stat-cell-pad-x) 0.3rem 0.25rem;
 }
 
 .decimal-label {
