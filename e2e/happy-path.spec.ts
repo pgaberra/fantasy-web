@@ -11,6 +11,7 @@ test.describe('happy path', () => {
   }) => {
     const email = `e2e-hp-${Date.now()}@slapstat.com`;
     const password = 'E2e-HappyPath-Ok9!';
+    const projectionName = 'E2E Happy Path';
 
     // 1) Register a fresh account and land signed-in on the projections list.
     await page.goto('/register');
@@ -24,7 +25,7 @@ test.describe('happy path', () => {
     // 2) Create a projection from last season's stats (the default source).
     await page.getByRole('button', { name: /create new projection/i }).click();
     await expect(page).toHaveURL(/\/projections\/new/);
-    await page.locator('#projection-name').fill('E2E Happy Path');
+    await page.locator('#projection-name').fill(projectionName);
     await page.getByRole('button', { name: /^create projection$/i }).click();
     await expect(page).toHaveURL(/\/projections\/[0-9a-f-]+$/i, { timeout: 20_000 });
 
@@ -37,36 +38,42 @@ test.describe('happy path', () => {
     await rows.nth(2).locator('input.stat-input').first().fill('0');
     await rows.nth(3).locator('input.stat-input').first().fill('65');
 
-    // 4) Ensure the Projection Settings panel is expanded (it's expanded by default now, but
-    //    stay robust to that default), then remove a scoring stat and switch to Category.
-    const settingsHint = page.locator('.settings-section .hint');
-    if (!(await settingsHint.isVisible())) {
-      await page.getByRole('button', { name: /projection settings/i }).click();
-    }
-    await expect(settingsHint).toBeVisible();
-    const categoryLabel = page.locator('label.radio-label', { hasText: 'Category' });
-    if (!(await categoryLabel.isVisible())) {
-      await page.getByRole('button', { name: /league settings/i }).click();
-    }
-    const statChips = page.locator('.stat-chip');
-    const chipsBefore = await statChips.count();
-    await page
-      .getByRole('button', { name: /^remove /i })
-      .first()
-      .click();
-    await expect(statChips).toHaveCount(chipsBefore - 1);
-    await categoryLabel.click();
-    await expect(page.locator('input[name="scoringType"][value="category"]')).toBeChecked();
+    // 4) Remove a scoring stat and switch the league to Category.
+    //
+    // Both settings used to live in a "Projection Settings" panel below the table. They now sit in
+    // the table's own toolbar — the league type as a segmented control, the stat columns behind a
+    // Stats popover — so this step follows them there rather than to a panel that no longer exists.
+    const statsMenu = page.getByRole('button', { name: /^stats$/i });
+    await statsMenu.click();
+    const checkedStats = page.locator('.add-row[aria-checked="true"]');
+    const checkedBefore = await checkedStats.count();
+    expect(checkedBefore).toBeGreaterThan(0);
+    await checkedStats.first().click();
+    await expect(checkedStats).toHaveCount(checkedBefore - 1);
+    await page.keyboard.press('Escape');
+
+    const categoryOption = page.locator('.segmented button', { hasText: 'Category' });
+    await categoryOption.click();
+    await expect(categoryOption).toHaveAttribute('aria-pressed', 'true');
 
     // Let the editor's debounced autosave flush before leaving the page.
     await page.waitForTimeout(1_500);
 
-    // 5) Enter draft mode from the projection card.
-    await page.goto('/projections');
-    await page.getByRole('button', { name: /draft mode/i }).click();
+    // 5) Enter draft mode. The projections list no longer carries a Draft button — a draft is
+    //    started from the Draft menu's source page, which asks what to draft against first.
+    await page.getByRole('button', { name: /^draft$/i }).click();
+    await page.getByRole('menuitem', { name: /draft mode/i }).click();
     await expect(page).toHaveURL(/\/draft\/?$/, { timeout: 15_000 });
 
-    // 6) Shrink to the smallest league so a full draft stays quick.
+    const sourceCard = page.locator('li.card').filter({ hasText: projectionName });
+    await expect(sourceCard).toBeVisible();
+    await sourceCard.getByRole('button').first().click();
+    await expect(page).toHaveURL(/\/projections\/[0-9a-f-]+\/draft$/i, { timeout: 30_000 });
+
+    // 6) Shrink to the smallest league so a full draft stays quick. Wait for the setup phase to
+    //    render first — the board seeds its rows on arrival, and reading the stepper before it
+    //    exists would take the fallback and remove the wrong number of teams.
+    await expect(page.locator('app-draft-setup')).toBeVisible({ timeout: 30_000 });
     const initialTeams = Number(
       (await page.locator('.stepper-value').textContent())?.trim() ?? '12',
     );
@@ -74,7 +81,7 @@ test.describe('happy path', () => {
     for (let i = 0; i < initialTeams - 2; i++) {
       await removeTeam.click();
     }
-    await page.getByRole('button', { name: /start draft/i }).click();
+    await page.getByRole('button', { name: /^start draft$/i }).click();
 
     // 7) Draft the top available player over and over until the draft is complete.
     // The loop's own guard is a non-waiting isVisible(), so the first row has to be awaited
