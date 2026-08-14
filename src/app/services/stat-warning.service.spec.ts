@@ -9,6 +9,12 @@ import {
   SkaterUtilityStats,
 } from '../models/projection.model';
 
+const DEFAULT_GAMES = 82;
+const DEFAULT_TOI_PER_GAME = 1200;
+
+// The line every skater test starts from is deliberately consistent with itself — the derived
+// checks compare stats against each other, so a fixture that didn't add up would warn before
+// the test changed anything.
 const skater = (
   scoring: Partial<SkaterScoringStats> = {},
   utility: Partial<SkaterUtilityStats> = {},
@@ -16,7 +22,7 @@ const skater = (
   type: 'skater',
   playerId: 1,
   stats: {
-    utility: { gp: 82, toiPerGame: 1200, ...utility },
+    utility: { gp: DEFAULT_GAMES, toiPerGame: DEFAULT_TOI_PER_GAME, ...utility },
     scoring: {
       stpg: 0,
       stpa: 0,
@@ -24,7 +30,7 @@ const skater = (
       hatTricks: 0,
       defPoints: 0,
       shifts: 0,
-      toi: 0,
+      toi: DEFAULT_GAMES * DEFAULT_TOI_PER_GAME,
       goals: 30,
       assists: 30,
       points: 60,
@@ -38,7 +44,7 @@ const skater = (
       shp: 0,
       gwg: 0,
       sog: 200,
-      shPct: 0,
+      shPct: 15,
       fw: 0,
       fl: 0,
       hits: 0,
@@ -55,7 +61,7 @@ const goalie = (
   type: 'goalie',
   playerId: 2,
   stats: {
-    utility: { gp: 82, ...utility },
+    utility: { gp: DEFAULT_GAMES, ...utility },
     scoring: {
       otl: 0,
       winPct: 0,
@@ -108,7 +114,9 @@ describe('StatWarningService', () => {
 
   it('warns when shooting percentage exceeds 100', () => {
     expect(service.warningsFor(skater({ shPct: 101 })).has('shPct')).toEqual(true);
-    expect(service.warningsFor(skater({ shPct: 100 })).has('shPct')).toEqual(false);
+    expect(service.warningsFor(skater({ goals: 30, sog: 30, shPct: 100 })).has('shPct')).toEqual(
+      false,
+    );
   });
 
   it('warns when P does not equal goals + assists', () => {
@@ -127,6 +135,99 @@ describe('StatWarningService', () => {
     expect(service.warningsFor(skater({ shg: 2, sha: 3, shp: 6 })).has('shp')).toEqual(true);
   });
 
+  it('warns when special teams stats do not equal power play plus shorthanded', () => {
+    const consistent = { ppg: 10, ppa: 15, ppp: 25, shg: 2, sha: 3, shp: 5 };
+    const balanced = service.warningsFor(
+      skater({ ...consistent, stpg: 12, stpa: 18, stp: 30, goals: 30, assists: 30, points: 60 }),
+    );
+    expect(balanced.has('stpg')).toEqual(false);
+    expect(balanced.has('stpa')).toEqual(false);
+    expect(balanced.has('stp')).toEqual(false);
+
+    const warnings = service.warningsFor(
+      skater({ ...consistent, stpg: 10, stpa: 18, stp: 40, goals: 30, assists: 30, points: 60 }),
+    );
+    expect(warnings.get('stpg')).toEqual("Doesn't equal PPG + SHG");
+    expect(warnings.has('stpa')).toEqual(false);
+    expect(warnings.get('stp')).toEqual("Doesn't equal STPG + STPA");
+  });
+
+  it('warns when power play and shorthanded together exceed the total', () => {
+    const warnings = service.warningsFor(
+      skater({
+        goals: 30,
+        assists: 30,
+        points: 60,
+        ppg: 20,
+        shg: 15,
+        stpg: 35,
+        ppa: 20,
+        sha: 15,
+        stpa: 35,
+        ppp: 40,
+        shp: 30,
+        stp: 70,
+      }),
+    );
+    expect(warnings.get('ppg')).toEqual('PPG + SHG exceed total goals');
+    expect(warnings.get('shg')).toEqual('PPG + SHG exceed total goals');
+    expect(warnings.get('ppa')).toEqual('PPA + SHA exceed total assists');
+    expect(warnings.get('sha')).toEqual('PPA + SHA exceed total assists');
+    expect(warnings.get('shp')).toEqual('PPP + SHP exceed total points');
+  });
+
+  it('keeps the more specific warning when a stat breaks two rules', () => {
+    const warnings = service.warningsFor(skater({ goals: 10, ppg: 11, shg: 5, stpg: 16 }));
+    expect(warnings.get('ppg')).toEqual('More than total goals');
+  });
+
+  it('warns when hat tricks need more goals than were scored', () => {
+    expect(service.warningsFor(skater({ goals: 30, hatTricks: 10 })).has('hatTricks')).toEqual(
+      false,
+    );
+    expect(service.warningsFor(skater({ goals: 30, hatTricks: 11 })).has('hatTricks')).toEqual(
+      true,
+    );
+  });
+
+  it('warns when defencemen points exceed total points', () => {
+    expect(service.warningsFor(skater({ defPoints: 60 })).has('defPoints')).toEqual(false);
+    expect(service.warningsFor(skater({ defPoints: 61 })).has('defPoints')).toEqual(true);
+  });
+
+  it('warns when shooting percentage does not match goals over shots', () => {
+    expect(service.warningsFor(skater({ goals: 30, sog: 200, shPct: 15 })).has('shPct')).toEqual(
+      false,
+    );
+    expect(service.warningsFor(skater({ goals: 30, sog: 200, shPct: 12 })).has('shPct')).toEqual(
+      true,
+    );
+    // Nothing to divide by, so the mismatch is left to the goals-over-shots check.
+    expect(service.warningsFor(skater({ goals: 0, sog: 0, shPct: 12 })).has('shPct')).toEqual(
+      false,
+    );
+  });
+
+  it('warns when season TOI does not match TOI/G times GP', () => {
+    expect(
+      service.warningsFor(skater({ toi: 98_400 }, { gp: 82, toiPerGame: 1200 })).has('toi'),
+    ).toEqual(false);
+    expect(
+      service.warningsFor(skater({ toi: 60_000 }, { gp: 82, toiPerGame: 1200 })).has('toi'),
+    ).toEqual(true);
+    // A season total is rounded against a per-game average reported to the second, so a
+    // fraction of a percent is rounding rather than a mistake.
+    expect(
+      service.warningsFor(skater({ toi: 98_500 }, { gp: 82, toiPerGame: 1200 })).has('toi'),
+    ).toEqual(false);
+    expect(service.warningsFor(skater({ toi: 0 }, { gp: 0, toiPerGame: 0 })).has('toi')).toEqual(
+      false,
+    );
+    expect(service.warningsFor(skater({ toi: 1200 }, { gp: 0, toiPerGame: 0 })).has('toi')).toEqual(
+      true,
+    );
+  });
+
   it('warns on impossible goalie lines', () => {
     const warnings = service.warningsFor(
       goalie({ gs: 70, w: 40, l: 35, sv: 120, ga: 110, sa: 100 }, { gp: 60 }),
@@ -138,6 +239,21 @@ describe('StatWarningService', () => {
     expect(warnings.has('ga')).toEqual(true);
   });
 
+  it('counts overtime losses among the decisions a goalie can have', () => {
+    const warnings = service.warningsFor(goalie({ w: 30, l: 25, otl: 6 }, { gp: 60 }));
+    expect(warnings.has('w')).toEqual(true);
+    expect(warnings.has('l')).toEqual(true);
+    expect(warnings.has('otl')).toEqual(true);
+    expect(service.warningsFor(goalie({ w: 30, l: 25, otl: 5 }, { gp: 60 })).has('otl')).toEqual(
+      false,
+    );
+  });
+
+  it('warns when shutouts exceed wins', () => {
+    expect(service.warningsFor(goalie({ w: 5, sho: 5 })).has('sho')).toEqual(false);
+    expect(service.warningsFor(goalie({ w: 5, sho: 6 })).has('sho')).toEqual(true);
+  });
+
   it('warns when saves + goals against do not equal shots against', () => {
     expect(service.warningsFor(goalie({ sa: 100, sv: 90, ga: 10 })).has('sa')).toEqual(false);
     expect(service.warningsFor(goalie({ sa: 100, sv: 90, ga: 5 })).has('sa')).toEqual(true);
@@ -146,6 +262,45 @@ describe('StatWarningService', () => {
   it('warns when save percentage exceeds 100', () => {
     expect(service.warningsFor(goalie({ svPct: 101 })).has('svPct')).toEqual(true);
     expect(service.warningsFor(goalie({ svPct: 100 })).has('svPct')).toEqual(false);
+  });
+
+  it('warns when save percentage does not match saves over shots against', () => {
+    expect(
+      service.warningsFor(goalie({ sa: 100, sv: 90, ga: 10, svPct: 0.9 })).has('svPct'),
+    ).toEqual(false);
+    expect(
+      service.warningsFor(goalie({ sa: 100, sv: 90, ga: 10, svPct: 0.85 })).has('svPct'),
+    ).toEqual(true);
+  });
+
+  it('warns when win percentage does not match the decisions', () => {
+    expect(
+      service.warningsFor(goalie({ w: 30, l: 10, otl: 10, winPct: 0.6 })).has('winPct'),
+    ).toEqual(false);
+    expect(
+      service.warningsFor(goalie({ w: 30, l: 10, otl: 10, winPct: 0.5 })).has('winPct'),
+    ).toEqual(true);
+    expect(service.warningsFor(goalie({ winPct: 0.5 })).has('winPct')).toEqual(false);
+  });
+
+  it('warns when GAA does not match goals against over the ice time', () => {
+    expect(
+      service.warningsFor(goalie({ toi: 36_000, ga: 25, sa: 25, gaa: 2.5 })).has('gaa'),
+    ).toEqual(false);
+    expect(
+      service.warningsFor(goalie({ toi: 36_000, ga: 25, sa: 25, gaa: 3.5 })).has('gaa'),
+    ).toEqual(true);
+    // Time on ice comes from a source that doesn't cover every goalie; without it there is
+    // nothing to check GAA against.
+    expect(service.warningsFor(goalie({ toi: 0, ga: 25, sa: 25, gaa: 3.5 })).has('gaa')).toEqual(
+      false,
+    );
+  });
+
+  it('warns when a goalie has more ice time than their games allow', () => {
+    expect(service.warningsFor(goalie({ toi: 3900 }, { gp: 1 })).has('toi')).toEqual(false);
+    expect(service.warningsFor(goalie({ toi: 3901 }, { gp: 1 })).has('toi')).toEqual(true);
+    expect(service.warningsFor(goalie({ toi: 1200 }, { gp: 0 })).has('toi')).toEqual(true);
   });
 
   it('produces no warnings for a plausible line', () => {
