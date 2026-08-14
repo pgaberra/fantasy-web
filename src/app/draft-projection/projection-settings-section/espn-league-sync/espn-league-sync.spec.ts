@@ -242,6 +242,7 @@ describe('EspnLeagueSyncComponent', () => {
   it('stops offering to reuse stored cookies once ESPN has refused them', async () => {
     await MockBuilder(EspnLeagueSyncComponent).mock(EspnService, {
       credentialStatus: () => of<CredentialStatusResponse>({ hasCredentials: true }),
+      credentialValues: () => of({ espnS2: 'stored-s2', swid: '{STORED}' }),
       saveCredentials: () => of(undefined),
       leagueProjectionSettings: () => throwError(() => new HttpErrorResponse({ status: 400 })),
     });
