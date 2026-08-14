@@ -36,6 +36,7 @@ describe('EspnLeagueSyncComponent', () => {
   it('reflects stored credentials from the status probe on init', async () => {
     await MockBuilder(EspnLeagueSyncComponent).mock(EspnService, {
       credentialStatus: () => of<CredentialStatusResponse>({ hasCredentials: true }),
+      credentialValues: () => of({ espnS2: 'stored-s2', swid: '{STORED}' }),
       saveCredentials: () => of(undefined),
       leagueProjectionSettings: () => of(settings),
     });
