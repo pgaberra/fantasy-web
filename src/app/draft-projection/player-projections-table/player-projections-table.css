@@ -100,8 +100,9 @@
   flex-wrap: wrap;
 }
 
-/* The settings that shape the whole projection sit to the left; the controls that only change what
-   is on screen — which stat columns, which players — stay together on the right.
+/* The settings that shape the whole projection — how it is scored, on which stats, for which
+   league — sit to the left; the controls that only narrow what is on screen stay together on the
+   right.
    Deliberately nowrap: letting this group fray one button at a time leaves the filters stranded
    on the first row beside a two-row toolbar. Held together it can't shrink, so the wrap in
    .table-controls moves the filters down as a unit and the break stays predictable. The phone
@@ -113,7 +114,7 @@
   flex-wrap: nowrap;
 }
 
-.view-controls {
+.filter-controls {
   display: flex;
   align-items: center;
   gap: var(--space-4);
@@ -272,15 +273,12 @@ tbody tr:hover {
     flex-wrap: wrap;
   }
 
-  .view-controls {
+  .filter-controls {
     gap: var(--space-2);
   }
 
-  /* A basis narrow enough to sit beside the Stats button rather than pushing it onto a line of its
-     own, and min-width:0 so the wrap is decided on that basis instead of on the input's own width. */
   .search-control {
-    flex: 1 1 10rem;
-    min-width: 0;
+    flex: 1 1 auto;
   }
 
   .search-control input {
