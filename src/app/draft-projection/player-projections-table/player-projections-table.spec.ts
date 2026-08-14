@@ -856,12 +856,13 @@ describe('PlayerProjectionsTableComponent', () => {
       expect(ngMocks.findAll('.league-controls')).toHaveLength(0);
     });
 
-    it('marks the league button once settings came from a league', () => {
-      getComponent({ columnControls: true, syncedLeagueName: null });
-      expect(ngMocks.findAll('.league-setup-btn .sync-dot')).toHaveLength(0);
-
+    it('leaves saying which league to the page, not a dot on League setup', () => {
+      // The toolbar's own action names the league in words; a dot here would be the same fact
+      // twice, an inch apart.
       getComponent({ columnControls: true, syncedLeagueName: 'Puck Luck Dynasty' });
-      expect(ngMocks.findAll('.league-setup-btn .sync-dot')).toHaveLength(1);
+
+      expect(ngMocks.findAll('.league-setup-btn')).toHaveLength(1);
+      expect(ngMocks.findAll('.league-setup-btn .sync-dot')).toHaveLength(0);
     });
 
     it('does not offer League setup in a points league with nothing behind it', () => {
