@@ -1,5 +1,5 @@
 import { Component, output, signal } from '@angular/core';
-import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
+import { HelpTipComponent } from '../../shared/help-tip/help-tip';
 
 export interface FullSeasonConfig {
   scaleStats: boolean;
@@ -14,7 +14,7 @@ export interface FullSeasonConfig {
  */
 @Component({
   selector: 'app-full-season-dialog',
-  imports: [TooltipDirective],
+  imports: [HelpTipComponent],
   templateUrl: './full-season-dialog.html',
   styleUrl: './full-season-dialog.css',
 })

@@ -11,7 +11,7 @@ import { CreateProjectionRequest } from '../api/models/create-projection-request
 import { ProjectionData } from '../api/models/projection-data';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
-import { InfoTooltipComponent } from '../shared/info-tooltip/info-tooltip';
+import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { createDefaultProjectionState } from '../draft-projection/projection-defaults';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 
@@ -19,7 +19,7 @@ type DataSource = 'last-season' | 'blank' | 'copy';
 
 @Component({
   selector: 'app-projection-create',
-  imports: [LoadingIndicatorComponent, ErrorStateComponent, InfoTooltipComponent, RouterLink],
+  imports: [LoadingIndicatorComponent, ErrorStateComponent, HelpTipComponent, RouterLink],
   templateUrl: './projection-create.html',
   styleUrl: './projection-create.css',
 })

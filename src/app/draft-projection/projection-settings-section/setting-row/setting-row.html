@@ -2,10 +2,7 @@
   <div class="setting-header">
     <span class="setting-name">{{ name() }}</span>
     @if (desc()) {
-      <div class="tooltip-container">
-        <span class="info-icon">ⓘ</span>
-        <div class="tooltip-content">{{ desc() }}</div>
-      </div>
+      <app-help-tip [label]="'What ' + name() + ' means'" [text]="desc()" />
     }
   </div>
 </div>

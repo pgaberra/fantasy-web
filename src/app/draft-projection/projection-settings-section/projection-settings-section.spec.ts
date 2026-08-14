@@ -13,12 +13,14 @@ import { ScaleConfig } from './model';
 import { ToggleSwitchComponent } from './toggle-switch/toggle-switch';
 import { SettingRowComponent } from './setting-row/setting-row';
 import { StatInfoService } from '../../services/stat-info.service';
+import { HelpTipComponent } from '../../shared/help-tip/help-tip';
 
 describe('ProjectionSettingsSectionComponent', () => {
   beforeEach(() =>
     MockBuilder(ProjectionSettingsSectionComponent)
       .keep(ToggleSwitchComponent)
       .keep(SettingRowComponent)
+      .keep(HelpTipComponent)
       .keep(StatInfoService),
   );
 
@@ -405,6 +407,20 @@ describe('ProjectionSettingsSectionComponent', () => {
 
       expect(fixture.point.componentInstance.isSectionVisible()).toEqual(false);
       expect(fixture.nativeElement.textContent).not.toContain('League Settings');
+    });
+  });
+
+  describe('utility stats help tip', () => {
+    it('explains the group without collapsing it — the header row is itself a button', () => {
+      const { fixture, component } = getExpandedFixture();
+      const tip = fixture.nativeElement.querySelector(
+        '.settings-group-header app-help-tip button',
+      ) as HTMLButtonElement;
+
+      tip.click();
+      fixture.detectChanges();
+
+      expect(component.isUtilityStatsVisible()).toEqual(true);
     });
   });
 
