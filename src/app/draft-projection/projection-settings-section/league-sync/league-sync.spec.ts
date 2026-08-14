@@ -45,24 +45,29 @@ describe('LeagueSyncComponent', () => {
     expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeNull();
   });
 
-  it('hides the ESPN tab and names only Yahoo when ESPN is disabled', async () => {
+  it('hides the ESPN tab and pre-selects Yahoo as the only platform on offer', async () => {
     const fixture = await render(false, false);
 
     const tabs: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.provider-tab'));
     expect(tabs.length).toEqual(1);
     expect(tabs[0].textContent?.trim()).toContain('Yahoo');
+    expect(tabs[0].getAttribute('aria-selected')).toEqual('true');
     expect(fixture.nativeElement.textContent).toContain('On Yahoo?');
     expect(fixture.nativeElement.textContent).not.toContain('ESPN');
+    // The one platform's sync is open already — there was no alternative to choose between.
+    expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeTruthy();
   });
 
-  it('hides the Yahoo tab and names only ESPN during the Yahoo off-season', async () => {
+  it('hides the Yahoo tab and pre-selects ESPN during the Yahoo off-season', async () => {
     const fixture = await render(true, true);
 
     const tabs: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.provider-tab'));
     expect(tabs.length).toEqual(1);
     expect(tabs[0].textContent?.trim()).toContain('ESPN');
+    expect(tabs[0].getAttribute('aria-selected')).toEqual('true');
     expect(fixture.nativeElement.textContent).toContain('On ESPN?');
     expect(fixture.nativeElement.textContent).not.toContain('Yahoo');
+    expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeTruthy();
   });
 
   it('hides the whole section when neither platform can be synced', async () => {
@@ -84,6 +89,8 @@ describe('LeagueSyncComponent', () => {
     const fixture = MockRender(LeagueSyncComponent, { lastSync });
 
     expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeNull();
+    // ESPN is the only platform left, so it takes the pre-selection.
+    expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeTruthy();
   });
 
   it('defaults to Yahoo when the projection was already synced from Yahoo', async () => {

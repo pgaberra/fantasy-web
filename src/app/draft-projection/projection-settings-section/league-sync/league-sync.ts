@@ -9,7 +9,7 @@ type Provider = 'none' | 'yahoo' | 'espn';
 /**
  * Wraps the per-provider league-sync UIs behind an optional platform picker. Syncing is a
  * convenience for the supported platforms — on any other platform (e.g. Fantrax) the user just
- * sets the league settings manually, so no platform is pre-selected.
+ * sets the league settings manually, so with a choice to make no platform is pre-selected.
  *
  * A platform whose sync is turned off (Yahoo between NHL seasons, ESPN before it's enabled) has
  * its tab hidden rather than shown disabled, and the hint names only what's actually on offer.
@@ -31,12 +31,24 @@ export class LeagueSyncComponent {
   protected readonly anyAvailable = this.yahooAvailable || this.espnAvailable;
   protected readonly hint = this.buildHint();
 
-  // Nothing is pre-selected on a fresh projection — the user opts into a platform only if they
-  // have one. A projection already synced from Yahoo defaults to Yahoo so its status stays shown,
-  // unless Yahoo's sync is currently off.
-  readonly provider = linkedSignal<Provider>(() =>
-    this.lastSync() && this.yahooAvailable ? 'yahoo' : 'none',
-  );
+  // A projection already synced from Yahoo defaults to Yahoo so its status stays shown, unless
+  // Yahoo's sync is currently off. Otherwise the tabs only mean something when there are two of
+  // them: with a single platform on offer the picker is a one-button choice, so make it, and the
+  // user lands straight on the form instead of having to click a tab that had no alternative.
+  readonly provider = linkedSignal<Provider>(() => this.initialProvider());
+
+  private initialProvider(): Provider {
+    if (this.lastSync() && this.yahooAvailable) {
+      return 'yahoo';
+    }
+    if (this.yahooAvailable && this.espnAvailable) {
+      return 'none';
+    }
+    if (this.yahooAvailable) {
+      return 'yahoo';
+    }
+    return this.espnAvailable ? 'espn' : 'none';
+  }
 
   private buildHint(): string {
     if (this.yahooAvailable && this.espnAvailable) {
