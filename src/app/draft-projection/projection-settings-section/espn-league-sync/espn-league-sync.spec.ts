@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, it, expect } from 'vitest';
 import { of, throwError } from 'rxjs';
@@ -22,11 +23,15 @@ describe('EspnLeagueSyncComponent', () => {
   const noCredentials: CredentialStatusResponse = { hasCredentials: false };
 
   const buildDefault = () =>
-    MockBuilder(EspnLeagueSyncComponent).mock(EspnService, {
-      credentialStatus: () => of(noCredentials),
-      saveCredentials: () => of(undefined),
-      leagueProjectionSettings: () => of(settings),
-    });
+    MockBuilder(EspnLeagueSyncComponent)
+      .mock(EspnService, {
+        credentialStatus: () => of(noCredentials),
+        saveCredentials: () => of(undefined),
+        leagueProjectionSettings: () => of(settings),
+      })
+      // Left real: a mocked DatePipe renders nothing, which is exactly what the "last synced"
+      // line is asserting about.
+      .keep(DatePipe);
 
   it('reflects stored credentials from the status probe on init', async () => {
     await MockBuilder(EspnLeagueSyncComponent).mock(EspnService, {
