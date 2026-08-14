@@ -890,7 +890,9 @@ describe('PlayerProjectionsTableComponent', () => {
       const toolbarButtons = ngMocks
         .findAll('.league-controls .btn')
         .map((button) => button.nativeElement.textContent.trim());
-      expect(toolbarButtons.some((label) => label.includes('Columns'))).toEqual(true);
+      // Named for what it decides — which stats the projection scores — not for the column each
+      // one happens to occupy.
+      expect(toolbarButtons.some((label) => label.includes('Stats'))).toEqual(true);
     });
 
     it('stacks the title above the toolbar once the league controls are there', () => {

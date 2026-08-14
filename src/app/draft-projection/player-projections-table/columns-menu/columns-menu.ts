@@ -24,10 +24,12 @@ const GROUP_LABELS: Record<StatGroup, string> = {
 };
 
 /**
- * Which columns are on screen. The counterpart to removing a column from its own header menu — it
- * picks what to add, grouped the way the settings panel it replaces grouped it, and deliberately
- * stays open while several are ticked, since adding one stat per dropdown round-trip was the
- * slowest part of the old panel.
+ * Which stats the projection carries — labelled **Stats** in the toolbar, because ticking one is
+ * not a display choice: `activeScoringColumns` is what the scoring and the ranking are computed
+ * over. The counterpart to removing a column from its own header menu — it picks what to add,
+ * grouped the way the settings panel it replaces grouped it, and deliberately stays open while
+ * several are ticked, since adding one stat per dropdown round-trip was the slowest part of the
+ * old panel.
  *
  * How a column's numbers are formatted is not here: decimals belong to the column they format, and
  * live in that column's own menu.
