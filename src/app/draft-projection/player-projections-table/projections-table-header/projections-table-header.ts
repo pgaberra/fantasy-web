@@ -16,6 +16,7 @@ import { StatLabelPipe } from '../../../pipes/stat-label.pipe';
 import { STAT_FULL_NAMES, StatTooltipPipe } from '../../../pipes/stat-tooltip.pipe';
 import { TooltipDirective } from '../../../shared/tooltip/tooltip.directive';
 import { PopoverTriggerDirective } from '../../../shared/popover/popover-trigger.directive';
+import { HelpTipComponent } from '../../../shared/help-tip/help-tip';
 import { ToggleSwitchComponent } from '../../projection-settings-section/toggle-switch/toggle-switch';
 import {
   DecimalStatKey,
@@ -32,6 +33,7 @@ import { StatInfoService } from '../../../services/stat-info.service';
     TooltipDirective,
     PopoverTriggerDirective,
     ToggleSwitchComponent,
+    HelpTipComponent,
   ],
   templateUrl: './projections-table-header.html',
   styleUrl: './projections-table-header.css',

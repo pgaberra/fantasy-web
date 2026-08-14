@@ -405,12 +405,10 @@ tr.decimal-row th {
   font-variant-numeric: tabular-nums;
 }
 
-.column-menu .menu-note {
-  margin: 0;
-  padding: 0 0.7rem 0.4rem;
-  font-size: var(--text-xs);
-  line-height: 1.45;
-  color: var(--color-text-subtle);
+.column-menu .menu-field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
 }
 
 .column-menu .scale-stat-list {

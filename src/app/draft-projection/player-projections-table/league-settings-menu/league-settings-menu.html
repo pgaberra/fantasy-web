@@ -42,7 +42,13 @@
   </div>
 
   <div class="menu-field">
-    <label for="min-goalie-games-input">Minimum goalie games</label>
+    <span class="field-label">
+      <label for="min-goalie-games-input">Minimum goalie games</label>
+      <app-help-tip
+        label="What the goalie minimum does"
+        text="Goalies projected for fewer games than this are ranked last."
+      />
+    </span>
     <input
       id="min-goalie-games-input"
       type="number"
@@ -52,10 +58,6 @@
       (input)="onMinGoalieGamesInput($event)"
     />
   </div>
-  <p class="menu-note">
-    Goalies projected for fewer games than this are ranked last, so a tiny-sample goalie with elite
-    rate stats can't top the rankings.
-  </p>
 
   <div class="menu-separator"></div>
   <p class="menu-title">Roster slots</p>

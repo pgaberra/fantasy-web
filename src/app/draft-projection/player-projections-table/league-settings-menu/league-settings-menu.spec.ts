@@ -49,6 +49,16 @@ describe('LeagueSettingsMenuComponent', () => {
     expect(ngMocks.findAll('input[type="number"]')).toHaveLength(0);
   });
 
+  it('explains the goalie minimum in a tip rather than a paragraph of the menu', () => {
+    getFixture();
+
+    expect(ngMocks.findAll('app-help-tip')).toHaveLength(1);
+    // The prose that used to sit under the field is gone; only the roster note is left.
+    const notes = ngMocks.findAll('.menu-note');
+    expect(notes).toHaveLength(1);
+    expect(notes[0].nativeElement.textContent).toContain('roster slots');
+  });
+
   it('heads every section with the same class and sentence-cased text', () => {
     getFixture();
 

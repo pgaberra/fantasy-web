@@ -1,0 +1,30 @@
+:host {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.help-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  font: inherit;
+  font-size: 0.8rem;
+  line-height: 1;
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+
+.help-trigger:hover {
+  color: var(--color-text-muted);
+}
+
+.help-trigger:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
