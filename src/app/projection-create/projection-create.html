@@ -30,37 +30,49 @@
       <span class="field-label">Starting point</span>
       <p class="field-hint">Initial stats for each player</p>
       <div class="radio-group">
-        <label class="radio-option">
-          <input
-            type="radio"
-            name="data-source"
-            [checked]="dataSource() === 'last-season'"
-            (change)="dataSource.set('last-season')"
-          />
-          <span class="radio-title">Last season's stats</span>
-          <app-info-tooltip text="Start from each player's real numbers from last season." />
-        </label>
-        <label class="radio-option">
-          <input
-            type="radio"
-            name="data-source"
-            [checked]="dataSource() === 'blank'"
-            (change)="dataSource.set('blank')"
-          />
-          <span class="radio-title">From scratch</span>
-          <app-info-tooltip text="Every stat starts at 0." />
-        </label>
-        @if (existingProjections().length) {
+        <div class="radio-row">
           <label class="radio-option">
             <input
               type="radio"
               name="data-source"
-              [checked]="dataSource() === 'copy'"
-              (change)="dataSource.set('copy')"
+              [checked]="dataSource() === 'last-season'"
+              (change)="dataSource.set('last-season')"
             />
-            <span class="radio-title">A copy of another projection</span>
-            <app-info-tooltip text="Base your projection on a current one." />
+            <span class="radio-title">Last season's stats</span>
           </label>
+          <app-help-tip
+            label="What starting from last season's stats means"
+            text="Start from each player's real numbers from last season."
+          />
+        </div>
+        <div class="radio-row">
+          <label class="radio-option">
+            <input
+              type="radio"
+              name="data-source"
+              [checked]="dataSource() === 'blank'"
+              (change)="dataSource.set('blank')"
+            />
+            <span class="radio-title">From scratch</span>
+          </label>
+          <app-help-tip label="What starting from scratch means" text="Every stat starts at 0." />
+        </div>
+        @if (existingProjections().length) {
+          <div class="radio-row">
+            <label class="radio-option">
+              <input
+                type="radio"
+                name="data-source"
+                [checked]="dataSource() === 'copy'"
+                (change)="dataSource.set('copy')"
+              />
+              <span class="radio-title">A copy of another projection</span>
+            </label>
+            <app-help-tip
+              label="What copying another projection means"
+              text="Base your projection on a current one."
+            />
+          </div>
         }
       </div>
       @if (dataSource() === 'copy') {

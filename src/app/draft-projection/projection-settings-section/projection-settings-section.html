@@ -1,4 +1,4 @@
-<section class="settings-section">
+﻿<section class="settings-section">
   <div
     class="section-header"
     role="button"
@@ -31,7 +31,7 @@
         }
         @if (isLeagueSettingsExpanded()) {
           <!-- Inside the collapse: the league sync fills in these very settings, so it belongs
-               with them — collapsing the group hides both. -->
+               with them â€” collapsing the group hides both. -->
           <div class="settings-projected-slot">
             <ng-content />
           </div>
@@ -90,13 +90,13 @@
             (keydown.space)="toggleUtilityStatsVisible(); $event.preventDefault()"
           >
             <h3 class="settings-group-title">Utility Stats</h3>
-            <div class="tooltip-container">
-              <span class="info-icon">ⓘ</span>
-              <div class="tooltip-content">
-                Stats that are not directly included in any league scoring but can be useful to
-                predict because they may affect the performance of scoring stats.
-              </div>
-            </div>
+            <!-- The header row is itself a button; the tip must not expand or collapse the group. -->
+            <app-help-tip
+              label="What utility stats are"
+              text="Stats that are not directly included in any league scoring but can be useful to predict because they may affect the performance of scoring stats."
+              (click)="$event.stopPropagation()"
+              (keydown)="$event.stopPropagation()"
+            />
             <span class="advanced-toggle-icon" [class.open]="isUtilityStatsVisible()"></span>
           </div>
           @if (isUtilityStatsVisible()) {
@@ -110,10 +110,10 @@
                     <div class="utility-stat-label">
                       <span class="utility-stat-chip">{{ key | utilityStatLabel }}</span>
                       @if (key | statDesc) {
-                        <div class="tooltip-container">
-                          <span class="info-icon">ⓘ</span>
-                          <div class="tooltip-content">{{ key | statDesc }}</div>
-                        </div>
+                        <app-help-tip
+                          [label]="'What ' + (key | utilityStatLabel) + ' means'"
+                          [text]="key | statDesc"
+                        />
                       }
                     </div>
                     <app-toggle-switch

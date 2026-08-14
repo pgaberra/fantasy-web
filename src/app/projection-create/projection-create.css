@@ -64,6 +64,14 @@
   gap: 0.6rem;
 }
 
+/* The tip sits beside the label rather than inside it: a `<button>` is interactive content, and
+   a label may not contain any — some browsers would let a tap on it select the radio. */
+.radio-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .radio-option {
   display: flex;
   align-items: center;

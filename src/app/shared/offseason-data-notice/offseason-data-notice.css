@@ -13,10 +13,12 @@
   background: var(--color-surface);
 }
 
+/* Sized to the title's line box so the icon centres on the first line, not on the whole notice. */
 .offseason-notice__icon {
   flex-shrink: 0;
-  font-size: 1.1rem;
-  line-height: 1.45;
+  display: inline-flex;
+  align-items: center;
+  height: 1.6rem;
   color: var(--color-gold-strong);
 }
 

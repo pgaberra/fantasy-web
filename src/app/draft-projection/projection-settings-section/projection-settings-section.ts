@@ -24,6 +24,7 @@ import { RosterSlots } from '../../api/models/roster-slots';
 import { StatGroupComponent } from './stat-group/stat-group';
 import { CategorySettingsComponent } from './category-settings/category-settings';
 import { StatInfoService } from '../../services/stat-info.service';
+import { HelpTipComponent } from '../../shared/help-tip/help-tip';
 
 @Component({
   selector: 'app-projection-settings-section',
@@ -37,6 +38,7 @@ import { StatInfoService } from '../../services/stat-info.service';
     SettingRowComponent,
     StatGroupComponent,
     CategorySettingsComponent,
+    HelpTipComponent,
   ],
 })
 export class ProjectionSettingsSectionComponent {
