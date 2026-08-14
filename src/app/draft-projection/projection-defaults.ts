@@ -131,6 +131,7 @@ export function createDefaultProjectionState(
     rosterSlots: DEFAULT_ROSTER_SLOTS,
     minGoalieGames: DEFAULT_MIN_GOALIE_GAMES,
     yahooSync: null,
+    espnSync: null,
     draft: null,
     playerProjections: [],
   };
