@@ -24,6 +24,9 @@ import { TemplatePortal } from '@angular/cdk/portal';
  * place. Content is a plain `<ng-template>` in the declaring component, which means the
  * component's own styles and bindings still apply inside the overlay.
  */
+const FOCUSABLE_SELECTOR =
+  'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
+
 const POPOVER_POSITIONS: Record<'start' | 'end', ConnectedPosition[]> = {
   start: [
     { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 6 },
@@ -88,11 +91,40 @@ export class PopoverTriggerDirective {
       new TemplatePortal(this.appPopover(), this.viewContainerRef, this.popoverContext()),
     );
 
+    // The overlay is appended at the end of the document, so a keyboard user tabbing off the
+    // trigger would otherwise walk past the menu they just opened into the rest of the page.
+    // Moving focus in on open — and back to the trigger on close — is what makes it reachable.
+    const panel = this.overlayRef.overlayElement;
+    panel.setAttribute('role', 'dialog');
+    // The toolbar's triggers carry their own label as text; a column's is an icon-only button whose
+    // aria-label is the only thing saying which column it belongs to.
+    panel.setAttribute(
+      'aria-label',
+      this.host.nativeElement.textContent?.trim() ||
+        this.host.nativeElement.getAttribute('aria-label') ||
+        'Menu',
+    );
+    panel.setAttribute('tabindex', '-1');
+    (panel.querySelector<HTMLElement>(FOCUSABLE_SELECTOR) ?? panel).focus();
+
+    // Non-modal, so tabbing past the last control should leave rather than cycle — but a menu left
+    // hanging open behind the focus is clutter, so it closes itself on the way out. A null
+    // relatedTarget is focus leaving for the document (a click on empty space), which
+    // outsidePointerEvents already handles.
+    panel.addEventListener('focusout', (event) => {
+      const next = event.relatedTarget as Node | null;
+      if (next && !panel.contains(next) && !this.host.nativeElement.contains(next)) {
+        // Focus is already on its way somewhere else, so this close must not restore it — during
+        // focusout the element losing focus is still the active one, and putting it back on the
+        // trigger would undo the very Tab that closed the menu.
+        this.close(false);
+      }
+    });
+
     this.overlayRef.keydownEvents().subscribe((event) => {
       if (event.key === 'Escape') {
         event.stopPropagation();
         this.close();
-        this.host.nativeElement.focus();
       }
     });
     // The host's own click would otherwise re-open the popover we just dismissed.
@@ -105,9 +137,19 @@ export class PopoverTriggerDirective {
     this.isOpen.set(true);
   }
 
-  close(): void {
+  /** `restoreFocus` is for the caller that already knows where focus is going — see the focusout
+   * handler in {@link open}. */
+  close(restoreFocus = true): void {
+    // Only pull focus back when it is inside the popover; closing on an outside click must leave
+    // focus wherever the click put it.
+    const panel = this.overlayRef?.overlayElement;
+    const heldFocus = restoreFocus && !!panel && panel.contains(document.activeElement);
     this.overlayRef?.dispose();
     this.overlayRef = null;
     this.isOpen.set(false);
+    // isConnected guards the destroy path, where the trigger is on its way out of the document.
+    if (heldFocus && this.host.nativeElement.isConnected) {
+      this.host.nativeElement.focus();
+    }
   }
 }

@@ -63,12 +63,13 @@
 .history-btn {
   min-width: 2rem;
   padding: var(--space-1) var(--space-2);
-  font-size: 1rem;
   line-height: 1;
 }
 
+/* Faded far enough to read as unavailable, but not so far that the pair looks like decoration
+   hanging off the heading — which is all they are until the first edit makes them live. */
 .history-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
@@ -153,16 +154,24 @@
   font: inherit;
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
-  color: var(--color-text-muted);
+  /* --color-text-muted lands at 4.4:1 on the track — just under the 4.5:1 the option needs to be
+     readable rather than to look disabled. Mixed toward the ink instead so the unpicked option
+     stays quieter than the picked one without dropping below it. */
+  color: color-mix(in srgb, var(--color-primary) 78%, var(--color-surface-alt));
   cursor: pointer;
   transition:
     background var(--transition-fast),
     color var(--transition-fast);
 }
 
+/* A white pill on a near-white track is a weak signal on its own; the border and the heavier
+   weight are what make the picked option legible at a glance. */
 .segmented button[aria-pressed='true'] {
   background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  padding: calc(0.3rem - 1px) calc(0.9rem - 1px);
   color: var(--color-primary);
+  font-weight: var(--weight-semibold);
   box-shadow: var(--shadow-sm);
 }
 
