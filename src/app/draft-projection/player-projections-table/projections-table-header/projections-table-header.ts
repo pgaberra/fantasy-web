@@ -81,6 +81,19 @@ export class ProjectionsTableHeaderComponent {
 
   summaryLabel = computed(() => (this.scoringType() === 'points' ? 'Total Points' : 'Z-Score'));
 
+  /** No utility columns, nothing to divide the header into — the rule would sit at its left edge. */
+  readonly hasUtilityColumns = computed(() => this.activeColumns().utility.size > 0);
+
+  /**
+   * The one thing the header cannot say by itself: a utility column takes no weight and adds
+   * nothing to the summary. In points mode the empty cells in the weight row hint at it; in
+   * Z-Score mode there is no weight row at all, so the role is stated here rather than in
+   * permanent chrome the two-column group has no room for.
+   */
+  utilityTooltip(statKey: UtilityStatKey): string {
+    return `${STAT_FULL_NAMES[statKey]} — a utility stat: it scores no points itself, but it can scale the stats that do.`;
+  }
+
   /** Which column's "stats to scale" list is expanded; only one menu is open at a time. */
   readonly expandedScaleList = signal<UtilityStatKey | null>(null);
 

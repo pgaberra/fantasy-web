@@ -13,7 +13,7 @@
         <button
           type="button"
           class="th-sort"
-          [appTooltip]="col | statTooltip"
+          [appTooltip]="utilityTooltip(col)"
           (click)="sort.emit(col)"
         >
           <span class="sort-arrow">{{ sortIndicator(col) }}</span
@@ -65,7 +65,11 @@
     </th>
   }
   @for (col of activeColumns().scoring; track col) {
-    <th class="col-stat" [class.sorted]="sortColumn() === col">
+    <th
+      class="col-stat"
+      [class.sorted]="sortColumn() === col"
+      [class.group-start]="$first && hasUtilityColumns()"
+    >
       <span class="th-inner">
         <button
           type="button"
@@ -111,7 +115,7 @@
       <th class="col-{{ col }}"></th>
     }
     @for (col of activeColumns().scoring; track col) {
-      <th>
+      <th [class.group-start]="$first && hasUtilityColumns()">
         <input
           type="number"
           class="weight-input"
@@ -147,7 +151,7 @@
       </th>
     }
     @for (col of activeColumns().scoring; track col) {
-      <th>
+      <th [class.group-start]="$first && hasUtilityColumns()">
         <input
           type="number"
           class="decimal-input"
