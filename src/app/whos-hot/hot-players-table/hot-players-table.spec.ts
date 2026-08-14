@@ -7,6 +7,7 @@ import { SkaterPosition } from '../../models/position.model';
 import { ActiveColumns, ScoringType } from '../../models/projection.model';
 import { ScoringStatKey } from '../../models/stat-key.model';
 import { DEFAULT_STAT_WEIGHTS } from '../../draft-projection/projection-defaults';
+import { DEFAULT_DECIMAL_SETTINGS } from '../../draft-projection/projection-settings-section/model';
 import { ProjectionCalculationService } from '../../services/projection-calculation.service';
 import { PositionFilterService } from '../../services/position-filter.service';
 import { ActiveColumnsService } from '../../services/active-columns.service';
@@ -163,7 +164,15 @@ describe('HotPlayersTableComponent', () => {
     const perGame = render([skater(1, 20)], { perGame: true });
 
     expect(totals.decimalsFor('goals')).toEqual('1.0-0');
-    expect(perGame.decimalsFor('goals')).toEqual('1.0-2');
+    expect(perGame.decimalsFor('goals')).toEqual('1.2-2');
+  });
+
+  it('shows a column as many decimals as it is set to, trailing zeros included', () => {
+    const component = render([skater(1, 20)]);
+
+    component.decimalSettings.set({ ...DEFAULT_DECIMAL_SETTINGS, sog: 3 });
+
+    expect(component.decimalsFor('sog')).toEqual('1.3-3');
   });
 
   it('offers only the teams present in the range', () => {

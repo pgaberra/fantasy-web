@@ -16,6 +16,8 @@
       [appTooltip]="warning()"
       [value]="formattedValue()"
       (input)="onInput($event)"
+      (focus)="onFocus()"
+      (blur)="onBlur()"
       [attr.min]="canStatBeNegative() ? null : 0"
       [attr.max]="isPercentage() ? 100 : null"
     />

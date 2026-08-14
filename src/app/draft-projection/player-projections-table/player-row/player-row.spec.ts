@@ -205,7 +205,24 @@ describe('PlayerRowComponent', () => {
     expect(tds[4].textContent.trim()).toEqual('-'); // goals
     expect(tds[5].textContent.trim()).toEqual('-'); // assists
     expect(tds[6].querySelector('input')?.value).toEqual('36'); // w
-    expect(tds[7].querySelector('input')?.value).toEqual('0.91'); // svPct
+    expect(tds[7].querySelector('input')?.value).toEqual('0.910'); // svPct, set to 3 decimals
+  });
+
+  it('pads a stat out to the decimals its column is set to', () => {
+    setInputs({ decimalSettings: { ...DEFAULT_DECIMAL_SETTINGS, goals: 3 } });
+
+    const goalsInput = fixture.nativeElement.querySelectorAll('td')[4].querySelector('input');
+    expect(goalsInput.value).toEqual('64.000');
+  });
+
+  it('drops the padding while the cell is being typed in', () => {
+    setInputs({ decimalSettings: { ...DEFAULT_DECIMAL_SETTINGS, goals: 3 } });
+
+    const goalsInput = fixture.nativeElement.querySelectorAll('td')[4].querySelector('input');
+    goalsInput.dispatchEvent(new Event('focus'));
+    fixture.detectChanges();
+
+    expect(goalsInput.value).toEqual('64');
   });
 
   it('leaves defencemen points to defencemen — a forward has none of the category', () => {
