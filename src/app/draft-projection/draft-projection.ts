@@ -36,6 +36,7 @@ import {
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
 import { ShareDialogComponent } from './share-dialog/share-dialog';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
+import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { OffseasonDataNoticeComponent } from '../shared/offseason-data-notice/offseason-data-notice';
 import {
   DecimalStatKey,
@@ -72,6 +73,7 @@ const AUTOSAVE_DEBOUNCE_MS = 1200;
     LeagueSyncDialogComponent,
     PlayerProjectionsTableComponent,
     LoadingIndicatorComponent,
+    ErrorStateComponent,
     SyncWarningDialogComponent,
     FullSeasonDialogComponent,
     OffseasonDataNoticeComponent,
@@ -196,6 +198,18 @@ export class DraftProjectionComponent implements OnInit {
 
   readonly isLoading = computed(() => this.playersResource.isLoading() || !this.projectionLoaded());
 
+  /**
+   * The resource settling is not the same as it having returned anything: it declares
+   * `defaultValue: []`, and a 200 carrying an empty list never reaches the error effect below. An
+   * editor with no player read model cannot rank, filter or name a single row, so it shows the
+   * error state rather than a table that looks like an empty projection.
+   */
+  readonly playersUnavailable = computed(() => this.players().length === 0);
+
+  reloadPlayers(): void {
+    this.playersResource.reload();
+  }
+
   readonly draftLinkLabel = computed(() => {
     const draft = this.draft();
     if (!draft) {
@@ -205,7 +219,7 @@ export class DraftProjectionComponent implements OnInit {
   });
 
   private readonly serializedState = computed(() =>
-    this.autosaveEnabled()
+    this.autosaveEnabled() && !this.playersUnavailable()
       ? JSON.stringify(this.serializer.toProjectionData(this.buildState()))
       : '',
   );
@@ -387,7 +401,10 @@ export class DraftProjectionComponent implements OnInit {
 
   private autosave(): void {
     const id = this.projectionId();
-    if (!this.autosaveEnabled() || !id) {
+    // The pool check is the load-bearing one, not belt-and-braces on serializedState: without a
+    // player read model the table holds nothing worth saving, and writing that back is how a
+    // projection gets destroyed by a page that merely failed to load.
+    if (!this.autosaveEnabled() || !id || this.playersUnavailable()) {
       return;
     }
     const data = this.serializer.toProjectionData(this.buildState());

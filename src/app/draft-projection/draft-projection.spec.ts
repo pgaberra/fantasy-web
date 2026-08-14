@@ -390,4 +390,51 @@ describe('DraftProjectionComponent', () => {
       expect(fixture.nativeElement.querySelector('app-full-season-dialog')).not.toBeNull();
     });
   });
+
+  /**
+   * A 200 carrying an empty list is not an error, so it walks past the error effect and leaves the
+   * resource holding its `defaultValue`. Rendering the editor on that made a loaded projection look
+   * like an empty one, and autosaving the result is how a real one was destroyed.
+   */
+  describe('when the player pool comes back empty', () => {
+    beforeEach(() =>
+      MockBuilder(DraftProjectionComponent)
+        .mock(PlayerService, { getPlayers: () => of([]) })
+        .mock(ProjectionStorageService, {
+          loadProjection: () => of(mockProjection),
+          updateProjection: () => of(mockProjection),
+        })
+        .keep(ProjectionSyncService)
+        .provide({
+          provide: ActivatedRoute,
+          useValue: { snapshot: { paramMap: { get: () => 'p1' } } },
+        }),
+    );
+
+    it('shows the error state instead of the table', async () => {
+      const fixture = MockRender(DraftProjectionComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('app-error-state')).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('app-player-projections-table')).toBeNull();
+    });
+
+    it('never writes the projection back, even after an edit that would normally autosave', async () => {
+      const updateSpy = vi.spyOn(
+        ngMocks.findInstance(ProjectionStorageService),
+        'updateProjection',
+      );
+      const fixture = MockRender(DraftProjectionComponent);
+      await fixture.whenStable();
+
+      // Without the guard this is exactly the sequence that emptied a real projection: a change
+      // to a setting, and an autosave that carries the table's (absent) rows with it.
+      fixture.point.componentInstance.leagueSize.set(14);
+      fixture.detectChanges();
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      expect(updateSpy).not.toHaveBeenCalled();
+    }, 10000);
+  });
 });

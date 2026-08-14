@@ -143,6 +143,9 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   readonly playerProjections = signal<Projection[]>([]);
 
+  /** Rows a stored projection carried for players the league no longer has. Told, never assumed. */
+  readonly droppedPlayerCount = signal(0);
+
   // Undo/redo history for stat edits and column changes. Snapshots are pushed onto `undoStack`
   // before each mutation; consecutive edits to the same cell (same `lastEditSignature`) coalesce
   // into a single step so typing "25" is one undo, not two. Since `ProjectionUpdateService` only
@@ -216,8 +219,13 @@ export class PlayerProjectionsTableComponent implements OnInit {
     const scored = this.realTimeSortedProjections();
     const filter = this.positionFilter();
     const players = this.playerMap();
-    const byPosition = scored.filter((sp) =>
-      this.positionFilterService.matches(sp.projection, players, filter),
+    // Holding a row and being able to draw it are different things: a row whose player is not in
+    // the pool has no name, team or headshot to render, and reading them threw. Skipping it here
+    // rather than discarding it at load keeps the data intact while never rendering a blank.
+    const byPosition = scored.filter(
+      (sp) =>
+        players.has(sp.projection.playerId) &&
+        this.positionFilterService.matches(sp.projection, players, filter),
     );
     return this.filterByTeam(byPosition);
   });
@@ -401,7 +409,17 @@ export class PlayerProjectionsTableComponent implements OnInit {
     const initial = this.initialProjections();
     if (initial) {
       const players = this.playerMap();
-      this.playerProjections.set(initial.filter((projection) => players.has(projection.playerId)));
+      // An empty pool is not "every one of these players left the league", it is "we do not know
+      // the league". Filtering against it would discard the whole projection, and the editor is
+      // not supposed to render at all in that state (see draft-projection's error state) — this
+      // guard is what makes the table safe on its own if it ever does.
+      if (players.size === 0) {
+        this.playerProjections.set(initial);
+        return;
+      }
+      const kept = initial.filter((projection) => players.has(projection.playerId));
+      this.droppedPlayerCount.set(initial.length - kept.length);
+      this.playerProjections.set(kept);
       return;
     }
 

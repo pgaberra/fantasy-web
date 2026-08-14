@@ -424,6 +424,47 @@ describe('PlayerProjectionsTableComponent', () => {
       const ids = fixture.point.componentInstance.playerProjections().map((pp) => pp.playerId);
       expect(ids).toEqual([1]);
     });
+
+    it('counts what it dropped so the user can be told', () => {
+      const missing: Projection = { ...mockPlayerProjections[0], playerId: 999 };
+      const fixture = MockRender(PlayerProjectionsTableComponent, {
+        players: mockPlayers,
+        scoringType: 'category',
+        initialProjections: [mockPlayerProjections[0], missing],
+        statWeights: mockStatWeights,
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['goals', 'assists']),
+          utility: new Set<SkaterUtilityStatKey>(['gp']),
+        },
+        scaleSettings: mockScaleSettings,
+        useDefaultDecimals: true,
+      });
+
+      expect(fixture.point.componentInstance.droppedPlayerCount()).toEqual(1);
+    });
+
+    /**
+     * An empty pool means the read model did not arrive, not that the league emptied. Filtering
+     * against it would discard every row of a saved projection.
+     */
+    it('keeps every row when there is no player pool to check against', () => {
+      const fixture = MockRender(PlayerProjectionsTableComponent, {
+        players: [],
+        scoringType: 'category',
+        initialProjections: mockPlayerProjections,
+        statWeights: mockStatWeights,
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['goals', 'assists']),
+          utility: new Set<SkaterUtilityStatKey>(['gp']),
+        },
+        scaleSettings: mockScaleSettings,
+        useDefaultDecimals: true,
+      });
+
+      const component = fixture.point.componentInstance;
+      expect(component.playerProjections()).toEqual(mockPlayerProjections);
+      expect(component.droppedPlayerCount()).toEqual(0);
+    });
   });
 
   describe('column sorting', () => {
