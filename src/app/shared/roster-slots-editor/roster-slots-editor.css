@@ -2,20 +2,6 @@
   display: block;
 }
 
-.roster-editor-header {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-  margin-bottom: var(--space-2);
-}
-
-.roster-editor-title {
-  font-size: 0.9rem;
-  font-weight: var(--weight-semibold);
-  color: var(--color-text);
-}
-
 .roster-grid {
   display: flex;
   flex-wrap: wrap;

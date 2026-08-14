@@ -1,4 +1,4 @@
-<app-setting-row name="League Size">
+<app-setting-row name="League size">
   <span class="league-size-field">
     <input
       type="number"
@@ -11,7 +11,9 @@
     <span class="league-size-unit">teams</span>
   </span>
 </app-setting-row>
-<app-roster-slots-editor [(rosterSlots)]="rosterSlots" />
+<app-setting-row class="roster-slots-row" name="Roster slots">
+  <app-roster-slots-editor [(rosterSlots)]="rosterSlots" />
+</app-setting-row>
 <p class="category-settings-hint">
-  We use League Size and Roster Slots to optimize the rankings for your league.
+  We use league size and roster slots to optimize the rankings for your league.
 </p>

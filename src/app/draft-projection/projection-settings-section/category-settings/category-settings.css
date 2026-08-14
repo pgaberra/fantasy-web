@@ -32,6 +32,11 @@
   color: var(--color-text-muted);
 }
 
-app-roster-slots-editor {
+.roster-slots-row {
+  display: block;
   margin-top: 0.9rem;
+}
+
+.roster-slots-row app-roster-slots-editor {
+  margin-top: 0.4rem;
 }
