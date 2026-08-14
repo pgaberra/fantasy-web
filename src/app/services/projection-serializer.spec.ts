@@ -33,6 +33,7 @@ const sampleState: ProjectionState = {
     leagueKey: 'nhl.l.123',
     syncedAt: '2026-06-20T12:00:00.000Z',
   },
+  espnSync: null,
   draft: {
     teams: [
       { id: 'team-me', name: 'My Team', mine: true },
@@ -147,6 +148,33 @@ describe('ProjectionSerializerService', () => {
       leagueKey: 'nhl.l.123',
       syncedAt: '2026-06-20T12:00:00.000Z',
     });
+  });
+
+  it('round-trips the espnSync metadata', () => {
+    const espnState: ProjectionState = {
+      ...sampleState,
+      yahooSync: null,
+      espnSync: {
+        leagueName: "Alexander's ESPN League",
+        leagueId: '123456',
+        syncedAt: '2026-08-14T15:00:00.000Z',
+      },
+    };
+
+    const roundTripped = service.fromProjectionData(service.toProjectionData(espnState));
+
+    expect(roundTripped.espnSync).toEqual({
+      leagueName: "Alexander's ESPN League",
+      leagueId: '123456',
+      syncedAt: '2026-08-14T15:00:00.000Z',
+    });
+  });
+
+  it('defaults espnSync to null for projections never synced from ESPN', () => {
+    const data = service.toProjectionData(sampleState);
+
+    expect(data.settings.espnSync).toBeUndefined();
+    expect(service.fromProjectionData(data).espnSync).toBeNull();
   });
 
   it('omits leagueSize and minGoalieGames for points leagues but keeps rosterSlots', () => {

@@ -65,6 +65,7 @@ export class ProjectionSerializerService {
         rosterSlots: { ...state.rosterSlots },
         minGoalieGames: state.scoringType === 'category' ? state.minGoalieGames : undefined,
         yahooSync: state.yahooSync ?? undefined,
+        espnSync: state.espnSync ?? undefined,
       },
       players: state.playerProjections.map((projection) => ({
         playerId: projection.playerId,
@@ -98,6 +99,7 @@ export class ProjectionSerializerService {
       rosterSlots: data.settings.rosterSlots ?? { ...DEFAULT_ROSTER_SLOTS },
       minGoalieGames: data.settings.minGoalieGames ?? DEFAULT_MIN_GOALIE_GAMES,
       yahooSync: data.settings.yahooSync ?? null,
+      espnSync: data.settings.espnSync ?? null,
       draft: this.sanitizeDraft(data.draft),
       playerProjections: data.players.map((player) => this.toProjection(player)),
     };

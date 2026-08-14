@@ -273,6 +273,56 @@ describe('DraftProjectionComponent', () => {
     expect(component.diverged()).toEqual(false);
   });
 
+  it('names the ESPN league it synced from, and stops naming the Yahoo one', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    const settings = {
+      scoringType: 'category' as const,
+      activeScoringColumns: ['goals'],
+      activeUtilityColumns: ['gp'],
+      statWeights: { goals: 5 },
+      rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
+      leagueSize: 12,
+      unsupportedStats: [],
+      unsupportedRosterCodes: [],
+    };
+
+    component.applyYahooSettings({ settings, leagueName: 'HHL', leagueKey: 'nhl.l.1' });
+    expect(component.syncedLeagueName()).toEqual('HHL');
+
+    component.applyEspnSettings({
+      settings: { ...settings, leagueName: 'Puck Luck Dynasty' },
+      leagueId: '123456',
+      leagueName: 'Puck Luck Dynasty',
+    });
+
+    expect(component.syncedLeagueName()).toEqual('Puck Luck Dynasty');
+    // These settings are ESPN's now — a leftover Yahoo stamp would mislabel them.
+    expect(component.yahooSync()).toBeNull();
+    expect(component.espnSync()?.leagueId).toEqual('123456');
+  });
+
+  it('falls back to the id when ESPN returns a league with no name', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.applyEspnSettings({
+      settings: {
+        scoringType: 'category',
+        activeScoringColumns: ['goals'],
+        activeUtilityColumns: ['gp'],
+        rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
+        unsupportedStats: [],
+        unsupportedRosterCodes: [],
+      },
+      leagueId: '123456',
+    });
+
+    expect(component.syncedLeagueName()).toEqual('123456');
+  });
+
   describe('full-season bulk action', () => {
     it('opens and cancels the confirmation dialog', async () => {
       const fixture = MockRender(DraftProjectionComponent);

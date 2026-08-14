@@ -23,6 +23,7 @@ import { YahooSyncResult } from './projection-settings-section/yahoo-league-sync
 import { EspnSyncResult } from './projection-settings-section/espn-league-sync/espn-league-sync';
 import { LeagueProjectionSettingsResponse } from '../api/models/league-projection-settings-response';
 import { YahooSync } from '../api/models/yahoo-sync';
+import { EspnSync } from '../api/models/espn-sync';
 import { DraftState } from '../api/models/draft-state';
 import { ProjectionData } from '../api/models/projection-data';
 import { UpdateProjectionData } from '../api/models/update-projection-data';
@@ -133,6 +134,7 @@ export class DraftProjectionComponent implements OnInit {
   rosterSlots = signal<RosterSlots>(DEFAULT_ROSTER_SLOTS);
   minGoalieGames = signal<number>(DEFAULT_MIN_GOALIE_GAMES);
   yahooSync = signal<YahooSync | null>(null);
+  espnSync = signal<EspnSync | null>(null);
   draft = signal<DraftState | null>(null);
 
   private readonly syncedSnapshot = signal<string | null>(null);
@@ -159,10 +161,12 @@ export class DraftProjectionComponent implements OnInit {
   readonly showShareDialog = signal<boolean>(false);
   readonly showSyncDialog = signal<boolean>(false);
   /**
-   * ESPN provenance isn't persisted yet, so a Yahoo stamp is the only league we can name after
-   * a reload — an ESPN import reads as "not connected" until that stamp carries a provider.
+   * The league these settings were imported from, whichever platform it was. A projection carries
+   * at most one sync, so the two stamps are alternatives rather than a precedence.
    */
-  readonly syncedLeagueName = computed(() => this.yahooSync()?.leagueName ?? null);
+  readonly syncedLeagueName = computed(
+    () => this.yahooSync()?.leagueName ?? this.espnSync()?.leagueName ?? null,
+  );
 
   /**
    * The rows a share would publish: the same ranking the table shows by default, frozen with the
@@ -250,13 +254,20 @@ export class DraftProjectionComponent implements OnInit {
       leagueKey: result.leagueKey,
       syncedAt: new Date().toISOString(),
     });
+    this.espnSync.set(null);
     this.syncedSnapshot.set(this.syncedSettingsKey());
   }
 
   applyEspnSettings(result: EspnSyncResult): void {
     this.applyLeagueSettings(result.settings);
-    // ESPN provenance isn't persisted yet (that needs the projection's sync stamp to carry a
-    // provider), so clear any stale Yahoo stamp rather than mislabel these settings as Yahoo's.
+    this.espnSync.set({
+      // ESPN names the league in its settings response; the user only ever typed the id.
+      leagueName: result.leagueName ?? result.leagueId,
+      leagueId: result.leagueId,
+      syncedAt: new Date().toISOString(),
+    });
+    // These settings are ESPN's now, so a Yahoo stamp would mislabel them — and `diverged`,
+    // which watches for edits since a Yahoo sync, has nothing to say about them either.
     this.yahooSync.set(null);
     this.syncedSnapshot.set(null);
   }
@@ -289,6 +300,7 @@ export class DraftProjectionComponent implements OnInit {
 
   confirmUnsync(): void {
     this.yahooSync.set(null);
+    this.espnSync.set(null);
     this.syncedSnapshot.set(null);
   }
 
@@ -347,6 +359,7 @@ export class DraftProjectionComponent implements OnInit {
       rosterSlots: this.rosterSlots(),
       minGoalieGames: this.minGoalieGames(),
       yahooSync: this.yahooSync(),
+      espnSync: this.espnSync(),
       draft: this.draft(),
       playerProjections: this.table()?.playerProjections?.() ?? this.loadedProjections() ?? [],
     };
@@ -364,6 +377,7 @@ export class DraftProjectionComponent implements OnInit {
     this.rosterSlots.set(state.rosterSlots);
     this.minGoalieGames.set(state.minGoalieGames);
     this.yahooSync.set(state.yahooSync);
+    this.espnSync.set(state.espnSync);
     this.draft.set(state.draft);
     this.loadedProjections.set(state.playerProjections);
     this.syncedSnapshot.set(this.syncedSettingsKey());

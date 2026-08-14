@@ -120,6 +120,7 @@ export class LandingDemoComponent {
       rosterSlots: this.rosterSlots(),
       minGoalieGames: this.minGoalieGames(),
       yahooSync: null,
+      espnSync: null,
       draft: null,
       playerProjections: this.table()?.playerProjections?.() ?? [],
     };

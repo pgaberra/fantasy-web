@@ -7,6 +7,8 @@ import { LeagueProjectionSettingsResponse } from '../../../api/models/league-pro
 export interface EspnSyncResult {
   settings: LeagueProjectionSettingsResponse;
   leagueId: string;
+  /** ESPN's own name for the league. Absent only if ESPN returned a league without one. */
+  leagueName?: string;
 }
 
 /**
@@ -41,6 +43,7 @@ export class EspnLeagueSyncComponent implements OnInit {
   readonly syncing = signal<boolean>(false);
   readonly error = signal<string | null>(null);
   readonly syncedLeagueId = signal<string | null>(null);
+  readonly syncedLeagueName = signal<string | null>(null);
   readonly unsupportedStats = signal<string[]>([]);
 
   ngOnInit(): void {
@@ -93,11 +96,12 @@ export class EspnLeagueSyncComponent implements OnInit {
       next: (settings) => {
         this.syncing.set(false);
         this.syncedLeagueId.set(leagueId);
+        this.syncedLeagueName.set(settings.leagueName ?? null);
         this.unsupportedStats.set(settings.unsupportedStats);
         if (savingCookies) {
           this.hasStoredCredentials.set(true);
         }
-        this.synced.emit({ settings, leagueId });
+        this.synced.emit({ settings, leagueId, leagueName: settings.leagueName });
       },
       error: (err: unknown) => {
         this.syncing.set(false);
