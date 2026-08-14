@@ -10,7 +10,8 @@ npx playwright install chromium   # once
 npm run e2e
 ```
 
-The landing, login-form and invalid-login tests need no setup. The **signed-in**
+The landing, login-form, invalid-login and projection-persistence tests need no
+setup — the last two register their own throwaway account. The **signed-in**
 tests require a dedicated throwaway staging account:
 
 ```bash
