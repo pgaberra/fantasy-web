@@ -328,6 +328,33 @@ describe('DraftProjectionComponent', () => {
     // Same slot, same dialog behind it — the import is still one click away.
     expect(fixture.nativeElement.textContent).not.toContain('Import league');
     expect(fixture.nativeElement.querySelector('.synced-league .synced-dot')).toBeTruthy();
+    // The platform's mark says where the league lives, without spending width on its name.
+    expect(fixture.nativeElement.querySelector('.synced-mark--espn')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.synced-mark--yahoo')).toBeNull();
+  });
+
+  it('wears the Yahoo mark for a league synced from Yahoo', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.applyYahooSettings({
+      settings: {
+        scoringType: 'category',
+        activeScoringColumns: ['goals'],
+        activeUtilityColumns: ['gp'],
+        rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
+        unsupportedStats: [],
+        unsupportedRosterCodes: [],
+      },
+      leagueName: 'HHL',
+      leagueKey: 'nhl.l.1',
+    });
+    fixture.detectChanges();
+
+    expect(component.syncedProvider()).toEqual('yahoo');
+    expect(fixture.nativeElement.querySelector('.synced-mark--yahoo')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.synced-mark--espn')).toBeNull();
   });
 
   it('falls back to the id when ESPN returns a league with no name', async () => {

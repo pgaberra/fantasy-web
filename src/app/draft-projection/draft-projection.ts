@@ -172,6 +172,14 @@ export class DraftProjectionComponent implements OnInit {
     () => this.yahooSync()?.leagueName ?? this.espnSync()?.leagueName ?? null,
   );
 
+  /** Which platform that league is on, so the toolbar can wear its mark. */
+  readonly syncedProvider = computed<'yahoo' | 'espn' | null>(() => {
+    if (this.yahooSync()) {
+      return 'yahoo';
+    }
+    return this.espnSync() ? 'espn' : null;
+  });
+
   /**
    * The rows a share would publish: the same ranking the table shows by default, frozen with the
    * player identity a public page has no way to look up. Computed lazily by the dialog's input

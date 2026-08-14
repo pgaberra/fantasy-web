@@ -130,6 +130,22 @@
   background: var(--color-success);
 }
 
+/* The platform's own mark, in its own colours: it says where the league lives without spending
+   any of the button's width on the word "ESPN" or "Yahoo". */
+.synced-mark {
+  flex: none;
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.synced-mark--espn {
+  border-radius: 0.15rem;
+}
+
+.synced-mark--yahoo {
+  color: #6001d2;
+}
+
 /* A league name is the user's own words and can run long — it may shorten, but it must never
    push the buttons beside it off the toolbar. */
 .synced-label {
