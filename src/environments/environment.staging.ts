@@ -15,6 +15,7 @@ export const environment = {
   // against the staging BFF). The deployed staging app builds from environment.prod.ts with
   // POSTHOG_KEY injected, so leaving this empty keeps local dev out of staging's stats.
   posthogKey: '',
+  sentryDsn: '',
   // Off for local staging runs; the deployed builds set it via the YAHOO_SYNC_DISABLED build arg.
   yahooSyncDisabled: false,
   // Off for local staging runs; the deployed builds set it via the PAYMENTS_ENABLED build arg.

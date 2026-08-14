@@ -26,6 +26,9 @@ ARG FACEBOOK_LOGIN_ENABLED=
 ARG APP_ENV=production
 ARG APP_VERSION=
 ARG POSTHOG_KEY=
+# Sentry DSN for browser error reporting. Public by design (it only permits sending events),
+# and empty disables reporting — so a build without it sends nothing.
+ARG SENTRY_DSN=
 # YAHOO_SYNC_DISABLED=true flips the Yahoo league-sync UI into its off-season note (between
 # NHL seasons there are no leagues to sync); anything else leaves sync enabled.
 ARG YAHOO_SYNC_DISABLED=
@@ -45,6 +48,7 @@ RUN sed -i \
   -e "s|__APP_ENV__|${APP_ENV}|g" \
   -e "s|__APP_VERSION__|${APP_VERSION}|g" \
   -e "s|__POSTHOG_KEY__|${POSTHOG_KEY}|g" \
+  -e "s|__SENTRY_DSN__|${SENTRY_DSN}|g" \
   -e "s|__YAHOO_SYNC_DISABLED__|${YAHOO_SYNC_DISABLED}|g" \
   -e "s|__PAYMENTS_ENABLED__|${PAYMENTS_ENABLED}|g" \
   -e "s|__ESPN_LEAGUES_ENABLED__|${ESPN_LEAGUES_ENABLED}|g" \
