@@ -90,6 +90,42 @@ describe('EspnLeagueSyncComponent', () => {
     expect(emitted).toEqual([]);
   });
 
+  it('starts from the league it synced last time instead of an empty field', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent, { lastLeagueId: '123456' });
+    await fixture.whenStable();
+
+    expect(fixture.point.componentInstance.leagueId()).toEqual('123456');
+    const input = fixture.nativeElement.querySelector('.espn-input') as HTMLInputElement;
+    expect(input.value).toEqual('123456');
+  });
+
+  it('opens the private section for a user whose cookies are already on file', async () => {
+    await MockBuilder(EspnLeagueSyncComponent).mock(EspnService, {
+      credentialStatus: () => of<CredentialStatusResponse>({ hasCredentials: true }),
+      saveCredentials: () => of(undefined),
+      leagueProjectionSettings: () => of(settings),
+    });
+    const fixture = MockRender(EspnLeagueSyncComponent);
+    await fixture.whenStable();
+
+    // Cookies on file mean last time's league was private — so the form opens the way it was left.
+    expect(fixture.point.componentInstance.isPrivate()).toEqual(true);
+    expect(fixture.nativeElement.querySelector('.espn-cookies')).toBeTruthy();
+    // The values themselves are server-side and never handed back, so the inputs stay empty and
+    // the panel offers to reuse what is stored.
+    expect(fixture.nativeElement.textContent).toContain('leave these blank to reuse them');
+  });
+
+  it('leaves the private section closed for a user with nothing on file', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent);
+    await fixture.whenStable();
+
+    expect(fixture.point.componentInstance.isPrivate()).toEqual(false);
+    expect(fixture.nativeElement.querySelector('.espn-cookies')).toBeNull();
+  });
+
   it('opens the cookie fields itself when ESPN refuses a league it got no cookies for', async () => {
     await MockBuilder(EspnLeagueSyncComponent).mock(EspnService, {
       credentialStatus: () => of(noCredentials),

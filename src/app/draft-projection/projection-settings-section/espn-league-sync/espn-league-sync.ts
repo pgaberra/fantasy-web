@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, output, signal } from '@angular/core';
+import { Component, inject, input, linkedSignal, OnInit, output, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { of, switchMap } from 'rxjs';
 import { EspnService } from '../../../services/espn.service';
@@ -17,10 +17,14 @@ export interface EspnSyncResult {
  * their espn_s2 + SWID cookies (stored server-side so they aren't re-entered). Emits the mapped
  * settings; the parent applies them.
  *
- * The private-league checkbox starts unticked on purpose. Reading two cookies out of the browser's
- * dev tools is the heaviest thing this flow asks for, and a public league needs none of it — so
- * the cookie fields stay closed until ESPN has actually refused the league, at which point this
- * component ticks the box itself.
+ * The private-league checkbox starts unticked for a user the app knows nothing about. Reading two
+ * cookies out of the browser's dev tools is the heaviest thing this flow asks for, and a public
+ * league needs none of it. It ticks itself on evidence: cookies already on file, or a league ESPN
+ * has just refused.
+ *
+ * A returning user finds the league id they synced last time. The cookies are not filled in
+ * because they cannot be: they are stored server-side and never handed back, which is also why
+ * the panel offers to reuse them rather than showing them.
  */
 @Component({
   selector: 'app-espn-league-sync',
@@ -30,9 +34,11 @@ export interface EspnSyncResult {
 export class EspnLeagueSyncComponent implements OnInit {
   private readonly espn = inject(EspnService);
 
+  /** The league this projection was last synced from, so a re-sync isn't retyped from memory. */
+  readonly lastLeagueId = input<string | null>(null);
   readonly synced = output<EspnSyncResult>();
 
-  readonly leagueId = signal<string>('');
+  readonly leagueId = linkedSignal<string>(() => this.lastLeagueId() ?? '');
   readonly isPrivate = signal<boolean>(false);
   readonly espnS2 = signal<string>('');
   readonly swid = signal<string>('');
@@ -48,7 +54,14 @@ export class EspnLeagueSyncComponent implements OnInit {
 
   ngOnInit(): void {
     this.espn.credentialStatus().subscribe({
-      next: (status) => this.hasStoredCredentials.set(status.hasCredentials),
+      next: (status) => {
+        this.hasStoredCredentials.set(status.hasCredentials);
+        // Cookies on file mean the last sync was of a private league, so open the section the
+        // way the user left it. The values themselves stay server-side — see the panel's note.
+        if (status.hasCredentials) {
+          this.isPrivate.set(true);
+        }
+      },
       // Best-effort: if the status probe fails we just show the cookie inputs (the safe default —
       // the user can always re-enter them), so there's nothing to surface to the user here.
       error: () => this.hasStoredCredentials.set(false),

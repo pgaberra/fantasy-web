@@ -52,7 +52,10 @@
       <app-yahoo-league-sync [lastSync]="lastSync()" (synced)="yahooSynced.emit($event)" />
     }
     @case ('espn') {
-      <app-espn-league-sync (synced)="espnSynced.emit($event)" />
+      <app-espn-league-sync
+        [lastLeagueId]="lastEspnLeagueId()"
+        (synced)="espnSynced.emit($event)"
+      />
     }
   }
 }
