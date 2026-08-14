@@ -4,6 +4,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { of, switchMap } from 'rxjs';
 import { EspnService } from '../../../services/espn.service';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
+import { CredentialValuesResponse } from '../../../api/models/credential-values-response';
 
 export interface EspnSyncResult {
   settings: LeagueProjectionSettingsResponse;
@@ -23,9 +24,10 @@ export interface EspnSyncResult {
  * league needs none of it. It ticks itself on evidence: cookies already on file, or a league ESPN
  * has just refused.
  *
- * A returning user finds the league id they synced last time. The cookies are not filled in
- * because they cannot be: they are stored server-side and never handed back, which is also why
- * the panel offers to reuse them rather than showing them.
+ * A returning user finds the form as they left it: the league id they synced last time, and the
+ * stored cookies read back from the server. That read is what makes the prefill possible and is
+ * also its cost — the pair is a session credential for the whole ESPN account, and from the
+ * moment it is displayed it lives in the page rather than only on the server.
  */
 @Component({
   selector: 'app-espn-league-sync',
@@ -47,6 +49,8 @@ export class EspnLeagueSyncComponent implements OnInit {
   readonly espnS2 = signal<string>('');
   readonly swid = signal<string>('');
   readonly hasStoredCredentials = signal<boolean>(false);
+  /** What the fields were filled from, so an untouched pair isn't written back on every sync. */
+  private readonly storedCookies = signal<CredentialValuesResponse | null>(null);
   /** Set once ESPN has rejected the stored cookies, so the form stops offering to reuse them. */
   readonly storedCredentialsRefused = signal<boolean>(false);
   readonly showHelp = signal<boolean>(false);
@@ -61,14 +65,31 @@ export class EspnLeagueSyncComponent implements OnInit {
       next: (status) => {
         this.hasStoredCredentials.set(status.hasCredentials);
         // Cookies on file mean the last sync was of a private league, so open the section the
-        // way the user left it. The values themselves stay server-side — see the panel's note.
+        // way the user left it — and fill it in with what is stored.
         if (status.hasCredentials) {
           this.isPrivate.set(true);
+          this.loadStoredCookies();
         }
       },
       // Best-effort: if the status probe fails we just show the cookie inputs (the safe default —
       // the user can always re-enter them), so there's nothing to surface to the user here.
       error: () => this.hasStoredCredentials.set(false),
+    });
+  }
+
+  /**
+   * Fills the cookie fields with the stored pair. Best-effort: if the read fails the fields stay
+   * empty, which is the form's other working state — a sync with them blank reuses what the
+   * server holds anyway.
+   */
+  private loadStoredCookies(): void {
+    this.espn.credentialValues().subscribe({
+      next: (cookies) => {
+        this.espnS2.set(cookies.espnS2);
+        this.swid.set(cookies.swid);
+        this.storedCookies.set(cookies);
+      },
+      error: () => undefined,
     });
   }
 
@@ -101,7 +122,10 @@ export class EspnLeagueSyncComponent implements OnInit {
     }
     const espnS2 = this.espnS2().trim();
     const swid = this.swid().trim();
-    const savingCookies = this.isPrivate() && espnS2.length > 0 && swid.length > 0;
+    const stored = this.storedCookies();
+    const edited = espnS2 !== stored?.espnS2 || swid !== stored?.swid;
+    // The fields may be showing the pair we just read back, so only write when they differ from it.
+    const savingCookies = this.isPrivate() && espnS2.length > 0 && swid.length > 0 && edited;
 
     this.error.set(null);
     this.unsupportedStats.set([]);
