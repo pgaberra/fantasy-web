@@ -49,6 +49,15 @@ describe('LeagueSettingsMenuComponent', () => {
     expect(ngMocks.findAll('input[type="number"]')).toHaveLength(0);
   });
 
+  it('heads every section with the same class and sentence-cased text', () => {
+    getFixture();
+
+    // One class means one font treatment, and the uppercasing stays the stylesheet's business
+    // rather than something each heading spells out for itself.
+    const headings = ngMocks.findAll('.menu-title').map((h) => h.nativeElement.textContent.trim());
+    expect(headings).toEqual(['League setup', 'Roster slots']);
+  });
+
   it('clamps league size and the goalie games minimum to their allowed range', () => {
     const component = getFixture().point.componentInstance;
     const inputEvent = (value: string) => ({ target: { value } }) as unknown as Event;

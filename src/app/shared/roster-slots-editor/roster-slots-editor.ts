@@ -3,7 +3,11 @@ import { RosterSlots } from '../../api/models/roster-slots';
 
 /**
  * Editable grid of roster slot counts per position. Two-way bound via `rosterSlots`.
- * Reused by the projection settings (category leagues) and the draft setup.
+ * Reused by the projection settings (category leagues), the League setup menu and the draft setup.
+ *
+ * Deliberately unlabelled: each host heads it in its own idiom — an uppercase section heading in
+ * the League setup popover, a setting name in the settings panel — and the draft setup already
+ * labelled it itself, so a title of its own only ever collided with theirs.
  */
 @Component({
   selector: 'app-roster-slots-editor',
