@@ -98,17 +98,20 @@ th.col-stat.sorted {
   background: none;
   border: none;
   border-radius: var(--radius-sm);
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--color-text-on-dark);
   cursor: pointer;
   /* Permanently visible, just dimmed. Revealing it on hover kept the header dense but left the
      only way to configure a column undiscoverable — nothing suggested the header was clickable
      at all. The gutter is reserved either way, so showing it costs no width. It brightens on
-     hover/focus, and the same treatment now applies to touch devices, which have no hover. */
-  opacity: 0.45;
+     hover/focus, and the same treatment now applies to touch devices, which have no hover.
+
+     Dim it with opacity ALONE: a translucent colour underneath multiplied out to about a
+     quarter of the header's white, which on this blue read as barely there at all. One
+     dimmer keeps the dots plainly visible while still ranking them under the label. */
+  opacity: 0.65;
   transition:
     opacity var(--transition-fast),
-    background var(--transition-fast),
-    color var(--transition-fast);
+    background var(--transition-fast);
 }
 
 th:hover .th-menu,
@@ -120,7 +123,6 @@ th:focus-within .th-menu,
 .th-menu:hover,
 .th-menu[aria-expanded='true'] {
   background: rgba(255, 255, 255, 0.22);
-  color: var(--color-text-on-dark);
 }
 
 th.summary-pts-col.sortable:hover {
