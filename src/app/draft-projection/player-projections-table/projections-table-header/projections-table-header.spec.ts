@@ -341,7 +341,13 @@ describe('ProjectionsTableHeaderComponent', () => {
   describe('utility / scoring split', () => {
     it('says what a utility column is for, which its label cannot', () => {
       expect(getComponent().utilityTooltip('gp')).toEqual(
-        'Games Played — a utility stat: it scores no points itself, but it can scale the stats that do.',
+        'Games Played — a Utility Stat that can be used to scale and project other stats.',
+      );
+    });
+
+    it('keeps expanding the abbreviation, which is the only place TOI/G is spelled out', () => {
+      expect(getComponent().utilityTooltip('toiPerGame')).toEqual(
+        'Time on Ice per Game — a Utility Stat that can be used to scale and project other stats.',
       );
     });
 
