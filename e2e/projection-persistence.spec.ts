@@ -35,7 +35,10 @@ test.describe('a projection survives a settings-only save', () => {
     await page.getByRole('button', { name: /create new projection/i }).click();
     await page.locator('#projection-name').fill('E2E Persistence');
     await page.getByRole('button', { name: /^create projection$/i }).click();
-    await expect(page).toHaveURL(/\/projections\/[0-9a-f-]+$/i, { timeout: 20_000 });
+    // Creating a projection seeds ~1589 rows server-side. 20s was enough on an idle staging and
+    // not enough behind another test that had just drafted a league, which showed up as a flake
+    // rather than as a failure worth trusting.
+    await expect(page).toHaveURL(/\/projections\/[0-9a-f-]+$/i, { timeout: 45_000 });
 
     // "Showing N of M" — M is the projection's row count, which is what has to survive. The
     // visible rows are paginated, so counting <tr>s would only prove the first page came back.
