@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { MockBuilder, MockRender } from 'ng-mocks';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { EspnLeagueSyncComponent, EspnSyncResult } from './espn-league-sync';
@@ -124,21 +124,66 @@ describe('EspnLeagueSyncComponent', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Last synced');
   });
 
-  it('opens the private section for a user whose cookies are already on file', async () => {
-    await MockBuilder(EspnLeagueSyncComponent).mock(EspnService, {
-      credentialStatus: () => of<CredentialStatusResponse>({ hasCredentials: true }),
-      saveCredentials: () => of(undefined),
-      leagueProjectionSettings: () => of(settings),
-    });
+  it('opens the private section filled in for a user whose cookies are on file', async () => {
+    await MockBuilder(EspnLeagueSyncComponent)
+      .mock(EspnService, {
+        credentialStatus: () => of<CredentialStatusResponse>({ hasCredentials: true }),
+        credentialValues: () => of({ espnS2: 'stored-s2', swid: '{STORED}' }),
+        saveCredentials: () => of(undefined),
+        leagueProjectionSettings: () => of(settings),
+      })
+      .keep(DatePipe);
     const fixture = MockRender(EspnLeagueSyncComponent);
     await fixture.whenStable();
+    const component = fixture.point.componentInstance;
 
-    // Cookies on file mean last time's league was private — so the form opens the way it was left.
-    expect(fixture.point.componentInstance.isPrivate()).toEqual(true);
-    expect(fixture.nativeElement.querySelector('.espn-cookies')).toBeTruthy();
-    // The values themselves are server-side and never handed back, so the inputs stay empty and
-    // the panel offers to reuse what is stored.
-    expect(fixture.nativeElement.textContent).toContain('leave these blank to reuse them');
+    expect(component.isPrivate()).toEqual(true);
+    expect(component.espnS2()).toEqual('stored-s2');
+    expect(component.swid()).toEqual('{STORED}');
+  });
+
+  it('does not write the stored pair back when the fields were not touched', async () => {
+    const saveCredentials = vi.fn(() => of(undefined));
+    await MockBuilder(EspnLeagueSyncComponent)
+      .mock(EspnService, {
+        credentialStatus: () => of<CredentialStatusResponse>({ hasCredentials: true }),
+        credentialValues: () => of({ espnS2: 'stored-s2', swid: '{STORED}' }),
+        saveCredentials,
+        leagueProjectionSettings: () => of(settings),
+      })
+      .keep(DatePipe);
+    const fixture = MockRender(EspnLeagueSyncComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.leagueId.set('123456');
+    component.sync();
+    await fixture.whenStable();
+    expect(saveCredentials).not.toHaveBeenCalled();
+
+    // Edited, and it is written.
+    component.espnS2.set('fresh-s2');
+    component.sync();
+    await fixture.whenStable();
+    expect(saveCredentials).toHaveBeenCalled();
+  });
+
+  it('leaves the fields empty when the stored pair cannot be read', async () => {
+    await MockBuilder(EspnLeagueSyncComponent)
+      .mock(EspnService, {
+        credentialStatus: () => of<CredentialStatusResponse>({ hasCredentials: true }),
+        credentialValues: () => throwError(() => new HttpErrorResponse({ status: 500 })),
+        saveCredentials: () => of(undefined),
+        leagueProjectionSettings: () => of(settings),
+      })
+      .keep(DatePipe);
+    const fixture = MockRender(EspnLeagueSyncComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    // Empty fields are the form's other working state — a sync then reuses what the server holds.
+    expect(component.isPrivate()).toEqual(true);
+    expect(component.espnS2()).toEqual('');
   });
 
   it('leaves the private section closed for a user with nothing on file', async () => {
