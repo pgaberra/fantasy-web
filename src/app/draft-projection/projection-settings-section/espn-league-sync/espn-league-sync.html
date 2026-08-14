@@ -28,7 +28,7 @@
 
   @if (isPrivate()) {
     <div class="espn-cookies">
-      @if (hasStoredCredentials()) {
+      @if (hasStoredCredentials() && !storedCredentialsRefused()) {
         <p class="espn-sync-muted" role="status">
           Your ESPN cookies are saved — leave these blank to reuse them.
         </p>
