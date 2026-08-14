@@ -165,6 +165,22 @@ th.summary-pts-col.sortable.sorted {
   min-width: 60px;
 }
 
+/* A utility column is an input, not a score: it takes no weight and adds nothing to the summary.
+   Rather than spend a header row on a "Utility Stats" / "Scoring Stats" band — the header is
+   already up to three rows, it is sticky, and the group is one or two columns wide — the split is
+   drawn: the utility labels sit back a shade, and a hairline opens the scoring block. The words
+   are left to the tooltip, which is where there is room for them. */
+.col-utility .th-sort {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* Set on the first scoring column of every header row, so the rule runs the full height of the
+   thead. Inset rather than a border: `border-collapse` on the table would drop it against the
+   neighbouring cell's own edges, and the gold summary column already divides itself this way. */
+.group-start {
+  box-shadow: inset 1px 0 0 0 rgba(255, 255, 255, 0.34);
+}
+
 th.summary-pts-col {
   background: var(--color-gold-strong);
   color: var(--color-text-on-dark);

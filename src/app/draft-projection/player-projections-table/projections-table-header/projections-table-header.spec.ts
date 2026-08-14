@@ -338,6 +338,49 @@ describe('ProjectionsTableHeaderComponent', () => {
     });
   });
 
+  describe('utility / scoring split', () => {
+    it('says what a utility column is for, which its label cannot', () => {
+      expect(getComponent().utilityTooltip('gp')).toEqual(
+        'Games Played — a utility stat: it scores no points itself, but it can scale the stats that do.',
+      );
+    });
+
+    it('opens the scoring block at the first scoring column of every header row', () => {
+      getFixture({
+        scoringType: 'points',
+        useDefaultDecimals: false,
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['goals', 'assists']),
+          utility: new Set<SkaterUtilityStatKey>(['gp', 'toiPerGame']),
+        },
+      });
+      // The label row, the weight row and the decimal row — the rule runs the full thead height.
+      expect(ngMocks.findAll('.group-start')).toHaveLength(3);
+    });
+
+    it('marks only the first scoring column, not every one', () => {
+      getFixture({
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['goals', 'assists', 'sog']),
+          utility: new Set<SkaterUtilityStatKey>(['gp']),
+        },
+      });
+      const divided = ngMocks.findAll('.group-start');
+      expect(divided).toHaveLength(1);
+      expect(divided[0].nativeElement.textContent).toContain('Goals');
+    });
+
+    it('draws no rule when there are no utility columns to divide off', () => {
+      getFixture({
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['goals', 'assists']),
+          utility: new Set<SkaterUtilityStatKey>(),
+        },
+      });
+      expect(ngMocks.findAll('.group-start')).toHaveLength(0);
+    });
+  });
+
   describe('full-season pill', () => {
     it('does not render the pill by default', () => {
       getFixture();
