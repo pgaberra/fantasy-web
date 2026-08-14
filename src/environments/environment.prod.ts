@@ -14,6 +14,10 @@ const facebookLoginEnabledFlag: string = '__FACEBOOK_LOGIN_ENABLED__';
 // Staging and production get different keys (separate PostHog projects) from Coolify.
 const posthogKeyFlag: string = '__POSTHOG_KEY__';
 
+// Sentry DSN for browser error reporting. Not a secret — it ships to every visitor and only
+// permits sending events. Untouched, it resolves to empty, which disables reporting.
+const sentryDsnFlag: string = '__SENTRY_DSN__';
+
 // Also build-time injected: which deployed environment this bundle is, and its version.
 // Untouched, they resolve to a plain production build with no version label.
 const appEnvFlag: string = '__APP_ENV__';
@@ -42,6 +46,7 @@ export const environment = {
   facebookAppId: facebookAppIdFlag.startsWith('__FACEBOOK') ? '' : facebookAppIdFlag,
   facebookLoginEnabled: facebookLoginEnabledFlag === 'true',
   posthogKey: posthogKeyFlag.startsWith('__POSTHOG') ? '' : posthogKeyFlag,
+  sentryDsn: sentryDsnFlag.startsWith('__SENTRY') ? '' : sentryDsnFlag,
   yahooSyncDisabled: yahooSyncDisabledFlag === 'true',
   paymentsEnabled: paymentsEnabledFlag === 'true',
   espnLeaguesEnabled: espnLeaguesEnabledFlag === 'true',

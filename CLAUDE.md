@@ -133,6 +133,38 @@ Three constraints that aren't obvious from the code:
 Autocapture and session replay are off. Turning either on is a deliberate step with its own
 privacy review (replay would otherwise record sign-up forms), not a default.
 
+## Error reporting (Sentry)
+
+Browser faults go through `services/error-reporting.service.ts` — **nothing else may import
+`@sentry/browser`**. It's off unless `environment.sentryDsn` is set (same pattern as an empty
+`posthogKey`), so local dev, CI and tests never fetch the SDK or send anything.
+
+It exists because a user lost a saved projection on 2026-08-13 and the only reason anyone found
+out was an emailed photograph of their screen a day later. The four backend services had reported
+to Sentry for months; the browser reported nowhere.
+
+- **Uncaught errors and unhandled rejections** reach it via `ReportingErrorHandler`, which
+  reports and then delegates to Angular's default handler so the console still gets them.
+  `provideBrowserGlobalErrorListeners()` is what routes rejections there.
+- **Handled failures report too.** `NotificationService.error(...)` is the single funnel for a
+  discrete user action that failed, so it reports as well as renders — telling the user and
+  telling ourselves are the same event.
+- **Never send the email as the identifier.** Use the account UUID from the JWT's `sub` claim
+  (`AuthService.getUserId()`), exactly as with analytics.
+- **URLs are redacted before send**, sharing `shared/redact-url.ts` with analytics. Add a new
+  sensitive query param to `REDACTED_QUERY_PARAMS` there and both paths are covered.
+- **`@sentry/browser` is imported dynamically**, deliberately — a static import puts the initial
+  bundle near the 1 MB budget error in `angular.json`.
+- **The DSN is not a secret** (it only permits sending events), but it is per-environment: it
+  arrives via the `SENTRY_DSN` build arg, and `environmentName` becomes Sentry's `environment` so
+  one project separates staging from production the same way the Java services do.
+- **The CSP has to allow the ingest host.** `connect-src` in `nginx.conf` lists
+  `https://*.ingest.de.sentry.io`; without it every report is blocked in the browser and the
+  feature is silently dead in production.
+
+Performance tracing is off (`tracesSampleRate: 0`) for the same reason the backends keep alerting
+narrow: a stream of spans would bury the faults this exists to surface.
+
 ## Conventions
 
 @.aiassistant/rules/guidelines.md

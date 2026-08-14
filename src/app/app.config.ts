@@ -1,5 +1,6 @@
 import {
   ApplicationConfig,
+  ErrorHandler,
   inject,
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
@@ -15,6 +16,8 @@ import { environment } from '../environments/environment';
 import { AnalyticsService } from './services/analytics.service';
 import { AuthService } from './services/auth.service';
 import { EntitlementService } from './services/entitlement.service';
+import { ErrorReportingService } from './services/error-reporting.service';
+import { ReportingErrorHandler } from './services/reporting-error-handler';
 
 // AuthService.storeTokens() only runs on an *active* sign-in, so a returning user whose token
 // is already in localStorage would otherwise stay anonymous — identify them here too. The
@@ -35,6 +38,20 @@ function initAnalytics() {
   void analytics.init().catch(() => undefined);
 }
 
+// Mirrors initAnalytics: the same one-way dependency (AuthService -> reporting, never back),
+// and the same refusal to let bootstrap wait on it. A user id makes an error answerable
+// ("whose session was this?") without carrying their email, which sits in the same token.
+function initErrorReporting() {
+  const reporting = inject(ErrorReportingService);
+
+  const userId = inject(AuthService).getUserId();
+  if (userId) {
+    reporting.identify(userId);
+  }
+
+  void reporting.init().catch(() => undefined);
+}
+
 // retryInterceptor is outermost so it wraps authInterceptor (a retried request still
 // gets a fresh Authorization header). It is a small always-on safety net for transient
 // gateway/connection blips — see retry.interceptor.ts.
@@ -50,9 +67,11 @@ function initEntitlements() {
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
+    { provide: ErrorHandler, useClass: ReportingErrorHandler },
     provideRouter(routes),
     provideHttpClient(withInterceptors([retryInterceptor, authInterceptor])),
     provideApiConfiguration(environment.rootUrl),
+    provideAppInitializer(initErrorReporting),
     provideAppInitializer(initAnalytics),
     provideAppInitializer(initEntitlements),
   ],

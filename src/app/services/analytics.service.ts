@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import type { CaptureResult, PostHog, Properties } from 'posthog-js';
 import { environment } from '../../environments/environment';
+import { redactUrl } from '../shared/redact-url';
 
 /**
  * Business events worth measuring — the funnel we'll want in PostHog once there's traffic.
@@ -23,37 +24,6 @@ export type ConsentDecision = 'granted' | 'denied' | 'pending';
  * Values are posthog's own: '1' granted, '0' denied, absent means pending.
  */
 export const CONSENT_STORAGE_KEY = 'slapstat_analytics_consent';
-
-/**
- * Query parameters that must never leave the browser.
- *
- * `/reset-password?token=…` and `/verify-email?token=…` carry live single-use account
- * tokens, and PostHog stamps the full URL (query string included) onto `$current_url` for
- * every event. Unredacted, a password-reset token would sit in PostHog — readable by
- * anyone with project access — before its owner had even clicked the link.
- */
-const REDACTED_QUERY_PARAMS = ['token'];
-
-const REDACTED = 'redacted';
-
-/** Rewrites sensitive query params out of any string that parses as a URL. */
-function redactUrl(value: string): string {
-  let url: URL;
-  try {
-    url = new URL(value);
-  } catch {
-    return value;
-  }
-
-  let changed = false;
-  for (const param of REDACTED_QUERY_PARAMS) {
-    if (url.searchParams.has(param)) {
-      url.searchParams.set(param, REDACTED);
-      changed = true;
-    }
-  }
-  return changed ? url.toString() : value;
-}
 
 /**
  * Redacts every string property that happens to be a URL, rather than allowlisting the

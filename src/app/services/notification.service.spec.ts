@@ -1,12 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { TestBed } from '@angular/core/testing';
 import { NotificationService } from './notification.service';
+import { ErrorReportingService } from './error-reporting.service';
 
 describe('NotificationService', () => {
   let service: NotificationService;
+  let reportMessage: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.useFakeTimers();
-    service = new NotificationService();
+    reportMessage = vi.fn();
+    TestBed.configureTestingModule({
+      providers: [{ provide: ErrorReportingService, useValue: { reportMessage } }],
+    });
+    service = TestBed.inject(NotificationService);
   });
 
   afterEach(() => {
@@ -53,5 +60,12 @@ describe('NotificationService', () => {
     const remaining = service.notifications();
     expect(remaining.length).toEqual(1);
     expect(remaining[0].message).toEqual('Keep me');
+  });
+  // Telling the user and telling ourselves are the same event: a failure nobody reported is
+  // the one we hear about from an email a day later, if at all.
+  it('reports the failure as well as showing it', () => {
+    service.error("Couldn't save your projection");
+
+    expect(reportMessage).toHaveBeenCalledWith("Couldn't save your projection");
   });
 });
