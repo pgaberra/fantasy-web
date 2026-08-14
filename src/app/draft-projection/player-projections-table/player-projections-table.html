@@ -168,6 +168,12 @@
       </div>
     </div>
   </div>
+  @if (droppedPlayerCount(); as dropped) {
+    <p class="table-notice" role="status">
+      {{ dropped }} {{ dropped === 1 ? 'player is' : 'players are' }} no longer in the league and
+      {{ dropped === 1 ? 'was' : 'were' }} removed from this projection.
+    </p>
+  }
   <div class="table-wrapper">
     <table>
       <thead
@@ -218,7 +224,13 @@
     </table>
   </div>
   @if (matchingCount() === 0) {
-    <p class="table-empty">No players match your search.</p>
+    <!-- "Nothing here" and "nothing matches what you typed" are different problems with different
+         fixes, and saying the latter for both is what an emptied projection looked like. -->
+    @if (playerProjections().length === 0) {
+      <p class="table-empty">This projection has no players.</p>
+    } @else {
+      <p class="table-empty">No players match your search.</p>
+    }
   } @else {
     <div class="table-footer">
       <span class="result-count"

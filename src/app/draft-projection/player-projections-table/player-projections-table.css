@@ -233,6 +233,18 @@
   color: var(--color-text-muted);
 }
 
+/* Losing rows from a saved projection is worth a beat of attention, so it sits above the table
+   rather than in the footer — but it is not an error, and the warning tint says so. */
+.table-notice {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--color-warning);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
