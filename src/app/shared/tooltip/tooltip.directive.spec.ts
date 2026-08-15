@@ -46,6 +46,17 @@ describe('TooltipDirective', () => {
     expect(overlayText()).not.toContain('Over 100%');
   });
 
+  it('dismisses itself when the trigger is activated', () => {
+    const { button } = setup('Over 100%');
+    button.dispatchEvent(new MouseEvent('mouseenter'));
+    expect(overlayText()).toContain('Over 100%');
+
+    // A tap synthesises mouseenter and never a mouseleave, so without this the bubble would sit
+    // over whatever the button just opened.
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(overlayText()).not.toContain('Over 100%');
+  });
+
   it('does not open a tooltip when there is no text', () => {
     const { button } = setup(null);
     button.dispatchEvent(new MouseEvent('mouseenter'));

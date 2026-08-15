@@ -3,6 +3,7 @@
   type="button"
   class="help-trigger"
   [appTooltip]="text()"
+  [dismissOnClick]="false"
   [attr.aria-label]="label()"
   (click)="tip.toggle()"
 >
