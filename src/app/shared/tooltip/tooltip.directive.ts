@@ -32,6 +32,7 @@ const TOOLTIP_POSITIONS: ConnectedPosition[] = [
     '(mouseleave)': 'hide()',
     '(focusin)': 'show()',
     '(focusout)': 'hide()',
+    '(click)': 'onClick()',
   },
 })
 export class TooltipDirective {
@@ -41,6 +42,13 @@ export class TooltipDirective {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly appTooltip = input<string | null>(null);
+  /**
+   * Whether activating the trigger dismisses the bubble. It should: a tap synthesises
+   * `mouseenter` but never a `mouseleave`, so on a phone a tooltip opened by tapping a button
+   * stays painted over whatever that button just opened. Off for a trigger where the tap is
+   * what opens the tooltip in the first place — see `app-help-tip`.
+   */
+  readonly dismissOnClick = input<boolean>(true);
 
   private overlayRef: OverlayRef | null = null;
   private bubbleRef: ComponentRef<TooltipComponent> | null = null;
@@ -80,6 +88,12 @@ export class TooltipDirective {
    * For a trigger that must also answer a tap: a touch device fires no hover, and Safari does not
    * focus a button when it is tapped, so neither of the host listeners above ever runs there.
    */
+  onClick(): void {
+    if (this.dismissOnClick()) {
+      this.hide();
+    }
+  }
+
   toggle(): void {
     if (this.overlayRef) {
       this.hide();
