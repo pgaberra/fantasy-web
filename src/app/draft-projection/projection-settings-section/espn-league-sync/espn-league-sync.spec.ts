@@ -111,10 +111,29 @@ describe('EspnLeagueSyncComponent', () => {
     const fixture = MockRender(EspnLeagueSyncComponent, {
       lastLeagueId: '123456',
       lastSyncedAt: '2026-08-14T17:12:00.000Z',
+      lastLeagueName: 'My 2027 League',
     });
     await fixture.whenStable();
 
-    expect(fixture.nativeElement.textContent).toContain('Last synced 14 Aug 2026');
+    const status = fixture.nativeElement.querySelector('.espn-synced-status');
+    expect(status.textContent).toContain('Synced with');
+    expect(status.textContent).toContain('My 2027 League');
+    expect(status.textContent).toContain('14 Aug 2026');
+    // Same green dot as the toolbar button that opened this dialog.
+    expect(status.querySelector('.espn-synced-dot')).toBeTruthy();
+  });
+
+  it('states the sync without a name when ESPN gave the league none', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent, {
+      lastLeagueId: '123456',
+      lastSyncedAt: '2026-08-14T17:12:00.000Z',
+    });
+    await fixture.whenStable();
+
+    const status = fixture.nativeElement.querySelector('.espn-synced-status');
+    expect(status.textContent).toContain('Synced');
+    expect(status.textContent).toContain('14 Aug 2026');
   });
 
   it('says nothing about a previous sync when there has not been one', async () => {
@@ -122,7 +141,7 @@ describe('EspnLeagueSyncComponent', () => {
     const fixture = MockRender(EspnLeagueSyncComponent);
     await fixture.whenStable();
 
-    expect(fixture.nativeElement.textContent).not.toContain('Last synced');
+    expect(fixture.nativeElement.querySelector('.espn-synced-status')).toBeNull();
   });
 
   it('opens the private section filled in for a user whose cookies are on file', async () => {

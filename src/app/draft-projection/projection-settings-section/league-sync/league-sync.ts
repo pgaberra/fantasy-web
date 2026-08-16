@@ -26,6 +26,7 @@ export class LeagueSyncComponent {
   /** The ESPN league this projection last synced from, for the ESPN panel to start from. */
   readonly lastEspnLeagueId = input<string | null>(null);
   readonly lastEspnSyncedAt = input<string | null>(null);
+  readonly lastEspnLeagueName = input<string | null>(null);
   readonly yahooSynced = output<YahooSyncResult>();
   readonly espnSynced = output<EspnSyncResult>();
 

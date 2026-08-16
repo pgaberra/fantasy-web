@@ -55,6 +55,7 @@
       <app-espn-league-sync
         [lastLeagueId]="lastEspnLeagueId()"
         [lastSyncedAt]="lastEspnSyncedAt()"
+        [lastLeagueName]="lastEspnLeagueName()"
         (synced)="espnSynced.emit($event)"
       />
     }

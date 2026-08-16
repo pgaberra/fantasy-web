@@ -42,6 +42,8 @@ export class EspnLeagueSyncComponent implements OnInit {
   readonly lastLeagueId = input<string | null>(null);
   /** When that sync ran — the answer to "are these settings still the league's?". */
   readonly lastSyncedAt = input<string | null>(null);
+  /** ESPN's name for that league, so the status line names it rather than its id. */
+  readonly lastLeagueName = input<string | null>(null);
   readonly synced = output<EspnSyncResult>();
 
   readonly leagueId = linkedSignal<string>(() => this.lastLeagueId() ?? '');
