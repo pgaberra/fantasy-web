@@ -1,4 +1,8 @@
 .landing {
+  --lp-nav-bar-height: 60px;
+  /* The nav floats over the page, so the demo table's pinned header has to come to rest below
+     it rather than behind it. The extra pixel is the nav's bottom border. */
+  --pinned-header-inset: calc(var(--lp-nav-bar-height) + 1px);
   background: var(--color-bg);
   color: var(--color-text);
 }
@@ -23,7 +27,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 60px;
+  height: var(--lp-nav-bar-height);
 }
 
 .lp-logo img {

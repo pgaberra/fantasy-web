@@ -1,3 +1,13 @@
+/* How far below the top of the window `appPinnedTableHeader` parks a table's header — a page
+   that floats a bar over its top sets this to that bar's height. Registered as a length rather
+   than left an ordinary custom property so the browser resolves it: the directive reads the
+   value back, and an unregistered property hands back its raw tokens, `calc(…)` and all. */
+@property --pinned-header-inset {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+
 :root {
   --color-primary: #0f3460;
   --color-primary-hover: #1a4a80;

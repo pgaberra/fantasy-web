@@ -196,15 +196,11 @@
   box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
 }
 
+/* Only the stat columns scroll. The rows run down the page itself — a ranking reads as one
+   list, and a second scrollbar inside a viewport-tall box left the page around it inert.
+   `appPinnedTableHeader` is what keeps the column headings in view without that box. */
 .table-wrapper {
   overflow-x: auto;
-}
-
-@media (min-width: 641px) {
-  .table-wrapper {
-    overflow: auto;
-    max-height: calc(100vh - 16rem);
-  }
 }
 
 .table-footer {
