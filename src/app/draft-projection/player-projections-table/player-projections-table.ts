@@ -1,6 +1,7 @@
 import {
   Component,
   computed,
+  DestroyRef,
   inject,
   input,
   linkedSignal,
@@ -59,6 +60,9 @@ import { LeagueSettingsMenuComponent } from './league-settings-menu/league-setti
 import { ColumnsMenuComponent } from './columns-menu/columns-menu';
 
 const PLAYERS_PER_PAGE = 250;
+
+/** How long a queued column change waits for a frame that may never come — see queueColumnToggle. */
+const COLUMN_APPLY_TIMEOUT_MS = 250;
 
 /** Everything one undo step restores: the projected stats and which columns were on screen. */
 interface TableSnapshot {
@@ -129,6 +133,18 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly manageSyncRequested = output<void>();
   readonly activeScoringColumns = model<Set<ScoringStatKey>>(new Set<ScoringStatKey>());
   readonly activeUtilityColumns = model<Set<UtilityStatKey>>(new Set<UtilityStatKey>());
+
+  // What the column menus draw. Ticking a stat re-scores the whole player pool and rebuilds every
+  // row underneath, which is a few hundred milliseconds of work that Angular would otherwise do
+  // before the browser gets to paint the tick — so the checkbox sits still under the cursor and
+  // the click reads as ignored. These run ahead of the real columns instead: the menu redraws from
+  // them at once and the table catches up on the next frame. They are linked signals, so anything
+  // that changes the columns from elsewhere — an undo, a league sync, opening another projection —
+  // resets them without either side having to know about it.
+  readonly shownScoringColumns = linkedSignal(() => this.activeScoringColumns());
+  readonly shownUtilityColumns = linkedSignal(() => this.activeUtilityColumns());
+  private queuedColumnToggles: (() => void)[] = [];
+  private pendingFlushTimers: ReturnType<typeof setTimeout>[] = [];
 
   readonly filteredActiveColumns = computed<ActiveColumns>(() =>
     this.activeColumnsService.filterAndSortActiveColumns(
@@ -256,13 +272,17 @@ export class PlayerProjectionsTableComponent implements OnInit {
   private readonly positionFilterService = inject(PositionFilterService);
   private readonly activeColumnsService = inject(ActiveColumnsService);
   private readonly statInfoService = inject(StatInfoService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  readonly scoredProjections = computed((): ScoredProjection[] => {
-    const projections = this.playerProjections();
-    const statWeights = this.statWeights();
-    const activeScoringColumns = this.activeColumns().scoring;
-
-    const roundedProjections: Projection[] = projections.map((pp) => {
+  /**
+   * The rows as they are scored: every stat at the precision its column shows, so the ranking
+   * agrees with the numbers on screen. It depends on the projections and the decimal settings
+   * and on nothing else, which is why it is computed apart from the scoring — picking a column
+   * re-scores the pool, and re-rounding it at the same time would be a second walk over every
+   * player for a set of numbers that cannot have changed.
+   */
+  private readonly roundedProjections = computed((): Projection[] =>
+    this.playerProjections().map((pp) => {
       if (pp.type === 'skater') {
         const roundedScoring: SkaterScoringStats = { ...pp.stats.scoring };
         SKATER_SCORING_STAT_KEYS.forEach((key) => {
@@ -275,7 +295,14 @@ export class PlayerProjectionsTableComponent implements OnInit {
         roundedScoring[key] = this.roundStat(roundedScoring[key], key);
       });
       return { ...pp, stats: { ...pp.stats, scoring: roundedScoring } };
-    });
+    }),
+  );
+
+  readonly scoredProjections = computed((): ScoredProjection[] => {
+    const projections = this.playerProjections();
+    const statWeights = this.statWeights();
+    const activeScoringColumns = this.activeColumns().scoring;
+    const roundedProjections = this.roundedProjections();
 
     const fantasyPoints = roundedProjections.map((pp) =>
       pp.type === 'skater'
@@ -416,6 +443,13 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   ngOnInit(): void {
     this.initializeProjection();
+    // A queued column change belongs to a table that is still on screen; leaving the timer to fire
+    // into a destroyed component would push a column onto a parent that has already moved on.
+    this.destroyRef.onDestroy(() => {
+      this.queuedColumnToggles = [];
+      this.pendingFlushTimers.forEach((timer) => clearTimeout(timer));
+      this.pendingFlushTimers = [];
+    });
   }
 
   realTimeRanks: Signal<Map<number, number>> = computed(() => {
@@ -584,13 +618,57 @@ export class PlayerProjectionsTableComponent implements OnInit {
   }
 
   toggleScoringColumn(statKey: ScoringStatKey): void {
-    this.pushHistory(`column:scoring:${statKey}`);
-    this.activeScoringColumns.update((columns) => toggledSet(columns, statKey));
+    this.shownScoringColumns.update((columns) => toggledSet(columns, statKey));
+    this.queueColumnToggle(() => {
+      this.pushHistory(`column:scoring:${statKey}`);
+      this.activeScoringColumns.update((columns) => toggledSet(columns, statKey));
+    });
   }
 
   toggleUtilityColumn(statKey: UtilityStatKey): void {
-    this.pushHistory(`column:utility:${statKey}`);
-    this.activeUtilityColumns.update((columns) => toggledSet(columns, statKey));
+    this.shownUtilityColumns.update((columns) => toggledSet(columns, statKey));
+    this.queueColumnToggle(() => {
+      this.pushHistory(`column:utility:${statKey}`);
+      this.activeUtilityColumns.update((columns) => toggledSet(columns, statKey));
+    });
+  }
+
+  /**
+   * Holds a column change until the tick the user just made has been painted. A frame callback
+   * still runs before that paint, so the work is handed to a task scheduled from inside one —
+   * the browser can only reach it once the frame is on screen. The timer alongside it is there
+   * because a backgrounded tab stops producing frames altogether, and a change nobody can see
+   * still has to land rather than sit in the queue until the tab is looked at again.
+   *
+   * Ticking several stats in a row queues them all and rescoring happens once, which is both
+   * faster and what the menu is for: it deliberately stays open so more than one can be picked.
+   */
+  private queueColumnToggle(apply: () => void): void {
+    this.queuedColumnToggles.push(apply);
+    if (this.queuedColumnToggles.length > 1) {
+      return;
+    }
+    requestAnimationFrame(() => this.scheduleFlush(0));
+    this.scheduleFlush(COLUMN_APPLY_TIMEOUT_MS);
+  }
+
+  private scheduleFlush(delayMs: number): void {
+    const timer = setTimeout(() => this.flushColumnToggles(), delayMs);
+    this.pendingFlushTimers.push(timer);
+  }
+
+  /**
+   * Applies every queued column change now. Anything that reads or rewrites the real columns —
+   * undo, redo — settles them first rather than racing the frame they are waiting for. Calling it
+   * with nothing queued does nothing, which is what lets the frame and the timer above both aim
+   * at it without having to know which of them got there first.
+   */
+  flushColumnToggles(): void {
+    this.pendingFlushTimers.forEach((timer) => clearTimeout(timer));
+    this.pendingFlushTimers = [];
+    const queued = this.queuedColumnToggles;
+    this.queuedColumnToggles = [];
+    queued.forEach((apply) => apply());
   }
 
   toggleScale(utilityKey: UtilityStatKey): void {
@@ -615,6 +693,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
   }
 
   undo(): void {
+    this.flushColumnToggles();
     const stack = this.undoStack();
     if (stack.length === 0) return;
     this.redoStack.update((redo) => [...redo, this.snapshot()]);
@@ -624,6 +703,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
   }
 
   redo(): void {
+    this.flushColumnToggles();
     const stack = this.redoStack();
     if (stack.length === 0) return;
     this.undoStack.update((undo) => [...undo, this.snapshot()]);

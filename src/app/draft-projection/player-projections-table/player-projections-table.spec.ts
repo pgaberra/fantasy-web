@@ -1019,6 +1019,52 @@ describe('PlayerProjectionsTableComponent', () => {
     });
   });
 
+  describe('picking columns', () => {
+    it('ticks the box before the table has been rescored', () => {
+      // Rescoring the pool and rebuilding every row is a few hundred milliseconds, and Angular
+      // would spend them before painting the tick. The menu answers the click straight away and
+      // the columns follow.
+      const component = getComponent({
+        activeScoringColumns: new Set<ScoringStatKey>(['goals', 'assists']),
+      });
+
+      component.toggleScoringColumn('goals');
+
+      expect([...component.shownScoringColumns()]).toEqual(['assists']);
+      expect([...component.activeScoringColumns()]).toEqual(['goals', 'assists']);
+
+      component.flushColumnToggles();
+      expect([...component.activeScoringColumns()]).toEqual(['assists']);
+    });
+
+    it('rescores once for several stats ticked in a row', () => {
+      const component = getComponent({
+        activeScoringColumns: new Set<ScoringStatKey>(['goals']),
+      });
+
+      component.toggleScoringColumn('assists');
+      component.toggleScoringColumn('hits');
+      expect([...component.shownScoringColumns()]).toEqual(['goals', 'assists', 'hits']);
+
+      component.flushColumnToggles();
+      expect([...component.activeScoringColumns()]).toEqual(['goals', 'assists', 'hits']);
+      // Each tick is still its own undo step — batching is about the work, not about the history.
+      component.undo();
+      expect([...component.activeScoringColumns()]).toEqual(['goals', 'assists']);
+    });
+
+    it('follows a column change made anywhere else, such as an undo', () => {
+      const component = getComponent({
+        activeScoringColumns: new Set<ScoringStatKey>(['goals', 'assists']),
+      });
+
+      component.toggleScoringColumn('goals');
+      component.undo();
+
+      expect([...component.shownScoringColumns()]).toEqual(['goals', 'assists']);
+    });
+  });
+
   describe('undo/redo', () => {
     const goalsOf = (component: PlayerProjectionsTableComponent, playerId: number) =>
       (component.playerProjections().find((p) => p.playerId === playerId) as SkaterProjection).stats
@@ -1043,6 +1089,7 @@ describe('PlayerProjectionsTableComponent', () => {
       });
 
       component.toggleScoringColumn('goals');
+      component.flushColumnToggles();
       expect([...component.activeScoringColumns()]).toEqual(['assists']);
       expect(component.canUndo()).toEqual(true);
 
@@ -1060,6 +1107,7 @@ describe('PlayerProjectionsTableComponent', () => {
       });
 
       component.toggleUtilityColumn('gp');
+      component.flushColumnToggles();
       expect([...component.activeUtilityColumns()]).toEqual([]);
 
       component.undo();
