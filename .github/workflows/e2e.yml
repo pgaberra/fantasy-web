@@ -2,17 +2,32 @@ name: E2E (staging)
 
 on:
   workflow_dispatch:
+  # A merge is the moment worth checking: the code that just became staging is the code nobody
+  # has run end to end yet. Not a PR gate — the suite drives *deployed* staging, so a PR's own
+  # changes are not there to test, and gating on it would block the PR that fixes a red suite.
+  push:
+    branches: [master]
   schedule:
     - cron: '0 6 * * *' # daily 06:00 UTC
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   e2e:
     name: Playwright against staging
     runs-on: ubuntu-latest
     steps:
+      # Captured before anything else, so it is the build that was live *before* this merge
+      # deployed. Coolify takes minutes to build; the runner takes seconds to get here.
+      - name: Note which bundle staging is serving now
+        id: before
+        run: |
+          bundle=$(curl -fsS https://staging.slapstat.com/ | grep -oE 'main-[A-Za-z0-9_-]+\.js' | head -1 || true)
+          echo "bundle=$bundle" >> "$GITHUB_OUTPUT"
+          echo "Staging is currently serving: ${bundle:-unknown}"
+
       - uses: actions/checkout@v7
 
       - name: Set up Node
@@ -26,6 +41,25 @@ jobs:
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
+
+      # Testing the previous build would be a false green, so wait for the new one to land. The
+      # hashed bundle name is the only signal available — APP_VERSION is stamped on tagged
+      # releases, not on a merge. A merge that leaves the bundle byte-identical (a workflow or
+      # e2e-only change) never flips it, so this gives up and proceeds rather than failing.
+      - name: Wait for staging to serve the merged build
+        if: github.event_name == 'push'
+        env:
+          BEFORE: ${{ steps.before.outputs.bundle }}
+        run: |
+          for i in $(seq 1 40); do
+            sleep 15
+            now=$(curl -fsS https://staging.slapstat.com/ | grep -oE 'main-[A-Za-z0-9_-]+\.js' | head -1 || true)
+            if [ -n "$now" ] && [ "$now" != "$BEFORE" ]; then
+              echo "Staging redeployed: $BEFORE -> $now"
+              exit 0
+            fi
+          done
+          echo "::warning::Staging still serves $BEFORE after 10 minutes. Either the merge did not change the bundle, or the deploy is slow — testing whatever is live."
 
       - name: Run E2E tests
         env:
@@ -41,3 +75,34 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 14
+
+      # A red cross in the Actions tab is not a signal — it went unread for five days while this
+      # suite reproduced a data-loss bug nightly. An issue is something that sits in the way.
+      # One issue per outage, not one per run: a failure while an issue is already open just
+      # adds a comment.
+      - name: Raise the alarm
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create e2e-red --color B60205 \
+            --description "The E2E suite against staging is failing" 2>/dev/null || true
+          open=$(gh issue list --label e2e-red --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body "Still failing — [run]($RUN_URL), triggered by \`${{ github.event_name }}\`."
+            exit 0
+          fi
+          {
+            echo "The E2E suite failed against deployed staging."
+            echo
+            echo "- Run: $RUN_URL"
+            echo "- Triggered by: \`${{ github.event_name }}\`"
+            echo "- Commit: ${{ github.sha }}"
+            echo
+            echo "The Playwright report is attached to the run as an artifact, with a screenshot per failure."
+            echo
+            echo "Close this issue once the suite is green again; the next failure opens a fresh one."
+            echo "While it stays open, further failures are added here as comments instead."
+          } > e2e-failure.md
+          gh issue create --title "E2E against staging is failing" --label e2e-red --body-file e2e-failure.md
