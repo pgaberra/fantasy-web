@@ -280,6 +280,7 @@ export class DraftProjectionComponent implements OnInit {
     });
     this.espnSync.set(null);
     this.syncedSnapshot.set(this.syncedSettingsKey());
+    this.closeSyncDialogUnlessThereIsMoreToSay(result.settings.unsupportedStats);
   }
 
   applyEspnSettings(result: EspnSyncResult): void {
@@ -294,6 +295,19 @@ export class DraftProjectionComponent implements OnInit {
     // which watches for edits since a Yahoo sync, has nothing to say about them either.
     this.yahooSync.set(null);
     this.syncedSnapshot.set(null);
+    this.closeSyncDialogUnlessThereIsMoreToSay(result.settings.unsupportedStats);
+  }
+
+  /**
+   * A sync that had nothing to report is finished the moment it lands, so the dialog gets out of
+   * the way and the toolbar states the league it came from. One that could not map every stat
+   * keeps the dialog open: that list is the only place the user is told their league scores
+   * something this projection cannot hold.
+   */
+  private closeSyncDialogUnlessThereIsMoreToSay(unsupportedStats: string[]): void {
+    if (!unsupportedStats.length) {
+      this.showSyncDialog.set(false);
+    }
   }
 
   reSync(): void {
