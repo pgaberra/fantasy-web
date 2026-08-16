@@ -17,11 +17,42 @@
   box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.35);
 }
 
+.dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
 .dialog-title {
   margin: 0 0 var(--space-2);
   font-size: 1.05rem;
   font-weight: var(--weight-semibold);
   color: var(--color-text);
+}
+
+.dialog-close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  margin: -0.25rem -0.25rem 0 0;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.dialog-close:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.dialog-close:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .dialog-body {

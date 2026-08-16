@@ -60,7 +60,7 @@ import { NotificationService } from '../services/notification.service';
 import { PlayerBasis, ProjectionState } from '../services/projection-serializer';
 import { PoolReconciliation } from '../api/models/pool-reconciliation';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
-import { ProjectionSyncService } from '../services/projection-sync.service';
+import { ProjectionSyncService, SyncedSettings } from '../services/projection-sync.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { ProjectionShareService } from '../services/projection-share.service';
 import { SharedPlayer } from '../api/models/shared-player';
@@ -155,15 +155,21 @@ export class DraftProjectionComponent implements OnInit {
   draft = signal<DraftState | null>(null);
 
   private readonly syncedSnapshot = signal<string | null>(null);
+  /**
+   * The synced settings themselves, not just the signature we compare against. The warning is
+   * blocking, so it is raised by one edit and this is what putting that edit back means.
+   */
+  private readonly syncedSettings = signal<SyncedSettings | null>(null);
+  private readonly currentSyncedSettings = computed<SyncedSettings>(() => ({
+    scoringType: this.scoringType(),
+    activeScoringColumns: this.activeScoringColumns(),
+    activeUtilityColumns: this.activeUtilityColumns(),
+    leagueSize: this.leagueSize(),
+    rosterSlots: this.rosterSlots(),
+    statWeights: this.statWeights(),
+  }));
   private readonly syncedSettingsKey = computed(() =>
-    this.projectionSync.settingsSignature({
-      scoringType: this.scoringType(),
-      activeScoringColumns: this.activeScoringColumns(),
-      activeUtilityColumns: this.activeUtilityColumns(),
-      leagueSize: this.leagueSize(),
-      rosterSlots: this.rosterSlots(),
-      statWeights: this.statWeights(),
-    }),
+    this.projectionSync.settingsSignature(this.currentSyncedSettings()),
   );
   readonly diverged = computed(() =>
     this.projectionSync.hasDiverged(
@@ -292,7 +298,7 @@ export class DraftProjectionComponent implements OnInit {
       syncedAt: new Date().toISOString(),
     });
     this.espnSync.set(null);
-    this.syncedSnapshot.set(this.syncedSettingsKey());
+    this.rememberSyncedSettings();
     this.closeSyncDialogUnlessThereIsMoreToSay(result.settings.unsupportedStats);
   }
 
@@ -307,7 +313,7 @@ export class DraftProjectionComponent implements OnInit {
     this.lastEspnLeagueId.set(result.leagueId);
     // These settings are ESPN's now, so a Yahoo stamp would mislabel them.
     this.yahooSync.set(null);
-    this.syncedSnapshot.set(this.syncedSettingsKey());
+    this.rememberSyncedSettings();
     this.closeSyncDialogUnlessThereIsMoreToSay(result.settings.unsupportedStats);
   }
 
@@ -368,6 +374,28 @@ export class DraftProjectionComponent implements OnInit {
         this.reSyncError.set(`Could not re-sync from ${platform}. Try again.`);
       },
     });
+  }
+
+  private rememberSyncedSettings(): void {
+    this.syncedSnapshot.set(this.syncedSettingsKey());
+    this.syncedSettings.set(this.currentSyncedSettings());
+  }
+
+  /**
+   * The way out of the warning that keeps the league: put back what it was synced with. The
+   * dialog blocks the page from the first edit onwards, so this undoes that edit and no more.
+   */
+  revertToSyncedSettings(): void {
+    const synced = this.syncedSettings();
+    if (!synced) {
+      return;
+    }
+    this.scoringType.set(synced.scoringType);
+    this.activeScoringColumns.set(new Set(synced.activeScoringColumns));
+    this.activeUtilityColumns.set(new Set(synced.activeUtilityColumns));
+    this.leagueSize.set(synced.leagueSize);
+    this.rosterSlots.set({ ...synced.rosterSlots });
+    this.statWeights.set({ ...synced.statWeights });
   }
 
   /**
@@ -463,7 +491,7 @@ export class DraftProjectionComponent implements OnInit {
     this.playerPoolSyncedAt.set(state.playerPoolSyncedAt);
     this.draft.set(state.draft);
     this.loadedProjections.set(state.playerProjections);
-    this.syncedSnapshot.set(this.syncedSettingsKey());
+    this.rememberSyncedSettings();
   }
 
   private autosave(): void {
