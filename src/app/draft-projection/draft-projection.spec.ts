@@ -357,6 +357,38 @@ describe('DraftProjectionComponent', () => {
     expect(fixture.nativeElement.querySelector('.synced-mark--espn')).toBeNull();
   });
 
+  it('warns when a setting drifts from the ESPN league, and lets the user own it', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.applyEspnSettings({
+      settings: {
+        scoringType: 'category',
+        activeScoringColumns: ['goals'],
+        activeUtilityColumns: ['gp'],
+        statWeights: { goals: 5 },
+        rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
+        leagueSize: 12,
+        unsupportedStats: [],
+        unsupportedRosterCodes: [],
+      },
+      leagueId: '123456',
+      leagueName: 'Puck Luck Dynasty',
+    });
+    expect(component.diverged()).toEqual(false);
+
+    component.scoringType.set('points');
+    expect(component.diverged()).toEqual(true);
+
+    // "Ok, I understand": the projection is its own from here, and the toolbar stops claiming
+    // a league.
+    component.confirmUnsync();
+    expect(component.diverged()).toEqual(false);
+    expect(component.espnSync()).toBeNull();
+    expect(component.syncedLeagueName()).toBeNull();
+  });
+
   it('closes the import dialog once a sync lands with nothing to report', async () => {
     const fixture = MockRender(DraftProjectionComponent);
     await fixture.whenStable();
