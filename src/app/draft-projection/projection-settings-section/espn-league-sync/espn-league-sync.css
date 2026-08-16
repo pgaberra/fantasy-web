@@ -146,3 +146,23 @@
   font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
+
+/* The dialog's answer to the toolbar button that opened it, so it wears the same green dot:
+   a connection that exists, named, with the date that says whether it is still worth trusting. */
+.espn-synced-status {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin: 0.15rem 0 0.1rem;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.espn-synced-dot {
+  flex: none;
+  align-self: center;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-success);
+}

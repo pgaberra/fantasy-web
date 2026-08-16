@@ -7,7 +7,17 @@
   </div>
 
   @if (lastSyncedAt(); as syncedAt) {
-    <p class="espn-sync-muted">Last synced {{ syncedAt | date: 'd MMM y, HH:mm' }}</p>
+    <p class="espn-synced-status">
+      <span class="espn-synced-dot" aria-hidden="true"></span>
+      <span>
+        @if (lastLeagueName(); as leagueName) {
+          Synced with <strong>{{ leagueName }}</strong>
+        } @else {
+          Synced
+        }
+        · {{ syncedAt | date: 'd MMM y, HH:mm' }}
+      </span>
+    </p>
   }
 
   <div class="espn-sync-form">

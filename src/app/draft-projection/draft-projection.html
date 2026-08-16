@@ -163,6 +163,7 @@
           [lastSync]="yahooSync()"
           [lastEspnLeagueId]="espnSync()?.leagueId ?? null"
           [lastEspnSyncedAt]="espnSync()?.syncedAt ?? null"
+          [lastEspnLeagueName]="espnSync()?.leagueName ?? null"
           (yahooSynced)="applyYahooSettings($event)"
           (espnSynced)="applyEspnSettings($event)"
         />
