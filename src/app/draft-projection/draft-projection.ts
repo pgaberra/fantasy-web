@@ -38,6 +38,7 @@ import { ShareDialogComponent } from './share-dialog/share-dialog';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { OffseasonDataNoticeComponent } from '../shared/offseason-data-notice/offseason-data-notice';
+import { PlayerPoolNoticeComponent } from '../shared/player-pool-notice/player-pool-notice';
 import {
   DecimalStatKey,
   DEFAULT_DECIMAL_SETTINGS,
@@ -56,7 +57,8 @@ import { RosterSlots } from '../api/models/roster-slots';
 import { StatInfoService } from '../services/stat-info.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { NotificationService } from '../services/notification.service';
-import { ProjectionState } from '../services/projection-serializer';
+import { PlayerBasis, ProjectionState } from '../services/projection-serializer';
+import { PoolReconciliation } from '../api/models/pool-reconciliation';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import { ProjectionSyncService } from '../services/projection-sync.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
@@ -78,6 +80,7 @@ const AUTOSAVE_DEBOUNCE_MS = 1200;
     SyncWarningDialogComponent,
     FullSeasonDialogComponent,
     OffseasonDataNoticeComponent,
+    PlayerPoolNoticeComponent,
     ShareDialogComponent,
     RouterLink,
     TooltipDirective,
@@ -141,6 +144,12 @@ export class DraftProjectionComponent implements OnInit {
   minGoalieGames = signal<number>(DEFAULT_MIN_GOALIE_GAMES);
   yahooSync = signal<YahooSync | null>(null);
   espnSync = signal<EspnSync | null>(null);
+  // Owned by the server: what the rows started as, and the sync they were last squared with.
+  // Held here only so a save carries them back rather than dropping them.
+  playerBasis = signal<PlayerBasis | null>(null);
+  playerPoolSyncedAt = signal<string | null>(null);
+  /** What the server had to add and drop to match the current pool, on the read that did it. */
+  readonly poolReconciliation = signal<PoolReconciliation | null>(null);
   draft = signal<DraftState | null>(null);
 
   private readonly syncedSnapshot = signal<string | null>(null);
@@ -391,6 +400,7 @@ export class DraftProjectionComponent implements OnInit {
           }
           this.projectionId.set(projection.id);
           this.projectionName.set(projection.name);
+          this.poolReconciliation.set(projection.poolReconciliation ?? null);
           const state = this.serializer.fromProjectionData(projection.data);
           this.applyState(state);
           const loaded = this.serializer.toProjectionData(state);
@@ -420,6 +430,8 @@ export class DraftProjectionComponent implements OnInit {
       minGoalieGames: this.minGoalieGames(),
       yahooSync: this.yahooSync(),
       espnSync: this.espnSync(),
+      playerBasis: this.playerBasis(),
+      playerPoolSyncedAt: this.playerPoolSyncedAt(),
       draft: this.draft(),
       playerProjections: this.table()?.playerProjections?.() ?? this.loadedProjections() ?? [],
     };
@@ -438,6 +450,8 @@ export class DraftProjectionComponent implements OnInit {
     this.minGoalieGames.set(state.minGoalieGames);
     this.yahooSync.set(state.yahooSync);
     this.espnSync.set(state.espnSync);
+    this.playerBasis.set(state.playerBasis);
+    this.playerPoolSyncedAt.set(state.playerPoolSyncedAt);
     this.draft.set(state.draft);
     this.loadedProjections.set(state.playerProjections);
     this.syncedSnapshot.set(this.syncedSettingsKey());

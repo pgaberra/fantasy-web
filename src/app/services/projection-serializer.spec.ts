@@ -34,6 +34,8 @@ const sampleState: ProjectionState = {
     syncedAt: '2026-06-20T12:00:00.000Z',
   },
   espnSync: null,
+  playerBasis: 'last_season',
+  playerPoolSyncedAt: '2026-08-16T04:12:00.000Z',
   draft: {
     teams: [
       { id: 'team-me', name: 'My Team', mine: true },

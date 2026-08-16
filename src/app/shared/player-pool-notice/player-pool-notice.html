@@ -1,0 +1,59 @@
+@if (show()) {
+  <aside class="pool-notice" role="status">
+    <span class="pool-notice__icon">
+      <svg
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M21 2v6h-6" />
+        <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+        <path d="M3 22v-6h6" />
+        <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+      </svg>
+    </span>
+    <div class="pool-notice__body">
+      <p class="pool-notice__title">The player list has been updated</p>
+      <ul class="pool-notice__list">
+        @if (added() > 0) {
+          <li>
+            {{ added() }} {{ added() === 1 ? 'player' : 'players' }} added — new to the league since
+            you started this projection.
+          </li>
+        }
+        @if (removed() > 0) {
+          <li>
+            {{ removed() }} {{ removed() === 1 ? 'player' : 'players' }} removed — no longer in the
+            league.
+          </li>
+        }
+      </ul>
+      <p class="pool-notice__footer">
+        Your own numbers are untouched. Added players start from last season's stats, or at zero if
+        you built this projection from scratch — worth a look before you draft.
+      </p>
+    </div>
+    <button type="button" class="pool-notice__dismiss" aria-label="Dismiss" (click)="dismiss()">
+      <svg
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M18 6 6 18" />
+        <path d="m6 6 12 12" />
+      </svg>
+    </button>
+  </aside>
+}
