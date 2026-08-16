@@ -170,9 +170,10 @@
       </app-league-sync-dialog>
     }
 
-    @if (diverged() && yahooSync(); as sync) {
+    @if (diverged() && syncedLeagueName(); as leagueName) {
       <app-sync-warning-dialog
-        [leagueName]="sync.leagueName"
+        [leagueName]="leagueName"
+        [platform]="syncedProvider() === 'espn' ? 'ESPN' : 'Yahoo'"
         [reSyncing]="reSyncing()"
         [error]="reSyncError()"
         (reSync)="reSync()"

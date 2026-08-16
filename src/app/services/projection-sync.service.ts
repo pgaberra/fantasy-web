@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import { ProjectionState } from './projection-serializer';
 import { YahooSync } from '../api/models/yahoo-sync';
+import { EspnSync } from '../api/models/espn-sync';
 
 /**
- * The settings copied from a Yahoo league on sync. Changing any of them is what takes a
- * projection out of sync with its league.
+ * The settings copied from a league on sync, whichever platform it was. Changing any of them is
+ * what takes a projection out of sync with that league.
  */
 export type SyncedSettings = Pick<
   ProjectionState,
@@ -35,11 +36,11 @@ export class ProjectionSyncService {
    * when it was last synced (or loaded). Not synced or no baseline means not diverged.
    */
   hasDiverged(
-    yahooSync: YahooSync | null,
+    sync: YahooSync | EspnSync | null,
     currentSignature: string,
     baseline: string | null,
   ): boolean {
-    return yahooSync != null && baseline != null && currentSignature !== baseline;
+    return sync != null && baseline != null && currentSignature !== baseline;
   }
 
   private byKey(entries: [string, unknown][]): [string, unknown][] {

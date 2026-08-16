@@ -12,7 +12,7 @@ import {
 import { HttpErrorResponse } from '@angular/common/http';
 import { rxResource, takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { debounceTime } from 'rxjs';
+import { debounceTime, Observable } from 'rxjs';
 import { PlayerService } from '../services/player.service';
 import { Player } from '../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
@@ -63,6 +63,7 @@ import { ProjectionRankingService } from '../services/projection-ranking.service
 import { ProjectionShareService } from '../services/projection-share.service';
 import { SharedPlayer } from '../api/models/shared-player';
 import { YahooService } from '../services/yahoo.service';
+import { EspnService } from '../services/espn.service';
 
 const AUTOSAVE_DEBOUNCE_MS = 1200;
 
@@ -92,6 +93,7 @@ export class DraftProjectionComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly yahoo = inject(YahooService);
+  private readonly espn = inject(EspnService);
   private readonly projectionSync = inject(ProjectionSyncService);
   private readonly ranking = inject(ProjectionRankingService);
   private readonly projectionShare = inject(ProjectionShareService);
@@ -154,7 +156,7 @@ export class DraftProjectionComponent implements OnInit {
   );
   readonly diverged = computed(() =>
     this.projectionSync.hasDiverged(
-      this.yahooSync(),
+      this.yahooSync() ?? this.espnSync(),
       this.syncedSettingsKey(),
       this.syncedSnapshot(),
     ),
@@ -291,10 +293,9 @@ export class DraftProjectionComponent implements OnInit {
       leagueId: result.leagueId,
       syncedAt: new Date().toISOString(),
     });
-    // These settings are ESPN's now, so a Yahoo stamp would mislabel them — and `diverged`,
-    // which watches for edits since a Yahoo sync, has nothing to say about them either.
+    // These settings are ESPN's now, so a Yahoo stamp would mislabel them.
     this.yahooSync.set(null);
-    this.syncedSnapshot.set(null);
+    this.syncedSnapshot.set(this.syncedSettingsKey());
     this.closeSyncDialogUnlessThereIsMoreToSay(result.settings.unsupportedStats);
   }
 
@@ -310,30 +311,51 @@ export class DraftProjectionComponent implements OnInit {
     }
   }
 
+  /** Pulls the league's current settings again — the answer for an edit that the league itself made. */
   reSync(): void {
-    const sync = this.yahooSync();
-    if (!sync || this.reSyncing()) {
+    if (this.reSyncing()) {
       return;
     }
+    const yahoo = this.yahooSync();
+    const espn = this.espnSync();
+    if (yahoo) {
+      this.runReSync(this.yahoo.leagueProjectionSettings(yahoo.leagueKey), 'Yahoo', (settings) =>
+        this.applyYahooSettings({
+          settings,
+          leagueName: yahoo.leagueName,
+          leagueKey: yahoo.leagueKey,
+        }),
+      );
+    } else if (espn) {
+      // The league id is all ESPN needs from us; any cookies a private league wants are the
+      // pair already stored server-side.
+      this.runReSync(this.espn.leagueProjectionSettings(espn.leagueId), 'ESPN', (settings) =>
+        this.applyEspnSettings({
+          settings,
+          leagueId: espn.leagueId,
+          leagueName: settings.leagueName ?? espn.leagueName,
+        }),
+      );
+    }
+  }
+
+  private runReSync(
+    request: Observable<LeagueProjectionSettingsResponse>,
+    platform: string,
+    apply: (settings: LeagueProjectionSettingsResponse) => void,
+  ): void {
     this.reSyncing.set(true);
     this.reSyncError.set(null);
-    this.yahoo
-      .leagueProjectionSettings(sync.leagueKey)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (settings) => {
-          this.applyYahooSettings({
-            settings,
-            leagueName: sync.leagueName,
-            leagueKey: sync.leagueKey,
-          });
-          this.reSyncing.set(false);
-        },
-        error: () => {
-          this.reSyncing.set(false);
-          this.reSyncError.set('Could not re-sync from Yahoo. Try again.');
-        },
-      });
+    request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (settings) => {
+        apply(settings);
+        this.reSyncing.set(false);
+      },
+      error: () => {
+        this.reSyncing.set(false);
+        this.reSyncError.set(`Could not re-sync from ${platform}. Try again.`);
+      },
+    });
   }
 
   confirmUnsync(): void {

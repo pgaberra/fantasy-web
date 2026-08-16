@@ -10,7 +10,7 @@
     <p id="sync-warning-body" class="dialog-body">
       Changing this setting will take this projection out of sync with
       <strong>{{ leagueName() }}</strong
-      >. If the league's settings changed in Yahoo, re-sync to pull the latest instead.
+      >. If the league's settings changed in {{ platform() }}, re-sync to pull the latest instead.
     </p>
     @if (error()) {
       <p class="dialog-error" role="alert">{{ error() }}</p>
