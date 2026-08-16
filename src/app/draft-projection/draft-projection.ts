@@ -245,10 +245,15 @@ export class DraftProjectionComponent implements OnInit {
     return draft.finishedAt ? 'View draft summary' : 'Resume draft';
   });
 
-  private readonly serializedState = computed(() =>
-    this.autosaveEnabled() && !this.playersUnavailable()
-      ? JSON.stringify(this.serializer.toProjectionData(this.buildState()))
-      : '',
+  /**
+   * Every piece of state a save would carry, rebuilt whenever any of it changes — which is what
+   * arms the debounce below. It deliberately stops at the state object: serializing it is ~0.5 MB
+   * of JSON and this is read on every change detection pass, so doing it here charged the full
+   * cost to every keystroke and every column tick, only to have the debounce throw the result
+   * away. `autosave` serializes once, after the typing stops, and compares against the last save.
+   */
+  private readonly saveableState = computed(() =>
+    this.autosaveEnabled() && !this.playersUnavailable() ? this.buildState() : null,
   );
 
   constructor() {
@@ -263,7 +268,7 @@ export class DraftProjectionComponent implements OnInit {
         this.renameInput()?.nativeElement.focus();
       }
     });
-    toObservable(this.serializedState)
+    toObservable(this.saveableState)
       .pipe(debounceTime(AUTOSAVE_DEBOUNCE_MS), takeUntilDestroyed())
       .subscribe(() => this.autosave());
   }

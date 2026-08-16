@@ -253,8 +253,8 @@
 
 <ng-template #columnsMenu>
   <app-columns-menu
-    [activeScoringColumns]="activeScoringColumns()"
-    [activeUtilityColumns]="activeUtilityColumns()"
+    [activeScoringColumns]="shownScoringColumns()"
+    [activeUtilityColumns]="shownUtilityColumns()"
     (scoringToggled)="toggleScoringColumn($event)"
     (utilityToggled)="toggleUtilityColumn($event)"
   />

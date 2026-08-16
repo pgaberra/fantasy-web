@@ -60,10 +60,18 @@ export class PlayerRowComponent {
     return p.type === 'skater' ? Array.from(p.positions).join(', ') : 'G';
   });
 
+  /** Merged once per row rather than once per cell: the template asks for a dozen-odd stats and
+   * each ask used to rebuild the player's whole stat line to read one number out of it. */
+  private readonly stats = computed(
+    () =>
+      ({ ...this.projection().stats.utility, ...this.projection().stats.scoring }) as Record<
+        StatKey,
+        number
+      >,
+  );
+
   getStatValue(key: StatKey): number {
-    const p = this.projection();
-    const stats = { ...p.stats.utility, ...p.stats.scoring } as Record<StatKey, number>;
-    return stats[key];
+    return this.stats()[key];
   }
 
   isStatApplicable(key: StatKey): boolean {
