@@ -9,26 +9,21 @@
       (toiKeydown)="onKeydown($event)"
     />
   } @else {
-    <span class="stat-field">
-      <!-- The value is written by the component, not bound here: a field being typed in keeps its
-           own text, so the padding can't fight the caret. -->
-      <input
-        #statField
-        type="number"
-        class="stat-input"
-        [class.has-warning]="!!warning()"
-        [appTooltip]="warning()"
-        (input)="onInput($event)"
-        (focus)="onFocus()"
-        (blur)="onBlur()"
-        [attr.step]="stepSize()"
-        [attr.min]="canStatBeNegative() ? null : 0"
-        [attr.max]="isPercentage() ? 100 : null"
-      />
-      @if (isFocused()) {
-        <app-stat-stepper (stepped)="step($event)" />
-      }
-    </span>
+    <!-- The value is written by the component, not bound here: a field being typed in keeps its
+         own text, so the padding can't fight the caret. -->
+    <input
+      #statField
+      type="number"
+      class="stat-input"
+      [class.has-warning]="!!warning()"
+      [appTooltip]="warning()"
+      (input)="onInput($event)"
+      (focus)="onFocus()"
+      (blur)="onBlur()"
+      [attr.step]="stepSize()"
+      [attr.min]="canStatBeNegative() ? null : 0"
+      [attr.max]="isPercentage() ? 100 : null"
+    />
   }
 } @else {
   <span class="stat-placeholder">-</span>

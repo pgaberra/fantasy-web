@@ -49,33 +49,6 @@ describe('ToiInputComponent', () => {
     expect(onKeydownSpy).toHaveBeenCalled();
   });
 
-  it('shows the touch stepper only while the field is being edited', () => {
-    const fixture = MockRender(ToiInputComponent, {
-      toiInSeconds: 120,
-    });
-    expect(ngMocks.findAll('app-stat-stepper')).toHaveLength(0);
-
-    ngMocks.trigger(ngMocks.find('input'), 'focus');
-    fixture.detectChanges();
-
-    expect(ngMocks.findAll('app-stat-stepper')).toHaveLength(1);
-  });
-
-  it('turns a stepper press into the arrow key the table already moves the clock by', () => {
-    const fixture = MockRender(ToiInputComponent, {
-      toiInSeconds: 120,
-    });
-    const pressed: string[] = [];
-    fixture.point.componentInstance.toiKeydown.subscribe((event) => pressed.push(event.key));
-
-    ngMocks.trigger(ngMocks.find('input'), 'focus');
-    fixture.detectChanges();
-    ngMocks.output(ngMocks.find('app-stat-stepper'), 'stepped').emit(1);
-    ngMocks.output(ngMocks.find('app-stat-stepper'), 'stepped').emit(-1);
-
-    expect(pressed).toEqual(['ArrowUp', 'ArrowDown']);
-  });
-
   it('should reset input value on blur', () => {
     const fixture = MockRender(ToiInputComponent, {
       toiInSeconds: 120,

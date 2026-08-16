@@ -262,35 +262,6 @@ describe('PlayerRowComponent', () => {
     expect(goalsInput.value).toEqual('64.1');
   });
 
-  it('offers a touch stepper for the cell being edited, and none of the others', () => {
-    setInputs();
-    expect(fixture.nativeElement.querySelectorAll('app-stat-stepper')).toHaveLength(0);
-
-    const goalsInput = fixture.nativeElement.querySelectorAll('td')[4].querySelector('input');
-    goalsInput.dispatchEvent(new Event('focus'));
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.querySelectorAll('app-stat-stepper')).toHaveLength(1);
-  });
-
-  it('steps the value from the touch stepper the way an arrow key does', () => {
-    setInputs({ decimalSettings: { ...DEFAULT_DECIMAL_SETTINGS, goals: 1 } });
-    const spy = vi.spyOn(component.statInput, 'emit');
-    const goalsInput = fixture.nativeElement.querySelectorAll('td')[4].querySelector('input');
-    goalsInput.dispatchEvent(new Event('focus'));
-    fixture.detectChanges();
-
-    const [stepDown, stepUp] = fixture.nativeElement.querySelectorAll('app-stat-stepper button');
-    stepUp.dispatchEvent(new Event('pointerdown', { bubbles: true, cancelable: true }));
-    expect(goalsInput.value).toEqual('64.1');
-    expect(spy).toHaveBeenCalledTimes(1);
-
-    stepDown.dispatchEvent(new Event('pointerdown', { bubbles: true, cancelable: true }));
-    stepDown.dispatchEvent(new Event('pointerdown', { bubbles: true, cancelable: true }));
-    expect(goalsInput.value).toEqual('63.9');
-    expect(spy).toHaveBeenCalledTimes(3);
-  });
-
   it('steps by the smallest amount the column can show', () => {
     setInputs({ decimalSettings: { ...DEFAULT_DECIMAL_SETTINGS, goals: 1, assists: 0 } });
     const tds = fixture.nativeElement.querySelectorAll('td');
