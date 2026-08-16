@@ -1,5 +1,6 @@
-import { Component, output, signal } from '@angular/core';
+import { Component, inject, output, signal } from '@angular/core';
 import { HelpTipComponent } from '../../shared/help-tip/help-tip';
+import { OpenPopovers } from '../../shared/popover/open-popovers';
 
 export interface FullSeasonConfig {
   scaleStats: boolean;
@@ -19,6 +20,11 @@ export interface FullSeasonConfig {
   styleUrl: './full-season-dialog.css',
 })
 export class FullSeasonDialogComponent {
+  /** Opened from the GP column's menu, which would otherwise stay open behind this. */
+  constructor() {
+    inject(OpenPopovers).closeAll();
+  }
+
   readonly confirm = output<FullSeasonConfig>();
   readonly cancelled = output<void>();
 
