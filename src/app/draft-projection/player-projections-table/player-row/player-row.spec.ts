@@ -215,14 +215,59 @@ describe('PlayerRowComponent', () => {
     expect(goalsInput.value).toEqual('64.000');
   });
 
-  it('drops the padding while the cell is being typed in', () => {
+  it('keeps the padding when the cell is entered', () => {
     setInputs({ decimalSettings: { ...DEFAULT_DECIMAL_SETTINGS, goals: 3 } });
 
     const goalsInput = fixture.nativeElement.querySelectorAll('td')[4].querySelector('input');
     goalsInput.dispatchEvent(new Event('focus'));
     fixture.detectChanges();
 
+    expect(goalsInput.value).toEqual('64.000');
+  });
+
+  it('leaves a half-typed value alone, then pads it again on blur', () => {
+    setInputs({ decimalSettings: { ...DEFAULT_DECIMAL_SETTINGS, goals: 3 } });
+
+    const goalsInput = fixture.nativeElement.querySelectorAll('td')[4].querySelector('input');
+    goalsInput.dispatchEvent(new Event('focus'));
+    goalsInput.value = '64';
+    fixture.detectChanges();
+
     expect(goalsInput.value).toEqual('64');
+
+    goalsInput.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+
+    expect(goalsInput.value).toEqual('64.000');
+  });
+
+  it('corrects a typed value the table stored as something else', () => {
+    setInputs({ decimalSettings: { ...DEFAULT_DECIMAL_SETTINGS, goals: 1 } });
+
+    const goalsInput = fixture.nativeElement.querySelectorAll('td')[4].querySelector('input');
+    goalsInput.dispatchEvent(new Event('focus'));
+    goalsInput.value = '64.06';
+
+    setInputs({
+      decimalSettings: { ...DEFAULT_DECIMAL_SETTINGS, goals: 1 },
+      projection: {
+        ...mockSkaterProjection,
+        stats: {
+          ...mockSkaterProjection.stats,
+          scoring: { ...mockSkaterProjection.stats.scoring, goals: 64.1 },
+        },
+      },
+    });
+
+    expect(goalsInput.value).toEqual('64.1');
+  });
+
+  it('steps by the smallest amount the column can show', () => {
+    setInputs({ decimalSettings: { ...DEFAULT_DECIMAL_SETTINGS, goals: 1, assists: 0 } });
+    const tds = fixture.nativeElement.querySelectorAll('td');
+
+    expect(tds[4].querySelector('input').getAttribute('step')).toEqual('0.1');
+    expect(tds[5].querySelector('input').getAttribute('step')).toEqual('1');
   });
 
   it('leaves defencemen points to defencemen — a forward has none of the category', () => {
