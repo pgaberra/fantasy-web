@@ -13,11 +13,12 @@ import { StatKey } from '../../../../models/stat-key.model';
 import { StatInfoService } from '../../../../services/stat-info.service';
 import { DecimalStatKey } from '../../../projection-settings-section/model';
 import { ToiInputComponent } from './toi-input/toi-input';
+import { StatStepperComponent } from './stat-stepper/stat-stepper';
 import { TooltipDirective } from '../../../../shared/tooltip/tooltip.directive';
 
 @Component({
   selector: 'app-stat-input',
-  imports: [ToiInputComponent, TooltipDirective],
+  imports: [ToiInputComponent, StatStepperComponent, TooltipDirective],
   templateUrl: './stat-input.html',
   styleUrl: './stat-input.css',
 })
@@ -68,7 +69,7 @@ export class StatInputComponent {
   });
 
   private readonly inputElement = viewChild<ElementRef<HTMLInputElement>>('statField');
-  private readonly isFocused = signal(false);
+  protected readonly isFocused = signal(false);
 
   constructor() {
     effect(() => {
@@ -93,6 +94,22 @@ export class StatInputComponent {
 
   onBlur() {
     this.isFocused.set(false);
+  }
+
+  /**
+   * The touch stepper's press, run through the field itself: `stepUp`/`stepDown` move by the
+   * column's own step and respect its min and max, and the input event that follows is the same
+   * one typing raises — so a tap is committed, ranked and undone exactly like an arrow key.
+   */
+  step(direction: 1 | -1) {
+    const element = this.inputElement()?.nativeElement;
+    if (!element) return;
+    if (direction === 1) {
+      element.stepUp();
+    } else {
+      element.stepDown();
+    }
+    element.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
   onKeydown(event: KeyboardEvent) {

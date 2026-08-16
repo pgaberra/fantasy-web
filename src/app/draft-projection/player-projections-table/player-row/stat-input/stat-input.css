@@ -2,6 +2,13 @@
    also ends. The inset is carried by the box's own padding rather than by pushing the box left:
    with border-box the padding is free, whereas widening the cell would cost that gutter on every
    stat column — and the table is already wider than a phone screen. */
+/* The anchor the touch stepper hangs from — it has to sit outside the field, which is 68px of
+   right-aligned value with no room for a touch target inside it. */
+.stat-field {
+  position: relative;
+  display: inline-block;
+}
+
 .stat-input,
 .stat-placeholder {
   /* The extra width over the old 62px, and the trimmed left padding, buy back exactly what the

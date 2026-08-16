@@ -1,11 +1,17 @@
-<input
-  #inputEl
-  type="text"
-  class="stat-input"
-  [class.has-warning]="!!warning()"
-  [appTooltip]="warning()"
-  [value]="formattedValue()"
-  (input)="onInput($event)"
-  (keydown)="onKeydown($event)"
-  (blur)="onBlur()"
-/>
+<span class="stat-field">
+  <input
+    #inputEl
+    type="text"
+    class="stat-input"
+    [class.has-warning]="!!warning()"
+    [appTooltip]="warning()"
+    [value]="formattedValue()"
+    (input)="onInput($event)"
+    (keydown)="onKeydown($event)"
+    (focus)="onFocus()"
+    (blur)="onBlur()"
+  />
+  @if (isFocused()) {
+    <app-stat-stepper (stepped)="onStepped($event)" />
+  }
+</span>

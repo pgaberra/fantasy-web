@@ -1,0 +1,20 @@
+<!-- Hidden from assistive technology on purpose: a number field is already a spinbutton, so a
+     screen reader can step the value without these, and they are not in the tab order. -->
+<button
+  type="button"
+  class="stat-step"
+  tabindex="-1"
+  aria-hidden="true"
+  (pointerdown)="onPress($event, -1)"
+>
+  −
+</button>
+<button
+  type="button"
+  class="stat-step"
+  tabindex="-1"
+  aria-hidden="true"
+  (pointerdown)="onPress($event, 1)"
+>
+  +
+</button>
