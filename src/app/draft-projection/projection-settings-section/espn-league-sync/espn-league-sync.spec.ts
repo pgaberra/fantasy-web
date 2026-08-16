@@ -239,7 +239,7 @@ describe('EspnLeagueSyncComponent', () => {
     expect(component.error()).not.toContain('This league is private');
   });
 
-  it('stops offering to reuse stored cookies once ESPN has refused them', async () => {
+  it('keeps the cookie fields on screen when ESPN refuses the stored pair', async () => {
     await MockBuilder(EspnLeagueSyncComponent).mock(EspnService, {
       credentialStatus: () => of<CredentialStatusResponse>({ hasCredentials: true }),
       credentialValues: () => of({ espnS2: 'stored-s2', swid: '{STORED}' }),
@@ -254,12 +254,9 @@ describe('EspnLeagueSyncComponent', () => {
     component.sync();
     await fixture.whenStable();
 
-    // The fix is still in the cookie fields — the stored pair has to be replaceable.
+    // The fix is in the cookie fields — the stored pair has to be replaceable.
     expect(component.isPrivate()).toEqual(true);
+    expect(fixture.nativeElement.querySelector('.espn-cookies')).toBeTruthy();
     expect(component.error()).toContain('cookies');
-    // ...and telling the user to leave them blank to reuse what was just refused would be advice
-    // straight back into the same failure.
-    expect(component.storedCredentialsRefused()).toEqual(true);
-    expect(fixture.nativeElement.textContent).not.toContain('leave these blank');
   });
 });

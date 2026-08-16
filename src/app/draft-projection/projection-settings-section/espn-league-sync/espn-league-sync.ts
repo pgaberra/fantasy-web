@@ -51,8 +51,6 @@ export class EspnLeagueSyncComponent implements OnInit {
   readonly hasStoredCredentials = signal<boolean>(false);
   /** What the fields were filled from, so an untouched pair isn't written back on every sync. */
   private readonly storedCookies = signal<CredentialValuesResponse | null>(null);
-  /** Set once ESPN has rejected the stored cookies, so the form stops offering to reuse them. */
-  readonly storedCredentialsRefused = signal<boolean>(false);
   readonly showHelp = signal<boolean>(false);
   readonly syncing = signal<boolean>(false);
   readonly error = signal<string | null>(null);
@@ -129,7 +127,6 @@ export class EspnLeagueSyncComponent implements OnInit {
 
     this.error.set(null);
     this.unsupportedStats.set([]);
-    this.storedCredentialsRefused.set(false);
     this.syncing.set(true);
 
     const start = savingCookies ? this.espn.saveCredentials({ espnS2, swid }) : of(undefined);
@@ -152,8 +149,6 @@ export class EspnLeagueSyncComponent implements OnInit {
         // at inputs the user would first have to find a checkbox to reveal.
         if (this.isPrivateLeagueRefusal(err)) {
           this.isPrivate.set(true);
-          // Stored cookies that were just refused are not something to offer reusing.
-          this.storedCredentialsRefused.set(this.hasStoredCredentials() && !savingCookies);
         }
         this.error.set(this.messageForError(err, hadCredentials));
       },

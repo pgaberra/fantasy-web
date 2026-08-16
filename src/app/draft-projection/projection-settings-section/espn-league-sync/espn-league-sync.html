@@ -32,11 +32,6 @@
 
   @if (isPrivate()) {
     <div class="espn-cookies">
-      @if (hasStoredCredentials() && !storedCredentialsRefused()) {
-        <p class="espn-sync-muted" role="status">
-          Your saved ESPN cookies — replace them if they have stopped working.
-        </p>
-      }
       <label class="espn-field">
         <span class="espn-field-label">espn_s2</span>
         <input
