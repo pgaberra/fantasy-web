@@ -8,6 +8,7 @@ import { getRookies } from '../api/fn/players/get-rookies';
 import { SkaterResponse } from '../api/models/skater-response';
 import { GoalieResponse } from '../api/models/goalie-response';
 import { Goalie, Player, Skater } from '../models/player.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -46,13 +47,22 @@ export class PlayerService {
   }
 }
 
+/**
+ * The BFF reports a headshot as a path relative to the API base rather than an absolute URL,
+ * so it stays correct whichever environment served it. Everything downstream — the table, the
+ * draft board, a shared projection's snapshot — just reads `headshot`.
+ */
+function headshotUrl(path: string | undefined): string | undefined {
+  return path ? `${environment.apiUrl}${path}` : undefined;
+}
+
 function skaterResponseToSkater(skater: SkaterResponse): Skater {
   return {
     type: 'skater',
     id: skater.id,
     name: skater.name,
     teamAbbrev: skater.teamAbbrev,
-    headshot: skater.headshot,
+    headshot: headshotUrl(skater.headshot),
     positions: new Set(skater.positions),
     stats: skater.stats,
   };
@@ -64,7 +74,7 @@ function goalieResponseToGoalie(goalie: GoalieResponse): Goalie {
     id: goalie.id,
     name: goalie.name,
     teamAbbrev: goalie.teamAbbrev,
-    headshot: goalie.headshot,
+    headshot: headshotUrl(goalie.headshot),
     stats: goalie.stats,
   };
 }
