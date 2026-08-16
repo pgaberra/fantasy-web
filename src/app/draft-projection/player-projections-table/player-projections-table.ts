@@ -53,7 +53,6 @@ import {
 import { StatInfoService } from '../../services/stat-info.service';
 import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
 import { LeagueSettingsMenuComponent } from './league-settings-menu/league-settings-menu';
-import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import { ColumnsMenuComponent } from './columns-menu/columns-menu';
 
 const PLAYERS_PER_PAGE = 250;
@@ -83,7 +82,6 @@ function toggledSet<T>(members: ReadonlySet<T>, member: T): Set<T> {
     PopoverTriggerDirective,
     LeagueSettingsMenuComponent,
     ColumnsMenuComponent,
-    TooltipDirective,
   ],
   templateUrl: './player-projections-table.html',
   styleUrl: './player-projections-table.css',
