@@ -1,4 +1,14 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { StatKey } from '../../../../models/stat-key.model';
 import { StatInfoService } from '../../../../services/stat-info.service';
 import { DecimalStatKey } from '../../../projection-settings-section/model';
@@ -37,21 +47,45 @@ export class StatInputComponent {
   canStatBeNegative = computed(() => this.statInfoService.canStatBeNegative(this.key()));
   isPercentage = computed(() => this.statInfoService.isPercentageStat(this.key()));
 
+  private readonly decimals = computed(
+    () => this.decimalSettings()[this.key() as DecimalStatKey] ?? 0,
+  );
+
   /**
    * A column set to N decimals shows N decimals, trailing zeros included — 272 at 3 decimals
-   * reads `272.000`, the way the setting says it should.
-   *
-   * While the cell has focus the trailing zeros are dropped again: the value binding rewrites
-   * the input whenever this string changes, so padding a half-typed number would push the caret
-   * past what the user just typed and turn the next keystroke into garbage.
+   * reads `272.000`, the way the setting says it should. The padding stays on while the cell has
+   * focus, so clicking into a value doesn't make its decimals disappear.
    */
-  formattedValue = computed(() => {
-    const decimals = this.decimalSettings()[this.key() as DecimalStatKey] ?? 0;
-    const padded = this.value().toFixed(decimals);
-    return this.isFocused() ? parseFloat(padded).toString() : padded;
+  formattedValue = computed(() => this.value().toFixed(this.decimals()));
+
+  /**
+   * The spinner and the arrow keys move by the smallest amount the column can show — a column set
+   * to one decimal steps 369.0 to 369.1, not to 370.
+   */
+  stepSize = computed(() => {
+    const decimals = this.decimals();
+    return decimals > 0 ? `0.${'0'.repeat(decimals - 1)}1` : '1';
   });
 
+  private readonly inputElement = viewChild<ElementRef<HTMLInputElement>>('statField');
   private readonly isFocused = signal(false);
+
+  constructor() {
+    effect(() => {
+      // Read before anything else: a TOI cell, a read-only cell and a stat the player can't have
+      // render no input at all, and none of them has a value worth formatting.
+      const element = this.inputElement()?.nativeElement;
+      if (!element) return;
+      const formatted = this.formattedValue();
+      const isFocused = this.isFocused();
+      // A field that is being typed in owns its own text: pushing `369.0` back over a half-typed
+      // `369` would move the caret past what was just entered. So while it holds the number that
+      // is stored — padding and all the ways of writing it aside — it is left alone, and only an
+      // entry the table rounded or clamped to something else is corrected. Blur re-pads it.
+      if (isFocused && Number(element.value) === this.value()) return;
+      element.value = formatted;
+    });
+  }
 
   onFocus() {
     this.isFocused.set(true);
