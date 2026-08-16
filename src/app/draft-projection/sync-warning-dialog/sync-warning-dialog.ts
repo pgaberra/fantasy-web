@@ -1,5 +1,6 @@
 import { Component, inject, input, output } from '@angular/core';
 import { OpenPopovers } from '../../shared/popover/open-popovers';
+import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 
 /**
  * Blocking warning shown when the user changes a setting that came from a synced league.
@@ -7,6 +8,7 @@ import { OpenPopovers } from '../../shared/popover/open-popovers';
  */
 @Component({
   selector: 'app-sync-warning-dialog',
+  imports: [TooltipDirective],
   templateUrl: './sync-warning-dialog.html',
   styleUrl: './sync-warning-dialog.css',
 })
@@ -28,4 +30,6 @@ export class SyncWarningDialogComponent {
 
   readonly reSync = output<void>();
   readonly confirm = output<void>();
+  /** The cross and Escape: put the edit back and keep the league. */
+  readonly cancelled = output<void>();
 }

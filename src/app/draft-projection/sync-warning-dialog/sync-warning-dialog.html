@@ -5,8 +5,34 @@
     aria-modal="true"
     aria-labelledby="sync-warning-title"
     aria-describedby="sync-warning-body"
+    (keydown.escape)="cancelled.emit()"
   >
-    <h2 id="sync-warning-title" class="dialog-title">No longer in sync</h2>
+    <div class="dialog-header">
+      <h2 id="sync-warning-title" class="dialog-title">No longer in sync</h2>
+      <!-- Not a plain dismissal: leaving the warning unanswered would keep a projection that
+           claims a league it no longer matches, so the cross undoes the edit that raised it. -->
+      <button
+        type="button"
+        class="dialog-close"
+        aria-label="Undo my change and stay in sync"
+        appTooltip="Undo my change and stay in sync"
+        [disabled]="reSyncing()"
+        (click)="cancelled.emit()"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
     <p id="sync-warning-body" class="dialog-body">
       Changing this setting will take this projection out of sync with
       <strong>{{ leagueName() }}</strong
@@ -30,7 +56,7 @@
         [disabled]="reSyncing()"
         (click)="confirm.emit()"
       >
-        Ok
+        Keep my change
       </button>
     </div>
   </div>
