@@ -177,10 +177,25 @@ th.summary-pts-col.sortable.sorted {
 }
 
 /* Set on the first scoring column of every header row, so the rule runs the full height of the
-   thead. Inset rather than a border: `border-collapse` on the table would drop it against the
-   neighbouring cell's own edges, and the gold summary column already divides itself this way. */
+   thead. Drawn rather than bordered: `border-collapse` on the table would drop a border against
+   the neighbouring cell's own edges. */
 .group-start {
-  box-shadow: inset 1px 0 0 0 rgba(255, 255, 255, 0.34);
+  position: relative;
+}
+
+/* Not on the cell boundary. Every stat column reserves --stat-value-inset on its right for the
+   menu button, so the utility column's dots end flush against that boundary while this column's
+   label — right-aligned, in a cell wider than the word — starts a good way past it. A rule on the
+   boundary therefore reads as an edge glued to the dots rather than as a split between the two
+   groups. Half the gutter over drops it into the middle of that whitespace. */
+.group-start::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--stat-value-inset) / 2);
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.34);
 }
 
 th.summary-pts-col {
