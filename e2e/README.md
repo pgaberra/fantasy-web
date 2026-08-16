@@ -22,8 +22,9 @@ Point the run somewhere else with `E2E_BASE_URL` (defaults to staging).
 
 ## CI
 
-`.github/workflows/e2e.yml` runs the suite daily and on manual dispatch against
-staging. To enable the signed-in tests there, add repo secrets `E2E_EMAIL` and
+`.github/workflows/e2e.yml` runs the suite against staging on every merge to
+`master`, daily at 06:00 UTC, and on manual dispatch. A failing run opens (or
+comments on) an issue labelled `e2e-red` — see the note in CLAUDE.md for why. To enable the signed-in tests there, add repo secrets `E2E_EMAIL` and
 `E2E_PASSWORD` for a dedicated staging test account. Without them those tests are
 skipped (they never fail the run).
 

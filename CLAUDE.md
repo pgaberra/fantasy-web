@@ -198,10 +198,17 @@ acceptable** experience. For **every UI change, double-check it holds up on a na
 ## End-to-end tests (Playwright)
 
 `e2e/` holds Playwright E2E tests that drive a real browser against the **deployed
-staging** app (`https://staging.slapstat.com`), not a local build. They are **not**
-part of the PR gate — `pr-checks.yml` runs only the unit tests; a dedicated
-`e2e.yml` workflow runs the E2E suite **daily and on manual dispatch** (a PR's code
-isn't on staging until it merges and deploys).
+staging** app (`https://staging.slapstat.com`), not a local build. `e2e.yml` runs them
+**on every merge to `master`** (waiting for the new bundle to reach staging first),
+**daily** at 06:00 UTC, and on manual dispatch.
+
+They are deliberately **not** a PR gate. The suite drives *deployed* staging, so a PR's
+own changes aren't there to test — gating on it would judge a PR by unrelated code and
+deadlock the PR that fixes a red suite.
+
+**A failing run opens a GitHub issue** (label `e2e-red`) and comments on it while it stays
+open. That exists because the suite once reproduced a data-loss bug nightly for five days
+and the only trace was a red cross nobody read.
 
 - Run locally: `npx playwright install chromium` (once), then `npm run e2e`.
 - The signed-in tests use a throwaway staging account: the signed-in test reads
