@@ -389,6 +389,33 @@ describe('DraftProjectionComponent', () => {
     expect(component.syncedLeagueName()).toBeNull();
   });
 
+  it('keeps the league to import from after the projection is taken out of sync', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.applyEspnSettings({
+      settings: {
+        scoringType: 'category',
+        activeScoringColumns: ['goals'],
+        activeUtilityColumns: ['gp'],
+        rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
+        unsupportedStats: [],
+        unsupportedRosterCodes: [],
+      },
+      leagueId: '1052312029',
+      leagueName: 'My 2027 League',
+    });
+
+    component.confirmUnsync();
+
+    // The claim is gone — the toolbar asks to import again...
+    expect(component.espnSync()).toBeNull();
+    expect(component.syncedLeagueName()).toBeNull();
+    // ...but the id is not something the user can look up from in here, so the form keeps it.
+    expect(component.lastEspnLeagueId()).toEqual('1052312029');
+  });
+
   it('closes the import dialog once a sync lands with nothing to report', async () => {
     const fixture = MockRender(DraftProjectionComponent);
     await fixture.whenStable();

@@ -34,6 +34,7 @@ const sampleState: ProjectionState = {
     syncedAt: '2026-06-20T12:00:00.000Z',
   },
   espnSync: null,
+  lastEspnLeagueId: null,
   playerBasis: 'last_season',
   playerPoolSyncedAt: '2026-08-16T04:12:00.000Z',
   draft: {
@@ -170,6 +171,21 @@ describe('ProjectionSerializerService', () => {
       leagueId: '123456',
       syncedAt: '2026-08-14T15:00:00.000Z',
     });
+  });
+
+  it('falls back to the stamp for a projection saved before the league was remembered', () => {
+    const data = service.toProjectionData({
+      ...sampleState,
+      lastEspnLeagueId: null,
+      espnSync: {
+        leagueName: 'My 2027 League',
+        leagueId: '1052312029',
+        syncedAt: '2026-08-16T11:10:00.000Z',
+      },
+    });
+    delete data.settings.lastEspnLeagueId;
+
+    expect(service.fromProjectionData(data).lastEspnLeagueId).toEqual('1052312029');
   });
 
   it('defaults espnSync to null for projections never synced from ESPN', () => {

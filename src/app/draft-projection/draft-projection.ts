@@ -144,6 +144,8 @@ export class DraftProjectionComponent implements OnInit {
   minGoalieGames = signal<number>(DEFAULT_MIN_GOALIE_GAMES);
   yahooSync = signal<YahooSync | null>(null);
   espnSync = signal<EspnSync | null>(null);
+  /** Survives an unsync: the stamp is the claim, this is the league they import from. */
+  lastEspnLeagueId = signal<string | null>(null);
   // Owned by the server: what the rows started as, and the sync they were last squared with.
   // Held here only so a save carries them back rather than dropping them.
   playerBasis = signal<PlayerBasis | null>(null);
@@ -302,6 +304,7 @@ export class DraftProjectionComponent implements OnInit {
       leagueId: result.leagueId,
       syncedAt: new Date().toISOString(),
     });
+    this.lastEspnLeagueId.set(result.leagueId);
     // These settings are ESPN's now, so a Yahoo stamp would mislabel them.
     this.yahooSync.set(null);
     this.syncedSnapshot.set(this.syncedSettingsKey());
@@ -367,6 +370,10 @@ export class DraftProjectionComponent implements OnInit {
     });
   }
 
+  /**
+   * "These settings are mine now." Only the claim goes — `lastEspnLeagueId` stays, so the next
+   * import starts from the league they were on rather than asking for the id again.
+   */
   confirmUnsync(): void {
     this.yahooSync.set(null);
     this.espnSync.set(null);
@@ -430,6 +437,7 @@ export class DraftProjectionComponent implements OnInit {
       minGoalieGames: this.minGoalieGames(),
       yahooSync: this.yahooSync(),
       espnSync: this.espnSync(),
+      lastEspnLeagueId: this.lastEspnLeagueId(),
       playerBasis: this.playerBasis(),
       playerPoolSyncedAt: this.playerPoolSyncedAt(),
       draft: this.draft(),
@@ -450,6 +458,7 @@ export class DraftProjectionComponent implements OnInit {
     this.minGoalieGames.set(state.minGoalieGames);
     this.yahooSync.set(state.yahooSync);
     this.espnSync.set(state.espnSync);
+    this.lastEspnLeagueId.set(state.lastEspnLeagueId);
     this.playerBasis.set(state.playerBasis);
     this.playerPoolSyncedAt.set(state.playerPoolSyncedAt);
     this.draft.set(state.draft);
