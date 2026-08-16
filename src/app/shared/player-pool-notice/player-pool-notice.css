@@ -1,0 +1,74 @@
+:host {
+  display: block;
+}
+
+.pool-notice {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-gold-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+/* Sized to the title's line box so the icon centres on the first line, not on the whole notice. */
+.pool-notice__icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  height: 1.6rem;
+  color: var(--color-gold-strong);
+}
+
+.pool-notice__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.pool-notice__title {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.pool-notice__list {
+  margin: 0;
+  padding-left: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.pool-notice__footer {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.pool-notice__dismiss {
+  flex-shrink: 0;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.6rem;
+  width: 1.6rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.pool-notice__dismiss:hover {
+  color: var(--color-text);
+  background: var(--color-surface-hover);
+}

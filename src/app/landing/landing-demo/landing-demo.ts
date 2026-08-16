@@ -121,6 +121,10 @@ export class LandingDemoComponent {
       minGoalieGames: this.minGoalieGames(),
       yahooSync: null,
       espnSync: null,
+      // The demo's rows are every player's real stats, which is what a projection seeded from
+      // last season starts as — so one redeemed into an account keeps being topped up that way.
+      playerBasis: 'last_season',
+      playerPoolSyncedAt: null,
       draft: null,
       playerProjections: this.table()?.playerProjections?.() ?? [],
     };

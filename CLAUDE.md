@@ -39,7 +39,14 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
 - `auth/` — `login`, `register`, shared `auth-form`
 - `draft-projection/` — main feature: `projection-settings-section`,
   `scoring-type-section`, `scoring-stats-section`, `player-projections-table`,
-  `share-dialog` (publishing the projection as a public link)
+  `share-dialog` (publishing the projection as a public link).
+  The player pool moves under a saved projection — a new season brings a new roster, trades
+  and call-ups follow — and the **BFF** squares the rows with it on the read that notices,
+  seeding a gained player from what the projection started as. Two consequences here: the
+  editor carries `playerBasis` / `playerPoolSyncedAt` through `ProjectionState` untouched so a
+  save doesn't drop them, and `shared/player-pool-notice` says what moved, from the
+  `poolReconciliation` the reading response carries. That is reported only on the read that
+  reconciled, so the notice appears once per pool change.
 - `draft-start/` — the **Draft Mode** page (`/draft`): picks what a draft is drafted
   against. Either one of the user's projections, or the "Last Season's Stats" preset.
   A preset draft has no projection behind it, so starting one creates a projection of
