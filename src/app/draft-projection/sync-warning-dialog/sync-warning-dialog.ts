@@ -1,4 +1,5 @@
-import { Component, input, output } from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
+import { OpenPopovers } from '../../shared/popover/open-popovers';
 
 /**
  * Blocking warning shown when the user changes a setting that came from a synced league.
@@ -10,6 +11,15 @@ import { Component, input, output } from '@angular/core';
   styleUrl: './sync-warning-dialog.css',
 })
 export class SyncWarningDialogComponent {
+  /**
+   * The edit that raises this warning is usually made inside a menu — a column's stats, the
+   * league setup — and that menu has no reason of its own to close, so it would hang over the
+   * dialog it just raised.
+   */
+  constructor() {
+    inject(OpenPopovers).closeAll();
+  }
+
   readonly leagueName = input.required<string>();
   /** Named so the advice points at the site the user would go and change the league in. */
   readonly platform = input.required<string>();

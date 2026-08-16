@@ -15,6 +15,7 @@ import {
   OverlayRef,
 } from '@angular/cdk/overlay';
 import { TemplatePortal } from '@angular/cdk/portal';
+import { OpenPopovers } from './open-popovers';
 
 /**
  * Opens a template as a popover anchored to the host element.
@@ -54,6 +55,7 @@ export class PopoverTriggerDirective {
   private readonly positionBuilder = inject(OverlayPositionBuilder);
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly openPopovers = inject(OpenPopovers);
 
   readonly appPopover = input.required<TemplateRef<unknown>>();
   readonly popoverAlign = input<'start' | 'end'>('end');
@@ -134,6 +136,7 @@ export class PopoverTriggerDirective {
       }
     });
 
+    this.openPopovers.add(this);
     this.isOpen.set(true);
   }
 
@@ -144,6 +147,7 @@ export class PopoverTriggerDirective {
     // focus wherever the click put it.
     const panel = this.overlayRef?.overlayElement;
     const heldFocus = restoreFocus && !!panel && panel.contains(document.activeElement);
+    this.openPopovers.remove(this);
     this.overlayRef?.dispose();
     this.overlayRef = null;
     this.isOpen.set(false);

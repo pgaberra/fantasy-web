@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { PopoverTriggerDirective } from './popover-trigger.directive';
+import { OpenPopovers } from './open-popovers';
 
 @Component({
   imports: [PopoverTriggerDirective],
@@ -20,7 +21,7 @@ function panel(): HTMLElement | null {
   return document.querySelector('.app-popover-panel');
 }
 
-describe('PopoverTriggerDirective', () => {
+describe('PopoverTriggerDirective and OpenPopovers', () => {
   beforeEach(() => TestBed.configureTestingModule({ imports: [HostComponent] }));
 
   function setup() {
@@ -30,6 +31,18 @@ describe('PopoverTriggerDirective', () => {
       fixture.nativeElement.querySelector(`#${id}`) as HTMLButtonElement;
     return { fixture, button };
   }
+
+  it('clears an open popover when a dialog takes the screen', () => {
+    const { button } = setup();
+    button('labelled').click();
+    expect(panel()).toBeTruthy();
+
+    // What a blocking dialog does on the way in: the menu that raised it has no reason of its
+    // own to close, so it would sit on top of the dialog.
+    TestBed.inject(OpenPopovers).closeAll();
+
+    expect(panel()).toBeNull();
+  });
 
   it('moves focus into the popover so a keyboard user lands in the menu they opened', () => {
     const { button } = setup();
