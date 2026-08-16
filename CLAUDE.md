@@ -47,6 +47,12 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   save doesn't drop them, and `shared/player-pool-notice` says what moved, from the
   `poolReconciliation` the reading response carries. That is reported only on the read that
   reconciled, so the notice appears once per pool change.
+  The table also marks **rookies** (a badge by the name, plus a "Rookies only" filter) from
+  `GET /api/v1/players/rookies`. That endpoint answers `known: false` wherever the projection
+  service is not running — production, today — and a failed request leaves the resource without
+  a value; both must read as *no marker and no filter*, never as every player being a veteran.
+  `rookieIds` is therefore null in both cases, and is taken via `hasValue()` because reading a
+  resource in an error state throws.
 - `draft-start/` — the **Draft Mode** page (`/draft`): picks what a draft is drafted
   against. Either one of the user's projections, or the "Last Season's Stats" preset.
   A preset draft has no projection behind it, so starting one creates a projection of

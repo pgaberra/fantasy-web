@@ -10,7 +10,9 @@ import {
   Signal,
   signal,
 } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { Player } from '../../models/player.model';
+import { PlayerService } from '../../services/player.service';
 import {
   ActiveColumns,
   GoalieScoringStats,
@@ -227,7 +229,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
         players.has(sp.projection.playerId) &&
         this.positionFilterService.matches(sp.projection, players, filter),
     );
-    return this.filterByTeam(byPosition);
+    return this.filterByRookie(this.filterByTeam(byPosition));
   });
   filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit: Signal<ScoredProjection[]> =
     computed(() => {
@@ -244,12 +246,13 @@ export class PlayerProjectionsTableComponent implements OnInit {
       const byPosition = lockedProjections.filter((sp) =>
         this.positionFilterService.matches(sp.projection, players, filter),
       );
-      return this.filterByTeam(byPosition);
+      return this.filterByRookie(this.filterByTeam(byPosition));
     });
 
   private readonly projectionCalculationService = inject(ProjectionCalculationService);
   private readonly projectionUpdateService = inject(ProjectionUpdateService);
   private readonly toiService = inject(ToiService);
+  private readonly playerService = inject(PlayerService);
   private readonly positionFilterService = inject(PositionFilterService);
   private readonly activeColumnsService = inject(ActiveColumnsService);
   private readonly statInfoService = inject(StatInfoService);
@@ -319,6 +322,41 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   readonly positionFilter = signal<PositionFilter>('ALL');
 
+  /**
+   * Ids of this season's rookies, or null while unknown — either still loading or the server
+   * declining to say, which it does in any environment without the projection service. Both
+   * read the same way here: no marker and no filter, rather than every player a veteran.
+   */
+  private readonly rookieResource = rxResource({
+    stream: () => this.playerService.getRookieIds(),
+    defaultValue: null as Set<number> | null,
+  });
+
+  // hasValue() rather than value(): a resource in an error state throws when read, and this is
+  // a decoration on the table — a rookies request that fails must leave the table standing.
+  readonly rookieIds = computed(() =>
+    this.rookieResource.hasValue() ? this.rookieResource.value() : null,
+  );
+  readonly rookiesOnly = signal(false);
+
+  /** Only offer the filter when there is something to filter to. */
+  readonly rookiesAvailable = computed(() => {
+    const rookies = this.rookieIds();
+    return !!rookies && this.players().some((player) => rookies.has(player.id));
+  });
+
+  isRookie(playerId: number): boolean {
+    return this.rookieIds()?.has(playerId) ?? false;
+  }
+
+  private filterByRookie(scored: ScoredProjection[]): ScoredProjection[] {
+    const rookies = this.rookieIds();
+    if (!this.rookiesOnly() || !rookies) {
+      return scored;
+    }
+    return scored.filter((sp) => rookies.has(sp.projection.playerId));
+  }
+
   readonly teamFilter = signal<string>('ALL');
   readonly availableTeams = computed<string[]>(() => {
     const teams = new Set<string>();
@@ -360,6 +398,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
       term: this.searchTerm(),
       position: this.positionFilter(),
       team: this.teamFilter(),
+      rookiesOnly: this.rookiesOnly(),
       sortColumn: this.sortColumn(),
       sortDirection: this.sortDirection(),
     }),

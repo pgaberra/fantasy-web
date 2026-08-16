@@ -5,6 +5,9 @@
       <img class="player-headshot" [src]="player().headshot" [alt]="player().name" loading="lazy" />
     }
     <span class="player-name-text">{{ player().name }} ({{ playerPosition() }})</span>
+    @if (rookie()) {
+      <span class="rookie-badge" title="Rookie this season">R</span>
+    }
     @if (player().teamAbbrev) {
       <span class="player-team">{{ player().teamAbbrev }}</span>
     }
