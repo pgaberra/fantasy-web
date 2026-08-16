@@ -162,6 +162,19 @@
         @if (availableTeams().length) {
           <app-team-filter [teams]="availableTeams()" [(value)]="teamFilter" />
         }
+        @if (rookiesAvailable()) {
+          <div class="filter-control filter-control--check">
+            <label for="rookies-only">
+              <input
+                id="rookies-only"
+                type="checkbox"
+                [checked]="rookiesOnly()"
+                (change)="rookiesOnly.set(!rookiesOnly())"
+              />
+              Rookies only
+            </label>
+          </div>
+        }
       </div>
     </div>
   </div>
@@ -207,6 +220,7 @@
             [playerScore]="sp.score"
             [belowMinGames]="!sp.qualified"
             [player]="getPlayer(sp.projection.playerId)"
+            [rookie]="isRookie(sp.projection.playerId)"
             [activeColumns]="filteredActiveColumns()"
             [scoringType]="scoringType()"
             [decimalSettings]="decimalSettings()"

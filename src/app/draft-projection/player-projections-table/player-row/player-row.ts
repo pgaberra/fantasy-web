@@ -37,6 +37,8 @@ export class PlayerRowComponent {
   scoringType = input.required<ScoringType>();
   activeColumns = input.required<ActiveColumns>();
   player = input.required<Player>();
+  /** Whether this player is a rookie this season. False also covers "we could not find out". */
+  rookie = input<boolean>(false);
   decimalSettings = input.required<Record<DecimalStatKey, number>>();
   isEditing = input<boolean>(false);
   belowMinGames = input<boolean>(false);

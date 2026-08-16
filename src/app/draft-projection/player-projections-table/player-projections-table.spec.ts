@@ -1,4 +1,4 @@
-import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
+import { MockBuilder, MockInstance, MockRender, ngMocks } from 'ng-mocks';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PlayerProjectionsTableComponent } from './player-projections-table';
 import { Goalie, Player, Skater } from '../../models/player.model';
@@ -18,6 +18,10 @@ import { ProjectionsTableHeaderComponent } from './projections-table-header/proj
 import { PlayerRowComponent } from './player-row/player-row';
 import { StatInputComponent } from './player-row/stat-input/stat-input';
 import { ScaleConfig } from '../projection-settings-section/model';
+import { PlayerService } from '../../services/player.service';
+import { TestBed } from '@angular/core/testing';
+import { ApplicationRef } from '@angular/core';
+import { Observable, of } from 'rxjs';
 
 describe('PlayerProjectionsTableComponent', () => {
   const mockPlayers: Player[] = [
@@ -199,7 +203,8 @@ describe('PlayerProjectionsTableComponent', () => {
       .keep(StatLabelPipe)
       .keep(FormatToiPipe)
       .keep(DecimalPipe)
-      .keep(StatInfoService),
+      .keep(StatInfoService)
+      .mock(PlayerService),
   );
 
   const getComponent = (
@@ -231,6 +236,63 @@ describe('PlayerProjectionsTableComponent', () => {
       useDefaultDecimals: true,
       ...overrides,
     }).point.componentInstance;
+
+  /**
+   * Rookie status is a decoration the server may not be able to supply — it comes from a
+   * service production runs with switched off. Null has to read as "no marker", never as
+   * "nobody is a rookie".
+   */
+  describe('rookies', () => {
+    // MockInstance rather than stubbing the injected service: ng-mocks needs the answer in
+    // place before the component is built, and reaching into TestBed first breaks MockRender.
+    MockInstance.scope();
+
+    /** The resource resolves asynchronously, so the answer is only there once it settles. */
+    const renderWithRookies = async (rookies: Observable<Set<number> | null>) => {
+      MockInstance(PlayerService, 'getRookieIds', () => rookies);
+      const component = getComponent();
+      await TestBed.inject(ApplicationRef).whenStable();
+      return component;
+    };
+
+    it('marks the rookies and offers the filter', async () => {
+      const component = await renderWithRookies(of(new Set([1])));
+
+      expect(component.isRookie(1)).toEqual(true);
+      expect(component.isRookie(2)).toEqual(false);
+      expect(component.rookiesAvailable()).toEqual(true);
+    });
+
+    it('narrows the table to the rookies when the filter is on', async () => {
+      const component = await renderWithRookies(of(new Set([1])));
+
+      component.rookiesOnly.set(true);
+
+      expect(component.visibleProjections().map((sp) => sp.projection.playerId)).toEqual([1]);
+    });
+
+    it('offers no filter when the server could not say who is a rookie', async () => {
+      const component = await renderWithRookies(of(null));
+
+      expect(component.rookiesAvailable()).toEqual(false);
+      expect(component.isRookie(1)).toEqual(false);
+    });
+
+    // Nobody being a rookie is a real answer, but there is nothing to filter to.
+    it('offers no filter when nobody in the pool is a rookie', async () => {
+      const component = await renderWithRookies(of(new Set([999])));
+
+      expect(component.rookiesAvailable()).toEqual(false);
+    });
+
+    it('shows every player while the filter is on but the answer is unknown', async () => {
+      const component = await renderWithRookies(of(null));
+
+      component.rookiesOnly.set(true);
+
+      expect(component.visibleProjections().length).toEqual(mockPlayerProjections.length);
+    });
+  });
 
   describe('onStatInput', () => {
     it('should update a scoring stat with a numeric value', () => {

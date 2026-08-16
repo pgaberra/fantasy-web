@@ -4,6 +4,7 @@ import { map } from 'rxjs/operators';
 import { Api } from '../api/api';
 import { getSkaters } from '../api/fn/players/get-skaters';
 import { getGoalies } from '../api/fn/players/get-goalies';
+import { getRookies } from '../api/fn/players/get-rookies';
 import { SkaterResponse } from '../api/models/skater-response';
 import { GoalieResponse } from '../api/models/goalie-response';
 import { Goalie, Player, Skater } from '../models/player.model';
@@ -29,6 +30,18 @@ export class PlayerService {
   getPlayers(): Observable<Player[]> {
     return forkJoin({ skaters: this.getSkaters(), goalies: this.getGoalies() }).pipe(
       map(({ skaters, goalies }) => [...skaters, ...goalies]),
+    );
+  }
+
+  /**
+   * Ids of the players who are rookies this season, or null when the server cannot say — which
+   * is a different answer from nobody being one, and the one production gives while the
+   * projection service is switched off. Callers must hide the marker on null rather than
+   * showing every player as a veteran.
+   */
+  getRookieIds(): Observable<Set<number> | null> {
+    return from(this.api.invoke(getRookies)).pipe(
+      map((rookies) => (rookies.known ? new Set(rookies.playerIds) : null)),
     );
   }
 }
