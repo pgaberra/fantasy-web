@@ -357,6 +357,51 @@ describe('DraftProjectionComponent', () => {
     expect(fixture.nativeElement.querySelector('.synced-mark--espn')).toBeNull();
   });
 
+  it('closes the import dialog once a sync lands with nothing to report', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.showSyncDialog.set(true);
+
+    component.applyEspnSettings({
+      settings: {
+        scoringType: 'category',
+        activeScoringColumns: ['goals'],
+        activeUtilityColumns: ['gp'],
+        rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
+        unsupportedStats: [],
+        unsupportedRosterCodes: [],
+      },
+      leagueId: '123456',
+      leagueName: 'Puck Luck Dynasty',
+    });
+
+    expect(component.showSyncDialog()).toEqual(false);
+  });
+
+  it('keeps the dialog open when the league scores something we cannot map', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.showSyncDialog.set(true);
+
+    component.applyEspnSettings({
+      settings: {
+        scoringType: 'category',
+        activeScoringColumns: ['goals'],
+        activeUtilityColumns: ['gp'],
+        rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
+        unsupportedStats: ['Defensive Points'],
+        unsupportedRosterCodes: [],
+      },
+      leagueId: '123456',
+      leagueName: 'Puck Luck Dynasty',
+    });
+
+    // That list is the only place this is said, so closing over it would swallow it.
+    expect(component.showSyncDialog()).toEqual(true);
+  });
+
   it('falls back to the id when ESPN returns a league with no name', async () => {
     const fixture = MockRender(DraftProjectionComponent);
     await fixture.whenStable();
