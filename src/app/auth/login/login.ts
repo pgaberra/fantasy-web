@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { finalize } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { AuthFormComponent } from '../auth-form/auth-form';
 import { AuthCredentials } from '../auth-form/model';
@@ -20,14 +21,18 @@ export class LoginComponent {
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
-    this.authService.login(credentials).subscribe({
-      error: (error: unknown) => {
-        this.errorMessage.set(
-          messageForError(error, 'Invalid email or password. Please try again.'),
-        );
-        this.isLoading.set(false);
-      },
-    });
+    // See the note in RegisterComponent: resetting only on the error path leaves the form spinning
+    // forever whenever the post-sign-in navigation fails rather than the sign-in itself.
+    this.authService
+      .login(credentials)
+      .pipe(finalize(() => this.isLoading.set(false)))
+      .subscribe({
+        error: (error: unknown) => {
+          this.errorMessage.set(
+            messageForError(error, 'Invalid email or password. Please try again.'),
+          );
+        },
+      });
   }
 
   onGoogleLogin() {
@@ -40,11 +45,15 @@ export class LoginComponent {
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
-    this.authService.facebookLogin(accessToken).subscribe({
-      error: (error: unknown) => {
-        this.errorMessage.set(messageForError(error, 'Facebook sign-in failed. Please try again.'));
-        this.isLoading.set(false);
-      },
-    });
+    this.authService
+      .facebookLogin(accessToken)
+      .pipe(finalize(() => this.isLoading.set(false)))
+      .subscribe({
+        error: (error: unknown) => {
+          this.errorMessage.set(
+            messageForError(error, 'Facebook sign-in failed. Please try again.'),
+          );
+        },
+      });
   }
 }

@@ -5,8 +5,9 @@ import {
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { NavigationEnd, provideRouter, Router, withNavigationErrorHandler } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { routes } from './app.routes';
 import { retryInterceptor } from './interceptors/retry.interceptor';
@@ -18,6 +19,7 @@ import { AuthService } from './services/auth.service';
 import { EntitlementService } from './services/entitlement.service';
 import { ErrorReportingService } from './services/error-reporting.service';
 import { ReportingErrorHandler } from './services/reporting-error-handler';
+import { clearStaleBuildReload, handleNavigationError } from './shared/navigation-error';
 
 // AuthService.storeTokens() only runs on an *active* sign-in, so a returning user whose token
 // is already in localStorage would otherwise stay anonymous — identify them here too. The
@@ -52,6 +54,17 @@ function initErrorReporting() {
   void reporting.init().catch(() => undefined);
 }
 
+// A navigation that completes means the tab is running against a build that still exists, so
+// the one-shot reload guard is spent and a later deploy may use it again.
+function initNavigationRecovery() {
+  const router = inject(Router);
+  router.events.pipe(takeUntilDestroyed()).subscribe((event) => {
+    if (event instanceof NavigationEnd) {
+      clearStaleBuildReload();
+    }
+  });
+}
+
 // retryInterceptor is outermost so it wraps authInterceptor (a retried request still
 // gets a fresh Authorization header). It is a small always-on safety net for transient
 // gateway/connection blips — see retry.interceptor.ts.
@@ -68,9 +81,10 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     { provide: ErrorHandler, useClass: ReportingErrorHandler },
-    provideRouter(routes),
+    provideRouter(routes, withNavigationErrorHandler(handleNavigationError)),
     provideHttpClient(withInterceptors([retryInterceptor, authInterceptor])),
     provideApiConfiguration(environment.rootUrl),
+    provideAppInitializer(initNavigationRecovery),
     provideAppInitializer(initErrorReporting),
     provideAppInitializer(initAnalytics),
     provideAppInitializer(initEntitlements),
