@@ -25,6 +25,11 @@ export interface ProjectionState {
   yahooSync: YahooSync | null;
   espnSync: EspnSync | null;
   /**
+   * The ESPN league this projection last imported from. Outlives `espnSync`, which is cleared
+   * when the user takes the projection out of sync — the league is still where they import from.
+   */
+  lastEspnLeagueId: string | null;
+  /**
    * What the player rows started from, and which player sync they were last squared with. The
    * server owns both — it seeds a new projection and reconciles a saved one against the pool —
    * so the app only carries them so they survive a save rather than being dropped by it.

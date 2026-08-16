@@ -66,6 +66,7 @@ export class ProjectionSerializerService {
         minGoalieGames: state.scoringType === 'category' ? state.minGoalieGames : undefined,
         yahooSync: state.yahooSync ?? undefined,
         espnSync: state.espnSync ?? undefined,
+        lastEspnLeagueId: state.lastEspnLeagueId ?? undefined,
         playerBasis: state.playerBasis ?? undefined,
         playerPoolSyncedAt: state.playerPoolSyncedAt ?? undefined,
       },
@@ -102,6 +103,8 @@ export class ProjectionSerializerService {
       minGoalieGames: data.settings.minGoalieGames ?? DEFAULT_MIN_GOALIE_GAMES,
       yahooSync: data.settings.yahooSync ?? null,
       espnSync: data.settings.espnSync ?? null,
+      // Projections synced before this was recorded fall back to the stamp's own id.
+      lastEspnLeagueId: data.settings.lastEspnLeagueId ?? data.settings.espnSync?.leagueId ?? null,
       playerBasis: data.settings.playerBasis ?? null,
       playerPoolSyncedAt: data.settings.playerPoolSyncedAt ?? null,
       draft: this.sanitizeDraft(data.draft),

@@ -132,6 +132,7 @@ export function createDefaultProjectionState(
     minGoalieGames: DEFAULT_MIN_GOALIE_GAMES,
     yahooSync: null,
     espnSync: null,
+    lastEspnLeagueId: null,
     playerBasis: null,
     playerPoolSyncedAt: null,
     draft: null,
