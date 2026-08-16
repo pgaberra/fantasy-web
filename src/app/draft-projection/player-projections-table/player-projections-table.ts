@@ -52,6 +52,7 @@ import {
 } from '../../models/stat-key.model';
 import { StatInfoService } from '../../services/stat-info.service';
 import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
+import { PinnedTableHeaderDirective } from '../../shared/pinned-table-header/pinned-table-header.directive';
 import { LeagueSettingsMenuComponent } from './league-settings-menu/league-settings-menu';
 import { ColumnsMenuComponent } from './columns-menu/columns-menu';
 
@@ -80,6 +81,7 @@ function toggledSet<T>(members: ReadonlySet<T>, member: T): Set<T> {
     PositionFilterComponent,
     TeamFilterComponent,
     PopoverTriggerDirective,
+    PinnedTableHeaderDirective,
     LeagueSettingsMenuComponent,
     ColumnsMenuComponent,
   ],

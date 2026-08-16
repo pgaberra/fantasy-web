@@ -83,6 +83,14 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   does **not** try to ride out a full service restart — that's the job of zero-downtime
   deploys, not a long client-side wait.
 - `models/`, `pipes/`, `shared/` (e.g. `loading-indicator`)
+  - `shared/pinned-table-header` — holds a wide table's `<thead>` against the top of the window
+    while the page scrolls past it. The projections table runs down the page rather than inside a
+    viewport-tall scrollbox, but its wrapper stays a horizontal scroll container for the stat
+    columns — and `overflow-x: auto` makes that wrapper the scrollport on both axes, so a sticky
+    `thead` has nothing to stick to. The directive translates the row group instead. A page that
+    floats a bar over its top (the landing nav) sets `--pinned-header-inset` to that bar's height;
+    it is registered with `@property` in `styles.css` as a `<length>`, because the directive reads
+    the value back and an unregistered custom property returns raw tokens.
 - `environments/` — `environment.ts` (dev: `apiUrl: http://localhost:8080/api/v1`),
   `environment.staging.ts` (points at the staging BFF `api.staging.slapstat.com`; used by
   `npm run start:staging` via the `staging` build/serve configs in `angular.json`),

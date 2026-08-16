@@ -97,7 +97,8 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
-            "coverageReporters": ["text", "json-summary", "lcov"]
+            "coverageReporters": ["text", "json-summary", "lcov"],
+            "setupFiles": ["src/test-setup.ts"]
           }
         }
       }
