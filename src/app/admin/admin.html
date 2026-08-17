@@ -125,4 +125,72 @@
       </details>
     }
   </article>
+
+  <article class="admin-card">
+    <h2>Yahoo access probe</h2>
+    <p class="admin-card-desc">
+      Ask Yahoo one question — will it serve this game's players? A failed sync only says that
+      something was refused; vary the game key and season here to find out what. Reads nothing into
+      the cache and writes nothing, so it is safe to fire at anything.
+    </p>
+
+    <div class="probe-inputs">
+      <div class="probe-field">
+        <label for="probe-game-key">Game key</label>
+        <input
+          id="probe-game-key"
+          type="text"
+          [value]="probeGameKey()"
+          (input)="onProbeGameKeyInput($event)"
+        />
+        <span class="probe-hint"
+          >"nhl" is whichever season is current; a number pins a past one</span
+        >
+      </div>
+      <div class="probe-field">
+        <label for="probe-season">Season</label>
+        <input
+          id="probe-season"
+          type="text"
+          placeholder="e.g. 2025"
+          [value]="probeSeason()"
+          (input)="onProbeSeasonInput($event)"
+        />
+        <span class="probe-hint">Start year. Leave empty to send no season filter at all</span>
+      </div>
+    </div>
+
+    <div class="admin-actions">
+      <button type="button" class="btn btn-secondary" [disabled]="probing()" (click)="runProbe()">
+        {{ probing() ? 'Asking Yahoo…' : 'Run probe' }}
+      </button>
+    </div>
+
+    @if (probeError()) {
+      <p class="admin-error" role="alert">{{ probeError() }}</p>
+    }
+
+    @if (probeResult(); as result) {
+      <div class="probe-result" [class.probe-failed]="!result.ok" role="status">
+        @if (result.ok) {
+          <p>
+            <span class="status status-ok">● Yahoo served it</span>
+            — {{ result.players }} {{ result.players === 1 ? 'player' : 'players' }} on the first
+            page.
+          </p>
+        } @else {
+          <p>
+            <span class="status status-off">● Refused</span>
+            @if (result.status) {
+              — HTTP {{ result.status }}
+            }
+          </p>
+          @if (result.error) {
+            <p class="probe-message">{{ result.error }}</p>
+          }
+        }
+        <p class="probe-path">{{ result.path }}</p>
+      </div>
+    }
+  </article>
 </section>

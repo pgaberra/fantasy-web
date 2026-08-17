@@ -78,6 +78,12 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   `/s/:token/og-image.png` so the tags and the image they point at share a host. That
   location must stay above the static-asset location, which would otherwise claim any URL
   ending in `.png` and 404 it.
+- `admin/` — admin-only tools (`/admin`): the Yahoo service account, the player sync, and a
+  **Yahoo access probe**. The probe asks Yahoo one question — will it serve this game's players? —
+  for a game key and season you type in, and shows the status and Yahoo's own error wording. A
+  failed sync only says that *something* was refused; this is how you find out what. A refusal is
+  a **result, not an error**: showing "could not reach the probe" over Yahoo's own 403 would waste
+  the whole feature, so only a failure of our own call surfaces as an error.
 - `profile/` — the account's **public name** (`/profile`, signed-in only). Sharing forces the
   choice, but a name has to be changeable afterwards: a shared page credits the current one.
   `AccountService` caches it in a signal, because the share dialog and this page both need to

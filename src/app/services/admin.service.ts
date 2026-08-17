@@ -5,11 +5,13 @@ import { connectYahooServiceAccount } from '../api/fn/admin/connect-yahoo-servic
 import { yahooServiceConnection } from '../api/fn/admin/yahoo-service-connection';
 import { triggerPlayerSync } from '../api/fn/admin/trigger-player-sync';
 import { playerSyncRuns } from '../api/fn/admin/player-sync-runs';
+import { probeYahooAccess } from '../api/fn/admin/probe-yahoo-access';
 import {
   AuthorizeUrlResponse,
   ConnectionResponse,
   SyncAcceptedResponse,
   SyncRunResponse,
+  YahooProbeResponse,
 } from '../api/models';
 
 @Injectable({
@@ -32,5 +34,13 @@ export class AdminService {
 
   syncRuns(limit = 10): Observable<SyncRunResponse[]> {
     return from(this.api.invoke(playerSyncRuns, { limit }));
+  }
+
+  /**
+   * Asks Yahoo whether it will serve a game's players. A refusal comes back as a normal answer
+   * with Yahoo's own wording — that is the point, so don't treat a non-ok result as an error.
+   */
+  probeYahooAccess(gameKey: string, season?: string): Observable<YahooProbeResponse> {
+    return from(this.api.invoke(probeYahooAccess, { gameKey, season }));
   }
 }
