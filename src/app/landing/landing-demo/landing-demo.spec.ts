@@ -11,6 +11,7 @@ import { PendingProjectionService } from '../../services/pending-projection.serv
 import { ProjectionSerializerService } from '../../services/projection-serializer.service';
 import { Player } from '../../models/player.model';
 import { SkaterStats } from '../../models/projection.model';
+import { ScoringStatKey } from '../../models/stat-key.model';
 import { DEFAULT_SCORING_COLUMNS } from '../../draft-projection/projection-defaults';
 import { environment } from '../../../environments/environment';
 
@@ -52,7 +53,24 @@ describe('LandingDemoComponent', () => {
     const component = fixture.point.componentInstance;
     expect(component.players()).toEqual(players);
     expect(component.scoringType()).toEqual('points');
-    expect(component.activeColumns().scoring.size).toEqual(DEFAULT_SCORING_COLUMNS.length);
+    expect(component.activeScoringColumns().size).toEqual(DEFAULT_SCORING_COLUMNS.length);
+  });
+
+  it('takes a column picked in the table as its own', async () => {
+    // The demo is the real editor, so the table owns the column menus and hands the choice back.
+    // Passing the columns down without taking the change back gives a table whose own menus
+    // cannot move it.
+    const fixture = MockRender(LandingDemoComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const table = ngMocks.find(fixture, PlayerProjectionsTableComponent);
+    ngMocks
+      .output(table, 'activeScoringColumnsChange')
+      .emit(new Set<ScoringStatKey>(['goals', 'hits']));
+    fixture.detectChanges();
+
+    expect([...fixture.point.componentInstance.activeScoringColumns()]).toEqual(['goals', 'hits']);
   });
 
   // The BFF still hands over the whole pool — the editor needs it to rank and score — but the

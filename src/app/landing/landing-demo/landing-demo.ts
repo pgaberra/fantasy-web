@@ -11,7 +11,7 @@ import { ProjectionState } from '../../services/projection-serializer';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../../shared/error-state/error-state';
 import { OffseasonDataNoticeComponent } from '../../shared/offseason-data-notice/offseason-data-notice';
-import { ActiveColumns, ScoringType } from '../../models/projection.model';
+import { ScoringType } from '../../models/projection.model';
 import { Player } from '../../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../../models/stat-key.model';
 import { RosterSlots } from '../../api/models/roster-slots';
@@ -89,10 +89,6 @@ export class LandingDemoComponent {
   readonly statWeights = signal<Record<ScoringStatKey, number>>({ ...DEFAULT_STAT_WEIGHTS });
   readonly activeScoringColumns = signal(new Set<ScoringStatKey>(DEFAULT_SCORING_COLUMNS));
   readonly activeUtilityColumns = signal(new Set<SkaterUtilityStatKey>(DEFAULT_UTILITY_COLUMNS));
-  readonly activeColumns = computed<ActiveColumns>(() => ({
-    scoring: this.activeScoringColumns(),
-    utility: this.activeUtilityColumns(),
-  }));
   readonly scaleSettings = signal<Record<SkaterUtilityStatKey, ScaleConfig>>(
     createDefaultScaleSettings((key) => this.statInfoService.isRateStat(key)),
   );
