@@ -12,8 +12,12 @@ export const environment = {
   // hidden (FACEBOOK_LOGIN_ENABLED unset). Only backs `npm run start:staging`.
   facebookLoginEnabled: false,
   // Empty on purpose: this file only backs `npm run start:staging` (the app served locally
-  // against the staging BFF). The deployed staging app builds from environment.prod.ts with
-  // POSTHOG_KEY injected, so leaving this empty keeps local dev out of staging's stats.
+  // against the staging BFF), and a local run has no business in anyone's stats.
+  //
+  // Deployed staging has no POSTHOG_KEY either — it is set on the production app only, so
+  // analytics is off on staging by configuration rather than by this file. Worth knowing before
+  // reading anything into an empty staging funnel, and before assuming the consent banner has
+  // been exercised anywhere but production.
   posthogKey: '',
   sentryDsn: '',
   // Off for local staging runs; the deployed builds set it via the YAHOO_SYNC_DISABLED build arg.
