@@ -154,3 +154,70 @@
 .run-empty {
   font-style: italic;
 }
+
+/* The probe's inputs are free-form on purpose: its value is varying one of them at a time. */
+.probe-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.probe-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 14rem;
+}
+
+.probe-field label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.probe-field input {
+  font: inherit;
+  font-size: var(--text-sm);
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  min-width: 0;
+}
+
+.probe-hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+}
+
+.probe-result {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-success);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  font-size: var(--text-sm);
+}
+
+.probe-result.probe-failed {
+  border-left-color: var(--color-error);
+}
+
+.probe-result p {
+  margin: 0 0 var(--space-1);
+}
+
+.probe-message {
+  color: var(--color-text);
+}
+
+/* Yahoo's paths are long and full of semicolons — let it wrap rather than stretch the card. */
+.probe-path {
+  margin: var(--space-1) 0 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+  overflow-wrap: anywhere;
+}

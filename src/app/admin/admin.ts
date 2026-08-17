@@ -1,7 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { AdminService } from '../services/admin.service';
-import { SyncRunResponse } from '../api/models';
+import { SyncRunResponse, YahooProbeResponse } from '../api/models';
 
 @Component({
   selector: 'app-admin',
@@ -17,6 +17,14 @@ export class AdminComponent implements OnInit {
   readonly syncing = signal(false);
   readonly syncMessage = signal<string | null>(null);
   readonly error = signal<string | null>(null);
+
+  // The probe is a diagnostic, so its inputs are deliberately free-form: the whole value is
+  // being able to vary one of them at a time and read what Yahoo says back.
+  readonly probeGameKey = signal('nhl');
+  readonly probeSeason = signal('');
+  readonly probing = signal(false);
+  readonly probeResult = signal<YahooProbeResponse | null>(null);
+  readonly probeError = signal<string | null>(null);
 
   readonly runs = signal<SyncRunResponse[]>([]);
   readonly latestRun = computed<SyncRunResponse | null>(() => this.runs()[0] ?? null);
@@ -59,6 +67,33 @@ export class AdminComponent implements OnInit {
         this.error.set('Could not start the Yahoo connection.');
       },
     });
+  }
+
+  onProbeGameKeyInput(event: Event): void {
+    this.probeGameKey.set((event.target as HTMLInputElement).value);
+  }
+
+  onProbeSeasonInput(event: Event): void {
+    this.probeSeason.set((event.target as HTMLInputElement).value);
+  }
+
+  runProbe(): void {
+    this.probing.set(true);
+    this.probeResult.set(null);
+    this.probeError.set(null);
+    const season = this.probeSeason().trim();
+    this.adminService
+      .probeYahooAccess(this.probeGameKey().trim() || 'nhl', season || undefined)
+      .subscribe({
+        next: (result) => {
+          this.probing.set(false);
+          this.probeResult.set(result);
+        },
+        error: () => {
+          this.probing.set(false);
+          this.probeError.set('Could not reach the probe itself — that is our side, not Yahoo.');
+        },
+      });
   }
 
   runSync(): void {
