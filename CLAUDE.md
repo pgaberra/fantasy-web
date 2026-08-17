@@ -221,8 +221,9 @@ They are deliberately **not** a PR gate. The suite drives *deployed* staging, so
 own changes aren't there to test — gating on it would judge a PR by unrelated code and
 deadlock the PR that fixes a red suite.
 
-**A failing run opens a GitHub issue** (label `e2e-red`) and comments on it while it stays
-open. That exists because the suite once reproduced a data-loss bug nightly for five days
+**A failing run opens a GitHub issue** (label `e2e-red`), comments on it while it stays
+open, and closes it once the suite is green again — an alarm nobody stands down stops being
+one. That exists because the suite once reproduced a data-loss bug nightly for five days
 and the only trace was a red cross nobody read.
 
 - Run locally: `npx playwright install chromium` (once), then `npm run e2e`.

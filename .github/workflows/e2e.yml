@@ -14,6 +14,15 @@ permissions:
   contents: read
   issues: write
 
+# Every run tests the same deployed staging, so two of them racing tells us nothing twice. Merges
+# land in bursts — three inside fourteen minutes on the day this was written — and each run costs
+# minutes and leaves a registered account behind. The newest run is the only one whose staging is
+# current, so it wins and the rest are cancelled. A cancelled run is neither success nor failure,
+# so it neither raises nor stands down the alarm.
+concurrency:
+  group: e2e-staging
+  cancel-in-progress: true
+
 jobs:
   e2e:
     name: Playwright against staging
@@ -75,6 +84,21 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 14
+
+      # Closing it is what keeps the alarm working. While an issue is open every later failure is
+      # only a comment on it, and a comment on a resolved issue is exactly the kind of signal
+      # nobody receives — which is the failure this whole mechanism exists to avoid. Leaving that
+      # to someone remembering would put us back where we started.
+      - name: Stand down the alarm
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          open=$(gh issue list --label e2e-red --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ -n "$open" ]; then
+            gh issue close "$open" --comment "Green again — [run]($RUN_URL). Closing so the next failure opens a fresh issue instead of commenting on a resolved one."
+          fi
 
       # A red cross in the Actions tab is not a signal — it went unread for five days while this
       # suite reproduced a data-loss bug nightly. An issue is something that sits in the way.
