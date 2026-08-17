@@ -41,12 +41,13 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   `scoring-type-section`, `scoring-stats-section`, `player-projections-table`,
   `share-dialog` (publishing the projection as a public link).
   The player pool moves under a saved projection — a new season brings a new roster, trades
-  and call-ups follow — and the **BFF** squares the rows with it on the read that notices,
-  seeding a gained player from what the projection started as. Two consequences here: the
-  editor carries `playerBasis` / `playerPoolSyncedAt` through `ProjectionState` untouched so a
-  save doesn't drop them, and `shared/player-pool-notice` says what moved, from the
-  `poolReconciliation` the reading response carries. That is reported only on the read that
-  reconciled, so the notice appears once per pool change.
+  and call-ups follow — and the **BFF** adds the newcomers on the read that notices, seeding
+  them from what the projection started as. It never removes: a row whose player has left the
+  pool is kept, and **the table is what hides it** (`droppedPlayerCount`, which counts the rows
+  it cannot draw). So the two notices divide the work — `shared/player-pool-notice` reports the
+  additions from `poolReconciliation`, once per pool change, and the table says how many rows are
+  hidden, which only it can know. The editor also carries `playerBasis` / `playerPoolSyncedAt`
+  through `ProjectionState` untouched, so a save doesn't drop them.
   The table also marks **rookies** (a badge by the name, plus a "Rookies only" filter) from
   `GET /api/v1/players/rookies`. That endpoint answers `known: false` wherever the projection
   service is not running — production, today — and a failed request leaves the resource without
