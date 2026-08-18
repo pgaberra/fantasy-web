@@ -6,10 +6,12 @@ import { yahooServiceConnection } from '../api/fn/admin/yahoo-service-connection
 import { triggerPlayerSync } from '../api/fn/admin/trigger-player-sync';
 import { playerSyncRuns } from '../api/fn/admin/player-sync-runs';
 import { probeYahooAccess } from '../api/fn/admin/probe-yahoo-access';
+import { yahooServiceAccountLeagues } from '../api/fn/admin/yahoo-service-account-leagues';
 import {
   AuthorizeUrlResponse,
   ConnectionResponse,
   SyncAcceptedResponse,
+  LeaguesResponse,
   SyncRunResponse,
   YahooProbeResponse,
 } from '../api/models';
@@ -40,7 +42,16 @@ export class AdminService {
    * Asks Yahoo whether it will serve a game's players. A refusal comes back as a normal answer
    * with Yahoo's own wording — that is the point, so don't treat a non-ok result as an error.
    */
-  probeYahooAccess(gameKey: string, season?: string): Observable<YahooProbeResponse> {
-    return from(this.api.invoke(probeYahooAccess, { gameKey, season }));
+  probeYahooAccess(
+    gameKey: string,
+    season?: string,
+    leagueKey?: string,
+  ): Observable<YahooProbeResponse> {
+    return from(this.api.invoke(probeYahooAccess, { gameKey, season, leagueKey }));
+  }
+
+  /** The service account's own leagues — where a league key for the probe comes from. */
+  yahooLeagues(): Observable<LeaguesResponse> {
+    return from(this.api.invoke(yahooServiceAccountLeagues));
   }
 }

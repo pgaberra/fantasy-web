@@ -148,6 +148,17 @@
         >
       </div>
       <div class="probe-field">
+        <label for="probe-league-key">League key</label>
+        <input
+          id="probe-league-key"
+          type="text"
+          placeholder="e.g. 465.l.12345"
+          [value]="probeLeagueKey()"
+          (input)="onProbeLeagueKeyInput($event)"
+        />
+        <span class="probe-hint">Asks that league's players instead of the whole game's</span>
+      </div>
+      <div class="probe-field">
         <label for="probe-season">Season</label>
         <input
           id="probe-season"
@@ -165,6 +176,27 @@
         {{ probing() ? 'Asking Yahoo…' : 'Run probe' }}
       </button>
     </div>
+
+    @if (leagues().length) {
+      <div class="probe-leagues">
+        <p class="probe-leagues__title">The service account's leagues</p>
+        <ul>
+          @for (league of leagues(); track league.leagueKey) {
+            <li>
+              <button type="button" class="link-button" (click)="useLeagueKey(league.leagueKey)">
+                {{ league.leagueKey }}
+              </button>
+              <span class="probe-leagues__name">{{ league.name }}</span>
+              @if (league.season) {
+                <span class="probe-hint">{{ league.season }}</span>
+              }
+            </li>
+          }
+        </ul>
+      </div>
+    } @else if (leaguesError()) {
+      <p class="admin-error" role="status">{{ leaguesError() }}</p>
+    }
 
     @if (probeError()) {
       <p class="admin-error" role="alert">{{ probeError() }}</p>
