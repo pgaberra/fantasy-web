@@ -31,6 +31,13 @@ import {
 } from '../../draft-projection/projection-defaults';
 import { environment } from '../../../environments/environment';
 
+/**
+ * How much of the player list the demo shows. The BFF still sends every player — the editor
+ * needs them all to rank and score — but only the top slice is rendered, because seeing the
+ * whole board is the thing an account buys you.
+ */
+const DEMO_VISIBLE_PLAYERS = 50;
+
 @Component({
   selector: 'app-landing-demo',
   imports: [
@@ -65,6 +72,8 @@ export class LandingDemoComponent {
   // available through the Yahoo off-season keeps the call to action live.
   protected readonly syncDisabled =
     environment.yahooSyncDisabled && !environment.espnLeaguesEnabled;
+
+  protected readonly visiblePlayers = DEMO_VISIBLE_PLAYERS;
 
   private readonly table = viewChild(PlayerProjectionsTableComponent);
 
