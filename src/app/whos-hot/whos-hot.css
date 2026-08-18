@@ -22,9 +22,28 @@
   max-width: 58ch;
 }
 
-app-projection-settings-section {
-  display: block;
-  margin-bottom: var(--space-4);
+/* Projected into the table's toolbar, so it is styled from here rather than there. */
+.synced-league {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 18rem;
+}
+
+.synced-dot {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-success);
+}
+
+/* A league name is the user's own words and can run long — it may shorten, but it must never
+   push the buttons beside it off the toolbar. */
+.synced-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 640px) {
@@ -34,5 +53,9 @@ app-projection-settings-section {
 
   .page-header h1 {
     font-size: var(--text-lg);
+  }
+
+  .synced-league {
+    max-width: 100%;
   }
 }

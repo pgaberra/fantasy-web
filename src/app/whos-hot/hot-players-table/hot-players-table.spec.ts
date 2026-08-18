@@ -86,7 +86,12 @@ describe('HotPlayersTableComponent', () => {
 
   const render = (
     hotPlayers: HotPlayer[],
-    overrides: { perGame?: boolean; minGames?: number; scoringType?: ScoringType } = {},
+    overrides: {
+      perGame?: boolean;
+      minGames?: number;
+      scoringType?: ScoringType;
+      syncedLeagueName?: string | null;
+    } = {},
   ) =>
     MockRender(HotPlayersTableComponent, {
       hotPlayers,
@@ -96,7 +101,39 @@ describe('HotPlayersTableComponent', () => {
       statWeights: DEFAULT_STAT_WEIGHTS,
       perGame: overrides.perGame ?? false,
       minGames: overrides.minGames ?? 1,
+      syncedLeagueName: overrides.syncedLeagueName ?? null,
     }).point.componentInstance;
+
+  it('offers no League setup in a points league that has imported nothing — the menu would be empty', () => {
+    const component = render([skater(1, 20)]);
+
+    expect(component.hasLeagueSetup()).toBe(false);
+  });
+
+  it('offers League setup once the ranking is by category, or once a league has been imported', () => {
+    expect(render([skater(1, 20)], { scoringType: 'category' }).hasLeagueSetup()).toBe(true);
+    expect(render([skater(1, 20)], { syncedLeagueName: 'My league' }).hasLeagueSetup()).toBe(true);
+  });
+
+  it('re-ranks by z-score when the toolbar switches the league to categories', () => {
+    const component = render([skater(1, 20)]);
+
+    component.selectScoringType('category');
+
+    expect(component.summaryValue(component.visiblePlayers()[0])).toEqual(
+      component.visiblePlayers()[0].score.zScore,
+    );
+  });
+
+  it('adds and removes a scoring column from the Stats menu', () => {
+    const component = render([skater(1, 20)]);
+
+    component.toggleScoringColumn('pim');
+    expect(component.activeScoringColumns().has('pim')).toBe(true);
+
+    component.toggleScoringColumn('pim');
+    expect(component.activeScoringColumns().has('pim')).toBe(false);
+  });
 
   it('ranks by total fantasy points by default', () => {
     const component = render([skater(1, 20, 5), skater(2, 20, 15)]);
