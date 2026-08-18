@@ -102,6 +102,15 @@ export class HotPlayersTableComponent {
   readonly useDefaultDecimals = input<boolean>(true);
   readonly perGame = input<boolean>(false);
   readonly minGames = input<number>(1);
+  /** Named rather than derived, so an empty leaderboard can say which season came back empty. */
+  readonly seasonLabel = input.required<string>();
+
+  /**
+   * Nothing came back for the whole season, as opposed to nothing surviving the filters. A season
+   * that hasn't been played yet is on the dropdown, so this is a normal answer rather than a
+   * failure, and telling the user to widen their range would be advice that cannot help.
+   */
+  readonly seasonNotPlayed = computed(() => this.hotPlayers().length === 0);
 
   // Everything the settings panel above the table used to own. Two-way, so the page keeps the
   // state it persists while the toolbar is the thing that changes it.

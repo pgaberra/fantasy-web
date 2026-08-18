@@ -4,6 +4,7 @@ import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
 import { DEFAULT_STAT_WEIGHTS } from '../draft-projection/projection-defaults';
 
 const settings: WhosHotSettings = {
+  season: 2025,
   fromGame: 50,
   toGame: 82,
   perGame: true,
@@ -67,6 +68,12 @@ describe('WhosHotSettingsService', () => {
 
     expect(loaded?.espnSync).toEqual({ leagueName: 'Puck Yeah', leagueId: '12345', syncedAt: 't' });
     expect(loaded?.lastEspnLeagueId).toEqual('12345');
+  });
+
+  it('reads a blob written before the season could be chosen as the season that existed then', () => {
+    localStorage.setItem('slapstat.whosHot.settings', JSON.stringify({ fromGame: 1, toGame: 82 }));
+
+    expect(service.load()?.season).toEqual(2025);
   });
 
   it('reads a blob written before ESPN was remembered as having no ESPN league', () => {

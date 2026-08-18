@@ -2,7 +2,13 @@
   <header class="range-header">
     <div class="range-title">
       <h2>Game range</h2>
-      <span class="season-badge">{{ seasonLabel() }}</span>
+      <select class="season-select" aria-label="Season" (change)="onSeasonChange($event)">
+        @for (option of seasons(); track option.startYear) {
+          <option [value]="option.startYear" [selected]="option.startYear === season()">
+            {{ option.label }}
+          </option>
+        }
+      </select>
     </div>
     <span class="range-summary">{{ summary() }}</span>
   </header>
@@ -87,19 +93,19 @@
           <span class="switch-track" aria-hidden="true"><span class="switch-knob"></span></span>
           Per game
         </button>
-        <p class="option-hint">
-          @if (perGame()) {
-            Divided by the games each player actually dressed for, so someone who missed half the
-            range isn't buried.
-          } @else {
-            Totals over the range. A player who missed games shows less, which is usually the point.
-          }
-        </p>
+        <app-help-tip
+          label="What per game does"
+          text="Off, the leaderboard shows totals over the range, so a player who missed games shows less — usually the point. On, it divides by the games each player actually dressed for, so someone who missed half the range isn't buried."
+        />
       </div>
 
       <div class="option">
         <div class="min-games">
           <label for="min-games">Min. games</label>
+          <app-help-tip
+            label="What the minimum does"
+            text="Hide players with fewer appearances in the range."
+          />
           <input
             id="min-games"
             type="number"
@@ -110,7 +116,6 @@
             (input)="onMinGamesInput($event)"
           />
         </div>
-        <p class="option-hint">Hide players with fewer appearances in the range.</p>
       </div>
     </div>
   </div>

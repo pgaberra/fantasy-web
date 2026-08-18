@@ -31,14 +31,28 @@
   margin: 0;
 }
 
-.season-badge {
+/* Reads as the badge it replaced until you go near it — the season is a fact about what is on
+   screen first and a control second, and the heading beside it shouldn't have to compete with a
+   full-height form field. */
+.season-select {
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   color: var(--color-text-muted);
+  cursor: pointer;
+  font: inherit;
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   padding: 0.1rem var(--space-2);
+}
+
+.season-select:hover {
+  background: var(--color-surface-hover);
+}
+
+.season-select:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
 }
 
 .range-summary {
@@ -51,7 +65,7 @@
    than stacking into a tall column of full-width rows. */
 .range-body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 19rem);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 14rem);
   gap: var(--space-5);
   margin-top: var(--space-3);
 }
@@ -221,16 +235,12 @@
   padding-left: var(--space-5);
 }
 
+/* Each option is a control and the tip that explains it, side by side — the prose that used to
+   sit under them said the same thing at the cost of half this panel's height. */
 .option {
+  align-items: center;
   display: flex;
-  flex-direction: column;
   gap: var(--space-2);
-}
-
-.option-hint {
-  color: var(--color-text-subtle);
-  font-size: var(--text-xs);
-  margin: 0;
 }
 
 /* A pill with a dot reads as a label with a bullet. A knob that slides reads as a thing you
@@ -309,10 +319,6 @@
     padding-left: 0;
     padding-top: var(--space-4);
   }
-
-  .option {
-    flex: 1 1 18rem;
-  }
 }
 
 @media (max-width: 640px) {
@@ -332,10 +338,5 @@
 
   .range-options {
     flex-direction: column;
-  }
-
-  /* The basis above is a width for a row; in a column it would become a 18rem-tall option. */
-  .option {
-    flex: none;
   }
 }

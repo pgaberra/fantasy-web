@@ -5,6 +5,9 @@
 }
 
 .page-header {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
   margin-bottom: var(--space-5);
 }
 
@@ -12,14 +15,7 @@
   color: var(--color-primary);
   font-size: var(--text-xl);
   font-weight: var(--weight-bold);
-  margin: 0 0 var(--space-2);
-}
-
-.subtitle {
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
   margin: 0;
-  max-width: 58ch;
 }
 
 /* Projected into the table's toolbar, so it is styled from here rather than there. */

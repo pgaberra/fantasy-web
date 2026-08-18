@@ -25,18 +25,15 @@ import {
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
+import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { GameRangeSelectorComponent } from './game-range-selector/game-range-selector';
+import {
+  DEFAULT_SEASON_START_YEAR,
+  SEASON_SCHEDULE_GAMES,
+  SEASONS,
+  seasonLabelOf,
+} from './season.model';
 import { HotPlayersTableComponent } from './hot-players-table/hot-players-table';
-
-/**
- * The only season on offer for now. The feature is built to work mid-season too — the range is
- * expressed in team game numbers, which exist as soon as games are played — but until more
- * seasons are ingested there is nothing to choose between, so this is a constant rather than a
- * selector the user would find has one option.
- */
-const SEASON_START_YEAR = 2025;
-const SEASON_LABEL = '2025-26';
-const SEASON_SCHEDULE_GAMES = 82;
 
 const DEFAULT_SPAN_LENGTH = 20;
 
@@ -57,6 +54,7 @@ const DEFAULT_SPAN_LENGTH = 20;
     LoadingIndicatorComponent,
     ErrorStateComponent,
     TooltipDirective,
+    HelpTipComponent,
   ],
   templateUrl: './whos-hot.html',
   styleUrl: './whos-hot.css',
@@ -66,10 +64,13 @@ export class WhosHotComponent {
   private readonly whosHot = inject(WhosHotService);
   private readonly settingsStore = inject(WhosHotSettingsService);
 
-  protected readonly seasonLabel = SEASON_LABEL;
+  protected readonly seasons = SEASONS;
   protected readonly scheduleLength = SEASON_SCHEDULE_GAMES;
 
   private readonly stored = this.settingsStore.load();
+
+  readonly season = signal(this.stored?.season ?? DEFAULT_SEASON_START_YEAR);
+  readonly seasonLabel = computed(() => seasonLabelOf(this.season()));
 
   readonly fromGame = signal(
     this.stored?.fromGame ?? SEASON_SCHEDULE_GAMES - DEFAULT_SPAN_LENGTH + 1,
@@ -119,7 +120,7 @@ export class WhosHotComponent {
   }));
 
   private readonly span = computed<GameSpan>(() => ({
-    season: SEASON_START_YEAR,
+    season: this.season(),
     fromGame: this.fromGame(),
     toGame: this.toGame(),
   }));
@@ -147,6 +148,7 @@ export class WhosHotComponent {
   constructor() {
     effect(() => {
       this.settingsStore.save({
+        season: this.season(),
         fromGame: this.fromGame(),
         toGame: this.toGame(),
         perGame: this.perGame(),
