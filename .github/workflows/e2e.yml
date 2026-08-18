@@ -2,11 +2,11 @@ name: E2E (staging)
 
 on:
   workflow_dispatch:
-  # A merge is the moment worth checking: the code that just became staging is the code nobody
-  # has run end to end yet. Not a PR gate — the suite drives *deployed* staging, so a PR's own
-  # changes are not there to test, and gating on it would block the PR that fixes a red suite.
-  push:
-    branches: [master]
+  # Used to run on every push to master too — "the code that just became staging is the code
+  # nobody has run end to end yet" — but each of those runs installs Node, installs a Chromium,
+  # and waits out staging's redeploy before it even starts testing, and merges land several times
+  # a day. Traded for the daily run catching a break within 24h instead of immediately: dispatch
+  # this manually right after a merge you want checked sooner.
   schedule:
     - cron: '0 6 * * *' # daily 06:00 UTC
 
@@ -14,11 +14,10 @@ permissions:
   contents: read
   issues: write
 
-# Every run tests the same deployed staging, so two of them racing tells us nothing twice. Merges
-# land in bursts — three inside fourteen minutes on the day this was written — and each run costs
-# minutes and leaves a registered account behind. The newest run is the only one whose staging is
-# current, so it wins and the rest are cancelled. A cancelled run is neither success nor failure,
-# so it neither raises nor stands down the alarm.
+# Every run tests the same deployed staging, so two of them racing tells us nothing twice — e.g.
+# a manual dispatch fired while the daily schedule is already running. Each run costs minutes and
+# leaves a registered account behind, so the newest run wins and the rest are cancelled. A
+# cancelled run is neither success nor failure, so it neither raises nor stands down the alarm.
 concurrency:
   group: e2e-staging
   cancel-in-progress: true
@@ -28,15 +27,6 @@ jobs:
     name: Playwright against staging
     runs-on: ubuntu-latest
     steps:
-      # Captured before anything else, so it is the build that was live *before* this merge
-      # deployed. Coolify takes minutes to build; the runner takes seconds to get here.
-      - name: Note which bundle staging is serving now
-        id: before
-        run: |
-          bundle=$(curl -fsS https://staging.slapstat.com/ | grep -oE 'main-[A-Za-z0-9_-]+\.js' | head -1 || true)
-          echo "bundle=$bundle" >> "$GITHUB_OUTPUT"
-          echo "Staging is currently serving: ${bundle:-unknown}"
-
       - uses: actions/checkout@v7
 
       - name: Set up Node
@@ -50,25 +40,6 @@ jobs:
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
-
-      # Testing the previous build would be a false green, so wait for the new one to land. The
-      # hashed bundle name is the only signal available — APP_VERSION is stamped on tagged
-      # releases, not on a merge. A merge that leaves the bundle byte-identical (a workflow or
-      # e2e-only change) never flips it, so this gives up and proceeds rather than failing.
-      - name: Wait for staging to serve the merged build
-        if: github.event_name == 'push'
-        env:
-          BEFORE: ${{ steps.before.outputs.bundle }}
-        run: |
-          for i in $(seq 1 40); do
-            sleep 15
-            now=$(curl -fsS https://staging.slapstat.com/ | grep -oE 'main-[A-Za-z0-9_-]+\.js' | head -1 || true)
-            if [ -n "$now" ] && [ "$now" != "$BEFORE" ]; then
-              echo "Staging redeployed: $BEFORE -> $now"
-              exit 0
-            fi
-          done
-          echo "::warning::Staging still serves $BEFORE after 10 minutes. Either the merge did not change the bundle, or the deploy is slow — testing whatever is live."
 
       - name: Run E2E tests
         env:
