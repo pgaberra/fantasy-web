@@ -110,6 +110,12 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly rosterSlots = model<RosterSlots>(DEFAULT_ROSTER_SLOTS);
   readonly minGoalieGames = model<number>(DEFAULT_MIN_GOALIE_GAMES);
   readonly saveStatus = input<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  /**
+   * A hard cap on how many rows are ever rendered, for surfaces that show a taste of the list
+   * rather than the list. When set, paging is off entirely: `Show more` never appears, because
+   * on the landing demo the rest of the list is what an account is for.
+   */
+  readonly maxVisiblePlayers = input<number | null>(null);
   readonly showFullSeasonButton = input<boolean>(false);
   readonly fullSeasonRequested = output<void>();
 
@@ -429,14 +435,16 @@ export class PlayerProjectionsTableComponent implements OnInit {
       sortColumn: this.sortColumn(),
       sortDirection: this.sortDirection(),
     }),
-    computation: () => PLAYERS_PER_PAGE,
+    computation: () => this.maxVisiblePlayers() ?? PLAYERS_PER_PAGE,
   });
 
   readonly visibleProjections = computed<ScoredProjection[]>(() =>
     this.searchedProjections().slice(0, this.visibleCount()),
   );
 
-  readonly hasMore = computed(() => this.visibleCount() < this.matchingCount());
+  readonly hasMore = computed(
+    () => this.maxVisiblePlayers() === null && this.visibleCount() < this.matchingCount(),
+  );
 
   editingPlayerId = signal<number | null>(null);
   private readonly lockedOrder = signal<number[]>([]);

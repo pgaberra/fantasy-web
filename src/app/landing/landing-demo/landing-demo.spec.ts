@@ -1,4 +1,4 @@
-import { MockBuilder, MockRender } from 'ng-mocks';
+import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
 import { Router } from '@angular/router';
@@ -53,6 +53,18 @@ describe('LandingDemoComponent', () => {
     expect(component.players()).toEqual(players);
     expect(component.scoringType()).toEqual('points');
     expect(component.activeColumns().scoring.size).toEqual(DEFAULT_SCORING_COLUMNS.length);
+  });
+
+  // The BFF still hands over the whole pool — the editor needs it to rank and score — but the
+  // demo only renders the top of it, so the rest of the board is what signing up is for.
+  it('renders only the top 50 players while still holding the full pool', async () => {
+    const fixture = MockRender(LandingDemoComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const table = ngMocks.find(PlayerProjectionsTableComponent);
+    expect(ngMocks.input(table, 'maxVisiblePlayers')).toEqual(50);
+    expect(ngMocks.input(table, 'players')).toEqual(players);
   });
 
   it('shows the save-projection call to action once loaded', async () => {

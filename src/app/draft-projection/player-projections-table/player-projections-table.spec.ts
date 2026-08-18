@@ -221,6 +221,7 @@ describe('PlayerProjectionsTableComponent', () => {
       activeUtilityColumns: Set<SkaterUtilityStatKey>;
       columnControls: boolean;
       syncedLeagueName: string | null;
+      maxVisiblePlayers: number | null;
     }> = {},
   ) =>
     MockRender(PlayerProjectionsTableComponent, {
@@ -822,9 +823,34 @@ describe('PlayerProjectionsTableComponent', () => {
       component.positionFilter.set('C');
       expect(component.visibleCount()).toEqual(250);
     });
+
+    it('should cap the visible projections at maxVisiblePlayers', () => {
+      const component = getComponent({ maxVisiblePlayers: 2 });
+      expect(component.visibleCount()).toEqual(2);
+      expect(component.visibleProjections()).toHaveLength(2);
+    });
+
+    // The rest of the list is behind an account, so offering to page into it would be a lie.
+    it('should never report more to show when capped, even with players left over', () => {
+      const component = getComponent({ maxVisiblePlayers: 2 });
+      expect(component.matchingCount()).toBeGreaterThan(2);
+      expect(component.hasMore()).toEqual(false);
+    });
+
+    it('should reset back to the cap, not a full page, when the search term changes', () => {
+      const component = getComponent({ maxVisiblePlayers: 2 });
+      component.visibleCount.set(500);
+      component.searchTerm.set('connor');
+      expect(component.visibleCount()).toEqual(2);
+    });
   });
 
   describe('template', () => {
+    it('should not offer a Show more button when the row count is capped', () => {
+      getComponent({ maxVisiblePlayers: 2 });
+      expect(ngMocks.findAll('.table-footer button')).toHaveLength(0);
+    });
+
     it('should render one row per player in the table body', () => {
       getComponent();
       expect(ngMocks.findAll('tbody tr')).toHaveLength(mockPlayers.length);
