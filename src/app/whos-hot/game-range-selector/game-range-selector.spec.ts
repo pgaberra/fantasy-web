@@ -1,13 +1,15 @@
 import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GameRangeSelectorComponent } from './game-range-selector';
+import { SEASONS } from '../season.model';
 
 describe('GameRangeSelectorComponent', () => {
   beforeEach(() => MockBuilder(GameRangeSelectorComponent));
 
   const render = (fromGame = 63, toGame = 82) =>
     MockRender(GameRangeSelectorComponent, {
-      seasonLabel: '2025-26',
+      seasons: SEASONS,
+      season: 2025,
       scheduleLength: 82,
       fromGame,
       toGame,
@@ -151,5 +153,21 @@ describe('GameRangeSelectorComponent', () => {
     component.onTrackHover({ ...hoverAt(0.9), buttons: 1 });
 
     expect(component.activeThumb()).toEqual('from');
+  });
+
+  it('picks the season by the year it starts in, which is what the splits API takes', () => {
+    const component = render();
+
+    component.onSeasonChange({ target: { value: '2026' } } as unknown as Event);
+
+    expect(component.season()).toEqual(2026);
+  });
+
+  it('ignores a season that is not a number rather than asking for an unnamed one', () => {
+    const component = render();
+
+    component.onSeasonChange({ target: { value: '' } } as unknown as Event);
+
+    expect(component.season()).toEqual(2025);
   });
 });

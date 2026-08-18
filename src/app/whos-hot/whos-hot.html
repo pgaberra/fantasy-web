@@ -1,14 +1,15 @@
 <div class="whos-hot">
   <div class="page-header">
     <h1>Who's hot</h1>
-    <p class="subtitle">
-      Pick a stretch of the {{ seasonLabel }} season and see who actually produced over it —
-      measured totals, scored the way your league scores.
-    </p>
+    <app-help-tip
+      label="What this page shows"
+      text="Which players have run hottest over a stretch of the season you pick — what they actually produced, scored the way your league scores."
+    />
   </div>
 
   <app-game-range-selector
-    [seasonLabel]="seasonLabel"
+    [seasons]="seasons"
+    [(season)]="season"
     [scheduleLength]="scheduleLength"
     [(fromGame)]="fromGame"
     [(toGame)]="toGame"
@@ -24,6 +25,7 @@
     <app-hot-players-table
       [hotPlayers]="hotPlayers()"
       [players]="players()"
+      [seasonLabel]="seasonLabel()"
       [activeColumns]="activeColumns()"
       [(scoringType)]="scoringType"
       [(statWeights)]="statWeights"

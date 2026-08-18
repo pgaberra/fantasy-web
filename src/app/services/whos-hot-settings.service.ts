@@ -5,6 +5,7 @@ import { RosterSlots } from '../api/models/roster-slots';
 import { YahooSync } from '../api/models/yahoo-sync';
 import { EspnSync } from '../api/models/espn-sync';
 import { DEFAULT_STAT_WEIGHTS } from '../draft-projection/projection-defaults';
+import { DEFAULT_SEASON_START_YEAR } from '../whos-hot/season.model';
 
 /**
  * Everything the Who's hot page remembers between visits: the span being looked at, how it is
@@ -15,6 +16,8 @@ import { DEFAULT_STAT_WEIGHTS } from '../draft-projection/projection-defaults';
  * and storing them server-side would mean a table and an API for a preference.
  */
 export interface WhosHotSettings {
+  /** The season being measured, as the year it starts in. */
+  season: number;
   fromGame: number;
   toGame: number;
   perGame: boolean;
@@ -83,6 +86,8 @@ export class WhosHotSettingsService {
         activeUtilityColumns: new Set(stored.activeUtilityColumns ?? []),
         // Written by a build that only knew about Yahoo: absent is "no ESPN league", not
         // undefined, so callers get the same answer they would from a fresh visit.
+        // Written before the season could be chosen: it could only ever have been the default.
+        season: stored.season ?? DEFAULT_SEASON_START_YEAR,
         espnSync: stored.espnSync ?? null,
         lastEspnLeagueId: stored.lastEspnLeagueId ?? null,
         // Defaults first, so a stat this page learns to score later arrives on its own.

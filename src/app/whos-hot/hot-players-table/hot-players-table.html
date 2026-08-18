@@ -94,79 +94,83 @@
     </div>
   </div>
 
-  <div class="table-wrapper">
-    <table>
-      <thead
-        app-projections-table-header
-        [activeColumns]="filteredActiveColumns()"
-        [scoringType]="scoringType()"
-        [(statWeights)]="statWeights"
-        [useDefaultDecimals]="useDefaultDecimals()"
-        [(decimalSettings)]="decimalSettings"
-        [sortColumn]="sortColumn()"
-        [sortDirection]="sortDirection()"
-        (sort)="onSort($event)"
-      ></thead>
-      <tbody>
-        @for (ranked of visiblePlayers(); track ranked.projection.playerId; let index = $index) {
-          <tr class="hot-row" [class.hot-row--unqualified]="!ranked.qualified">
-            <td class="col-rank">{{ index + 1 }}</td>
-            <td class="col-name player-name">
-              <div class="player-name-content">
-                @if (headshot(ranked.projection.playerId); as headshotUrl) {
-                  <img
-                    class="player-headshot"
-                    [src]="headshotUrl"
-                    [alt]="ranked.hot.name"
-                    loading="lazy"
-                  />
-                }
-                <span class="player-name-text"
-                  >{{ ranked.hot.name }} ({{ positionLabel(ranked) }})</span
-                >
-                @if (ranked.hot.teamAbbrev) {
-                  <span class="player-team">{{ ranked.hot.teamAbbrev }}</span>
-                }
-                <span class="player-games" [title]="'Games played within the selected range'">
-                  {{ ranked.hot.games }} GP
-                </span>
-                @if (!ranked.qualified) {
-                  <span
-                    class="below-min-games"
-                    title="Fewer games than the league's goalie minimum, so this goalie is ranked last."
-                    >Below min. games</span
+  @if (!seasonNotPlayed()) {
+    <div class="table-wrapper">
+      <table>
+        <thead
+          app-projections-table-header
+          [activeColumns]="filteredActiveColumns()"
+          [scoringType]="scoringType()"
+          [(statWeights)]="statWeights"
+          [useDefaultDecimals]="useDefaultDecimals()"
+          [(decimalSettings)]="decimalSettings"
+          [sortColumn]="sortColumn()"
+          [sortDirection]="sortDirection()"
+          (sort)="onSort($event)"
+        ></thead>
+        <tbody>
+          @for (ranked of visiblePlayers(); track ranked.projection.playerId; let index = $index) {
+            <tr class="hot-row" [class.hot-row--unqualified]="!ranked.qualified">
+              <td class="col-rank">{{ index + 1 }}</td>
+              <td class="col-name player-name">
+                <div class="player-name-content">
+                  @if (headshot(ranked.projection.playerId); as headshotUrl) {
+                    <img
+                      class="player-headshot"
+                      [src]="headshotUrl"
+                      [alt]="ranked.hot.name"
+                      loading="lazy"
+                    />
+                  }
+                  <span class="player-name-text"
+                    >{{ ranked.hot.name }} ({{ positionLabel(ranked) }})</span
                   >
-                }
-              </div>
-            </td>
-            @for (col of filteredActiveColumns().utility; track col) {
-              <td class="col-{{ col }}">
-                @if (!isApplicable(ranked, col)) {
-                  <span class="stat-placeholder">-</span>
-                } @else if (isToi(col)) {
-                  {{ statValue(ranked, col) | formatToi }}
-                } @else {
-                  {{ statValue(ranked, col) | number: decimalsFor(col) }}
-                }
+                  @if (ranked.hot.teamAbbrev) {
+                    <span class="player-team">{{ ranked.hot.teamAbbrev }}</span>
+                  }
+                  <span class="player-games" [title]="'Games played within the selected range'">
+                    {{ ranked.hot.games }} GP
+                  </span>
+                  @if (!ranked.qualified) {
+                    <span
+                      class="below-min-games"
+                      title="Fewer games than the league's goalie minimum, so this goalie is ranked last."
+                      >Below min. games</span
+                    >
+                  }
+                </div>
               </td>
-            }
-            @for (col of filteredActiveColumns().scoring; track col) {
-              <td>
-                @if (isApplicable(ranked, col)) {
-                  {{ statValue(ranked, col) | number: decimalsFor(col) }}
-                } @else {
-                  <span class="stat-placeholder">-</span>
-                }
-              </td>
-            }
-            <td class="fan-pts-col">{{ summaryValue(ranked) | number: '1.0-2' }}</td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  </div>
+              @for (col of filteredActiveColumns().utility; track col) {
+                <td class="col-{{ col }}">
+                  @if (!isApplicable(ranked, col)) {
+                    <span class="stat-placeholder">-</span>
+                  } @else if (isToi(col)) {
+                    {{ statValue(ranked, col) | formatToi }}
+                  } @else {
+                    {{ statValue(ranked, col) | number: decimalsFor(col) }}
+                  }
+                </td>
+              }
+              @for (col of filteredActiveColumns().scoring; track col) {
+                <td>
+                  @if (isApplicable(ranked, col)) {
+                    {{ statValue(ranked, col) | number: decimalsFor(col) }}
+                  } @else {
+                    <span class="stat-placeholder">-</span>
+                  }
+                </td>
+              }
+              <td class="fan-pts-col">{{ summaryValue(ranked) | number: '1.0-2' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
 
-  @if (matchingCount() === 0) {
+  @if (seasonNotPlayed()) {
+    <p class="table-empty">No games have been played in the {{ seasonLabel() }} season yet.</p>
+  } @else if (matchingCount() === 0) {
     <p class="table-empty">
       No players match. Try a wider game range, a lower minimum, or a different filter.
     </p>

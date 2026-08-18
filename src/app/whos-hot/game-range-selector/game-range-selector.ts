@@ -1,4 +1,6 @@
 import { Component, computed, input, model, signal } from '@angular/core';
+import { HelpTipComponent } from '../../shared/help-tip/help-tip';
+import { Season } from '../season.model';
 
 interface RangePreset {
   label: string;
@@ -33,11 +35,13 @@ const PRESETS: RangePreset[] = [
  */
 @Component({
   selector: 'app-game-range-selector',
+  imports: [HelpTipComponent],
   templateUrl: './game-range-selector.html',
   styleUrl: './game-range-selector.css',
 })
 export class GameRangeSelectorComponent {
-  readonly seasonLabel = input.required<string>();
+  readonly seasons = input.required<readonly Season[]>();
+  readonly season = model.required<number>();
   readonly scheduleLength = input.required<number>();
   readonly fromGame = model.required<number>();
   readonly toGame = model.required<number>();
@@ -93,6 +97,14 @@ export class GameRangeSelectorComponent {
     this.toGame.set(value);
     if (value < this.fromGame()) {
       this.fromGame.set(value);
+    }
+  }
+
+  /** Only a season that is actually on offer: `Number('')` is 0, which is finite and is not one. */
+  onSeasonChange(event: Event): void {
+    const startYear = Number((event.target as HTMLSelectElement).value);
+    if (this.seasons().some((season) => season.startYear === startYear)) {
+      this.season.set(startYear);
     }
   }
 

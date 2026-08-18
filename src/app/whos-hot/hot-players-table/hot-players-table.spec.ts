@@ -102,7 +102,19 @@ describe('HotPlayersTableComponent', () => {
       perGame: overrides.perGame ?? false,
       minGames: overrides.minGames ?? 1,
       syncedLeagueName: overrides.syncedLeagueName ?? null,
+      seasonLabel: '2025-26',
     }).point.componentInstance;
+
+  it('tells an empty season apart from a filter that matched nobody', () => {
+    // Nothing came back at all: a season on the dropdown that has not been played yet.
+    expect(render([]).seasonNotPlayed()).toBe(true);
+
+    const filteredOut = render([skater(1, 20)]);
+    filteredOut.searchTerm.set('nobody by that name');
+
+    expect(filteredOut.seasonNotPlayed()).toBe(false);
+    expect(filteredOut.matchingCount()).toEqual(0);
+  });
 
   it('offers no League setup in a points league that has imported nothing — the menu would be empty', () => {
     const component = render([skater(1, 20)]);
