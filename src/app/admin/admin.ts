@@ -1,7 +1,7 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { AdminService } from '../services/admin.service';
-import { SyncRunResponse, YahooProbeResponse } from '../api/models';
+import { LeagueSummary, SyncRunResponse, YahooProbeResponse } from '../api/models';
 
 @Component({
   selector: 'app-admin',
@@ -22,6 +22,15 @@ export class AdminComponent implements OnInit {
   // being able to vary one of them at a time and read what Yahoo says back.
   readonly probeGameKey = signal('nhl');
   readonly probeSeason = signal('');
+  readonly probeLeagueKey = signal('');
+
+  /**
+   * The service account's leagues. Loaded because a league key is otherwise a thing you have to
+   * go and find, and because the call succeeding at all says the account and its permission are
+   * in order — which narrows a refusal elsewhere to what was asked for.
+   */
+  readonly leagues = signal<LeagueSummary[]>([]);
+  readonly leaguesError = signal<string | null>(null);
   readonly probing = signal(false);
   readonly probeResult = signal<YahooProbeResponse | null>(null);
   readonly probeError = signal<string | null>(null);
@@ -32,6 +41,19 @@ export class AdminComponent implements OnInit {
   ngOnInit(): void {
     this.loadConnection();
     this.loadRuns();
+    this.loadLeagues();
+  }
+
+  loadLeagues(): void {
+    this.leaguesError.set(null);
+    this.adminService.yahooLeagues().subscribe({
+      next: (response) => this.leagues.set(response.leagues ?? []),
+      error: () => this.leaguesError.set("Yahoo would not list the service account's leagues."),
+    });
+  }
+
+  useLeagueKey(leagueKey: string): void {
+    this.probeLeagueKey.set(leagueKey);
   }
 
   loadConnection(): void {
@@ -77,13 +99,22 @@ export class AdminComponent implements OnInit {
     this.probeSeason.set((event.target as HTMLInputElement).value);
   }
 
+  onProbeLeagueKeyInput(event: Event): void {
+    this.probeLeagueKey.set((event.target as HTMLInputElement).value);
+  }
+
   runProbe(): void {
     this.probing.set(true);
     this.probeResult.set(null);
     this.probeError.set(null);
     const season = this.probeSeason().trim();
+    const leagueKey = this.probeLeagueKey().trim();
     this.adminService
-      .probeYahooAccess(this.probeGameKey().trim() || 'nhl', season || undefined)
+      .probeYahooAccess(
+        this.probeGameKey().trim() || 'nhl',
+        season || undefined,
+        leagueKey || undefined,
+      )
       .subscribe({
         next: (result) => {
           this.probing.set(false);
