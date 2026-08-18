@@ -175,7 +175,20 @@
       <button type="button" class="btn btn-secondary" [disabled]="probing()" (click)="runProbe()">
         {{ probing() ? 'Asking Yahoo…' : 'Run probe' }}
       </button>
+      <button
+        type="button"
+        class="btn btn-secondary btn-sm"
+        [disabled]="probing()"
+        (click)="runLeaguesProbe()"
+      >
+        Can we list our leagues?
+      </button>
     </div>
+    <p class="probe-hint">
+      The second button ignores the fields above and asks the simplest question there is: will Yahoo
+      list this account's own leagues? That is the floor — if even that is refused, no route into
+      the Fantasy API is open to us, and no choice of endpoint will help.
+    </p>
 
     @if (leagues().length) {
       <div class="probe-leagues">

@@ -103,7 +103,16 @@ export class AdminComponent implements OnInit {
     this.probeLeagueKey.set((event.target as HTMLInputElement).value);
   }
 
-  runProbe(): void {
+  /**
+   * The floor question: can this account list its own leagues at all? Nothing else is sent,
+   * because a refusal here is not about which endpoint was picked — it is about whether any
+   * route into the Fantasy API is open to us.
+   */
+  runLeaguesProbe(): void {
+    this.runProbe('leagues');
+  }
+
+  runProbe(target?: string): void {
     this.probing.set(true);
     this.probeResult.set(null);
     this.probeError.set(null);
@@ -114,6 +123,7 @@ export class AdminComponent implements OnInit {
         this.probeGameKey().trim() || 'nhl',
         season || undefined,
         leagueKey || undefined,
+        target,
       )
       .subscribe({
         next: (result) => {
