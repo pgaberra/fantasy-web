@@ -100,8 +100,13 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
     while the page scrolls past it. The projections table runs down the page rather than inside a
     viewport-tall scrollbox, but its wrapper stays a horizontal scroll container for the stat
     columns — and `overflow-x: auto` makes that wrapper the scrollport on both axes, so a sticky
-    `thead` has nothing to stick to. The directive translates the row group instead. A page that
-    floats a bar over its top (the landing nav) sets `--pinned-header-inset` to that bar's height;
+    `thead` has nothing to stick to. The row group is translated instead — by a scroll-driven CSS
+    animation (`styles.css`), so the browser runs the pin off the main thread and the header keeps
+    up with a fast flick rather than trailing the rows and catching up at rest. The directive only
+    measures what the timeline can't work out for itself (how far the header may travel, and where
+    the pin begins), and keeps the old per-frame scroll handler for browsers without scroll
+    timelines. A page that floats a bar over its top (the landing nav) sets
+    `--pinned-header-inset` to that bar's height;
     it is registered with `@property` in `styles.css` as a `<length>`, because the directive reads
     the value back and an unregistered custom property returns raw tokens.
 - `environments/` — `environment.ts` (dev: `apiUrl: http://localhost:8080/api/v1`),

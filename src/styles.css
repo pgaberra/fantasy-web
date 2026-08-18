@@ -8,6 +8,45 @@
   initial-value: 0px;
 }
 
+/* The pin itself, for browsers that can drive an animation from the scroll position: the table
+   declares a view timeline, and its header rides a `translateY` along it. The browser runs that
+   off the main thread, so the header holds its place through a fast flick — a scroll handler
+   cannot, because the rows are moved by the compositor while it still waits for its frame.
+   The range is measured from `cover 0%`, the moment the table's top edge meets the bottom of the
+   window: `--pinned-header-pin-start` is the scrolling from there to the table's top edge
+   reaching the top of the window (less whatever bar the page floats over it), and the travel ends
+   where the header would otherwise hang below the last row. `PinnedTableHeaderDirective` measures
+   both, and falls back to a scroll handler where none of this is understood. */
+@supports (animation-timeline: view()) {
+  @keyframes pinned-table-header {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(var(--pinned-header-travel, 0px));
+    }
+  }
+
+  [appPinnedTableHeader] {
+    view-timeline: --pinned-table-header block;
+  }
+
+  [appPinnedTableHeader] > table > thead {
+    animation: pinned-table-header linear both;
+    animation-timeline: --pinned-table-header;
+    animation-range: cover var(--pinned-header-pin-start, 0px) cover
+      var(--pinned-header-pin-end, 0px);
+    /* The reduced-motion reset below stamps `animation-duration: 0.01ms !important` on every
+       animation in the app. Nothing here is motion anyone opted out of — it is a header holding
+       its place while the page scrolls, which is what `position: sticky` would do if it could
+       reach past the horizontal scroll container. Chromium ignores a time duration on a
+       progress-based timeline, so this line changes nothing there; it is here for the engine
+       that reads it the other way and would slam the header to the end of its travel at the
+       first pixel of scroll. */
+    animation-duration: auto !important;
+  }
+}
+
 :root {
   --color-primary: #0f3460;
   --color-primary-hover: #1a4a80;
