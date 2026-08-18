@@ -16,6 +16,8 @@ const settings: WhosHotSettings = {
   rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
   minGoalieGames: 30,
   yahooSync: { leagueName: 'HHL', leagueKey: 'nhl.l.1', syncedAt: 't' },
+  espnSync: null,
+  lastEspnLeagueId: null,
 };
 
 describe('WhosHotSettingsService', () => {
@@ -51,6 +53,32 @@ describe('WhosHotSettingsService', () => {
     expect(service.load()).toEqual(null);
     // The unreadable blob is cleared, so it can't fail every subsequent visit too.
     expect(localStorage.getItem('slapstat.whosHot.settings')).toEqual(null);
+  });
+
+  it('round-trips an ESPN league the same way it does a Yahoo one', () => {
+    service.save({
+      ...settings,
+      yahooSync: null,
+      espnSync: { leagueName: 'Puck Yeah', leagueId: '12345', syncedAt: 't' },
+      lastEspnLeagueId: '12345',
+    });
+
+    const loaded = service.load();
+
+    expect(loaded?.espnSync).toEqual({ leagueName: 'Puck Yeah', leagueId: '12345', syncedAt: 't' });
+    expect(loaded?.lastEspnLeagueId).toEqual('12345');
+  });
+
+  it('reads a blob written before ESPN was remembered as having no ESPN league', () => {
+    localStorage.setItem(
+      'slapstat.whosHot.settings',
+      JSON.stringify({ fromGame: 1, toGame: 82, yahooSync: null }),
+    );
+
+    const loaded = service.load();
+
+    expect(loaded?.espnSync).toEqual(null);
+    expect(loaded?.lastEspnLeagueId).toEqual(null);
   });
 
   it('treats a blob missing its column arrays as having no columns rather than throwing', () => {

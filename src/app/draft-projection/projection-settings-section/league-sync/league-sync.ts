@@ -35,15 +35,21 @@ export class LeagueSyncComponent {
   protected readonly anyAvailable = this.yahooAvailable || this.espnAvailable;
   protected readonly hint = this.buildHint();
 
-  // A projection already synced from Yahoo defaults to Yahoo so its status stays shown, unless
-  // Yahoo's sync is currently off. Otherwise the tabs only mean something when there are two of
-  // them: with a single platform on offer the picker is a one-button choice, so make it, and the
-  // user lands straight on the form instead of having to click a tab that had no alternative.
+  // Already synced from somewhere? Open on that platform, so its status stays shown and
+  // re-syncing is one click — unless that platform's sync is currently off. Otherwise the tabs
+  // only mean something when there are two of them: with a single platform on offer the picker
+  // is a one-button choice, so make it, and the user lands straight on the form instead of
+  // having to click a tab that had no alternative.
   readonly provider = linkedSignal<Provider>(() => this.initialProvider());
 
   private initialProvider(): Provider {
     if (this.lastSync() && this.yahooAvailable) {
       return 'yahoo';
+    }
+    // The stamp of the last ESPN sync, not the remembered league id: the id outlives an unsync
+    // and would keep re-opening on ESPN long after the settings stopped being ESPN's.
+    if (this.lastEspnSyncedAt() && this.espnAvailable) {
+      return 'espn';
     }
     if (this.yahooAvailable && this.espnAvailable) {
       return 'none';

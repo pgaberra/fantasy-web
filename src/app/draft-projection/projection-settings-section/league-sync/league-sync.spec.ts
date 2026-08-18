@@ -92,6 +92,34 @@ describe('LeagueSyncComponent', () => {
     expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeTruthy();
   });
 
+  it('defaults to ESPN when the settings were already synced from ESPN', async () => {
+    environment.yahooSyncDisabled = false;
+    environment.espnLeaguesEnabled = true;
+    await MockBuilder(LeagueSyncComponent)
+      .mock(YahooLeagueSyncComponent)
+      .mock(EspnLeagueSyncComponent);
+    const fixture = MockRender(LeagueSyncComponent, {
+      lastEspnLeagueId: '12345',
+      lastEspnSyncedAt: 't',
+    });
+
+    expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeNull();
+  });
+
+  it('leaves the picker open on a league id remembered from a sync that was since undone', async () => {
+    environment.yahooSyncDisabled = false;
+    environment.espnLeaguesEnabled = true;
+    await MockBuilder(LeagueSyncComponent)
+      .mock(YahooLeagueSyncComponent)
+      .mock(EspnLeagueSyncComponent);
+    // The id outlives an unsync; the stamp does not, and the stamp is what claims a platform.
+    const fixture = MockRender(LeagueSyncComponent, { lastEspnLeagueId: '12345' });
+
+    expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeNull();
+  });
+
   it('defaults to Yahoo when the projection was already synced from Yahoo', async () => {
     environment.yahooSyncDisabled = false;
     environment.espnLeaguesEnabled = true;

@@ -3,6 +3,7 @@ import { ScoringType } from '../models/projection.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
 import { RosterSlots } from '../api/models/roster-slots';
 import { YahooSync } from '../api/models/yahoo-sync';
+import { EspnSync } from '../api/models/espn-sync';
 import { DEFAULT_STAT_WEIGHTS } from '../draft-projection/projection-defaults';
 
 /**
@@ -25,7 +26,11 @@ export interface WhosHotSettings {
   leagueSize: number;
   rosterSlots: RosterSlots;
   minGoalieGames: number;
+  /** At most one of these is set: a leaderboard is scored by one league, on one platform. */
   yahooSync: YahooSync | null;
+  espnSync: EspnSync | null;
+  /** Survives an unsync: the stamp is the claim, this is the league they import from. */
+  lastEspnLeagueId: string | null;
 }
 
 const STORAGE_KEY = 'slapstat.whosHot.settings';
@@ -76,6 +81,10 @@ export class WhosHotSettingsService {
         ...stored,
         activeScoringColumns: new Set(stored.activeScoringColumns ?? []),
         activeUtilityColumns: new Set(stored.activeUtilityColumns ?? []),
+        // Written by a build that only knew about Yahoo: absent is "no ESPN league", not
+        // undefined, so callers get the same answer they would from a fresh visit.
+        espnSync: stored.espnSync ?? null,
+        lastEspnLeagueId: stored.lastEspnLeagueId ?? null,
         // Defaults first, so a stat this page learns to score later arrives on its own.
         statWeights: { ...DEFAULT_STAT_WEIGHTS, ...customised },
       };
