@@ -46,8 +46,9 @@ export class AdminService {
     gameKey: string,
     season?: string,
     leagueKey?: string,
+    target?: string,
   ): Observable<YahooProbeResponse> {
-    return from(this.api.invoke(probeYahooAccess, { gameKey, season, leagueKey }));
+    return from(this.api.invoke(probeYahooAccess, { gameKey, season, leagueKey, target }));
   }
 
   /** The service account's own leagues — where a league key for the probe comes from. */

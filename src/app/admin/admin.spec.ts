@@ -94,7 +94,7 @@ describe('AdminComponent', () => {
 
       runProbe(fixture);
 
-      expect(probeYahooAccess).toHaveBeenCalledWith('nhl', undefined, undefined);
+      expect(probeYahooAccess).toHaveBeenCalledWith('nhl', undefined, undefined, undefined);
     });
 
     /**
@@ -108,7 +108,20 @@ describe('AdminComponent', () => {
       fixture.point.componentInstance.runProbe();
       fixture.detectChanges();
 
-      expect(probeYahooAccess).toHaveBeenCalledWith('nhl', undefined, '465.l.12345');
+      expect(probeYahooAccess).toHaveBeenCalledWith('nhl', undefined, '465.l.12345', undefined);
+    });
+
+    /**
+     * The floor question has to be askable from the page, or it does not get asked: everything we
+     * knew until now came from a call that threw and hid Yahoo's answer.
+     */
+    it('asks whether the account can list its own leagues', () => {
+      const fixture = MockRender(AdminComponent);
+
+      fixture.point.componentInstance.runLeaguesProbe();
+      fixture.detectChanges();
+
+      expect(probeYahooAccess).toHaveBeenCalledWith('nhl', undefined, undefined, 'leagues');
     });
 
     it('offers the service account league keys to fill it in', () => {
@@ -128,7 +141,7 @@ describe('AdminComponent', () => {
 
       runProbe(fixture);
 
-      expect(probeYahooAccess).toHaveBeenCalledWith('nhl', undefined, undefined);
+      expect(probeYahooAccess).toHaveBeenCalledWith('nhl', undefined, undefined, undefined);
     });
   });
 });
