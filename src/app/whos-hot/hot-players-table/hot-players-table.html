@@ -23,10 +23,6 @@
           </button>
         </div>
 
-        <!-- Ahead of the two menus: what this slot holds is the call to action for a leaderboard
-             not yet framed by a league, and it stops asking once one has been imported. -->
-        <ng-content select="[table-toolbar-actions]" />
-
         <!-- A points league sets its scoring in the weight row under the column headings, so
              there is nothing behind this button unless the leaderboard ranks by category or has
              a league to re-sync. An affordance with an empty menu behind it is worse than none. -->
@@ -71,6 +67,12 @@
           </svg>
           Stats
         </button>
+
+        <!-- Last in the group, and deliberately: this slot is a call to action while no league
+             has been imported and the league's name afterwards, so it is the one item here whose
+             width changes. Ahead of the buttons it would shove them sideways the moment a league
+             was connected or renamed. -->
+        <ng-content select="[table-toolbar-actions]" />
       </div>
 
       <div class="filter-controls">
