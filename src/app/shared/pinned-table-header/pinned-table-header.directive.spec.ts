@@ -27,6 +27,8 @@ const HEAD_HEIGHT = 60;
 class HostComponent {}
 
 describe('PinnedTableHeaderDirective', () => {
+  let supportsScrollTimelines = false;
+
   beforeEach(() => {
     // jsdom lays nothing out, so the geometry the directive reads is supplied per test. Frames
     // run inline to keep the assertions on the same tick as the scroll that caused them.
@@ -34,6 +36,11 @@ describe('PinnedTableHeaderDirective', () => {
       callback(0);
       return 1;
     });
+    // Which of the two paths runs is stated per test rather than left to what jsdom claims to
+    // support: the scroll handler below is the fallback, and every browser we ship to takes the
+    // timeline instead.
+    supportsScrollTimelines = false;
+    vi.spyOn(CSS, 'supports').mockImplementation(() => supportsScrollTimelines);
     TestBed.configureTestingModule({ imports: [HostComponent] });
   });
 
@@ -117,5 +124,34 @@ describe('PinnedTableHeaderDirective', () => {
     scroll();
 
     expect(head.style.transform).toEqual('translateY(250px)');
+  });
+
+  describe('where the browser drives animations from the scroll position', () => {
+    beforeEach(() => {
+      supportsScrollTimelines = true;
+    });
+
+    it('hands the timeline the distance the header may travel', () => {
+      const { fixture } = setup(120, 1000);
+      const wrapper = fixture.nativeElement.querySelector('.table-wrapper') as HTMLElement;
+
+      expect(wrapper.style.getPropertyValue('--pinned-header-travel')).toEqual(
+        `${1000 - HEAD_HEIGHT}px`,
+      );
+    });
+
+    it('asks for no travel at all from a table no taller than its own header', () => {
+      const { fixture } = setup(120, HEAD_HEIGHT - 10);
+      const wrapper = fixture.nativeElement.querySelector('.table-wrapper') as HTMLElement;
+
+      expect(wrapper.style.getPropertyValue('--pinned-header-travel')).toEqual('0px');
+    });
+
+    it('leaves the header itself alone, since the timeline is what follows the scroll', () => {
+      const { head } = setup(-250);
+      scroll();
+
+      expect(head.style.transform).toEqual('');
+    });
   });
 });
