@@ -8,6 +8,7 @@ import { ActiveColumns, ScoringType } from '../models/projection.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
 import { RosterSlots } from '../api/models/roster-slots';
 import { YahooSync } from '../api/models/yahoo-sync';
+import { EspnSync } from '../api/models/espn-sync';
 import { LeagueProjectionSettingsResponse } from '../api/models/league-projection-settings-response';
 import { LeagueSyncComponent } from '../draft-projection/projection-settings-section/league-sync/league-sync';
 import { LeagueSyncDialogComponent } from '../draft-projection/league-sync-dialog/league-sync-dialog';
@@ -91,10 +92,26 @@ export class WhosHotComponent {
   readonly rosterSlots = signal<RosterSlots>(this.stored?.rosterSlots ?? DEFAULT_ROSTER_SLOTS);
   readonly minGoalieGames = signal(this.stored?.minGoalieGames ?? DEFAULT_MIN_GOALIE_GAMES);
   readonly yahooSync = signal<YahooSync | null>(this.stored?.yahooSync ?? null);
+  readonly espnSync = signal<EspnSync | null>(this.stored?.espnSync ?? null);
+  /** Kept past an import from elsewhere, so returning to ESPN doesn't ask for the id again. */
+  readonly lastEspnLeagueId = signal<string | null>(this.stored?.lastEspnLeagueId ?? null);
   readonly showSyncDialog = signal<boolean>(false);
 
-  /** The league these settings came from, once one has been imported. */
-  readonly syncedLeagueName = computed(() => this.yahooSync()?.leagueName ?? null);
+  /**
+   * The league these settings came from, whichever platform it was. The leaderboard is scored by
+   * one league at a time, so the two stamps are alternatives rather than a precedence.
+   */
+  readonly syncedLeagueName = computed(
+    () => this.yahooSync()?.leagueName ?? this.espnSync()?.leagueName ?? null,
+  );
+
+  /** Which platform that league is on, so the toolbar can wear its mark. */
+  readonly syncedProvider = computed<'yahoo' | 'espn' | null>(() => {
+    if (this.yahooSync()) {
+      return 'yahoo';
+    }
+    return this.espnSync() ? 'espn' : null;
+  });
 
   readonly activeColumns = computed<ActiveColumns>(() => ({
     scoring: this.activeScoringColumns(),
@@ -142,6 +159,8 @@ export class WhosHotComponent {
         rosterSlots: this.rosterSlots(),
         minGoalieGames: this.minGoalieGames(),
         yahooSync: this.yahooSync(),
+        espnSync: this.espnSync(),
+        lastEspnLeagueId: this.lastEspnLeagueId(),
       });
     });
   }
@@ -162,13 +181,21 @@ export class WhosHotComponent {
       leagueKey: result.leagueKey,
       syncedAt: new Date().toISOString(),
     });
+    // These settings are Yahoo's now, so an ESPN stamp would mislabel them.
+    this.espnSync.set(null);
     this.closeSyncDialogUnlessThereIsMoreToSay(result.settings.unsupportedStats);
   }
 
   applyEspnSettings(result: EspnSyncResult): void {
     this.applyLeagueSettings(result.settings);
-    // ESPN provenance isn't carried on the sync stamp yet, so clear any stale Yahoo one rather
-    // than mislabel these settings as Yahoo's.
+    this.espnSync.set({
+      // ESPN names the league in its settings response; the user only ever typed the id.
+      leagueName: result.leagueName ?? result.leagueId,
+      leagueId: result.leagueId,
+      syncedAt: new Date().toISOString(),
+    });
+    this.lastEspnLeagueId.set(result.leagueId);
+    // These settings are ESPN's now, so a Yahoo stamp would mislabel them.
     this.yahooSync.set(null);
     this.closeSyncDialogUnlessThereIsMoreToSay(result.settings.unsupportedStats);
   }
