@@ -6,13 +6,14 @@
   box-shadow: var(--shadow-md);
 }
 
-/* Search plus two filters don't fit beside the title on a tablet, and unlike the table they
-   have no wrapper to scroll inside — without wrapping they push the whole page sideways. */
+/* The league toolbar and the filters together are far too heavy to sit beside the title, so
+   the title keeps a row of its own and everything that acts on the table goes beneath it.
+   Unlike the table, these controls have no wrapper to scroll inside — without wrapping they
+   would push the whole page sideways. */
 .table-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
   gap: var(--space-3);
   margin: 0 0 var(--space-4);
 }
@@ -45,6 +46,72 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-3) var(--space-4);
+}
+
+/* What frames the whole leaderboard sits to the left; the controls that only narrow what is on
+   screen stay together on the right. Held together with nowrap so the group breaks as a unit
+   rather than fraying one button at a time and stranding the filters beside a two-row toolbar. */
+.league-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: nowrap;
+}
+
+.filter-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.league-controls .btn svg {
+  flex: none;
+  margin-right: 0.35rem;
+  vertical-align: -2px;
+}
+
+.league-setup-btn {
+  display: inline-flex;
+  align-items: center;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.segmented button {
+  background: none;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 0.3rem 0.9rem;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  /* --color-text-muted lands at 4.4:1 on the track — just under the 4.5:1 the option needs to be
+     readable rather than to look disabled. Mixed toward the ink instead so the unpicked option
+     stays quieter than the picked one without dropping below it. */
+  color: color-mix(in srgb, var(--color-primary) 78%, var(--color-surface-alt));
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+/* A white pill on a near-white track is a weak signal on its own; the border and the heavier
+   weight are what make the picked option legible at a glance. */
+.segmented button[aria-pressed='true'] {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  padding: calc(0.3rem - 1px) calc(0.9rem - 1px);
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+  box-shadow: var(--shadow-sm);
 }
 
 .search-control {
@@ -218,14 +285,17 @@ tbody tr:hover td.fan-pts-col {
     padding: var(--space-4);
   }
 
-  .table-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-3);
-  }
-
   .table-controls {
     flex-wrap: wrap;
+  }
+
+  /* No width to hold the group on one line here, and overflowing sideways is worse than wrapping. */
+  .league-controls {
+    flex-wrap: wrap;
+  }
+
+  .filter-controls {
+    margin-left: 0;
   }
 
   .search-control {

@@ -1,4 +1,13 @@
-import { Component, computed, inject, input, linkedSignal, model, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  model,
+  output,
+  signal,
+} from '@angular/core';
 import { Player } from '../../models/player.model';
 import {
   ActiveColumns,
@@ -15,6 +24,7 @@ import {
   ScoringStatKey,
   SKATER_SCORING_STAT_KEYS,
   StatKey,
+  UtilityStatKey,
 } from '../../models/stat-key.model';
 import { ProjectionCalculationService } from '../../services/projection-calculation.service';
 import { PositionFilterService } from '../../services/position-filter.service';
@@ -34,10 +44,21 @@ import {
 import { ProjectionsTableHeaderComponent } from '../../draft-projection/player-projections-table/projections-table-header/projections-table-header';
 import { PositionFilterComponent } from '../../draft-projection/player-projections-table/position-filter/position-filter';
 import { TeamFilterComponent } from '../../draft-projection/player-projections-table/team-filter/team-filter';
+import { ColumnsMenuComponent } from '../../draft-projection/player-projections-table/columns-menu/columns-menu';
+import { LeagueSettingsMenuComponent } from '../../draft-projection/player-projections-table/league-settings-menu/league-settings-menu';
+import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
 import { FormatToiPipe } from '../../pipes/format-toi.pipe';
 import { DecimalPipe } from '@angular/common';
 
 const PLAYERS_PER_PAGE = 100;
+
+function toggledSet<T>(members: ReadonlySet<T>, member: T): Set<T> {
+  const next = new Set(members);
+  if (!next.delete(member)) {
+    next.add(member);
+  }
+  return next;
+}
 
 interface RankedPlayer extends ScoredProjection {
   hot: HotPlayer;
@@ -48,8 +69,9 @@ interface RankedPlayer extends ScoredProjection {
  * league scores it.
  *
  * Read-only by design. These are numbers that already happened — unlike a projection there is
- * nothing here to edit, so the table shows values rather than inputs. The stat weights in the
- * header stay editable, because those belong to the league, not to the measurement.
+ * nothing here to edit, so the table shows values rather than inputs. What stays editable is the
+ * league: the stat weights in the header, and the toolbar above it, because those decide how the
+ * measurement is scored rather than what it measured.
  */
 @Component({
   selector: 'app-hot-players-table',
@@ -57,6 +79,9 @@ interface RankedPlayer extends ScoredProjection {
     ProjectionsTableHeaderComponent,
     PositionFilterComponent,
     TeamFilterComponent,
+    PopoverTriggerDirective,
+    LeagueSettingsMenuComponent,
+    ColumnsMenuComponent,
     FormatToiPipe,
     DecimalPipe,
   ],
@@ -72,15 +97,33 @@ export class HotPlayersTableComponent {
   readonly hotPlayers = input.required<HotPlayer[]>();
   readonly players = input.required<Player[]>();
   readonly activeColumns = input.required<ActiveColumns>();
-  readonly scoringType = input.required<ScoringType>();
   readonly statWeights = model.required<Record<ScoringStatKey, number>>();
   readonly decimalSettings = model<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
   readonly useDefaultDecimals = input<boolean>(true);
-  readonly leagueSize = input<number>(DEFAULT_LEAGUE_SIZE);
-  readonly rosterSlots = input<RosterSlots>(DEFAULT_ROSTER_SLOTS);
-  readonly minGoalieGames = input<number>(DEFAULT_MIN_GOALIE_GAMES);
   readonly perGame = input<boolean>(false);
   readonly minGames = input<number>(1);
+
+  // Everything the settings panel above the table used to own. Two-way, so the page keeps the
+  // state it persists while the toolbar is the thing that changes it.
+  readonly scoringType = model.required<ScoringType>();
+  readonly activeScoringColumns = model<Set<ScoringStatKey>>(new Set<ScoringStatKey>());
+  readonly activeUtilityColumns = model<Set<UtilityStatKey>>(new Set<UtilityStatKey>());
+  readonly leagueSize = model<number>(DEFAULT_LEAGUE_SIZE);
+  readonly rosterSlots = model<RosterSlots>(DEFAULT_ROSTER_SLOTS);
+  readonly minGoalieGames = model<number>(DEFAULT_MIN_GOALIE_GAMES);
+
+  /** The league these settings were imported from, once there is one. */
+  readonly syncedLeagueName = input<string | null>(null);
+  readonly manageSyncRequested = output<void>();
+
+  /**
+   * The League setup menu holds the category ranking inputs and, once a league has been imported,
+   * where it came from. A points league that has imported nothing leaves it empty — its scoring is
+   * the weight row in the table header — so the button is not offered at all.
+   */
+  readonly hasLeagueSetup = computed(
+    () => this.scoringType() === 'category' || !!this.syncedLeagueName(),
+  );
 
   readonly sortColumn = signal<SortColumn>('summary');
   readonly sortDirection = signal<SortDirection>('desc');
@@ -250,6 +293,18 @@ export class HotPlayersTableComponent {
   );
 
   readonly hasMore = computed(() => this.visibleCount() < this.matchingCount());
+
+  selectScoringType(type: ScoringType): void {
+    this.scoringType.set(type);
+  }
+
+  toggleScoringColumn(key: ScoringStatKey): void {
+    this.activeScoringColumns.update((columns) => toggledSet(columns, key));
+  }
+
+  toggleUtilityColumn(key: UtilityStatKey): void {
+    this.activeUtilityColumns.update((columns) => toggledSet(columns, key));
+  }
 
   onSort(column: SortColumn): void {
     if (this.sortColumn() === column) {

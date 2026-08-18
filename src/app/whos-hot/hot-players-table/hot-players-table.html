@@ -5,20 +5,90 @@
       <span class="mode-badge">{{ perGame() ? 'Per game' : 'Totals' }}</span>
     </div>
     <div class="table-controls">
-      <div class="search-control">
-        <label for="hot-player-search">Search</label>
-        <input
-          id="hot-player-search"
-          type="search"
-          placeholder="Search player…"
-          [value]="searchTerm()"
-          (input)="onSearchInput($event)"
-        />
+      <div class="league-controls">
+        <div class="segmented" role="group" aria-label="League type">
+          <button
+            type="button"
+            [attr.aria-pressed]="scoringType() === 'points'"
+            (click)="selectScoringType('points')"
+          >
+            Points
+          </button>
+          <button
+            type="button"
+            [attr.aria-pressed]="scoringType() === 'category'"
+            (click)="selectScoringType('category')"
+          >
+            Category
+          </button>
+        </div>
+
+        <!-- Ahead of the two menus: what this slot holds is the call to action for a leaderboard
+             not yet framed by a league, and it stops asking once one has been imported. -->
+        <ng-content select="[table-toolbar-actions]" />
+
+        <!-- A points league sets its scoring in the weight row under the column headings, so
+             there is nothing behind this button unless the leaderboard ranks by category or has
+             a league to re-sync. An affordance with an empty menu behind it is worse than none. -->
+        @if (hasLeagueSetup()) {
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm league-setup-btn"
+            [appPopover]="leagueMenu"
+          >
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" />
+            </svg>
+            League setup
+          </button>
+        }
+
+        <button type="button" class="btn btn-secondary btn-sm" [appPopover]="columnsMenu">
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="3" y="4" width="5.5" height="16" rx="1" />
+            <rect x="10.5" y="4" width="5.5" height="16" rx="1" />
+            <path d="M19.5 9v11M18 4h5" />
+          </svg>
+          Stats
+        </button>
       </div>
-      <app-position-filter [(value)]="positionFilter" />
-      @if (availableTeams().length) {
-        <app-team-filter [teams]="availableTeams()" [(value)]="teamFilter" />
-      }
+
+      <div class="filter-controls">
+        <div class="search-control">
+          <label for="hot-player-search">Search</label>
+          <input
+            id="hot-player-search"
+            type="search"
+            placeholder="Search player…"
+            [value]="searchTerm()"
+            (input)="onSearchInput($event)"
+          />
+        </div>
+        <app-position-filter [(value)]="positionFilter" />
+        @if (availableTeams().length) {
+          <app-team-filter [teams]="availableTeams()" [(value)]="teamFilter" />
+        }
+      </div>
     </div>
   </div>
 
@@ -109,3 +179,26 @@
     </div>
   }
 </section>
+
+<ng-template #leagueMenu>
+  <app-league-settings-menu
+    [scoringType]="scoringType()"
+    [syncedLeagueName]="syncedLeagueName()"
+    (manageSync)="manageSyncRequested.emit()"
+    [(leagueSize)]="leagueSize"
+    [(rosterSlots)]="rosterSlots"
+    [(minGoalieGames)]="minGoalieGames"
+  />
+</ng-template>
+
+<!-- Utility stats are hidden here: the leaderboard shows games played beside every name already,
+     and the rest of that group exists to drive a projection's scaling, which this page has none of. -->
+<ng-template #columnsMenu>
+  <app-columns-menu
+    [activeScoringColumns]="activeScoringColumns()"
+    [activeUtilityColumns]="activeUtilityColumns()"
+    [showUtility]="false"
+    (scoringToggled)="toggleScoringColumn($event)"
+    (utilityToggled)="toggleUtilityColumn($event)"
+  />
+</ng-template>
