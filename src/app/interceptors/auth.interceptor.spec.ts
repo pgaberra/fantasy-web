@@ -110,4 +110,36 @@ describe('authInterceptor', () => {
     expect(authService.refresh).not.toHaveBeenCalled();
     expect(authService.logout).toHaveBeenCalledTimes(1);
   });
+
+  /**
+   * A public page whose data turns out to need auth must be allowed to say so itself.
+   * `logout()` navigates to /login, so calling it for a visitor who never signed in threw
+   * them off the page they were reading — the landing demo's own error state never showed.
+   */
+  it('does not log out a visitor who was never signed in', async () => {
+    authService.getToken.mockReturnValue(null);
+    authService.getRefreshToken.mockReturnValue(null);
+    const next = vi.fn<HttpHandlerFn>().mockReturnValue(unauthorized());
+
+    await expect(run(new HttpRequest('GET', '/api/v1/players/skaters'), next)).rejects.toBeTruthy();
+
+    expect(authService.logout).not.toHaveBeenCalled();
+    expect(authService.refresh).not.toHaveBeenCalled();
+  });
+
+  // The access token is the half that expires; a refresh token on its own is still a session.
+  it('still refreshes when only the access token is gone', async () => {
+    authService.getToken.mockReturnValue(null);
+    authService.getRefreshToken.mockReturnValue('refresh');
+    authService.refresh.mockReturnValue(of(tokens));
+    const next = vi
+      .fn<HttpHandlerFn>()
+      .mockReturnValueOnce(unauthorized())
+      .mockReturnValueOnce(of(new HttpResponse({ status: 200 })));
+
+    await run(new HttpRequest('GET', '/api/v1/players/skaters'), next);
+
+    expect(authService.refresh).toHaveBeenCalledTimes(1);
+    expect(authService.logout).not.toHaveBeenCalled();
+  });
 });
