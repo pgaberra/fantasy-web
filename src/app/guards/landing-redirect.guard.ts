@@ -16,10 +16,9 @@ export const landingRedirectGuard: CanActivateFn = (route: ActivatedRouteSnapsho
   const params = route.queryParams as Record<string, string | undefined>;
   const outcome = params['yahoo'];
   if ((outcome === 'connected' || outcome === 'error') && authService.isAdmin()) {
-    const reason = params['reason'];
-    return router.createUrlTree(['/admin'], {
-      queryParams: reason ? { yahoo: outcome, reason } : { yahoo: outcome },
-    });
+    // Everything the callback sent, not a hand-picked subset: listing the params here once cost
+    // us Yahoo's own error code, which was the one thing worth carrying.
+    return router.createUrlTree(['/admin'], { queryParams: { ...params } });
   }
   return router.createUrlTree(['/projections']);
 };
