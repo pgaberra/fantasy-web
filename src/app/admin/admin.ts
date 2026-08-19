@@ -19,6 +19,25 @@ const CONNECT_OUTCOMES: Record<string, string> = {
     'mis-click — check the app registration and its Fantasy Sports permission.',
 };
 
+/**
+ * Yahoo's own OAuth error code, when it sent one. Worth a sentence of its own: "declined" covers
+ * both someone pressing no and Yahoo refusing to let the app ask at all, and those call for
+ * completely different responses.
+ */
+const YAHOO_ERRORS: Record<string, string> = {
+  access_denied: 'Yahoo calls it a declined request.',
+  invalid_scope:
+    'Yahoo rejected the fspt-r scope outright — this app is no longer allowed to ask for ' +
+    'Fantasy Sports data. Retrying will not help.',
+  unauthorized_client:
+    'Yahoo does not accept this app for this flow — check the client type and its API ' +
+    'permissions. Retrying will not help.',
+  invalid_request: 'Yahoo called the request itself malformed.',
+  unsupported_response_type: 'Yahoo rejected the response type the app asked for.',
+  server_error: 'Yahoo reported a fault on its own side, so this one is worth simply retrying.',
+  temporarily_unavailable: 'Yahoo says it is temporarily unavailable, so this is worth retrying.',
+};
+
 @Component({
   selector: 'app-admin',
   imports: [RelativeTimePipe],
@@ -74,12 +93,15 @@ export class AdminComponent implements OnInit {
       return;
     }
     const reason = params['reason'];
+    const detail = params['detail'];
     const explained = reason ? CONNECT_OUTCOMES[reason] : undefined;
+    const fromYahoo = detail ? YAHOO_ERRORS[detail] : undefined;
+    const failure = explained ?? 'Yahoo did not complete the connection, and did not say why.';
     this.connectOutcome.set(outcome);
     this.connectMessage.set(
       outcome === 'connected'
         ? 'Yahoo account connected.'
-        : (explained ?? 'Yahoo did not complete the connection, and did not say why.'),
+        : [failure, fromYahoo].filter(Boolean).join(' '),
     );
   }
 
