@@ -29,6 +29,18 @@
       }
     </div>
 
+    @if (connectMessage(); as message) {
+      <p
+        class="connect-outcome"
+        [class.admin-error]="connectOutcome() === 'error'"
+        [class.admin-success]="connectOutcome() === 'connected'"
+        [attr.role]="connectOutcome() === 'error' ? 'alert' : 'status'"
+      >
+        {{ message }}
+        <button type="button" class="link-button" (click)="dismissConnectOutcome()">Dismiss</button>
+      </p>
+    }
+
     <div class="admin-actions">
       <button
         type="button"

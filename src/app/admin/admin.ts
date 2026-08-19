@@ -1,7 +1,23 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { AdminService } from '../services/admin.service';
 import { LeagueSummary, SyncRunResponse, YahooProbeResponse } from '../api/models';
+
+/**
+ * What the Yahoo callback said about the connect attempt it just finished, in words rather than
+ * a slug. Anything unrecognised falls back to the generic line -- a new slug from the service
+ * must not render as a blank banner.
+ */
+const CONNECT_OUTCOMES: Record<string, string> = {
+  declined: 'Yahoo sent no authorization code back. The consent was declined or cancelled.',
+  invalid_state:
+    'The connection link had expired before Yahoo sent you back. Press reconnect and approve it ' +
+    'without pausing — the link is good for ten minutes.',
+  exchange_failed:
+    'Yahoo refused to exchange the code for a token. That is Yahoo turning us away, not a ' +
+    'mis-click — check the app registration and its Fantasy Sports permission.',
+};
 
 @Component({
   selector: 'app-admin',
@@ -11,6 +27,11 @@ import { LeagueSummary, SyncRunResponse, YahooProbeResponse } from '../api/model
 })
 export class AdminComponent implements OnInit {
   private readonly adminService = inject(AdminService);
+  private readonly route = inject(ActivatedRoute);
+
+  /** Set when we have just come back from Yahoo, so the round trip does not end in silence. */
+  readonly connectOutcome = signal<'connected' | 'error' | null>(null);
+  readonly connectMessage = signal<string | null>(null);
 
   readonly connected = signal<boolean | null>(null);
   readonly connecting = signal(false);
@@ -39,9 +60,32 @@ export class AdminComponent implements OnInit {
   readonly latestRun = computed<SyncRunResponse | null>(() => this.runs()[0] ?? null);
 
   ngOnInit(): void {
+    this.readConnectOutcome();
     this.loadConnection();
     this.loadRuns();
     this.loadLeagues();
+  }
+
+  private readConnectOutcome(): void {
+    // Params are typed `any` by the router; narrow once here rather than at every use.
+    const params = this.route.snapshot.queryParams as Record<string, string | undefined>;
+    const outcome = params['yahoo'];
+    if (outcome !== 'connected' && outcome !== 'error') {
+      return;
+    }
+    const reason = params['reason'];
+    const explained = reason ? CONNECT_OUTCOMES[reason] : undefined;
+    this.connectOutcome.set(outcome);
+    this.connectMessage.set(
+      outcome === 'connected'
+        ? 'Yahoo account connected.'
+        : (explained ?? 'Yahoo did not complete the connection, and did not say why.'),
+    );
+  }
+
+  dismissConnectOutcome(): void {
+    this.connectOutcome.set(null);
+    this.connectMessage.set(null);
   }
 
   loadLeagues(): void {
