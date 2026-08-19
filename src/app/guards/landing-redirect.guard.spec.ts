@@ -54,6 +54,18 @@ describe('landingRedirectGuard', () => {
     });
   });
 
+  /**
+   * Yahoo's own error code rides along in `detail`, and naming params one by one dropped it on
+   * the floor -- the card could never show the one thing we built it to show.
+   */
+  it("carries Yahoo's own error code through as well", () => {
+    expect(
+      runGuard({ yahoo: 'error', reason: 'declined', detail: 'invalid_scope' }).createUrlTree,
+    ).toHaveBeenCalledWith(['/admin'], {
+      queryParams: { yahoo: 'error', reason: 'declined', detail: 'invalid_scope' },
+    });
+  });
+
   it('sends a non-admin to projections even after a connect', () => {
     expect(runGuard({ yahoo: 'connected' }, true, false).createUrlTree).toHaveBeenCalledWith([
       '/projections',
