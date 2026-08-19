@@ -1,10 +1,14 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
 import { AdminComponent } from './admin';
 import { AdminService } from '../services/admin.service';
 
 describe('AdminComponent', () => {
+  // Mutated by a test before MockRender to stand in for the query string the Yahoo callback
+  // sends us back with.
+  let queryParams: Record<string, string>;
   const yahooConnection = vi.fn();
   const connectYahoo = vi.fn();
   const triggerSync = vi.fn();
@@ -13,6 +17,7 @@ describe('AdminComponent', () => {
   const yahooLeagues = vi.fn();
 
   beforeEach(() => {
+    queryParams = {};
     yahooConnection.mockReturnValue(of({ connected: true }));
     connectYahoo.mockReturnValue(of({ authorizeUrl: 'https://example.com/consent' }));
     triggerSync.mockReturnValue(of({ status: 'accepted' }));
@@ -21,13 +26,63 @@ describe('AdminComponent', () => {
       of({ ok: true, path: '/game/nhl/players', status: 200, players: 25 }),
     );
     yahooLeagues.mockReturnValue(of({ leagues: [] }));
-    return MockBuilder(AdminComponent).mock(AdminService, {
-      yahooConnection,
-      connectYahoo,
-      triggerSync,
-      syncRuns,
-      probeYahooAccess,
-      yahooLeagues,
+    return MockBuilder(AdminComponent)
+      .mock(AdminService, {
+        yahooConnection,
+        connectYahoo,
+        triggerSync,
+        syncRuns,
+        probeYahooAccess,
+        yahooLeagues,
+      })
+      .provide({ provide: ActivatedRoute, useValue: { snapshot: { queryParams } } });
+  });
+
+  /**
+   * A connect round trip used to end in silence: whatever happened at Yahoo, you were dropped on
+   * a page that said nothing about it. That is how a dead connection sat unnoticed for months.
+   */
+  describe('coming back from Yahoo', () => {
+    it('says the connect worked', () => {
+      queryParams['yahoo'] = 'connected';
+
+      const fixture = MockRender(AdminComponent);
+
+      expect(fixture.nativeElement.textContent).toContain('Yahoo account connected.');
+    });
+
+    it('explains a refused code exchange instead of just saying it failed', () => {
+      queryParams['yahoo'] = 'error';
+      queryParams['reason'] = 'exchange_failed';
+
+      const fixture = MockRender(AdminComponent);
+
+      expect(fixture.nativeElement.textContent).toContain('Yahoo refused to exchange the code');
+    });
+
+    it('tells you to retry without pausing when the link had expired', () => {
+      queryParams['yahoo'] = 'error';
+      queryParams['reason'] = 'invalid_state';
+
+      const fixture = MockRender(AdminComponent);
+
+      expect(fixture.nativeElement.textContent).toContain('had expired');
+    });
+
+    /** A slug we do not recognise must still produce a sentence, not an empty banner. */
+    it('falls back to plain words for an unknown reason', () => {
+      queryParams['yahoo'] = 'error';
+      queryParams['reason'] = 'something-we-have-not-seen';
+
+      const fixture = MockRender(AdminComponent);
+
+      expect(fixture.nativeElement.textContent).toContain('did not say why');
+    });
+
+    it('says nothing when we did not just come back from Yahoo', () => {
+      const fixture = MockRender(AdminComponent);
+
+      expect(fixture.nativeElement.textContent).not.toContain('Yahoo account connected.');
     });
   });
 
