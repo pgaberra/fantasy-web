@@ -60,6 +60,32 @@ describe('AdminComponent', () => {
       expect(fixture.nativeElement.textContent).toContain('Yahoo refused to exchange the code');
     });
 
+    /**
+     * The distinction the whole banner exists for: Yahoo refusing the scope is not a mis-click,
+     * and reading it as one sends you round the retry loop for nothing.
+     */
+    it("adds Yahoo's own word when it refused the scope", () => {
+      queryParams['yahoo'] = 'error';
+      queryParams['reason'] = 'declined';
+      queryParams['detail'] = 'invalid_scope';
+
+      const fixture = MockRender(AdminComponent);
+
+      const text = fixture.nativeElement.textContent as string;
+      expect(text).toContain('Yahoo sent no authorization code back');
+      expect(text).toContain('no longer allowed to ask for Fantasy Sports data');
+    });
+
+    it('ignores a detail it does not recognise', () => {
+      queryParams['yahoo'] = 'error';
+      queryParams['reason'] = 'declined';
+      queryParams['detail'] = 'something-else';
+
+      const fixture = MockRender(AdminComponent);
+
+      expect(fixture.nativeElement.textContent).toContain('Yahoo sent no authorization code back');
+    });
+
     it('tells you to retry without pausing when the link had expired', () => {
       queryParams['yahoo'] = 'error';
       queryParams['reason'] = 'invalid_state';
