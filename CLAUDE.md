@@ -262,40 +262,17 @@ doesn't replace them.
 
 ## Monorepo conventions
 
-Shared across all four repos (`fantasy-web` → `fantasy-bff` → `fantasy-db-service` +
-`fantasy-nhl-service`). The web talks only to the BFF.
+The full set lives in the monorepo root `CLAUDE.md`: input validation at every boundary,
+secrets only from env, one worktree per agent, and the merge procedure. In short — the web
+talks only to the BFF. Branch → push → PR → checks pass → **squash merge** to `master` (the
+PR title becomes the commit message; make it a proper `feat:`/`fix:` message and merge with
+an explicit `--subject`). No attribution trailers. Never merge a PR titled "wip"/"draft".
 
-### Input validation
-
-**Every service validates its own inbound data independently** — never trust an upstream
-caller. The web's form validation (e.g. `maxLength` on the auth fields, mirroring the BFF's
-`@Size` caps) is a UX convenience, **not** a security boundary: the BFF re-validates every
-request server-side regardless. Keep the two in sync so users get a friendly message before
-the server rejects an oversized value.
-
-### Secrets
-
-**Never commit a password, API key, token, or any secret to git — in any environment**,
-not even throwaway local-dev credentials. Secrets and environment-specific values come from
-build-/run-time env vars (e.g. the BFF URL is injected via `API_URL` into
-`environment.prod.ts` at build time), never hardcoded in committed config.
-
-### Merging PRs
-
-Branch → push → PR → checks pass → **squash merge** to `master`. GitHub squash uses the
-**PR title** as the commit message, so make it a proper message (`feat: …`, `fix: …`), then
-merge with an explicit subject:
-```
-gh pr merge <n> --squash --delete-branch \
-  --subject "feat: describe the change (#<n>)" \
-  --body "Optional longer description."
-```
-Never merge a PR titled "wip"/"draft".
-
-### Commit messages
-
-No attribution trailers (`attribution.commit` / `attribution.pr` are `""` in
-`~/.claude/settings.json`, enforced at the tool level).
+Two that land differently on this side: the web's form validation (`maxLength` on the auth
+fields, mirroring the BFF's `@Size` caps) is a **UX convenience, not a security boundary** —
+the BFF re-validates regardless; and environment-specific values arrive as **build-time**
+args (`API_URL`, `GOOGLE_CLIENT_ID`, `SENTRY_DSN` → `environment.prod.ts`), never hardcoded
+in committed config.
 
 ## Deployment
 
