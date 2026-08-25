@@ -69,6 +69,12 @@
   --color-border: #e0e4ef;
   --color-border-strong: #cbd5e1;
   --color-border-header: #e2e8f0;
+  /* The line that says "a control is here". WCAG 1.4.11 wants 3:1 against what's behind it
+     wherever that line is the only thing marking the control out — an empty text field is
+     nothing but its border. The three tokens above are for card edges, table rules and
+     dividers, which the rule doesn't cover, and they sit at 1.2-1.5:1, far under it.
+     3.5:1 on --color-surface, 3.3:1 on --color-surface-alt, 3.2:1 on --color-bg. */
+  --color-border-control: #7b89a0;
 
   --color-error: #e94560;
   --color-danger: #b3261e;

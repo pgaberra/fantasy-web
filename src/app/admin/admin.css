@@ -188,7 +188,7 @@
   font: inherit;
   font-size: var(--text-sm);
   padding: 0.35rem 0.5rem;
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-border-control);
   border-radius: var(--radius-sm);
   min-width: 0;
 }
