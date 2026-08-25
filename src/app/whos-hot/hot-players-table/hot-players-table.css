@@ -116,16 +116,16 @@
 }
 
 /* The stat columns are the point of the table, so the horizontal scroll lives here rather
-   than on the page — the page body must never scroll sideways. */
+   than on the page — the page body must never scroll sideways. Sideways only: this used to be
+   a viewport-tall scrollbox as well, capped at `100vh - 20rem`, a guess at how much chrome sat
+   above it. The guess could not be right — the environment and unverified banners come and go
+   above the header, and the toolbar wraps to a second row on a narrow window — so the box was
+   either short of the fold or past it, and past it meant the page scrolled too. Two scrollbars
+   for one list of players, and the header scrolled away inside the inner one regardless.
+   The page scrolls now, once, and `appPinnedTableHeader` holds the headings — the stat weight
+   row among them — against the top of the window while it does. */
 .table-wrapper {
   overflow-x: auto;
-}
-
-@media (min-width: 641px) {
-  .table-wrapper {
-    overflow: auto;
-    max-height: calc(100vh - 20rem);
-  }
 }
 
 table {
