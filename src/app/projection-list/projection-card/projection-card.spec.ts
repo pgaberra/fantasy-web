@@ -168,4 +168,46 @@ describe('ProjectionCardComponent', () => {
     );
     expect(fixture.nativeElement.textContent).toContain('Draft complete');
   });
+
+  describe('a board imported from a share link', () => {
+    const imported: ProjectionSummaryResponse = {
+      ...projection,
+      kind: 'imported',
+      name: "Alex's board",
+      origin: { shareToken: 'abc123', authorUsername: 'alex' },
+    };
+
+    const renderImported = () =>
+      MockRender(template, {
+        projection: imported,
+        isPreparingShare: false,
+        onEdit,
+        onShare,
+        onRemove,
+      });
+
+    it('says whose numbers it holds', () => {
+      const fixture = renderImported();
+
+      expect(fixture.nativeElement.textContent).toContain('From alex');
+    });
+
+    /** A share credits the account that publishes it; this board is not theirs to publish. */
+    it('does not offer to share it', () => {
+      const fixture = renderImported();
+      fixture.nativeElement.querySelector('.card-menu')?.click();
+      fixture.detectChanges();
+
+      expect(document.querySelector('.menu-item.share')).toBeNull();
+    });
+
+    it('still offers to edit and to delete it', () => {
+      const fixture = renderImported();
+
+      expect(fixture.nativeElement.querySelector('.edit')).not.toBeNull();
+      fixture.nativeElement.querySelector('.card-menu')?.click();
+      fixture.detectChanges();
+      expect(document.querySelector('.menu-item.delete')).not.toBeNull();
+    });
+  });
 });

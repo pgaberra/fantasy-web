@@ -76,7 +76,7 @@ describe('ProjectionListComponent', () => {
   };
 
   const navigate = vi.fn();
-  const listProjections = vi.fn(() => of(summaries));
+  const listEditable = vi.fn(() => of(summaries));
   const deleteProjection = vi.fn(() => of(undefined));
   const createProjection = vi.fn();
   const notifyError = vi.fn();
@@ -89,13 +89,13 @@ describe('ProjectionListComponent', () => {
 
   beforeEach(() => {
     navigate.mockClear();
-    listProjections.mockClear();
+    listEditable.mockClear();
     deleteProjection.mockClear();
     createProjection.mockClear();
     notifyError.mockClear();
     peek.mockClear();
     clearPending.mockClear();
-    listProjections.mockReturnValue(of(summaries));
+    listEditable.mockReturnValue(of(summaries));
     deleteProjection.mockReturnValue(of(undefined));
     peek.mockReturnValue(null);
     loadProjection.mockReturnValue(of({ id: 'p1', name: 'My league', data: demoData }));
@@ -114,7 +114,7 @@ describe('ProjectionListComponent', () => {
     toSharedPlayers.mockReturnValue([]);
     return MockBuilder(ProjectionListComponent)
       .mock(ProjectionStorageService, {
-        listProjections,
+        listEditable,
         deleteProjection,
         createProjection,
         loadProjection,
@@ -159,7 +159,7 @@ describe('ProjectionListComponent', () => {
   });
 
   it('saves a projection carried over from the demo and opens it in the editor', async () => {
-    listProjections.mockReturnValue(of([]));
+    listEditable.mockReturnValue(of([]));
     peek.mockReturnValue(demoData);
     createProjection.mockReturnValue(of({ id: 'new1' }));
 
@@ -184,7 +184,7 @@ describe('ProjectionListComponent', () => {
   });
 
   it('keeps the demo stash when saving it fails, so it can be retried', async () => {
-    listProjections.mockReturnValue(of([]));
+    listEditable.mockReturnValue(of([]));
     peek.mockReturnValue(demoData);
     createProjection.mockReturnValue(throwError(() => new Error('bff down')));
 
@@ -197,7 +197,7 @@ describe('ProjectionListComponent', () => {
   });
 
   it('shows the empty state when there are no saved projections', async () => {
-    listProjections.mockReturnValue(of([]));
+    listEditable.mockReturnValue(of([]));
     const fixture = MockRender(ProjectionListComponent);
     await fixture.whenStable();
     fixture.detectChanges();
@@ -206,7 +206,7 @@ describe('ProjectionListComponent', () => {
   });
 
   it('enables the create button when there are no projections', async () => {
-    listProjections.mockReturnValue(of([]));
+    listEditable.mockReturnValue(of([]));
     const fixture = MockRender(ProjectionListComponent);
     await fixture.whenStable();
     fixture.detectChanges();
@@ -230,37 +230,37 @@ describe('ProjectionListComponent', () => {
   it('reloads the list when retry is called', async () => {
     const fixture = MockRender(ProjectionListComponent);
     await fixture.whenStable();
-    expect(listProjections).toHaveBeenCalledTimes(1);
+    expect(listEditable).toHaveBeenCalledTimes(1);
 
     fixture.point.componentInstance.retry();
     await fixture.whenStable();
 
-    expect(listProjections).toHaveBeenCalledTimes(2);
+    expect(listEditable).toHaveBeenCalledTimes(2);
   });
 
   it('reloads the list after a delete', async () => {
     const fixture = MockRender(ProjectionListComponent);
     await fixture.whenStable();
-    expect(listProjections).toHaveBeenCalledTimes(1);
+    expect(listEditable).toHaveBeenCalledTimes(1);
 
     await fixture.point.componentInstance.remove('p1');
     await fixture.whenStable();
 
     expect(deleteProjection).toHaveBeenCalledWith('p1');
-    expect(listProjections).toHaveBeenCalledTimes(2);
+    expect(listEditable).toHaveBeenCalledTimes(2);
   });
 
   it('notifies the user and keeps the list when a delete fails', async () => {
     deleteProjection.mockReturnValueOnce(throwError(() => new Error('network down')));
     const fixture = MockRender(ProjectionListComponent);
     await fixture.whenStable();
-    expect(listProjections).toHaveBeenCalledTimes(1);
+    expect(listEditable).toHaveBeenCalledTimes(1);
 
     await fixture.point.componentInstance.remove('p1');
     await fixture.whenStable();
 
     expect(notifyError).toHaveBeenCalledOnce();
-    expect(listProjections).toHaveBeenCalledTimes(1);
+    expect(listEditable).toHaveBeenCalledTimes(1);
   });
 
   it('opens sharing straight from the list, without visiting the projection', async () => {
