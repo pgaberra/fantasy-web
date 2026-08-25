@@ -56,8 +56,14 @@
   --color-gold-strong: #c8860a;
 
   --color-text: #1a1a2e;
-  --color-text-muted: #64748b;
-  --color-text-subtle: #7a8baa;
+  /* Both of these are body text somewhere, so both owe 4.5:1 (WCAG 1.4.3) against every surface
+     they can land on -- and the one that binds is --color-bg, the darkest of the three. That is
+     what sets how light --color-text-subtle is allowed to be: at its old #7a8baa it read 3.1:1
+     there. Lighten either of these and the ratio in the comment is the thing to recheck.
+     muted:  7.2:1 on --color-surface, 6.7:1 on --color-surface-alt, 6.4:1 on --color-bg.
+     subtle: 5.3:1 / 4.9:1 / 4.7:1 -- the tightest number in the palette, so it moves first. */
+  --color-text-muted: #4c586a;
+  --color-text-subtle: #5f6c85;
   --color-text-on-dark: #ffffff;
 
   --color-bg: #f0f2f8;
