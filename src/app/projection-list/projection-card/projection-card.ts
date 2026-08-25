@@ -41,6 +41,16 @@ export class ProjectionCardComponent {
     }
   });
 
+  readonly origin = computed(() => this.projection().origin ?? null);
+
+  /**
+   * A copy of someone else's board is not the user's to publish: a share credits the account
+   * that published it, so re-sharing an imported board would put their name on work that is
+   * not theirs. Editing it is fine — that is the point of the copy — this is only about
+   * republishing it as their own.
+   */
+  readonly canShare = computed(() => !this.origin());
+
   readonly confirmingDelete = signal(false);
 
   constructor() {
