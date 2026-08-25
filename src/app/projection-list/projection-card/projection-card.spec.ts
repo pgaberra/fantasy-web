@@ -1,7 +1,10 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
+import { ApplicationRef } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ProjectionCardComponent } from './projection-card';
 import { ProjectionSummaryResponse } from '../../api/models/projection-summary-response';
+import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
 
 describe('ProjectionCardComponent', () => {
   const projection: ProjectionSummaryResponse = {
@@ -14,26 +17,46 @@ describe('ProjectionCardComponent', () => {
     draftStatus: 'none',
   };
 
+  const template = `<li app-projection-card [projection]="projection"
+    [isPreparingShare]="isPreparingShare"
+    (edit)="onEdit()" (share)="onShare()" (remove)="onRemove()"></li>`;
+
   const renderWithStatus = (draftStatus: ProjectionSummaryResponse['draftStatus']) =>
-    MockRender(
-      `<li app-projection-card [projection]="projection" (edit)="onEdit()" (remove)="onRemove()"></li>`,
-      { projection: { ...projection, draftStatus }, onEdit, onRemove },
-    );
+    MockRender(template, {
+      projection: { ...projection, draftStatus },
+      isPreparingShare: false,
+      onEdit,
+      onShare,
+      onRemove,
+    });
 
   const onEdit = vi.fn();
+  const onShare = vi.fn();
   const onRemove = vi.fn();
 
   beforeEach(() => {
     onEdit.mockClear();
+    onShare.mockClear();
     onRemove.mockClear();
-    return MockBuilder(ProjectionCardComponent);
+    return MockBuilder(ProjectionCardComponent).keep(PopoverTriggerDirective);
   });
 
-  const render = () =>
-    MockRender(
-      `<li app-projection-card [projection]="projection" (edit)="onEdit()" (remove)="onRemove()"></li>`,
-      { projection, onEdit, onRemove },
-    );
+  const render = (isPreparingShare = false) =>
+    MockRender(template, { projection, isPreparingShare, onEdit, onShare, onRemove });
+
+  /** Menu items live in the CDK overlay, outside the fixture's own DOM. */
+  const menuItems = () => {
+    TestBed.inject(ApplicationRef).tick();
+    return [...document.querySelectorAll<HTMLButtonElement>('.cdk-overlay-container .menu-item')];
+  };
+
+  const openMenu = () => {
+    ngMocks.find<HTMLButtonElement>('.card-menu').nativeElement.click();
+    return menuItems();
+  };
+
+  const menuItem = (label: string) =>
+    menuItems().find((item) => item.textContent?.includes(label))!;
 
   it('renders the projection name and last-updated label', () => {
     const fixture = render();
@@ -50,10 +73,39 @@ describe('ProjectionCardComponent', () => {
     expect(onEdit).toHaveBeenCalledOnce();
   });
 
-  it('asks for confirmation before removing, then emits on confirm', () => {
+  it('keeps Share and Delete behind the menu rather than on the card itself', () => {
     const fixture = render();
 
-    ngMocks.find<HTMLButtonElement>('.delete').nativeElement.click();
+    expect(fixture.nativeElement.textContent).toContain('Edit');
+    expect(fixture.nativeElement.textContent).not.toContain('Share');
+    expect(fixture.nativeElement.textContent).not.toContain('Delete');
+
+    const labels = openMenu().map((item) => item.textContent?.trim());
+    expect(labels).toEqual(['Share', 'Delete']);
+  });
+
+  it('emits share when the menu item is chosen', () => {
+    render();
+    openMenu();
+
+    menuItem('Share').dispatchEvent(new Event('click', { bubbles: true }));
+
+    expect(onShare).toHaveBeenCalledOnce();
+  });
+
+  it('says a share is opening and blocks a second attempt while it prepares', () => {
+    render(true);
+    openMenu();
+
+    const share = menuItem('Opening…');
+    expect(share.disabled).toBe(true);
+  });
+
+  it('asks for confirmation before removing, then emits on confirm', () => {
+    const fixture = render();
+    openMenu();
+
+    menuItem('Delete').dispatchEvent(new Event('click', { bubbles: true }));
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Delete “My league”?');
@@ -64,10 +116,23 @@ describe('ProjectionCardComponent', () => {
     expect(onRemove).toHaveBeenCalledOnce();
   });
 
+  it('puts focus on the question, not on the button that would delete', () => {
+    const fixture = render();
+    openMenu();
+
+    menuItem('Delete').dispatchEvent(new Event('click', { bubbles: true }));
+    fixture.detectChanges();
+
+    // Choosing Delete destroys the menu focus was in, so the confirmation has to take it —
+    // but landing on "Yes, delete" would let the keypress that opened the item confirm too.
+    expect(document.activeElement).toEqual(ngMocks.find('.confirm-text').nativeElement);
+  });
+
   it('does not remove when the confirmation is cancelled', () => {
     const fixture = render();
+    openMenu();
 
-    ngMocks.find<HTMLButtonElement>('.delete').nativeElement.click();
+    menuItem('Delete').dispatchEvent(new Event('click', { bubbles: true }));
     fixture.detectChanges();
     ngMocks.find<HTMLButtonElement>('.cancel').nativeElement.click();
     fixture.detectChanges();
