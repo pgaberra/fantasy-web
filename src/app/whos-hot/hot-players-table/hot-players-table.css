@@ -107,7 +107,7 @@
    weight are what make the picked option legible at a glance. */
 .segmented button[aria-pressed='true'] {
   background: var(--color-surface);
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-border-control);
   padding: calc(0.3rem - 1px) calc(0.9rem - 1px);
   color: var(--color-primary);
   font-weight: var(--weight-semibold);
@@ -129,7 +129,7 @@
 .search-control input {
   font-size: var(--text-sm);
   padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-control);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-primary);

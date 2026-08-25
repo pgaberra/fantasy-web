@@ -26,7 +26,7 @@
   padding: 0.3rem 0.4rem;
   font-size: 0.9rem;
   color: var(--color-text);
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-border-control);
   border-radius: var(--radius-sm);
   text-align: center;
 }
