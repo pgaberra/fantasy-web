@@ -197,13 +197,14 @@
   />
 </ng-template>
 
-<!-- Utility stats are hidden here: the leaderboard shows games played beside every name already,
-     and the rest of that group exists to drive a projection's scaling, which this page has none of. -->
+<!-- Utility stats are offered here like any other: time on ice per game is a measured number
+     over the range, and games played is one the user may want as a sortable column rather than
+     only as the badge beside each name. What the group cannot do on this page is drive a
+     projection's scaling — there is no projection here to scale. -->
 <ng-template #columnsMenu>
   <app-columns-menu
     [activeScoringColumns]="activeScoringColumns()"
     [activeUtilityColumns]="activeUtilityColumns()"
-    [showUtility]="false"
     (scoringToggled)="toggleScoringColumn($event)"
     (utilityToggled)="toggleUtilityColumn($event)"
   />

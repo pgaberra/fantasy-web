@@ -5,13 +5,14 @@ import { HotPlayer } from '../../services/whos-hot.service';
 import { Player } from '../../models/player.model';
 import { SkaterPosition } from '../../models/position.model';
 import { ActiveColumns, ScoringType } from '../../models/projection.model';
-import { ScoringStatKey } from '../../models/stat-key.model';
+import { ScoringStatKey, SkaterUtilityStatKey } from '../../models/stat-key.model';
 import { DEFAULT_STAT_WEIGHTS } from '../../draft-projection/projection-defaults';
 import { DEFAULT_DECIMAL_SETTINGS } from '../../draft-projection/projection-settings-section/model';
 import { ProjectionCalculationService } from '../../services/projection-calculation.service';
 import { PositionFilterService } from '../../services/position-filter.service';
 import { ActiveColumnsService } from '../../services/active-columns.service';
 import { StatInfoService } from '../../services/stat-info.service';
+import { FormatToiPipe } from '../../pipes/format-toi.pipe';
 
 const SKATER_STATS = {
   goals: 10,
@@ -41,7 +42,7 @@ const SKATER_STATS = {
   toi: 60000,
 };
 
-function skater(playerId: number, games: number, goals = 10): HotPlayer {
+function skater(playerId: number, games: number, goals = 10, toiPerGame = 1200): HotPlayer {
   return {
     name: `Skater ${playerId}`,
     teamAbbrev: 'EDM',
@@ -53,7 +54,7 @@ function skater(playerId: number, games: number, goals = 10): HotPlayer {
       playerId,
       stats: {
         scoring: { ...SKATER_STATS, goals },
-        utility: { gp: games, toiPerGame: 1200 },
+        utility: { gp: games, toiPerGame },
       },
     },
   };
@@ -76,7 +77,8 @@ describe('HotPlayersTableComponent', () => {
       .keep(ProjectionCalculationService)
       .keep(PositionFilterService)
       .keep(ActiveColumnsService)
-      .keep(StatInfoService),
+      .keep(StatInfoService)
+      .keep(FormatToiPipe),
   );
 
   const activeColumns: ActiveColumns = {
@@ -145,6 +147,16 @@ describe('HotPlayersTableComponent', () => {
 
     component.toggleScoringColumn('pim');
     expect(component.activeScoringColumns().has('pim')).toBe(false);
+  });
+
+  it('adds and removes a utility column from the same menu', () => {
+    const component = render([skater(1, 20)]);
+
+    component.toggleUtilityColumn('toiPerGame');
+    expect(component.activeUtilityColumns().has('toiPerGame')).toBe(true);
+
+    component.toggleUtilityColumn('toiPerGame');
+    expect(component.activeUtilityColumns().has('toiPerGame')).toBe(false);
   });
 
   it('ranks by total fantasy points by default', () => {
@@ -258,6 +270,47 @@ describe('HotPlayersTableComponent', () => {
 
     expect(ngMocks.findAll('tbody tr')).toHaveLength(0);
     expect(ngMocks.find('.table-empty').nativeElement.textContent).toContain('No players match');
+  });
+
+  describe('time on ice per game', () => {
+    const withToi = (hotPlayers: HotPlayer[], perGame = false) =>
+      MockRender(HotPlayersTableComponent, {
+        hotPlayers,
+        players: hotPlayers.map((hot) => player(hot.projection.playerId)),
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['goals']),
+          utility: new Set<SkaterUtilityStatKey>(['gp', 'toiPerGame']),
+        },
+        scoringType: 'points',
+        statWeights: DEFAULT_STAT_WEIGHTS,
+        perGame,
+        minGames: 1,
+      }).point.componentInstance;
+
+    it('is a column of its own, shown as a clock rather than a count', () => {
+      const component = withToi([skater(1, 20)]);
+
+      expect([...component.filteredActiveColumns().utility]).toEqual(['gp', 'toiPerGame']);
+      expect(component.statValue(component.visiblePlayers()[0], 'toiPerGame')).toEqual(1200);
+      // 1200 seconds is twenty minutes a night, not a count of twelve hundred of anything.
+      expect(ngMocks.formatText(ngMocks.find('tbody tr td.col-toiPerGame'))).toEqual('20:00');
+    });
+
+    it('is already a per-game number, so the per-game view must not divide it again', () => {
+      const component = withToi([skater(1, 20)], true);
+
+      expect(component.statValue(component.visiblePlayers()[0], 'toiPerGame')).toEqual(1200);
+    });
+
+    it('sorts on it like any other column', () => {
+      const component = withToi([skater(1, 20, 10, 900), skater(2, 20, 10, 1500)]);
+
+      component.onSort('toiPerGame');
+      expect(component.visiblePlayers()[0].projection.playerId).toEqual(2);
+
+      component.onSort('toiPerGame');
+      expect(component.visiblePlayers()[0].projection.playerId).toEqual(1);
+    });
   });
 
   describe('stats the player cannot have', () => {
