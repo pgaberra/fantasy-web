@@ -33,6 +33,7 @@ import { DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
+import { PinnedTableHeaderDirective } from '../shared/pinned-table-header/pinned-table-header.directive';
 
 /** One published row, in the shapes the editor's table components expect. */
 interface SharedRow {
@@ -66,6 +67,7 @@ interface SharedRow {
     PlayerRowComponent,
     PositionFilterComponent,
     ProjectionsTableHeaderComponent,
+    PinnedTableHeaderDirective,
   ],
   templateUrl: './shared-projection.html',
   styleUrl: './shared-projection.css',

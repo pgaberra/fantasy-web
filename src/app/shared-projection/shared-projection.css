@@ -135,15 +135,18 @@
   gap: var(--space-3);
 }
 
+/* Sideways only, exactly as the editor's does. This used to be a viewport-tall scrollbox as
+   well, capped at `100vh - 16rem` — a guess at how much of the window the heading, the byline
+   and the toolbar above it had already spent. The guess could not be right: the environment and
+   unverified banners come and go above the app header, the title wraps to a second line on a
+   long projection name, and the toolbar stacks on a narrow window. Too tall and the page
+   scrolled as well, so one list of players had two scrollbars — and the column headings
+   scrolled away inside the inner one either way.
+
+   The page scrolls now, once, and `appPinnedTableHeader` holds the headings against the top of
+   the window while it does, which is what the editor's table has always done. */
 .table-wrapper {
   overflow-x: auto;
-}
-
-@media (min-width: 641px) {
-  .table-wrapper {
-    overflow: auto;
-    max-height: calc(100vh - 16rem);
-  }
 }
 
 table {
