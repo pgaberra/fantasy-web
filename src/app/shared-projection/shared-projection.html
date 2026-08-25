@@ -70,14 +70,37 @@
     </section>
 
     <section class="cta">
-      <h2 class="cta-title">
-        This is the top {{ projection.data.players.length }} of one manager's board
-      </h2>
-      <p class="cta-body">
-        Build your own projections, tuned to your league's scoring settings, and rank every player
-        the way this one does. Free to start.
-      </p>
-      <a routerLink="/register" class="btn btn-primary">Make your own projection</a>
+      @if (isLoggedIn()) {
+        <h2 class="cta-title">Draft against {{ authorLabel() }}'s board</h2>
+        <p class="cta-body">
+          Take a copy of these numbers into your own projections and run a draft against them. Their
+          picks don't come with it, and editing your copy leaves theirs alone.
+        </p>
+        @if (alreadyImported()) {
+          <p class="cta-note">
+            You already have a copy of this board.
+            <a routerLink="/draft">Go to Draft Mode</a> to pick up from there.
+          </p>
+        } @else {
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="isImporting()"
+            (click)="draftAgainstThis()"
+          >
+            {{ isImporting() ? 'Copying…' : 'Draft against this board' }}
+          </button>
+        }
+      } @else {
+        <h2 class="cta-title">
+          This is the top {{ projection.data.players.length }} of one manager's board
+        </h2>
+        <p class="cta-body">
+          Build your own projections, tuned to your league's scoring settings, and rank every player
+          the way this one does — or draft straight against this one. Free to start.
+        </p>
+        <a routerLink="/register" class="btn btn-primary">Make your own projection</a>
+      }
     </section>
 
     <footer class="shared-footer">

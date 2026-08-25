@@ -1,9 +1,7 @@
 <div class="draft-start">
   <div class="page-header">
     <h1>Draft Mode</h1>
-    <p class="subtitle">
-      Draft against one of your own projections, or start straight from a preset.
-    </p>
+    <p class="subtitle">Pick what you want to draft against.</p>
   </div>
 
   @if (sourcesResource.isLoading()) {
@@ -11,82 +9,204 @@
   } @else if (sourcesResource.error()) {
     <app-error-state title="Couldn't load your draft sources" (retry)="retry()" />
   } @else {
-    <section class="source-group">
-      <h2 class="group-title">Your projections</h2>
-      @if (projections().length === 0) {
-        <p class="group-empty">
-          No projections yet.
-          <a routerLink="/projections/new">Create one</a> to draft against your own numbers.
-        </p>
-      } @else {
-        <ul class="cards">
-          @for (projection of projections(); track projection.id) {
-            <li class="card">
-              <div class="card-main">
-                <span class="card-name">{{ projection.name }}</span>
-                <span class="card-meta">Updated {{ projection.updatedAt | relativeTime }}</span>
-                @if (projection.draftStatus === 'finished') {
-                  <span class="card-status card-status--done">Draft complete</span>
-                } @else if (projection.draftStatus === 'in_progress') {
-                  <span class="card-status">Draft in progress</span>
-                }
+    @if (inProgress().length > 0) {
+      <section class="resume" aria-labelledby="resume-title">
+        <h2 class="group-title" id="resume-title">Pick up where you left off</h2>
+        <ul class="rows">
+          @for (draft of inProgress(); track draft.id) {
+            <li class="row row--resume">
+              <div class="row-main">
+                <span class="row-name">{{ draft.name }}</span>
+                <span class="row-meta">
+                  {{ sourceLabel(draft) }} · last pick {{ draft.updatedAt | relativeTime }}
+                </span>
               </div>
-              <div class="card-actions">
-                <button
-                  type="button"
-                  class="btn btn-primary btn-sm"
-                  (click)="openDraft(projection.id)"
-                >
-                  {{ draftLabel(projection.draftStatus) }}
-                </button>
-              </div>
+              <button type="button" class="btn btn-primary btn-sm" (click)="openDraft(draft.id)">
+                Resume draft
+              </button>
             </li>
           }
         </ul>
-      }
-    </section>
+      </section>
+    }
 
-    <section class="source-group">
-      <h2 class="group-title">Presets</h2>
-      <ul class="cards">
-        <li class="card">
-          <div class="card-main">
-            <span class="card-name">{{ presetName }}</span>
-            <span class="card-meta">
-              Every player at last season's numbers, with the default scoring settings.
-            </span>
-            @if (presetDraft(); as preset) {
-              @if (preset.draftStatus === 'finished') {
-                <span class="card-status card-status--done">Draft complete</span>
-              } @else if (preset.draftStatus === 'in_progress') {
-                <span class="card-status">Draft in progress</span>
+    <div class="tabs" role="tablist" aria-label="Draft sources">
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        [class.tab--active]="selectedTab() === 'own'"
+        [attr.aria-selected]="selectedTab() === 'own'"
+        (click)="selectTab('own')"
+      >
+        Your projections
+        <span class="tab-count">{{ projections().length }}</span>
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        [class.tab--active]="selectedTab() === 'imported'"
+        [attr.aria-selected]="selectedTab() === 'imported'"
+        (click)="selectTab('imported')"
+      >
+        Shared with you
+        <span class="tab-count">{{ imported().length }}</span>
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        [class.tab--active]="selectedTab() === 'presets'"
+        [attr.aria-selected]="selectedTab() === 'presets'"
+        (click)="selectTab('presets')"
+      >
+        Presets
+        <span class="tab-count">1</span>
+      </button>
+    </div>
+
+    @switch (selectedTab()) {
+      @case ('own') {
+        <section class="panel">
+          @if (projections().length === 0) {
+            <p class="panel-empty">
+              No projections yet.
+              <a routerLink="/projections/new">Create one</a> to draft against your own numbers.
+            </p>
+          } @else {
+            <ul class="rows">
+              @for (projection of projections(); track projection.id) {
+                <li class="row">
+                  <div class="row-main">
+                    <span class="row-name">{{ projection.name }}</span>
+                    <span class="row-meta">Updated {{ projection.updatedAt | relativeTime }}</span>
+                  </div>
+                  @if (projection.draftStatus === 'finished') {
+                    <span class="row-status row-status--done">Draft complete</span>
+                  }
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm"
+                    (click)="openDraft(projection.id)"
+                  >
+                    {{ draftLabel(projection.draftStatus) }}
+                  </button>
+                </li>
               }
+            </ul>
+          }
+        </section>
+      }
+
+      @case ('imported') {
+        <section class="panel">
+          @if (imported().length === 0) {
+            <p class="panel-empty">
+              Nobody's board here yet. Paste a SlapStat share link below to draft against someone
+              else's numbers.
+            </p>
+          } @else {
+            <ul class="rows">
+              @for (board of imported(); track board.id) {
+                <li class="row">
+                  <div class="row-main">
+                    <span class="row-name">{{ board.name }}</span>
+                    <span class="row-meta">
+                      {{ sourceLabel(board) }} · imported {{ board.createdAt | relativeTime }}
+                    </span>
+                  </div>
+                  @if (board.draftStatus === 'finished') {
+                    <span class="row-status row-status--done">Draft complete</span>
+                  }
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm"
+                    (click)="openDraft(board.id)"
+                  >
+                    {{ draftLabel(board.draftStatus) }}
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+
+          <form class="import" (ngSubmit)="importShared()">
+            <label class="import-label" for="share-link">Add a shared board</label>
+            <div class="import-controls">
+              <input
+                id="share-link"
+                type="text"
+                class="import-input"
+                placeholder="Paste a share link"
+                autocomplete="off"
+                maxlength="200"
+                [value]="shareInput()"
+                (input)="shareInput.set($any($event.target).value)"
+              />
+              @if (importName() !== null) {
+                <input
+                  type="text"
+                  class="import-input"
+                  placeholder="Name this copy"
+                  autocomplete="off"
+                  maxlength="100"
+                  [value]="importName()"
+                  (input)="importName.set($any($event.target).value)"
+                />
+              }
+              <button
+                type="submit"
+                class="btn btn-primary btn-sm"
+                [disabled]="isImporting() || shareInput().trim().length === 0"
+              >
+                {{ isImporting() ? 'Importing…' : 'Import' }}
+              </button>
+            </div>
+            @if (importHint()) {
+              <p class="import-hint">{{ importHint() }}</p>
             }
-          </div>
-          <div class="card-actions">
-            @if (isStarting()) {
-              <span class="card-busy">Starting…</span>
-            } @else if (confirmingRestart()) {
-              <span class="confirm-text">Discard this draft and start over?</span>
-              <button type="button" class="btn btn-danger btn-sm" (click)="confirmRestart()">
-                Yes, start over
-              </button>
-              <button type="button" class="btn btn-secondary btn-sm" (click)="cancelRestart()">
-                Cancel
-              </button>
-            } @else {
-              <button type="button" class="btn btn-primary btn-sm" (click)="startPreset()">
-                {{ presetLabel() }}
-              </button>
-              @if (presetDraft()) {
-                <button type="button" class="btn btn-secondary btn-sm" (click)="requestRestart()">
-                  Start over
+          </form>
+        </section>
+      }
+
+      @case ('presets') {
+        <section class="panel">
+          <ul class="rows">
+            <li class="row">
+              <div class="row-main">
+                <span class="row-name">{{ presetName }}</span>
+                <span class="row-meta">
+                  Every player at last season's numbers, default scoring settings
+                </span>
+              </div>
+              @if (presetDraft()?.draftStatus === 'finished') {
+                <span class="row-status row-status--done">Draft complete</span>
+              }
+              @if (isStarting()) {
+                <span class="row-busy">Starting…</span>
+              } @else if (confirmingRestart()) {
+                <span class="confirm-text">Discard this draft and start over?</span>
+                <button type="button" class="btn btn-danger btn-sm" (click)="confirmRestart()">
+                  Yes, start over
                 </button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="cancelRestart()">
+                  Cancel
+                </button>
+              } @else {
+                <button type="button" class="btn btn-secondary btn-sm" (click)="startPreset()">
+                  {{ presetLabel() }}
+                </button>
+                @if (presetDraft()) {
+                  <button type="button" class="btn btn-secondary btn-sm" (click)="requestRestart()">
+                    Start over
+                  </button>
+                }
               }
-            }
-          </div>
-        </li>
-      </ul>
-    </section>
+            </li>
+          </ul>
+        </section>
+      }
+    }
   }
 </div>

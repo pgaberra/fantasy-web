@@ -1,4 +1,5 @@
 import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, switchMap } from 'rxjs';
@@ -15,16 +16,33 @@ import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 
 /**
  * The name the preset draft is stored under. It doubles as the label on the board, so the
- * heading there reads the same as the card the draft was started from.
+ * heading there reads the same as the row the draft was started from.
  */
 export const LAST_SEASON_PRESET_NAME = "Last Season's Stats";
 
+/** Which kind of source the picker is showing. */
+export type SourceTab = 'own' | 'imported' | 'presets';
+
 /**
- * Picks what a draft is drafted against: one of the user's own projections, or a preset.
+ * Pulls the token out of whatever gets pasted: a whole share URL, the path from one, or the
+ * token on its own. Anything else is not a link we published.
+ */
+export function shareTokenFrom(pasted: string): string | null {
+  const trimmed = pasted.trim();
+  const fromLink = /\/s\/([A-Za-z0-9_-]+)/.exec(trimmed);
+  if (fromLink) {
+    return fromLink[1];
+  }
+  return /^[A-Za-z0-9_-]{8,64}$/.test(trimmed) ? trimmed : null;
+}
+
+/**
+ * Picks what a draft is drafted against: one of the user's own projections, a board copied from
+ * someone's share link, or a preset.
  *
  * A preset draft has no projection behind it, so starting one creates a projection of its own
  * kind — seeded server-side from the same read model a new projection starts from — purely to
- * hold the picks. It never shows up under "My projections".
+ * hold the picks. It never shows up under "Your projections".
  */
 @Component({
   selector: 'app-draft-start',
@@ -49,13 +67,16 @@ export class DraftStartComponent {
 
   readonly isStarting = signal(false);
   readonly confirmingRestart = signal(false);
+  readonly selectedTab = signal<SourceTab>('own');
 
-  readonly projections = computed(() =>
-    this.sourcesResource
-      .value()
-      .filter((projection) => projection.kind === 'projection')
-      .sort((first, second) => second.updatedAt.localeCompare(first.updatedAt)),
-  );
+  readonly shareInput = signal('');
+  readonly isImporting = signal(false);
+  readonly importHint = signal<string | null>(null);
+  /** Non-null only after a name clash, which is the one thing the importer has to settle. */
+  readonly importName = signal<string | null>(null);
+
+  readonly projections = computed(() => this.byKind('projection'));
+  readonly imported = computed(() => this.byKind('imported'));
 
   readonly presetDraft = computed(
     () =>
@@ -63,6 +84,21 @@ export class DraftStartComponent {
   );
 
   readonly presetLabel = computed(() => this.draftLabel(this.presetDraft()?.draftStatus ?? 'none'));
+
+  /**
+   * Drafts left mid-way, lifted out of the lists below. Resuming one is what most visits here
+   * are for, and it would otherwise be buried under whichever tab its source happens to sit in.
+   */
+  readonly inProgress = computed(() =>
+    this.sourcesResource
+      .value()
+      .filter((projection) => projection.draftStatus === 'in_progress')
+      .sort((first, second) => second.updatedAt.localeCompare(first.updatedAt)),
+  );
+
+  selectTab(tab: SourceTab): void {
+    this.selectedTab.set(tab);
+  }
 
   draftLabel(status: ProjectionSummaryResponse['draftStatus']): string {
     switch (status) {
@@ -75,12 +111,66 @@ export class DraftStartComponent {
     }
   }
 
+  /** Whose numbers a row holds, said in the row rather than only by the tab it sits under. */
+  sourceLabel(projection: ProjectionSummaryResponse): string {
+    return projection.origin ? `From ${projection.origin.authorUsername}` : 'Your projection';
+  }
+
   retry(): void {
     this.sourcesResource.reload();
   }
 
   openDraft(id: string): void {
     void this.router.navigate(['/projections', id, 'draft']);
+  }
+
+  importShared(): void {
+    const token = shareTokenFrom(this.shareInput());
+    if (!token) {
+      this.importHint.set("That doesn't look like a SlapStat share link.");
+      return;
+    }
+    const chosenName = this.importName()?.trim();
+    if (this.importName() !== null && !chosenName) {
+      this.importHint.set('Give the copy a name.');
+      return;
+    }
+    this.importHint.set(null);
+    this.isImporting.set(true);
+    this.storage
+      .importFromShare(token, chosenName || undefined)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.isImporting.set(false);
+          this.shareInput.set('');
+          this.importName.set(null);
+          this.selectedTab.set('imported');
+          this.sourcesResource.reload();
+        },
+        error: (error: unknown) => {
+          this.isImporting.set(false);
+          this.onImportFailed(error);
+        },
+      });
+  }
+
+  /**
+   * A name clash is the importer's to settle — two people can call a projection the same thing,
+   * and only the one copying can say what the second should be called — so it asks for a name
+   * rather than reporting a failure they could do nothing about.
+   */
+  private onImportFailed(error: unknown): void {
+    if (error instanceof HttpErrorResponse && error.status === 409) {
+      this.importName.set(this.importName() ?? '');
+      this.importHint.set('You already have a board with that name. Give this copy another.');
+      return;
+    }
+    if (error instanceof HttpErrorResponse && error.status === 404) {
+      this.importHint.set("That link isn't active any more.");
+      return;
+    }
+    this.notification.error("Couldn't import that board. Please try again.");
   }
 
   startPreset(): void {
@@ -115,6 +205,13 @@ export class DraftStartComponent {
     this.start(
       this.storage.deleteProjection(existing.id).pipe(switchMap(() => this.createPresetDraft())),
     );
+  }
+
+  private byKind(kind: ProjectionSummaryResponse['kind']): ProjectionSummaryResponse[] {
+    return this.sourcesResource
+      .value()
+      .filter((projection) => projection.kind === kind)
+      .sort((first, second) => second.updatedAt.localeCompare(first.updatedAt));
   }
 
   private createPresetDraft(): Observable<ProjectionResponse> {

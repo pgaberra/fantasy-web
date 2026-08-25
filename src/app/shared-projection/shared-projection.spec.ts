@@ -1,11 +1,15 @@
 import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { SharedProjectionComponent } from './shared-projection';
 import { PlayerRowComponent } from '../draft-projection/player-projections-table/player-row/player-row';
+import { AuthService } from '../services/auth.service';
+import { NotificationService } from '../services/notification.service';
 import { ProjectionShareService } from '../services/projection-share.service';
+import { ProjectionStorageService } from '../services/projection-storage.service';
 import { SharedProjectionResponse } from '../api/models/shared-projection-response';
 
 describe('SharedProjectionComponent', () => {
@@ -53,16 +57,29 @@ describe('SharedProjectionComponent', () => {
   };
 
   const loadShared = vi.fn(() => of(shared));
+  const importFromShare = vi.fn();
+  const navigate = vi.fn();
+  const notifyError = vi.fn();
+  const isLoggedIn = signal(false);
 
   beforeEach(() => {
     loadShared.mockClear();
     loadShared.mockReturnValue(of(shared));
+    importFromShare.mockClear();
+    importFromShare.mockReturnValue(of({ id: 'copy1' }));
+    navigate.mockClear();
+    notifyError.mockClear();
+    isLoggedIn.set(false);
     return (
       MockBuilder(SharedProjectionComponent)
         // Kept real: the point of this page is that it renders the editor's own row, so a mocked
         // stand-in would test nothing.
         .keep(PlayerRowComponent)
         .mock(ProjectionShareService, { loadShared })
+        .mock(ProjectionStorageService, { importFromShare })
+        .mock(NotificationService, { error: notifyError })
+        .provide({ provide: AuthService, useValue: { isLoggedIn } })
+        .provide({ provide: Router, useValue: { navigate } })
         .provide({
           provide: ActivatedRoute,
           useValue: { snapshot: { paramMap: { get: () => 'abc123' } } },
@@ -144,5 +161,55 @@ describe('SharedProjectionComponent', () => {
 
     expect(fixture.point.componentInstance.isGone()).toEqual(true);
     expect(fixture.nativeElement.textContent).toContain("This link isn't active");
+  });
+
+  describe('drafting against a shared board', () => {
+    const render = async () => {
+      const fixture = MockRender(SharedProjectionComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+      return fixture;
+    };
+
+    it('offers a signed-out visitor the sign-up rather than a copy', async () => {
+      const fixture = await render();
+
+      expect(fixture.nativeElement.textContent).toContain('Make your own projection');
+      expect(fixture.nativeElement.textContent).not.toContain('Draft against this board');
+    });
+
+    it('copies the board and opens a draft against it', async () => {
+      isLoggedIn.set(true);
+      const fixture = await render();
+
+      fixture.point.componentInstance.draftAgainstThis();
+
+      expect(importFromShare).toHaveBeenCalledWith('abc123');
+      expect(navigate).toHaveBeenCalledWith(['/projections', 'copy1', 'draft']);
+    });
+
+    /** A clash on the shared name means this same board is already in their account. */
+    it('points at Draft Mode when the board is already imported', async () => {
+      isLoggedIn.set(true);
+      importFromShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
+      const fixture = await render();
+
+      fixture.point.componentInstance.draftAgainstThis();
+
+      expect(fixture.point.componentInstance.alreadyImported()).toEqual(true);
+      expect(navigate).not.toHaveBeenCalled();
+      expect(notifyError).not.toHaveBeenCalled();
+    });
+
+    it('surfaces any other failure and lets them try again', async () => {
+      isLoggedIn.set(true);
+      importFromShare.mockReturnValue(throwError(() => new Error('boom')));
+      const fixture = await render();
+
+      fixture.point.componentInstance.draftAgainstThis();
+
+      expect(notifyError).toHaveBeenCalledOnce();
+      expect(fixture.point.componentInstance.isImporting()).toEqual(false);
+    });
   });
 });

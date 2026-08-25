@@ -4,6 +4,7 @@ import { Api } from '../api/api';
 import { list } from '../api/fn/projections/list';
 import { get } from '../api/fn/projections/get';
 import { create } from '../api/fn/projections/create';
+import { importFromShare } from '../api/fn/projections/import-from-share';
 import { update } from '../api/fn/projections/update';
 import { delete$ } from '../api/fn/projections/delete';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
@@ -38,6 +39,15 @@ export class ProjectionStorageService {
 
   createProjection(request: CreateProjectionRequest): Observable<ProjectionResponse> {
     return from(this.api.invoke(create, { body: request }));
+  }
+
+  /**
+   * Copies a board someone published under a share link. The name is only worth sending to
+   * settle a clash with a board already imported under the same one — the server otherwise
+   * keeps the name it was shared as.
+   */
+  importFromShare(token: string, name?: string): Observable<ProjectionResponse> {
+    return from(this.api.invoke(importFromShare, { body: { token, name } }));
   }
 
   updateProjection(id: string, request: UpdateProjectionRequest): Observable<ProjectionResponse> {
