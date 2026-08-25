@@ -141,9 +141,28 @@
   border-color: var(--color-primary);
 }
 
+/* The shell fills the window and no more, so a page with nothing to scroll to does not scroll.
+   This used to be `min-height: calc(100vh - 56px)` on the main element — the header's height,
+   subtracted by hand. That could only ever be half the answer: the environment banner and the
+   unverified-email banner sit above the header and come and go, and each one made the page that
+   much taller than the window, so every page carried a short scrollbar leading nowhere. Nothing
+   is subtracted now. The column is the window's height, the banners and header take what they
+   take, and main is told to have the rest. */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* A flex column in turn, so a page that wants the rest of the window can say `flex: 1` on its
+   own host instead of re-deriving what is above it. Growing but never shrinking: a page taller
+   than the window pushes past it and the window scrolls, which is the normal case. */
 .app-main {
-  min-height: calc(100vh - 56px);
   background: var(--color-bg);
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
 }
 
 @media (max-width: 640px) {

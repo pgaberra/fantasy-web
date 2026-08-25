@@ -1,8 +1,16 @@
+/* The card is centred in whatever the shell leaves, which is why neither of these subtracts a
+   header height any more — the banners above it are not a fixed quantity. */
+:host {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+}
+
 .auth-container {
   display: flex;
+  flex: 1;
   justify-content: center;
   align-items: center;
-  min-height: calc(100vh - 56px);
   padding: var(--space-6);
   background: var(--color-bg);
 }
