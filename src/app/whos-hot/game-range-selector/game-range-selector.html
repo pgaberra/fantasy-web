@@ -2,13 +2,16 @@
   <header class="range-header">
     <div class="range-title">
       <h2>Game range</h2>
-      <select class="season-select" aria-label="Season" (change)="onSeasonChange($event)">
-        @for (option of seasons(); track option.startYear) {
-          <option [value]="option.startYear" [selected]="option.startYear === season()">
-            {{ option.label }}
-          </option>
-        }
-      </select>
+      <div class="season-field">
+        <label class="season-label" for="whos-hot-season">Season</label>
+        <select id="whos-hot-season" class="season-select" (change)="onSeasonChange($event)">
+          @for (option of seasons(); track option.startYear) {
+            <option [value]="option.startYear" [selected]="option.startYear === season()">
+              {{ option.label }}
+            </option>
+          }
+        </select>
+      </div>
     </div>
     <span class="range-summary">{{ summary() }}</span>
   </header>
