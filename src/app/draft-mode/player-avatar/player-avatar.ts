@@ -1,11 +1,11 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal } from '@angular/core';
 import { DraftPlayerLookupService } from '../draft-player-lookup.service';
 
 @Component({
   selector: 'app-player-avatar',
   host: { '[class]': 'avatarClass()' },
-  template: `@if (headshot(); as src) {
-      <img [src]="src" alt="" loading="lazy" />
+  template: `@if (showImage()) {
+      <img [src]="headshot()" alt="" loading="lazy" (error)="failed.set(true)" />
     } @else {
       {{ initials() }}
     }`,
@@ -18,6 +18,14 @@ export class PlayerAvatarComponent {
   readonly small = input<boolean>(false);
 
   readonly headshot = computed(() => this.lookup.headshot(this.playerId()));
+  // A picture the platform serves can still fail to arrive; fall back to the initials rather
+  // than the browser's broken-image icon. Resets when the picture does, since the avatars are
+  // recycled as the board scrolls.
+  protected readonly failed = linkedSignal<string | undefined, boolean>({
+    source: this.headshot,
+    computation: () => false,
+  });
+  protected readonly showImage = computed(() => !!this.headshot() && !this.failed());
   readonly initials = computed(() => this.lookup.initials(this.playerId()));
   readonly avatarClass = computed(
     () =>

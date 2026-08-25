@@ -1,9 +1,7 @@
 <td class="col-rank">{{ rank() }}</td>
 <td class="col-name player-name">
   <div class="player-name-content">
-    @if (player().headshot) {
-      <img class="player-headshot" [src]="player().headshot" [alt]="player().name" loading="lazy" />
-    }
+    <app-player-headshot class="player-headshot" [src]="player().headshot" [name]="player().name" />
     <span class="player-name-text">{{ player().name }} ({{ playerPosition() }})</span>
     @if (rookie()) {
       <span class="rookie-badge" title="Rookie this season">R</span>
