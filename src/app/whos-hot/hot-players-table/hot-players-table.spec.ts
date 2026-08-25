@@ -13,6 +13,7 @@ import { PositionFilterService } from '../../services/position-filter.service';
 import { ActiveColumnsService } from '../../services/active-columns.service';
 import { StatInfoService } from '../../services/stat-info.service';
 import { FormatToiPipe } from '../../pipes/format-toi.pipe';
+import { DecimalPipe } from '@angular/common';
 
 const SKATER_STATS = {
   goals: 10,
@@ -78,7 +79,8 @@ describe('HotPlayersTableComponent', () => {
       .keep(PositionFilterService)
       .keep(ActiveColumnsService)
       .keep(StatInfoService)
-      .keep(FormatToiPipe),
+      .keep(FormatToiPipe)
+      .keep(DecimalPipe),
   );
 
   const activeColumns: ActiveColumns = {
@@ -250,7 +252,10 @@ describe('HotPlayersTableComponent', () => {
 
     const firstRow = rows[0].nativeElement as HTMLElement;
     expect(firstRow.textContent).toContain('Skater 2');
-    expect(firstRow.textContent).toContain('14 GP');
+    // Games played is the GP column and nothing else — it used to be repeated as a pill
+    // beside the name, which said the same thing twice in the one cell that has least room.
+    expect(ngMocks.formatText(ngMocks.findAll('tbody tr td.col-gp')[0])).toEqual('14');
+    expect(firstRow.textContent).not.toContain('14 GP');
     // The measurement already happened, so nothing in the body is editable.
     expect(firstRow.querySelectorAll('input')).toHaveLength(0);
   });
