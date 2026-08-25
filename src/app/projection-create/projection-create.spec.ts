@@ -9,6 +9,13 @@ import { StatInfoService } from '../services/stat-info.service';
 import { CreateProjectionRequest } from '../api/models/create-projection-request';
 import { ProjectionResponse } from '../api/models/projection-response';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
+import { PlayerService } from '../services/player.service';
+import { ProjectionRankingService } from '../services/projection-ranking.service';
+import { ProjectionCalculationService } from '../services/projection-calculation.service';
+import { Skater } from '../models/player.model';
+import { SkaterPosition } from '../models/position.model';
+import { SkaterScoringStats } from '../models/projection.model';
+import { SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
 
 describe('ProjectionCreateComponent', () => {
   MockInstance.scope();
@@ -75,6 +82,33 @@ describe('ProjectionCreateComponent', () => {
     updatedAt: '2026-06-01T00:00:00Z',
   };
 
+  const skater = (id: number, name: string, goals: number): Skater => ({
+    type: 'skater',
+    id,
+    name,
+    teamAbbrev: 'TOR',
+    positions: new Set<SkaterPosition>(['C']),
+    stats: {
+      utility: { gp: 82, toiPerGame: 1200 },
+      scoring: {
+        ...(Object.fromEntries(
+          SKATER_SCORING_STAT_KEYS.map((key) => [key, 0]),
+        ) as SkaterScoringStats),
+        goals,
+        assists: 40,
+      },
+    },
+  });
+
+  const skaters = [
+    skater(1, 'Best Player', 60),
+    skater(2, 'Second Player', 50),
+    skater(3, 'Third Player', 40),
+    skater(4, 'Fourth Player', 30),
+    skater(5, 'Fifth Player', 20),
+    skater(6, 'Sixth Player', 10),
+  ];
+
   const navigate = vi.fn();
   const createProjection = vi.fn<
     (request: CreateProjectionRequest) => Observable<ProjectionResponse>
@@ -85,6 +119,9 @@ describe('ProjectionCreateComponent', () => {
     createProjection.mockClear();
     return MockBuilder(ProjectionCreateComponent)
       .keep(StatInfoService)
+      .keep(ProjectionRankingService)
+      .keep(ProjectionCalculationService)
+      .mock(PlayerService, { getSkaters: () => of(skaters) })
       .mock(ProjectionStorageService, {
         listProjections: () => of([]),
         createProjection,
@@ -214,5 +251,59 @@ describe('ProjectionCreateComponent', () => {
     component.create();
 
     expect(createProjection).toHaveBeenCalledWith(expect.objectContaining({ data: source.data }));
+  });
+
+  it('previews the top players with the stats last season gave them', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    const rows = component.previewRows();
+    expect(rows.map((row) => row.name)).toEqual([
+      'Best Player',
+      'Second Player',
+      'Third Player',
+      'Fourth Player',
+      'Fifth Player',
+    ]);
+    // gp, goals, assists, ppp, hits, blocks — the columns a new projection opens with.
+    expect(component.previewColumns).toEqual(['gp', 'goals', 'assists', 'ppp', 'hits', 'blocks']);
+    expect(rows[0].values).toEqual([82, 60, 40, 0, 0, 0]);
+  });
+
+  // Same players, same columns, emptied — the point of the preview is that only the numbers change.
+  it('zeroes every previewed stat when starting from scratch', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.dataSource.set('blank');
+
+    const rows = component.previewRows();
+    expect(rows.map((row) => row.name)).toEqual([
+      'Best Player',
+      'Second Player',
+      'Third Player',
+      'Fourth Player',
+      'Fifth Player',
+    ]);
+    expect(rows.every((row) => row.values.every((value) => value === 0))).toEqual(true);
+  });
+
+  // A failed player read model is not a reason to block the form: the preview is decoration.
+  it('still lets you create when the preview cannot load', async () => {
+    MockInstance(
+      PlayerService,
+      'getSkaters',
+      vi.fn(() => throwError(() => new HttpErrorResponse({ status: 502 }))),
+    );
+
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    expect(component.previewFailed()).toEqual(true);
+    expect(component.loadError()).toEqual(false);
+    expect(component.canCreate()).toEqual(true);
   });
 });
