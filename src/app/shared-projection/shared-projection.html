@@ -91,10 +91,32 @@
             {{ isImporting() ? 'Copying…' : 'Draft against this board' }}
           </button>
         }
-      } @else {
+      } @else if (isTruncated()) {
         <h2 class="cta-title">
-          This is the top {{ projection.data.players.length }} of one manager's board
+          You're seeing the top {{ projection.data.players.length }} of {{ totalPlayers() }} players
         </h2>
+        <p class="cta-body">
+          Sign in to read the rest of {{ authorLabel() }}'s board — every player they ranked, under
+          their league's scoring settings — and take a copy to draft against. Free to start.
+        </p>
+        <div class="cta-actions">
+          <a
+            routerLink="/login"
+            [queryParams]="{ returnUrl }"
+            class="btn btn-primary"
+            data-testid="gate-login"
+            >Log in</a
+          >
+          <a
+            routerLink="/register"
+            [queryParams]="{ returnUrl }"
+            class="btn btn-secondary"
+            data-testid="gate-register"
+            >Create an account</a
+          >
+        </div>
+      } @else {
+        <h2 class="cta-title">This is one manager's board</h2>
         <p class="cta-body">
           Build your own projections, tuned to your league's scoring settings, and rank every player
           the way this one does — or draft straight against this one. Free to start.

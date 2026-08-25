@@ -1,4 +1,5 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { AuthFormComponent } from '../auth-form/auth-form';
@@ -11,11 +12,21 @@ import { messageForError } from '../../shared/http-error';
   templateUrl: './register.html',
   styleUrl: './register.css',
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit {
   private readonly authService = inject(AuthService);
+  private readonly route = inject(ActivatedRoute);
 
   readonly errorMessage = signal<string | null>(null);
   readonly isLoading = signal(false);
+
+  /**
+   * Handed to AuthService rather than kept here: the visitor may still switch between Sign
+   * in and Register, or leave for Google and come back, and where they were headed should
+   * survive all of it.
+   */
+  ngOnInit(): void {
+    this.authService.rememberReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'));
+  }
 
   /**
    * `finalize` rather than resetting only on the error path: a success used to leave the flag set
