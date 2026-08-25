@@ -59,9 +59,14 @@ export class GameRangeSelectorComponent {
 
   readonly spanLength = computed(() => this.toGame() - this.fromGame() + 1);
 
+  /**
+   * Only the span length. The two bounds sit in the boxes at either end of the rail, so
+   * repeating them here would be the same fact twice — the count is the one thing the row
+   * cannot be read off directly.
+   */
   readonly summary = computed(() => {
     const games = this.spanLength();
-    return `${games} game${games === 1 ? '' : 's'} · #${this.fromGame()}–${this.toGame()}`;
+    return `${games} game${games === 1 ? '' : 's'}`;
   });
 
   /** The band between the handles, drawn on the rail behind them. */

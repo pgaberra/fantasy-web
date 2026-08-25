@@ -1,125 +1,116 @@
-<section class="range-selector">
-  <header class="range-header">
-    <div class="range-title">
-      <h2>Game range</h2>
-      <div class="season-field">
-        <label class="season-label" for="whos-hot-season">Season</label>
-        <select id="whos-hot-season" class="season-select" (change)="onSeasonChange($event)">
-          @for (option of seasons(); track option.startYear) {
-            <option [value]="option.startYear" [selected]="option.startYear === season()">
-              {{ option.label }}
-            </option>
-          }
-        </select>
-      </div>
-    </div>
-    <span class="range-summary">{{ summary() }}</span>
-  </header>
-
-  <div class="range-body">
-    <div class="range-picker">
-      <div class="presets" role="group" aria-label="Quick ranges">
-        @for (preset of presets; track preset.label) {
-          <button
-            type="button"
-            class="preset"
-            [class.preset--active]="isPresetActive()(preset)"
-            [attr.aria-pressed]="isPresetActive()(preset)"
-            (click)="applyPreset(preset)"
-          >
-            {{ preset.label }}
-          </button>
+<section class="range-bar" aria-label="Game range">
+  <div class="range-scope">
+    <div class="season-field">
+      <label class="season-label" for="whos-hot-season">Season</label>
+      <select id="whos-hot-season" class="season-select" (change)="onSeasonChange($event)">
+        @for (option of seasons(); track option.startYear) {
+          <option [value]="option.startYear" [selected]="option.startYear === season()">
+            {{ option.label }}
+          </option>
         }
-      </div>
-
-      <div class="range-slider">
-        <input
-          class="game-number"
-          type="number"
-          min="1"
-          [max]="scheduleLength()"
-          step="1"
-          [value]="fromGame()"
-          aria-label="First game in the range"
-          (input)="onFromInput($event)"
-        />
-        <div class="track" (pointermove)="onTrackHover($event)">
-          <div class="track-rail" aria-hidden="true"></div>
-          <div class="track-fill" aria-hidden="true" [style]="fillStyle()"></div>
-          <input
-            class="thumb"
-            [class.thumb--on-top]="activeThumb() === 'from'"
-            type="range"
-            min="1"
-            [max]="scheduleLength()"
-            step="1"
-            [value]="fromGame()"
-            aria-label="Drag to set the first game in the range"
-            [attr.aria-valuetext]="'Game ' + fromGame()"
-            (input)="onFromInput($event)"
-          />
-          <input
-            class="thumb"
-            [class.thumb--on-top]="activeThumb() === 'to'"
-            type="range"
-            min="1"
-            [max]="scheduleLength()"
-            step="1"
-            [value]="toGame()"
-            aria-label="Drag to set the last game in the range"
-            [attr.aria-valuetext]="'Game ' + toGame()"
-            (input)="onToInput($event)"
-          />
-        </div>
-        <input
-          class="game-number"
-          type="number"
-          min="1"
-          [max]="scheduleLength()"
-          step="1"
-          [value]="toGame()"
-          aria-label="Last game in the range"
-          (input)="onToInput($event)"
-        />
-      </div>
+      </select>
     </div>
 
-    <div class="range-options">
-      <div class="option">
+    <div class="presets" role="group" aria-label="Quick ranges">
+      @for (preset of presets; track preset.label) {
         <button
           type="button"
-          class="switch"
-          role="switch"
-          [attr.aria-checked]="perGame()"
-          (click)="togglePerGame()"
+          class="preset"
+          [class.preset--active]="isPresetActive()(preset)"
+          [attr.aria-pressed]="isPresetActive()(preset)"
+          (click)="applyPreset(preset)"
         >
-          <span class="switch-track" aria-hidden="true"><span class="switch-knob"></span></span>
-          Per game
+          {{ preset.label }}
         </button>
-        <app-help-tip
-          label="What per game does"
-          text="Off, the leaderboard shows totals over the range, so a player who missed games shows less — usually the point. On, it divides by the games each player actually dressed for, so someone who missed half the range isn't buried."
-        />
-      </div>
+      }
+    </div>
+  </div>
 
-      <div class="option">
-        <div class="min-games">
-          <label for="min-games">Min. games</label>
-          <app-help-tip
-            label="What the minimum does"
-            text="Hide players with fewer appearances in the range."
-          />
-          <input
-            id="min-games"
-            type="number"
-            min="1"
-            [max]="spanLength()"
-            step="1"
-            [value]="minGames()"
-            (input)="onMinGamesInput($event)"
-          />
-        </div>
-      </div>
+  <div class="range-slider">
+    <input
+      class="game-number"
+      type="number"
+      min="1"
+      [max]="scheduleLength()"
+      step="1"
+      [value]="fromGame()"
+      aria-label="First game in the range"
+      (input)="onFromInput($event)"
+    />
+    <div class="track" (pointermove)="onTrackHover($event)">
+      <div class="track-rail" aria-hidden="true"></div>
+      <div class="track-fill" aria-hidden="true" [style]="fillStyle()"></div>
+      <input
+        class="thumb"
+        [class.thumb--on-top]="activeThumb() === 'from'"
+        type="range"
+        min="1"
+        [max]="scheduleLength()"
+        step="1"
+        [value]="fromGame()"
+        aria-label="Drag to set the first game in the range"
+        [attr.aria-valuetext]="'Game ' + fromGame()"
+        (input)="onFromInput($event)"
+      />
+      <input
+        class="thumb"
+        [class.thumb--on-top]="activeThumb() === 'to'"
+        type="range"
+        min="1"
+        [max]="scheduleLength()"
+        step="1"
+        [value]="toGame()"
+        aria-label="Drag to set the last game in the range"
+        [attr.aria-valuetext]="'Game ' + toGame()"
+        (input)="onToInput($event)"
+      />
+    </div>
+    <input
+      class="game-number"
+      type="number"
+      min="1"
+      [max]="scheduleLength()"
+      step="1"
+      [value]="toGame()"
+      aria-label="Last game in the range"
+      (input)="onToInput($event)"
+    />
+    <span class="range-summary">{{ summary() }}</span>
+  </div>
+
+  <div class="range-options">
+    <div class="option">
+      <button
+        type="button"
+        class="switch"
+        role="switch"
+        [attr.aria-checked]="perGame()"
+        (click)="togglePerGame()"
+      >
+        <span class="switch-track" aria-hidden="true"><span class="switch-knob"></span></span>
+        Per game
+      </button>
+      <app-help-tip
+        label="What per game does"
+        text="Off, the leaderboard shows totals over the range, so a player who missed games shows less — usually the point. On, it divides by the games each player actually dressed for, so someone who missed half the range isn't buried."
+      />
+    </div>
+
+    <div class="option min-games">
+      <label for="min-games">Min. games</label>
+      <app-help-tip
+        label="What the minimum does"
+        text="Hide players with fewer appearances in the range."
+      />
+      <input
+        id="min-games"
+        type="number"
+        min="1"
+        [max]="spanLength()"
+        step="1"
+        [value]="minGames()"
+        (input)="onMinGamesInput($event)"
+      />
     </div>
   </div>
 </section>

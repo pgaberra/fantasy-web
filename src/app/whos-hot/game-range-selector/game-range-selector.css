@@ -1,35 +1,38 @@
-/* A control panel, not a data surface: capped so the track stays a length the eye can judge
-   at a glance. Stretched across a 1400px page, a handle at "game 53" lands hundreds of pixels
-   from anything that says so, and the drag stops feeling connected to the number. */
-.range-selector {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  padding: var(--space-4) var(--space-5);
+/* No card of its own any more: the page draws one card around the whole leaderboard and this
+   is its top row, separated from the toolbar under it by a hairline rather than by a gap
+   between two panels. Picking the games and reading the result were never two subjects.
+
+   Areas rather than source order, because the two differ. Down the page the row reads as one
+   question answered in steps — which games, then exactly which, then how to count them — while
+   across a wide screen the counting options belong up in the corner, out of the way of the rail
+   and lined up over the table's own filters. Grid lets the markup keep the reading order that
+   the tab key and a narrow screen both follow, and move only the wide layout. */
+.range-bar {
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  display: grid;
+  gap: var(--space-4);
+  grid-template-areas:
+    'scope  options'
+    'slider slider';
+  grid-template-columns: minmax(0, 1fr) auto;
   margin-bottom: var(--space-4);
-  max-width: 64rem;
+  padding-bottom: var(--space-4);
 }
 
-.range-header {
+.range-scope {
+  align-items: center;
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-3);
   flex-wrap: wrap;
-}
-
-.range-title {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-3);
+  gap: var(--space-3) var(--space-4);
+  grid-area: scope;
 }
 
 /* The label and the dropdown are one thing, so they sit closer to each other than either
-   does to the heading — otherwise "Season" reads as trailing off "Game range". */
+   does to the presets beside them. */
 .season-field {
+  align-items: center;
   display: flex;
-  align-items: baseline;
   gap: var(--space-1);
 }
 
@@ -39,15 +42,8 @@
   font-weight: var(--weight-medium);
 }
 
-.range-title h2 {
-  font-size: var(--text-lg);
-  font-weight: var(--weight-semibold);
-  margin: 0;
-}
-
-/* Reads as the badge it replaced until you go near it — the season is a fact about what is on
-   screen first and a control second, so the heading beside it doesn't have to compete with a
-   full-height form field. */
+/* Reads as a badge until you go near it — the season is a fact about what is on screen first
+   and a control second, so it doesn't spend the height of a full form field saying so. */
 .season-select {
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border-control);
@@ -73,15 +69,7 @@
   color: var(--color-text-muted);
   font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
-}
-
-/* Picking the range and framing how it's scored are two jobs, so they sit side by side rather
-   than stacking into a tall column of full-width rows. */
-.range-body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 14rem);
-  gap: var(--space-5);
-  margin-top: var(--space-3);
+  white-space: nowrap;
 }
 
 .presets {
@@ -115,15 +103,21 @@
    One rail carrying both handles. The two range inputs are stacked on top of each other and
    made transparent to the pointer, except for the handles themselves — so a press lands on a
    handle, and the rail and band underneath are ours to draw. */
+/* Short on purpose, and left-aligned rather than stretched. The presets above already cover
+   every range anyone asks for by name and the boxes at either end take an exact game, so the
+   rail only has to be long enough to drag comfortably. Run the full width of the page and a
+   handle ends up hundreds of pixels from the number that describes it, and the drag stops
+   feeling connected to it. */
 .range-slider {
   align-items: center;
-  display: grid;
+  display: flex;
   gap: var(--space-3);
-  grid-template-columns: 3.5rem minmax(0, 1fr) 3.5rem;
-  margin-top: var(--space-4);
+  grid-area: slider;
 }
 
 .track {
+  flex: 0 1 20rem;
+  min-width: 7rem;
   --thumb-size: 1.25rem;
   /* A thinner rail under a bigger handle. The old pairing had it the other way round, so the
      band was the loudest thing on the card and the handles you actually grab sat on top of it
@@ -269,6 +263,11 @@
 /* Filled and unoutlined until you go near them: they read the range back to you far more often
    than they are typed into, and two bordered boxes bracketing the rail made the row look like a
    form rather than a control. */
+.game-number {
+  flex: none;
+  width: 3.25rem;
+}
+
 .game-number,
 .min-games input {
   background: var(--color-surface-alt);
@@ -281,7 +280,6 @@
   font-weight: var(--weight-medium);
   padding: var(--space-1) var(--space-2);
   text-align: center;
-  width: 100%;
 }
 
 .game-number:hover,
@@ -310,13 +308,15 @@
   margin: 0;
 }
 
-/* ── Scoring options ───────────────────────────────────────────────────────────────── */
+/* ── Scoring options ─────────────────────────────────────────────────────────────────
+   Held at the right end of the top row, where they line up over the table's own search and
+   filters: everything down that edge narrows or reframes what is shown, everything down the
+   left picks what is measured. */
 .range-options {
-  border-left: 1px solid var(--color-border);
+  align-items: center;
   display: flex;
-  flex-direction: column;
   gap: var(--space-4);
-  padding-left: var(--space-5);
+  grid-area: options;
 }
 
 /* Each option is a control and the tip that explains it, side by side — the prose that used to
@@ -386,41 +386,32 @@
   width: 4rem;
 }
 
-/* Below the two-column threshold the options fall under the picker, and the divider moves
-   from the side to the top so it still separates them. */
-@media (max-width: 900px) {
-  .range-body {
+@media (max-width: 640px) {
+  /* One column, and the options fall to the bottom — under the rail they qualify rather than
+     above it, which is the order the markup was already in. */
+  .range-bar {
+    gap: var(--space-3);
+    grid-template-areas:
+      'scope'
+      'slider'
+      'options';
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-4);
   }
 
   .range-options {
-    border-left: none;
-    border-top: 1px solid var(--color-border);
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: var(--space-3) var(--space-5);
-    padding-left: 0;
-    padding-top: var(--space-4);
-  }
-}
-
-@media (max-width: 640px) {
-  .range-selector {
-    padding: var(--space-3);
+    gap: var(--space-3);
   }
 
   .range-slider {
     gap: var(--space-2);
-    grid-template-columns: 3rem minmax(0, 1fr) 3rem;
+  }
+
+  .game-number {
+    width: 3rem;
   }
 
   /* Fingers are blunter than cursors, and the band follows the handle size on its own. */
   .track {
     --thumb-size: 1.5rem;
-  }
-
-  .range-options {
-    flex-direction: column;
   }
 }
