@@ -1,4 +1,4 @@
-import { MockBuilder, MockRender } from 'ng-mocks';
+import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GameRangeSelectorComponent } from './game-range-selector';
 import { SEASONS } from '../season.model';
@@ -153,6 +153,19 @@ describe('GameRangeSelectorComponent', () => {
     component.onTrackHover({ ...hoverAt(0.9), buttons: 1 });
 
     expect(component.activeThumb()).toEqual('from');
+  });
+
+  it('names the season dropdown with a label the pointer can reach, not just a screen reader', () => {
+    render();
+
+    const label = ngMocks.find('label.season-label').nativeElement as HTMLLabelElement;
+    const select = ngMocks.find('select.season-select').nativeElement as HTMLSelectElement;
+
+    expect(label.textContent.trim()).toEqual('Season');
+    // `for` and `id` rather than an aria-label: clicking the word focuses the control, and
+    // the name is on screen for everyone rather than only for assistive tech.
+    expect(label.htmlFor).toEqual(select.id);
+    expect(select.getAttribute('aria-label')).toEqual(null);
   });
 
   it('picks the season by the year it starts in, which is what the splits API takes', () => {
