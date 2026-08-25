@@ -28,8 +28,20 @@ import {
 } from '../draft-projection/projection-defaults';
 import { DEFAULT_DECIMAL_SETTINGS } from '../draft-projection/projection-settings-section/model';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
+import { ProjectionModelService } from '../services/projection-model.service';
+import { SeededProjectionResponse } from '../api/models/seeded-projection-response';
 
-type DataSource = 'last-season' | 'blank' | 'copy';
+type DataSource = 'last-season' | 'ai' | 'blank' | 'copy';
+
+/**
+ * What each starting point sends as `source`. 'copy' is absent on purpose: it uploads rows
+ * taken from another projection rather than asking the server to derive them.
+ */
+const SOURCE_BY_CHOICE: Record<Exclude<DataSource, 'copy'>, CreateProjectionRequest['source']> = {
+  'last-season': 'default',
+  ai: 'model',
+  blank: 'blank',
+};
 
 /**
  * How many rows the preview shows. Enough to see what the editor opens as — the columns, the
@@ -42,8 +54,8 @@ interface PreviewRow {
   name: string;
   position: string;
   teamAbbrev?: string;
-  /** Aligned with `previewColumns`. */
-  values: number[];
+  /** Aligned with `previewColumns`. Null where the model has no line for this player. */
+  values: (number | null)[];
 }
 
 @Component({
@@ -67,6 +79,7 @@ export class ProjectionCreateComponent {
   private readonly notification = inject(NotificationService);
   private readonly analytics = inject(AnalyticsService);
   private readonly playerService = inject(PlayerService);
+  private readonly projectionModel = inject(ProjectionModelService);
   private readonly ranking = inject(ProjectionRankingService);
 
   // Only the existing projections are needed here: the player rows of a new projection are
@@ -89,6 +102,17 @@ export class ProjectionCreateComponent {
   });
 
   readonly dataSource = signal<DataSource>('last-season');
+
+  /**
+   * The model's lines, fetched only once the AI preset is picked. It is a second download the
+   * size of the player pool, so making it lazy keeps the page as fast as it was for everyone
+   * who never chooses it.
+   */
+  private readonly modelSeedResource = rxResource({
+    params: () => (this.dataSource() === 'ai' ? {} : undefined),
+    stream: () => this.projectionModel.seed(),
+    defaultValue: undefined as SeededProjectionResponse | undefined,
+  });
   readonly copyFromId = signal<string | null>(null);
   readonly existingProjections = computed(() => this.dataResource.value());
   readonly isLoading = this.dataResource.isLoading;
@@ -131,20 +155,57 @@ export class ProjectionCreateComponent {
       .filter((skater): skater is Skater => !!skater);
   });
 
+  /** The model's lines by player id, for the preview to read instead of last season's. */
+  private readonly modelStatsByPlayer = computed<Map<number, Record<StatKey, number>>>(() => {
+    const seeded = this.modelSeedResource.value();
+    if (!seeded) {
+      return new Map();
+    }
+    return new Map(
+      seeded.players.map((player) => [
+        player.playerId,
+        { ...player.stats.utility, ...player.stats.scoring } as Record<StatKey, number>,
+      ]),
+    );
+  });
+
   readonly previewRows = computed<PreviewRow[]>(() => {
     // 'From scratch' is the same players and the same columns, just emptied — which is the
     // whole point of showing it: the shape doesn't change, only the numbers.
-    const zeroed = this.dataSource() === 'blank';
+    const source = this.dataSource();
+    const zeroed = source === 'blank';
+    const modelStats = source === 'ai' ? this.modelStatsByPlayer() : null;
     return this.previewPlayers().map((skater) => {
       const stats = { ...skater.stats.utility, ...skater.stats.scoring } as Record<StatKey, number>;
+      // A player the model could not reach has no line at all. Showing last season's numbers
+      // under the AI heading would credit them to the model, so the row reads as unfilled.
+      const projected = modelStats?.get(skater.id);
       return {
         playerId: skater.id,
         name: skater.name,
         position: Array.from(skater.positions).join(', '),
         teamAbbrev: skater.teamAbbrev,
-        values: this.previewColumns.map((col) => (zeroed ? 0 : (stats[col] ?? 0))),
+        values: this.previewColumns.map((col) => {
+          if (zeroed) {
+            return 0;
+          }
+          if (modelStats) {
+            return projected ? (projected[col] ?? 0) : null;
+          }
+          return stats[col] ?? 0;
+        }),
       };
     });
+  });
+
+  readonly isModelPreviewLoading = computed(
+    () => this.dataSource() === 'ai' && this.modelSeedResource.isLoading(),
+  );
+
+  /** What the model covered, so the page can say so rather than quietly seeding fewer rows. */
+  readonly modelCoverage = computed(() => {
+    const seeded = this.modelSeedResource.value();
+    return seeded ? { skaters: seeded.skaters, goalies: seeded.goalies } : null;
   });
 
   readonly canCreate = computed(
@@ -210,7 +271,7 @@ export class ProjectionCreateComponent {
       this.serializer.toProjectionData(
         createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
       ),
-      this.dataSource() === 'blank' ? 'blank' : 'default',
+      SOURCE_BY_CHOICE[this.dataSource() as Exclude<DataSource, 'copy'>],
     );
   }
 

@@ -131,6 +131,11 @@
   color: var(--color-text-subtle);
 }
 
+/* A cell the model has no line for. Dimmed so it reads as absent rather than as a value. */
+.preview-unfilled {
+  color: var(--color-text-subtle);
+}
+
 .preview-note {
   margin: 0.4rem 0 0;
   font-size: var(--text-xs);
