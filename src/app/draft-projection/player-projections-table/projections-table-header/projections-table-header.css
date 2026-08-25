@@ -449,7 +449,7 @@ tr.decimal-row th {
 .column-menu .menu-field input[type='number'] {
   width: 4.2rem;
   padding: 0.3rem 0.45rem;
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-border-control);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   font: inherit;

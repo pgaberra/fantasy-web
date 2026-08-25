@@ -21,7 +21,7 @@
   font-weight: var(--weight-semibold);
   color: var(--color-primary);
   background: var(--color-surface);
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-border-control);
   border-radius: var(--radius-sm);
   padding: 0.3rem 0.5rem;
   cursor: pointer;

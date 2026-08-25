@@ -33,7 +33,7 @@
 .draft-search {
   font-size: var(--text-sm);
   padding: 0.4rem 0.6rem;
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-border-control);
   border-radius: var(--radius-sm);
   min-width: 12rem;
 }
@@ -99,7 +99,7 @@
 .page-size-select {
   font-size: var(--text-xs);
   padding: 0.2rem 0.4rem;
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-border-control);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
