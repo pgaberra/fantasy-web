@@ -124,8 +124,15 @@
 }
 
 .track {
-  --thumb-size: 1.05rem;
-  --rail-height: 0.375rem;
+  --thumb-size: 1.25rem;
+  /* A thinner rail under a bigger handle. The old pairing had it the other way round, so the
+     band was the loudest thing on the card and the handles you actually grab sat on top of it
+     like specks. */
+  --rail-height: 0.25rem;
+  /* The halo the handle grows on hover, press and focus. Mixed from the accent rather than
+     written out as an rgba() literal, so re-theming the accent carries it along. */
+  --thumb-halo: color-mix(in srgb, var(--color-accent) 20%, transparent);
+  --thumb-halo-strong: color-mix(in srgb, var(--color-accent) 35%, transparent);
 
   height: 1.5rem;
   position: relative;
@@ -185,16 +192,19 @@
   height: var(--thumb-size);
 }
 
+/* The input itself is transparent to the pointer, so the handle is what the browser hit-tests
+   — which is why :hover and :active on the input still track the handle under the cursor. */
 .thumb::-webkit-slider-thumb {
   appearance: none;
   -webkit-appearance: none;
   background: var(--color-surface);
   border: 2px solid var(--color-accent);
   border-radius: 50%;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   cursor: grab;
   height: var(--thumb-size);
   pointer-events: auto;
+  transition: box-shadow 120ms ease;
   width: var(--thumb-size);
 }
 
@@ -202,20 +212,39 @@
   background: var(--color-surface);
   border: 2px solid var(--color-accent);
   border-radius: 50%;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   cursor: grab;
   height: var(--thumb-size);
   pointer-events: auto;
+  transition: box-shadow 120ms ease;
   width: var(--thumb-size);
 }
 
+.thumb:hover::-webkit-slider-thumb {
+  box-shadow:
+    var(--shadow-md),
+    0 0 0 0.3rem var(--thumb-halo);
+}
+
+.thumb:hover::-moz-range-thumb {
+  box-shadow:
+    var(--shadow-md),
+    0 0 0 0.3rem var(--thumb-halo);
+}
+
+/* A halo rather than the filled-in handle this used to draw: inverting the handle mid-drag
+   swapped the thing under the cursor for a different-looking one at the moment it mattered. */
 .thumb:active::-webkit-slider-thumb {
-  background: var(--color-accent);
+  box-shadow:
+    var(--shadow-md),
+    0 0 0 0.45rem var(--thumb-halo);
   cursor: grabbing;
 }
 
 .thumb:active::-moz-range-thumb {
-  background: var(--color-accent);
+  box-shadow:
+    var(--shadow-md),
+    0 0 0 0.45rem var(--thumb-halo);
   cursor: grabbing;
 }
 
@@ -226,22 +255,59 @@
 }
 
 .thumb:focus-visible::-webkit-slider-thumb {
-  box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.35);
+  box-shadow:
+    var(--shadow-md),
+    0 0 0 0.3rem var(--thumb-halo-strong);
 }
 
 .thumb:focus-visible::-moz-range-thumb {
-  box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.35);
+  box-shadow:
+    var(--shadow-md),
+    0 0 0 0.3rem var(--thumb-halo-strong);
 }
 
+/* Filled and unoutlined until you go near them: they read the range back to you far more often
+   than they are typed into, and two bordered boxes bracketing the rail made the row look like a
+   form rather than a control. */
 .game-number,
 .min-games input {
-  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font: inherit;
   font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-medium);
   padding: var(--space-1) var(--space-2);
   text-align: center;
   width: 100%;
+}
+
+.game-number:hover,
+.min-games input:hover {
+  border-color: var(--color-border-strong);
+}
+
+.game-number:focus,
+.min-games input:focus {
+  background: var(--color-surface);
+  border-color: var(--color-accent);
+  outline: none;
+}
+
+/* The spinners are a poor second to the rail for changing these, and at 3.5rem they crowd the
+   digits they sit beside the moment the pointer is anywhere near. */
+.game-number {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.game-number::-webkit-inner-spin-button,
+.game-number::-webkit-outer-spin-button {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 /* ── Scoring options ───────────────────────────────────────────────────────────────── */
@@ -351,7 +417,7 @@
 
   /* Fingers are blunter than cursors, and the band follows the handle size on its own. */
   .track {
-    --thumb-size: 1.35rem;
+    --thumb-size: 1.5rem;
   }
 
   .range-options {
