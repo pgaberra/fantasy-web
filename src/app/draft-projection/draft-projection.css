@@ -104,7 +104,7 @@
 }
 
 .rename-input:focus {
-  border-color: #1e6bff;
+  border-color: var(--color-accent);
   box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
 }
 
