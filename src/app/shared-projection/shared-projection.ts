@@ -1,6 +1,6 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { SharedPlayer } from '../api/models/shared-player';
 import { Player } from '../models/player.model';
@@ -25,7 +25,12 @@ import { PlayerRowComponent } from '../draft-projection/player-projections-table
 import { PositionFilterComponent } from '../draft-projection/player-projections-table/position-filter/position-filter';
 import { ProjectionsTableHeaderComponent } from '../draft-projection/player-projections-table/projections-table-header/projections-table-header';
 import { AnalyticsService } from '../services/analytics.service';
+import { AuthService } from '../services/auth.service';
+import { NotificationService } from '../services/notification.service';
 import { ProjectionShareService } from '../services/projection-share.service';
+import { ProjectionStorageService } from '../services/projection-storage.service';
+import { DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 
@@ -62,8 +67,44 @@ interface SharedRow {
 })
 export class SharedProjectionComponent {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly shareService = inject(ProjectionShareService);
+  private readonly storage = inject(ProjectionStorageService);
+  private readonly notification = inject(NotificationService);
   private readonly analytics = inject(AnalyticsService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  readonly isLoggedIn = inject(AuthService).isLoggedIn;
+  readonly isImporting = signal(false);
+  readonly alreadyImported = signal(false);
+
+  /**
+   * Takes a copy of the published board and opens a draft against it. What the visitor is
+   * looking at is a snapshot, and so is the copy — the author's later edits are theirs, and
+   * their picks do not come along.
+   */
+  draftAgainstThis(): void {
+    this.isImporting.set(true);
+    this.storage
+      .importFromShare(this.token)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (projection) => {
+          this.analytics.capture('shared_projection_imported');
+          void this.router.navigate(['/projections', projection.id, 'draft']);
+        },
+        error: (error: unknown) => {
+          this.isImporting.set(false);
+          // A clash on the name it was shared under almost always means this same board is
+          // already in their account — nothing to fix, just somewhere else to go.
+          if (error instanceof HttpErrorResponse && error.status === 409) {
+            this.alreadyImported.set(true);
+            return;
+          }
+          this.notification.error("Couldn't copy this board. Please try again.");
+        },
+      });
+  }
 
   private readonly token = this.route.snapshot.paramMap.get('token') ?? '';
 
