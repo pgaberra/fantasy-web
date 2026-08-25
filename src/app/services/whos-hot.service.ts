@@ -1,6 +1,7 @@
+import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { forkJoin, from, map, Observable } from 'rxjs';
-import { Api } from '../api/api';
+import { forkJoin, map, Observable } from 'rxjs';
+import { ApiConfiguration } from '../api/api-configuration';
 import { skaterSplits } from '../api/fn/projection-model/skater-splits';
 import { goalieSplits } from '../api/fn/projection-model/goalie-splits';
 import { PlayerSplitResponse } from '../api/models/player-split-response';
@@ -43,7 +44,15 @@ const MAX_PLAYERS = 1000;
   providedIn: 'root',
 })
 export class WhosHotService {
-  private readonly api = inject(Api);
+  /**
+   * The generated operations are called directly rather than through {@link Api}, whose `invoke`
+   * hands back a promise. A promise cannot be cancelled, so an abandoned span — the caller moves
+   * the range again before this one lands — would keep running to completion at the server.
+   * Staying with the observable lets the caller's unsubscribe abort the request in flight, which
+   * is what keeps a drag across the slider from becoming a burst the edge rate-limiter rejects.
+   */
+  private readonly http = inject(HttpClient);
+  private readonly rootUrl = inject(ApiConfiguration).rootUrl;
 
   splits(span: GameSpan): Observable<HotPlayer[]> {
     const params = {
@@ -53,8 +62,8 @@ export class WhosHotService {
       limit: MAX_PLAYERS,
     };
     return forkJoin({
-      skaters: from(this.api.invoke(skaterSplits, params)),
-      goalies: from(this.api.invoke(goalieSplits, params)),
+      skaters: skaterSplits(this.http, this.rootUrl, params).pipe(map((sent) => sent.body)),
+      goalies: goalieSplits(this.http, this.rootUrl, params).pipe(map((sent) => sent.body)),
     }).pipe(map(({ skaters, goalies }) => [...skaters.map(toSkater), ...goalies.map(toGoalie)]));
   }
 }
