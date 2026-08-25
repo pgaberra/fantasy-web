@@ -12,7 +12,8 @@ export type AnalyticsEvent =
   | 'projection_created'
   | 'draft_started'
   | 'projection_shared'
-  | 'shared_projection_viewed';
+  | 'shared_projection_viewed'
+  | 'shared_projection_imported';
 
 /** Mirrors posthog's `get_explicit_consent_status()`. */
 export type ConsentDecision = 'granted' | 'denied' | 'pending';

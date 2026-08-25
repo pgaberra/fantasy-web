@@ -24,25 +24,19 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Passing BASE_SHA is what makes this only blame the branch: a producer merge staled the
+      # copy in every open PR at once, and failing all of them blocked work that had nothing to
+      # do with the spec. The script carries the whole argument.
       - name: Verify pinned BFF spec is in sync
         if: github.actor != 'dependabot[bot]'
         env:
-          GH_TOKEN: ${{ secrets.SPEC_READ_TOKEN }}
+          PRODUCER_TOKEN: ${{ secrets.SPEC_READ_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "::error::SPEC_READ_TOKEN is not set. Add a fine-grained PAT with read access to fantasy-bff contents as a repo secret."
-            exit 1
-          fi
-          if ! gh api repos/pgaberra/fantasy-bff/contents/specs/bff-openapi.yaml \
-                -H "Accept: application/vnd.github.raw" > /tmp/bff-openapi.yaml 2> /tmp/gh-err.txt; then
-            echo "::error::Could not fetch the BFF spec — SPEC_READ_TOKEN is likely invalid or expired. Rotate it and update the repo secret. (This is an auth failure, not a spec mismatch.)"
-            cat /tmp/gh-err.txt
-            exit 1
-          fi
-          if ! diff -u specs/bff-openapi.yaml /tmp/bff-openapi.yaml; then
-            echo "::error::Pinned BFF spec is stale. Copy fantasy-bff/specs/bff-openapi.yaml into specs/bff-openapi.yaml and run npm run generate:api."
-            exit 1
-          fi
+          bash .github/scripts/check-pinned-spec.sh \
+            pgaberra/fantasy-bff specs/bff-openapi.yaml specs/bff-openapi.yaml \
+            'npm run generate:api'
 
       - name: Set up Node
         uses: actions/setup-node@v7

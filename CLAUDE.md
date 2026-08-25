@@ -55,14 +55,22 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   `rookieIds` is therefore null in both cases, and is taken via `hasValue()` because reading a
   resource in an error state throws.
 - `draft-start/` — the **Draft Mode** page (`/draft`): picks what a draft is drafted
-  against. Either one of the user's projections, or the "Last Season's Stats" preset.
+  against, across three kinds of source behind a tab each — the user's own projections,
+  boards copied from someone's share link, and the "Last Season's Stats" preset. Drafts
+  left mid-way are lifted out of the tabs into a strip at the top, since resuming one is
+  what most visits are for. The imported tab carries the paste-a-share-link field;
+  `shareTokenFrom` accepts a whole URL, a `/s/…` path, or a bare token, and a name clash
+  (409) asks for a name rather than reporting a failure the user cannot act on.
   A preset draft has no projection behind it, so starting one creates a projection of
   kind `preset_draft` (seeded server-side via `source: default`) purely to hold the picks;
   `ProjectionStorageService.listProjections()` filters that row out so it never shows up
   as the user's own work, and `listWithPresetDrafts()` is the one place it is wanted.
   Both sources then run the same board in `draft-mode/`.
 - `shared-projection/` — the page behind a share link (`/s/:token`), public and unguarded: a
-  share link has to open for someone who has never signed in. It renders the **snapshot** the
+  share link has to open for someone who has never signed in. A signed-in visitor is offered
+  "Draft against this board", which copies the snapshot into their own projections and opens
+  the board; a signed-out one still gets the sign-up. A 409 there means they already hold a
+  copy, so it points at Draft Mode instead of reporting an error. It renders the **snapshot** the
   owner published — the top rows with identity, rank and value frozen into them — so it needs
   no player read model and no ranking of its own. It renders the editor's own `player-row` and
   `projections-table-header` in a **read-only** mode, so a shared projection looks like the

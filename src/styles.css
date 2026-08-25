@@ -51,13 +51,24 @@
   --color-primary: #0f3460;
   --color-primary-hover: #1a4a80;
   --color-primary-contrast: #ffffff;
-  --color-accent: #1e6bff;
+  /* Darkened from #1e6bff, which read 4.1:1 on --color-bg -- under the 4.5:1 WCAG 1.4.3 asks
+     of the links and emphasis drawn in it. The fills it also draws carry no text. */
+  --color-accent: #1c62eb;
   --color-gold: #e6b84a;
-  --color-gold-strong: #c8860a;
+  /* Darkened from #c8860a, which was failing at both ends of its job: 3.1:1 as text on a light
+     surface, and 3.1:1 under the white text of the rookie badge and the summary points column.
+     One move fixes both -- 5.2:1 either way. */
+  --color-gold-strong: #946307;
 
   --color-text: #1a1a2e;
-  --color-text-muted: #64748b;
-  --color-text-subtle: #7a8baa;
+  /* Both of these are body text somewhere, so both owe 4.5:1 (WCAG 1.4.3) against every surface
+     they can land on -- and the one that binds is --color-bg, the darkest of the three. That is
+     what sets how light --color-text-subtle is allowed to be: at its old #7a8baa it read 3.1:1
+     there. Lighten either of these and the ratio in the comment is the thing to recheck.
+     muted:  7.2:1 on --color-surface, 6.7:1 on --color-surface-alt, 6.4:1 on --color-bg.
+     subtle: 5.3:1 / 4.9:1 / 4.7:1 -- the tightest number in the palette, so it moves first. */
+  --color-text-muted: #4c586a;
+  --color-text-subtle: #5f6c85;
   --color-text-on-dark: #ffffff;
 
   --color-bg: #f0f2f8;
@@ -76,11 +87,15 @@
      3.5:1 on --color-surface, 3.3:1 on --color-surface-alt, 3.2:1 on --color-bg. */
   --color-border-control: #7b89a0;
 
-  --color-error: #e94560;
+  /* Darkened from #e94560 (3.4:1 on --color-bg) for the validation messages drawn in it. Still
+     well clear of the 3:1 its invalid-field borders owe under 1.4.11. */
+  --color-error: #c43a51;
   --color-danger: #b3261e;
   --color-danger-hover: #8f1d17;
   --color-warning: #e6b84a;
-  --color-success: #16a34a;
+  /* Darkened from #16a34a (2.9:1 on --color-bg) for the confirmations drawn in it. Its other
+     job is the sync dots, which carry no text and only read better for it. */
+  --color-success: #117e39;
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;

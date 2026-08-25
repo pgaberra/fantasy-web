@@ -305,8 +305,11 @@ export class DraftModeComponent implements OnInit {
 
   // A preset draft has no projection to go back to — it exists only to hold these picks — so
   // leaving it returns to where the draft was started from.
+  // Only a projection the user made has an editor to go back to: a preset draft has no
+  // projection behind it, and an imported board is listed under Draft Mode rather than among
+  // their own work, so both send you back to where you started the draft from.
   readonly exitLink = computed(() =>
-    this.projectionKind() === 'preset_draft' ? ['/draft'] : ['/projections', this.projectionId()],
+    this.projectionKind() === 'projection' ? ['/projections', this.projectionId()] : ['/draft'],
   );
 
   readonly draftLabel = computed(() => {
