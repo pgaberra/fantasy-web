@@ -9,6 +9,7 @@ import { NotificationService } from '../../services/notification.service';
 import { ProjectionShareService } from '../../services/projection-share.service';
 import { USERNAME_PATTERN, USERNAME_MAX_LENGTH } from '../../models/username';
 import { messageForError } from '../../shared/http-error';
+import { OpenPopovers } from '../../shared/popover/open-popovers';
 
 /**
  * Publishing a projection as a public link. Opening the dialog only reads the current state —
@@ -50,6 +51,11 @@ export class ShareDialogComponent implements OnInit {
   readonly canPublish = computed(
     () => !this.needsUsername() || USERNAME_PATTERN.test(this.usernameInput().trim()),
   );
+
+  /** Opened from a projection card's overflow menu, which would otherwise stay open behind this. */
+  constructor() {
+    inject(OpenPopovers).closeAll();
+  }
 
   ngOnInit(): void {
     this.account.load().subscribe({

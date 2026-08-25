@@ -1,10 +1,20 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  computed,
+  effect,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { ProjectionSummaryResponse } from '../../api/models/projection-summary-response';
 import { RelativeTimePipe } from '../../pipes/relative-time.pipe';
+import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
 
 @Component({
   selector: 'li[app-projection-card]',
-  imports: [RelativeTimePipe],
+  imports: [RelativeTimePipe, PopoverTriggerDirective],
   templateUrl: './projection-card.html',
   styleUrl: './projection-card.css',
 })
@@ -18,6 +28,8 @@ export class ProjectionCardComponent {
   readonly share = output<void>();
   readonly remove = output<void>();
 
+  private readonly confirmPrompt = viewChild<ElementRef<HTMLElement>>('confirmPrompt');
+
   readonly draftLabel = computed(() => {
     switch (this.projection().draftStatus) {
       case 'finished':
@@ -30,6 +42,18 @@ export class ProjectionCardComponent {
   });
 
   readonly confirmingDelete = signal(false);
+
+  constructor() {
+    // Delete lives in the overflow menu, and choosing it destroys the trigger the menu hangs
+    // off — so the confirmation would otherwise appear with focus dropped on the body. The
+    // prompt takes focus rather than "Yes, delete": the same keypress that picked the menu
+    // item must not be able to carry through and confirm the deletion.
+    effect(() => {
+      if (this.confirmingDelete()) {
+        this.confirmPrompt()?.nativeElement.focus();
+      }
+    });
+  }
 
   startDelete(): void {
     this.confirmingDelete.set(true);

@@ -9,7 +9,7 @@
 </div>
 <div class="card-actions">
   @if (confirmingDelete()) {
-    <span class="confirm-text">Delete “{{ projection().name }}”?</span>
+    <span class="confirm-text" tabindex="-1" #confirmPrompt>Delete “{{ projection().name }}”?</span>
     <button type="button" class="btn btn-danger btn-sm delete" (click)="confirmDelete()">
       Yes, delete
     </button>
@@ -23,14 +23,61 @@
     </button>
     <button
       type="button"
-      class="btn btn-secondary btn-sm share"
-      [disabled]="isPreparingShare()"
-      (click)="share.emit()"
+      class="card-menu"
+      [attr.aria-label]="'More actions for ' + projection().name"
+      [appPopover]="cardMenu"
     >
-      {{ isPreparingShare() ? 'Opening…' : 'Share' }}
-    </button>
-    <button type="button" class="btn btn-danger btn-sm delete" (click)="startDelete()">
-      Delete
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+        <circle cx="12" cy="5" r="2.1" />
+        <circle cx="12" cy="12" r="2.1" />
+        <circle cx="12" cy="19" r="2.1" />
+      </svg>
     </button>
   }
 </div>
+
+<ng-template #cardMenu>
+  <div class="card-menu-panel">
+    <button
+      type="button"
+      class="menu-item share"
+      [disabled]="isPreparingShare()"
+      (click)="share.emit()"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="15"
+        height="15"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M9 17H7A5 5 0 0 1 7 7h2" />
+        <path d="M15 7h2a5 5 0 0 1 0 10h-2" />
+        <line x1="8" y1="12" x2="16" y2="12" />
+      </svg>
+      {{ isPreparingShare() ? 'Opening…' : 'Share' }}
+    </button>
+    <button type="button" class="menu-item menu-item--danger delete" (click)="startDelete()">
+      <svg
+        viewBox="0 0 24 24"
+        width="15"
+        height="15"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M3 6h18" />
+        <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      </svg>
+      Delete
+    </button>
+  </div>
+</ng-template>
