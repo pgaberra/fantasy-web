@@ -152,16 +152,20 @@
   background: var(--color-accent);
 }
 
+/* Chromium lays the handle against the *top* of the runnable track rather than centring it on
+   the track, so a track taller than the handle leaves the handle riding above the rail. Sizing
+   the track to the handle and centring the input instead keeps the two in step whatever either
+   height becomes — a margin fudge on the handle would have to be re-derived every time. */
 .thumb {
   appearance: none;
   -webkit-appearance: none;
   background: none;
-  height: 1.5rem;
+  height: var(--thumb-size);
   left: 0;
   margin: 0;
   pointer-events: none;
   position: absolute;
-  top: 0;
+  top: calc(50% - var(--thumb-size) / 2);
   width: 100%;
 }
 
@@ -172,13 +176,13 @@
 .thumb::-webkit-slider-runnable-track {
   background: none;
   border: none;
-  height: 1.5rem;
+  height: var(--thumb-size);
 }
 
 .thumb::-moz-range-track {
   background: none;
   border: none;
-  height: 1.5rem;
+  height: var(--thumb-size);
 }
 
 .thumb::-webkit-slider-thumb {
