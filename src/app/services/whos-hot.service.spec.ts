@@ -1,10 +1,14 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import {
+  HttpTestingController,
+  TestRequest,
+  provideHttpClientTesting,
+} from '@angular/common/http/testing';
 import { firstValueFrom } from 'rxjs';
-import { Api } from '../api/api';
-import { skaterSplits } from '../api/fn/projection-model/skater-splits';
 import { PlayerSplitResponse } from '../api/models/player-split-response';
-import { HotPlayer, WhosHotService } from './whos-hot.service';
+import { GameSpan, HotPlayer, WhosHotService } from './whos-hot.service';
 import { GoalieScoringStats, SkaterScoringStats } from '../models/projection.model';
 
 function skaterScoring(hot: HotPlayer): SkaterScoringStats {
@@ -35,38 +39,66 @@ function split(overrides: Partial<PlayerSplitResponse> = {}): PlayerSplitRespons
   };
 }
 
-/** `Api.invoke` resolves a promise, so the mock has to as well or `from(...)` gets an array. */
-type InvokeFn = (fn: unknown, params?: unknown) => Promise<PlayerSplitResponse[]>;
+const SPAN: GameSpan = { season: 2025, fromGame: 63, toGame: 82 };
 
 describe('WhosHotService', () => {
   let service: WhosHotService;
-  let invoke: ReturnType<typeof vi.fn<InvokeFn>>;
+  let httpTesting: HttpTestingController;
 
   beforeEach(() => {
-    invoke = vi.fn<InvokeFn>();
     TestBed.configureTestingModule({
-      providers: [{ provide: Api, useValue: { invoke } }],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
     });
     service = TestBed.inject(WhosHotService);
+    httpTesting = TestBed.inject(HttpTestingController);
   });
 
+  afterEach(() => {
+    httpTesting.verify();
+  });
+
+  function pending(half: 'skaters' | 'goalies'): TestRequest {
+    return httpTesting.expectOne((request) => request.url.endsWith(`/splits/${half}`));
+  }
+
+  /**
+   * Both halves have to be answered before the span resolves — the service asks for skaters and
+   * goalies together and only emits once it has both.
+   */
+  function answer(skaters: PlayerSplitResponse[], goalies: PlayerSplitResponse[] = []): void {
+    pending('skaters').flush(skaters);
+    pending('goalies').flush(goalies);
+  }
+
   it('asks for both bounds of the span, for skaters and goalies alike', async () => {
-    invoke.mockReturnValue(Promise.resolve([]));
+    const splits = firstValueFrom(service.splits({ season: 2025, fromGame: 50, toGame: 82 }));
 
-    await firstValueFrom(service.splits({ season: 2025, fromGame: 50, toGame: 82 }));
+    for (const half of ['skaters', 'goalies'] as const) {
+      const asked = pending(half);
+      expect(asked.request.params.get('season')).toEqual('2025');
+      expect(asked.request.params.get('fromGame')).toEqual('50');
+      expect(asked.request.params.get('toGame')).toEqual('82');
+      asked.flush([]);
+    }
 
-    expect(invoke).toHaveBeenCalledTimes(2);
-    expect(invoke.mock.calls[0][1]).toEqual(
-      expect.objectContaining({ season: 2025, fromGame: 50, toGame: 82 }),
-    );
+    expect(await splits).toEqual([]);
+  });
+
+  it('drops the request when the caller moves on, rather than leaving it running at the server', () => {
+    const subscription = service.splits(SPAN).subscribe();
+    const inFlight = httpTesting.match(() => true);
+
+    subscription.unsubscribe();
+
+    expect(inFlight).toHaveLength(2);
+    expect(inFlight.every((request) => request.cancelled)).toBe(true);
   });
 
   it('shapes a skater split as a projection the ranking engine can score', async () => {
-    invoke.mockImplementation((fn: unknown) =>
-      Promise.resolve(fn === skaterSplits ? [split()] : []),
-    );
+    const splits = firstValueFrom(service.splits(SPAN));
+    answer([split()]);
 
-    const [hot] = await firstValueFrom(service.splits({ season: 2025, fromGame: 63, toGame: 82 }));
+    const [hot] = await splits;
 
     expect(hot.projection.type).toEqual('skater');
     expect(skaterScoring(hot).goals).toEqual(13);
@@ -76,36 +108,32 @@ describe('WhosHotService', () => {
   });
 
   it('fills a stat the split never mentioned with zero, so the stat line is complete', async () => {
-    invoke.mockImplementation((fn: unknown) =>
-      Promise.resolve(fn === skaterSplits ? [split({ stats: { goals: 4 } })] : []),
-    );
+    const splits = firstValueFrom(service.splits(SPAN));
+    answer([split({ stats: { goals: 4 } })]);
 
-    const [hot] = await firstValueFrom(service.splits({ season: 2025, fromGame: 63, toGame: 82 }));
+    const [hot] = await splits;
 
     expect(skaterScoring(hot).assists).toEqual(0);
     expect(skaterScoring(hot).fw).toEqual(0);
   });
 
   it('takes games played from the split rather than from the stat map', async () => {
-    invoke.mockImplementation((fn: unknown) =>
-      Promise.resolve(fn === skaterSplits ? [split({ games: 17 })] : []),
-    );
+    const splits = firstValueFrom(service.splits(SPAN));
+    answer([split({ games: 17 })]);
 
-    const [hot] = await firstValueFrom(service.splits({ season: 2025, fromGame: 63, toGame: 82 }));
+    const [hot] = await splits;
 
     expect(hot.projection.stats.utility.gp).toEqual(17);
   });
 
   it('returns skaters and goalies together', async () => {
-    invoke.mockImplementation((fn: unknown) =>
-      Promise.resolve(
-        fn === skaterSplits
-          ? [split()]
-          : [split({ playerId: 6000, name: 'Stuart Skinner', type: 'goalie', stats: { w: 12 } })],
-      ),
+    const splits = firstValueFrom(service.splits(SPAN));
+    answer(
+      [split()],
+      [split({ playerId: 6000, name: 'Stuart Skinner', type: 'goalie', stats: { w: 12 } })],
     );
 
-    const hot = await firstValueFrom(service.splits({ season: 2025, fromGame: 63, toGame: 82 }));
+    const hot = await splits;
 
     expect(hot.map((player) => player.projection.type)).toEqual(['skater', 'goalie']);
     expect(goalieScoring(hot[1]).w).toEqual(12);

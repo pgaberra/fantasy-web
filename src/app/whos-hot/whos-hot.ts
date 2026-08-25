@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
-import { rxResource } from '@angular/core/rxjs-interop';
+import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { debounceTime, distinctUntilChanged, startWith } from 'rxjs';
 import { PlayerService } from '../services/player.service';
 import { Player } from '../models/player.model';
 import { GameSpan, WhosHotService } from '../services/whos-hot.service';
@@ -36,6 +37,16 @@ import {
 import { HotPlayersTableComponent } from './hot-players-table/hot-players-table';
 
 const DEFAULT_SPAN_LENGTH = 20;
+
+/**
+ * How long the game range has to hold still before it is worth a request. Long enough that a
+ * drag resolves to a single fetch, short enough that letting go feels immediate.
+ */
+const SPAN_SETTLE_MS = 250;
+
+function isSameSpan(a: GameSpan, b: GameSpan): boolean {
+  return a.season === b.season && a.fromGame === b.fromGame && a.toGame === b.toGame;
+}
 
 /**
  * Who's hot: which players actually produced best over a stretch of the schedule.
@@ -125,13 +136,34 @@ export class WhosHotComponent {
     toGame: this.toGame(),
   }));
 
+  /**
+   * The span the server is actually asked about. Dragging a slider handle passes through every
+   * game number on the way, and each one is a span of its own — fetching them all spends dozens
+   * of requests on ranges nobody asked to see, enough of a burst that the edge rate limiter
+   * starts rejecting them (and a rejected request reaches the browser as an opaque CORS failure,
+   * so the page shows its error state rather than the range the user landed on). Waiting for the
+   * range to settle spends one request on the range they meant. Ranges are compared by value, so
+   * dragging away and back again costs nothing at all.
+   */
+  private readonly settledSpan = toSignal(
+    toObservable(this.span).pipe(
+      debounceTime(SPAN_SETTLE_MS),
+      // The range the page opens on is worth a request straight away rather than a quarter
+      // second later, and seeding it here also makes it the value the comparison below starts
+      // from — so a drag that ends where it began settles back into silence.
+      startWith(this.span()),
+      distinctUntilChanged(isSameSpan),
+    ),
+    { requireSync: true },
+  );
+
   private readonly playersResource = rxResource({
     stream: () => this.playerService.getPlayers(),
     defaultValue: [] as Player[],
   });
 
   private readonly splitsResource = rxResource({
-    params: () => this.span(),
+    params: () => this.settledSpan(),
     stream: ({ params }) => this.whosHot.splits(params),
     defaultValue: [],
   });
