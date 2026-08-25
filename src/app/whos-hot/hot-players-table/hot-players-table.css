@@ -227,8 +227,10 @@ td.col-name {
   color: var(--color-text-subtle);
 }
 
+/* --color-warning is a fill: it carries dark text on the unverified banner and is nowhere near
+   readable as type itself (1.9:1 on white). The amber meant for ink is --color-gold-strong. */
 .below-min-games {
-  color: var(--color-warning);
+  color: var(--color-gold-strong);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
 }

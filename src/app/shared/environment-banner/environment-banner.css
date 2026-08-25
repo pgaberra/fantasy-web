@@ -89,7 +89,7 @@
 }
 
 .version-dot.up {
-  background: #16a34a;
+  background: var(--color-success);
 }
 
 .version-dot.down {
