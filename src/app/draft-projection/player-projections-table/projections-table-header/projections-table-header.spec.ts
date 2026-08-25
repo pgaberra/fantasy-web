@@ -376,6 +376,24 @@ describe('ProjectionsTableHeaderComponent', () => {
       expect(divided[0].nativeElement.textContent).toContain('Goals');
     });
 
+    it('leaves the rule on the cell boundary when no menu dots fill the gutter', () => {
+      const fixture = getFixture();
+      const thead = ngMocks.find(fixture.debugElement, 'thead').nativeElement as HTMLElement;
+      expect(thead.classList.contains('has-column-menus')).toBe(false);
+    });
+
+    it('shifts the rule off the boundary once the menu dots take the utility gutter', () => {
+      const fixture = getFixture({ columnControls: true });
+      const thead = ngMocks.find(fixture.debugElement, 'thead').nativeElement as HTMLElement;
+      expect(thead.classList.contains('has-column-menus')).toBe(true);
+    });
+
+    it('keeps the rule on the boundary on a read-only page, which has no menus either', () => {
+      const fixture = getFixture({ columnControls: true, readonly: true });
+      const thead = ngMocks.find(fixture.debugElement, 'thead').nativeElement as HTMLElement;
+      expect(thead.classList.contains('has-column-menus')).toBe(false);
+    });
+
     it('draws no rule when there are no utility columns to divide off', () => {
       getFixture({
         activeColumns: {
