@@ -125,9 +125,6 @@
                   @if (ranked.hot.teamAbbrev) {
                     <span class="player-team">{{ ranked.hot.teamAbbrev }}</span>
                   }
-                  <span class="player-games" [title]="'Games played within the selected range'">
-                    {{ ranked.hot.games }} GP
-                  </span>
                   @if (!ranked.qualified) {
                     <span
                       class="below-min-games"
@@ -194,13 +191,14 @@
   />
 </ng-template>
 
-<!-- Utility stats are hidden here: the leaderboard shows games played beside every name already,
-     and the rest of that group exists to drive a projection's scaling, which this page has none of. -->
+<!-- Utility stats are offered here like any other: over a game range both of them are measured
+     numbers, and games played in particular is one the leaderboard is read through — a 12-point
+     week means something different over four games than over seven. What the group cannot do on
+     this page is drive a projection's scaling — there is no projection here to scale. -->
 <ng-template #columnsMenu>
   <app-columns-menu
     [activeScoringColumns]="activeScoringColumns()"
     [activeUtilityColumns]="activeUtilityColumns()"
-    [showUtility]="false"
     (scoringToggled)="toggleScoringColumn($event)"
     (utilityToggled)="toggleUtilityColumn($event)"
   />

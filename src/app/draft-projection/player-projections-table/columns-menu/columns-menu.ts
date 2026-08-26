@@ -43,7 +43,6 @@ const GROUP_LABELS: Record<StatGroup, string> = {
 export class ColumnsMenuComponent {
   readonly activeScoringColumns = input.required<Set<ScoringStatKey>>();
   readonly activeUtilityColumns = input.required<Set<UtilityStatKey>>();
-  readonly showUtility = input<boolean>(true);
 
   readonly scoringToggled = output<ScoringStatKey>();
   readonly utilityToggled = output<UtilityStatKey>();
@@ -51,9 +50,7 @@ export class ColumnsMenuComponent {
   readonly group = signal<StatGroup>('skater');
   readonly searchTerm = signal('');
 
-  readonly groups = computed<StatGroup[]>(() =>
-    this.showUtility() ? ['skater', 'goalie', 'utility'] : ['skater', 'goalie'],
-  );
+  readonly groups: StatGroup[] = ['skater', 'goalie', 'utility'];
 
   private readonly optionsInGroup = computed<StatOption[]>(() => {
     switch (this.group()) {
