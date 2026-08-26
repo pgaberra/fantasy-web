@@ -77,6 +77,13 @@ export class ProjectionsTableHeaderComponent {
    */
   readonly allActiveScoringColumns = input<Set<ScoringStatKey>>(new Set<ScoringStatKey>());
   readonly scaleSettings = input<Record<UtilityStatKey, ScaleConfig> | null>(null);
+  /**
+   * What GP counts over, where that is not a whole season. The leaderboard measures a chosen
+   * stretch of the schedule, so 14 there means fourteen games *of that stretch* — a different
+   * claim from fourteen games of a year, and the one the reader has to have to read the row.
+   * Named by the caller rather than inferred, since only the caller knows what it picked.
+   */
+  readonly gamesPlayedScope = input<string | null>(null);
 
   /**
    * A shared page renders this same header, so the two flags are resolved in one place: nothing
@@ -103,12 +110,19 @@ export class ProjectionsTableHeaderComponent {
    * Scaling is only half of that role, and only where there is a projection to scale. On a
    * leaderboard of measured games the same column is a number that already happened, so
    * promising it drives other stats would describe a control the page does not have.
+   *
+   * Such a surface also has to say what GP is counted over — see `gamesPlayedScope`.
    */
   utilityTooltip(statKey: UtilityStatKey): string {
     const name = STAT_FULL_NAMES[statKey];
-    return this.scaleSettings()
-      ? `${name} — a Utility Stat that can be used to scale and project other stats.`
-      : `${name} — a Utility Stat: it takes no weight and adds nothing to the total.`;
+    if (this.scaleSettings()) {
+      return `${name} — a Utility Stat that can be used to scale and project other stats.`;
+    }
+    const scope = this.gamesPlayedScope();
+    if (scope && statKey === 'gp') {
+      return `${name} — games within ${scope}. A Utility Stat: it takes no weight and adds nothing to the total.`;
+    }
+    return `${name} — a Utility Stat: it takes no weight and adds nothing to the total.`;
   }
 
   /** Which column's "stats to scale" list is expanded; only one menu is open at a time. */
