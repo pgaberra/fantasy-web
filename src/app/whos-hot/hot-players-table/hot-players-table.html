@@ -114,14 +114,11 @@
               <td class="col-rank">{{ index + 1 }}</td>
               <td class="col-name player-name">
                 <div class="player-name-content">
-                  @if (headshot(ranked.projection.playerId); as headshotUrl) {
-                    <img
-                      class="player-headshot"
-                      [src]="headshotUrl"
-                      [alt]="ranked.hot.name"
-                      loading="lazy"
-                    />
-                  }
+                  <app-player-headshot
+                    class="player-headshot"
+                    [src]="headshot(ranked.projection.playerId)"
+                    [name]="ranked.hot.name"
+                  />
                   <span class="player-name-text"
                     >{{ ranked.hot.name }} ({{ positionLabel(ranked) }})</span
                   >
