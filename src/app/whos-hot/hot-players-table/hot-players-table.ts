@@ -41,6 +41,7 @@ import {
   DEFAULT_MIN_GOALIE_GAMES,
   DEFAULT_ROSTER_SLOTS,
 } from '../../draft-projection/projection-defaults';
+import { PlayerHeadshotComponent } from '../../shared/player-headshot/player-headshot';
 import { ProjectionsTableHeaderComponent } from '../../draft-projection/player-projections-table/projections-table-header/projections-table-header';
 import { PositionFilterComponent } from '../../draft-projection/player-projections-table/position-filter/position-filter';
 import { TeamFilterComponent } from '../../draft-projection/player-projections-table/team-filter/team-filter';
@@ -76,6 +77,7 @@ interface RankedPlayer extends ScoredProjection {
 @Component({
   selector: 'app-hot-players-table',
   imports: [
+    PlayerHeadshotComponent,
     ProjectionsTableHeaderComponent,
     PositionFilterComponent,
     TeamFilterComponent,

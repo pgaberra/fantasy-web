@@ -48,12 +48,17 @@ export class PlayerService {
 }
 
 /**
- * The BFF reports a headshot as a path relative to the API base rather than an absolute URL,
- * so it stays correct whichever environment served it. Everything downstream — the table, the
- * draft board, a shared projection's snapshot — just reads `headshot`.
+ * A headshot arrives either as a path relative to the API base — which stays correct whichever
+ * environment served it — or as an absolute URL when the picture lives on the platform's own
+ * image CDN and the browser should fetch it there rather than through the BFF. Everything
+ * downstream — the table, the draft board, a shared projection's snapshot — just reads
+ * `headshot`.
  */
-function headshotUrl(path: string | undefined): string | undefined {
-  return path ? `${environment.apiUrl}${path}` : undefined;
+function headshotUrl(pathOrUrl: string | undefined): string | undefined {
+  if (!pathOrUrl) {
+    return undefined;
+  }
+  return /^https?:\/\//.test(pathOrUrl) ? pathOrUrl : `${environment.apiUrl}${pathOrUrl}`;
 }
 
 function skaterResponseToSkater(skater: SkaterResponse): Skater {

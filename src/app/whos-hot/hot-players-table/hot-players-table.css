@@ -208,17 +208,10 @@ td.col-name {
   background: #e6e9f2;
 }
 
-.player-team,
-.player-games {
+.player-team {
   color: var(--color-text-subtle);
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
-}
-
-.player-games {
-  background: var(--color-surface-alt);
-  border-radius: var(--radius-pill);
-  padding: 0 var(--space-2);
 }
 
 /* A stat this player cannot have. Muted so the column reads as "not theirs" at a glance
@@ -309,10 +302,6 @@ tbody tr:hover td.fan-pts-col {
   /* Keep the identity columns compact on a phone so the stat columns stay reachable by
      scrolling rather than being pushed off the far edge (see fantasy-web#161). */
   .player-headshot {
-    display: none;
-  }
-
-  .player-games {
     display: none;
   }
 }

@@ -37,6 +37,10 @@ import { StatInfoService } from '../../../services/stat-info.service';
   ],
   templateUrl: './projections-table-header.html',
   styleUrl: './projections-table-header.css',
+  // Where the rule between the utility and the scoring columns sits depends on whether the
+  // menu dots fill the utility column's gutter, and the rule is drawn from the scoring cell —
+  // which cannot see that. The thead carries the answer for every row at once.
+  host: { '[class.has-column-menus]': 'showColumnControls()' },
 })
 export class ProjectionsTableHeaderComponent {
   protected readonly MAX_DECIMAL_SETTING = 3;
@@ -89,9 +93,16 @@ export class ProjectionsTableHeaderComponent {
    * nothing to the summary. In points mode the empty cells in the weight row hint at it; in
    * Z-Score mode there is no weight row at all, so the role is stated here rather than in
    * permanent chrome the two-column group has no room for.
+   *
+   * Scaling is only half of that role, and only where there is a projection to scale. On a
+   * leaderboard of measured games the same column is a number that already happened, so
+   * promising it drives other stats would describe a control the page does not have.
    */
   utilityTooltip(statKey: UtilityStatKey): string {
-    return `${STAT_FULL_NAMES[statKey]} — a Utility Stat that can be used to scale and project other stats.`;
+    const name = STAT_FULL_NAMES[statKey];
+    return this.scaleSettings()
+      ? `${name} — a Utility Stat that can be used to scale and project other stats.`
+      : `${name} — a Utility Stat: it takes no weight and adds nothing to the total.`;
   }
 
   /** Which column's "stats to scale" list is expanded; only one menu is open at a time. */
