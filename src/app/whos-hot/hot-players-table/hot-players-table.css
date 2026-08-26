@@ -299,12 +299,10 @@ tbody tr:hover td.fan-pts-col {
     min-width: 0;
   }
 
-  /* Unlike the other tables, this one keeps the picture and the team on a phone. It is a
-     leaderboard of players you are not being asked to recognise by name -- that is the whole
-     point of it -- so the two things that say who a row is earn their room here.
-     They cost nothing but name length: the column stays capped at the 9rem #161 gave it, so
-     the same six stat columns reach the edge as before, and the name truncates sooner. */
-  .table-wrapper .col-name .player-team {
-    display: inline;
-  }
+  /* The picture and the team stay on a phone here, where the other boards drop them: this is a
+     leaderboard of players you are not being asked to recognise by name, so the two things that
+     say who a row is earn their room. They cost only name length -- the column keeps the 9rem
+     cap from #161, so the same stat columns reach the edge and the name truncates sooner.
+     Nothing to declare for the team: this table simply does not take
+     .table-wrapper--compact-identity. */
 }
