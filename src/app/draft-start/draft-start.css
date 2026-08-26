@@ -71,6 +71,31 @@
   color: var(--color-text-subtle);
 }
 
+/*
+ * Three labels across a phone is about 115px each, and "Shared with you" needs more than that.
+ * Wrapping is what the strip did before: a two-line label with the count floating beside it,
+ * twice as tall as the other two tabs. A shorter word on the narrow end reads better than a
+ * broken one, so each tab carries both and the width picks.
+ */
+.tab-label--short {
+  display: none;
+}
+
+@media (max-width: 560px) {
+  .tab {
+    gap: 0.25rem;
+    padding: 0.4rem 0.25rem;
+  }
+
+  .tab-label {
+    display: none;
+  }
+
+  .tab-label--short {
+    display: inline;
+  }
+}
+
 .panel {
   margin-top: var(--space-3);
 }
