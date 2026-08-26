@@ -291,8 +291,8 @@ describe('ProjectionCreateComponent', () => {
 
     const rows = component.previewRows();
     expect(rows.map((row) => row.player.name)).toEqual(topFive);
-    // The goalie keeps the rank it holds on the whole board, rather than being renumbered 5.
-    expect(rows.map((row) => row.rank)).toEqual([1, 2, 3, 4, 7]);
+    // Numbered by their place in the preview, the way the editor numbers its own view.
+    expect(rows.map((row) => row.rank)).toEqual([1, 2, 3, 4, 5]);
     expect(rows[0].projection.stats.scoring).toEqual(
       expect.objectContaining({ goals: 60, assists: 40 }),
     );
@@ -382,7 +382,7 @@ describe('ProjectionCreateComponent', () => {
       // The goalie has no hits at all, so it is still lifted in — from the bottom of this order.
       'Only Goalie',
     ]);
-    expect(rows.map((row) => row.rank)).toEqual([1, 2, 3, 4, 7]);
+    expect(rows.map((row) => row.rank)).toEqual([1, 2, 3, 4, 5]);
 
     component.onPreviewSort('hits');
 

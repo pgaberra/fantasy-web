@@ -70,11 +70,6 @@ interface ScoredPlayer {
   qualified: boolean;
 }
 
-/** A scored player and the place they hold in the board's current order. */
-interface RankedPlayer extends ScoredPlayer {
-  rank: number;
-}
-
 const ZERO_SCORE: PlayerScore = { fantasyPoints: 0, zScore: 0 };
 
 /** A player's value in any column — a column their position doesn't have counts as nothing. */
@@ -211,7 +206,7 @@ export class ProjectionCreateComponent {
    * only honest reading of a truncated board: sorting the five would show the wrong five players
    * under every column but the one they were picked by.
    */
-  private readonly sortedPlayers = computed<RankedPlayer[]>(() => {
+  private readonly sortedPlayers = computed<ScoredPlayer[]>(() => {
     const column = this.previewSortColumn();
     const direction = this.previewSortDirection();
     const rows = [...this.rankedPlayers()];
@@ -225,7 +220,7 @@ export class ProjectionCreateComponent {
     if (column === 'name' ? !ascending : ascending) {
       rows.reverse();
     }
-    return rows.map((row, index) => ({ ...row, rank: index + 1 }));
+    return rows;
   });
 
   /**
@@ -233,7 +228,7 @@ export class ProjectionCreateComponent {
    * there itself. The board's own top five is all skaters, which would leave every goalie column
    * showing the dash a skater has and nothing else.
    */
-  private readonly previewPlayers = computed<RankedPlayer[]>(() => {
+  private readonly previewPlayers = computed<ScoredPlayer[]>(() => {
     const sorted = this.sortedPlayers();
     const shown = sorted.slice(0, PREVIEW_ROWS);
     if (shown.some((row) => row.player.type === 'goalie')) {
@@ -248,10 +243,11 @@ export class ProjectionCreateComponent {
     // point of showing it: the board doesn't change, only the numbers on it.
     const zeroed = this.dataSource() === 'blank';
     const rookieIds = this.rookieIdsResource.hasValue() ? this.rookieIdsResource.value() : null;
-    return this.previewPlayers().map(({ player, score, qualified, rank }) => ({
-      // The place the row holds on the whole board, not among these five: the goalie is lifted
-      // in from further down, and numbering it 5 would misreport the board.
-      rank,
+    return this.previewPlayers().map(({ player, score, qualified }, index) => ({
+      // Numbered by their place in the preview, the way the editor numbers its own view. The
+      // goalie is lifted in from further down the board, and its real place there — three
+      // figures, next to a 4 — reads as a fault rather than as information.
+      rank: index + 1,
       player,
       projection:
         player.type === 'skater'
