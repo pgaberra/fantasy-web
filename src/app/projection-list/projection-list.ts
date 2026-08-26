@@ -39,7 +39,7 @@ export class ProjectionListComponent {
   private readonly projectionShare = inject(ProjectionShareService);
 
   readonly projectionsResource = rxResource({
-    stream: () => this.storage.listProjections(),
+    stream: () => this.storage.listEditable(),
     defaultValue: [],
   });
 
