@@ -1,7 +1,7 @@
-import { MockBuilder, MockRender } from 'ng-mocks';
+import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { SharedProjectionComponent } from './shared-projection';
@@ -20,6 +20,8 @@ describe('SharedProjectionComponent', () => {
     season: '20262027',
     createdAt: '2026-08-01T10:00:00Z',
     updatedAt: '2026-08-02T10:00:00Z',
+    totalPlayers: 2,
+    truncated: false,
     data: {
       settings: {
         scoringType: 'points',
@@ -89,6 +91,13 @@ describe('SharedProjectionComponent', () => {
         })
     );
   });
+
+  const render = async () => {
+    const fixture = MockRender(SharedProjectionComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
+  };
 
   it('renders the published rows in the order they were shared', async () => {
     const fixture = MockRender(SharedProjectionComponent);
@@ -167,18 +176,52 @@ describe('SharedProjectionComponent', () => {
   });
 
   describe('drafting against a shared board', () => {
-    const render = async () => {
-      const fixture = MockRender(SharedProjectionComponent);
-      await fixture.whenStable();
-      fixture.detectChanges();
-      return fixture;
-    };
-
     it('offers a signed-out visitor the sign-up rather than a copy', async () => {
       const fixture = await render();
 
       expect(fixture.nativeElement.textContent).toContain('Make your own projection');
       expect(fixture.nativeElement.textContent).not.toContain('Draft against this board');
+    });
+  });
+
+  describe('the sign-in gate', () => {
+    /** What the BFF sent is all there is — the withheld rows never reach the browser. */
+    const truncated = { ...shared, totalPlayers: 1489, truncated: true };
+
+    it('asks a signed-out visitor to sign in, and says what they are missing', async () => {
+      loadShared.mockReturnValue(of(truncated));
+      const fixture = await render();
+
+      expect(fixture.nativeElement.textContent).toContain("You're seeing the top 2 of 1489");
+      expect(fixture.nativeElement.textContent).not.toContain('Make your own projection');
+    });
+
+    it('sends them back to this board once they have signed in', async () => {
+      loadShared.mockReturnValue(of(truncated));
+      await render();
+
+      const login = ngMocks.get(ngMocks.find('[data-testid="gate-login"]'), RouterLink);
+      const register = ngMocks.get(ngMocks.find('[data-testid="gate-register"]'), RouterLink);
+      expect(login.routerLink).toEqual('/login');
+      expect(login.queryParams).toEqual({ returnUrl: '/s/abc123' });
+      expect(register.routerLink).toEqual('/register');
+      expect(register.queryParams).toEqual({ returnUrl: '/s/abc123' });
+    });
+
+    it('does not claim rows are missing when the whole board came back', async () => {
+      const fixture = await render();
+
+      expect(fixture.nativeElement.textContent).not.toContain("You're seeing the top");
+      expect(fixture.nativeElement.textContent).toContain('Make your own projection');
+    });
+
+    it('offers a signed-in reader the copy, not the gate', async () => {
+      isLoggedIn.set(true);
+      loadShared.mockReturnValue(of({ ...shared, totalPlayers: 1489 }));
+      const fixture = await render();
+
+      expect(fixture.nativeElement.textContent).toContain('Draft against');
+      expect(fixture.nativeElement.textContent).not.toContain("You're seeing the top");
     });
 
     it('copies the board and opens a draft against it', async () => {

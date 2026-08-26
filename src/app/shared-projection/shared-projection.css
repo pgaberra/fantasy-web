@@ -171,3 +171,12 @@ tbody tr:hover {
     gap: var(--space-3);
   }
 }
+
+/* Side by side where there is room, stacked on a phone — a share link is opened on one more
+   often than not. */
+.cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: center;
+}
