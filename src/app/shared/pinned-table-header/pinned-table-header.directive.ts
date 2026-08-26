@@ -75,12 +75,24 @@ export class PinnedTableHeaderDirective {
     // A resized window moves where the pin begins, and may resize the bar the page floats over
     // the top along with it.
     const observer = new ResizeObserver(measure);
+
+    // Where the pin begins is a window height, and on a phone the window changes height mid-
+    // scroll: scrolling down collapses the browser's toolbars and the page grows into the space
+    // they leave. That does not reliably raise a window `resize`, so the measurement would stay
+    // at the height the page loaded with — and since the header then tracks the scroll one-for-
+    // one from a start point that is too early, it comes to rest that many pixels below the top
+    // of the screen and stays there. visualViewport is the event that does fire for it; what is
+    // read back is still the layout viewport, which is the box the timeline resolves against.
+    const viewport = window.visualViewport;
+
     this.destroyRef.onDestroy(() => {
       observer.disconnect();
       window.removeEventListener('resize', measure);
+      viewport?.removeEventListener('resize', measure);
     });
 
     window.addEventListener('resize', measure);
+    viewport?.addEventListener('resize', measure);
     observer.observe(wrapper);
     observer.observe(head);
     measure();
