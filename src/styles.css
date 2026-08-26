@@ -359,7 +359,11 @@ summary:focus-visible,
     white-space: nowrap;
     min-width: 0;
   }
-  .table-wrapper .col-name .player-team {
+  /* Dropping the team is the one part of this a table has to ask for. It suits a board whose
+     rows you put there yourself and can name on sight; it does not suit a leaderboard, where
+     the team is part of saying who the row is. Opt in with the modifier rather than out with an
+     override, so a table that says nothing keeps what it renders. */
+  .table-wrapper--compact-identity .col-name .player-team {
     display: none;
   }
 }
