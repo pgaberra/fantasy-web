@@ -1,24 +1,34 @@
 <tr>
   <th class="col-rank">#</th>
   <th
-    class="col-name sortable"
-    [class.sorted]="sortColumn() === 'name'"
-    (click)="sort.emit('name')"
+    class="col-name"
+    [class.sortable]="sortable()"
+    [class.sorted]="sortable() && sortColumn() === 'name'"
+    (click)="sortable() && sort.emit('name')"
   >
-    Player<span class="sort-arrow sort-arrow--trailing">{{ sortIndicator('name') }}</span>
+    Player
+    @if (sortable()) {
+      <span class="sort-arrow sort-arrow--trailing">{{ sortIndicator('name') }}</span>
+    }
   </th>
   @for (col of activeColumns().utility; track col) {
-    <th class="col-utility col-stat" [class.sorted]="sortColumn() === col">
+    <th class="col-utility col-stat" [class.sorted]="sortable() && sortColumn() === col">
       <span class="th-inner">
-        <button
-          type="button"
-          class="th-sort"
-          [appTooltip]="utilityTooltip(col)"
-          (click)="sort.emit(col)"
-        >
-          <span class="sort-arrow">{{ sortIndicator(col) }}</span
-          >{{ col | statLabel }}
-        </button>
+        @if (sortable()) {
+          <button
+            type="button"
+            class="th-sort"
+            [appTooltip]="utilityTooltip(col)"
+            (click)="sort.emit(col)"
+          >
+            <span class="sort-arrow">{{ sortIndicator(col) }}</span
+            >{{ col | statLabel }}
+          </button>
+        } @else {
+          <span class="th-sort th-sort--static" [appTooltip]="utilityTooltip(col)">{{
+            col | statLabel
+          }}</span>
+        }
         <!-- Without column menus there is nowhere else for the bulk "full season" action to
              live, so it stays a pill in the header for those surfaces. -->
         @if (showFullSeasonButton() && col === 'gp' && !showColumnControls()) {
@@ -67,19 +77,25 @@
   @for (col of activeColumns().scoring; track col) {
     <th
       class="col-stat"
-      [class.sorted]="sortColumn() === col"
+      [class.sorted]="sortable() && sortColumn() === col"
       [class.group-start]="$first && hasUtilityColumns()"
     >
       <span class="th-inner">
-        <button
-          type="button"
-          class="th-sort"
-          [appTooltip]="col | statTooltip"
-          (click)="sort.emit(col)"
-        >
-          <span class="sort-arrow">{{ sortIndicator(col) }}</span
-          >{{ col | statLabel }}
-        </button>
+        @if (sortable()) {
+          <button
+            type="button"
+            class="th-sort"
+            [appTooltip]="col | statTooltip"
+            (click)="sort.emit(col)"
+          >
+            <span class="sort-arrow">{{ sortIndicator(col) }}</span
+            >{{ col | statLabel }}
+          </button>
+        } @else {
+          <span class="th-sort th-sort--static" [appTooltip]="col | statTooltip">{{
+            col | statLabel
+          }}</span>
+        }
         @if (showColumnControls()) {
           <button
             type="button"
@@ -99,12 +115,15 @@
     </th>
   }
   <th
-    class="summary-pts-col sortable"
-    [class.sorted]="sortColumn() === 'summary'"
-    (click)="sort.emit('summary')"
+    class="summary-pts-col"
+    [class.sortable]="sortable()"
+    [class.sorted]="sortable() && sortColumn() === 'summary'"
+    (click)="sortable() && sort.emit('summary')"
   >
-    <span class="sort-arrow">{{ sortIndicator('summary') }}</span
-    >{{ summaryLabel() }}
+    @if (sortable()) {
+      <span class="sort-arrow">{{ sortIndicator('summary') }}</span>
+    }
+    {{ summaryLabel() }}
   </th>
 </tr>
 @if (scoringType() === 'points' && !readonly()) {

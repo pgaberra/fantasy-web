@@ -491,3 +491,13 @@ tr.decimal-row th {
   color: var(--color-text-muted);
   cursor: pointer;
 }
+
+/* A heading that does not sort keeps the sorting one's type and spacing, and drops only what
+   says "click me". */
+.th-sort--static {
+  cursor: default;
+}
+
+.th-sort--static:hover {
+  background: none;
+}
