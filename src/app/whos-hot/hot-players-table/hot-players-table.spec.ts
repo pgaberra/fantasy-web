@@ -13,6 +13,7 @@ import { PositionFilterService } from '../../services/position-filter.service';
 import { ActiveColumnsService } from '../../services/active-columns.service';
 import { StatInfoService } from '../../services/stat-info.service';
 import { FormatToiPipe } from '../../pipes/format-toi.pipe';
+import { ProjectionsTableHeaderComponent } from '../../draft-projection/player-projections-table/projections-table-header/projections-table-header';
 import { DecimalPipe } from '@angular/common';
 
 const SKATER_STATS = {
@@ -258,6 +259,15 @@ describe('HotPlayersTableComponent', () => {
     expect(firstRow.textContent).not.toContain('14 GP');
     // The measurement already happened, so nothing in the body is editable.
     expect(firstRow.querySelectorAll('input')).toHaveLength(0);
+  });
+
+  it('tells the header that GP here is counted over the chosen range, not a season', () => {
+    render([skater(1, 20)]);
+
+    // The heading is the same 'GP' the projection editor shows, where it means games in a
+    // year. Only the caller knows this one was measured over a stretch of the schedule.
+    const header = ngMocks.find(ProjectionsTableHeaderComponent);
+    expect(ngMocks.input(header, 'gamesPlayedScope')).toEqual('the selected game range');
   });
 
   it('marks the summary cell as the pinned column so it paints over the scrolled stats', () => {

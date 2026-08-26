@@ -62,6 +62,7 @@ describe('ProjectionsTableHeaderComponent', () => {
         [columnControls]="columnControls"
         [allActiveScoringColumns]="allActiveScoringColumns"
         [scaleSettings]="scaleSettings"
+        [gamesPlayedScope]="gamesPlayedScope"
         [readonly]="readonly"
       ></thead>
     </table>
@@ -96,6 +97,7 @@ describe('ProjectionsTableHeaderComponent', () => {
       columnControls: false,
       allActiveScoringColumns: new Set<ScoringStatKey>(['goals', 'assists']),
       scaleSettings: null,
+      gamesPlayedScope: null,
       readonly: false,
       ...overrides,
     });
@@ -362,6 +364,22 @@ describe('ProjectionsTableHeaderComponent', () => {
     it('promises no scaling where there is no projection to scale', () => {
       expect(getComponent().utilityTooltip('toiPerGame')).toEqual(
         'Time on Ice per Game — a Utility Stat: it takes no weight and adds nothing to the total.',
+      );
+    });
+
+    it('says what GP counts over on a surface that measures a stretch of the schedule', () => {
+      // 14 games of a chosen range is a different claim from 14 games of a season, and the
+      // heading alone cannot tell them apart.
+      expect(
+        getComponent({ gamesPlayedScope: 'the selected game range' }).utilityTooltip('gp'),
+      ).toEqual(
+        'Games Played — games within the selected game range. A Utility Stat: it takes no weight and adds nothing to the total.',
+      );
+    });
+
+    it('leaves GP unqualified where the projection is of a whole season', () => {
+      expect(getComponent().utilityTooltip('gp')).toEqual(
+        'Games Played — a Utility Stat: it takes no weight and adds nothing to the total.',
       );
     });
 
