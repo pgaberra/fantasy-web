@@ -180,54 +180,8 @@
   background: var(--color-surface-alt);
 }
 
-/* Footer */
-.lp-footer {
-  padding: var(--space-6) 0;
-  background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
-}
-
-.lp-footer-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-}
-
-.lp-footer-logo {
-  height: 24px;
-  width: auto;
-}
-
-.lp-footer-copy {
-  font-size: var(--text-sm);
-  color: var(--color-text-subtle);
-}
-
-.lp-footer-links {
-  display: flex;
-  gap: var(--space-4);
-}
-
-.lp-footer-links a {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  color: var(--color-primary);
-  text-decoration: none;
-}
-
-.lp-footer-links a:hover {
-  color: var(--color-accent);
-}
-
 @media (max-width: 640px) {
   .lp-cta-row .btn {
     width: 100%;
-  }
-
-  .lp-footer-inner {
-    flex-direction: column;
-    text-align: center;
   }
 }
