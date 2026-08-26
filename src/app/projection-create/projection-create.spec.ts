@@ -9,6 +9,13 @@ import { StatInfoService } from '../services/stat-info.service';
 import { CreateProjectionRequest } from '../api/models/create-projection-request';
 import { ProjectionResponse } from '../api/models/projection-response';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
+import { PlayerService } from '../services/player.service';
+import { ProjectionRankingService } from '../services/projection-ranking.service';
+import { ProjectionCalculationService } from '../services/projection-calculation.service';
+import { Skater } from '../models/player.model';
+import { SkaterPosition } from '../models/position.model';
+import { SkaterScoringStats } from '../models/projection.model';
+import { SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
 
 describe('ProjectionCreateComponent', () => {
   MockInstance.scope();
@@ -75,6 +82,35 @@ describe('ProjectionCreateComponent', () => {
     updatedAt: '2026-06-01T00:00:00Z',
   };
 
+  const skater = (id: number, name: string, goals: number): Skater => ({
+    type: 'skater',
+    id,
+    name,
+    teamAbbrev: 'TOR',
+    positions: new Set<SkaterPosition>(['C']),
+    stats: {
+      utility: { gp: 82, toiPerGame: 1200 },
+      scoring: {
+        ...(Object.fromEntries(
+          SKATER_SCORING_STAT_KEYS.map((key) => [key, 0]),
+        ) as SkaterScoringStats),
+        goals,
+        assists: 40,
+        // Inverse to the goals, so sorting by hits is a different five in a different order.
+        hits: 100 - goals,
+      },
+    },
+  });
+
+  const skaters = [
+    skater(1, 'Best Player', 60),
+    skater(2, 'Second Player', 50),
+    skater(3, 'Third Player', 40),
+    skater(4, 'Fourth Player', 30),
+    skater(5, 'Fifth Player', 20),
+    skater(6, 'Sixth Player', 10),
+  ];
+
   const navigate = vi.fn();
   const createProjection = vi.fn<
     (request: CreateProjectionRequest) => Observable<ProjectionResponse>
@@ -85,6 +121,12 @@ describe('ProjectionCreateComponent', () => {
     createProjection.mockClear();
     return MockBuilder(ProjectionCreateComponent)
       .keep(StatInfoService)
+      .keep(ProjectionRankingService)
+      .keep(ProjectionCalculationService)
+      .mock(PlayerService, {
+        getSkaters: () => of(skaters),
+        getRookieIds: () => of(new Set([3])),
+      })
       .mock(ProjectionStorageService, {
         listProjections: () => of([]),
         createProjection,
@@ -214,5 +256,112 @@ describe('ProjectionCreateComponent', () => {
     component.create();
 
     expect(createProjection).toHaveBeenCalledWith(expect.objectContaining({ data: source.data }));
+  });
+
+  const topFive = ['Best Player', 'Second Player', 'Third Player', 'Fourth Player', 'Fifth Player'];
+
+  it('previews the top players with the stats last season gave them', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    const rows = component.previewRows();
+    expect(rows.map((row) => row.player.name)).toEqual(topFive);
+    expect(rows.map((row) => row.rank)).toEqual([1, 2, 3, 4, 5]);
+    expect(rows[0].projection.stats.scoring).toEqual(
+      expect.objectContaining({ goals: 60, assists: 40 }),
+    );
+    expect(rows[0].projection.stats.utility.gp).toEqual(82);
+    expect(rows[0].score.fantasyPoints).toBeGreaterThan(0);
+  });
+
+  // The preview shows the columns the editor opens with — the goalie ones included, so they read
+  // as the editor's empty cells rather than being quietly left out.
+  it('previews the columns a new projection opens with', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    expect([...component.previewActiveColumns.utility]).toEqual(['gp']);
+    expect([...component.previewActiveColumns.scoring]).toEqual([
+      'goals',
+      'assists',
+      'ppp',
+      'hits',
+      'blocks',
+      'w',
+      'sv',
+      'ga',
+    ]);
+  });
+
+  // Same players in the same rows, emptied — the point of the preview is that only the numbers
+  // change, so the score has to go to zero with the stats that produced it.
+  it('zeroes every previewed stat and score when starting from scratch', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.dataSource.set('blank');
+
+    const rows = component.previewRows();
+    expect(rows.map((row) => row.player.name)).toEqual(topFive);
+    const values = rows.flatMap((row) => [
+      ...Object.values(row.projection.stats.scoring),
+      ...Object.values(row.projection.stats.utility),
+      row.score.fantasyPoints,
+      row.score.zScore,
+    ]);
+    expect(values.every((value) => value === 0)).toEqual(true);
+  });
+
+  // Sorting five rows would show the wrong five players: the whole pool is sorted, then cut.
+  it('re-picks the top five when the header sorts by another column', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.onPreviewSort('hits');
+
+    expect(component.previewSortDirection()).toEqual('desc');
+    expect(component.previewRows().map((row) => row.player.name)).toEqual([
+      'Sixth Player',
+      'Fifth Player',
+      'Fourth Player',
+      'Third Player',
+      'Second Player',
+    ]);
+
+    component.onPreviewSort('hits');
+
+    expect(component.previewSortDirection()).toEqual('asc');
+    expect(component.previewRows()[0].player.name).toEqual('Best Player');
+  });
+
+  it('marks the rookies the editor would mark', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+
+    const rows = fixture.point.componentInstance.previewRows();
+    expect(rows.filter((row) => row.rookie).map((row) => row.player.name)).toEqual([
+      'Third Player',
+    ]);
+  });
+
+  // A failed player read model is not a reason to block the form: the preview is decoration.
+  it('still lets you create when the preview cannot load', async () => {
+    MockInstance(
+      PlayerService,
+      'getSkaters',
+      vi.fn(() => throwError(() => new HttpErrorResponse({ status: 502 }))),
+    );
+
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    expect(component.previewFailed()).toEqual(true);
+    expect(component.loadError()).toEqual(false);
+    expect(component.canCreate()).toEqual(true);
   });
 });

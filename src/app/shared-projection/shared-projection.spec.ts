@@ -106,7 +106,7 @@ describe('SharedProjectionComponent', () => {
       'Connor McDavid',
       'Igor Shesterkin',
     ]);
-    expect(fixture.nativeElement.querySelector('img.player-headshot')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('app-player-headshot img')).not.toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Connor McDavid');
   });
 

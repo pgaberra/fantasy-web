@@ -64,15 +64,17 @@ describe('ColumnsMenuComponent', () => {
     expect(component.visibleOptions().map((option) => option.statKey)).toContain('sv');
   });
 
-  it('drops the utility group when the surface does not track utility stats', () => {
-    const fixture = MockRender(ColumnsMenuComponent, {
-      activeScoringColumns: new Set<ScoringStatKey>(),
-      activeUtilityColumns: new Set<UtilityStatKey>(),
-      showUtility: false,
-    });
+  it('offers the utility group alongside the two scoring ones', () => {
+    const component = getComponent();
 
-    expect(fixture.point.componentInstance.groups()).toEqual(['skater', 'goalie']);
-    expect(ngMocks.findAll('.add-tab')).toHaveLength(2);
+    expect(component.groups).toEqual(['skater', 'goalie', 'utility']);
+    expect(ngMocks.findAll('.add-tab')).toHaveLength(3);
+
+    component.selectGroup('utility');
+    expect(component.visibleOptions().map((option) => option.statKey)).toEqual([
+      'gp',
+      'toiPerGame',
+    ]);
   });
 
   it('says nothing about decimals, which belong to the column they format', () => {

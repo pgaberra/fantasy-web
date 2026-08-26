@@ -6,20 +6,85 @@ import { AnalyticsService } from '../services/analytics.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { NotificationService } from '../services/notification.service';
 import { StatInfoService } from '../services/stat-info.service';
+import { PlayerService } from '../services/player.service';
+import { ProjectionRankingService } from '../services/projection-ranking.service';
+import { Player, Skater } from '../models/player.model';
+import { SKATER_SCORING_STAT_KEYS, StatKey } from '../models/stat-key.model';
+import {
+  ActiveColumns,
+  PlayerScore,
+  Projection,
+  SkaterScoringStats,
+  SkaterStats,
+  SortColumn,
+  SortDirection,
+} from '../models/projection.model';
+import { PlayerRowComponent } from '../draft-projection/player-projections-table/player-row/player-row';
+import { ProjectionsTableHeaderComponent } from '../draft-projection/player-projections-table/projections-table-header/projections-table-header';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { CreateProjectionRequest } from '../api/models/create-projection-request';
 import { ProjectionData } from '../api/models/projection-data';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
-import { createDefaultProjectionState } from '../draft-projection/projection-defaults';
+import {
+  createDefaultProjectionState,
+  DEFAULT_LEAGUE_SIZE,
+  DEFAULT_MIN_GOALIE_GAMES,
+  DEFAULT_ROSTER_SLOTS,
+  DEFAULT_SCORING_COLUMNS,
+  DEFAULT_STAT_WEIGHTS,
+  DEFAULT_UTILITY_COLUMNS,
+} from '../draft-projection/projection-defaults';
+import { DEFAULT_DECIMAL_SETTINGS } from '../draft-projection/projection-settings-section/model';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 
 type DataSource = 'last-season' | 'blank' | 'copy';
 
+/**
+ * How many rows the preview shows. Enough to see what the editor opens as — the columns, the
+ * order, whether the numbers are real or zeroed — without turning this page into the editor.
+ */
+const PREVIEW_ROWS = 5;
+
+/** One preview row, in the shapes the editor's own table components expect. */
+interface PreviewRow {
+  rank: number;
+  player: Player;
+  projection: Projection;
+  score: PlayerScore;
+  rookie: boolean;
+}
+
+const ZERO_SCORE: PlayerScore = { fantasyPoints: 0, zScore: 0 };
+
+/** A skater's value in any column, goalie stats included — those they simply don't have. */
+function statOf(skater: Skater, key: StatKey): number {
+  const stats: Partial<Record<StatKey, number>> = {
+    ...skater.stats.utility,
+    ...skater.stats.scoring,
+  };
+  return stats[key] ?? 0;
+}
+
+/** What 'From scratch' gives every player. Read-only rows, so one instance serves them all. */
+const ZEROED_SKATER_STATS: SkaterStats = {
+  utility: { gp: 0, toiPerGame: 0 },
+  scoring: Object.fromEntries(
+    SKATER_SCORING_STAT_KEYS.map((key) => [key, 0]),
+  ) as SkaterScoringStats,
+};
+
 @Component({
   selector: 'app-projection-create',
-  imports: [LoadingIndicatorComponent, ErrorStateComponent, HelpTipComponent, RouterLink],
+  imports: [
+    LoadingIndicatorComponent,
+    ErrorStateComponent,
+    HelpTipComponent,
+    RouterLink,
+    PlayerRowComponent,
+    ProjectionsTableHeaderComponent,
+  ],
   templateUrl: './projection-create.html',
   styleUrl: './projection-create.css',
 })
@@ -31,6 +96,8 @@ export class ProjectionCreateComponent {
   private readonly serializer = inject(ProjectionSerializerService);
   private readonly notification = inject(NotificationService);
   private readonly analytics = inject(AnalyticsService);
+  private readonly playerService = inject(PlayerService);
+  private readonly ranking = inject(ProjectionRankingService);
 
   // Only the existing projections are needed here: the player rows of a new projection are
   // filled in server-side from `source`, so this page no longer downloads every player just
@@ -38,6 +105,23 @@ export class ProjectionCreateComponent {
   private readonly dataResource = rxResource({
     stream: () => this.projectionStorage.listProjections(),
     defaultValue: [] as ProjectionSummaryResponse[],
+  });
+
+  /**
+   * The preview's own fetch, kept apart from `dataResource`: it is decoration, so a slow or
+   * failed player read model must not stop anyone creating a projection. Skaters only — five
+   * rows of skater columns is all it shows, and asking for the goalies too would double a
+   * download this page had deliberately dropped.
+   */
+  private readonly previewPlayersResource = rxResource({
+    stream: () => this.playerService.getSkaters(),
+    defaultValue: [] as Skater[],
+  });
+
+  /** The rookie markers the editor's rows draw. Null means "couldn't tell", so nothing is marked. */
+  private readonly rookieIdsResource = rxResource({
+    stream: () => this.playerService.getRookieIds(),
+    defaultValue: null as Set<number> | null,
   });
 
   readonly dataSource = signal<DataSource>('last-season');
@@ -48,12 +132,107 @@ export class ProjectionCreateComponent {
   readonly isCreating = signal<boolean>(false);
   readonly name = linkedSignal(() => this.defaultName(this.dataResource.value()));
 
+  /**
+   * Exactly the columns a new projection opens with — the goalie ones included, so they read as
+   * the editor's empty cells rather than being quietly left out of the preview.
+   */
+  readonly previewActiveColumns: ActiveColumns = {
+    scoring: new Set(DEFAULT_SCORING_COLUMNS),
+    utility: new Set(DEFAULT_UTILITY_COLUMNS),
+  };
+  readonly previewStatWeights = DEFAULT_STAT_WEIGHTS;
+  readonly previewDecimalSettings = DEFAULT_DECIMAL_SETTINGS;
+  readonly previewSortColumn = signal<SortColumn>('summary');
+  readonly previewSortDirection = signal<SortDirection>('desc');
+  readonly isPreviewLoading = this.previewPlayersResource.isLoading;
+  readonly previewFailed = computed(() => !!this.previewPlayersResource.error());
+
+  /** Every skater, scored and ordered exactly as the editor scores and orders them by default. */
+  private readonly rankedSkaters = computed(() => {
+    // Via hasValue(): reading a resource that failed throws, and neither fetch is worth taking
+    // the page down for.
+    const skaters = this.previewPlayersResource.hasValue()
+      ? this.previewPlayersResource.value()
+      : [];
+    if (!skaters.length) {
+      return [];
+    }
+    const byId = new Map(skaters.map((skater) => [skater.id, skater]));
+    return this.ranking
+      .rankOverall({
+        projections: skaters.map((skater) => ({
+          type: 'skater' as const,
+          playerId: skater.id,
+          stats: skater.stats,
+        })),
+        scoringType: 'points',
+        statWeights: DEFAULT_STAT_WEIGHTS,
+        activeScoringColumns: new Set(DEFAULT_SCORING_COLUMNS),
+        leagueSize: DEFAULT_LEAGUE_SIZE,
+        rosterSlots: DEFAULT_ROSTER_SLOTS,
+        minGoalieGames: DEFAULT_MIN_GOALIE_GAMES,
+        decimalSettings: DEFAULT_DECIMAL_SETTINGS,
+      })
+      .map((scored) => ({ skater: byId.get(scored.projection.playerId), score: scored.score }))
+      .filter((row): row is { skater: Skater; score: PlayerScore } => !!row.skater);
+  });
+
+  /**
+   * The five rows the header's current sort puts on top. Sorting the whole pool and then taking
+   * five is the only honest reading of a truncated board: sorting the five would show the wrong
+   * five players under every column but the one they were picked by.
+   */
+  private readonly sortedTopPlayers = computed(() => {
+    const column = this.previewSortColumn();
+    const direction = this.previewSortDirection();
+    const rows = [...this.rankedSkaters()];
+    if (column === 'name') {
+      rows.sort((first, second) => first.skater.name.localeCompare(second.skater.name));
+    } else if (column !== 'summary') {
+      rows.sort((first, second) => statOf(second.skater, column) - statOf(first.skater, column));
+    }
+    // `rankedSkaters` already comes back by summary, descending — the editor's own default.
+    const ascending = direction === 'asc';
+    if (column === 'name' ? !ascending : ascending) {
+      rows.reverse();
+    }
+    return rows.slice(0, PREVIEW_ROWS);
+  });
+
+  readonly previewRows = computed<PreviewRow[]>(() => {
+    // 'From scratch' is the same players in the same rows, just emptied — which is the whole
+    // point of showing it: the board doesn't change, only the numbers on it.
+    const zeroed = this.dataSource() === 'blank';
+    const rookieIds = this.rookieIdsResource.hasValue() ? this.rookieIdsResource.value() : null;
+    return this.sortedTopPlayers().map(({ skater, score }, index) => ({
+      rank: index + 1,
+      player: skater,
+      projection: {
+        type: 'skater' as const,
+        playerId: skater.id,
+        stats: zeroed ? ZEROED_SKATER_STATS : skater.stats,
+      },
+      score: zeroed ? ZERO_SCORE : score,
+      rookie: rookieIds?.has(skater.id) ?? false,
+    }));
+  });
+
   readonly canCreate = computed(
     () =>
       !this.isCreating() &&
       this.name().trim().length > 0 &&
       (this.dataSource() !== 'copy' || !!this.copyFromId()),
   );
+
+  /** Same rule as the editor's table: a new column starts descending, the same one flips. */
+  onPreviewSort(column: SortColumn): void {
+    if (this.previewSortColumn() === column) {
+      this.previewSortDirection.update((direction) => (direction === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+    this.previewSortColumn.set(column);
+    this.previewSortDirection.set(column === 'name' ? 'asc' : 'desc');
+  }
 
   onNameInput(event: Event): void {
     this.name.set((event.target as HTMLInputElement).value);
@@ -81,6 +260,7 @@ export class ProjectionCreateComponent {
 
   retryLoad(): void {
     this.dataResource.reload();
+    this.previewPlayersResource.reload();
   }
 
   create(): void {
