@@ -299,9 +299,12 @@ tbody tr:hover td.fan-pts-col {
     min-width: 0;
   }
 
-  /* Keep the identity columns compact on a phone so the stat columns stay reachable by
-     scrolling rather than being pushed off the far edge (see fantasy-web#161). */
-  .player-headshot {
-    display: none;
+  /* Unlike the other tables, this one keeps the picture and the team on a phone. It is a
+     leaderboard of players you are not being asked to recognise by name -- that is the whole
+     point of it -- so the two things that say who a row is earn their room here.
+     They cost nothing but name length: the column stays capped at the 9rem #161 gave it, so
+     the same six stat columns reach the edge as before, and the name truncates sooner. */
+  .table-wrapper .col-name .player-team {
+    display: inline;
   }
 }
