@@ -267,4 +267,16 @@ describe('DraftStartComponent', () => {
       expect(component.isImporting()).toEqual(false);
     });
   });
+
+  it('keeps both tab labels in the markup so the width can pick one', async () => {
+    const fixture = MockRender(DraftStartComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const labels = Array.from(
+      fixture.nativeElement.querySelectorAll('.tab-label') as NodeListOf<HTMLElement>,
+    ).map((label) => label.textContent?.trim());
+
+    expect(labels).toEqual(['Your projections', 'Yours', 'Shared with you', 'Shared', 'Presets']);
+  });
 });
