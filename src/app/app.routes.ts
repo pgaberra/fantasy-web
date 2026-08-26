@@ -54,9 +54,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./shared-projection/shared-projection').then((m) => m.SharedProjectionComponent),
   },
+  // The splits behind the leaderboard are a signed-in endpoint, so without this a signed-out
+  // visitor who typed the URL or kept a bookmark got the page's "couldn't load — check your
+  // connection" state over a 401, which blames the network for a sign-in. The nav only offers
+  // the link to a signed-in user, so this catches the direct hit rather than a visible link.
   {
     path: 'whos-hot',
     loadComponent: () => import('./whos-hot/whos-hot').then((m) => m.WhosHotComponent),
+    canActivate: [authGuard],
   },
   {
     path: 'admin',
