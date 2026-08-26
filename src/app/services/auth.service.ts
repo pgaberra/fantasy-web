@@ -29,6 +29,7 @@ export class AuthService {
   private readonly adminKey = 'is_admin';
   private readonly emailVerifiedKey = 'email_verified';
   private readonly googleStateKey = 'google_oauth_state';
+  private readonly returnUrlKey = 'auth_return_url';
   private readonly googleCallbackPath = '/auth/google/callback';
   private readonly googleAuthEndpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
 
@@ -109,7 +110,9 @@ export class AuthService {
     const refreshToken = this.getRefreshToken();
     const body: RefreshRequest = { refreshToken: refreshToken ?? '' };
     return from(this.api.invoke(refresh, { body })).pipe(
-      tap((response) => this.storeTokens(response)),
+      // Stored but not followed by a navigation: a refresh happens silently behind whatever the
+      // user is reading, and sending them to /projections for it would yank the page away.
+      tap((response) => this.storeTokens(response, { thenNavigate: false })),
     );
   }
 
@@ -188,7 +191,28 @@ export class AuthService {
     }
   }
 
-  private storeTokens(response: AuthResponse) {
+  /**
+   * Where to land once signed in, for a visitor who was sent to the form from a page that wants
+   * them back — a share link they have to sign in to read in full, say.
+   *
+   * <p>Held in sessionStorage rather than carried through the form, so it survives both the hop
+   * out to Google and back and the switch between Sign in and Register. Anything that is not a
+   * path on this site is dropped: the value arrives in a query parameter, and a link could
+   * otherwise point the redirect at another origin.
+   */
+  rememberReturnUrl(url: string | null | undefined): void {
+    if (url && isInternalPath(url)) {
+      sessionStorage.setItem(this.returnUrlKey, url);
+    }
+  }
+
+  private takeReturnUrl(): string | null {
+    const url = sessionStorage.getItem(this.returnUrlKey);
+    sessionStorage.removeItem(this.returnUrlKey);
+    return url && isInternalPath(url) ? url : null;
+  }
+
+  private storeTokens(response: AuthResponse, options = { thenNavigate: true }) {
     localStorage.setItem(this.tokenKey, response.token);
     localStorage.setItem(this.refreshTokenKey, response.refreshToken);
     localStorage.setItem(this.adminKey, String(response.admin));
@@ -202,6 +226,17 @@ export class AuthService {
     if (userId) {
       this.analytics.identify(userId);
     }
-    void this.router.navigate(['/projections']);
+    if (options.thenNavigate) {
+      void this.router.navigateByUrl(this.takeReturnUrl() ?? '/projections');
+    }
   }
+}
+
+/**
+ * A path on this site, and nothing else. Rejects an absolute URL, and `//evil.example` with it —
+ * the browser reads a protocol-relative URL as another origin, and it starts with a slash like
+ * any local path does.
+ */
+function isInternalPath(url: string): boolean {
+  return url.startsWith('/') && !url.startsWith('//') && !url.startsWith('/\\');
 }
