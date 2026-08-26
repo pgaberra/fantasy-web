@@ -119,10 +119,10 @@
                 [statWeights]="previewStatWeights"
                 [useDefaultDecimals]="true"
                 [decimalSettings]="previewDecimalSettings"
-                [sortColumn]="previewSortColumn()"
-                [sortDirection]="previewSortDirection()"
+                [sortColumn]="'summary'"
+                [sortDirection]="'desc'"
                 [readonly]="true"
-                (sort)="onPreviewSort($event)"
+                [sortable]="false"
               ></thead>
               <tbody>
                 @for (row of previewRows(); track row.projection.playerId) {
@@ -134,6 +134,7 @@
                     [playerScore]="row.score"
                     [player]="row.player"
                     [rookie]="row.rookie"
+                    [belowMinGames]="row.belowMinGames"
                     [activeColumns]="previewActiveColumns"
                     [scoringType]="'points'"
                     [decimalSettings]="previewDecimalSettings"
@@ -144,7 +145,8 @@
             </table>
           </div>
           <p class="preview-note">
-            The top {{ previewRows().length }} skaters, of every player the editor opens with.
+            The top of the board, with a goalie brought in so the goalie columns show what they
+            hold. The editor opens with every player, and sorts.
           </p>
         }
       </div>

@@ -16,22 +16,29 @@ import { environment } from '../../environments/environment';
 export class PlayerService {
   private readonly api = inject(Api);
 
-  getSkaters(): Observable<Skater[]> {
-    return from(this.api.invoke(getSkaters)).pipe(
+  /**
+   * The skaters, highest scoring first. `limit` asks the BFF for only that many — the top of the
+   * board rather than the pool, for a caller that draws a handful of rows. The editor takes them
+   * all: it ranks and scores every player, and a slice would rank the slice.
+   */
+  getSkaters(limit?: number): Observable<Skater[]> {
+    return from(this.api.invoke(getSkaters, { limit })).pipe(
       map((skaters) => skaters.map(skaterResponseToSkater)),
     );
   }
 
-  getGoalies(): Observable<Goalie[]> {
-    return from(this.api.invoke(getGoalies)).pipe(
+  /** The goalies, most wins first. `limit` behaves as it does for {@link getSkaters}. */
+  getGoalies(limit?: number): Observable<Goalie[]> {
+    return from(this.api.invoke(getGoalies, { limit })).pipe(
       map((goalies) => goalies.map(goalieResponseToGoalie)),
     );
   }
 
-  getPlayers(): Observable<Player[]> {
-    return forkJoin({ skaters: this.getSkaters(), goalies: this.getGoalies() }).pipe(
-      map(({ skaters, goalies }) => [...skaters, ...goalies]),
-    );
+  getPlayers(limits?: { skaters: number; goalies: number }): Observable<Player[]> {
+    return forkJoin({
+      skaters: this.getSkaters(limits?.skaters),
+      goalies: this.getGoalies(limits?.goalies),
+    }).pipe(map(({ skaters, goalies }) => [...skaters, ...goalies]));
   }
 
   /**

@@ -46,6 +46,11 @@ interface SharedRow {
  * The page behind a share link. Public and unguarded: it renders the snapshot the owner
  * published and nothing else — no live data, no account, no player read model.
  *
+ * <p>How much of that snapshot arrives depends on who asked. A signed-in reader gets the whole
+ * board; anyone else gets the top of it and a prompt to sign in for the rest. The BFF decides
+ * that and sends only what the reader may see, so the rows behind the prompt are not here to be
+ * found — this page reports the cut rather than making it.
+ *
  * <p>It reuses the editor's table row and header so a shared projection looks like the table it
  * came from, in a read-only mode. What it deliberately does not reuse is the scoring: the values
  * were computed against the owner's whole player pool, and recomputing them here — over the
@@ -142,6 +147,15 @@ export class SharedProjectionComponent {
   });
 
   readonly authorLabel = computed(() => this.shared()?.authorUsername ?? '');
+
+  /** True when rows were withheld because the reader is not signed in. */
+  readonly isTruncated = computed(() => this.shared()?.truncated ?? false);
+
+  /** How many rows the published board holds, whether or not this reader received them all. */
+  readonly totalPlayers = computed(() => this.shared()?.totalPlayers ?? 0);
+
+  /** Back to this page once they have signed in — the board is what they came for. */
+  readonly returnUrl = `/s/${this.token}`;
 
   readonly scoringType = computed<ScoringType>(
     () => this.shared()?.data.settings.scoringType ?? 'points',

@@ -3,9 +3,10 @@ import { NotificationService } from '../services/notification.service';
 
 /**
  * Set once we have already reloaded for a missing chunk, so a build that is genuinely broken
- * cannot put the tab in a reload loop. Cleared on the next navigation that works.
+ * cannot put the tab in a reload loop. Cleared on the next navigation that works. Exported so a
+ * test asserting that nothing was reported cannot pass by writing the wrong key.
  */
-const RELOADED_KEY = 'slapstat_reloaded_for_stale_build';
+export const RELOADED_KEY = 'slapstat_reloaded_for_stale_build';
 
 /**
  * Every route is lazily loaded, so a tab that was open across a deploy asks for chunk filenames
@@ -40,6 +41,18 @@ export function handleNavigationError(error: unknown): void {
   }
 
   inject(NotificationService).error("Couldn't open that page. Please try again.");
+}
+
+/**
+ * True for the stale-build error of a navigation we are already reloading for. The router calls
+ * the navigation error handler above and *then* rethrows, so the same error reaches the global
+ * ErrorHandler a second time — where reporting it made every deploy raise a Sentry alert for a
+ * failure the user never saw and the reload had already fixed. The build that is broken rather
+ * than stale still reports: the second time through, the handler above shows (and reports) the
+ * notification instead of reloading again.
+ */
+export function isRecoveringFromStaleBuild(error: unknown): boolean {
+  return isStaleBuildError(error) && sessionStorage.getItem(RELOADED_KEY) !== null;
 }
 
 /** Called after a navigation succeeds, so a later deploy is allowed its one reload. */

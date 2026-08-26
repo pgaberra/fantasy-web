@@ -58,6 +58,12 @@ export class ProjectionsTableHeaderComponent {
   readonly showFullSeasonButton = input<boolean>(false);
   // A shared page shows the same header, minus the rows that exist to change things.
   readonly readonly = input<boolean>(false);
+  /**
+   * Whether the column headings sort the table. Off for a surface holding only part of the board
+   * — sorting rows that are already a slice of it would answer with the wrong players, and a
+   * heading that looks clickable and isn't is worse than one that never offered.
+   */
+  readonly sortable = input<boolean>(true);
   readonly fullSeason = output<void>();
 
   /**
