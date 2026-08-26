@@ -134,6 +134,7 @@
                     [playerScore]="row.score"
                     [player]="row.player"
                     [rookie]="row.rookie"
+                    [belowMinGames]="row.belowMinGames"
                     [activeColumns]="previewActiveColumns"
                     [scoringType]="'points'"
                     [decimalSettings]="previewDecimalSettings"
@@ -144,7 +145,8 @@
             </table>
           </div>
           <p class="preview-note">
-            The top {{ previewRows().length }} skaters, of every player the editor opens with.
+            The top of the board, of every player the editor opens with — with a goalie brought in
+            so the goalie columns show what they hold.
           </p>
         }
       </div>
