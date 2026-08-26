@@ -11,11 +11,12 @@ import { Player } from '../models/player.model';
 import { ScoredProjection, ScoringType } from '../models/projection.model';
 
 /**
- * How many ranked rows a share publishes. The link is meant to start a conversation, not to hand
- * the whole board to someone who never signed up — the public page says as much and points at
- * the sign-up.
+ * The most ranked rows a share may publish. Not the product rule — a share publishes the whole
+ * board, and this only matches the cap the API enforces, sized above the largest player pool. How
+ * much of that board a visitor actually reads is decided by the BFF, which hands the full rows to
+ * someone signed in and the top of them to everyone else.
  */
-export const SHARED_PLAYER_COUNT = 100;
+export const SHARED_PLAYER_LIMIT = 2000;
 
 @Injectable({
   providedIn: 'root',
@@ -36,15 +37,15 @@ export class ProjectionShareService {
   }
 
   /**
-   * Freezes the top of a ranking into the rows a share publishes. Identity is denormalised here
-   * because the public page has no player read model to join against — what gets stored is
-   * exactly what a visitor will see.
+   * Freezes a ranking into the rows a share publishes — all of it, since a signed-in visitor is
+   * meant to read the whole board. Identity is denormalised here because the public page has no
+   * player read model to join against: what gets stored is exactly what a visitor will see.
    */
   toSharedPlayers(
     ranked: ScoredProjection[],
     playersById: Map<number, Player>,
     scoringType: ScoringType,
-    count = SHARED_PLAYER_COUNT,
+    count = SHARED_PLAYER_LIMIT,
   ): SharedPlayer[] {
     return ranked.slice(0, count).map((scored, index) => {
       const player = playersById.get(scored.projection.playerId);

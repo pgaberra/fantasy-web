@@ -48,10 +48,60 @@ describe('AuthService', () => {
 
     await MockBuilder(AuthService)
       .provide({ provide: Api, useValue: { invoke } })
-      .provide({ provide: Router, useValue: { navigate: vi.fn() } })
+      .provide({ provide: Router, useValue: { navigate: vi.fn(), navigateByUrl: vi.fn() } })
       .provide({ provide: AnalyticsService, useValue: { identify, reset, capture } });
 
     service = TestBed.inject(AuthService);
+  });
+
+  describe('where signing in lands', () => {
+    const signIn = async () => {
+      invoke.mockReturnValue(Promise.resolve(authResponse(jwtWith({ sub: 'account-uuid' }))));
+      await firstValueFrom(service.login({ email: 'a@example.test', password: 'secret' }));
+      return TestBed.inject(Router);
+    };
+
+    it('goes to the projections list when nothing asked for somewhere else', async () => {
+      const router = await signIn();
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/projections');
+    });
+
+    it('goes back to the page that sent them, once', async () => {
+      service.rememberReturnUrl('/s/abc123');
+      const router = await signIn();
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/s/abc123');
+
+      // Spent on arrival: the next sign-in this session is not still headed for that share.
+      invoke.mockReturnValue(Promise.resolve(authResponse(jwtWith({ sub: 'account-uuid' }))));
+      await firstValueFrom(service.login({ email: 'a@example.test', password: 'secret' }));
+      expect(router.navigateByUrl).toHaveBeenLastCalledWith('/projections');
+    });
+
+    /** The value arrives in a query parameter, so a link could otherwise aim it off-site. */
+    it.each(['https://evil.example/steal', '//evil.example/steal', 'evil.example'])(
+      'refuses to be sent to %s',
+      async (elsewhere) => {
+        service.rememberReturnUrl(elsewhere);
+        const router = await signIn();
+
+        expect(router.navigateByUrl).toHaveBeenCalledWith('/projections');
+      },
+    );
+
+    /**
+     * A refresh fires on its own behind whatever the reader is looking at — a shared board they
+     * signed in to read, say. Sending them to /projections for it would take the page away.
+     */
+    it('stays put on a silent token refresh', async () => {
+      localStorage.setItem('refresh_token', 'refresh-token');
+      invoke.mockReturnValue(Promise.resolve(authResponse(jwtWith({ sub: 'account-uuid' }))));
+
+      await firstValueFrom(service.refresh());
+
+      expect(TestBed.inject(Router).navigateByUrl).not.toHaveBeenCalled();
+    });
   });
 
   describe('getUserId', () => {
