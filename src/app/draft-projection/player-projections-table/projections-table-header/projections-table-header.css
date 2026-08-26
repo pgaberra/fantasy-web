@@ -183,19 +183,27 @@ th.summary-pts-col.sortable.sorted {
   position: relative;
 }
 
-/* Not on the cell boundary. Every stat column reserves --stat-value-inset on its right for the
-   menu button, so the utility column's dots end flush against that boundary while this column's
-   label — right-aligned, in a cell wider than the word — starts a good way past it. A rule on the
-   boundary therefore reads as an edge glued to the dots rather than as a split between the two
-   groups. Half the gutter over drops it into the middle of that whitespace. */
+/* Centred in the whitespace between the two groups, which is not the same place on every
+   surface. Every stat column reserves --stat-value-inset on its right and right-aligns its
+   label, so each group's ink stops about one inset short of the cell boundary on its own side:
+   the boundary is the middle of that gap, and that is where the rule sits. */
 .group-start::before {
   content: '';
   position: absolute;
-  left: calc(var(--stat-value-inset) / 2);
+  left: 0;
   top: 0;
   bottom: 0;
   width: 1px;
   background: rgba(255, 255, 255, 0.34);
+}
+
+/* Unless the column menus are on. Their ⋮ dots fill the gutter the utility column reserved, so
+   its ink now ends flush at the boundary and only the scoring column's half of the gap is left —
+   a rule on the boundary reads as an edge glued to the dots. Half an inset over re-centres it.
+   Who's hot, a shared page and the landing demo have no menus and keep the rule on the
+   boundary. */
+:host(.has-column-menus) .group-start::before {
+  left: calc(var(--stat-value-inset) / 2);
 }
 
 th.summary-pts-col {

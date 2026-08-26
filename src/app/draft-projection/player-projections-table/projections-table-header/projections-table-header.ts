@@ -37,6 +37,10 @@ import { StatInfoService } from '../../../services/stat-info.service';
   ],
   templateUrl: './projections-table-header.html',
   styleUrl: './projections-table-header.css',
+  // Where the rule between the utility and the scoring columns sits depends on whether the
+  // menu dots fill the utility column's gutter, and the rule is drawn from the scoring cell —
+  // which cannot see that. The thead carries the answer for every row at once.
+  host: { '[class.has-column-menus]': 'showColumnControls()' },
 })
 export class ProjectionsTableHeaderComponent {
   protected readonly MAX_DECIMAL_SETTING = 3;
