@@ -96,6 +96,8 @@ describe('ProjectionCreateComponent', () => {
         ) as SkaterScoringStats),
         goals,
         assists: 40,
+        // Inverse to the goals, so sorting by hits is a different five in a different order.
+        hits: 100 - goals,
       },
     },
   });
@@ -121,7 +123,10 @@ describe('ProjectionCreateComponent', () => {
       .keep(StatInfoService)
       .keep(ProjectionRankingService)
       .keep(ProjectionCalculationService)
-      .mock(PlayerService, { getSkaters: () => of(skaters) })
+      .mock(PlayerService, {
+        getSkaters: () => of(skaters),
+        getRookieIds: () => of(new Set([3])),
+      })
       .mock(ProjectionStorageService, {
         listProjections: () => of([]),
         createProjection,
@@ -253,26 +258,46 @@ describe('ProjectionCreateComponent', () => {
     expect(createProjection).toHaveBeenCalledWith(expect.objectContaining({ data: source.data }));
   });
 
+  const topFive = ['Best Player', 'Second Player', 'Third Player', 'Fourth Player', 'Fifth Player'];
+
   it('previews the top players with the stats last season gave them', async () => {
     const fixture = MockRender(ProjectionCreateComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
 
     const rows = component.previewRows();
-    expect(rows.map((row) => row.name)).toEqual([
-      'Best Player',
-      'Second Player',
-      'Third Player',
-      'Fourth Player',
-      'Fifth Player',
-    ]);
-    // gp, goals, assists, ppp, hits, blocks — the columns a new projection opens with.
-    expect(component.previewColumns).toEqual(['gp', 'goals', 'assists', 'ppp', 'hits', 'blocks']);
-    expect(rows[0].values).toEqual([82, 60, 40, 0, 0, 0]);
+    expect(rows.map((row) => row.player.name)).toEqual(topFive);
+    expect(rows.map((row) => row.rank)).toEqual([1, 2, 3, 4, 5]);
+    expect(rows[0].projection.stats.scoring).toEqual(
+      expect.objectContaining({ goals: 60, assists: 40 }),
+    );
+    expect(rows[0].projection.stats.utility.gp).toEqual(82);
+    expect(rows[0].score.fantasyPoints).toBeGreaterThan(0);
   });
 
-  // Same players, same columns, emptied — the point of the preview is that only the numbers change.
-  it('zeroes every previewed stat when starting from scratch', async () => {
+  // The preview shows the columns the editor opens with — the goalie ones included, so they read
+  // as the editor's empty cells rather than being quietly left out.
+  it('previews the columns a new projection opens with', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    expect([...component.previewActiveColumns.utility]).toEqual(['gp']);
+    expect([...component.previewActiveColumns.scoring]).toEqual([
+      'goals',
+      'assists',
+      'ppp',
+      'hits',
+      'blocks',
+      'w',
+      'sv',
+      'ga',
+    ]);
+  });
+
+  // Same players in the same rows, emptied — the point of the preview is that only the numbers
+  // change, so the score has to go to zero with the stats that produced it.
+  it('zeroes every previewed stat and score when starting from scratch', async () => {
     const fixture = MockRender(ProjectionCreateComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
@@ -280,14 +305,47 @@ describe('ProjectionCreateComponent', () => {
     component.dataSource.set('blank');
 
     const rows = component.previewRows();
-    expect(rows.map((row) => row.name)).toEqual([
-      'Best Player',
-      'Second Player',
-      'Third Player',
-      'Fourth Player',
-      'Fifth Player',
+    expect(rows.map((row) => row.player.name)).toEqual(topFive);
+    const values = rows.flatMap((row) => [
+      ...Object.values(row.projection.stats.scoring),
+      ...Object.values(row.projection.stats.utility),
+      row.score.fantasyPoints,
+      row.score.zScore,
     ]);
-    expect(rows.every((row) => row.values.every((value) => value === 0))).toEqual(true);
+    expect(values.every((value) => value === 0)).toEqual(true);
+  });
+
+  // Sorting five rows would show the wrong five players: the whole pool is sorted, then cut.
+  it('re-picks the top five when the header sorts by another column', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.onPreviewSort('hits');
+
+    expect(component.previewSortDirection()).toEqual('desc');
+    expect(component.previewRows().map((row) => row.player.name)).toEqual([
+      'Sixth Player',
+      'Fifth Player',
+      'Fourth Player',
+      'Third Player',
+      'Second Player',
+    ]);
+
+    component.onPreviewSort('hits');
+
+    expect(component.previewSortDirection()).toEqual('asc');
+    expect(component.previewRows()[0].player.name).toEqual('Best Player');
+  });
+
+  it('marks the rookies the editor would mark', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+
+    const rows = fixture.point.componentInstance.previewRows();
+    expect(rows.filter((row) => row.rookie).map((row) => row.player.name)).toEqual([
+      'Third Player',
+    ]);
   });
 
   // A failed player read model is not a reason to block the form: the preview is decoration.
