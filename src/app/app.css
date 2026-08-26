@@ -77,6 +77,49 @@
   height: 14px;
 }
 
+/*
+ * The nav's stand-in where its items no longer fit beside the logo. Every link goes into the
+ * menu it opens rather than being dropped: on a phone the four of them plus Sign Out came to
+ * more than the width left over, so they wrapped, "Who's hot" broke across two lines and the
+ * Sign Out button ran off the right edge.
+ */
+.nav-burger {
+  display: none;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.nav-burger svg {
+  width: 22px;
+  height: 22px;
+}
+
+.nav-burger:hover,
+.nav-burger[aria-expanded='true'] {
+  background: var(--color-surface-hover);
+}
+
+/* Only the collapsed nav needs these; the header shows them itself at any width that fits. */
+.nav-menu-item--collapsed {
+  display: none;
+}
+
+.nav-menu-item--signout {
+  width: 100%;
+  background: none;
+  border: none;
+  border-left: 3px solid transparent;
+  font: inherit;
+  text-align: left;
+}
+
 .nav-menu {
   display: flex;
   flex-direction: column;
@@ -151,11 +194,25 @@
     padding: 0 var(--space-4);
   }
 
-  .app-nav {
-    gap: var(--space-4);
-  }
-
   .app-logo img {
     height: 26px;
+  }
+
+  .nav-burger {
+    display: grid;
+  }
+
+  .app-nav a,
+  .nav-trigger,
+  .btn-logout {
+    display: none;
+  }
+
+  .nav-menu-item--collapsed {
+    display: block;
+  }
+
+  .nav-menu-item--signout {
+    display: block;
   }
 }

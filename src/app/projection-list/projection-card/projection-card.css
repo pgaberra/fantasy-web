@@ -59,6 +59,13 @@
   .card-actions {
     flex-wrap: wrap;
   }
+
+  /* The card stacks here, so the actions become a row of their own and the kebab would sit
+     against the last button — reading as a third action rather than the card's own menu.
+     Against the far edge it lines up with the card, which is what it belongs to. */
+  .card-menu {
+    margin-left: auto;
+  }
 }
 
 .card-actions {

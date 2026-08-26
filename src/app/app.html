@@ -7,11 +7,25 @@
       </a>
       <nav class="app-nav">
         @if (authService.isLoggedIn()) {
+          <button type="button" class="nav-burger" aria-label="Menu" [cdkMenuTriggerFor]="navMenu">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <line x1="4" y1="7" x2="20" y2="7" />
+              <line x1="4" y1="12" x2="20" y2="12" />
+              <line x1="4" y1="17" x2="20" y2="17" />
+            </svg>
+          </button>
           <button
             type="button"
             class="nav-trigger"
             [class.active]="isDraftSection()"
-            [cdkMenuTriggerFor]="draftMenu"
+            [cdkMenuTriggerFor]="navMenu"
           >
             Draft
             <svg
@@ -42,7 +56,7 @@
     </div>
   </header>
 }
-<ng-template #draftMenu>
+<ng-template #navMenu>
   <div class="nav-menu" cdkMenu>
     <a
       class="nav-menu-item"
@@ -61,6 +75,45 @@
     >
       My Projections
     </a>
+    <a
+      class="nav-menu-item nav-menu-item--collapsed"
+      cdkMenuItem
+      routerLink="/whos-hot"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+    >
+      Who's hot
+    </a>
+    @if (paymentsEnabled) {
+      <a
+        class="nav-menu-item nav-menu-item--collapsed"
+        cdkMenuItem
+        routerLink="/account"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+      >
+        Account
+      </a>
+    }
+    @if (authService.isAdmin()) {
+      <a
+        class="nav-menu-item nav-menu-item--collapsed"
+        cdkMenuItem
+        routerLink="/admin"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+      >
+        Admin
+      </a>
+    }
+    <button
+      type="button"
+      class="nav-menu-item nav-menu-item--collapsed nav-menu-item--signout"
+      cdkMenuItem
+      (click)="authService.logout()"
+    >
+      Sign Out
+    </button>
   </div>
 </ng-template>
 <app-unverified-banner />
