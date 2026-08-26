@@ -9,8 +9,13 @@ import { environment } from '../../environments/environment';
 import { PlayerService } from './player.service';
 
 /**
- * The BFF reports a headshot as a path relative to the API base, never as Yahoo's own image
- * URL — that source is a multi-megapixel original for an avatar drawn at 28px.
+ * A headshot arrives one of two ways, and which one decides whether the API base belongs in
+ * front of it: a path when this service serves the picture, an absolute URL when it lives on
+ * the platform's own image CDN and the browser should fetch it there. Prefixing an absolute
+ * one yields `https://api…/https://…` and a broken image, which is what these pin down.
+ *
+ * What it is never is the source image the platform holds — a multi-megapixel original for an
+ * avatar drawn at 28px.
  */
 describe('PlayerService', () => {
   function serviceReturning(skaters: SkaterResponse[], goalies: GoalieResponse[]): PlayerService {
@@ -27,12 +32,47 @@ describe('PlayerService', () => {
     return TestBed.inject(PlayerService);
   }
 
+  // A preview draws five rows; the editor projects against every player. The limit is what
+  // keeps the first from downloading what only the second needs.
+  it('passes a limit through to the player endpoints, and none when there is none', async () => {
+    const calls: { name?: string; params?: unknown }[] = [];
+    TestBed.configureTestingModule({
+      providers: [
+        MockProvider(Api, {
+          invoke: (operation: unknown, params?: unknown) => {
+            calls.push({ name: (operation as { name?: string }).name, params });
+            return Promise.resolve([]);
+          },
+        } as Partial<Api>),
+      ],
+    });
+    const service = TestBed.inject(PlayerService);
+
+    await firstValueFrom(service.getPlayers({ skaters: 25, goalies: 10 }));
+    await firstValueFrom(service.getSkaters());
+
+    expect(calls).toEqual([
+      { name: 'getSkaters', params: { limit: 25 } },
+      { name: 'getGoalies', params: { limit: 10 } },
+      { name: 'getSkaters', params: { limit: undefined } },
+    ]);
+  });
+
   it('resolves a headshot path against the API base URL', async () => {
     const service = serviceReturning([skater('/players/9245/headshot')], []);
 
     const skaters = await firstValueFrom(service.getSkaters());
 
     expect(skaters[0].headshot).toEqual(`${environment.apiUrl}/players/9245/headshot`);
+  });
+
+  it('leaves a headshot that is already an absolute URL alone', async () => {
+    const cdn = 'https://a.espncdn.com/i/headshots/nhl/players/full/3024816.png';
+    const service = serviceReturning([skater(cdn)], []);
+
+    const skaters = await firstValueFrom(service.getSkaters());
+
+    expect(skaters[0].headshot).toEqual(cdn);
   });
 
   it('leaves a player without a headshot undefined', async () => {

@@ -844,8 +844,10 @@ paths:
       tags:
       - Shared projections
       summary: Fetch a shared projection by its token
-      description: "Public: anyone holding the link can read it. Returns the snapshot\
-        \ as it was when shared, with no identity beyond the alias the owner chose."
+      description: "Public: anyone holding the link can read it. A signed-in reader\
+        \ gets the whole published board; anyone else gets its top rows, with `truncated`\
+        \ set and `totalPlayers` saying what the board holds. Returns the snapshot\
+        \ as it was when shared, with no identity beyond the owner's public username."
       operationId: getSharedProjection
       parameters:
       - name: token
@@ -1052,12 +1054,32 @@ paths:
     get:
       tags:
       - Players
-      summary: Get all skaters
-      description: Returns all skaters with full season stats
+      summary: Get skaters
+      description: "Skaters with full season stats, highest scoring first. `limit`\
+        \ returns only that many, for a caller that wants the top of the board rather\
+        \ than the whole pool — the editor needs every player, a preview needs five."
       operationId: getSkaters
+      parameters:
+      - name: limit
+        in: query
+        description: How many skaters to return; all of them when absent
+        required: false
+        schema:
+          type: integer
+          format: int32
+          maximum: 500
+          minimum: 1
       responses:
         "200":
           description: Skaters retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SkaterResponse"
+        "400":
+          description: limit is not between 1 and 500
           content:
             application/json:
               schema:
@@ -1093,12 +1115,31 @@ paths:
     get:
       tags:
       - Players
-      summary: Get all goalies
-      description: Returns all goalies with full season stats
+      summary: Get goalies
+      description: "Goalies with full season stats, most wins first. `limit` returns\
+        \ only that many, the same way it does for skaters."
       operationId: getGoalies
+      parameters:
+      - name: limit
+        in: query
+        description: How many goalies to return; all of them when absent
+        required: false
+        schema:
+          type: integer
+          format: int32
+          maximum: 500
+          minimum: 1
       responses:
         "200":
           description: Goalies retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GoalieResponse"
+        "400":
+          description: limit is not between 1 and 500
           content:
             application/json:
               schema:
@@ -1701,10 +1742,13 @@ components:
       properties:
         players:
           type: array
-          description: "The ranked rows to publish, in display order."
+          description: "The ranked rows to publish, in display order. A share carries\
+            \ the whole board, so this is the client's entire ranking rather than\
+            \ the top of it; the cap is a safety limit sized above the largest player\
+            \ pool."
           items:
             $ref: "#/components/schemas/SharedPlayer"
-          maxItems: 200
+          maxItems: 2000
           minItems: 0
       required:
       - players
@@ -1846,6 +1890,7 @@ components:
           enum:
           - default
           - blank
+          - model
       required:
       - data
       - name
@@ -2275,7 +2320,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ServiceVersion"
+        playerSource:
+          type: string
+          description: "Which platform the player pool is being served from — the\
+            \ live wiring, not the configured value, so a setting that did not take\
+            \ is visible rather than assumed."
+          enum:
+          - yahoo
+          - espn
       required:
+      - playerSource
       - services
     SharedProjectionData:
       type: object
@@ -2301,15 +2355,24 @@ components:
           type: string
         authorUsername:
           type: string
+          description: "The owner's public name. Read live rather than snapshotted:\
+            \ a rename should follow onto links already shared."
         season:
           type: string
-          enum:
-          - "20252026"
-          - "20262027"
-          - "20272028"
-          - "20282029"
+          description: "The season this projection is for, as its 8-digit code."
         data:
           $ref: "#/components/schemas/SharedProjectionData"
+          description: "The snapshot. Its rows are the whole published board for a\
+            \ signed-in reader, and the top of it otherwise."
+        totalPlayers:
+          type: integer
+          format: int32
+          description: "How many rows the published board has in total, whether or\
+            \ not this response carries them all."
+        truncated:
+          type: boolean
+          description: True when rows were withheld because the reader is not signed
+            in.
         createdAt:
           type: string
           format: date-time
@@ -2323,6 +2386,8 @@ components:
       - name
       - season
       - token
+      - totalPlayers
+      - truncated
       - updatedAt
     ProjectionSummaryResponse:
       type: object
@@ -2458,8 +2523,10 @@ components:
           type: string
         headshot:
           type: string
-          description: "Path to the player's headshot, relative to the API base URL\
-            \ (e.g. /players/9245/headshot). Absent when the player has no picture."
+          description: "The player's headshot: an absolute URL when the picture lives\
+            \ on the platform's image CDN, or a path relative to the API base URL\
+            \ (e.g. /players/9245/headshot) when this service serves it. Absent when\
+            \ the player has no picture."
         sweaterNumber:
           type: integer
           format: int32
@@ -2645,8 +2712,10 @@ components:
           type: string
         headshot:
           type: string
-          description: "Path to the player's headshot, relative to the API base URL\
-            \ (e.g. /players/9245/headshot). Absent when the player has no picture."
+          description: "The player's headshot: an absolute URL when the picture lives\
+            \ on the platform's image CDN, or a path relative to the API base URL\
+            \ (e.g. /players/9245/headshot) when this service serves it. Absent when\
+            \ the player has no picture."
         sweaterNumber:
           type: integer
           format: int32
