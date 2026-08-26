@@ -108,29 +108,37 @@
         } @else if (previewFailed() || !previewRows().length) {
           <p class="preview-note">Preview unavailable right now.</p>
         } @else {
+          <!-- The editor's own header and rows, read-only: the preview is the table it previews,
+               not a drawing of it. -->
           <div class="preview-scroll">
-            <table class="preview-table">
-              <thead>
-                <tr>
-                  <th scope="col" class="preview-player-col">Player</th>
-                  @for (col of previewColumns; track col) {
-                    <th scope="col">{{ col | statLabel }}</th>
-                  }
-                </tr>
-              </thead>
+            <table>
+              <thead
+                app-projections-table-header
+                [activeColumns]="previewActiveColumns"
+                [scoringType]="'points'"
+                [statWeights]="previewStatWeights"
+                [useDefaultDecimals]="true"
+                [decimalSettings]="previewDecimalSettings"
+                [sortColumn]="previewSortColumn()"
+                [sortDirection]="previewSortDirection()"
+                [readonly]="true"
+                (sort)="onPreviewSort($event)"
+              ></thead>
               <tbody>
-                @for (row of previewRows(); track row.playerId) {
-                  <tr>
-                    <th scope="row" class="preview-player-col">
-                      {{ row.name }} ({{ row.position }})
-                      @if (row.teamAbbrev) {
-                        <span class="preview-team">{{ row.teamAbbrev }}</span>
-                      }
-                    </th>
-                    @for (value of row.values; track $index) {
-                      <td>{{ value }}</td>
-                    }
-                  </tr>
+                @for (row of previewRows(); track row.projection.playerId) {
+                  <tr
+                    app-player-row
+                    [positionRank]="row.rank"
+                    [totalRank]="null"
+                    [projection]="row.projection"
+                    [playerScore]="row.score"
+                    [player]="row.player"
+                    [rookie]="row.rookie"
+                    [activeColumns]="previewActiveColumns"
+                    [scoringType]="'points'"
+                    [decimalSettings]="previewDecimalSettings"
+                    [readonly]="true"
+                  ></tr>
                 }
               </tbody>
             </table>
