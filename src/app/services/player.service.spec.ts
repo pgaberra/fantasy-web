@@ -32,6 +32,32 @@ describe('PlayerService', () => {
     return TestBed.inject(PlayerService);
   }
 
+  // A preview draws five rows; the editor projects against every player. The limit is what
+  // keeps the first from downloading what only the second needs.
+  it('passes a limit through to the player endpoints, and none when there is none', async () => {
+    const calls: { name?: string; params?: unknown }[] = [];
+    TestBed.configureTestingModule({
+      providers: [
+        MockProvider(Api, {
+          invoke: (operation: unknown, params?: unknown) => {
+            calls.push({ name: (operation as { name?: string }).name, params });
+            return Promise.resolve([]);
+          },
+        } as Partial<Api>),
+      ],
+    });
+    const service = TestBed.inject(PlayerService);
+
+    await firstValueFrom(service.getPlayers({ skaters: 25, goalies: 10 }));
+    await firstValueFrom(service.getSkaters());
+
+    expect(calls).toEqual([
+      { name: 'getSkaters', params: { limit: 25 } },
+      { name: 'getGoalies', params: { limit: 10 } },
+      { name: 'getSkaters', params: { limit: undefined } },
+    ]);
+  });
+
   it('resolves a headshot path against the API base URL', async () => {
     const service = serviceReturning([skater('/players/9245/headshot')], []);
 

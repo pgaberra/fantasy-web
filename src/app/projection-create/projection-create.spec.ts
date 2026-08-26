@@ -364,30 +364,16 @@ describe('ProjectionCreateComponent', () => {
     expect(rows.some((row) => row.belowMinGames)).toEqual(false);
   });
 
-  // Sorting five rows would show the wrong five players: the whole pool is sorted, then cut.
-  it('re-picks the top five when the header sorts by another column', async () => {
+  // Five rows do not need the pool. Asking for it was half a megabyte to draw them.
+  it('downloads only the top of the board', async () => {
+    const getPlayers = vi.fn(() => of(players));
+    MockInstance(PlayerService, 'getPlayers', getPlayers);
+
     const fixture = MockRender(ProjectionCreateComponent);
     await fixture.whenStable();
-    const component = fixture.point.componentInstance;
 
-    component.onPreviewSort('hits');
-
-    expect(component.previewSortDirection()).toEqual('desc');
-    const rows = component.previewRows();
-    expect(rows.map((row) => row.player.name)).toEqual([
-      'Sixth Player',
-      'Fifth Player',
-      'Fourth Player',
-      'Third Player',
-      // The goalie has no hits at all, so it is still lifted in — from the bottom of this order.
-      'Only Goalie',
-    ]);
-    expect(rows.map((row) => row.rank)).toEqual([1, 2, 3, 4, 5]);
-
-    component.onPreviewSort('hits');
-
-    expect(component.previewSortDirection()).toEqual('asc');
-    expect(component.previewRows()[0].player.name).toEqual('Only Goalie');
+    expect(getPlayers).toHaveBeenCalledWith({ skaters: 25, goalies: 10 });
+    expect(fixture.point.componentInstance.previewRows()).toHaveLength(5);
   });
 
   it('marks the rookies the editor would mark', async () => {

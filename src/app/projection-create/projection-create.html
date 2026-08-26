@@ -119,10 +119,10 @@
                 [statWeights]="previewStatWeights"
                 [useDefaultDecimals]="true"
                 [decimalSettings]="previewDecimalSettings"
-                [sortColumn]="previewSortColumn()"
-                [sortDirection]="previewSortDirection()"
+                [sortColumn]="'summary'"
+                [sortDirection]="'desc'"
                 [readonly]="true"
-                (sort)="onPreviewSort($event)"
+                [sortable]="false"
               ></thead>
               <tbody>
                 @for (row of previewRows(); track row.projection.playerId) {
@@ -145,8 +145,8 @@
             </table>
           </div>
           <p class="preview-note">
-            The top of the board, of every player the editor opens with — with a goalie brought in
-            so the goalie columns show what they hold.
+            The top of the board, with a goalie brought in so the goalie columns show what they
+            hold. The editor opens with every player, and sorts.
           </p>
         }
       </div>

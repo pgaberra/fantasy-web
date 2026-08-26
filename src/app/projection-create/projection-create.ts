@@ -9,11 +9,7 @@ import { StatInfoService } from '../services/stat-info.service';
 import { PlayerService } from '../services/player.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { Player } from '../models/player.model';
-import {
-  GOALIE_SCORING_STAT_KEYS,
-  SKATER_SCORING_STAT_KEYS,
-  StatKey,
-} from '../models/stat-key.model';
+import { GOALIE_SCORING_STAT_KEYS, SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
 import {
   ActiveColumns,
   GoalieScoringStats,
@@ -22,8 +18,6 @@ import {
   Projection,
   SkaterScoringStats,
   SkaterStats,
-  SortColumn,
-  SortDirection,
 } from '../models/projection.model';
 import { PlayerRowComponent } from '../draft-projection/player-projections-table/player-row/player-row';
 import { ProjectionsTableHeaderComponent } from '../draft-projection/player-projections-table/projections-table-header/projections-table-header';
@@ -53,6 +47,15 @@ type DataSource = 'last-season' | 'blank' | 'copy';
  */
 const PREVIEW_ROWS = 5;
 
+/**
+ * How much of the board the preview downloads to fill those rows. The BFF serves skaters by
+ * points and goalies by wins; the default weights score hits and blocks too, so the order the
+ * preview wants is not exactly the order it receives — these are wide enough that the players it
+ * would pick out of the whole pool are certainly inside, and narrow enough to be a few kilobytes
+ * rather than the half-megabyte the editor needs.
+ */
+const PREVIEW_FETCH_LIMITS = { skaters: 25, goalies: 10 };
+
 /** One preview row, in the shapes the editor's own table components expect. */
 interface PreviewRow {
   rank: number;
@@ -71,15 +74,6 @@ interface ScoredPlayer {
 }
 
 const ZERO_SCORE: PlayerScore = { fantasyPoints: 0, zScore: 0 };
-
-/** A player's value in any column — a column their position doesn't have counts as nothing. */
-function statOf(player: Player, key: StatKey): number {
-  const stats: Partial<Record<StatKey, number>> = {
-    ...player.stats.utility,
-    ...player.stats.scoring,
-  };
-  return stats[key] ?? 0;
-}
 
 /** What 'From scratch' gives every player. Read-only rows, so one instance serves them all. */
 const ZEROED_SKATER_STATS: SkaterStats = {
@@ -130,11 +124,12 @@ export class ProjectionCreateComponent {
 
   /**
    * The preview's own fetch, kept apart from `dataResource`: it is decoration, so a slow or
-   * failed player read model must not stop anyone creating a projection. The goalies come with
-   * the skaters because the preview keeps a row for one — see `previewPlayers`.
+   * failed player read model must not stop anyone creating a projection. Only the top of the
+   * board, since only five rows are drawn — and the goalies come with the skaters because one of
+   * those rows is kept for a goalie (see `previewPlayers`).
    */
   private readonly previewPlayersResource = rxResource({
-    stream: () => this.playerService.getPlayers(),
+    stream: () => this.playerService.getPlayers(PREVIEW_FETCH_LIMITS),
     defaultValue: [] as Player[],
   });
 
@@ -162,8 +157,6 @@ export class ProjectionCreateComponent {
   };
   readonly previewStatWeights = DEFAULT_STAT_WEIGHTS;
   readonly previewDecimalSettings = DEFAULT_DECIMAL_SETTINGS;
-  readonly previewSortColumn = signal<SortColumn>('summary');
-  readonly previewSortDirection = signal<SortDirection>('desc');
   readonly isPreviewLoading = this.previewPlayersResource.isLoading;
   readonly previewFailed = computed(() => !!this.previewPlayersResource.error());
 
@@ -202,39 +195,17 @@ export class ProjectionCreateComponent {
   });
 
   /**
-   * The whole pool in the header's current order. Sorting all of it and then taking five is the
-   * only honest reading of a truncated board: sorting the five would show the wrong five players
-   * under every column but the one they were picked by.
-   */
-  private readonly sortedPlayers = computed<ScoredPlayer[]>(() => {
-    const column = this.previewSortColumn();
-    const direction = this.previewSortDirection();
-    const rows = [...this.rankedPlayers()];
-    if (column === 'name') {
-      rows.sort((first, second) => first.player.name.localeCompare(second.player.name));
-    } else if (column !== 'summary') {
-      rows.sort((first, second) => statOf(second.player, column) - statOf(first.player, column));
-    }
-    // `rankedPlayers` already comes back by summary, descending — the editor's own default.
-    const ascending = direction === 'asc';
-    if (column === 'name' ? !ascending : ascending) {
-      rows.reverse();
-    }
-    return rows;
-  });
-
-  /**
-   * The five rows shown, with the last seat given to a goalie whenever the sort hasn't put one
+   * The five rows shown, with the last seat given to a goalie whenever the ranking hasn't put one
    * there itself. The board's own top five is all skaters, which would leave every goalie column
    * showing the dash a skater has and nothing else.
    */
   private readonly previewPlayers = computed<ScoredPlayer[]>(() => {
-    const sorted = this.sortedPlayers();
-    const shown = sorted.slice(0, PREVIEW_ROWS);
+    const ranked = this.rankedPlayers();
+    const shown = ranked.slice(0, PREVIEW_ROWS);
     if (shown.some((row) => row.player.type === 'goalie')) {
       return shown;
     }
-    const goalie = sorted.find((row) => row.player.type === 'goalie');
+    const goalie = ranked.find((row) => row.player.type === 'goalie');
     return goalie ? [...shown.slice(0, PREVIEW_ROWS - 1), goalie] : shown;
   });
 
@@ -275,16 +246,6 @@ export class ProjectionCreateComponent {
       this.name().trim().length > 0 &&
       (this.dataSource() !== 'copy' || !!this.copyFromId()),
   );
-
-  /** Same rule as the editor's table: a new column starts descending, the same one flips. */
-  onPreviewSort(column: SortColumn): void {
-    if (this.previewSortColumn() === column) {
-      this.previewSortDirection.update((direction) => (direction === 'asc' ? 'desc' : 'asc'));
-      return;
-    }
-    this.previewSortColumn.set(column);
-    this.previewSortDirection.set(column === 'name' ? 'asc' : 'desc');
-  }
 
   onNameInput(event: Event): void {
     this.name.set((event.target as HTMLInputElement).value);
