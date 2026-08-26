@@ -193,6 +193,12 @@ to Sentry for months; the browser reported nowhere.
 - **Uncaught errors and unhandled rejections** reach it via `ReportingErrorHandler`, which
   reports and then delegates to Angular's default handler so the console still gets them.
   `provideBrowserGlobalErrorListeners()` is what routes rejections there.
+- **One error is deliberately not reported**: a stale-build chunk failure the router is already
+  reloading for (`isRecoveringFromStaleBuild` in `shared/navigation-error.ts`). The router calls
+  the navigation error handler and *then* rethrows, so the same failure arrives twice — and it
+  was raising a Sentry alert on every deploy for something the user never saw. It still reaches
+  the console, and a build that is broken rather than stale still reports, through the
+  notification the navigation handler shows when reloading did not help.
 - **Handled failures report too.** `NotificationService.error(...)` is the single funnel for a
   discrete user action that failed, so it reports as well as renders — telling the user and
   telling ourselves are the same event.
