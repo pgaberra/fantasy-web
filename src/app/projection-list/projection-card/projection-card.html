@@ -1,6 +1,11 @@
 <div class="card-main">
   <span class="card-name">{{ projection().name }}</span>
-  <span class="card-meta">Updated {{ projection().updatedAt | relativeTime }}</span>
+  <span class="card-meta">
+    @if (origin(); as from) {
+      From {{ from.authorUsername }} ·
+    }
+    Updated {{ projection().updatedAt | relativeTime }}
+  </span>
   @if (projection().draftStatus === 'finished') {
     <span class="card-status card-status--done">Draft complete</span>
   } @else if (projection().draftStatus === 'in_progress') {
@@ -38,29 +43,31 @@
 
 <ng-template #cardMenu>
   <div class="card-menu-panel">
-    <button
-      type="button"
-      class="menu-item share"
-      [disabled]="isPreparingShare()"
-      (click)="share.emit()"
-    >
-      <svg
-        viewBox="0 0 24 24"
-        width="15"
-        height="15"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
+    @if (canShare()) {
+      <button
+        type="button"
+        class="menu-item share"
+        [disabled]="isPreparingShare()"
+        (click)="share.emit()"
       >
-        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-        <polyline points="16 6 12 2 8 6" />
-        <line x1="12" y1="2" x2="12" y2="15" />
-      </svg>
-      {{ isPreparingShare() ? 'Opening…' : 'Share' }}
-    </button>
+        <svg
+          viewBox="0 0 24 24"
+          width="15"
+          height="15"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+          <polyline points="16 6 12 2 8 6" />
+          <line x1="12" y1="2" x2="12" y2="15" />
+        </svg>
+        {{ isPreparingShare() ? 'Opening…' : 'Share' }}
+      </button>
+    }
     <button type="button" class="menu-item menu-item--danger delete" (click)="startDelete()">
       <svg
         viewBox="0 0 24 24"

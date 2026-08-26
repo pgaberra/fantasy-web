@@ -29,6 +29,17 @@ export class ProjectionStorageService {
     );
   }
 
+  /**
+   * Everything the user can open in the editor: what they made, plus the boards they copied
+   * from a share link. A preset draft is left out — it is scaffolding for a draft, not a
+   * projection anyone edits.
+   */
+  listEditable(): Observable<ProjectionSummaryResponse[]> {
+    return this.listWithPresetDrafts().pipe(
+      map((projections) => projections.filter((projection) => projection.kind !== 'preset_draft')),
+    );
+  }
+
   listWithPresetDrafts(): Observable<ProjectionSummaryResponse[]> {
     return from(this.api.invoke(list));
   }
