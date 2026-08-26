@@ -39,7 +39,8 @@
         [attr.aria-selected]="selectedTab() === 'own'"
         (click)="selectTab('own')"
       >
-        Your projections
+        <span class="tab-label">Your projections</span>
+        <span class="tab-label tab-label--short">Yours</span>
         <span class="tab-count">{{ projections().length }}</span>
       </button>
       <button
@@ -50,7 +51,8 @@
         [attr.aria-selected]="selectedTab() === 'imported'"
         (click)="selectTab('imported')"
       >
-        Shared with you
+        <span class="tab-label">Shared with you</span>
+        <span class="tab-label tab-label--short">Shared</span>
         <span class="tab-count">{{ imported().length }}</span>
       </button>
       <button
@@ -61,7 +63,7 @@
         [attr.aria-selected]="selectedTab() === 'presets'"
         (click)="selectTab('presets')"
       >
-        Presets
+        <span class="tab-label">Presets</span>
         <span class="tab-count">1</span>
       </button>
     </div>
@@ -87,7 +89,7 @@
                   }
                   <button
                     type="button"
-                    class="btn btn-secondary btn-sm"
+                    class="btn btn-primary btn-sm"
                     (click)="openDraft(projection.id)"
                   >
                     {{ draftLabel(projection.draftStatus) }}
@@ -121,7 +123,7 @@
                   }
                   <button
                     type="button"
-                    class="btn btn-secondary btn-sm"
+                    class="btn btn-primary btn-sm"
                     (click)="openDraft(board.id)"
                   >
                     {{ draftLabel(board.draftStatus) }}
@@ -194,7 +196,7 @@
                   Cancel
                 </button>
               } @else {
-                <button type="button" class="btn btn-secondary btn-sm" (click)="startPreset()">
+                <button type="button" class="btn btn-primary btn-sm" (click)="startPreset()">
                   {{ presetLabel() }}
                 </button>
                 @if (presetDraft()) {
