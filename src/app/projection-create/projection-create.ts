@@ -8,9 +8,19 @@ import { NotificationService } from '../services/notification.service';
 import { StatInfoService } from '../services/stat-info.service';
 import { PlayerService } from '../services/player.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
-import { Skater } from '../models/player.model';
-import { StatKey } from '../models/stat-key.model';
-import { StatLabelPipe } from '../pipes/stat-label.pipe';
+import { Player, Skater } from '../models/player.model';
+import { SKATER_SCORING_STAT_KEYS, StatKey } from '../models/stat-key.model';
+import {
+  ActiveColumns,
+  PlayerScore,
+  Projection,
+  SkaterScoringStats,
+  SkaterStats,
+  SortColumn,
+  SortDirection,
+} from '../models/projection.model';
+import { PlayerRowComponent } from '../draft-projection/player-projections-table/player-row/player-row';
+import { ProjectionsTableHeaderComponent } from '../draft-projection/player-projections-table/projections-table-header/projections-table-header';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { CreateProjectionRequest } from '../api/models/create-projection-request';
 import { ProjectionData } from '../api/models/projection-data';
@@ -37,14 +47,33 @@ type DataSource = 'last-season' | 'blank' | 'copy';
  */
 const PREVIEW_ROWS = 5;
 
+/** One preview row, in the shapes the editor's own table components expect. */
 interface PreviewRow {
-  playerId: number;
-  name: string;
-  position: string;
-  teamAbbrev?: string;
-  /** Aligned with `previewColumns`. */
-  values: number[];
+  rank: number;
+  player: Player;
+  projection: Projection;
+  score: PlayerScore;
+  rookie: boolean;
 }
+
+const ZERO_SCORE: PlayerScore = { fantasyPoints: 0, zScore: 0 };
+
+/** A skater's value in any column, goalie stats included — those they simply don't have. */
+function statOf(skater: Skater, key: StatKey): number {
+  const stats: Partial<Record<StatKey, number>> = {
+    ...skater.stats.utility,
+    ...skater.stats.scoring,
+  };
+  return stats[key] ?? 0;
+}
+
+/** What 'From scratch' gives every player. Read-only rows, so one instance serves them all. */
+const ZEROED_SKATER_STATS: SkaterStats = {
+  utility: { gp: 0, toiPerGame: 0 },
+  scoring: Object.fromEntries(
+    SKATER_SCORING_STAT_KEYS.map((key) => [key, 0]),
+  ) as SkaterScoringStats,
+};
 
 @Component({
   selector: 'app-projection-create',
@@ -53,7 +82,8 @@ interface PreviewRow {
     ErrorStateComponent,
     HelpTipComponent,
     RouterLink,
-    StatLabelPipe,
+    PlayerRowComponent,
+    ProjectionsTableHeaderComponent,
   ],
   templateUrl: './projection-create.html',
   styleUrl: './projection-create.css',
@@ -88,6 +118,12 @@ export class ProjectionCreateComponent {
     defaultValue: [] as Skater[],
   });
 
+  /** The rookie markers the editor's rows draw. Null means "couldn't tell", so nothing is marked. */
+  private readonly rookieIdsResource = rxResource({
+    stream: () => this.playerService.getRookieIds(),
+    defaultValue: null as Set<number> | null,
+  });
+
   readonly dataSource = signal<DataSource>('last-season');
   readonly copyFromId = signal<string | null>(null);
   readonly existingProjections = computed(() => this.dataResource.value());
@@ -96,17 +132,28 @@ export class ProjectionCreateComponent {
   readonly isCreating = signal<boolean>(false);
   readonly name = linkedSignal(() => this.defaultName(this.dataResource.value()));
 
-  /** The columns a new projection opens with, minus the goalie ones the preview has no rows for. */
-  readonly previewColumns: StatKey[] = [
-    ...DEFAULT_UTILITY_COLUMNS,
-    ...DEFAULT_SCORING_COLUMNS.filter((key) => this.statInfoService.isSkaterScoringStat(key)),
-  ];
+  /**
+   * Exactly the columns a new projection opens with — the goalie ones included, so they read as
+   * the editor's empty cells rather than being quietly left out of the preview.
+   */
+  readonly previewActiveColumns: ActiveColumns = {
+    scoring: new Set(DEFAULT_SCORING_COLUMNS),
+    utility: new Set(DEFAULT_UTILITY_COLUMNS),
+  };
+  readonly previewStatWeights = DEFAULT_STAT_WEIGHTS;
+  readonly previewDecimalSettings = DEFAULT_DECIMAL_SETTINGS;
+  readonly previewSortColumn = signal<SortColumn>('summary');
+  readonly previewSortDirection = signal<SortDirection>('desc');
   readonly isPreviewLoading = this.previewPlayersResource.isLoading;
   readonly previewFailed = computed(() => !!this.previewPlayersResource.error());
 
-  /** The players the editor would put on top, ranked exactly as it ranks them by default. */
-  private readonly previewPlayers = computed<Skater[]>(() => {
-    const skaters = this.previewPlayersResource.value();
+  /** Every skater, scored and ordered exactly as the editor scores and orders them by default. */
+  private readonly rankedSkaters = computed(() => {
+    // Via hasValue(): reading a resource that failed throws, and neither fetch is worth taking
+    // the page down for.
+    const skaters = this.previewPlayersResource.hasValue()
+      ? this.previewPlayersResource.value()
+      : [];
     if (!skaters.length) {
       return [];
     }
@@ -126,25 +173,48 @@ export class ProjectionCreateComponent {
         minGoalieGames: DEFAULT_MIN_GOALIE_GAMES,
         decimalSettings: DEFAULT_DECIMAL_SETTINGS,
       })
-      .slice(0, PREVIEW_ROWS)
-      .map((scored) => byId.get(scored.projection.playerId))
-      .filter((skater): skater is Skater => !!skater);
+      .map((scored) => ({ skater: byId.get(scored.projection.playerId), score: scored.score }))
+      .filter((row): row is { skater: Skater; score: PlayerScore } => !!row.skater);
+  });
+
+  /**
+   * The five rows the header's current sort puts on top. Sorting the whole pool and then taking
+   * five is the only honest reading of a truncated board: sorting the five would show the wrong
+   * five players under every column but the one they were picked by.
+   */
+  private readonly sortedTopPlayers = computed(() => {
+    const column = this.previewSortColumn();
+    const direction = this.previewSortDirection();
+    const rows = [...this.rankedSkaters()];
+    if (column === 'name') {
+      rows.sort((first, second) => first.skater.name.localeCompare(second.skater.name));
+    } else if (column !== 'summary') {
+      rows.sort((first, second) => statOf(second.skater, column) - statOf(first.skater, column));
+    }
+    // `rankedSkaters` already comes back by summary, descending — the editor's own default.
+    const ascending = direction === 'asc';
+    if (column === 'name' ? !ascending : ascending) {
+      rows.reverse();
+    }
+    return rows.slice(0, PREVIEW_ROWS);
   });
 
   readonly previewRows = computed<PreviewRow[]>(() => {
-    // 'From scratch' is the same players and the same columns, just emptied — which is the
-    // whole point of showing it: the shape doesn't change, only the numbers.
+    // 'From scratch' is the same players in the same rows, just emptied — which is the whole
+    // point of showing it: the board doesn't change, only the numbers on it.
     const zeroed = this.dataSource() === 'blank';
-    return this.previewPlayers().map((skater) => {
-      const stats = { ...skater.stats.utility, ...skater.stats.scoring } as Record<StatKey, number>;
-      return {
+    const rookieIds = this.rookieIdsResource.hasValue() ? this.rookieIdsResource.value() : null;
+    return this.sortedTopPlayers().map(({ skater, score }, index) => ({
+      rank: index + 1,
+      player: skater,
+      projection: {
+        type: 'skater' as const,
         playerId: skater.id,
-        name: skater.name,
-        position: Array.from(skater.positions).join(', '),
-        teamAbbrev: skater.teamAbbrev,
-        values: this.previewColumns.map((col) => (zeroed ? 0 : (stats[col] ?? 0))),
-      };
-    });
+        stats: zeroed ? ZEROED_SKATER_STATS : skater.stats,
+      },
+      score: zeroed ? ZERO_SCORE : score,
+      rookie: rookieIds?.has(skater.id) ?? false,
+    }));
   });
 
   readonly canCreate = computed(
@@ -153,6 +223,16 @@ export class ProjectionCreateComponent {
       this.name().trim().length > 0 &&
       (this.dataSource() !== 'copy' || !!this.copyFromId()),
   );
+
+  /** Same rule as the editor's table: a new column starts descending, the same one flips. */
+  onPreviewSort(column: SortColumn): void {
+    if (this.previewSortColumn() === column) {
+      this.previewSortDirection.update((direction) => (direction === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+    this.previewSortColumn.set(column);
+    this.previewSortDirection.set(column === 'name' ? 'asc' : 'desc');
+  }
 
   onNameInput(event: Event): void {
     this.name.set((event.target as HTMLInputElement).value);
