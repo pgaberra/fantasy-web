@@ -339,15 +339,29 @@ describe('ProjectionsTableHeaderComponent', () => {
   });
 
   describe('utility / scoring split', () => {
+    const scalingHeader = () =>
+      getComponent({
+        scaleSettings: {
+          gp: { scale: true, scalableStats: new Set<ScoringStatKey>(['goals']) },
+          toiPerGame: { scale: false, scalableStats: new Set<ScoringStatKey>() },
+        },
+      });
+
     it('says what a utility column is for, which its label cannot', () => {
-      expect(getComponent().utilityTooltip('gp')).toEqual(
+      expect(scalingHeader().utilityTooltip('gp')).toEqual(
         'Games Played — a Utility Stat that can be used to scale and project other stats.',
       );
     });
 
     it('keeps expanding the abbreviation, which is the only place TOI/G is spelled out', () => {
-      expect(getComponent().utilityTooltip('toiPerGame')).toEqual(
+      expect(scalingHeader().utilityTooltip('toiPerGame')).toEqual(
         'Time on Ice per Game — a Utility Stat that can be used to scale and project other stats.',
+      );
+    });
+
+    it('promises no scaling where there is no projection to scale', () => {
+      expect(getComponent().utilityTooltip('toiPerGame')).toEqual(
+        'Time on Ice per Game — a Utility Stat: it takes no weight and adds nothing to the total.',
       );
     });
 
@@ -374,6 +388,24 @@ describe('ProjectionsTableHeaderComponent', () => {
       const divided = ngMocks.findAll('.group-start');
       expect(divided).toHaveLength(1);
       expect(divided[0].nativeElement.textContent).toContain('Goals');
+    });
+
+    it('leaves the rule on the cell boundary when no menu dots fill the gutter', () => {
+      const fixture = getFixture();
+      const thead = ngMocks.find(fixture.debugElement, 'thead').nativeElement as HTMLElement;
+      expect(thead.classList.contains('has-column-menus')).toBe(false);
+    });
+
+    it('shifts the rule off the boundary once the menu dots take the utility gutter', () => {
+      const fixture = getFixture({ columnControls: true });
+      const thead = ngMocks.find(fixture.debugElement, 'thead').nativeElement as HTMLElement;
+      expect(thead.classList.contains('has-column-menus')).toBe(true);
+    });
+
+    it('keeps the rule on the boundary on a read-only page, which has no menus either', () => {
+      const fixture = getFixture({ columnControls: true, readonly: true });
+      const thead = ngMocks.find(fixture.debugElement, 'thead').nativeElement as HTMLElement;
+      expect(thead.classList.contains('has-column-menus')).toBe(false);
     });
 
     it('draws no rule when there are no utility columns to divide off', () => {

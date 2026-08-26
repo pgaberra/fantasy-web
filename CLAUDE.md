@@ -65,6 +65,12 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   kind `preset_draft` (seeded server-side via `source: default`) purely to hold the picks;
   `ProjectionStorageService.listProjections()` filters that row out so it never shows up
   as the user's own work, and `listWithPresetDrafts()` is the one place it is wanted.
+  A third reading, `listEditable()`, is everything that can be opened in the editor —
+  the user's own plus imported boards, preset drafts excluded — and is what
+  `projection-list` lists. `projection-create` deliberately keeps `listProjections()`:
+  it asks whether the user already has a projection of their own, and an imported copy
+  is not one. An imported card says whose board it is and offers no Share, since a share
+  credits the account that publishes it.
   Both sources then run the same board in `draft-mode/`.
 - `shared-projection/` — the page behind a share link (`/s/:token`), public and unguarded: a
   share link has to open for someone who has never signed in. A signed-in visitor is offered

@@ -9,13 +9,14 @@ import {
   ScoringType,
 } from '../../../models/projection.model';
 import { DecimalStatKey } from '../../projection-settings-section/model';
+import { PlayerHeadshotComponent } from '../../../shared/player-headshot/player-headshot';
 import { StatInputComponent } from './stat-input/stat-input';
 import { StatWarningService } from '../../../services/stat-warning.service';
 import { StatInfoService } from '../../../services/stat-info.service';
 
 @Component({
   selector: 'tr[app-player-row]',
-  imports: [DecimalPipe, StatInputComponent],
+  imports: [DecimalPipe, StatInputComponent, PlayerHeadshotComponent],
   templateUrl: './player-row.html',
   styleUrl: './player-row.css',
   host: {
