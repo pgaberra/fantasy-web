@@ -54,6 +54,9 @@ describe('SharedProjectionComponent', () => {
         },
       ],
     },
+    // The fixture carries the whole board, which is what a signed-in reader gets.
+    totalPlayers: 2,
+    truncated: false,
   };
 
   const loadShared = vi.fn(() => of(shared));
