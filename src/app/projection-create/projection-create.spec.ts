@@ -12,10 +12,10 @@ import { ProjectionSummaryResponse } from '../api/models/projection-summary-resp
 import { PlayerService } from '../services/player.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { ProjectionCalculationService } from '../services/projection-calculation.service';
-import { Skater } from '../models/player.model';
+import { Goalie, Skater } from '../models/player.model';
 import { SkaterPosition } from '../models/position.model';
-import { SkaterScoringStats } from '../models/projection.model';
-import { SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
+import { GoalieScoringStats, SkaterScoringStats } from '../models/projection.model';
+import { GOALIE_SCORING_STAT_KEYS, SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
 
 describe('ProjectionCreateComponent', () => {
   MockInstance.scope();
@@ -102,6 +102,26 @@ describe('ProjectionCreateComponent', () => {
     },
   });
 
+  // Enough games to be a qualified starter, but a modest enough season to rank below every
+  // skater — which is what makes the reserved goalie row worth having.
+  const goalie: Goalie = {
+    type: 'goalie',
+    id: 7,
+    name: 'Only Goalie',
+    teamAbbrev: 'WPG',
+    stats: {
+      utility: { gp: 40 },
+      scoring: {
+        ...(Object.fromEntries(
+          GOALIE_SCORING_STAT_KEYS.map((key) => [key, 0]),
+        ) as GoalieScoringStats),
+        w: 1,
+        sv: 10,
+        ga: 5,
+      },
+    },
+  };
+
   const skaters = [
     skater(1, 'Best Player', 60),
     skater(2, 'Second Player', 50),
@@ -110,6 +130,8 @@ describe('ProjectionCreateComponent', () => {
     skater(5, 'Fifth Player', 20),
     skater(6, 'Sixth Player', 10),
   ];
+
+  const players = [...skaters, goalie];
 
   const navigate = vi.fn();
   const createProjection = vi.fn<
@@ -124,7 +146,7 @@ describe('ProjectionCreateComponent', () => {
       .keep(ProjectionRankingService)
       .keep(ProjectionCalculationService)
       .mock(PlayerService, {
-        getSkaters: () => of(skaters),
+        getPlayers: () => of(players),
         getRookieIds: () => of(new Set([3])),
       })
       .mock(ProjectionStorageService, {
@@ -258,7 +280,9 @@ describe('ProjectionCreateComponent', () => {
     expect(createProjection).toHaveBeenCalledWith(expect.objectContaining({ data: source.data }));
   });
 
-  const topFive = ['Best Player', 'Second Player', 'Third Player', 'Fourth Player', 'Fifth Player'];
+  // Four skaters and the goalie, which is the whole point of the reserved row: the board's own
+  // top five is all skaters, and the goalie columns would stand empty.
+  const topFive = ['Best Player', 'Second Player', 'Third Player', 'Fourth Player', 'Only Goalie'];
 
   it('previews the top players with the stats last season gave them', async () => {
     const fixture = MockRender(ProjectionCreateComponent);
@@ -267,12 +291,35 @@ describe('ProjectionCreateComponent', () => {
 
     const rows = component.previewRows();
     expect(rows.map((row) => row.player.name)).toEqual(topFive);
-    expect(rows.map((row) => row.rank)).toEqual([1, 2, 3, 4, 5]);
+    // The goalie keeps the rank it holds on the whole board, rather than being renumbered 5.
+    expect(rows.map((row) => row.rank)).toEqual([1, 2, 3, 4, 7]);
     expect(rows[0].projection.stats.scoring).toEqual(
       expect.objectContaining({ goals: 60, assists: 40 }),
     );
     expect(rows[0].projection.stats.utility.gp).toEqual(82);
     expect(rows[0].score.fantasyPoints).toBeGreaterThan(0);
+    expect(rows[4].projection.stats.scoring).toEqual(
+      expect.objectContaining({ w: 1, sv: 10, ga: 5 }),
+    );
+    expect(rows[4].belowMinGames).toEqual(false);
+  });
+
+  // The goalie minimum is a category-league rule (see ProjectionRankingService.isQualified), and
+  // a new projection opens in points mode — so the preview must not put the editor's
+  // "Below min. games" marker on a goalie who would never carry one there.
+  it('leaves a barely-played goalie unmarked, as points scoring does', async () => {
+    MockInstance(
+      PlayerService,
+      'getPlayers',
+      vi.fn(() => of([...skaters, { ...goalie, stats: { ...goalie.stats, utility: { gp: 5 } } }])),
+    );
+
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+
+    const goalieRow = fixture.point.componentInstance.previewRows()[4];
+    expect(goalieRow.player.name).toEqual('Only Goalie');
+    expect(goalieRow.belowMinGames).toEqual(false);
   });
 
   // The preview shows the columns the editor opens with — the goalie ones included, so they read
@@ -313,6 +360,8 @@ describe('ProjectionCreateComponent', () => {
       row.score.zScore,
     ]);
     expect(values.every((value) => value === 0)).toEqual(true);
+    // Nobody is projected for any games yet, so the goalie is not called short of them either.
+    expect(rows.some((row) => row.belowMinGames)).toEqual(false);
   });
 
   // Sorting five rows would show the wrong five players: the whole pool is sorted, then cut.
@@ -324,18 +373,21 @@ describe('ProjectionCreateComponent', () => {
     component.onPreviewSort('hits');
 
     expect(component.previewSortDirection()).toEqual('desc');
-    expect(component.previewRows().map((row) => row.player.name)).toEqual([
+    const rows = component.previewRows();
+    expect(rows.map((row) => row.player.name)).toEqual([
       'Sixth Player',
       'Fifth Player',
       'Fourth Player',
       'Third Player',
-      'Second Player',
+      // The goalie has no hits at all, so it is still lifted in — from the bottom of this order.
+      'Only Goalie',
     ]);
+    expect(rows.map((row) => row.rank)).toEqual([1, 2, 3, 4, 7]);
 
     component.onPreviewSort('hits');
 
     expect(component.previewSortDirection()).toEqual('asc');
-    expect(component.previewRows()[0].player.name).toEqual('Best Player');
+    expect(component.previewRows()[0].player.name).toEqual('Only Goalie');
   });
 
   it('marks the rookies the editor would mark', async () => {
@@ -352,7 +404,7 @@ describe('ProjectionCreateComponent', () => {
   it('still lets you create when the preview cannot load', async () => {
     MockInstance(
       PlayerService,
-      'getSkaters',
+      'getPlayers',
       vi.fn(() => throwError(() => new HttpErrorResponse({ status: 502 }))),
     );
 

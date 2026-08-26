@@ -8,10 +8,16 @@ import { NotificationService } from '../services/notification.service';
 import { StatInfoService } from '../services/stat-info.service';
 import { PlayerService } from '../services/player.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
-import { Player, Skater } from '../models/player.model';
-import { SKATER_SCORING_STAT_KEYS, StatKey } from '../models/stat-key.model';
+import { Player } from '../models/player.model';
+import {
+  GOALIE_SCORING_STAT_KEYS,
+  SKATER_SCORING_STAT_KEYS,
+  StatKey,
+} from '../models/stat-key.model';
 import {
   ActiveColumns,
+  GoalieScoringStats,
+  GoalieStats,
   PlayerScore,
   Projection,
   SkaterScoringStats,
@@ -54,15 +60,28 @@ interface PreviewRow {
   projection: Projection;
   score: PlayerScore;
   rookie: boolean;
+  belowMinGames: boolean;
+}
+
+/** A player with the value the editor's default settings give them. */
+interface ScoredPlayer {
+  player: Player;
+  score: PlayerScore;
+  qualified: boolean;
+}
+
+/** A scored player and the place they hold in the board's current order. */
+interface RankedPlayer extends ScoredPlayer {
+  rank: number;
 }
 
 const ZERO_SCORE: PlayerScore = { fantasyPoints: 0, zScore: 0 };
 
-/** A skater's value in any column, goalie stats included — those they simply don't have. */
-function statOf(skater: Skater, key: StatKey): number {
+/** A player's value in any column — a column their position doesn't have counts as nothing. */
+function statOf(player: Player, key: StatKey): number {
   const stats: Partial<Record<StatKey, number>> = {
-    ...skater.stats.utility,
-    ...skater.stats.scoring,
+    ...player.stats.utility,
+    ...player.stats.scoring,
   };
   return stats[key] ?? 0;
 }
@@ -73,6 +92,13 @@ const ZEROED_SKATER_STATS: SkaterStats = {
   scoring: Object.fromEntries(
     SKATER_SCORING_STAT_KEYS.map((key) => [key, 0]),
   ) as SkaterScoringStats,
+};
+
+const ZEROED_GOALIE_STATS: GoalieStats = {
+  utility: { gp: 0 },
+  scoring: Object.fromEntries(
+    GOALIE_SCORING_STAT_KEYS.map((key) => [key, 0]),
+  ) as GoalieScoringStats,
 };
 
 @Component({
@@ -109,13 +135,12 @@ export class ProjectionCreateComponent {
 
   /**
    * The preview's own fetch, kept apart from `dataResource`: it is decoration, so a slow or
-   * failed player read model must not stop anyone creating a projection. Skaters only — five
-   * rows of skater columns is all it shows, and asking for the goalies too would double a
-   * download this page had deliberately dropped.
+   * failed player read model must not stop anyone creating a projection. The goalies come with
+   * the skaters because the preview keeps a row for one — see `previewPlayers`.
    */
   private readonly previewPlayersResource = rxResource({
-    stream: () => this.playerService.getSkaters(),
-    defaultValue: [] as Skater[],
+    stream: () => this.playerService.getPlayers(),
+    defaultValue: [] as Player[],
   });
 
   /** The rookie markers the editor's rows draw. Null means "couldn't tell", so nothing is marked. */
@@ -147,24 +172,24 @@ export class ProjectionCreateComponent {
   readonly isPreviewLoading = this.previewPlayersResource.isLoading;
   readonly previewFailed = computed(() => !!this.previewPlayersResource.error());
 
-  /** Every skater, scored and ordered exactly as the editor scores and orders them by default. */
-  private readonly rankedSkaters = computed(() => {
+  /** Every player, scored and ordered exactly as the editor scores and orders them by default. */
+  private readonly rankedPlayers = computed<ScoredPlayer[]>(() => {
     // Via hasValue(): reading a resource that failed throws, and neither fetch is worth taking
     // the page down for.
-    const skaters = this.previewPlayersResource.hasValue()
+    const players = this.previewPlayersResource.hasValue()
       ? this.previewPlayersResource.value()
       : [];
-    if (!skaters.length) {
+    if (!players.length) {
       return [];
     }
-    const byId = new Map(skaters.map((skater) => [skater.id, skater]));
+    const byId = new Map(players.map((player) => [player.id, player]));
     return this.ranking
       .rankOverall({
-        projections: skaters.map((skater) => ({
-          type: 'skater' as const,
-          playerId: skater.id,
-          stats: skater.stats,
-        })),
+        projections: players.map((player) =>
+          player.type === 'skater'
+            ? { type: 'skater' as const, playerId: player.id, stats: player.stats }
+            : { type: 'goalie' as const, playerId: player.id, stats: player.stats },
+        ),
         scoringType: 'points',
         statWeights: DEFAULT_STAT_WEIGHTS,
         activeScoringColumns: new Set(DEFAULT_SCORING_COLUMNS),
@@ -173,30 +198,49 @@ export class ProjectionCreateComponent {
         minGoalieGames: DEFAULT_MIN_GOALIE_GAMES,
         decimalSettings: DEFAULT_DECIMAL_SETTINGS,
       })
-      .map((scored) => ({ skater: byId.get(scored.projection.playerId), score: scored.score }))
-      .filter((row): row is { skater: Skater; score: PlayerScore } => !!row.skater);
+      .map((scored) => ({
+        player: byId.get(scored.projection.playerId),
+        score: scored.score,
+        qualified: scored.qualified,
+      }))
+      .filter((row): row is ScoredPlayer => !!row.player);
   });
 
   /**
-   * The five rows the header's current sort puts on top. Sorting the whole pool and then taking
-   * five is the only honest reading of a truncated board: sorting the five would show the wrong
-   * five players under every column but the one they were picked by.
+   * The whole pool in the header's current order. Sorting all of it and then taking five is the
+   * only honest reading of a truncated board: sorting the five would show the wrong five players
+   * under every column but the one they were picked by.
    */
-  private readonly sortedTopPlayers = computed(() => {
+  private readonly sortedPlayers = computed<RankedPlayer[]>(() => {
     const column = this.previewSortColumn();
     const direction = this.previewSortDirection();
-    const rows = [...this.rankedSkaters()];
+    const rows = [...this.rankedPlayers()];
     if (column === 'name') {
-      rows.sort((first, second) => first.skater.name.localeCompare(second.skater.name));
+      rows.sort((first, second) => first.player.name.localeCompare(second.player.name));
     } else if (column !== 'summary') {
-      rows.sort((first, second) => statOf(second.skater, column) - statOf(first.skater, column));
+      rows.sort((first, second) => statOf(second.player, column) - statOf(first.player, column));
     }
-    // `rankedSkaters` already comes back by summary, descending — the editor's own default.
+    // `rankedPlayers` already comes back by summary, descending — the editor's own default.
     const ascending = direction === 'asc';
     if (column === 'name' ? !ascending : ascending) {
       rows.reverse();
     }
-    return rows.slice(0, PREVIEW_ROWS);
+    return rows.map((row, index) => ({ ...row, rank: index + 1 }));
+  });
+
+  /**
+   * The five rows shown, with the last seat given to a goalie whenever the sort hasn't put one
+   * there itself. The board's own top five is all skaters, which would leave every goalie column
+   * showing the dash a skater has and nothing else.
+   */
+  private readonly previewPlayers = computed<RankedPlayer[]>(() => {
+    const sorted = this.sortedPlayers();
+    const shown = sorted.slice(0, PREVIEW_ROWS);
+    if (shown.some((row) => row.player.type === 'goalie')) {
+      return shown;
+    }
+    const goalie = sorted.find((row) => row.player.type === 'goalie');
+    return goalie ? [...shown.slice(0, PREVIEW_ROWS - 1), goalie] : shown;
   });
 
   readonly previewRows = computed<PreviewRow[]>(() => {
@@ -204,16 +248,28 @@ export class ProjectionCreateComponent {
     // point of showing it: the board doesn't change, only the numbers on it.
     const zeroed = this.dataSource() === 'blank';
     const rookieIds = this.rookieIdsResource.hasValue() ? this.rookieIdsResource.value() : null;
-    return this.sortedTopPlayers().map(({ skater, score }, index) => ({
-      rank: index + 1,
-      player: skater,
-      projection: {
-        type: 'skater' as const,
-        playerId: skater.id,
-        stats: zeroed ? ZEROED_SKATER_STATS : skater.stats,
-      },
+    return this.previewPlayers().map(({ player, score, qualified, rank }) => ({
+      // The place the row holds on the whole board, not among these five: the goalie is lifted
+      // in from further down, and numbering it 5 would misreport the board.
+      rank,
+      player,
+      projection:
+        player.type === 'skater'
+          ? {
+              type: 'skater' as const,
+              playerId: player.id,
+              stats: zeroed ? ZEROED_SKATER_STATS : player.stats,
+            }
+          : {
+              type: 'goalie' as const,
+              playerId: player.id,
+              stats: zeroed ? ZEROED_GOALIE_STATS : player.stats,
+            },
       score: zeroed ? ZERO_SCORE : score,
-      rookie: rookieIds?.has(skater.id) ?? false,
+      rookie: rookieIds?.has(player.id) ?? false,
+      // The editor marks a goalie projected for fewer games than the league minimum, which is
+      // why it ranks last. From scratch nobody is projected for anything yet.
+      belowMinGames: !zeroed && player.type === 'goalie' && !qualified,
     }));
   });
 
