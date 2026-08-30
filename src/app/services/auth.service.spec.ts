@@ -37,6 +37,8 @@ function authResponse(token: string, emailVerified = true): AuthResponse {
 
 describe('AuthService', () => {
   let service: AuthService;
+  /** What the router would say the visitor is looking at when their session runs out. */
+  let currentUrl = '/projections/abc123/draft';
 
   beforeEach(async () => {
     localStorage.clear();
@@ -45,10 +47,21 @@ describe('AuthService', () => {
     reset.mockClear();
     capture.mockClear();
     invoke.mockReset();
+    currentUrl = '/projections/abc123/draft';
 
     await MockBuilder(AuthService)
       .provide({ provide: Api, useValue: { invoke } })
-      .provide({ provide: Router, useValue: { navigate: vi.fn(), navigateByUrl: vi.fn() } })
+      .provide({
+        provide: Router,
+        useValue: {
+          navigate: vi.fn(),
+          navigateByUrl: vi.fn(),
+          // A getter, so a test can move the visitor after the mock is built.
+          get url() {
+            return currentUrl;
+          },
+        },
+      })
       .provide({ provide: AnalyticsService, useValue: { identify, reset, capture } });
 
     service = TestBed.inject(AuthService);
@@ -220,6 +233,49 @@ describe('AuthService', () => {
     service.logout();
 
     expect(reset).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * Leaving on purpose and being thrown out mid-page are different endings. The first is where
+   * the visitor meant to go; the second interrupted them, and what they were reading is what
+   * they want back.
+   */
+  describe('ending a session', () => {
+    it('sends someone who signed out to the form and nowhere after it', () => {
+      service.logout();
+
+      expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/login']);
+    });
+
+    it('keeps the page a session ran out under', () => {
+      service.endExpiredSession();
+
+      expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/login'], {
+        queryParams: { returnUrl: '/projections/abc123/draft' },
+      });
+    });
+
+    it('clears the session either way', () => {
+      localStorage.setItem('auth_token', 'a-token');
+
+      service.endExpiredSession();
+
+      expect(localStorage.getItem('auth_token')).toEqual(null);
+      expect(service.isLoggedIn()).toEqual(false);
+      expect(reset).toHaveBeenCalledTimes(1);
+    });
+
+    /** Coming back to the form they were already on is a loop, not a return. */
+    it.each(['/login', '/login?returnUrl=%2Fs%2Fabc', '/register', '/auth/google/callback?code=x'])(
+      'does not try to send them back to %s',
+      (page) => {
+        currentUrl = page;
+
+        service.endExpiredSession();
+
+        expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/login']);
+      },
+    );
   });
 
   describe('Google OAuth redirect flow', () => {

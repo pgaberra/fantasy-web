@@ -20,7 +20,7 @@ describe('authInterceptor', () => {
     getToken: ReturnType<typeof vi.fn>;
     getRefreshToken: ReturnType<typeof vi.fn>;
     refresh: ReturnType<typeof vi.fn>;
-    logout: ReturnType<typeof vi.fn>;
+    endExpiredSession: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -28,7 +28,7 @@ describe('authInterceptor', () => {
       getToken: vi.fn(),
       getRefreshToken: vi.fn(),
       refresh: vi.fn(),
-      logout: vi.fn(),
+      endExpiredSession: vi.fn(),
     };
     TestBed.configureTestingModule({
       providers: [{ provide: AuthService, useValue: authService }],
@@ -97,10 +97,10 @@ describe('authInterceptor', () => {
     await expect(run(new HttpRequest('GET', '/api/v1/players/skaters'), next)).rejects.toBeTruthy();
 
     expect(authService.refresh).toHaveBeenCalledTimes(1);
-    expect(authService.logout).toHaveBeenCalledTimes(1);
+    expect(authService.endExpiredSession).toHaveBeenCalledTimes(1);
   });
 
-  it('logs out without refreshing when there is no refresh token', async () => {
+  it('ends the session without refreshing when there is no refresh token', async () => {
     authService.getToken.mockReturnValue('stale');
     authService.getRefreshToken.mockReturnValue(null);
     const next = vi.fn<HttpHandlerFn>().mockReturnValue(unauthorized());
@@ -108,22 +108,22 @@ describe('authInterceptor', () => {
     await expect(run(new HttpRequest('GET', '/api/v1/players/skaters'), next)).rejects.toBeTruthy();
 
     expect(authService.refresh).not.toHaveBeenCalled();
-    expect(authService.logout).toHaveBeenCalledTimes(1);
+    expect(authService.endExpiredSession).toHaveBeenCalledTimes(1);
   });
 
   /**
    * A public page whose data turns out to need auth must be allowed to say so itself.
-   * `logout()` navigates to /login, so calling it for a visitor who never signed in threw
+   * Ending a session navigates to /login, so doing it for a visitor who never signed in threw
    * them off the page they were reading — the landing demo's own error state never showed.
    */
-  it('does not log out a visitor who was never signed in', async () => {
+  it('does not end a session for a visitor who was never signed in', async () => {
     authService.getToken.mockReturnValue(null);
     authService.getRefreshToken.mockReturnValue(null);
     const next = vi.fn<HttpHandlerFn>().mockReturnValue(unauthorized());
 
     await expect(run(new HttpRequest('GET', '/api/v1/players/skaters'), next)).rejects.toBeTruthy();
 
-    expect(authService.logout).not.toHaveBeenCalled();
+    expect(authService.endExpiredSession).not.toHaveBeenCalled();
     expect(authService.refresh).not.toHaveBeenCalled();
   });
 
@@ -140,6 +140,6 @@ describe('authInterceptor', () => {
     await run(new HttpRequest('GET', '/api/v1/players/skaters'), next);
 
     expect(authService.refresh).toHaveBeenCalledTimes(1);
-    expect(authService.logout).not.toHaveBeenCalled();
+    expect(authService.endExpiredSession).not.toHaveBeenCalled();
   });
 });

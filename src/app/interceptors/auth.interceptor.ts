@@ -23,7 +23,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
       const refreshToken = authService.getRefreshToken();
 
-      // A visitor who never signed in has no session to end, and `logout()` navigates to
+      // A visitor who never signed in has no session to end, and ending one navigates to
       // /login. Without this, a public page whose data happens to need auth ejected the
       // reader to the sign-in form instead of letting the page show its own error state.
       // The 401 still propagates — the caller decides what to say about it.
@@ -32,7 +32,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       }
 
       if (!refreshToken) {
-        authService.logout();
+        authService.endExpiredSession();
         return throwError(() => error);
       }
 
@@ -41,7 +41,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           next(req.clone({ setHeaders: { Authorization: `Bearer ${response.token}` } })),
         ),
         catchError((refreshError: unknown) => {
-          authService.logout();
+          authService.endExpiredSession();
           return throwError(() => refreshError);
         }),
       );
