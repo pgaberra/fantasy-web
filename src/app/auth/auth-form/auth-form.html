@@ -63,7 +63,7 @@
 
       @if (showForgotPasswordLink()) {
         <div class="auth-forgot">
-          <a routerLink="/forgot-password">Forgot password?</a>
+          <a routerLink="/forgot-password" queryParamsHandling="preserve">Forgot password?</a>
         </div>
       }
 
@@ -93,7 +93,10 @@
     }
 
     <p class="auth-footer">
-      {{ footerText() }} <a [routerLink]="footerLinkRoute()">{{ footerLinkLabel() }}</a>
+      <!-- The switch between Sign in and Register keeps the query string, which is how a
+           returnUrl survives the change of mind. AuthService forgets one it is not handed. -->
+      {{ footerText() }}
+      <a [routerLink]="footerLinkRoute()" queryParamsHandling="preserve">{{ footerLinkLabel() }}</a>
     </p>
   </div>
 </div>

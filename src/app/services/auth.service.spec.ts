@@ -79,6 +79,27 @@ describe('AuthService', () => {
       expect(router.navigateByUrl).toHaveBeenLastCalledWith('/projections');
     });
 
+    /**
+     * Reaching a form with nothing asked for is reaching it from somewhere that does not want
+     * them back: the nav, a guard, a bookmark. A value left from an earlier visit would send them
+     * to a page they asked for in another life, and carry out the action it had on it.
+     */
+    it('forgets where they were headed when they arrive without a destination', async () => {
+      service.rememberReturnUrl('/s/abc123?action=draft');
+      service.rememberReturnUrl(null);
+      const router = await signIn();
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/projections');
+    });
+
+    it('forgets it for a destination it would refuse anyway', async () => {
+      service.rememberReturnUrl('/s/abc123');
+      service.rememberReturnUrl('https://evil.example/steal');
+      const router = await signIn();
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/projections');
+    });
+
     /** The value arrives in a query parameter, so a link could otherwise aim it off-site. */
     it.each(['https://evil.example/steal', '//evil.example/steal', 'evil.example'])(
       'refuses to be sent to %s',
