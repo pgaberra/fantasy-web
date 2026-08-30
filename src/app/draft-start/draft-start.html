@@ -64,6 +64,7 @@
         (click)="selectTab('presets')"
       >
         <span class="tab-label">Presets</span>
+        <span class="tab-label tab-label--short">Presets</span>
         <span class="tab-count">{{ presets.length }}</span>
       </button>
     </div>
@@ -133,42 +134,7 @@
             </ul>
           }
 
-          <form class="import" (ngSubmit)="importShared()">
-            <label class="import-label" for="share-link">Add a shared board</label>
-            <div class="import-controls">
-              <input
-                id="share-link"
-                type="text"
-                class="import-input"
-                placeholder="Paste a share link"
-                autocomplete="off"
-                maxlength="200"
-                [value]="shareInput()"
-                (input)="shareInput.set($any($event.target).value)"
-              />
-              @if (importName() !== null) {
-                <input
-                  type="text"
-                  class="import-input"
-                  placeholder="Name this copy"
-                  autocomplete="off"
-                  maxlength="100"
-                  [value]="importName()"
-                  (input)="importName.set($any($event.target).value)"
-                />
-              }
-              <button
-                type="submit"
-                class="btn btn-primary btn-sm"
-                [disabled]="isImporting() || shareInput().trim().length === 0"
-              >
-                {{ isImporting() ? 'Importing…' : 'Import' }}
-              </button>
-            </div>
-            @if (importHint()) {
-              <p class="import-hint">{{ importHint() }}</p>
-            }
-          </form>
+          <app-share-import (imported)="onImported()" />
         </section>
       }
 

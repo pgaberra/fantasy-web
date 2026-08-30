@@ -6,17 +6,9 @@
 
   @if (!projectionsResource.isLoading() && !isSavingDemo()) {
     <div class="create-row">
-      <button
-        type="button"
-        class="create-button btn btn-primary"
-        [disabled]="projectionsResource.value().length > 0"
-        (click)="createNew()"
-      >
+      <button type="button" class="create-button btn btn-primary" (click)="createNew()">
         + Create new projection
       </button>
-      @if (projectionsResource.value().length > 0) {
-        <p class="create-note">Only one projection per account is supported right now.</p>
-      }
     </div>
   }
 

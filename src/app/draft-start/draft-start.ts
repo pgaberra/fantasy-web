@@ -1,5 +1,4 @@
 import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, switchMap } from 'rxjs';
@@ -14,6 +13,7 @@ import { createDefaultProjectionState } from '../draft-projection/projection-def
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
+import { ShareImportComponent } from '../shared/share-import/share-import';
 
 /**
  * The name the preset draft is stored under. It doubles as the label on the board, so the
@@ -57,19 +57,6 @@ export const PRESETS: readonly Preset[] = [
 export type SourceTab = 'own' | 'imported' | 'presets';
 
 /**
- * Pulls the token out of whatever gets pasted: a whole share URL, the path from one, or the
- * token on its own. Anything else is not a link we published.
- */
-export function shareTokenFrom(pasted: string): string | null {
-  const trimmed = pasted.trim();
-  const fromLink = /\/s\/([A-Za-z0-9_-]+)/.exec(trimmed);
-  if (fromLink) {
-    return fromLink[1];
-  }
-  return /^[A-Za-z0-9_-]{8,64}$/.test(trimmed) ? trimmed : null;
-}
-
-/**
  * Picks what a draft is drafted against: one of the user's own projections, a board copied from
  * someone's share link, or a preset.
  *
@@ -79,7 +66,13 @@ export function shareTokenFrom(pasted: string): string | null {
  */
 @Component({
   selector: 'app-draft-start',
-  imports: [RouterLink, LoadingIndicatorComponent, ErrorStateComponent, RelativeTimePipe],
+  imports: [
+    RouterLink,
+    LoadingIndicatorComponent,
+    ErrorStateComponent,
+    RelativeTimePipe,
+    ShareImportComponent,
+  ],
   templateUrl: './draft-start.html',
   styleUrl: './draft-start.css',
 })
@@ -102,12 +95,6 @@ export class DraftStartComponent {
   /** Which preset is being asked about, so two rows cannot share one confirmation. */
   readonly confirmingRestart = signal<Preset['id'] | null>(null);
   readonly selectedTab = signal<SourceTab>('own');
-
-  readonly shareInput = signal('');
-  readonly isImporting = signal(false);
-  readonly importHint = signal<string | null>(null);
-  /** Non-null only after a name clash, which is the one thing the importer has to settle. */
-  readonly importName = signal<string | null>(null);
 
   readonly projections = computed(() => this.byKind('projection'));
   readonly imported = computed(() => this.byKind('imported'));
@@ -176,53 +163,10 @@ export class DraftStartComponent {
     void this.router.navigate(['/projections', id, 'draft']);
   }
 
-  importShared(): void {
-    const token = shareTokenFrom(this.shareInput());
-    if (!token) {
-      this.importHint.set("That doesn't look like a SlapStat share link.");
-      return;
-    }
-    const chosenName = this.importName()?.trim();
-    if (this.importName() !== null && !chosenName) {
-      this.importHint.set('Give the copy a name.');
-      return;
-    }
-    this.importHint.set(null);
-    this.isImporting.set(true);
-    this.storage
-      .importFromShare(token, chosenName || undefined)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.isImporting.set(false);
-          this.shareInput.set('');
-          this.importName.set(null);
-          this.selectedTab.set('imported');
-          this.sourcesResource.reload();
-        },
-        error: (error: unknown) => {
-          this.isImporting.set(false);
-          this.onImportFailed(error);
-        },
-      });
-  }
-
-  /**
-   * A name clash is the importer's to settle — two people can call a projection the same thing,
-   * and only the one copying can say what the second should be called — so it asks for a name
-   * rather than reporting a failure they could do nothing about.
-   */
-  private onImportFailed(error: unknown): void {
-    if (error instanceof HttpErrorResponse && error.status === 409) {
-      this.importName.set(this.importName() ?? '');
-      this.importHint.set('You already have a board with that name. Give this copy another.');
-      return;
-    }
-    if (error instanceof HttpErrorResponse && error.status === 404) {
-      this.importHint.set("That link isn't active any more.");
-      return;
-    }
-    this.notification.error("Couldn't import that board. Please try again.");
+  /** The copy is the user's board now, so the tab that lists those is where it belongs. */
+  onImported(): void {
+    this.selectedTab.set('imported');
+    this.sourcesResource.reload();
   }
 
   startPreset(preset: Preset): void {

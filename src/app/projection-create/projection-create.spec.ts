@@ -10,6 +10,7 @@ import { CreateProjectionRequest } from '../api/models/create-projection-request
 import { ProjectionResponse } from '../api/models/projection-response';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { PlayerService } from '../services/player.service';
+import { NotificationService } from '../services/notification.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { ProjectionModelService } from '../services/projection-model.service';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
@@ -167,12 +168,14 @@ describe('ProjectionCreateComponent', () => {
   const seed = vi.fn<() => Observable<SeededProjectionResponse>>(() => of(seeded));
 
   const navigate = vi.fn();
+  const notifyError = vi.fn();
   const createProjection = vi.fn<
     (request: CreateProjectionRequest) => Observable<ProjectionResponse>
   >(() => of(created));
 
   beforeEach(() => {
     navigate.mockClear();
+    notifyError.mockClear();
     createProjection.mockClear();
     seed.mockClear();
     return MockBuilder(ProjectionCreateComponent)
@@ -186,10 +189,11 @@ describe('ProjectionCreateComponent', () => {
         getRookieIds: () => of(new Set([3])),
       })
       .mock(ProjectionStorageService, {
-        listProjections: () => of([]),
+        listEditable: () => of([]),
         createProjection,
         loadProjection: () => of(source),
       })
+      .mock(NotificationService, { error: notifyError })
       .provide({ provide: Router, useValue: { navigate } });
   });
 
@@ -213,7 +217,7 @@ describe('ProjectionCreateComponent', () => {
   it('suffixes the suggested name when it is already taken', async () => {
     MockInstance(
       ProjectionStorageService,
-      'listProjections',
+      'listEditable',
       vi.fn(() =>
         of([
           { ...summary, id: 'p1', name: 'My Projection' },
@@ -240,7 +244,9 @@ describe('ProjectionCreateComponent', () => {
     expect(navigate).toHaveBeenCalledWith(['/projections', 'new-id']);
   });
 
-  it('redirects to the list when the server rejects a second projection (409)', async () => {
+  // Names are unique per user, and the name is a field on this page, so a clash is something to
+  // say here rather than a reason to leave.
+  it('says the name is taken when the server rejects it (409), and stays put', async () => {
     createProjection.mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 409 })));
     const fixture = MockRender(ProjectionCreateComponent);
     await fixture.whenStable();
@@ -249,7 +255,103 @@ describe('ProjectionCreateComponent', () => {
     component.name.set('Dynasty');
     component.create();
 
-    expect(navigate).toHaveBeenCalledWith(['/projections']);
+    expect(notifyError).toHaveBeenCalledWith('You already have a projection with that name.');
+    expect(navigate).not.toHaveBeenCalled();
+    expect(component.isCreating()).toEqual(false);
+  });
+
+  describe('the three groups of starting points', () => {
+    const listed = [
+      { ...summary, id: 'own1', kind: 'projection' as const, name: 'Dynasty' },
+      {
+        ...summary,
+        id: 'shared1',
+        kind: 'imported' as const,
+        name: "Alex's board",
+        origin: { shareToken: 'tok', authorUsername: 'alex' },
+      },
+    ];
+
+    it('splits what the user has into their own and what was shared with them', async () => {
+      MockInstance(
+        ProjectionStorageService,
+        'listEditable',
+        vi.fn(() => of(listed)),
+      );
+
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      expect(component.ownProjections().map((row) => row.id)).toEqual(['own1']);
+      expect(component.importedBoards().map((row) => row.id)).toEqual(['shared1']);
+      expect(component.sourceLabel(listed[1])).toEqual('From alex');
+    });
+
+    it('opens on the presets, with last season picked', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      expect(component.selectedTab()).toEqual('presets');
+      expect(component.selectedPreset()).toEqual('default');
+      expect(component.canCreate()).toEqual(true);
+    });
+
+    it('waits for a row to be picked before it can create from a copy', async () => {
+      MockInstance(
+        ProjectionStorageService,
+        'listEditable',
+        vi.fn(() => of(listed)),
+      );
+
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.selectTab('imported');
+      expect(component.canCreate()).toEqual(false);
+
+      component.selectCopyFrom('shared1');
+      expect(component.canCreate()).toEqual(true);
+    });
+
+    // A copy carries rows only the client has, whoever made them — the same path the user's own
+    // projections take, which is the point of listing both as starting points.
+    it('copies a shared board verbatim, sending no source', async () => {
+      MockInstance(
+        ProjectionStorageService,
+        'listEditable',
+        vi.fn(() => of(listed)),
+      );
+
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.selectTab('imported');
+      component.selectCopyFrom('shared1');
+      component.create();
+
+      expect(createProjection).toHaveBeenCalledWith(
+        expect.objectContaining({ data: source.data, source: undefined }),
+      );
+    });
+
+    it('picks a board the moment it is imported, and re-reads the list it belongs in', async () => {
+      const listEditable = vi.fn(() => of(listed));
+      MockInstance(ProjectionStorageService, 'listEditable', listEditable);
+
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.onImported({ id: 'fresh1' } as ProjectionResponse);
+      await fixture.whenStable();
+
+      expect(component.copyFromId()).toEqual('fresh1');
+      expect(listEditable).toHaveBeenCalledTimes(2);
+    });
   });
 
   it('creates from scratch with default (points) settings', async () => {
@@ -285,7 +387,7 @@ describe('ProjectionCreateComponent', () => {
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
 
-    component.dataSource.set('blank');
+    component.selectPreset('blank');
     component.create();
 
     expect(createProjection.mock.calls[0][0].source).toEqual('blank');
@@ -297,8 +399,8 @@ describe('ProjectionCreateComponent', () => {
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
 
-    component.dataSource.set('copy');
-    component.copyFromId.set('src');
+    component.selectTab('own');
+    component.selectCopyFrom('src');
     component.create();
 
     expect(createProjection.mock.calls[0][0].source).toBeUndefined();
@@ -309,8 +411,8 @@ describe('ProjectionCreateComponent', () => {
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
 
-    component.dataSource.set('copy');
-    component.copyFromId.set('src');
+    component.selectTab('own');
+    component.selectCopyFrom('src');
     component.create();
 
     expect(createProjection).toHaveBeenCalledWith(expect.objectContaining({ data: source.data }));
@@ -388,7 +490,7 @@ describe('ProjectionCreateComponent', () => {
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
 
-    component.dataSource.set('blank');
+    component.selectPreset('blank');
 
     const rows = component.previewRows();
     expect(rows.map((row) => row.player.name)).toEqual(topFive);
@@ -448,7 +550,7 @@ describe('ProjectionCreateComponent', () => {
     const component = fixture.point.componentInstance;
 
     component.name.set('Dynasty');
-    component.dataSource.set('ai');
+    component.selectPreset('model');
     await fixture.whenStable();
     component.create();
 
@@ -461,7 +563,7 @@ describe('ProjectionCreateComponent', () => {
     const fixture = MockRender(ProjectionCreateComponent);
     await fixture.whenStable();
 
-    fixture.point.componentInstance.dataSource.set('ai');
+    fixture.point.componentInstance.selectPreset('model');
     await fixture.whenStable();
 
     expect(seed).toHaveBeenCalledWith({ skaterLimit: 25, goalieLimit: 10 });
@@ -474,7 +576,7 @@ describe('ProjectionCreateComponent', () => {
 
     expect(seed).not.toHaveBeenCalled();
 
-    fixture.point.componentInstance.dataSource.set('ai');
+    fixture.point.componentInstance.selectPreset('model');
     await fixture.whenStable();
 
     expect(seed).toHaveBeenCalledOnce();
@@ -487,7 +589,7 @@ describe('ProjectionCreateComponent', () => {
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
 
-    component.dataSource.set('ai');
+    component.selectPreset('model');
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -508,7 +610,7 @@ describe('ProjectionCreateComponent', () => {
     const component = fixture.point.componentInstance;
 
     const lastSeason = component.previewRows().find((row) => row.player.id === 6);
-    component.dataSource.set('ai');
+    component.selectPreset('model');
     await fixture.whenStable();
     const projected = component.previewRows().find((row) => row.player.id === 6);
 
@@ -525,7 +627,7 @@ describe('ProjectionCreateComponent', () => {
 
     expect(component.modelCoverage()).toBeNull();
 
-    component.dataSource.set('ai');
+    component.selectPreset('model');
     await fixture.whenStable();
 
     expect(component.modelCoverage()).toEqual({ skaters: 3, goalies: 0 });

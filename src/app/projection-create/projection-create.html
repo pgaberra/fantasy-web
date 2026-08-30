@@ -34,90 +34,142 @@
           text="The initial stats each player is given."
         />
       </div>
-      <div class="source-tabs" role="radiogroup" aria-label="Starting point">
-        <div class="source-tab" [class.source-tab--active]="dataSource() === 'last-season'">
-          <label class="source-tab-choice">
-            <input
-              type="radio"
-              class="source-tab-input"
-              name="data-source"
-              [checked]="dataSource() === 'last-season'"
-              (change)="dataSource.set('last-season')"
-            />
-            <span class="source-tab-label">Last season's stats</span>
-            <span class="source-tab-label source-tab-label--short">Last season</span>
-          </label>
-          <app-help-tip
-            label="What starting from last season's stats means"
-            text="Start from each player's real numbers from last season."
-          />
-        </div>
-        <div class="source-tab" [class.source-tab--active]="dataSource() === 'ai'">
-          <label class="source-tab-choice">
-            <input
-              type="radio"
-              class="source-tab-input"
-              name="data-source"
-              [checked]="dataSource() === 'ai'"
-              (change)="dataSource.set('ai')"
-            />
-            <span class="source-tab-label">AI projection</span>
-            <span class="source-tab-label source-tab-label--short">AI</span>
-          </label>
-          <app-help-tip
-            label="What starting from the AI projection means"
-            text="Start from a model's estimate for the coming season, built from several seasons of NHL data. It is a qualified guess, not the truth, so adjust it as you would any other starting point."
-          />
-        </div>
-        <div class="source-tab" [class.source-tab--active]="dataSource() === 'blank'">
-          <label class="source-tab-choice">
-            <input
-              type="radio"
-              class="source-tab-input"
-              name="data-source"
-              [checked]="dataSource() === 'blank'"
-              (change)="dataSource.set('blank')"
-            />
-            <span class="source-tab-label">From scratch</span>
-            <span class="source-tab-label source-tab-label--short">Scratch</span>
-          </label>
-          <app-help-tip label="What starting from scratch means" text="Every stat starts at 0." />
-        </div>
-        @if (existingProjections().length) {
-          <div class="source-tab" [class.source-tab--active]="dataSource() === 'copy'">
-            <label class="source-tab-choice">
-              <input
-                type="radio"
-                class="source-tab-input"
-                name="data-source"
-                [checked]="dataSource() === 'copy'"
-                (change)="dataSource.set('copy')"
-              />
-              <span class="source-tab-label">Another projection</span>
-              <span class="source-tab-label source-tab-label--short">Copy</span>
-            </label>
-            <app-help-tip
-              label="What copying another projection means"
-              text="Base your projection on a current one."
-            />
-          </div>
-        }
-      </div>
-      @if (dataSource() === 'copy') {
-        <select
-          class="copy-select"
-          [value]="copyFromId() ?? ''"
-          (change)="onCopyFromChange($event)"
+
+      <!-- The same strip the draft picker uses to choose what to draft against
+           (draft-start.html), because it is the same question asked one step earlier: whose
+           numbers this projection opens with. -->
+      <div class="tabs" role="tablist" aria-label="Starting point">
+        <button
+          type="button"
+          role="tab"
+          class="tab"
+          [class.tab--active]="selectedTab() === 'presets'"
+          [attr.aria-selected]="selectedTab() === 'presets'"
+          (click)="selectTab('presets')"
         >
-          <option value="">Choose a projection…</option>
-          @for (projection of existingProjections(); track projection.id) {
-            <option [value]="projection.id">{{ projection.name }} ({{ projection.season }})</option>
-          }
-        </select>
+          <span class="tab-label">Presets</span>
+          <span class="tab-label tab-label--short">Presets</span>
+          <span class="tab-count">{{ presets.length }}</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="tab"
+          [class.tab--active]="selectedTab() === 'own'"
+          [attr.aria-selected]="selectedTab() === 'own'"
+          (click)="selectTab('own')"
+        >
+          <span class="tab-label">Your projections</span>
+          <span class="tab-label tab-label--short">Yours</span>
+          <span class="tab-count">{{ ownProjections().length }}</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="tab"
+          [class.tab--active]="selectedTab() === 'imported'"
+          [attr.aria-selected]="selectedTab() === 'imported'"
+          (click)="selectTab('imported')"
+        >
+          <span class="tab-label">Shared with you</span>
+          <span class="tab-label tab-label--short">Shared</span>
+          <span class="tab-count">{{ importedBoards().length }}</span>
+        </button>
+      </div>
+
+      @switch (selectedTab()) {
+        @case ('presets') {
+          <section class="panel">
+            <ul class="rows">
+              @for (preset of presets; track preset.source) {
+                <li>
+                  <label class="row">
+                    <input
+                      type="radio"
+                      name="starting-point"
+                      [checked]="selectedPreset() === preset.source"
+                      (change)="selectPreset(preset.source)"
+                    />
+                    <span class="row-main">
+                      <span class="row-name">{{ preset.name }}</span>
+                      <span class="row-meta">{{ preset.description }}</span>
+                    </span>
+                  </label>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        @case ('own') {
+          <section class="panel">
+            @if (ownProjections().length === 0) {
+              <p class="panel-empty">
+                No projections yet. Start this one from a preset, and the next can begin as a copy
+                of it.
+              </p>
+            } @else {
+              <ul class="rows">
+                @for (projection of ownProjections(); track projection.id) {
+                  <li>
+                    <label class="row">
+                      <input
+                        type="radio"
+                        name="starting-point"
+                        [checked]="copyFromId() === projection.id"
+                        (change)="selectCopyFrom(projection.id)"
+                      />
+                      <span class="row-main">
+                        <span class="row-name">{{ projection.name }}</span>
+                        <span class="row-meta">
+                          Updated {{ projection.updatedAt | relativeTime }}
+                        </span>
+                      </span>
+                    </label>
+                  </li>
+                }
+              </ul>
+            }
+          </section>
+        }
+
+        @case ('imported') {
+          <section class="panel">
+            @if (importedBoards().length === 0) {
+              <p class="panel-empty">
+                Nobody's board here yet. Paste a SlapStat share link below to start from someone
+                else's numbers.
+              </p>
+            } @else {
+              <ul class="rows">
+                @for (board of importedBoards(); track board.id) {
+                  <li>
+                    <label class="row">
+                      <input
+                        type="radio"
+                        name="starting-point"
+                        [checked]="copyFromId() === board.id"
+                        (change)="selectCopyFrom(board.id)"
+                      />
+                      <span class="row-main">
+                        <span class="row-name">{{ board.name }}</span>
+                        <span class="row-meta">
+                          {{ sourceLabel(board) }} · imported
+                          {{ board.createdAt | relativeTime }}
+                        </span>
+                      </span>
+                    </label>
+                  </li>
+                }
+              </ul>
+            }
+            <app-share-import label="Start from a shared board" (imported)="onImported($event)" />
+          </section>
+        }
       }
     </div>
 
-    @if (dataSource() !== 'copy') {
+    @if (selectedTab() === 'presets') {
       <div class="preview">
         <div class="field-label-row">
           <span class="field-label">Preview</span>
