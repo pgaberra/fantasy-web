@@ -99,6 +99,9 @@
   --color-error: #c43a51;
   --color-danger: #b3261e;
   --color-danger-hover: #8f1d17;
+  /* The wash a destructive control takes on hover, faint enough to leave the red text on it
+     well clear of 4.5:1 (6.3:1). Only ever a background: nothing is drawn in it. */
+  --color-danger-surface: #fdf0ef;
   --color-warning: #e6b84a;
   /* Darkened from #16a34a (2.9:1 on --color-bg) for the confirmations drawn in it. Its other
      job is the sync dots, which carry no text and only read better for it. */
@@ -238,6 +241,25 @@ summary:focus-visible,
 
 .btn-danger:hover:not(:disabled) {
   background: var(--color-danger-hover);
+}
+
+/*
+ * The quiet half of a destructive pair: the control that asks, rather than the one that acts.
+ * It keeps the secondary shape and says what it costs in red, so it reads as destructive
+ * without shouting over the primary action beside it — a filled red trigger would make
+ * throwing something away look as important as the thing the screen is for. The solid
+ * .btn-danger stays for the "yes" that follows.
+ */
+.btn-danger-quiet {
+  background: var(--color-surface);
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.btn-danger-quiet:hover:not(:disabled) {
+  background: var(--color-danger-surface);
+  border-color: var(--color-danger-hover);
+  color: var(--color-danger-hover);
 }
 
 .btn-block {

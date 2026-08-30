@@ -153,7 +153,7 @@
 }
 
 .card-menu-panel .menu-item--danger:hover:not(:disabled) {
-  background: #fdf0ef;
+  background: var(--color-danger-surface);
 }
 
 /* Focused programmatically when the confirmation replaces the actions, so it needs no ring. */
