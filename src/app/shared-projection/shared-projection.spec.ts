@@ -325,11 +325,47 @@ describe('SharedProjectionComponent', () => {
   });
 
   describe('taking a copy of a shared board', () => {
-    it('offers a signed-out visitor the sign-up rather than a copy', async () => {
+    /** The offer is the same for everyone; what differs is what pressing it costs you first. */
+    it('offers both to a visitor without an account too', async () => {
       const fixture = await render();
 
-      expect(fixture.nativeElement.textContent).toContain('Make your own projection');
-      expect(fixture.nativeElement.textContent).not.toContain('Draft against this board');
+      expect(fixture.nativeElement.querySelector('[data-testid="copy-board"]')).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('[data-testid="draft-board"]')).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('[data-testid="sign-in-prompt"]')).toBeNull();
+    });
+
+    it('asks a visitor without an account to sign in instead of copying', async () => {
+      const fixture = await render();
+
+      fixture.nativeElement.querySelector('[data-testid="draft-board"]').click();
+      fixture.detectChanges();
+
+      expect(importFromShare).not.toHaveBeenCalled();
+      expect(navigate).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.textContent).toContain('to draft against it');
+    });
+
+    it('names what they were reaching for in the ask', async () => {
+      const fixture = await render();
+
+      fixture.nativeElement.querySelector('[data-testid="copy-board"]').click();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.textContent).toContain('to make it yours');
+    });
+
+    it('sends them back to this board once they have signed in from the ask', async () => {
+      const fixture = await render();
+
+      fixture.nativeElement.querySelector('[data-testid="draft-board"]').click();
+      fixture.detectChanges();
+
+      const login = ngMocks.get(ngMocks.find('[data-testid="prompt-login"]'), RouterLink);
+      const register = ngMocks.get(ngMocks.find('[data-testid="prompt-register"]'), RouterLink);
+      expect(login.routerLink).toEqual('/login');
+      expect(login.queryParams).toEqual({ returnUrl: '/s/abc123' });
+      expect(register.routerLink).toEqual('/register');
+      expect(register.queryParams).toEqual({ returnUrl: '/s/abc123' });
     });
 
     /** Both offers are what the page is for, so neither is under a board to be scrolled past. */

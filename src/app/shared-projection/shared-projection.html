@@ -27,41 +27,52 @@
       <h1 class="shared-title">{{ projection.name }}</h1>
       <p class="shared-byline">By {{ authorLabel() }} · {{ leagueSummary() }}</p>
 
-      @if (isLoggedIn()) {
-        <!-- Above the table on purpose: what a visitor does with someone else's board is take a
-             copy of it, and that offer used to sit under every row they had to scroll past. -->
-        <div class="board-actions">
-          <button
-            type="button"
-            class="btn btn-secondary"
-            [disabled]="isImporting()"
-            (click)="copyToMyProjections()"
-            data-testid="copy-board"
+      <!-- Above the table on purpose: what a visitor does with someone else's board is take a
+           copy of it, and that offer used to sit under every row they had to scroll past. Both
+           buttons are offered to a visitor without an account too, who is asked to sign in when
+           they press one rather than being told in advance that the page is not for them yet. -->
+      <div class="board-actions">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          [disabled]="isImporting()"
+          (click)="copyToMyProjections()"
+          data-testid="copy-board"
+        >
+          {{ importingInto() === 'projection' ? 'Copying…' : 'Create a projection from this' }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="isImporting()"
+          (click)="draftAgainstThis()"
+          data-testid="draft-board"
+        >
+          {{ importingInto() === 'draft' ? 'Copying…' : 'Draft against this board' }}
+        </button>
+      </div>
+      @if (alreadyImported()) {
+        <p class="board-actions-note">
+          You already have a copy of this board.
+          <a routerLink="/projections">Open your projections</a> to edit it, or
+          <a routerLink="/draft">go to Draft Mode</a> to draft against it.
+        </p>
+      } @else if (signInPromptFor(); as intent) {
+        <p class="board-actions-prompt" role="status" data-testid="sign-in-prompt">
+          Your copy of this board lives in your account, so
+          <a routerLink="/login" [queryParams]="{ returnUrl }" data-testid="prompt-login">log in</a>
+          or
+          <a routerLink="/register" [queryParams]="{ returnUrl }" data-testid="prompt-register"
+            >create an account</a
           >
-            {{ importingInto() === 'projection' ? 'Copying…' : 'Create a projection from this' }}
-          </button>
-          <button
-            type="button"
-            class="btn btn-primary"
-            [disabled]="isImporting()"
-            (click)="draftAgainstThis()"
-            data-testid="draft-board"
-          >
-            {{ importingInto() === 'draft' ? 'Copying…' : 'Draft against this board' }}
-          </button>
-        </div>
-        @if (alreadyImported()) {
-          <p class="board-actions-note">
-            You already have a copy of this board.
-            <a routerLink="/projections">Open your projections</a> to edit it, or
-            <a routerLink="/draft">go to Draft Mode</a> to draft against it.
-          </p>
-        } @else {
-          <p class="board-actions-note">
-            Either one takes a copy of these numbers. {{ authorLabel() }}'s picks don't come with
-            it, and editing your copy leaves theirs alone.
-          </p>
-        }
+          {{ intent === 'draft' ? 'to draft against it.' : 'to make it yours.' }} Free to start, and
+          this board is waiting when you come back.
+        </p>
+      } @else {
+        <p class="board-actions-note">
+          Either one takes a copy of these numbers. {{ authorLabel() }}'s picks don't come with it,
+          and editing your copy leaves theirs alone.
+        </p>
       }
     </header>
 
