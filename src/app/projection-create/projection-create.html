@@ -55,6 +55,21 @@
             <input
               type="radio"
               name="data-source"
+              [checked]="dataSource() === 'ai'"
+              (change)="dataSource.set('ai')"
+            />
+            <span class="radio-title">AI projection</span>
+          </label>
+          <app-help-tip
+            label="What starting from the AI projection means"
+            text="Start from a model's estimate for the coming season, built from several seasons of NHL data. It is a qualified guess, not the truth — adjust it as you would any other starting point. It reaches most of the league but not all of it, so the projection opens with fewer players than the other starting points give."
+          />
+        </div>
+        <div class="radio-row">
+          <label class="radio-option">
+            <input
+              type="radio"
+              name="data-source"
               [checked]="dataSource() === 'blank'"
               (change)="dataSource.set('blank')"
             />
@@ -103,7 +118,7 @@
             text="The first rows of the editor, as this starting point would fill them in."
           />
         </div>
-        @if (isPreviewLoading()) {
+        @if (isPreviewLoading() || isModelPreviewLoading()) {
           <p class="preview-note">Loading preview…</p>
         } @else if (previewFailed() || !previewRows().length) {
           <p class="preview-note">Preview unavailable right now.</p>
@@ -144,6 +159,15 @@
               </tbody>
             </table>
           </div>
+          @if (modelCoverage(); as coverage) {
+            <p class="preview-note">
+              The model has lines for {{ coverage.skaters }} skaters and
+              {{ coverage.goalies }} goalies. Players it cannot reach — prospects yet to play,
+              goalies it projects no starts for, and anyone it has no basis for — are left out, so
+              this projection opens with fewer rows than the other starting points give. Data ©
+              MoneyPuck.com.
+            </p>
+          }
         }
       </div>
     }
