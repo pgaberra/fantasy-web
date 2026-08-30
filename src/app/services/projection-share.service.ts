@@ -8,7 +8,20 @@ import { ShareLinkResponse } from '../api/models/share-link-response';
 import { SharedPlayer } from '../api/models/shared-player';
 import { SharedProjectionResponse } from '../api/models/shared-projection-response';
 import { Player } from '../models/player.model';
-import { ScoredProjection, ScoringType } from '../models/projection.model';
+import {
+  PositionFilter,
+  ScoredProjection,
+  ScoringType,
+  SortColumn,
+  SortDirection,
+} from '../models/projection.model';
+
+/** How a visitor has asked a shared board to be ordered, as the public read takes it. */
+export interface SharedBoardOrder {
+  readonly position: PositionFilter;
+  readonly sort: SortColumn;
+  readonly direction: SortDirection;
+}
 
 /**
  * The most ranked rows a share may publish. Not the product rule — a share publishes the whole
@@ -32,8 +45,14 @@ export class ProjectionShareService {
     return from(this.api.invoke(shareProjection, { id: projectionId, body: { players } }));
   }
 
-  loadShared(token: string): Observable<SharedProjectionResponse> {
-    return from(this.api.invoke(getSharedProjection, { token }));
+  /**
+   * Reads a published board. The order is asked for rather than applied on arrival because it
+   * decides *which* rows come back: a visitor who is not signed in receives the top of the board
+   * under this order, not the top of the published one re-sorted in the browser. Someone holding
+   * the whole board is unaffected, and passes nothing.
+   */
+  loadShared(token: string, order?: SharedBoardOrder): Observable<SharedProjectionResponse> {
+    return from(this.api.invoke(getSharedProjection, { token, ...order }));
   }
 
   /**
