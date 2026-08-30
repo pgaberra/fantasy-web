@@ -40,7 +40,7 @@ test.describe('happy path', () => {
 
     // 4) Remove a scoring stat and switch the league to Category.
     //
-    // Both settings used to live in a "Projection Settings" panel below the table. They now sit in
+    // Both settings used to live in a "Projection settings" panel below the table. They now sit in
     // the table's own toolbar — the league type as a segmented control, the stat columns behind a
     // Stats popover — so this step follows them there rather than to a panel that no longer exists.
     const statsMenu = page.getByRole('button', { name: /^stats$/i });

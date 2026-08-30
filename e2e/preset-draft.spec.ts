@@ -19,14 +19,14 @@ test.describe('draft mode from a preset', () => {
   test.skip(!email || !password, 'Set E2E_EMAIL and E2E_PASSWORD to run the signed-in tests');
   test.setTimeout(120_000);
 
-  test('starts a draft from the preset and keeps it out of My Projections', async ({ page }) => {
+  test('starts a draft from the preset and keeps it out of My projections', async ({ page }) => {
     await page.goto('/login');
     await page.locator('#email').fill(email!);
     await page.locator('#password').fill(password!);
     await page.locator('button[type="submit"]').click();
     await expect(page).toHaveURL(/\/projections/, { timeout: 15_000 });
 
-    // 1) Reach Draft Mode through the nav menu rather than by URL, so the menu is covered too.
+    // 1) Reach Draft mode through the nav menu rather than by URL, so the menu is covered too.
     await page.getByRole('button', { name: /^draft$/i }).click();
     await page.getByRole('menuitem', { name: /draft mode/i }).click();
     await expect(page).toHaveURL(/\/draft\/?$/);
@@ -61,11 +61,11 @@ test.describe('draft mode from a preset', () => {
     await expect(page).toHaveURL(/\/draft\/?$/);
     await expect(presetCard.locator('.card-status')).toBeVisible();
 
-    // 5) The preset draft is not the user's own work, so it is absent from My Projections.
+    // 5) The preset draft is not the user's own work, so it is absent from My projections.
     await page.getByRole('button', { name: /^draft$/i }).click();
     await page.getByRole('menuitem', { name: /my projections/i }).click();
     await expect(page).toHaveURL(/\/projections\/?$/);
-    await expect(page.getByRole('heading', { name: 'My Projections' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'My projections' })).toBeVisible();
     await expect(page.locator('li').filter({ hasText: PRESET_NAME })).toHaveCount(0);
   });
 });

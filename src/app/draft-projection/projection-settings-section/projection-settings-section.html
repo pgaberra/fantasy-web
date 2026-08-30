@@ -8,7 +8,7 @@
     (keydown.enter)="toggleSectionVisible()"
     (keydown.space)="toggleSectionVisible(); $event.preventDefault()"
   >
-    <h2>Projection Settings</h2>
+    <h2>Projection settings</h2>
     <span class="advanced-toggle-icon" [class.open]="isSectionVisible()"></span>
   </div>
   @if (isSectionVisible()) {
@@ -25,7 +25,7 @@
             (keydown.enter)="toggleLeagueSettingsVisible()"
             (keydown.space)="toggleLeagueSettingsVisible(); $event.preventDefault()"
           >
-            <h3 class="settings-group-title">League Settings</h3>
+            <h3 class="settings-group-title">League settings</h3>
             <span class="advanced-toggle-icon" [class.open]="isLeagueSettingsVisible()"></span>
           </div>
         }
@@ -63,14 +63,14 @@
             <app-category-settings [(leagueSize)]="leagueSize" [(rosterSlots)]="rosterSlots" />
           }
           <app-stat-group
-            title="Skater Stats"
+            title="Skater stats"
             [activeStats]="activeSkaterStats()"
             [availableStats]="availableSkaterStats()"
             (statRemoved)="toggleStat($event)"
             (statAdded)="toggleStat($event)"
           />
           <app-stat-group
-            title="Goalie Stats"
+            title="Goalie stats"
             [activeStats]="activeGoalieStats()"
             [availableStats]="availableGoalieStats()"
             (statRemoved)="toggleStat($event)"
@@ -89,7 +89,7 @@
             (keydown.enter)="toggleUtilityStatsVisible()"
             (keydown.space)="toggleUtilityStatsVisible(); $event.preventDefault()"
           >
-            <h3 class="settings-group-title">Utility Stats</h3>
+            <h3 class="settings-group-title">Utility stats</h3>
             <!-- The header row is itself a button; the tip must not expand or collapse the group. -->
             <app-help-tip
               label="What utility stats are"
@@ -190,7 +190,7 @@
             (keydown.enter)="toggleAdditionalSettingsVisible()"
             (keydown.space)="toggleAdditionalSettingsVisible(); $event.preventDefault()"
           >
-            <h3 class="settings-group-title">Additional Settings</h3>
+            <h3 class="settings-group-title">Additional settings</h3>
             <span class="advanced-toggle-icon" [class.open]="isAdditionalSettingsVisible()"></span>
           </div>
         }

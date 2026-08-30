@@ -378,7 +378,7 @@ describe('SharedProjectionComponent', () => {
 
       for (const [testId, text] of [
         ['copy-board', 'Create your own projection from a copy of this one'],
-        ['draft-board', 'Enter Draft Mode with a copy of this projection'],
+        ['draft-board', 'Enter Draft mode with a copy of this projection'],
       ]) {
         const button = fixture.nativeElement.querySelector(`[data-testid="${testId}"]`);
         button.dispatchEvent(new MouseEvent('mouseenter'));
@@ -595,7 +595,7 @@ describe('SharedProjectionComponent', () => {
       loadShared.mockReturnValue(of({ ...shared, totalPlayers: 1489 }));
       const fixture = await render();
 
-      expect(fixture.nativeElement.textContent).toContain('Draft Mode');
+      expect(fixture.nativeElement.textContent).toContain('Draft mode');
       expect(fixture.nativeElement.textContent).not.toContain('This link opens the top');
     });
 

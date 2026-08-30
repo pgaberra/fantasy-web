@@ -13,9 +13,9 @@ describe('AuthFormComponent', () => {
 
   const render = (isLoading: boolean) =>
     MockRender(AuthFormComponent, {
-      title: 'Sign In',
+      title: 'Sign in',
       subtitle: 'Welcome back',
-      submitLabel: 'Sign In',
+      submitLabel: 'Sign in',
       loadingLabel: 'Signing in',
       footerText: "Don't have an account?",
       footerLinkLabel: 'Register',
@@ -25,9 +25,9 @@ describe('AuthFormComponent', () => {
 
   const renderRegister = () =>
     MockRender(AuthFormComponent, {
-      title: 'Create Account',
+      title: 'Create account',
       subtitle: 'Join Fantasy Hockey today',
-      submitLabel: 'Create Account',
+      submitLabel: 'Create account',
       loadingLabel: 'Creating account',
       footerText: 'Already have an account?',
       footerLinkLabel: 'Sign in',
@@ -55,7 +55,7 @@ describe('AuthFormComponent', () => {
     const button = ngMocks.find('button.btn-primary').nativeElement as HTMLButtonElement;
 
     expect(button.disabled).toEqual(false);
-    expect(button.textContent).toContain('Sign In');
+    expect(button.textContent).toContain('Sign in');
     expect(ngMocks.findAll('.loading-dots')).toHaveLength(0);
   });
 
@@ -175,9 +175,9 @@ describe('AuthFormComponent Facebook button visibility', () => {
 
   const renderLogin = () =>
     MockRender(AuthFormComponent, {
-      title: 'Sign In',
+      title: 'Sign in',
       subtitle: 'Welcome back',
-      submitLabel: 'Sign In',
+      submitLabel: 'Sign in',
       loadingLabel: 'Signing in',
       footerText: "Don't have an account?",
       footerLinkLabel: 'Register',

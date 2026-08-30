@@ -85,7 +85,7 @@ describe('ProjectionSettingsSectionComponent', () => {
 
       const text = fixture.nativeElement.textContent;
       expect(text).toContain('League Type');
-      expect(text).not.toContain('Utility Stats');
+      expect(text).not.toContain('Utility stats');
       expect(text).not.toContain('Use default decimal places');
     });
 
@@ -104,8 +104,8 @@ describe('ProjectionSettingsSectionComponent', () => {
       const text = fixture.nativeElement.textContent;
       expect(text).toContain('League Type');
       expect(text).toContain('Points');
-      expect(text).not.toContain('League Settings');
-      expect(text).not.toContain('Additional Settings');
+      expect(text).not.toContain('League settings');
+      expect(text).not.toContain('Additional settings');
       expect(fixture.nativeElement.querySelectorAll('.settings-group-header').length).toEqual(0);
       expect(fixture.nativeElement.querySelectorAll('app-stat-group').length).toEqual(2);
     });
@@ -139,11 +139,11 @@ describe('ProjectionSettingsSectionComponent', () => {
   });
 
   describe('template', () => {
-    it('should render an "Additional Settings" header', () => {
+    it('should render an "Additional settings" header', () => {
       getExpandedFixture();
       const titles = ngMocks.findAll('.settings-group-title');
       expect(
-        titles.some((t) => t.nativeElement.textContent.trim() === 'Additional Settings'),
+        titles.some((t) => t.nativeElement.textContent.trim() === 'Additional settings'),
       ).toEqual(true);
     });
 
@@ -170,7 +170,7 @@ describe('ProjectionSettingsSectionComponent', () => {
       const toggles = ngMocks.findAll('.toggle-switch');
       const onToggles = toggles.filter((t) => t.classes['on']);
       expect(onToggles.length).toEqual(1);
-      // The decimals toggle now lives in the last group (Additional Settings).
+      // The decimals toggle now lives in the last group (Additional settings).
       expect(toggles[toggles.length - 1].classes['on']).toEqual(true);
     });
 
@@ -341,13 +341,13 @@ describe('ProjectionSettingsSectionComponent', () => {
       fixture.detectChanges();
 
       settingRows = ngMocks.findAll(SettingRowComponent);
-      // Utility stats hidden; League Settings + Additional Settings are also collapsed,
+      // Utility stats hidden; League settings + Additional settings are also collapsed,
       // so no setting rows remain
       expect(settingRows.length).toEqual(0);
     });
   });
 
-  describe('projected League Settings slot', () => {
+  describe('projected League settings slot', () => {
     const renderWithProjectedContent = () =>
       MockRender(
         `<app-projection-settings-section
@@ -367,7 +367,7 @@ describe('ProjectionSettingsSectionComponent', () => {
         },
       );
 
-    it('collapses the projected league sync together with the League Settings rows', () => {
+    it('collapses the projected league sync together with the League settings rows', () => {
       const fixture = renderWithProjectedContent();
       const component = ngMocks.findInstance(ProjectionSettingsSectionComponent);
 
@@ -386,7 +386,7 @@ describe('ProjectionSettingsSectionComponent', () => {
   });
 
   describe('default expansion', () => {
-    it('opens the section with League Settings expanded', () => {
+    it('opens the section with League settings expanded', () => {
       const component = getComponent();
 
       expect(component.isSectionVisible()).toEqual(true);
@@ -406,7 +406,7 @@ describe('ProjectionSettingsSectionComponent', () => {
       fixture.detectChanges();
 
       expect(fixture.point.componentInstance.isSectionVisible()).toEqual(false);
-      expect(fixture.nativeElement.textContent).not.toContain('League Settings');
+      expect(fixture.nativeElement.textContent).not.toContain('League settings');
     });
   });
 
