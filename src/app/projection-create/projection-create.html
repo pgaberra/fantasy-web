@@ -82,19 +82,17 @@
           <section class="panel">
             <ul class="rows">
               @for (preset of presets; track preset.source) {
-                <li>
-                  <label class="row">
+                <li class="row">
+                  <label class="row-choice">
                     <input
                       type="radio"
                       name="starting-point"
                       [checked]="selectedPreset() === preset.source"
                       (change)="selectPreset(preset.source)"
                     />
-                    <span class="row-main">
-                      <span class="row-name">{{ preset.name }}</span>
-                      <span class="row-meta">{{ preset.description }}</span>
-                    </span>
+                    <span class="row-name">{{ preset.name }}</span>
                   </label>
+                  <app-help-tip [label]="preset.tipLabel" [text]="preset.description" />
                 </li>
               }
             </ul>
@@ -111,8 +109,8 @@
             } @else {
               <ul class="rows">
                 @for (projection of ownProjections(); track projection.id) {
-                  <li>
-                    <label class="row">
+                  <li class="row">
+                    <label class="row-choice">
                       <input
                         type="radio"
                         name="starting-point"
@@ -143,8 +141,8 @@
             } @else {
               <ul class="rows">
                 @for (board of importedBoards(); track board.id) {
-                  <li>
-                    <label class="row">
+                  <li class="row">
+                    <label class="row-choice">
                       <input
                         type="radio"
                         name="starting-point"

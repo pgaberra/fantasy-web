@@ -55,25 +55,31 @@ export type SourceTab = 'presets' | 'own' | 'imported';
 export interface CreatePreset {
   readonly name: string;
   readonly source: NonNullable<CreateProjectionRequest['source']>;
+  /** What picking it means, shown in the row's tip rather than under the name. */
   readonly description: string;
+  /** Names what the tip explains — its trigger is an icon with nothing to read. */
+  readonly tipLabel: string;
 }
 
 export const CREATE_PRESETS: readonly CreatePreset[] = [
   {
     name: "Last season's stats",
     source: 'default',
-    description: 'Every player at their real numbers from last season',
+    description: "Start from each player's real numbers from last season.",
+    tipLabel: "What starting from last season's stats means",
   },
   {
     name: 'AI projection',
     source: 'model',
     description:
-      "A model's estimate for the coming season, built from several seasons of NHL data — a qualified guess, not the truth",
+      "Start from a model's estimate for the coming season, built from several seasons of NHL data. It is a qualified guess, not the truth, so adjust it as you would any other starting point.",
+    tipLabel: 'What starting from the AI projection means',
   },
   {
     name: 'From scratch',
     source: 'blank',
-    description: 'Every player on the board, every stat at 0',
+    description: 'Every player keeps their seat on the board, with every stat at 0.',
+    tipLabel: 'What starting from scratch means',
   },
 ];
 
