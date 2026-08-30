@@ -1,7 +1,8 @@
 /* How far below the top of the window `appPinnedTableHeader` parks a table's header — a page
    that floats a bar over its top sets this to that bar's height. Registered as a length rather
-   than left an ordinary custom property so the browser resolves it: the directive reads the
-   value back, and an unregistered property hands back its raw tokens, `calc(…)` and all. */
+   than left an ordinary custom property so the browser resolves it: the directive's fallback
+   path reads the value back, and an unregistered property hands back its raw tokens, `calc(…)`
+   and all. */
 @property --pinned-header-inset {
   syntax: '<length>';
   inherits: true;
@@ -12,12 +13,11 @@
    declares a view timeline, and its header rides a `translateY` along it. The browser runs that
    off the main thread, so the header holds its place through a fast flick — a scroll handler
    cannot, because the rows are moved by the compositor while it still waits for its frame.
-   The range is measured from `cover 0%`, the moment the table's top edge meets the bottom of the
-   window: `--pinned-header-pin-start` is the scrolling from there to the table's top edge
-   reaching the top of the window (less whatever bar the page floats over it), and the travel ends
-   where the header would otherwise hang below the last row. `PinnedTableHeaderDirective` measures
-   both, and falls back to a scroll handler where none of this is understood. */
-@supports (animation-timeline: view()) {
+   The range runs from `exit-crossing 0%` — the table's top edge crossing the top of the window,
+   which is the moment the header has to start holding its place — and ends where the header
+   would otherwise hang below the last row. `PinnedTableHeaderDirective` measures that travel,
+   and falls back to a scroll handler where none of this is understood. */
+@supports (animation-timeline: view()) and (animation-range: exit-crossing 0px) {
   @keyframes pinned-table-header {
     from {
       transform: translateY(0);
@@ -34,8 +34,15 @@
   [appPinnedTableHeader] > table > thead {
     animation: pinned-table-header linear both;
     animation-timeline: --pinned-table-header;
-    animation-range: cover var(--pinned-header-pin-start, 0px) cover
-      var(--pinned-header-pin-end, 0px);
+    /* Naming the edge crossing rather than measuring the window is the whole point. The same
+       pin used to start `cover <window height>px` in, so every change of window height had to
+       be caught and re-measured, and any that slipped past — a zoom step, a phone collapsing
+       its toolbars — left the header parked that many pixels down the table for the rest of the
+       scroll. The browser resolves this against the scrollport it has now, so there is nothing
+       left to go stale. The inset brings the pin forward by the height of a bar the page floats
+       over the top, so the header comes to rest below it. */
+    animation-range: exit-crossing calc(0px - var(--pinned-header-inset)) exit-crossing
+      calc(var(--pinned-header-travel, 0px) - var(--pinned-header-inset));
     /* The reduced-motion reset below stamps `animation-duration: 0.01ms !important` on every
        animation in the app. Nothing here is motion anyone opted out of — it is a header holding
        its place while the page scrolls, which is what `position: sticky` would do if it could

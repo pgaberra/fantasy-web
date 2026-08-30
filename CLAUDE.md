@@ -117,12 +117,15 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
     `thead` has nothing to stick to. The row group is translated instead — by a scroll-driven CSS
     animation (`styles.css`), so the browser runs the pin off the main thread and the header keeps
     up with a fast flick rather than trailing the rows and catching up at rest. The directive only
-    measures what the timeline can't work out for itself (how far the header may travel, and where
-    the pin begins), and keeps the old per-frame scroll handler for browsers without scroll
-    timelines. A page that floats a bar over its top (the landing nav) sets
-    `--pinned-header-inset` to that bar's height;
-    it is registered with `@property` in `styles.css` as a `<length>`, because the directive reads
-    the value back and an unregistered custom property returns raw tokens.
+    measures what the timeline can't work out for itself — how far the header may travel — and
+    keeps the old per-frame scroll handler for browsers without scroll timelines. **Where the pin
+    begins is named, not measured**: the range is anchored to `exit-crossing`, the table's own top
+    edge crossing the top of the window. It was once a measured window height, and every way that
+    height could change without the measurement being redone (a zoom step, a phone collapsing its
+    toolbars) parked the header that many pixels down the table for the rest of the scroll.
+    A page that floats a bar over its top (the landing nav) sets `--pinned-header-inset` to that
+    bar's height; it is registered with `@property` in `styles.css` as a `<length>`, because the
+    fallback path reads the value back and an unregistered custom property returns raw tokens.
 - `environments/` — `environment.ts` (dev: `apiUrl: http://localhost:8080/api/v1`),
   `environment.staging.ts` (points at the staging BFF `api.staging.slapstat.com`; used by
   `npm run start:staging` via the `staging` build/serve configs in `angular.json`),
