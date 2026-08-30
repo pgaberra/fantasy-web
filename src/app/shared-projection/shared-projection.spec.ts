@@ -1,6 +1,6 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -241,6 +241,86 @@ describe('SharedProjectionComponent', () => {
       component.showMore();
       component.onSort('goals');
       expect(component.visibleRows().length).toEqual(50);
+    });
+  });
+
+  /**
+   * The gate cuts the board before the browser sees it, so a column heading behind it is a
+   * question only the server can answer. These check that it is asked — and asked again when the
+   * question changes — rather than the 25 rows on hand being re-sorted into a different answer.
+   */
+  describe('ordering a board that arrived cut', () => {
+    it('asks for the board in the order it is showing', async () => {
+      await render();
+
+      expect(loadShared).toHaveBeenCalledWith('abc123', {
+        position: 'ALL',
+        sort: 'summary',
+        direction: 'desc',
+      });
+    });
+
+    it('asks again when a column is sorted', async () => {
+      const fixture = await render();
+
+      fixture.point.componentInstance.onSort('goals');
+      await fixture.whenStable();
+
+      expect(loadShared).toHaveBeenLastCalledWith('abc123', {
+        position: 'ALL',
+        sort: 'goals',
+        direction: 'desc',
+      });
+    });
+
+    it('asks again when the position filter changes', async () => {
+      const fixture = await render();
+
+      fixture.point.componentInstance.positionFilter.set('D');
+      await fixture.whenStable();
+
+      expect(loadShared).toHaveBeenLastCalledWith('abc123', {
+        position: 'D',
+        sort: 'summary',
+        direction: 'desc',
+      });
+    });
+
+    it('keeps the rows on screen while the new order is on its way', async () => {
+      const fixture = await render();
+      const component = fixture.point.componentInstance;
+      const pending = new Subject<SharedProjectionResponse>();
+      loadShared.mockReturnValue(pending);
+
+      // Not whenStable(): a request in flight is a pending task, and waiting on it would wait
+      // out the very state under test. detectChanges() flushes the resource's effect instead.
+      component.onSort('goals');
+      fixture.detectChanges();
+
+      expect(component.shared()).toBeDefined();
+      expect(component.isReordering()).toEqual(true);
+      expect(fixture.nativeElement.textContent).toContain('Connor McDavid');
+      expect(fixture.nativeElement.querySelector('app-loading-indicator')).toBeNull();
+
+      pending.next({ ...shared, data: { ...shared.data, players: [shared.data.players[1]] } });
+      pending.complete();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(component.isReordering()).toEqual(false);
+      expect(component.visibleRows().map((row) => row.player.name)).toEqual(['Igor Shesterkin']);
+    });
+
+    it('leaves a reader who holds the whole board to sort it in the browser', async () => {
+      isLoggedIn.set(true);
+      const fixture = await render();
+
+      expect(loadShared).toHaveBeenCalledWith('abc123', undefined);
+
+      fixture.point.componentInstance.onSort('goals');
+      await fixture.whenStable();
+
+      expect(loadShared).toHaveBeenCalledOnce();
     });
   });
 
