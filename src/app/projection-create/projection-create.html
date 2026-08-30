@@ -161,13 +161,7 @@
                 }
               </ul>
             }
-            <app-share-import
-              label="Start from a shared board"
-              [showSubmit]="false"
-              (linkChanged)="onShareLinkChanged()"
-              (imported)="onImported($event)"
-              (failed)="onImportFailed()"
-            />
+            <app-share-import label="Start from a shared board" (imported)="onImported($event)" />
           </section>
         }
       }
