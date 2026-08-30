@@ -1,12 +1,4 @@
-import {
-  Component,
-  computed,
-  DestroyRef,
-  inject,
-  linkedSignal,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { Component, computed, DestroyRef, inject, linkedSignal, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -175,13 +167,6 @@ export class ProjectionCreateComponent {
   private readonly playerService = inject(PlayerService);
   private readonly projectionModel = inject(ProjectionModelService);
   private readonly ranking = inject(ProjectionRankingService);
-
-  /**
-   * The paste field on the 'Shared with you' tab. The page drives it rather than the other way
-   * round: a link is a starting point like the rows above it, so Create is what turns it into a
-   * projection — there is no Import step of its own to press first.
-   */
-  private readonly shareImport = viewChild(ShareImportComponent);
 
   // Only the boards themselves are needed here: the player rows of a new projection are
   // filled in server-side from `source`, so this page no longer downloads every player just
@@ -363,14 +348,11 @@ export class ProjectionCreateComponent {
     return seeded ? { skaters: seeded.skaters, goalies: seeded.goalies } : null;
   });
 
-  /** A link waiting to be imported, which is as much of a starting point as a row that exists. */
-  readonly hasPendingShareLink = computed(() => this.shareImport()?.hasLink() ?? false);
-
   readonly canCreate = computed(
     () =>
       !this.isCreating() &&
       this.name().trim().length > 0 &&
-      (this.selectedTab() === 'presets' || !!this.copyFromId() || this.hasPendingShareLink()),
+      (this.selectedTab() === 'presets' || !!this.copyFromId()),
   );
 
   onNameInput(event: Event): void {
@@ -391,13 +373,6 @@ export class ProjectionCreateComponent {
 
   selectCopyFrom(id: string): void {
     this.copyFromId.set(id);
-    // One starting point at a time: picking a row means abandoning whatever was pasted.
-    this.shareImport()?.clear();
-  }
-
-  /** And the other way round — a link being typed is the choice now. */
-  onShareLinkChanged(): void {
-    this.copyFromId.set(null);
   }
 
   /** Whose numbers a row holds, said in the row rather than only by the tab it sits under. */
@@ -409,16 +384,6 @@ export class ProjectionCreateComponent {
   onImported(projection: ProjectionResponse): void {
     this.copyFromId.set(projection.id);
     this.dataResource.reload();
-    if (this.isCreating()) {
-      // Create is what asked for this import, and the copy came back whole — so the projection
-      // can be written from it without reading the board back a second time.
-      this.persist({ ...projection.data, draft: undefined });
-    }
-  }
-
-  /** The import said why itself, under the field; all this page owes is its button back. */
-  onImportFailed(): void {
-    this.isCreating.set(false);
   }
 
   private byKind(kind: ProjectionSummaryResponse['kind']): ProjectionSummaryResponse[] {
@@ -440,15 +405,8 @@ export class ProjectionCreateComponent {
     this.isCreating.set(true);
 
     if (this.selectedTab() !== 'presets') {
-      const copyFromId = this.copyFromId();
-      if (!copyFromId) {
-        // Only a pasted link so far. Importing it is the first half of creating from it, and
-        // onImported picks up the second.
-        this.shareImport()?.submit();
-        return;
-      }
       this.projectionStorage
-        .loadProjection(copyFromId)
+        .loadProjection(this.copyFromId()!)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (projection) => this.persist({ ...projection.data, draft: undefined }),
