@@ -217,8 +217,10 @@ export class SharedProjectionComponent {
     computation: () => INITIAL_ROWS,
   });
 
-  /** Rows the reader received that match the filter — not the board's total, which is on the page
-   * even when the sign-in gate held most of it back. */
+  /** Rows the reader received that match the filter — what the footer counts against. The board's
+   * total is a different number, and the gate below the table is where it is named: the two read
+   * as one sentence only because the gate speaks of what the link opens, not of what is on
+   * screen. */
   readonly matchingCount = computed(() => this.sortedRows().length);
 
   readonly visibleRows = computed<SharedRow[]>(() =>

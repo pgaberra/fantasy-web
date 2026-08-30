@@ -261,8 +261,37 @@ describe('SharedProjectionComponent', () => {
       loadShared.mockReturnValue(of(truncated));
       const fixture = await render();
 
-      expect(fixture.nativeElement.textContent).toContain("You're seeing the top 2 of 1489");
+      expect(fixture.nativeElement.textContent).toContain('This link opens the top 2 of 1489');
       expect(fixture.nativeElement.textContent).not.toContain('Make your own projection');
+    });
+
+    /** The footer counts rows on screen, the gate counts the board — they sat side by side saying
+        different things about "the top N", which read as one of them being wrong. */
+    it('names the board while the footer names the page, without the two clashing', async () => {
+      loadShared.mockReturnValue(
+        of({
+          ...shared,
+          totalPlayers: 1489,
+          truncated: true,
+          data: {
+            ...shared.data,
+            players: Array.from({ length: 100 }, (_, index) => ({
+              playerId: 2000 + index,
+              name: `Skater ${index}`,
+              teamAbbrev: 'EDM',
+              positions: ['C'],
+              type: 'skater' as const,
+              rank: index + 1,
+              value: 100 - index,
+              stats: { utility: { gp: 82 }, scoring: { goals: 100 - index, assists: index } },
+            })),
+          },
+        }),
+      );
+      const fixture = await render();
+
+      expect(fixture.nativeElement.textContent).toContain('Showing 50 of 100');
+      expect(fixture.nativeElement.textContent).toContain('This link opens the top 100 of 1489');
     });
 
     it('sends them back to this board once they have signed in', async () => {
@@ -280,7 +309,7 @@ describe('SharedProjectionComponent', () => {
     it('does not claim rows are missing when the whole board came back', async () => {
       const fixture = await render();
 
-      expect(fixture.nativeElement.textContent).not.toContain("You're seeing the top");
+      expect(fixture.nativeElement.textContent).not.toContain('This link opens the top');
       expect(fixture.nativeElement.textContent).toContain('Make your own projection');
     });
 
@@ -290,7 +319,7 @@ describe('SharedProjectionComponent', () => {
       const fixture = await render();
 
       expect(fixture.nativeElement.textContent).toContain('Draft against');
-      expect(fixture.nativeElement.textContent).not.toContain("You're seeing the top");
+      expect(fixture.nativeElement.textContent).not.toContain('This link opens the top');
     });
 
     it('copies the board and opens a draft against it', async () => {
