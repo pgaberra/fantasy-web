@@ -3,20 +3,30 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { DraftStartComponent, LAST_SEASON_PRESET_NAME, shareTokenFrom } from './draft-start';
+import {
+  DraftStartComponent,
+  LAST_SEASON_PRESET_NAME,
+  MODEL_PRESET_NAME,
+  PRESETS,
+  shareTokenFrom,
+} from './draft-start';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { NotificationService } from '../services/notification.service';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 
 describe('DraftStartComponent', () => {
+  const LAST_SEASON = PRESETS.find((preset) => preset.name === LAST_SEASON_PRESET_NAME)!;
+  const MODEL = PRESETS.find((preset) => preset.name === MODEL_PRESET_NAME)!;
+
   const summary = (
     id: string,
     kind: ProjectionSummaryResponse['kind'],
     draftStatus: ProjectionSummaryResponse['draftStatus'] = 'none',
     updatedAt = '2026-06-01T00:00:00Z',
+    presetName = LAST_SEASON_PRESET_NAME,
   ): ProjectionSummaryResponse => ({
     id,
-    name: kind === 'preset_draft' ? LAST_SEASON_PRESET_NAME : `Projection ${id}`,
+    name: kind === 'preset_draft' ? presetName : `Projection ${id}`,
     kind,
     draftStatus,
     season: '20262027',
@@ -81,7 +91,7 @@ describe('DraftStartComponent', () => {
     const component = await render();
 
     expect(component.projections().map((projection) => projection.id)).toEqual(['p2', 'p1']);
-    expect(component.presetDraft()?.id).toEqual('preset1');
+    expect(component.presetDraft(LAST_SEASON)?.id).toEqual('preset1');
   });
 
   it('opens the draft board for a projection', async () => {
@@ -95,7 +105,7 @@ describe('DraftStartComponent', () => {
   it('seeds the preset draft server-side the first time it is started', async () => {
     const component = await render();
 
-    component.startPreset();
+    component.startPreset(LAST_SEASON);
 
     expect(createProjection).toHaveBeenCalledOnce();
     const request = createProjection.mock.calls[0][0];
@@ -110,11 +120,11 @@ describe('DraftStartComponent', () => {
     listWithPresetDrafts.mockReturnValue(of([summary('preset1', 'preset_draft', 'in_progress')]));
 
     const component = await render();
-    component.startPreset();
+    component.startPreset(LAST_SEASON);
 
     expect(createProjection).not.toHaveBeenCalled();
     expect(navigate).toHaveBeenCalledWith(['/projections', 'preset1', 'draft']);
-    expect(component.presetLabel()).toEqual('Resume draft');
+    expect(component.presetLabel(LAST_SEASON)).toEqual('Resume draft');
   });
 
   it('starting over replaces the stored preset draft with a fresh one', async () => {
@@ -122,20 +132,20 @@ describe('DraftStartComponent', () => {
     createProjection.mockReturnValue(of({ id: 'preset2' }));
 
     const component = await render();
-    component.requestRestart();
-    component.confirmRestart();
+    component.requestRestart(LAST_SEASON);
+    component.confirmRestart(LAST_SEASON);
 
     expect(deleteProjection).toHaveBeenCalledWith('preset1');
     expect(createProjection).toHaveBeenCalledOnce();
     expect(navigate).toHaveBeenCalledWith(['/projections', 'preset2', 'draft']);
-    expect(component.confirmingRestart()).toEqual(false);
+    expect(component.confirmingRestart()).toBeNull();
   });
 
   it('surfaces a failed start and lets the user try again', async () => {
     createProjection.mockReturnValue(throwError(() => new Error('boom')));
 
     const component = await render();
-    component.startPreset();
+    component.startPreset(LAST_SEASON);
 
     expect(notifyError).toHaveBeenCalledOnce();
     expect(component.isStarting()).toEqual(false);
@@ -268,6 +278,45 @@ describe('DraftStartComponent', () => {
     });
   });
 
+  it('starts the AI preset from the model source, not last season', async () => {
+    const component = await render();
+
+    component.startPreset(MODEL);
+
+    expect(createProjection).toHaveBeenCalledOnce();
+    const request = createProjection.mock.calls[0][0];
+    expect(request.name).toEqual(MODEL_PRESET_NAME);
+    expect(request.kind).toEqual('preset_draft');
+    expect(request.source).toEqual('model');
+    expect(request.data.players).toEqual([]);
+  });
+
+  it('keeps the two presets apart, each with its own stored draft', async () => {
+    // Both are kind: 'preset_draft', so only the name tells them apart. Getting this wrong
+    // would resume the wrong board — or refuse to start the second preset at all.
+    listWithPresetDrafts.mockReturnValue(
+      of([
+        summary('lastSeason1', 'preset_draft', 'in_progress', '2026-06-01T00:00:00Z'),
+        summary('model1', 'preset_draft', 'finished', '2026-06-02T00:00:00Z', MODEL_PRESET_NAME),
+      ]),
+    );
+
+    const component = await render();
+
+    expect(component.presetDraft(LAST_SEASON)?.id).toEqual('lastSeason1');
+    expect(component.presetDraft(MODEL)?.id).toEqual('model1');
+    expect(component.presetLabel(LAST_SEASON)).toEqual('Resume draft');
+    expect(component.presetLabel(MODEL)).toEqual('View summary');
+  });
+
+  it('confirming a restart on one preset does not arm the other', async () => {
+    const component = await render();
+
+    component.requestRestart(MODEL);
+
+    expect(component.isConfirmingRestart(MODEL)).toBe(true);
+    expect(component.isConfirmingRestart(LAST_SEASON)).toBe(false);
+  });
   it('keeps both tab labels in the markup so the width can pick one', async () => {
     const fixture = MockRender(DraftStartComponent);
     await fixture.whenStable();
