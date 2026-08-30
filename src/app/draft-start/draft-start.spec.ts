@@ -49,8 +49,7 @@ describe('DraftStartComponent', () => {
   const listWithPresetDrafts = vi.fn();
   const createProjection = vi.fn();
   const deleteProjection = vi.fn();
-  const loadProjection = vi.fn();
-  const updateProjection = vi.fn();
+  const clearDraft = vi.fn();
   const notifyError = vi.fn();
 
   beforeEach(() => {
@@ -58,16 +57,12 @@ describe('DraftStartComponent', () => {
     listWithPresetDrafts.mockClear();
     createProjection.mockClear();
     deleteProjection.mockClear();
-    loadProjection.mockClear();
-    updateProjection.mockClear();
+    clearDraft.mockClear();
     notifyError.mockClear();
     listWithPresetDrafts.mockReturnValue(of([summary('p1', 'projection')]));
     createProjection.mockReturnValue(of({ id: 'preset1' }));
     deleteProjection.mockReturnValue(of(undefined));
-    loadProjection.mockReturnValue(
-      of({ id: 'p1', name: 'Projection p1', data: { settings: { leagueSize: 12 }, players: [] } }),
-    );
-    updateProjection.mockReturnValue(of({ id: 'p1' }));
+    clearDraft.mockReturnValue(of({ id: 'p1' }));
     return (
       MockBuilder(DraftStartComponent)
         // The row actions live in one template the three lists share, so the outlet that renders
@@ -77,8 +72,7 @@ describe('DraftStartComponent', () => {
           listWithPresetDrafts,
           createProjection,
           deleteProjection,
-          loadProjection,
-          updateProjection,
+          clearDraft,
         })
         .mock(NotificationService, { error: notifyError })
         .provide({ provide: Router, useValue: { navigate } })
@@ -314,11 +308,8 @@ describe('DraftStartComponent', () => {
     component.confirmDiscard(draft);
 
     expect(deleteProjection).not.toHaveBeenCalled();
-    expect(updateProjection).toHaveBeenCalledWith('p1', {
-      name: 'Projection p1',
-      // No draft: that is what clears it. No players either, so the stored rows are kept.
-      data: { settings: { leagueSize: 12 } },
-    });
+    // What clearing means is the storage service's business; here it only has to be asked.
+    expect(clearDraft).toHaveBeenCalledWith('p1');
     expect(component.confirmingDiscard()).toBeNull();
     expect(component.isDiscarding(draft)).toEqual(false);
   });
@@ -331,7 +322,7 @@ describe('DraftStartComponent', () => {
     component.confirmDiscard(draft);
 
     expect(deleteProjection).toHaveBeenCalledWith('preset1');
-    expect(updateProjection).not.toHaveBeenCalled();
+    expect(clearDraft).not.toHaveBeenCalled();
   });
 
   it('reloads the sources once a draft is discarded, so its row goes away', async () => {
@@ -352,7 +343,7 @@ describe('DraftStartComponent', () => {
   it('surfaces a failed discard and leaves the row where it was', async () => {
     const draft = summary('p1', 'projection', 'in_progress');
     listWithPresetDrafts.mockReturnValue(of([draft]));
-    updateProjection.mockReturnValue(throwError(() => new Error('boom')));
+    clearDraft.mockReturnValue(throwError(() => new Error('boom')));
 
     const component = await render();
     component.confirmDiscard(draft);
@@ -371,7 +362,7 @@ describe('DraftStartComponent', () => {
     component.cancelDiscard();
 
     expect(component.isConfirmingDiscard(draft)).toEqual(false);
-    expect(updateProjection).not.toHaveBeenCalled();
+    expect(clearDraft).not.toHaveBeenCalled();
     expect(deleteProjection).not.toHaveBeenCalled();
   });
 
@@ -443,10 +434,7 @@ describe('DraftStartComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(updateProjection).toHaveBeenCalledWith('p1', {
-      name: 'Projection p1',
-      data: { settings: { leagueSize: 12 } },
-    });
+    expect(clearDraft).toHaveBeenCalledWith('p1');
     expect(
       (
         fixture.nativeElement.querySelector('.panel .row button') as HTMLElement

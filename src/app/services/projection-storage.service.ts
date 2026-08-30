@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, from, map } from 'rxjs';
+import { Observable, from, map, switchMap } from 'rxjs';
 import { Api } from '../api/api';
 import { list } from '../api/fn/projections/list';
 import { get } from '../api/fn/projections/get';
@@ -63,6 +63,27 @@ export class ProjectionStorageService {
 
   updateProjection(id: string, request: UpdateProjectionRequest): Observable<ProjectionResponse> {
     return from(this.api.invoke(update, { id, body: request }));
+  }
+
+  /**
+   * Throws away the draft played against a projection, leaving the projection itself alone.
+   *
+   * <p>An omitted draft is what clears one, so the update sends back the settings as they
+   * stand and nothing else: the player rows are keep-if-absent, which spares this the ~0.5 MB
+   * of them. The settings do have to be read back first, since an update replaces those.
+   *
+   * <p>A draft started from a preset is not cleared this way — the projection under it holds
+   * nothing but the picks, so there the whole thing is deleted instead.
+   */
+  clearDraft(id: string): Observable<ProjectionResponse> {
+    return this.loadProjection(id).pipe(
+      switchMap((projection) =>
+        this.updateProjection(id, {
+          name: projection.name,
+          data: { settings: projection.data.settings },
+        }),
+      ),
+    );
   }
 
   deleteProjection(id: string): Observable<void> {

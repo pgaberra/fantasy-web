@@ -27,6 +27,7 @@ export class ProjectionCardComponent {
   readonly draft = output<void>();
   readonly share = output<void>();
   readonly remove = output<void>();
+  readonly discardDraft = output<void>();
 
   private readonly confirmPrompt = viewChild<ElementRef<HTMLElement>>('confirmPrompt');
 
@@ -43,6 +44,9 @@ export class ProjectionCardComponent {
 
   readonly origin = computed(() => this.projection().origin ?? null);
 
+  /** Nothing to throw away until a draft has been played against this board. */
+  readonly hasDraft = computed(() => this.projection().draftStatus !== 'none');
+
   /**
    * A copy of someone else's board is not the user's to publish: a share credits the account
    * that published it, so re-sharing an imported board would put their name on work that is
@@ -52,14 +56,15 @@ export class ProjectionCardComponent {
   readonly canShare = computed(() => !this.origin());
 
   readonly confirmingDelete = signal(false);
+  readonly confirmingDiscard = signal(false);
 
   constructor() {
-    // Delete lives in the overflow menu, and choosing it destroys the trigger the menu hangs
-    // off — so the confirmation would otherwise appear with focus dropped on the body. The
-    // prompt takes focus rather than "Yes, delete": the same keypress that picked the menu
-    // item must not be able to carry through and confirm the deletion.
+    // Both destructive actions live in the overflow menu, and choosing one destroys the
+    // trigger the menu hangs off — so the confirmation would otherwise appear with focus
+    // dropped on the body. The prompt takes focus rather than the "Yes" beside it: the same
+    // keypress that picked the menu item must not be able to carry through and confirm.
     effect(() => {
-      if (this.confirmingDelete()) {
+      if (this.confirmingDelete() || this.confirmingDiscard()) {
         this.confirmPrompt()?.nativeElement.focus();
       }
     });
@@ -76,5 +81,18 @@ export class ProjectionCardComponent {
   confirmDelete(): void {
     this.confirmingDelete.set(false);
     this.remove.emit();
+  }
+
+  startDiscard(): void {
+    this.confirmingDiscard.set(true);
+  }
+
+  cancelDiscard(): void {
+    this.confirmingDiscard.set(false);
+  }
+
+  confirmDiscard(): void {
+    this.confirmingDiscard.set(false);
+    this.discardDraft.emit();
   }
 }
