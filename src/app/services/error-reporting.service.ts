@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import type { ErrorEvent, EventHint } from '@sentry/browser';
 import { environment } from '../../environments/environment';
 import { redactUrl } from '../shared/redact-url';
+import { isRecoveringFromStaleBuild } from '../shared/stale-build';
 
 type SentryApi = typeof import('@sentry/browser');
 
@@ -28,6 +29,26 @@ export function redactEvent(event: ErrorEvent): ErrorEvent {
     }
   }
   return event;
+}
+
+/**
+ * The last gate before an event goes on the wire, and the only one that sees every event.
+ *
+ * Sentry installs its own `error` and `unhandledrejection` listeners, which report straight past
+ * Angular's `ErrorHandler` — so the stale-build filter in `ReportingErrorHandler` covered only one
+ * of the two ways that error reaches Sentry. The router rethrows after scheduling the reload, the
+ * rethrow surfaces as an unhandled rejection, and the global listener sent it regardless: the
+ * alert kept firing on every deploy from the release that was supposed to have stopped it.
+ * Filtering here catches both paths at once.
+ */
+export function beforeSendEvent(event: ErrorEvent, hint?: EventHint): ErrorEvent | null {
+  // The SDK hands over what was actually thrown; the serialised value is the fallback for an
+  // event that reached us without one.
+  const thrown = hint?.originalException ?? event.exception?.values?.[0]?.value ?? '';
+  if (isRecoveringFromStaleBuild(thrown)) {
+    return null;
+  }
+  return redactEvent(event);
 }
 
 /**
@@ -74,7 +95,7 @@ export class ErrorReportingService {
       // Off for the same reason the backends keep their alerting narrow: a stream of
       // performance spans would bury the faults this exists to surface.
       tracesSampleRate: 0,
-      beforeSend: redactEvent,
+      beforeSend: beforeSendEvent,
     });
 
     this.sentry = sentry;
