@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Route } from '@angular/router';
 import { routes } from './app.routes';
 import { authGuard } from './guards/auth.guard';
+import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
 
 describe('routes', () => {
   const routeFor = (path: string): Route => routes.find((route) => route.path === path)!;
@@ -9,7 +10,7 @@ describe('routes', () => {
   it('keeps the leaderboard behind a sign-in, since its splits are a signed-in endpoint', () => {
     // Unguarded, a signed-out visitor with the URL reached the page and was told the
     // leaderboard "couldn't load — check your connection" over what was really a 401.
-    expect(routeFor('whos-hot').canActivate).toEqual([authGuard]);
+    expect(routeFor('whos-hot').canActivate).toEqual([whosHotEnabledGuard, authGuard]);
   });
 
   it('leaves the pages that have to open for a stranger unguarded', () => {

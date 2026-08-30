@@ -6,6 +6,7 @@ import { provideLocationMocks } from '@angular/common/testing';
 import { of } from 'rxjs';
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { App } from './app';
+import { environment } from '../environments/environment';
 import { AuthService } from './services/auth.service';
 import { ConsentBannerComponent } from './shared/consent-banner/consent-banner';
 import { EnvironmentBannerComponent } from './shared/environment-banner/environment-banner';
@@ -79,6 +80,24 @@ describe('App', () => {
 
     expect(items).not.toContain('Admin');
     expect(items).toContain("Who's hot");
+  });
+
+  /**
+   * The page is a build-flag feature, and a link into a page the router will bounce is worse
+   * than no link, so the nav has to drop it wherever it appears.
+   */
+  it("drops the Who's hot link when the page is switched off", () => {
+    const original = environment.whosHotEnabled;
+    environment.whosHotEnabled = false;
+    try {
+      const fixture = render();
+
+      const header = fixture.nativeElement.textContent ?? '';
+      expect(header).not.toContain("Who's hot");
+      expect(openMenu(fixture).map((item) => item.textContent?.trim())).not.toContain("Who's hot");
+    } finally {
+      environment.whosHotEnabled = original;
+    }
   });
 
   it('signs out from the menu', () => {

@@ -36,6 +36,11 @@ const paymentsEnabledFlag: string = '__PAYMENTS_ENABLED__';
 // turns it on; untouched or empty resolves to false, keeping the ESPN provider hidden by default.
 const espnLeaguesEnabledFlag: string = '__ESPN_LEAGUES_ENABLED__';
 
+// Who's hot toggle. The odd one out: the page already ships, so this reads the other way round —
+// only the literal "false" (via the WHOS_HOT_ENABLED build arg) hides it, and untouched or empty
+// leaves it visible. A deploy that forgets the arg keeps a live page rather than dropping it.
+const whosHotEnabledFlag: string = '__WHOS_HOT_ENABLED__';
+
 export const environment = {
   production: true,
   environmentName: appEnvFlag.startsWith('__APP_ENV') ? 'production' : appEnvFlag,
@@ -50,4 +55,5 @@ export const environment = {
   yahooSyncDisabled: yahooSyncDisabledFlag === 'true',
   paymentsEnabled: paymentsEnabledFlag === 'true',
   espnLeaguesEnabled: espnLeaguesEnabledFlag === 'true',
+  whosHotEnabled: whosHotEnabledFlag !== 'false',
 };
