@@ -1,0 +1,17 @@
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <img src="slapstat-logo.png" alt="SlapStat" class="site-footer-logo" />
+    <span class="site-footer-copy"
+      >© 2026 SlapStat · Top-Shelf Tools for Fantasy Hockey Managers.</span
+    >
+    <span class="site-footer-links">
+      <a routerLink="/privacy">Privacy</a>
+      @if (authService.isLoggedIn()) {
+        <a routerLink="/whos-hot">Who's hot</a>
+      } @else {
+        <a routerLink="/login">Sign in</a>
+        <a routerLink="/register">Get started</a>
+      }
+    </span>
+  </div>
+</footer>

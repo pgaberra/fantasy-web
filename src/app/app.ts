@@ -6,6 +6,7 @@ import { filter, map } from 'rxjs';
 import { AuthService } from './services/auth.service';
 import { ConsentBannerComponent } from './shared/consent-banner/consent-banner';
 import { EnvironmentBannerComponent } from './shared/environment-banner/environment-banner';
+import { SiteFooterComponent } from './shared/site-footer/site-footer';
 import { ToastComponent } from './shared/toast/toast';
 import { UnverifiedBannerComponent } from './shared/unverified-banner/unverified-banner';
 import { environment } from '../environments/environment';
@@ -21,6 +22,7 @@ import { environment } from '../environments/environment';
     CdkMenuTrigger,
     ConsentBannerComponent,
     EnvironmentBannerComponent,
+    SiteFooterComponent,
     ToastComponent,
     UnverifiedBannerComponent,
   ],
