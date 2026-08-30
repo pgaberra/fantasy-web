@@ -36,7 +36,7 @@ import {
 } from './season.model';
 import { HotPlayersTableComponent } from './hot-players-table/hot-players-table';
 
-const DEFAULT_SPAN_LENGTH = 20;
+const DEFAULT_SPAN_LENGTH = 10;
 
 /**
  * How long the game range has to hold still before it is worth a request. Long enough that a
@@ -197,6 +197,14 @@ export class WhosHotComponent {
         lastEspnLeagueId: this.lastEspnLeagueId(),
       });
     });
+  }
+
+  /** Only a season that is actually on offer: `Number('')` is 0, which is finite and is not one. */
+  onSeasonChange(event: Event): void {
+    const startYear = Number((event.target as HTMLSelectElement).value);
+    if (this.seasons.some((season) => season.startYear === startYear)) {
+      this.season.set(startYear);
+    }
   }
 
   retry(): void {

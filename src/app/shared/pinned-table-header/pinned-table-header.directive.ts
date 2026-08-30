@@ -17,8 +17,10 @@ import { DestroyRef, Directive, ElementRef, afterNextRender, inject } from '@ang
  * a fast flick and one that trails the rows and catches up once the scroll stops — a scroll
  * handler cannot win that race, because the rows are moved by the compositor while it is still
  * waiting for its frame. All the timeline needs from here is how far the header may travel,
- * which changes only when the table under it does. Everything else is positional, so the pin
- * survives the page above the table reflowing.
+ * which changes only when the table under it does. Where the pin begins is named, not measured
+ * — the table's own top edge crossing the top of the window — so nothing here holds a copy of
+ * the window's height that the browser could then disagree with. Everything else is positional,
+ * so the pin survives the page above the table reflowing.
  *
  * Browsers without scroll timelines fall back to doing the same arithmetic a frame at a time.
  *
@@ -41,7 +43,13 @@ export class PinnedTableHeaderDirective {
         return;
       }
 
-      if (CSS.supports('animation-timeline: view()')) {
+      // Both halves are asked for: an engine that understands view timelines but not the range
+      // this pins against would drop the `animation-range` in `styles.css` and run the keyframes
+      // across the table's whole passage through the window instead — worse than not pinning.
+      if (
+        CSS.supports('animation-timeline: view()') &&
+        CSS.supports('animation-range', 'exit-crossing 0px')
+      ) {
         this.measureForTimeline(wrapper, head);
       } else {
         this.pinPerFrame(wrapper, head);
@@ -50,49 +58,29 @@ export class PinnedTableHeaderDirective {
   }
 
   /**
-   * Feeds the CSS timeline the two distances it cannot work out for itself, both measured from
-   * `cover 0%` — the moment the table's top edge meets the bottom of the window. The header
-   * starts moving a window-height later, when that edge reaches the top instead, and stops once
-   * it has travelled the height of the table beneath it.
+   * Feeds the CSS timeline the one distance it cannot work out for itself: how far the header
+   * may travel before it would hang below the last row.
    *
-   * Neither depends on the scroll position, which is the point: the browser is left to follow
-   * the scroll, and this runs only when the layout it measured has actually changed.
+   * Where the pin begins is deliberately not measured here. It used to be — a window height,
+   * refreshed on every event that might have changed it — and a header pinned against a window
+   * height that has since moved parks that many pixels down the table and stays there for the
+   * rest of the scroll. The range in `styles.css` names the table's top edge crossing the top of
+   * the window instead, which the browser resolves against the window it has at that moment, so
+   * a zoom step or a phone collapsing its toolbars needs nothing from this file.
    */
   private measureForTimeline(wrapper: HTMLElement, head: HTMLElement): void {
     const measure = () => {
-      const inset =
-        parseFloat(getComputedStyle(wrapper).getPropertyValue('--pinned-header-inset')) || 0;
-      const pinStart = document.documentElement.clientHeight - inset;
       const travel = Math.max(wrapper.getBoundingClientRect().height - head.offsetHeight, 0);
 
       wrapper.style.setProperty('--pinned-header-travel', `${travel}px`);
-      wrapper.style.setProperty('--pinned-header-pin-start', `${pinStart}px`);
-      wrapper.style.setProperty('--pinned-header-pin-end', `${pinStart + travel}px`);
     };
 
     // Show more, a column toggled, a filter narrowing the rows — each changes how far the header
     // may travel. The header is observed too: its own height moves the stopping point as well.
-    // A resized window moves where the pin begins, and may resize the bar the page floats over
-    // the top along with it.
     const observer = new ResizeObserver(measure);
 
-    // Where the pin begins is a window height, and on a phone the window changes height mid-
-    // scroll: scrolling down collapses the browser's toolbars and the page grows into the space
-    // they leave. That does not reliably raise a window `resize`, so the measurement would stay
-    // at the height the page loaded with — and since the header then tracks the scroll one-for-
-    // one from a start point that is too early, it comes to rest that many pixels below the top
-    // of the screen and stays there. visualViewport is the event that does fire for it; what is
-    // read back is still the layout viewport, which is the box the timeline resolves against.
-    const viewport = window.visualViewport;
+    this.destroyRef.onDestroy(() => observer.disconnect());
 
-    this.destroyRef.onDestroy(() => {
-      observer.disconnect();
-      window.removeEventListener('resize', measure);
-      viewport?.removeEventListener('resize', measure);
-    });
-
-    window.addEventListener('resize', measure);
-    viewport?.addEventListener('resize', measure);
     observer.observe(wrapper);
     observer.observe(head);
     measure();
