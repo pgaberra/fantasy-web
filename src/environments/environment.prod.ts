@@ -41,6 +41,11 @@ const espnLeaguesEnabledFlag: string = '__ESPN_LEAGUES_ENABLED__';
 // leaves it visible. A deploy that forgets the arg keeps a live page rather than dropping it.
 const whosHotEnabledFlag: string = '__WHOS_HOT_ENABLED__';
 
+// Off-season notice toggle. Only the literal "true" (via the OFFSEASON_ENABLED build arg) shows
+// the off-season data banner; untouched or empty resolves to false, so the banner stays hidden by
+// default and has to be turned on deliberately each off-season.
+const offseasonEnabledFlag: string = '__OFFSEASON_ENABLED__';
+
 // AI projection toggle. Reads the same way round as whosHotEnabled — only the literal "false"
 // (via the AI_PROJECTION_ENABLED build arg) drops the preset, and untouched or empty leaves it
 // offered. The preset already ships, so a deploy that forgets the arg must not silently lose it.
@@ -62,4 +67,5 @@ export const environment = {
   espnLeaguesEnabled: espnLeaguesEnabledFlag === 'true',
   whosHotEnabled: whosHotEnabledFlag !== 'false',
   aiProjectionEnabled: aiProjectionEnabledFlag !== 'false',
+  offseasonEnabled: offseasonEnabledFlag === 'true',
 };
