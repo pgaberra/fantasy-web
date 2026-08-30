@@ -7,6 +7,7 @@ import {
   DraftStartComponent,
   LAST_SEASON_PRESET_NAME,
   MODEL_PRESET_NAME,
+  Preset,
   PRESETS,
   shareTokenFrom,
 } from './draft-start';
@@ -15,19 +16,20 @@ import { NotificationService } from '../services/notification.service';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 
 describe('DraftStartComponent', () => {
-  const LAST_SEASON = PRESETS.find((preset) => preset.name === LAST_SEASON_PRESET_NAME)!;
-  const MODEL = PRESETS.find((preset) => preset.name === MODEL_PRESET_NAME)!;
+  const LAST_SEASON = PRESETS.find((preset) => preset.id === 'last_season')!;
+  const MODEL = PRESETS.find((preset) => preset.id === 'model')!;
 
   const summary = (
     id: string,
     kind: ProjectionSummaryResponse['kind'],
     draftStatus: ProjectionSummaryResponse['draftStatus'] = 'none',
     updatedAt = '2026-06-01T00:00:00Z',
-    presetName = LAST_SEASON_PRESET_NAME,
+    preset: Preset = LAST_SEASON,
   ): ProjectionSummaryResponse => ({
     id,
-    name: kind === 'preset_draft' ? presetName : `Projection ${id}`,
+    name: kind === 'preset_draft' ? preset.name : `Projection ${id}`,
     kind,
+    ...(kind === 'preset_draft' ? { preset: preset.id } : {}),
     draftStatus,
     season: '20262027',
     createdAt: '2026-06-01T00:00:00Z',
@@ -297,7 +299,7 @@ describe('DraftStartComponent', () => {
     listWithPresetDrafts.mockReturnValue(
       of([
         summary('lastSeason1', 'preset_draft', 'in_progress', '2026-06-01T00:00:00Z'),
-        summary('model1', 'preset_draft', 'finished', '2026-06-02T00:00:00Z', MODEL_PRESET_NAME),
+        summary('model1', 'preset_draft', 'finished', '2026-06-02T00:00:00Z', MODEL),
       ]),
     );
 
@@ -307,6 +309,19 @@ describe('DraftStartComponent', () => {
     expect(component.presetDraft(MODEL)?.id).toEqual('model1');
     expect(component.presetLabel(LAST_SEASON)).toEqual('Resume draft');
     expect(component.presetLabel(MODEL)).toEqual('View summary');
+  });
+
+  // Drafts saved before the server recorded the preset carry none. Every one of them came from
+  // last season's stats, so they must still land on that row rather than disappearing from it.
+  it('resolves a stored draft that predates the preset field', async () => {
+    listWithPresetDrafts.mockReturnValue(
+      of([{ ...summary('legacy1', 'preset_draft', 'in_progress'), preset: undefined }]),
+    );
+
+    const component = await render();
+
+    expect(component.presetDraft(LAST_SEASON)?.id).toEqual('legacy1');
+    expect(component.presetDraft(MODEL)).toBeNull();
   });
 
   it('confirming a restart on one preset does not arm the other', async () => {

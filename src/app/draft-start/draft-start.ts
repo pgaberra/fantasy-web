@@ -27,12 +27,12 @@ export const MODEL_PRESET_NAME = 'AI Projection';
 /**
  * A starting point everyone shares, as opposed to a projection someone owns.
  *
- * <p>The name doubles as the identity: `kind: 'preset_draft'` says a stored draft came from a
- * preset but not which one, and the server decides the name (so a draft cannot claim to have
- * been drafted against something it was not). That makes it safe to match on here, though a
- * dedicated field on the projection would say it outright.
+ * <p>`id` is what a stored draft is matched on. It used to be the name, because `kind:
+ * 'preset_draft'` says a draft came from a preset but not which one — the server now records
+ * which, so the name is free to change without orphaning the drafts started from it.
  */
 export interface Preset {
+  readonly id: NonNullable<ProjectionSummaryResponse['preset']>;
   readonly name: string;
   readonly source: CreateProjectionRequest['source'];
   readonly description: string;
@@ -40,11 +40,13 @@ export interface Preset {
 
 export const PRESETS: readonly Preset[] = [
   {
+    id: 'last_season',
     name: LAST_SEASON_PRESET_NAME,
     source: 'default',
     description: "Every player at last season's numbers, default scoring settings",
   },
   {
+    id: 'model',
     name: MODEL_PRESET_NAME,
     source: 'model',
     description: "The model's estimate for the coming season: a qualified guess, not the truth",
@@ -98,7 +100,7 @@ export class DraftStartComponent {
 
   readonly isStarting = signal(false);
   /** Which preset is being asked about, so two rows cannot share one confirmation. */
-  readonly confirmingRestart = signal<string | null>(null);
+  readonly confirmingRestart = signal<Preset['id'] | null>(null);
   readonly selectedTab = signal<SourceTab>('own');
 
   readonly shareInput = signal('');
@@ -110,19 +112,25 @@ export class DraftStartComponent {
   readonly projections = computed(() => this.byKind('projection'));
   readonly imported = computed(() => this.byKind('imported'));
 
-  /** The stored draft for each preset, by preset name. Absent until one has been started. */
+  /**
+   * The stored draft for each preset. Absent until one has been started.
+   *
+   * <p>A draft saved before the server recorded the preset has none; every one of those came
+   * from last season's stats, which is what the migration that added the field gave them, and
+   * what this falls back to for anything still in flight.
+   */
   private readonly presetDrafts = computed(() => {
-    const byName = new Map<string, ProjectionSummaryResponse>();
+    const byPreset = new Map<Preset['id'], ProjectionSummaryResponse>();
     for (const projection of this.sourcesResource.value()) {
       if (projection.kind === 'preset_draft') {
-        byName.set(projection.name, projection);
+        byPreset.set(projection.preset ?? 'last_season', projection);
       }
     }
-    return byName;
+    return byPreset;
   });
 
   presetDraft(preset: Preset): ProjectionSummaryResponse | null {
-    return this.presetDrafts().get(preset.name) ?? null;
+    return this.presetDrafts().get(preset.id) ?? null;
   }
 
   presetLabel(preset: Preset): string {
@@ -227,7 +235,7 @@ export class DraftStartComponent {
   }
 
   requestRestart(preset: Preset): void {
-    this.confirmingRestart.set(preset.name);
+    this.confirmingRestart.set(preset.id);
   }
 
   cancelRestart(): void {
@@ -235,7 +243,7 @@ export class DraftStartComponent {
   }
 
   isConfirmingRestart(preset: Preset): boolean {
-    return this.confirmingRestart() === preset.name;
+    return this.confirmingRestart() === preset.id;
   }
 
   /**
