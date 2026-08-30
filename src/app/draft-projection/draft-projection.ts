@@ -67,7 +67,8 @@ import { SharedPlayer } from '../api/models/shared-player';
 import { YahooService } from '../services/yahoo.service';
 import { EspnService } from '../services/espn.service';
 
-const AUTOSAVE_DEBOUNCE_MS = 1200;
+/** Exported so the tests can wait out exactly this and not a round number they guessed at. */
+export const AUTOSAVE_DEBOUNCE_MS = 1200;
 
 @Component({
   selector: 'app-draft-projection',

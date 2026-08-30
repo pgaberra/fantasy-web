@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
-import { DraftProjectionComponent } from './draft-projection';
+import { AUTOSAVE_DEBOUNCE_MS, DraftProjectionComponent } from './draft-projection';
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
 import { PlayerService } from '../services/player.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
@@ -211,6 +211,25 @@ describe('DraftProjectionComponent', () => {
 
     expect(updateSpy.mock.calls[0][1].data.players).toHaveLength(1);
   });
+
+  /**
+   * The debounced autosave had no cover at all, which is what let the guard test below sit
+   * green while asserting on a service instance the component never touched. This is the
+   * control for it: the same edit, a pool that loaded, and a save that does happen.
+   */
+  it('saves a settings edit once the debounce has run out', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    const updateSpy = vi.spyOn(ngMocks.findInstance(ProjectionStorageService), 'updateProjection');
+
+    component.leagueSize.set(14);
+    fixture.detectChanges();
+    await new Promise((resolve) => setTimeout(resolve, AUTOSAVE_DEBOUNCE_MS + 200));
+
+    expect(updateSpy).toHaveBeenCalled();
+    expect(component.saveStatus()).toEqual('saved');
+  }, 10000);
 
   it('reports a conflict and keeps the old name when the name is taken', async () => {
     const fixture = MockRender(DraftProjectionComponent);
@@ -552,20 +571,26 @@ describe('DraftProjectionComponent', () => {
     });
 
     it('never writes the projection back, even after an edit that would normally autosave', async () => {
+      const fixture = MockRender(DraftProjectionComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+      // Spied after the render and not before it: a TestBed lookup ahead of MockRender takes the
+      // service out of a module ng-mocks then rebuilds — "Forgot to flush TestBed?" is the
+      // warning it prints — so the spy sat on an instance the component never called, and this
+      // assertion held whether the guard was there or not. Deleting the guard now fails it.
       const updateSpy = vi.spyOn(
         ngMocks.findInstance(ProjectionStorageService),
         'updateProjection',
       );
-      const fixture = MockRender(DraftProjectionComponent);
-      await fixture.whenStable();
 
       // Without the guard this is exactly the sequence that emptied a real projection: a change
       // to a setting, and an autosave that carries the table's (absent) rows with it.
-      fixture.point.componentInstance.leagueSize.set(14);
+      component.leagueSize.set(14);
       fixture.detectChanges();
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, AUTOSAVE_DEBOUNCE_MS + 200));
 
       expect(updateSpy).not.toHaveBeenCalled();
+      expect(component.saveStatus()).toEqual('idle');
     }, 10000);
   });
 });
