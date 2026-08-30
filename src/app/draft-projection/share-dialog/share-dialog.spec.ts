@@ -130,7 +130,7 @@ describe('ShareDialogComponent', () => {
 
     component.publish();
 
-    expect(component.errorMessage()).toEqual('That name is taken — try another.');
+    expect(component.errorMessage()).toEqual('That name is taken. Try another.');
     expect(share).not.toHaveBeenCalled();
   });
 

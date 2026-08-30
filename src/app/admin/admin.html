@@ -141,7 +141,7 @@
   <article class="admin-card">
     <h2>Yahoo access probe</h2>
     <p class="admin-card-desc">
-      Ask Yahoo one question — will it serve this game's players? A failed sync only says that
+      Ask Yahoo one question: will it serve this game's players? A failed sync only says that
       something was refused; vary the game key and season here to find out what. Reads nothing into
       the cache and writes nothing, so it is safe to fire at anything.
     </p>
@@ -198,8 +198,8 @@
     </div>
     <p class="probe-hint">
       The second button ignores the fields above and asks the simplest question there is: will Yahoo
-      list this account's own leagues? That is the floor — if even that is refused, no route into
-      the Fantasy API is open to us, and no choice of endpoint will help.
+      list this account's own leagues? That is the floor. If even that is refused, no route into the
+      Fantasy API is open to us, and no choice of endpoint will help.
     </p>
 
     @if (leagues().length) {
@@ -232,14 +232,14 @@
         @if (result.ok) {
           <p>
             <span class="status status-ok">● Yahoo served it</span>
-            — {{ result.players }} {{ result.players === 1 ? 'player' : 'players' }} on the first
-            page.
+            ({{ result.players }} {{ result.players === 1 ? 'player' : 'players' }} on the first
+            page).
           </p>
         } @else {
           <p>
             <span class="status status-off">● Refused</span>
             @if (result.status) {
-              — HTTP {{ result.status }}
+              (HTTP {{ result.status }})
             }
           </p>
           @if (result.error) {

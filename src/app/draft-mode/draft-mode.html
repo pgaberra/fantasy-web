@@ -18,7 +18,7 @@
             <span class="save-status">Saved</span>
           }
           @case ('error') {
-            <span class="save-status save-status--error">Couldn't save — changes are unsaved</span>
+            <span class="save-status save-status--error">Couldn't save, changes are unsaved</span>
           }
         }
       </div>
@@ -141,8 +141,8 @@
                 Finishing marks the draft done and opens its summary. You can head back to the board
                 and edit anytime.
               } @else {
-                The draft isn't finished yet — {{ picks().length }} of {{ totalPicks() }} picks
-                made. You can still finish and view the summary, then come back to keep drafting.
+                The draft isn't finished yet, {{ picks().length }} of {{ totalPicks() }} picks made.
+                You can still finish and view the summary, then come back to keep drafting.
               }
             </p>
             <div class="modal-actions">

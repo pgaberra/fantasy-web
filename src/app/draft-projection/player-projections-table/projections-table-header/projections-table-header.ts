@@ -116,13 +116,13 @@ export class ProjectionsTableHeaderComponent {
   utilityTooltip(statKey: UtilityStatKey): string {
     const name = STAT_FULL_NAMES[statKey];
     if (this.scaleSettings()) {
-      return `${name} — a Utility Stat that can be used to scale and project other stats.`;
+      return `${name}. A Utility Stat that can be used to scale and project other stats.`;
     }
     const scope = this.gamesPlayedScope();
     if (scope && statKey === 'gp') {
-      return `${name} — games within ${scope}. A Utility Stat: it takes no weight and adds nothing to the total.`;
+      return `${name}, games within ${scope}. A Utility Stat: it takes no weight and adds nothing to the total.`;
     }
-    return `${name} — a Utility Stat: it takes no weight and adds nothing to the total.`;
+    return `${name}. A Utility Stat: it takes no weight and adds nothing to the total.`;
   }
 
   /** Which column's "stats to scale" list is expanded; only one menu is open at a time. */

@@ -28,12 +28,12 @@
             @if (entitlement.currentPeriodEnd()) {
               <p class="account-note">
                 Your subscription cancels on
-                {{ entitlement.currentPeriodEnd() | date: 'longDate' }} — you keep premium access
+                {{ entitlement.currentPeriodEnd() | date: 'longDate' }}. You keep premium access
                 until then.
               </p>
             } @else {
               <p class="account-note">
-                Your subscription is set to cancel — you keep premium access until the period ends.
+                Your subscription is set to cancel. You keep premium access until the period ends.
               </p>
             }
           } @else if (entitlement.currentPeriodEnd()) {

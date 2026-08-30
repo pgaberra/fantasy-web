@@ -2,7 +2,7 @@
   <div class="unverified-banner" role="status">
     @if (sent()) {
       <span class="unverified-banner__text">
-        Verification email sent — check your inbox (and your spam folder).
+        Verification email sent. Check your inbox (and your spam folder).
       </span>
     } @else {
       <span class="unverified-banner__text">
@@ -21,7 +21,7 @@
         }
       </button>
       @if (failed()) {
-        <span class="unverified-banner__error">Couldn't send — please try again.</span>
+        <span class="unverified-banner__error">Couldn't send. Please try again.</span>
       }
     }
   </div>
