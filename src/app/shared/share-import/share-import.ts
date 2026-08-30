@@ -47,6 +47,17 @@ export class ShareImportComponent {
   /** Non-null only after a name clash, which is the one thing the importer has to settle. */
   readonly importName = signal<string | null>(null);
 
+  /**
+   * The form's own submit, stopped before the browser acts on it. Without this the press
+   * navigates the page instead of importing, and the new-projection page comes back reloaded
+   * on its first tab. `(ngSubmit)` would not do: it belongs to `FormsModule`, which nothing
+   * here imports, so it binds to an event that never fires and lets the native submit through.
+   */
+  onSubmit(event: Event): void {
+    event.preventDefault();
+    this.submit();
+  }
+
   submit(): void {
     const token = shareTokenFrom(this.shareInput());
     if (!token) {
