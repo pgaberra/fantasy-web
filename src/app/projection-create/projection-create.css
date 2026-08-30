@@ -61,82 +61,16 @@
   box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
 }
 
-/* The strip and the rows under it are the draft picker's (draft-start.css), because they are the
-   same control: three groups of starting points, one list at a time. Component styles are scoped,
-   so they are repeated here rather than imported — the same trade the preview table makes below. */
-.tabs {
-  display: flex;
-  gap: var(--space-1);
-  padding: 0.2rem;
-  background: var(--color-surface-alt);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.tab {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  padding: 0.4rem 0.5rem;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  background: none;
-  font: inherit;
+/* The rows and the headings over them are the draft picker's (draft-start.css), because they are
+   the same control: every starting point in one list, grouped by where it comes from. Component
+   styles are scoped, so they are repeated here rather than imported — the same trade the preview
+   table makes below. */
+.group-title {
+  margin: var(--space-5) 0 var(--space-2);
   font-size: var(--text-sm);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition:
-    background var(--transition-fast),
-    color var(--transition-fast);
-}
-
-.tab:hover {
-  color: var(--color-text);
-}
-
-.tab--active {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  color: var(--color-primary);
   font-weight: var(--weight-semibold);
-}
-
-.tab-count {
-  font-size: var(--text-xs);
-  color: var(--color-text-subtle);
-}
-
-/* "Shared with you" needs more room than a third of a phone, and a wrapped label makes its tab
-   twice as tall as the other two. Each tab carries a short label too, and the width picks. */
-.tab-label--short {
-  display: none;
-}
-
-@media (max-width: 560px) {
-  .tab {
-    gap: 0.25rem;
-    padding: 0.4rem 0.25rem;
-  }
-
-  .tab-label {
-    display: none;
-  }
-
-  .tab-label--short {
-    display: inline;
-  }
-}
-
-.panel {
-  margin-top: var(--space-3);
-}
-
-.panel-empty {
-  margin: 0;
-  padding: var(--space-3) 0;
-  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--color-text-subtle);
 }
 
@@ -188,6 +122,11 @@
 .row-meta {
   font-size: var(--text-xs);
   color: var(--color-text-subtle);
+}
+
+.sources app-share-import {
+  display: block;
+  margin-top: var(--space-3);
 }
 
 .preview {
