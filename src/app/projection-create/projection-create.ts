@@ -46,10 +46,16 @@ import { freeProjectionName } from '../services/projection-name';
 import { SeededProjectionResponse } from '../api/models/seeded-projection-response';
 
 /**
- * Where the starting points are grouped, the same three the draft picker offers: a projection
- * of the user's own, one someone shared with them, or a preset everybody has.
+ * What the projection opens with: a preset everybody has, or a copy of a board the user can
+ * already open — one of their own, or one imported from someone's share link.
+ *
+ * <p>One value, not a group plus a preset plus a copy id. Split in three, two answers were held
+ * at once and the visible group decided which of them the Create button used, so a copy picked
+ * under one heading was discarded without a word by creating under another.
  */
-export type SourceTab = 'presets' | 'own' | 'imported';
+export type StartingPoint =
+  | { readonly kind: 'preset'; readonly source: NonNullable<CreateProjectionRequest['source']> }
+  | { readonly kind: 'copy'; readonly id: string };
 
 /** A starting point the server can derive on its own, from nothing the user has to supply. */
 export interface CreatePreset {
@@ -195,9 +201,11 @@ export class ProjectionCreateComponent {
   });
 
   readonly presets = CREATE_PRESETS;
-  /** Presets first: it is the only tab that is never empty, and where most projections start. */
-  readonly selectedTab = signal<SourceTab>('presets');
-  readonly selectedPreset = signal<CreatePreset['source']>('default');
+  /**
+   * The one answer the page holds. Presets lead the list and last season's stats is picked from
+   * the start: it is the group that is never empty, and where most projections begin.
+   */
+  readonly startingPoint = signal<StartingPoint>({ kind: 'preset', source: 'default' });
 
   /**
    * The model's lines for the preview, fetched only once the AI preset is picked — and only the
@@ -213,13 +221,22 @@ export class ProjectionCreateComponent {
       }),
     defaultValue: undefined as SeededProjectionResponse | undefined,
   });
-  readonly copyFromId = signal<string | null>(null);
   readonly ownProjections = computed(() => this.byKind('projection'));
   readonly importedBoards = computed(() => this.byKind('imported'));
   /** Whether the AI preset is what the page is showing, which is what its extra fetch follows. */
-  private readonly isModelPreset = computed(
-    () => this.selectedTab() === 'presets' && this.selectedPreset() === 'model',
-  );
+  private readonly isModelPreset = computed(() => this.isPreset('model'));
+  /**
+   * The board a copy would be made of, or null when a preset is picked. The preview reads it to
+   * name what it cannot draw: the rows of a copy are the board's own, which this page never
+   * downloads.
+   */
+  readonly copiedBoard = computed(() => {
+    const point = this.startingPoint();
+    if (point.kind !== 'copy') {
+      return null;
+    }
+    return this.dataResource.value().find((board) => board.id === point.id) ?? null;
+  });
   readonly isLoading = this.dataResource.isLoading;
   readonly loadError = computed(() => !!this.dataResource.error());
   readonly isCreating = signal<boolean>(false);
@@ -320,7 +337,7 @@ export class ProjectionCreateComponent {
   readonly previewRows = computed<PreviewRow[]>(() => {
     // 'From scratch' is the same players in the same rows, just emptied — which is the whole
     // point of showing it: the board doesn't change, only the numbers on it.
-    const zeroed = this.selectedTab() === 'presets' && this.selectedPreset() === 'blank';
+    const zeroed = this.isPreset('blank');
     const rookieIds = this.rookieIdsResource.hasValue() ? this.rookieIdsResource.value() : null;
     return this.previewPlayers().map(({ player, projection, score, qualified }, index) => ({
       // Numbered by their place in the preview, which is also their place on the board.
@@ -348,12 +365,8 @@ export class ProjectionCreateComponent {
     return seeded ? { skaters: seeded.skaters, goalies: seeded.goalies } : null;
   });
 
-  readonly canCreate = computed(
-    () =>
-      !this.isCreating() &&
-      this.name().trim().length > 0 &&
-      (this.selectedTab() === 'presets' || !!this.copyFromId()),
-  );
+  // A starting point is always picked, so only the name can hold the button back.
+  readonly canCreate = computed(() => !this.isCreating() && this.name().trim().length > 0);
 
   onNameInput(event: Event): void {
     this.name.set((event.target as HTMLInputElement).value);
@@ -363,26 +376,32 @@ export class ProjectionCreateComponent {
     (event.target as HTMLInputElement).select();
   }
 
-  selectTab(tab: SourceTab): void {
-    this.selectedTab.set(tab);
-  }
-
   selectPreset(source: CreatePreset['source']): void {
-    this.selectedPreset.set(source);
+    this.startingPoint.set({ kind: 'preset', source });
   }
 
   selectCopyFrom(id: string): void {
-    this.copyFromId.set(id);
+    this.startingPoint.set({ kind: 'copy', id });
   }
 
-  /** Whose numbers a row holds, said in the row rather than only by the tab it sits under. */
+  isPreset(source: CreatePreset['source']): boolean {
+    const point = this.startingPoint();
+    return point.kind === 'preset' && point.source === source;
+  }
+
+  isCopyOf(id: string): boolean {
+    const point = this.startingPoint();
+    return point.kind === 'copy' && point.id === id;
+  }
+
+  /** Whose numbers a row holds, said in the row rather than only by the heading above it. */
   sourceLabel(projection: ProjectionSummaryResponse): string {
     return projection.origin ? `From ${projection.origin.authorUsername}` : 'Your projection';
   }
 
   /** A board just copied from a share link is a starting point, so it arrives already picked. */
   onImported(projection: ProjectionResponse): void {
-    this.copyFromId.set(projection.id);
+    this.selectCopyFrom(projection.id);
     this.dataResource.reload();
   }
 
@@ -404,9 +423,10 @@ export class ProjectionCreateComponent {
     }
     this.isCreating.set(true);
 
-    if (this.selectedTab() !== 'presets') {
+    const point = this.startingPoint();
+    if (point.kind === 'copy') {
       this.projectionStorage
-        .loadProjection(this.copyFromId()!)
+        .loadProjection(point.id)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (projection) => this.persist({ ...projection.data, draft: undefined }),
@@ -425,7 +445,7 @@ export class ProjectionCreateComponent {
       this.serializer.toProjectionData(
         createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
       ),
-      this.selectedPreset(),
+      point.source,
     );
   }
 

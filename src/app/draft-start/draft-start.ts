@@ -54,9 +54,6 @@ export const PRESETS: readonly Preset[] = [
   },
 ];
 
-/** Which kind of source the picker is showing. */
-export type SourceTab = 'own' | 'imported' | 'presets';
-
 /**
  * Picks what a draft is drafted against: one of the user's own projections, a board copied from
  * someone's share link, or a preset.
@@ -100,7 +97,6 @@ export class DraftStartComponent {
   readonly confirmingDiscard = signal<string | null>(null);
   /** The draft being thrown away, so its row says so and cannot be pressed a second time. */
   readonly discarding = signal<string | null>(null);
-  readonly selectedTab = signal<SourceTab>('own');
 
   readonly projections = computed(() => this.byKind('projection'));
   readonly imported = computed(() => this.byKind('imported'));
@@ -132,7 +128,7 @@ export class DraftStartComponent {
 
   /**
    * Drafts left mid-way, lifted out of the lists below. Resuming one is what most visits here
-   * are for, and it would otherwise be buried under whichever tab its source happens to sit in.
+   * are for, and it would otherwise be buried among the sources it was started from.
    */
   readonly inProgress = computed(() =>
     this.sourcesResource
@@ -140,10 +136,6 @@ export class DraftStartComponent {
       .filter((projection) => projection.draftStatus === 'in_progress')
       .sort((first, second) => second.updatedAt.localeCompare(first.updatedAt)),
   );
-
-  selectTab(tab: SourceTab): void {
-    this.selectedTab.set(tab);
-  }
 
   draftLabel(status: ProjectionSummaryResponse['draftStatus']): string {
     switch (status) {
@@ -156,7 +148,7 @@ export class DraftStartComponent {
     }
   }
 
-  /** Whose numbers a row holds, said in the row rather than only by the tab it sits under. */
+  /** Whose numbers a row holds, said in the row rather than only by the heading above it. */
   sourceLabel(projection: ProjectionSummaryResponse): string {
     return projection.origin ? `From ${projection.origin.authorUsername}` : 'Your projection';
   }
@@ -219,9 +211,8 @@ export class DraftStartComponent {
     });
   }
 
-  /** The copy is the user's board now, so the tab that lists those is where it belongs. */
+  /** The copy is the user's board now, and the list it joins is already on the page. */
   onImported(): void {
-    this.selectedTab.set('imported');
     this.sourcesResource.reload();
   }
 

@@ -211,17 +211,14 @@ describe('DraftStartComponent', () => {
     expect(component.inProgress().map((draft) => draft.id)).toEqual(['i1', 'preset1']);
   });
 
-  it('shows a board it just imported, under the tab that lists them', async () => {
+  it('re-reads the sources when a board is imported, so the copy joins the list', async () => {
     const fixture = MockRender(DraftStartComponent);
     await fixture.whenStable();
-    const component = fixture.point.componentInstance;
-    component.selectTab('presets');
 
-    component.onImported();
+    fixture.point.componentInstance.onImported();
     await fixture.whenStable();
 
-    expect(component.selectedTab()).toEqual('imported');
-    // The list is what the tab reads from, and the copy is not in the one already fetched.
+    // The list is what the group reads from, and the copy is not in the one already fetched.
     expect(listWithPresetDrafts).toHaveBeenCalledTimes(2);
   });
 
@@ -277,25 +274,22 @@ describe('DraftStartComponent', () => {
     expect(component.isConfirmingRestart(MODEL)).toBe(true);
     expect(component.isConfirmingRestart(LAST_SEASON)).toBe(false);
   });
-  // Every tab needs both, the third included: on a phone only the short one is displayed, so a
-  // tab without one showed its count and nothing else.
-  it('keeps both tab labels in the markup so the width can pick one', async () => {
+  // The point of dropping the tabs: nothing here is a click away any more, the import box
+  // included — it used to sit behind the one tab that is empty until it has been used once.
+  it('shows every group, and the import box, without a click', async () => {
+    listWithPresetDrafts.mockReturnValue(of([summary('p1', 'projection', 'none')]));
+
     const fixture = MockRender(DraftStartComponent);
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const labels = Array.from(
-      fixture.nativeElement.querySelectorAll('.tab-label') as NodeListOf<HTMLElement>,
-    ).map((label) => label.textContent?.trim());
+    const headings = Array.from(
+      fixture.nativeElement.querySelectorAll('.group-title') as NodeListOf<HTMLElement>,
+    ).map((heading) => heading.textContent?.trim());
 
-    expect(labels).toEqual([
-      'Your projections',
-      'Yours',
-      'Shared with you',
-      'Shared',
-      'Presets',
-      'Presets',
-    ]);
+    expect(headings).toEqual(['Presets', 'Your projections', 'Shared with you']);
+    expect(fixture.nativeElement.querySelector('app-share-import')).not.toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('.row')).toHaveLength(PRESETS.length + 1);
   });
 
   it('clears the picks off a projection, keeping the projection itself', async () => {
@@ -410,7 +404,7 @@ describe('DraftStartComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     const rows = Array.from(
-      fixture.nativeElement.querySelectorAll('.panel .row') as NodeListOf<HTMLElement>,
+      fixture.nativeElement.querySelectorAll('.group--own .row') as NodeListOf<HTMLElement>,
     ).map((row) =>
       Array.from(row.querySelectorAll('button') as NodeListOf<HTMLElement>).map((button) =>
         button.textContent?.trim(),
@@ -437,7 +431,7 @@ describe('DraftStartComponent', () => {
     expect(clearDraft).toHaveBeenCalledWith('p1');
     expect(
       (
-        fixture.nativeElement.querySelector('.panel .row button') as HTMLElement
+        fixture.nativeElement.querySelector('.group--own .row button') as HTMLElement
       ).textContent?.trim(),
     ).toEqual('Start draft');
   });
