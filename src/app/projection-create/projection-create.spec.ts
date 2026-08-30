@@ -11,6 +11,9 @@ import { ProjectionResponse } from '../api/models/projection-response';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { PlayerService } from '../services/player.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
+import { ProjectionModelService } from '../services/projection-model.service';
+import { ProjectionSerializerService } from '../services/projection-serializer.service';
+import { SeededProjectionResponse } from '../api/models/seeded-projection-response';
 import { ProjectionCalculationService } from '../services/projection-calculation.service';
 import { Goalie, Skater } from '../models/player.model';
 import { SkaterPosition } from '../models/position.model';
@@ -133,6 +136,36 @@ describe('ProjectionCreateComponent', () => {
 
   const players = [...skaters, goalie];
 
+  // The model reaches three of the six skaters and none of the goalie, and rates them in the
+  // opposite order to last season — so a preview drawn from it cannot be mistaken for the
+  // last-season one.
+  const seeded: SeededProjectionResponse = {
+    season: 2026,
+    modelVersion: 'test-1',
+    skaters: 3,
+    goalies: 0,
+    unmapped: 0,
+    goaliesWithoutWorkload: 2,
+    players: [4, 5, 6].map((id) => ({
+      playerId: id,
+      type: 'skater' as const,
+      stats: {
+        utility: { gp: 82, toiPerGame: 1200 },
+        scoring: {
+          ...(Object.fromEntries(SKATER_SCORING_STAT_KEYS.map((key) => [key, 0])) as Record<
+            string,
+            number
+          >),
+          goals: id * 10,
+          assists: 40,
+          hits: 0,
+        },
+      },
+    })),
+  };
+
+  const seed = vi.fn<() => Observable<SeededProjectionResponse>>(() => of(seeded));
+
   const navigate = vi.fn();
   const createProjection = vi.fn<
     (request: CreateProjectionRequest) => Observable<ProjectionResponse>
@@ -141,10 +174,13 @@ describe('ProjectionCreateComponent', () => {
   beforeEach(() => {
     navigate.mockClear();
     createProjection.mockClear();
+    seed.mockClear();
     return MockBuilder(ProjectionCreateComponent)
       .keep(StatInfoService)
       .keep(ProjectionRankingService)
       .keep(ProjectionCalculationService)
+      .keep(ProjectionSerializerService)
+      .mock(ProjectionModelService, { seed })
       .mock(PlayerService, {
         getPlayers: () => of(players),
         getRookieIds: () => of(new Set([3])),
@@ -401,5 +437,82 @@ describe('ProjectionCreateComponent', () => {
     expect(component.previewFailed()).toEqual(true);
     expect(component.loadError()).toEqual(false);
     expect(component.canCreate()).toEqual(true);
+  });
+
+  it("asks the server for the model's lines when the AI preset is picked", async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.name.set('Dynasty');
+    component.dataSource.set('ai');
+    await fixture.whenStable();
+    component.create();
+
+    expect(createProjection.mock.calls[0][0].source).toEqual('model');
+  });
+
+  // Half a megabyte, for a preset most visitors never pick.
+  it('does not download the model until the AI preset is picked', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+
+    expect(seed).not.toHaveBeenCalled();
+
+    fixture.point.componentInstance.dataSource.set('ai');
+    await fixture.whenStable();
+
+    expect(seed).toHaveBeenCalledOnce();
+  });
+
+  // The server seeds a model projection with the players the model reached and no others, so a
+  // preview showing the rest — filled in, or dashed — would promise rows the editor will not have.
+  it("previews only the players the model reached, in the model's own order", async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.dataSource.set('ai');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const rows = component.previewRows();
+    expect(rows.map((row) => row.player.name)).toEqual([
+      'Sixth Player',
+      'Fifth Player',
+      'Fourth Player',
+    ]);
+    // Last season had these three last, and the goalie is absent because the model has no line
+    // for it — not lifted into the final row the way the other presets reserve one.
+    expect(rows.every((row) => row.player.type === 'skater')).toBe(true);
+  });
+
+  it("scores the preview on the model's numbers, not last season's", async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    const lastSeason = component.previewRows().find((row) => row.player.id === 6);
+    component.dataSource.set('ai');
+    await fixture.whenStable();
+    const projected = component.previewRows().find((row) => row.player.id === 6);
+
+    expect(lastSeason).toBeUndefined();
+    expect(projected?.projection.type).toEqual('skater');
+    expect((projected?.projection.stats.scoring as SkaterScoringStats).goals).toEqual(60);
+    expect(projected?.score.fantasyPoints).toBeGreaterThan(0);
+  });
+
+  it('says how much of the league the model reached', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    expect(component.modelCoverage()).toBeNull();
+
+    component.dataSource.set('ai');
+    await fixture.whenStable();
+
+    expect(component.modelCoverage()).toEqual({ skaters: 3, goalies: 0 });
   });
 });

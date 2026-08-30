@@ -112,7 +112,11 @@ export class ProjectionSerializerService {
     };
   }
 
-  private toProjection(player: ApiPlayerProjection): Projection {
+  /**
+   * One player row, as the app models it. Public because the projection model returns its
+   * lines in the same shape a saved projection stores them, and both should be read one way.
+   */
+  toProjection(player: ApiPlayerProjection): Projection {
     if (player.type === 'skater') {
       return {
         type: 'skater',

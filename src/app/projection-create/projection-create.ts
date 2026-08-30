@@ -38,8 +38,20 @@ import {
 } from '../draft-projection/projection-defaults';
 import { DEFAULT_DECIMAL_SETTINGS } from '../draft-projection/projection-settings-section/model';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
+import { ProjectionModelService } from '../services/projection-model.service';
+import { SeededProjectionResponse } from '../api/models/seeded-projection-response';
 
-type DataSource = 'last-season' | 'blank' | 'copy';
+type DataSource = 'last-season' | 'ai' | 'blank' | 'copy';
+
+/**
+ * What each starting point sends as `source`. 'copy' is absent on purpose: it uploads rows
+ * taken from another projection rather than asking the server to derive them.
+ */
+const SOURCE_BY_CHOICE: Record<Exclude<DataSource, 'copy'>, CreateProjectionRequest['source']> = {
+  'last-season': 'default',
+  ai: 'model',
+  blank: 'blank',
+};
 
 /**
  * How many rows the preview shows. Enough to see what the editor opens as — the columns, the
@@ -69,11 +81,20 @@ interface PreviewRow {
 /** A player with the value the editor's default settings give them. */
 interface ScoredPlayer {
   player: Player;
+  /** The line it was scored on — the model's when the AI preset is picked, its own otherwise. */
+  projection: Projection;
   score: PlayerScore;
   qualified: boolean;
 }
 
 const ZERO_SCORE: PlayerScore = { fantasyPoints: 0, zScore: 0 };
+
+/** The row 'From scratch' gives a player: their own seat on the board, with nothing in it. */
+function zeroedProjection(player: Player): Projection {
+  return player.type === 'skater'
+    ? { type: 'skater', playerId: player.id, stats: ZEROED_SKATER_STATS }
+    : { type: 'goalie', playerId: player.id, stats: ZEROED_GOALIE_STATS };
+}
 
 /** What 'From scratch' gives every player. Read-only rows, so one instance serves them all. */
 const ZEROED_SKATER_STATS: SkaterStats = {
@@ -112,6 +133,7 @@ export class ProjectionCreateComponent {
   private readonly notification = inject(NotificationService);
   private readonly analytics = inject(AnalyticsService);
   private readonly playerService = inject(PlayerService);
+  private readonly projectionModel = inject(ProjectionModelService);
   private readonly ranking = inject(ProjectionRankingService);
 
   // Only the existing projections are needed here: the player rows of a new projection are
@@ -140,6 +162,18 @@ export class ProjectionCreateComponent {
   });
 
   readonly dataSource = signal<DataSource>('last-season');
+
+  /**
+   * The model's lines, fetched only once the AI preset is picked. The endpoint serves the whole
+   * board — there is no way to ask for the handful of rows the preview draws — so this is a
+   * download the size of the player pool, and it stays lazy to keep the page as fast as it was
+   * for everyone who never chooses it.
+   */
+  private readonly modelSeedResource = rxResource({
+    params: () => (this.dataSource() === 'ai' ? {} : undefined),
+    stream: () => this.projectionModel.seed(),
+    defaultValue: undefined as SeededProjectionResponse | undefined,
+  });
   readonly copyFromId = signal<string | null>(null);
   readonly existingProjections = computed(() => this.dataResource.value());
   readonly isLoading = this.dataResource.isLoading;
@@ -160,6 +194,41 @@ export class ProjectionCreateComponent {
   readonly isPreviewLoading = this.previewPlayersResource.isLoading;
   readonly previewFailed = computed(() => !!this.previewPlayersResource.error());
 
+  /**
+   * The lines the preview ranks. Every player's own stats, except under the AI preset, where
+   * they are the model's estimates instead.
+   *
+   * <p>The model reaches fewer players than the pool does, and a projection seeded from it holds
+   * only the ones it reached — so the rows missing here are exactly the rows the editor will not
+   * open with. Ranking the model's own lines rather than filtering last season's also gives the
+   * preview the model's order and the model's totals, which is what the finished board shows.
+   */
+  private readonly previewProjections = computed<Projection[]>(() => {
+    const players = this.previewPlayersResource.hasValue()
+      ? this.previewPlayersResource.value()
+      : [];
+    const own = players.map((player) =>
+      player.type === 'skater'
+        ? { type: 'skater' as const, playerId: player.id, stats: player.stats }
+        : { type: 'goalie' as const, playerId: player.id, stats: player.stats },
+    );
+    if (this.dataSource() !== 'ai') {
+      return own;
+    }
+    const seeded = this.modelSeedResource.value();
+    if (!seeded) {
+      // Still loading, or the fetch failed. The template says so rather than showing the board
+      // this preset would not produce.
+      return [];
+    }
+    // Only the players whose identity this page holds: it fetches the top of the board, not the
+    // pool, so a model line for anyone further down has no name to put beside it.
+    const inPreviewPool = new Set(players.map((player) => player.id));
+    return seeded.players
+      .filter((player) => inPreviewPool.has(player.playerId))
+      .map((player) => this.serializer.toProjection(player));
+  });
+
   /** Every player, scored and ordered exactly as the editor scores and orders them by default. */
   private readonly rankedPlayers = computed<ScoredPlayer[]>(() => {
     // Via hasValue(): reading a resource that failed throws, and neither fetch is worth taking
@@ -167,17 +236,14 @@ export class ProjectionCreateComponent {
     const players = this.previewPlayersResource.hasValue()
       ? this.previewPlayersResource.value()
       : [];
-    if (!players.length) {
+    const projections = this.previewProjections();
+    if (!players.length || !projections.length) {
       return [];
     }
     const byId = new Map(players.map((player) => [player.id, player]));
     return this.ranking
       .rankOverall({
-        projections: players.map((player) =>
-          player.type === 'skater'
-            ? { type: 'skater' as const, playerId: player.id, stats: player.stats }
-            : { type: 'goalie' as const, playerId: player.id, stats: player.stats },
-        ),
+        projections,
         scoringType: 'points',
         statWeights: DEFAULT_STAT_WEIGHTS,
         activeScoringColumns: new Set(DEFAULT_SCORING_COLUMNS),
@@ -188,6 +254,7 @@ export class ProjectionCreateComponent {
       })
       .map((scored) => ({
         player: byId.get(scored.projection.playerId),
+        projection: scored.projection,
         score: scored.score,
         qualified: scored.qualified,
       }))
@@ -214,30 +281,32 @@ export class ProjectionCreateComponent {
     // point of showing it: the board doesn't change, only the numbers on it.
     const zeroed = this.dataSource() === 'blank';
     const rookieIds = this.rookieIdsResource.hasValue() ? this.rookieIdsResource.value() : null;
-    return this.previewPlayers().map(({ player, score, qualified }, index) => ({
+    return this.previewPlayers().map(({ player, projection, score, qualified }, index) => ({
       // Numbered by their place in the preview, the way the editor numbers its own view. The
       // goalie is lifted in from further down the board, and its real place there — three
       // figures, next to a 4 — reads as a fault rather than as information.
       rank: index + 1,
       player,
-      projection:
-        player.type === 'skater'
-          ? {
-              type: 'skater' as const,
-              playerId: player.id,
-              stats: zeroed ? ZEROED_SKATER_STATS : player.stats,
-            }
-          : {
-              type: 'goalie' as const,
-              playerId: player.id,
-              stats: zeroed ? ZEROED_GOALIE_STATS : player.stats,
-            },
+      projection: zeroed ? zeroedProjection(player) : projection,
       score: zeroed ? ZERO_SCORE : score,
       rookie: rookieIds?.has(player.id) ?? false,
       // The editor marks a goalie projected for fewer games than the league minimum, which is
       // why it ranks last. From scratch nobody is projected for anything yet.
       belowMinGames: !zeroed && player.type === 'goalie' && !qualified,
     }));
+  });
+
+  readonly isModelPreviewLoading = computed(
+    () => this.dataSource() === 'ai' && this.modelSeedResource.isLoading(),
+  );
+
+  /**
+   * How much of the board the model reached, so the page can say the projection will be smaller
+   * rather than quietly opening with fewer rows than the other presets give.
+   */
+  readonly modelCoverage = computed(() => {
+    const seeded = this.modelSeedResource.value();
+    return seeded ? { skaters: seeded.skaters, goalies: seeded.goalies } : null;
   });
 
   readonly canCreate = computed(
@@ -303,7 +372,7 @@ export class ProjectionCreateComponent {
       this.serializer.toProjectionData(
         createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
       ),
-      this.dataSource() === 'blank' ? 'blank' : 'default',
+      SOURCE_BY_CHOICE[this.dataSource() as Exclude<DataSource, 'copy'>],
     );
   }
 
