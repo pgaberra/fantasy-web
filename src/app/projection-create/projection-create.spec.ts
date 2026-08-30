@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Observable, of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { ProjectionCreateComponent } from './projection-create';
+import { CREATE_PRESETS, ProjectionCreateComponent } from './projection-create';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { StatInfoService } from '../services/stat-info.service';
 import { CreateProjectionRequest } from '../api/models/create-projection-request';
@@ -296,6 +296,18 @@ describe('ProjectionCreateComponent', () => {
       expect(component.selectedTab()).toEqual('presets');
       expect(component.selectedPreset()).toEqual('default');
       expect(component.canCreate()).toEqual(true);
+    });
+
+    // What a preset means is a tip on the row, not a line under the name: three subtitles made
+    // the strip's own choices louder than the projections listed beside them.
+    it('explains each preset in a tip rather than a subtitle', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const panel: HTMLElement = fixture.nativeElement.querySelector('.panel');
+      expect(panel.querySelectorAll('app-help-tip')).toHaveLength(CREATE_PRESETS.length);
+      expect(panel.querySelector('.row-meta')).toBeNull();
     });
 
     it('waits for a row to be picked before it can create from a copy', async () => {
