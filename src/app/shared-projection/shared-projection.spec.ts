@@ -172,6 +172,78 @@ describe('SharedProjectionComponent', () => {
     expect(fixture.nativeElement.textContent).toContain("This link isn't active");
   });
 
+  describe('paging through a long board', () => {
+    /** A real board is the owner's whole pool; 2 rows say nothing about what 1600 do. */
+    const long: SharedProjectionResponse = {
+      ...shared,
+      totalPlayers: 400,
+      data: {
+        ...shared.data,
+        players: Array.from({ length: 400 }, (_, index) => ({
+          playerId: 1000 + index,
+          name: `Skater ${index}`,
+          teamAbbrev: 'EDM',
+          positions: index % 2 === 0 ? ['C'] : ['D'],
+          type: 'skater' as const,
+          rank: index + 1,
+          value: 400 - index,
+          stats: { utility: { gp: 82 }, scoring: { goals: 400 - index, assists: index } },
+        })),
+      },
+    };
+
+    beforeEach(() => {
+      loadShared.mockReturnValue(of(long));
+    });
+
+    it('opens on the top 50 rather than the whole board', async () => {
+      const fixture = await render();
+      const component = fixture.point.componentInstance;
+
+      expect(component.visibleRows().length).toEqual(50);
+      expect(component.visibleRows()[0].player.name).toEqual('Skater 0');
+      expect(component.matchingCount()).toEqual(400);
+      expect(fixture.nativeElement.textContent).toContain('Showing 50 of 400');
+    });
+
+    it('reveals another 100 on each click of Show more', async () => {
+      const fixture = await render();
+      const component = fixture.point.componentInstance;
+
+      component.showMore();
+      expect(component.visibleRows().length).toEqual(150);
+
+      component.showMore();
+      expect(component.visibleRows().length).toEqual(250);
+    });
+
+    it('stops offering Show more once the last row is on screen', async () => {
+      const fixture = await render();
+      const component = fixture.point.componentInstance;
+
+      component.visibleCount.set(400);
+      fixture.detectChanges();
+
+      expect(component.hasMore()).toEqual(false);
+      expect(fixture.nativeElement.textContent).not.toContain('Show more');
+      expect(fixture.nativeElement.textContent).toContain('Showing 400 of 400');
+    });
+
+    it('goes back to the top 50 when the filter or the sort changes', async () => {
+      const fixture = await render();
+      const component = fixture.point.componentInstance;
+
+      component.showMore();
+      component.positionFilter.set('D');
+      expect(component.visibleRows().length).toEqual(50);
+      expect(component.matchingCount()).toEqual(200);
+
+      component.showMore();
+      component.onSort('goals');
+      expect(component.visibleRows().length).toEqual(50);
+    });
+  });
+
   describe('drafting against a shared board', () => {
     it('offers a signed-out visitor the sign-up rather than a copy', async () => {
       const fixture = await render();

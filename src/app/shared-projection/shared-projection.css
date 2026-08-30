@@ -149,6 +149,19 @@
   overflow-x: auto;
 }
 
+.table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.result-count {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
