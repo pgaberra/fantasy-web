@@ -1,44 +1,21 @@
+/* The card is drawn by the page, around the game range and this table together — they are one
+   surface, and a second panel stacked above this one only made the page look like two.
+   The heading went with it: the page is already called Who's hot and there is nothing else on
+   it for a "Leaderboard" title to distinguish this from. The name lives on as an aria-label,
+   where it still says what the region is without spending a line saying it twice. */
 .table-section {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-5);
-  box-shadow: var(--shadow-md);
+  display: block;
 }
 
-/* The league toolbar and the filters together are far too heavy to sit beside the title, so
-   the title keeps a row of its own and everything that acts on the table goes beneath it.
-   Unlike the table, these controls have no wrapper to scroll inside — without wrapping they
-   would push the whole page sideways. */
+/* The league toolbar and the filters together are far too heavy for one line, so they get a
+   block of their own above the table. Unlike the table, these controls have no wrapper to
+   scroll inside — without wrapping they would push the whole page sideways. */
 .table-header {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: var(--space-3);
   margin: 0 0 var(--space-4);
-}
-
-.table-title {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-3);
-}
-
-.table-section h2 {
-  font-size: 1.1rem;
-  font-weight: var(--weight-semibold);
-  color: var(--color-primary);
-  margin: 0;
-}
-
-.mode-badge {
-  background: var(--color-surface-alt);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-pill);
-  color: var(--color-text-muted);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  padding: 0.1rem var(--space-2);
 }
 
 .table-controls {
@@ -139,16 +116,16 @@
 }
 
 /* The stat columns are the point of the table, so the horizontal scroll lives here rather
-   than on the page — the page body must never scroll sideways. */
+   than on the page — the page body must never scroll sideways. Sideways only: this used to be
+   a viewport-tall scrollbox as well, capped at `100vh - 20rem`, a guess at how much chrome sat
+   above it. The guess could not be right — the environment and unverified banners come and go
+   above the header, and the toolbar wraps to a second row on a narrow window — so the box was
+   either short of the fold or past it, and past it meant the page scrolled too. Two scrollbars
+   for one list of players, and the header scrolled away inside the inner one regardless.
+   The page scrolls now, once, and `appPinnedTableHeader` holds the headings — the stat weight
+   row among them — against the top of the window while it does. */
 .table-wrapper {
   overflow-x: auto;
-}
-
-@media (min-width: 641px) {
-  .table-wrapper {
-    overflow: auto;
-    max-height: calc(100vh - 20rem);
-  }
 }
 
 table {
@@ -273,10 +250,6 @@ tbody tr:hover td.fan-pts-col {
 }
 
 @media (max-width: 640px) {
-  .table-section {
-    padding: var(--space-4);
-  }
-
   .table-controls {
     flex-wrap: wrap;
   }

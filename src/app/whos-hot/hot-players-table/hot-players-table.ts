@@ -48,6 +48,7 @@ import { TeamFilterComponent } from '../../draft-projection/player-projections-t
 import { ColumnsMenuComponent } from '../../draft-projection/player-projections-table/columns-menu/columns-menu';
 import { LeagueSettingsMenuComponent } from '../../draft-projection/player-projections-table/league-settings-menu/league-settings-menu';
 import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
+import { PinnedTableHeaderDirective } from '../../shared/pinned-table-header/pinned-table-header.directive';
 import { FormatToiPipe } from '../../pipes/format-toi.pipe';
 import { DecimalPipe } from '@angular/common';
 
@@ -82,6 +83,7 @@ interface RankedPlayer extends ScoredProjection {
     PositionFilterComponent,
     TeamFilterComponent,
     PopoverTriggerDirective,
+    PinnedTableHeaderDirective,
     LeagueSettingsMenuComponent,
     ColumnsMenuComponent,
     FormatToiPipe,

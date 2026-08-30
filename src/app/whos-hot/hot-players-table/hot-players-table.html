@@ -1,9 +1,5 @@
-<section class="table-section">
+<section class="table-section" aria-label="Leaderboard">
   <div class="table-header">
-    <div class="table-title">
-      <h2>Leaderboard</h2>
-      <span class="mode-badge">{{ perGame() ? 'Per game' : 'Totals' }}</span>
-    </div>
     <div class="table-controls">
       <div class="league-controls">
         <div class="segmented" role="group" aria-label="League type">
@@ -95,7 +91,7 @@
   </div>
 
   @if (!seasonNotPlayed()) {
-    <div class="table-wrapper">
+    <div class="table-wrapper" appPinnedTableHeader>
       <table>
         <thead
           app-projections-table-header

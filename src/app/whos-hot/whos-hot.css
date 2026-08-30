@@ -18,6 +18,17 @@
   margin: 0;
 }
 
+/* The one surface on the page: the game range, the leaderboard's own toolbar and the table
+   share a card rather than sitting in two of them. Drawn here because the range bar and the
+   table are separate components and neither can own a border that goes round both. */
+.leaderboard-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+}
+
 /* Projected into the table's toolbar, so it is styled from here rather than there. */
 .synced-league {
   display: inline-flex;
@@ -65,6 +76,10 @@
 
   .page-header h1 {
     font-size: var(--text-lg);
+  }
+
+  .leaderboard-card {
+    padding: var(--space-3);
   }
 
   .synced-league {

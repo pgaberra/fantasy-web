@@ -41,11 +41,11 @@ describe('GameRangeSelectorComponent', () => {
     const component = render(50, 82);
 
     expect(component.spanLength()).toEqual(33);
-    expect(component.summary()).toEqual('33 games · #50–82');
+    expect(component.summary()).toEqual('33 games');
   });
 
   it('describes a one-game span in the singular', () => {
-    expect(render(41, 41).summary()).toEqual('1 game · #41–41');
+    expect(render(41, 41).summary()).toEqual('1 game');
   });
 
   it('resolves the last-N presets against the season length', () => {
