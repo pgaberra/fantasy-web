@@ -16,7 +16,7 @@ import { debounceTime, Observable } from 'rxjs';
 import { PlayerService } from '../services/player.service';
 import { Player } from '../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
-import { ActiveColumns, Projection, ScoringType } from '../models/projection.model';
+import { Projection, ScoringType } from '../models/projection.model';
 import { LeagueSyncComponent } from './projection-settings-section/league-sync/league-sync';
 import { LeagueSyncDialogComponent } from './league-sync-dialog/league-sync-dialog';
 import { YahooSyncResult } from './projection-settings-section/yahoo-league-sync/yahoo-league-sync';
@@ -130,10 +130,6 @@ export class DraftProjectionComponent implements OnInit {
 
   activeScoringColumns = signal(new Set<ScoringStatKey>(DEFAULT_SCORING_COLUMNS));
   activeUtilityColumns = signal(new Set<SkaterUtilityStatKey>(DEFAULT_UTILITY_COLUMNS));
-  activeColumns = computed<ActiveColumns>(() => ({
-    scoring: this.activeScoringColumns(),
-    utility: this.activeUtilityColumns(),
-  }));
   scaleSettings = signal<Record<SkaterUtilityStatKey, ScaleConfig>>(
     createDefaultScaleSettings((key) => this.statInfoService.isRateStat(key)),
   );

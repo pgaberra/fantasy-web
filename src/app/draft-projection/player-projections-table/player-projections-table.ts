@@ -99,13 +99,11 @@ function toggledSet<T>(members: ReadonlySet<T>, member: T): Set<T> {
 })
 export class PlayerProjectionsTableComponent implements OnInit {
   // The settings that used to sit in a separate panel are two-way here, so the projection page
-  // can hand ownership to the table without giving up the state it autosaves. Surfaces that
-  // still bind them one-way (the landing demo) are unaffected.
+  // can hand ownership to the table without giving up the state it autosaves.
   readonly scoringType = model.required<ScoringType>();
   readonly statWeights = model.required<Record<ScoringStatKey, number>>();
   readonly players = input.required<Player[]>();
   readonly initialProjections = input<Projection[] | null>(null);
-  readonly activeColumns = input.required<ActiveColumns>();
   readonly leagueSize = model<number>(DEFAULT_LEAGUE_SIZE);
   readonly rosterSlots = model<RosterSlots>(DEFAULT_ROSTER_SLOTS);
   readonly minGoalieGames = model<number>(DEFAULT_MIN_GOALIE_GAMES);
@@ -137,6 +135,13 @@ export class PlayerProjectionsTableComponent implements OnInit {
     () => this.scoringType() === 'category' || !!this.syncedLeagueName(),
   );
   readonly manageSyncRequested = output<void>();
+
+  /**
+   * Which stats the projection scores, and which utility columns sit beside them. These two are
+   * the table's only account of its columns — it used to take an `activeColumns` input carrying
+   * the same two sets, and a surface that bound one and not the other got a table that rendered
+   * columns its own menus could not change.
+   */
   readonly activeScoringColumns = model<Set<ScoringStatKey>>(new Set<ScoringStatKey>());
   readonly activeUtilityColumns = model<Set<UtilityStatKey>>(new Set<UtilityStatKey>());
 
@@ -154,7 +159,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   readonly filteredActiveColumns = computed<ActiveColumns>(() =>
     this.activeColumnsService.filterAndSortActiveColumns(
-      this.activeColumns(),
+      { scoring: this.activeScoringColumns(), utility: this.activeUtilityColumns() },
       this.positionFilter(),
     ),
   );
@@ -307,7 +312,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly scoredProjections = computed((): ScoredProjection[] => {
     const projections = this.playerProjections();
     const statWeights = this.statWeights();
-    const activeScoringColumns = this.activeColumns().scoring;
+    const activeScoringColumns = this.activeScoringColumns();
     const roundedProjections = this.roundedProjections();
 
     const fantasyPoints = roundedProjections.map((pp) =>
