@@ -6,9 +6,7 @@
     >
     <span class="site-footer-links">
       <a routerLink="/privacy">Privacy</a>
-      @if (authService.isLoggedIn()) {
-        <a routerLink="/whos-hot">Who's hot</a>
-      } @else {
+      @if (!authService.isLoggedIn()) {
         <a routerLink="/login">Sign in</a>
         <a routerLink="/register">Get started</a>
       }
