@@ -164,14 +164,17 @@ export class ProjectionCreateComponent {
   readonly dataSource = signal<DataSource>('last-season');
 
   /**
-   * The model's lines, fetched only once the AI preset is picked. The endpoint serves the whole
-   * board — there is no way to ask for the handful of rows the preview draws — so this is a
-   * download the size of the player pool, and it stays lazy to keep the page as fast as it was
-   * for everyone who never chooses it.
+   * The model's lines for the preview, fetched only once the AI preset is picked — and only the
+   * top of them, the same slice of the board the pool itself is asked for. The counts come back
+   * whole either way, so the note under the table still speaks for the whole league.
    */
   private readonly modelSeedResource = rxResource({
     params: () => (this.dataSource() === 'ai' ? {} : undefined),
-    stream: () => this.projectionModel.seed(),
+    stream: () =>
+      this.projectionModel.seed({
+        skaterLimit: PREVIEW_FETCH_LIMITS.skaters,
+        goalieLimit: PREVIEW_FETCH_LIMITS.goalies,
+      }),
     defaultValue: undefined as SeededProjectionResponse | undefined,
   });
   readonly copyFromId = signal<string | null>(null);
