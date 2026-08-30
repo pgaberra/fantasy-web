@@ -63,31 +63,106 @@
   box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
 }
 
-.radio-group {
+/* The starting point is a segmented strip, the same control the draft page uses to pick what to
+   draft against (draft-start.css `.tabs`): a handful of exclusive choices, each one changing the
+   preview below it. Radios still do the work underneath — the strip is only what they look like,
+   so the arrow keys and the "1 of 4" a screen reader reads out survive the restyling. */
+.source-tabs {
   display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
+  gap: var(--space-1);
+  padding: 0.2rem;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.source-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.source-tab:hover {
+  color: var(--color-text);
+}
+
+.source-tab--active {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
 }
 
 /* The tip sits beside the label rather than inside it: a `<button>` is interactive content, and
    a label may not contain any — some browsers would let a tap on it select the radio. */
-.radio-row {
-  display: flex;
+.source-tab-choice {
+  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-}
-
-.radio-option {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  text-align: center;
   cursor: pointer;
 }
 
-.radio-title {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  color: var(--color-primary);
+/* Hidden, not removed: `display: none` would drop it out of the tab order and out of the group
+   a screen reader announces. */
+.source-tab-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The ring belongs on the segment, since the input it would otherwise draw around has no size. */
+.source-tab:has(.source-tab-input:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* Four labels across a phone is about 85px each, which "Last season's stats" is nowhere near.
+   A shorter word on the narrow end reads better than a wrapped or clipped one, so each segment
+   carries both and the width picks — the same trade the draft page's strip makes. */
+.source-tab-label--short {
+  display: none;
+}
+
+@media (max-width: 560px) {
+  /* Four segments don't fit across a phone even shortened, and a segment that wraps to two lines
+     stands a head taller than the rest. Natural widths that wrap as a row runs out keep every
+     label on one line, whether the copy choice is there to make a fourth or not. */
+  .source-tabs {
+    flex-wrap: wrap;
+  }
+
+  .source-tab {
+    flex: 1 1 auto;
+    gap: 0.25rem;
+    padding: 0.4rem 0.25rem;
+    font-size: var(--text-xs);
+    white-space: nowrap;
+  }
+
+  .source-tab-label {
+    display: none;
+  }
+
+  .source-tab-label--short {
+    display: inline;
+  }
 }
 
 .copy-select {
