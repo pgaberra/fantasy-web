@@ -60,13 +60,21 @@
       } @else if (signInPromptFor(); as intent) {
         <p class="board-actions-prompt" role="status" data-testid="sign-in-prompt">
           Your copy of this board lives in your account, so
-          <a routerLink="/login" [queryParams]="{ returnUrl }" data-testid="prompt-login">log in</a>
+          <a
+            routerLink="/login"
+            [queryParams]="{ returnUrl: promptReturnUrl() }"
+            data-testid="prompt-login"
+            >log in</a
+          >
           or
-          <a routerLink="/register" [queryParams]="{ returnUrl }" data-testid="prompt-register"
+          <a
+            routerLink="/register"
+            [queryParams]="{ returnUrl: promptReturnUrl() }"
+            data-testid="prompt-register"
             >create an account</a
           >
           {{ intent === 'draft' ? 'to draft against it.' : 'to make it yours.' }} Free to start, and
-          this board is waiting when you come back.
+          this carries on where you left off.
         </p>
       } @else {
         <p class="board-actions-note">
