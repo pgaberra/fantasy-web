@@ -175,22 +175,42 @@
 
 /* The table shell mirrors the editor's (player-projections-table.css), the same way the shared
    page does: the header and the rows are literally the editor's components, and component styles
-   are scoped, so the shell around them is repeated rather than imported. */
-.preview-scroll {
-  overflow-x: auto;
+   are scoped, so the shell around them is repeated rather than imported.
+
+   The scrolling box has to be called `.table-wrapper` and nothing else: the rules that pin the
+   rank, player and total columns while the stats scroll under them live in styles.css, keyed on
+   that class. Under any other name the preview renders the same table with none of it stuck —
+   which is what it did, and why the total scrolled out of sight in the one place the preview is
+   read for. The card around it carries the border and the padding the editor gets from its
+   .table-section, so the table isn't flush against its own frame. */
+.preview-card {
+  /* A step tighter than the editor's --space-5: this table sits in a 760px column rather than
+     the full page, and every pixel of padding is a pixel of stats the preview can't show. */
+  padding: var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
 }
 
-.preview-scroll table {
+.preview-card .table-wrapper {
+  overflow-x: auto;
+}
+
+.preview-card table {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--text-sm);
 }
 
-.preview-scroll tbody tr:nth-child(even) {
+.preview-card tbody tr:nth-child(even) {
   background: var(--color-surface-alt);
+}
+
+/* The hover highlight isn't optional once the columns are pinned: styles.css repaints the pinned
+   cells' own opaque backgrounds on :hover, so without the row behind them following, hovering
+   lights three cells out of twelve. The editor's table sets the same rule for the same reason. */
+.preview-card tbody tr:hover {
+  background: var(--color-surface-hover);
 }
 
 .preview-note {

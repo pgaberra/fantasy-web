@@ -66,7 +66,7 @@
           </label>
           <app-help-tip
             label="What starting from the AI projection means"
-            text="Start from a model's estimate for the coming season, built from several seasons of NHL data. It is a qualified guess, not the truth, so adjust it as you would any other starting point. It reaches most of the league but not all of it, so the projection opens with fewer players than the other starting points give."
+            text="Start from a model's estimate for the coming season, built from several seasons of NHL data. It is a qualified guess, not the truth, so adjust it as you would any other starting point."
           />
         </div>
         <div class="source-tab" [class.source-tab--active]="dataSource() === 'blank'">
@@ -133,39 +133,41 @@
         } @else {
           <!-- The editor's own header and rows, read-only: the preview is the table it previews,
                not a drawing of it. -->
-          <div class="preview-scroll">
-            <table>
-              <thead
-                app-projections-table-header
-                [activeColumns]="previewActiveColumns"
-                [scoringType]="'points'"
-                [statWeights]="previewStatWeights"
-                [useDefaultDecimals]="true"
-                [decimalSettings]="previewDecimalSettings"
-                [sortColumn]="'summary'"
-                [sortDirection]="'desc'"
-                [readonly]="true"
-                [sortable]="false"
-              ></thead>
-              <tbody>
-                @for (row of previewRows(); track row.projection.playerId) {
-                  <tr
-                    app-player-row
-                    [positionRank]="row.rank"
-                    [totalRank]="null"
-                    [projection]="row.projection"
-                    [playerScore]="row.score"
-                    [player]="row.player"
-                    [rookie]="row.rookie"
-                    [belowMinGames]="row.belowMinGames"
-                    [activeColumns]="previewActiveColumns"
-                    [scoringType]="'points'"
-                    [decimalSettings]="previewDecimalSettings"
-                    [readonly]="true"
-                  ></tr>
-                }
-              </tbody>
-            </table>
+          <div class="preview-card">
+            <div class="table-wrapper table-wrapper--compact-identity">
+              <table>
+                <thead
+                  app-projections-table-header
+                  [activeColumns]="previewActiveColumns"
+                  [scoringType]="'points'"
+                  [statWeights]="previewStatWeights"
+                  [useDefaultDecimals]="true"
+                  [decimalSettings]="previewDecimalSettings"
+                  [sortColumn]="'summary'"
+                  [sortDirection]="'desc'"
+                  [readonly]="true"
+                  [sortable]="false"
+                ></thead>
+                <tbody>
+                  @for (row of previewRows(); track row.projection.playerId) {
+                    <tr
+                      app-player-row
+                      [positionRank]="row.rank"
+                      [totalRank]="null"
+                      [projection]="row.projection"
+                      [playerScore]="row.score"
+                      [player]="row.player"
+                      [rookie]="row.rookie"
+                      [belowMinGames]="row.belowMinGames"
+                      [activeColumns]="previewActiveColumns"
+                      [scoringType]="'points'"
+                      [decimalSettings]="previewDecimalSettings"
+                      [readonly]="true"
+                    ></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
           @if (modelCoverage(); as coverage) {
             <p class="preview-note">
