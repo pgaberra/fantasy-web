@@ -316,9 +316,9 @@ describe('ProjectionCreateComponent', () => {
     expect(createProjection).toHaveBeenCalledWith(expect.objectContaining({ data: source.data }));
   });
 
-  // Four skaters and the goalie, which is the whole point of the reserved row: the board's own
-  // top five is all skaters, and the goalie columns would stand empty.
-  const topFive = ['Best Player', 'Second Player', 'Third Player', 'Fourth Player', 'Only Goalie'];
+  // The board's own top five, whoever they turn out to be. Under these stats that is all
+  // skaters — the goalie ranks below them and is not lifted into the last seat.
+  const topFive = ['Best Player', 'Second Player', 'Third Player', 'Fourth Player', 'Fifth Player'];
 
   it('previews the top players with the stats last season gave them', async () => {
     const fixture = MockRender(ProjectionCreateComponent);
@@ -334,28 +334,31 @@ describe('ProjectionCreateComponent', () => {
     );
     expect(rows[0].projection.stats.utility.gp).toEqual(82);
     expect(rows[0].score.fantasyPoints).toBeGreaterThan(0);
-    expect(rows[4].projection.stats.scoring).toEqual(
-      expect.objectContaining({ w: 1, sv: 10, ga: 5 }),
-    );
-    expect(rows[4].belowMinGames).toEqual(false);
+    expect(rows.every((row) => row.player.type === 'skater')).toBe(true);
   });
 
   // The goalie minimum is a category-league rule (see ProjectionRankingService.isQualified), and
   // a new projection opens in points mode — so the preview must not put the editor's
   // "Below min. games" marker on a goalie who would never carry one there.
   it('leaves a barely-played goalie unmarked, as points scoring does', async () => {
+    // A board short enough that the goalie is in the preview on its own merits — there is no
+    // reserved seat lifting it in any more.
     MockInstance(
       PlayerService,
       'getPlayers',
-      vi.fn(() => of([...skaters, { ...goalie, stats: { ...goalie.stats, utility: { gp: 5 } } }])),
+      vi.fn(() =>
+        of([...skaters.slice(0, 3), { ...goalie, stats: { ...goalie.stats, utility: { gp: 5 } } }]),
+      ),
     );
 
     const fixture = MockRender(ProjectionCreateComponent);
     await fixture.whenStable();
 
-    const goalieRow = fixture.point.componentInstance.previewRows()[4];
-    expect(goalieRow.player.name).toEqual('Only Goalie');
-    expect(goalieRow.belowMinGames).toEqual(false);
+    const goalieRow = fixture.point.componentInstance
+      .previewRows()
+      .find((row) => row.player.name === 'Only Goalie');
+    expect(goalieRow).toBeDefined();
+    expect(goalieRow?.belowMinGames).toEqual(false);
   });
 
   // The preview shows the columns the editor opens with — the goalie ones included, so they read
@@ -396,7 +399,7 @@ describe('ProjectionCreateComponent', () => {
       row.score.zScore,
     ]);
     expect(values.every((value) => value === 0)).toEqual(true);
-    // Nobody is projected for any games yet, so the goalie is not called short of them either.
+    // Nobody is projected for any games yet, so nobody is called short of them either.
     expect(rows.some((row) => row.belowMinGames)).toEqual(false);
   });
 
@@ -483,7 +486,7 @@ describe('ProjectionCreateComponent', () => {
       'Fourth Player',
     ]);
     // Last season had these three last, and the goalie is absent because the model has no line
-    // for it — not lifted into the final row the way the other presets reserve one.
+    // for it.
     expect(rows.every((row) => row.player.type === 'skater')).toBe(true);
   });
 
