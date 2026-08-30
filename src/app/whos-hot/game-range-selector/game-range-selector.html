@@ -1,17 +1,6 @@
-<!-- The row asks three things — which season, which games, how to count them — so it is named
-     for all three. "Game range" would repeat the label inside it and leave out the rest. -->
-<section class="range-bar" aria-label="Season, game range and scoring options">
-  <div class="season-field">
-    <label class="field-label" for="whos-hot-season">Season</label>
-    <select id="whos-hot-season" class="season-select" (change)="onSeasonChange($event)">
-      @for (option of seasons(); track option.startYear) {
-        <option [value]="option.startYear" [selected]="option.startYear === season()">
-          {{ option.label }}
-        </option>
-      }
-    </select>
-  </div>
-
+<!-- Which games, and how to count them. Which season is not asked here: it frames the whole
+     page rather than this row, so it is asked once, up beside the page title. -->
+<section class="range-bar" aria-label="Game range and scoring options">
   <!-- The pills and the rail are one question asked twice over — by name, then exactly — so
        they are one group under one label rather than two rows that happen to sit together. -->
   <div class="range-group" role="group" aria-labelledby="whos-hot-range-label">
