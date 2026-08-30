@@ -9,6 +9,7 @@ import { NotificationService } from '../services/notification.service';
 import { StatInfoService } from '../services/stat-info.service';
 import { ProjectionResponse } from '../api/models/projection-response';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
+import { CreateProjectionRequest } from '../api/models/create-projection-request';
 import { createDefaultProjectionState } from '../draft-projection/projection-defaults';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
@@ -19,6 +20,36 @@ import { RelativeTimePipe } from '../pipes/relative-time.pipe';
  * heading there reads the same as the row the draft was started from.
  */
 export const LAST_SEASON_PRESET_NAME = "Last Season's Stats";
+
+/** The model's own estimate for the coming season. Named by the server, like the other preset. */
+export const MODEL_PRESET_NAME = 'AI Projection';
+
+/**
+ * A starting point everyone shares, as opposed to a projection someone owns.
+ *
+ * <p>The name doubles as the identity: `kind: 'preset_draft'` says a stored draft came from a
+ * preset but not which one, and the server decides the name (so a draft cannot claim to have
+ * been drafted against something it was not). That makes it safe to match on here, though a
+ * dedicated field on the projection would say it outright.
+ */
+export interface Preset {
+  readonly name: string;
+  readonly source: CreateProjectionRequest['source'];
+  readonly description: string;
+}
+
+export const PRESETS: readonly Preset[] = [
+  {
+    name: LAST_SEASON_PRESET_NAME,
+    source: 'default',
+    description: "Every player at last season's numbers, default scoring settings",
+  },
+  {
+    name: MODEL_PRESET_NAME,
+    source: 'model',
+    description: "The model's estimate for the coming season — a qualified guess, not the truth",
+  },
+];
 
 /** Which kind of source the picker is showing. */
 export type SourceTab = 'own' | 'imported' | 'presets';
@@ -58,7 +89,7 @@ export class DraftStartComponent {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly presetName = LAST_SEASON_PRESET_NAME;
+  readonly presets = PRESETS;
 
   readonly sourcesResource = rxResource({
     stream: () => this.storage.listWithPresetDrafts(),
@@ -66,7 +97,8 @@ export class DraftStartComponent {
   });
 
   readonly isStarting = signal(false);
-  readonly confirmingRestart = signal(false);
+  /** Which preset is being asked about, so two rows cannot share one confirmation. */
+  readonly confirmingRestart = signal<string | null>(null);
   readonly selectedTab = signal<SourceTab>('own');
 
   readonly shareInput = signal('');
@@ -78,12 +110,24 @@ export class DraftStartComponent {
   readonly projections = computed(() => this.byKind('projection'));
   readonly imported = computed(() => this.byKind('imported'));
 
-  readonly presetDraft = computed(
-    () =>
-      this.sourcesResource.value().find((projection) => projection.kind === 'preset_draft') ?? null,
-  );
+  /** The stored draft for each preset, by preset name. Absent until one has been started. */
+  private readonly presetDrafts = computed(() => {
+    const byName = new Map<string, ProjectionSummaryResponse>();
+    for (const projection of this.sourcesResource.value()) {
+      if (projection.kind === 'preset_draft') {
+        byName.set(projection.name, projection);
+      }
+    }
+    return byName;
+  });
 
-  readonly presetLabel = computed(() => this.draftLabel(this.presetDraft()?.draftStatus ?? 'none'));
+  presetDraft(preset: Preset): ProjectionSummaryResponse | null {
+    return this.presetDrafts().get(preset.name) ?? null;
+  }
+
+  presetLabel(preset: Preset): string {
+    return this.draftLabel(this.presetDraft(preset)?.draftStatus ?? 'none');
+  }
 
   /**
    * Drafts left mid-way, lifted out of the lists below. Resuming one is what most visits here
@@ -173,21 +217,25 @@ export class DraftStartComponent {
     this.notification.error("Couldn't import that board. Please try again.");
   }
 
-  startPreset(): void {
-    const existing = this.presetDraft();
+  startPreset(preset: Preset): void {
+    const existing = this.presetDraft(preset);
     if (existing) {
       this.openDraft(existing.id);
       return;
     }
-    this.start(this.createPresetDraft());
+    this.start(this.createPresetDraft(preset));
   }
 
-  requestRestart(): void {
-    this.confirmingRestart.set(true);
+  requestRestart(preset: Preset): void {
+    this.confirmingRestart.set(preset.name);
   }
 
   cancelRestart(): void {
-    this.confirmingRestart.set(false);
+    this.confirmingRestart.set(null);
+  }
+
+  isConfirmingRestart(preset: Preset): boolean {
+    return this.confirmingRestart() === preset.name;
   }
 
   /**
@@ -196,14 +244,16 @@ export class DraftStartComponent {
    * keeping. A projection's draft is reset from the board instead, where the projection
    * itself has to survive.
    */
-  confirmRestart(): void {
-    const existing = this.presetDraft();
-    this.confirmingRestart.set(false);
+  confirmRestart(preset: Preset): void {
+    const existing = this.presetDraft(preset);
+    this.confirmingRestart.set(null);
     if (!existing) {
       return;
     }
     this.start(
-      this.storage.deleteProjection(existing.id).pipe(switchMap(() => this.createPresetDraft())),
+      this.storage
+        .deleteProjection(existing.id)
+        .pipe(switchMap(() => this.createPresetDraft(preset))),
     );
   }
 
@@ -214,13 +264,14 @@ export class DraftStartComponent {
       .sort((first, second) => second.updatedAt.localeCompare(first.updatedAt));
   }
 
-  private createPresetDraft(): Observable<ProjectionResponse> {
-    // No player rows: `source` has the server fill them from its read model, exactly as a new
-    // projection created from last season's stats does.
+  private createPresetDraft(preset: Preset): Observable<ProjectionResponse> {
+    // No player rows: `source` has the server fill them in, exactly as a new projection created
+    // from the same starting point does. The name is sent for completeness — the server names a
+    // preset draft itself, so that a board cannot claim a preset it was not drafted against.
     return this.storage.createProjection({
-      name: LAST_SEASON_PRESET_NAME,
+      name: preset.name,
       kind: 'preset_draft',
-      source: 'default',
+      source: preset.source,
       data: this.serializer.toProjectionData(
         createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
       ),
