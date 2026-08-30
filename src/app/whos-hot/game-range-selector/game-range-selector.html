@@ -92,21 +92,28 @@
       />
     </div>
 
-    <div class="option min-games">
-      <label for="min-games">Min. games</label>
-      <app-help-tip
-        label="What the minimum does"
-        text="Hide players with fewer appearances in the range."
-      />
-      <input
-        id="min-games"
-        type="number"
-        min="1"
-        [max]="spanLength()"
-        step="1"
-        [value]="minGames()"
-        (input)="onMinGamesInput($event)"
-      />
-    </div>
+    <!-- The minimum only means something once the leaderboard is scored per game: a rate off two
+         games is the thing it guards against, while in totals mode a player who barely played
+         already shows small totals and sorts himself to the bottom. Shown next to the switch that
+         gives it a job, and not applied while that switch is off, so the number on screen is
+         always a filter that is actually running. -->
+    @if (perGame()) {
+      <div class="option min-games">
+        <label for="min-games">Min. games</label>
+        <app-help-tip
+          label="What the minimum does"
+          text="Hide players with fewer appearances in the range."
+        />
+        <input
+          id="min-games"
+          type="number"
+          min="1"
+          [max]="spanLength()"
+          step="1"
+          [value]="minGames()"
+          (input)="onMinGamesInput($event)"
+        />
+      </div>
+    }
   </div>
 </section>

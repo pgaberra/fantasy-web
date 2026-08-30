@@ -193,10 +193,16 @@ describe('HotPlayersTableComponent', () => {
   });
 
   it('drops players below the minimum-games threshold entirely', () => {
-    const component = render([skater(1, 3), skater(2, 20)], { minGames: 5 });
+    const component = render([skater(1, 3), skater(2, 20)], { perGame: true, minGames: 5 });
 
     expect(component.matchingCount()).toEqual(1);
     expect(component.visiblePlayers()[0].projection.playerId).toEqual(2);
+  });
+
+  it('ignores the minimum-games threshold while the leaderboard shows totals', () => {
+    const component = render([skater(1, 3), skater(2, 20)], { minGames: 5 });
+
+    expect(component.matchingCount()).toEqual(2);
   });
 
   it('shows games played from the range, not the season', () => {
@@ -281,7 +287,7 @@ describe('HotPlayersTableComponent', () => {
   });
 
   it('shows the empty state rather than a bare table when nothing qualifies', () => {
-    render([skater(1, 2)], { minGames: 10 });
+    render([skater(1, 2)], { perGame: true, minGames: 10 });
 
     expect(ngMocks.findAll('tbody tr')).toHaveLength(0);
     expect(ngMocks.find('.table-empty').nativeElement.textContent).toContain('No players match');

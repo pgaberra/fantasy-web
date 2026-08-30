@@ -108,6 +108,23 @@ describe('GameRangeSelectorComponent', () => {
     expect(component.minGames()).toEqual(13);
   });
 
+  it('offers the minimum-games filter only while the leaderboard is scored per game', () => {
+    const fixture = MockRender(GameRangeSelectorComponent, {
+      scheduleLength: 82,
+      fromGame: 63,
+      toGame: 82,
+      perGame: false,
+      minGames: 1,
+    });
+
+    expect(ngMocks.findAll('#min-games')).toHaveLength(0);
+
+    fixture.point.componentInstance.togglePerGame();
+    fixture.detectChanges();
+
+    expect(ngMocks.findAll('#min-games')).toHaveLength(1);
+  });
+
   it('toggles the per-game view', () => {
     const component = render();
 
