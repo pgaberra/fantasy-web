@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import type { ErrorEvent } from '@sentry/browser';
-import { ErrorReportingService, redactEvent } from './error-reporting.service';
+import { beforeSendEvent, ErrorReportingService, redactEvent } from './error-reporting.service';
+import { RELOADED_KEY } from '../shared/stale-build';
 
 describe('redactEvent', () => {
   it('strips a single-use token out of the request URL', () => {
@@ -35,6 +36,70 @@ describe('redactEvent', () => {
     };
 
     expect(redactEvent(event).request?.url).toEqual('https://slapstat.com/projections/abc');
+  });
+});
+
+/**
+ * Sentry's own global listeners report past Angular's ErrorHandler, so the filter there is not
+ * enough on its own: the router's rethrow arrives as an unhandled rejection and was sent anyway.
+ */
+describe('beforeSendEvent', () => {
+  const chunkEvent = (): ErrorEvent => ({
+    type: undefined,
+    exception: {
+      values: [
+        {
+          type: 'TypeError',
+          value: 'Failed to fetch dynamically imported module: https://slapstat.com/chunk-A.js',
+        },
+      ],
+    },
+  });
+
+  afterEach(() => sessionStorage.clear());
+
+  it('drops the stale-build error of a reload the app has already scheduled', () => {
+    sessionStorage.setItem(RELOADED_KEY, '1');
+
+    expect(
+      beforeSendEvent(chunkEvent(), { originalException: new Error('ChunkLoadError') }),
+    ).toBeNull();
+  });
+
+  it('drops it on the serialised value alone, for an event that arrives without the throwable', () => {
+    sessionStorage.setItem(RELOADED_KEY, '1');
+
+    expect(beforeSendEvent(chunkEvent())).toBeNull();
+  });
+
+  /** A chunk error with no reload pending is a broken build, not a stale one. It must report. */
+  it('keeps a stale-build error nobody is reloading for', () => {
+    expect(beforeSendEvent(chunkEvent())).not.toBeNull();
+  });
+
+  it('keeps an unrelated error while a reload is pending', () => {
+    sessionStorage.setItem(RELOADED_KEY, '1');
+    const event: ErrorEvent = {
+      type: undefined,
+      exception: { values: [{ type: 'TypeError', value: 'Cannot read properties of undefined' }] },
+    };
+
+    expect(
+      beforeSendEvent(event, {
+        originalException: new Error('Cannot read properties of undefined'),
+      }),
+    ).not.toBeNull();
+  });
+
+  it('still redacts the events it keeps', () => {
+    const event: ErrorEvent = {
+      type: undefined,
+      request: { url: 'https://slapstat.com/reset-password?token=live-secret' },
+    };
+
+    expect(beforeSendEvent(event)?.request?.url).toEqual(
+      'https://slapstat.com/reset-password?token=redacted',
+    );
   });
 });
 
