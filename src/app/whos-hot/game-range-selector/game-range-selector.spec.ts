@@ -180,6 +180,16 @@ describe('GameRangeSelectorComponent', () => {
     expect(presets.getAttribute('aria-label')).toEqual(null);
   });
 
+  it('names the whole row for everything in it, not just the range in the middle of it', () => {
+    render();
+
+    const bar = ngMocks.find('.range-bar').nativeElement as HTMLElement;
+
+    // Naming the region 'Game range' repeated the label inside it and left the season and the
+    // scoring options out of the name.
+    expect(bar.getAttribute('aria-label')).toEqual('Season, game range and scoring options');
+  });
+
   it('picks the season by the year it starts in, which is what the splits API takes', () => {
     const component = render();
 
