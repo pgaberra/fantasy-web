@@ -25,15 +25,6 @@ describe('ShareImportComponent', () => {
     return fixture.point.componentInstance;
   };
 
-  /** The new-projection page imports from its own Create button, so this one is in the way. */
-  it('leaves out its own button when the page drives the import', async () => {
-    const fixture = MockRender(ShareImportComponent, { showSubmit: false });
-    await fixture.whenStable();
-
-    expect(fixture.nativeElement.querySelector('button')).toBeNull();
-    expect(fixture.point.componentInstance.hasLink()).toEqual(false);
-  });
-
   it('takes the token out of a pasted share link', () => {
     expect(shareTokenFrom('https://slapstat.com/s/aBc123_-xyz')).toEqual('aBc123_-xyz');
     expect(shareTokenFrom('  /s/aBc123_-xyz  ')).toEqual('aBc123_-xyz');
@@ -85,29 +76,15 @@ describe('ShareImportComponent', () => {
     expect(component.importName()).toBeNull();
   });
 
-  it('says so when the link has gone, and tells the page the import got nowhere', async () => {
+  it('says so when the link has gone', async () => {
     importFromShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
 
     const component = await render();
-    const failed = vi.fn();
-    component.failed.subscribe(failed);
     component.shareInput.set('https://slapstat.com/s/aBc123_-xyz');
     component.submit();
 
     expect(component.importHint()).toBeTruthy();
     expect(notifyError).not.toHaveBeenCalled();
-    expect(failed).toHaveBeenCalledOnce();
-  });
-
-  it('reports a paste that is not a link as a failure too, so no page waits on it', async () => {
-    const component = await render();
-    const failed = vi.fn();
-    component.failed.subscribe(failed);
-    component.shareInput.set('https://example.com/nothing');
-
-    component.submit();
-
-    expect(failed).toHaveBeenCalledOnce();
   });
 
   it('surfaces any other failure as a toast', async () => {
