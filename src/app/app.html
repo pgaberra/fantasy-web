@@ -41,7 +41,9 @@
               <polyline points="6 9 12 15 18 9" />
             </svg>
           </button>
-          <a routerLink="/whos-hot" routerLinkActive="active">Who's hot</a>
+          @if (whosHotEnabled) {
+            <a routerLink="/whos-hot" routerLinkActive="active">Who's hot</a>
+          }
           @if (paymentsEnabled) {
             <a routerLink="/account" routerLinkActive="active">Account</a>
           }
@@ -75,15 +77,17 @@
     >
       My Projections
     </a>
-    <a
-      class="nav-menu-item nav-menu-item--collapsed"
-      cdkMenuItem
-      routerLink="/whos-hot"
-      routerLinkActive="active"
-      ariaCurrentWhenActive="page"
-    >
-      Who's hot
-    </a>
+    @if (whosHotEnabled) {
+      <a
+        class="nav-menu-item nav-menu-item--collapsed"
+        cdkMenuItem
+        routerLink="/whos-hot"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+      >
+        Who's hot
+      </a>
+    }
     @if (paymentsEnabled) {
       <a
         class="nav-menu-item nav-menu-item--collapsed"

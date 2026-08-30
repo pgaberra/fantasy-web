@@ -35,6 +35,7 @@ export class App {
   protected readonly environmentName = environment.environmentName;
   protected readonly appVersion = environment.version;
   protected readonly paymentsEnabled = environment.paymentsEnabled;
+  protected readonly whosHotEnabled = environment.whosHotEnabled;
 
   private readonly currentPath = () => this.router.url.split(/[?#]/)[0];
   private readonly path = toSignal(

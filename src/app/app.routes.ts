@@ -3,6 +3,7 @@ import { landingRedirectGuard } from './guards/landing-redirect.guard';
 import { adminGuard } from './guards/admin.guard';
 import { authGuard } from './guards/auth.guard';
 import { paymentsEnabledGuard } from './guards/payments-enabled.guard';
+import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
 
 /**
  * Every route is loaded on demand. Statically importing the components put each feature —
@@ -54,6 +55,9 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./shared-projection/shared-projection').then((m) => m.SharedProjectionComponent),
   },
+  // Off with WHOS_HOT_ENABLED=false, which drops the nav links and bounces a direct hit home,
+  // so the page can be pulled from an environment without pulling it from the build.
+  //
   // The splits behind the leaderboard are a signed-in endpoint, so without this a signed-out
   // visitor who typed the URL or kept a bookmark got the page's "couldn't load — check your
   // connection" state over a 401, which blames the network for a sign-in. The nav only offers
@@ -61,7 +65,7 @@ export const routes: Routes = [
   {
     path: 'whos-hot',
     loadComponent: () => import('./whos-hot/whos-hot').then((m) => m.WhosHotComponent),
-    canActivate: [authGuard],
+    canActivate: [whosHotEnabledGuard, authGuard],
   },
   {
     path: 'admin',

@@ -33,4 +33,8 @@ export const environment = {
   // Off by default; deployed builds drive it via the ESPN_LEAGUES_ENABLED build arg. Mirrors the
   // facebookLoginEnabled pattern — the ESPN provider stays hidden until this is true.
   espnLeaguesEnabled: false,
+  // Feature toggle for the Who's hot page (its nav links and its route). On by default, unlike
+  // the toggles above: the page already ships, so an unset flag has to mean "carry on showing
+  // it". Deployed builds turn it off with the WHOS_HOT_ENABLED=false build arg.
+  whosHotEnabled: true,
 };

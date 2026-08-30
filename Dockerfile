@@ -38,6 +38,9 @@ ARG PAYMENTS_ENABLED=
 # ESPN_LEAGUES_ENABLED=true shows the ESPN provider in the projection's league-sync UI;
 # empty/anything else keeps it hidden (default), so ESPN stays dark until enabled per env.
 ARG ESPN_LEAGUES_ENABLED=
+# WHOS_HOT_ENABLED=false hides the Who's hot page (both nav links and the route); empty/anything
+# else leaves it visible (default), since the page already ships.
+ARG WHOS_HOT_ENABLED=
 
 # Inject the values into environment.prod.ts (replaces the committed placeholders).
 RUN sed -i \
@@ -52,6 +55,7 @@ RUN sed -i \
   -e "s|__YAHOO_SYNC_DISABLED__|${YAHOO_SYNC_DISABLED}|g" \
   -e "s|__PAYMENTS_ENABLED__|${PAYMENTS_ENABLED}|g" \
   -e "s|__ESPN_LEAGUES_ENABLED__|${ESPN_LEAGUES_ENABLED}|g" \
+  -e "s|__WHOS_HOT_ENABLED__|${WHOS_HOT_ENABLED}|g" \
   src/environments/environment.prod.ts
 
 RUN npm run build
