@@ -15,6 +15,7 @@ import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-i
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { ShareImportComponent } from '../shared/share-import/share-import';
+import { offeredPresets } from '../models/ai-projection';
 
 /**
  * The name the preset draft is stored under. It doubles as the label on the board, so the
@@ -39,6 +40,7 @@ export interface Preset {
   readonly description: string;
 }
 
+/** Every preset the picker knows of. What it offers is `offeredPresets` of these — see below. */
 export const PRESETS: readonly Preset[] = [
   {
     id: 'last_season',
@@ -86,7 +88,11 @@ export class DraftStartComponent {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly presets = PRESETS;
+  /**
+   * The presets this build offers. Filtered rather than constant: the AI projection is behind a
+   * build flag, and a row that starts a draft the build cannot seed is worse than no row.
+   */
+  readonly presets = offeredPresets(PRESETS);
 
   readonly sourcesResource = rxResource({
     stream: () => this.storage.listWithPresetDrafts(),

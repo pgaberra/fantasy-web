@@ -13,6 +13,7 @@ import {
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { NotificationService } from '../services/notification.service';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
+import { environment } from '../../environments/environment';
 
 describe('DraftStartComponent', () => {
   const LAST_SEASON = PRESETS.find((preset) => preset.id === 'last_season')!;
@@ -236,6 +237,19 @@ describe('DraftStartComponent', () => {
     expect(request.kind).toEqual('preset_draft');
     expect(request.source).toEqual('model');
     expect(request.data.players).toEqual([]);
+  });
+
+  // The row is the only way in here, so dropping it is what switching the feature off means.
+  it('drops the AI preset from the picker when the AI projection is switched off', async () => {
+    const original = environment.aiProjectionEnabled;
+    environment.aiProjectionEnabled = false;
+    try {
+      const component = await render();
+
+      expect(component.presets.map((preset) => preset.id)).toEqual(['last_season']);
+    } finally {
+      environment.aiProjectionEnabled = original;
+    }
   });
 
   it('keeps the two presets apart, each with its own stored draft', async () => {
