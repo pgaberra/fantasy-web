@@ -34,59 +34,67 @@
           text="The initial stats each player is given."
         />
       </div>
-      <div class="radio-group">
-        <div class="radio-row">
-          <label class="radio-option">
+      <div class="source-tabs" role="radiogroup" aria-label="Starting point">
+        <div class="source-tab" [class.source-tab--active]="dataSource() === 'last-season'">
+          <label class="source-tab-choice">
             <input
               type="radio"
+              class="source-tab-input"
               name="data-source"
               [checked]="dataSource() === 'last-season'"
               (change)="dataSource.set('last-season')"
             />
-            <span class="radio-title">Last season's stats</span>
+            <span class="source-tab-label">Last season's stats</span>
+            <span class="source-tab-label source-tab-label--short">Last season</span>
           </label>
           <app-help-tip
             label="What starting from last season's stats means"
             text="Start from each player's real numbers from last season."
           />
         </div>
-        <div class="radio-row">
-          <label class="radio-option">
+        <div class="source-tab" [class.source-tab--active]="dataSource() === 'ai'">
+          <label class="source-tab-choice">
             <input
               type="radio"
+              class="source-tab-input"
               name="data-source"
               [checked]="dataSource() === 'ai'"
               (change)="dataSource.set('ai')"
             />
-            <span class="radio-title">AI projection</span>
+            <span class="source-tab-label">AI projection</span>
+            <span class="source-tab-label source-tab-label--short">AI</span>
           </label>
           <app-help-tip
             label="What starting from the AI projection means"
             text="Start from a model's estimate for the coming season, built from several seasons of NHL data. It is a qualified guess, not the truth, so adjust it as you would any other starting point. It reaches most of the league but not all of it, so the projection opens with fewer players than the other starting points give."
           />
         </div>
-        <div class="radio-row">
-          <label class="radio-option">
+        <div class="source-tab" [class.source-tab--active]="dataSource() === 'blank'">
+          <label class="source-tab-choice">
             <input
               type="radio"
+              class="source-tab-input"
               name="data-source"
               [checked]="dataSource() === 'blank'"
               (change)="dataSource.set('blank')"
             />
-            <span class="radio-title">From scratch</span>
+            <span class="source-tab-label">From scratch</span>
+            <span class="source-tab-label source-tab-label--short">Scratch</span>
           </label>
           <app-help-tip label="What starting from scratch means" text="Every stat starts at 0." />
         </div>
         @if (existingProjections().length) {
-          <div class="radio-row">
-            <label class="radio-option">
+          <div class="source-tab" [class.source-tab--active]="dataSource() === 'copy'">
+            <label class="source-tab-choice">
               <input
                 type="radio"
+                class="source-tab-input"
                 name="data-source"
                 [checked]="dataSource() === 'copy'"
                 (change)="dataSource.set('copy')"
               />
-              <span class="radio-title">A copy of another projection</span>
+              <span class="source-tab-label">Another projection</span>
+              <span class="source-tab-label source-tab-label--short">Copy</span>
             </label>
             <app-help-tip
               label="What copying another projection means"
