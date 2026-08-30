@@ -38,6 +38,19 @@
   margin-top: var(--space-4);
 }
 
+/* The answer to a button that was just pressed, so it carries more weight than the standing note
+   it replaces: pressing something and getting a line of grey text back reads as nothing happening. */
+.board-actions-prompt {
+  margin: var(--space-3) 0 0;
+  max-width: 60ch;
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
 .board-actions-note {
   margin: var(--space-2) 0 0;
   max-width: 60ch;

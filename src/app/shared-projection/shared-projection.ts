@@ -103,6 +103,13 @@ export class SharedProjectionComponent {
   readonly isImporting = computed(() => this.importingInto() !== null);
   readonly alreadyImported = signal(false);
 
+  /**
+   * Which button a visitor without an account pressed, and therefore what the sign-in prompt is
+   * about. Both buttons are offered to them on purpose: a copy is what the page is for, and
+   * finding that out by pressing the thing you came to press beats reading it in a card first.
+   */
+  readonly signInPromptFor = signal<ImportDestination | null>(null);
+
   /** Takes a copy of the published board and opens it for editing. */
   copyToMyProjections(): void {
     this.importThen('projection');
@@ -119,6 +126,12 @@ export class SharedProjectionComponent {
    * lands differs, which is the whole difference between the two buttons.
    */
   private importThen(destination: ImportDestination): void {
+    // A copy has to live in an account, so someone without one is asked for it here rather than
+    // being sent away and made to find their way back. The board stays on screen behind the ask.
+    if (!this.isLoggedIn()) {
+      this.signInPromptFor.set(destination);
+      return;
+    }
     this.importingInto.set(destination);
     this.alreadyImported.set(false);
     this.storage
