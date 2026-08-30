@@ -455,7 +455,19 @@ describe('ProjectionCreateComponent', () => {
     expect(createProjection.mock.calls[0][0].source).toEqual('model');
   });
 
-  // Half a megabyte, for a preset most visitors never pick.
+  // Five rows do not need the model's whole board either, the same reason the pool is asked
+  // for a slice. The counts still cover the league, which is what the note under it reports.
+  it('asks the model for the same slice of the board the pool is asked for', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+
+    fixture.point.componentInstance.dataSource.set('ai');
+    await fixture.whenStable();
+
+    expect(seed).toHaveBeenCalledWith({ skaterLimit: 25, goalieLimit: 10 });
+    expect(fixture.point.componentInstance.modelCoverage()).toEqual({ skaters: 3, goalies: 0 });
+  });
+
   it('does not download the model until the AI preset is picked', async () => {
     const fixture = MockRender(ProjectionCreateComponent);
     await fixture.whenStable();
