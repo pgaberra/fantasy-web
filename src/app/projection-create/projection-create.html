@@ -134,10 +134,7 @@
         @case ('imported') {
           <section class="panel">
             @if (importedBoards().length === 0) {
-              <p class="panel-empty">
-                Nobody's board here yet. Paste a SlapStat share link below to start from someone
-                else's numbers.
-              </p>
+              <p class="panel-empty">No projections imported.</p>
             } @else {
               <ul class="rows">
                 @for (board of importedBoards(); track board.id) {
