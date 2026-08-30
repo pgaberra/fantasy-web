@@ -37,11 +37,10 @@ td.col-name {
 }
 
 .player-headshot {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: #e6e9f2;
+  /* Sized through the component's own variables — it draws itself round on that box, and
+     the row grows to follow the picture. */
+  --headshot-size: 36px;
+  --headshot-initials-size: 0.75rem;
   flex-shrink: 0;
 }
 

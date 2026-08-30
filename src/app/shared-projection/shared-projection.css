@@ -59,8 +59,8 @@
 }
 
 @media (max-width: 640px) {
-  /* Side by side they wrap to two lines of different widths, which reads as one button being
-     the lesser offer. Full width apiece is the same two choices, stacked. */
+  /* The short labels fit side by side now, but at two different widths — which reads as one
+     button being the lesser offer. Full width apiece is the same two choices, stacked. */
   .board-actions .btn {
     flex: 1 1 100%;
   }
