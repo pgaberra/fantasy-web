@@ -167,10 +167,20 @@ export class HotPlayersTableComponent {
    * Players with enough appearances to be worth ranking. Anyone below the threshold is dropped
    * before the z-score pool is built, so a single-game call-up can't skew the baselines the
    * rest of the league is measured against.
+   *
+   * The threshold only applies in per-game mode, which is where a tiny sample does damage: a
+   * rate off two games looks like a superstar. Totals already discount a player who barely
+   * played, so filtering them out there would only hide rows nobody was going to be misled by —
+   * and the input that sets the number is hidden with the mode, so an unapplied minimum is never
+   * left on screen looking as though it were in force.
    */
-  private readonly qualifying = computed(() =>
-    this.hotPlayers().filter((hot) => hot.games >= this.minGames()),
-  );
+  private readonly qualifying = computed(() => {
+    if (!this.perGame()) {
+      return this.hotPlayers();
+    }
+    const minimum = this.minGames();
+    return this.hotPlayers().filter((hot) => hot.games >= minimum);
+  });
 
   /**
    * In per-game mode the counting stats are divided by the games the player actually dressed
