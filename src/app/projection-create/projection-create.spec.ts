@@ -1,10 +1,11 @@
-import { MockBuilder, MockInstance, MockRender } from 'ng-mocks';
+import { MockBuilder, MockInstance, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Observable, of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { CREATE_PRESETS, ProjectionCreateComponent } from './projection-create';
 import { ProjectionStorageService } from '../services/projection-storage.service';
+import { ShareImportComponent } from '../shared/share-import/share-import';
 import { StatInfoService } from '../services/stat-info.service';
 import { CreateProjectionRequest } from '../api/models/create-projection-request';
 import { ProjectionResponse } from '../api/models/projection-response';
@@ -172,29 +173,40 @@ describe('ProjectionCreateComponent', () => {
   const createProjection = vi.fn<
     (request: CreateProjectionRequest) => Observable<ProjectionResponse>
   >(() => of(created));
+  /** What a share link copies in: the board itself, whole, under the importer's own list. */
+  const importFromShare = vi.fn<() => Observable<ProjectionResponse>>(() =>
+    of({ ...source, id: 'imported1', kind: 'imported' as const }),
+  );
 
   beforeEach(() => {
     navigate.mockClear();
     notifyError.mockClear();
     createProjection.mockClear();
+    importFromShare.mockClear();
+    importFromShare.mockReturnValue(of({ ...source, id: 'imported1', kind: 'imported' as const }));
     seed.mockClear();
-    return MockBuilder(ProjectionCreateComponent)
-      .keep(StatInfoService)
-      .keep(ProjectionRankingService)
-      .keep(ProjectionCalculationService)
-      .keep(ProjectionSerializerService)
-      .mock(ProjectionModelService, { seed })
-      .mock(PlayerService, {
-        getPlayers: () => of(players),
-        getRookieIds: () => of(new Set([3])),
-      })
-      .mock(ProjectionStorageService, {
-        listEditable: () => of([]),
-        createProjection,
-        loadProjection: () => of(source),
-      })
-      .mock(NotificationService, { error: notifyError })
-      .provide({ provide: Router, useValue: { navigate } });
+    return (
+      MockBuilder(ProjectionCreateComponent)
+        // The page drives this one from its own Create button, so the test needs the real thing.
+        .keep(ShareImportComponent)
+        .keep(StatInfoService)
+        .keep(ProjectionRankingService)
+        .keep(ProjectionCalculationService)
+        .keep(ProjectionSerializerService)
+        .mock(ProjectionModelService, { seed })
+        .mock(PlayerService, {
+          getPlayers: () => of(players),
+          getRookieIds: () => of(new Set([3])),
+        })
+        .mock(ProjectionStorageService, {
+          listEditable: () => of([]),
+          createProjection,
+          importFromShare,
+          loadProjection: () => of(source),
+        })
+        .mock(NotificationService, { error: notifyError })
+        .provide({ provide: Router, useValue: { navigate } })
+    );
   });
 
   it('loads the existing projections', async () => {
@@ -348,6 +360,81 @@ describe('ProjectionCreateComponent', () => {
       expect(createProjection).toHaveBeenCalledWith(
         expect.objectContaining({ data: source.data, source: undefined }),
       );
+    });
+
+    /**
+     * A pasted link used to need its own Import press before Create would light up. It is a
+     * starting point like the rows above it, so Create takes it from paste to projection.
+     */
+    it('creates straight from a pasted link, with no import step of its own', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.selectTab('imported');
+      fixture.detectChanges();
+      expect(component.canCreate()).toEqual(false);
+
+      const importer = ngMocks.findInstance(fixture.debugElement, ShareImportComponent);
+      importer.shareInput.set('https://staging.slapstat.com/s/aBc123_-xyz');
+      fixture.detectChanges();
+      expect(component.canCreate()).toEqual(true);
+
+      component.name.set('Dynasty');
+      component.create();
+
+      expect(importFromShare).toHaveBeenCalledWith('aBc123_-xyz', undefined);
+      expect(createProjection).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'Dynasty', data: source.data, source: undefined }),
+      );
+      expect(navigate).toHaveBeenCalledWith(['/projections', 'new-id']);
+    });
+
+    // The field says why itself; all the page owes is a button that works again.
+    it('gives the button back when the import gets nowhere', async () => {
+      importFromShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.selectTab('imported');
+      fixture.detectChanges();
+      const importer = ngMocks.findInstance(fixture.debugElement, ShareImportComponent);
+      importer.shareInput.set('https://staging.slapstat.com/s/aBc123_-xyz');
+      fixture.detectChanges();
+
+      component.create();
+
+      expect(createProjection).not.toHaveBeenCalled();
+      expect(navigate).not.toHaveBeenCalled();
+      expect(component.isCreating()).toEqual(false);
+    });
+
+    // The rows and the paste field ask the same question, so only one of them can be answered.
+    it('keeps to one starting point, whichever was chosen last', async () => {
+      MockInstance(
+        ProjectionStorageService,
+        'listEditable',
+        vi.fn(() => of(listed)),
+      );
+
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.selectTab('imported');
+      fixture.detectChanges();
+      const importer = ngMocks.findInstance(fixture.debugElement, ShareImportComponent);
+
+      importer.onInput('https://staging.slapstat.com/s/aBc123_-xyz');
+      component.selectCopyFrom('shared1');
+      fixture.detectChanges();
+      expect(importer.shareInput()).toEqual('');
+
+      importer.onInput('https://staging.slapstat.com/s/aBc123_-xyz');
+      fixture.detectChanges();
+      expect(component.copyFromId()).toBeNull();
     });
 
     it('picks a board the moment it is imported, and re-reads the list it belongs in', async () => {

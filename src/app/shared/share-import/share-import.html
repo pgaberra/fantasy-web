@@ -9,7 +9,7 @@
       autocomplete="off"
       maxlength="200"
       [value]="shareInput()"
-      (input)="shareInput.set($any($event.target).value)"
+      (input)="onInput($any($event.target).value)"
     />
     @if (importName() !== null) {
       <input
@@ -22,13 +22,11 @@
         (input)="importName.set($any($event.target).value)"
       />
     }
-    <button
-      type="submit"
-      class="btn btn-primary btn-sm"
-      [disabled]="isImporting() || shareInput().trim().length === 0"
-    >
-      {{ isImporting() ? 'Importing…' : 'Import' }}
-    </button>
+    @if (showSubmit()) {
+      <button type="submit" class="btn btn-primary btn-sm" [disabled]="isImporting() || !hasLink()">
+        {{ isImporting() ? 'Importing…' : 'Import' }}
+      </button>
+    }
   </div>
   @if (importHint()) {
     <p class="import-hint">{{ importHint() }}</p>
