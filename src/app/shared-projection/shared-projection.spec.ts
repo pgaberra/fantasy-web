@@ -1,5 +1,5 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from 'vitest';
 import { of, Subject, throwError } from 'rxjs';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Location } from '@angular/common';
@@ -67,6 +67,12 @@ describe('SharedProjectionComponent', () => {
   const isLoggedIn = signal(false);
   /** The `action` a visitor carried back from the sign-in, as the URL would hold it. */
   let requestedAction: string | null = null;
+  /**
+   * Whether the board renders real rows. True everywhere the row itself is the subject; the
+   * paging tests turn it off, because a board long enough to page through is also long enough
+   * that building every row of it costs more than the rest of this file put together.
+   */
+  let realRows = true;
 
   beforeEach(() => {
     loadShared.mockClear();
@@ -78,27 +84,27 @@ describe('SharedProjectionComponent', () => {
     replaceState.mockClear();
     isLoggedIn.set(false);
     requestedAction = null;
-    return (
-      MockBuilder(SharedProjectionComponent)
-        // Kept real: the point of this page is that it renders the editor's own row, so a mocked
-        // stand-in would test nothing.
-        .keep(PlayerRowComponent)
-        .mock(ProjectionShareService, { loadShared })
-        .mock(ProjectionStorageService, { importFromShare })
-        .mock(NotificationService, { error: notifyError })
-        .provide({ provide: AuthService, useValue: { isLoggedIn } })
-        .provide({ provide: Router, useValue: { navigate } })
-        .provide({ provide: Location, useValue: { replaceState } })
-        .provide({
-          provide: ActivatedRoute,
-          useValue: {
-            snapshot: {
-              paramMap: { get: () => 'abc123' },
-              queryParamMap: { get: () => requestedAction },
-            },
+    // Kept real: the point of this page is that it renders the editor's own row, so a mocked
+    // stand-in would test nothing — except where the rows are only there to be counted.
+    const builder = realRows
+      ? MockBuilder(SharedProjectionComponent).keep(PlayerRowComponent)
+      : MockBuilder(SharedProjectionComponent).mock(PlayerRowComponent);
+    return builder
+      .mock(ProjectionShareService, { loadShared })
+      .mock(ProjectionStorageService, { importFromShare })
+      .mock(NotificationService, { error: notifyError })
+      .provide({ provide: AuthService, useValue: { isLoggedIn } })
+      .provide({ provide: Router, useValue: { navigate } })
+      .provide({ provide: Location, useValue: { replaceState } })
+      .provide({
+        provide: ActivatedRoute,
+        useValue: {
+          snapshot: {
+            paramMap: { get: () => 'abc123' },
+            queryParamMap: { get: () => requestedAction },
           },
-        })
-    );
+        },
+      });
   });
 
   const render = async () => {
@@ -203,6 +209,16 @@ describe('SharedProjectionComponent', () => {
         })),
       },
     };
+
+    // Runs before the outer beforeEach builds the module for each of these tests, which is the
+    // only place the choice can still be made.
+    beforeAll(() => {
+      realRows = false;
+    });
+
+    afterAll(() => {
+      realRows = true;
+    });
 
     beforeEach(() => {
       loadShared.mockReturnValue(of(long));
