@@ -5,13 +5,7 @@ import { DraftPlayerLookupService } from '../draft-player-lookup.service';
   selector: 'app-player-avatar',
   host: { '[class]': 'avatarClass()' },
   template: `@if (showImage()) {
-      <img
-        class="player-headshot"
-        [src]="headshot()"
-        alt=""
-        loading="lazy"
-        (error)="failed.set(true)"
-      />
+      <img [src]="headshot()" alt="" loading="lazy" (error)="failed.set(true)" />
     } @else {
       {{ initials() }}
     }`,
