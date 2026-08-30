@@ -20,6 +20,7 @@ import { Goalie, Skater } from '../models/player.model';
 import { SkaterPosition } from '../models/position.model';
 import { GoalieScoringStats, SkaterScoringStats } from '../models/projection.model';
 import { GOALIE_SCORING_STAT_KEYS, SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
+import { environment } from '../../environments/environment';
 
 describe('ProjectionCreateComponent', () => {
   MockInstance.scope();
@@ -607,6 +608,24 @@ describe('ProjectionCreateComponent', () => {
     expect(component.previewFailed()).toEqual(true);
     expect(component.loadError()).toEqual(false);
     expect(component.canCreate()).toEqual(true);
+  });
+
+  // The preset list is the whole of this page's offer, so a build with the AI projection off
+  // must not list it — and 'default' is still what the page opens on, so nothing else moves.
+  it('drops the AI preset when the AI projection is switched off', async () => {
+    const original = environment.aiProjectionEnabled;
+    environment.aiProjectionEnabled = false;
+    try {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      expect(component.presets.map((preset) => preset.source)).toEqual(['default', 'blank']);
+      expect(component.isPreset('default')).toBe(true);
+      expect(seed).not.toHaveBeenCalled();
+    } finally {
+      environment.aiProjectionEnabled = original;
+    }
   });
 
   it("asks the server for the model's lines when the AI preset is picked", async () => {

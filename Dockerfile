@@ -41,6 +41,9 @@ ARG ESPN_LEAGUES_ENABLED=
 # WHOS_HOT_ENABLED=false hides the Who's hot page (both nav links and the route); empty/anything
 # else leaves it visible (default), since the page already ships.
 ARG WHOS_HOT_ENABLED=
+# AI_PROJECTION_ENABLED=false drops the AI projection from the presets on the new-projection page
+# and the draft picker; empty/anything else leaves it offered (default), since the preset ships.
+ARG AI_PROJECTION_ENABLED=
 
 # Inject the values into environment.prod.ts (replaces the committed placeholders).
 RUN sed -i \
@@ -56,6 +59,7 @@ RUN sed -i \
   -e "s|__PAYMENTS_ENABLED__|${PAYMENTS_ENABLED}|g" \
   -e "s|__ESPN_LEAGUES_ENABLED__|${ESPN_LEAGUES_ENABLED}|g" \
   -e "s|__WHOS_HOT_ENABLED__|${WHOS_HOT_ENABLED}|g" \
+  -e "s|__AI_PROJECTION_ENABLED__|${AI_PROJECTION_ENABLED}|g" \
   src/environments/environment.prod.ts
 
 RUN npm run build

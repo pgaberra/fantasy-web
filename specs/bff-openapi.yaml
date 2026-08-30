@@ -1092,15 +1092,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SeededProjectionResponse"
+        "404":
+          description: The AI projection is switched off
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeededProjectionResponse"
   /api/v1/players/{playerId}/headshot:
     get:
       tags:
       - Players
       summary: Get a player's headshot
-      description: The thumbnail yahoo-service renders from the player's headshot.
-        This is what the `headshot` path on a skater or goalie points at; the source
-        images themselves are multi-megapixel originals and are never served to a
-        browser.
+      description: "The player's headshot, framed on the face and scaled to the avatar\
+        \ the table draws. This is what the `headshot` path on a skater or goalie\
+        \ points at; the sources themselves are wide, heavy originals and are never\
+        \ served to a browser."
       operationId: getHeadshot
       parameters:
       - name: playerId
