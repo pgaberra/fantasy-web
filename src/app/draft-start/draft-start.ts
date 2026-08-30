@@ -94,6 +94,10 @@ export class DraftStartComponent {
   readonly isStarting = signal(false);
   /** Which preset is being asked about, so two rows cannot share one confirmation. */
   readonly confirmingRestart = signal<Preset['id'] | null>(null);
+  /** Which resumable draft is being asked about, for the same reason. */
+  readonly confirmingDiscard = signal<string | null>(null);
+  /** The draft being thrown away, so its row says so and cannot be pressed a second time. */
+  readonly discarding = signal<string | null>(null);
   readonly selectedTab = signal<SourceTab>('own');
 
   readonly projections = computed(() => this.byKind('projection'));
@@ -163,6 +167,54 @@ export class DraftStartComponent {
     void this.router.navigate(['/projections', id, 'draft']);
   }
 
+  requestDiscard(draft: ProjectionSummaryResponse): void {
+    this.confirmingDiscard.set(draft.id);
+  }
+
+  cancelDiscard(): void {
+    this.confirmingDiscard.set(null);
+  }
+
+  isConfirmingDiscard(draft: ProjectionSummaryResponse): boolean {
+    return this.confirmingDiscard() === draft.id;
+  }
+
+  isDiscarding(draft: ProjectionSummaryResponse): boolean {
+    return this.discarding() === draft.id;
+  }
+
+  /** What is actually lost, which is not the same thing for a preset draft as for a board. */
+  discardPrompt(draft: ProjectionSummaryResponse): string {
+    return draft.kind === 'preset_draft'
+      ? 'Discard this draft? The picks are lost.'
+      : 'Discard the picks? The projection stays.';
+  }
+
+  /**
+   * Throws away a draft left mid-way. A preset draft holds nothing but its picks and its rows
+   * are the same for everyone, so the whole thing goes, exactly as starting over does. A draft
+   * against a projection or an imported board is cleared out of it instead: the board is the
+   * user's own work and has to survive losing the picks made against it.
+   */
+  confirmDiscard(draft: ProjectionSummaryResponse): void {
+    this.confirmingDiscard.set(null);
+    this.discarding.set(draft.id);
+    const discarded =
+      draft.kind === 'preset_draft'
+        ? this.storage.deleteProjection(draft.id)
+        : this.clearDraft(draft.id);
+    discarded.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.discarding.set(null);
+        this.sourcesResource.reload();
+      },
+      error: () => {
+        this.discarding.set(null);
+        this.notification.error("Couldn't discard the draft. Please try again.");
+      },
+    });
+  }
+
   /** The copy is the user's board now, so the tab that lists those is where it belongs. */
   onImported(): void {
     this.selectedTab.set('imported');
@@ -206,6 +258,24 @@ export class DraftStartComponent {
       this.storage
         .deleteProjection(existing.id)
         .pipe(switchMap(() => this.createPresetDraft(preset))),
+    );
+  }
+
+  /**
+   * Drops the stored draft from a projection and leaves the rest of it alone. An omitted draft
+   * is what clears one, so the update sends the settings back as they stand and nothing else:
+   * the player rows are keep-if-absent, which spares this a ~0.5 MB round trip they would only
+   * be exposed to for no reason. Their settings do have to be read back first, since an update
+   * replaces them.
+   */
+  private clearDraft(id: string): Observable<unknown> {
+    return this.storage.loadProjection(id).pipe(
+      switchMap((projection) =>
+        this.storage.updateProjection(id, {
+          name: projection.name,
+          data: { settings: projection.data.settings },
+        }),
+      ),
     );
   }
 

@@ -21,9 +21,28 @@
                   {{ sourceLabel(draft) }} · last pick {{ draft.updatedAt | relativeTime }}
                 </span>
               </div>
-              <button type="button" class="btn btn-primary btn-sm" (click)="openDraft(draft.id)">
-                Resume draft
-              </button>
+              @if (isDiscarding(draft)) {
+                <span class="row-busy">Discarding…</span>
+              } @else if (isConfirmingDiscard(draft)) {
+                <span class="confirm-text">{{ discardPrompt(draft) }}</span>
+                <button type="button" class="btn btn-danger btn-sm" (click)="confirmDiscard(draft)">
+                  Yes, discard
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" (click)="cancelDiscard()">
+                  Cancel
+                </button>
+              } @else {
+                <button type="button" class="btn btn-primary btn-sm" (click)="openDraft(draft.id)">
+                  Resume draft
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm"
+                  (click)="requestDiscard(draft)"
+                >
+                  Discard draft
+                </button>
+              }
             </li>
           }
         </ul>

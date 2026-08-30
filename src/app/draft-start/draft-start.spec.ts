@@ -48,6 +48,8 @@ describe('DraftStartComponent', () => {
   const listWithPresetDrafts = vi.fn();
   const createProjection = vi.fn();
   const deleteProjection = vi.fn();
+  const loadProjection = vi.fn();
+  const updateProjection = vi.fn();
   const notifyError = vi.fn();
 
   beforeEach(() => {
@@ -55,15 +57,23 @@ describe('DraftStartComponent', () => {
     listWithPresetDrafts.mockClear();
     createProjection.mockClear();
     deleteProjection.mockClear();
+    loadProjection.mockClear();
+    updateProjection.mockClear();
     notifyError.mockClear();
     listWithPresetDrafts.mockReturnValue(of([summary('p1', 'projection')]));
     createProjection.mockReturnValue(of({ id: 'preset1' }));
     deleteProjection.mockReturnValue(of(undefined));
+    loadProjection.mockReturnValue(
+      of({ id: 'p1', name: 'Projection p1', data: { settings: { leagueSize: 12 }, players: [] } }),
+    );
+    updateProjection.mockReturnValue(of({ id: 'p1' }));
     return MockBuilder(DraftStartComponent)
       .mock(ProjectionStorageService, {
         listWithPresetDrafts,
         createProjection,
         deleteProjection,
+        loadProjection,
+        updateProjection,
       })
       .mock(NotificationService, { error: notifyError })
       .provide({ provide: Router, useValue: { navigate } });
@@ -286,5 +296,111 @@ describe('DraftStartComponent', () => {
       'Presets',
       'Presets',
     ]);
+  });
+
+  it('clears the picks off a projection, keeping the projection itself', async () => {
+    const draft = summary('p1', 'projection', 'in_progress');
+    listWithPresetDrafts.mockReturnValue(of([draft]));
+
+    const component = await render();
+    component.requestDiscard(draft);
+    expect(component.isConfirmingDiscard(draft)).toEqual(true);
+    component.confirmDiscard(draft);
+
+    expect(deleteProjection).not.toHaveBeenCalled();
+    expect(updateProjection).toHaveBeenCalledWith('p1', {
+      name: 'Projection p1',
+      // No draft: that is what clears it. No players either, so the stored rows are kept.
+      data: { settings: { leagueSize: 12 } },
+    });
+    expect(component.confirmingDiscard()).toBeNull();
+    expect(component.isDiscarding(draft)).toEqual(false);
+  });
+
+  it('discards a preset draft by deleting it, since it holds nothing but the picks', async () => {
+    const draft = summary('preset1', 'preset_draft', 'in_progress');
+    listWithPresetDrafts.mockReturnValue(of([draft]));
+
+    const component = await render();
+    component.confirmDiscard(draft);
+
+    expect(deleteProjection).toHaveBeenCalledWith('preset1');
+    expect(updateProjection).not.toHaveBeenCalled();
+  });
+
+  it('reloads the sources once a draft is discarded, so its row goes away', async () => {
+    const draft = summary('p1', 'projection', 'in_progress');
+    listWithPresetDrafts.mockReturnValue(of([draft]));
+
+    const fixture = MockRender(DraftStartComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    listWithPresetDrafts.mockReturnValue(of([summary('p1', 'projection', 'none')]));
+
+    component.confirmDiscard(draft);
+    await fixture.whenStable();
+
+    expect(component.inProgress()).toEqual([]);
+  });
+
+  it('surfaces a failed discard and leaves the row where it was', async () => {
+    const draft = summary('p1', 'projection', 'in_progress');
+    listWithPresetDrafts.mockReturnValue(of([draft]));
+    updateProjection.mockReturnValue(throwError(() => new Error('boom')));
+
+    const component = await render();
+    component.confirmDiscard(draft);
+
+    expect(notifyError).toHaveBeenCalledOnce();
+    expect(component.isDiscarding(draft)).toEqual(false);
+    expect(component.inProgress().map((row) => row.id)).toEqual(['p1']);
+  });
+
+  it('backing out of the confirmation discards nothing', async () => {
+    const draft = summary('p1', 'projection', 'in_progress');
+    listWithPresetDrafts.mockReturnValue(of([draft]));
+
+    const component = await render();
+    component.requestDiscard(draft);
+    component.cancelDiscard();
+
+    expect(component.isConfirmingDiscard(draft)).toEqual(false);
+    expect(updateProjection).not.toHaveBeenCalled();
+    expect(deleteProjection).not.toHaveBeenCalled();
+  });
+
+  it('says what a discard costs, which differs between a preset draft and a board', async () => {
+    const component = await render();
+
+    expect(component.discardPrompt(summary('preset1', 'preset_draft', 'in_progress'))).toEqual(
+      'Discard this draft? The picks are lost.',
+    );
+    expect(component.discardPrompt(summary('p1', 'projection', 'in_progress'))).toEqual(
+      'Discard the picks? The projection stays.',
+    );
+  });
+
+  it('offers the discard beside the resume, and asks before it acts', async () => {
+    listWithPresetDrafts.mockReturnValue(of([summary('p1', 'projection', 'in_progress')]));
+
+    const fixture = MockRender(DraftStartComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const buttons = () =>
+      Array.from(
+        fixture.nativeElement.querySelectorAll('.row--resume button') as NodeListOf<HTMLElement>,
+      ).map((button) => button.textContent?.trim());
+
+    expect(buttons()).toEqual(['Resume draft', 'Discard draft']);
+
+    fixture.point.componentInstance.requestDiscard(summary('p1', 'projection', 'in_progress'));
+    fixture.detectChanges();
+
+    expect(buttons()).toEqual(['Yes, discard', 'Cancel']);
+    expect(
+      (
+        fixture.nativeElement.querySelector('.row--resume .confirm-text') as HTMLElement
+      ).textContent?.trim(),
+    ).toEqual('Discard the picks? The projection stays.');
   });
 });
