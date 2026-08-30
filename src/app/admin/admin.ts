@@ -13,10 +13,10 @@ const CONNECT_OUTCOMES: Record<string, string> = {
   declined: 'Yahoo sent no authorization code back. The consent was declined or cancelled.',
   invalid_state:
     'The connection link had expired before Yahoo sent you back. Press reconnect and approve it ' +
-    'without pausing — the link is good for ten minutes.',
+    'without pausing. The link is good for ten minutes.',
   exchange_failed:
     'Yahoo refused to exchange the code for a token. That is Yahoo turning us away, not a ' +
-    'mis-click — check the app registration and its Fantasy Sports permission.',
+    'mis-click. Check the app registration and its Fantasy Sports permission.',
 };
 
 /**
@@ -27,10 +27,10 @@ const CONNECT_OUTCOMES: Record<string, string> = {
 const YAHOO_ERRORS: Record<string, string> = {
   access_denied: 'Yahoo calls it a declined request.',
   invalid_scope:
-    'Yahoo rejected the fspt-r scope outright — this app is no longer allowed to ask for ' +
+    'Yahoo rejected the fspt-r scope outright. This app is no longer allowed to ask for ' +
     'Fantasy Sports data. Retrying will not help.',
   unauthorized_client:
-    'Yahoo does not accept this app for this flow — check the client type and its API ' +
+    'Yahoo does not accept this app for this flow. Check the client type and its API ' +
     'permissions. Retrying will not help.',
   invalid_request: 'Yahoo called the request itself malformed.',
   unsupported_response_type: 'Yahoo rejected the response type the app asked for.',
@@ -198,7 +198,7 @@ export class AdminComponent implements OnInit {
         },
         error: () => {
           this.probing.set(false);
-          this.probeError.set('Could not reach the probe itself — that is our side, not Yahoo.');
+          this.probeError.set('Could not reach the probe itself. That is our side, not Yahoo.');
         },
       });
   }
@@ -210,7 +210,7 @@ export class AdminComponent implements OnInit {
     const beforeId = this.latestRun()?.id ?? null;
     this.adminService.triggerSync().subscribe({
       next: () => {
-        this.syncMessage.set('Sync started — waiting for the result…');
+        this.syncMessage.set('Sync started, waiting for the result…');
         this.pollForNewRun(beforeId, 0);
       },
       error: () => {
@@ -223,7 +223,7 @@ export class AdminComponent implements OnInit {
   private pollForNewRun(beforeId: number | null, attempt: number): void {
     if (attempt >= 20) {
       this.syncing.set(false);
-      this.syncMessage.set('Sync is taking longer than expected — use Refresh to check.');
+      this.syncMessage.set('Sync is taking longer than expected. Use Refresh to check.');
       return;
     }
     setTimeout(() => {

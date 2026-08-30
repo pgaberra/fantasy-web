@@ -49,7 +49,7 @@ export const PRESETS: readonly Preset[] = [
     id: 'model',
     name: MODEL_PRESET_NAME,
     source: 'model',
-    description: "The model's estimate for the coming season — a qualified guess, not the truth",
+    description: "The model's estimate for the coming season: a qualified guess, not the truth",
   },
 ];
 

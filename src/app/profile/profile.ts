@@ -75,7 +75,7 @@ export class ProfileComponent implements OnInit {
         this.isSaving.set(false);
         this.errorMessage.set(
           error instanceof HttpErrorResponse && error.status === 409
-            ? 'That name is taken — try another.'
+            ? 'That name is taken. Try another.'
             : messageForError(error, "Couldn't save your name."),
         );
       },
