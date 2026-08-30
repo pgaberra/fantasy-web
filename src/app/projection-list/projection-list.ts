@@ -156,6 +156,19 @@ export class ProjectionListComponent {
     this.sharingProjectionId.set(null);
   }
 
+  /**
+   * Throws away the picks played against a projection while the projection itself stays. The
+   * card offers it wherever a draft has been started, finished or not, so a board can be
+   * drafted afresh without deleting it and building it again.
+   */
+  discardDraft(id: string): Promise<void> {
+    return firstValueFrom(this.storage.clearDraft(id))
+      .then(() => {
+        this.projectionsResource.reload();
+      })
+      .catch(() => this.notification.error("Couldn't discard the draft. Please try again."));
+  }
+
   remove(id: string): Promise<void> {
     return firstValueFrom(this.storage.deleteProjection(id))
       .then(() => {

@@ -201,10 +201,12 @@ export class DraftStartComponent {
   confirmDiscard(draft: ProjectionSummaryResponse): void {
     this.confirmingDiscard.set(null);
     this.discarding.set(draft.id);
-    const discarded =
+    // Typed here because the two branches return different things and neither matters: one
+    // deletes, the other saves the projection back without its draft.
+    const discarded: Observable<unknown> =
       draft.kind === 'preset_draft'
         ? this.storage.deleteProjection(draft.id)
-        : this.clearDraft(draft.id);
+        : this.storage.clearDraft(draft.id);
     discarded.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.discarding.set(null);
@@ -260,24 +262,6 @@ export class DraftStartComponent {
       this.storage
         .deleteProjection(existing.id)
         .pipe(switchMap(() => this.createPresetDraft(preset))),
-    );
-  }
-
-  /**
-   * Drops the stored draft from a projection and leaves the rest of it alone. An omitted draft
-   * is what clears one, so the update sends the settings back as they stand and nothing else:
-   * the player rows are keep-if-absent, which spares this a ~0.5 MB round trip they would only
-   * be exposed to for no reason. Their settings do have to be read back first, since an update
-   * replaces them.
-   */
-  private clearDraft(id: string): Observable<unknown> {
-    return this.storage.loadProjection(id).pipe(
-      switchMap((projection) =>
-        this.storage.updateProjection(id, {
-          name: projection.name,
-          data: { settings: projection.data.settings },
-        }),
-      ),
     );
   }
 

@@ -19,7 +19,8 @@ describe('ProjectionCardComponent', () => {
 
   const template = `<li app-projection-card [projection]="projection"
     [isPreparingShare]="isPreparingShare"
-    (edit)="onEdit()" (share)="onShare()" (remove)="onRemove()"></li>`;
+    (edit)="onEdit()" (share)="onShare()" (remove)="onRemove()"
+    (discardDraft)="onDiscardDraft()"></li>`;
 
   const renderWithStatus = (draftStatus: ProjectionSummaryResponse['draftStatus']) =>
     MockRender(template, {
@@ -28,21 +29,31 @@ describe('ProjectionCardComponent', () => {
       onEdit,
       onShare,
       onRemove,
+      onDiscardDraft,
     });
 
   const onEdit = vi.fn();
   const onShare = vi.fn();
   const onRemove = vi.fn();
+  const onDiscardDraft = vi.fn();
 
   beforeEach(() => {
     onEdit.mockClear();
     onShare.mockClear();
     onRemove.mockClear();
+    onDiscardDraft.mockClear();
     return MockBuilder(ProjectionCardComponent).keep(PopoverTriggerDirective);
   });
 
   const render = (isPreparingShare = false) =>
-    MockRender(template, { projection, isPreparingShare, onEdit, onShare, onRemove });
+    MockRender(template, {
+      projection,
+      isPreparingShare,
+      onEdit,
+      onShare,
+      onRemove,
+      onDiscardDraft,
+    });
 
   /** Menu items live in the CDK overlay, outside the fixture's own DOM. */
   const menuItems = () => {
@@ -209,5 +220,56 @@ describe('ProjectionCardComponent', () => {
       fixture.detectChanges();
       expect(document.querySelector('.menu-item.delete')).not.toBeNull();
     });
+  });
+
+  it('offers to discard the draft, but only once one has been played', () => {
+    renderWithStatus('none');
+    expect(openMenu().map((item) => item.textContent?.trim())).toEqual(['Share', 'Delete']);
+
+    renderWithStatus('in_progress');
+    expect(openMenu().map((item) => item.textContent?.trim())).toEqual([
+      'Share',
+      'Discard draft',
+      'Delete',
+    ]);
+
+    // A finished draft is worth throwing away too: it is what stands between the board and
+    // being drafted afresh.
+    renderWithStatus('finished');
+    expect(openMenu().map((item) => item.textContent?.trim())).toEqual([
+      'Share',
+      'Discard draft',
+      'Delete',
+    ]);
+  });
+
+  it('asks before discarding, naming the board so it is not read as a delete', () => {
+    const fixture = renderWithStatus('finished');
+    openMenu();
+
+    menuItem('Discard draft').dispatchEvent(new Event('click', { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Discard the draft for “My league”?');
+    expect(onDiscardDraft).not.toHaveBeenCalled();
+    expect(document.activeElement).toEqual(ngMocks.find('.confirm-text').nativeElement);
+
+    ngMocks.find<HTMLButtonElement>('.discard').nativeElement.click();
+
+    expect(onDiscardDraft).toHaveBeenCalledOnce();
+    expect(onRemove).not.toHaveBeenCalled();
+  });
+
+  it('does not discard when the confirmation is cancelled', () => {
+    const fixture = renderWithStatus('finished');
+    openMenu();
+
+    menuItem('Discard draft').dispatchEvent(new Event('click', { bubbles: true }));
+    fixture.detectChanges();
+    ngMocks.find<HTMLButtonElement>('.cancel').nativeElement.click();
+    fixture.detectChanges();
+
+    expect(onDiscardDraft).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('Edit');
   });
 });

@@ -78,6 +78,7 @@ describe('ProjectionListComponent', () => {
   const navigate = vi.fn();
   const listEditable = vi.fn(() => of(summaries));
   const deleteProjection = vi.fn(() => of(undefined));
+  const clearDraft = vi.fn();
   const createProjection = vi.fn();
   const notifyError = vi.fn();
   const peek = vi.fn();
@@ -91,12 +92,14 @@ describe('ProjectionListComponent', () => {
     navigate.mockClear();
     listEditable.mockClear();
     deleteProjection.mockClear();
+    clearDraft.mockClear();
     createProjection.mockClear();
     notifyError.mockClear();
     peek.mockClear();
     clearPending.mockClear();
     listEditable.mockReturnValue(of(summaries));
     deleteProjection.mockReturnValue(of(undefined));
+    clearDraft.mockReturnValue(of({ id: 'p1' }));
     peek.mockReturnValue(null);
     loadProjection.mockReturnValue(of({ id: 'p1', name: 'My league', data: demoData }));
     getPlayers.mockReturnValue(
@@ -116,6 +119,7 @@ describe('ProjectionListComponent', () => {
       .mock(ProjectionStorageService, {
         listEditable,
         deleteProjection,
+        clearDraft,
         createProjection,
         loadProjection,
       })
@@ -301,5 +305,31 @@ describe('ProjectionListComponent', () => {
     expect(component.sharingProjectionId()).toBeNull();
     expect(component.preparingShareFor()).toBeNull();
     expect(notifyError).toHaveBeenCalled();
+  });
+
+  it('reloads the list after a draft is discarded, so the card drops its pill', async () => {
+    const fixture = MockRender(ProjectionListComponent);
+    await fixture.whenStable();
+    expect(listEditable).toHaveBeenCalledTimes(1);
+
+    await fixture.point.componentInstance.discardDraft('p1');
+    await fixture.whenStable();
+
+    // The picks go; the projection is not deleted with them.
+    expect(clearDraft).toHaveBeenCalledWith('p1');
+    expect(deleteProjection).not.toHaveBeenCalled();
+    expect(listEditable).toHaveBeenCalledTimes(2);
+  });
+
+  it('notifies the user and keeps the list when a discard fails', async () => {
+    clearDraft.mockReturnValueOnce(throwError(() => new Error('network down')));
+    const fixture = MockRender(ProjectionListComponent);
+    await fixture.whenStable();
+
+    await fixture.point.componentInstance.discardDraft('p1');
+    await fixture.whenStable();
+
+    expect(notifyError).toHaveBeenCalledOnce();
+    expect(listEditable).toHaveBeenCalledTimes(1);
   });
 });
