@@ -54,10 +54,18 @@
 }
 
 /* Sized like the input it replaces, so a read-only table lines up with the editable one — it has
-   no border of its own, so it makes up that pixel in its padding. */
+   no border of its own, so it makes up that pixel in its padding.
+
+   The width is the input's 68px, not 100%: a table sizes its columns to their content, and at
+   100% a read-only cell contributes only the width of the digits in it. The editable table's
+   columns are all 68px wide whatever they hold; the read-only one's came out anywhere from 52px
+   to the full 68, and only where a "-" placeholder — which keeps its own 68px — happened to sit
+   in the column did the two line up. Where the columns are narrower than the container the
+   difference is invisible, since the table stretches to fill it; where they are not, which is
+   the create page's preview in its 760px column, the same table came out a different shape. */
 .stat-readonly {
   display: inline-block;
-  width: 100%;
+  width: 68px;
   padding: 0.25rem calc(var(--stat-value-inset) - var(--stat-cell-pad-x)) 0.25rem 0.25rem;
   text-align: right;
   font-variant-numeric: tabular-nums;
