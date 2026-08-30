@@ -63,4 +63,38 @@ describe('ProjectionStorageService', () => {
 
     expect((await listed).map((projection) => projection.id)).toEqual(['p1', 'i1', 'd1']);
   });
+
+  it('clears a draft by saving the projection back without one, and without its players', async () => {
+    const cleared = firstValueFrom(service.clearDraft('p1'));
+
+    const read = http.expectOne((candidate) => candidate.url.endsWith('/projections/p1'));
+    expect(read.request.method).toEqual('GET');
+    read.flush({
+      id: 'p1',
+      name: 'Projection p1',
+      kind: 'projection',
+      season: '20262027',
+      createdAt: '2026-06-01T00:00:00Z',
+      updatedAt: '2026-06-01T00:00:00Z',
+      data: {
+        settings: { leagueSize: 12 },
+        players: [{ playerId: '1' }],
+        draft: { teams: [], order: [], picks: [] },
+      },
+    });
+
+    // The read resolves through a promise before the write is sent, so let the queue drain.
+    await new Promise((resolve) => setTimeout(resolve));
+
+    const write = http.expectOne((candidate) => candidate.url.endsWith('/projections/p1'));
+    expect(write.request.method).toEqual('PUT');
+    // No draft is what clears it; no players is what keeps the stored ~0.5 MB of them.
+    expect(write.request.body).toEqual({
+      name: 'Projection p1',
+      data: { settings: { leagueSize: 12 } },
+    });
+    write.flush({ id: 'p1' });
+
+    await cleared;
+  });
 });
