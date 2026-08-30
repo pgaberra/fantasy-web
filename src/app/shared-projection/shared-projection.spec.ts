@@ -324,12 +324,59 @@ describe('SharedProjectionComponent', () => {
     });
   });
 
-  describe('drafting against a shared board', () => {
+  describe('taking a copy of a shared board', () => {
     it('offers a signed-out visitor the sign-up rather than a copy', async () => {
       const fixture = await render();
 
       expect(fixture.nativeElement.textContent).toContain('Make your own projection');
       expect(fixture.nativeElement.textContent).not.toContain('Draft against this board');
+    });
+
+    /** Both offers are what the page is for, so neither is under a board to be scrolled past. */
+    it('puts both offers above the table', async () => {
+      isLoggedIn.set(true);
+      const fixture = await render();
+
+      const actions = fixture.nativeElement.querySelector('.board-actions');
+      const table = fixture.nativeElement.querySelector('table');
+      expect(actions).not.toBeNull();
+      expect(
+        actions.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('[data-testid="copy-board"]')).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('[data-testid="draft-board"]')).not.toBeNull();
+    });
+
+    it('leaves a signed-in reader no card under the table to scroll to', async () => {
+      isLoggedIn.set(true);
+      const fixture = await render();
+
+      expect(fixture.nativeElement.querySelector('.cta')).toBeNull();
+    });
+
+    it('copies the board and opens it for editing', async () => {
+      isLoggedIn.set(true);
+      const fixture = await render();
+
+      fixture.nativeElement.querySelector('[data-testid="copy-board"]').click();
+
+      expect(importFromShare).toHaveBeenCalledWith('abc123');
+      expect(navigate).toHaveBeenCalledWith(['/projections', 'copy1']);
+    });
+
+    it('says which of the two is copying, and holds the other', async () => {
+      isLoggedIn.set(true);
+      importFromShare.mockReturnValue(new Subject());
+      const fixture = await render();
+
+      fixture.nativeElement.querySelector('[data-testid="draft-board"]').click();
+      fixture.detectChanges();
+
+      const copy = fixture.nativeElement.querySelector('[data-testid="copy-board"]');
+      const draft = fixture.nativeElement.querySelector('[data-testid="draft-board"]');
+      expect(draft.textContent).toContain('Copying…');
+      expect(copy.textContent).toContain('Create a projection from this');
+      expect(copy.disabled).toEqual(true);
     });
   });
 
@@ -413,14 +460,16 @@ describe('SharedProjectionComponent', () => {
     });
 
     /** A clash on the shared name means this same board is already in their account. */
-    it('points at Draft Mode when the board is already imported', async () => {
+    it('points at the copy they already have rather than making a second one', async () => {
       isLoggedIn.set(true);
       importFromShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
       const fixture = await render();
 
       fixture.point.componentInstance.draftAgainstThis();
+      fixture.detectChanges();
 
       expect(fixture.point.componentInstance.alreadyImported()).toEqual(true);
+      expect(fixture.nativeElement.textContent).toContain('You already have a copy of this board');
       expect(navigate).not.toHaveBeenCalled();
       expect(notifyError).not.toHaveBeenCalled();
     });

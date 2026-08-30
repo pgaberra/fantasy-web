@@ -43,6 +43,9 @@ import { PinnedTableHeaderDirective } from '../shared/pinned-table-header/pinned
 const INITIAL_ROWS = 50;
 const ROWS_PER_PAGE = 100;
 
+/** Where a copy of the board lands: open for editing, or straight into a draft against it. */
+type ImportDestination = 'projection' | 'draft';
+
 /** One published row, in the shapes the editor's table components expect. */
 interface SharedRow {
   readonly shared: SharedPlayer;
@@ -94,28 +97,46 @@ export class SharedProjectionComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly isLoggedIn = inject(AuthService).isLoggedIn;
-  readonly isImporting = signal(false);
+
+  /** Which of the two buttons is waiting on the copy, so only that one says so. */
+  readonly importingInto = signal<ImportDestination | null>(null);
+  readonly isImporting = computed(() => this.importingInto() !== null);
   readonly alreadyImported = signal(false);
 
-  /**
-   * Takes a copy of the published board and opens a draft against it. What the visitor is
-   * looking at is a snapshot, and so is the copy — the author's later edits are theirs, and
-   * their picks do not come along.
-   */
+  /** Takes a copy of the published board and opens it for editing. */
+  copyToMyProjections(): void {
+    this.importThen('projection');
+  }
+
+  /** Takes a copy and goes straight to drafting against it. */
   draftAgainstThis(): void {
-    this.isImporting.set(true);
+    this.importThen('draft');
+  }
+
+  /**
+   * The copy behind both buttons. What the visitor is looking at is a snapshot, and so is the
+   * copy: the author's later edits are theirs, and their picks do not come along. Only where it
+   * lands differs, which is the whole difference between the two buttons.
+   */
+  private importThen(destination: ImportDestination): void {
+    this.importingInto.set(destination);
+    this.alreadyImported.set(false);
     this.storage
       .importFromShare(this.token)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (projection) => {
-          this.analytics.capture('shared_projection_imported');
-          void this.router.navigate(['/projections', projection.id, 'draft']);
+          this.analytics.capture('shared_projection_imported', { destination });
+          void this.router.navigate(
+            destination === 'draft'
+              ? ['/projections', projection.id, 'draft']
+              : ['/projections', projection.id],
+          );
         },
         error: (error: unknown) => {
-          this.isImporting.set(false);
+          this.importingInto.set(null);
           // A clash on the name it was shared under almost always means this same board is
-          // already in their account — nothing to fix, just somewhere else to go.
+          // already in their account: nothing to fix, just somewhere else to go.
           if (error instanceof HttpErrorResponse && error.status === 409) {
             this.alreadyImported.set(true);
             return;
