@@ -195,15 +195,24 @@ export class AuthService {
    * Where to land once signed in, for a visitor who was sent to the form from a page that wants
    * them back — a share link they have to sign in to read in full, say.
    *
-   * <p>Held in sessionStorage rather than carried through the form, so it survives both the hop
-   * out to Google and back and the switch between Sign in and Register. Anything that is not a
-   * path on this site is dropped: the value arrives in a query parameter, and a link could
-   * otherwise point the redirect at another origin.
+   * <p>Held in sessionStorage rather than carried through the form, so it survives the hop out to
+   * Google and back. Anything that is not a path on this site is dropped: the value arrives in a
+   * query parameter, and a link could otherwise point the redirect at another origin.
+   *
+   * <p>Arriving at a form without one clears whatever was there. It used to be left in place, on
+   * the reasoning that a visitor switching between Sign in and Register should not lose where
+   * they were headed. That is true, and the two forms now carry the parameter across to each
+   * other so it holds without this. What was left over was worse: reaching the form from the nav
+   * an hour later, or from a guard, sent them to a page they had asked for in another life. Now
+   * that a return URL can carry an action, it would also take a copy of a board they had thought
+   * better of.
    */
   rememberReturnUrl(url: string | null | undefined): void {
     if (url && isInternalPath(url)) {
       sessionStorage.setItem(this.returnUrlKey, url);
+      return;
     }
+    sessionStorage.removeItem(this.returnUrlKey);
   }
 
   private takeReturnUrl(): string | null {

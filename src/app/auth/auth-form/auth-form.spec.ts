@@ -1,4 +1,5 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
+import { RouterLink } from '@angular/router';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { AuthFormComponent } from './auth-form';
 import { AuthCredentials } from './model';
@@ -35,6 +36,19 @@ describe('AuthFormComponent', () => {
       requireConfirmPassword: true,
       isLoading: false,
     });
+
+  /**
+   * Where a visitor was headed rides on the URL as ?returnUrl=, and changing their mind about
+   * which form they wanted should not lose it. AuthService forgets a return URL it is not handed
+   * on arrival, so this link is what carries it across.
+   */
+  it('keeps the query string when switching to the other form', () => {
+    render(false);
+
+    const link = ngMocks.get(ngMocks.find('.auth-footer a'), RouterLink);
+    expect(link.routerLink).toEqual('/register');
+    expect(link.queryParamsHandling).toEqual('preserve');
+  });
 
   it('shows the submit label and stays enabled when not loading', () => {
     render(false);
