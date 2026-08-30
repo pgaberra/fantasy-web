@@ -28,206 +28,158 @@
 
     <div class="field">
       <div class="field-label-row">
-        <span class="field-label">Starting point</span>
+        <span class="field-label" id="starting-point-label">Starting point</span>
         <app-help-tip
           label="What the starting point decides"
           text="The initial stats each player is given."
         />
       </div>
 
-      <!-- The same strip the draft picker uses to choose what to draft against
-           (draft-start.html), because it is the same question asked one step earlier: whose
-           numbers this projection opens with. -->
-      <div class="tabs" role="tablist" aria-label="Starting point">
-        <button
-          type="button"
-          role="tab"
-          class="tab"
-          [class.tab--active]="selectedTab() === 'presets'"
-          [attr.aria-selected]="selectedTab() === 'presets'"
-          (click)="selectTab('presets')"
-        >
-          <span class="tab-label">Presets</span>
-          <span class="tab-label tab-label--short">Presets</span>
-          <span class="tab-count">{{ presets.length }}</span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          class="tab"
-          [class.tab--active]="selectedTab() === 'own'"
-          [attr.aria-selected]="selectedTab() === 'own'"
-          (click)="selectTab('own')"
-        >
-          <span class="tab-label">Your projections</span>
-          <span class="tab-label tab-label--short">Yours</span>
-          <span class="tab-count">{{ ownProjections().length }}</span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          class="tab"
-          [class.tab--active]="selectedTab() === 'imported'"
-          [attr.aria-selected]="selectedTab() === 'imported'"
-          (click)="selectTab('imported')"
-        >
-          <span class="tab-label">Shared with you</span>
-          <span class="tab-label tab-label--short">Shared</span>
-          <span class="tab-count">{{ importedBoards().length }}</span>
-        </button>
+      <!--
+        One question, so one list: every starting point is on the page at once, under headings
+        that say where each group comes from. They were three tabs, and a tab hides the answer —
+        the preset picked a moment ago is invisible from the tab listing your own boards, and
+        there was no way to see, without clicking back, what the projection would start from.
+        The draft picker groups the same three sources the same way (draft-start.html).
+      -->
+      <div class="sources" role="group" aria-labelledby="starting-point-label">
+        <div class="rows rows--presets">
+          @for (preset of presets; track preset.source) {
+            <div class="row">
+              <label class="row-choice">
+                <input
+                  type="radio"
+                  name="starting-point"
+                  [checked]="isPreset(preset.source)"
+                  (change)="selectPreset(preset.source)"
+                />
+                <span class="row-name">{{ preset.name }}</span>
+              </label>
+              <app-help-tip [label]="preset.tipLabel" [text]="preset.description" />
+            </div>
+          }
+        </div>
+
+        @if (ownProjections().length) {
+          <h2 class="group-title" id="own-group-title">Copy one of yours</h2>
+          <div class="rows" role="group" aria-labelledby="own-group-title">
+            @for (projection of ownProjections(); track projection.id) {
+              <div class="row">
+                <label class="row-choice">
+                  <input
+                    type="radio"
+                    name="starting-point"
+                    [checked]="isCopyOf(projection.id)"
+                    (change)="selectCopyFrom(projection.id)"
+                  />
+                  <span class="row-main">
+                    <span class="row-name">{{ projection.name }}</span>
+                    <span class="row-meta">Updated {{ projection.updatedAt | relativeTime }}</span>
+                  </span>
+                </label>
+              </div>
+            }
+          </div>
+        }
+
+        <h2 class="group-title" id="shared-group-title">Shared with you</h2>
+        @if (importedBoards().length) {
+          <div class="rows" role="group" aria-labelledby="shared-group-title">
+            @for (board of importedBoards(); track board.id) {
+              <div class="row">
+                <label class="row-choice">
+                  <input
+                    type="radio"
+                    name="starting-point"
+                    [checked]="isCopyOf(board.id)"
+                    (change)="selectCopyFrom(board.id)"
+                  />
+                  <span class="row-main">
+                    <span class="row-name">{{ board.name }}</span>
+                    <span class="row-meta">
+                      {{ sourceLabel(board) }} · imported {{ board.createdAt | relativeTime }}
+                    </span>
+                  </span>
+                </label>
+              </div>
+            }
+          </div>
+        }
+        <app-share-import label="Start from a shared board" (imported)="onImported($event)" />
       </div>
+    </div>
 
-      @switch (selectedTab()) {
-        @case ('presets') {
-          <section class="panel">
-            <ul class="rows">
-              @for (preset of presets; track preset.source) {
-                <li class="row">
-                  <label class="row-choice">
-                    <input
-                      type="radio"
-                      name="starting-point"
-                      [checked]="selectedPreset() === preset.source"
-                      (change)="selectPreset(preset.source)"
-                    />
-                    <span class="row-name">{{ preset.name }}</span>
-                  </label>
-                  <app-help-tip [label]="preset.tipLabel" [text]="preset.description" />
-                </li>
-              }
-            </ul>
-          </section>
-        }
-
-        @case ('own') {
-          <section class="panel">
-            @if (ownProjections().length === 0) {
-              <p class="panel-empty">
-                No projections yet. Start this one from a preset, and the next can begin as a copy
-                of it.
-              </p>
-            } @else {
-              <ul class="rows">
-                @for (projection of ownProjections(); track projection.id) {
-                  <li class="row">
-                    <label class="row-choice">
-                      <input
-                        type="radio"
-                        name="starting-point"
-                        [checked]="copyFromId() === projection.id"
-                        (change)="selectCopyFrom(projection.id)"
-                      />
-                      <span class="row-main">
-                        <span class="row-name">{{ projection.name }}</span>
-                        <span class="row-meta">
-                          Updated {{ projection.updatedAt | relativeTime }}
-                        </span>
-                      </span>
-                    </label>
-                  </li>
+    <div class="preview">
+      <div class="field-label-row">
+        <span class="field-label">Preview</span>
+        <app-help-tip
+          label="What the preview shows"
+          text="The first rows of the editor, as this starting point would fill them in."
+        />
+      </div>
+      <!--
+        A copy has no preview of its own: its rows are whatever the board holds, which this page
+        does not download. Saying so keeps the slot filled rather than letting the page jump by
+        the height of a table whenever the picked row changes group.
+      -->
+      @if (copiedBoard(); as board) {
+        <p class="preview-note">
+          Starts as an exact copy of {{ board.name }}, with the numbers it was last saved with.
+        </p>
+      } @else if (isPreviewLoading() || isModelPreviewLoading()) {
+        <p class="preview-note">Loading preview…</p>
+      } @else if (previewFailed() || !previewRows().length) {
+        <p class="preview-note">Preview unavailable right now.</p>
+      } @else {
+        <!-- The editor's own header and rows, read-only: the preview is the table it previews,
+             not a drawing of it. -->
+        <div class="preview-card">
+          <div class="table-wrapper table-wrapper--compact-identity">
+            <table>
+              <thead
+                app-projections-table-header
+                [activeColumns]="previewActiveColumns"
+                [scoringType]="'points'"
+                [statWeights]="previewStatWeights"
+                [useDefaultDecimals]="true"
+                [decimalSettings]="previewDecimalSettings"
+                [sortColumn]="'summary'"
+                [sortDirection]="'desc'"
+                [readonly]="true"
+                [sortable]="false"
+              ></thead>
+              <tbody>
+                @for (row of previewRows(); track row.projection.playerId) {
+                  <tr
+                    app-player-row
+                    [positionRank]="row.rank"
+                    [totalRank]="null"
+                    [projection]="row.projection"
+                    [playerScore]="row.score"
+                    [player]="row.player"
+                    [rookie]="row.rookie"
+                    [belowMinGames]="row.belowMinGames"
+                    [activeColumns]="previewActiveColumns"
+                    [scoringType]="'points'"
+                    [decimalSettings]="previewDecimalSettings"
+                    [readonly]="true"
+                  ></tr>
                 }
-              </ul>
-            }
-          </section>
-        }
-
-        @case ('imported') {
-          <section class="panel">
-            @if (importedBoards().length === 0) {
-              <p class="panel-empty">No projections imported.</p>
-            } @else {
-              <ul class="rows">
-                @for (board of importedBoards(); track board.id) {
-                  <li class="row">
-                    <label class="row-choice">
-                      <input
-                        type="radio"
-                        name="starting-point"
-                        [checked]="copyFromId() === board.id"
-                        (change)="selectCopyFrom(board.id)"
-                      />
-                      <span class="row-main">
-                        <span class="row-name">{{ board.name }}</span>
-                        <span class="row-meta">
-                          {{ sourceLabel(board) }} · imported
-                          {{ board.createdAt | relativeTime }}
-                        </span>
-                      </span>
-                    </label>
-                  </li>
-                }
-              </ul>
-            }
-            <app-share-import label="Start from a shared board" (imported)="onImported($event)" />
-          </section>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        @if (modelCoverage(); as coverage) {
+          <p class="preview-note">
+            The model has lines for {{ coverage.skaters }} skaters and
+            {{ coverage.goalies }} goalies. Players it cannot reach (prospects yet to play, goalies
+            it projects no starts for, and anyone it has no basis for) are left out, so this
+            projection opens with fewer rows than the other starting points give. Data ©
+            MoneyPuck.com.
+          </p>
         }
       }
     </div>
-
-    @if (selectedTab() === 'presets') {
-      <div class="preview">
-        <div class="field-label-row">
-          <span class="field-label">Preview</span>
-          <app-help-tip
-            label="What the preview shows"
-            text="The first rows of the editor, as this starting point would fill them in."
-          />
-        </div>
-        @if (isPreviewLoading() || isModelPreviewLoading()) {
-          <p class="preview-note">Loading preview…</p>
-        } @else if (previewFailed() || !previewRows().length) {
-          <p class="preview-note">Preview unavailable right now.</p>
-        } @else {
-          <!-- The editor's own header and rows, read-only: the preview is the table it previews,
-               not a drawing of it. -->
-          <div class="preview-card">
-            <div class="table-wrapper table-wrapper--compact-identity">
-              <table>
-                <thead
-                  app-projections-table-header
-                  [activeColumns]="previewActiveColumns"
-                  [scoringType]="'points'"
-                  [statWeights]="previewStatWeights"
-                  [useDefaultDecimals]="true"
-                  [decimalSettings]="previewDecimalSettings"
-                  [sortColumn]="'summary'"
-                  [sortDirection]="'desc'"
-                  [readonly]="true"
-                  [sortable]="false"
-                ></thead>
-                <tbody>
-                  @for (row of previewRows(); track row.projection.playerId) {
-                    <tr
-                      app-player-row
-                      [positionRank]="row.rank"
-                      [totalRank]="null"
-                      [projection]="row.projection"
-                      [playerScore]="row.score"
-                      [player]="row.player"
-                      [rookie]="row.rookie"
-                      [belowMinGames]="row.belowMinGames"
-                      [activeColumns]="previewActiveColumns"
-                      [scoringType]="'points'"
-                      [decimalSettings]="previewDecimalSettings"
-                      [readonly]="true"
-                    ></tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
-          @if (modelCoverage(); as coverage) {
-            <p class="preview-note">
-              The model has lines for {{ coverage.skaters }} skaters and
-              {{ coverage.goalies }} goalies. Players it cannot reach (prospects yet to play,
-              goalies it projects no starts for, and anyone it has no basis for) are left out, so
-              this projection opens with fewer rows than the other starting points give. Data ©
-              MoneyPuck.com.
-            </p>
-          }
-        }
-      </div>
-    }
 
     <button
       type="button"

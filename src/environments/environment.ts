@@ -37,6 +37,11 @@ export const environment = {
   // the toggles above: the page already ships, so an unset flag has to mean "carry on showing
   // it". Deployed builds turn it off with the WHOS_HOT_ENABLED=false build arg.
   whosHotEnabled: true,
+  // Feature toggle for the off-season data notice (the banner about stale team affiliations and
+  // missing rookies). Off by default and independent of yahooSyncDisabled: a paused Yahoo sync is
+  // not on its own a reason to tell every visitor it is the off-season. Deployed builds turn it on
+  // with the OFFSEASON_ENABLED=true build arg.
+  offseasonEnabled: false,
   // Feature toggle for the AI projection (the model-backed preset on the new-projection page and
   // the draft picker). On by default, like whosHotEnabled and for the same reason: the preset
   // already ships, so an unset flag has to mean "carry on offering it". Deployed builds turn it

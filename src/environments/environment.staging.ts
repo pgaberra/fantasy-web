@@ -31,4 +31,6 @@ export const environment = {
   // On for local staging runs; the deployed builds drop the preset with
   // AI_PROJECTION_ENABLED=false.
   aiProjectionEnabled: true,
+  // Off for local staging runs, matching deployed staging, which sets OFFSEASON_ENABLED=false.
+  offseasonEnabled: false,
 };
