@@ -36,6 +36,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { PinnedTableHeaderDirective } from '../shared/pinned-table-header/pinned-table-header.directive';
+import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 
 /**
  * A published board is the owner's whole pool — some 1600 rows — and someone arriving from a link
@@ -84,6 +85,7 @@ interface SharedRow {
     PositionFilterComponent,
     ProjectionsTableHeaderComponent,
     PinnedTableHeaderDirective,
+    TooltipDirective,
   ],
   templateUrl: './shared-projection.html',
   styleUrl: './shared-projection.css',

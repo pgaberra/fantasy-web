@@ -74,9 +74,9 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   Both sources then run the same board in `draft-mode/`.
 - `shared-projection/` — the page behind a share link (`/s/:token`), public and unguarded: a
   share link has to open for someone who has never signed in. A signed-in visitor is offered
-  "Draft against this board", which copies the snapshot into their own projections and opens
-  the board; a signed-out one still gets the sign-up. A 409 there means they already hold a
-  copy, so it points at Draft Mode instead of reporting an error. It renders the **snapshot** the
+  "Draft Mode", which copies the snapshot into their own projections and opens the board; a
+  signed-out one still gets the sign-up. A 409 there means they already hold a copy, so it
+  points at Draft Mode instead of reporting an error. It renders the **snapshot** the
   owner published — the top rows with identity, rank and value frozen into them — so it needs
   no player read model and no ranking of its own. It renders the editor's own `player-row` and
   `projections-table-header` in a **read-only** mode, so a shared projection looks like the

@@ -30,25 +30,29 @@
       <!-- Above the table on purpose: what a visitor does with someone else's board is take a
            copy of it, and that offer used to sit under every row they had to scroll past. Both
            buttons are offered to a visitor without an account too, who is asked to sign in when
-           they press one rather than being told in advance that the page is not for them yet. -->
+           they press one rather than being told in advance that the page is not for them yet.
+           The labels name the destination and the tooltip carries the "a copy, not theirs"
+           detail, so the row reads as two choices rather than two sentences. -->
       <div class="board-actions">
         <button
           type="button"
           class="btn btn-secondary"
+          appTooltip="Create your own projection from a copy of this one"
           [disabled]="isImporting()"
           (click)="copyToMyProjections()"
           data-testid="copy-board"
         >
-          {{ importingInto() === 'projection' ? 'Copying…' : 'Create a projection from this' }}
+          {{ importingInto() === 'projection' ? 'Copying…' : 'Create projection' }}
         </button>
         <button
           type="button"
           class="btn btn-primary"
+          appTooltip="Enter Draft Mode with a copy of this projection"
           [disabled]="isImporting()"
           (click)="draftAgainstThis()"
           data-testid="draft-board"
         >
-          {{ importingInto() === 'draft' ? 'Copying…' : 'Draft against this board' }}
+          {{ importingInto() === 'draft' ? 'Copying…' : 'Draft Mode' }}
         </button>
       </div>
       @if (alreadyImported()) {
