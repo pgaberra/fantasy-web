@@ -378,19 +378,3 @@ summary:focus-visible,
   box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
-
-/* Yahoo serves a headshot as a 3:2 *landscape* cutout of the player's upper body: the head sits
-   centred and narrow near the top — about 1100px of a 3504px frame — and the shoulders spread
-   across the full width below it. In a round 28px avatar `object-fit: cover` therefore scales the
-   source by its height and crops the sides, which leaves the face filling barely half the frame's
-   width but nearly all of its height. Nothing is distorted, but a face framed that way reads as
-   small and stretched.
-
-   Frame the head instead: a ~2000px square around it, anchored to the top of the source. Firefox
-   has no `object-view-box` yet, so this is an enhancement rather than a correction — where it is
-   not understood the avatar simply keeps today's wider crop. */
-@supports (object-view-box: inset(0%)) {
-  .player-headshot {
-    object-view-box: inset(0% 22% 14% 20%);
-  }
-}

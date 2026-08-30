@@ -1,4 +1,7 @@
-@if (sharedResource.isLoading()) {
+<!-- Only before there is a board to show: a reorder behind the gate is a fresh request, and
+     swapping the table for a spinner on every click of a column heading loses the reader's place
+     for the sake of 25 rows arriving. The table dims instead. -->
+@if (sharedResource.isLoading() && !shared()) {
   <app-loading-indicator />
 } @else if (isGone()) {
   <div class="shared-projection">
@@ -35,7 +38,12 @@
         </div>
       </div>
 
-      <div class="table-wrapper table-wrapper--compact-identity" appPinnedTableHeader>
+      <div
+        class="table-wrapper table-wrapper--compact-identity"
+        [class.table-wrapper--reordering]="isReordering()"
+        [attr.aria-busy]="isReordering()"
+        appPinnedTableHeader
+      >
         <table>
           <thead
             app-projections-table-header

@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { SharedPlayer } from '../api/models/shared-player';
+import { SharedProjectionResponse } from '../api/models/shared-projection-response';
 import { Player } from '../models/player.model';
 import { SkaterPosition } from '../models/position.model';
 import {
@@ -58,6 +59,10 @@ interface SharedRow {
  * board; anyone else gets the top of it and a prompt to sign in for the rest. The BFF decides
  * that and sends only what the reader may see, so the rows behind the prompt are not here to be
  * found — this page reports the cut rather than making it.
+ *
+ * <p>Which is why sorting and filtering behind that prompt are asked of the BFF rather than done
+ * here: the answer to "who scores the most goals" is in the rows this page was not given, so it
+ * sends the question up and renders the answer that comes back.
  *
  * <p>It reuses the editor's table row and header so a shared projection looks like the table it
  * came from, in a read-only mode. What it deliberately does not reuse is the scoring: the values
@@ -122,19 +127,47 @@ export class SharedProjectionComponent {
 
   private readonly token = this.route.snapshot.paramMap.get('token') ?? '';
 
-  readonly sharedResource = rxResource({
-    stream: () => this.shareService.loadShared(this.token),
-  });
-
-  // Guarded rather than read straight off the resource: value() throws while the resource is in
-  // an error state, and both the template and the analytics effect below read this on that path.
-  readonly shared = computed(() =>
-    this.sharedResource.hasValue() ? this.sharedResource.value() : undefined,
-  );
-
   readonly positionFilter = signal<PositionFilter>('ALL');
   readonly sortColumn = signal<SortColumn>('summary');
   readonly sortDirection = signal<SortDirection>('desc');
+
+  /**
+   * Who decides what a column means here depends on how much of the board the reader holds.
+   *
+   * <p>Someone signed in holds all of it, so their request never changes and the board is fetched
+   * once — the sorting below is the whole answer. Behind the gate the rows on screen are the top
+   * of the board and the rest is not in the browser to be sorted, so the order goes to the BFF,
+   * which applies it to the whole board and returns the top of *that*. Sorting by goals then
+   * answers with the board's best scorers rather than the best among the rows already sent.
+   */
+  readonly sharedResource = rxResource({
+    params: () =>
+      this.isLoggedIn()
+        ? null
+        : {
+            position: this.positionFilter(),
+            sort: this.sortColumn(),
+            direction: this.sortDirection(),
+          },
+    stream: ({ params }) => this.shareService.loadShared(this.token, params ?? undefined),
+  });
+
+  /**
+   * The board on screen. Held across a reload rather than read straight off the resource: a new
+   * order is a new request, which empties the resource's value while it is in flight, and a page
+   * that blanked to a spinner on every click of a column heading would be a worse answer than the
+   * one it replaces. The rows are also read here on the error path, where value() throws.
+   */
+  readonly shared = linkedSignal<
+    SharedProjectionResponse | undefined,
+    SharedProjectionResponse | undefined
+  >({
+    source: () => (this.sharedResource.hasValue() ? this.sharedResource.value() : undefined),
+    computation: (loaded, previous) => loaded ?? previous?.value,
+  });
+
+  /** A reorder in flight, as opposed to the first load: the table is on screen and going stale. */
+  readonly isReordering = computed(() => this.sharedResource.isLoading() && !!this.shared());
 
   private viewCounted = false;
 
@@ -199,6 +232,11 @@ export class SharedProjectionComponent {
     (this.shared()?.data.players ?? []).map((shared) => this.toRow(shared)),
   );
 
+  /**
+   * Sorted here as well as on the server, and not only for the reader who holds the whole board:
+   * the BFF chooses *which* rows a gated visitor gets, and this puts the rows it sent in the same
+   * order the editor's table would. Two orderings that agree, rather than one trusted blindly.
+   */
   private readonly sortedRows = computed<SharedRow[]>(() => {
     const filtered = this.rows().filter((row) => this.matchesFilter(row));
     const column = this.sortColumn();
