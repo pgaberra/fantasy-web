@@ -127,21 +127,8 @@ describe('PinnedTableHeaderDirective', () => {
   });
 
   describe('where the browser drives animations from the scroll position', () => {
-    // jsdom has no visualViewport; a bare EventTarget is all the directive asks of it.
-    let viewport: EventTarget;
-
     beforeEach(() => {
       supportsScrollTimelines = true;
-      viewport = new EventTarget();
-      Object.defineProperty(window, 'visualViewport', {
-        value: viewport,
-        configurable: true,
-        writable: true,
-      });
-    });
-
-    afterEach(() => {
-      Reflect.deleteProperty(window, 'visualViewport');
     });
 
     it('hands the timeline the distance the header may travel', () => {
@@ -168,31 +155,27 @@ describe('PinnedTableHeaderDirective', () => {
     });
 
     /**
-     * A phone collapses its toolbars as you scroll and the page grows into the space. That moves
-     * where the pin has to begin, and it does not reliably raise a window resize — left stale,
-     * the header parks that many pixels below the top of the screen for the rest of the scroll.
+     * Where the pin begins is the window's height, and a copy of it kept here is a copy that can
+     * go out of date — a zoom step, a phone collapsing its toolbars. The header then tracks the
+     * scroll from a start point that is no longer the top of the window and parks that many
+     * pixels down the table for the rest of the scroll. The range names the edge crossing
+     * instead, so the only number handed over is the table's own.
      */
-    it('moves the pin when the viewport grows under a collapsing browser toolbar', () => {
+    it('hands the timeline nothing that a change of window height could invalidate', () => {
       const { fixture } = setup(120, 1000);
       const wrapper = fixture.nativeElement.querySelector('.table-wrapper') as HTMLElement;
-      const asLoaded = wrapper.style.getPropertyValue('--pinned-header-pin-start');
 
-      vi.spyOn(document.documentElement, 'clientHeight', 'get').mockReturnValue(812);
-      viewport.dispatchEvent(new Event('resize'));
-
-      expect(wrapper.style.getPropertyValue('--pinned-header-pin-start')).toEqual('812px');
-      expect(wrapper.style.getPropertyValue('--pinned-header-pin-start')).not.toEqual(asLoaded);
+      expect(wrapper.style.getPropertyValue('--pinned-header-pin-start')).toEqual('');
+      expect(wrapper.style.getPropertyValue('--pinned-header-pin-end')).toEqual('');
     });
 
-    it('stops listening to the viewport once the table is destroyed', () => {
+    it('stops measuring the table once it is destroyed', () => {
+      const disconnect = vi.spyOn(ResizeObserver.prototype, 'disconnect');
       const { fixture } = setup(120, 1000);
-      const wrapper = fixture.nativeElement.querySelector('.table-wrapper') as HTMLElement;
+
       fixture.destroy();
 
-      vi.spyOn(document.documentElement, 'clientHeight', 'get').mockReturnValue(812);
-      viewport.dispatchEvent(new Event('resize'));
-
-      expect(wrapper.style.getPropertyValue('--pinned-header-pin-start')).not.toEqual('812px');
+      expect(disconnect).toHaveBeenCalled();
     });
   });
 });
