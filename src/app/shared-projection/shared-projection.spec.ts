@@ -2,6 +2,7 @@ import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of, Subject, throwError } from 'rxjs';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Location } from '@angular/common';
 import { signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { SharedProjectionComponent } from './shared-projection';
@@ -62,7 +63,10 @@ describe('SharedProjectionComponent', () => {
   const importFromShare = vi.fn();
   const navigate = vi.fn();
   const notifyError = vi.fn();
+  const replaceState = vi.fn();
   const isLoggedIn = signal(false);
+  /** The `action` a visitor carried back from the sign-in, as the URL would hold it. */
+  let requestedAction: string | null = null;
 
   beforeEach(() => {
     loadShared.mockClear();
@@ -71,7 +75,9 @@ describe('SharedProjectionComponent', () => {
     importFromShare.mockReturnValue(of({ id: 'copy1' }));
     navigate.mockClear();
     notifyError.mockClear();
+    replaceState.mockClear();
     isLoggedIn.set(false);
+    requestedAction = null;
     return (
       MockBuilder(SharedProjectionComponent)
         // Kept real: the point of this page is that it renders the editor's own row, so a mocked
@@ -82,9 +88,15 @@ describe('SharedProjectionComponent', () => {
         .mock(NotificationService, { error: notifyError })
         .provide({ provide: AuthService, useValue: { isLoggedIn } })
         .provide({ provide: Router, useValue: { navigate } })
+        .provide({ provide: Location, useValue: { replaceState } })
         .provide({
           provide: ActivatedRoute,
-          useValue: { snapshot: { paramMap: { get: () => 'abc123' } } },
+          useValue: {
+            snapshot: {
+              paramMap: { get: () => 'abc123' },
+              queryParamMap: { get: () => requestedAction },
+            },
+          },
         })
     );
   });
@@ -363,9 +375,9 @@ describe('SharedProjectionComponent', () => {
       const login = ngMocks.get(ngMocks.find('[data-testid="prompt-login"]'), RouterLink);
       const register = ngMocks.get(ngMocks.find('[data-testid="prompt-register"]'), RouterLink);
       expect(login.routerLink).toEqual('/login');
-      expect(login.queryParams).toEqual({ returnUrl: '/s/abc123' });
+      expect(login.queryParams).toEqual({ returnUrl: '/s/abc123?action=draft' });
       expect(register.routerLink).toEqual('/register');
-      expect(register.queryParams).toEqual({ returnUrl: '/s/abc123' });
+      expect(register.queryParams).toEqual({ returnUrl: '/s/abc123?action=draft' });
     });
 
     /** Both offers are what the page is for, so neither is under a board to be scrolled past. */
@@ -413,6 +425,62 @@ describe('SharedProjectionComponent', () => {
       expect(draft.textContent).toContain('Copying…');
       expect(copy.textContent).toContain('Create a projection from this');
       expect(copy.disabled).toEqual(true);
+    });
+  });
+
+  /**
+   * The press that was interrupted by the sign-in. It rides back on the return URL, so these are
+   * as much about the copy not happening on sight as about it happening at all.
+   */
+  describe('coming back from the sign-in with the press still in hand', () => {
+    it('drafts against the board without being asked twice', async () => {
+      isLoggedIn.set(true);
+      requestedAction = 'draft';
+
+      await render();
+
+      expect(importFromShare).toHaveBeenCalledWith('abc123');
+      expect(navigate).toHaveBeenCalledWith(['/projections', 'copy1', 'draft']);
+    });
+
+    it('opens the copy for editing when that was the button', async () => {
+      isLoggedIn.set(true);
+      requestedAction = 'projection';
+
+      await render();
+
+      expect(navigate).toHaveBeenCalledWith(['/projections', 'copy1']);
+    });
+
+    /** A copy is something someone pressed a button for, not something a URL can ask for twice. */
+    it('takes the action off the address bar before acting on it', async () => {
+      isLoggedIn.set(true);
+      requestedAction = 'draft';
+
+      await render();
+
+      expect(replaceState).toHaveBeenCalledWith('/s/abc123');
+    });
+
+    it('asks again rather than copying when the sign-in did not take', async () => {
+      requestedAction = 'draft';
+
+      const fixture = await render();
+
+      expect(importFromShare).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.querySelector('[data-testid="sign-in-prompt"]')).not.toBeNull();
+    });
+
+    it('ignores an action it does not offer', async () => {
+      isLoggedIn.set(true);
+      requestedAction = 'delete-everything';
+
+      const fixture = await render();
+
+      expect(importFromShare).not.toHaveBeenCalled();
+      expect(navigate).not.toHaveBeenCalled();
+      expect(replaceState).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.querySelector('[data-testid="sign-in-prompt"]')).toBeNull();
     });
   });
 

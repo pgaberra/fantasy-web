@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, linkedSignal, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { SharedPlayer } from '../api/models/shared-player';
@@ -95,6 +96,7 @@ export class SharedProjectionComponent {
   private readonly notification = inject(NotificationService);
   private readonly analytics = inject(AnalyticsService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly location = inject(Location);
 
   readonly isLoggedIn = inject(AuthService).isLoggedIn;
 
@@ -109,6 +111,36 @@ export class SharedProjectionComponent {
    * finding that out by pressing the thing you came to press beats reading it in a card first.
    */
   readonly signInPromptFor = signal<ImportDestination | null>(null);
+
+  /**
+   * Where the sign-in prompt sends them, and how the press survives the trip: the button they
+   * chose rides back on the return URL, so the copy happens on arrival rather than asking them
+   * to find the board and press the same thing twice.
+   */
+  readonly promptReturnUrl = computed(() => {
+    const intent = this.signInPromptFor();
+    return intent ? `${this.returnUrl}?action=${intent}` : this.returnUrl;
+  });
+
+  /**
+   * Picks that press back up, once. Anything other than the two actions is ignored rather than
+   * reported: the parameter is part of a URL a visitor may edit or a mail client may mangle, and
+   * the page behind it reads fine without it.
+   *
+   * <p>The parameter comes off the address bar before the copy is attempted. An action left in
+   * the URL is one a refresh would run again, and one that would follow the link if the visitor
+   * passed it on: a board should be copied because someone pressed a button, not because a URL
+   * said so. Arriving with an action but no session lands on the same prompt as pressing the
+   * button would, which is what a sign-in that did not complete deserves.
+   */
+  private resumeRequestedAction(): void {
+    const requested = this.route.snapshot.queryParamMap.get('action');
+    if (requested !== 'draft' && requested !== 'projection') {
+      return;
+    }
+    this.location.replaceState(this.returnUrl);
+    this.importThen(requested);
+  }
 
   /** Takes a copy of the published board and opens it for editing. */
   copyToMyProjections(): void {
@@ -206,6 +238,8 @@ export class SharedProjectionComponent {
   private viewCounted = false;
 
   constructor() {
+    this.resumeRequestedAction();
+
     // The other half of the sharing loop: projection_shared is captured when a link is made,
     // this when someone actually opens one.
     effect(() => {
