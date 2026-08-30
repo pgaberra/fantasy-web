@@ -2,38 +2,43 @@
    is its top row, separated from the toolbar under it by a hairline rather than by a gap
    between two panels. Picking the games and reading the result were never two subjects.
 
-   Areas rather than source order, because the two differ. Down the page the row reads as one
-   question answered in steps — which games, then exactly which, then how to count them — while
-   across a wide screen the counting options belong up in the corner, out of the way of the rail
-   and lined up over the table's own filters. Grid lets the markup keep the reading order that
-   the tab key and a narrow screen both follow, and move only the wide layout. */
+   Three columns, and the middle one is a block rather than a row: which season on the left,
+   the whole range question — pills and rail together — in the middle, and how to count it on
+   the right, over the table's own filters. The range is the only one of the three that needs
+   two lines, and it keeps them to itself instead of spreading them across the bar. */
 .range-bar {
-  align-items: center;
+  align-items: start;
   border-bottom: 1px solid var(--color-border);
   display: grid;
   gap: var(--space-4);
-  grid-template-areas:
-    'scope  options'
-    'slider slider';
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'season range options';
+  grid-template-columns: auto minmax(0, 1fr) auto;
   margin-bottom: var(--space-4);
   padding-bottom: var(--space-4);
 }
 
-.range-scope {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3) var(--space-4);
-  grid-area: scope;
-}
-
 /* A label and the control it names are one thing, so they sit closer to each other than
-   either does to the field beside them. */
+   either does to the field beside them. The pill-height box is so the season lines up with
+   the presets across the divider rather than floating a couple of pixels above them. */
 .season-field {
   align-items: center;
   display: flex;
   gap: var(--space-1);
+  grid-area: season;
+  min-height: 1.75rem;
+}
+
+/* The section the row is really about, and drawn as one: a rule down its left edge that runs
+   past both lines, so the rail reads as part of the same question as the pills above it
+   rather than as a second row of the bar that happens to follow. */
+.range-group {
+  border-left: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  grid-area: range;
+  min-width: 0;
+  padding-left: var(--space-4);
 }
 
 /* The presets are a group rather than a single control, so their label needs a touch more
@@ -124,7 +129,6 @@
   align-items: center;
   display: flex;
   gap: var(--space-3);
-  grid-area: slider;
 }
 
 .track {
@@ -329,6 +333,7 @@
   display: flex;
   gap: var(--space-4);
   grid-area: options;
+  min-height: 1.75rem;
 }
 
 /* Each option is a control and the tip that explains it, side by side — the prose that used to
@@ -398,16 +403,39 @@
   width: 4rem;
 }
 
+/* Room for three columns runs out well before the window does — the options are wider than
+   the season field, and squeezing the range between the two turns the row of pills into a
+   column of them. Past that point the options drop under the range instead, which is the
+   same move the narrow layout makes, one step earlier. */
+@media (max-width: 1080px) {
+  .range-bar {
+    grid-template-areas:
+      'season range'
+      'options options';
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 640px) {
   /* One column, and the options fall to the bottom — under the rail they qualify rather than
      above it, which is the order the markup was already in. */
   .range-bar {
     gap: var(--space-3);
     grid-template-areas:
-      'scope'
-      'slider'
+      'season'
+      'range'
       'options';
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Stacked, the rule turns a corner: a line above the group divides it from the season the
+     same way the one down its side did, where a border on the left would just hang off the
+     start of a line. */
+  .range-group {
+    border-left: none;
+    border-top: 1px solid var(--color-border);
+    padding-left: 0;
+    padding-top: var(--space-3);
   }
 
   .range-options {

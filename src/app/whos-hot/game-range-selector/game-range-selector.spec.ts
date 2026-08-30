@@ -172,12 +172,24 @@ describe('GameRangeSelectorComponent', () => {
     render();
 
     const label = ngMocks.find('#whos-hot-range-label').nativeElement as HTMLElement;
-    const presets = ngMocks.find('.presets').nativeElement as HTMLElement;
+    const group = ngMocks.find('.range-group').nativeElement as HTMLElement;
 
     expect(label.textContent.trim()).toEqual('Game range');
+    expect(group.getAttribute('role')).toEqual('group');
     // Labelled by the word on screen rather than by an aria-label nobody else can read.
-    expect(presets.getAttribute('aria-labelledby')).toEqual(label.id);
-    expect(presets.getAttribute('aria-label')).toEqual(null);
+    expect(group.getAttribute('aria-labelledby')).toEqual(label.id);
+    expect(group.getAttribute('aria-label')).toEqual(null);
+  });
+
+  it('keeps the pills and the rail inside that one group, not beside each other', () => {
+    render();
+
+    const group = ngMocks.find('.range-group').nativeElement as HTMLElement;
+
+    // The label governs both halves of the question, so both have to sit under it — the rail
+    // used to be a sibling row of the bar with nothing tying it to the name above it.
+    expect(group.querySelector('.presets')).toBeTruthy();
+    expect(group.querySelector('.range-slider')).toBeTruthy();
   });
 
   it('names the whole row for everything in it, not just the range in the middle of it', () => {

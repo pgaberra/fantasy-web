@@ -1,21 +1,23 @@
 <!-- The row asks three things — which season, which games, how to count them — so it is named
      for all three. "Game range" would repeat the label inside it and leave out the rest. -->
 <section class="range-bar" aria-label="Season, game range and scoring options">
-  <div class="range-scope">
-    <div class="season-field">
-      <label class="field-label" for="whos-hot-season">Season</label>
-      <select id="whos-hot-season" class="season-select" (change)="onSeasonChange($event)">
-        @for (option of seasons(); track option.startYear) {
-          <option [value]="option.startYear" [selected]="option.startYear === season()">
-            {{ option.label }}
-          </option>
-        }
-      </select>
-    </div>
+  <div class="season-field">
+    <label class="field-label" for="whos-hot-season">Season</label>
+    <select id="whos-hot-season" class="season-select" (change)="onSeasonChange($event)">
+      @for (option of seasons(); track option.startYear) {
+        <option [value]="option.startYear" [selected]="option.startYear === season()">
+          {{ option.label }}
+        </option>
+      }
+    </select>
+  </div>
 
+  <!-- The pills and the rail are one question asked twice over — by name, then exactly — so
+       they are one group under one label rather than two rows that happen to sit together. -->
+  <div class="range-group" role="group" aria-labelledby="whos-hot-range-label">
     <div class="range-field">
       <span class="field-label" id="whos-hot-range-label">Game range</span>
-      <div class="presets" role="group" aria-labelledby="whos-hot-range-label">
+      <div class="presets">
         @for (preset of presets; track preset.label) {
           <button
             type="button"
@@ -29,58 +31,58 @@
         }
       </div>
     </div>
-  </div>
 
-  <div class="range-slider">
-    <input
-      class="game-number"
-      type="number"
-      min="1"
-      [max]="scheduleLength()"
-      step="1"
-      [value]="fromGame()"
-      aria-label="First game in the range"
-      (input)="onFromInput($event)"
-    />
-    <div class="track" (pointermove)="onTrackHover($event)">
-      <div class="track-rail" aria-hidden="true"></div>
-      <div class="track-fill" aria-hidden="true" [style]="fillStyle()"></div>
+    <div class="range-slider">
       <input
-        class="thumb"
-        [class.thumb--on-top]="activeThumb() === 'from'"
-        type="range"
+        class="game-number"
+        type="number"
         min="1"
         [max]="scheduleLength()"
         step="1"
         [value]="fromGame()"
-        aria-label="Drag to set the first game in the range"
-        [attr.aria-valuetext]="'Game ' + fromGame()"
+        aria-label="First game in the range"
         (input)="onFromInput($event)"
       />
+      <div class="track" (pointermove)="onTrackHover($event)">
+        <div class="track-rail" aria-hidden="true"></div>
+        <div class="track-fill" aria-hidden="true" [style]="fillStyle()"></div>
+        <input
+          class="thumb"
+          [class.thumb--on-top]="activeThumb() === 'from'"
+          type="range"
+          min="1"
+          [max]="scheduleLength()"
+          step="1"
+          [value]="fromGame()"
+          aria-label="Drag to set the first game in the range"
+          [attr.aria-valuetext]="'Game ' + fromGame()"
+          (input)="onFromInput($event)"
+        />
+        <input
+          class="thumb"
+          [class.thumb--on-top]="activeThumb() === 'to'"
+          type="range"
+          min="1"
+          [max]="scheduleLength()"
+          step="1"
+          [value]="toGame()"
+          aria-label="Drag to set the last game in the range"
+          [attr.aria-valuetext]="'Game ' + toGame()"
+          (input)="onToInput($event)"
+        />
+      </div>
       <input
-        class="thumb"
-        [class.thumb--on-top]="activeThumb() === 'to'"
-        type="range"
+        class="game-number"
+        type="number"
         min="1"
         [max]="scheduleLength()"
         step="1"
         [value]="toGame()"
-        aria-label="Drag to set the last game in the range"
-        [attr.aria-valuetext]="'Game ' + toGame()"
+        aria-label="Last game in the range"
         (input)="onToInput($event)"
       />
+      <span class="range-summary">{{ summary() }}</span>
     </div>
-    <input
-      class="game-number"
-      type="number"
-      min="1"
-      [max]="scheduleLength()"
-      step="1"
-      [value]="toGame()"
-      aria-label="Last game in the range"
-      (input)="onToInput($event)"
-    />
-    <span class="range-summary">{{ summary() }}</span>
   </div>
 
   <div class="range-options">
