@@ -137,7 +137,29 @@ export class AuthService {
     return from(this.api.invoke(resendVerification, { body: { email } }));
   }
 
+  /** Signing out on purpose: the form is where they meant to end up, and nothing follows them. */
   logout() {
+    this.endSession();
+    void this.router.navigate(['/login']);
+  }
+
+  /**
+   * A session that ran out underneath whatever the visitor was reading, which is a different
+   * thing from deciding to leave: they were in the middle of something, and the page they lost
+   * is the page they want back. It rides to the form as `returnUrl`, the same way a guard's
+   * bounce and a share link's prompt send someone there.
+   *
+   * <p>Except from a form itself, where coming back to it would be a loop rather than a return.
+   */
+  endExpiredSession(): void {
+    this.endSession();
+    const lost = this.router.url;
+    void (isAuthPage(lost)
+      ? this.router.navigate(['/login'])
+      : this.router.navigate(['/login'], { queryParams: { returnUrl: lost } }));
+  }
+
+  private endSession(): void {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.refreshTokenKey);
     localStorage.removeItem(this.adminKey);
@@ -147,7 +169,6 @@ export class AuthService {
     this.isEmailVerified.set(true);
     // Without this the next person to sign in on this browser inherits the previous identity.
     this.analytics.reset();
-    void this.router.navigate(['/login']);
   }
 
   getToken(): string | null {
@@ -246,6 +267,21 @@ export class AuthService {
  * the browser reads a protocol-relative URL as another origin, and it starts with a slash like
  * any local path does.
  */
+/** The forms and the pages that only exist to get someone to one. */
+const AUTH_PATHS = [
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/verify-email',
+  '/auth',
+];
+
+function isAuthPage(url: string): boolean {
+  const path = url.split('?')[0];
+  return AUTH_PATHS.some((auth) => path === auth || path.startsWith(`${auth}/`));
+}
+
 function isInternalPath(url: string): boolean {
   return url.startsWith('/') && !url.startsWith('//') && !url.startsWith('/\\');
 }
