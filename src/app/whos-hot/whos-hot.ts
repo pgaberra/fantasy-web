@@ -199,6 +199,14 @@ export class WhosHotComponent {
     });
   }
 
+  /** Only a season that is actually on offer: `Number('')` is 0, which is finite and is not one. */
+  onSeasonChange(event: Event): void {
+    const startYear = Number((event.target as HTMLSelectElement).value);
+    if (this.seasons.some((season) => season.startYear === startYear)) {
+      this.season.set(startYear);
+    }
+  }
+
   retry(): void {
     if (this.playersResource.error()) {
       this.playersResource.reload();
