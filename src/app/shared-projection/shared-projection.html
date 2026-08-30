@@ -26,6 +26,43 @@
       <p class="shared-eyebrow">Shared projection</p>
       <h1 class="shared-title">{{ projection.name }}</h1>
       <p class="shared-byline">By {{ authorLabel() }} · {{ leagueSummary() }}</p>
+
+      @if (isLoggedIn()) {
+        <!-- Above the table on purpose: what a visitor does with someone else's board is take a
+             copy of it, and that offer used to sit under every row they had to scroll past. -->
+        <div class="board-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            [disabled]="isImporting()"
+            (click)="copyToMyProjections()"
+            data-testid="copy-board"
+          >
+            {{ importingInto() === 'projection' ? 'Copying…' : 'Create a projection from this' }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="isImporting()"
+            (click)="draftAgainstThis()"
+            data-testid="draft-board"
+          >
+            {{ importingInto() === 'draft' ? 'Copying…' : 'Draft against this board' }}
+          </button>
+        </div>
+        @if (alreadyImported()) {
+          <p class="board-actions-note">
+            You already have a copy of this board.
+            <a routerLink="/projections">Open your projections</a> to edit it, or
+            <a routerLink="/draft">go to Draft Mode</a> to draft against it.
+          </p>
+        } @else {
+          <p class="board-actions-note">
+            Either one takes a copy of these numbers. {{ authorLabel() }}'s picks don't come with
+            it, and editing your copy leaves theirs alone.
+          </p>
+        }
+      }
     </header>
 
     <section class="table-section">
@@ -88,62 +125,45 @@
       }
     </section>
 
-    <section class="cta">
-      @if (isLoggedIn()) {
-        <h2 class="cta-title">Draft against {{ authorLabel() }}'s board</h2>
-        <p class="cta-body">
-          Take a copy of these numbers into your own projections and run a draft against them. Their
-          picks don't come with it, and editing your copy leaves theirs alone.
-        </p>
-        @if (alreadyImported()) {
-          <p class="cta-note">
-            You already have a copy of this board.
-            <a routerLink="/draft">Go to Draft Mode</a> to pick up from there.
+    <!-- Only for a visitor who cannot act on the board yet. Someone signed in has both offers
+         above the table, where they do not have to scroll a board to find them. -->
+    @if (!isLoggedIn()) {
+      <section class="cta">
+        @if (isTruncated()) {
+          <h2 class="cta-title">
+            This link opens the top {{ projection.data.players.length }} of
+            {{ totalPlayers() }} players
+          </h2>
+          <p class="cta-body">
+            Sign in to read the rest of {{ authorLabel() }}'s board (every player they ranked, under
+            their league's scoring settings) and take a copy to draft against. Free to start.
           </p>
+          <div class="cta-actions">
+            <a
+              routerLink="/login"
+              [queryParams]="{ returnUrl }"
+              class="btn btn-primary"
+              data-testid="gate-login"
+              >Log in</a
+            >
+            <a
+              routerLink="/register"
+              [queryParams]="{ returnUrl }"
+              class="btn btn-secondary"
+              data-testid="gate-register"
+              >Create an account</a
+            >
+          </div>
         } @else {
-          <button
-            type="button"
-            class="btn btn-primary"
-            [disabled]="isImporting()"
-            (click)="draftAgainstThis()"
-          >
-            {{ isImporting() ? 'Copying…' : 'Draft against this board' }}
-          </button>
+          <h2 class="cta-title">This is one manager's board</h2>
+          <p class="cta-body">
+            Build your own projections, tuned to your league's scoring settings, and rank every
+            player the way this one does, or draft straight against this one. Free to start.
+          </p>
+          <a routerLink="/register" class="btn btn-primary">Make your own projection</a>
         }
-      } @else if (isTruncated()) {
-        <h2 class="cta-title">
-          This link opens the top {{ projection.data.players.length }} of
-          {{ totalPlayers() }} players
-        </h2>
-        <p class="cta-body">
-          Sign in to read the rest of {{ authorLabel() }}'s board (every player they ranked, under
-          their league's scoring settings) and take a copy to draft against. Free to start.
-        </p>
-        <div class="cta-actions">
-          <a
-            routerLink="/login"
-            [queryParams]="{ returnUrl }"
-            class="btn btn-primary"
-            data-testid="gate-login"
-            >Log in</a
-          >
-          <a
-            routerLink="/register"
-            [queryParams]="{ returnUrl }"
-            class="btn btn-secondary"
-            data-testid="gate-register"
-            >Create an account</a
-          >
-        </div>
-      } @else {
-        <h2 class="cta-title">This is one manager's board</h2>
-        <p class="cta-body">
-          Build your own projections, tuned to your league's scoring settings, and rank every player
-          the way this one does, or draft straight against this one. Free to start.
-        </p>
-        <a routerLink="/register" class="btn btn-primary">Make your own projection</a>
-      }
-    </section>
+      </section>
+    }
 
     <div class="shared-footer">
       <p>
