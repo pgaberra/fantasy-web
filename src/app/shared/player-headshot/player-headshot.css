@@ -5,7 +5,7 @@
   justify-content: center;
   overflow: hidden;
   border-radius: 50%;
-  /* Sized by the caller, so the same component serves the 28px tables and the draft board. */
+  /* Sized by the caller, so the same component serves the tables and the draft board. */
   width: var(--headshot-size, 28px);
   height: var(--headshot-size, 28px);
   background: var(--headshot-bg, #e6e9f2);
