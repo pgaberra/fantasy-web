@@ -5,6 +5,21 @@
       label="What this page shows"
       text="Check which players have performed the best over a selected time period, customized to your league settings."
     />
+
+    <!-- Beside the title rather than down in the range bar, because that is what it is: the
+         season frames every number on the page, not just the stretch of games picked below it.
+         In the bar it was one short column next to a two-line one, which left a hole under it
+         the width of the field and the height of the rail. -->
+    <div class="season-field">
+      <label class="season-label" for="whos-hot-season">Season</label>
+      <select id="whos-hot-season" class="season-select" (change)="onSeasonChange($event)">
+        @for (option of seasons; track option.startYear) {
+          <option [value]="option.startYear" [selected]="option.startYear === season()">
+            {{ option.label }}
+          </option>
+        }
+      </select>
+    </div>
   </div>
 
   <!-- One card, not two. Choosing the games, choosing how they are scored and reading the
@@ -15,8 +30,6 @@
        put instead of the page reflowing around it on every reload. -->
   <div class="leaderboard-card">
     <app-game-range-selector
-      [seasons]="seasons"
-      [(season)]="season"
       [scheduleLength]="scheduleLength"
       [(fromGame)]="fromGame"
       [(toGame)]="toGame"

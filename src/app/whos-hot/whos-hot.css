@@ -7,6 +7,7 @@
 .page-header {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
   margin-bottom: var(--space-5);
 }
@@ -16,6 +17,45 @@
   font-size: var(--text-xl);
   font-weight: var(--weight-bold);
   margin: 0;
+}
+
+/* Far enough from the tip to read as its own thing rather than more of the title, close enough
+   to still qualify it. Wraps to its own line before it would push the heading around. */
+.season-field {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+  margin-left: var(--space-3);
+}
+
+/* The word names the control; the year is the part worth reading. So the label stays quiet and
+   the badge beside it carries the weight, rather than the two competing under the heading. */
+.season-label {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* Reads as a badge until you go near it — the season is a fact about what is on screen first
+   and a control second, so it doesn't spend the height of a full form field saying so. */
+.season-select {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  padding: 0.1rem var(--space-2);
+}
+
+.season-select:hover {
+  background: var(--color-surface-hover);
+}
+
+.season-select:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
 }
 
 /* The one surface on the page: the game range, the leaderboard's own toolbar and the table
@@ -76,6 +116,12 @@
 
   .page-header h1 {
     font-size: var(--text-lg);
+  }
+
+  /* No room to sit beside the title on a phone, so it takes the line under it and starts at
+     the same left edge instead of trailing off the end of the heading. */
+  .season-field {
+    margin-left: 0;
   }
 
   .leaderboard-card {

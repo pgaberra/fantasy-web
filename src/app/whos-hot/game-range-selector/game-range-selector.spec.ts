@@ -1,15 +1,12 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GameRangeSelectorComponent } from './game-range-selector';
-import { SEASONS } from '../season.model';
 
 describe('GameRangeSelectorComponent', () => {
   beforeEach(() => MockBuilder(GameRangeSelectorComponent));
 
   const render = (fromGame = 63, toGame = 82) =>
     MockRender(GameRangeSelectorComponent, {
-      seasons: SEASONS,
-      season: 2025,
       scheduleLength: 82,
       fromGame,
       toGame,
@@ -155,19 +152,6 @@ describe('GameRangeSelectorComponent', () => {
     expect(component.activeThumb()).toEqual('from');
   });
 
-  it('names the season dropdown with a label the pointer can reach, not just a screen reader', () => {
-    render();
-
-    const label = ngMocks.find('label.field-label').nativeElement as HTMLLabelElement;
-    const select = ngMocks.find('select.season-select').nativeElement as HTMLSelectElement;
-
-    expect(label.textContent.trim()).toEqual('Season');
-    // `for` and `id` rather than an aria-label: clicking the word focuses the control, and
-    // the name is on screen for everyone rather than only for assistive tech.
-    expect(label.htmlFor).toEqual(select.id);
-    expect(select.getAttribute('aria-label')).toEqual(null);
-  });
-
   it('names the presets and the rail under them with the same visible label', () => {
     render();
 
@@ -192,29 +176,21 @@ describe('GameRangeSelectorComponent', () => {
     expect(group.querySelector('.range-slider')).toBeTruthy();
   });
 
-  it('names the whole row for everything in it, not just the range in the middle of it', () => {
+  it('names the whole row for everything in it, not just the range on the left of it', () => {
     render();
 
     const bar = ngMocks.find('.range-bar').nativeElement as HTMLElement;
 
-    // Naming the region 'Game range' repeated the label inside it and left the season and the
-    // scoring options out of the name.
-    expect(bar.getAttribute('aria-label')).toEqual('Season, game range and scoring options');
+    // Naming the region 'Game range' would repeat the label inside it and leave the scoring
+    // options out of the name.
+    expect(bar.getAttribute('aria-label')).toEqual('Game range and scoring options');
   });
 
-  it('picks the season by the year it starts in, which is what the splits API takes', () => {
-    const component = render();
+  it('leaves the season to the page, so the bar asks one question rather than two', () => {
+    render();
 
-    component.onSeasonChange({ target: { value: '2026' } } as unknown as Event);
-
-    expect(component.season()).toEqual(2026);
-  });
-
-  it('ignores a season that is not a number rather than asking for an unnamed one', () => {
-    const component = render();
-
-    component.onSeasonChange({ target: { value: '' } } as unknown as Event);
-
-    expect(component.season()).toEqual(2025);
+    // It framed every number on the page, not just this row, and as a one-line column beside a
+    // two-line one it left a hole under itself the height of the rail.
+    expect(ngMocks.findAll('select.season-select').length).toEqual(0);
   });
 });
