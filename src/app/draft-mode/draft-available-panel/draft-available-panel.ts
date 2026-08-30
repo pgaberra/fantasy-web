@@ -32,7 +32,7 @@ export class DraftAvailablePanelComponent {
   readonly editingInfo = input.required<EditingPickInfo | null>();
   readonly searchTerm = input.required<string>();
   readonly positionFilters = input.required<{ value: PositionFilter; label: string }[]>();
-  readonly positionFilter = input.required<PositionFilter>();
+  readonly selectedPositions = input.required<readonly PositionFilter[]>();
   readonly showStats = input.required<boolean>();
   readonly pageSizeOptions = input.required<{ label: string; value: number }[]>();
   readonly pageSize = input.required<number>();
@@ -47,13 +47,17 @@ export class DraftAvailablePanelComponent {
   readonly statColumns = input.required<ScoringStatKey[]>();
 
   readonly searchChange = output<string>();
-  readonly positionFilterChange = output<PositionFilter>();
+  readonly positionFilterToggle = output<PositionFilter>();
   readonly statsToggle = output<boolean>();
   readonly pageSizeChange = output<number>();
   readonly showMore = output<void>();
   readonly draft = output<number>();
   readonly replace = output<number>();
   readonly cancelEdit = output<void>();
+
+  isPositionSelected(filter: PositionFilter): boolean {
+    return this.selectedPositions().includes(filter);
+  }
 
   onSearchInput(event: Event): void {
     this.searchChange.emit((event.target as HTMLInputElement).value);

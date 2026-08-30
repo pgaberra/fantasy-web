@@ -319,6 +319,56 @@ describe('DraftModeComponent', () => {
     expect(component.draftLabel()).toEqual('Draft for Team 1');
   });
 
+  it('filters on several positions at once and falls back to all when none are left', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+
+    component.togglePositionFilter('C');
+
+    expect(component.selectedPositions()).toEqual(['C']);
+    expect(component.available().map((sp) => sp.projection.playerId)).toEqual([1]);
+
+    component.togglePositionFilter('D');
+
+    expect(component.selectedPositions()).toEqual(['C', 'D']);
+    expect(
+      component
+        .available()
+        .map((sp) => sp.projection.playerId)
+        .sort((first, second) => first - second),
+    ).toEqual([1, 2]);
+
+    component.togglePositionFilter('C');
+
+    expect(component.selectedPositions()).toEqual(['D']);
+    expect(component.available().map((sp) => sp.projection.playerId)).toEqual([2]);
+
+    component.togglePositionFilter('D');
+
+    expect(component.selectedPositions()).toEqual(['ALL']);
+    expect(
+      component
+        .available()
+        .map((sp) => sp.projection.playerId)
+        .sort((first, second) => first - second),
+    ).toEqual([1, 2]);
+  });
+
+  it('drops the other positions when All is picked', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+
+    component.togglePositionFilter('C');
+    component.togglePositionFilter('D');
+    component.togglePositionFilter('ALL');
+
+    expect(component.selectedPositions()).toEqual(['ALL']);
+  });
+
   it('attributes a pick to the next team and undoes the last pick', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
@@ -595,14 +645,19 @@ describe('DraftModeComponent — available pagination', () => {
       }),
   );
 
-  it('defaults to 100 players per page and reveals more on show more', async () => {
+  it('defaults to 50 players per page and reveals more on show more', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
     component.applySetup(draft);
 
     expect(component.available().length).toEqual(120);
-    expect(component.pageSize()).toEqual(100);
+    expect(component.pageSize()).toEqual(50);
+    expect(component.visibleAvailable().length).toEqual(50);
+    expect(component.hasMoreAvailable()).toBe(true);
+
+    component.showMore();
+
     expect(component.visibleAvailable().length).toEqual(100);
     expect(component.hasMoreAvailable()).toBe(true);
 
@@ -618,11 +673,12 @@ describe('DraftModeComponent — available pagination', () => {
     const component = fixture.point.componentInstance;
     component.applySetup(draft);
     component.showMore();
+    component.showMore();
     expect(component.visibleAvailable().length).toEqual(120);
 
-    component.setPositionFilter('C');
+    component.togglePositionFilter('C');
 
-    expect(component.visibleAvailable().length).toEqual(100);
+    expect(component.visibleAvailable().length).toEqual(50);
   });
 
   it('honors a user-chosen page size', async () => {
@@ -635,8 +691,8 @@ describe('DraftModeComponent — available pagination', () => {
     expect(component.visibleAvailable().length).toEqual(120);
     expect(component.hasMoreAvailable()).toBe(false);
 
-    component.pageSize.set(100);
-    expect(component.visibleAvailable().length).toEqual(100);
+    component.pageSize.set(50);
+    expect(component.visibleAvailable().length).toEqual(50);
     expect(component.hasMoreAvailable()).toBe(true);
   });
 });
