@@ -55,10 +55,12 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   `rookieIds` is therefore null in both cases, and is taken via `hasValue()` because reading a
   resource in an error state throws.
 - `draft-start/` — the **Draft Mode** page (`/draft`): picks what a draft is drafted
-  against, across three kinds of source behind a tab each — the user's own projections,
-  boards copied from someone's share link, and the "Last Season's Stats" preset. Drafts
-  left mid-way are lifted out of the tabs into a strip at the top, since resuming one is
-  what most visits are for. The imported tab carries the paste-a-share-link field;
+  against, across three kinds of source — the presets, the user's own projections, and
+  boards copied from someone's share link. All three are listed at once, under a heading
+  each; they were tabs, and a tab hid two thirds of the answer, the paste-a-share-link
+  field included (`projection-create` groups the same three the same way, in the same
+  order). Drafts left mid-way are lifted out of the groups into a strip at the top, since
+  resuming one is what most visits are for. The shared group carries the field;
   `shareTokenFrom` accepts a whole URL, a `/s/…` path, or a bare token, and a name clash
   (409) asks for a name rather than reporting a failure the user cannot act on.
   A preset draft has no projection behind it, so starting one creates a projection of

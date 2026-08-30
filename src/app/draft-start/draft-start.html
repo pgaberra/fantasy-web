@@ -62,151 +62,105 @@
       </section>
     }
 
-    <div class="tabs" role="tablist" aria-label="Draft sources">
-      <button
-        type="button"
-        role="tab"
-        class="tab"
-        [class.tab--active]="selectedTab() === 'own'"
-        [attr.aria-selected]="selectedTab() === 'own'"
-        (click)="selectTab('own')"
-      >
-        <span class="tab-label">Your projections</span>
-        <span class="tab-label tab-label--short">Yours</span>
-        <span class="tab-count">{{ projections().length }}</span>
-      </button>
-      <button
-        type="button"
-        role="tab"
-        class="tab"
-        [class.tab--active]="selectedTab() === 'imported'"
-        [attr.aria-selected]="selectedTab() === 'imported'"
-        (click)="selectTab('imported')"
-      >
-        <span class="tab-label">Shared with you</span>
-        <span class="tab-label tab-label--short">Shared</span>
-        <span class="tab-count">{{ imported().length }}</span>
-      </button>
-      <button
-        type="button"
-        role="tab"
-        class="tab"
-        [class.tab--active]="selectedTab() === 'presets'"
-        [attr.aria-selected]="selectedTab() === 'presets'"
-        (click)="selectTab('presets')"
-      >
-        <span class="tab-label">Presets</span>
-        <span class="tab-label tab-label--short">Presets</span>
-        <span class="tab-count">{{ presets.length }}</span>
-      </button>
-    </div>
-
-    @switch (selectedTab()) {
-      @case ('own') {
-        <section class="panel">
-          @if (projections().length === 0) {
-            <p class="panel-empty">
-              No projections yet.
-              <a routerLink="/projections/new">Create one</a> to draft against your own numbers.
-            </p>
-          } @else {
-            <ul class="rows">
-              @for (projection of projections(); track projection.id) {
-                <li class="row">
-                  <div class="row-main">
-                    <span class="row-name">{{ projection.name }}</span>
-                    <span class="row-meta">Updated {{ projection.updatedAt | relativeTime }}</span>
-                  </div>
-                  <ng-container
-                    [ngTemplateOutlet]="draftActions"
-                    [ngTemplateOutletContext]="{ $implicit: projection }"
-                  />
-                </li>
-              }
-            </ul>
-          }
-        </section>
-      }
-
-      @case ('imported') {
-        <section class="panel">
-          @if (imported().length === 0) {
-            <p class="panel-empty">
-              Nobody's board here yet. Paste a SlapStat share link below to draft against someone
-              else's numbers.
-            </p>
-          } @else {
-            <ul class="rows">
-              @for (board of imported(); track board.id) {
-                <li class="row">
-                  <div class="row-main">
-                    <span class="row-name">{{ board.name }}</span>
-                    <span class="row-meta">
-                      {{ sourceLabel(board) }} · imported {{ board.createdAt | relativeTime }}
-                    </span>
-                  </div>
-                  <ng-container
-                    [ngTemplateOutlet]="draftActions"
-                    [ngTemplateOutletContext]="{ $implicit: board }"
-                  />
-                </li>
-              }
-            </ul>
-          }
-
-          <app-share-import (imported)="onImported()" />
-        </section>
-      }
-
-      @case ('presets') {
-        <section class="panel">
-          <ul class="rows">
-            @for (preset of presets; track preset.name) {
-              <li class="row">
-                <div class="row-main">
-                  <span class="row-name">{{ preset.name }}</span>
-                  <span class="row-meta">{{ preset.description }}</span>
-                </div>
-                @if (presetDraft(preset)?.draftStatus === 'finished') {
-                  <span class="row-status row-status--done">Draft complete</span>
-                }
-                @if (isStarting()) {
-                  <span class="row-busy">Starting…</span>
-                } @else if (isConfirmingRestart(preset)) {
-                  <span class="confirm-text">Discard this draft and start over?</span>
-                  <button
-                    type="button"
-                    class="btn btn-danger btn-sm"
-                    (click)="confirmRestart(preset)"
-                  >
-                    Yes, start over
-                  </button>
-                  <button type="button" class="btn btn-secondary btn-sm" (click)="cancelRestart()">
-                    Cancel
-                  </button>
-                } @else {
-                  <button
-                    type="button"
-                    class="btn btn-primary btn-sm"
-                    (click)="startPreset(preset)"
-                  >
-                    {{ presetLabel(preset) }}
-                  </button>
-                  @if (presetDraft(preset)) {
-                    <button
-                      type="button"
-                      class="btn btn-secondary btn-sm"
-                      (click)="requestRestart(preset)"
-                    >
-                      Start over
-                    </button>
-                  }
-                }
-              </li>
+    <!--
+      One list, grouped by where a source comes from, rather than three tabs over the same
+      question. The new-projection page groups the same three the same way (projection-create.html):
+      a tab hid two thirds of what can be drafted against — the import box included, behind the
+      tab that is empty until it has been used once.
+    -->
+    <section class="group group--presets" aria-labelledby="presets-title">
+      <h2 class="group-title" id="presets-title">Presets</h2>
+      <ul class="rows">
+        @for (preset of presets; track preset.name) {
+          <li class="row">
+            <div class="row-main">
+              <span class="row-name">{{ preset.name }}</span>
+              <span class="row-meta">{{ preset.description }}</span>
+            </div>
+            @if (presetDraft(preset)?.draftStatus === 'finished') {
+              <span class="row-status row-status--done">Draft complete</span>
             }
-          </ul>
-        </section>
+            @if (isStarting()) {
+              <span class="row-busy">Starting…</span>
+            } @else if (isConfirmingRestart(preset)) {
+              <span class="confirm-text">Discard this draft and start over?</span>
+              <button type="button" class="btn btn-danger btn-sm" (click)="confirmRestart(preset)">
+                Yes, start over
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" (click)="cancelRestart()">
+                Cancel
+              </button>
+            } @else {
+              <button type="button" class="btn btn-primary btn-sm" (click)="startPreset(preset)">
+                {{ presetLabel(preset) }}
+              </button>
+              @if (presetDraft(preset)) {
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm"
+                  (click)="requestRestart(preset)"
+                >
+                  Start over
+                </button>
+              }
+            }
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section class="group group--own" aria-labelledby="own-title">
+      <h2 class="group-title" id="own-title">Your projections</h2>
+      @if (projections().length === 0) {
+        <p class="group-empty">
+          No projections yet.
+          <a routerLink="/projections/new">Create one</a> to draft against your own numbers.
+        </p>
+      } @else {
+        <ul class="rows">
+          @for (projection of projections(); track projection.id) {
+            <li class="row">
+              <div class="row-main">
+                <span class="row-name">{{ projection.name }}</span>
+                <span class="row-meta">Updated {{ projection.updatedAt | relativeTime }}</span>
+              </div>
+              <ng-container
+                [ngTemplateOutlet]="draftActions"
+                [ngTemplateOutletContext]="{ $implicit: projection }"
+              />
+            </li>
+          }
+        </ul>
       }
-    }
+    </section>
+
+    <section class="group group--shared" aria-labelledby="shared-title">
+      <h2 class="group-title" id="shared-title">Shared with you</h2>
+      @if (imported().length === 0) {
+        <p class="group-empty">
+          Nobody's board here yet. Paste a SlapStat share link below to draft against someone else's
+          numbers.
+        </p>
+      } @else {
+        <ul class="rows">
+          @for (board of imported(); track board.id) {
+            <li class="row">
+              <div class="row-main">
+                <span class="row-name">{{ board.name }}</span>
+                <span class="row-meta">
+                  {{ sourceLabel(board) }} · imported {{ board.createdAt | relativeTime }}
+                </span>
+              </div>
+              <ng-container
+                [ngTemplateOutlet]="draftActions"
+                [ngTemplateOutletContext]="{ $implicit: board }"
+              />
+            </li>
+          }
+        </ul>
+      }
+
+      <app-share-import (imported)="onImported()" />
+    </section>
   }
 </div>
