@@ -74,6 +74,14 @@
   gap: var(--space-2);
 }
 
+/* The label on this button changes with the draft's state, and the three labels are not the
+   same length. Without a floor wide enough for the longest of them, every card sets the
+   button's width from its own label and the Edit button beside it lands at a different x on
+   each row, so the primary action has no column to sit in as the eye runs down the list. */
+.card-actions .draft {
+  min-width: 8.5rem;
+}
+
 .card-actions .confirm-text {
   font-size: var(--text-sm);
   color: var(--color-primary);
