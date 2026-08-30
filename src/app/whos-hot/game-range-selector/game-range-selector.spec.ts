@@ -158,7 +158,7 @@ describe('GameRangeSelectorComponent', () => {
   it('names the season dropdown with a label the pointer can reach, not just a screen reader', () => {
     render();
 
-    const label = ngMocks.find('label.season-label').nativeElement as HTMLLabelElement;
+    const label = ngMocks.find('label.field-label').nativeElement as HTMLLabelElement;
     const select = ngMocks.find('select.season-select').nativeElement as HTMLSelectElement;
 
     expect(label.textContent.trim()).toEqual('Season');
@@ -166,6 +166,18 @@ describe('GameRangeSelectorComponent', () => {
     // the name is on screen for everyone rather than only for assistive tech.
     expect(label.htmlFor).toEqual(select.id);
     expect(select.getAttribute('aria-label')).toEqual(null);
+  });
+
+  it('names the presets and the rail under them with the same visible label', () => {
+    render();
+
+    const label = ngMocks.find('#whos-hot-range-label').nativeElement as HTMLElement;
+    const presets = ngMocks.find('.presets').nativeElement as HTMLElement;
+
+    expect(label.textContent.trim()).toEqual('Game range');
+    // Labelled by the word on screen rather than by an aria-label nobody else can read.
+    expect(presets.getAttribute('aria-labelledby')).toEqual(label.id);
+    expect(presets.getAttribute('aria-label')).toEqual(null);
   });
 
   it('picks the season by the year it starts in, which is what the splits API takes', () => {

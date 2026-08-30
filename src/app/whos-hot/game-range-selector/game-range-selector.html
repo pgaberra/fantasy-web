@@ -1,7 +1,7 @@
 <section class="range-bar" aria-label="Game range">
   <div class="range-scope">
     <div class="season-field">
-      <label class="season-label" for="whos-hot-season">Season</label>
+      <label class="field-label" for="whos-hot-season">Season</label>
       <select id="whos-hot-season" class="season-select" (change)="onSeasonChange($event)">
         @for (option of seasons(); track option.startYear) {
           <option [value]="option.startYear" [selected]="option.startYear === season()">
@@ -11,18 +11,21 @@
       </select>
     </div>
 
-    <div class="presets" role="group" aria-label="Quick ranges">
-      @for (preset of presets; track preset.label) {
-        <button
-          type="button"
-          class="preset"
-          [class.preset--active]="isPresetActive()(preset)"
-          [attr.aria-pressed]="isPresetActive()(preset)"
-          (click)="applyPreset(preset)"
-        >
-          {{ preset.label }}
-        </button>
-      }
+    <div class="range-field">
+      <span class="field-label" id="whos-hot-range-label">Game range</span>
+      <div class="presets" role="group" aria-labelledby="whos-hot-range-label">
+        @for (preset of presets; track preset.label) {
+          <button
+            type="button"
+            class="preset"
+            [class.preset--active]="isPresetActive()(preset)"
+            [attr.aria-pressed]="isPresetActive()(preset)"
+            (click)="applyPreset(preset)"
+          >
+            {{ preset.label }}
+          </button>
+        }
+      </div>
     </div>
   </div>
 
