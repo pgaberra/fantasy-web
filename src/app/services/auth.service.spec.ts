@@ -24,14 +24,14 @@ function jwtWith(claims: Record<string, string>): string {
   return `header.${payload}.signature`;
 }
 
-function authResponse(token: string): AuthResponse {
+function authResponse(token: string, emailVerified = true): AuthResponse {
   return {
     token,
     refreshToken: 'refresh-token',
     expiresInSeconds: 900,
     refreshExpiresInSeconds: 86400,
     admin: false,
-    emailVerified: true,
+    emailVerified,
   };
 }
 
@@ -101,6 +101,50 @@ describe('AuthService', () => {
       await firstValueFrom(service.refresh());
 
       expect(TestBed.inject(Router).navigateByUrl).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * A shared board sends someone here mid-press: the button they chose is on the return URL as
+   * `?action=…`, and the board runs it when they land back. Signing up is the path that press is
+   * most likely to take, and the one with the most between the press and the landing, so what it
+   * carries is worth pinning down rather than reading off the happy path.
+   */
+  describe('where signing up lands', () => {
+    const register = async (emailVerified = true) => {
+      invoke.mockReturnValue(
+        Promise.resolve(authResponse(jwtWith({ sub: 'account-uuid' }), emailVerified)),
+      );
+      await firstValueFrom(service.register({ email: 'a@example.test', password: 'secret' }));
+      return TestBed.inject(Router);
+    };
+
+    it('takes a new account back to the board that sent them', async () => {
+      service.rememberReturnUrl('/s/abc123');
+      const router = await register();
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/s/abc123');
+    });
+
+    /** The query string is the press. Trimming the return URL to a bare path would drop it. */
+    it('keeps the action the return URL was carrying', async () => {
+      service.rememberReturnUrl('/s/abc123?action=draft');
+      const router = await register();
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/s/abc123?action=draft');
+    });
+
+    /**
+     * Verifying an email happens out of band, in whatever tab the link from the mail opens. A
+     * fresh account is signed in and goes where it was headed; if that ever became a redirect to
+     * a "check your inbox" page instead, this is the test that would say so.
+     */
+    it('does not hold an unverified account back from where it was going', async () => {
+      service.rememberReturnUrl('/s/abc123?action=projection');
+      const router = await register(false);
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/s/abc123?action=projection');
+      expect(service.isEmailVerified()).toEqual(false);
     });
   });
 
