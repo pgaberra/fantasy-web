@@ -3,7 +3,8 @@ import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from 'vites
 import { of, Subject, throwError } from 'rxjs';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Location } from '@angular/common';
-import { signal } from '@angular/core';
+import { ApplicationRef, signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { SharedProjectionComponent } from './shared-projection';
 import { PlayerRowComponent } from '../draft-projection/player-projections-table/player-row/player-row';
@@ -12,6 +13,7 @@ import { NotificationService } from '../services/notification.service';
 import { ProjectionShareService } from '../services/projection-share.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { SharedProjectionResponse } from '../api/models/shared-projection-response';
+import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 
 describe('SharedProjectionComponent', () => {
   const shared: SharedProjectionResponse = {
@@ -89,22 +91,27 @@ describe('SharedProjectionComponent', () => {
     const builder = realRows
       ? MockBuilder(SharedProjectionComponent).keep(PlayerRowComponent)
       : MockBuilder(SharedProjectionComponent).mock(PlayerRowComponent);
-    return builder
-      .mock(ProjectionShareService, { loadShared })
-      .mock(ProjectionStorageService, { importFromShare })
-      .mock(NotificationService, { error: notifyError })
-      .provide({ provide: AuthService, useValue: { isLoggedIn } })
-      .provide({ provide: Router, useValue: { navigate } })
-      .provide({ provide: Location, useValue: { replaceState } })
-      .provide({
-        provide: ActivatedRoute,
-        useValue: {
-          snapshot: {
-            paramMap: { get: () => 'abc123' },
-            queryParamMap: { get: () => requestedAction },
+    return (
+      builder
+        // Kept real so the buttons' tooltips are the ones a reader would get, not a stand-in:
+        // the labels alone no longer say a copy is taken.
+        .keep(TooltipDirective)
+        .mock(ProjectionShareService, { loadShared })
+        .mock(ProjectionStorageService, { importFromShare })
+        .mock(NotificationService, { error: notifyError })
+        .provide({ provide: AuthService, useValue: { isLoggedIn } })
+        .provide({ provide: Router, useValue: { navigate } })
+        .provide({ provide: Location, useValue: { replaceState } })
+        .provide({
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: { get: () => 'abc123' },
+              queryParamMap: { get: () => requestedAction },
+            },
           },
-        },
-      });
+        })
+    );
   });
 
   const render = async () => {
@@ -362,6 +369,29 @@ describe('SharedProjectionComponent', () => {
       expect(fixture.nativeElement.querySelector('[data-testid="sign-in-prompt"]')).toBeNull();
     });
 
+    /**
+     * The labels name where you end up; that a copy is taken — and that the owner's board is
+     * untouched — is what the tooltip is for, since the note that used to say so is gone.
+     */
+    it('explains on each button that it takes a copy', async () => {
+      const fixture = await render();
+
+      for (const [testId, text] of [
+        ['copy-board', 'Create your own projection from a copy of this one'],
+        ['draft-board', 'Enter Draft Mode with a copy of this projection'],
+      ]) {
+        const button = fixture.nativeElement.querySelector(`[data-testid="${testId}"]`);
+        button.dispatchEvent(new MouseEvent('mouseenter'));
+        TestBed.inject(ApplicationRef).tick();
+
+        expect(button.getAttribute('aria-describedby')).toBeTruthy();
+        expect(document.querySelector('.cdk-overlay-container')?.textContent).toContain(text);
+
+        button.dispatchEvent(new MouseEvent('mouseleave'));
+        TestBed.inject(ApplicationRef).tick();
+      }
+    });
+
     it('asks a visitor without an account to sign in instead of copying', async () => {
       const fixture = await render();
 
@@ -439,7 +469,7 @@ describe('SharedProjectionComponent', () => {
       const copy = fixture.nativeElement.querySelector('[data-testid="copy-board"]');
       const draft = fixture.nativeElement.querySelector('[data-testid="draft-board"]');
       expect(draft.textContent).toContain('Copying…');
-      expect(copy.textContent).toContain('Create a projection from this');
+      expect(copy.textContent).toContain('Create projection');
       expect(copy.disabled).toEqual(true);
     });
   });
@@ -565,7 +595,7 @@ describe('SharedProjectionComponent', () => {
       loadShared.mockReturnValue(of({ ...shared, totalPlayers: 1489 }));
       const fixture = await render();
 
-      expect(fixture.nativeElement.textContent).toContain('Draft against');
+      expect(fixture.nativeElement.textContent).toContain('Draft Mode');
       expect(fixture.nativeElement.textContent).not.toContain('This link opens the top');
     });
 
