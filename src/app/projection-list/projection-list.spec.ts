@@ -171,16 +171,17 @@ describe('ProjectionListComponent', () => {
     expect(navigate).toHaveBeenCalledWith(['/projections', 'new1']);
   });
 
-  it('keeps an existing projection rather than overwriting it with the demo', async () => {
+  /** Names are unique per user, so the demo's copy cannot reuse one an existing projection has. */
+  it('saves the demo beside an existing projection, under a name that is free', async () => {
+    listEditable.mockReturnValue(of([{ ...summaries[0], name: 'My Projection' }]));
     peek.mockReturnValue(demoData);
+    createProjection.mockReturnValue(of({ id: 'new1' }));
 
     const fixture = MockRender(ProjectionListComponent);
     await fixture.whenStable();
 
-    expect(createProjection).not.toHaveBeenCalled();
-    expect(clearPending).toHaveBeenCalledOnce();
-    expect(notifyError).toHaveBeenCalled();
-    expect(navigate).toHaveBeenCalledWith(['/projections', 'p1']);
+    expect(createProjection).toHaveBeenCalledWith({ name: 'My Projection 2', data: demoData });
+    expect(navigate).toHaveBeenCalledWith(['/projections', 'new1']);
   });
 
   it('keeps the demo stash when saving it fails, so it can be retried', async () => {
@@ -216,15 +217,14 @@ describe('ProjectionListComponent', () => {
     expect(button.disabled).toEqual(false);
   });
 
-  it('disables the create button with a note once a projection exists (one per user)', async () => {
+  it('keeps the create button live once a projection exists — a user may keep several', async () => {
     const fixture = MockRender(ProjectionListComponent);
     await fixture.whenStable();
     fixture.detectChanges();
 
     const button: HTMLButtonElement = fixture.nativeElement.querySelector('.create-button');
     expect(button).not.toBeNull();
-    expect(button.disabled).toEqual(true);
-    expect(fixture.nativeElement.textContent).toContain('one projection per account');
+    expect(button.disabled).toEqual(false);
   });
 
   it('reloads the list when retry is called', async () => {

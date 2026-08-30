@@ -22,11 +22,14 @@ import {
 import { PlayerRowComponent } from '../draft-projection/player-projections-table/player-row/player-row';
 import { ProjectionsTableHeaderComponent } from '../draft-projection/player-projections-table/projections-table-header/projections-table-header';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
+import { ProjectionResponse } from '../api/models/projection-response';
 import { CreateProjectionRequest } from '../api/models/create-projection-request';
 import { ProjectionData } from '../api/models/projection-data';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
+import { ShareImportComponent } from '../shared/share-import/share-import';
+import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import {
   createDefaultProjectionState,
   DEFAULT_LEAGUE_SIZE,
@@ -39,19 +42,40 @@ import {
 import { DEFAULT_DECIMAL_SETTINGS } from '../draft-projection/projection-settings-section/model';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import { ProjectionModelService } from '../services/projection-model.service';
+import { freeProjectionName } from '../services/projection-name';
 import { SeededProjectionResponse } from '../api/models/seeded-projection-response';
 
-type DataSource = 'last-season' | 'ai' | 'blank' | 'copy';
-
 /**
- * What each starting point sends as `source`. 'copy' is absent on purpose: it uploads rows
- * taken from another projection rather than asking the server to derive them.
+ * Where the starting points are grouped, the same three the draft picker offers: a projection
+ * of the user's own, one someone shared with them, or a preset everybody has.
  */
-const SOURCE_BY_CHOICE: Record<Exclude<DataSource, 'copy'>, CreateProjectionRequest['source']> = {
-  'last-season': 'default',
-  ai: 'model',
-  blank: 'blank',
-};
+export type SourceTab = 'presets' | 'own' | 'imported';
+
+/** A starting point the server can derive on its own, from nothing the user has to supply. */
+export interface CreatePreset {
+  readonly name: string;
+  readonly source: NonNullable<CreateProjectionRequest['source']>;
+  readonly description: string;
+}
+
+export const CREATE_PRESETS: readonly CreatePreset[] = [
+  {
+    name: "Last season's stats",
+    source: 'default',
+    description: 'Every player at their real numbers from last season',
+  },
+  {
+    name: 'AI projection',
+    source: 'model',
+    description:
+      "A model's estimate for the coming season, built from several seasons of NHL data — a qualified guess, not the truth",
+  },
+  {
+    name: 'From scratch',
+    source: 'blank',
+    description: 'Every player on the board, every stat at 0',
+  },
+];
 
 /**
  * How many rows the preview shows. Enough to see what the editor opens as — the columns, the
@@ -120,6 +144,8 @@ const ZEROED_GOALIE_STATS: GoalieStats = {
     RouterLink,
     PlayerRowComponent,
     ProjectionsTableHeaderComponent,
+    ShareImportComponent,
+    RelativeTimePipe,
   ],
   templateUrl: './projection-create.html',
   styleUrl: './projection-create.css',
@@ -136,11 +162,12 @@ export class ProjectionCreateComponent {
   private readonly projectionModel = inject(ProjectionModelService);
   private readonly ranking = inject(ProjectionRankingService);
 
-  // Only the existing projections are needed here: the player rows of a new projection are
+  // Only the boards themselves are needed here: the player rows of a new projection are
   // filled in server-side from `source`, so this page no longer downloads every player just
-  // to upload them straight back.
+  // to upload them straight back. Both kinds are listed — the user's own projections and the
+  // ones they imported from a share link are each a starting point a copy can be made from.
   private readonly dataResource = rxResource({
-    stream: () => this.projectionStorage.listProjections(),
+    stream: () => this.projectionStorage.listEditable(),
     defaultValue: [] as ProjectionSummaryResponse[],
   });
 
@@ -161,7 +188,10 @@ export class ProjectionCreateComponent {
     defaultValue: null as Set<number> | null,
   });
 
-  readonly dataSource = signal<DataSource>('last-season');
+  readonly presets = CREATE_PRESETS;
+  /** Presets first: it is the only tab that is never empty, and where most projections start. */
+  readonly selectedTab = signal<SourceTab>('presets');
+  readonly selectedPreset = signal<CreatePreset['source']>('default');
 
   /**
    * The model's lines for the preview, fetched only once the AI preset is picked — and only the
@@ -169,7 +199,7 @@ export class ProjectionCreateComponent {
    * whole either way, so the note under the table still speaks for the whole league.
    */
   private readonly modelSeedResource = rxResource({
-    params: () => (this.dataSource() === 'ai' ? {} : undefined),
+    params: () => (this.isModelPreset() ? {} : undefined),
     stream: () =>
       this.projectionModel.seed({
         skaterLimit: PREVIEW_FETCH_LIMITS.skaters,
@@ -178,11 +208,18 @@ export class ProjectionCreateComponent {
     defaultValue: undefined as SeededProjectionResponse | undefined,
   });
   readonly copyFromId = signal<string | null>(null);
-  readonly existingProjections = computed(() => this.dataResource.value());
+  readonly ownProjections = computed(() => this.byKind('projection'));
+  readonly importedBoards = computed(() => this.byKind('imported'));
+  /** Whether the AI preset is what the page is showing, which is what its extra fetch follows. */
+  private readonly isModelPreset = computed(
+    () => this.selectedTab() === 'presets' && this.selectedPreset() === 'model',
+  );
   readonly isLoading = this.dataResource.isLoading;
   readonly loadError = computed(() => !!this.dataResource.error());
   readonly isCreating = signal<boolean>(false);
-  readonly name = linkedSignal(() => this.defaultName(this.dataResource.value()));
+  readonly name = linkedSignal(() =>
+    freeProjectionName(this.ownProjections().map((projection) => projection.name)),
+  );
 
   /**
    * Exactly the columns a new projection opens with — the goalie ones included, so they read as
@@ -215,7 +252,7 @@ export class ProjectionCreateComponent {
         ? { type: 'skater' as const, playerId: player.id, stats: player.stats }
         : { type: 'goalie' as const, playerId: player.id, stats: player.stats },
     );
-    if (this.dataSource() !== 'ai') {
+    if (!this.isModelPreset()) {
       return own;
     }
     const seeded = this.modelSeedResource.value();
@@ -277,7 +314,7 @@ export class ProjectionCreateComponent {
   readonly previewRows = computed<PreviewRow[]>(() => {
     // 'From scratch' is the same players in the same rows, just emptied — which is the whole
     // point of showing it: the board doesn't change, only the numbers on it.
-    const zeroed = this.dataSource() === 'blank';
+    const zeroed = this.selectedTab() === 'presets' && this.selectedPreset() === 'blank';
     const rookieIds = this.rookieIdsResource.hasValue() ? this.rookieIdsResource.value() : null;
     return this.previewPlayers().map(({ player, projection, score, qualified }, index) => ({
       // Numbered by their place in the preview, which is also their place on the board.
@@ -293,7 +330,7 @@ export class ProjectionCreateComponent {
   });
 
   readonly isModelPreviewLoading = computed(
-    () => this.dataSource() === 'ai' && this.modelSeedResource.isLoading(),
+    () => this.isModelPreset() && this.modelSeedResource.isLoading(),
   );
 
   /**
@@ -309,7 +346,7 @@ export class ProjectionCreateComponent {
     () =>
       !this.isCreating() &&
       this.name().trim().length > 0 &&
-      (this.dataSource() !== 'copy' || !!this.copyFromId()),
+      (this.selectedTab() === 'presets' || !!this.copyFromId()),
   );
 
   onNameInput(event: Event): void {
@@ -320,20 +357,34 @@ export class ProjectionCreateComponent {
     (event.target as HTMLInputElement).select();
   }
 
-  private defaultName(projections: ProjectionSummaryResponse[]): string {
-    const takenNames = new Set(projections.map((projection) => projection.name));
-    if (!takenNames.has('My Projection')) {
-      return 'My Projection';
-    }
-    let suffix = 2;
-    while (takenNames.has(`My Projection ${suffix}`)) {
-      suffix++;
-    }
-    return `My Projection ${suffix}`;
+  selectTab(tab: SourceTab): void {
+    this.selectedTab.set(tab);
   }
 
-  onCopyFromChange(event: Event): void {
-    this.copyFromId.set((event.target as HTMLSelectElement).value || null);
+  selectPreset(source: CreatePreset['source']): void {
+    this.selectedPreset.set(source);
+  }
+
+  selectCopyFrom(id: string): void {
+    this.copyFromId.set(id);
+  }
+
+  /** Whose numbers a row holds, said in the row rather than only by the tab it sits under. */
+  sourceLabel(projection: ProjectionSummaryResponse): string {
+    return projection.origin ? `From ${projection.origin.authorUsername}` : 'Your projection';
+  }
+
+  /** A board just copied from a share link is a starting point, so it arrives already picked. */
+  onImported(projection: ProjectionResponse): void {
+    this.copyFromId.set(projection.id);
+    this.dataResource.reload();
+  }
+
+  private byKind(kind: ProjectionSummaryResponse['kind']): ProjectionSummaryResponse[] {
+    return this.dataResource
+      .value()
+      .filter((projection) => projection.kind === kind)
+      .sort((first, second) => second.updatedAt.localeCompare(first.updatedAt));
   }
 
   retryLoad(): void {
@@ -347,7 +398,7 @@ export class ProjectionCreateComponent {
     }
     this.isCreating.set(true);
 
-    if (this.dataSource() === 'copy') {
+    if (this.selectedTab() !== 'presets') {
       this.projectionStorage
         .loadProjection(this.copyFromId()!)
         .pipe(takeUntilDestroyed(this.destroyRef))
@@ -368,7 +419,7 @@ export class ProjectionCreateComponent {
       this.serializer.toProjectionData(
         createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
       ),
-      SOURCE_BY_CHOICE[this.dataSource() as Exclude<DataSource, 'copy'>],
+      this.selectedPreset(),
     );
   }
 
@@ -383,9 +434,10 @@ export class ProjectionCreateComponent {
         },
         error: (error: unknown) => {
           this.isCreating.set(false);
-          // Each user may keep only one projection; the server rejects a second with 409.
+          // Names are unique per user, and the name is right there to change — so a 409 is
+          // something to say on the page rather than a reason to navigate away from it.
           if (error instanceof HttpErrorResponse && error.status === 409) {
-            void this.router.navigate(['/projections']);
+            this.notification.error('You already have a projection with that name.');
           } else {
             this.notification.error("Couldn't create the projection. Please try again.");
           }

@@ -2,14 +2,12 @@ import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
 import { Router } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
 import {
   DraftStartComponent,
   LAST_SEASON_PRESET_NAME,
   MODEL_PRESET_NAME,
   Preset,
   PRESETS,
-  shareTokenFrom,
 } from './draft-start';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { NotificationService } from '../services/notification.service';
@@ -48,7 +46,6 @@ describe('DraftStartComponent', () => {
 
   const navigate = vi.fn();
   const listWithPresetDrafts = vi.fn();
-  const importFromShare = vi.fn();
   const createProjection = vi.fn();
   const deleteProjection = vi.fn();
   const notifyError = vi.fn();
@@ -59,8 +56,6 @@ describe('DraftStartComponent', () => {
     createProjection.mockClear();
     deleteProjection.mockClear();
     notifyError.mockClear();
-    importFromShare.mockClear();
-    importFromShare.mockReturnValue(of({ id: 'i1' }));
     listWithPresetDrafts.mockReturnValue(of([summary('p1', 'projection')]));
     createProjection.mockReturnValue(of({ id: 'preset1' }));
     deleteProjection.mockReturnValue(of(undefined));
@@ -69,7 +64,6 @@ describe('DraftStartComponent', () => {
         listWithPresetDrafts,
         createProjection,
         deleteProjection,
-        importFromShare,
       })
       .mock(NotificationService, { error: notifyError })
       .provide({ provide: Router, useValue: { navigate } });
@@ -207,77 +201,18 @@ describe('DraftStartComponent', () => {
     expect(component.inProgress().map((draft) => draft.id)).toEqual(['i1', 'preset1']);
   });
 
-  describe('importing a shared board', () => {
-    it('takes the token out of a pasted share link', () => {
-      expect(shareTokenFrom('https://slapstat.com/s/aBc123_-xyz')).toEqual('aBc123_-xyz');
-      expect(shareTokenFrom('  /s/aBc123_-xyz  ')).toEqual('aBc123_-xyz');
-      expect(shareTokenFrom('aBc123_-xyz')).toEqual('aBc123_-xyz');
-      expect(shareTokenFrom('https://example.com/nothing')).toBeNull();
-      expect(shareTokenFrom('short')).toBeNull();
-    });
+  it('shows a board it just imported, under the tab that lists them', async () => {
+    const fixture = MockRender(DraftStartComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.selectTab('presets');
 
-    it('imports the pasted link and shows the board it copied', async () => {
-      const component = await render();
-      component.shareInput.set('https://slapstat.com/s/aBc123_-xyz');
+    component.onImported();
+    await fixture.whenStable();
 
-      component.importShared();
-
-      expect(importFromShare).toHaveBeenCalledWith('aBc123_-xyz', undefined);
-      expect(component.shareInput()).toEqual('');
-      expect(component.selectedTab()).toEqual('imported');
-      expect(component.isImporting()).toEqual(false);
-    });
-
-    it('rejects something that is not a share link without calling the server', async () => {
-      const component = await render();
-      component.shareInput.set('https://example.com/nothing');
-
-      component.importShared();
-
-      expect(importFromShare).not.toHaveBeenCalled();
-      expect(component.importHint()).toBeTruthy();
-    });
-
-    /** Two people can name a projection the same thing; only the importer can settle it. */
-    it('asks for a name when one is already taken, then imports under it', async () => {
-      importFromShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
-
-      const component = await render();
-      component.shareInput.set('https://slapstat.com/s/aBc123_-xyz');
-      component.importShared();
-
-      expect(component.importName()).toEqual('');
-      expect(component.importHint()).toBeTruthy();
-
-      importFromShare.mockReturnValue(of({ id: 'i2' }));
-      component.importName.set("Alex's board");
-      component.importShared();
-
-      expect(importFromShare).toHaveBeenLastCalledWith('aBc123_-xyz', "Alex's board");
-      expect(component.importName()).toBeNull();
-    });
-
-    it('says so when the link has gone', async () => {
-      importFromShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
-
-      const component = await render();
-      component.shareInput.set('https://slapstat.com/s/aBc123_-xyz');
-      component.importShared();
-
-      expect(component.importHint()).toBeTruthy();
-      expect(notifyError).not.toHaveBeenCalled();
-    });
-
-    it('surfaces any other failure as a toast', async () => {
-      importFromShare.mockReturnValue(throwError(() => new Error('boom')));
-
-      const component = await render();
-      component.shareInput.set('https://slapstat.com/s/aBc123_-xyz');
-      component.importShared();
-
-      expect(notifyError).toHaveBeenCalledOnce();
-      expect(component.isImporting()).toEqual(false);
-    });
+    expect(component.selectedTab()).toEqual('imported');
+    // The list is what the tab reads from, and the copy is not in the one already fetched.
+    expect(listWithPresetDrafts).toHaveBeenCalledTimes(2);
   });
 
   it('starts the AI preset from the model source, not last season', async () => {
@@ -332,6 +267,8 @@ describe('DraftStartComponent', () => {
     expect(component.isConfirmingRestart(MODEL)).toBe(true);
     expect(component.isConfirmingRestart(LAST_SEASON)).toBe(false);
   });
+  // Every tab needs both, the third included: on a phone only the short one is displayed, so a
+  // tab without one showed its count and nothing else.
   it('keeps both tab labels in the markup so the width can pick one', async () => {
     const fixture = MockRender(DraftStartComponent);
     await fixture.whenStable();
@@ -341,6 +278,13 @@ describe('DraftStartComponent', () => {
       fixture.nativeElement.querySelectorAll('.tab-label') as NodeListOf<HTMLElement>,
     ).map((label) => label.textContent?.trim());
 
-    expect(labels).toEqual(['Your projections', 'Yours', 'Shared with you', 'Shared', 'Presets']);
+    expect(labels).toEqual([
+      'Your projections',
+      'Yours',
+      'Shared with you',
+      'Shared',
+      'Presets',
+      'Presets',
+    ]);
   });
 });

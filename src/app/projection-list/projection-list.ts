@@ -14,6 +14,7 @@ import { PlayerService } from '../services/player.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import { ProjectionShareService } from '../services/projection-share.service';
+import { freeProjectionName } from '../services/projection-name';
 import { SharedPlayer } from '../api/models/shared-player';
 
 @Component({
@@ -82,21 +83,11 @@ export class ProjectionListComponent {
   }
 
   private redeemDemoProjection(data: ProjectionData): void {
-    // Only one projection per account, so an account that already has one keeps it — the
-    // demo edits are never allowed to overwrite existing work.
-    const existing = this.projectionsResource.value();
-    if (existing.length > 0) {
-      this.pendingProjection.clear();
-      this.notification.error(
-        "You already have a projection, so the changes from the demo weren't saved.",
-      );
-      void this.router.navigate(['/projections', existing[0].id]);
-      return;
-    }
-
+    // Saved beside whatever the account already holds, under a name none of those has taken —
+    // work from the demo is a projection like any other now that a user may keep several.
     this.isSavingDemo.set(true);
     this.storage
-      .createProjection({ name: 'My Projection', data })
+      .createProjection({ name: this.freeName(), data })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (projection) => {
@@ -171,5 +162,15 @@ export class ProjectionListComponent {
         this.projectionsResource.reload();
       })
       .catch(() => this.notification.error("Couldn't delete the projection. Please try again."));
+  }
+
+  /** Only the user's own projections take a name from the same pool; imported boards do not. */
+  private freeName(): string {
+    return freeProjectionName(
+      this.projectionsResource
+        .value()
+        .filter((projection) => projection.kind === 'projection')
+        .map((projection) => projection.name),
+    );
   }
 }
