@@ -739,6 +739,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PlayerIdRemapReport"
+  /api/v1/admin/espn/players/sync:
+    post:
+      tags:
+      - Admin
+      summary: Trigger an ESPN player sync
+      description: "Starts a refresh of the ESPN player pool — which is where the\
+        \ pool comes from — and answers as soon as it is under way. The work runs\
+        \ for minutes; watch it with GET /api/v1/admin/espn/players/sync/latest until\
+        \ running is false and syncedAt has moved. Otherwise the pool only moves on\
+        \ espn-service's nightly run, a long wait for a deployment that changed what\
+        \ the sync stores."
+      operationId: triggerEspnPlayerSync
+      responses:
+        "202":
+          description: Sync started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncAcceptedResponse"
+        "409":
+          description: A sync is already running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncAcceptedResponse"
   /api/v1/yahoo/leagues:
     get:
       tags:
@@ -1363,6 +1388,21 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/SyncRunResponse"
+  /api/v1/admin/espn/players/sync/latest:
+    get:
+      tags:
+      - Admin
+      summary: When the ESPN player pool was last refreshed
+      description: "And whether a sync is running right now, which is how a triggered\
+        \ one is watched to completion."
+      operationId: espnPlayerSyncStatus
+      responses:
+        "200":
+          description: Status returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerSyncStatusResponse"
   /api/v1/account:
     get:
       tags:
@@ -1624,9 +1664,6 @@ components:
             $ref: "#/components/schemas/PlayerProjection"
         draft:
           $ref: "#/components/schemas/DraftState"
-        tings:
-          $ref: "#/components/schemas/UpdateProjectionData"
-          writeOnly: true
       required:
       - settings
     UpdateProjectionRequest:
@@ -1676,13 +1713,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PlayerProjection"
-          maxItems: 2000
-          minItems: 0
         draft:
           $ref: "#/components/schemas/DraftState"
-        tings:
-          $ref: "#/components/schemas/ProjectionData"
-          writeOnly: true
       required:
       - players
       - settings
@@ -2339,9 +2371,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SharedPlayer"
-        tings:
-          $ref: "#/components/schemas/SharedProjectionData"
-          writeOnly: true
       required:
       - players
       - settings
@@ -2920,6 +2949,20 @@ components:
       - removedCount
       - startedAt
       - status
+    PlayerSyncStatusResponse:
+      type: object
+      properties:
+        syncedAt:
+          type: string
+          format: date-time
+        players:
+          type: integer
+          format: int64
+        running:
+          type: boolean
+      required:
+      - players
+      - running
   securitySchemes:
     bearerAuth:
       type: http
