@@ -262,19 +262,14 @@ export class ProjectionCreateComponent {
   });
 
   /**
-   * The five rows shown, with the last seat given to a goalie whenever the ranking hasn't put one
-   * there itself. The board's own top five is all skaters, which would leave every goalie column
-   * showing the dash a skater has and nothing else.
+   * The rows shown: the top of the board as the ranking leaves it. A goalie used to be lifted
+   * into the last seat whenever the ranking hadn't put one there, so the goalie columns had
+   * something in them — but that row was never the board's fifth-best player, and under the AI
+   * preset there is not always a goalie to lift. The preview shows the top five, whoever they are.
    */
-  private readonly previewPlayers = computed<ScoredPlayer[]>(() => {
-    const ranked = this.rankedPlayers();
-    const shown = ranked.slice(0, PREVIEW_ROWS);
-    if (shown.some((row) => row.player.type === 'goalie')) {
-      return shown;
-    }
-    const goalie = ranked.find((row) => row.player.type === 'goalie');
-    return goalie ? [...shown.slice(0, PREVIEW_ROWS - 1), goalie] : shown;
-  });
+  private readonly previewPlayers = computed<ScoredPlayer[]>(() =>
+    this.rankedPlayers().slice(0, PREVIEW_ROWS),
+  );
 
   readonly previewRows = computed<PreviewRow[]>(() => {
     // 'From scratch' is the same players in the same rows, just emptied — which is the whole
@@ -282,9 +277,7 @@ export class ProjectionCreateComponent {
     const zeroed = this.dataSource() === 'blank';
     const rookieIds = this.rookieIdsResource.hasValue() ? this.rookieIdsResource.value() : null;
     return this.previewPlayers().map(({ player, projection, score, qualified }, index) => ({
-      // Numbered by their place in the preview, the way the editor numbers its own view. The
-      // goalie is lifted in from further down the board, and its real place there — three
-      // figures, next to a 4 — reads as a fault rather than as information.
+      // Numbered by their place in the preview, which is also their place on the board.
       rank: index + 1,
       player,
       projection: zeroed ? zeroedProjection(player) : projection,
