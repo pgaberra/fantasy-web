@@ -19,11 +19,13 @@ describe('ShareImportComponent', () => {
       .mock(NotificationService, { error: notifyError });
   });
 
-  const render = async () => {
+  const renderFixture = async () => {
     const fixture = MockRender(ShareImportComponent);
     await fixture.whenStable();
-    return fixture.point.componentInstance;
+    return fixture;
   };
+
+  const render = async () => (await renderFixture()).point.componentInstance;
 
   it('takes the token out of a pasted share link', () => {
     expect(shareTokenFrom('https://slapstat.com/s/aBc123_-xyz')).toEqual('aBc123_-xyz');
@@ -45,6 +47,25 @@ describe('ShareImportComponent', () => {
     expect(imported).toHaveBeenCalledWith({ id: 'i1' });
     expect(component.shareInput()).toEqual('');
     expect(component.isImporting()).toEqual(false);
+  });
+
+  /**
+   * Pressing Import used to submit the form to the browser instead of the component, which
+   * navigated away and brought the page back on its first tab with nothing imported. The press
+   * has to go through the DOM here: calling submit() directly is exactly what missed it.
+   */
+  it('imports on the button press, and lets the browser do nothing with it', async () => {
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
+    component.shareInput.set('https://slapstat.com/s/aBc123_-xyz');
+    fixture.detectChanges();
+
+    const form: HTMLFormElement = fixture.nativeElement.querySelector('form');
+    const submitted = new Event('submit', { bubbles: true, cancelable: true });
+    form.dispatchEvent(submitted);
+
+    expect(importFromShare).toHaveBeenCalledWith('aBc123_-xyz', undefined);
+    expect(submitted.defaultPrevented).toEqual(true);
   });
 
   it('rejects something that is not a share link without calling the server', async () => {

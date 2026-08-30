@@ -1,4 +1,4 @@
-<form class="import" (ngSubmit)="submit()">
+<form class="import" (submit)="onSubmit($event)" novalidate>
   <label class="import-label" for="share-link">{{ label() }}</label>
   <div class="import-controls">
     <input
