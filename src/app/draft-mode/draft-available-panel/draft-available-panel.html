@@ -24,8 +24,9 @@
       <button
         type="button"
         class="pos-filter-chip"
-        [class.active]="positionFilter() === filter.value"
-        (click)="positionFilterChange.emit(filter.value)"
+        [class.active]="isPositionSelected(filter.value)"
+        [attr.aria-pressed]="isPositionSelected(filter.value)"
+        (click)="positionFilterToggle.emit(filter.value)"
       >
         {{ filter.label }}
       </button>

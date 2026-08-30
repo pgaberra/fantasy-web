@@ -53,7 +53,7 @@ import {
   LeagueProjectionTeamInput,
 } from './league-projection';
 
-const DEFAULT_PAGE_SIZE = 100;
+const DEFAULT_PAGE_SIZE = 50;
 
 @Component({
   selector: 'app-draft-mode',
@@ -91,10 +91,11 @@ export class DraftModeComponent implements OnInit {
   readonly loaded = signal<boolean>(false);
   readonly saveStatus = signal<'idle' | 'saving' | 'saved' | 'error'>('idle');
   readonly searchTerm = signal<string>('');
-  readonly positionFilter = signal<PositionFilter>('ALL');
+  readonly selectedPositions = signal<readonly PositionFilter[]>(['ALL']);
   readonly pageSize = signal<number>(DEFAULT_PAGE_SIZE);
   readonly showStats = signal<boolean>(false);
   readonly pageSizeOptions: { label: string; value: number }[] = [
+    { label: '50', value: 50 },
     { label: '100', value: 100 },
     { label: '200', value: 200 },
     { label: '300', value: 300 },
@@ -200,13 +201,17 @@ export class DraftModeComponent implements OnInit {
   readonly available = computed<ScoredProjection[]>(() => {
     const drafted = this.draftedIds();
     const term = this.searchTerm().trim().toLowerCase();
-    const filter = this.positionFilter();
+    const filters = this.selectedPositions();
     const players = this.playerMap();
     return this.ranked().filter((scoredProjection) => {
       if (drafted.has(scoredProjection.projection.playerId)) {
         return false;
       }
-      if (!this.positionFilterService.matches(scoredProjection.projection, players, filter)) {
+      // Several positions can be picked at once, so a player shows if any of them fits.
+      const fitsAPosition = filters.some((filter) =>
+        this.positionFilterService.matches(scoredProjection.projection, players, filter),
+      );
+      if (!fitsAPosition) {
         return false;
       }
       if (!term) {
@@ -219,7 +224,7 @@ export class DraftModeComponent implements OnInit {
   readonly visibleCount = linkedSignal({
     source: () => ({
       term: this.searchTerm(),
-      position: this.positionFilter(),
+      positions: this.selectedPositions(),
       pageSize: this.pageSize(),
     }),
     computation: () => this.pageSize(),
@@ -688,8 +693,16 @@ export class DraftModeComponent implements OnInit {
     this.showSummary.set(false);
   }
 
-  setPositionFilter(filter: PositionFilter): void {
-    this.positionFilter.set(filter);
+  togglePositionFilter(filter: PositionFilter): void {
+    if (filter === 'ALL') {
+      this.selectedPositions.set(['ALL']);
+      return;
+    }
+    const chosen = this.selectedPositions().filter((position) => position !== 'ALL');
+    const next = chosen.includes(filter)
+      ? chosen.filter((position) => position !== filter)
+      : [...chosen, filter];
+    this.selectedPositions.set(next.length ? next : ['ALL']);
   }
 
   showMore(): void {
