@@ -28,4 +28,7 @@ export const environment = {
   espnLeaguesEnabled: false,
   // On for local staging runs; the deployed builds hide the page with WHOS_HOT_ENABLED=false.
   whosHotEnabled: true,
+  // On for local staging runs; the deployed builds drop the preset with
+  // AI_PROJECTION_ENABLED=false.
+  aiProjectionEnabled: true,
 };

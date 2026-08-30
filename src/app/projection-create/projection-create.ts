@@ -44,6 +44,7 @@ import { ProjectionSerializerService } from '../services/projection-serializer.s
 import { ProjectionModelService } from '../services/projection-model.service';
 import { freeProjectionName } from '../services/projection-name';
 import { SeededProjectionResponse } from '../api/models/seeded-projection-response';
+import { offeredPresets } from '../models/ai-projection';
 
 /**
  * Where the starting points are grouped, the same three the draft picker offers: a projection
@@ -61,6 +62,7 @@ export interface CreatePreset {
   readonly tipLabel: string;
 }
 
+/** Every preset this page knows of. What it offers is `offeredPresets` of these — see below. */
 export const CREATE_PRESETS: readonly CreatePreset[] = [
   {
     name: "Last season's stats",
@@ -194,7 +196,11 @@ export class ProjectionCreateComponent {
     defaultValue: null as Set<number> | null,
   });
 
-  readonly presets = CREATE_PRESETS;
+  /**
+   * The presets this build offers. Filtered rather than constant: the AI projection is behind a
+   * build flag, and a row that seeds a projection the build cannot fill in is worse than no row.
+   */
+  readonly presets = offeredPresets(CREATE_PRESETS);
   /** Presets first: it is the only tab that is never empty, and where most projections start. */
   readonly selectedTab = signal<SourceTab>('presets');
   readonly selectedPreset = signal<CreatePreset['source']>('default');

@@ -37,4 +37,9 @@ export const environment = {
   // the toggles above: the page already ships, so an unset flag has to mean "carry on showing
   // it". Deployed builds turn it off with the WHOS_HOT_ENABLED=false build arg.
   whosHotEnabled: true,
+  // Feature toggle for the AI projection (the model-backed preset on the new-projection page and
+  // the draft picker). On by default, like whosHotEnabled and for the same reason: the preset
+  // already ships, so an unset flag has to mean "carry on offering it". Deployed builds turn it
+  // off with the AI_PROJECTION_ENABLED=false build arg.
+  aiProjectionEnabled: true,
 };
