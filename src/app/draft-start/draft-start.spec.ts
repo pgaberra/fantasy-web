@@ -2,6 +2,7 @@ import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
 import { Router } from '@angular/router';
+import { NgTemplateOutlet } from '@angular/common';
 import {
   DraftStartComponent,
   LAST_SEASON_PRESET_NAME,
@@ -67,16 +68,21 @@ describe('DraftStartComponent', () => {
       of({ id: 'p1', name: 'Projection p1', data: { settings: { leagueSize: 12 }, players: [] } }),
     );
     updateProjection.mockReturnValue(of({ id: 'p1' }));
-    return MockBuilder(DraftStartComponent)
-      .mock(ProjectionStorageService, {
-        listWithPresetDrafts,
-        createProjection,
-        deleteProjection,
-        loadProjection,
-        updateProjection,
-      })
-      .mock(NotificationService, { error: notifyError })
-      .provide({ provide: Router, useValue: { navigate } });
+    return (
+      MockBuilder(DraftStartComponent)
+        // The row actions live in one template the three lists share, so the outlet that renders
+        // it has to be real: mocked away, every row comes out with no buttons at all.
+        .keep(NgTemplateOutlet)
+        .mock(ProjectionStorageService, {
+          listWithPresetDrafts,
+          createProjection,
+          deleteProjection,
+          loadProjection,
+          updateProjection,
+        })
+        .mock(NotificationService, { error: notifyError })
+        .provide({ provide: Router, useValue: { navigate } })
+    );
   });
 
   const render = async () => {
@@ -402,5 +408,64 @@ describe('DraftStartComponent', () => {
         fixture.nativeElement.querySelector('.row--resume .confirm-text') as HTMLElement
       ).textContent?.trim(),
     ).toEqual('Discard the picks? The projection stays.');
+  });
+
+  it('offers the discard on a finished draft too, beside its summary', async () => {
+    listWithPresetDrafts.mockReturnValue(
+      of([summary('p1', 'projection', 'finished'), summary('p2', 'projection', 'none')]),
+    );
+
+    const fixture = MockRender(DraftStartComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const rows = Array.from(
+      fixture.nativeElement.querySelectorAll('.panel .row') as NodeListOf<HTMLElement>,
+    ).map((row) =>
+      Array.from(row.querySelectorAll('button') as NodeListOf<HTMLElement>).map((button) =>
+        button.textContent?.trim(),
+      ),
+    );
+
+    // The finished one can be looked at or thrown away; the one never drafted has nothing to lose.
+    expect(rows).toEqual([['View summary', 'Discard draft'], ['Start draft']]);
+  });
+
+  it('discarding a finished draft clears the picks and leaves the projection to draft again', async () => {
+    const finished = summary('p1', 'projection', 'finished');
+    listWithPresetDrafts.mockReturnValue(of([finished]));
+
+    const fixture = MockRender(DraftStartComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    listWithPresetDrafts.mockReturnValue(of([summary('p1', 'projection', 'none')]));
+
+    component.confirmDiscard(finished);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(updateProjection).toHaveBeenCalledWith('p1', {
+      name: 'Projection p1',
+      data: { settings: { leagueSize: 12 } },
+    });
+    expect(
+      (
+        fixture.nativeElement.querySelector('.panel .row button') as HTMLElement
+      ).textContent?.trim(),
+    ).toEqual('Start draft');
+  });
+
+  it('marks the discard as destructive without dressing it as the main action', async () => {
+    listWithPresetDrafts.mockReturnValue(of([summary('p1', 'projection', 'in_progress')]));
+
+    const fixture = MockRender(DraftStartComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const discard = fixture.nativeElement.querySelector(
+      '.row--resume button.btn-danger-quiet',
+    ) as HTMLElement;
+
+    expect(discard.textContent?.trim()).toEqual('Discard draft');
+    // The solid red belongs to the confirmation, not to the button that only asks for it.
+    expect(discard.classList.contains('btn-danger')).toEqual(false);
   });
 });

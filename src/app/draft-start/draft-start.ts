@@ -1,5 +1,6 @@
 import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { NgTemplateOutlet } from '@angular/common';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, switchMap } from 'rxjs';
 import { ProjectionStorageService } from '../services/projection-storage.service';
@@ -68,6 +69,7 @@ export type SourceTab = 'own' | 'imported' | 'presets';
   selector: 'app-draft-start',
   imports: [
     RouterLink,
+    NgTemplateOutlet,
     LoadingIndicatorComponent,
     ErrorStateComponent,
     RelativeTimePipe,
