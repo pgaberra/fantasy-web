@@ -183,6 +183,9 @@ td.col-name {
   border-radius: 50%;
   object-fit: cover;
   background: #e6e9f2;
+  /* Without this a squeezed name cell takes the width out of the avatar rather than the name,
+     and a round headshot turns into a narrow oval. The projections table already pins it. */
+  flex-shrink: 0;
 }
 
 .player-team {
