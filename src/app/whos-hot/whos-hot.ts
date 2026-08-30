@@ -36,7 +36,7 @@ import {
 } from './season.model';
 import { HotPlayersTableComponent } from './hot-players-table/hot-players-table';
 
-const DEFAULT_SPAN_LENGTH = 20;
+const DEFAULT_SPAN_LENGTH = 10;
 
 /**
  * How long the game range has to hold still before it is worth a request. Long enough that a
