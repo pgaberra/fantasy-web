@@ -1,0 +1,8 @@
+/* The page is a single `app-auth-form` and nothing else, but a flex child only grows if it is
+   asked to, and only the element that is `main`'s own child can be asked — so the instruction to
+   fill the window has to be passed down through here rather than starting at the form. */
+:host {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+}
