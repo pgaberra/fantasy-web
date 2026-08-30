@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, linkedSignal, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
@@ -34,6 +34,13 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { PinnedTableHeaderDirective } from '../shared/pinned-table-header/pinned-table-header.directive';
+
+/**
+ * A published board is the owner's whole pool — some 1600 rows — and someone arriving from a link
+ * came to read the top of it, not to scroll past everyone. The rest is a click away.
+ */
+const INITIAL_ROWS = 50;
+const ROWS_PER_PAGE = 100;
 
 /** One published row, in the shapes the editor's table components expect. */
 interface SharedRow {
@@ -192,12 +199,37 @@ export class SharedProjectionComponent {
     (this.shared()?.data.players ?? []).map((shared) => this.toRow(shared)),
   );
 
-  readonly visibleRows = computed<SharedRow[]>(() => {
+  private readonly sortedRows = computed<SharedRow[]>(() => {
     const filtered = this.rows().filter((row) => this.matchesFilter(row));
     const column = this.sortColumn();
     const sign = this.sortDirection() === 'asc' ? 1 : -1;
     return [...filtered].sort((first, second) => this.compare(first, second, column, sign));
   });
+
+  /** How many rows are on screen. Back to the first page whenever the pool or its order changes:
+   * a page grown deep under one sort is nothing to hold on to once the rows underneath it move. */
+  readonly visibleCount = linkedSignal({
+    source: () => ({
+      position: this.positionFilter(),
+      sortColumn: this.sortColumn(),
+      sortDirection: this.sortDirection(),
+    }),
+    computation: () => INITIAL_ROWS,
+  });
+
+  /** Rows the reader received that match the filter — not the board's total, which is on the page
+   * even when the sign-in gate held most of it back. */
+  readonly matchingCount = computed(() => this.sortedRows().length);
+
+  readonly visibleRows = computed<SharedRow[]>(() =>
+    this.sortedRows().slice(0, this.visibleCount()),
+  );
+
+  readonly hasMore = computed(() => this.visibleCount() < this.matchingCount());
+
+  showMore(): void {
+    this.visibleCount.update((count) => count + ROWS_PER_PAGE);
+  }
 
   onSort(column: SortColumn): void {
     if (this.sortColumn() === column) {

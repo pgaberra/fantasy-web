@@ -67,6 +67,17 @@
           </tbody>
         </table>
       </div>
+
+      @if (matchingCount() > 0) {
+        <div class="table-footer">
+          <span class="result-count"
+            >Showing {{ visibleRows().length }} of {{ matchingCount() }}</span
+          >
+          @if (hasMore()) {
+            <button type="button" class="btn btn-primary" (click)="showMore()">Show more</button>
+          }
+        </div>
+      }
     </section>
 
     <section class="cta">
