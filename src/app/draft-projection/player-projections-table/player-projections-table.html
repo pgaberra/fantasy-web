@@ -228,11 +228,7 @@
           <tr
             app-player-row
             [positionRank]="positionRanks().get(sp.projection.playerId)!"
-            [totalRank]="
-              positionFilter() !== 'ALL'
-                ? (overallRanks().get(sp.projection.playerId) ?? null)
-                : null
-            "
+            [totalRank]="isNarrowed() ? (overallRanks().get(sp.projection.playerId) ?? null) : null"
             [projection]="sp.projection"
             [playerScore]="sp.score"
             [belowMinGames]="!sp.qualified"

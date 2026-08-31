@@ -234,6 +234,10 @@ describe('PlayerProjectionsTableComponent', () => {
       ...overrides,
     }).point.componentInstance;
 
+  /** The # column as it is rendered: "3" on its own, or "1 (3)" once the table is narrowed. */
+  const rankCells = (): string[] =>
+    ngMocks.findAll('tbody .col-rank').map((cell) => cell.nativeElement.textContent.trim());
+
   /**
    * Rookie status is a decoration the server may not be able to supply — it comes from a
    * service production runs with switched off. Null has to read as "no marker", never as
@@ -266,6 +270,16 @@ describe('PlayerProjectionsTableComponent', () => {
       component.rookiesOnly.set(true);
 
       expect(component.visibleProjections().map((sp) => sp.projection.playerId)).toEqual([1]);
+    });
+
+    it('keeps the brackets when it is the rookie filter doing the narrowing', async () => {
+      const component = await renderWithRookies(of(new Set([2])));
+
+      component.rookiesOnly.set(true);
+      TestBed.inject(ApplicationRef).tick();
+
+      // Draisaitl alone on screen, third in this category league's ranking.
+      expect(rankCells()).toEqual(['1 (3)']);
     });
 
     it('offers no filter when the server could not say who is a rookie', async () => {
@@ -829,9 +843,6 @@ describe('PlayerProjectionsTableComponent', () => {
    * the ranking rather than off whatever the table is sorted by.
    */
   describe('the rank column under a position filter', () => {
-    const rankCells = (): string[] =>
-      ngMocks.findAll('tbody .col-rank').map((cell) => cell.nativeElement.textContent.trim());
-
     const render = (overrides = {}) => {
       const component = getComponent({
         scoringType: 'points',
@@ -867,6 +878,18 @@ describe('PlayerProjectionsTableComponent', () => {
       render();
 
       expect(rankCells()).toEqual(['1', '2', '3']);
+    });
+
+    // Any filter narrows the pool the same way, so any of them leaves the same question:
+    // first of what is on screen, and where in the ranking?
+    it('keeps the brackets when it is the team filter doing the narrowing', () => {
+      const component = render();
+
+      // Draisaitl plays for COL here, and sits second in the ranking behind McDavid.
+      component.teamFilter.set('COL');
+      TestBed.inject(ApplicationRef).tick();
+
+      expect(rankCells()).toEqual(['1 (2)']);
     });
   });
 

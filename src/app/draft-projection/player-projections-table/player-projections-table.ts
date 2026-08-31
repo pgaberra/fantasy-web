@@ -526,6 +526,19 @@ export class PlayerProjectionsTableComponent implements OnInit {
     return new Map(ranked.map((sp, index) => [sp.projection.playerId, index + 1]));
   });
 
+  /**
+   * Whether the rows on screen are a narrowed pool, whichever filter did the narrowing — the
+   * position, the team, the rookies. That is what decides whether the # column carries two
+   * numbers: narrowed, it counts what is on screen and the ranking follows in brackets, and
+   * unfiltered the single number is the ranking already.
+   *
+   * <p>Measured against the ranking rather than asking each filter in turn, so a filter added
+   * later is covered by having narrowed the table, without anything here being told about it.
+   */
+  readonly isNarrowed = computed(
+    () => this.filteredAndSortedProjections().length < this.overallRanks().size,
+  );
+
   positionRanks: Signal<Map<number, number>> = computed(() => {
     return new Map(
       this.filteredAndSortedProjections().map((sp, i) => [sp.projection.playerId, i + 1]),
