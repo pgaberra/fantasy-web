@@ -136,6 +136,7 @@ export function createDefaultProjectionState(
     playerBasis: null,
     playerPoolSyncedAt: null,
     draft: null,
+    positionOverrides: new Map(),
     playerProjections: [],
   };
 }

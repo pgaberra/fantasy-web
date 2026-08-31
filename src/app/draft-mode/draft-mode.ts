@@ -18,6 +18,7 @@ import { PlayerService } from '../services/player.service';
 import { ProjectionRankingService, RankingInput } from '../services/projection-ranking.service';
 import { PositionFilterService } from '../services/position-filter.service';
 import { Player } from '../models/player.model';
+import { applyPositionOverrides } from '../models/position-override';
 import {
   PositionFilter,
   Projection,
@@ -482,8 +483,14 @@ export class DraftModeComponent implements OnInit {
           this.projectionName.set(projection.name);
           this.projectionKind.set(projection.kind);
           this.data.set(projection.data);
-          this.allPlayers.set(players);
-          this.lookup.setPlayers(players);
+          // Corrected before anything sees the pool, so a pick lands in the slot this owner's
+          // league says the player is eligible for rather than the one the read model reports.
+          const pool = applyPositionOverrides(
+            players,
+            this.serializer.fromProjectionData(projection.data).positionOverrides,
+          );
+          this.allPlayers.set(pool);
+          this.lookup.setPlayers(pool);
           const loadedDraft = this.serializer.fromProjectionData(projection.data).draft;
           this.draft.set(loadedDraft);
           // A finished draft opens straight to its summary — the board stays a click away

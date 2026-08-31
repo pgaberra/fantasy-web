@@ -21,6 +21,9 @@ import {
   DEFAULT_STAT_WEIGHTS,
 } from '../draft-projection/projection-defaults';
 import { DraftState } from '../api/models/draft-state';
+import { PositionOverride } from '../api/models/position-override';
+import { PositionOverrides } from '../models/position-override';
+import { SKATER_POSITIONS, SkaterPosition } from '../models/position.model';
 import { ProjectionState } from './projection-serializer';
 
 /**
@@ -79,6 +82,12 @@ export class ProjectionSerializerService {
         },
       })),
       draft: state.draft ? this.cloneDraft(state.draft) : undefined,
+      // Sorted rather than left in the order the owner happened to click, so that toggling a
+      // player off and back on does not look like a change to the autosave, which compares the
+      // serialised payload against the last one it saved.
+      positionOverrides: [...state.positionOverrides.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([playerId, positions]) => ({ playerId, positions: [...positions] })),
     };
   }
 
@@ -108,6 +117,7 @@ export class ProjectionSerializerService {
       playerBasis: data.settings.playerBasis ?? null,
       playerPoolSyncedAt: data.settings.playerPoolSyncedAt ?? null,
       draft: this.sanitizeDraft(data.draft),
+      positionOverrides: this.toPositionOverrides(data.positionOverrides),
       playerProjections: data.players.map((player) => this.toProjection(player)),
     };
   }
@@ -135,6 +145,24 @@ export class ProjectionSerializerService {
         scoring: everyStat(GOALIE_SCORING_STAT_KEYS, player.stats.scoring),
       },
     };
+  }
+
+  /**
+   * A stored projection can predate the field, and an override can outlive the player it was
+   * written for or name a position the app no longer knows — none of which is worth losing the
+   * whole projection over, so anything unreadable is simply dropped.
+   */
+  private toPositionOverrides(stored: PositionOverride[] | undefined): PositionOverrides {
+    const overrides = new Map<number, readonly SkaterPosition[]>();
+    for (const override of stored ?? []) {
+      const positions = (override.positions ?? []).filter((position) =>
+        SKATER_POSITIONS.includes(position),
+      );
+      if (positions.length > 0) {
+        overrides.set(override.playerId, positions);
+      }
+    }
+    return overrides;
   }
 
   private cloneDraft(draft: DraftState): DraftState {
