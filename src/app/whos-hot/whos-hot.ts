@@ -1,6 +1,8 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, startWith } from 'rxjs';
+import { environment } from '../../environments/environment';
+import { EntitlementService } from '../services/entitlement.service';
 import { PlayerService } from '../services/player.service';
 import { Player } from '../models/player.model';
 import { GameSpan, WhosHotService } from '../services/whos-hot.service';
@@ -27,7 +29,7 @@ import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-i
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
-import { GameRangeSelectorComponent } from './game-range-selector/game-range-selector';
+import { FREE_PRESET, GameRangeSelectorComponent } from './game-range-selector/game-range-selector';
 import {
   DEFAULT_SEASON_START_YEAR,
   SEASON_SCHEDULE_GAMES,
@@ -35,8 +37,6 @@ import {
   seasonLabelOf,
 } from './season.model';
 import { HotPlayersTableComponent } from './hot-players-table/hot-players-table';
-
-const DEFAULT_SPAN_LENGTH = 10;
 
 /**
  * How long the game range has to hold still before it is worth a request. Long enough that a
@@ -74,6 +74,7 @@ export class WhosHotComponent {
   private readonly playerService = inject(PlayerService);
   private readonly whosHot = inject(WhosHotService);
   private readonly settingsStore = inject(WhosHotSettingsService);
+  private readonly entitlement = inject(EntitlementService);
 
   protected readonly seasons = SEASONS;
   protected readonly scheduleLength = SEASON_SCHEDULE_GAMES;
@@ -83,10 +84,11 @@ export class WhosHotComponent {
   readonly season = signal(this.stored?.season ?? DEFAULT_SEASON_START_YEAR);
   readonly seasonLabel = computed(() => seasonLabelOf(this.season()));
 
-  readonly fromGame = signal(
-    this.stored?.fromGame ?? SEASON_SCHEDULE_GAMES - DEFAULT_SPAN_LENGTH + 1,
-  );
-  readonly toGame = signal(this.stored?.toGame ?? SEASON_SCHEDULE_GAMES);
+  /** The stretch a free account is held to, and the range every account opens on. */
+  private readonly freeRange = FREE_PRESET.range(SEASON_SCHEDULE_GAMES);
+
+  readonly fromGame = signal(this.stored?.fromGame ?? this.freeRange.from);
+  readonly toGame = signal(this.stored?.toGame ?? this.freeRange.to);
   readonly perGame = signal(this.stored?.perGame ?? false);
   readonly minGames = signal(this.stored?.minGames ?? 1);
 
@@ -124,6 +126,28 @@ export class WhosHotComponent {
     }
     return this.espnSync() ? 'espn' : null;
   });
+
+  /**
+   * Whether this account may pick its own range. Premium buys it; with payments switched off
+   * nobody can, so nobody is held to the free range either. /pricing redirects home while the
+   * flag is off, so locking the control then would point at a page that does not exist and
+   * leave the range unbuyable rather than unbought.
+   */
+  readonly canPickRange = computed(
+    () => !environment.paymentsEnabled || this.entitlement.premium(),
+  );
+
+  /**
+   * The entitlement is a live fetch, and it reads as non-premium until it lands. Holding the
+   * fallback below until it has settled keeps a premium account's stored range from being
+   * snapped back to the last 10 in the moment before their subscription is known.
+   */
+  private readonly entitlementSettled = computed(
+    () =>
+      !environment.paymentsEnabled ||
+      this.entitlement.loadState() === 'loaded' ||
+      this.entitlement.loadState() === 'error',
+  );
 
   readonly activeColumns = computed<ActiveColumns>(() => ({
     scoring: this.activeScoringColumns(),
@@ -178,6 +202,20 @@ export class WhosHotComponent {
   );
 
   constructor() {
+    /**
+     * A range outlives the subscription that bought it: it is saved to this browser, so an
+     * account that lapses (or one that was premium in another browser) would otherwise come back
+     * to a custom range it can no longer change, with every control that could undo it switched
+     * off. Put it back on the free range instead.
+     */
+    effect(() => {
+      if (!this.entitlementSettled() || this.canPickRange()) {
+        return;
+      }
+      this.fromGame.set(this.freeRange.from);
+      this.toGame.set(this.freeRange.to);
+    });
+
     effect(() => {
       this.settingsStore.save({
         season: this.season(),
