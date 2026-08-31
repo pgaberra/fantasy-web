@@ -13,6 +13,8 @@ import {
 } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Player } from '../../models/player.model';
+import { PositionOverrides } from '../../models/position-override';
+import { SkaterPosition } from '../../models/position.model';
 import { PlayerService } from '../../services/player.service';
 import {
   ActiveColumns,
@@ -58,6 +60,7 @@ import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.di
 import { PinnedTableHeaderDirective } from '../../shared/pinned-table-header/pinned-table-header.directive';
 import { LeagueSettingsMenuComponent } from './league-settings-menu/league-settings-menu';
 import { ColumnsMenuComponent } from './columns-menu/columns-menu';
+import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 
 const PLAYERS_PER_PAGE = 250;
 
@@ -90,6 +93,7 @@ function toggledSet<T>(members: ReadonlySet<T>, member: T): Set<T> {
     PinnedTableHeaderDirective,
     LeagueSettingsMenuComponent,
     ColumnsMenuComponent,
+    TooltipDirective,
   ],
   templateUrl: './player-projections-table.html',
   styleUrl: './player-projections-table.css',
@@ -119,6 +123,18 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   /** Turns on the column menus, the add-column cell and the league toolbar. */
   readonly columnControls = input<boolean>(false);
+
+  /**
+   * Turns on correcting a player's positions. Separate from `columnControls` because it needs
+   * somewhere to save to: the landing demo has the toolbar but no projection behind it.
+   */
+  readonly positionControls = input<boolean>(false);
+  /** The corrections already made, so a row can show it carries one and the toolbar can count. */
+  readonly positionOverrides = input<PositionOverrides>(new Map());
+  readonly positionsChanged = output<{ playerId: number; positions: SkaterPosition[] | null }>();
+  readonly positionsReset = output<void>();
+
+  readonly overriddenPositionCount = computed(() => this.positionOverrides().size);
   /**
    * The league these settings were imported from, once there is one. Connecting a league is a
    * call to action while it hasn't happened; afterwards it is provenance, so it moves off the

@@ -282,6 +282,18 @@ tbody tr:hover {
 
 /* A checkbox rather than another select: it is one binary choice, and giving it the same
    stacked label/control shape as the selects would make it read as a third dropdown. */
+.position-overrides {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+
+.position-overrides-count {
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
+}
+
 .filter-control--check label {
   display: inline-flex;
   align-items: center;

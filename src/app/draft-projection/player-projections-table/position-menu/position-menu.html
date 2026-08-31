@@ -1,0 +1,39 @@
+<p class="position-menu-title">Positions for {{ playerName() }}</p>
+
+<div class="position-list">
+  @for (position of allPositions; track position) {
+    <button
+      type="button"
+      role="checkbox"
+      class="position-row"
+      [attr.aria-checked]="isSelected(position)"
+      [attr.aria-disabled]="isLocked(position)"
+      [title]="isLocked(position) ? 'A player has to keep at least one position' : null"
+      (click)="toggle(position)"
+    >
+      <span class="position-check" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          width="12"
+          height="12"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M20 6L9 17l-5-5" />
+        </svg>
+      </span>
+      <span class="position-key">{{ position }}</span>
+    </button>
+  }
+</div>
+
+@if (overridden()) {
+  <div class="position-menu-footer">
+    <button type="button" class="btn btn-secondary btn-sm" (click)="useDefault()">
+      Use reported positions
+    </button>
+  </div>
+}

@@ -44,6 +44,29 @@ td.col-name {
   flex-shrink: 0;
 }
 
+/* The positions read as part of the name, so the trigger keeps the name's type and colour and
+   only picks up an underline on hover. A button that looked like a button here would compete
+   with the row's own controls for attention it does not deserve. */
+.player-positions {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.player-positions:hover,
+.player-positions:focus-visible {
+  text-decoration: underline;
+}
+
+/* A correction the owner made is worth seeing without opening the menu. */
+.player-positions--overridden {
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
 .player-team {
   color: var(--color-text-subtle);
   font-size: 0.8em;
