@@ -177,13 +177,10 @@ export class ProjectionListComponent {
       .catch(() => this.notification.error("Couldn't delete the projection. Please try again."));
   }
 
-  /** Only the user's own projections take a name from the same pool; imported boards do not. */
+  /** Every board the user keeps shares one pool of names, imported ones included. */
   private freeName(): string {
     return freeProjectionName(
-      this.projectionsResource
-        .value()
-        .filter((projection) => projection.kind === 'projection')
-        .map((projection) => projection.name),
+      this.projectionsResource.value().map((projection) => projection.name),
     );
   }
 }
