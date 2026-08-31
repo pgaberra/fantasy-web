@@ -45,6 +45,7 @@ const sampleState: ProjectionState = {
     order: ['team-me', 'team-1'],
     picks: [{ playerId: 1, teamId: 'team-me' }],
   },
+  positionOverrides: new Map([[1, ['C', 'LW'] as const]]),
   playerProjections: [
     {
       type: 'skater',
@@ -202,6 +203,51 @@ describe('ProjectionSerializerService', () => {
     expect(settings.leagueSize).toBeUndefined();
     expect(settings.minGoalieGames).toBeUndefined();
     expect(settings.rosterSlots).toEqual({ c: 1, lw: 1, rw: 1, d: 2, util: 1, bn: 2, g: 2 });
+  });
+
+  it('round-trips the positions an owner corrected by hand', () => {
+    const roundTripped = service.fromProjectionData(service.toProjectionData(sampleState));
+
+    expect(roundTripped.positionOverrides).toEqual(new Map([[1, ['C', 'LW']]]));
+  });
+
+  it('serializes corrections by player id, so re-picking the same ones is not a change', () => {
+    const clicked: ProjectionState = {
+      ...sampleState,
+      positionOverrides: new Map([
+        [7, ['D']],
+        [1, ['C', 'LW']],
+      ]),
+    };
+    const sorted: ProjectionState = {
+      ...sampleState,
+      positionOverrides: new Map([
+        [1, ['C', 'LW']],
+        [7, ['D']],
+      ]),
+    };
+
+    expect(JSON.stringify(service.toProjectionData(clicked))).toEqual(
+      JSON.stringify(service.toProjectionData(sorted)),
+    );
+  });
+
+  it('reads a projection saved before positions could be corrected', () => {
+    const data = service.toProjectionData(sampleState);
+    delete data.positionOverrides;
+
+    expect(service.fromProjectionData(data).positionOverrides).toEqual(new Map());
+  });
+
+  /** A stored override can name a position the app no longer has, or none at all. */
+  it('drops a stored correction it cannot read rather than failing the load', () => {
+    const data = service.toProjectionData(sampleState);
+    data.positionOverrides = [
+      { playerId: 1, positions: ['C', 'F' as 'C'] },
+      { playerId: 2, positions: [] },
+    ];
+
+    expect(service.fromProjectionData(data).positionOverrides).toEqual(new Map([[1, ['C']]]));
   });
 
   it('round-trips rosterSlots for both category and points leagues', () => {

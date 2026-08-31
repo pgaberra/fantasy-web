@@ -162,6 +162,23 @@
         @if (availableTeams().length) {
           <app-team-filter [teams]="availableTeams()" [(value)]="teamFilter" />
         }
+        <!-- Only here once there is something to undo: a control that says "reset" over an
+             untouched pool is a question nobody asked. -->
+        @if (overriddenPositionCount(); as changed) {
+          <div class="filter-control position-overrides">
+            <span class="position-overrides-count">
+              {{ changed }} {{ changed === 1 ? 'position' : 'positions' }} changed
+            </span>
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              (click)="positionsReset.emit()"
+              appTooltip="Put every player back on the positions the player pool reports"
+            >
+              Reset
+            </button>
+          </div>
+        }
         @if (rookiesAvailable()) {
           <div class="filter-control filter-control--check">
             <label for="rookies-only">
@@ -225,9 +242,12 @@
             [scoringType]="scoringType()"
             [decimalSettings]="decimalSettings()"
             [isEditing]="editingPlayerId() === sp.projection.playerId"
+            [positionsEditable]="positionControls()"
+            [positionsOverridden]="positionOverrides().has(sp.projection.playerId)"
             (focusin)="onRowFocusIn(sp.projection.playerId)"
             (focusout)="onRowFocusOut($event)"
             (statInput)="onStatInput($event.playerId, $event.key, $event.event)"
+            (positionsChanged)="positionsChanged.emit($event)"
             (toiKeydown)="onToiKeydown($event.playerId, $event.event)"
           ></tr>
         }

@@ -231,6 +231,57 @@ describe('DraftProjectionComponent', () => {
     expect(component.saveStatus()).toEqual('saved');
   }, 10000);
 
+  /**
+   * The corrections are small and the server replaces what it is sent, so a save that skips the
+   * player rows still has to carry them. Leaving them out of this payload is how they would be
+   * lost to the next rename.
+   */
+  it('carries the corrected positions on a save that leaves the player rows out', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    const updateSpy = vi.spyOn(ngMocks.findInstance(ProjectionStorageService), 'updateProjection');
+
+    component.onPositionsChanged({ playerId: 1, positions: ['LW', 'RW'] });
+    component.startRename();
+    component.renameValue.set('Renamed league');
+    component.saveRename();
+    await fixture.whenStable();
+
+    expect(updateSpy.mock.calls[0][1].data.players).toBeUndefined();
+    expect(updateSpy.mock.calls[0][1].data.positionOverrides).toEqual([
+      { playerId: 1, positions: ['LW', 'RW'] },
+    ]);
+  });
+
+  it('sends an empty list when the owner resets every position, so the server clears them', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    const updateSpy = vi.spyOn(ngMocks.findInstance(ProjectionStorageService), 'updateProjection');
+
+    component.onPositionsChanged({ playerId: 1, positions: ['D'] });
+    component.onPositionsReset();
+    component.startRename();
+    component.renameValue.set('Renamed league');
+    component.saveRename();
+    await fixture.whenStable();
+
+    expect(updateSpy.mock.calls[0][1].data.positionOverrides).toEqual([]);
+  });
+
+  it('shows the corrected positions on the player, not the ones the pool reports', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.onPositionsChanged({ playerId: 1, positions: ['D'] });
+    fixture.detectChanges();
+
+    const corrected = component.players().find((player) => player.id === 1);
+    expect(corrected?.type === 'skater' && [...corrected.positions]).toEqual(['D']);
+  });
+
   it('reports a conflict and keeps the old name when the name is taken', async () => {
     const fixture = MockRender(DraftProjectionComponent);
     await fixture.whenStable();
