@@ -89,7 +89,10 @@
           <h2>Player Projections</h2>
         </div>
         <div class="table-controls">
-          <app-position-filter [(value)]="positionFilter" />
+          <app-position-filter
+            [value]="positionFilter()"
+            (valueChange)="setPositionFilter($event)"
+          />
         </div>
       </div>
 
@@ -102,7 +105,7 @@
         <table>
           <thead
             app-projections-table-header
-            [activeColumns]="activeColumns()"
+            [activeColumns]="filteredActiveColumns()"
             [scoringType]="scoringType()"
             [statWeights]="statWeights()"
             [useDefaultDecimals]="true"
@@ -116,12 +119,12 @@
             @for (row of visibleRows(); track row.shared.playerId) {
               <tr
                 app-player-row
-                [positionRank]="row.shared.rank"
-                [totalRank]="null"
+                [positionRank]="rankOf(row)"
+                [totalRank]="overallRankOf(row)"
                 [projection]="row.projection"
                 [playerScore]="row.score"
                 [player]="row.player"
-                [activeColumns]="activeColumns()"
+                [activeColumns]="filteredActiveColumns()"
                 [scoringType]="scoringType()"
                 [decimalSettings]="decimalSettings()"
                 [readonly]="true"
