@@ -82,7 +82,7 @@
             (input)="onSearchInput($event)"
           />
         </div>
-        <app-position-filter [(value)]="positionFilter" />
+        <app-position-filter [value]="positionFilter()" (valueChange)="setPositionFilter($event)" />
         @if (availableTeams().length) {
           <app-team-filter [teams]="availableTeams()" [(value)]="teamFilter" />
         }

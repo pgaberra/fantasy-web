@@ -374,7 +374,28 @@ export class PlayerProjectionsTableComponent implements OnInit {
     return projection.stats.utility.gp >= minGames;
   }
 
-  readonly positionFilter = signal<PositionFilter>('ALL');
+  private readonly positionFilterState = signal<PositionFilter>('ALL');
+  readonly positionFilter: Signal<PositionFilter> = this.positionFilterState.asReadonly();
+
+  /**
+   * Narrowing to a position can take the sorted column off the screen with it: a board of left
+   * wings has no goalie columns to sort by. Rather than leave the rows in an order nothing on
+   * screen explains, the sort falls back to the ranking.
+   */
+  setPositionFilter(filter: PositionFilter): void {
+    this.positionFilterState.set(filter);
+    if (
+      this.activeColumnsService.showsSortColumn(
+        this.sortColumn(),
+        { scoring: this.activeScoringColumns(), utility: this.activeUtilityColumns() },
+        filter,
+      )
+    ) {
+      return;
+    }
+    this.sortColumn.set('summary');
+    this.sortDirection.set(defaultSortDirection('summary'));
+  }
 
   /**
    * Ids of this season's rookies, or null while unknown — either still loading or the server
@@ -481,10 +502,28 @@ export class PlayerProjectionsTableComponent implements OnInit {
     });
   }
 
-  realTimeRanks: Signal<Map<number, number>> = computed(() => {
-    return new Map(
-      this.realTimeSortedProjections().map((sp, i) => [sp.projection.playerId, i + 1]),
-    );
+  /**
+   * Where each player sits in the ranking itself: by fantasy points in a points league and by
+   * z-score in a category one, with the goalies below the games minimum kept last exactly as the
+   * summary column keeps them.
+   *
+   * <p>Deliberately not the order on screen. This is the number in brackets beside a position's
+   * rank, and it only reads as "and 7th overall" if it is counted off the ranking. Counted off
+   * the arrangement, sorting the wingers by hits printed each player's place in a list of
+   * hitters instead.
+   */
+  overallRanks: Signal<Map<number, number>> = computed(() => {
+    const summaryValueOf = this.summaryValueResolver();
+    const players = this.playerMap();
+    const ranked = this.scoredProjections()
+      .filter((sp) => players.has(sp.projection.playerId))
+      .sort((a, b) => {
+        if (a.qualified !== b.qualified) {
+          return a.qualified ? -1 : 1;
+        }
+        return summaryValueOf(b) - summaryValueOf(a);
+      });
+    return new Map(ranked.map((sp, index) => [sp.projection.playerId, index + 1]));
   });
 
   positionRanks: Signal<Map<number, number>> = computed(() => {

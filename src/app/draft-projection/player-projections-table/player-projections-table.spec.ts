@@ -798,7 +798,7 @@ describe('PlayerProjectionsTableComponent', () => {
     it('should reset the visible count when the position filter changes', () => {
       const component = getComponent();
       component.visibleCount.set(500);
-      component.positionFilter.set('C');
+      component.setPositionFilter('C');
       expect(component.visibleCount()).toEqual(250);
     });
 
@@ -820,6 +820,78 @@ describe('PlayerProjectionsTableComponent', () => {
       component.visibleCount.set(500);
       component.searchTerm.set('connor');
       expect(component.visibleCount()).toEqual(2);
+    });
+  });
+
+  /**
+   * Under a position filter the # column carries two numbers: where the player sits in the
+   * position, and where they sit in the ranking. The second only means that if it is counted off
+   * the ranking rather than off whatever the table is sorted by.
+   */
+  describe('the rank column under a position filter', () => {
+    const rankCells = (): string[] =>
+      ngMocks.findAll('tbody .col-rank').map((cell) => cell.nativeElement.textContent.trim());
+
+    const render = (overrides = {}) => {
+      const component = getComponent({
+        scoringType: 'points',
+        activeScoringColumns: new Set<ScoringStatKey>(['goals', 'assists', 'hits']),
+        ...overrides,
+      });
+      return component;
+    };
+
+    it('counts the position, and keeps the ranking in brackets', () => {
+      const component = render();
+
+      component.setPositionFilter('C');
+      TestBed.inject(ApplicationRef).tick();
+
+      // McDavid outscores Draisaitl, and the centres are the two of them.
+      expect(rankCells()).toEqual(['1 (1)', '2 (2)']);
+    });
+
+    it('keeps the brackets on the ranking when another column is sorted', () => {
+      const component = render();
+
+      component.setPositionFilter('C');
+      // Draisaitl out-hits McDavid, so this turns the two of them around on screen without
+      // touching where either sits in the ranking.
+      component.onSort('hits');
+      TestBed.inject(ApplicationRef).tick();
+
+      expect(rankCells()).toEqual(['1 (2)', '2 (1)']);
+    });
+
+    it('shows one number while the whole pool is on screen', () => {
+      render();
+
+      expect(rankCells()).toEqual(['1', '2', '3']);
+    });
+  });
+
+  describe('a sorted column the position filter takes away', () => {
+    it('falls back to the ranking rather than an order nothing explains', () => {
+      const component = getComponent({
+        activeScoringColumns: new Set<ScoringStatKey>(['goals', 'assists', 'w']),
+      });
+
+      component.onSort('w');
+      component.setPositionFilter('C');
+
+      expect(component.sortColumn()).toEqual('summary');
+      expect(component.sortDirection()).toEqual('desc');
+    });
+
+    it('leaves a sorted column the filter still shows', () => {
+      const component = getComponent({
+        activeScoringColumns: new Set<ScoringStatKey>(['goals', 'assists', 'w']),
+      });
+
+      component.onSort('goals');
+      component.setPositionFilter('C');
+
+      expect(component.sortColumn()).toEqual('goals');
     });
   });
 

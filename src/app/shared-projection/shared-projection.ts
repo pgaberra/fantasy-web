@@ -209,18 +209,13 @@ export class SharedProjectionComponent {
    */
   setPositionFilter(filter: PositionFilter): void {
     this.positionFilterState.set(filter);
-    const column = this.sortColumn();
-    if (column === 'name' || column === 'summary') {
+    if (
+      this.activeColumnsService.showsSortColumn(this.sortColumn(), this.activeColumns(), filter)
+    ) {
       return;
     }
-    const columns = this.filteredActiveColumns();
-    const stillShown =
-      (columns.scoring as ReadonlySet<string>).has(column) ||
-      (columns.utility as ReadonlySet<string>).has(column);
-    if (!stillShown) {
-      this.sortColumn.set('summary');
-      this.sortDirection.set(defaultSortDirection('summary'));
-    }
+    this.sortColumn.set('summary');
+    this.sortDirection.set(defaultSortDirection('summary'));
   }
 
   /**

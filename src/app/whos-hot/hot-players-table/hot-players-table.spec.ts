@@ -334,6 +334,41 @@ describe('HotPlayersTableComponent', () => {
     });
   });
 
+  describe('a sorted column the position filter takes away', () => {
+    const withWins = () =>
+      MockRender(HotPlayersTableComponent, {
+        hotPlayers: [skater(1, 20)],
+        players: [player(1)],
+        activeColumns: {
+          scoring: new Set<ScoringStatKey>(['goals', 'w']),
+          utility: new Set<SkaterUtilityStatKey>(['gp']),
+        },
+        scoringType: 'points',
+        statWeights: DEFAULT_STAT_WEIGHTS,
+        perGame: false,
+        minGames: 1,
+      }).point.componentInstance;
+
+    it('falls back to the ranking rather than an order nothing explains', () => {
+      const component = withWins();
+
+      component.onSort('w');
+      component.setPositionFilter('SKATER');
+
+      expect(component.sortColumn()).toEqual('summary');
+      expect(component.sortDirection()).toEqual('desc');
+    });
+
+    it('leaves a sorted column the filter still shows', () => {
+      const component = withWins();
+
+      component.onSort('goals');
+      component.setPositionFilter('SKATER');
+
+      expect(component.sortColumn()).toEqual('goals');
+    });
+  });
+
   describe('stats the player cannot have', () => {
     const withColumns = (scoring: ScoringStatKey[], positions: SkaterPosition[]) =>
       MockRender(HotPlayersTableComponent, {
