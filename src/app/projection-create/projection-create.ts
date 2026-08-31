@@ -247,8 +247,24 @@ export class ProjectionCreateComponent {
   readonly loadError = computed(() => !!this.dataResource.error());
   readonly isCreating = signal<boolean>(false);
   readonly name = linkedSignal(() =>
-    freeProjectionName(this.ownProjections().map((projection) => projection.name)),
+    freeProjectionName(this.dataResource.value().map((projection) => projection.name)),
   );
+
+  /**
+   * Whether the name is one the user is already keeping something under. The server refuses it
+   * either way (names are unique per user across their own boards and imported ones alike), so
+   * this is only about where they find out: on the field they can fix, rather than in a toast
+   * after pressing Create.
+   *
+   * <p>Compared exactly, trimmed, because that is the comparison the server makes. Anything
+   * looser would stop a name it would have accepted.
+   */
+  readonly nameTaken = computed(() => {
+    const typed = this.name().trim();
+    return (
+      typed.length > 0 && this.dataResource.value().some((projection) => projection.name === typed)
+    );
+  });
 
   /**
    * Exactly the columns a new projection opens with — the goalie ones included, so they read as
@@ -372,7 +388,9 @@ export class ProjectionCreateComponent {
   });
 
   // A starting point is always picked, so only the name can hold the button back.
-  readonly canCreate = computed(() => !this.isCreating() && this.name().trim().length > 0);
+  readonly canCreate = computed(
+    () => !this.isCreating() && this.name().trim().length > 0 && !this.nameTaken(),
+  );
 
   onNameInput(event: Event): void {
     this.name.set((event.target as HTMLInputElement).value);

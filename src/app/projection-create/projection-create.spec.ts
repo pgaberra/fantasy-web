@@ -233,6 +233,53 @@ describe('ProjectionCreateComponent', () => {
     expect(fixture.point.componentInstance.name()).toEqual('My Projection 3');
   });
 
+  // An imported board takes a name as surely as one of the user's own does: they are listed
+  // together, and the server keeps them in one namespace.
+  it('skips a name an imported board is already using', async () => {
+    MockInstance(
+      ProjectionStorageService,
+      'listEditable',
+      vi.fn(() =>
+        of([
+          { ...summary, id: 'p1', name: 'My Projection' },
+          { ...summary, id: 's1', kind: 'imported' as const, name: 'My Projection 2' },
+        ]),
+      ),
+    );
+
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+
+    expect(fixture.point.componentInstance.name()).toEqual('My Projection 3');
+  });
+
+  // The server refuses it either way; this is about hearing so on the field rather than in a
+  // toast after the round trip.
+  it('blocks a name already taken, and says so on the field', async () => {
+    MockInstance(
+      ProjectionStorageService,
+      'listEditable',
+      vi.fn(() => of([{ ...summary, id: 's1', kind: 'imported' as const, name: "Erik's board" }])),
+    );
+
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.name.set("  Erik's board  ");
+    fixture.detectChanges();
+
+    expect(component.nameTaken()).toBe(true);
+    expect(component.canCreate()).toEqual(false);
+    expect(fixture.nativeElement.querySelector('.field-error').textContent).toContain(
+      'You already have a projection with that name',
+    );
+
+    component.name.set('Something else');
+    expect(component.nameTaken()).toBe(false);
+    expect(component.canCreate()).toEqual(true);
+  });
+
   it('creates a projection and navigates to edit mode', async () => {
     const fixture = MockRender(ProjectionCreateComponent);
     await fixture.whenStable();

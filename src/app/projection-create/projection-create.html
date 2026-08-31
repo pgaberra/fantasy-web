@@ -20,10 +20,20 @@
         type="text"
         maxlength="100"
         placeholder="Projection name"
+        [class.invalid]="nameTaken()"
+        [attr.aria-invalid]="nameTaken() || null"
+        [attr.aria-describedby]="nameTaken() ? 'projection-name-error' : null"
         [value]="name()"
         (input)="onNameInput($event)"
         (focus)="onNameFocus($event)"
       />
+      <!-- Said here rather than after the round trip: the server refuses the name, and the field
+           that has to change is the one right above this. -->
+      @if (nameTaken()) {
+        <p class="field-error" id="projection-name-error">
+          You already have a projection with that name. Pick another one.
+        </p>
+      }
     </div>
 
     <div class="field">
