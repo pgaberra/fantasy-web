@@ -234,6 +234,10 @@ describe('PlayerProjectionsTableComponent', () => {
       ...overrides,
     }).point.componentInstance;
 
+  /** The # column as it is rendered: "3" on its own, or "1 (3)" once the table is narrowed. */
+  const rankCells = (): string[] =>
+    ngMocks.findAll('tbody .col-rank').map((cell) => cell.nativeElement.textContent.trim());
+
   /**
    * Rookie status is a decoration the server may not be able to supply — it comes from a
    * service production runs with switched off. Null has to read as "no marker", never as
@@ -266,6 +270,16 @@ describe('PlayerProjectionsTableComponent', () => {
       component.rookiesOnly.set(true);
 
       expect(component.visibleProjections().map((sp) => sp.projection.playerId)).toEqual([1]);
+    });
+
+    it('keeps the brackets when it is the rookie filter doing the narrowing', async () => {
+      const component = await renderWithRookies(of(new Set([2])));
+
+      component.rookiesOnly.set(true);
+      TestBed.inject(ApplicationRef).tick();
+
+      // Draisaitl alone on screen, third in this category league's ranking.
+      expect(rankCells()).toEqual(['1 (3)']);
     });
 
     it('offers no filter when the server could not say who is a rookie', async () => {
@@ -798,7 +812,7 @@ describe('PlayerProjectionsTableComponent', () => {
     it('should reset the visible count when the position filter changes', () => {
       const component = getComponent();
       component.visibleCount.set(500);
-      component.positionFilter.set('C');
+      component.setPositionFilter('C');
       expect(component.visibleCount()).toEqual(250);
     });
 
@@ -820,6 +834,87 @@ describe('PlayerProjectionsTableComponent', () => {
       component.visibleCount.set(500);
       component.searchTerm.set('connor');
       expect(component.visibleCount()).toEqual(2);
+    });
+  });
+
+  /**
+   * Under a position filter the # column carries two numbers: where the player sits in the
+   * position, and where they sit in the ranking. The second only means that if it is counted off
+   * the ranking rather than off whatever the table is sorted by.
+   */
+  describe('the rank column under a position filter', () => {
+    const render = (overrides = {}) => {
+      const component = getComponent({
+        scoringType: 'points',
+        activeScoringColumns: new Set<ScoringStatKey>(['goals', 'assists', 'hits']),
+        ...overrides,
+      });
+      return component;
+    };
+
+    it('counts the position, and keeps the ranking in brackets', () => {
+      const component = render();
+
+      component.setPositionFilter('C');
+      TestBed.inject(ApplicationRef).tick();
+
+      // McDavid outscores Draisaitl, and the centres are the two of them.
+      expect(rankCells()).toEqual(['1 (1)', '2 (2)']);
+    });
+
+    it('keeps the brackets on the ranking when another column is sorted', () => {
+      const component = render();
+
+      component.setPositionFilter('C');
+      // Draisaitl out-hits McDavid, so this turns the two of them around on screen without
+      // touching where either sits in the ranking.
+      component.onSort('hits');
+      TestBed.inject(ApplicationRef).tick();
+
+      expect(rankCells()).toEqual(['1 (2)', '2 (1)']);
+    });
+
+    it('shows one number while the whole pool is on screen', () => {
+      render();
+
+      expect(rankCells()).toEqual(['1', '2', '3']);
+    });
+
+    // Any filter narrows the pool the same way, so any of them leaves the same question:
+    // first of what is on screen, and where in the ranking?
+    it('keeps the brackets when it is the team filter doing the narrowing', () => {
+      const component = render();
+
+      // Draisaitl plays for COL here, and sits second in the ranking behind McDavid.
+      component.teamFilter.set('COL');
+      TestBed.inject(ApplicationRef).tick();
+
+      expect(rankCells()).toEqual(['1 (2)']);
+    });
+  });
+
+  describe('a sorted column the position filter takes away', () => {
+    it('falls back to the ranking rather than an order nothing explains', () => {
+      const component = getComponent({
+        activeScoringColumns: new Set<ScoringStatKey>(['goals', 'assists', 'w']),
+      });
+
+      component.onSort('w');
+      component.setPositionFilter('C');
+
+      expect(component.sortColumn()).toEqual('summary');
+      expect(component.sortDirection()).toEqual('desc');
+    });
+
+    it('leaves a sorted column the filter still shows', () => {
+      const component = getComponent({
+        activeScoringColumns: new Set<ScoringStatKey>(['goals', 'assists', 'w']),
+      });
+
+      component.onSort('goals');
+      component.setPositionFilter('C');
+
+      expect(component.sortColumn()).toEqual('goals');
     });
   });
 

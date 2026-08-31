@@ -158,7 +158,7 @@
             (input)="onSearchInput($event)"
           />
         </div>
-        <app-position-filter [(value)]="positionFilter" />
+        <app-position-filter [value]="positionFilter()" (valueChange)="setPositionFilter($event)" />
         @if (availableTeams().length) {
           <app-team-filter [teams]="availableTeams()" [(value)]="teamFilter" />
         }
@@ -228,11 +228,7 @@
           <tr
             app-player-row
             [positionRank]="positionRanks().get(sp.projection.playerId)!"
-            [totalRank]="
-              positionFilter() !== 'ALL'
-                ? (realTimeRanks().get(sp.projection.playerId) ?? null)
-                : null
-            "
+            [totalRank]="isNarrowed() ? (overallRanks().get(sp.projection.playerId) ?? null) : null"
             [projection]="sp.projection"
             [playerScore]="sp.score"
             [belowMinGames]="!sp.qualified"
