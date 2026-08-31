@@ -323,16 +323,18 @@ describe('ProjectionCreateComponent', () => {
       expect(createProjection.mock.calls[0][0].source).toEqual('model');
     });
 
-    // What a preset means is a tip on the row, not a line under the name: three subtitles made
-    // the strip's own choices louder than the projections listed beside them.
-    it('explains each preset in a tip rather than a subtitle', async () => {
+    // What a preset means is a line under its name, as every other row on the page explains
+    // itself. Behind a tip icon it took a hover to read, and put four icons down the page.
+    it('explains each preset in a subtitle rather than a tip', async () => {
       const fixture = MockRender(ProjectionCreateComponent);
       await fixture.whenStable();
       fixture.detectChanges();
 
       const presets: HTMLElement = fixture.nativeElement.querySelector('.rows--presets');
-      expect(presets.querySelectorAll('app-help-tip')).toHaveLength(CREATE_PRESETS.length);
-      expect(presets.querySelector('.row-meta')).toBeNull();
+      expect(presets.querySelectorAll('app-help-tip')).toHaveLength(0);
+      expect(
+        Array.from(presets.querySelectorAll('.row-meta')).map((meta) => meta.textContent?.trim()),
+      ).toEqual(CREATE_PRESETS.map((preset) => preset.description));
     });
 
     // What the tabs cost: a board picked in one was invisible from the others, so the page never
@@ -352,11 +354,131 @@ describe('ProjectionCreateComponent', () => {
         fixture.nativeElement.querySelectorAll('.group-title') as NodeListOf<HTMLElement>,
       ).map((heading) => heading.textContent?.trim());
 
-      expect(headings).toEqual(['Copy one of yours', 'Shared with you']);
+      expect(headings).toEqual(['Presets', 'Copy one of yours', 'Shared with you']);
       expect(fixture.nativeElement.querySelectorAll('.sources .row')).toHaveLength(
         CREATE_PRESETS.length + listed.length,
       );
       expect(fixture.nativeElement.querySelector('app-share-import')).not.toBeNull();
+    });
+
+    // The import box is a text field and a button, not an answer to the question the radios
+    // ask, so it sits outside the group they are announced as part of.
+    it('keeps the import box out of the radio group', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.sources app-share-import')).toBeNull();
+      expect(fixture.nativeElement.querySelector('app-share-import')).not.toBeNull();
+    });
+
+    // The heading is drawn either way, and an empty one with a text field under it reads as a
+    // group that failed to load rather than one nobody has filled yet.
+    it('says the shared group is empty rather than leaving its heading bare', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.group-empty').textContent).toContain(
+        "Nobody's board here yet",
+      );
+    });
+
+    describe('the cap on each copy group', () => {
+      const many = (kind: ProjectionSummaryResponse['kind'], count: number) =>
+        Array.from({ length: count }, (unused, index) => ({
+          ...summary,
+          kind,
+          id: `${kind}${index}`,
+          name: `Board ${index}`,
+          // Descending, so the list order is the order they are listed in.
+          updatedAt: `2026-06-${String(28 - index).padStart(2, '0')}T00:00:00Z`,
+        }));
+
+      it('lists the first few and reveals the rest on Show all', async () => {
+        MockInstance(
+          ProjectionStorageService,
+          'listEditable',
+          vi.fn(() => of(many('projection', 8))),
+        );
+
+        const fixture = MockRender(ProjectionCreateComponent);
+        await fixture.whenStable();
+        fixture.detectChanges();
+        const component = fixture.point.componentInstance;
+
+        expect(component.visibleOwnProjections().map((board) => board.id)).toEqual([
+          'projection0',
+          'projection1',
+          'projection2',
+          'projection3',
+          'projection4',
+        ]);
+
+        const showAll: HTMLButtonElement = fixture.nativeElement.querySelector('.show-all');
+        expect(showAll.textContent?.trim()).toEqual('Show all 8 projections');
+
+        showAll.click();
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(component.visibleOwnProjections()).toHaveLength(8);
+        expect(fixture.nativeElement.querySelector('.show-all').textContent?.trim()).toEqual(
+          'Show fewer',
+        );
+      });
+
+      it('leaves a short group whole, with nothing to expand', async () => {
+        MockInstance(
+          ProjectionStorageService,
+          'listEditable',
+          vi.fn(() => of(many('projection', 5))),
+        );
+
+        const fixture = MockRender(ProjectionCreateComponent);
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(fixture.point.componentInstance.visibleOwnProjections()).toHaveLength(5);
+        expect(fixture.nativeElement.querySelector('.show-all')).toBeNull();
+      });
+
+      // The cap must never hide the answer — that is exactly what the tabs did, and the reason
+      // every starting point is on the page at once.
+      it('keeps the picked board on the page when the cap would hide it', async () => {
+        MockInstance(
+          ProjectionStorageService,
+          'listEditable',
+          vi.fn(() => of(many('imported', 8))),
+        );
+
+        const fixture = MockRender(ProjectionCreateComponent);
+        await fixture.whenStable();
+        const component = fixture.point.componentInstance;
+
+        component.selectCopyFrom('imported7');
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(component.visibleImportedBoards().map((board) => board.id)).toContain('imported7');
+        expect(component.visibleImportedBoards()).toHaveLength(6);
+      });
+
+      it('counts each group on its own', async () => {
+        MockInstance(
+          ProjectionStorageService,
+          'listEditable',
+          vi.fn(() => of([...many('projection', 8), ...many('imported', 2)])),
+        );
+
+        const fixture = MockRender(ProjectionCreateComponent);
+        await fixture.whenStable();
+        const component = fixture.point.componentInstance;
+
+        expect(component.hasMoreOwn()).toBe(true);
+        expect(component.hasMoreShared()).toBe(false);
+        expect(component.visibleImportedBoards()).toHaveLength(2);
+      });
     });
 
     // A copy has no preview: the rows are the board's own, which this page never downloads.

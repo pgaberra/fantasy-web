@@ -62,32 +62,35 @@ export type StartingPoint =
 export interface CreatePreset {
   readonly name: string;
   readonly source: NonNullable<CreateProjectionRequest['source']>;
-  /** What picking it means, shown in the row's tip rather than under the name. */
+  /**
+   * What picking it means, one line, under the name. It was a tip behind an icon, which denied
+   * the three rows that are always here the one thing every other row on the page has — a
+   * subtitle saying what it is — and put four tip icons in a column down the page.
+   */
   readonly description: string;
-  /** Names what the tip explains — its trigger is an icon with nothing to read. */
-  readonly tipLabel: string;
 }
 
-/** Every preset this page knows of. What it offers is `offeredPresets` of these — see below. */
+/**
+ * Every preset this page knows of. What it offers is `offeredPresets` of these — see below.
+ * One line each, as the draft picker's presets are (draft-start.ts): a subtitle fits in a row,
+ * a paragraph does not. What the model is built from is left to the note under the preview,
+ * which is on screen exactly when the AI preset is picked.
+ */
 export const CREATE_PRESETS: readonly CreatePreset[] = [
   {
     name: "Last season's stats",
     source: 'default',
-    description: "Start from each player's real numbers from last season.",
-    tipLabel: "What starting from last season's stats means",
+    description: "Every player at last season's real numbers",
   },
   {
     name: 'AI projection',
     source: 'model',
-    description:
-      "Start from a model's estimate for the coming season, built from several seasons of NHL data. It is a qualified guess, not the truth, so adjust it as you would any other starting point.",
-    tipLabel: 'What starting from the AI projection means',
+    description: "The model's estimate for the coming season: a qualified guess, not the truth",
   },
   {
     name: 'From scratch',
     source: 'blank',
-    description: 'Every player keeps their seat on the board, with every stat at 0.',
-    tipLabel: 'What starting from scratch means',
+    description: 'Every player keeps their seat on the board, with every stat at 0',
   },
 ];
 
@@ -105,6 +108,14 @@ const PREVIEW_ROWS = 5;
  * rather than the half-megabyte the editor needs.
  */
 const PREVIEW_FETCH_LIMITS = { skaters: 25, goalies: 10 };
+
+/**
+ * How many boards each copy group lists before the rest go behind "Show all". The two groups are
+ * the only part of this page that grows without limit: with thirty projections they pushed the
+ * presets, the preview and the Create button off the screen, and a starting point is picked from
+ * the top of that list far more often than from the bottom of it.
+ */
+const VISIBLE_BOARDS = 5;
 
 /** One preview row, in the shapes the editor's own table components expect. */
 interface PreviewRow {
@@ -229,6 +240,17 @@ export class ProjectionCreateComponent {
   });
   readonly ownProjections = computed(() => this.byKind('projection'));
   readonly importedBoards = computed(() => this.byKind('imported'));
+  /** Whether each copy group is listing everything it has, rather than its first few. */
+  readonly showAllOwn = signal(false);
+  readonly showAllShared = signal(false);
+  readonly visibleOwnProjections = computed(() =>
+    this.visibleBoards(this.ownProjections(), this.showAllOwn()),
+  );
+  readonly visibleImportedBoards = computed(() =>
+    this.visibleBoards(this.importedBoards(), this.showAllShared()),
+  );
+  readonly hasMoreOwn = computed(() => this.ownProjections().length > VISIBLE_BOARDS);
+  readonly hasMoreShared = computed(() => this.importedBoards().length > VISIBLE_BOARDS);
   /** Whether the AI preset is what the page is showing, which is what its extra fetch follows. */
   private readonly isModelPreset = computed(() => this.isPreset('model'));
   /**
@@ -398,6 +420,35 @@ export class ProjectionCreateComponent {
   isCopyOf(id: string): boolean {
     const point = this.startingPoint();
     return point.kind === 'copy' && point.id === id;
+  }
+
+  toggleShowAllOwn(): void {
+    this.showAllOwn.update((showing) => !showing);
+  }
+
+  toggleShowAllShared(): void {
+    this.showAllShared.update((showing) => !showing);
+  }
+
+  /**
+   * The rows a copy group shows: its first few, plus the picked board when the cap would
+   * otherwise have hidden it. Whatever the page is about to create from stays on the page —
+   * that is what the tabs cost, and a cap that could hide the answer would cost it again.
+   */
+  private visibleBoards(
+    boards: readonly ProjectionSummaryResponse[],
+    showAll: boolean,
+  ): readonly ProjectionSummaryResponse[] {
+    if (showAll || boards.length <= VISIBLE_BOARDS) {
+      return boards;
+    }
+    const shown = boards.slice(0, VISIBLE_BOARDS);
+    const point = this.startingPoint();
+    if (point.kind !== 'copy' || shown.some((board) => board.id === point.id)) {
+      return shown;
+    }
+    const picked = boards.find((board) => board.id === point.id);
+    return picked ? [...shown, picked] : shown;
   }
 
   /** Whose numbers a row holds, said in the row rather than only by the heading above it. */

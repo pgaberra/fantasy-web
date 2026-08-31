@@ -77,6 +77,38 @@
   color: var(--color-text-subtle);
 }
 
+/* The first heading answers straight to "Starting point" above it, so it keeps the spacing that
+   label already set rather than adding a gap of its own. */
+.sources > .group-title:first-of-type {
+  margin-top: 0;
+}
+
+/* Said rather than left blank, because the import box that fills this group sits below it: an
+   empty heading with a text field under it reads as a group that failed to load. */
+.group-empty {
+  margin: 0;
+  padding: var(--space-3) 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
+}
+
+.show-all {
+  appearance: none;
+  margin-top: var(--space-2);
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.show-all:hover {
+  text-decoration: underline;
+}
+
 .rows {
   list-style: none;
   margin: 0;
@@ -95,16 +127,15 @@
   border-top: 1px solid var(--color-border);
 }
 
-/* Everything but the tip is the label, so the name selects the row as the radio does — the
-   target a list of one-line choices otherwise makes needlessly small. The tip stays outside it:
-   a `<button>` is interactive content, and a label may not contain any — some browsers would
-   let a tap on it pick the row. */
+/* The whole row is the label, so anywhere in it selects as the radio does — the target a list
+   of one-line choices otherwise makes needlessly small. It stretches now that no row carries a
+   tip beside the name: the tip was a `<button>`, a label may not contain interactive content,
+   and it had to sit outside a row-choice that stopped short of it. */
 .row-choice {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  /* Not stretched: the tip belongs beside the name it explains, not out at the row's edge. */
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-width: 0;
   cursor: pointer;
 }
@@ -127,7 +158,8 @@
   color: var(--color-text-subtle);
 }
 
-.sources app-share-import {
+/* Below the groups rather than inside them — see the comment on it in the template. */
+app-share-import {
   display: block;
   margin-top: var(--space-3);
 }

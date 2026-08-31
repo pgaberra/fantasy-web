@@ -43,7 +43,13 @@
         The draft picker groups the same three sources the same way (draft-start.html).
       -->
       <div class="sources" role="group" aria-labelledby="starting-point-label">
-        <div class="rows rows--presets">
+        <!--
+          The presets are a group like the other two, under a heading of their own. Unlabelled
+          they read as the question itself and the boards below as an afterthought, which is
+          the only hierarchy the page ever offered: three groups, one of them nameless.
+        -->
+        <h2 class="group-title" id="preset-group-title">Presets</h2>
+        <div class="rows rows--presets" role="group" aria-labelledby="preset-group-title">
           @for (preset of presets; track preset.source) {
             <div class="row">
               <label class="row-choice">
@@ -53,9 +59,11 @@
                   [checked]="isPreset(preset.source)"
                   (change)="selectPreset(preset.source)"
                 />
-                <span class="row-name">{{ preset.name }}</span>
+                <span class="row-main">
+                  <span class="row-name">{{ preset.name }}</span>
+                  <span class="row-meta">{{ preset.description }}</span>
+                </span>
               </label>
-              <app-help-tip [label]="preset.tipLabel" [text]="preset.description" />
             </div>
           }
         </div>
@@ -63,7 +71,7 @@
         @if (ownProjections().length) {
           <h2 class="group-title" id="own-group-title">Copy one of yours</h2>
           <div class="rows" role="group" aria-labelledby="own-group-title">
-            @for (projection of ownProjections(); track projection.id) {
+            @for (projection of visibleOwnProjections(); track projection.id) {
               <div class="row">
                 <label class="row-choice">
                   <input
@@ -80,12 +88,19 @@
               </div>
             }
           </div>
+          @if (hasMoreOwn()) {
+            <button type="button" class="show-all" (click)="toggleShowAllOwn()">
+              {{
+                showAllOwn() ? 'Show fewer' : 'Show all ' + ownProjections().length + ' projections'
+              }}
+            </button>
+          }
         }
 
         <h2 class="group-title" id="shared-group-title">Shared with you</h2>
         @if (importedBoards().length) {
           <div class="rows" role="group" aria-labelledby="shared-group-title">
-            @for (board of importedBoards(); track board.id) {
+            @for (board of visibleImportedBoards(); track board.id) {
               <div class="row">
                 <label class="row-choice">
                   <input
@@ -104,9 +119,26 @@
               </div>
             }
           </div>
+          @if (hasMoreShared()) {
+            <button type="button" class="show-all" (click)="toggleShowAllShared()">
+              {{
+                showAllShared() ? 'Show fewer' : 'Show all ' + importedBoards().length + ' boards'
+              }}
+            </button>
+          }
+        } @else {
+          <p class="group-empty">
+            Nobody's board here yet. Paste a share link below to start from someone else's numbers.
+          </p>
         }
-        <app-share-import label="Start from a shared board" (imported)="onImported($event)" />
       </div>
+
+      <!--
+        The import box is outside the radio group on purpose: a text field and a button are not
+        one of the answers, and inside `role="group"` they were read out as part of the same
+        question. It still sits directly under the group it fills.
+      -->
+      <app-share-import label="Start from a shared board" (imported)="onImported($event)" />
     </div>
 
     <div class="preview">
