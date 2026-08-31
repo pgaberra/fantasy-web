@@ -110,8 +110,12 @@
         [(useDefaultDecimals)]="useDefaultDecimals"
         [showFullSeasonButton]="true"
         [syncedLeagueName]="syncedLeagueName()"
+        [positionControls]="true"
+        [positionOverrides]="positionOverrides()"
         (manageSyncRequested)="showSyncDialog.set(true)"
         (fullSeasonRequested)="openFullSeasonDialog()"
+        (positionsChanged)="onPositionsChanged($event)"
+        (positionsReset)="onPositionsReset()"
       >
         <!-- The same slot says two different things. With no league yet, importing one is the
              fastest route to a useful projection, so it earns the toolbar's only primary button.

@@ -154,6 +154,9 @@ export class LandingDemoComponent {
       playerBasis: 'last_season',
       playerPoolSyncedAt: null,
       draft: null,
+      // The demo has no way to correct a position, so a board redeemed from it starts on
+      // whatever the read model reports — which is where a new projection starts anyway.
+      positionOverrides: new Map(),
       playerProjections: this.table()?.playerProjections?.() ?? [],
     };
   }
