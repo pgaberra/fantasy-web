@@ -3,8 +3,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { LandingDemoComponent } from './landing-demo';
+import { FullSeasonDialogComponent } from '../../draft-projection/full-season-dialog/full-season-dialog';
 import { PlayerProjectionsTableComponent } from '../../draft-projection/player-projections-table/player-projections-table';
-import { ProjectionSettingsSectionComponent } from '../../draft-projection/projection-settings-section/projection-settings-section';
 import { PlayerService } from '../../services/player.service';
 import { StatInfoService } from '../../services/stat-info.service';
 import { PendingProjectionService } from '../../services/pending-projection.service';
@@ -38,7 +38,7 @@ describe('LandingDemoComponent', () => {
     getPlayers.mockReturnValue(of(players));
     return MockBuilder(LandingDemoComponent)
       .mock(PlayerProjectionsTableComponent)
-      .mock(ProjectionSettingsSectionComponent)
+      .mock(FullSeasonDialogComponent)
       .mock(PlayerService, { getPlayers })
       .mock(PendingProjectionService, { stash })
       .keep(StatInfoService)
@@ -110,6 +110,21 @@ describe('LandingDemoComponent', () => {
     expect(navigate).toHaveBeenCalledWith(['/register']);
   });
 
+  it('offers the full-season scaling the editor offers, dialog and all', async () => {
+    const fixture = MockRender(LandingDemoComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const table = ngMocks.find(PlayerProjectionsTableComponent);
+    expect(ngMocks.input(table, 'showFullSeasonButton')).toBe(true);
+    expect(fixture.nativeElement.querySelector('app-full-season-dialog')).toBeNull();
+
+    ngMocks.output(table, 'fullSeasonRequested').emit();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('app-full-season-dialog')).not.toBeNull();
+  });
+
   it('includes the off-season player-data notice', async () => {
     const fixture = MockRender(LandingDemoComponent);
     await fixture.whenStable();
@@ -118,17 +133,33 @@ describe('LandingDemoComponent', () => {
     expect(fixture.nativeElement.querySelector('app-offseason-data-notice')).not.toBeNull();
   });
 
-  it('shows the Yahoo sync gated behind sign-in', async () => {
+  // The editor keeps its settings in the table's own toolbar and header menus, so the demo has
+  // to hand the table the same controls — otherwise the landing page advertises a screen the
+  // product no longer has.
+  it("gives the table the editor's column and league controls", async () => {
     const fixture = MockRender(LandingDemoComponent);
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const text = fixture.nativeElement.textContent;
-    expect(text).toContain('Sync your Yahoo league');
-    expect(text).toContain('Sign in to connect Yahoo');
+    const table = ngMocks.find(PlayerProjectionsTableComponent);
+    expect(ngMocks.input(table, 'columnControls')).toBe(true);
+    expect(fixture.nativeElement.querySelector('app-projection-settings-section')).toBeNull();
   });
 
-  it('hides the sync teaser entirely when no platform can be synced', async () => {
+  it("offers the league import behind sign-in, in the editor's toolbar slot", async () => {
+    const fixture = MockRender(LandingDemoComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const importLink: HTMLAnchorElement | null =
+      fixture.nativeElement.querySelector('.demo-import');
+    expect(importLink).not.toBeNull();
+    expect(importLink!.textContent).toContain('Import league');
+    expect(importLink!.getAttribute('routerLink')).toEqual('/register');
+    expect(importLink!.hasAttribute('table-toolbar-actions')).toBe(true);
+  });
+
+  it('hides the import call to action when no platform can be synced', async () => {
     const originalEspn = environment.espnLeaguesEnabled;
     environment.yahooSyncDisabled = true;
     environment.espnLeaguesEnabled = false;
@@ -138,18 +169,16 @@ describe('LandingDemoComponent', () => {
       fixture.detectChanges();
 
       // Same behaviour as app-league-sync in the signed-in editor: with nothing to sync the
-      // section is absent rather than advertising a dead end behind a disabled button.
-      expect(fixture.nativeElement.querySelector('.demo-yahoo-gate')).toBeNull();
-      const text = fixture.nativeElement.textContent;
-      expect(text).not.toContain('Sync your Yahoo league');
-      expect(text).not.toContain('Sign in to connect Yahoo');
+      // button is absent rather than advertising a dead end.
+      expect(fixture.nativeElement.querySelector('.demo-import')).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('Import league');
     } finally {
       environment.yahooSyncDisabled = false;
       environment.espnLeaguesEnabled = originalEspn;
     }
   });
 
-  it('keeps the teaser while ESPN is still syncable, even with Yahoo off', async () => {
+  it('keeps the import while ESPN is still syncable, even with Yahoo off', async () => {
     const originalEspn = environment.espnLeaguesEnabled;
     environment.yahooSyncDisabled = true;
     environment.espnLeaguesEnabled = true;
@@ -158,10 +187,10 @@ describe('LandingDemoComponent', () => {
       await fixture.whenStable();
       fixture.detectChanges();
 
-      expect(fixture.nativeElement.querySelector('.demo-yahoo-gate')).not.toBeNull();
+      const importLink = fixture.nativeElement.querySelector('.demo-import');
+      expect(importLink).not.toBeNull();
       // Naming Yahoo here would advertise a sync the editor doesn't offer.
-      expect(fixture.nativeElement.textContent).toContain('Sync your ESPN league');
-      expect(fixture.nativeElement.textContent).not.toContain('Yahoo league');
+      expect(fixture.point.componentInstance['syncablePlatforms']).toEqual('ESPN');
     } finally {
       environment.yahooSyncDisabled = false;
       environment.espnLeaguesEnabled = originalEspn;

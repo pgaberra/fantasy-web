@@ -9,57 +9,26 @@
 } @else {
   <div class="demo-card">
     <app-offseason-data-notice />
-    <app-projection-settings-section
+
+    <!-- Bound exactly as the signed-in editor binds it, column controls included: the settings
+         live in the table's own toolbar and header menus there, so a demo that kept the old
+         settings panel above the table was showing a screen the product no longer has. -->
+    <app-player-projections-table
       [(scoringType)]="scoringType"
+      [(statWeights)]="statWeights"
+      [players]="players()"
+      [columnControls]="true"
       [(activeScoringColumns)]="activeScoringColumns"
       [(activeUtilityColumns)]="activeUtilityColumns"
-      [(scaleSettings)]="scaleSettings"
-      [(useDefaultDecimals)]="useDefaultDecimals"
       [(leagueSize)]="leagueSize"
       [(rosterSlots)]="rosterSlots"
       [(minGoalieGames)]="minGoalieGames"
-    >
-      @if (!syncDisabled) {
-        <div class="demo-yahoo-gate">
-          <div class="demo-yahoo-brand">
-            <svg
-              class="yahoo-logo"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path
-                d="M18.86 1.56L14.27 11.87H19.4L24 1.56H18.86M0 6.71L5.15 18.27L3.3 22.44H7.83L14.69 6.71H10.19L7.39 13.44L4.62 6.71H0M15.62 12.87C13.95 12.87 12.71 14.12 12.71 15.58C12.71 17 13.91 18.19 15.5 18.19C17.18 18.19 18.43 16.96 18.43 15.5C18.43 14.03 17.23 12.87 15.62 12.87Z"
-              />
-            </svg>
-            <div class="demo-yahoo-text">
-              <span class="demo-yahoo-title">Sync your {{ syncablePlatforms }} league</span>
-              <span class="demo-yahoo-note"
-                >Import your league's exact scoring and roster in one click.</span
-              >
-            </div>
-          </div>
-          <a routerLink="/register" class="btn btn-secondary btn-sm">{{
-            espnEnabled ? 'Sign in to connect your league' : 'Sign in to connect Yahoo'
-          }}</a>
-        </div>
-      }
-    </app-projection-settings-section>
-
-    <app-player-projections-table
-      [scoringType]="scoringType()"
-      [(statWeights)]="statWeights"
-      [players]="players()"
-      [(activeScoringColumns)]="activeScoringColumns"
-      [(activeUtilityColumns)]="activeUtilityColumns"
-      [scaleSettings]="scaleSettings()"
+      [(scaleSettings)]="scaleSettings"
       [(decimalSettings)]="decimalSettings"
-      [useDefaultDecimals]="useDefaultDecimals()"
-      [leagueSize]="leagueSize()"
-      [rosterSlots]="rosterSlots()"
-      [minGoalieGames]="minGoalieGames()"
+      [(useDefaultDecimals)]="useDefaultDecimals"
+      [showFullSeasonButton]="true"
       [maxVisiblePlayers]="visiblePlayers"
+      (fullSeasonRequested)="openFullSeasonDialog()"
     >
       <button
         table-actions
@@ -69,6 +38,46 @@
       >
         Save projection
       </button>
+
+      <!-- The editor's Import league button, in the same toolbar slot and with the same icon.
+           Importing needs an account, so this one leads to the sign-up instead of the sync
+           dialog, and the tooltip says so rather than the button opening onto a dead end.
+           Secondary rather than the editor's primary, which is the treatment this slot already
+           takes once a league is connected: on this page the primary is Save projection, and two
+           filled buttons stacked in the same header read as two competing calls to action. -->
+      @if (!syncDisabled) {
+        <a
+          table-toolbar-actions
+          routerLink="/register"
+          class="btn btn-secondary btn-sm demo-import"
+          [appTooltip]="
+            'Sign in to import your ' + syncablePlatforms + ' league scoring and roster'
+          "
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-7.5-4M3 12a9 9 0 0 1 9-9 9 9 0 0 1 7.5 4" />
+            <path d="M21 3v5h-5M3 21v-5h5" />
+          </svg>
+          Import league
+        </a>
+      }
     </app-player-projections-table>
+
+    @if (showFullSeasonDialog()) {
+      <app-full-season-dialog
+        (confirm)="applyFullSeason($event)"
+        (cancelled)="cancelFullSeason()"
+      />
+    }
   </div>
 }
