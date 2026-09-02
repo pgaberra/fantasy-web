@@ -1,4 +1,4 @@
-import { MockBuilder, MockRender } from 'ng-mocks';
+import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
 import { Router } from '@angular/router';
@@ -333,7 +333,83 @@ describe('DraftStartComponent', () => {
     expect(text('.section-title')).toEqual(['Start a new draft']);
     expect(text('.group-title')).toEqual(['Presets', 'Your projections', 'Shared with you']);
     expect(fixture.nativeElement.querySelector('app-share-import')).not.toBeNull();
-    expect(fixture.nativeElement.querySelectorAll('.row')).toHaveLength(PRESETS.length + 1);
+    expect(fixture.nativeElement.querySelectorAll('.preset')).toHaveLength(PRESETS.length);
+    expect(fixture.nativeElement.querySelectorAll('.row')).toHaveLength(1);
+  });
+
+  // A preset needs nothing of the user's, so it is the page's ready-made way in and gets the
+  // loud button; a projection or a shared board is work someone did first and is found by
+  // name, so its row can be quiet. One list of identical buttons gave the page no way in.
+  it('offers the presets as cards with the loud button, and the rest as quiet rows', async () => {
+    listWithPresetDrafts.mockReturnValue(
+      of([summary('p1', 'projection', 'none'), imported('i1', 'alex')]),
+    );
+
+    const fixture = MockRender(DraftStartComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const presetButtons = Array.from(
+      fixture.nativeElement.querySelectorAll('.preset .start') as NodeListOf<HTMLElement>,
+    );
+    const rowButtons = Array.from(
+      fixture.nativeElement.querySelectorAll('.row .start') as NodeListOf<HTMLElement>,
+    );
+
+    expect(presetButtons).toHaveLength(PRESETS.length);
+    expect(presetButtons.every((button) => button.classList.contains('btn-primary'))).toBe(true);
+    expect(rowButtons.map((button) => button.textContent?.trim())).toEqual([
+      'Start draft',
+      'Start draft',
+    ]);
+    expect(rowButtons.every((button) => button.classList.contains('btn-secondary'))).toBe(true);
+  });
+
+  // Resuming is what most visits are for; reading a summary is not. The two used to share a
+  // button, so a page of finished drafts was as loud as a page of drafts still being made.
+  it('gives the resume the loud button and the summary the quiet one', async () => {
+    listWithPresetDrafts.mockReturnValue(
+      of([
+        summary('p1', 'projection', 'in_progress'),
+        summary('p2', 'projection', 'finished', '2026-06-20T00:00:00Z'),
+      ]),
+    );
+
+    const fixture = MockRender(DraftStartComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const resumes = Array.from(
+      fixture.nativeElement.querySelectorAll('.draft .resume') as NodeListOf<HTMLElement>,
+    );
+    const statuses = Array.from(
+      fixture.nativeElement.querySelectorAll('.draft-status') as NodeListOf<HTMLElement>,
+    ).map((status) => status.textContent?.trim());
+
+    expect(resumes.map((button) => button.textContent?.trim())).toEqual([
+      'Resume draft',
+      'View summary',
+    ]);
+    expect(resumes[0].classList.contains('btn-primary')).toBe(true);
+    expect(resumes[1].classList.contains('btn-secondary')).toBe(true);
+    expect(statuses).toEqual(['In progress', 'Complete']);
+  });
+
+  // The empty state links to the new-projection page; a list that is not empty used to lose
+  // that door, though it is the only way to more projections from here.
+  it('keeps the way to a new projection beside the projections already listed', async () => {
+    listWithPresetDrafts.mockReturnValue(of([summary('p1', 'projection', 'none')]));
+
+    const fixture = MockRender(DraftStartComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    // RouterLink is mocked away with the rest of the router here, so the anchor carries no
+    // href; the directive's input is what says where it goes.
+    const link = ngMocks.find(fixture, '.create-projection');
+
+    expect(ngMocks.input(link, 'routerLink')).toEqual('/projections/new');
+    expect(link.nativeElement.textContent?.trim()).toEqual('+ Create a new projection');
   });
 
   it('leads with the drafts, and drops their sources out of the lists below', async () => {

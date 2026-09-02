@@ -49,8 +49,27 @@
   color: var(--color-text-subtle);
 }
 
+.group-footer {
+  margin: var(--space-2) 0 0;
+  padding: 0 0.15rem;
+  font-size: var(--text-sm);
+}
+
+.group-link {
+  color: var(--color-text-subtle);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+}
+
+.group-link:hover,
+.group-link:focus-visible {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
 .rows,
-.drafts {
+.drafts,
+.presets {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -60,6 +79,7 @@
    progress the user is being offered back, the other is a menu of things to begin. */
 .draft {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
   padding: 0.7rem 0.9rem;
@@ -78,6 +98,25 @@
 
 .draft + .draft {
   margin-top: var(--space-2);
+}
+
+/* The state of the draft, in colour, before its name: blue is the one still being made and
+   green the one that is over. Tinted rather than filled, so a list of them does not turn into
+   a column of badges louder than the buttons. */
+.draft-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: rgba(28, 98, 235, 0.1);
+  color: var(--color-accent);
+}
+
+.draft--done .draft-icon {
+  background: rgba(17, 126, 57, 0.1);
+  color: var(--color-success);
 }
 
 .draft-main {
@@ -114,11 +153,12 @@
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   border-radius: var(--radius-pill);
-  background: var(--color-surface-hover);
-  color: var(--color-text-subtle);
+  background: rgba(28, 98, 235, 0.1);
+  color: var(--color-accent);
 }
 
 .draft-status--done {
+  background: rgba(17, 126, 57, 0.1);
   color: var(--color-success);
 }
 
@@ -132,6 +172,73 @@
    longer of them the kebab beside it lands at a different x on every card. */
 .draft-actions .resume {
   min-width: 7.5rem;
+}
+
+/* The question and its two buttons are wider than the resume they replace, and beside the
+   name they squeezed it down to "My…". They take a line of their own under it instead, and
+   the card grows by that line for as long as it is asking. */
+.draft--confirming .draft-actions {
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* The presets sit side by side, each a card of its own: they are the ready-made way in, and
+   two of them across the page read as a choice rather than as the top of a long list. One on
+   its own (the other already drafted) takes the full width instead of half. */
+.presets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--space-3);
+}
+
+.preset {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition);
+}
+
+.preset:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+.preset-icon {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  color: var(--color-primary);
+}
+
+.preset-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  /* Pushes the button to the bottom, so the two cards' buttons line up whatever the length of
+     the description above them. */
+  flex: 1;
+}
+
+.preset-name {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+
+.preset-meta {
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--color-text-subtle);
 }
 
 .row {
@@ -253,24 +360,42 @@
 }
 
 @media (max-width: 640px) {
-  .row,
-  .draft {
+  .row {
     flex-wrap: wrap;
   }
 
-  .row-main,
-  .draft-main {
+  .row-main {
     flex-basis: 100%;
   }
 
-  /* The card stacks here, so the actions become a row of their own and the kebab would sit
-     against the Resume button, reading as a second action rather than the card's own menu. */
+  /* The icon and the name share the first line; the actions take a line of their own under
+     them, with the kebab at the far edge so it reads as the card's menu rather than a second
+     button beside the resume. */
+  .draft-main {
+    flex-basis: calc(100% - 2.25rem - var(--space-3));
+  }
+
+  .draft-actions {
+    flex-basis: 100%;
+    flex-wrap: wrap;
+  }
+
+  /* The whole line is the question; the answer goes on the line after it. */
+  .draft--confirming .confirm-text {
+    flex-basis: 100%;
+    text-align: right;
+  }
+
   .draft-menu {
     margin-left: auto;
     /* No hover on touch, so the trigger stays at full strength, with a full 44px target. */
     width: 2.75rem;
     height: 2.75rem;
     color: var(--color-text-muted);
+  }
+
+  .preset .btn {
+    width: 100%;
   }
 
   .import-controls {

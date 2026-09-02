@@ -60,7 +60,11 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   each; they were tabs, and a tab hid two thirds of the answer, the paste-a-share-link
   field included (`projection-create` groups the same three the same way, in the same
   order). Drafts left mid-way are lifted out of the groups into a strip at the top, since
-  resuming one is what most visits are for. The shared group carries the field;
+  resuming one is what most visits are for. The buttons carry the hierarchy: **Resume
+  draft** and the two preset cards are the only filled buttons on the page; a finished
+  draft's *View summary* and every *Start draft* on a projection or shared-board row are
+  outlined, so the page reads as "pick up where you were, or just draft" rather than as a
+  column of identical buttons. The shared group carries the field;
   `shareTokenFrom` accepts a whole URL, a `/s/…` path, or a bare token, and a name clash
   (409) asks for a name rather than reporting a failure the user cannot act on.
   A preset draft has no projection behind it, so starting one creates a projection of
