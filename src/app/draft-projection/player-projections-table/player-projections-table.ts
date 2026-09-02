@@ -12,6 +12,7 @@ import {
   signal,
 } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
+import { PlayerInjury } from '../../api/models/player-injury';
 import { Player } from '../../models/player.model';
 import { PositionOverrides } from '../../models/position-override';
 import { SkaterPosition } from '../../models/position.model';
@@ -422,6 +423,23 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   isRookie(playerId: number): boolean {
     return this.rookieIds()?.has(playerId) ?? false;
+  }
+
+  /**
+   * The current injury report, or null while unknown — still loading, or a server without
+   * the projection service, which reads the same way here: no marker rather than a fit league.
+   */
+  private readonly injuryResource = rxResource({
+    stream: () => this.playerService.getInjuries(),
+    defaultValue: null as Map<number, PlayerInjury> | null,
+  });
+
+  readonly injuries = computed(() =>
+    this.injuryResource.hasValue() ? this.injuryResource.value() : null,
+  );
+
+  injuryFor(playerId: number): PlayerInjury | null {
+    return this.injuries()?.get(playerId) ?? null;
   }
 
   private filterByRookie(scored: ScoredProjection[]): ScoredProjection[] {
