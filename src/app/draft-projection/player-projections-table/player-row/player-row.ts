@@ -1,5 +1,7 @@
+import { formatDate } from '@angular/common';
 import { Component, computed, inject, input, output, Signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { PlayerInjury } from '../../../api/models/player-injury';
 import { Player } from '../../../models/player.model';
 import { StatKey } from '../../../models/stat-key.model';
 import {
@@ -44,6 +46,41 @@ export class PlayerRowComponent {
 
     return `${this.positionRank()} (${this.totalRank()})`;
   });
+
+  /**
+   * The badge text: short enough to sit beside a name without pushing the numbers along. The
+   * report's own words are longer than the space, so they are abbreviated to the forms a fantasy
+   * manager already reads on a roster page.
+   */
+  readonly injuryLabel = computed(() => {
+    const status = this.injury()?.status;
+    if (!status) {
+      return '';
+    }
+    if (status === 'Day-To-Day') {
+      return 'DTD';
+    }
+    if (status === 'Suspension') {
+      return 'SUSP';
+    }
+    return status === 'Injured Reserve' ? 'IR' : 'OUT';
+  });
+
+  /** The whole of what the report says, for the reader who stops on the badge. */
+  readonly injuryTitle = computed(() => {
+    const injury = this.injury();
+    if (!injury) {
+      return '';
+    }
+    const parts = [injury.status];
+    if (injury.bodyPart) {
+      parts.push(injury.bodyPart.toLowerCase());
+    }
+    if (injury.expectedReturn) {
+      parts.push(`expected back ${formatDate(injury.expectedReturn, 'd MMMM', 'en')}`);
+    }
+    return parts.join(', ');
+  });
   projection = input.required<Projection>();
   playerScore = input.required<PlayerScore>();
   scoringType = input.required<ScoringType>();
@@ -51,6 +88,8 @@ export class PlayerRowComponent {
   player = input.required<Player>();
   /** Whether this player is a rookie this season. False also covers "we could not find out". */
   rookie = input<boolean>(false);
+  /** The current injury report for this player, or null when he is not on it. */
+  injury = input<PlayerInjury | null>(null);
   decimalSettings = input.required<Record<DecimalStatKey, number>>();
   isEditing = input<boolean>(false);
   belowMinGames = input<boolean>(false);
