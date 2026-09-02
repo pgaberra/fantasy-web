@@ -2,7 +2,10 @@ import { Component, computed, inject, signal, viewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { PlayerProjectionsTableComponent } from '../../draft-projection/player-projections-table/player-projections-table';
-import { ProjectionSettingsSectionComponent } from '../../draft-projection/projection-settings-section/projection-settings-section';
+import {
+  FullSeasonConfig,
+  FullSeasonDialogComponent,
+} from '../../draft-projection/full-season-dialog/full-season-dialog';
 import { PlayerService } from '../../services/player.service';
 import { StatInfoService } from '../../services/stat-info.service';
 import { PendingProjectionService } from '../../services/pending-projection.service';
@@ -11,6 +14,7 @@ import { ProjectionState } from '../../services/projection-serializer';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../../shared/error-state/error-state';
 import { OffseasonDataNoticeComponent } from '../../shared/offseason-data-notice/offseason-data-notice';
+import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import { ScoringType } from '../../models/projection.model';
 import { Player } from '../../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../../models/stat-key.model';
@@ -42,8 +46,9 @@ const DEMO_VISIBLE_PLAYERS = 50;
   selector: 'app-landing-demo',
   imports: [
     RouterLink,
-    ProjectionSettingsSectionComponent,
+    TooltipDirective,
     PlayerProjectionsTableComponent,
+    FullSeasonDialogComponent,
     LoadingIndicatorComponent,
     ErrorStateComponent,
     OffseasonDataNoticeComponent,
@@ -58,16 +63,16 @@ export class LandingDemoComponent {
   private readonly pendingProjection = inject(PendingProjectionService);
   private readonly router = inject(Router);
 
-  protected readonly espnEnabled = environment.espnLeaguesEnabled;
-  // Naming a platform whose sync is turned off would advertise something the editor then
-  // doesn't offer, which is what happened on staging while Yahoo was down for the off-season.
+  // Named in the tooltip. Naming a platform whose sync is turned off would advertise something
+  // the editor then doesn't offer, which is what happened on staging while Yahoo was down for
+  // the off-season.
   protected readonly syncablePlatforms = [
     environment.yahooSyncDisabled ? null : 'Yahoo',
     environment.espnLeaguesEnabled ? 'ESPN' : null,
   ]
     .filter(Boolean)
     .join(' or ');
-  // The teaser disappears entirely when no platform can be synced at all, mirroring
+  // The call to action disappears entirely when no platform can be synced at all, mirroring
   // app-league-sync in the signed-in editor rather than advertising a dead end. ESPN staying
   // available through the Yahoo off-season keeps the call to action live.
   protected readonly syncDisabled =
@@ -97,6 +102,23 @@ export class LandingDemoComponent {
   readonly leagueSize = signal<number>(DEFAULT_LEAGUE_SIZE);
   readonly rosterSlots = signal<RosterSlots>(DEFAULT_ROSTER_SLOTS);
   readonly minGoalieGames = signal<number>(DEFAULT_MIN_GOALIE_GAMES);
+
+  // The GP column's full-season action, wired exactly as the editor wires it. Without the dialog
+  // behind it the button in the header would be dead, so it comes along with the rest.
+  readonly showFullSeasonDialog = signal<boolean>(false);
+
+  openFullSeasonDialog(): void {
+    this.showFullSeasonDialog.set(true);
+  }
+
+  cancelFullSeason(): void {
+    this.showFullSeasonDialog.set(false);
+  }
+
+  applyFullSeason(config: FullSeasonConfig): void {
+    this.table()?.applyFullSeasonGames(config.scaleStats, config.minGamesToScale);
+    this.showFullSeasonDialog.set(false);
+  }
 
   retryLoad(): void {
     this.playersResource.reload();
@@ -132,6 +154,9 @@ export class LandingDemoComponent {
       playerBasis: 'last_season',
       playerPoolSyncedAt: null,
       draft: null,
+      // The demo has no way to correct a position, so a board redeemed from it starts on
+      // whatever the read model reports — which is where a new projection starts anyway.
+      positionOverrides: new Map(),
       playerProjections: this.table()?.playerProjections?.() ?? [],
     };
   }

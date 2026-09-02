@@ -2,55 +2,10 @@
   text-align: left;
 }
 
-.demo-save {
-  flex-shrink: 0;
-  text-decoration: none;
-}
-
-.demo-yahoo-gate {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  border: 1px dashed var(--color-border-strong);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-alt);
-}
-
-.demo-yahoo-brand {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.yahoo-logo {
-  width: 1.15rem;
-  height: 1.15rem;
-  flex-shrink: 0;
-  color: #6001d2;
-}
-
-.demo-yahoo-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.demo-yahoo-title {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  color: var(--color-text);
-}
-
-.demo-yahoo-note {
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-}
-
-.demo-yahoo-gate .btn {
+/* Both calls to action are anchors or buttons dropped into the table's own toolbar, so they
+   only need what an anchor doesn't inherit from .btn. */
+.demo-save,
+.demo-import {
   flex-shrink: 0;
   text-decoration: none;
 }

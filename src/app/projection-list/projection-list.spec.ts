@@ -188,6 +188,21 @@ describe('ProjectionListComponent', () => {
     expect(navigate).toHaveBeenCalledWith(['/projections', 'new1']);
   });
 
+  // The carried-over board joins the same list an imported one is in, and one namespace covers
+  // both, so it may not take a name an imported board already holds either.
+  it('saves the demo under a name no imported board is using', async () => {
+    listEditable.mockReturnValue(
+      of([{ ...summaries[0], kind: 'imported' as const, name: 'My Projection' }]),
+    );
+    peek.mockReturnValue(demoData);
+    createProjection.mockReturnValue(of({ id: 'new1' }));
+
+    const fixture = MockRender(ProjectionListComponent);
+    await fixture.whenStable();
+
+    expect(createProjection).toHaveBeenCalledWith({ name: 'My Projection 2', data: demoData });
+  });
+
   it('keeps the demo stash when saving it fails, so it can be retried', async () => {
     listEditable.mockReturnValue(of([]));
     peek.mockReturnValue(demoData);

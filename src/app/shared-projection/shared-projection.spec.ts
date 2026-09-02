@@ -1,4 +1,4 @@
-import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
+import { MockBuilder, MockedComponentFixture, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from 'vitest';
 import { of, Subject, throwError } from 'rxjs';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -158,9 +158,148 @@ describe('SharedProjectionComponent', () => {
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
 
-    component.positionFilter.set('G');
+    component.setPositionFilter('G');
 
     expect(component.visibleRows().map((row) => row.player.name)).toEqual(['Igor Shesterkin']);
+  });
+
+  /**
+   * A published board ranks everyone together, so a reader who narrows it to one position is
+   * looking at rows numbered 7, 10, 13 — the board's ranking, with the gaps left in. The editor
+   * answers this by counting the position and keeping the board's number in brackets, and a
+   * shared board says the same thing.
+   */
+  describe('narrowing to one position', () => {
+    /**
+     * Two left wings with a centre above them, so the position's ranks and the board's differ,
+     * and a goalie at the foot of it, so there is something to see under the goalie filter.
+     */
+    const wingers: SharedProjectionResponse = {
+      ...shared,
+      totalPlayers: 4,
+      data: {
+        ...shared.data,
+        settings: {
+          ...shared.data.settings,
+          activeScoringColumns: ['goals', 'assists', 'w'],
+        },
+        players: [
+          shared.data.players[0],
+          {
+            playerId: 2,
+            name: 'Jason Robertson',
+            teamAbbrev: 'DAL',
+            positions: ['LW'],
+            type: 'skater' as const,
+            rank: 2,
+            value: 352.6,
+            stats: { utility: { gp: 84 }, scoring: { goals: 35, assists: 47 } },
+          },
+          {
+            playerId: 3,
+            name: 'Kirill Kaprizov',
+            teamAbbrev: 'MIN',
+            positions: ['LW'],
+            type: 'skater' as const,
+            rank: 3,
+            value: 325.9,
+            stats: { utility: { gp: 70 }, scoring: { goals: 36, assists: 40 } },
+          },
+          { ...shared.data.players[1], rank: 4 },
+        ],
+      },
+    };
+
+    beforeEach(() => {
+      loadShared.mockReturnValue(of(wingers));
+    });
+
+    it('counts the position from one, with the board rank in brackets', async () => {
+      const fixture = await render();
+
+      fixture.point.componentInstance.setPositionFilter('LW');
+      fixture.detectChanges();
+
+      const ranks = Array.from(
+        fixture.nativeElement.querySelectorAll('tbody .col-rank') as NodeListOf<HTMLElement>,
+      ).map((cell) => cell.textContent?.trim());
+      expect(ranks).toEqual(['1 (2)', '2 (3)']);
+    });
+
+    it('shows the published rank alone while the whole board is on screen', async () => {
+      const fixture = await render();
+
+      const ranks = Array.from(
+        fixture.nativeElement.querySelectorAll('tbody .col-rank') as NodeListOf<HTMLElement>,
+      ).map((cell) => cell.textContent?.trim());
+      expect(ranks).toEqual(['1', '2', '3', '4']);
+    });
+
+    it('counts off the published ranking, not the column being sorted', async () => {
+      const fixture = await render();
+      const component = fixture.point.componentInstance;
+
+      component.setPositionFilter('LW');
+      // Kaprizov outscores Robertson, so this puts the board's third row on top of the two.
+      component.onSort('goals');
+      fixture.detectChanges();
+
+      const ranks = Array.from(
+        fixture.nativeElement.querySelectorAll('tbody .col-rank') as NodeListOf<HTMLElement>,
+      ).map((cell) => cell.textContent?.trim());
+      expect(ranks).toEqual(['2 (3)', '1 (2)']);
+    });
+
+    /** The cells of the first row: rank, name, the columns on screen, and the value. */
+    const firstRowCells = (fixture: MockedComponentFixture<SharedProjectionComponent>): number =>
+      fixture.nativeElement.querySelectorAll('tbody tr:first-child td').length;
+
+    it('drops the goalie columns when the filter leaves only skaters', async () => {
+      const fixture = await render();
+
+      fixture.point.componentInstance.setPositionFilter('LW');
+      fixture.detectChanges();
+
+      const columns = fixture.point.componentInstance.filteredActiveColumns();
+      expect([...columns.scoring]).toEqual(['goals', 'assists']);
+      expect([...columns.utility]).toEqual(['gp']);
+      // Rank, name, GP, goals, assists, value: no column of dashes where the wins would be.
+      expect(firstRowCells(fixture)).toEqual(6);
+    });
+
+    it('drops the skater columns when the filter leaves only goalies', async () => {
+      const fixture = await render();
+
+      fixture.point.componentInstance.setPositionFilter('G');
+      fixture.detectChanges();
+
+      const columns = fixture.point.componentInstance.filteredActiveColumns();
+      expect([...columns.scoring]).toEqual(['w']);
+      expect([...columns.utility]).toEqual(['gp']);
+      // Rank, name, GP, wins, value.
+      expect(firstRowCells(fixture)).toEqual(5);
+    });
+
+    it('falls back to the published order when the sorted column is filtered away', async () => {
+      const fixture = await render();
+      const component = fixture.point.componentInstance;
+
+      component.onSort('w');
+      component.setPositionFilter('LW');
+
+      expect(component.sortColumn()).toEqual('summary');
+      expect(component.sortDirection()).toEqual('desc');
+    });
+
+    it('keeps a sorted column the filter still shows', async () => {
+      const fixture = await render();
+      const component = fixture.point.componentInstance;
+
+      component.onSort('goals');
+      component.setPositionFilter('LW');
+
+      expect(component.sortColumn()).toEqual('goals');
+    });
   });
 
   it('sorts by a stat column when its header is clicked', async () => {
@@ -269,7 +408,7 @@ describe('SharedProjectionComponent', () => {
       const component = fixture.point.componentInstance;
 
       component.showMore();
-      component.positionFilter.set('D');
+      component.setPositionFilter('D');
       expect(component.visibleRows().length).toEqual(50);
       expect(component.matchingCount()).toEqual(200);
 
@@ -311,7 +450,7 @@ describe('SharedProjectionComponent', () => {
     it('asks again when the position filter changes', async () => {
       const fixture = await render();
 
-      fixture.point.componentInstance.positionFilter.set('D');
+      fixture.point.componentInstance.setPositionFilter('D');
       await fixture.whenStable();
 
       expect(loadShared).toHaveBeenLastCalledWith('abc123', {

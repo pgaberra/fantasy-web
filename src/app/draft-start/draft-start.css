@@ -14,8 +14,22 @@
   margin: var(--space-1) 0 var(--space-5);
 }
 
+/* The page's two questions. They carry the weight the group headings used to share equally
+   with them, so that "which draft am I in" and "what do I start" read as the two halves of the
+   page rather than as four lists of the same rank. */
+.section-title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+
+.section + .section {
+  margin-top: var(--space-6);
+}
+
 .group-title {
-  margin: 0 0 var(--space-2);
+  margin: var(--space-5) 0 var(--space-2);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   text-transform: uppercase;
@@ -23,94 +37,101 @@
   color: var(--color-text-subtle);
 }
 
-.resume {
-  margin-bottom: var(--space-5);
+.group-title:first-of-type {
+  margin-top: 0;
 }
 
-.tabs {
-  display: flex;
-  gap: var(--space-1);
-  padding: 0.2rem;
-  background: var(--color-surface-alt);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.tab {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  padding: 0.4rem 0.5rem;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  background: none;
-  font: inherit;
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition:
-    background var(--transition-fast),
-    color var(--transition-fast);
-}
-
-.tab:hover {
-  color: var(--color-text);
-}
-
-.tab--active {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  color: var(--color-primary);
-  font-weight: var(--weight-semibold);
-}
-
-.tab-count {
-  font-size: var(--text-xs);
-  color: var(--color-text-subtle);
-}
-
-/*
- * Three labels across a phone is about 115px each, and "Shared with you" needs more than that.
- * Wrapping is what the strip did before: a two-line label with the count floating beside it,
- * twice as tall as the other two tabs. A shorter word on the narrow end reads better than a
- * broken one, so each tab carries both and the width picks.
- */
-.tab-label--short {
-  display: none;
-}
-
-@media (max-width: 560px) {
-  .tab {
-    gap: 0.25rem;
-    padding: 0.4rem 0.25rem;
-  }
-
-  .tab-label {
-    display: none;
-  }
-
-  .tab-label--short {
-    display: inline;
-  }
-}
-
-.panel {
-  margin-top: var(--space-3);
-}
-
-.panel-empty {
+/* Each group is a heading with its rows under it; the headings carry the space between them. */
+.group-empty {
   margin: 0;
   padding: var(--space-3) 0;
   font-size: var(--text-sm);
   color: var(--color-text-subtle);
 }
 
-.rows {
+.rows,
+.drafts {
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+/* A draft is a card, a source is a line in a list. The difference is the point: one is work in
+   progress the user is being offered back, the other is a menu of things to begin. */
+.draft {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0.7rem 0.9rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition);
+}
+
+.draft:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+.draft + .draft {
+  margin-top: var(--space-2);
+}
+
+.draft-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.draft-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.draft-name {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.draft-meta {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+}
+
+.draft-status {
+  flex-shrink: 0;
+  padding: 0.05rem 0.45rem;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-hover);
+  color: var(--color-text-subtle);
+}
+
+.draft-status--done {
+  color: var(--color-success);
+}
+
+.draft-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Resume and View summary are not the same length, and without a floor wide enough for the
+   longer of them the kebab beside it lands at a different x on every card. */
+.draft-actions .resume {
+  min-width: 7.5rem;
 }
 
 .row {
@@ -123,21 +144,6 @@
 
 .row:first-child {
   border-top: 1px solid var(--color-border);
-}
-
-.row--resume {
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--color-accent);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-}
-
-.row--resume + .row--resume {
-  margin-top: var(--space-2);
-}
-
-.row--resume:first-child {
-  border-top: 1px solid var(--color-accent);
 }
 
 .row-main {
@@ -161,20 +167,6 @@
   color: var(--color-text-subtle);
 }
 
-.row-status {
-  flex-shrink: 0;
-  padding: 0.05rem 0.45rem;
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  border-radius: var(--radius-pill);
-  background: var(--color-surface-hover);
-  color: var(--color-text-subtle);
-}
-
-.row-status--done {
-  color: var(--color-success);
-}
-
 .row-busy,
 .confirm-text {
   flex-shrink: 0;
@@ -186,13 +178,99 @@
   color: var(--color-primary);
 }
 
+/* Focused programmatically when the confirmation replaces the actions, so it needs no ring. */
+.confirm-text:focus {
+  outline: none;
+}
+
+.draft-menu {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  transition:
+    background var(--transition),
+    color var(--transition);
+}
+
+.draft-menu:hover,
+.draft-menu:focus-visible,
+.draft-menu[aria-expanded='true'] {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+/* Rendered inside the overlay panel, which supplies the surface, border and shadow. */
+.draft-menu-panel {
+  min-width: 12rem;
+  padding: 0.3rem;
+}
+
+.draft-menu-panel .menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  /* 44px tall so the whole row is a comfortable target on touch. */
+  min-height: 2.75rem;
+  padding: 0.4rem 0.7rem;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.draft-menu-panel .menu-item:hover {
+  background: var(--color-surface-hover);
+}
+
+.draft-menu-panel .menu-item svg {
+  flex: none;
+  color: var(--color-text-subtle);
+}
+
+.draft-menu-panel .menu-item--danger {
+  color: var(--color-danger);
+}
+
+.draft-menu-panel .menu-item--danger svg {
+  color: currentColor;
+}
+
+.draft-menu-panel .menu-item--danger:hover {
+  background: var(--color-danger-surface);
+}
+
 @media (max-width: 640px) {
-  .row {
+  .row,
+  .draft {
     flex-wrap: wrap;
   }
 
-  .row-main {
+  .row-main,
+  .draft-main {
     flex-basis: 100%;
+  }
+
+  /* The card stacks here, so the actions become a row of their own and the kebab would sit
+     against the Resume button, reading as a second action rather than the card's own menu. */
+  .draft-menu {
+    margin-left: auto;
+    /* No hover on touch, so the trigger stays at full strength, with a full 44px target. */
+    width: 2.75rem;
+    height: 2.75rem;
+    color: var(--color-text-muted);
   }
 
   .import-controls {

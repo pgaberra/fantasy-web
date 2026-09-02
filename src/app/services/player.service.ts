@@ -5,8 +5,10 @@ import { Api } from '../api/api';
 import { getSkaters } from '../api/fn/players/get-skaters';
 import { getGoalies } from '../api/fn/players/get-goalies';
 import { getRookies } from '../api/fn/players/get-rookies';
+import { getInjuries } from '../api/fn/players/get-injuries';
 import { SkaterResponse } from '../api/models/skater-response';
 import { GoalieResponse } from '../api/models/goalie-response';
+import { PlayerInjury } from '../api/models/player-injury';
 import { Goalie, Player, Skater } from '../models/player.model';
 import { environment } from '../../environments/environment';
 
@@ -50,6 +52,24 @@ export class PlayerService {
   getRookieIds(): Observable<Set<number> | null> {
     return from(this.api.invoke(getRookies)).pipe(
       map((rookies) => (rookies.known ? new Set(rookies.playerIds) : null)),
+    );
+  }
+
+  /**
+   * Who is hurt right now, by player id, or null when the server cannot say — the same
+   * distinction the rookie list draws, and for the same reason: an empty injury list and an
+   * unanswerable one would otherwise both read as a fit league.
+   *
+   * Unlike the rookie list this describes today rather than the season, and it is refreshed once
+   * a night, so a stale copy marks recovered players as out.
+   */
+  getInjuries(): Observable<Map<number, PlayerInjury> | null> {
+    return from(this.api.invoke(getInjuries)).pipe(
+      map((injuries) =>
+        injuries.known
+          ? new Map(injuries.players.map((injury) => [injury.playerId, injury]))
+          : null,
+      ),
     );
   }
 }

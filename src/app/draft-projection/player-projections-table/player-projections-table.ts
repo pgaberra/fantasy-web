@@ -12,7 +12,10 @@ import {
   signal,
 } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
+import { PlayerInjury } from '../../api/models/player-injury';
 import { Player } from '../../models/player.model';
+import { PositionOverrides } from '../../models/position-override';
+import { SkaterPosition } from '../../models/position.model';
 import { PlayerService } from '../../services/player.service';
 import {
   ActiveColumns,
@@ -58,6 +61,7 @@ import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.di
 import { PinnedTableHeaderDirective } from '../../shared/pinned-table-header/pinned-table-header.directive';
 import { LeagueSettingsMenuComponent } from './league-settings-menu/league-settings-menu';
 import { ColumnsMenuComponent } from './columns-menu/columns-menu';
+import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 
 const PLAYERS_PER_PAGE = 250;
 
@@ -90,6 +94,7 @@ function toggledSet<T>(members: ReadonlySet<T>, member: T): Set<T> {
     PinnedTableHeaderDirective,
     LeagueSettingsMenuComponent,
     ColumnsMenuComponent,
+    TooltipDirective,
   ],
   templateUrl: './player-projections-table.html',
   styleUrl: './player-projections-table.css',
@@ -119,6 +124,18 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   /** Turns on the column menus, the add-column cell and the league toolbar. */
   readonly columnControls = input<boolean>(false);
+
+  /**
+   * Turns on correcting a player's positions. Separate from `columnControls` because it needs
+   * somewhere to save to: the landing demo has the toolbar but no projection behind it.
+   */
+  readonly positionControls = input<boolean>(false);
+  /** The corrections already made, so a row can show it carries one and the toolbar can count. */
+  readonly positionOverrides = input<PositionOverrides>(new Map());
+  readonly positionsChanged = output<{ playerId: number; positions: SkaterPosition[] | null }>();
+  readonly positionsReset = output<void>();
+
+  readonly overriddenPositionCount = computed(() => this.positionOverrides().size);
   /**
    * The league these settings were imported from, once there is one. Connecting a league is a
    * call to action while it hasn't happened; afterwards it is provenance, so it moves off the
@@ -358,7 +375,28 @@ export class PlayerProjectionsTableComponent implements OnInit {
     return projection.stats.utility.gp >= minGames;
   }
 
-  readonly positionFilter = signal<PositionFilter>('ALL');
+  private readonly positionFilterState = signal<PositionFilter>('ALL');
+  readonly positionFilter: Signal<PositionFilter> = this.positionFilterState.asReadonly();
+
+  /**
+   * Narrowing to a position can take the sorted column off the screen with it: a board of left
+   * wings has no goalie columns to sort by. Rather than leave the rows in an order nothing on
+   * screen explains, the sort falls back to the ranking.
+   */
+  setPositionFilter(filter: PositionFilter): void {
+    this.positionFilterState.set(filter);
+    if (
+      this.activeColumnsService.showsSortColumn(
+        this.sortColumn(),
+        { scoring: this.activeScoringColumns(), utility: this.activeUtilityColumns() },
+        filter,
+      )
+    ) {
+      return;
+    }
+    this.sortColumn.set('summary');
+    this.sortDirection.set(defaultSortDirection('summary'));
+  }
 
   /**
    * Ids of this season's rookies, or null while unknown — either still loading or the server
@@ -385,6 +423,23 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   isRookie(playerId: number): boolean {
     return this.rookieIds()?.has(playerId) ?? false;
+  }
+
+  /**
+   * The current injury report, or null while unknown — still loading, or a server without
+   * the projection service, which reads the same way here: no marker rather than a fit league.
+   */
+  private readonly injuryResource = rxResource({
+    stream: () => this.playerService.getInjuries(),
+    defaultValue: null as Map<number, PlayerInjury> | null,
+  });
+
+  readonly injuries = computed(() =>
+    this.injuryResource.hasValue() ? this.injuryResource.value() : null,
+  );
+
+  injuryFor(playerId: number): PlayerInjury | null {
+    return this.injuries()?.get(playerId) ?? null;
   }
 
   private filterByRookie(scored: ScoredProjection[]): ScoredProjection[] {
@@ -465,11 +520,42 @@ export class PlayerProjectionsTableComponent implements OnInit {
     });
   }
 
-  realTimeRanks: Signal<Map<number, number>> = computed(() => {
-    return new Map(
-      this.realTimeSortedProjections().map((sp, i) => [sp.projection.playerId, i + 1]),
-    );
+  /**
+   * Where each player sits in the ranking itself: by fantasy points in a points league and by
+   * z-score in a category one, with the goalies below the games minimum kept last exactly as the
+   * summary column keeps them.
+   *
+   * <p>Deliberately not the order on screen. This is the number in brackets beside a position's
+   * rank, and it only reads as "and 7th overall" if it is counted off the ranking. Counted off
+   * the arrangement, sorting the wingers by hits printed each player's place in a list of
+   * hitters instead.
+   */
+  overallRanks: Signal<Map<number, number>> = computed(() => {
+    const summaryValueOf = this.summaryValueResolver();
+    const players = this.playerMap();
+    const ranked = this.scoredProjections()
+      .filter((sp) => players.has(sp.projection.playerId))
+      .sort((a, b) => {
+        if (a.qualified !== b.qualified) {
+          return a.qualified ? -1 : 1;
+        }
+        return summaryValueOf(b) - summaryValueOf(a);
+      });
+    return new Map(ranked.map((sp, index) => [sp.projection.playerId, index + 1]));
   });
+
+  /**
+   * Whether the rows on screen are a narrowed pool, whichever filter did the narrowing — the
+   * position, the team, the rookies. That is what decides whether the # column carries two
+   * numbers: narrowed, it counts what is on screen and the ranking follows in brackets, and
+   * unfiltered the single number is the ranking already.
+   *
+   * <p>Measured against the ranking rather than asking each filter in turn, so a filter added
+   * later is covered by having narrowed the table, without anything here being told about it.
+   */
+  readonly isNarrowed = computed(
+    () => this.filteredAndSortedProjections().length < this.overallRanks().size,
+  );
 
   positionRanks: Signal<Map<number, number>> = computed(() => {
     return new Map(

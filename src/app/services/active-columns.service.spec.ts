@@ -89,6 +89,46 @@ describe('ActiveColumnsService', () => {
     expect([...result.utility]).toEqual(['gp', 'toiPerGame']);
   });
 
+  describe('showsSortColumn', () => {
+    const columns: ActiveColumns = {
+      scoring: new Set(['goals', 'w']),
+      utility: new Set(['gp', 'toiPerGame']),
+    };
+
+    /** The two columns every table shows, whoever is on screen. */
+    it('always shows the name and the ranking', () => {
+      const service = ngMocks.findInstance(ActiveColumnsService);
+      const positionFilterService = ngMocks.findInstance(PositionFilterService);
+      vi.spyOn(positionFilterService, 'getFilterType').mockReturnValue('skater');
+
+      expect(service.showsSortColumn('name', columns, 'LW')).toEqual(true);
+      expect(service.showsSortColumn('summary', columns, 'LW')).toEqual(true);
+    });
+
+    it('says a stat column the filter keeps is still on screen', () => {
+      const service = ngMocks.findInstance(ActiveColumnsService);
+      const positionFilterService = ngMocks.findInstance(PositionFilterService);
+      const statInfoService = ngMocks.findInstance(StatInfoService);
+      vi.spyOn(positionFilterService, 'getFilterType').mockReturnValue('skater');
+      vi.spyOn(statInfoService, 'isSkaterScoringStat').mockImplementation((key) => key === 'goals');
+      vi.spyOn(statInfoService, 'isSkaterUtilityStat').mockReturnValue(true);
+
+      expect(service.showsSortColumn('goals', columns, 'LW')).toEqual(true);
+      expect(service.showsSortColumn('gp', columns, 'LW')).toEqual(true);
+    });
+
+    it('says a stat column the filter drops is gone', () => {
+      const service = ngMocks.findInstance(ActiveColumnsService);
+      const positionFilterService = ngMocks.findInstance(PositionFilterService);
+      const statInfoService = ngMocks.findInstance(StatInfoService);
+      vi.spyOn(positionFilterService, 'getFilterType').mockReturnValue('skater');
+      vi.spyOn(statInfoService, 'isSkaterScoringStat').mockImplementation((key) => key === 'goals');
+      vi.spyOn(statInfoService, 'isSkaterUtilityStat').mockReturnValue(true);
+
+      expect(service.showsSortColumn('w', columns, 'LW')).toEqual(false);
+    });
+  });
+
   it('should sort scoring columns with skater stats before goalie stats', () => {
     const service = ngMocks.findInstance(ActiveColumnsService);
     const positionFilterService = ngMocks.findInstance(PositionFilterService);

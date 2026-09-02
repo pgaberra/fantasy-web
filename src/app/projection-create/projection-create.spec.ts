@@ -233,6 +233,53 @@ describe('ProjectionCreateComponent', () => {
     expect(fixture.point.componentInstance.name()).toEqual('My Projection 3');
   });
 
+  // An imported board takes a name as surely as one of the user's own does: they are listed
+  // together, and the server keeps them in one namespace.
+  it('skips a name an imported board is already using', async () => {
+    MockInstance(
+      ProjectionStorageService,
+      'listEditable',
+      vi.fn(() =>
+        of([
+          { ...summary, id: 'p1', name: 'My Projection' },
+          { ...summary, id: 's1', kind: 'imported' as const, name: 'My Projection 2' },
+        ]),
+      ),
+    );
+
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+
+    expect(fixture.point.componentInstance.name()).toEqual('My Projection 3');
+  });
+
+  // The server refuses it either way; this is about hearing so on the field rather than in a
+  // toast after the round trip.
+  it('blocks a name already taken, and says so on the field', async () => {
+    MockInstance(
+      ProjectionStorageService,
+      'listEditable',
+      vi.fn(() => of([{ ...summary, id: 's1', kind: 'imported' as const, name: "Erik's board" }])),
+    );
+
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.name.set("  Erik's board  ");
+    fixture.detectChanges();
+
+    expect(component.nameTaken()).toBe(true);
+    expect(component.canCreate()).toEqual(false);
+    expect(fixture.nativeElement.querySelector('.field-error').textContent).toContain(
+      'You already have a projection with that name',
+    );
+
+    component.name.set('Something else');
+    expect(component.nameTaken()).toBe(false);
+    expect(component.canCreate()).toEqual(true);
+  });
+
   it('creates a projection and navigates to edit mode', async () => {
     const fixture = MockRender(ProjectionCreateComponent);
     await fixture.whenStable();
@@ -289,29 +336,19 @@ describe('ProjectionCreateComponent', () => {
       expect(component.sourceLabel(listed[1])).toEqual('From alex');
     });
 
-    it('opens on the presets, with last season picked', async () => {
+    it('opens with last season picked, so there is always an answer', async () => {
       const fixture = MockRender(ProjectionCreateComponent);
       await fixture.whenStable();
       const component = fixture.point.componentInstance;
 
-      expect(component.selectedTab()).toEqual('presets');
-      expect(component.selectedPreset()).toEqual('default');
+      expect(component.startingPoint()).toEqual({ kind: 'preset', source: 'default' });
       expect(component.canCreate()).toEqual(true);
     });
 
-    // What a preset means is a tip on the row, not a line under the name: three subtitles made
-    // the strip's own choices louder than the projections listed beside them.
-    it('explains each preset in a tip rather than a subtitle', async () => {
-      const fixture = MockRender(ProjectionCreateComponent);
-      await fixture.whenStable();
-      fixture.detectChanges();
-
-      const panel: HTMLElement = fixture.nativeElement.querySelector('.panel');
-      expect(panel.querySelectorAll('app-help-tip')).toHaveLength(CREATE_PRESETS.length);
-      expect(panel.querySelector('.row-meta')).toBeNull();
-    });
-
-    it('waits for a row to be picked before it can create from a copy', async () => {
+    // The three groups were tabs, and a tab holds an answer of its own: a copy picked under one
+    // and a preset under another were both live at once, and pressing Create used whichever tab
+    // happened to be open. One value cannot do that — picking either replaces the other.
+    it('holds one starting point, so picking a preset drops a copy', async () => {
       MockInstance(
         ProjectionStorageService,
         'listEditable',
@@ -322,11 +359,77 @@ describe('ProjectionCreateComponent', () => {
       await fixture.whenStable();
       const component = fixture.point.componentInstance;
 
-      component.selectTab('imported');
-      expect(component.canCreate()).toEqual(false);
+      component.selectCopyFrom('shared1');
+      expect(component.isCopyOf('shared1')).toBe(true);
+
+      component.selectPreset('model');
+      expect(component.isCopyOf('shared1')).toBe(false);
+      expect(component.isPreset('model')).toBe(true);
+
+      component.create();
+      expect(createProjection.mock.calls[0][0].source).toEqual('model');
+    });
+
+    // What a preset means is a tip on the row, not a line under the name: three subtitles made
+    // the strip's own choices louder than the projections listed beside them.
+    it('explains each preset in a tip rather than a subtitle', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const presets: HTMLElement = fixture.nativeElement.querySelector('.rows--presets');
+      expect(presets.querySelectorAll('app-help-tip')).toHaveLength(CREATE_PRESETS.length);
+      expect(presets.querySelector('.row-meta')).toBeNull();
+    });
+
+    // What the tabs cost: a board picked in one was invisible from the others, so the page never
+    // showed, in one view, what the projection would actually start from.
+    it('lists every starting point at once, the import box included', async () => {
+      MockInstance(
+        ProjectionStorageService,
+        'listEditable',
+        vi.fn(() => of(listed)),
+      );
+
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const headings = Array.from(
+        fixture.nativeElement.querySelectorAll('.group-title') as NodeListOf<HTMLElement>,
+      ).map((heading) => heading.textContent?.trim());
+
+      expect(headings).toEqual(['Copy one of yours', 'Shared with you']);
+      expect(fixture.nativeElement.querySelectorAll('.sources .row')).toHaveLength(
+        CREATE_PRESETS.length + listed.length,
+      );
+      expect(fixture.nativeElement.querySelector('app-share-import')).not.toBeNull();
+    });
+
+    // A copy has no preview: the rows are the board's own, which this page never downloads.
+    // The slot says so rather than emptying, which moved the Create button while it was aimed at.
+    it('names the board a copy would be made of, in the preview slot', async () => {
+      MockInstance(
+        ProjectionStorageService,
+        'listEditable',
+        vi.fn(() => of(listed)),
+      );
+
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      expect(component.copiedBoard()).toBeNull();
 
       component.selectCopyFrom('shared1');
-      expect(component.canCreate()).toEqual(true);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(component.copiedBoard()?.id).toEqual('shared1');
+      expect(fixture.nativeElement.querySelector('.preview-note').textContent).toContain(
+        'exact copy of',
+      );
+      expect(fixture.nativeElement.querySelector('.preview-card')).toBeNull();
     });
 
     // A copy carries rows only the client has, whoever made them — the same path the user's own
@@ -342,7 +445,6 @@ describe('ProjectionCreateComponent', () => {
       await fixture.whenStable();
       const component = fixture.point.componentInstance;
 
-      component.selectTab('imported');
       component.selectCopyFrom('shared1');
       component.create();
 
@@ -362,7 +464,7 @@ describe('ProjectionCreateComponent', () => {
       component.onImported({ id: 'fresh1' } as ProjectionResponse);
       await fixture.whenStable();
 
-      expect(component.copyFromId()).toEqual('fresh1');
+      expect(component.isCopyOf('fresh1')).toBe(true);
       expect(listEditable).toHaveBeenCalledTimes(2);
     });
   });
@@ -412,7 +514,6 @@ describe('ProjectionCreateComponent', () => {
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
 
-    component.selectTab('own');
     component.selectCopyFrom('src');
     component.create();
 
@@ -424,7 +525,6 @@ describe('ProjectionCreateComponent', () => {
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
 
-    component.selectTab('own');
     component.selectCopyFrom('src');
     component.create();
 
@@ -568,7 +668,7 @@ describe('ProjectionCreateComponent', () => {
       const component = fixture.point.componentInstance;
 
       expect(component.presets.map((preset) => preset.source)).toEqual(['default', 'blank']);
-      expect(component.selectedPreset()).toEqual('default');
+      expect(component.isPreset('default')).toBe(true);
       expect(seed).not.toHaveBeenCalled();
     } finally {
       environment.aiProjectionEnabled = original;

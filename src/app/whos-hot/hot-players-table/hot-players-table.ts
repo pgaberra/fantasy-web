@@ -6,6 +6,7 @@ import {
   linkedSignal,
   model,
   output,
+  Signal,
   signal,
 } from '@angular/core';
 import { Player } from '../../models/player.model';
@@ -140,7 +141,8 @@ export class HotPlayersTableComponent {
 
   readonly sortColumn = signal<SortColumn>('summary');
   readonly sortDirection = signal<SortDirection>('desc');
-  readonly positionFilter = signal<PositionFilter>('ALL');
+  private readonly positionFilterState = signal<PositionFilter>('ALL');
+  readonly positionFilter: Signal<PositionFilter> = this.positionFilterState.asReadonly();
   readonly teamFilter = signal<string>('ALL');
   readonly searchTerm = signal('');
 
@@ -150,6 +152,22 @@ export class HotPlayersTableComponent {
       this.positionFilter(),
     ),
   );
+
+  /**
+   * Narrowing to a position can take the sorted column off the screen with it: a leaderboard of
+   * left wings has no goalie columns to sort by. Rather than leave the rows in an order nothing
+   * on screen explains, the sort falls back to the ranking.
+   */
+  setPositionFilter(filter: PositionFilter): void {
+    this.positionFilterState.set(filter);
+    if (
+      this.activeColumnsService.showsSortColumn(this.sortColumn(), this.activeColumns(), filter)
+    ) {
+      return;
+    }
+    this.sortColumn.set('summary');
+    this.sortDirection.set(defaultSortDirection('summary'));
+  }
 
   private readonly playerMap = computed(() => new Map(this.players().map((p) => [p.id, p])));
 

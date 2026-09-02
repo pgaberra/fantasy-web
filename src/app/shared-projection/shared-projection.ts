@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, linkedSignal, signal } from '@angular/core';
+import { Component, computed, effect, inject, linkedSignal, Signal, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -26,6 +26,7 @@ import {
 import { PlayerRowComponent } from '../draft-projection/player-projections-table/player-row/player-row';
 import { PositionFilterComponent } from '../draft-projection/player-projections-table/position-filter/position-filter';
 import { ProjectionsTableHeaderComponent } from '../draft-projection/player-projections-table/projections-table-header/projections-table-header';
+import { ActiveColumnsService } from '../services/active-columns.service';
 import { AnalyticsService } from '../services/analytics.service';
 import { AuthService } from '../services/auth.service';
 import { NotificationService } from '../services/notification.service';
@@ -97,6 +98,7 @@ export class SharedProjectionComponent {
   private readonly storage = inject(ProjectionStorageService);
   private readonly notification = inject(NotificationService);
   private readonly analytics = inject(AnalyticsService);
+  private readonly activeColumnsService = inject(ActiveColumnsService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly location = inject(Location);
 
@@ -195,9 +197,26 @@ export class SharedProjectionComponent {
 
   private readonly token = this.route.snapshot.paramMap.get('token') ?? '';
 
-  readonly positionFilter = signal<PositionFilter>('ALL');
+  private readonly positionFilterState = signal<PositionFilter>('ALL');
+  readonly positionFilter: Signal<PositionFilter> = this.positionFilterState.asReadonly();
   readonly sortColumn = signal<SortColumn>('summary');
   readonly sortDirection = signal<SortDirection>('desc');
+
+  /**
+   * Narrowing to a position can take the sorted column off the screen with it: a board of left
+   * wings has no goalie columns to sort by. Rather than leave the rows in an order nothing on
+   * screen explains, the sort falls back to the published ranking.
+   */
+  setPositionFilter(filter: PositionFilter): void {
+    this.positionFilterState.set(filter);
+    if (
+      this.activeColumnsService.showsSortColumn(this.sortColumn(), this.activeColumns(), filter)
+    ) {
+      return;
+    }
+    this.sortColumn.set('summary');
+    this.sortDirection.set(defaultSortDirection('summary'));
+  }
 
   /**
    * Who decides what a column means here depends on how much of the board the reader holds.
@@ -290,6 +309,18 @@ export class SharedProjectionComponent {
     };
   });
 
+  /**
+   * The columns a filtered board still has values for. Goalie columns against a screen of left
+   * wings are columns of dashes, and skater columns against a screen of goalies are the same, so
+   * the position filter decides which stats are shown exactly as it does in the editor.
+   */
+  readonly filteredActiveColumns = computed<ActiveColumns>(() =>
+    this.activeColumnsService.filterAndSortActiveColumns(
+      this.activeColumns(),
+      this.positionFilter(),
+    ),
+  );
+
   readonly statWeights = signal<Record<ScoringStatKey, number>>(
     {} as Record<ScoringStatKey, number>,
   );
@@ -301,6 +332,35 @@ export class SharedProjectionComponent {
   private readonly rows = computed<SharedRow[]>(() =>
     (this.shared()?.data.players ?? []).map((shared) => this.toRow(shared)),
   );
+
+  /**
+   * Where each row sits within the position being filtered for. The board ranked every player
+   * together, so under a position filter the top row is the best left wing rather than the best
+   * player, and saying "1" alone would lose which of the two the number is. It is counted off the
+   * published ranking rather than the column being sorted, so it stays the board's own answer
+   * however the reader has arranged it.
+   *
+   * <p>Empty while the whole board is on screen, where the published rank is the answer already.
+   */
+  private readonly positionRanks = computed<Map<number, number>>(() => {
+    if (this.positionFilter() === 'ALL') {
+      return new Map();
+    }
+    const withinPosition = this.rows()
+      .filter((row) => this.matchesFilter(row))
+      .sort((first, second) => first.shared.rank - second.shared.rank);
+    return new Map(withinPosition.map((row, index) => [row.shared.playerId, index + 1]));
+  });
+
+  /** The number in the # column: the position's rank where there is one, the board's otherwise. */
+  rankOf(row: SharedRow): number {
+    return this.positionRanks().get(row.shared.playerId) ?? row.shared.rank;
+  }
+
+  /** The board-wide rank, shown in brackets only when the rank beside it is a position's. */
+  overallRankOf(row: SharedRow): number | null {
+    return this.positionRanks().has(row.shared.playerId) ? row.shared.rank : null;
+  }
 
   /**
    * Sorted here as well as on the server, and not only for the reader who holds the whole board:

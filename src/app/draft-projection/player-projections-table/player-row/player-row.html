@@ -2,9 +2,33 @@
 <td class="col-name player-name">
   <div class="player-name-content">
     <app-player-headshot class="player-headshot" [src]="player().headshot" [name]="player().name" />
-    <span class="player-name-text">{{ player().name }} ({{ playerPosition() }})</span>
+    <span class="player-name-text">
+      {{ player().name }}
+      @if (canEditPositions()) {
+        <button
+          type="button"
+          class="player-positions"
+          [class.player-positions--overridden]="positionsOverridden()"
+          [appPopover]="positionMenu"
+          popoverAlign="start"
+          [attr.aria-label]="'Positions for ' + player().name + ', ' + playerPosition()"
+          [appTooltip]="
+            positionsOverridden()
+              ? 'You set these positions. Click to change them.'
+              : 'Click to set the positions your league uses'
+          "
+        >
+          ({{ playerPosition() }})
+        </button>
+      } @else {
+        <span>({{ playerPosition() }})</span>
+      }
+    </span>
     @if (rookie()) {
       <span class="rookie-badge" title="Rookie this season">R</span>
+    }
+    @if (injury()) {
+      <span class="injury-badge" [title]="injuryTitle()">{{ injuryLabel() }}</span>
     }
     @if (player().teamAbbrev) {
       <span class="player-team">{{ player().teamAbbrev }}</span>
@@ -53,3 +77,12 @@
       | number: '1.0-2'
   }}
 </td>
+
+<ng-template #positionMenu>
+  <app-position-menu
+    [playerName]="player().name"
+    [positions]="skaterPositions()"
+    [overridden]="positionsOverridden()"
+    (positionsChanged)="positionsChanged.emit({ playerId: player().id, positions: $event })"
+  />
+</ng-template>

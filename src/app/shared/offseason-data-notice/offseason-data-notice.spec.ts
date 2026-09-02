@@ -4,16 +4,18 @@ import { OffseasonDataNoticeComponent } from './offseason-data-notice';
 import { environment } from '../../../environments/environment';
 
 describe('OffseasonDataNoticeComponent', () => {
-  const originalDisabled = environment.yahooSyncDisabled;
+  const originalEnabled = environment.offseasonEnabled;
+  const originalSyncDisabled = environment.yahooSyncDisabled;
 
   beforeEach(() => MockBuilder(OffseasonDataNoticeComponent));
 
   afterEach(() => {
-    environment.yahooSyncDisabled = originalDisabled;
+    environment.offseasonEnabled = originalEnabled;
+    environment.yahooSyncDisabled = originalSyncDisabled;
   });
 
-  it('shows the off-season data caveats when Yahoo sync is disabled', () => {
-    environment.yahooSyncDisabled = true;
+  it('shows the off-season data caveats when the off-season flag is on', () => {
+    environment.offseasonEnabled = true;
     const fixture = MockRender(OffseasonDataNoticeComponent);
 
     const text = (fixture.nativeElement.textContent as string).toLowerCase();
@@ -25,11 +27,21 @@ describe('OffseasonDataNoticeComponent', () => {
     expect(text).not.toContain('yahoo sync');
   });
 
-  it('renders nothing while Yahoo sync is enabled', () => {
-    environment.yahooSyncDisabled = false;
+  it('renders nothing while the off-season flag is off', () => {
+    environment.offseasonEnabled = false;
     const fixture = MockRender(OffseasonDataNoticeComponent);
 
     expect(fixture.nativeElement.querySelector('.offseason-notice')).toBeNull();
     expect((fixture.nativeElement.textContent as string).trim()).toEqual('');
+  });
+
+  // The notice used to piggyback on yahooSyncDisabled, which meant any pause of the Yahoo sync
+  // announced an off-season that wasn't happening. The two flags are independent now.
+  it('renders nothing while Yahoo sync is disabled but the off-season flag is off', () => {
+    environment.offseasonEnabled = false;
+    environment.yahooSyncDisabled = true;
+    const fixture = MockRender(OffseasonDataNoticeComponent);
+
+    expect(fixture.nativeElement.querySelector('.offseason-notice')).toBeNull();
   });
 });
