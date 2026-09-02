@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { PlayerRowComponent } from './player-row';
 import { StatInputComponent } from './stat-input/stat-input';
+import { PlayerInjury } from '../../../api/models/player-injury';
 import { Goalie, Player, Skater } from '../../../models/player.model';
 import { SkaterPosition } from '../../../models/position.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../../../models/stat-key.model';
@@ -129,6 +130,7 @@ describe('PlayerRowComponent', () => {
     scoringType: ScoringType;
     decimalSettings: Record<DecimalStatKey, number>;
     isEditing: boolean;
+    injury?: PlayerInjury | null;
   }
 
   const setInputs = (overrides: Partial<PlayerRowComponentInputs> = {}) => {
@@ -150,6 +152,46 @@ describe('PlayerRowComponent', () => {
     });
     fixture.detectChanges();
   };
+
+  describe('the injury marker', () => {
+    const badge = () => fixture.nativeElement.querySelector('.injury-badge');
+
+    it('says nothing about a player who is not on the report', () => {
+      setInputs();
+      expect(badge()).toBeNull();
+    });
+
+    it('marks a player who is out and puts the whole report in the title', () => {
+      setInputs({
+        injury: {
+          playerId: 1,
+          status: 'Out',
+          bodyPart: 'Knee',
+          expectedReturn: '2026-11-07',
+        },
+      });
+
+      expect(badge().textContent.trim()).toBe('OUT');
+      expect(badge().getAttribute('title')).toBe('Out, knee, expected back 7 November');
+    });
+
+    it('shortens the statuses a roster page already abbreviates', () => {
+      setInputs({ injury: { playerId: 1, status: 'Injured Reserve' } });
+      expect(badge().textContent.trim()).toBe('IR');
+
+      setInputs({ injury: { playerId: 1, status: 'Day-To-Day' } });
+      expect(badge().textContent.trim()).toBe('DTD');
+
+      setInputs({ injury: { playerId: 1, status: 'Suspension' } });
+      expect(badge().textContent.trim()).toBe('SUSP');
+    });
+
+    it('says only what the report says, when it says little', () => {
+      setInputs({ injury: { playerId: 1, status: 'Out' } });
+
+      expect(badge().getAttribute('title')).toBe('Out');
+    });
+  });
 
   it('should display skater name and positions', () => {
     setInputs();

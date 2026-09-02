@@ -27,6 +27,9 @@
     @if (rookie()) {
       <span class="rookie-badge" title="Rookie this season">R</span>
     }
+    @if (injury()) {
+      <span class="injury-badge" [title]="injuryTitle()">{{ injuryLabel() }}</span>
+    }
     @if (player().teamAbbrev) {
       <span class="player-team">{{ player().teamAbbrev }}</span>
     }

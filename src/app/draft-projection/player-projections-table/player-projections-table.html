@@ -234,6 +234,7 @@
             [belowMinGames]="!sp.qualified"
             [player]="getPlayer(sp.projection.playerId)"
             [rookie]="isRookie(sp.projection.playerId)"
+            [injury]="injuryFor(sp.projection.playerId)"
             [activeColumns]="filteredActiveColumns()"
             [scoringType]="scoringType()"
             [decimalSettings]="decimalSettings()"
