@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, linkedSignal, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable } from 'rxjs';
@@ -56,21 +56,52 @@ export const PRESETS: readonly Preset[] = [
   },
 ];
 
+/** Where a new draft's numbers come from. The page asks this first, and one at a time. */
+export type SourceKind = 'preset' | 'projection' | 'imported';
+
+/** One of the three answers to "what do you want to draft against", as the page words it. */
+export interface SourceKindOption {
+  readonly kind: SourceKind;
+  readonly name: string;
+  readonly description: string;
+}
+
+export const SOURCE_KINDS: readonly SourceKindOption[] = [
+  { kind: 'preset', name: 'A preset', description: 'Ready-made numbers, nothing to set up' },
+  { kind: 'projection', name: 'Your projection', description: 'Numbers you tuned yourself' },
+  {
+    kind: 'imported',
+    name: 'A shared board',
+    description: "Someone else's numbers, from a share link",
+  },
+];
+
+/**
+ * The one thing the Start button will draft against. A preset is seeded on the server the
+ * moment it is started; a board, the user's own or a copy of someone else's, already exists.
+ */
+export type DraftSource =
+  | { readonly kind: 'preset'; readonly preset: Preset }
+  | { readonly kind: 'board'; readonly id: string };
+
 /**
  * Picks what a draft is drafted against: one of the user's own projections, a board copied from
  * someone's share link, or a preset.
  *
  * <p>The page asks two questions in that order, and every row belongs to exactly one of them.
- * "Your drafts" is every draft that exists, whatever it was started against; "Start a new draft"
- * is the sources that have none yet. The two used to overlap: an unfinished draft was copied to
- * the top of the page rather than lifted out of the list below, so half the rows on screen were
- * a second rendering of a row further down, carrying the same buttons under a different label.
- * A source holds at most one draft, so splitting them this way leaves nothing out and nothing
- * twice.
+ * "Your drafts" is every draft that exists, whatever it was started against, each a card that
+ * opens it. "Start a new draft" is a choice made in steps: the kind of source first, then the
+ * specific one, then a single Start button. It used to be every source at once, each with a
+ * button of its own, and a page of eight identical buttons gave no sense of what to do first.
+ * The kind is chosen with a tile, and only that kind's rows are on the page; the tiles say what
+ * each holds, so nothing is hidden, only folded.
+ *
+ * <p>A source holds at most one draft, so lifting the drafts out leaves the rows below meaning
+ * exactly one thing, "not started yet", and nothing on the page is rendered twice.
  *
  * <p>A preset draft has no projection behind it, so starting one creates a projection of its own
  * kind — seeded server-side from the same read model a new projection starts from — purely to
- * hold the picks. It never shows up under "Your projections".
+ * hold the picks. It never shows up under "Your projection".
  */
 @Component({
   selector: 'app-draft-start',
@@ -92,6 +123,8 @@ export class DraftStartComponent {
   private readonly notification = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+
+  readonly sourceKinds = SOURCE_KINDS;
 
   /**
    * The presets this build knows of. What the page offers is `availablePresets`, the ones with
@@ -159,6 +192,58 @@ export class DraftStartComponent {
     this.presets.filter((preset) => !this.presetDraft(preset)),
   );
 
+  /**
+   * The kind the page opens on: the first with something in it, presets ahead of the rest since
+   * they are the way in that needs nothing prepared. A computed rather than read inline, so the
+   * tile below only re-derives when this answer actually changes, and a kind the user picked
+   * survives a reload of the lists that leaves the answer where it was.
+   */
+  private readonly defaultKind = computed<SourceKind>(() => {
+    if (this.availablePresets().length > 0) {
+      return 'preset';
+    }
+    return this.projections().length > 0 ? 'projection' : 'imported';
+  });
+
+  /** The tile that is down: which of the three kinds the rows below are showing. */
+  readonly sourceKind = linkedSignal<SourceKind, SourceKind>({
+    source: this.defaultKind,
+    computation: (kind) => kind,
+  });
+
+  /**
+   * What Start will draft against. The first row of the chosen kind is picked as soon as the
+   * kind is, so a draft is always one press away; a pick the user made survives the lists
+   * reloading for as long as its row is still there.
+   */
+  readonly selection = linkedSignal<
+    { kind: SourceKind; options: readonly DraftSource[] },
+    DraftSource | null
+  >({
+    source: () => ({ kind: this.sourceKind(), options: this.optionsOf(this.sourceKind()) }),
+    computation: ({ options }, previous) => {
+      const kept = previous?.value;
+      if (kept && options.some((option) => sameSource(option, kept))) {
+        return kept;
+      }
+      return options[0] ?? null;
+    },
+  });
+
+  /** Said beside the button, so the press is never a guess about which row is checked. */
+  readonly selectionName = computed(() => {
+    const chosen = this.selection();
+    if (!chosen) {
+      return null;
+    }
+    if (chosen.kind === 'preset') {
+      return chosen.preset.name;
+    }
+    return (
+      this.sourcesResource.value().find((projection) => projection.id === chosen.id)?.name ?? null
+    );
+  });
+
   presetDraft(preset: Preset): ProjectionSummaryResponse | null {
     return this.presetDrafts().get(preset.id) ?? null;
   }
@@ -178,6 +263,53 @@ export class DraftStartComponent {
   /** What the timestamp beside it means, which differs for a draft still being made. */
   timingLabel(draft: ProjectionSummaryResponse): string {
     return draft.draftStatus === 'finished' ? 'finished' : 'last pick';
+  }
+
+  /**
+   * What a tile holds, so the two kinds not showing are still accounted for on the page. A
+   * preset that is drafted against is above, not gone, and the tile says so.
+   */
+  kindMeta(kind: SourceKind): string {
+    const total = this.optionsOf(kind).length;
+    switch (kind) {
+      case 'preset':
+        return total > 0 ? counted(total, 'preset') : 'All drafted above';
+      case 'projection':
+        return total > 0 ? counted(total, 'projection') : 'None yet';
+      case 'imported':
+        return total > 0 ? counted(total, 'board') : 'None yet';
+    }
+  }
+
+  isPresetSelected(preset: Preset): boolean {
+    const chosen = this.selection();
+    return chosen?.kind === 'preset' && chosen.preset.id === preset.id;
+  }
+
+  isBoardSelected(id: string): boolean {
+    const chosen = this.selection();
+    return chosen?.kind === 'board' && chosen.id === id;
+  }
+
+  selectPreset(preset: Preset): void {
+    this.selection.set({ kind: 'preset', preset });
+  }
+
+  selectBoard(id: string): void {
+    this.selection.set({ kind: 'board', id });
+  }
+
+  /** The one Start on the page: seeds a preset, or opens the board that is already there. */
+  start(): void {
+    const chosen = this.selection();
+    if (!chosen) {
+      return;
+    }
+    if (chosen.kind === 'preset') {
+      this.startPreset(chosen.preset);
+    } else {
+      this.openDraft(chosen.id);
+    }
   }
 
   /** Only a board that exists on its own: a preset draft holds nothing but its picks. */
@@ -248,8 +380,14 @@ export class DraftStartComponent {
     });
   }
 
-  /** The copy is the user's board now, and the list it joins is already on the page. */
-  onImported(): void {
+  /**
+   * The copy is the user's board now. It is checked before the list that will hold it has been
+   * re-read: `selection` keeps a pick whose row turns up in the reload, so the copy is what
+   * Start drafts against the moment it appears, rather than whichever board was first before.
+   */
+  onImported(id: string): void {
+    this.sourceKind.set('imported');
+    this.selection.set({ kind: 'board', id });
     this.sourcesResource.reload();
   }
 
@@ -261,7 +399,18 @@ export class DraftStartComponent {
       this.openDraft(existing.id);
       return;
     }
-    this.start(this.createPresetDraft(preset));
+    this.seedAndOpen(this.createPresetDraft(preset));
+  }
+
+  private optionsOf(kind: SourceKind): readonly DraftSource[] {
+    switch (kind) {
+      case 'preset':
+        return this.availablePresets().map((preset) => ({ kind: 'preset', preset }));
+      case 'projection':
+        return this.projections().map((projection) => ({ kind: 'board', id: projection.id }));
+      case 'imported':
+        return this.imported().map((board) => ({ kind: 'board', id: board.id }));
+    }
   }
 
   private undrafted(kind: ProjectionSummaryResponse['kind']): ProjectionSummaryResponse[] {
@@ -285,7 +434,7 @@ export class DraftStartComponent {
     });
   }
 
-  private start(started: Observable<ProjectionResponse>): void {
+  private seedAndOpen(started: Observable<ProjectionResponse>): void {
     this.isStarting.set(true);
     started.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (projection) => this.openDraft(projection.id),
@@ -296,4 +445,15 @@ export class DraftStartComponent {
       },
     });
   }
+}
+
+function sameSource(first: DraftSource, second: DraftSource): boolean {
+  if (first.kind === 'preset' && second.kind === 'preset') {
+    return first.preset.id === second.preset.id;
+  }
+  return first.kind === 'board' && second.kind === 'board' && first.id === second.id;
+}
+
+function counted(total: number, noun: string): string {
+  return `${total} ${noun}${total === 1 ? '' : 's'}`;
 }

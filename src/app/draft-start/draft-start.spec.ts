@@ -89,6 +89,18 @@ describe('DraftStartComponent', () => {
     return fixture.point.componentInstance;
   };
 
+  const renderFixture = async () => {
+    const fixture = MockRender(DraftStartComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
+  };
+
+  const texts = (fixture: { nativeElement: HTMLElement }, selector: string) =>
+    Array.from(fixture.nativeElement.querySelectorAll<HTMLElement>(selector)).map((element) =>
+      element.textContent?.trim(),
+    );
+
   const menuPanel = () => document.querySelector('.draft-menu-panel');
 
   it('offers the projections newest-updated first and keeps the preset draft out of them', async () => {
@@ -250,7 +262,7 @@ describe('DraftStartComponent', () => {
     const fixture = MockRender(DraftStartComponent);
     await fixture.whenStable();
 
-    fixture.point.componentInstance.onImported();
+    fixture.point.componentInstance.onImported('i9');
     await fixture.whenStable();
 
     // The list is what the group reads from, and the copy is not in the one already fetched.
@@ -315,59 +327,158 @@ describe('DraftStartComponent', () => {
     expect(component.presetDraft(MODEL)).toBeNull();
   });
 
-  // The point of dropping the tabs: nothing here is a click away any more, the import box
-  // included — it used to sit behind the one tab that is empty until it has been used once.
-  it('shows every group, and the import box, without a click', async () => {
-    listWithPresetDrafts.mockReturnValue(of([summary('p1', 'projection', 'none')]));
-
-    const fixture = MockRender(DraftStartComponent);
-    await fixture.whenStable();
-    fixture.detectChanges();
-
-    const text = (selector: string) =>
-      Array.from(fixture.nativeElement.querySelectorAll(selector) as NodeListOf<HTMLElement>).map(
-        (element) => element.textContent?.trim(),
-      );
-
-    // Nothing is drafted yet, so the page is one question rather than two.
-    expect(text('.section-title')).toEqual(['Start a new draft']);
-    expect(text('.group-title')).toEqual(['Presets', 'Your projections', 'Shared with you']);
-    expect(fixture.nativeElement.querySelector('app-share-import')).not.toBeNull();
-    expect(fixture.nativeElement.querySelectorAll('.preset')).toHaveLength(PRESETS.length);
-    expect(fixture.nativeElement.querySelectorAll('.row')).toHaveLength(1);
-  });
-
-  // A preset needs nothing of the user's, so it is the page's ready-made way in and gets the
-  // loud button; a projection or a shared board is work someone did first and is found by
-  // name, so its row can be quiet. One list of identical buttons gave the page no way in.
-  it('offers the presets as cards with the loud button, and the rest as quiet rows', async () => {
+  // The choice is made in steps: the kind first, and the page opens on the presets since they
+  // need nothing prepared. The other two kinds are tiles that say what they hold, not lists.
+  it('asks for the kind of source first, opening on the presets with the rest folded', async () => {
     listWithPresetDrafts.mockReturnValue(
       of([summary('p1', 'projection', 'none'), imported('i1', 'alex')]),
     );
 
-    const fixture = MockRender(DraftStartComponent);
-    await fixture.whenStable();
-    fixture.detectChanges();
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
 
-    const presetButtons = Array.from(
-      fixture.nativeElement.querySelectorAll('.preset .start') as NodeListOf<HTMLElement>,
-    );
-    const rowButtons = Array.from(
-      fixture.nativeElement.querySelectorAll('.row .start') as NodeListOf<HTMLElement>,
-    );
-
-    expect(presetButtons).toHaveLength(PRESETS.length);
-    expect(presetButtons.every((button) => button.classList.contains('btn-primary'))).toBe(true);
-    expect(rowButtons.map((button) => button.textContent?.trim())).toEqual([
-      'Start draft',
-      'Start draft',
-    ]);
-    expect(rowButtons.every((button) => button.classList.contains('btn-secondary'))).toBe(true);
+    // Nothing is drafted yet, so the page is one question rather than two.
+    expect(texts(fixture, '.section-title')).toEqual(['Start a new draft']);
+    expect(texts(fixture, '.kind-name')).toEqual(['A preset', 'Your projection', 'A shared board']);
+    expect(texts(fixture, '.kind-meta')).toEqual(['2 presets', '1 projection', '1 board']);
+    expect(component.sourceKind()).toEqual('preset');
+    expect(texts(fixture, '.row-name')).toEqual([LAST_SEASON_PRESET_NAME, MODEL_PRESET_NAME]);
+    expect(fixture.nativeElement.querySelector('app-share-import')).toBeNull();
   });
 
-  // Resuming is what most visits are for; reading a summary is not. The two used to share a
-  // button, so a page of finished drafts was as loud as a page of drafts still being made.
-  it('gives the resume the loud button and the summary the quiet one', async () => {
+  it('says on the tiles what the kinds with nothing in them are waiting for', async () => {
+    listWithPresetDrafts.mockReturnValue(
+      of([
+        summary('lastSeason1', 'preset_draft', 'in_progress'),
+        summary('model1', 'preset_draft', 'finished', '2026-06-02T00:00:00Z', MODEL),
+      ]),
+    );
+
+    const fixture = await renderFixture();
+
+    expect(texts(fixture, '.kind-meta')).toEqual(['All drafted above', 'None yet', 'None yet']);
+  });
+
+  // One press to a draft: the first row of the open kind is checked from the start, and the
+  // one Start button on the page drafts against it.
+  it('checks the first preset from the start, so one press seeds and opens it', async () => {
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
+
+    expect(component.selection()).toEqual({ kind: 'preset', preset: LAST_SEASON });
+    expect(component.selectionName()).toEqual(LAST_SEASON_PRESET_NAME);
+    expect(texts(fixture, '.start')).toEqual(['Start draft']);
+    expect(texts(fixture, '.start-hint')).toEqual([`Against ${LAST_SEASON_PRESET_NAME}`]);
+
+    (fixture.nativeElement.querySelector('.start') as HTMLButtonElement).click();
+
+    expect(createProjection).toHaveBeenCalledOnce();
+    expect(createProjection.mock.calls[0][0].source).toEqual('default');
+    expect(navigate).toHaveBeenCalledWith(['/projections', 'preset1', 'draft']);
+  });
+
+  it('switches the rows with the tile, and checks the first of the new kind', async () => {
+    listWithPresetDrafts.mockReturnValue(
+      of([
+        summary('p1', 'projection', 'none', '2026-06-01T00:00:00Z'),
+        summary('p2', 'projection', 'none', '2026-06-10T00:00:00Z'),
+      ]),
+    );
+
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
+
+    component.sourceKind.set('projection');
+    fixture.detectChanges();
+
+    expect(texts(fixture, '.row-name')).toEqual(['Projection p2', 'Projection p1']);
+    expect(component.selection()).toEqual({ kind: 'board', id: 'p2' });
+    expect(component.selectionName()).toEqual('Projection p2');
+    expect(component.isBoardSelected('p2')).toBe(true);
+
+    component.selectBoard('p1');
+    component.start();
+
+    // A board already exists; nothing to seed, just open it.
+    expect(createProjection).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['/projections', 'p1', 'draft']);
+  });
+
+  it('opens on the projections when every preset is drafted already', async () => {
+    listWithPresetDrafts.mockReturnValue(
+      of([
+        summary('lastSeason1', 'preset_draft', 'in_progress'),
+        summary('model1', 'preset_draft', 'finished', '2026-06-02T00:00:00Z', MODEL),
+        summary('p1', 'projection', 'none'),
+      ]),
+    );
+
+    const component = await render();
+
+    expect(component.sourceKind()).toEqual('projection');
+    expect(component.selection()).toEqual({ kind: 'board', id: 'p1' });
+  });
+
+  it('disables Start when the open kind has nothing to draft against', async () => {
+    listWithPresetDrafts.mockReturnValue(of([]));
+
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
+
+    component.sourceKind.set('projection');
+    fixture.detectChanges();
+
+    expect(component.selection()).toBeNull();
+    expect((fixture.nativeElement.querySelector('.start') as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    expect(texts(fixture, '.group-empty')[0]).toContain('No projections yet.');
+  });
+
+  // The paste field lives with the shared boards; the tile says the kind is there to be used.
+  it('keeps the import box with the shared boards, and picks the copy once one is imported', async () => {
+    listWithPresetDrafts.mockReturnValue(of([imported('i1', 'alex')]));
+
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
+
+    component.sourceKind.set('imported');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-share-import')).not.toBeNull();
+    expect(component.selection()).toEqual({ kind: 'board', id: 'i1' });
+
+    listWithPresetDrafts.mockReturnValue(
+      of([
+        imported('i1', 'alex'),
+        { ...imported('i9', 'bulle'), updatedAt: '2026-07-01T00:00:00Z' },
+      ]),
+    );
+    component.sourceKind.set('preset');
+    component.onImported('i9');
+    await fixture.whenStable();
+
+    expect(component.sourceKind()).toEqual('imported');
+    expect(component.selection()).toEqual({ kind: 'board', id: 'i9' });
+    expect(component.selectionName()).toEqual('Board i9');
+  });
+
+  it('leads with the drafts, and drops their sources out of the rows below', async () => {
+    listWithPresetDrafts.mockReturnValue(
+      of([summary('p1', 'projection', 'in_progress'), summary('p2', 'projection', 'none')]),
+    );
+
+    const fixture = await renderFixture();
+    fixture.point.componentInstance.sourceKind.set('projection');
+    fixture.detectChanges();
+
+    expect(texts(fixture, '.section-title')).toEqual(['Your drafts', 'Start a new draft']);
+    expect(texts(fixture, '.draft-name')).toEqual(['Projection p1']);
+    expect(texts(fixture, '.row-name')).toEqual(['Projection p2']);
+  });
+
+  // The card is the button. A "Resume draft" on every card was a column of buttons before the
+  // page had asked its second question; the one filled button on the page is Start.
+  it('opens a draft from its card, worded by its state, with no button of its own', async () => {
     listWithPresetDrafts.mockReturnValue(
       of([
         summary('p1', 'projection', 'in_progress'),
@@ -375,80 +486,33 @@ describe('DraftStartComponent', () => {
       ]),
     );
 
-    const fixture = MockRender(DraftStartComponent);
-    await fixture.whenStable();
-    fixture.detectChanges();
+    const fixture = await renderFixture();
 
-    const resumes = Array.from(
-      fixture.nativeElement.querySelectorAll('.draft .resume') as NodeListOf<HTMLElement>,
+    const cards = Array.from(
+      fixture.nativeElement.querySelectorAll('.draft-open') as NodeListOf<HTMLButtonElement>,
     );
-    const statuses = Array.from(
-      fixture.nativeElement.querySelectorAll('.draft-status') as NodeListOf<HTMLElement>,
-    ).map((status) => status.textContent?.trim());
-
-    expect(resumes.map((button) => button.textContent?.trim())).toEqual([
-      'Resume draft',
-      'View summary',
+    expect(cards.map((card) => card.getAttribute('aria-label'))).toEqual([
+      'Resume draft: Projection p1',
+      'View summary: Projection p2',
     ]);
-    expect(resumes[0].classList.contains('btn-primary')).toBe(true);
-    expect(resumes[1].classList.contains('btn-secondary')).toBe(true);
-    expect(statuses).toEqual(['In progress', 'Complete']);
+    expect(texts(fixture, '.draft-status')).toEqual(['In progress', 'Complete']);
+    expect(fixture.nativeElement.querySelectorAll('.draft .btn')).toHaveLength(0);
+    expect(fixture.nativeElement.querySelectorAll('.btn-primary')).toHaveLength(1);
+
+    cards[1].click();
+
+    expect(navigate).toHaveBeenCalledWith(['/projections', 'p2', 'draft']);
   });
 
-  // The empty state links to the new-projection page; a list that is not empty used to lose
-  // that door, though it is the only way to more projections from here.
-  it('keeps the way to a new projection beside the projections already listed', async () => {
-    listWithPresetDrafts.mockReturnValue(of([summary('p1', 'projection', 'none')]));
-
-    const fixture = MockRender(DraftStartComponent);
-    await fixture.whenStable();
-    fixture.detectChanges();
-
-    // RouterLink is mocked away with the rest of the router here, so the anchor carries no
-    // href; the directive's input is what says where it goes.
-    const link = ngMocks.find(fixture, '.create-projection');
-
-    expect(ngMocks.input(link, 'routerLink')).toEqual('/projections/new');
-    expect(link.nativeElement.textContent?.trim()).toEqual('+ Create a new projection');
-  });
-
-  it('leads with the drafts, and drops their sources out of the lists below', async () => {
-    listWithPresetDrafts.mockReturnValue(
-      of([summary('p1', 'projection', 'in_progress'), summary('p2', 'projection', 'none')]),
-    );
-
-    const fixture = MockRender(DraftStartComponent);
-    await fixture.whenStable();
-    fixture.detectChanges();
-
-    const sectionTitles = Array.from(
-      fixture.nativeElement.querySelectorAll('.section-title') as NodeListOf<HTMLElement>,
-    ).map((heading) => heading.textContent?.trim());
-    const draftNames = Array.from(
-      fixture.nativeElement.querySelectorAll('.draft-name') as NodeListOf<HTMLElement>,
-    ).map((name) => name.textContent?.trim());
-    const rowNames = Array.from(
-      fixture.nativeElement.querySelectorAll('.row-name') as NodeListOf<HTMLElement>,
-    ).map((name) => name.textContent?.trim());
-
-    expect(sectionTitles).toEqual(['Your drafts', 'Start a new draft']);
-    expect(draftNames).toEqual(['Projection p1']);
-    expect(rowNames).not.toContain('Projection p1');
-    expect(rowNames).toContain('Projection p2');
-  });
-
-  it('keeps the discard behind the row menu rather than beside the resume', async () => {
+  it('keeps the discard behind the card menu rather than on the card', async () => {
     listWithPresetDrafts.mockReturnValue(of([summary('p1', 'projection', 'in_progress')]));
 
-    const fixture = MockRender(DraftStartComponent);
-    await fixture.whenStable();
-    fixture.detectChanges();
+    const fixture = await renderFixture();
 
     const buttons = Array.from(
-      fixture.nativeElement.querySelectorAll('.draft-actions button') as NodeListOf<HTMLElement>,
-    ).map((button) => button.textContent?.trim());
-    // The kebab carries an icon and no text, so the only label on the card is the resume.
-    expect(buttons).toEqual(['Resume draft', '']);
+      fixture.nativeElement.querySelectorAll('.draft button') as NodeListOf<HTMLElement>,
+    ).map((button) => button.className);
+    expect(buttons).toEqual(['draft-open', 'draft-menu']);
 
     (fixture.nativeElement.querySelector('.draft-menu') as HTMLElement).click();
 
@@ -461,7 +525,7 @@ describe('DraftStartComponent', () => {
     );
   });
 
-  // The board is the picks and nothing else, and it is not in "Your projections" to open.
+  // The board is the picks and nothing else, and it is not in "Your projection" to open.
   it('offers no way into the board behind a preset draft', async () => {
     const component = await render();
 
@@ -586,14 +650,8 @@ describe('DraftStartComponent', () => {
     fixture.point.componentInstance.requestDiscard(summary('p1', 'projection', 'in_progress'));
     fixture.detectChanges();
 
-    const buttons = Array.from(
-      fixture.nativeElement.querySelectorAll('.draft-actions button') as NodeListOf<HTMLElement>,
-    ).map((button) => button.textContent?.trim());
-
-    expect(buttons).toEqual(['Yes, discard', 'Cancel']);
-    expect(
-      (fixture.nativeElement.querySelector('.confirm-text') as HTMLElement).textContent?.trim(),
-    ).toEqual('Discard the picks? The projection stays.');
+    expect(texts(fixture, '.draft-actions button')).toEqual(['Yes, discard', 'Cancel']);
+    expect(texts(fixture, '.confirm-text')).toEqual(['Discard the picks? The projection stays.']);
   });
 
   it('discarding a finished draft leaves the projection to be drafted again', async () => {
@@ -607,12 +665,29 @@ describe('DraftStartComponent', () => {
 
     component.confirmDiscard(finished);
     await fixture.whenStable();
+    component.sourceKind.set('projection');
     fixture.detectChanges();
 
     expect(clearDraft).toHaveBeenCalledWith('p1');
     expect(fixture.nativeElement.querySelector('.draft')).toBeNull();
-    expect(
-      (fixture.nativeElement.querySelector('.row button') as HTMLElement).textContent?.trim(),
-    ).toEqual('Start draft');
+    expect(texts(fixture, '.row-name')).toEqual(['Projection p1']);
+    expect(component.selection()).toEqual({ kind: 'board', id: 'p1' });
+  });
+
+  // The empty state links to the new-projection page; a list that is not empty used to lose
+  // that door, though it is the only way to more projections from here.
+  it('keeps the way to a new projection beside the projections already listed', async () => {
+    listWithPresetDrafts.mockReturnValue(of([summary('p1', 'projection', 'none')]));
+
+    const fixture = await renderFixture();
+    fixture.point.componentInstance.sourceKind.set('projection');
+    fixture.detectChanges();
+
+    // RouterLink is mocked away with the rest of the router here, so the anchor carries no
+    // href; the directive's input is what says where it goes.
+    const link = ngMocks.find(fixture, '.create-projection');
+
+    expect(ngMocks.input(link, 'routerLink')).toEqual('/projections/new');
+    expect(link.nativeElement.textContent?.trim()).toEqual('+ Create a new projection');
   });
 });
