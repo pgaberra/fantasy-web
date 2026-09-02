@@ -153,7 +153,7 @@ describe('PlayerRowComponent', () => {
     fixture.detectChanges();
   };
 
-describe('the injury marker', () => {
+  describe('the injury marker', () => {
     const badge = () => fixture.nativeElement.querySelector('.injury-badge');
 
     it('says nothing about a player who is not on the report', () => {
