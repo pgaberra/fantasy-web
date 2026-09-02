@@ -31,17 +31,27 @@ test.describe('draft mode from a preset', () => {
     await page.getByRole('menuitem', { name: /draft mode/i }).click();
     await expect(page).toHaveURL(/\/draft\/?$/);
 
-    // The picker keeps a preset that has been drafted against out of the list below, so which
-    // of the two the preset shows up in says whether this run is the first on the account.
+    // The picker keeps a preset that has been drafted against out of the rows below, so which
+    // of the two the preset shows up in says whether this run is the first on the account. The
+    // page's Start button renders with the rows, so waiting for it is waiting for the answer;
+    // count() itself does not wait.
+    const startDraft = page.getByRole('button', { name: /^start draft$/i });
+    await expect(startDraft).toBeVisible({ timeout: 15_000 });
     const presetRow = page.locator('li.row').filter({ hasText: PRESET_NAME });
     const presetDraft = page.locator('li.draft').filter({ hasText: PRESET_NAME });
     const startedAlready = (await presetDraft.count()) > 0;
-    const presetEntry = startedAlready ? presetDraft : presetRow;
-    await expect(presetEntry).toBeVisible();
 
-    // 2) Open the preset draft. Seeding the player rows server-side takes a moment on a first
-    //    run; a later run resumes the one already stored.
-    await presetEntry.getByRole('button').first().click();
+    // 2) Open the preset draft. A later run resumes the one already stored: the draft card is
+    //    itself the button. A first run picks the preset's radio row (the page opens on the
+    //    presets, so no tile to press) and starts from the page's one Start button; seeding the
+    //    player rows server-side takes a moment.
+    if (startedAlready) {
+      await presetDraft.getByRole('button', { name: /resume draft|view summary/i }).click();
+    } else {
+      await expect(presetRow).toBeVisible();
+      await presetRow.getByRole('radio').check();
+      await startDraft.click();
+    }
     await expect(page).toHaveURL(/\/projections\/[0-9a-f-]+\/draft$/i, { timeout: 30_000 });
     await expect(page.getByRole('heading', { name: PRESET_NAME })).toBeVisible({
       timeout: 30_000,
