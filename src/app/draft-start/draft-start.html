@@ -1,38 +1,17 @@
-<!--
-  What a row with a draft offers: open it, and once there is something to lose, throw it away.
-  One template for all three lists, so a draft can be discarded wherever it turns up — the
-  resume card above, a projection of the user's own, or a board imported from a share link —
-  and the three cannot drift apart. A row with no draft yet shows only the button that starts
-  one.
--->
-<ng-template #draftActions let-row>
-  @if (isDiscarding(row)) {
-    <span class="row-busy">Discarding…</span>
-  } @else if (isConfirmingDiscard(row)) {
-    <span class="confirm-text">{{ discardPrompt(row) }}</span>
-    <button type="button" class="btn btn-danger btn-sm" (click)="confirmDiscard(row)">
-      Yes, discard
-    </button>
-    <button type="button" class="btn btn-secondary btn-sm" (click)="cancelDiscard()">Cancel</button>
-  } @else {
-    @if (row.draftStatus === 'finished') {
-      <span class="row-status row-status--done">Draft complete</span>
-    }
-    <button type="button" class="btn btn-primary btn-sm" (click)="openDraft(row.id)">
-      {{ draftLabel(row.draftStatus) }}
-    </button>
-    @if (row.draftStatus !== 'none') {
-      <button type="button" class="btn btn-danger-quiet btn-sm" (click)="requestDiscard(row)">
-        Discard draft
-      </button>
-    }
-  }
-</ng-template>
-
 <div class="draft-start">
   <div class="page-header">
-    <h1>Draft Mode</h1>
-    <p class="subtitle">Pick what you want to draft against.</p>
+    <h1>Draft mode</h1>
+    <!--
+      `hasValue` before anything derived from the list: this line sits outside the error branch
+      below, and reading the resource's value while it is in an error state throws.
+    -->
+    <p class="subtitle">
+      @if (sourcesResource.hasValue() && drafts().length > 0) {
+        Pick up a draft, or start a new one.
+      } @else {
+        Pick what you want to draft against.
+      }
+    </p>
   </div>
 
   @if (sourcesResource.isLoading()) {
@@ -40,109 +19,158 @@
   } @else if (sourcesResource.error()) {
     <app-error-state title="Couldn't load your draft sources" (retry)="retry()" />
   } @else {
-    @if (inProgress().length > 0) {
-      <section class="resume" aria-labelledby="resume-title">
-        <h2 class="group-title" id="resume-title">Pick up where you left off</h2>
-        <ul class="rows">
-          @for (draft of inProgress(); track draft.id) {
-            <li class="row row--resume">
-              <div class="row-main">
-                <span class="row-name">{{ draft.name }}</span>
-                <span class="row-meta">
-                  {{ sourceLabel(draft) }} · last pick {{ draft.updatedAt | relativeTime }}
+    <!--
+      The drafts, then the sources with none. Every draft is here and nowhere else: it used to be
+      copied to the top of the page while its source stayed in the list below, so the same draft
+      answered to two rows with two labels. A source holds at most one draft, so lifting them all
+      out leaves the lists below meaning exactly one thing, "not started yet".
+    -->
+    @if (drafts().length > 0) {
+      <section class="section" aria-labelledby="drafts-title">
+        <h2 class="section-title" id="drafts-title">Your drafts</h2>
+        <ul class="drafts">
+          @for (draft of drafts(); track draft.id) {
+            <li class="draft">
+              <div class="draft-main">
+                <div class="draft-heading">
+                  <span class="draft-name">{{ draft.name }}</span>
+                  @if (draft.draftStatus === 'finished') {
+                    <span class="draft-status draft-status--done">Complete</span>
+                  }
+                </div>
+                <span class="draft-meta">
+                  {{ sourceLabel(draft) }} · {{ timingLabel(draft) }}
+                  {{ draft.updatedAt | relativeTime }}
                 </span>
               </div>
-              <ng-container
-                [ngTemplateOutlet]="draftActions"
-                [ngTemplateOutletContext]="{ $implicit: draft }"
-              />
+              <div class="draft-actions">
+                @if (isDiscarding(draft)) {
+                  <span class="row-busy">Discarding…</span>
+                } @else if (isConfirmingDiscard(draft)) {
+                  <span class="confirm-text" tabindex="-1">{{ discardPrompt(draft) }}</span>
+                  <button
+                    type="button"
+                    class="btn btn-danger btn-sm discard"
+                    (click)="confirmDiscard(draft)"
+                  >
+                    Yes, discard
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm cancel"
+                    (click)="cancelDiscard()"
+                  >
+                    Cancel
+                  </button>
+                } @else {
+                  <button
+                    type="button"
+                    class="btn btn-primary btn-sm resume"
+                    (click)="openDraft(draft.id)"
+                  >
+                    {{ draftLabel(draft.draftStatus) }}
+                  </button>
+                  <!--
+                    One loud action per row, the rest behind the kebab: the discard used to sit
+                    beside the resume on every row, so a page of drafts was a column of red.
+                    Same affordance the projection list uses for the same reason.
+                  -->
+                  <button
+                    type="button"
+                    class="draft-menu"
+                    [attr.aria-label]="'More actions for ' + draft.name"
+                    [appPopover]="draftMenu"
+                    [popoverContext]="{ $implicit: draft }"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <circle cx="12" cy="5" r="2.1" />
+                      <circle cx="12" cy="12" r="2.1" />
+                      <circle cx="12" cy="19" r="2.1" />
+                    </svg>
+                  </button>
+                }
+              </div>
             </li>
           }
         </ul>
       </section>
     }
 
-    <!--
-      One list, grouped by where a source comes from, rather than three tabs over the same
-      question. The new-projection page groups the same three the same way (projection-create.html):
-      a tab hid two thirds of what can be drafted against — the import box included, behind the
-      tab that is empty until it has been used once.
-    -->
-    <section class="group group--presets" aria-labelledby="presets-title">
-      <h2 class="group-title" id="presets-title">Presets</h2>
-      <ul class="rows">
-        @for (preset of presets; track preset.name) {
-          <li class="row">
-            <div class="row-main">
-              <span class="row-name">{{ preset.name }}</span>
-              <span class="row-meta">{{ preset.description }}</span>
-            </div>
-            @if (presetDraft(preset)?.draftStatus === 'finished') {
-              <span class="row-status row-status--done">Draft complete</span>
-            }
-            @if (isStarting()) {
-              <span class="row-busy">Starting…</span>
-            } @else if (isConfirmingRestart(preset)) {
-              <span class="confirm-text">Discard this draft and start over?</span>
-              <button type="button" class="btn btn-danger btn-sm" (click)="confirmRestart(preset)">
-                Yes, start over
-              </button>
-              <button type="button" class="btn btn-secondary btn-sm" (click)="cancelRestart()">
-                Cancel
-              </button>
-            } @else {
-              <button type="button" class="btn btn-primary btn-sm" (click)="startPreset(preset)">
-                {{ presetLabel(preset) }}
-              </button>
-              @if (presetDraft(preset)) {
-                <button
-                  type="button"
-                  class="btn btn-secondary btn-sm"
-                  (click)="requestRestart(preset)"
-                >
-                  Start over
+    <section class="section" aria-labelledby="start-title">
+      <h2 class="section-title" id="start-title">Start a new draft</h2>
+
+      <!--
+        One list, grouped by where a source comes from, rather than three tabs over the same
+        question. The new-projection page groups the same three the same way
+        (projection-create.html): a tab hid two thirds of what can be drafted against, the import
+        box included, behind the tab that is empty until it has been used once.
+      -->
+      @if (availablePresets().length > 0) {
+        <h3 class="group-title" id="presets-title">Presets</h3>
+        <ul class="rows" aria-labelledby="presets-title">
+          @for (preset of availablePresets(); track preset.id) {
+            <li class="row">
+              <div class="row-main">
+                <span class="row-name">{{ preset.name }}</span>
+                <span class="row-meta">{{ preset.description }}</span>
+              </div>
+              @if (isStarting()) {
+                <span class="row-busy">Starting…</span>
+              } @else {
+                <button type="button" class="btn btn-primary btn-sm" (click)="startPreset(preset)">
+                  Start draft
                 </button>
               }
-            }
-          </li>
-        }
-      </ul>
-    </section>
+            </li>
+          }
+        </ul>
+      }
 
-    <section class="group group--own" aria-labelledby="own-title">
-      <h2 class="group-title" id="own-title">Your projections</h2>
+      <h3 class="group-title" id="own-title">Your projections</h3>
       @if (projections().length === 0) {
         <p class="group-empty">
-          No projections yet.
-          <a routerLink="/projections/new">Create one</a> to draft against your own numbers.
+          @if (drafts().length > 0) {
+            Every projection you have is drafted against already.
+            <a routerLink="/projections/new">Create another</a> to draft against fresh numbers.
+          } @else {
+            No projections yet.
+            <a routerLink="/projections/new">Create one</a> to draft against your own numbers.
+          }
         </p>
       } @else {
-        <ul class="rows">
+        <ul class="rows" aria-labelledby="own-title">
           @for (projection of projections(); track projection.id) {
             <li class="row">
               <div class="row-main">
                 <span class="row-name">{{ projection.name }}</span>
                 <span class="row-meta">Updated {{ projection.updatedAt | relativeTime }}</span>
               </div>
-              <ng-container
-                [ngTemplateOutlet]="draftActions"
-                [ngTemplateOutletContext]="{ $implicit: projection }"
-              />
+              <button
+                type="button"
+                class="btn btn-primary btn-sm"
+                (click)="openDraft(projection.id)"
+              >
+                Start draft
+              </button>
             </li>
           }
         </ul>
       }
-    </section>
 
-    <section class="group group--shared" aria-labelledby="shared-title">
-      <h2 class="group-title" id="shared-title">Shared with you</h2>
+      <h3 class="group-title" id="shared-title">Shared with you</h3>
       @if (imported().length === 0) {
         <p class="group-empty">
           Nobody's board here yet. Paste a SlapStat share link below to draft against someone else's
           numbers.
         </p>
       } @else {
-        <ul class="rows">
+        <ul class="rows" aria-labelledby="shared-title">
           @for (board of imported(); track board.id) {
             <li class="row">
               <div class="row-main">
@@ -151,10 +179,9 @@
                   {{ sourceLabel(board) }} · imported {{ board.createdAt | relativeTime }}
                 </span>
               </div>
-              <ng-container
-                [ngTemplateOutlet]="draftActions"
-                [ngTemplateOutletContext]="{ $implicit: board }"
-              />
+              <button type="button" class="btn btn-primary btn-sm" (click)="openDraft(board.id)">
+                Start draft
+              </button>
             </li>
           }
         </ul>
@@ -164,3 +191,49 @@
     </section>
   }
 </div>
+
+<ng-template #draftMenu let-draft>
+  <div class="draft-menu-panel">
+    @if (canOpenBoard(draft)) {
+      <button type="button" class="menu-item open-board" (click)="openBoard(draft.id)">
+        <svg
+          viewBox="0 0 24 24"
+          width="15"
+          height="15"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M4 5h16v14H4z" />
+          <path d="M4 9h16" />
+          <path d="M10 9v10" />
+        </svg>
+        Open the projection
+      </button>
+    }
+    <button
+      type="button"
+      class="menu-item menu-item--danger discard"
+      (click)="requestDiscard(draft)"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="15"
+        height="15"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M3 12a9 9 0 1 0 2.6-6.4" />
+        <polyline points="3 4 3 9.5 8.5 9.5" />
+      </svg>
+      Discard draft
+    </button>
+  </div>
+</ng-template>

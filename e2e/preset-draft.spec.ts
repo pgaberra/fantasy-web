@@ -31,12 +31,17 @@ test.describe('draft mode from a preset', () => {
     await page.getByRole('menuitem', { name: /draft mode/i }).click();
     await expect(page).toHaveURL(/\/draft\/?$/);
 
-    const presetCard = page.locator('li.card').filter({ hasText: PRESET_NAME });
-    await expect(presetCard).toBeVisible();
+    // The picker keeps a preset that has been drafted against out of the list below, so which
+    // of the two the preset shows up in says whether this run is the first on the account.
+    const presetRow = page.locator('li.row').filter({ hasText: PRESET_NAME });
+    const presetDraft = page.locator('li.draft').filter({ hasText: PRESET_NAME });
+    const startedAlready = (await presetDraft.count()) > 0;
+    const presetEntry = startedAlready ? presetDraft : presetRow;
+    await expect(presetEntry).toBeVisible();
 
     // 2) Open the preset draft. Seeding the player rows server-side takes a moment on a first
     //    run; a later run resumes the one already stored.
-    await presetCard.getByRole('button').first().click();
+    await presetEntry.getByRole('button').first().click();
     await expect(page).toHaveURL(/\/projections\/[0-9a-f-]+\/draft$/i, { timeout: 30_000 });
     await expect(page.getByRole('heading', { name: PRESET_NAME })).toBeVisible({
       timeout: 30_000,
@@ -59,7 +64,9 @@ test.describe('draft mode from a preset', () => {
     // 4) Leaving the board returns to the source picker, not to a projection that isn't theirs.
     await page.getByRole('link', { name: /exit draft mode/i }).click();
     await expect(page).toHaveURL(/\/draft\/?$/);
-    await expect(presetCard.locator('.card-status')).toBeVisible();
+    // The draft now exists, so the preset has moved out of the list below and into "Your drafts".
+    await expect(presetDraft).toBeVisible();
+    await expect(presetRow).toHaveCount(0);
 
     // 5) The preset draft is not the user's own work, so it is absent from My Projections.
     await page.getByRole('button', { name: /^draft$/i }).click();
