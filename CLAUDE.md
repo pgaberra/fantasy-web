@@ -68,14 +68,17 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   handful of projections no longer faces ten radios. The first row of the open kind is
   checked from the start (`selection`, a
   `linkedSignal` that keeps a pick whose row survives a reload), so a preset draft is
-  still one press away. Under the preset tile the two presets are **cards** rather than
-  bare radios, side by side so they read as peers: the AI projection is what we mean to
-  sell, and second in a vertical list of two it read as a footnote. It carries a gold
-  **Premium** badge, and `showsPremiumBadge` holds that badge back wherever
-  `paymentsEnabled` is off — without payments the preset is free and ungated, and a badge
-  naming a subscription the build cannot sell promises something nobody can act on. The
-  user's own projections and shared boards stay plain rows: they are a growing list, and a
-  card each is the noise this page was rebuilt to lose. The shared kind carries the paste
+  still one press away. Every choice under the tiles is **the same card** (a visible radio,
+  an icon, the name, the meta if there is any, an outline on the checked one), two across
+  on desktop and one on a phone. The presets were cards and the boards a ruled list for one
+  release (#514); switching tiles then switched the grammar of the control under them,
+  which read as inconsistent, so the card won. The two presets side by side are peers: the
+  AI projection is what we mean to sell, and second in a vertical list it read as a
+  footnote. It carries a gold **Premium** badge, and `showsPremiumBadge` holds that badge
+  back wherever `paymentsEnabled` is off — without payments the preset is free and
+  ungated, and a badge naming a subscription the build cannot sell promises something
+  nobody can act on. The radio stays real and visible on purpose: it is what the E2E suite
+  checks (`li.row` + `getByRole('radio')`). The shared kind carries the paste
   field; `shareTokenFrom` accepts a whole URL, a `/s/…` path, or a bare token, and a name
   clash (409) asks for a name rather than reporting a failure the user cannot act on. An
   import switches to that kind and checks the copy.

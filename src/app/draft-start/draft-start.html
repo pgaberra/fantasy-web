@@ -235,8 +235,12 @@
       </fieldset>
 
       <!--
-        The rows of the chosen kind, and only those. The radio rows are the new-projection
-        page's (projection-create.html), which asks the same question of the same three groups.
+        The choices of the open kind, and only those. Every one of them is the same card, with
+        the same radio, icon and outline, whichever tile it came from: the presets were cards and
+        the rest a ruled list for a while, and switching tiles then switched the grammar of the
+        control under them, which read as a different page each time. The icon repeats within a
+        kind and says which tile the card belongs to; what tells the cards apart is the name and,
+        for a board, when it was last touched.
       -->
       <fieldset class="panel">
         <legend class="visually-hidden">Which one</legend>
@@ -256,7 +260,7 @@
             } @else {
               <ul class="rows">
                 @for (projection of projections(); track projection.id) {
-                  <li class="row">
+                  <li class="row" [class.row--selected]="isBoardSelected(projection.id)">
                     <label class="row-choice">
                       <input
                         type="radio"
@@ -264,8 +268,26 @@
                         [checked]="isBoardSelected(projection.id)"
                         (change)="selectBoard(projection.id)"
                       />
+                      <span class="row-icon" aria-hidden="true">
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="20"
+                          height="20"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path d="M4 5h16v14H4z" />
+                          <path d="M4 9h16" />
+                          <path d="M10 9v10" />
+                        </svg>
+                      </span>
                       <span class="row-main">
-                        <span class="row-name">{{ projection.name }}</span>
+                        <span class="row-heading">
+                          <span class="row-name">{{ projection.name }}</span>
+                        </span>
                         <span class="row-meta">
                           Updated {{ projection.updatedAt | relativeTime }}
                         </span>
@@ -294,7 +316,7 @@
             } @else {
               <ul class="rows">
                 @for (board of imported(); track board.id) {
-                  <li class="row">
+                  <li class="row" [class.row--selected]="isBoardSelected(board.id)">
                     <label class="row-choice">
                       <input
                         type="radio"
@@ -302,8 +324,25 @@
                         [checked]="isBoardSelected(board.id)"
                         (change)="selectBoard(board.id)"
                       />
+                      <span class="row-icon" aria-hidden="true">
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="20"
+                          height="20"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5" />
+                          <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5" />
+                        </svg>
+                      </span>
                       <span class="row-main">
-                        <span class="row-name">{{ board.name }}</span>
+                        <span class="row-heading">
+                          <span class="row-name">{{ board.name }}</span>
+                        </span>
                         <span class="row-meta">
                           {{ sourceLabel(board) }} · imported {{ board.createdAt | relativeTime }}
                         </span>
@@ -322,16 +361,13 @@
               </p>
             } @else {
               <!--
-                The presets are cards, where a projection or a shared board stays a plain row.
-                They are the product's own offer rather than a list of the user's things, there
-                are exactly two, and side by side they are peers: in a vertical list of bare
-                radios the AI projection read as a footnote under last season's stats, which is
-                the wrong shape for the one we mean to sell. The rows below stay rows because a
-                card each, for a list that grows, is where this page started.
+                Side by side the two presets are peers: in a vertical list the AI projection read
+                as a footnote under last season's stats, which is the wrong shape for the one we
+                mean to sell. Its badge is the one thing on the page that is selling anything.
               -->
-              <ul class="rows rows--presets">
+              <ul class="rows">
                 @for (preset of availablePresets(); track preset.id) {
-                  <li class="row row--preset" [class.row--selected]="isPresetSelected(preset)">
+                  <li class="row" [class.row--selected]="isPresetSelected(preset)">
                     <label class="row-choice">
                       <input
                         type="radio"
@@ -339,7 +375,7 @@
                         [checked]="isPresetSelected(preset)"
                         (change)="selectPreset(preset)"
                       />
-                      <span class="preset-icon" aria-hidden="true">
+                      <span class="row-icon" aria-hidden="true">
                         @switch (preset.id) {
                           @case ('model') {
                             <svg
@@ -378,10 +414,12 @@
                         }
                       </span>
                       <span class="row-main">
-                        <span class="row-name">{{ preset.name }}</span>
-                        @if (showsPremiumBadge(preset)) {
-                          <span class="preset-badge">Premium</span>
-                        }
+                        <span class="row-heading">
+                          <span class="row-name">{{ preset.name }}</span>
+                          @if (showsPremiumBadge(preset)) {
+                            <span class="row-badge">Premium</span>
+                          }
+                        </span>
                       </span>
                     </label>
                   </li>
