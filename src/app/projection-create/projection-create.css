@@ -25,10 +25,19 @@
   margin-bottom: var(--space-5);
 }
 
+/* A fieldset, so the four cards are one radio group the arrow keys can walk. Stripped of the
+   frame the browser gives one, so it lays out like the fields around it. */
+.starting {
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
 .field-label-row {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  padding: 0;
   margin-bottom: 0.4rem;
 }
 
@@ -71,75 +80,138 @@
   box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
 }
 
-/* The rows and the headings over them are the draft picker's (draft-start.css), because they are
-   the same control: every starting point in one list, grouped by where it comes from. Component
-   styles are scoped, so they are repeated here rather than imported — the same trade the preview
-   table makes below. */
-/* Quieter than the draft picker's, which are that page's own section headings and answer to
-   nothing above them. These sit inside a labelled field, so they may not outrank the label that
-   asks the question: at --text-sm in tracked capitals they were a size and a case louder than
-   "Starting point" itself. Same size as that label now, a weight below it, and the space above
-   each one does the separating the capitals used to. */
-.group-title {
-  margin: var(--space-5) 0 var(--space-2);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  color: var(--color-text-subtle);
+/* The four ways in, two by two. The tile is the draft picker's (draft-start.css), which asks
+   the same question with the same kinds; component styles are scoped, so it is repeated here. */
+.starts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
 }
 
-.rows {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.row {
+.start {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: 0.6rem 0.15rem;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.rows .row:first-child {
-  border-top: 1px solid var(--color-border);
-}
-
-/* Everything but the tip is the label, so the name selects the row as the radio does — the
-   target a list of one-line choices otherwise makes needlessly small. The tip stays outside it:
-   a `<button>` is interactive content, and a label may not contain any — some browsers would
-   let a tap on it pick the row. */
-.row-choice {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  /* Not stretched: the tip belongs beside the name it explains, not out at the row's edge. */
-  flex: 0 1 auto;
-  min-width: 0;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: 0.7rem 0.8rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   cursor: pointer;
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition);
 }
 
-.row-main {
+.start:hover {
+  border-color: var(--color-border-strong);
+}
+
+.start--selected {
+  border-color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
+.start:has(.start-input:focus-visible) {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
+/* Off-screen rather than display: none, so it keeps its place in the tab order. */
+.start-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.start-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  transition:
+    background var(--transition),
+    color var(--transition);
+}
+
+.start--selected .start-icon {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
+.start-main {
   display: flex;
   flex-direction: column;
   gap: 0.1rem;
   min-width: 0;
 }
 
-.row-name {
+.start-name {
   font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
+  font-weight: var(--weight-semibold);
   color: var(--color-primary);
 }
 
-.row-meta {
+.start-description {
   font-size: var(--text-xs);
+  line-height: 1.35;
   color: var(--color-text-subtle);
 }
 
-.sources app-share-import {
-  display: block;
+.start-meta {
+  margin-top: 0.2rem;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+}
+
+/* Under the cards while the copy card is down: which board, and the way to one more. */
+.copy-panel {
   margin-top: var(--space-3);
+}
+
+.copy-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+}
+
+/* The name field's own look, so the two controls on the page read as one form. */
+.copy-select {
+  width: 100%;
+  max-width: 380px;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--color-primary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-sm);
+}
+
+.copy-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
+}
+
+.copy-empty {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
+}
+
+.copy-panel app-share-import {
+  display: block;
 }
 
 .preview {
@@ -194,4 +266,19 @@
 
 .create-button {
   margin-top: var(--space-5);
+}
+
+@media (max-width: 640px) {
+  /* Two across do not fit a phone; stacked, each card is a row with the icon at its start. */
+  .starts {
+    grid-template-columns: 1fr;
+  }
+
+  .start {
+    align-items: center;
+  }
+
+  .copy-select {
+    max-width: none;
+  }
 }

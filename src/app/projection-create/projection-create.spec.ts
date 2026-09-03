@@ -370,21 +370,10 @@ describe('ProjectionCreateComponent', () => {
       expect(createProjection.mock.calls[0][0].source).toEqual('model');
     });
 
-    // What a preset means is a tip on the row, not a line under the name: three subtitles made
-    // the strip's own choices louder than the projections listed beside them.
-    it('explains each preset in a tip rather than a subtitle', async () => {
-      const fixture = MockRender(ProjectionCreateComponent);
-      await fixture.whenStable();
-      fixture.detectChanges();
-
-      const presets: HTMLElement = fixture.nativeElement.querySelector('.rows--presets');
-      expect(presets.querySelectorAll('app-help-tip')).toHaveLength(CREATE_PRESETS.length);
-      expect(presets.querySelector('.row-meta')).toBeNull();
-    });
-
-    // What the tabs cost: a board picked in one was invisible from the others, so the page never
-    // showed, in one view, what the projection would actually start from.
-    it('lists every starting point at once, the import box included', async () => {
+    // Four cards, each with an icon and what picking it means. The boards used to be radio rows
+    // under the presets, all on the page at once, so a user with a few projections faced ten
+    // radios before the question had registered.
+    it('offers the presets and the copy as four cards, with the boards folded away', async () => {
       MockInstance(
         ProjectionStorageService,
         'listEditable',
@@ -395,15 +384,83 @@ describe('ProjectionCreateComponent', () => {
       await fixture.whenStable();
       fixture.detectChanges();
 
-      const headings = Array.from(
-        fixture.nativeElement.querySelectorAll('.group-title') as NodeListOf<HTMLElement>,
-      ).map((heading) => heading.textContent?.trim());
-
-      expect(headings).toEqual(['Copy one of yours', 'Shared with you']);
-      expect(fixture.nativeElement.querySelectorAll('.sources .row')).toHaveLength(
-        CREATE_PRESETS.length + listed.length,
+      const root: HTMLElement = fixture.nativeElement;
+      const names = Array.from(root.querySelectorAll<HTMLElement>('.start-name')).map((name) =>
+        name.textContent?.trim(),
       );
+
+      expect(names).toEqual([...CREATE_PRESETS.map((preset) => preset.name), 'Copy a board']);
+      expect(fixture.nativeElement.querySelectorAll('.start-icon svg')).toHaveLength(
+        CREATE_PRESETS.length + 1,
+      );
+      expect(fixture.nativeElement.querySelector('.start-meta')?.textContent?.trim()).toEqual(
+        '2 boards',
+      );
+      // Folded, not gone: the card says how many there are, and the select is a press away.
+      expect(fixture.nativeElement.querySelector('.copy-select')).toBeNull();
+      expect(fixture.nativeElement.querySelector('app-share-import')).toBeNull();
+    });
+
+    // The copy card is an answer the moment it is pressed: the first of the user's own boards is
+    // picked, and the select under it lists the rest under the two headings they came from.
+    it('picks the first board when the copy card is pressed, and lists the rest to choose from', async () => {
+      MockInstance(
+        ProjectionStorageService,
+        'listEditable',
+        vi.fn(() => of(listed)),
+      );
+
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.selectCopy();
+      fixture.detectChanges();
+
+      expect(component.startingPoint()).toEqual({ kind: 'copy', id: 'own1' });
+      expect(component.canCreate()).toEqual(true);
+      const root: HTMLElement = fixture.nativeElement;
+      const groups = Array.from(
+        root.querySelectorAll<HTMLOptGroupElement>('.copy-select optgroup'),
+      ).map((group) => group.label);
+      const options = Array.from(root.querySelectorAll<HTMLOptionElement>('.copy-select option'));
+      expect(groups).toEqual(['Your projections', 'Shared with you']);
+      expect(options.map((option) => option.value)).toEqual(['own1', 'shared1']);
+      expect(options.map((option) => option.selected)).toEqual([true, false]);
+      expect(options[1].textContent?.trim()).toEqual("Alex's board · From alex");
       expect(fixture.nativeElement.querySelector('app-share-import')).not.toBeNull();
+
+      // Pressing the card again is not a reason to swap a board already picked for the first.
+      component.selectCopyFrom('shared1');
+      component.selectCopy();
+      expect(component.startingPoint()).toEqual({ kind: 'copy', id: 'shared1' });
+    });
+
+    // With nothing to copy the card still answers "what kind", so it stays down and says where
+    // a board comes from; only Create has to wait.
+    it('opens the copy card empty-handed when there is no board, and holds Create back', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.selectCopy();
+      fixture.detectChanges();
+
+      expect(component.startingPoint()).toEqual({ kind: 'copy', id: null });
+      expect(component.copiedBoard()).toBeNull();
+      expect(component.canCreate()).toEqual(false);
+      expect(fixture.nativeElement.querySelector('.start-meta')?.textContent?.trim()).toEqual(
+        'None yet',
+      );
+      expect(fixture.nativeElement.querySelector('.copy-empty')).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('.copy-select')).toBeNull();
+      expect(fixture.nativeElement.querySelector('app-share-import')).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('.preview-note').textContent).toContain(
+        'Pick a board to copy',
+      );
+
+      component.selectPreset('default');
+      expect(component.canCreate()).toEqual(true);
     });
 
     // A copy has no preview: the rows are the board's own, which this page never downloads.

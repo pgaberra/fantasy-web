@@ -62,9 +62,11 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   open-the-projection behind a kebab. Below it, starting a draft is **one choice made in
   steps**: a tile per kind of source (each saying what it holds, so the two not open are
   still accounted for), the radio rows of the open kind, and a single **Start draft**
-  button, the only filled button on the page. The rows are the new-projection page's
-  starting-point rows; `projection-create` asks the same question of the same three
-  groups. The first row of the open kind is checked from the start (`selection`, a
+  button, the only filled button on the page. `projection-create` asks the same question
+  with the same tiles: the three presets and "Copy a board" as four cards, the boards
+  behind the fourth in a `<select>` grouped by yours / shared with you, so a user with a
+  handful of projections no longer faces ten radios. The first row of the open kind is
+  checked from the start (`selection`, a
   `linkedSignal` that keeps a pick whose row survives a reload), so a preset draft is
   still one press away. The shared kind carries the paste field; `shareTokenFrom` accepts
   a whole URL, a `/s/…` path, or a bare token, and a name clash (409) asks for a name
