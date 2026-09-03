@@ -263,8 +263,11 @@ acceptable** experience. For **every UI change, double-check it holds up on a na
 
 `e2e/` holds Playwright E2E tests that drive a real browser against the **deployed
 staging** app (`https://staging.slapstat.com`), not a local build. `e2e.yml` runs them
-**on every merge to `master`** (waiting for the new bundle to reach staging first),
-**daily** at 06:00 UTC, and on manual dispatch.
+**daily** at 06:00 UTC and on manual dispatch (`gh workflow run e2e.yml`). It used to run
+on every merge to `master` too; that was traded away because each run installs a
+Chromium and waits out the redeploy, and merges land several times a day. So a merge that
+touches a page the suite walks (`/draft`, `/projections/new`, the editor, the board) is
+**not** checked until the next morning unless someone dispatches the run.
 
 They are deliberately **not** a PR gate. The suite drives _deployed_ staging, so a PR's
 own changes aren't there to test — gating on it would judge a PR by unrelated code and
