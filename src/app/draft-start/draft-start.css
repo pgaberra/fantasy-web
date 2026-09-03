@@ -410,60 +410,17 @@
   text-decoration: underline;
 }
 
-/* The radio rows are the new-projection page's (projection-create.css): the same control for
-   the same question. Component styles are scoped, so they are repeated rather than imported. */
-.row {
-  border-bottom: 1px solid var(--color-border);
-}
-
-.row:first-child {
-  border-top: 1px solid var(--color-border);
-}
-
-/* The whole row is the label, so the name selects it as the radio does. */
-.row-choice {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: 0.6rem 0.3rem;
-  cursor: pointer;
-}
-
-.row-choice input {
-  flex: none;
-  width: 1rem;
-  height: 1rem;
-  margin: 0;
-  accent-color: var(--color-primary);
-}
-
-.row-main {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  min-width: 0;
-}
-
-.row-name {
-  font-weight: var(--weight-medium);
-  color: var(--color-text);
-}
-
-.row-meta {
-  font-size: var(--text-xs);
-  color: var(--color-text-subtle);
-}
-
-/* The two presets, side by side and each a card of its own. Only the presets: a projection or
-   a shared board is one of a growing list, and a card each is the noise this page was rebuilt
-   to lose. */
-.rows--presets {
+/* Every choice under the tiles is the same card, whichever tile is open: the presets were cards
+   and the boards a ruled list for a while, and switching tiles then switched the grammar of the
+   control beneath them. Two across on desktop, one on a phone. auto-fit rather than a fixed two:
+   a lone shared board fills the row instead of sitting at half width beside nothing. */
+.rows {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
   gap: var(--space-2);
 }
 
-.row--preset {
+.row {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
@@ -472,37 +429,35 @@
     box-shadow var(--transition);
 }
 
-.row--preset:hover {
+.row:hover {
   border-color: var(--color-border-strong);
 }
 
-/* Two classes deep on purpose: `.row:first-child` sets a border-top of its own, and at equal
-   specificity the later rule wins — a single `.row--selected` would leave the first card's top
-   edge grey while the other three sides turned blue. */
-.row--preset.row--selected {
+.row--selected {
   border-color: var(--color-primary);
   box-shadow: inset 0 0 0 1px var(--color-primary);
 }
 
-.row--preset .row-choice {
+/* The whole card is the label, so the name selects it as the radio does. */
+.row-choice {
+  display: flex;
+  align-items: center;
   gap: var(--space-2);
   padding: 0.75rem 0.8rem;
+  cursor: pointer;
 }
 
-/* The name and its badge share a line here, rather than stacking as a row's name and meta do. */
-.row--preset .row-main {
-  flex-direction: row;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.35rem var(--space-2);
+/* A real radio, kept visible: it is what makes a card of choices read as a choice, and it is
+   what the E2E suite checks (`li.row` + getByRole('radio')). */
+.row-choice input {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--color-primary);
 }
 
-.row--preset .row-name {
-  font-weight: var(--weight-semibold);
-  color: var(--color-primary);
-}
-
-.preset-icon {
+.row-icon {
   display: grid;
   place-items: center;
   flex: none;
@@ -516,14 +471,40 @@
     color var(--transition);
 }
 
-.row--selected .preset-icon {
+.row--selected .row-icon {
   background: var(--color-primary);
   color: var(--color-primary-contrast);
 }
 
+.row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+/* The name and, on the AI projection, its badge, on one line; the meta under them. */
+.row-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.2rem var(--space-2);
+  min-width: 0;
+}
+
+.row-name {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+
+.row-meta {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+}
+
 /* Gold, and the dark gold for the text: the tint alone does not carry 4.5:1. It is the app's
    only ornamental colour, and this is the one place on the page selling anything. */
-.preset-badge {
+.row-badge {
   flex: none;
   padding: 0.05rem 0.45rem;
   font-size: var(--text-xs);
@@ -554,8 +535,8 @@
 }
 
 @media (max-width: 640px) {
-  /* Two cards across do not fit a phone, and "Last Season's Stats" would wrap in both. */
-  .rows--presets {
+  /* Two cards across do not fit a phone. */
+  .rows {
     grid-template-columns: 1fr;
   }
 

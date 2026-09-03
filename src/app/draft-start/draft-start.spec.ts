@@ -346,29 +346,37 @@ describe('DraftStartComponent', () => {
     expect(fixture.nativeElement.querySelector('app-share-import')).toBeNull();
   });
 
-  // The presets are the product's own offer and there are two of them, so they are cards side
-  // by side; a projection or a shared board is one of a growing list and stays a plain row.
-  it('draws the presets as cards, and the boards as plain rows', async () => {
-    listWithPresetDrafts.mockReturnValue(of([summary('p1', 'projection', 'none')]));
+  // One card for every choice, whichever tile is open. The presets were cards and the boards a
+  // ruled list for a release, and switching tiles then switched the control under them.
+  it('draws every choice as the same card, whichever tile is open', async () => {
+    listWithPresetDrafts.mockReturnValue(
+      of([summary('p1', 'projection', 'none'), imported('i1', 'alex')]),
+    );
 
     const fixture = await renderFixture();
     const component = fixture.point.componentInstance;
+    const root: HTMLElement = fixture.nativeElement;
+    const cards = () => Array.from(root.querySelectorAll<HTMLElement>('.row'));
+    const selected = () => cards().map((card) => card.classList.contains('row--selected'));
 
-    const cards = fixture.nativeElement.querySelectorAll('.row--preset');
-    expect(cards).toHaveLength(PRESETS.length);
-    expect(fixture.nativeElement.querySelectorAll('.preset-icon svg')).toHaveLength(PRESETS.length);
-    // The checked one is marked on the card, not only inside the radio.
-    expect(cards[0].classList.contains('row--selected')).toBe(true);
-    expect(cards[1].classList.contains('row--selected')).toBe(false);
-
+    // Presets: two cards, an icon on each, the checked one marked on the card itself.
+    expect(cards()).toHaveLength(PRESETS.length);
+    expect(root.querySelectorAll('.row-icon svg')).toHaveLength(PRESETS.length);
+    expect(selected()).toEqual([true, false]);
     component.selectPreset(MODEL);
     fixture.detectChanges();
-    expect(cards[1].classList.contains('row--selected')).toBe(true);
+    expect(selected()).toEqual([false, true]);
 
-    component.sourceKind.set('projection');
-    fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('.row--preset')).toHaveLength(0);
-    expect(fixture.nativeElement.querySelectorAll('.row')).toHaveLength(1);
+    // The same card for a projection and for a shared board: radio, icon, outline and meta.
+    for (const kind of ['projection', 'imported'] as const) {
+      component.sourceKind.set(kind);
+      fixture.detectChanges();
+      expect(cards()).toHaveLength(1);
+      expect(root.querySelectorAll('.row-icon svg')).toHaveLength(1);
+      expect(root.querySelectorAll('.row-choice input[type="radio"]')).toHaveLength(1);
+      expect(selected()).toEqual([true]);
+      expect(root.querySelector('.row-meta')).not.toBeNull();
+    }
   });
 
   // The badge says the AI projection is sold. Rendered once per state rather than twice in one
@@ -384,7 +392,7 @@ describe('DraftStartComponent', () => {
       expect(component.showsPremiumBadge(MODEL)).toBe(true);
       // Only the one that is sold: last season's stats is in every build.
       expect(component.showsPremiumBadge(LAST_SEASON)).toBe(false);
-      expect(texts(fixture, '.preset-badge')).toEqual(['Premium']);
+      expect(texts(fixture, '.row-badge')).toEqual(['Premium']);
     } finally {
       environment.paymentsEnabled = original;
     }
@@ -399,7 +407,7 @@ describe('DraftStartComponent', () => {
       const fixture = await renderFixture();
 
       expect(fixture.point.componentInstance.showsPremiumBadge(MODEL)).toBe(false);
-      expect(fixture.nativeElement.querySelector('.preset-badge')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.row-badge')).toBeNull();
       // The preset itself is still on offer; only the mark on it is held back.
       expect(texts(fixture, '.row-name')).toEqual([LAST_SEASON_PRESET_NAME, MODEL_PRESET_NAME]);
     } finally {
