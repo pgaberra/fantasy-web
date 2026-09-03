@@ -16,6 +16,7 @@ import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { PopoverTriggerDirective } from '../shared/popover/popover-trigger.directive';
 import { ShareImportComponent } from '../shared/share-import/share-import';
 import { offeredPresets } from '../models/ai-projection';
+import { environment } from '../../environments/environment';
 
 /**
  * The name the preset draft is stored under. It doubles as the label on the board, so the
@@ -37,12 +38,17 @@ export interface Preset {
   readonly id: NonNullable<ProjectionSummaryResponse['preset']>;
   readonly name: string;
   readonly source: CreateProjectionRequest['source'];
+  /**
+   * Sold as part of Premium. It marks the card and nothing else — see `showsPremiumBadge` for
+   * why the mark is not shown in a build that has no way to charge for it.
+   */
+  readonly premium?: boolean;
 }
 
 /** Every preset the picker knows of. What it offers is `availablePresets` — see below. */
 export const PRESETS: readonly Preset[] = [
   { id: 'last_season', name: LAST_SEASON_PRESET_NAME, source: 'default' },
-  { id: 'model', name: MODEL_PRESET_NAME, source: 'model' },
+  { id: 'model', name: MODEL_PRESET_NAME, source: 'model', premium: true },
 ];
 
 /** Where a new draft's numbers come from. The page asks this first, and one at a time. */
@@ -254,6 +260,16 @@ export class DraftStartComponent {
   /** What the timestamp beside it means, which differs for a draft still being made. */
   timingLabel(draft: ProjectionSummaryResponse): string {
     return draft.draftStatus === 'finished' ? 'finished' : 'last pick';
+  }
+
+  /**
+   * Whether to mark a preset as Premium. Only where payments exist: without them the AI
+   * projection is free and ungated, and a badge advertising a subscription the build cannot
+   * sell is a promise nobody can act on. Gated on the same flag as the pricing and account
+   * routes, so the payments story appears and disappears in one piece.
+   */
+  showsPremiumBadge(preset: Preset): boolean {
+    return !!preset.premium && environment.paymentsEnabled;
   }
 
   /**

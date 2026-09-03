@@ -346,6 +346,67 @@ describe('DraftStartComponent', () => {
     expect(fixture.nativeElement.querySelector('app-share-import')).toBeNull();
   });
 
+  // The presets are the product's own offer and there are two of them, so they are cards side
+  // by side; a projection or a shared board is one of a growing list and stays a plain row.
+  it('draws the presets as cards, and the boards as plain rows', async () => {
+    listWithPresetDrafts.mockReturnValue(of([summary('p1', 'projection', 'none')]));
+
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
+
+    const cards = fixture.nativeElement.querySelectorAll('.row--preset');
+    expect(cards).toHaveLength(PRESETS.length);
+    expect(fixture.nativeElement.querySelectorAll('.preset-icon svg')).toHaveLength(PRESETS.length);
+    // The checked one is marked on the card, not only inside the radio.
+    expect(cards[0].classList.contains('row--selected')).toBe(true);
+    expect(cards[1].classList.contains('row--selected')).toBe(false);
+
+    component.selectPreset(MODEL);
+    fixture.detectChanges();
+    expect(cards[1].classList.contains('row--selected')).toBe(true);
+
+    component.sourceKind.set('projection');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('.row--preset')).toHaveLength(0);
+    expect(fixture.nativeElement.querySelectorAll('.row')).toHaveLength(1);
+  });
+
+  // The badge says the AI projection is sold. Rendered once per state rather than twice in one
+  // test: two live fixtures over a flipped flag re-check the first against the new value, which
+  // Angular reports as ExpressionChangedAfterItHasBeenChecked.
+  it('marks the AI projection as Premium where payments are on', async () => {
+    const original = environment.paymentsEnabled;
+    environment.paymentsEnabled = true;
+    try {
+      const fixture = await renderFixture();
+      const component = fixture.point.componentInstance;
+
+      expect(component.showsPremiumBadge(MODEL)).toBe(true);
+      // Only the one that is sold: last season's stats is in every build.
+      expect(component.showsPremiumBadge(LAST_SEASON)).toBe(false);
+      expect(texts(fixture, '.preset-badge')).toEqual(['Premium']);
+    } finally {
+      environment.paymentsEnabled = original;
+    }
+  });
+
+  // Without payments the AI projection is free and ungated, and a badge naming a subscription
+  // this build cannot sell promises something nobody can act on.
+  it('leaves the badge off where there is no way to buy anything', async () => {
+    const original = environment.paymentsEnabled;
+    environment.paymentsEnabled = false;
+    try {
+      const fixture = await renderFixture();
+
+      expect(fixture.point.componentInstance.showsPremiumBadge(MODEL)).toBe(false);
+      expect(fixture.nativeElement.querySelector('.preset-badge')).toBeNull();
+      // The preset itself is still on offer; only the mark on it is held back.
+      expect(texts(fixture, '.row-name')).toEqual([LAST_SEASON_PRESET_NAME, MODEL_PRESET_NAME]);
+    } finally {
+      environment.paymentsEnabled = original;
+    }
+  });
+
   it('says on the tiles what the kinds with nothing in them are waiting for', async () => {
     listWithPresetDrafts.mockReturnValue(
       of([

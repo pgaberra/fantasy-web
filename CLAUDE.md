@@ -68,10 +68,17 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   handful of projections no longer faces ten radios. The first row of the open kind is
   checked from the start (`selection`, a
   `linkedSignal` that keeps a pick whose row survives a reload), so a preset draft is
-  still one press away. The shared kind carries the paste field; `shareTokenFrom` accepts
-  a whole URL, a `/s/…` path, or a bare token, and a name clash (409) asks for a name
-  rather than reporting a failure the user cannot act on. An import switches to that kind
-  and checks the copy.
+  still one press away. Under the preset tile the two presets are **cards** rather than
+  bare radios, side by side so they read as peers: the AI projection is what we mean to
+  sell, and second in a vertical list of two it read as a footnote. It carries a gold
+  **Premium** badge, and `showsPremiumBadge` holds that badge back wherever
+  `paymentsEnabled` is off — without payments the preset is free and ungated, and a badge
+  naming a subscription the build cannot sell promises something nobody can act on. The
+  user's own projections and shared boards stay plain rows: they are a growing list, and a
+  card each is the noise this page was rebuilt to lose. The shared kind carries the paste
+  field; `shareTokenFrom` accepts a whole URL, a `/s/…` path, or a bare token, and a name
+  clash (409) asks for a name rather than reporting a failure the user cannot act on. An
+  import switches to that kind and checks the copy.
   History, for anyone tempted to relitigate: the three kinds were tabs (#406), then all
   three lists at once with a button per row (#459, #503), then a hierarchy of filled and
   outlined buttons (#505). Eight buttons on one page was still too much; folding two of

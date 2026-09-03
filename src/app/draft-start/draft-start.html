@@ -321,9 +321,17 @@
                 Every preset has a draft above. Discard that draft to start the preset fresh.
               </p>
             } @else {
-              <ul class="rows">
+              <!--
+                The presets are cards, where a projection or a shared board stays a plain row.
+                They are the product's own offer rather than a list of the user's things, there
+                are exactly two, and side by side they are peers: in a vertical list of bare
+                radios the AI projection read as a footnote under last season's stats, which is
+                the wrong shape for the one we mean to sell. The rows below stay rows because a
+                card each, for a list that grows, is where this page started.
+              -->
+              <ul class="rows rows--presets">
                 @for (preset of availablePresets(); track preset.id) {
-                  <li class="row">
+                  <li class="row row--preset" [class.row--selected]="isPresetSelected(preset)">
                     <label class="row-choice">
                       <input
                         type="radio"
@@ -331,7 +339,50 @@
                         [checked]="isPresetSelected(preset)"
                         (change)="selectPreset(preset)"
                       />
-                      <span class="row-name">{{ preset.name }}</span>
+                      <span class="preset-icon" aria-hidden="true">
+                        @switch (preset.id) {
+                          @case ('model') {
+                            <svg
+                              viewBox="0 0 24 24"
+                              width="20"
+                              height="20"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="1.8"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            >
+                              <path
+                                d="M11 3.5l1.9 5.1 5.1 1.9-5.1 1.9L11 17.5l-1.9-5.1L4 10.5l5.1-1.9z"
+                              />
+                              <path d="M18.5 15l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" />
+                            </svg>
+                          }
+                          @default {
+                            <svg
+                              viewBox="0 0 24 24"
+                              width="20"
+                              height="20"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="1.8"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            >
+                              <path d="M4 4v16h16" />
+                              <path d="M8.5 15.5v-4" />
+                              <path d="M13 15.5V8" />
+                              <path d="M17.5 15.5v-6" />
+                            </svg>
+                          }
+                        }
+                      </span>
+                      <span class="row-main">
+                        <span class="row-name">{{ preset.name }}</span>
+                        @if (showsPremiumBadge(preset)) {
+                          <span class="preset-badge">Premium</span>
+                        }
+                      </span>
                     </label>
                   </li>
                 }
