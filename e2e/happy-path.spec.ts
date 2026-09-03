@@ -88,10 +88,9 @@ test.describe('happy path', () => {
     await page.getByRole('button', { name: /^start draft$/i }).click();
 
     // 7) Draft the top available player over and over until the draft is complete.
-    // The loop's own guard is a non-waiting isVisible(), so the first row has to be awaited
-    // here: confirming the setup only just switched the board out of its setup phase, and a
-    // guard that runs before the list renders reads "no players left" and ends the draft at
-    // zero picks.
+    // The loop's own guards do not wait, so the first row has to be awaited here: confirming
+    // the setup only just switched the board out of its setup phase, and a guard that runs
+    // before the list renders reads "no players left" and ends the draft at zero picks.
     const topDraftButton = page
       .locator('.available-row')
       .first()
@@ -100,13 +99,30 @@ test.describe('happy path', () => {
 
     const draftComplete = page.getByText('Draft complete');
     for (let i = 0; i < 80; i++) {
-      if (await draftComplete.isVisible().catch(() => false)) break;
       const draftButton = page
         .locator('.available-row')
         .first()
         .getByRole('button', { name: /draft/i });
-      if (!(await draftButton.isVisible().catch(() => false))) break;
-      await draftButton.click();
+
+      // Ask the button itself, at the instant it matters. This used to read "Draft complete"
+      // first and then click whatever was there, and the two are the same state read twice:
+      // the board disables this button exactly when the draft is over
+      // (draft-available-panel.html, `[disabled]="isComplete()"`), in the same render that puts
+      // the text in the toolbar. A guard taken a moment before that render says "carry on", and
+      // the click that follows lands on a button that has since gone disabled — which Playwright
+      // retries until the 180s test timeout, failing the run and opening an e2e-red issue.
+      // Seen on run 33730624717.
+      //
+      // The short timeouts bound the last iteration, where the answer is "nothing left to press"
+      // and the default would spend the test's whole budget discovering it.
+      if (!(await draftButton.isEnabled({ timeout: 5_000 }).catch(() => false))) break;
+      try {
+        await draftButton.click({ timeout: 15_000 });
+      } catch {
+        // It went disabled between the check and the press, which from here is what finishing
+        // the draft looks like. Step 8 is what decides whether that is what happened.
+        break;
+      }
     }
 
     // 8) Every team's roster is filled — the draft is complete.
