@@ -1,3 +1,4 @@
+import { ApplicationRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { PlayerRowComponent } from './player-row';
 import { StatInputComponent } from './stat-input/stat-input';
@@ -155,13 +156,19 @@ describe('PlayerRowComponent', () => {
 
   describe('the injury marker', () => {
     const badge = () => fixture.nativeElement.querySelector('.injury-badge');
+    /** What the tooltip bubble says while the badge is hovered. */
+    const badgeTooltip = () => {
+      badge().dispatchEvent(new MouseEvent('mouseenter'));
+      TestBed.inject(ApplicationRef).tick();
+      return (document.querySelector('.cdk-overlay-container')?.textContent ?? '').trim();
+    };
 
     it('says nothing about a player who is not on the report', () => {
       setInputs();
       expect(badge()).toBeNull();
     });
 
-    it('marks a player who is out and puts the whole report in the title', () => {
+    it('marks a player who is out and puts the whole report in the tooltip', () => {
       setInputs({
         injury: {
           playerId: 1,
@@ -172,7 +179,7 @@ describe('PlayerRowComponent', () => {
       });
 
       expect(badge().textContent.trim()).toBe('OUT');
-      expect(badge().getAttribute('title')).toBe('Out, knee, expected back 7 November');
+      expect(badgeTooltip()).toBe('Out, knee, expected back 7 November');
     });
 
     it('shortens the statuses a roster page already abbreviates', () => {
@@ -189,7 +196,7 @@ describe('PlayerRowComponent', () => {
     it('says only what the report says, when it says little', () => {
       setInputs({ injury: { playerId: 1, status: 'Out' } });
 
-      expect(badge().getAttribute('title')).toBe('Out');
+      expect(badgeTooltip()).toBe('Out');
     });
   });
 

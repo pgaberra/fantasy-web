@@ -8,7 +8,7 @@
       class="position-row"
       [attr.aria-checked]="isSelected(position)"
       [attr.aria-disabled]="isLocked(position)"
-      [title]="isLocked(position) ? 'A player has to keep at least one position' : null"
+      [appTooltip]="isLocked(position) ? 'A player has to keep at least one position' : null"
       (click)="toggle(position)"
     >
       <span class="position-check" aria-hidden="true">

@@ -1,6 +1,7 @@
 import { Component, inject, input, output } from '@angular/core';
 import { DraftPlayerLookupService } from '../draft-player-lookup.service';
 import { PlayerAvatarComponent } from '../player-avatar/player-avatar';
+import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 
 export interface DraftPickEntry {
   overall: number;
@@ -16,7 +17,7 @@ export interface DraftPickRound {
 
 @Component({
   selector: 'app-draft-picks-panel',
-  imports: [PlayerAvatarComponent],
+  imports: [PlayerAvatarComponent, TooltipDirective],
   templateUrl: './draft-picks-panel.html',
   styleUrl: './draft-picks-panel.css',
 })
