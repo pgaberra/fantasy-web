@@ -173,9 +173,9 @@
               type="button"
               class="btn btn-secondary btn-sm"
               (click)="positionsReset.emit()"
-              appTooltip="Put every player back on the positions the player pool reports"
+              appTooltip="Put every player back on their default positions"
             >
-              Reset
+              Reset all positions
             </button>
           </div>
         }
@@ -241,10 +241,12 @@
             [isEditing]="editingPlayerId() === sp.projection.playerId"
             [positionsEditable]="positionControls()"
             [positionsOverridden]="positionOverrides().has(sp.projection.playerId)"
+            [positionsOverriddenCount]="overriddenPositionCount()"
             (focusin)="onRowFocusIn(sp.projection.playerId)"
             (focusout)="onRowFocusOut($event)"
             (statInput)="onStatInput($event.playerId, $event.key, $event.event)"
             (positionsChanged)="positionsChanged.emit($event)"
+            (positionsReset)="positionsReset.emit()"
             (toiKeydown)="onToiKeydown($event.playerId, $event.event)"
           ></tr>
         }

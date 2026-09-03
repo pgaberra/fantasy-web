@@ -83,6 +83,8 @@
     [playerName]="player().name"
     [positions]="skaterPositions()"
     [overridden]="positionsOverridden()"
+    [overriddenCount]="positionsOverriddenCount()"
     (positionsChanged)="positionsChanged.emit({ playerId: player().id, positions: $event })"
+    (allReset)="positionsReset.emit()"
   />
 </ng-template>

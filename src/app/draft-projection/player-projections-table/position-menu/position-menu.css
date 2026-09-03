@@ -69,10 +69,18 @@
 }
 
 .position-menu-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
   padding: 0.35rem 0.5rem 0.55rem;
   border-top: 1px solid var(--color-border);
 }
 
 .position-menu-footer .btn {
   width: 100%;
+}
+
+/* Secondary to the button above it: this one reaches past the player whose menu it is. */
+.position-menu-footer .reset-all {
+  font-size: var(--text-xs);
 }
