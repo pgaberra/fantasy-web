@@ -17,11 +17,21 @@ import { SKATER_POSITIONS, SkaterPosition } from '../../../models/position.model
 export class PositionMenuComponent {
   readonly playerName = input.required<string>();
   readonly positions = input.required<ReadonlySet<SkaterPosition>>();
-  /** Whether these positions are the owner's correction rather than the reported ones. */
+  /** Whether these positions are the owner's correction rather than the default ones. */
   readonly overridden = input<boolean>(false);
+  /** How many players are corrected in all, this one included. */
+  readonly overriddenCount = input<number>(0);
 
-  /** The new positions, or null to go back to the ones the player pool reports. */
+  /** The new positions, or null to go back to the default ones. */
   readonly positionsChanged = output<SkaterPosition[] | null>();
+  readonly allReset = output<void>();
+
+  /**
+   * Putting the whole pool back is offered here because this menu is where someone is standing
+   * when they think about positions at all. It is left out when this player is the only one
+   * corrected, since the button above it would then do exactly the same thing.
+   */
+  readonly canResetAll = computed(() => this.overriddenCount() - (this.overridden() ? 1 : 0) > 0);
 
   readonly allPositions = SKATER_POSITIONS;
 
@@ -51,5 +61,9 @@ export class PositionMenuComponent {
 
   useDefault(): void {
     this.positionsChanged.emit(null);
+  }
+
+  resetAll(): void {
+    this.allReset.emit();
   }
 }

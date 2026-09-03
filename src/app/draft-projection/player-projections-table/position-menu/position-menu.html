@@ -30,10 +30,17 @@
   }
 </div>
 
-@if (overridden()) {
+@if (overridden() || canResetAll()) {
   <div class="position-menu-footer">
-    <button type="button" class="btn btn-secondary btn-sm" (click)="useDefault()">
-      Use reported positions
-    </button>
+    @if (overridden()) {
+      <button type="button" class="btn btn-secondary btn-sm" (click)="useDefault()">
+        Use default positions
+      </button>
+    }
+    @if (canResetAll()) {
+      <button type="button" class="btn btn-secondary btn-sm reset-all" (click)="resetAll()">
+        Reset every player to default
+      </button>
+    }
   </div>
 }

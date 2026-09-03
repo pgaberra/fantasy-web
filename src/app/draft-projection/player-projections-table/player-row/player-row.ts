@@ -100,11 +100,14 @@ export class PlayerRowComponent {
    * else's or nothing is saved: a shared projection, the landing demo.
    */
   positionsEditable = input<boolean>(false);
-  /** Whether the positions shown are the owner's correction rather than the reported ones. */
+  /** Whether the positions shown are the owner's correction rather than the default ones. */
   positionsOverridden = input<boolean>(false);
+  /** How many players are corrected in all, so the menu can offer to put them all back. */
+  positionsOverriddenCount = input<number>(0);
 
   statInput = output<{ playerId: number; key: StatKey; event: Event }>();
   positionsChanged = output<{ playerId: number; positions: SkaterPosition[] | null }>();
+  positionsReset = output<void>();
   toiKeydown = output<{ playerId: number; event: KeyboardEvent }>();
 
   private readonly statWarningService = inject(StatWarningService);
