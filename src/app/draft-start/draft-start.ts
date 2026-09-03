@@ -37,43 +37,34 @@ export interface Preset {
   readonly id: NonNullable<ProjectionSummaryResponse['preset']>;
   readonly name: string;
   readonly source: CreateProjectionRequest['source'];
-  readonly description: string;
 }
 
 /** Every preset the picker knows of. What it offers is `availablePresets` — see below. */
 export const PRESETS: readonly Preset[] = [
-  {
-    id: 'last_season',
-    name: LAST_SEASON_PRESET_NAME,
-    source: 'default',
-    description: "Every player at last season's numbers, default scoring settings",
-  },
-  {
-    id: 'model',
-    name: MODEL_PRESET_NAME,
-    source: 'model',
-    description: "The model's estimate for the coming season: a qualified guess, not the truth",
-  },
+  { id: 'last_season', name: LAST_SEASON_PRESET_NAME, source: 'default' },
+  { id: 'model', name: MODEL_PRESET_NAME, source: 'model' },
 ];
 
 /** Where a new draft's numbers come from. The page asks this first, and one at a time. */
 export type SourceKind = 'preset' | 'projection' | 'imported';
 
-/** One of the three answers to "what do you want to draft against", as the page words it. */
+/**
+ * One of the three answers to "what do you want to draft against", as the page words it.
+ *
+ * <p>A name and nothing else. Each tile used to carry a line explaining its kind ("Ready-made
+ * numbers, nothing to set up"), and each preset row one explaining itself — six sentences of
+ * prose above a list of two, which is more reading than the choice is worth. The count under
+ * the name stays: it says what the tile holds, which the name cannot.
+ */
 export interface SourceKindOption {
   readonly kind: SourceKind;
   readonly name: string;
-  readonly description: string;
 }
 
 export const SOURCE_KINDS: readonly SourceKindOption[] = [
-  { kind: 'preset', name: 'A preset', description: 'Ready-made numbers, nothing to set up' },
-  { kind: 'projection', name: 'Your projection', description: 'Numbers you tuned yourself' },
-  {
-    kind: 'imported',
-    name: 'A shared board',
-    description: "Someone else's numbers, from a share link",
-  },
+  { kind: 'preset', name: 'A preset' },
+  { kind: 'projection', name: 'Your projection' },
+  { kind: 'imported', name: 'A shared board' },
 ];
 
 /**

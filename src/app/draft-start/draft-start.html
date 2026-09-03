@@ -227,7 +227,6 @@
               </span>
               <span class="kind-main">
                 <span class="kind-name">{{ option.name }}</span>
-                <span class="kind-description">{{ option.description }}</span>
                 <span class="kind-meta">{{ kindMeta(option.kind) }}</span>
               </span>
             </label>
@@ -332,10 +331,7 @@
                         [checked]="isPresetSelected(preset)"
                         (change)="selectPreset(preset)"
                       />
-                      <span class="row-main">
-                        <span class="row-name">{{ preset.name }}</span>
-                        <span class="row-meta">{{ preset.description }}</span>
-                      </span>
+                      <span class="row-name">{{ preset.name }}</span>
                     </label>
                   </li>
                 }

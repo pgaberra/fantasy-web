@@ -301,10 +301,12 @@
   gap: var(--space-2);
 }
 
+/* Two short lines beside the icon now that the explanations are gone, so the tile centres on
+   them rather than hanging them from its top edge. */
 .kind {
   position: relative;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-2);
   padding: 0.7rem 0.8rem;
   background: var(--color-surface);
@@ -373,14 +375,7 @@
   color: var(--color-primary);
 }
 
-.kind-description {
-  font-size: var(--text-xs);
-  line-height: 1.35;
-  color: var(--color-text-subtle);
-}
-
 .kind-meta {
-  margin-top: 0.2rem;
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
   color: var(--color-text-muted);
