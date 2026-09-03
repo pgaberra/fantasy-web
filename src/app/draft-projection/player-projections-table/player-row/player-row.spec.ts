@@ -314,9 +314,16 @@ describe('PlayerRowComponent', () => {
   it('steps by the smallest amount the column can show', () => {
     setInputs({ decimalSettings: { ...DEFAULT_DECIMAL_SETTINGS, goals: 1, assists: 0 } });
     const tds = fixture.nativeElement.querySelectorAll('td');
+    const goals = tds[4].querySelector('input') as HTMLInputElement;
+    const assists = tds[5].querySelector('input') as HTMLInputElement;
+    const goalsBefore = Number(goals.value);
+    const assistsBefore = Number(assists.value);
 
-    expect(tds[4].querySelector('input').getAttribute('step')).toEqual('0.1');
-    expect(tds[5].querySelector('input').getAttribute('step')).toEqual('1');
+    goals.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
+    assists.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+
+    expect(Number(goals.value)).toBeCloseTo(goalsBefore + 0.1, 10);
+    expect(Number(assists.value)).toBeCloseTo(assistsBefore - 1, 10);
   });
 
   it('leaves defencemen points to defencemen — a forward has none of the category', () => {
@@ -339,7 +346,7 @@ describe('PlayerRowComponent', () => {
     setInputs();
     const spy = vi.spyOn(component.statInput, 'emit');
 
-    const input = fixture.nativeElement.querySelector('input[type="number"]');
+    const input = fixture.nativeElement.querySelector('input.stat-input');
     input.value = '70';
     input.dispatchEvent(new Event('input'));
 

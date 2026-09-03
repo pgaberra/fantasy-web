@@ -10,19 +10,22 @@
     />
   } @else {
     <!-- The value is written by the component, not bound here: a field being typed in keeps its
-         own text, so the padding can't fight the caret. -->
+         own text, so the padding can't fight the caret.
+
+         A text field, not a number field: the browser writes a number field in the machine's
+         locale, so a cell set to one decimal read `36,5` on a Swedish computer. The table clamps
+         and rounds what is typed anyway, so what the field gives up is only its arrow keys. -->
     <input
       #statField
-      type="number"
+      type="text"
+      inputmode="decimal"
       class="stat-input"
       [class.has-warning]="!!warning()"
       [appTooltip]="warning()"
       (input)="onInput($event)"
+      (keydown)="onStatKeydown($event)"
       (focus)="onFocus()"
       (blur)="onBlur()"
-      [attr.step]="stepSize()"
-      [attr.min]="canStatBeNegative() ? null : 0"
-      [attr.max]="isPercentage() ? 100 : null"
     />
   }
 } @else {
