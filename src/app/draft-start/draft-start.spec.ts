@@ -328,7 +328,7 @@ describe('DraftStartComponent', () => {
   });
 
   // The choice is made in steps: the kind first, and the page opens on the presets since they
-  // need nothing prepared. The other two kinds are tiles that say what they hold, not lists.
+  // need nothing prepared. The other two kinds are segments that say how much they hold.
   it('asks for the kind of source first, opening on the presets with the rest folded', async () => {
     listWithPresetDrafts.mockReturnValue(
       of([summary('p1', 'projection', 'none'), imported('i1', 'alex')]),
@@ -339,8 +339,13 @@ describe('DraftStartComponent', () => {
 
     // Nothing is drafted yet, so the page is one question rather than two.
     expect(texts(fixture, '.section-title')).toEqual(['Start a new draft']);
-    expect(texts(fixture, '.kind-name')).toEqual(['A preset', 'Your projection', 'A shared board']);
-    expect(texts(fixture, '.kind-meta')).toEqual(['2 presets', '1 projection', '1 board']);
+    expect(texts(fixture, '.kind-name')).toEqual(['Preset', 'Your projection', 'Shared board']);
+    expect(texts(fixture, '.kind-count')).toEqual(['2', '1', '1']);
+    // A segmented control, not radios: the pressed one is said on the button itself.
+    const pressed = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('.segmented .kind'),
+    ).map((segment) => segment.getAttribute('aria-pressed'));
+    expect(pressed).toEqual(['true', 'false', 'false']);
     expect(component.sourceKind()).toEqual('preset');
     expect(texts(fixture, '.row-name')).toEqual([LAST_SEASON_PRESET_NAME, MODEL_PRESET_NAME]);
     expect(fixture.nativeElement.querySelector('app-share-import')).toBeNull();
@@ -415,7 +420,9 @@ describe('DraftStartComponent', () => {
     }
   });
 
-  it('says on the tiles what the kinds with nothing in them are waiting for', async () => {
+  // A kind with nothing in it still has its segment, with a 0 on it: the count is what keeps the
+  // fold honest, and the panel's empty state says the rest once it is pressed.
+  it('counts an empty kind as 0 on its segment rather than dropping it', async () => {
     listWithPresetDrafts.mockReturnValue(
       of([
         summary('lastSeason1', 'preset_draft', 'in_progress'),
@@ -425,7 +432,11 @@ describe('DraftStartComponent', () => {
 
     const fixture = await renderFixture();
 
-    expect(texts(fixture, '.kind-meta')).toEqual(['All drafted above', 'None yet', 'None yet']);
+    expect(texts(fixture, '.kind-count')).toEqual(['0', '0', '0']);
+    // Nothing to open on, so the page lands on the last kind, whose empty state offers the
+    // one way to get something: the paste field.
+    expect(fixture.point.componentInstance.sourceKind()).toEqual('imported');
+    expect(texts(fixture, '.group-empty')[0]).toContain("Nobody's board here yet");
   });
 
   // One press to a draft: the first row of the open kind is checked from the start, and the
