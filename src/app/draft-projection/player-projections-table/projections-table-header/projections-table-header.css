@@ -3,17 +3,23 @@
    A cell's sticky constraint rect is the TABLE, not its row, so per-cell `top: 0` made
    every header row clamp to the same band once the wrapper scrolled; the z-index scale
    discriminates by column rather than row, so the tie fell through to DOM order and the
-   weight row covered the column labels. One sticky box cannot overlap itself: the rows
-   keep their natural offsets at every scroll position, for any number of them. */
+   weight row covered the column labels. One box moved as a unit cannot overlap itself: the
+   rows keep their natural offsets at every scroll position, for any number of them.
+   `position: sticky` is not what does the moving — the wrapper stays a horizontal scroll
+   container for the stat columns, and that makes it the sticky element's scrollport on
+   *both* axes, so a sticky thead here resolves against a box that never scrolls vertically
+   and rides away with the page (see `PinnedTableHeaderDirective`, which drives the actual
+   pin via `translateY`). `position: relative` is kept only so `z-index` below has a
+   positioned box to apply to — without one, the translated thead paints under the tbody
+   rows it is meant to cover, since DOM order alone would put them on top of it. */
 :host {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 2;
-  /* Paint the sticky thead's own background behind its rows. With border-collapse and a
-     sticky thead, a row boundary that lands on a fractional device pixel leaves a 1px
-     seam the two rows' snapped cell backgrounds don't cover — which otherwise reveals the
-     white table surface as a hairline (most visibly under the top header row). A background
-     on the sticky layer fills that seam; --color-primary matches the top row, so it vanishes. */
+  /* Paint the thead's own background behind its rows. With border-collapse, a row boundary
+     that lands on a fractional device pixel leaves a 1px seam the two rows' snapped cell
+     backgrounds don't cover — which otherwise reveals the white table surface as a hairline
+     (most visibly under the top header row). A background behind them fills that seam;
+     --color-primary matches the top row, so it vanishes. */
   background: var(--color-primary);
 }
 

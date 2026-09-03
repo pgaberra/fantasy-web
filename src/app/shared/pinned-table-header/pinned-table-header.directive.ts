@@ -46,9 +46,22 @@ export class PinnedTableHeaderDirective {
       // Both halves are asked for: an engine that understands view timelines but not the range
       // this pins against would drop the `animation-range` in `styles.css` and run the keyframes
       // across the table's whole passage through the window instead — worse than not pinning.
+      //
+      // The probe below spells out two calc() endpoints rather than a bare `exit-crossing 0px`,
+      // because that is the shape `styles.css` actually declares (each endpoint offsets the named
+      // crossing by a subtraction) and `CSS.supports` only vouches for the exact grammar it is
+      // given — a bare named offset can pass while the two-calc()-endpoint form it stands in for
+      // is silently dropped, which fell back to nothing being pinned and the header parking
+      // mid-table for the rest of the scroll rather than reaching the fallback that would have
+      // caught it. `var()` is left out on purpose: `CSS.supports` accepts any value containing
+      // one unconditionally, since it defers to substitution, so a probe built from it would
+      // never actually exercise the calc()-in-animation-range grammar being checked.
       if (
         CSS.supports('animation-timeline: view()') &&
-        CSS.supports('animation-range', 'exit-crossing 0px')
+        CSS.supports(
+          'animation-range',
+          'exit-crossing calc(1px - 2px) exit-crossing calc(3px - 2px)',
+        )
       ) {
         this.measureForTimeline(wrapper, head);
       } else {
