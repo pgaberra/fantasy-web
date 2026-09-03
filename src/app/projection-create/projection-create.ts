@@ -45,6 +45,8 @@ import { ProjectionModelService } from '../services/projection-model.service';
 import { freeProjectionName } from '../services/projection-name';
 import { SeededProjectionResponse } from '../api/models/seeded-projection-response';
 import { offeredPresets } from '../models/ai-projection';
+import { SOURCE_KINDS, SourceKind } from '../models/source-kind';
+import { environment } from '../../environments/environment';
 
 /**
  * What the projection opens with: a preset everybody has, or a copy of a board the user can
@@ -66,28 +68,18 @@ export type StartingPoint =
 export interface CreatePreset {
   readonly name: string;
   readonly source: NonNullable<CreateProjectionRequest['source']>;
-  /** What picking it means, under the name on its card. */
-  readonly description: string;
+  /**
+   * Sold as part of Premium. It marks the card and nothing else — `showsPremiumBadge` keeps the
+   * mark out of a build that has no way to charge for it.
+   */
+  readonly premium?: boolean;
 }
 
 /** Every preset this page knows of. What it offers is `offeredPresets` of these — see below. */
 export const CREATE_PRESETS: readonly CreatePreset[] = [
-  {
-    name: "Last season's stats",
-    source: 'default',
-    description: "Each player's real numbers from last season.",
-  },
-  {
-    name: 'AI projection',
-    source: 'model',
-    description:
-      "A model's estimate for the coming season, from several seasons of NHL data. A qualified guess, not the truth.",
-  },
-  {
-    name: 'From scratch',
-    source: 'blank',
-    description: 'Every player keeps their seat on the board, with every stat at 0.',
-  },
+  { name: "Last season's stats", source: 'default' },
+  { name: 'AI projection', source: 'model', premium: true },
+  { name: 'From scratch', source: 'blank' },
 ];
 
 /**
@@ -206,11 +198,33 @@ export class ProjectionCreateComponent {
    * build flag, and a row that seeds a projection the build cannot fill in is worse than no row.
    */
   readonly presets = offeredPresets(CREATE_PRESETS);
+
+  readonly sourceKinds = SOURCE_KINDS;
+
   /**
-   * The one answer the page holds. Presets lead the list and last season's stats is picked from
-   * the start: it is the group that is never empty, and where most projections begin.
+   * Which of the three kinds the cards below are showing. Opens on the presets: it is the group
+   * that is never empty, and where most projections begin.
    */
-  readonly startingPoint = signal<StartingPoint>({ kind: 'preset', source: 'default' });
+  readonly sourceKind = signal<SourceKind>('preset');
+
+  /**
+   * The one answer the page holds, and the card that is checked. The first of the open kind is
+   * picked as soon as the kind is, so Create is never a press away from nothing; a pick the user
+   * made survives the list reloading for as long as its card is still there.
+   */
+  readonly startingPoint = linkedSignal<
+    { kind: SourceKind; options: readonly StartingPoint[] },
+    StartingPoint
+  >({
+    source: () => ({ kind: this.sourceKind(), options: this.optionsOf(this.sourceKind()) }),
+    computation: ({ options }, previous) => {
+      const kept = previous?.value;
+      if (kept && options.some((option) => sameStartingPoint(option, kept))) {
+        return kept;
+      }
+      return options[0] ?? NOTHING_TO_COPY;
+    },
+  });
 
   /**
    * The model's lines for the preview, fetched only once the AI preset is picked — and only the
@@ -228,17 +242,7 @@ export class ProjectionCreateComponent {
   });
   readonly ownProjections = computed(() => this.byKind('projection'));
   readonly importedBoards = computed(() => this.byKind('imported'));
-  /** Everything the copy card can copy: the user's own first, then what was shared with them. */
-  readonly boards = computed(() => [...this.ownProjections(), ...this.importedBoards()]);
-  /** What the copy card holds, said on the card, so the fold hides nothing. */
-  readonly copyMeta = computed(() => {
-    const total = this.boards().length;
-    if (total === 0) {
-      return 'None yet';
-    }
-    return `${total} board${total === 1 ? '' : 's'}`;
-  });
-  /** Whether the copy card is the one down, board picked or not. */
+  /** Whether a copy is what is picked, board or not, which is when the preview cannot draw. */
   readonly isCopy = computed(() => this.startingPoint().kind === 'copy');
   /** Whether the AI preset is what the page is showing, which is what its extra fetch follows. */
   private readonly isModelPreset = computed(() => this.isPreset('model'));
@@ -429,20 +433,20 @@ export class ProjectionCreateComponent {
   }
 
   /**
-   * The copy card itself. It picks the first board there is, so the card is an answer the
-   * moment it is pressed; with no board to pick it stays down empty-handed, and the panel under
-   * it says where one comes from. Pressing it again changes nothing, so a board already picked
-   * is not swapped for the first.
+   * How many starting points a kind holds, shown on its segment so the two kinds not open are
+   * still accounted for. The presets are always there, so only the other two can read 0.
    */
-  selectCopy(): void {
-    if (this.isCopy()) {
-      return;
-    }
-    this.startingPoint.set({ kind: 'copy', id: this.boards()[0]?.id ?? null });
+  kindCount(kind: SourceKind): number {
+    return this.optionsOf(kind).length;
   }
 
-  onCopyChange(event: Event): void {
-    this.selectCopyFrom((event.target as HTMLSelectElement).value);
+  /**
+   * Whether to mark a preset as Premium. Only where payments exist, for the reason the draft
+   * picker gives (draft-start.ts): without them the AI projection is free and ungated, and a
+   * badge naming a subscription the build cannot sell promises something nobody can act on.
+   */
+  showsPremiumBadge(preset: CreatePreset): boolean {
+    return !!preset.premium && environment.paymentsEnabled;
   }
 
   isPreset(source: CreatePreset['source']): boolean {
@@ -460,10 +464,33 @@ export class ProjectionCreateComponent {
     return projection.origin ? `From ${projection.origin.authorUsername}` : 'Your projection';
   }
 
-  /** A board just copied from a share link is a starting point, so it arrives already picked. */
+  /**
+   * A board just copied from a share link is a starting point, so it arrives already picked —
+   * checked before the list that will hold it has been re-read, since `startingPoint` keeps a
+   * pick whose card turns up in the reload.
+   */
   onImported(projection: ProjectionResponse): void {
+    this.sourceKind.set('imported');
     this.selectCopyFrom(projection.id);
     this.dataResource.reload();
+  }
+
+  /** Every starting point of one kind, in the order its cards are drawn. */
+  private optionsOf(kind: SourceKind): readonly StartingPoint[] {
+    switch (kind) {
+      case 'preset':
+        return this.presets.map((preset) => ({ kind: 'preset', source: preset.source }) as const);
+      case 'projection':
+        return this.ownProjections().map(
+          (projection) =>
+            ({
+              kind: 'copy',
+              id: projection.id,
+            }) as const,
+        );
+      case 'imported':
+        return this.importedBoards().map((board) => ({ kind: 'copy', id: board.id }) as const);
+    }
   }
 
   private byKind(kind: ProjectionSummaryResponse['kind']): ProjectionSummaryResponse[] {
@@ -536,4 +563,18 @@ export class ProjectionCreateComponent {
         },
       });
   }
+}
+
+/**
+ * What the picked card falls back to when the open kind holds nothing to copy. The kind is still
+ * the answer to "what does this start from", so it stays open; only Create waits, held back by
+ * `hasStartingPoint`.
+ */
+const NOTHING_TO_COPY: StartingPoint = { kind: 'copy', id: null };
+
+function sameStartingPoint(first: StartingPoint, second: StartingPoint): boolean {
+  if (first.kind === 'preset' && second.kind === 'preset') {
+    return first.source === second.source;
+  }
+  return first.kind === 'copy' && second.kind === 'copy' && first.id === second.id;
 }
