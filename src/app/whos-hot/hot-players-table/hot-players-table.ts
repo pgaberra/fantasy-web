@@ -401,15 +401,17 @@ export class HotPlayersTableComponent {
 
   /**
    * Per-game counting stats need decimals to say anything — a rounded 0 goals per game is
-   * indistinguishable from a rounded 0.4, which is a 33-goal pace.
+   * indistinguishable from a rounded 0.4, which is a 33-goal pace. Games played is the divisor
+   * rather than a divided stat, so it stays the whole number it always is.
    *
    * The minimum matches the maximum so a column set to N decimals shows N of them: a whole
    * number under a 3-decimal setting reads `272.000`, not `272`.
    */
   decimalsFor(key: StatKey): string {
     const configured = this.decimalSettings()[key as DecimalStatKey] ?? 0;
-    const isCountingStat = !this.statInfoService.isRateStat(key) && !this.isToi(key);
-    const decimals = this.perGame() && isCountingStat ? Math.max(configured, 2) : configured;
+    const isDividedByGames =
+      key !== 'gp' && !this.statInfoService.isRateStat(key) && !this.isToi(key);
+    const decimals = this.perGame() && isDividedByGames ? Math.max(configured, 2) : configured;
     return `1.${decimals}-${decimals}`;
   }
 

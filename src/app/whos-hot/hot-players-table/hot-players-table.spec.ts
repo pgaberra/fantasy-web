@@ -237,6 +237,12 @@ describe('HotPlayersTableComponent', () => {
     expect(perGame.decimalsFor('goals')).toEqual('1.2-2');
   });
 
+  it('keeps games played whole in the per-game view, since it is never divided', () => {
+    const perGame = render([skater(1, 20)], { perGame: true });
+
+    expect(perGame.decimalsFor('gp')).toEqual('1.0-0');
+  });
+
   it('shows a column as many decimals as it is set to, trailing zeros included', () => {
     const component = render([skater(1, 20)]);
 
