@@ -37,11 +37,11 @@
     </div>
 
     <!--
-      One question, four cards: the three presets and "copy a board". The boards themselves are
-      folded behind the fourth card, in a select once it is picked. They used to be radio rows
-      under the presets, every one of them on the page at once, and a user with a handful of
-      projections and a shared board or two faced ten radios before the question had registered.
-      The draft picker folds the same three kinds the same way (draft-start.html).
+      The same shape as the draft picker (draft-start.html), which asks the same question of the
+      same three groups: a segmented control for the kind, then a card per choice. Four cards with
+      the boards folded into a select under one of them was this page's own invention, and a page
+      that words a question one way while its neighbour words it another makes the reader learn it
+      twice.
     -->
     <fieldset class="field starting">
       <legend class="field-label-row">
@@ -52,136 +52,193 @@
         />
       </legend>
 
-      <div class="starts">
-        @for (preset of presets; track preset.source) {
-          <label class="start" [class.start--selected]="isPreset(preset.source)">
-            <input
-              type="radio"
-              name="starting-point"
-              class="start-input"
-              [checked]="isPreset(preset.source)"
-              (change)="selectPreset(preset.source)"
-            />
-            <span class="start-icon" aria-hidden="true">
-              @switch (preset.source) {
-                @case ('model') {
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M11 3.5l1.9 5.1 5.1 1.9-5.1 1.9L11 17.5l-1.9-5.1L4 10.5l5.1-1.9z" />
-                    <path d="M18.5 15l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" />
-                  </svg>
-                }
-                @case ('blank') {
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
-                  </svg>
-                }
-                @default {
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M4 4v16h16" />
-                    <path d="M8.5 15.5v-4" />
-                    <path d="M13 15.5V8" />
-                    <path d="M17.5 15.5v-6" />
-                  </svg>
-                }
-              }
-            </span>
-            <span class="start-main">
-              <span class="start-name">{{ preset.name }}</span>
-              <span class="start-description">{{ preset.description }}</span>
-            </span>
-          </label>
+      <div class="segmented" role="group" aria-labelledby="starting-point-label">
+        @for (option of sourceKinds; track option.kind) {
+          <button
+            type="button"
+            class="kind"
+            [attr.aria-pressed]="sourceKind() === option.kind"
+            (click)="sourceKind.set(option.kind)"
+          >
+            <span class="kind-name">{{ option.name }}</span>
+            <span class="kind-count">{{ kindCount(option.kind) }}</span>
+          </button>
         }
-        <label class="start start--copy" [class.start--selected]="isCopy()">
-          <input
-            type="radio"
-            name="starting-point"
-            class="start-input"
-            [checked]="isCopy()"
-            (change)="selectCopy()"
-          />
-          <span class="start-icon" aria-hidden="true">
-            <svg
-              viewBox="0 0 24 24"
-              width="20"
-              height="20"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <rect x="9" y="9" width="11" height="11" rx="2" />
-              <path d="M5 15V5a2 2 0 0 1 2-2h10" />
-            </svg>
-          </span>
-          <span class="start-main">
-            <span class="start-name">Copy a board</span>
-            <span class="start-description">One of yours, or a board shared with you</span>
-            <span class="start-meta">{{ copyMeta() }}</span>
-          </span>
-        </label>
       </div>
 
-      @if (isCopy()) {
-        <div class="copy-panel">
-          @if (boards().length > 0) {
-            <label class="copy-label" for="copy-source">Board to copy</label>
-            <select id="copy-source" class="copy-select" (change)="onCopyChange($event)">
-              @if (ownProjections().length > 0) {
-                <optgroup label="Your projections">
-                  @for (projection of ownProjections(); track projection.id) {
-                    <option [value]="projection.id" [selected]="isCopyOf(projection.id)">
-                      {{ projection.name }} · updated {{ projection.updatedAt | relativeTime }}
-                    </option>
-                  }
-                </optgroup>
-              }
-              @if (importedBoards().length > 0) {
-                <optgroup label="Shared with you">
-                  @for (board of importedBoards(); track board.id) {
-                    <option [value]="board.id" [selected]="isCopyOf(board.id)">
-                      {{ board.name }} · {{ sourceLabel(board) }}
-                    </option>
-                  }
-                </optgroup>
-              }
-            </select>
-          } @else {
-            <p class="copy-empty">
-              No board to copy yet. Paste a share link below, or start from a preset.
-            </p>
+      <div class="panel">
+        @switch (sourceKind()) {
+          @case ('projection') {
+            @if (ownProjections().length === 0) {
+              <p class="group-empty">
+                You have no projections yet. Start from a preset, and copies of it belong here.
+              </p>
+            } @else {
+              <ul class="rows">
+                @for (projection of ownProjections(); track projection.id) {
+                  <li class="row" [class.row--selected]="isCopyOf(projection.id)">
+                    <label class="row-choice">
+                      <input
+                        type="radio"
+                        name="starting-point"
+                        [checked]="isCopyOf(projection.id)"
+                        (change)="selectCopyFrom(projection.id)"
+                      />
+                      <span class="row-icon" aria-hidden="true">
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="20"
+                          height="20"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path d="M4 5h16v14H4z" />
+                          <path d="M4 9h16" />
+                          <path d="M10 9v10" />
+                        </svg>
+                      </span>
+                      <span class="row-main">
+                        <span class="row-heading">
+                          <span class="row-name">{{ projection.name }}</span>
+                        </span>
+                        <span class="row-meta">
+                          Updated {{ projection.updatedAt | relativeTime }}
+                        </span>
+                      </span>
+                    </label>
+                  </li>
+                }
+              </ul>
+            }
           }
-          <app-share-import label="Or paste a share link" (imported)="onImported($event)" />
-        </div>
-      }
+          @case ('imported') {
+            @if (importedBoards().length === 0) {
+              <p class="group-empty">
+                Nobody's board here yet. Paste a SlapStat share link below to copy one.
+              </p>
+            } @else {
+              <ul class="rows">
+                @for (board of importedBoards(); track board.id) {
+                  <li class="row" [class.row--selected]="isCopyOf(board.id)">
+                    <label class="row-choice">
+                      <input
+                        type="radio"
+                        name="starting-point"
+                        [checked]="isCopyOf(board.id)"
+                        (change)="selectCopyFrom(board.id)"
+                      />
+                      <span class="row-icon" aria-hidden="true">
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="20"
+                          height="20"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5" />
+                          <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5" />
+                        </svg>
+                      </span>
+                      <span class="row-main">
+                        <span class="row-heading">
+                          <span class="row-name">{{ board.name }}</span>
+                        </span>
+                        <span class="row-meta">
+                          {{ sourceLabel(board) }} · imported {{ board.createdAt | relativeTime }}
+                        </span>
+                      </span>
+                    </label>
+                  </li>
+                }
+              </ul>
+            }
+            <app-share-import label="Or paste a share link" (imported)="onImported($event)" />
+          }
+          @default {
+            <ul class="rows">
+              @for (preset of presets; track preset.source) {
+                <li class="row" [class.row--selected]="isPreset(preset.source)">
+                  <label class="row-choice">
+                    <input
+                      type="radio"
+                      name="starting-point"
+                      [checked]="isPreset(preset.source)"
+                      (change)="selectPreset(preset.source)"
+                    />
+                    <span class="row-icon" aria-hidden="true">
+                      @switch (preset.source) {
+                        @case ('model') {
+                          <svg
+                            viewBox="0 0 24 24"
+                            width="20"
+                            height="20"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <path
+                              d="M11 3.5l1.9 5.1 5.1 1.9-5.1 1.9L11 17.5l-1.9-5.1L4 10.5l5.1-1.9z"
+                            />
+                            <path d="M18.5 15l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" />
+                          </svg>
+                        }
+                        @case ('blank') {
+                          <svg
+                            viewBox="0 0 24 24"
+                            width="20"
+                            height="20"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+                          </svg>
+                        }
+                        @default {
+                          <svg
+                            viewBox="0 0 24 24"
+                            width="20"
+                            height="20"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <path d="M4 4v16h16" />
+                            <path d="M8.5 15.5v-4" />
+                            <path d="M13 15.5V8" />
+                            <path d="M17.5 15.5v-6" />
+                          </svg>
+                        }
+                      }
+                    </span>
+                    <span class="row-main">
+                      <span class="row-heading">
+                        <span class="row-name">{{ preset.name }}</span>
+                        @if (showsPremiumBadge(preset)) {
+                          <span class="row-badge">Premium</span>
+                        }
+                      </span>
+                    </span>
+                  </label>
+                </li>
+              }
+            </ul>
+          }
+        }
+      </div>
     </fieldset>
 
     <div class="preview">
@@ -202,9 +259,7 @@
           Starts as an exact copy of {{ board.name }}, with the numbers it was last saved with.
         </p>
       } @else if (isCopy()) {
-        <p class="preview-note">
-          Pick a board to copy, and the projection starts as an exact copy of it.
-        </p>
+        <p class="preview-note">There is nothing to copy here yet.</p>
       } @else if (isPreviewLoading() || isModelPreviewLoading()) {
         <p class="preview-note">Loading preview…</p>
       } @else if (previewFailed() || !previewRows().length) {

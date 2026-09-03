@@ -16,6 +16,7 @@ import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { PopoverTriggerDirective } from '../shared/popover/popover-trigger.directive';
 import { ShareImportComponent } from '../shared/share-import/share-import';
 import { offeredPresets } from '../models/ai-projection';
+import { SOURCE_KINDS, SourceKind } from '../models/source-kind';
 import { environment } from '../../environments/environment';
 
 /**
@@ -49,28 +50,6 @@ export interface Preset {
 export const PRESETS: readonly Preset[] = [
   { id: 'last_season', name: LAST_SEASON_PRESET_NAME, source: 'default' },
   { id: 'model', name: MODEL_PRESET_NAME, source: 'model', premium: true },
-];
-
-/** Where a new draft's numbers come from. The page asks this first, and one at a time. */
-export type SourceKind = 'preset' | 'projection' | 'imported';
-
-/**
- * One of the three answers to "what do you want to draft against", as the page words it.
- *
- * <p>A name and nothing else, short enough for a segment of a pill: the segment carries the
- * count beside it, and the panel under it says the rest. Each kind used to be a tile with a
- * line of prose ("Ready-made numbers, nothing to set up"), which is more reading than the
- * choice is worth.
- */
-export interface SourceKindOption {
-  readonly kind: SourceKind;
-  readonly name: string;
-}
-
-export const SOURCE_KINDS: readonly SourceKindOption[] = [
-  { kind: 'preset', name: 'Preset' },
-  { kind: 'projection', name: 'Your projection' },
-  { kind: 'imported', name: 'Shared board' },
 ];
 
 /**
