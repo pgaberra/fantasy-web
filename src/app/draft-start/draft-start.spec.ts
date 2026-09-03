@@ -446,9 +446,7 @@ describe('DraftStartComponent', () => {
     const component = fixture.point.componentInstance;
 
     expect(component.selection()).toEqual({ kind: 'preset', preset: LAST_SEASON });
-    expect(component.selectionName()).toEqual(LAST_SEASON_PRESET_NAME);
     expect(texts(fixture, '.start')).toEqual(['Start draft']);
-    expect(texts(fixture, '.start-hint')).toEqual([`Against ${LAST_SEASON_PRESET_NAME}`]);
 
     (fixture.nativeElement.querySelector('.start') as HTMLButtonElement).click();
 
@@ -473,7 +471,6 @@ describe('DraftStartComponent', () => {
 
     expect(texts(fixture, '.row-name')).toEqual(['Projection p2', 'Projection p1']);
     expect(component.selection()).toEqual({ kind: 'board', id: 'p2' });
-    expect(component.selectionName()).toEqual('Projection p2');
     expect(component.isBoardSelected('p2')).toBe(true);
 
     component.selectBoard('p1');
@@ -539,7 +536,6 @@ describe('DraftStartComponent', () => {
 
     expect(component.sourceKind()).toEqual('imported');
     expect(component.selection()).toEqual({ kind: 'board', id: 'i9' });
-    expect(component.selectionName()).toEqual('Board i9');
   });
 
   it('leads with the drafts, and drops their sources out of the rows below', async () => {

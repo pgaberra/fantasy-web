@@ -481,20 +481,12 @@
   display: block;
 }
 
-/* The one filled button on the page, and beside it what it will draft against. */
+/* The one filled button on the page. It used to carry "Against …" beside it; with the checked
+   card outlined directly above, that repeated what the eye already had. */
 .start-row {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
   margin-top: var(--space-4);
-}
-
-.start-hint {
-  font-size: var(--text-sm);
-  color: var(--color-text-subtle);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 @media (max-width: 640px) {
@@ -564,10 +556,6 @@
   .start-row {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .start-hint {
-    text-align: center;
   }
 
   .import-controls {

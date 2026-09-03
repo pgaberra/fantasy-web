@@ -227,20 +227,6 @@ export class DraftStartComponent {
     },
   });
 
-  /** Said beside the button, so the press is never a guess about which row is checked. */
-  readonly selectionName = computed(() => {
-    const chosen = this.selection();
-    if (!chosen) {
-      return null;
-    }
-    if (chosen.kind === 'preset') {
-      return chosen.preset.name;
-    }
-    return (
-      this.sourcesResource.value().find((projection) => projection.id === chosen.id)?.name ?? null
-    );
-  });
-
   presetDraft(preset: Preset): ProjectionSummaryResponse | null {
     return this.presetDrafts().get(preset.id) ?? null;
   }
