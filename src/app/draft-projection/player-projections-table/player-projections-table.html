@@ -13,7 +13,7 @@
             type="button"
             class="btn btn-secondary btn-sm history-btn"
             [disabled]="!canUndo()"
-            title="Undo (Ctrl+Z)"
+            appTooltip="Undo (Ctrl+Z)"
             aria-label="Undo last change"
             (click)="undo()"
           >
@@ -36,7 +36,7 @@
             type="button"
             class="btn btn-secondary btn-sm history-btn"
             [disabled]="!canRedo()"
-            title="Redo (Ctrl+Shift+Z)"
+            appTooltip="Redo (Ctrl+Shift+Z)"
             aria-label="Redo change"
             (click)="redo()"
           >
