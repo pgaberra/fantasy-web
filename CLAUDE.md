@@ -67,9 +67,13 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   choices under it became cards too (#515) the two rows looked alike and nothing said
   which was the category, so the category went low and the cards kept the weight.
   `projection-create` asks the same question
-  with the same tiles: the three presets and "Copy a board" as four cards, the boards
-  behind the fourth in a `<select>` grouped by yours / shared with you, so a user with a
-  handful of projections no longer faces ten radios. The first row of the open kind is
+  the same way, down to the markup: the same segmented control over the same three kinds,
+  the same radio cards under it, and the paste field on the shared kind. The three kinds
+  and their labels live in `models/source-kind.ts` so the two pages cannot drift into
+  calling one group two things; everything else is repeated per page, since component
+  styles are scoped. That page went via four cards with the boards folded into a `<select>`
+  (#508, #514), which was its own invention and made the reader learn the question twice.
+  The first row of the open kind is
   checked from the start (`selection`, a
   `linkedSignal` that keeps a pick whose row survives a reload), so a preset draft is
   still one press away. Every choice under the tiles is **the same card** (a visible radio,
