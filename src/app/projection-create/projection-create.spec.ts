@@ -465,9 +465,9 @@ describe('ProjectionCreateComponent', () => {
       expect(component.canCreate()).toEqual(true);
     });
 
-    // A copy has no preview: the rows are the board's own, which this page never downloads.
-    // The slot says so rather than emptying, which moved the Create button while it was aimed at.
-    it('names the board a copy would be made of, in the preview slot', async () => {
+    // A copy is previewed out of the board it would copy — its rows, its numbers, its columns.
+    // It used to be a sentence naming the board, because the page never downloaded one.
+    it('previews the board a copy would be made of', async () => {
       MockInstance(
         ProjectionStorageService,
         'listEditable',
@@ -485,6 +485,89 @@ describe('ProjectionCreateComponent', () => {
       fixture.detectChanges();
 
       expect(component.copiedBoard()?.id).toEqual('shared1');
+      // The board's own row, with the board's own number on it — not the 60 goals last season
+      // gave the same player, which is what every preset preview would show.
+      const rows = component.previewRows();
+      expect(rows.map((row) => row.player.name)).toEqual(['Best Player']);
+      expect((rows[0].projection.stats.scoring as SkaterScoringStats).goals).toEqual(64);
+      expect(fixture.nativeElement.querySelector('.preview-card')).not.toBeNull();
+    });
+
+    // The board is scored and drawn the way it will open in the editor: a category board is not
+    // previewed as a points one, and the columns are the ones it keeps.
+    it("previews a copy with the board's own settings", async () => {
+      MockInstance(
+        ProjectionStorageService,
+        'listEditable',
+        vi.fn(() => of(listed)),
+      );
+
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.selectCopyFrom('own1');
+      await fixture.whenStable();
+
+      expect(component.previewScoringType()).toEqual('category');
+      expect([...component.previewActiveColumns().scoring]).toEqual(['goals']);
+      expect([...component.previewActiveColumns().utility]).toEqual(['gp']);
+      expect(component.previewUseDefaultDecimals()).toEqual(false);
+      expect(component.previewDecimalSettings().goals).toEqual(0);
+    });
+
+    // Half a megabyte a board, so the preview's copy is the one Create sends — and picking a
+    // board again after wandering off it does not fetch it a second time.
+    it('downloads a board once, however often it is picked or created from', async () => {
+      const loadProjection = vi.fn(() => of(source));
+      MockInstance(
+        ProjectionStorageService,
+        'listEditable',
+        vi.fn(() => of(listed)),
+      );
+      MockInstance(ProjectionStorageService, 'loadProjection', loadProjection);
+
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.selectCopyFrom('own1');
+      await fixture.whenStable();
+      component.selectPreset('default');
+      component.selectCopyFrom('own1');
+      await fixture.whenStable();
+      component.create();
+
+      expect(loadProjection).toHaveBeenCalledOnce();
+      expect(createProjection).toHaveBeenCalledWith(
+        expect.objectContaining({ data: source.data, source: undefined }),
+      );
+    });
+
+    // The preview is decoration: a board that will not download costs the page the table, not
+    // the sentence that was there before there was one, and not the Create button.
+    it('names the board when its rows cannot be downloaded', async () => {
+      MockInstance(
+        ProjectionStorageService,
+        'listEditable',
+        vi.fn(() => of(listed)),
+      );
+      MockInstance(
+        ProjectionStorageService,
+        'loadProjection',
+        vi.fn(() => throwError(() => new HttpErrorResponse({ status: 502 }))),
+      );
+
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.selectCopyFrom('shared1');
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(component.previewFailed()).toEqual(true);
+      expect(component.canCreate()).toEqual(true);
       expect(fixture.nativeElement.querySelector('.preview-note').textContent).toContain(
         'exact copy of',
       );
@@ -644,8 +727,8 @@ describe('ProjectionCreateComponent', () => {
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
 
-    expect([...component.previewActiveColumns.utility]).toEqual(['gp']);
-    expect([...component.previewActiveColumns.scoring]).toEqual([
+    expect([...component.previewActiveColumns().utility]).toEqual(['gp']);
+    expect([...component.previewActiveColumns().scoring]).toEqual([
       'goals',
       'assists',
       'ppp',
