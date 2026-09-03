@@ -14,6 +14,7 @@ import { StatInfoService } from '../../../../services/stat-info.service';
 import { DecimalStatKey } from '../../../projection-settings-section/model';
 import { ToiInputComponent } from './toi-input/toi-input';
 import { TooltipDirective } from '../../../../shared/tooltip/tooltip.directive';
+import { parseDecimalInput, steppedDecimalInput } from '../../../../shared/decimal-input';
 
 @Component({
   selector: 'app-stat-input',
@@ -44,9 +45,6 @@ export class StatInputComponent {
     const seconds = Math.max(0, Math.round(this.value()));
     return `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`;
   });
-  canStatBeNegative = computed(() => this.statInfoService.canStatBeNegative(this.key()));
-  isPercentage = computed(() => this.statInfoService.isPercentageStat(this.key()));
-
   private readonly decimals = computed(
     () => this.decimalSettings()[this.key() as DecimalStatKey] ?? 0,
   );
@@ -59,13 +57,10 @@ export class StatInputComponent {
   formattedValue = computed(() => this.value().toFixed(this.decimals()));
 
   /**
-   * The spinner and the arrow keys move by the smallest amount the column can show — a column set
-   * to one decimal steps 369.0 to 369.1, not to 370.
+   * The arrow keys move by the smallest amount the column can show — a column set to one decimal
+   * steps 369.0 to 369.1, not to 370.
    */
-  stepSize = computed(() => {
-    const decimals = this.decimals();
-    return decimals > 0 ? `0.${'0'.repeat(decimals - 1)}1` : '1';
-  });
+  private readonly stepSize = computed(() => Number(`1e-${this.decimals()}`));
 
   private readonly inputElement = viewChild<ElementRef<HTMLInputElement>>('statField');
   private readonly isFocused = signal(false);
@@ -82,7 +77,7 @@ export class StatInputComponent {
       // `369` would move the caret past what was just entered. So while it holds the number that
       // is stored — padding and all the ways of writing it aside — it is left alone, and only an
       // entry the table rounded or clamped to something else is corrected. Blur re-pads it.
-      if (isFocused && Number(element.value) === this.value()) return;
+      if (isFocused && parseDecimalInput(element.value) === this.value()) return;
       element.value = formatted;
     });
   }
@@ -101,5 +96,19 @@ export class StatInputComponent {
 
   onInput(event: Event) {
     this.statInput.emit({ playerId: this.playerId(), key: this.key(), event });
+  }
+
+  /**
+   * A text field does not step itself, so the arrow keys are handled here: the field is written
+   * first and then reported, so the table reads the stepped value off it like any other edit.
+   */
+  onStatKeydown(event: KeyboardEvent) {
+    const field = event.target as HTMLInputElement;
+    const stepped = steppedDecimalInput(field.value, event.key, this.stepSize());
+    if (stepped === null) return;
+    // The arrow would otherwise jump the caret to the end of the text it just changed.
+    event.preventDefault();
+    field.value = `${stepped}`;
+    this.onInput(event);
   }
 }

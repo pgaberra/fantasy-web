@@ -24,6 +24,10 @@ import {
   scalableScoringStatsFor,
 } from '../../projection-settings-section/model';
 import { StatInfoService } from '../../../services/stat-info.service';
+import { parseDecimalInput, steppedDecimalInput } from '../../../shared/decimal-input';
+
+/** What an arrow key moves a weight by, matching the two decimals a weight is written with. */
+const WEIGHT_STEP = 0.01;
 
 @Component({
   selector: 'thead[app-projections-table-header]',
@@ -150,7 +154,31 @@ export class ProjectionsTableHeaderComponent {
   }
 
   onWeightInput(statKey: ScoringStatKey, event: Event): void {
-    const weight = Number((event.target as HTMLInputElement).value);
+    const weight = parseDecimalInput((event.target as HTMLInputElement).value);
+    this.setWeight(statKey, weight);
+  }
+
+  onWeightKeydown(statKey: ScoringStatKey, event: KeyboardEvent): void {
+    const field = event.target as HTMLInputElement;
+    const stepped = steppedDecimalInput(field.value, event.key, WEIGHT_STEP);
+    if (stepped === null) {
+      return;
+    }
+    // The arrow would otherwise jump the caret to the end of the text it just changed.
+    event.preventDefault();
+    field.value = `${stepped}`;
+    this.setWeight(statKey, stepped);
+  }
+
+  /**
+   * Whatever the field is left holding, it goes back to showing the weight that is stored: text
+   * the browser is no longer policing can be left half-typed, or not a number at all.
+   */
+  onWeightBlur(statKey: ScoringStatKey, event: Event): void {
+    (event.target as HTMLInputElement).value = `${this.statWeights()[statKey]}`;
+  }
+
+  private setWeight(statKey: ScoringStatKey, weight: number): void {
     this.statWeights.update((weights) => ({ ...weights, [statKey]: weight }));
   }
 

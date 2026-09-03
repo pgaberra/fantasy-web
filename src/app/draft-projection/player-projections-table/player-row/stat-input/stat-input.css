@@ -21,10 +21,6 @@
   display: inline-block;
 }
 
-.stat-input {
-  -moz-appearance: textfield;
-}
-
 .stat-input:hover {
   border-color: #b0b8d4;
   background: var(--color-surface);
@@ -46,11 +42,6 @@
 .stat-input.has-warning:focus {
   border-color: #e6a700;
   box-shadow: 0 0 0 2px rgba(230, 167, 0, 0.3);
-}
-
-.stat-input::-webkit-outer-spin-button,
-.stat-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
 }
 
 /* Sized like the input it replaces, so a read-only table lines up with the editable one — it has
