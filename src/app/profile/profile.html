@@ -11,6 +11,54 @@
     <h1 class="profile-title">Profile</h1>
 
     <section class="card">
+      <h2 class="card-title">Profile picture</h2>
+      <p class="card-body">
+        Shown in the top corner of every page. Until you add one, the first letter of your name
+        stands in for it.
+      </p>
+
+      <div class="avatar-row">
+        <app-player-headshot
+          class="avatar-preview"
+          [src]="avatarUrl() ?? undefined"
+          [name]="displayName()"
+        />
+        <div class="avatar-actions">
+          <input
+            #avatarFile
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            hidden
+            (change)="onAvatarPicked($event)"
+          />
+          <button
+            type="button"
+            class="btn btn-secondary"
+            [disabled]="isUploading()"
+            (click)="avatarFile.click()"
+          >
+            {{ isUploading() ? 'Saving…' : avatarUrl() ? 'Change picture' : 'Upload picture' }}
+          </button>
+          @if (avatarUrl()) {
+            <button
+              type="button"
+              class="btn btn-danger-quiet"
+              [disabled]="isUploading()"
+              (click)="removeAvatar()"
+            >
+              Remove
+            </button>
+          }
+        </div>
+      </div>
+      <p class="field-hint">A PNG, JPEG or WebP. It is cropped to a square.</p>
+
+      @if (avatarError()) {
+        <p class="field-error">{{ avatarError() }}</p>
+      }
+    </section>
+
+    <section class="card">
       <h2 class="card-title">Public name</h2>
       <p class="card-body">
         Shown on every projection you share, so people know whose board they're looking at. It's the

@@ -27,6 +27,7 @@
 
 .app-nav {
   display: flex;
+  align-items: center;
   gap: var(--space-5);
 }
 
@@ -106,6 +107,32 @@
   background: var(--color-surface-hover);
 }
 
+/*
+ * Who is signed in, at the right edge where every site keeps it. The picture is the button; the
+ * ring is the same accent the links underline themselves with, so an open menu or the profile
+ * page reads as "you are here" the way the rest of the nav does. It stays at every width: on a
+ * phone the links fold into the burger, but the account has to stay a tap away.
+ */
+.nav-avatar {
+  --headshot-size: 32px;
+  --headshot-bg: var(--color-primary);
+  --headshot-color: var(--color-primary-contrast);
+  --headshot-initials-size: 0.8rem;
+  display: inline-flex;
+  padding: 0;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: border-color var(--transition);
+}
+
+.nav-avatar:hover,
+.nav-avatar.active,
+.nav-avatar[aria-expanded='true'] {
+  border-color: var(--color-accent);
+}
+
 /* Only the collapsed nav needs these; the header shows them itself at any width that fits. */
 .nav-menu-item--collapsed {
   display: none;
@@ -130,6 +157,33 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
+}
+
+.account-menu {
+  min-width: 14rem;
+}
+
+/* Who the menu is about, above what it offers. Not an item: it goes nowhere and is not focusable. */
+.account-menu-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.45rem 0.7rem 0.6rem;
+  margin-bottom: var(--space-1);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.account-menu-name {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.account-menu-email {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
 }
 
 .nav-menu-item {
@@ -165,25 +219,6 @@
   color: var(--color-primary);
 }
 
-.btn-logout {
-  background: none;
-  border: 1.5px solid rgba(15, 52, 96, 0.3);
-  color: rgba(15, 52, 96, 0.75);
-  border-radius: var(--radius-sm);
-  padding: 0.2rem var(--space-3);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  cursor: pointer;
-  transition:
-    color var(--transition),
-    border-color var(--transition);
-}
-
-.btn-logout:hover {
-  color: var(--color-primary);
-  border-color: var(--color-primary);
-}
-
 /* The shell fills the window and no more, so a page with nothing to scroll to does not scroll.
    This used to be `min-height: calc(100vh - 56px)` on the main element — the header's height,
    subtracted by hand. That could only ever be half the answer: the environment banner and the
@@ -217,21 +252,20 @@
     height: 26px;
   }
 
+  .app-nav {
+    gap: var(--space-3);
+  }
+
   .nav-burger {
     display: grid;
   }
 
   .app-nav a,
-  .nav-trigger,
-  .btn-logout {
+  .nav-trigger {
     display: none;
   }
 
   .nav-menu-item--collapsed {
-    display: block;
-  }
-
-  .nav-menu-item--signout {
     display: block;
   }
 }
