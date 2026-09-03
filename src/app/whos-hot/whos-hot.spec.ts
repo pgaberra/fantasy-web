@@ -146,6 +146,69 @@ describe('WhosHotComponent', () => {
     });
   });
 
+  describe('the minimum-games filter against a range that moved under it', () => {
+    /** A premium account, so the range is the test's to move. */
+    beforeEach(() => {
+      environment.paymentsEnabled = false;
+    });
+
+    it('never asks for more games than the range holds', () => {
+      stored = { fromGame: 1, toGame: 82, perGame: true, minGames: 25 } as WhosHotSettings;
+
+      const fixture = MockRender(WhosHotComponent);
+      const component = fixture.point.componentInstance;
+      expect(component.appliedMinGames()).toEqual(25);
+
+      // The same minimum against a stretch that cannot contain it would drop every player and
+      // leave the leaderboard empty for a reason nothing on screen explains.
+      component.fromGame.set(60);
+      fixture.detectChanges();
+
+      expect(component.appliedMinGames()).toEqual(23);
+    });
+
+    it('keeps the minimum the user chose, so widening the range brings it back', () => {
+      stored = { fromGame: 1, toGame: 82, perGame: true, minGames: 25 } as WhosHotSettings;
+
+      const fixture = MockRender(WhosHotComponent);
+      const component = fixture.point.componentInstance;
+
+      // A drag passes through every narrow range on its way to a wide one, so clamping the
+      // stored number itself would let the trip destroy the setting.
+      component.fromGame.set(80);
+      fixture.detectChanges();
+      expect(component.appliedMinGames()).toEqual(3);
+
+      component.fromGame.set(1);
+      fixture.detectChanges();
+
+      expect(component.minGames()).toEqual(25);
+      expect(component.appliedMinGames()).toEqual(25);
+    });
+
+    it('hands the clamped minimum to the range bar and the table alike', async () => {
+      stored = { fromGame: 1, toGame: 82, perGame: true, minGames: 25 } as WhosHotSettings;
+
+      const fixture = MockRender(WhosHotComponent);
+      await fixture.whenStable();
+      fixture.point.componentInstance.fromGame.set(60);
+      fixture.detectChanges();
+
+      // The box shows the number that is actually filtering, and the table filters by the
+      // number the box shows, so the two can never disagree about what is being hidden.
+      expect(ngMocks.input(ngMocks.find('app-game-range-selector'), 'minGames')).toEqual(23);
+      expect(ngMocks.input(ngMocks.find('app-hot-players-table'), 'minGames')).toEqual(23);
+    });
+
+    it('clamps a stored minimum against the range stored beside it', () => {
+      stored = { fromGame: 73, toGame: 82, perGame: true, minGames: 40 } as WhosHotSettings;
+
+      const component = MockRender(WhosHotComponent).point.componentInstance;
+
+      expect(component.appliedMinGames()).toEqual(10);
+    });
+  });
+
   it('names the season dropdown with a label the pointer can reach, not just a screen reader', () => {
     MockRender(WhosHotComponent);
 
