@@ -348,6 +348,16 @@ describe('PlayerProjectionsTableComponent', () => {
       ).toEqual(before);
     });
 
+    it('should read a typed comma as the decimal point it stands in for', () => {
+      const component = getComponent();
+      const event = { target: { value: '2,5' } } as unknown as Event;
+      component.onStatInput(1, 'shPct', event);
+      expect(
+        (component.playerProjections().find((p) => p.playerId === 1) as SkaterProjection).stats
+          .scoring.shPct,
+      ).toEqual(2.5);
+    });
+
     it('should clamp shPct to 100', () => {
       const component = getComponent();
       const event = { target: { value: '110' } } as unknown as Event;
@@ -993,31 +1003,16 @@ describe('PlayerProjectionsTableComponent', () => {
       expect(toiInput.value).toEqual('22:00');
     });
 
-    it('should render a non-toiPerGame utility input as type="number"', () => {
+    it('should render a non-toiPerGame utility input as a decimal text field', () => {
       getComponent({
         activeScoringColumns: new Set<ScoringStatKey>(['goals', 'assists']),
         activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
       });
+      // Not a number field: the browser writes one in the machine's locale, and this app writes
+      // a decimal point.
       const gpInput = ngMocks.find('.col-gp input').nativeElement as HTMLInputElement;
-      expect(gpInput.type).toEqual('number');
-    });
-
-    it('should have max="100" for shPct input', () => {
-      getComponent({
-        activeScoringColumns: new Set<ScoringStatKey>(['shPct']),
-        activeUtilityColumns: new Set<SkaterUtilityStatKey>(),
-      });
-      const shPctInput = ngMocks.find('app-stat-input input').nativeElement as HTMLInputElement;
-      expect(shPctInput.getAttribute('max')).toEqual('100');
-    });
-
-    it('should have max="100" for svPct input', () => {
-      getComponent({
-        activeScoringColumns: new Set<ScoringStatKey>(['svPct']),
-        activeUtilityColumns: new Set<SkaterUtilityStatKey>(),
-      });
-      const svPctInput = ngMocks.find('app-stat-input input').nativeElement as HTMLInputElement;
-      expect(svPctInput.getAttribute('max')).toEqual('100');
+      expect(gpInput.type).toEqual('text');
+      expect(gpInput.getAttribute('inputmode')).toEqual('decimal');
     });
   });
 

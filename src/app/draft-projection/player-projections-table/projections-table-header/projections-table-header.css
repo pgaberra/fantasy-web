@@ -269,7 +269,6 @@ tr.weight-row th {
   transition:
     border-color var(--transition-fast),
     background var(--transition-fast);
-  -moz-appearance: textfield;
 }
 
 .weight-input:hover {
@@ -282,11 +281,6 @@ tr.weight-row th {
   border-color: var(--color-gold);
   background: rgba(255, 255, 255, 0.25);
   box-shadow: 0 0 0 2px rgba(230, 184, 74, 0.35);
-}
-
-.weight-input::-webkit-outer-spin-button,
-.weight-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
 }
 
 tr.decimal-row th {

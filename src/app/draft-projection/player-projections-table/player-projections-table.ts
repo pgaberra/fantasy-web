@@ -58,6 +58,7 @@ import {
 } from '../../models/stat-key.model';
 import { StatInfoService } from '../../services/stat-info.service';
 import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
+import { parseDecimalInput } from '../../shared/decimal-input';
 import { PinnedTableHeaderDirective } from '../../shared/pinned-table-header/pinned-table-header.directive';
 import { LeagueSettingsMenuComponent } from './league-settings-menu/league-settings-menu';
 import { ColumnsMenuComponent } from './columns-menu/columns-menu';
@@ -652,7 +653,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
     const raw = (event.target as HTMLInputElement).value;
     const parsed = this.statInfoService.isToiStat(key)
       ? this.toiService.parseToi(raw)
-      : Number(raw);
+      : parseDecimalInput(raw);
     const decimals = this.decimalSettings();
     const rounded = key in decimals ? this.roundStat(parsed, key as DecimalStatKey) : parsed;
     let value = this.statInfoService.canStatBeNegative(key) ? rounded : Math.max(0, rounded);
