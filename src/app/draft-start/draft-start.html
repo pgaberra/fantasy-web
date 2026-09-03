@@ -388,9 +388,6 @@
         >
           {{ isStarting() ? 'Starting…' : 'Start draft' }}
         </button>
-        @if (selectionName(); as name) {
-          <span class="start-hint">Against {{ name }}</span>
-        }
       </div>
     </section>
   }
