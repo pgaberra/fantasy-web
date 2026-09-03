@@ -31,6 +31,26 @@
   line-height: 1.5;
 }
 
+.avatar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/* Large enough to judge the crop by; the header will draw the same picture at a quarter of this. */
+.avatar-preview {
+  --headshot-size: 96px;
+  --headshot-bg: var(--color-primary);
+  --headshot-color: var(--color-primary-contrast);
+  --headshot-initials-size: 2rem;
+}
+
+.avatar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 .field-label {
   display: block;
   margin-bottom: var(--space-1);
@@ -53,6 +73,11 @@
   margin: var(--space-1) 0 var(--space-4);
   font-size: var(--text-sm);
   color: var(--color-text-muted);
+}
+
+.avatar-row + .field-hint {
+  margin-top: var(--space-3);
+  margin-bottom: 0;
 }
 
 .card-actions {

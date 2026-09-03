@@ -131,10 +131,19 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   failed sync only says that _something_ was refused; this is how you find out what. A refusal is
   a **result, not an error**: showing "could not reach the probe" over Yahoo's own 403 would waste
   the whole feature, so only a failure of our own call surfaces as an error.
-- `profile/` — the account's **public name** (`/profile`, signed-in only). Sharing forces the
-  choice, but a name has to be changeable afterwards: a shared page credits the current one.
-  `AccountService` caches it in a signal, because the share dialog and this page both need to
-  know whether a name exists without re-fetching.
+- `profile/` — the account's **profile picture** and **public name** (`/profile`, signed-in
+  only), reached from the avatar at the right edge of the header, which opens the account menu
+  (who is signed in, Profile, Sign out) at every width. Sharing forces the choice of a name, but
+  it has to be changeable afterwards: a shared page credits the current one. `AccountService`
+  caches the name in a signal, because the share dialog and this page both need to know whether
+  one exists without re-fetching, and **follows the session**: an `effect` on
+  `AuthService.isLoggedIn` loads the profile and the picture when a session starts and drops
+  them when it ends, so the header can show them without every page asking. The picture is held
+  as an object URL (`avatarUrl`), since the endpoint needs the bearer token an `<img>` cannot
+  send. `AvatarImageService` crops and scales the picked file to a 256px square JPEG **in the
+  browser** before upload, so a phone photo becomes a few tens of KB and the server never decodes
+  an untrusted image; the header and the profile page both draw it with the table's
+  `app-player-headshot`, whose initials fallback covers an account without a picture.
 - `services/` — app services (auth, projections, etc.)
 - `interceptors/` — HTTP interceptors: `authInterceptor` attaches the JWT and refreshes
   once on 401 (all environments). `retryInterceptor` (outermost) is a small **always-on**

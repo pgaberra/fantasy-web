@@ -92,6 +92,19 @@ export class WhosHotComponent {
   readonly perGame = signal(this.stored?.perGame ?? false);
   readonly minGames = signal(this.stored?.minGames ?? 1);
 
+  /**
+   * The minimum the leaderboard is actually filtered by. The number the user typed outlives the
+   * range it was typed against: narrow the range afterwards and a minimum of 25 asks for more
+   * games than a 23-game stretch holds, so every player is dropped and the page reads as broken
+   * rather than over-filtered. Clamping here rather than rewriting `minGames` keeps the figure
+   * they chose, so widening the range brings it back instead of making them type it again — a
+   * drag passes through every narrow range on its way to a wide one, and a drag must not be able
+   * to destroy the setting.
+   */
+  readonly appliedMinGames = computed(() =>
+    Math.min(this.minGames(), Math.max(1, this.toGame() - this.fromGame() + 1)),
+  );
+
   readonly scoringType = signal<ScoringType>(this.stored?.scoringType ?? 'points');
   readonly statWeights = signal<Record<ScoringStatKey, number>>(
     this.stored?.statWeights ?? DEFAULT_STAT_WEIGHTS,

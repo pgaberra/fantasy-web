@@ -35,7 +35,9 @@
       [(fromGame)]="fromGame"
       [(toGame)]="toGame"
       [(perGame)]="perGame"
-      [(minGames)]="minGames"
+      [minGames]="appliedMinGames()"
+      [minGamesRequested]="minGames()"
+      (minGamesChange)="minGames.set($event)"
     />
 
     @if (hasError()) {
@@ -57,7 +59,7 @@
         [(minGoalieGames)]="minGoalieGames"
         [syncedLeagueName]="syncedLeagueName()"
         [perGame]="perGame()"
-        [minGames]="minGames()"
+        [minGames]="appliedMinGames()"
         (manageSyncRequested)="showSyncDialog.set(true)"
       >
         <!-- The same slot says two different things. With no league yet, importing one is the

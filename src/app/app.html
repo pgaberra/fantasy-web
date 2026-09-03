@@ -50,7 +50,15 @@
           @if (authService.isAdmin()) {
             <a routerLink="/admin" routerLinkActive="active">Admin</a>
           }
-          <button class="btn-logout" (click)="authService.logout()">Sign out</button>
+          <button
+            type="button"
+            class="nav-avatar"
+            aria-label="Account menu"
+            [class.active]="isProfileRoute()"
+            [cdkMenuTriggerFor]="accountMenu"
+          >
+            <app-player-headshot [src]="account.avatarUrl() ?? undefined" [name]="displayName()" />
+          </button>
         } @else {
           <a routerLink="/login" routerLinkActive="active">Sign in</a>
         }
@@ -110,9 +118,26 @@
         Admin
       </a>
     }
+  </div>
+</ng-template>
+<ng-template #accountMenu>
+  <div class="nav-menu account-menu" cdkMenu>
+    <div class="account-menu-identity">
+      <span class="account-menu-name">{{ account.username() ?? 'No username yet' }}</span>
+      <span class="account-menu-email">{{ account.email() }}</span>
+    </div>
+    <a
+      class="nav-menu-item"
+      cdkMenuItem
+      routerLink="/profile"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+    >
+      Profile
+    </a>
     <button
       type="button"
-      class="nav-menu-item nav-menu-item--collapsed nav-menu-item--signout"
+      class="nav-menu-item nav-menu-item--signout"
       cdkMenuItem
       (click)="authService.logout()"
     >
