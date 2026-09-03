@@ -15,6 +15,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { debounceTime, Observable } from 'rxjs';
 import { PlayerService } from '../services/player.service';
 import { Player } from '../models/player.model';
+import { applyPositionOverrides, PositionOverrides } from '../models/position-override';
+import { SkaterPosition } from '../models/position.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
 import { Projection, ScoringType } from '../models/projection.model';
 import { LeagueSyncComponent } from './projection-settings-section/league-sync/league-sync';
@@ -124,7 +126,15 @@ export class DraftProjectionComponent implements OnInit {
     stream: () => this.playerService.getPlayers(),
     defaultValue: [] as Player[],
   });
-  readonly players = computed(() => this.playersResource.value());
+  /**
+   * The pool this projection is drafted against: what the read model reports, with the owner's
+   * corrections applied. Every reader downstream — the position filter, the row label, the
+   * draft's slot eligibility, a published share — sees the corrected positions, because the
+   * correction happens once here rather than at each of them.
+   */
+  readonly players = computed(() =>
+    applyPositionOverrides(this.playersResource.value(), this.positionOverrides()),
+  );
 
   scoringType = signal<ScoringType>('points');
   statWeights = signal<Record<ScoringStatKey, number>>(DEFAULT_STAT_WEIGHTS);
@@ -150,6 +160,8 @@ export class DraftProjectionComponent implements OnInit {
   /** What the server had to add and drop to match the current pool, on the read that did it. */
   readonly poolReconciliation = signal<PoolReconciliation | null>(null);
   draft = signal<DraftState | null>(null);
+  /** The positions the owner corrected by hand, keyed by player. Empty when none have been. */
+  readonly positionOverrides = signal<PositionOverrides>(new Map());
 
   private readonly syncedSnapshot = signal<string | null>(null);
   /**
@@ -471,6 +483,7 @@ export class DraftProjectionComponent implements OnInit {
       playerBasis: this.playerBasis(),
       playerPoolSyncedAt: this.playerPoolSyncedAt(),
       draft: this.draft(),
+      positionOverrides: this.positionOverrides(),
       playerProjections: this.table()?.playerProjections?.() ?? this.loadedProjections() ?? [],
     };
   }
@@ -492,8 +505,30 @@ export class DraftProjectionComponent implements OnInit {
     this.playerBasis.set(state.playerBasis);
     this.playerPoolSyncedAt.set(state.playerPoolSyncedAt);
     this.draft.set(state.draft);
+    this.positionOverrides.set(state.positionOverrides);
     this.loadedProjections.set(state.playerProjections);
     this.rememberSyncedSettings();
+  }
+
+  /**
+   * Corrects one skater's positions, or puts them back on the read model's when given null.
+   * Autosaves like any other edit: the state this builds is what the save watches.
+   */
+  onPositionsChanged(change: { playerId: number; positions: SkaterPosition[] | null }): void {
+    this.positionOverrides.update((current) => {
+      const next = new Map(current);
+      if (change.positions === null) {
+        next.delete(change.playerId);
+      } else {
+        next.set(change.playerId, change.positions);
+      }
+      return next;
+    });
+  }
+
+  /** Drops every correction at once, putting the whole pool back on the reported positions. */
+  onPositionsReset(): void {
+    this.positionOverrides.set(new Map());
   }
 
   private autosave(): void {
@@ -534,7 +569,11 @@ export class DraftProjectionComponent implements OnInit {
    */
   private payload(data: ProjectionData): UpdateProjectionData {
     if (JSON.stringify(data.players) === this.lastSavedPlayersJson) {
-      return { settings: data.settings, draft: data.draft };
+      return {
+        settings: data.settings,
+        draft: data.draft,
+        positionOverrides: data.positionOverrides,
+      };
     }
     return data;
   }

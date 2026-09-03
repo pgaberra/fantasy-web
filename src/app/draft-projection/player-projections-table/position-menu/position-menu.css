@@ -1,0 +1,86 @@
+:host {
+  display: block;
+  width: 15rem;
+  max-width: 92vw;
+}
+
+.position-menu-title {
+  margin: 0;
+  padding: 0.6rem 0.7rem 0.35rem;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.position-list {
+  padding: 0.25rem 0.35rem;
+}
+
+.position-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  /* 44px tall so the whole row is a comfortable target on touch. */
+  min-height: 2.75rem;
+  padding: 0.35rem 0.5rem;
+  cursor: pointer;
+}
+
+.position-row:hover {
+  background: var(--color-surface-hover);
+}
+
+.position-row[aria-disabled='true'] {
+  cursor: default;
+}
+
+.position-check {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 4px;
+  color: transparent;
+}
+
+.position-row[aria-checked='true'] .position-check {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
+.position-row[aria-checked='true'][aria-disabled='true'] .position-check {
+  background: var(--color-border-strong);
+  border-color: var(--color-border-strong);
+}
+
+.position-key {
+  font-weight: var(--weight-semibold);
+}
+
+.position-menu-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.35rem 0.5rem 0.55rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.position-menu-footer .btn {
+  width: 100%;
+}
+
+/* Secondary to the button above it: this one reaches past the player whose menu it is. */
+.position-menu-footer .reset-all {
+  font-size: var(--text-xs);
+}

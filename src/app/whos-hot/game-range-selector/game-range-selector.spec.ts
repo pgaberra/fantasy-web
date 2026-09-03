@@ -1,18 +1,22 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach } from 'vitest';
-import { GameRangeSelectorComponent } from './game-range-selector';
+import { FREE_PRESET, GameRangeSelectorComponent } from './game-range-selector';
 
 describe('GameRangeSelectorComponent', () => {
   beforeEach(() => MockBuilder(GameRangeSelectorComponent));
 
-  const render = (fromGame = 63, toGame = 82) =>
+  const render = (fromGame = 63, toGame = 82, locked = false) =>
     MockRender(GameRangeSelectorComponent, {
       scheduleLength: 82,
       fromGame,
       toGame,
       perGame: false,
       minGames: 1,
+      locked,
     }).point.componentInstance;
+
+  /** A free account: opened on the one range it is allowed, with everything else shut. */
+  const renderLocked = () => render(73, 82, true);
 
   const preset = (component: GameRangeSelectorComponent, label: string) =>
     component.presets.find((candidate) => candidate.label === label)!;
@@ -201,6 +205,67 @@ describe('GameRangeSelectorComponent', () => {
     // Naming the region 'Game range' would repeat the label inside it and leave the scoring
     // options out of the name.
     expect(bar.getAttribute('aria-label')).toEqual('Game range and scoring options');
+  });
+
+  it('leaves every preset alive while the range is not locked', () => {
+    const component = render();
+
+    expect(component.presets.every((preset) => !component.isPresetLocked()(preset))).toEqual(true);
+    expect(ngMocks.findAll('.premium-lock').length).toEqual(0);
+  });
+
+  it('locks every preset but the free one, so the row still shows what is being measured', () => {
+    const component = renderLocked();
+
+    const locked = component.presets.filter((preset) => component.isPresetLocked()(preset));
+
+    expect(locked.map((preset) => preset.label)).toEqual([
+      'Last 20',
+      'Last 30',
+      'First half',
+      'Second half',
+      'Full season',
+    ]);
+    expect(component.isPresetLocked()(FREE_PRESET)).toEqual(false);
+    expect(FREE_PRESET.label).toEqual('Last 10');
+  });
+
+  it('disables the locked pills and leaves the free one pressable', () => {
+    renderLocked();
+
+    const pills = ngMocks
+      .findAll('button.preset')
+      .map((pill) => pill.nativeElement as HTMLButtonElement);
+    const byLabel = (label: string) => pills.find((pill) => pill.textContent.trim() === label)!;
+
+    expect(byLabel('Last 10').disabled).toEqual(false);
+    expect(byLabel('Full season').disabled).toEqual(true);
+  });
+
+  it('shuts the rail and both boxes, not just the presets', () => {
+    renderLocked();
+
+    // The pills are the named way in and the rail is the exact one. Leaving either open would
+    // hand the whole feature over.
+    const inputs = ngMocks
+      .findAll('.range-slider input')
+      .map((input) => input.nativeElement as HTMLInputElement);
+
+    expect(inputs.length).toEqual(4);
+    expect(inputs.every((input) => input.disabled)).toEqual(true);
+    expect(ngMocks.find('.track').nativeElement.classList).toContain('track--locked');
+  });
+
+  it('offers the way out of the lock, on the row it applies to', () => {
+    renderLocked();
+
+    const lock = ngMocks.find('.premium-lock');
+
+    expect((lock.nativeElement as HTMLElement).textContent.trim()).toEqual('Premium');
+    // A link to the pricing page rather than a dead badge: being told the feature is paid for
+    // is only half of it.
+    expect(ngMocks.input(lock, 'routerLink')).toEqual('/pricing');
+    expect(ngMocks.find('.presets').nativeElement.contains(lock.nativeElement)).toEqual(true);
   });
 
   it('leaves the season to the page, so the bar asks one question rather than two', () => {

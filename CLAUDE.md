@@ -51,18 +51,31 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   The table also marks **rookies** (a badge by the name, plus a "Rookies only" filter) from
   `GET /api/v1/players/rookies`. That endpoint answers `known: false` wherever the projection
   service is not running — production, today — and a failed request leaves the resource without
-  a value; both must read as *no marker and no filter*, never as every player being a veteran.
+  a value; both must read as _no marker and no filter_, never as every player being a veteran.
   `rookieIds` is therefore null in both cases, and is taken via `hasValue()` because reading a
   resource in an error state throws.
 - `draft-start/` — the **Draft Mode** page (`/draft`): picks what a draft is drafted
   against, across three kinds of source — the presets, the user's own projections, and
-  boards copied from someone's share link. All three are listed at once, under a heading
-  each; they were tabs, and a tab hid two thirds of the answer, the paste-a-share-link
-  field included (`projection-create` groups the same three the same way, in the same
-  order). Drafts left mid-way are lifted out of the groups into a strip at the top, since
-  resuming one is what most visits are for. The shared group carries the field;
-  `shareTokenFrom` accepts a whole URL, a `/s/…` path, or a bare token, and a name clash
-  (409) asks for a name rather than reporting a failure the user cannot act on.
+  boards copied from someone's share link. Drafts left mid-way lead the page as cards,
+  since resuming one is what most visits are for; **the card itself is the button** (a
+  chevron and a "Resume draft" / "View summary" label at its edge), with discard and
+  open-the-projection behind a kebab. Below it, starting a draft is **one choice made in
+  steps**: a tile per kind of source (each saying what it holds, so the two not open are
+  still accounted for), the radio rows of the open kind, and a single **Start draft**
+  button, the only filled button on the page. `projection-create` asks the same question
+  with the same tiles: the three presets and "Copy a board" as four cards, the boards
+  behind the fourth in a `<select>` grouped by yours / shared with you, so a user with a
+  handful of projections no longer faces ten radios. The first row of the open kind is
+  checked from the start (`selection`, a
+  `linkedSignal` that keeps a pick whose row survives a reload), so a preset draft is
+  still one press away. The shared kind carries the paste field; `shareTokenFrom` accepts
+  a whole URL, a `/s/…` path, or a bare token, and a name clash (409) asks for a name
+  rather than reporting a failure the user cannot act on. An import switches to that kind
+  and checks the copy.
+  History, for anyone tempted to relitigate: the three kinds were tabs (#406), then all
+  three lists at once with a button per row (#459, #503), then a hierarchy of filled and
+  outlined buttons (#505). Eight buttons on one page was still too much; folding two of
+  the three kinds behind tiles that name their contents is the compromise.
   A preset draft has no projection behind it, so starting one creates a projection of
   kind `preset_draft` (seeded server-side via `source: default`) purely to hold the picks;
   `ProjectionStorageService.listProjections()` filters that row out so it never shows up
@@ -97,7 +110,7 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
 - `admin/` — admin-only tools (`/admin`): the Yahoo service account, the player sync, and a
   **Yahoo access probe**. The probe asks Yahoo one question — will it serve this game's players? —
   for a game key and season you type in, and shows the status and Yahoo's own error wording. A
-  failed sync only says that *something* was refused; this is how you find out what. A refusal is
+  failed sync only says that _something_ was refused; this is how you find out what. A refusal is
   a **result, not an error**: showing "could not reach the probe" over Yahoo's own 403 would waste
   the whole feature, so only a failure of our own call surfaces as an error.
 - `profile/` — the account's **public name** (`/profile`, signed-in only). Sharing forces the
@@ -200,7 +213,7 @@ to Sentry for months; the browser reported nowhere.
   `provideBrowserGlobalErrorListeners()` is what routes rejections there.
 - **One error is deliberately not reported**: a stale-build chunk failure the router is already
   reloading for (`isRecoveringFromStaleBuild` in `shared/navigation-error.ts`). The router calls
-  the navigation error handler and *then* rethrows, so the same failure arrives twice — and it
+  the navigation error handler and _then_ rethrows, so the same failure arrives twice — and it
   was raising a Sentry alert on every deploy for something the user never saw. It still reaches
   the console, and a build that is broken rather than stale still reports, through the
   notification the navigation handler shows when reloading did not help.
@@ -250,10 +263,13 @@ acceptable** experience. For **every UI change, double-check it holds up on a na
 
 `e2e/` holds Playwright E2E tests that drive a real browser against the **deployed
 staging** app (`https://staging.slapstat.com`), not a local build. `e2e.yml` runs them
-**on every merge to `master`** (waiting for the new bundle to reach staging first),
-**daily** at 06:00 UTC, and on manual dispatch.
+**daily** at 06:00 UTC and on manual dispatch (`gh workflow run e2e.yml`). It used to run
+on every merge to `master` too; that was traded away because each run installs a
+Chromium and waits out the redeploy, and merges land several times a day. So a merge that
+touches a page the suite walks (`/draft`, `/projections/new`, the editor, the board) is
+**not** checked until the next morning unless someone dispatches the run.
 
-They are deliberately **not** a PR gate. The suite drives *deployed* staging, so a PR's
+They are deliberately **not** a PR gate. The suite drives _deployed_ staging, so a PR's
 own changes aren't there to test — gating on it would judge a PR by unrelated code and
 deadlock the PR that fixes a red suite.
 
@@ -303,7 +319,7 @@ in committed config.
 
 - Deployed via **Coolify** (Hetzner) using the multi-stage `Dockerfile`: a Node build
   stage produces `dist/fantasy-web/browser`, served by nginx (SPA rewrite `/* →
-  /index.html`, see `nginx.conf`). The BFF URL + Google Client ID are injected into
+/index.html`, see `nginx.conf`). The BFF URL + Google Client ID are injected into
   `environment.prod.ts` at build time via the `API_URL` / `GOOGLE_CLIENT_ID` build args.
   production = `slapstat.com` (`api.slapstat.com`), staging = `staging.slapstat.com`
   (`api.staging.slapstat.com`). See `DEPLOYMENT.md`.

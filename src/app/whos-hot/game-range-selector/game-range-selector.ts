@@ -1,7 +1,8 @@
 import { Component, computed, input, model, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { HelpTipComponent } from '../../shared/help-tip/help-tip';
 
-interface RangePreset {
+export interface RangePreset {
   label: string;
   /** Resolved against the season's length, so "last 20" means the same stretch in any season. */
   range: (scheduleLength: number) => { from: number; to: number };
@@ -19,6 +20,16 @@ const PRESETS: RangePreset[] = [
 ];
 
 /**
+ * The one range a free account gets: the most recent form, which is what the page is for at its
+ * simplest. Everything else about the range — the other presets and the rail — is premium.
+ *
+ * Exported because the page has to agree with the pills about what "the free range" is: it opens
+ * on this range and falls back to it when an account is not premium, and two independent
+ * definitions of "last 10" would drift the first time one of them changed.
+ */
+export const FREE_PRESET: RangePreset = PRESETS[0];
+
+/**
  * Picks the stretch of schedule to measure, in team game numbers.
  *
  * Game numbers rather than dates, because they are the unit the whole feature is expressed in:
@@ -34,12 +45,20 @@ const PRESETS: RangePreset[] = [
  */
 @Component({
   selector: 'app-game-range-selector',
-  imports: [HelpTipComponent],
+  imports: [HelpTipComponent, RouterLink],
   templateUrl: './game-range-selector.html',
   styleUrl: './game-range-selector.css',
 })
 export class GameRangeSelectorComponent {
   readonly scheduleLength = input.required<number>();
+
+  /**
+   * Whether picking the range is closed to this account. Everything that moves the bounds goes
+   * flat: the presets other than the free one, the rail and the two boxes. The free preset stays
+   * live so the row still reads as a choice that has been made rather than a dead strip, and the
+   * lock beside it says who the rest is for.
+   */
+  readonly locked = input(false);
   readonly fromGame = model.required<number>();
   readonly toGame = model.required<number>();
   readonly perGame = model.required<boolean>();
@@ -71,6 +90,12 @@ export class GameRangeSelectorComponent {
     left: this.railOffset(this.positionOf(this.fromGame())),
     right: this.railOffset(1 - this.positionOf(this.toGame())),
   }));
+
+  /** Every preset but the free one, once the range is locked. */
+  readonly isPresetLocked = computed(() => {
+    const locked = this.locked();
+    return (preset: RangePreset) => locked && preset !== FREE_PRESET;
+  });
 
   readonly isPresetActive = computed(() => {
     const { from, to } = { from: this.fromGame(), to: this.toGame() };

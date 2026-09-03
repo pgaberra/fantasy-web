@@ -47,19 +47,19 @@
         <button
           type="button"
           class="btn btn-primary"
-          appTooltip="Enter Draft Mode with a copy of this projection"
+          appTooltip="Enter Draft mode with a copy of this projection"
           [disabled]="isImporting()"
           (click)="draftAgainstThis()"
           data-testid="draft-board"
         >
-          {{ importingInto() === 'draft' ? 'Copying…' : 'Draft Mode' }}
+          {{ importingInto() === 'draft' ? 'Copying…' : 'Draft mode' }}
         </button>
       </div>
       @if (alreadyImported()) {
         <p class="board-actions-note">
           You already have a copy of this board.
           <a routerLink="/projections">Open your projections</a> to edit it, or
-          <a routerLink="/draft">go to Draft Mode</a> to draft against it.
+          <a routerLink="/draft">go to Draft mode</a> to draft against it.
         </p>
       } @else if (signInPromptFor(); as intent) {
         <p class="board-actions-prompt" role="status" data-testid="sign-in-prompt">
@@ -86,10 +86,13 @@
     <section class="table-section">
       <div class="table-header">
         <div class="table-title">
-          <h2>Player Projections</h2>
+          <h2>Player projections</h2>
         </div>
         <div class="table-controls">
-          <app-position-filter [(value)]="positionFilter" />
+          <app-position-filter
+            [value]="positionFilter()"
+            (valueChange)="setPositionFilter($event)"
+          />
         </div>
       </div>
 
@@ -102,7 +105,7 @@
         <table>
           <thead
             app-projections-table-header
-            [activeColumns]="activeColumns()"
+            [activeColumns]="filteredActiveColumns()"
             [scoringType]="scoringType()"
             [statWeights]="statWeights()"
             [useDefaultDecimals]="true"
@@ -116,12 +119,12 @@
             @for (row of visibleRows(); track row.shared.playerId) {
               <tr
                 app-player-row
-                [positionRank]="row.shared.rank"
-                [totalRank]="null"
+                [positionRank]="rankOf(row)"
+                [totalRank]="overallRankOf(row)"
                 [projection]="row.projection"
                 [playerScore]="row.score"
                 [player]="row.player"
-                [activeColumns]="activeColumns()"
+                [activeColumns]="filteredActiveColumns()"
                 [scoringType]="scoringType()"
                 [decimalSettings]="decimalSettings()"
                 [readonly]="true"

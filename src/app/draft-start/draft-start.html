@@ -1,38 +1,17 @@
-<!--
-  What a row with a draft offers: open it, and once there is something to lose, throw it away.
-  One template for all three lists, so a draft can be discarded wherever it turns up — the
-  resume card above, a projection of the user's own, or a board imported from a share link —
-  and the three cannot drift apart. A row with no draft yet shows only the button that starts
-  one.
--->
-<ng-template #draftActions let-row>
-  @if (isDiscarding(row)) {
-    <span class="row-busy">Discarding…</span>
-  } @else if (isConfirmingDiscard(row)) {
-    <span class="confirm-text">{{ discardPrompt(row) }}</span>
-    <button type="button" class="btn btn-danger btn-sm" (click)="confirmDiscard(row)">
-      Yes, discard
-    </button>
-    <button type="button" class="btn btn-secondary btn-sm" (click)="cancelDiscard()">Cancel</button>
-  } @else {
-    @if (row.draftStatus === 'finished') {
-      <span class="row-status row-status--done">Draft complete</span>
-    }
-    <button type="button" class="btn btn-primary btn-sm" (click)="openDraft(row.id)">
-      {{ draftLabel(row.draftStatus) }}
-    </button>
-    @if (row.draftStatus !== 'none') {
-      <button type="button" class="btn btn-danger-quiet btn-sm" (click)="requestDiscard(row)">
-        Discard draft
-      </button>
-    }
-  }
-</ng-template>
-
 <div class="draft-start">
   <div class="page-header">
-    <h1>Draft Mode</h1>
-    <p class="subtitle">Pick what you want to draft against.</p>
+    <h1>Draft mode</h1>
+    <!--
+      `hasValue` before anything derived from the list: this line sits outside the error branch
+      below, and reading the resource's value while it is in an error state throws.
+    -->
+    <p class="subtitle">
+      @if (sourcesResource.hasValue() && drafts().length > 0) {
+        Pick up a draft, or start a new one.
+      } @else {
+        Pick what you want to draft against.
+      }
+    </p>
   </div>
 
   @if (sourcesResource.isLoading()) {
@@ -40,127 +19,391 @@
   } @else if (sourcesResource.error()) {
     <app-error-state title="Couldn't load your draft sources" (retry)="retry()" />
   } @else {
-    @if (inProgress().length > 0) {
-      <section class="resume" aria-labelledby="resume-title">
-        <h2 class="group-title" id="resume-title">Pick up where you left off</h2>
-        <ul class="rows">
-          @for (draft of inProgress(); track draft.id) {
-            <li class="row row--resume">
-              <div class="row-main">
-                <span class="row-name">{{ draft.name }}</span>
-                <span class="row-meta">
-                  {{ sourceLabel(draft) }} · last pick {{ draft.updatedAt | relativeTime }}
+    <!--
+      The drafts, then the sources with none. Every draft is here and nowhere else: it used to be
+      copied to the top of the page while its source stayed in the list below, so the same draft
+      answered to two rows with two labels. A source holds at most one draft, so lifting them all
+      out leaves the rows below meaning exactly one thing, "not started yet".
+    -->
+    @if (drafts().length > 0) {
+      <section class="section" aria-labelledby="drafts-title">
+        <h2 class="section-title" id="drafts-title">Your drafts</h2>
+        <ul class="drafts">
+          @for (draft of drafts(); track draft.id) {
+            <li
+              class="draft"
+              [class.draft--done]="draft.draftStatus === 'finished'"
+              [class.draft--confirming]="isConfirmingDiscard(draft) || isDiscarding(draft)"
+            >
+              <!--
+                The card is the button. A "Resume draft" beside each name made a page of drafts
+                a column of buttons before the page had even asked its second question; the
+                chevron and the label at the edge say what a press does, in the card's own voice.
+              -->
+              <button
+                type="button"
+                class="draft-open"
+                [attr.aria-label]="draftLabel(draft.draftStatus) + ': ' + draft.name"
+                (click)="openDraft(draft.id)"
+              >
+                <span class="draft-icon" aria-hidden="true">
+                  @if (draft.draftStatus === 'finished') {
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="5 12.5 10 17.5 19 7" />
+                    </svg>
+                  } @else {
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                      <path
+                        d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"
+                      />
+                    </svg>
+                  }
                 </span>
-              </div>
-              <ng-container
-                [ngTemplateOutlet]="draftActions"
-                [ngTemplateOutletContext]="{ $implicit: draft }"
-              />
+                <span class="draft-main">
+                  <span class="draft-heading">
+                    <span class="draft-name">{{ draft.name }}</span>
+                    @if (draft.draftStatus === 'finished') {
+                      <span class="draft-status draft-status--done">Complete</span>
+                    } @else {
+                      <span class="draft-status">In progress</span>
+                    }
+                  </span>
+                  <span class="draft-meta">
+                    {{ sourceLabel(draft) }} · {{ timingLabel(draft) }}
+                    {{ draft.updatedAt | relativeTime }}
+                  </span>
+                </span>
+                <span class="draft-cta" aria-hidden="true">
+                  <span class="draft-cta-label">{{ draftLabel(draft.draftStatus) }}</span>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polyline points="9 6 15 12 9 18" />
+                  </svg>
+                </span>
+              </button>
+              <!--
+                Everything but opening the draft lives behind the kebab, as on the projection
+                list. It sits beside the card's button rather than inside it: a button may not
+                contain another.
+              -->
+              <button
+                type="button"
+                class="draft-menu"
+                [attr.aria-label]="'More actions for ' + draft.name"
+                [appPopover]="draftMenu"
+                [popoverContext]="{ $implicit: draft }"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="5" r="2.1" />
+                  <circle cx="12" cy="12" r="2.1" />
+                  <circle cx="12" cy="19" r="2.1" />
+                </svg>
+              </button>
+              @if (isDiscarding(draft)) {
+                <div class="draft-actions">
+                  <span class="row-busy">Discarding…</span>
+                </div>
+              } @else if (isConfirmingDiscard(draft)) {
+                <div class="draft-actions">
+                  <span class="confirm-text" tabindex="-1">{{ discardPrompt(draft) }}</span>
+                  <button
+                    type="button"
+                    class="btn btn-danger btn-sm discard"
+                    (click)="confirmDiscard(draft)"
+                  >
+                    Yes, discard
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm cancel"
+                    (click)="cancelDiscard()"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              }
             </li>
           }
         </ul>
       </section>
     }
 
-    <!--
-      One list, grouped by where a source comes from, rather than three tabs over the same
-      question. The new-projection page groups the same three the same way (projection-create.html):
-      a tab hid two thirds of what can be drafted against — the import box included, behind the
-      tab that is empty until it has been used once.
-    -->
-    <section class="group group--presets" aria-labelledby="presets-title">
-      <h2 class="group-title" id="presets-title">Presets</h2>
-      <ul class="rows">
-        @for (preset of presets; track preset.name) {
-          <li class="row">
-            <div class="row-main">
-              <span class="row-name">{{ preset.name }}</span>
-              <span class="row-meta">{{ preset.description }}</span>
-            </div>
-            @if (presetDraft(preset)?.draftStatus === 'finished') {
-              <span class="row-status row-status--done">Draft complete</span>
-            }
-            @if (isStarting()) {
-              <span class="row-busy">Starting…</span>
-            } @else if (isConfirmingRestart(preset)) {
-              <span class="confirm-text">Discard this draft and start over?</span>
-              <button type="button" class="btn btn-danger btn-sm" (click)="confirmRestart(preset)">
-                Yes, start over
-              </button>
-              <button type="button" class="btn btn-secondary btn-sm" (click)="cancelRestart()">
-                Cancel
-              </button>
+    <section class="section" aria-labelledby="start-title">
+      <h2 class="section-title" id="start-title">Start a new draft</h2>
+
+      <!--
+        One choice, made in steps: the kind of source, then the one to use, then Start. The
+        three kinds used to be three lists on the page at once, each row with a button of its
+        own, and the page read as eight buttons with no first among them. A tile carries what
+        its kind holds, so the two not showing are still accounted for.
+      -->
+      <fieldset class="kinds">
+        <legend class="kinds-legend">What do you want to draft against?</legend>
+        <div class="kind-tiles">
+          @for (option of sourceKinds; track option.kind) {
+            <label class="kind" [class.kind--selected]="sourceKind() === option.kind">
+              <input
+                type="radio"
+                name="source-kind"
+                class="kind-input"
+                [value]="option.kind"
+                [checked]="sourceKind() === option.kind"
+                (change)="sourceKind.set(option.kind)"
+              />
+              <span class="kind-icon" aria-hidden="true">
+                @switch (option.kind) {
+                  @case ('projection') {
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="20"
+                      height="20"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M4 5h16v14H4z" />
+                      <path d="M4 9h16" />
+                      <path d="M10 9v10" />
+                    </svg>
+                  }
+                  @case ('imported') {
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="20"
+                      height="20"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5" />
+                      <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5" />
+                    </svg>
+                  }
+                  @default {
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="20"
+                      height="20"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M4 4v16h16" />
+                      <path d="M8.5 15.5v-4" />
+                      <path d="M13 15.5V8" />
+                      <path d="M17.5 15.5v-6" />
+                    </svg>
+                  }
+                }
+              </span>
+              <span class="kind-main">
+                <span class="kind-name">{{ option.name }}</span>
+                <span class="kind-description">{{ option.description }}</span>
+                <span class="kind-meta">{{ kindMeta(option.kind) }}</span>
+              </span>
+            </label>
+          }
+        </div>
+      </fieldset>
+
+      <!--
+        The rows of the chosen kind, and only those. The radio rows are the new-projection
+        page's (projection-create.html), which asks the same question of the same three groups.
+      -->
+      <fieldset class="panel">
+        <legend class="visually-hidden">Which one</legend>
+        @switch (sourceKind()) {
+          @case ('projection') {
+            @if (projections().length === 0) {
+              <p class="group-empty">
+                @if (drafts().length > 0) {
+                  Every projection you have is drafted against already.
+                  <a routerLink="/projections/new">Create another</a> to draft against fresh
+                  numbers.
+                } @else {
+                  No projections yet.
+                  <a routerLink="/projections/new">Create one</a> to draft against your own numbers.
+                }
+              </p>
             } @else {
-              <button type="button" class="btn btn-primary btn-sm" (click)="startPreset(preset)">
-                {{ presetLabel(preset) }}
-              </button>
-              @if (presetDraft(preset)) {
-                <button
-                  type="button"
-                  class="btn btn-secondary btn-sm"
-                  (click)="requestRestart(preset)"
-                >
-                  Start over
-                </button>
-              }
+              <ul class="rows">
+                @for (projection of projections(); track projection.id) {
+                  <li class="row">
+                    <label class="row-choice">
+                      <input
+                        type="radio"
+                        name="source"
+                        [checked]="isBoardSelected(projection.id)"
+                        (change)="selectBoard(projection.id)"
+                      />
+                      <span class="row-main">
+                        <span class="row-name">{{ projection.name }}</span>
+                        <span class="row-meta">
+                          Updated {{ projection.updatedAt | relativeTime }}
+                        </span>
+                      </span>
+                    </label>
+                  </li>
+                }
+              </ul>
+              <!--
+                The way to more of these is a page away. The empty state above says so; a list
+                that is not empty should not lose the door.
+              -->
+              <p class="group-footer">
+                <a class="group-link create-projection" routerLink="/projections/new">
+                  + Create a new projection
+                </a>
+              </p>
             }
-          </li>
+          }
+          @case ('imported') {
+            @if (imported().length === 0) {
+              <p class="group-empty">
+                Nobody's board here yet. Paste a SlapStat share link below to copy one, and the copy
+                is yours to draft against.
+              </p>
+            } @else {
+              <ul class="rows">
+                @for (board of imported(); track board.id) {
+                  <li class="row">
+                    <label class="row-choice">
+                      <input
+                        type="radio"
+                        name="source"
+                        [checked]="isBoardSelected(board.id)"
+                        (change)="selectBoard(board.id)"
+                      />
+                      <span class="row-main">
+                        <span class="row-name">{{ board.name }}</span>
+                        <span class="row-meta">
+                          {{ sourceLabel(board) }} · imported {{ board.createdAt | relativeTime }}
+                        </span>
+                      </span>
+                    </label>
+                  </li>
+                }
+              </ul>
+            }
+            <app-share-import (imported)="onImported($event.id)" />
+          }
+          @default {
+            @if (availablePresets().length === 0) {
+              <p class="group-empty">
+                Every preset has a draft above. Discard that draft to start the preset fresh.
+              </p>
+            } @else {
+              <ul class="rows">
+                @for (preset of availablePresets(); track preset.id) {
+                  <li class="row">
+                    <label class="row-choice">
+                      <input
+                        type="radio"
+                        name="source"
+                        [checked]="isPresetSelected(preset)"
+                        (change)="selectPreset(preset)"
+                      />
+                      <span class="row-main">
+                        <span class="row-name">{{ preset.name }}</span>
+                        <span class="row-meta">{{ preset.description }}</span>
+                      </span>
+                    </label>
+                  </li>
+                }
+              </ul>
+            }
+          }
         }
-      </ul>
-    </section>
+      </fieldset>
 
-    <section class="group group--own" aria-labelledby="own-title">
-      <h2 class="group-title" id="own-title">Your projections</h2>
-      @if (projections().length === 0) {
-        <p class="group-empty">
-          No projections yet.
-          <a routerLink="/projections/new">Create one</a> to draft against your own numbers.
-        </p>
-      } @else {
-        <ul class="rows">
-          @for (projection of projections(); track projection.id) {
-            <li class="row">
-              <div class="row-main">
-                <span class="row-name">{{ projection.name }}</span>
-                <span class="row-meta">Updated {{ projection.updatedAt | relativeTime }}</span>
-              </div>
-              <ng-container
-                [ngTemplateOutlet]="draftActions"
-                [ngTemplateOutletContext]="{ $implicit: projection }"
-              />
-            </li>
-          }
-        </ul>
-      }
-    </section>
-
-    <section class="group group--shared" aria-labelledby="shared-title">
-      <h2 class="group-title" id="shared-title">Shared with you</h2>
-      @if (imported().length === 0) {
-        <p class="group-empty">
-          Nobody's board here yet. Paste a SlapStat share link below to draft against someone else's
-          numbers.
-        </p>
-      } @else {
-        <ul class="rows">
-          @for (board of imported(); track board.id) {
-            <li class="row">
-              <div class="row-main">
-                <span class="row-name">{{ board.name }}</span>
-                <span class="row-meta">
-                  {{ sourceLabel(board) }} · imported {{ board.createdAt | relativeTime }}
-                </span>
-              </div>
-              <ng-container
-                [ngTemplateOutlet]="draftActions"
-                [ngTemplateOutletContext]="{ $implicit: board }"
-              />
-            </li>
-          }
-        </ul>
-      }
-
-      <app-share-import (imported)="onImported()" />
+      <div class="start-row">
+        <button
+          type="button"
+          class="btn btn-primary start"
+          [disabled]="!selection() || isStarting()"
+          (click)="start()"
+        >
+          {{ isStarting() ? 'Starting…' : 'Start draft' }}
+        </button>
+        @if (selectionName(); as name) {
+          <span class="start-hint">Against {{ name }}</span>
+        }
+      </div>
     </section>
   }
 </div>
+
+<ng-template #draftMenu let-draft>
+  <div class="draft-menu-panel">
+    @if (canOpenBoard(draft)) {
+      <button type="button" class="menu-item open-board" (click)="openBoard(draft.id)">
+        <svg
+          viewBox="0 0 24 24"
+          width="15"
+          height="15"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M4 5h16v14H4z" />
+          <path d="M4 9h16" />
+          <path d="M10 9v10" />
+        </svg>
+        Open the projection
+      </button>
+    }
+    <button
+      type="button"
+      class="menu-item menu-item--danger discard"
+      (click)="requestDiscard(draft)"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="15"
+        height="15"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M3 12a9 9 0 1 0 2.6-6.4" />
+        <polyline points="3 4 3 9.5 8.5 9.5" />
+      </svg>
+      Discard draft
+    </button>
+  </div>
+</ng-template>

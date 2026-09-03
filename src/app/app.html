@@ -50,9 +50,9 @@
           @if (authService.isAdmin()) {
             <a routerLink="/admin" routerLinkActive="active">Admin</a>
           }
-          <button class="btn-logout" (click)="authService.logout()">Sign Out</button>
+          <button class="btn-logout" (click)="authService.logout()">Sign out</button>
         } @else {
-          <a routerLink="/login" routerLinkActive="active">Sign In</a>
+          <a routerLink="/login" routerLinkActive="active">Sign in</a>
         }
       </nav>
     </div>
@@ -66,7 +66,7 @@
       routerLink="/draft"
       routerLinkActive="active"
       ariaCurrentWhenActive="page"
-      >Draft Mode</a
+      >Draft mode</a
     >
     <a
       class="nav-menu-item"
@@ -75,7 +75,7 @@
       routerLinkActive="active"
       ariaCurrentWhenActive="page"
     >
-      My Projections
+      My projections
     </a>
     @if (whosHotEnabled) {
       <a
@@ -116,7 +116,7 @@
       cdkMenuItem
       (click)="authService.logout()"
     >
-      Sign Out
+      Sign out
     </button>
   </div>
 </ng-template>

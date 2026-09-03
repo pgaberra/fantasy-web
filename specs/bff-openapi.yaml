@@ -98,7 +98,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProjectionResponse"
         "409":
-          description: Another projection with that name already exists
+          description: The name is already taken by another projection or imported
+            board
           content:
             application/json:
               schema:
@@ -320,7 +321,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProjectionResponse"
         "409":
-          description: A projection of that kind already exists
+          description: "The name is already taken by a projection or an imported board,\
+            \ or a draft against that preset already exists"
           content:
             application/json:
               schema:
@@ -361,7 +363,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProjectionResponse"
         "409":
-          description: An imported projection with that name already exists
+          description: The name is already taken by a projection or an imported board
           content:
             application/json:
               schema:
@@ -929,7 +931,8 @@ paths:
         \ schedule — measured, not projected. Ranges are in team game numbers, so\
         \ the same range covers the same stretch for every player; one who missed\
         \ some of them shows fewer games. Give either fromGame/toGame or lastGames;\
-        \ with neither, the whole season is covered."
+        \ with neither, the whole season is covered. Reading further back than the\
+        \ last 10 games needs a premium subscription."
       operationId: skaterSplits
       parameters:
       - name: season
@@ -983,11 +986,20 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/PlayerSplitResponse"
+        "403":
+          description: The range needs premium and this account has none
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerSplitResponse"
   /api/v1/projection-model/splits/goalies:
     get:
       tags:
       - Projection model
       summary: Goalies' measured totals over a range of a season's games
+      description: Reading further back than the last 10 games needs a premium subscription.
       operationId: goalieSplits
       parameters:
       - name: season
@@ -1032,6 +1044,14 @@ paths:
       responses:
         "200":
           description: Totals over the range
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerSplitResponse"
+        "403":
+          description: The range needs premium and this account has none
           content:
             application/json:
               schema:
@@ -1198,6 +1218,23 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RookiesResponse"
+  /api/v1/players/injuries:
+    get:
+      tags:
+      - Players
+      summary: Who is currently hurt
+      description: "The current injury report for the players a league can roster:\
+        \ status, body part and expected return. Answers known=false when the report\
+        \ cannot be read, which is not the same as nobody being hurt. This describes\
+        \ today and is refreshed nightly, so it is not worth caching for long."
+      operationId: getInjuries
+      responses:
+        "200":
+          description: "Injuries returned, or reported as unknown"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InjuriesResponse"
   /api/v1/players/goalies:
     get:
       tags:
@@ -1589,6 +1626,26 @@ components:
       required:
       - scoring
       - utility
+    PositionOverride:
+      type: object
+      properties:
+        playerId:
+          type: integer
+          format: int32
+        positions:
+          type: array
+          items:
+            type: string
+            enum:
+            - LW
+            - C
+            - RW
+            - D
+          maxItems: 4
+          minItems: 0
+      required:
+      - playerId
+      - positions
     ProjectionSettings:
       type: object
       properties:
@@ -1726,6 +1783,14 @@ components:
             $ref: "#/components/schemas/PlayerProjection"
         draft:
           $ref: "#/components/schemas/DraftState"
+        positionOverrides:
+          type: array
+          description: "Positions the owner set by hand. Omit to keep the stored ones,\
+            \ so a save that has nothing to do with positions cannot clear them. Send\
+            \ an empty list to put every player back on the positions the read model\
+            \ reports."
+          items:
+            $ref: "#/components/schemas/PositionOverride"
       required:
       - settings
     UpdateProjectionRequest:
@@ -1777,6 +1842,13 @@ components:
             $ref: "#/components/schemas/PlayerProjection"
         draft:
           $ref: "#/components/schemas/DraftState"
+        positionOverrides:
+          type: array
+          description: "Positions the owner set by hand, replacing what the player\
+            \ read model reports for that skater. Absent or empty means every player\
+            \ keeps its reported positions."
+          items:
+            $ref: "#/components/schemas/PositionOverride"
       required:
       - players
       - settings
@@ -2272,6 +2344,8 @@ components:
           $ref: "#/components/schemas/PlayerIdRemapCounts"
         draftPicks:
           $ref: "#/components/schemas/PlayerIdRemapCounts"
+        positionOverrides:
+          $ref: "#/components/schemas/PlayerIdRemapCounts"
         sharesScanned:
           type: integer
           format: int32
@@ -2286,6 +2360,7 @@ components:
       - draftPicks
       - dryRun
       - playerRows
+      - positionOverrides
       - projectionsScanned
       - sharedRows
       - sharesScanned
@@ -2623,8 +2698,10 @@ components:
           type: string
           description: "The player's headshot: an absolute URL when the picture lives\
             \ on the platform's image CDN, or a path relative to the API base URL\
-            \ (e.g. /players/9245/headshot) when this service serves it. Absent when\
-            \ the player has no picture."
+            \ (e.g. /players/9245/headshot?v=96-1.55-0.04) when this service serves\
+            \ it. The query string is opaque and marks how the avatar was drawn, so\
+            \ that reframing it does not leave a cached picture behind: use the value\
+            \ as given. Absent when the player has no picture."
         sweaterNumber:
           type: integer
           format: int32
@@ -2798,6 +2875,45 @@ components:
       required:
       - known
       - playerIds
+    InjuriesResponse:
+      type: object
+      properties:
+        known:
+          type: boolean
+          description: "Whether the injury report could be read at all. When false,\
+            \ players is empty and means nothing — hide the marker rather than showing\
+            \ the league as fit."
+        players:
+          type: array
+          description: "One entry per injured player, in the same id space as /api/v1/players/skaters\
+            \ and /goalies."
+          items:
+            $ref: "#/components/schemas/PlayerInjury"
+      required:
+      - known
+      - players
+    PlayerInjury:
+      type: object
+      properties:
+        playerId:
+          type: integer
+          format: int32
+        status:
+          type: string
+          description: "The report's own wording: Out, Injured Reserve, Suspension\
+            \ or Day-To-Day. Day-To-Day usually costs no games."
+        bodyPart:
+          type: string
+          description: "Where he is hurt, as reported: Knee, Upper Body, Undisclosed.\
+            \ Absent when the report gives none."
+        expectedReturn:
+          type: string
+          format: date
+          description: "When he is expected back. A club's guess, so read it as the\
+            \ middle of a range rather than a date. Absent when none is given."
+      required:
+      - playerId
+      - status
     GoalieResponse:
       type: object
       properties:
@@ -2812,8 +2928,10 @@ components:
           type: string
           description: "The player's headshot: an absolute URL when the picture lives\
             \ on the platform's image CDN, or a path relative to the API base URL\
-            \ (e.g. /players/9245/headshot) when this service serves it. Absent when\
-            \ the player has no picture."
+            \ (e.g. /players/9245/headshot?v=96-1.55-0.04) when this service serves\
+            \ it. The query string is opaque and marks how the avatar was drawn, so\
+            \ that reframing it does not leave a cached picture behind: use the value\
+            \ as given. Absent when the player has no picture."
         sweaterNumber:
           type: integer
           format: int32

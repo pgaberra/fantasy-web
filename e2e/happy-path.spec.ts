@@ -40,7 +40,7 @@ test.describe('happy path', () => {
 
     // 4) Remove a scoring stat and switch the league to Category.
     //
-    // Both settings used to live in a "Projection Settings" panel below the table. They now sit in
+    // Both settings used to live in a "Projection settings" panel below the table. They now sit in
     // the table's own toolbar — the league type as a segmented control, the stat columns behind a
     // Stats popover — so this step follows them there rather than to a panel that no longer exists.
     const statsMenu = page.getByRole('button', { name: /^stats$/i });
@@ -65,9 +65,13 @@ test.describe('happy path', () => {
     await page.getByRole('menuitem', { name: /draft mode/i }).click();
     await expect(page).toHaveURL(/\/draft\/?$/, { timeout: 15_000 });
 
-    const sourceCard = page.locator('li.card').filter({ hasText: projectionName });
-    await expect(sourceCard).toBeVisible();
-    await sourceCard.getByRole('button').first().click();
+    // The page asks for the kind of source first, and opens on the presets: the projection sits
+    // behind the "Your projection" tile, as a radio row, with the page's one Start button below.
+    await page.locator('label.kind', { hasText: 'Your projection' }).click();
+    const sourceRow = page.locator('li.row').filter({ hasText: projectionName });
+    await expect(sourceRow).toBeVisible();
+    await sourceRow.getByRole('radio').check();
+    await page.getByRole('button', { name: /^start draft$/i }).click();
     await expect(page).toHaveURL(/\/projections\/[0-9a-f-]+\/draft$/i, { timeout: 30_000 });
 
     // 6) Shrink to the smallest league so a full draft stays quick. Wait for the setup phase to

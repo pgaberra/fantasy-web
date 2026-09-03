@@ -69,7 +69,7 @@ describe('App', () => {
 
     const items = openMenu(fixture).map((item) => item.textContent?.trim());
 
-    expect(items).toEqual(['Draft Mode', 'My Projections', "Who's hot", 'Admin', 'Sign Out']);
+    expect(items).toEqual(['Draft mode', 'My projections', "Who's hot", 'Admin', 'Sign out']);
   });
 
   it('leaves out the links the header itself leaves out', () => {
@@ -102,7 +102,7 @@ describe('App', () => {
 
   it('signs out from the menu', () => {
     const fixture = render();
-    const signOut = openMenu(fixture).find((item) => item.textContent?.trim() === 'Sign Out');
+    const signOut = openMenu(fixture).find((item) => item.textContent?.trim() === 'Sign out');
 
     signOut?.click();
 

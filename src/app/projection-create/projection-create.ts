@@ -56,16 +56,18 @@ import { offeredPresets } from '../models/ai-projection';
  */
 export type StartingPoint =
   | { readonly kind: 'preset'; readonly source: NonNullable<CreateProjectionRequest['source']> }
-  | { readonly kind: 'copy'; readonly id: string };
+  /**
+   * A copy of a board. `id` is null only while the copy card is down and there is no board to
+   * copy yet: the card is still the answer to "what kind", so it stays picked, but Create waits.
+   */
+  | { readonly kind: 'copy'; readonly id: string | null };
 
 /** A starting point the server can derive on its own, from nothing the user has to supply. */
 export interface CreatePreset {
   readonly name: string;
   readonly source: NonNullable<CreateProjectionRequest['source']>;
-  /** What picking it means, shown in the row's tip rather than under the name. */
+  /** What picking it means, under the name on its card. */
   readonly description: string;
-  /** Names what the tip explains — its trigger is an icon with nothing to read. */
-  readonly tipLabel: string;
 }
 
 /** Every preset this page knows of. What it offers is `offeredPresets` of these — see below. */
@@ -73,21 +75,18 @@ export const CREATE_PRESETS: readonly CreatePreset[] = [
   {
     name: "Last season's stats",
     source: 'default',
-    description: "Start from each player's real numbers from last season.",
-    tipLabel: "What starting from last season's stats means",
+    description: "Each player's real numbers from last season.",
   },
   {
     name: 'AI projection',
     source: 'model',
     description:
-      "Start from a model's estimate for the coming season, built from several seasons of NHL data. It is a qualified guess, not the truth, so adjust it as you would any other starting point.",
-    tipLabel: 'What starting from the AI projection means',
+      "A model's estimate for the coming season, from several seasons of NHL data. A qualified guess, not the truth.",
   },
   {
     name: 'From scratch',
     source: 'blank',
     description: 'Every player keeps their seat on the board, with every stat at 0.',
-    tipLabel: 'What starting from scratch means',
   },
 ];
 
@@ -229,16 +228,28 @@ export class ProjectionCreateComponent {
   });
   readonly ownProjections = computed(() => this.byKind('projection'));
   readonly importedBoards = computed(() => this.byKind('imported'));
+  /** Everything the copy card can copy: the user's own first, then what was shared with them. */
+  readonly boards = computed(() => [...this.ownProjections(), ...this.importedBoards()]);
+  /** What the copy card holds, said on the card, so the fold hides nothing. */
+  readonly copyMeta = computed(() => {
+    const total = this.boards().length;
+    if (total === 0) {
+      return 'None yet';
+    }
+    return `${total} board${total === 1 ? '' : 's'}`;
+  });
+  /** Whether the copy card is the one down, board picked or not. */
+  readonly isCopy = computed(() => this.startingPoint().kind === 'copy');
   /** Whether the AI preset is what the page is showing, which is what its extra fetch follows. */
   private readonly isModelPreset = computed(() => this.isPreset('model'));
   /**
-   * The board a copy would be made of, or null when a preset is picked. The preview reads it to
-   * name what it cannot draw: the rows of a copy are the board's own, which this page never
-   * downloads.
+   * The board a copy would be made of, or null when a preset is picked or there is no board to
+   * copy yet. The preview reads it to name what it cannot draw: the rows of a copy are the
+   * board's own, which this page never downloads.
    */
   readonly copiedBoard = computed(() => {
     const point = this.startingPoint();
-    if (point.kind !== 'copy') {
+    if (point.kind !== 'copy' || point.id === null) {
       return null;
     }
     return this.dataResource.value().find((board) => board.id === point.id) ?? null;
@@ -247,8 +258,24 @@ export class ProjectionCreateComponent {
   readonly loadError = computed(() => !!this.dataResource.error());
   readonly isCreating = signal<boolean>(false);
   readonly name = linkedSignal(() =>
-    freeProjectionName(this.ownProjections().map((projection) => projection.name)),
+    freeProjectionName(this.dataResource.value().map((projection) => projection.name)),
   );
+
+  /**
+   * Whether the name is one the user is already keeping something under. The server refuses it
+   * either way (names are unique per user across their own boards and imported ones alike), so
+   * this is only about where they find out: on the field they can fix, rather than in a toast
+   * after pressing Create.
+   *
+   * <p>Compared exactly, trimmed, because that is the comparison the server makes. Anything
+   * looser would stop a name it would have accepted.
+   */
+  readonly nameTaken = computed(() => {
+    const typed = this.name().trim();
+    return (
+      typed.length > 0 && this.dataResource.value().some((projection) => projection.name === typed)
+    );
+  });
 
   /**
    * Exactly the columns a new projection opens with — the goalie ones included, so they read as
@@ -371,8 +398,19 @@ export class ProjectionCreateComponent {
     return seeded ? { skaters: seeded.skaters, goalies: seeded.goalies } : null;
   });
 
-  // A starting point is always picked, so only the name can hold the button back.
-  readonly canCreate = computed(() => !this.isCreating() && this.name().trim().length > 0);
+  /** Whether the answer names something to start from: a preset always does, a copy needs a board. */
+  private readonly hasStartingPoint = computed(() => {
+    const point = this.startingPoint();
+    return point.kind === 'preset' || point.id !== null;
+  });
+
+  readonly canCreate = computed(
+    () =>
+      !this.isCreating() &&
+      this.name().trim().length > 0 &&
+      !this.nameTaken() &&
+      this.hasStartingPoint(),
+  );
 
   onNameInput(event: Event): void {
     this.name.set((event.target as HTMLInputElement).value);
@@ -388,6 +426,23 @@ export class ProjectionCreateComponent {
 
   selectCopyFrom(id: string): void {
     this.startingPoint.set({ kind: 'copy', id });
+  }
+
+  /**
+   * The copy card itself. It picks the first board there is, so the card is an answer the
+   * moment it is pressed; with no board to pick it stays down empty-handed, and the panel under
+   * it says where one comes from. Pressing it again changes nothing, so a board already picked
+   * is not swapped for the first.
+   */
+  selectCopy(): void {
+    if (this.isCopy()) {
+      return;
+    }
+    this.startingPoint.set({ kind: 'copy', id: this.boards()[0]?.id ?? null });
+  }
+
+  onCopyChange(event: Event): void {
+    this.selectCopyFrom((event.target as HTMLSelectElement).value);
   }
 
   isPreset(source: CreatePreset['source']): boolean {
@@ -431,6 +486,11 @@ export class ProjectionCreateComponent {
 
     const point = this.startingPoint();
     if (point.kind === 'copy') {
+      if (point.id === null) {
+        // Unreachable through the button, which `canCreate` holds back; said for the type.
+        this.isCreating.set(false);
+        return;
+      }
       this.projectionStorage
         .loadProjection(point.id)
         .pipe(takeUntilDestroyed(this.destroyRef))

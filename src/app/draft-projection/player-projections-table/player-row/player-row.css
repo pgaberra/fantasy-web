@@ -44,6 +44,29 @@ td.col-name {
   flex-shrink: 0;
 }
 
+/* The positions read as part of the name, so the trigger keeps the name's type and colour and
+   only picks up an underline on hover. A button that looked like a button here would compete
+   with the row's own controls for attention it does not deserve. */
+.player-positions {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.player-positions:hover,
+.player-positions:focus-visible {
+  text-decoration: underline;
+}
+
+/* A correction the owner made is worth seeing without opening the menu. */
+.player-positions--overridden {
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
 .player-team {
   color: var(--color-text-subtle);
   font-size: 0.8em;
@@ -137,6 +160,23 @@ td.col-name {
 /* The rookie mark rides beside the name rather than taking a column: it applies to a handful
    of players, and a column would cost every row the width. Small, quiet, and out of the way of
    the numbers, which are what the table is read for. */
+/* The injury mark sits where the rookie mark does and is built the same way, because it answers
+   the same kind of question about a player. It is red rather than gold because it is a warning
+   and not a fact worth celebrating, and it carries the whole report in its title: the badge has
+   room for a word, and "out until 7 November" is what the reader actually wants. */
+.injury-badge {
+  flex: none;
+  margin-left: var(--space-1);
+  padding: 0 0.3rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-danger);
+  color: var(--color-text-on-dark);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  line-height: 1.35;
+  cursor: help;
+}
+
 .rookie-badge {
   flex: none;
   margin-left: var(--space-1);

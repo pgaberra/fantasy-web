@@ -19,24 +19,39 @@ test.describe('draft mode from a preset', () => {
   test.skip(!email || !password, 'Set E2E_EMAIL and E2E_PASSWORD to run the signed-in tests');
   test.setTimeout(120_000);
 
-  test('starts a draft from the preset and keeps it out of My Projections', async ({ page }) => {
+  test('starts a draft from the preset and keeps it out of My projections', async ({ page }) => {
     await page.goto('/login');
     await page.locator('#email').fill(email!);
     await page.locator('#password').fill(password!);
     await page.locator('button[type="submit"]').click();
     await expect(page).toHaveURL(/\/projections/, { timeout: 15_000 });
 
-    // 1) Reach Draft Mode through the nav menu rather than by URL, so the menu is covered too.
+    // 1) Reach Draft mode through the nav menu rather than by URL, so the menu is covered too.
     await page.getByRole('button', { name: /^draft$/i }).click();
     await page.getByRole('menuitem', { name: /draft mode/i }).click();
     await expect(page).toHaveURL(/\/draft\/?$/);
 
-    const presetCard = page.locator('li.card').filter({ hasText: PRESET_NAME });
-    await expect(presetCard).toBeVisible();
+    // The picker keeps a preset that has been drafted against out of the rows below, so which
+    // of the two the preset shows up in says whether this run is the first on the account. The
+    // page's Start button renders with the rows, so waiting for it is waiting for the answer;
+    // count() itself does not wait.
+    const startDraft = page.getByRole('button', { name: /^start draft$/i });
+    await expect(startDraft).toBeVisible({ timeout: 15_000 });
+    const presetRow = page.locator('li.row').filter({ hasText: PRESET_NAME });
+    const presetDraft = page.locator('li.draft').filter({ hasText: PRESET_NAME });
+    const startedAlready = (await presetDraft.count()) > 0;
 
-    // 2) Open the preset draft. Seeding the player rows server-side takes a moment on a first
-    //    run; a later run resumes the one already stored.
-    await presetCard.getByRole('button').first().click();
+    // 2) Open the preset draft. A later run resumes the one already stored: the draft card is
+    //    itself the button. A first run picks the preset's radio row (the page opens on the
+    //    presets, so no tile to press) and starts from the page's one Start button; seeding the
+    //    player rows server-side takes a moment.
+    if (startedAlready) {
+      await presetDraft.getByRole('button', { name: /resume draft|view summary/i }).click();
+    } else {
+      await expect(presetRow).toBeVisible();
+      await presetRow.getByRole('radio').check();
+      await startDraft.click();
+    }
     await expect(page).toHaveURL(/\/projections\/[0-9a-f-]+\/draft$/i, { timeout: 30_000 });
     await expect(page.getByRole('heading', { name: PRESET_NAME })).toBeVisible({
       timeout: 30_000,
@@ -59,13 +74,15 @@ test.describe('draft mode from a preset', () => {
     // 4) Leaving the board returns to the source picker, not to a projection that isn't theirs.
     await page.getByRole('link', { name: /exit draft mode/i }).click();
     await expect(page).toHaveURL(/\/draft\/?$/);
-    await expect(presetCard.locator('.card-status')).toBeVisible();
+    // The draft now exists, so the preset has moved out of the list below and into "Your drafts".
+    await expect(presetDraft).toBeVisible();
+    await expect(presetRow).toHaveCount(0);
 
-    // 5) The preset draft is not the user's own work, so it is absent from My Projections.
+    // 5) The preset draft is not the user's own work, so it is absent from My projections.
     await page.getByRole('button', { name: /^draft$/i }).click();
     await page.getByRole('menuitem', { name: /my projections/i }).click();
     await expect(page).toHaveURL(/\/projections\/?$/);
-    await expect(page.getByRole('heading', { name: 'My Projections' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'My projections' })).toBeVisible();
     await expect(page.locator('li').filter({ hasText: PRESET_NAME })).toHaveCount(0);
   });
 });

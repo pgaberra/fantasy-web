@@ -5,6 +5,7 @@ import { RosterSlots } from '../api/models/roster-slots';
 import { YahooSync } from '../api/models/yahoo-sync';
 import { EspnSync } from '../api/models/espn-sync';
 import { DraftState } from '../api/models/draft-state';
+import { PositionOverrides } from '../models/position-override';
 import { ProjectionSettings } from '../api/models/projection-settings';
 
 export type PlayerBasis = NonNullable<ProjectionSettings['playerBasis']>;
@@ -37,4 +38,9 @@ export interface ProjectionState {
   playerBasis: PlayerBasis | null;
   playerPoolSyncedAt: string | null;
   draft: DraftState | null;
+  /**
+   * The positions the owner corrected by hand, keyed by player. Empty is the normal case: it
+   * means every player is on the positions the read model reports.
+   */
+  positionOverrides: PositionOverrides;
 }

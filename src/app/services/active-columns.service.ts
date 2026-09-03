@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { ActiveColumns, PositionFilter } from '../models/projection.model';
+import { ActiveColumns, PositionFilter, SortColumn } from '../models/projection.model';
 import { PositionFilterService } from './position-filter.service';
 import { StatInfoService } from './stat-info.service';
 import {
@@ -51,6 +51,26 @@ export class ActiveColumnsService {
       scoring: filteredScoring,
       utility: filteredUtility,
     });
+  }
+
+  /**
+   * Whether a table narrowed to `filter` still shows the column it is sorted by. The name and the
+   * ranking are always on screen; a stat column is only there while the filter keeps it, and a
+   * table left sorted by a column it no longer shows sits in an order nothing on screen explains.
+   */
+  showsSortColumn(
+    column: SortColumn,
+    activeColumns: ActiveColumns,
+    filter: PositionFilter,
+  ): boolean {
+    if (column === 'name' || column === 'summary') {
+      return true;
+    }
+    const shown = this.filterAndSortActiveColumns(activeColumns, filter);
+    return (
+      (shown.scoring as ReadonlySet<string>).has(column) ||
+      (shown.utility as ReadonlySet<string>).has(column)
+    );
   }
 
   private sortActiveColumns(activeColumns: ActiveColumns): ActiveColumns {
