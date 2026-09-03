@@ -200,6 +200,18 @@ describe('WhosHotComponent', () => {
       expect(ngMocks.input(ngMocks.find('app-hot-players-table'), 'minGames')).toEqual(23);
     });
 
+    it('tells the range bar what was asked for, so it can explain the number it shows', () => {
+      stored = { fromGame: 1, toGame: 82, perGame: true, minGames: 25 } as WhosHotSettings;
+
+      const fixture = MockRender(WhosHotComponent);
+      fixture.point.componentInstance.fromGame.set(60);
+      fixture.detectChanges();
+
+      const selector = ngMocks.find('app-game-range-selector');
+      expect(ngMocks.input(selector, 'minGames')).toEqual(23);
+      expect(ngMocks.input(selector, 'minGamesRequested')).toEqual(25);
+    });
+
     it('clamps a stored minimum against the range stored beside it', () => {
       stored = { fromGame: 73, toGame: 82, perGame: true, minGames: 40 } as WhosHotSettings;
 
