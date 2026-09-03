@@ -1,23 +1,28 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
+import { from, switchMap } from 'rxjs';
 import { AccountService } from '../services/account.service';
+import { AvatarImageService, UnreadableImageError } from '../services/avatar-image.service';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
+import { PlayerHeadshotComponent } from '../shared/player-headshot/player-headshot';
 import { USERNAME_MAX_LENGTH, USERNAME_PATTERN, USERNAME_RULE } from '../models/username';
 import { messageForError } from '../shared/http-error';
 
 /**
- * The account's public name. Sharing forces the choice, but it has to be changeable somewhere
- * afterwards — a shared page credits the current name, so this is what a reader sees.
+ * The account as the app shows it: the picture in the header and the public name. Sharing forces
+ * the choice of a name, but it has to be changeable somewhere afterwards — a shared page credits
+ * the current name, so this is what a reader sees.
  */
 @Component({
   selector: 'app-profile',
-  imports: [LoadingIndicatorComponent, ErrorStateComponent],
+  imports: [LoadingIndicatorComponent, ErrorStateComponent, PlayerHeadshotComponent],
   templateUrl: './profile.html',
   styleUrl: './profile.css',
 })
 export class ProfileComponent implements OnInit {
   private readonly account = inject(AccountService);
+  private readonly avatarImages = inject(AvatarImageService);
 
   readonly usernameMaxLength = USERNAME_MAX_LENGTH;
   readonly usernameRule = USERNAME_RULE;
@@ -30,6 +35,11 @@ export class ProfileComponent implements OnInit {
   readonly usernameInput = signal<string>('');
   readonly errorMessage = signal<string | null>(null);
   readonly justSaved = signal<boolean>(false);
+
+  readonly avatarUrl = this.account.avatarUrl;
+  readonly isUploading = signal<boolean>(false);
+  readonly avatarError = signal<string | null>(null);
+  readonly displayName = computed(() => this.username() ?? this.email());
 
   readonly canSave = computed(() => {
     const candidate = this.usernameInput().trim();
@@ -78,6 +88,43 @@ export class ProfileComponent implements OnInit {
             ? 'That name is taken. Try another.'
             : messageForError(error, "Couldn't save your name."),
         );
+      },
+    });
+  }
+
+  onAvatarPicked(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    // Cleared so picking the same file again after a failure fires another change event.
+    input.value = '';
+    if (!file) {
+      return;
+    }
+    this.isUploading.set(true);
+    this.avatarError.set(null);
+    from(this.avatarImages.prepare(file))
+      .pipe(switchMap((image) => this.account.setAvatar(image)))
+      .subscribe({
+        next: () => this.isUploading.set(false),
+        error: (error: unknown) => {
+          this.isUploading.set(false);
+          this.avatarError.set(
+            error instanceof UnreadableImageError
+              ? "Couldn't read that file as a picture. Try a PNG or JPEG."
+              : messageForError(error, "Couldn't save your picture."),
+          );
+        },
+      });
+  }
+
+  removeAvatar(): void {
+    this.isUploading.set(true);
+    this.avatarError.set(null);
+    this.account.removeAvatar().subscribe({
+      next: () => this.isUploading.set(false),
+      error: (error: unknown) => {
+        this.isUploading.set(false);
+        this.avatarError.set(messageForError(error, "Couldn't remove your picture."));
       },
     });
   }

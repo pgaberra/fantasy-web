@@ -3,9 +3,11 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
+import { AccountService } from './services/account.service';
 import { AuthService } from './services/auth.service';
 import { ConsentBannerComponent } from './shared/consent-banner/consent-banner';
 import { EnvironmentBannerComponent } from './shared/environment-banner/environment-banner';
+import { PlayerHeadshotComponent } from './shared/player-headshot/player-headshot';
 import { SiteFooterComponent } from './shared/site-footer/site-footer';
 import { ToastComponent } from './shared/toast/toast';
 import { UnverifiedBannerComponent } from './shared/unverified-banner/unverified-banner';
@@ -22,6 +24,7 @@ import { environment } from '../environments/environment';
     CdkMenuTrigger,
     ConsentBannerComponent,
     EnvironmentBannerComponent,
+    PlayerHeadshotComponent,
     SiteFooterComponent,
     ToastComponent,
     UnverifiedBannerComponent,
@@ -31,6 +34,7 @@ import { environment } from '../environments/environment';
 })
 export class App {
   readonly authService = inject(AuthService);
+  readonly account = inject(AccountService);
   private readonly router = inject(Router);
   protected readonly environmentName = environment.environmentName;
   protected readonly appVersion = environment.version;
@@ -52,5 +56,13 @@ export class App {
   // stays highlighted anywhere under either — a trigger button gets no routerLinkActive.
   protected readonly isDraftSection = computed(
     () => this.path().startsWith('/draft') || this.path().startsWith('/projections'),
+  );
+
+  protected readonly isProfileRoute = computed(() => this.path() === '/profile');
+
+  // What the avatar falls back to when there is no picture: the first letter of the username,
+  // or of the email while the account has not picked one.
+  protected readonly displayName = computed(
+    () => this.account.username() ?? this.account.email() ?? '',
   );
 }
