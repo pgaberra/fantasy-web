@@ -24,7 +24,7 @@
                 class="feed-change"
                 (click)="startEdit.emit(entry.overall)"
                 aria-label="Change pick"
-                title="Change this pick"
+                appTooltip="Change this pick"
               >
                 <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
                   <path
@@ -37,7 +37,7 @@
                 class="feed-remove"
                 (click)="requestRemove.emit(entry.overall)"
                 aria-label="Remove pick"
-                title="Remove this pick"
+                appTooltip="Remove this pick"
               >
                 ×
               </button>

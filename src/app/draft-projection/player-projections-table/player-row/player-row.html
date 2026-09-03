@@ -25,10 +25,10 @@
       }
     </span>
     @if (rookie()) {
-      <span class="rookie-badge" title="Rookie this season">R</span>
+      <span class="rookie-badge" appTooltip="Rookie this season">R</span>
     }
     @if (injury()) {
-      <span class="injury-badge" [title]="injuryTitle()">{{ injuryLabel() }}</span>
+      <span class="injury-badge" [appTooltip]="injuryTooltip()">{{ injuryLabel() }}</span>
     }
     @if (player().teamAbbrev) {
       <span class="player-team">{{ player().teamAbbrev }}</span>
@@ -36,7 +36,7 @@
     @if (belowMinGames()) {
       <span
         class="below-min-games"
-        title="Projected for fewer games than the league's goalie minimum, so this goalie is ranked last."
+        appTooltip="Projected for fewer games than the league's goalie minimum, so this goalie is ranked last."
         >Below min. games</span
       >
     }

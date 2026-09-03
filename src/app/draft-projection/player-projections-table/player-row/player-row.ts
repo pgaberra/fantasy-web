@@ -67,7 +67,7 @@ export class PlayerRowComponent {
   });
 
   /** The whole of what the report says, for the reader who stops on the badge. */
-  readonly injuryTitle = computed(() => {
+  readonly injuryTooltip = computed(() => {
     const injury = this.injury();
     if (!injury) {
       return '';
