@@ -250,20 +250,23 @@
         />
       </div>
       <!--
-        A copy has no preview of its own: its rows are whatever the board holds, which this page
-        does not download. Saying so keeps the slot filled rather than letting the page jump by
+        A copy is previewed like any other starting point, out of the board it would copy: the
+        board's own top rows, in its own columns, with the numbers it was last saved with. What
+        cannot be drawn keeps the slot filled with a line rather than letting the page jump by
         the height of a table whenever the picked card changes.
       -->
-      @if (copiedBoard(); as board) {
-        <p class="preview-note">
-          Starts as an exact copy of {{ board.name }}, with the numbers it was last saved with.
-        </p>
-      } @else if (isCopy()) {
-        <p class="preview-note">There is nothing to copy here yet.</p>
-      } @else if (isPreviewLoading() || isModelPreviewLoading()) {
+      @if (isPreviewLoading() || isModelPreviewLoading()) {
         <p class="preview-note">Loading preview…</p>
       } @else if (previewFailed() || !previewRows().length) {
-        <p class="preview-note">Preview unavailable right now.</p>
+        @if (copiedBoard(); as board) {
+          <p class="preview-note">
+            Starts as an exact copy of {{ board.name }}, with the numbers it was last saved with.
+          </p>
+        } @else if (isCopy()) {
+          <p class="preview-note">There is nothing to copy here yet.</p>
+        } @else {
+          <p class="preview-note">Preview unavailable right now.</p>
+        }
       } @else {
         <!-- The editor's own header and rows, read-only: the preview is the table it previews,
              not a drawing of it. -->
@@ -272,11 +275,11 @@
             <table>
               <thead
                 app-projections-table-header
-                [activeColumns]="previewActiveColumns"
-                [scoringType]="'points'"
-                [statWeights]="previewStatWeights"
-                [useDefaultDecimals]="true"
-                [decimalSettings]="previewDecimalSettings"
+                [activeColumns]="previewActiveColumns()"
+                [scoringType]="previewScoringType()"
+                [statWeights]="previewStatWeights()"
+                [useDefaultDecimals]="previewUseDefaultDecimals()"
+                [decimalSettings]="previewDecimalSettings()"
                 [sortColumn]="'summary'"
                 [sortDirection]="'desc'"
                 [readonly]="true"
@@ -293,9 +296,9 @@
                     [player]="row.player"
                     [rookie]="row.rookie"
                     [belowMinGames]="row.belowMinGames"
-                    [activeColumns]="previewActiveColumns"
-                    [scoringType]="'points'"
-                    [decimalSettings]="previewDecimalSettings"
+                    [activeColumns]="previewActiveColumns()"
+                    [scoringType]="previewScoringType()"
+                    [decimalSettings]="previewDecimalSettings()"
                     [readonly]="true"
                   ></tr>
                 }
