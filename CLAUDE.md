@@ -60,9 +60,13 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   since resuming one is what most visits are for; **the card itself is the button** (a
   chevron and a "Resume draft" / "View summary" label at its edge), with discard and
   open-the-projection behind a kebab. Below it, starting a draft is **one choice made in
-  steps**: a tile per kind of source (each saying what it holds, so the two not open are
-  still accounted for), the radio rows of the open kind, and a single **Start draft**
-  button, the only filled button on the page. `projection-create` asks the same question
+  steps**: a segmented control for the kind of source (the table toolbar's "Points |
+  Category" pill, each segment carrying its count so the two kinds not open are still
+  accounted for), the radio cards of the open kind, and a single **Start draft** button,
+  the only filled button on the page. The kind was a row of tiles for a release; once the
+  choices under it became cards too (#515) the two rows looked alike and nothing said
+  which was the category, so the category went low and the cards kept the weight.
+  `projection-create` asks the same question
   with the same tiles: the three presets and "Copy a board" as four cards, the boards
   behind the fourth in a `<select>` grouped by yours / shared with you, so a user with a
   handful of projections no longer faces ten radios. The first row of the open kind is

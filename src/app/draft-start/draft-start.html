@@ -157,82 +157,31 @@
       <!--
         One choice, made in steps: the kind of source, then the one to use, then Start. The
         three kinds used to be three lists on the page at once, each row with a button of its
-        own, and the page read as eight buttons with no first among them. A tile carries what
-        its kind holds, so the two not showing are still accounted for.
+        own, and the page read as eight buttons with no first among them.
+
+        The kind is a segmented control, the same one the table and Who's hot use for the league
+        type. It was a row of tiles for a while, and once the choices under it became cards too
+        the two rows looked alike: same frame, same icon box, a dark outline on each row's pick,
+        and nothing to say which row was the category and which the choice. A low pill for the
+        category and cards for the choice puts the weight where the decision is. Each segment
+        still carries its count, so the two kinds not open are accounted for, not hidden.
       -->
-      <fieldset class="kinds">
-        <legend class="kinds-legend">What do you want to draft against?</legend>
-        <div class="kind-tiles">
+      <div class="kinds">
+        <span class="kinds-label" id="kinds-label">What do you want to draft against?</span>
+        <div class="segmented" role="group" aria-labelledby="kinds-label">
           @for (option of sourceKinds; track option.kind) {
-            <label class="kind" [class.kind--selected]="sourceKind() === option.kind">
-              <input
-                type="radio"
-                name="source-kind"
-                class="kind-input"
-                [value]="option.kind"
-                [checked]="sourceKind() === option.kind"
-                (change)="sourceKind.set(option.kind)"
-              />
-              <span class="kind-icon" aria-hidden="true">
-                @switch (option.kind) {
-                  @case ('projection') {
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="20"
-                      height="20"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="M4 5h16v14H4z" />
-                      <path d="M4 9h16" />
-                      <path d="M10 9v10" />
-                    </svg>
-                  }
-                  @case ('imported') {
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="20"
-                      height="20"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5" />
-                      <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5" />
-                    </svg>
-                  }
-                  @default {
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="20"
-                      height="20"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="M4 4v16h16" />
-                      <path d="M8.5 15.5v-4" />
-                      <path d="M13 15.5V8" />
-                      <path d="M17.5 15.5v-6" />
-                    </svg>
-                  }
-                }
-              </span>
-              <span class="kind-main">
-                <span class="kind-name">{{ option.name }}</span>
-                <span class="kind-meta">{{ kindMeta(option.kind) }}</span>
-              </span>
-            </label>
+            <button
+              type="button"
+              class="kind"
+              [attr.aria-pressed]="sourceKind() === option.kind"
+              (click)="sourceKind.set(option.kind)"
+            >
+              <span class="kind-name">{{ option.name }}</span>
+              <span class="kind-count">{{ kindCount(option.kind) }}</span>
+            </button>
           }
         </div>
-      </fieldset>
+      </div>
 
       <!--
         The choices of the open kind, and only those. Every one of them is the same card, with

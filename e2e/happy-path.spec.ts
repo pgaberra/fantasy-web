@@ -66,8 +66,12 @@ test.describe('happy path', () => {
     await expect(page).toHaveURL(/\/draft\/?$/, { timeout: 15_000 });
 
     // The page asks for the kind of source first, and opens on the presets: the projection sits
-    // behind the "Your projection" tile, as a radio row, with the page's one Start button below.
-    await page.locator('label.kind', { hasText: 'Your projection' }).click();
+    // behind the "Your projection" segment, as a radio card, with the page's one Start button
+    // below. Scoped to the group: the draft cards above carry "Your projection" in their meta.
+    await page
+      .getByRole('group', { name: /draft against/i })
+      .getByRole('button', { name: /your projection/i })
+      .click();
     const sourceRow = page.locator('li.row').filter({ hasText: projectionName });
     await expect(sourceRow).toBeVisible();
     await sourceRow.getByRole('radio').check();

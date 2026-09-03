@@ -57,10 +57,10 @@ export type SourceKind = 'preset' | 'projection' | 'imported';
 /**
  * One of the three answers to "what do you want to draft against", as the page words it.
  *
- * <p>A name and nothing else. Each tile used to carry a line explaining its kind ("Ready-made
- * numbers, nothing to set up"), and each preset row one explaining itself — six sentences of
- * prose above a list of two, which is more reading than the choice is worth. The count under
- * the name stays: it says what the tile holds, which the name cannot.
+ * <p>A name and nothing else, short enough for a segment of a pill: the segment carries the
+ * count beside it, and the panel under it says the rest. Each kind used to be a tile with a
+ * line of prose ("Ready-made numbers, nothing to set up"), which is more reading than the
+ * choice is worth.
  */
 export interface SourceKindOption {
   readonly kind: SourceKind;
@@ -68,9 +68,9 @@ export interface SourceKindOption {
 }
 
 export const SOURCE_KINDS: readonly SourceKindOption[] = [
-  { kind: 'preset', name: 'A preset' },
+  { kind: 'preset', name: 'Preset' },
   { kind: 'projection', name: 'Your projection' },
-  { kind: 'imported', name: 'A shared board' },
+  { kind: 'imported', name: 'Shared board' },
 ];
 
 /**
@@ -273,19 +273,12 @@ export class DraftStartComponent {
   }
 
   /**
-   * What a tile holds, so the two kinds not showing are still accounted for on the page. A
-   * preset that is drafted against is above, not gone, and the tile says so.
+   * How many choices a kind holds, shown on its segment so the two kinds not open are still
+   * accounted for on the page. A bare number: a segment has room for "Preset 2", not for the
+   * sentence a tile used to carry, and the panel's empty state says the rest when it is 0.
    */
-  kindMeta(kind: SourceKind): string {
-    const total = this.optionsOf(kind).length;
-    switch (kind) {
-      case 'preset':
-        return total > 0 ? counted(total, 'preset') : 'All drafted above';
-      case 'projection':
-        return total > 0 ? counted(total, 'projection') : 'None yet';
-      case 'imported':
-        return total > 0 ? counted(total, 'board') : 'None yet';
-    }
+  kindCount(kind: SourceKind): number {
+    return this.optionsOf(kind).length;
   }
 
   isPresetSelected(preset: Preset): boolean {
@@ -459,8 +452,4 @@ function sameSource(first: DraftSource, second: DraftSource): boolean {
     return first.preset.id === second.preset.id;
   }
   return first.kind === 'board' && second.kind === 'board' && first.id === second.id;
-}
-
-function counted(total: number, noun: string): string {
-  return `${total} ${noun}${total === 1 ? '' : 's'}`;
 }
