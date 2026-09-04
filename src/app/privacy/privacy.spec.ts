@@ -17,15 +17,21 @@ describe('PrivacyComponent', () => {
   // Every party named here is one the code really sends data to, or that the browser really
   // contacts. If one is added or dropped, this test should fail and force the page to change
   // with it — a privacy policy that has drifted from the code is worse than none.
-  it.each(['Hetzner', 'PostHog', 'Resend', 'Sentry', 'Google Fonts', 'Yahoo'])(
-    'names %s as a recipient of data',
-    async (name) => {
-      await MockBuilder(PrivacyComponent);
-      MockRender(PrivacyComponent);
+  it.each([
+    'Cloudflare',
+    'Gmail',
+    'Hetzner',
+    'PostHog',
+    'Resend',
+    'Sentry',
+    'Google Fonts',
+    'Yahoo',
+  ])('names %s as a recipient of data', async (name) => {
+    await MockBuilder(PrivacyComponent);
+    MockRender(PrivacyComponent);
 
-      expect(text()).toContain(name);
-    },
-  );
+    expect(text()).toContain(name);
+  });
 
   // index.html loads Inter from fonts.googleapis.com on every page, so Google sees every
   // visitor's IP with no consent gate. It's the least visible disclosure on the site and the

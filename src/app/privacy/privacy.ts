@@ -15,5 +15,5 @@ import { Component } from '@angular/core';
   styleUrl: './privacy.css',
 })
 export class PrivacyComponent {
-  protected readonly lastUpdated = '17 July 2026';
+  protected readonly lastUpdated = '5 September 2026';
 }
