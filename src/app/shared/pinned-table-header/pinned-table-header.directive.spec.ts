@@ -28,6 +28,7 @@ class HostComponent {}
 
 describe('PinnedTableHeaderDirective', () => {
   let supportsScrollTimelines = false;
+  let isIos = false;
 
   beforeEach(() => {
     // jsdom lays nothing out, so the geometry the directive reads is supplied per test. Nothing
@@ -39,11 +40,17 @@ describe('PinnedTableHeaderDirective', () => {
     // support: the scroll handler below is the fallback, and every browser we ship to takes the
     // timeline instead.
     supportsScrollTimelines = false;
-    vi.spyOn(CSS, 'supports').mockImplementation(() => supportsScrollTimelines);
+    isIos = false;
+    vi.spyOn(CSS, 'supports').mockImplementation((property: string) =>
+      property === '-webkit-touch-callout' ? isIos : supportsScrollTimelines,
+    );
     TestBed.configureTestingModule({ imports: [HostComponent] });
   });
 
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
 
   /** @param top where the table's top edge sits relative to the window */
   function setup(top: number, height = 1000, inset?: string) {
@@ -203,6 +210,81 @@ describe('PinnedTableHeaderDirective', () => {
       fixture.destroy();
 
       expect(disconnect).toHaveBeenCalled();
+    });
+  });
+
+  describe('on iOS, where the page scrolls ahead of anything the pin could do', () => {
+    beforeEach(() => {
+      isIos = true;
+      // iOS has the timelines too; it is the one engine where they are not taken.
+      supportsScrollTimelines = true;
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    });
+
+    it('switches the timeline pin off, since it would trail the rows from the main thread', () => {
+      const { head } = setup(-250);
+
+      expect(head.style.animation).toEqual('none');
+    });
+
+    it('places the header where the page has come to rest', () => {
+      const { head } = setup(-250);
+
+      expect(head.style.transform).toEqual('translateY(250px)');
+      expect(head.style.opacity).toEqual('');
+    });
+
+    it('hides a pinned header the moment the page scrolls, and puts it back once it settles', () => {
+      const { fixture, head } = setup(-250);
+      const wrapper = fixture.nativeElement.querySelector('.table-wrapper') as HTMLElement;
+
+      scroll();
+      expect(head.style.opacity).toEqual('0');
+      expect(head.style.transform).toEqual('translateY(250px)');
+
+      wrapper.getBoundingClientRect = () => ({ top: -400, height: 1000 }) as DOMRect;
+      scroll();
+      vi.advanceTimersByTime(119);
+      expect(head.style.opacity).toEqual('0');
+
+      vi.advanceTimersByTime(1);
+      expect(head.style.transform).toEqual('translateY(400px)');
+      expect(head.style.opacity).toEqual('');
+      expect(head.style.transition).toEqual('opacity 150ms ease-out');
+    });
+
+    it('leaves a header still in the flow of the table alone while the page scrolls', () => {
+      const { head } = setup(120);
+
+      scroll();
+
+      expect(head.style.opacity).toEqual('');
+      expect(head.style.transform).toEqual('');
+    });
+
+    it('lets the header go once the table scrolls back into view', () => {
+      const { fixture, head } = setup(-250);
+      const wrapper = fixture.nativeElement.querySelector('.table-wrapper') as HTMLElement;
+
+      wrapper.getBoundingClientRect = () => ({ top: 40, height: 1000 }) as DOMRect;
+      scroll();
+      vi.advanceTimersByTime(120);
+
+      expect(head.style.transform).toEqual('');
+      expect(head.style.opacity).toEqual('');
+    });
+
+    it('stops placing the header once the table is destroyed', () => {
+      const { fixture, head } = setup(-250);
+      const wrapper = fixture.nativeElement.querySelector('.table-wrapper') as HTMLElement;
+
+      fixture.destroy();
+      wrapper.getBoundingClientRect = () => ({ top: -800, height: 1000 }) as DOMRect;
+      scroll();
+      vi.advanceTimersByTime(120);
+
+      expect(head.style.transform).toEqual('translateY(250px)');
+      expect(head.style.opacity).toEqual('');
     });
   });
 });

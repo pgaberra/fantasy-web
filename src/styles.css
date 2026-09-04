@@ -43,11 +43,12 @@
        over the top, so the header comes to rest below it. */
     animation-range: exit-crossing calc(0px - var(--pinned-header-inset)) exit-crossing
       calc(var(--pinned-header-travel, 0px) - var(--pinned-header-inset));
-    /* No `will-change: transform` here, however tempting: the pin is smoother where the browser
-       composites the row group, but this row group holds the sticky identity columns (`.col-rank`
-       and `.col-name`, further down this file), and promoting it costs them. WebKit stopped
-       painting those two header cells altogether — a header with its stat columns and nothing
-       where the rank and the player name belong. Frozen columns beat a smoother pin. */
+    /* No `will-change: transform` here, however tempting. The row group holds the sticky
+       identity columns (`.col-rank` and `.col-name`, further down this file), which iOS places
+       from its scrolling thread, and the one release that promoted the group (#530) lost them
+       from the pinned header. The group's own `position: sticky` turned out to be what keeps
+       them riding along, so the promotion may well be innocent — but it buys nothing on the
+       engines that composite this animation anyway, and it is not worth finding out on. */
     /* The reduced-motion reset below stamps `animation-duration: 0.01ms !important` on every
        animation in the app. Nothing here is motion anyone opted out of — it is a header holding
        its place while the page scrolls, which is what `position: sticky` would do if it could
