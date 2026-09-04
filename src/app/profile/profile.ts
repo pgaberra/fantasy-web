@@ -52,6 +52,18 @@ export class ProfileComponent implements OnInit {
     return USERNAME_PATTERN.test(candidate) && candidate !== this.username();
   });
 
+  /** Set on the first blur, so the rule is not thrown at a name still being typed. */
+  private readonly usernameWasLeft = signal<boolean>(false);
+
+  /**
+   * Only ever shown for a name that has been typed and left: an empty field is a name not filled
+   * in yet, not a wrong one, and it already has nothing to save.
+   */
+  readonly usernameRuleBroken = computed(() => {
+    const candidate = this.usernameInput().trim();
+    return this.usernameWasLeft() && candidate.length > 0 && !USERNAME_PATTERN.test(candidate);
+  });
+
   ngOnInit(): void {
     this.load();
   }
@@ -75,6 +87,10 @@ export class ProfileComponent implements OnInit {
 
   onUsernameInput(event: Event): void {
     this.usernameInput.set((event.target as HTMLInputElement).value);
+  }
+
+  onUsernameBlur(): void {
+    this.usernameWasLeft.set(true);
   }
 
   save(): void {
