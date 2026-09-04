@@ -22,7 +22,7 @@ import { DestroyRef, Directive, ElementRef, afterNextRender, inject } from '@ang
  * the window's height that the browser could then disagree with. Everything else is positional,
  * so the pin survives the page above the table reflowing.
  *
- * Browsers without scroll timelines fall back to doing the same arithmetic a frame at a time.
+ * Browsers without scroll timelines fall back to doing the same arithmetic in a scroll handler.
  *
  * A page that floats its own bar over the top — the landing page's nav — sets
  * `--pinned-header-inset` to that bar's height, and the header comes to rest below it instead of
@@ -52,7 +52,7 @@ export class PinnedTableHeaderDirective {
       ) {
         this.measureForTimeline(wrapper, head);
       } else {
-        this.pinPerFrame(wrapper, head);
+        this.pinOnScroll(wrapper, head);
       }
     });
   }
@@ -86,11 +86,19 @@ export class PinnedTableHeaderDirective {
     measure();
   }
 
-  /** The pre-scroll-timeline path: recompute the offset on every frame the window scrolls. */
-  private pinPerFrame(wrapper: HTMLElement, head: HTMLElement): void {
-    let frame = 0;
-    let queued = false;
-    // Read once rather than every frame: it only moves with the breakpoint that sized the bar.
+  /**
+   * The pre-scroll-timeline path: work the same offset out from the window's own geometry every
+   * time the page scrolls.
+   *
+   * The write is deliberately synchronous. It was once deferred to the next animation frame,
+   * which is the usual way to keep a scroll handler cheap — but it also draws the header one
+   * frame behind the rows it is meant to sit above, and a browser that stops serving frames
+   * through a momentum scroll (phones do) leaves it behind for the whole flick, part-way down
+   * the table, until the scroll stops. A rect read and a transform write are cheap enough to do
+   * in the handler, and scroll events already arrive at most once per frame.
+   */
+  private pinOnScroll(wrapper: HTMLElement, head: HTMLElement): void {
+    // Read once rather than on every scroll: it only moves with the breakpoint that sized the bar.
     let inset = 0;
     const readInset = () => {
       inset = parseFloat(getComputedStyle(wrapper).getPropertyValue('--pinned-header-inset')) || 0;
@@ -103,36 +111,22 @@ export class PinnedTableHeaderDirective {
       head.style.transform = offset > 0 ? `translateY(${offset}px)` : '';
       head.style.willChange = offset > 0 ? 'transform' : '';
     };
-    // Whether a frame is pending is tracked apart from its handle: the handle is only assigned
-    // once requestAnimationFrame returns, which is too late to clear if the frame already ran.
-    const schedule = () => {
-      if (queued) {
-        return;
-      }
-      queued = true;
-      frame = requestAnimationFrame(() => {
-        queued = false;
-        pin();
-      });
-    };
-
     const remeasure = () => {
       readInset();
-      schedule();
+      pin();
     };
 
     // Scroll and resize move the header relative to the window; the observer catches the table
     // growing under it — Show more, a column toggled, a filter narrowing the rows — which
     // changes how far the header may travel.
-    const observer = new ResizeObserver(schedule);
+    const observer = new ResizeObserver(pin);
     this.destroyRef.onDestroy(() => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('scroll', pin);
       window.removeEventListener('resize', remeasure);
       observer.disconnect();
     });
 
-    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('scroll', pin, { passive: true });
     window.addEventListener('resize', remeasure);
     observer.observe(wrapper);
     readInset();

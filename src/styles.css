@@ -43,6 +43,13 @@
        over the top, so the header comes to rest below it. */
     animation-range: exit-crossing calc(0px - var(--pinned-header-inset)) exit-crossing
       calc(var(--pinned-header-travel, 0px) - var(--pinned-header-inset));
+    /* Ask for the row group to be composited. The whole point of driving the pin from the
+       scroll position is that the browser can run it off the main thread; an animation it
+       resolves with the rest of style instead trails the rows through a flick and only lands
+       right once the scroll stops — which is what an unaccelerated pin looks like on a phone.
+       WebKit hands a scroll-driven animation to the scrolling thread only where it can hold an
+       accelerated representation of the animated box, and this is how that box is asked for. */
+    will-change: transform;
     /* The reduced-motion reset below stamps `animation-duration: 0.01ms !important` on every
        animation in the app. Nothing here is motion anyone opted out of — it is a header holding
        its place while the page scrolls, which is what `position: sticky` would do if it could
