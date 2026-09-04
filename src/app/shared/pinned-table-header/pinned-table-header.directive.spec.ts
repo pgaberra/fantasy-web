@@ -30,12 +30,11 @@ describe('PinnedTableHeaderDirective', () => {
   let supportsScrollTimelines = false;
 
   beforeEach(() => {
-    // jsdom lays nothing out, so the geometry the directive reads is supplied per test. Frames
-    // run inline to keep the assertions on the same tick as the scroll that caused them.
-    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
-      callback(0);
-      return 1;
-    });
+    // jsdom lays nothing out, so the geometry the directive reads is supplied per test. Nothing
+    // asks for an animation frame: a browser can stop serving them through a momentum scroll, so
+    // the fallback writes the header's offset in the scroll handler itself. Frames are stubbed
+    // out here to keep that honest — a test that only passed because one ran would fail.
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
     // Which of the two paths runs is stated per test rather than left to what jsdom claims to
     // support: the scroll handler below is the fallback, and every browser we ship to takes the
     // timeline instead.
@@ -78,6 +77,21 @@ describe('PinnedTableHeaderDirective', () => {
     scroll();
 
     expect(head.style.transform).toEqual('translateY(250px)');
+  });
+
+  /**
+   * The offset used to be written from a `requestAnimationFrame` callback, which draws the header
+   * a frame behind the rows it sits above — and on a phone, which stops serving frames through a
+   * momentum scroll, leaves it part-way down the table for the length of the flick.
+   */
+  it('moves the header in the scroll handler rather than waiting for a frame', () => {
+    const { head } = setup(-250);
+    const framesBefore = vi.mocked(window.requestAnimationFrame).mock.calls.length;
+
+    scroll();
+
+    expect(head.style.transform).toEqual('translateY(250px)');
+    expect(vi.mocked(window.requestAnimationFrame).mock.calls.length).toEqual(framesBefore);
   });
 
   it('rests the header below a bar the page floats over its top', () => {

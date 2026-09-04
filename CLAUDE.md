@@ -168,6 +168,15 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
     A page that floats a bar over its top (the landing nav) sets `--pinned-header-inset` to that
     bar's height; it is registered with `@property` in `styles.css` as a `<length>`, because the
     fallback path reads the value back and an unregistered custom property returns raw tokens.
+    **The row group is the pin's alone.** It was also `position: sticky` for a long time, which
+    pinned nothing (that box never scrolls vertically) but did hand the same element to the
+    browser's scrolling machinery, which places it during a scroll without waiting for layout —
+    two things placing one box, one of them recomputed at rest, which is what a header stuck
+    part-way down the table for the length of an iOS flick looks like. It is `position: relative`
+    now, and asks to be composited (`will-change`), since a pin the browser resolves on the main
+    thread trails the rows through a flick however it is expressed. The fallback writes its
+    offset in the scroll handler itself for the same reason: a phone can stop serving animation
+    frames for the length of a momentum scroll.
 - `environments/` — `environment.ts` (dev: `apiUrl: http://localhost:8080/api/v1`),
   `environment.staging.ts` (points at the staging BFF `api.staging.slapstat.com`; used by
   `npm run start:staging` via the `staging` build/serve configs in `angular.json`),

@@ -1,19 +1,29 @@
-/* The whole thead pins as one unit rather than each th individually — this component's
-   selector is `thead[app-projections-table-header]`, so :host is the thead itself.
-   A cell's sticky constraint rect is the TABLE, not its row, so per-cell `top: 0` made
-   every header row clamp to the same band once the wrapper scrolled; the z-index scale
-   discriminates by column rather than row, so the tie fell through to DOM order and the
-   weight row covered the column labels. One sticky box cannot overlap itself: the rows
-   keep their natural offsets at every scroll position, for any number of them. */
+/* This component's selector is `thead[app-projections-table-header]`, so :host is the thead
+   itself, and the whole row group moves as one unit — `appPinnedTableHeader` translates it, so
+   the header rows keep their natural offsets at every scroll position, for any number of them.
+   (Pinning the cells instead was tried and does not work: a cell's constraint rect is the TABLE
+   rather than its row, so every header row clamped to the same band and the weight row covered
+   the column labels.)
+
+   Positioned only so `z-index` applies. It read `position: sticky; top: 0` for a long time,
+   left over from when the pin was meant to be sticky, and it pinned nothing: the wrapper's
+   `overflow-x: auto` makes it the scrollport on both axes and that box never scrolls
+   vertically, so the offset always resolved to zero. Inert is not the same as free, though. A
+   sticky box is one the browser's own scrolling machinery holds in place, and it moves it while
+   the page scrolls rather than waiting for layout — so the same box was being placed twice,
+   once by that machinery and once by the pin's translation, and only the second of those is
+   recomputed when the scroll comes to rest. A header that spends a flick part-way down the
+   table and is back at the top the moment the scroll stops (reported on iOS) is what that
+   disagreement looks like. Whatever the browser was doing with it, the pin owns this box. */
 :host {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 2;
-  /* Paint the sticky thead's own background behind its rows. With border-collapse and a
-     sticky thead, a row boundary that lands on a fractional device pixel leaves a 1px
-     seam the two rows' snapped cell backgrounds don't cover — which otherwise reveals the
-     white table surface as a hairline (most visibly under the top header row). A background
-     on the sticky layer fills that seam; --color-primary matches the top row, so it vanishes. */
+  /* Paint the row group's own background behind its rows. With border-collapse, a row boundary
+     that lands on a fractional device pixel leaves a 1px seam the two rows' snapped cell
+     backgrounds don't cover — which otherwise reveals the white table surface as a hairline
+     (most visibly under the top header row) once the group is translated away from the rows
+     beneath it. A background on the group itself fills that seam; --color-primary matches the
+     top row, so it vanishes. */
   background: var(--color-primary);
 }
 
