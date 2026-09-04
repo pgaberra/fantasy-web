@@ -5,7 +5,11 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
 import { ProfileComponent } from './profile';
 import { AccountService } from '../services/account.service';
-import { AvatarImageService, UnreadableImageError } from '../services/avatar-image.service';
+import {
+  AvatarImageService,
+  UnreadableImageError,
+  UnsupportedImageTypeError,
+} from '../services/avatar-image.service';
 import { PlayerHeadshotComponent } from '../shared/player-headshot/player-headshot';
 import { AccountResponse } from '../api/models/account-response';
 
@@ -94,6 +98,29 @@ describe('ProfileComponent', () => {
 
     expect(setAvatar).not.toHaveBeenCalled();
     expect(text(fixture)).toContain("Couldn't read that file as a picture");
+  });
+
+  /**
+   * The formats are no longer listed under the button, so this message is the only place the
+   * page names them — it has to arrive the moment a file we cannot take is picked.
+   */
+  it('names the formats it takes when the file is not one of them', async () => {
+    prepare.mockRejectedValue(new UnsupportedImageTypeError());
+    const fixture = await render();
+
+    await pick(fixture, picked);
+
+    expect(setAvatar).not.toHaveBeenCalled();
+    expect(text(fixture)).toContain(
+      'Unsupported file format. Please upload a PNG, JPEG, or WebP image.',
+    );
+    expect(fixture.point.componentInstance.isUploading()).toEqual(false);
+  });
+
+  it('no longer spends a line of help text on the formats it takes', async () => {
+    const fixture = await render();
+
+    expect(text(fixture)).not.toContain('cropped to a square');
   });
 
   it('reports an upload the server refused', async () => {
