@@ -125,6 +125,19 @@ describe('PinnedTableHeaderDirective', () => {
     scroll();
 
     expect(head.style.transform).toEqual('');
+  });
+
+  /**
+   * The row group holds the sticky identity columns, and asking for it to be composited stopped
+   * WebKit painting them: a header with its stat columns and nothing where the rank and the
+   * player name belong. The pin is smoother on a promoted layer; the frozen columns are worth
+   * more than that.
+   */
+  it('never promotes the header to its own layer, pinned or not', () => {
+    const { head } = setup(-250);
+    scroll();
+
+    expect(head.style.transform).toEqual('translateY(250px)');
     expect(head.style.willChange).toEqual('');
   });
 

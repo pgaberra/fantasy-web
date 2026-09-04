@@ -109,7 +109,10 @@ export class PinnedTableHeaderDirective {
       const travel = Math.max(wrapperBox.height - head.offsetHeight, 0);
       const offset = Math.min(Math.max(inset - wrapperBox.top, 0), travel);
       head.style.transform = offset > 0 ? `translateY(${offset}px)` : '';
-      head.style.willChange = offset > 0 ? 'transform' : '';
+      // Deliberately no `will-change: transform` to go with it. It is the usual companion to a
+      // transform that moves every frame, but this row group holds the sticky identity columns,
+      // and promoting it stopped WebKit painting them at all — a header with its stat columns
+      // and nothing where the rank and the player name belong.
     };
     const remeasure = () => {
       readInset();
