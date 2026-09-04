@@ -1,6 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AvatarImageService, UnreadableImageError } from './avatar-image.service';
+import {
+  AvatarImageService,
+  UnreadableImageError,
+  UnsupportedImageTypeError,
+} from './avatar-image.service';
 
 /**
  * jsdom has no image decoder and no canvas, so the happy path (decode, crop, re-encode) can only
@@ -24,9 +28,41 @@ describe('AvatarImageService', () => {
       vi.fn().mockRejectedValue(new DOMException('bad image', 'InvalidStateError')),
     );
 
-    await expect(service.prepare(new File(['not an image'], 'me.txt'))).rejects.toBeInstanceOf(
-      UnreadableImageError,
+    await expect(
+      service.prepare(new File(['not an image'], 'me.png', { type: 'image/png' })),
+    ).rejects.toBeInstanceOf(UnreadableImageError);
+  });
+
+  it('turns away a format we do not take before trying to decode it', async () => {
+    const createImageBitmap = vi.fn();
+    vi.stubGlobal('createImageBitmap', createImageBitmap);
+
+    await expect(
+      service.prepare(new File(['GIF89a'], 'me.gif', { type: 'image/gif' })),
+    ).rejects.toBeInstanceOf(UnsupportedImageTypeError);
+    expect(createImageBitmap).not.toHaveBeenCalled();
+  });
+
+  /** A file picked past the input's `accept` filter can reach here with no type at all. */
+  it('turns away a file the browser gives no type for', async () => {
+    vi.stubGlobal('createImageBitmap', vi.fn());
+
+    await expect(service.prepare(new File(['x'], 'me'))).rejects.toBeInstanceOf(
+      UnsupportedImageTypeError,
     );
+  });
+
+  it('takes each of the formats it offers', async () => {
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn().mockRejectedValue(new DOMException('bad image', 'InvalidStateError')),
+    );
+
+    for (const type of ['image/png', 'image/jpeg', 'image/webp']) {
+      await expect(service.prepare(new File(['x'], 'me', { type }))).rejects.toBeInstanceOf(
+        UnreadableImageError,
+      );
+    }
   });
 
   it('asks the browser to honour the orientation stored in the photo', async () => {
@@ -34,7 +70,7 @@ describe('AvatarImageService', () => {
       .fn()
       .mockRejectedValue(new DOMException('bad image', 'InvalidStateError'));
     vi.stubGlobal('createImageBitmap', createImageBitmap);
-    const file = new File(['x'], 'me.jpg');
+    const file = new File(['x'], 'me.jpg', { type: 'image/jpeg' });
 
     await service.prepare(file).catch(() => undefined);
 

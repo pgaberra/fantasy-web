@@ -4,6 +4,25 @@ import { Injectable } from '@angular/core';
 export const AVATAR_SIDE = 256;
 const JPEG_QUALITY = 0.85;
 
+/**
+ * What a picked file may be. The file picker asks for these through its `accept` attribute, but
+ * that is only a filter — every platform lets the user choose "all files" past it — and the crop
+ * below re-encodes whatever it can decode, so a GIF or a BMP would otherwise be accepted in
+ * silence. Checking the type is what makes the answer the same either way.
+ */
+export const ACCEPTED_AVATAR_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
+
+/** The `accept` attribute for a file input offering the above, so the two cannot drift apart. */
+export const ACCEPTED_AVATAR_ACCEPT = ACCEPTED_AVATAR_TYPES.join(',');
+
+/** The file the user picked is not one of the formats we take. */
+export class UnsupportedImageTypeError extends Error {
+  constructor() {
+    super('The file is not a format we accept');
+    this.name = 'UnsupportedImageTypeError';
+  }
+}
+
 /** The file the user picked could not be decoded as an image. */
 export class UnreadableImageError extends Error {
   constructor() {
@@ -22,6 +41,9 @@ export class UnreadableImageError extends Error {
 @Injectable({ providedIn: 'root' })
 export class AvatarImageService {
   async prepare(file: File): Promise<Blob> {
+    if (!ACCEPTED_AVATAR_TYPES.some((accepted) => accepted === file.type)) {
+      throw new UnsupportedImageTypeError();
+    }
     const bitmap = await this.decode(file);
     try {
       const canvas = document.createElement('canvas');

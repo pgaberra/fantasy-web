@@ -2,7 +2,12 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { from, switchMap } from 'rxjs';
 import { AccountService } from '../services/account.service';
-import { AvatarImageService, UnreadableImageError } from '../services/avatar-image.service';
+import {
+  ACCEPTED_AVATAR_ACCEPT,
+  AvatarImageService,
+  UnreadableImageError,
+  UnsupportedImageTypeError,
+} from '../services/avatar-image.service';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { PlayerHeadshotComponent } from '../shared/player-headshot/player-headshot';
@@ -26,6 +31,7 @@ export class ProfileComponent implements OnInit {
 
   readonly usernameMaxLength = USERNAME_MAX_LENGTH;
   readonly usernameRule = USERNAME_RULE;
+  readonly acceptedAvatarTypes = ACCEPTED_AVATAR_ACCEPT;
 
   readonly isLoading = signal<boolean>(true);
   readonly loadFailed = signal<boolean>(false);
@@ -108,13 +114,23 @@ export class ProfileComponent implements OnInit {
         next: () => this.isUploading.set(false),
         error: (error: unknown) => {
           this.isUploading.set(false);
-          this.avatarError.set(
-            error instanceof UnreadableImageError
-              ? "Couldn't read that file as a picture. Try a PNG or JPEG."
-              : messageForError(error, "Couldn't save your picture."),
-          );
+          this.avatarError.set(this.messageForAvatarError(error));
         },
       });
+  }
+
+  /**
+   * The formats we take are no longer written under the button, so a file we cannot use has to
+   * say so itself — the message names them where the hint used to.
+   */
+  private messageForAvatarError(error: unknown): string {
+    if (error instanceof UnsupportedImageTypeError) {
+      return 'Unsupported file format. Please upload a PNG, JPEG, or WebP image.';
+    }
+    if (error instanceof UnreadableImageError) {
+      return "Couldn't read that file as a picture. Try a PNG or JPEG.";
+    }
+    return messageForError(error, "Couldn't save your picture.");
   }
 
   removeAvatar(): void {

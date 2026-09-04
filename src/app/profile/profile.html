@@ -23,7 +23,7 @@
           <input
             #avatarFile
             type="file"
-            accept="image/png,image/jpeg,image/webp"
+            [attr.accept]="acceptedAvatarTypes"
             hidden
             (change)="onAvatarPicked($event)"
           />
@@ -47,7 +47,6 @@
           }
         </div>
       </div>
-      <p class="field-hint">A PNG, JPEG or WebP. It is cropped to a square.</p>
 
       @if (avatarError()) {
         <p class="field-error">{{ avatarError() }}</p>
