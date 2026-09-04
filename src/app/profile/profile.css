@@ -76,21 +76,14 @@
   border-radius: var(--radius-md);
 }
 
-.field-hint {
-  margin: var(--space-1) 0 var(--space-4);
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.avatar-row + .field-hint {
-  margin-top: var(--space-3);
-  margin-bottom: 0;
-}
-
+/* The space above the buttons is set here rather than left to the bottom margin of whatever
+   happens to precede them: what precedes them is now a message that comes and goes, and the row
+   moved by that much whenever it did. */
 .card-actions {
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  margin-top: var(--space-4);
 }
 
 .saved-note {
