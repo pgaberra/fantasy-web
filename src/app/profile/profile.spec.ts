@@ -202,4 +202,86 @@ describe('ProfileComponent', () => {
 
     expect(setUsername).toHaveBeenCalledWith('newname');
   });
+
+  describe('the username rule', () => {
+    const usernameField = (fixture: Awaited<ReturnType<typeof render>>) =>
+      fixture.nativeElement.querySelector('#profile-username') as HTMLInputElement;
+
+    const type = async (fixture: Awaited<ReturnType<typeof render>>, value: string) => {
+      const field = usernameField(fixture);
+      field.value = value;
+      field.dispatchEvent(new Event('input'));
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+
+    const leave = async (fixture: Awaited<ReturnType<typeof render>>) => {
+      usernameField(fixture).dispatchEvent(new Event('blur'));
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+
+    const RULE =
+      'Username must be 3–20 characters long and can only contain letters, numbers, and underscores.';
+
+    it('says nothing about the rule until one is broken', async () => {
+      const fixture = await render();
+
+      expect(text(fixture)).not.toContain(RULE);
+    });
+
+    it('holds its tongue while a short name is still being typed', async () => {
+      const fixture = await render();
+
+      await type(fixture, 'al');
+
+      expect(text(fixture)).not.toContain(RULE);
+    });
+
+    it('states the rule once a name that breaks it is left', async () => {
+      const fixture = await render();
+
+      await type(fixture, 'al');
+      await leave(fixture);
+
+      expect(text(fixture)).toContain(RULE);
+      expect(usernameField(fixture).getAttribute('aria-invalid')).toEqual('true');
+      expect(usernameField(fixture).getAttribute('aria-describedby')).toEqual(
+        'profile-username-error',
+      );
+    });
+
+    it('says it for a name with a character the rule does not allow', async () => {
+      const fixture = await render();
+
+      await type(fixture, 'alex smith');
+      await leave(fixture);
+
+      expect(text(fixture)).toContain(RULE);
+    });
+
+    it('drops it again as soon as the name is corrected', async () => {
+      const fixture = await render();
+
+      await type(fixture, 'al');
+      await leave(fixture);
+      expect(text(fixture)).toContain(RULE);
+
+      await type(fixture, 'alex');
+
+      expect(text(fixture)).not.toContain(RULE);
+      expect(usernameField(fixture).getAttribute('aria-invalid')).toBeNull();
+    });
+
+    /** An empty field is a name not filled in yet, not a wrong one. */
+    it('stays quiet for a field cleared back to empty', async () => {
+      const fixture = await render();
+
+      await type(fixture, 'al');
+      await leave(fixture);
+      await type(fixture, '');
+
+      expect(text(fixture)).not.toContain(RULE);
+    });
+  });
 });

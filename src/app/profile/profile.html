@@ -67,8 +67,13 @@
         placeholder="e.g. beerleaguehero"
         [value]="usernameInput()"
         (input)="onUsernameInput($event)"
+        (blur)="onUsernameBlur()"
+        [attr.aria-invalid]="usernameRuleBroken() ? 'true' : null"
+        [attr.aria-describedby]="usernameRuleBroken() ? 'profile-username-error' : null"
       />
-      <p class="field-hint">{{ usernameRule }}</p>
+      @if (usernameRuleBroken()) {
+        <p id="profile-username-error" class="field-error">{{ usernameRule }}</p>
+      }
 
       <div class="card-actions">
         <button
