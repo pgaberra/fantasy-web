@@ -57,7 +57,9 @@
       <h2 class="card-title">Username</h2>
       <p class="card-body">Your name will only be shown if you share your player projections.</p>
 
-      <label class="field-label" for="profile-username">Username</label>
+      <!-- The card's heading already says "Username" to anyone who can see it; the label is kept
+           for the screen reader, which reaches the field without having read the heading. -->
+      <label class="visually-hidden" for="profile-username">Username</label>
       <input
         id="profile-username"
         class="field-input"

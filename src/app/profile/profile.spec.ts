@@ -224,6 +224,20 @@ describe('ProfileComponent', () => {
     const RULE =
       'Username must be 3–20 characters long and can only contain letters, numbers, and underscores.';
 
+    /**
+     * The card's heading says "Username" already, so drawing the label too said it twice. It is
+     * kept in the markup regardless: it is what names the field for a screen reader.
+     */
+    it('keeps the field labelled without drawing the word a second time', async () => {
+      const fixture = await render();
+      const label = fixture.nativeElement.querySelector(
+        'label[for="profile-username"]',
+      ) as HTMLLabelElement;
+
+      expect(label.textContent?.trim()).toEqual('Username');
+      expect(label.className).toContain('visually-hidden');
+    });
+
     it('says nothing about the rule until one is broken', async () => {
       const fixture = await render();
 
