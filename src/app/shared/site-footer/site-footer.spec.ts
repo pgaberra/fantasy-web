@@ -19,6 +19,9 @@ describe('SiteFooterComponent', () => {
     const contact = ngMocks.find('.site-footer-links a[href^="mailto:"]')
       .nativeElement as HTMLAnchorElement;
     expect(contact.getAttribute('href')).toEqual('mailto:info@slapstat.com');
-    expect(contact.textContent?.trim()).toEqual('Contact');
+    // The address is the link text, not a word like "Contact" standing in for it. Someone who
+    // wants to write from their phone, or note it down for later, should be able to read it
+    // off the page without clicking anything.
+    expect(contact.textContent?.trim()).toEqual('info@slapstat.com');
   });
 });
