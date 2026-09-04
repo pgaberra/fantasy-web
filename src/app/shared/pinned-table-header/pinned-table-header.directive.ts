@@ -1,5 +1,8 @@
 import { DestroyRef, Directive, ElementRef, afterNextRender, inject } from '@angular/core';
 
+/** How long the page has to be still before the iOS path counts a scroll as over. */
+const SCROLL_SETTLE_MS = 120;
+
 /**
  * Keeps a wide table's `<thead>` against the top of the window while the page scrolls past it.
  *
@@ -23,6 +26,8 @@ import { DestroyRef, Directive, ElementRef, afterNextRender, inject } from '@ang
  * so the pin survives the page above the table reflowing.
  *
  * Browsers without scroll timelines fall back to doing the same arithmetic in a scroll handler.
+ * iOS takes neither: the header is hidden while the page scrolls and placed once it rests,
+ * because there the pin cannot keep up with a flick however it is expressed (`pinAtRest`).
  *
  * A page that floats its own bar over the top — the landing page's nav — sets
  * `--pinned-header-inset` to that bar's height, and the header comes to rest below it instead of
@@ -40,6 +45,14 @@ export class PinnedTableHeaderDirective {
       const wrapper = this.host.nativeElement;
       const head = wrapper.querySelector('thead');
       if (!head) {
+        return;
+      }
+
+      // `-webkit-touch-callout` exists on iOS WebKit and nowhere else — and on iOS every browser
+      // is WebKit, Chrome included. It is the one engine where the pin cannot follow the scroll
+      // however it is expressed, so it gets the third path below.
+      if (CSS.supports('-webkit-touch-callout', 'none')) {
+        this.pinAtRest(wrapper, head);
         return;
       }
 
@@ -84,6 +97,84 @@ export class PinnedTableHeaderDirective {
     observer.observe(wrapper);
     observer.observe(head);
     measure();
+  }
+
+  /**
+   * The iOS path: the header is not moved while the page is scrolling at all. It is hidden the
+   * moment a scroll starts, placed once the scroll has come to rest, and faded back in there.
+   *
+   * On iOS the page is scrolled by a thread the page's own code never runs on, and nothing we
+   * can hand that thread describes this pin: `position: sticky` cannot reach past the horizontal
+   * scroll container, and a scroll-driven animation is resolved with the rest of style there —
+   * WebKit's `canBeAccelerated()` refuses any progress-based timeline until it has threaded
+   * animations (Safari 26.4), and the report that led here came from a build that had them. So
+   * whatever moves the header during a flick trails the rows by however far the scroll got
+   * ahead, and a header sitting on the wrong rows is worse than none. Hiding it costs nothing
+   * to get right — a frame late is invisible, where a frame late on a position is a row out.
+   *
+   * The identity cells inside the group are sticky (the frozen columns), and iOS places those
+   * from the scrolling thread as well; `position: sticky` on the group itself is what keeps
+   * them riding along with its translation (see the header component's stylesheet). This path
+   * leaves that alone and only ever sets the transform between scrolls.
+   */
+  private pinAtRest(wrapper: HTMLElement, head: HTMLElement): void {
+    // The timeline in `styles.css` would otherwise drive this same transform from the main
+    // thread, which is the whole problem.
+    head.style.animation = 'none';
+
+    let inset = 0;
+    const readInset = () => {
+      inset = parseFloat(getComputedStyle(wrapper).getPropertyValue('--pinned-header-inset')) || 0;
+    };
+    const offsetNow = () => {
+      const wrapperBox = wrapper.getBoundingClientRect();
+      const travel = Math.max(wrapperBox.height - head.offsetHeight, 0);
+      return Math.min(Math.max(inset - wrapperBox.top, 0), travel);
+    };
+    let pinned = false;
+    let hidden = false;
+    let settle = 0;
+
+    const place = () => {
+      const offset = offsetNow();
+      pinned = offset > 0;
+      head.style.transform = pinned ? `translateY(${offset}px)` : '';
+      if (hidden) {
+        hidden = false;
+        // Set together with the opacity so the fade applies to this change and not the hide.
+        head.style.transition = 'opacity 150ms ease-out';
+        head.style.opacity = '';
+      }
+    };
+    const onScroll = () => {
+      // A header still at the top of the table scrolls with it, which is right; one held part-way
+      // down is about to be on the wrong rows.
+      if (pinned && !hidden) {
+        hidden = true;
+        head.style.transition = 'none';
+        head.style.opacity = '0';
+      }
+      clearTimeout(settle);
+      settle = setTimeout(place, SCROLL_SETTLE_MS);
+    };
+    const remeasure = () => {
+      readInset();
+      place();
+    };
+
+    const observer = new ResizeObserver(place);
+    this.destroyRef.onDestroy(() => {
+      clearTimeout(settle);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', remeasure);
+      observer.disconnect();
+    });
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', remeasure);
+    observer.observe(wrapper);
+    readInset();
+    place();
   }
 
   /**

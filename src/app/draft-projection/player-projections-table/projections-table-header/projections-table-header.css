@@ -5,18 +5,18 @@
    rather than its row, so every header row clamped to the same band and the weight row covered
    the column labels.)
 
-   Positioned only so `z-index` applies. It read `position: sticky; top: 0` for a long time,
-   left over from when the pin was meant to be sticky, and it pinned nothing: the wrapper's
-   `overflow-x: auto` makes it the scrollport on both axes and that box never scrolls
-   vertically, so the offset always resolved to zero. Inert is not the same as free, though. A
-   sticky box is one the browser's own scrolling machinery holds in place, and it moves it while
-   the page scrolls rather than waiting for layout — so the same box was being placed twice,
-   once by that machinery and once by the pin's translation, and only the second of those is
-   recomputed when the scroll comes to rest. A header that spends a flick part-way down the
-   table and is back at the top the moment the scroll stops (reported on iOS) is what that
-   disagreement looks like. Whatever the browser was doing with it, the pin owns this box. */
+   `position: sticky` here pins nothing — the wrapper's `overflow-x: auto` makes it the
+   scrollport on both axes and that box never scrolls vertically, so the offset always resolves
+   to zero — and it must stay all the same. The rank and player cells inside this group are
+   sticky too (`.table-wrapper .col-rank` / `.col-name` in `styles.css`, the frozen columns the
+   stat columns scroll behind), and iOS places every sticky box from its scrolling thread. With
+   the group itself sticky, those cells are placed within it and ride along with its
+   translation; with the group merely `relative` (#530) they were placed against the wrapper
+   on their own, at the group's untransformed spot at the top of the table, and the pinned
+   header came back with its stat columns and nothing where the rank and the name belong. */
 :host {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 2;
   /* Paint the row group's own background behind its rows. With border-collapse, a row boundary
      that lands on a fractional device pixel leaves a 1px seam the two rows' snapped cell

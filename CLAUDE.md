@@ -168,17 +168,24 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
     A page that floats a bar over its top (the landing nav) sets `--pinned-header-inset` to that
     bar's height; it is registered with `@property` in `styles.css` as a `<length>`, because the
     fallback path reads the value back and an unregistered custom property returns raw tokens.
-    **The row group is the pin's alone.** It was also `position: sticky` for a long time, which
-    pinned nothing (that box never scrolls vertically) but did hand the same element to the
-    browser's scrolling machinery, which places it during a scroll without waiting for layout —
-    two things placing one box, one of them recomputed at rest, which is what a header stuck
-    part-way down the table for the length of an iOS flick looks like. It is `position: relative`
-    now, and the fallback writes its offset in the scroll handler itself rather than a frame
-    later, since a phone can stop serving animation frames for the length of a momentum scroll.
-    **It is not promoted, and must not be**: `will-change: transform` is the obvious way to buy
-    a compositor-driven pin, and it was tried — WebKit then stopped painting the row group's
-    sticky identity cells, leaving a header with its stat columns and nothing where the rank and
-    the player name belong. Frozen columns beat a smoother pin.
+    **iOS takes neither path.** There the page is scrolled by a thread the page's code never
+    runs on, and nothing we can hand that thread describes this pin: sticky cannot reach past
+    the horizontal scroll container, and WebKit resolves a scroll-driven animation on the main
+    thread (`canBeAccelerated()` refuses progress-based timelines without threaded animations,
+    and the build that had them still showed it). Whatever moves the header during a flick trails
+    the rows by however far the scroll got ahead — the header part-way down the table that was
+    reported — so on iOS (`-webkit-touch-callout`, which every iOS browser has and nothing else
+    does) the directive hides the header the moment a scroll starts and places it, with a fade,
+    once the page has been still for `SCROLL_SETTLE_MS`. A frame late on a hide is invisible;
+    a frame late on a position is a row out.
+    **The `<thead>` stays `position: sticky` even though it pins nothing** (its scrollport never
+    scrolls vertically): the rank and name cells inside it are sticky too — the frozen columns —
+    and iOS places every sticky box from its scrolling thread. With the group itself sticky they
+    are placed within it and ride along with its translation; made merely `relative` (#530) they
+    were placed at the group's untransformed spot at the top of the table, and the pinned header
+    came back with nothing where the rank and the name belong. The group is not promoted with
+    `will-change` either (#531): it buys nothing where the animation is composited anyway, and it
+    was in the mix when the cells went missing.
 - `environments/` — `environment.ts` (dev: `apiUrl: http://localhost:8080/api/v1`),
   `environment.staging.ts` (points at the staging BFF `api.staging.slapstat.com`; used by
   `npm run start:staging` via the `staging` build/serve configs in `angular.json`),
