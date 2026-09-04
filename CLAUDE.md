@@ -175,9 +175,11 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
     and the build that had them still showed it). Whatever moves the header during a flick trails
     the rows by however far the scroll got ahead — the header part-way down the table that was
     reported — so on iOS (`-webkit-touch-callout`, which every iOS browser has and nothing else
-    does) the directive hides the header the moment a scroll starts and places it, with a fade,
-    once the page has been still for `SCROLL_SETTLE_MS`. A frame late on a hide is invisible;
-    a frame late on a position is a row out.
+    does) the directive follows the page only while it moves slowly enough to be followed (under
+    `FLICK_PX_PER_EVENT` between scroll events — a dragging finger), hides the header the moment
+    it moves faster than that, and places it, with a fade, once the page has been still for
+    `SCROLL_SETTLE_MS`. A frame late on a hide is invisible; a frame late on a position is a
+    row out.
     **The `<thead>` stays `position: sticky` even though it pins nothing** (its scrollport never
     scrolls vertically): the rank and name cells inside it are sticky too — the frozen columns —
     and iOS places every sticky box from its scrolling thread. With the group itself sticky they

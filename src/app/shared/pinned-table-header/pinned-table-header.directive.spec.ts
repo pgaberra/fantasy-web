@@ -234,16 +234,26 @@ describe('PinnedTableHeaderDirective', () => {
       expect(head.style.opacity).toEqual('');
     });
 
-    it('hides a pinned header the moment the page scrolls, and puts it back once it settles', () => {
+    it('follows the page while it moves slowly enough to be followed', () => {
       const { fixture, head } = setup(-250);
       const wrapper = fixture.nativeElement.querySelector('.table-wrapper') as HTMLElement;
 
+      wrapper.getBoundingClientRect = () => ({ top: -270, height: 1000 }) as DOMRect;
+      scroll();
+
+      expect(head.style.transform).toEqual('translateY(270px)');
+      expect(head.style.opacity).toEqual('');
+    });
+
+    it('hides a pinned header the moment the page flicks, and puts it back once it settles', () => {
+      const { fixture, head } = setup(-250);
+      const wrapper = fixture.nativeElement.querySelector('.table-wrapper') as HTMLElement;
+
+      wrapper.getBoundingClientRect = () => ({ top: -400, height: 1000 }) as DOMRect;
       scroll();
       expect(head.style.opacity).toEqual('0');
       expect(head.style.transform).toEqual('translateY(250px)');
 
-      wrapper.getBoundingClientRect = () => ({ top: -400, height: 1000 }) as DOMRect;
-      scroll();
       vi.advanceTimersByTime(119);
       expect(head.style.opacity).toEqual('0');
 
@@ -251,6 +261,35 @@ describe('PinnedTableHeaderDirective', () => {
       expect(head.style.transform).toEqual('translateY(400px)');
       expect(head.style.opacity).toEqual('');
       expect(head.style.transition).toEqual('opacity 150ms ease-out');
+    });
+
+    it('stays hidden through a flick that is caught and slowed, until the page rests', () => {
+      const { fixture, head } = setup(-250);
+      const wrapper = fixture.nativeElement.querySelector('.table-wrapper') as HTMLElement;
+
+      wrapper.getBoundingClientRect = () => ({ top: -400, height: 1000 }) as DOMRect;
+      scroll();
+      wrapper.getBoundingClientRect = () => ({ top: -410, height: 1000 }) as DOMRect;
+      scroll();
+      expect(head.style.opacity).toEqual('0');
+      expect(head.style.transform).toEqual('translateY(250px)');
+
+      vi.advanceTimersByTime(120);
+      expect(head.style.transform).toEqual('translateY(410px)');
+      expect(head.style.opacity).toEqual('');
+    });
+
+    it('does not pin a header mid-flick that was still in the flow when the flick began', () => {
+      const { fixture, head } = setup(120);
+      const wrapper = fixture.nativeElement.querySelector('.table-wrapper') as HTMLElement;
+
+      wrapper.getBoundingClientRect = () => ({ top: -200, height: 1000 }) as DOMRect;
+      scroll();
+      expect(head.style.transform).toEqual('');
+      expect(head.style.opacity).toEqual('');
+
+      vi.advanceTimersByTime(120);
+      expect(head.style.transform).toEqual('translateY(200px)');
     });
 
     it('leaves a header still in the flow of the table alone while the page scrolls', () => {

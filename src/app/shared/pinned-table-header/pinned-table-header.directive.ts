@@ -4,6 +4,16 @@ import { DestroyRef, Directive, ElementRef, afterNextRender, inject } from '@ang
 const SCROLL_SETTLE_MS = 120;
 
 /**
+ * How far the page may move between two scroll events before the iOS path stops following it.
+ * The header trails the rows by a frame or two of whatever the scroll is doing, so this is also
+ * roughly how far off it is allowed to be: a finger dragging the page moves it a handful of
+ * pixels a frame and the header swims a little behind, which reads as the header keeping up;
+ * a flick moves it a hundred and the header lands on the wrong rows. Measured per event rather
+ * than per millisecond because the browser already delivers at most one scroll event a frame.
+ */
+const FLICK_PX_PER_EVENT = 32;
+
+/**
  * Keeps a wide table's `<thead>` against the top of the window while the page scrolls past it.
  *
  * `position: sticky` cannot do this here. The host has to stay a horizontal scroll container for
@@ -26,8 +36,9 @@ const SCROLL_SETTLE_MS = 120;
  * so the pin survives the page above the table reflowing.
  *
  * Browsers without scroll timelines fall back to doing the same arithmetic in a scroll handler.
- * iOS takes neither: the header is hidden while the page scrolls and placed once it rests,
- * because there the pin cannot keep up with a flick however it is expressed (`pinAtRest`).
+ * iOS takes neither: the header follows a slow scroll, is hidden through a flick and placed once
+ * the page rests, because there the pin cannot keep up with a flick however it is expressed
+ * (`pinAtRest`).
  *
  * A page that floats its own bar over the top — the landing page's nav — sets
  * `--pinned-header-inset` to that bar's height, and the header comes to rest below it instead of
@@ -100,17 +111,21 @@ export class PinnedTableHeaderDirective {
   }
 
   /**
-   * The iOS path: the header is not moved while the page is scrolling at all. It is hidden the
-   * moment a scroll starts, placed once the scroll has come to rest, and faded back in there.
+   * The iOS path: the header follows the page while it moves slowly enough to be followed, and
+   * is hidden the moment it moves faster than that — a flick — until the page has come to rest,
+   * where it is placed and faded back in.
    *
    * On iOS the page is scrolled by a thread the page's own code never runs on, and nothing we
    * can hand that thread describes this pin: `position: sticky` cannot reach past the horizontal
    * scroll container, and a scroll-driven animation is resolved with the rest of style there —
    * WebKit's `canBeAccelerated()` refuses any progress-based timeline until it has threaded
    * animations (Safari 26.4), and the report that led here came from a build that had them. So
-   * whatever moves the header during a flick trails the rows by however far the scroll got
-   * ahead, and a header sitting on the wrong rows is worse than none. Hiding it costs nothing
-   * to get right — a frame late is invisible, where a frame late on a position is a row out.
+   * whatever moves the header during a scroll trails the rows by however far the scroll got
+   * ahead. Under a dragging finger that is a few pixels, and following is the right call; through
+   * a flick it is rows, and a header sitting on the wrong rows is worse than none. Hiding it
+   * costs nothing to get right — a frame late is invisible, where a frame late on a position is
+   * a row out. Once hidden it stays hidden until the page rests, so a flick that is caught and
+   * slowed does not flicker the header back at the wrong place.
    *
    * The identity cells inside the group are sticky (the frozen columns), and iOS places those
    * from the scrolling thread as well; `position: sticky` on the group itself is what keeps
@@ -126,17 +141,16 @@ export class PinnedTableHeaderDirective {
     const readInset = () => {
       inset = parseFloat(getComputedStyle(wrapper).getPropertyValue('--pinned-header-inset')) || 0;
     };
-    const offsetNow = () => {
-      const wrapperBox = wrapper.getBoundingClientRect();
-      const travel = Math.max(wrapperBox.height - head.offsetHeight, 0);
-      return Math.min(Math.max(inset - wrapperBox.top, 0), travel);
-    };
     let pinned = false;
     let hidden = false;
     let settle = 0;
+    let lastTop: number | null = null;
 
     const place = () => {
-      const offset = offsetNow();
+      const wrapperBox = wrapper.getBoundingClientRect();
+      const travel = Math.max(wrapperBox.height - head.offsetHeight, 0);
+      const offset = Math.min(Math.max(inset - wrapperBox.top, 0), travel);
+      lastTop = wrapperBox.top;
       pinned = offset > 0;
       head.style.transform = pinned ? `translateY(${offset}px)` : '';
       if (hidden) {
@@ -147,15 +161,25 @@ export class PinnedTableHeaderDirective {
       }
     };
     const onScroll = () => {
+      clearTimeout(settle);
+      settle = setTimeout(place, SCROLL_SETTLE_MS);
+      if (hidden) {
+        return;
+      }
+      const top = wrapper.getBoundingClientRect().top;
+      const moved = lastTop === null ? 0 : Math.abs(top - lastTop);
+      lastTop = top;
+      if (moved <= FLICK_PX_PER_EVENT) {
+        place();
+        return;
+      }
       // A header still at the top of the table scrolls with it, which is right; one held part-way
-      // down is about to be on the wrong rows.
-      if (pinned && !hidden) {
+      // down is about to be on the wrong rows. Nothing is placed mid-flick either way.
+      if (pinned) {
         hidden = true;
         head.style.transition = 'none';
         head.style.opacity = '0';
       }
-      clearTimeout(settle);
-      settle = setTimeout(place, SCROLL_SETTLE_MS);
     };
     const remeasure = () => {
       readInset();
