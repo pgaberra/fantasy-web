@@ -73,7 +73,9 @@ export const environment = {
   espnLeaguesEnabled: espnLeaguesEnabledFlag === 'true',
   whosHotEnabled: whosHotEnabledFlag !== 'false',
   aiProjectionEnabled: aiProjectionEnabledFlag !== 'false',
-  paddleClientToken: paddleClientTokenFlag.startsWith('__PADDLE_CLIENT_TOKEN') ? '' : paddleClientTokenFlag,
+  paddleClientToken: paddleClientTokenFlag.startsWith('__PADDLE_CLIENT_TOKEN')
+    ? ''
+    : paddleClientTokenFlag,
   paddleEnvironment: paddleEnvironmentFlag.startsWith('__PADDLE_ENVIRONMENT')
     ? 'production'
     : paddleEnvironmentFlag,

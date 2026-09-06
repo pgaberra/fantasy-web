@@ -45,9 +45,7 @@ describe('PayComponent', () => {
     expect(initializePaddle).toHaveBeenCalledWith(
       expect.objectContaining({ token: 'test_token', environment: 'sandbox' }),
     );
-    expect(open).toHaveBeenCalledWith(
-      expect.objectContaining({ transactionId: 'txn_1' }),
-    );
+    expect(open).toHaveBeenCalledWith(expect.objectContaining({ transactionId: 'txn_1' }));
   });
 
   /** Paddle requires an absolute success URL, and the account page is what reads the result. */
