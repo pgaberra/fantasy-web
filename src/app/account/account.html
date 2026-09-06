@@ -5,9 +5,7 @@
   </header>
 
   @if (justSubscribed()) {
-    <p class="account-success" role="status">
-      Thanks for subscribing! Your premium access is now active.
-    </p>
+    <p class="account-success" role="status">Thanks for subscribing!</p>
   }
 
   <article class="account-card">
@@ -50,6 +48,22 @@
             >
               {{ openingPortal() ? 'Opening…' : 'Manage subscription' }}
             </button>
+          </div>
+        } @else if (confirming()) {
+          <div class="plan-status"><span class="status status-pending">● Confirming</span></div>
+          <p class="account-note">
+            Your payment went through. We are waiting for the confirmation, which usually takes a
+            few seconds.
+          </p>
+        } @else if (confirmationTimedOut()) {
+          <div class="plan-status"><span class="status status-pending">● Confirming</span></div>
+          <p class="account-note">
+            Your payment went through, but the confirmation has not reached us yet. It will arrive
+            on its own. If this page still looks wrong in a few minutes, write to
+            <a href="mailto:info@slapstat.com">info&#64;slapstat.com</a> and we will sort it out.
+          </p>
+          <div class="account-actions">
+            <button type="button" class="btn btn-secondary" (click)="reload()">Check again</button>
           </div>
         } @else {
           <div class="plan-status"><span class="status status-off">● Free plan</span></div>

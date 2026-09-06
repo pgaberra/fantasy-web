@@ -18,7 +18,8 @@ describe('AccountComponent', () => {
   const cancelAtPeriodEnd = signal(false);
   const loadState = signal<'idle' | 'loading' | 'loaded' | 'error'>('loaded');
   const realLocation = window.location;
-  const route = { snapshot: { queryParamMap: { get: (): string | null => null } } };
+  const checkoutParam = signal<string | null>(null);
+  const route = { snapshot: { queryParamMap: { get: () => checkoutParam() } } };
 
   beforeEach(() => {
     openPortal.mockReset();
@@ -29,6 +30,7 @@ describe('AccountComponent', () => {
     currentPeriodEnd.set(null);
     cancelAtPeriodEnd.set(false);
     loadState.set('loaded');
+    checkoutParam.set(null);
     Object.defineProperty(window, 'location', { configurable: true, value: { href: '' } });
     return MockBuilder(AccountComponent)
       .mock(BillingService, { openPortal })
@@ -91,5 +93,48 @@ describe('AccountComponent', () => {
       expect.stringContaining('Your subscription is unchanged'),
     );
     expect(notifyError).not.toHaveBeenCalledWith(expect.stringContaining('try again'));
+  });
+
+  /**
+   * Paddle redirects the browser the moment the payment clears and tells our server separately.
+   * The redirect wins, so the first read still says free plan. Showing that told someone who had
+   * just paid that they had no subscription, right under a banner thanking them for subscribing.
+   */
+  it('does not call a just-paid account free while the confirmation is still coming', () => {
+    checkoutParam.set('success');
+    premium.set(false);
+
+    MockRender(AccountComponent);
+
+    const text = (ngMocks.find('.account-card').nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Confirming');
+    expect(text).not.toContain('Free plan');
+    expect(text).not.toContain("You don't have an active subscription");
+  });
+
+  it('shows the subscription as soon as the confirmation lands', () => {
+    checkoutParam.set('success');
+    premium.set(false);
+    const fixture = MockRender(AccountComponent);
+
+    premium.set(true);
+    fixture.detectChanges();
+
+    const text = (ngMocks.find('.account-card').nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Premium active');
+    expect(text).not.toContain('Confirming');
+  });
+
+  // Only the return from checkout is a race. An ordinary visit with no subscription is a fact,
+  // and hiding it behind "confirming" would leave the free plan with no way to see itself.
+  it('still calls an ordinary account free when it has no subscription', () => {
+    checkoutParam.set(null);
+    premium.set(false);
+
+    MockRender(AccountComponent);
+
+    const text = (ngMocks.find('.account-card').nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Free plan');
+    expect(text).not.toContain('Confirming');
   });
 });
