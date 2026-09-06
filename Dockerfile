@@ -41,6 +41,8 @@ ARG PAYMENTS_ENABLED=
 # does not sell anything.
 ARG PADDLE_CLIENT_TOKEN=
 ARG PADDLE_ENVIRONMENT=
+# The recurring price the pricing page asks Paddle to quote. Public, like the token.
+ARG PADDLE_PRICE_ID=
 # ESPN_LEAGUES_ENABLED=true shows the ESPN provider in the projection's league-sync UI;
 # empty/anything else keeps it hidden (default), so ESPN stays dark until enabled per env.
 ARG ESPN_LEAGUES_ENABLED=
