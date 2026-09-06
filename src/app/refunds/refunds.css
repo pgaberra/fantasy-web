@@ -1,0 +1,70 @@
+.refunds {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4) var(--space-6);
+  color: var(--color-text);
+}
+
+.refunds__title {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  margin: 0 0 var(--space-2);
+}
+
+.refunds__updated {
+  margin: 0 0 var(--space-6);
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
+}
+
+.refunds__lead {
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-6);
+}
+
+.refunds h2 {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  margin: var(--space-6) 0 var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.refunds p,
+.refunds li {
+  line-height: 1.65;
+  color: var(--color-text-muted);
+}
+
+.refunds p {
+  margin: 0 0 var(--space-3);
+}
+
+.refunds ul {
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-5);
+}
+
+.refunds li {
+  margin-bottom: var(--space-2);
+}
+
+.refunds a {
+  color: var(--color-primary);
+  font-weight: var(--weight-medium);
+}
+
+.refunds a:hover {
+  color: var(--color-accent);
+}
+
+@media (max-width: 640px) {
+  .refunds {
+    padding: var(--space-5) var(--space-3);
+  }
+
+  .refunds__title {
+    font-size: var(--text-xl);
+  }
+}

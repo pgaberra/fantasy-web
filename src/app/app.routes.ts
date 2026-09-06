@@ -78,6 +78,17 @@ export const routes: Routes = [
     path: 'privacy',
     loadComponent: () => import('./privacy/privacy').then((m) => m.PrivacyComponent),
   },
+  // Public and unguarded like /privacy, and deliberately not behind the payments flag: Paddle's
+  // website review reads them from a signed-out browser before the feature is ever switched on,
+  // and a customer deciding whether to pay has to be able to read them before they do.
+  {
+    path: 'terms',
+    loadComponent: () => import('./terms/terms').then((m) => m.TermsComponent),
+  },
+  {
+    path: 'refunds',
+    loadComponent: () => import('./refunds/refunds').then((m) => m.RefundsComponent),
+  },
   // Payments UI stays dark until the PAYMENTS_ENABLED build flag is on — the guard redirects both
   // routes home otherwise. Account additionally requires being signed in.
   {

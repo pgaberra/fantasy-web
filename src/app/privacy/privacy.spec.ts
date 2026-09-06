@@ -20,6 +20,7 @@ describe('PrivacyComponent', () => {
   it.each([
     'Cloudflare',
     'Gmail',
+    'Paddle',
     'Hetzner',
     'PostHog',
     'Resend',

@@ -36,5 +36,6 @@ export const environment = {
   // builds from environment.prod.ts with PADDLE_CLIENT_TOKEN injected.
   paddleClientToken: '',
   paddleEnvironment: 'sandbox',
+  paddlePriceId: '',
   offseasonEnabled: false,
 };
