@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LandingDemoComponent } from './landing-demo/landing-demo';
+import { environment } from '../../environments/environment';
 
 interface Feature {
   title: string;
@@ -14,6 +15,10 @@ interface Feature {
   styleUrl: './landing.css',
 })
 export class LandingComponent {
+  // A visitor weighing up the app should find the price from the front page, and the pricing
+  // page is only there to find where a build sells something.
+  readonly paymentsEnabled = environment.paymentsEnabled;
+
   readonly features: Feature[] = [
     {
       title: 'Ditch the Excel Sheets',

@@ -1,11 +1,32 @@
 <section class="account">
   <header class="account-header">
-    <h1>Your subscription</h1>
-    <p class="account-sub">Manage your SlapStat Premium membership.</p>
+    <h1>Subscription</h1>
+    <p class="account-sub">Your plan, and where to change it.</p>
   </header>
 
+  <!-- Straight after checkout. Once the subscription has landed the useful thing to say is where
+       the things just paid for live; until then, only the thanks, and the card below says what is
+       true at that moment. -->
   @if (justSubscribed()) {
-    <p class="account-success" role="status">Thanks for subscribing!</p>
+    @if (entitlement.premium()) {
+      <section class="account-welcome" role="status">
+        <h2 class="account-welcome-title">Welcome to Premium</h2>
+        <p class="account-welcome-text">Thanks for subscribing! Everything below is yours now.</p>
+        @if (nextSteps.length > 0) {
+          <ul class="account-welcome-links">
+            @for (perk of nextSteps; track perk.title) {
+              <li>
+                <a [routerLink]="perk.link" class="btn btn-secondary btn-sm">{{
+                  perk.linkLabel
+                }}</a>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    } @else {
+      <p class="account-success" role="status">Thanks for subscribing!</p>
+    }
   }
 
   <article class="account-card">
@@ -21,17 +42,20 @@
       }
       @default {
         @if (entitlement.premium()) {
-          <div class="plan-status"><span class="status status-ok">● Premium active</span></div>
+          <div class="plan-status">
+            <span class="status status-ok">Premium active</span>
+          </div>
           @if (entitlement.cancelAtPeriodEnd()) {
             @if (entitlement.currentPeriodEnd()) {
-              <p class="account-note">
-                Your subscription cancels on
-                {{ entitlement.currentPeriodEnd() | date: 'longDate' }}. You keep premium access
-                until then.
+              <p class="account-note account-note--ending">
+                Cancelled. You keep Premium until
+                {{ entitlement.currentPeriodEnd() | date: 'longDate' }}, and nothing more is
+                charged.
               </p>
             } @else {
-              <p class="account-note">
-                Your subscription is set to cancel. You keep premium access until the period ends.
+              <p class="account-note account-note--ending">
+                Cancelled. You keep Premium until the end of the period you have paid for, and
+                nothing more is charged.
               </p>
             }
           } @else if (entitlement.currentPeriodEnd()) {
@@ -49,14 +73,22 @@
               {{ openingPortal() ? 'Opening…' : 'Manage subscription' }}
             </button>
           </div>
+          <p class="account-hint">
+            Change your card, download receipts or cancel in the billing portal. Paddle, our
+            merchant of record, runs it on our behalf.
+          </p>
         } @else if (confirming()) {
-          <div class="plan-status"><span class="status status-pending">● Confirming</span></div>
+          <div class="plan-status">
+            <span class="status status-pending">Confirming</span>
+          </div>
           <p class="account-note">
             Your payment went through. We are waiting for the confirmation, which usually takes a
             few seconds.
           </p>
         } @else if (confirmationTimedOut()) {
-          <div class="plan-status"><span class="status status-pending">● Confirming</span></div>
+          <div class="plan-status">
+            <span class="status status-pending">Confirming</span>
+          </div>
           <p class="account-note">
             Your payment went through, but the confirmation has not reached us yet. It will arrive
             on its own. If this page still looks wrong in a few minutes, write to
@@ -66,10 +98,20 @@
             <button type="button" class="btn btn-secondary" (click)="reload()">Check again</button>
           </div>
         } @else {
-          <div class="plan-status"><span class="status status-off">● Free plan</span></div>
-          <p class="account-note">You don't have an active subscription.</p>
+          <div class="plan-status">
+            <span class="status status-off">Free plan</span>
+          </div>
+          <p class="account-note">You have everything in the free app. Premium adds:</p>
+          <ul class="perk-list">
+            @for (perk of perks; track perk.title) {
+              <li>
+                <span class="perk-title">{{ perk.title }}</span>
+                <span class="perk-desc">{{ perk.description }}</span>
+              </li>
+            }
+          </ul>
           <div class="account-actions">
-            <a routerLink="/pricing" class="btn btn-primary">See Premium</a>
+            <a routerLink="/pricing" class="btn btn-primary">Upgrade to Premium</a>
           </div>
         }
       }

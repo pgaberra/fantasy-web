@@ -280,6 +280,46 @@ summary:focus-visible,
 .btn-sm {
   padding: 0.35rem 0.85rem;
 }
+/*
+ * The mark Premium wears wherever it is named: the AI projection's card, the locked ranges on
+ * Who's hot, the account menu, the pricing page. Gold, since that is the colour the pricing page
+ * sells it in, and the dark gold for the text, because the tint alone does not carry 4.5:1. It
+ * was three different pills in three places (two golds and a blue) before it was one class.
+ * A global class rather than a component so it can sit inside a radio's label, where a child
+ * component would put an element between the label and its text.
+ */
+.premium-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: none;
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--radius-pill);
+  background: rgba(230, 184, 74, 0.2);
+  color: var(--color-gold-strong);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  line-height: 1.4;
+  white-space: nowrap;
+  text-decoration: none;
+  transition:
+    background var(--transition),
+    color var(--transition);
+}
+
+.premium-badge svg {
+  width: 0.85em;
+  height: 0.85em;
+  flex: none;
+}
+
+/* A badge that is also the way to the pricing page: it darkens under the pointer, as a link
+   should, and nothing else about it changes. */
+a.premium-badge:hover,
+a.premium-badge:focus-visible {
+  background: rgba(230, 184, 74, 0.38);
+  color: #6b4705;
+}
 
 /* Position colour system — sets --pos / --pos-bg, consumed by player avatars and
    position/slot chips (app-player-avatar and the draft panels). */

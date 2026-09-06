@@ -144,6 +144,24 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   browser** before upload, so a phone photo becomes a few tens of KB and the server never decodes
   an untrusted image; the header and the profile page both draw it with the table's
   `app-player-headshot`, whose initials fallback covers an account without a picture.
+- `pricing/`, `pay/`, `account/` and `shared/premium/` — the **Premium** subscription, sold
+  through Paddle (see `BillingService`, `EntitlementService`). The four surfaces agree on what
+  Premium _is_ through one list, `shared/premium/premium-perks.ts`, which follows the build
+  flags so a build with the AI projection or Who's hot switched off cannot sell them; and on
+  what it _looks like_ through one global class, `.premium-badge` in `styles.css` (a class
+  rather than a component so it can sit inside a radio's label). `/pricing` puts Free and
+  Premium side by side and answers the questions that otherwise arrive by mail after the first
+  charge; it knows who is looking, so a subscriber sees the way to their subscription and never
+  a second Subscribe button. `/pay` is only where Paddle's checkout opens (its comment says why
+  it is not behind `authGuard`). `/account` is the subscription page: reached from the account
+  menu, never from a header link, and straight after checkout it is the welcome, with a link
+  into each perk. `EntitlementService` **follows the session** like `AccountService` (an
+  `effect` on `isLoggedIn`), because sign-in is a router navigation and a load done once at
+  bootstrap missed everyone who signed in during the session. The header sells Premium only to
+  an account that has not bought it (`plan()` in `app.ts`, null until the entitlement has
+  landed, so nothing is said of a subscriber a request too early), and the pricing page is in
+  the footer and the landing nav wherever payments are on, since the price has to be reachable
+  from the navigation for Paddle's review.
 - `services/` — app services (auth, projections, etc.)
 - `interceptors/` — HTTP interceptors: `authInterceptor` attaches the JWT and refreshes
   once on 401 (all environments). `retryInterceptor` (outermost) is a small **always-on**

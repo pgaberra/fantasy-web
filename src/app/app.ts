@@ -5,6 +5,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { AccountService } from './services/account.service';
 import { AuthService } from './services/auth.service';
+import { EntitlementService } from './services/entitlement.service';
 import { ConsentBannerComponent } from './shared/consent-banner/consent-banner';
 import { EnvironmentBannerComponent } from './shared/environment-banner/environment-banner';
 import { PlayerHeadshotComponent } from './shared/player-headshot/player-headshot';
@@ -35,6 +36,10 @@ import { environment } from '../environments/environment';
 export class App {
   readonly authService = inject(AuthService);
   readonly account = inject(AccountService);
+  // Injected here on purpose, and not only where it is read: the service follows the session
+  // through an effect of its own, and the root component is what guarantees it exists from the
+  // first paint rather than from the first page that happens to ask about the plan.
+  readonly entitlement = inject(EntitlementService);
   private readonly router = inject(Router);
   protected readonly environmentName = environment.environmentName;
   protected readonly appVersion = environment.version;
@@ -58,11 +63,37 @@ export class App {
     () => this.path().startsWith('/draft') || this.path().startsWith('/projections'),
   );
 
-  protected readonly isProfileRoute = computed(() => this.path() === '/profile');
+  // Everything behind the avatar: the profile, and the subscription page the account menu
+  // leads to. The avatar is the only way to either, so it is the thing to mark "you are here".
+  protected readonly isAccountSection = computed(
+    () => this.path() === '/profile' || this.path() === '/account',
+  );
 
   // What the avatar falls back to when there is no picture: the first letter of the username,
   // or of the email while the account has not picked one.
   protected readonly displayName = computed(
     () => this.account.username() ?? this.account.email() ?? '',
   );
+
+  /**
+   * The plan as the nav may state it. Null until it is known: "Free plan" said of a subscriber
+   * whose entitlement has not landed yet is wrong, not merely early, and the header link that
+   * sells Premium to a free account would be selling it to someone who already pays. Null too
+   * wherever payments are off, since without them there is no plan to have.
+   */
+  protected readonly plan = computed<'premium' | 'free' | null>(() => {
+    if (!this.paymentsEnabled) {
+      return null;
+    }
+    if (this.entitlement.premium()) {
+      return 'premium';
+    }
+    return this.entitlement.loadState() === 'loaded' ? 'free' : null;
+  });
+
+  /**
+   * Whether the header offers the pricing page. Only to an account that could act on it: a
+   * subscriber's header says nothing about Premium, and their plan lives in the account menu.
+   */
+  protected readonly showsPremiumLink = computed(() => this.plan() === 'free');
 }

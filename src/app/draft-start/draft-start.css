@@ -467,16 +467,6 @@
 
 /* Gold, and the dark gold for the text: the tint alone does not carry 4.5:1. It is the app's
    only ornamental colour, and this is the one place on the page selling anything. */
-.row-badge {
-  flex: none;
-  padding: 0.05rem 0.45rem;
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  border-radius: var(--radius-pill);
-  background: rgba(230, 184, 74, 0.2);
-  color: var(--color-gold-strong);
-}
-
 .panel app-share-import {
   display: block;
 }

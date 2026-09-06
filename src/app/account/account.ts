@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BillingService } from '../services/billing.service';
 import { EntitlementService } from '../services/entitlement.service';
 import { NotificationService } from '../services/notification.service';
+import { premiumPerks } from '../shared/premium/premium-perks';
 
 /** How long to keep waiting for the subscription to reach us before saying so, in milliseconds. */
 const CONFIRMATION_TIMEOUT_MS = 30_000;
@@ -11,6 +12,14 @@ const CONFIRMATION_TIMEOUT_MS = 30_000;
 /** How long to wait between reads while confirming, in milliseconds. */
 const CONFIRMATION_POLL_MS = 2_000;
 
+/**
+ * The subscription page: which plan the account is on, and what to do about it.
+ *
+ * Reached from the account menu. A free account is told what Premium would add and offered the
+ * pricing page; a subscriber is told when the next charge is, or when the last day is once they
+ * have cancelled, and given the billing portal. Straight after checkout it is also the welcome:
+ * the first thing a new subscriber should see is where the things they just paid for live.
+ */
 @Component({
   selector: 'app-account',
   imports: [RouterLink, DatePipe],
@@ -24,6 +33,11 @@ export class AccountComponent implements OnInit, OnDestroy {
   protected readonly entitlement = inject(EntitlementService);
   protected readonly openingPortal = signal(false);
   protected readonly justSubscribed = signal(false);
+
+  protected readonly perks = premiumPerks();
+
+  /** The perks with a page to go to, for the welcome after checkout. */
+  protected readonly nextSteps = this.perks.filter((perk) => perk.link);
 
   /**
    * True while we are back from a completed checkout but the subscription has not reached us yet.

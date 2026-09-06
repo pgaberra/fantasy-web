@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
@@ -32,18 +33,22 @@ describe('AccountComponent', () => {
     loadState.set('loaded');
     checkoutParam.set(null);
     Object.defineProperty(window, 'location', { configurable: true, value: { href: '' } });
-    return MockBuilder(AccountComponent)
-      .mock(BillingService, { openPortal })
-      .mock(EntitlementService, {
-        premium,
-        status,
-        currentPeriodEnd,
-        cancelAtPeriodEnd,
-        loadState,
-        refresh,
-      })
-      .mock(NotificationService, { error: notifyError })
-      .provide({ provide: ActivatedRoute, useValue: route });
+    return (
+      MockBuilder(AccountComponent)
+        // The dates are part of what the page says, so the pipe that formats them stays real.
+        .keep(DatePipe)
+        .mock(BillingService, { openPortal })
+        .mock(EntitlementService, {
+          premium,
+          status,
+          currentPeriodEnd,
+          cancelAtPeriodEnd,
+          loadState,
+          refresh,
+        })
+        .mock(NotificationService, { error: notifyError })
+        .provide({ provide: ActivatedRoute, useValue: route })
+    );
   });
 
   afterEach(() => {
@@ -56,13 +61,50 @@ describe('AccountComponent', () => {
     expect(refresh).toHaveBeenCalled();
   });
 
-  it('shows the free state with a link to Premium', () => {
+  it('shows the free state, what Premium would add, and the way to it', () => {
     premium.set(false);
 
     const fixture = MockRender(AccountComponent);
 
-    expect(fixture.nativeElement.textContent).toContain('Free plan');
-    expect(fixture.nativeElement.textContent).toContain('See Premium');
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Free plan');
+    expect(text).toContain('Premium adds');
+    expect(text).toContain('Upgrade to Premium');
+    expect(ngMocks.find('a.btn-primary').attributes['routerLink']).toEqual('/pricing');
+  });
+
+  it('says when a cancelled subscription ends, and that nothing more is charged', () => {
+    premium.set(true);
+    cancelAtPeriodEnd.set(true);
+    currentPeriodEnd.set('2026-10-07T09:00:00Z');
+
+    const fixture = MockRender(AccountComponent);
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('You keep Premium until October 7, 2026');
+    expect(text).toContain('nothing more is charged');
+    expect(text).not.toContain('Renews on');
+  });
+
+  /**
+   * The first thing a new subscriber should see is where the things they just paid for live,
+   * so the welcome carries a link into each of them. Only once the subscription has actually
+   * landed: before that the page cannot vouch for what is theirs.
+   */
+  it('welcomes a new subscriber with the way into each perk once the subscription lands', () => {
+    checkoutParam.set('success');
+    premium.set(false);
+    const fixture = MockRender(AccountComponent);
+    expect(fixture.nativeElement.textContent).not.toContain('Welcome to Premium');
+
+    premium.set(true);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Welcome to Premium');
+    const links = ngMocks
+      .findAll('.account-welcome-links a')
+      .map((link) => ngMocks.input(link, 'routerLink'));
+    expect(links).toContain('/whos-hot');
   });
 
   it('shows the manage button and opens the portal when premium', () => {

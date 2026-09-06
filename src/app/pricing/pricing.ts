@@ -3,9 +3,22 @@ import { RouterLink } from '@angular/router';
 import { initializePaddle, type Environments } from '@paddle/paddle-js';
 import { AuthService } from '../services/auth.service';
 import { BillingService } from '../services/billing.service';
+import { EntitlementService } from '../services/entitlement.service';
 import { NotificationService } from '../services/notification.service';
+import { freeFeatures, premiumPerks } from '../shared/premium/premium-perks';
 import { environment } from '../../environments/environment';
 
+/**
+ * The pricing page: the free plan and Premium side by side, what each includes, and the way in.
+ *
+ * Two cards rather than one on purpose. A lone Premium card that listed "everything in the free
+ * app" as its first perk left the reader to guess what the free app was, and so what they would
+ * actually be paying for. Beside the free column, Premium's perks read as the difference.
+ *
+ * The card knows who is looking at it. A subscriber sees that they already have Premium and the
+ * way to their subscription, not a Subscribe button that would start a second checkout; a
+ * signed-out visitor is sent to sign in, since the checkout is created for the signed-in caller.
+ */
 @Component({
   selector: 'app-pricing',
   imports: [RouterLink],
@@ -16,7 +29,11 @@ export class PricingComponent implements OnInit {
   private readonly billing = inject(BillingService);
   private readonly notifications = inject(NotificationService);
   protected readonly authService = inject(AuthService);
+  protected readonly entitlement = inject(EntitlementService);
   protected readonly starting = signal(false);
+
+  protected readonly perks = premiumPerks();
+  protected readonly freeFeatures = freeFeatures();
 
   /**
    * What this visitor would actually be charged, already formatted by Paddle in their own
