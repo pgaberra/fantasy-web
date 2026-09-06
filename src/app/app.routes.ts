@@ -85,6 +85,15 @@ export const routes: Routes = [
     loadComponent: () => import('./pricing/pricing').then((m) => m.PricingComponent),
     canActivate: [paymentsEnabledGuard],
   },
+  // Where Paddle's checkout opens. Behind the payments flag like the rest, but deliberately
+  // not behind authGuard: a session that lapsed between starting checkout and landing here
+  // would be redirected to /login, which drops the transaction id in the URL and strands a
+  // checkout Paddle has already prepared.
+  {
+    path: 'pay',
+    loadComponent: () => import('./pay/pay').then((m) => m.PayComponent),
+    canActivate: [paymentsEnabledGuard],
+  },
   {
     path: 'account',
     loadComponent: () => import('./account/account').then((m) => m.AccountComponent),

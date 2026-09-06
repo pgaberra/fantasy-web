@@ -1,0 +1,18 @@
+.pay {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--color-text);
+}
+
+.pay__title {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  margin: 0 0 var(--space-2);
+}
+
+.pay__text {
+  margin: 0 0 var(--space-4);
+  color: var(--color-text-subtle);
+}

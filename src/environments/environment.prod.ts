@@ -51,6 +51,12 @@ const offseasonEnabledFlag: string = '__OFFSEASON_ENABLED__';
 // offered. The preset already ships, so a deploy that forgets the arg must not silently lose it.
 const aiProjectionEnabledFlag: string = '__AI_PROJECTION_ENABLED__';
 
+// Public Paddle client token, injected at build time. Not a secret: it ships to the browser by
+// design and only permits opening a checkout. Untouched it resolves to empty, which leaves the
+// /pay page unable to open one. PADDLE_ENVIRONMENT picks which Paddle the token belongs to.
+const paddleClientTokenFlag: string = '__PADDLE_CLIENT_TOKEN__';
+const paddleEnvironmentFlag: string = '__PADDLE_ENVIRONMENT__';
+
 export const environment = {
   production: true,
   environmentName: appEnvFlag.startsWith('__APP_ENV') ? 'production' : appEnvFlag,
@@ -67,5 +73,9 @@ export const environment = {
   espnLeaguesEnabled: espnLeaguesEnabledFlag === 'true',
   whosHotEnabled: whosHotEnabledFlag !== 'false',
   aiProjectionEnabled: aiProjectionEnabledFlag !== 'false',
+  paddleClientToken: paddleClientTokenFlag.startsWith('__PADDLE_CLIENT_TOKEN') ? '' : paddleClientTokenFlag,
+  paddleEnvironment: paddleEnvironmentFlag.startsWith('__PADDLE_ENVIRONMENT')
+    ? 'production'
+    : paddleEnvironmentFlag,
   offseasonEnabled: offseasonEnabledFlag === 'true',
 };

@@ -35,6 +35,12 @@ ARG YAHOO_SYNC_DISABLED=
 # PAYMENTS_ENABLED=true turns on the subscription billing UI; empty/anything else keeps the
 # whole payments feature dark (default).
 ARG PAYMENTS_ENABLED=
+# Public Paddle client token, and which Paddle it belongs to ("sandbox" or "production").
+# The token is not a secret: it ships to the browser and only permits opening a checkout.
+# Both empty leaves /pay unable to open one, which is the right default for a build that
+# does not sell anything.
+ARG PADDLE_CLIENT_TOKEN=
+ARG PADDLE_ENVIRONMENT=
 # ESPN_LEAGUES_ENABLED=true shows the ESPN provider in the projection's league-sync UI;
 # empty/anything else keeps it hidden (default), so ESPN stays dark until enabled per env.
 ARG ESPN_LEAGUES_ENABLED=
@@ -60,6 +66,8 @@ RUN sed -i \
   -e "s|__SENTRY_DSN__|${SENTRY_DSN}|g" \
   -e "s|__YAHOO_SYNC_DISABLED__|${YAHOO_SYNC_DISABLED}|g" \
   -e "s|__PAYMENTS_ENABLED__|${PAYMENTS_ENABLED}|g" \
+  -e "s|__PADDLE_CLIENT_TOKEN__|${PADDLE_CLIENT_TOKEN}|g" \
+  -e "s|__PADDLE_ENVIRONMENT__|${PADDLE_ENVIRONMENT}|g" \
   -e "s|__ESPN_LEAGUES_ENABLED__|${ESPN_LEAGUES_ENABLED}|g" \
   -e "s|__WHOS_HOT_ENABLED__|${WHOS_HOT_ENABLED}|g" \
   -e "s|__AI_PROJECTION_ENABLED__|${AI_PROJECTION_ENABLED}|g"   -e "s|__OFFSEASON_ENABLED__|${OFFSEASON_ENABLED}|g" \
