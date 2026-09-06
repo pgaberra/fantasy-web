@@ -6,6 +6,7 @@ import { PricingComponent } from './pricing';
 import { environment } from '../../environments/environment';
 import { BillingService } from '../services/billing.service';
 import { AuthService } from '../services/auth.service';
+import { EntitlementService } from '../services/entitlement.service';
 import { NotificationService } from '../services/notification.service';
 
 const initializePaddle = vi.fn();
@@ -19,12 +20,14 @@ describe('PricingComponent', () => {
   const startCheckout = vi.fn();
   const error = vi.fn();
   const loggedIn = signal(true);
+  const premium = signal(false);
   const realLocation = window.location;
 
   beforeEach(() => {
     startCheckout.mockReset();
     error.mockReset();
     loggedIn.set(true);
+    premium.set(false);
     initializePaddle.mockReset();
     PricePreview.mockReset();
     PricePreview.mockResolvedValue({
@@ -37,6 +40,7 @@ describe('PricingComponent', () => {
     return MockBuilder(PricingComponent)
       .mock(BillingService, { startCheckout })
       .mock(AuthService, { isLoggedIn: loggedIn })
+      .mock(EntitlementService, { premium })
       .mock(NotificationService, { error });
   });
 
@@ -56,6 +60,30 @@ describe('PricingComponent', () => {
     const fixture = MockRender(PricingComponent);
 
     expect(fixture.nativeElement.textContent).toContain('Sign in to subscribe');
+  });
+
+  // A Subscribe button shown to a subscriber starts a second checkout for a plan they already
+  // pay for. They get told they have it, and the way to their subscription instead.
+  it('offers a subscriber their subscription rather than a second checkout', () => {
+    premium.set(true);
+
+    const fixture = MockRender(PricingComponent);
+
+    expect(fixture.nativeElement.textContent).toContain('You already have it');
+    expect(ngMocks.findAll('button.btn-primary').length).toEqual(0);
+    expect(ngMocks.find('.plan-card--premium a.btn').attributes['routerLink']).toEqual('/account');
+  });
+
+  // The perks are the page's argument, so both columns have to actually say something: the
+  // free plan by name, and Premium as a list of things rather than "features as they roll out".
+  it('lists what the free plan has and what Premium adds to it', () => {
+    const fixture = MockRender(PricingComponent);
+
+    const text = fixture.nativeElement.textContent;
+    expect(ngMocks.findAll('.plan-card--free .plan-perks li').length).toBeGreaterThan(2);
+    expect(text).toContain('Everything in Free');
+    expect(text).toContain('The AI projection');
+    expect(text).toContain('Who charges my card?');
   });
 
   it('redirects to the checkout URL when Subscribe is clicked', () => {
@@ -112,7 +140,7 @@ describe('PricingComponent', () => {
 
     expect(ngMocks.findAll('.plan-price-amount').length).toEqual(0);
     expect(error).not.toHaveBeenCalled();
-    expect(ngMocks.findAll('.plan-name').length).toEqual(1);
+    expect(ngMocks.findAll('.plan-card--premium .plan-name').length).toEqual(1);
   });
 
   /**

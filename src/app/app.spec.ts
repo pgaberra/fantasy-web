@@ -9,6 +9,7 @@ import { App } from './app';
 import { environment } from '../environments/environment';
 import { AccountService } from './services/account.service';
 import { AuthService } from './services/auth.service';
+import { EntitlementService } from './services/entitlement.service';
 import { ConsentBannerComponent } from './shared/consent-banner/consent-banner';
 import { EnvironmentBannerComponent } from './shared/environment-banner/environment-banner';
 import { PlayerHeadshotComponent } from './shared/player-headshot/player-headshot';
@@ -22,6 +23,8 @@ describe('App', () => {
   const username = signal<string | null>('alex');
   const email = signal<string | null>('alex@example.com');
   const avatarUrl = signal<string | null>(null);
+  const premium = signal(false);
+  const loadState = signal<'idle' | 'loading' | 'loaded' | 'error'>('loaded');
 
   beforeEach(() => {
     isLoggedIn.set(true);
@@ -29,6 +32,8 @@ describe('App', () => {
     username.set('alex');
     email.set('alex@example.com');
     avatarUrl.set(null);
+    premium.set(false);
+    loadState.set('loaded');
     logout.mockClear();
     return (
       MockBuilder(App)
@@ -44,6 +49,7 @@ describe('App', () => {
         .mock(UnverifiedBannerComponent)
         .mock(AuthService, { isLoggedIn, isAdmin, logout })
         .mock(AccountService, { username, email, avatarUrl })
+        .mock(EntitlementService, { premium, loadState })
         .provide({
           provide: Router,
           useValue: {
@@ -152,6 +158,85 @@ describe('App', () => {
     expect(link?.textContent?.trim()).toEqual('Set a username');
     expect(link?.getAttribute('routerLink')).toEqual('/profile');
     expect(link?.getAttribute('fragment')).toEqual('username');
+  });
+
+  /**
+   * Where a build sells Premium, the nav has to say what the account has and offer the way to
+   * the rest: the plan under the name, one subscription item in the account menu, and a header
+   * link to the pricing page for an account that could use it. Each in one place, and never a
+   * "Free plan" or an offer to buy said of a subscriber.
+   */
+  describe('where payments are on', () => {
+    const withPayments = (test: () => void) => {
+      const original = environment.paymentsEnabled;
+      environment.paymentsEnabled = true;
+      try {
+        test();
+      } finally {
+        environment.paymentsEnabled = original;
+      }
+    };
+
+    it('offers a free account the pricing page from the header and the burger', () => {
+      withPayments(() => {
+        const fixture = render();
+
+        const link = fixture.nativeElement.querySelector('.app-nav a.nav-premium');
+        expect(link?.textContent?.trim()).toEqual('Premium');
+        expect(link?.getAttribute('routerLink')).toEqual('/pricing');
+        expect(openNavMenu(fixture).map((item) => item.textContent?.trim())).toContain('Premium');
+      });
+    });
+
+    it('states the free plan and leads to pricing from the account menu', () => {
+      withPayments(() => {
+        const fixture = render();
+
+        const items = openAccountMenu(fixture);
+        const subscription = items.find((item) => item.textContent?.trim() === 'Get Premium');
+        expect(subscription?.getAttribute('routerLink')).toEqual('/pricing');
+        expect(document.querySelector('.account-menu-plan')?.textContent?.trim()).toEqual(
+          'Free plan',
+        );
+      });
+    });
+
+    it('sells nothing to a subscriber, and leads them to their subscription instead', () => {
+      withPayments(() => {
+        premium.set(true);
+        const fixture = render();
+
+        expect(fixture.nativeElement.querySelector('.app-nav a.nav-premium')).toBeNull();
+        const items = openAccountMenu(fixture);
+        expect(items.map((item) => item.textContent?.trim())).toEqual([
+          'Profile',
+          'Subscription',
+          'Sign out',
+        ]);
+        expect(
+          items
+            .find((item) => item.textContent?.trim() === 'Subscription')
+            ?.getAttribute('routerLink'),
+        ).toEqual('/account');
+        expect(document.querySelector('.account-menu-plan')?.textContent?.trim()).toEqual(
+          'Premium',
+        );
+      });
+    });
+
+    // The entitlement is a live read and says non-premium until it lands. Acting on that early
+    // would sell Premium to a subscriber for the length of a request.
+    it('says nothing about the plan until the entitlement is known', () => {
+      withPayments(() => {
+        loadState.set('loading');
+        const fixture = render();
+
+        expect(fixture.nativeElement.querySelector('.app-nav a.nav-premium')).toBeNull();
+        const items = openAccountMenu(fixture).map((item) => item.textContent?.trim());
+        expect(items).toContain('Subscription');
+        expect(document.querySelector('.account-menu-plan')).toBeNull();
+      });
+    });
   });
 
   it('signs out from the account menu', () => {

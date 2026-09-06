@@ -1,10 +1,10 @@
 .pricing {
-  max-width: 560px;
+  max-width: 880px;
   margin: 0 auto;
   padding: var(--space-6) var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-6);
 }
 
 .pricing-header {
@@ -23,32 +23,41 @@
 }
 
 .pricing-sub {
-  margin: 0;
+  margin: 0 auto;
+  max-width: 34rem;
   color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+/* Free beside Premium, the paid card the wider of the two: it has the most to say, and side by
+   side the free column is what makes its perks read as the difference rather than as a list. */
+.plans {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: var(--space-4);
+  align-items: stretch;
 }
 
 .plan-card {
   border: 1px solid var(--color-border);
-  border-top: 4px solid var(--color-gold);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
-  box-shadow: var(--shadow-md);
-  padding: var(--space-6) var(--space-5);
+  padding: var(--space-5);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
 }
 
-.plan-badge {
-  align-self: flex-start;
-  background: var(--color-gold);
-  color: var(--color-primary);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-bold);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.2rem 0.6rem;
-  border-radius: var(--radius-pill);
+/* The gold edge and the shadow are the only things that say which card is for sale. */
+.plan-card--premium {
+  border-top: 4px solid var(--color-gold);
+  box-shadow: var(--shadow-md);
+}
+
+.plan-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
 .plan-name {
@@ -58,38 +67,19 @@
   color: var(--color-text);
 }
 
-.plan-perks {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  color: var(--color-text);
-}
-
-.plan-perks li {
-  position: relative;
-  padding-left: 1.5rem;
-}
-
-.plan-perks li::before {
-  content: '✓';
-  position: absolute;
-  left: 0;
+.plan-name--premium {
   color: var(--color-gold-strong);
-  font-weight: var(--weight-bold);
 }
 
-.plan-note {
+.plan-tagline {
   margin: 0;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
-  text-align: center;
+  line-height: 1.5;
 }
 
 .plan-price {
-  margin: 0;
+  margin: var(--space-1) 0 0;
   display: flex;
   align-items: baseline;
   gap: var(--space-2);
@@ -100,6 +90,7 @@
   font-size: var(--text-2xl);
   font-weight: var(--weight-bold);
   color: var(--color-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .plan-price-period {
@@ -110,4 +101,143 @@
   margin: 0;
   font-size: var(--text-sm);
   color: var(--color-text-subtle);
+  line-height: 1.5;
+}
+
+/* The lists take whatever height is left, so the two cards' buttons land on the same line. */
+.plan-perks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--color-text);
+  flex: 1 0 auto;
+}
+
+.plan-perks li {
+  position: relative;
+  padding-left: 1.5rem;
+  line-height: 1.5;
+}
+
+.plan-perks li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--color-text-muted);
+  font-weight: var(--weight-bold);
+}
+
+.plan-perks--premium li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.plan-perks--premium li::before {
+  color: var(--color-gold-strong);
+}
+
+.perk-title {
+  font-weight: var(--weight-semibold);
+}
+
+.perk-desc {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.plan-cta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* What the free card says to the account already on it: no button, since there is nothing to
+   do here, but not nothing either, or the card looks unfinished beside the one with a button. */
+.plan-current {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 0.55rem 0;
+}
+
+.plan-current--premium {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  color: var(--color-text);
+}
+
+.plan-note {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.plan-note a,
+.faq a {
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+}
+
+.pricing-faq-title {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  text-align: center;
+}
+
+.faq {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4) var(--space-5);
+}
+
+.faq dt {
+  margin: 0 0 var(--space-1);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.faq dd {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+@media (max-width: 720px) {
+  .plans {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* On one column the sale comes first; the free card is the footnote here, not the lead. */
+  .plan-card--premium {
+    order: -1;
+  }
+
+  .faq {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .pricing {
+    padding: var(--space-5) var(--space-4);
+    gap: var(--space-5);
+  }
+
+  .plan-card {
+    padding: var(--space-4);
+  }
 }

@@ -6,6 +6,9 @@
     >
     <span class="site-footer-links">
       <a href="mailto:info@slapstat.com">info&#64;slapstat.com</a>
+      @if (paymentsEnabled) {
+        <a routerLink="/pricing">Pricing</a>
+      }
       <a routerLink="/privacy">Privacy</a>
       <a routerLink="/terms">Terms</a>
       <a routerLink="/refunds">Refunds</a>

@@ -44,8 +44,12 @@
           @if (whosHotEnabled) {
             <a routerLink="/whos-hot" routerLinkActive="active">Who's hot</a>
           }
-          @if (paymentsEnabled) {
-            <a routerLink="/account" routerLinkActive="active">Account</a>
+          <!-- The one link in the header that sells something, and only to an account that has
+               not bought it. It used to be an "Account" link to the subscription page, beside an
+               avatar that also opened an account menu: two doors marked the same, one of them
+               leading to a page that told a free account it had no subscription. -->
+          @if (showsPremiumLink()) {
+            <a routerLink="/pricing" routerLinkActive="active" class="nav-premium">Premium</a>
           }
           @if (authService.isAdmin()) {
             <a routerLink="/admin" routerLinkActive="active">Admin</a>
@@ -54,7 +58,7 @@
             type="button"
             class="nav-avatar"
             aria-label="Account menu"
-            [class.active]="isProfileRoute()"
+            [class.active]="isAccountSection()"
             [cdkMenuTriggerFor]="accountMenu"
           >
             <app-player-headshot [src]="account.avatarUrl() ?? undefined" [name]="displayName()" />
@@ -96,15 +100,15 @@
         Who's hot
       </a>
     }
-    @if (paymentsEnabled) {
+    @if (showsPremiumLink()) {
       <a
-        class="nav-menu-item nav-menu-item--collapsed"
+        class="nav-menu-item nav-menu-item--collapsed nav-menu-item--premium"
         cdkMenuItem
-        routerLink="/account"
+        routerLink="/pricing"
         routerLinkActive="active"
         ariaCurrentWhenActive="page"
       >
-        Account
+        Premium
       </a>
     }
     @if (authService.isAdmin()) {
@@ -138,6 +142,15 @@
         </a>
       }
       <span class="account-menu-email">{{ account.email() }}</span>
+      <!-- The plan, under who holds it, and nothing until it is known. -->
+      @switch (plan()) {
+        @case ('premium') {
+          <span class="premium-badge account-menu-plan">Premium</span>
+        }
+        @case ('free') {
+          <span class="account-menu-plan account-menu-plan--free">Free plan</span>
+        }
+      }
     </div>
     <a
       class="nav-menu-item"
@@ -148,6 +161,32 @@
     >
       Profile
     </a>
+    <!-- One subscription item. A free account has nothing to manage, so it goes to the pricing
+         page; everyone else, including an account whose plan is still loading or failed to
+         load, goes to the subscription page, which can say so and try again. -->
+    @if (paymentsEnabled) {
+      @if (plan() === 'free') {
+        <a
+          class="nav-menu-item"
+          cdkMenuItem
+          routerLink="/pricing"
+          routerLinkActive="active"
+          ariaCurrentWhenActive="page"
+        >
+          Get Premium
+        </a>
+      } @else {
+        <a
+          class="nav-menu-item"
+          cdkMenuItem
+          routerLink="/account"
+          routerLinkActive="active"
+          ariaCurrentWhenActive="page"
+        >
+          Subscription
+        </a>
+      }
+    }
     <button
       type="button"
       class="nav-menu-item nav-menu-item--signout"

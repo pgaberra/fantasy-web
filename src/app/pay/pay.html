@@ -6,7 +6,11 @@
     </p>
     <a routerLink="/pricing" class="btn btn-primary">Back to pricing</a>
   } @else {
+    <!-- Something moving while Paddle's script loads, so a blank second reads as loading and
+         not as a page that has stopped. -->
+    <div class="pay__spinner" aria-hidden="true"></div>
     <h1 class="pay__title">Opening secure checkout</h1>
     <p class="pay__text">This takes a moment. Please do not close this page.</p>
+    <p class="pay__hint">Nothing is charged until you confirm in the payment window.</p>
   }
 </section>
