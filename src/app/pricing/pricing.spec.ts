@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PricingComponent } from './pricing';
 import { environment } from '../../environments/environment';
@@ -113,5 +113,21 @@ describe('PricingComponent', () => {
     expect(ngMocks.findAll('.plan-price-amount').length).toEqual(0);
     expect(error).not.toHaveBeenCalled();
     expect(ngMocks.findAll('.plan-name').length).toEqual(1);
+  });
+
+  /**
+   * The BFF answers 502 when the payment provider is misconfigured, which is a fault on our
+   * side. Telling the user to try again would send them at something that cannot work, so the
+   * promise the copy makes instead is that no money moved. Pinned, because that promise going
+   * stale would be a lie told at a payment step.
+   */
+  it('says nothing was charged when checkout cannot be started', () => {
+    startCheckout.mockReturnValue(throwError(() => new Error('502')));
+
+    const fixture = MockRender(PricingComponent);
+    fixture.point.componentInstance.subscribe();
+
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('Nothing has been charged'));
+    expect(error).not.toHaveBeenCalledWith(expect.stringContaining('try again'));
   });
 });

@@ -39,7 +39,11 @@ export class AccountComponent implements OnInit {
       },
       error: () => {
         this.openingPortal.set(false);
-        this.notifications.error('Could not open the billing portal. Please try again.');
+        // Same reasoning as the checkout message: this fails when something on our side is
+        // wrong, so the useful thing to say is that the subscription itself is untouched.
+        this.notifications.error(
+          'The billing portal could not be opened. Your subscription is unchanged, and we have been notified.',
+        );
       },
     });
   }
