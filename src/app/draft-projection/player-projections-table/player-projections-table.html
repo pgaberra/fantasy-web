@@ -242,7 +242,6 @@
             [positionsEditable]="positionControls()"
             [positionsOverridden]="positionOverrides().has(sp.projection.playerId)"
             [positionsOverriddenCount]="overriddenPositionCount()"
-            [teamGoalieStarts]="teamGoalieStartsFor(sp.projection.playerId)"
             (focusin)="onRowFocusIn(sp.projection.playerId)"
             (focusout)="onRowFocusOut($event)"
             (statInput)="onStatInput($event.playerId, $event.key, $event.event)"

@@ -27,14 +27,6 @@ const MAX_GOALIE_TOI_PER_GAME_SECONDS = 65 * 60;
  * - **SH%** is carried as a percentage rounded to one decimal; **SV%** and **W%** are carried
  *   as fractions rounded to three.
  */
-/**
- * A team's goalies share one net, so the projection model divides the schedule between them and
- * their games started add up to exactly it. Only an *excess* is flagged: a team can never start
- * more games than it plays, while falling short is ordinary (a goalie the pool doesn't carry
- * contributes nothing). Half a game of slack keeps rounding out of it.
- */
-const TEAM_STARTS_TOLERANCE = 0.5;
-
 const TOI_RELATIVE_TOLERANCE = 0.02;
 const TOI_MIN_TOLERANCE_SECONDS = 60;
 const GAA_RELATIVE_TOLERANCE = 0.02;
@@ -46,16 +38,7 @@ const FRACTION_TOLERANCE = 0.005;
   providedIn: 'root',
 })
 export class StatWarningService {
-  /**
-   * `teamGoalieStarts` is the games started by every goalie on this player's team, or null when
-   * there is no trustworthy total to compare against. It is the caller's job to decide that:
-   * the check is only as good as the team a player is shown on, and that label comes from the
-   * cached player pool.
-   */
-  warningsFor(
-    projection: Projection,
-    teamGoalieStarts: number | null = null,
-  ): Map<StatKey, string> {
+  warningsFor(projection: Projection): Map<StatKey, string> {
     const warnings = new Map<StatKey, string>();
 
     if (projection.stats.utility.gp > FULL_SEASON_GAMES) {
@@ -65,7 +48,7 @@ export class StatWarningService {
     if (projection.type === 'skater') {
       this.addSkaterWarnings(projection, warnings);
     } else {
-      this.addGoalieWarnings(projection, warnings, teamGoalieStarts);
+      this.addGoalieWarnings(projection, warnings);
     }
 
     return warnings;
@@ -158,25 +141,12 @@ export class StatWarningService {
     }
   }
 
-  private addGoalieWarnings(
-    projection: GoalieProjection,
-    warnings: Map<StatKey, string>,
-    teamGoalieStarts: number | null,
-  ): void {
+  private addGoalieWarnings(projection: GoalieProjection, warnings: Map<StatKey, string>): void {
     const { scoring, utility } = projection.stats;
     const decisions = scoring.w + scoring.l + scoring.otl;
 
     if (scoring.gs > utility.gp) {
       this.warn(warnings, 'gs', 'More than games played');
-    }
-    if (teamGoalieStarts !== null && teamGoalieStarts > FULL_SEASON_GAMES + TEAM_STARTS_TOLERANCE) {
-      const total = Math.round(teamGoalieStarts * 10) / 10;
-      this.warn(
-        warnings,
-        'gs',
-        `This team's goalies start ${total} games between them, more than the ` +
-          `${FULL_SEASON_GAMES} it plays`,
-      );
     }
     if (decisions > utility.gp) {
       const message = 'Wins + losses + OT losses exceed games played';

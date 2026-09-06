@@ -66,14 +66,6 @@ import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 
 const PLAYERS_PER_PAGE = 250;
 
-/**
- * How recently the player pool must have synced for its team labels to be worth checking a team
- * total against. The Yahoo sync runs daily when it runs at all, so a week's slack survives an
- * outage while ruling out the months-long pause between seasons.
- */
-const POOL_FRESH_FOR_DAYS = 7;
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
 /** How long a queued column change waits for a frame that may never come — see queueColumnToggle. */
 const COLUMN_APPLY_TIMEOUT_MS = 250;
 
@@ -122,11 +114,6 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly rosterSlots = model<RosterSlots>(DEFAULT_ROSTER_SLOTS);
   readonly minGoalieGames = model<number>(DEFAULT_MIN_GOALIE_GAMES);
   readonly saveStatus = input<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  /**
-   * When the player pool the rows were squared with last synced. Only used to decide whether
-   * its team labels are current enough to check a team's goalie starts against.
-   */
-  readonly playerPoolSyncedAt = input<string | null>(null);
   /**
    * A hard cap on how many rows are ever rendered, for surfaces that show a taste of the list
    * rather than the list. When set, paging is off entirely: `Show more` never appears, because
@@ -581,49 +568,6 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   getPlayer(playerId: number): Player {
     return this.playerMap().get(playerId)!;
-  }
-
-  /**
-   * A team's goalies share one net: the model divides the schedule between them, so their games
-   * started add up to it and anything above that is an edit gone wrong.
-   *
-   * The total is only computed while the player pool is fresh, and is empty otherwise. The check
-   * groups by the team a goalie is *shown* on, and that label comes from the cached pool. While
-   * the daily sync is paused between seasons the pool keeps a player on the club he left, so his
-   * starts land against the wrong crease: on the pool as it stood in September 2026, fifteen of
-   * the thirty-two teams read as over the schedule with nothing edited at all.
-   */
-  private readonly goalieStartsByTeam = computed<ReadonlyMap<string, number>>(() => {
-    if (!this.playerPoolIsFresh()) {
-      return new Map();
-    }
-    const players = this.playerMap();
-    const totals = new Map<string, number>();
-    for (const projection of this.playerProjections()) {
-      if (projection.type !== 'goalie') {
-        continue;
-      }
-      const team = players.get(projection.playerId)?.teamAbbrev;
-      if (!team) {
-        continue;
-      }
-      totals.set(team, (totals.get(team) ?? 0) + projection.stats.scoring.gs);
-    }
-    return totals;
-  });
-
-  private readonly playerPoolIsFresh = computed(() => {
-    const syncedAt = this.playerPoolSyncedAt();
-    if (!syncedAt) {
-      return false;
-    }
-    const synced = Date.parse(syncedAt);
-    return Number.isFinite(synced) && Date.now() - synced <= POOL_FRESH_FOR_DAYS * MS_PER_DAY;
-  });
-
-  teamGoalieStartsFor(playerId: number): number | null {
-    const team = this.playerMap().get(playerId)?.teamAbbrev;
-    return team ? (this.goalieStartsByTeam().get(team) ?? null) : null;
   }
 
   onSearchInput(event: Event): void {

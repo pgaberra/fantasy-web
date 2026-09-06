@@ -220,7 +220,6 @@ describe('PlayerProjectionsTableComponent', () => {
       columnControls: boolean;
       syncedLeagueName: string | null;
       maxVisiblePlayers: number | null;
-      playerPoolSyncedAt: string | null;
     }> = {},
   ) =>
     MockRender(PlayerProjectionsTableComponent, {
@@ -1014,58 +1013,6 @@ describe('PlayerProjectionsTableComponent', () => {
       const gpInput = ngMocks.find('.col-gp input').nativeElement as HTMLInputElement;
       expect(gpInput.type).toEqual('text');
       expect(gpInput.getAttribute('inputmode')).toEqual('decimal');
-    });
-  });
-
-  /**
-   * The check itself lives in StatWarningService; what the table owns is the total handed to it,
-   * and the judgement of whether the pool's team labels are current enough to group by.
-   */
-  describe('team goalie starts', () => {
-    const fresh = () => new Date().toISOString();
-    const stale = () => new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString();
-
-    // A second Winnipeg goalie, so the crease is shared and the total is worth something. With
-    // no initialProjections the table builds its rows from the pool, so the split lives here.
-    const backup: Goalie = {
-      ...(mockPlayers[2] as Goalie),
-      id: 4,
-      name: 'Eric Comrie',
-      stats: {
-        utility: { gp: 22 },
-        scoring: { ...(mockPlayers[2] as Goalie).stats.scoring, gs: 20 },
-      },
-    };
-
-    const withBothGoalies = (playerPoolSyncedAt: string | null) =>
-      getComponent({ players: [...mockPlayers, backup], playerPoolSyncedAt });
-
-    it('adds up the starts of every goalie on a team', () => {
-      const component = withBothGoalies(fresh());
-      // Hellebuyck's 64 and Comrie's 20, both Winnipeg.
-      expect(component.teamGoalieStartsFor(3)).toEqual(84);
-      expect(component.teamGoalieStartsFor(4)).toEqual(84);
-    });
-
-    it('has no total for a skater', () => {
-      expect(withBothGoalies(fresh()).teamGoalieStartsFor(1)).toBeNull();
-    });
-
-    /**
-     * The team a goalie is shown on comes from the cached player pool. While the daily sync is
-     * paused between seasons the pool keeps players on the club they left, so the totals are
-     * grouped by the wrong crease and are not worth warning about.
-     */
-    it('withholds the total while the player pool is stale', () => {
-      expect(withBothGoalies(stale()).teamGoalieStartsFor(3)).toBeNull();
-    });
-
-    it('withholds the total when the pool has never been stamped', () => {
-      expect(withBothGoalies(null).teamGoalieStartsFor(3)).toBeNull();
-    });
-
-    it('withholds the total when the stamp cannot be read', () => {
-      expect(withBothGoalies('not a date').teamGoalieStartsFor(3)).toBeNull();
     });
   });
 
