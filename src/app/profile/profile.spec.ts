@@ -2,7 +2,8 @@ import { MockBuilder, MockRender } from 'ng-mocks';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { of, throwError } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
+import { BehaviorSubject, of, throwError } from 'rxjs';
 import { ProfileComponent } from './profile';
 import { AccountService } from '../services/account.service';
 import {
@@ -24,12 +25,14 @@ describe('ProfileComponent', () => {
   const removeAvatar = vi.fn();
   const prepare = vi.fn();
   const avatarUrl = signal<string | null>(null);
+  const fragment = new BehaviorSubject<string | null>(null);
 
   beforeEach(() => {
     for (const spy of [load, setUsername, setAvatar, removeAvatar, prepare]) {
       spy.mockReset();
     }
     avatarUrl.set(null);
+    fragment.next(null);
     load.mockReturnValue(of(named));
     setUsername.mockReturnValue(of(named));
     setAvatar.mockReturnValue(of(undefined));
@@ -45,7 +48,8 @@ describe('ProfileComponent', () => {
         username: signal<string | null>('alex'),
         avatarUrl,
       })
-      .mock(AvatarImageService, { prepare });
+      .mock(AvatarImageService, { prepare })
+      .provide({ provide: ActivatedRoute, useValue: { fragment } });
   });
 
   const render = async () => {
@@ -68,6 +72,28 @@ describe('ProfileComponent', () => {
 
   const text = (fixture: Awaited<ReturnType<typeof render>>) =>
     (fixture.nativeElement.textContent as string).replace(/\s+/g, ' ');
+
+  /**
+   * The account menu's "Set a username" link lands on #username, and the page is expected to put
+   * the caret in the field: the account loads first, so the field is not there to jump to on
+   * arrival.
+   */
+  it('puts the caret in the username field when sent to it by fragment', async () => {
+    fragment.next('username');
+    const fixture = await render();
+
+    expect(document.activeElement).toEqual(
+      fixture.nativeElement.querySelector('#profile-username'),
+    );
+  });
+
+  it('leaves the caret alone when it was not sent to the username field', async () => {
+    const fixture = await render();
+
+    expect(document.activeElement).not.toEqual(
+      fixture.nativeElement.querySelector('#profile-username'),
+    );
+  });
 
   it('offers to upload a picture while the account has none', async () => {
     const fixture = await render();

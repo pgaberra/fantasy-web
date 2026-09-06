@@ -163,7 +163,8 @@
   min-width: 14rem;
 }
 
-/* Who the menu is about, above what it offers. Not an item: it goes nowhere and is not focusable. */
+/* Who the menu is about, above what it offers. Nothing here is focusable except the link that
+   stands in for a name that has not been set. */
 .account-menu-identity {
   display: flex;
   flex-direction: column;
@@ -178,6 +179,19 @@
   font-weight: var(--weight-semibold);
   color: var(--color-text);
   overflow-wrap: anywhere;
+}
+
+/* The stand-in for a name nobody has set: it sits where the name goes, but it is a link, so it
+   is coloured and underlined rather than left looking like text that does nothing. */
+.account-menu-name--unset {
+  align-self: flex-start;
+  color: var(--color-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.account-menu-name--unset:hover {
+  color: var(--color-primary-hover);
 }
 
 .account-menu-email {
