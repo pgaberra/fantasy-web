@@ -1,5 +1,16 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  OnInit,
+  computed,
+  effect,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
+import { ActivatedRoute } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { from, switchMap } from 'rxjs';
 import { AccountService } from '../services/account.service';
 import {
@@ -28,6 +39,7 @@ import { messageForError } from '../shared/http-error';
 export class ProfileComponent implements OnInit {
   private readonly account = inject(AccountService);
   private readonly avatarImages = inject(AvatarImageService);
+  private readonly route = inject(ActivatedRoute);
 
   readonly usernameMaxLength = USERNAME_MAX_LENGTH;
   readonly usernameRule = USERNAME_RULE;
@@ -63,6 +75,28 @@ export class ProfileComponent implements OnInit {
     const candidate = this.usernameInput().trim();
     return this.usernameWasLeft() && candidate.length > 0 && !USERNAME_PATTERN.test(candidate);
   });
+
+  private readonly usernameField = viewChild<ElementRef<HTMLInputElement>>('usernameField');
+
+  /**
+   * The account menu links here to say a name has not been set yet, and lands on #username. The
+   * field it means only exists once the account has loaded, so the fragment cannot just be
+   * scrolled to on arrival: it is honoured when the field appears, and only the first time, so a
+   * later render (a picture saved, say) does not pull the caret back.
+   */
+  private readonly fragment = toSignal(this.route.fragment);
+  private focusedUsername = false;
+
+  constructor() {
+    effect(() => {
+      const field = this.usernameField();
+      if (!field || this.fragment() !== 'username' || this.focusedUsername) {
+        return;
+      }
+      this.focusedUsername = true;
+      field.nativeElement.focus();
+    });
+  }
 
   ngOnInit(): void {
     this.load();

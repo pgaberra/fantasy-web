@@ -123,7 +123,20 @@
 <ng-template #accountMenu>
   <div class="nav-menu account-menu" cdkMenu>
     <div class="account-menu-identity">
-      <span class="account-menu-name">{{ account.username() ?? 'No username yet' }}</span>
+      @if (account.username(); as username) {
+        <span class="account-menu-name">{{ username }}</span>
+      } @else {
+        <!-- Saying there is no name yet leaves the reader to find where one is set, so the line
+             that says it is also the way there: it lands on the field itself. -->
+        <a
+          class="account-menu-name account-menu-name--unset"
+          cdkMenuItem
+          routerLink="/profile"
+          fragment="username"
+        >
+          Set a username
+        </a>
+      }
       <span class="account-menu-email">{{ account.email() }}</span>
     </div>
     <a
