@@ -11,6 +11,7 @@ export interface RangePreset {
 type Thumb = 'from' | 'to';
 
 const PRESETS: RangePreset[] = [
+  { label: 'Last 5', range: (games) => ({ from: Math.max(1, games - 4), to: games }) },
   { label: 'Last 10', range: (games) => ({ from: Math.max(1, games - 9), to: games }) },
   { label: 'Last 20', range: (games) => ({ from: Math.max(1, games - 19), to: games }) },
   { label: 'Last 30', range: (games) => ({ from: Math.max(1, games - 29), to: games }) },
@@ -25,7 +26,7 @@ const PRESETS: RangePreset[] = [
  *
  * Exported because the page has to agree with the pills about what "the free range" is: it opens
  * on this range and falls back to it when an account is not premium, and two independent
- * definitions of "last 10" would drift the first time one of them changed.
+ * definitions of "last 5" would drift the first time one of them changed.
  */
 export const FREE_PRESET: RangePreset = PRESETS[0];
 

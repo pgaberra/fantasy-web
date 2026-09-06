@@ -66,13 +66,13 @@ describe('WhosHotComponent', () => {
       expect(component.fromGame()).toEqual(1);
     });
 
-    it('opens on the last 10 games, which is the range a free account is held to', () => {
+    it('opens on the last 5 games, which is the range a free account is held to', () => {
       environment.paymentsEnabled = true;
 
       const component = MockRender(WhosHotComponent).point.componentInstance;
 
       expect(component.canPickRange()).toEqual(false);
-      expect(component.fromGame()).toEqual(73);
+      expect(component.fromGame()).toEqual(78);
       expect(component.toGame()).toEqual(82);
     });
 
@@ -85,7 +85,7 @@ describe('WhosHotComponent', () => {
       // The range is saved to the browser and outlives the subscription that bought it. Left
       // alone it would be a range they can no longer change, with every control that could
       // undo it switched off.
-      expect(component.fromGame()).toEqual(73);
+      expect(component.fromGame()).toEqual(78);
       expect(component.toGame()).toEqual(82);
     });
 
@@ -132,7 +132,7 @@ describe('WhosHotComponent', () => {
       fixture.detectChanges();
 
       expect(component.canPickRange()).toEqual(false);
-      expect(component.fromGame()).toEqual(73);
+      expect(component.fromGame()).toEqual(78);
     });
 
     it('tells the range bar it is locked, rather than each of them asking separately', () => {
