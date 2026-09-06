@@ -3,9 +3,17 @@ import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { of } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PricingComponent } from './pricing';
+import { environment } from '../../environments/environment';
 import { BillingService } from '../services/billing.service';
 import { AuthService } from '../services/auth.service';
 import { NotificationService } from '../services/notification.service';
+
+const initializePaddle = vi.fn();
+const PricePreview = vi.fn();
+
+vi.mock('@paddle/paddle-js', () => ({
+  initializePaddle: (...args: unknown[]) => initializePaddle(...args),
+}));
 
 describe('PricingComponent', () => {
   const startCheckout = vi.fn();
@@ -17,6 +25,14 @@ describe('PricingComponent', () => {
     startCheckout.mockReset();
     error.mockReset();
     loggedIn.set(true);
+    initializePaddle.mockReset();
+    PricePreview.mockReset();
+    PricePreview.mockResolvedValue({
+      data: { details: { lineItems: [{ formattedTotals: { total: '$4.99' } }] } },
+    });
+    initializePaddle.mockResolvedValue({ PricePreview });
+    environment.paddleClientToken = 'test_token';
+    environment.paddlePriceId = 'pri_1';
     Object.defineProperty(window, 'location', { configurable: true, value: { href: '' } });
     return MockBuilder(PricingComponent)
       .mock(BillingService, { startCheckout })
@@ -50,5 +66,52 @@ describe('PricingComponent', () => {
 
     expect(startCheckout).toHaveBeenCalled();
     expect(window.location.href).toEqual('https://checkout.example/go');
+  });
+
+  // The price arrives through a chain of promises, so waiting a fixed number of microtask
+  // ticks is guesswork. A macrotask drains the whole queue behind it; then the view is
+  // checked, since the signal is set long after the first render.
+  async function settle(fixture: { detectChanges: () => void }): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    fixture.detectChanges();
+  }
+
+  /**
+   * The catalog holds a base price in USD and a local price per country, so the figure on the
+   * page has to come from Paddle. A number written into the template would be right for one
+   * country and wrong everywhere else, and quoting one price while charging another is how a
+   * sale is lost.
+   */
+  it('shows the price Paddle quotes for this visitor', async () => {
+    const fixture = MockRender(PricingComponent);
+
+    await settle(fixture);
+
+    expect(PricePreview).toHaveBeenCalledWith({ items: [{ priceId: 'pri_1', quantity: 1 }] });
+    expect(ngMocks.formatText(ngMocks.find('.plan-price-amount'))).toContain('$4.99');
+  });
+
+  // A build that sells nothing has no price id, and must not call Paddle at all - that call is
+  // what puts Paddle's script on a public page.
+  it('asks Paddle nothing when the build has no price id', async () => {
+    environment.paddlePriceId = '';
+
+    const fixture = MockRender(PricingComponent);
+    await settle(fixture);
+
+    expect(initializePaddle).not.toHaveBeenCalled();
+    expect(ngMocks.findAll('.plan-price-amount').length).toEqual(0);
+  });
+
+  // Losing the price is not worth an error toast on a marketing page. The card still reads.
+  it('renders the card without a price when Paddle cannot be reached', async () => {
+    initializePaddle.mockRejectedValue(new Error('offline'));
+
+    const fixture = MockRender(PricingComponent);
+    await settle(fixture);
+
+    expect(ngMocks.findAll('.plan-price-amount').length).toEqual(0);
+    expect(error).not.toHaveBeenCalled();
+    expect(ngMocks.findAll('.plan-name').length).toEqual(1);
   });
 });

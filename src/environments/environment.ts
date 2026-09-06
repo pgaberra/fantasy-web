@@ -53,5 +53,8 @@ export const environment = {
   // Which Paddle environment the client token belongs to: "sandbox" or "production". Tokens and
   // price ids are environment-scoped, so this has to move together with the token.
   paddleEnvironment: 'sandbox',
+  // The recurring price the pricing page asks Paddle to quote. Empty locally, where the mock
+  // provider is in use and no Paddle catalog exists.
+  paddlePriceId: '',
   aiProjectionEnabled: true,
 };

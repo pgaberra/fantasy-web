@@ -9,6 +9,16 @@
   <article class="plan-card">
     <span class="plan-badge">Premium</span>
     <h2 class="plan-name">Monthly membership</h2>
+    @if (formattedPrice()) {
+      <p class="plan-price">
+        <span class="plan-price-amount">{{ formattedPrice() }}</span>
+        <span class="plan-price-period">per month</span>
+      </p>
+      <p class="plan-price-note">
+        Shown in your own currency. Tax is added or included as your country requires, and the exact
+        total is confirmed at checkout.
+      </p>
+    }
     <ul class="plan-perks">
       <li>Everything in the free app</li>
       <li>Premium features as they roll out</li>

@@ -56,6 +56,7 @@ const aiProjectionEnabledFlag: string = '__AI_PROJECTION_ENABLED__';
 // /pay page unable to open one. PADDLE_ENVIRONMENT picks which Paddle the token belongs to.
 const paddleClientTokenFlag: string = '__PADDLE_CLIENT_TOKEN__';
 const paddleEnvironmentFlag: string = '__PADDLE_ENVIRONMENT__';
+const paddlePriceIdFlag: string = '__PADDLE_PRICE_ID__';
 
 export const environment = {
   production: true,
@@ -79,5 +80,6 @@ export const environment = {
   paddleEnvironment: paddleEnvironmentFlag.startsWith('__PADDLE_ENVIRONMENT')
     ? 'production'
     : paddleEnvironmentFlag,
+  paddlePriceId: paddlePriceIdFlag.startsWith('__PADDLE_PRICE_ID') ? '' : paddlePriceIdFlag,
   offseasonEnabled: offseasonEnabledFlag === 'true',
 };
