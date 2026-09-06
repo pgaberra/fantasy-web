@@ -56,6 +56,11 @@ describe('GameRangeSelectorComponent', () => {
 
     expect(component.fromGame()).toEqual(63);
     expect(component.toGame()).toEqual(82);
+
+    component.applyPreset(preset(component, 'Last 5'));
+
+    expect(component.fromGame()).toEqual(78);
+    expect(component.toGame()).toEqual(82);
   });
 
   it('splits the season into halves that meet without overlapping', () => {
@@ -259,6 +264,7 @@ describe('GameRangeSelectorComponent', () => {
     const locked = component.presets.filter((preset) => component.isPresetLocked()(preset));
 
     expect(locked.map((preset) => preset.label)).toEqual([
+      'Last 10',
       'Last 20',
       'Last 30',
       'First half',
@@ -266,7 +272,7 @@ describe('GameRangeSelectorComponent', () => {
       'Full season',
     ]);
     expect(component.isPresetLocked()(FREE_PRESET)).toEqual(false);
-    expect(FREE_PRESET.label).toEqual('Last 10');
+    expect(FREE_PRESET.label).toEqual('Last 5');
   });
 
   it('disables the locked pills and leaves the free one pressable', () => {
@@ -277,7 +283,7 @@ describe('GameRangeSelectorComponent', () => {
       .map((pill) => pill.nativeElement as HTMLButtonElement);
     const byLabel = (label: string) => pills.find((pill) => pill.textContent.trim() === label)!;
 
-    expect(byLabel('Last 10').disabled).toEqual(false);
+    expect(byLabel('Last 5').disabled).toEqual(false);
     expect(byLabel('Full season').disabled).toEqual(true);
   });
 

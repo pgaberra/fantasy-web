@@ -153,7 +153,7 @@ export class WhosHotComponent {
   /**
    * The entitlement is a live fetch, and it reads as non-premium until it lands. Holding the
    * fallback below until it has settled keeps a premium account's stored range from being
-   * snapped back to the last 10 in the moment before their subscription is known.
+   * snapped back to the last 5 in the moment before their subscription is known.
    */
   private readonly entitlementSettled = computed(
     () =>
