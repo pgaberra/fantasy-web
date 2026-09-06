@@ -307,4 +307,41 @@ describe('StatWarningService', () => {
     expect(service.warningsFor(skater({})).size).toEqual(0);
     expect(service.warningsFor(goalie({})).size).toEqual(0);
   });
+
+  describe("a team's goalie starts", () => {
+    // 40 of the team's 84, so the goalie's own line never warns and only the team total can.
+    const shareOfTheNet = goalie({ gs: 40 }, { gp: 45 });
+
+    it('says nothing without a team total to compare against', () => {
+      expect(service.warningsFor(shareOfTheNet).has('gs')).toEqual(false);
+      expect(service.warningsFor(shareOfTheNet, null).has('gs')).toEqual(false);
+    });
+
+    it('says nothing when the team adds up to the schedule', () => {
+      expect(service.warningsFor(shareOfTheNet, 84).has('gs')).toEqual(false);
+    });
+
+    it('says nothing when the team falls short', () => {
+      // Ordinary: a goalie the pool does not carry contributes nothing to the total.
+      expect(service.warningsFor(shareOfTheNet, 61).has('gs')).toEqual(false);
+    });
+
+    it('allows half a game of rounding either side', () => {
+      expect(service.warningsFor(shareOfTheNet, 84.4).has('gs')).toEqual(false);
+      expect(service.warningsFor(shareOfTheNet, 84.6).has('gs')).toEqual(true);
+    });
+
+    it('names the total when the team starts more games than it plays', () => {
+      expect(service.warningsFor(shareOfTheNet, 88.42).get('gs')).toEqual(
+        "This team's goalies start 88.4 games between them, more than the 84 it plays",
+      );
+    });
+
+    it("leaves the goalie's own contradiction in front of the team's", () => {
+      // More starts than games played is the more specific fault and the one he can fix here.
+      expect(service.warningsFor(goalie({ gs: 50 }, { gp: 45 }), 88).get('gs')).toEqual(
+        'More than games played',
+      );
+    });
+  });
 });

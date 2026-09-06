@@ -105,6 +105,12 @@ export class PlayerRowComponent {
   /** How many players are corrected in all, so the menu can offer to put them all back. */
   positionsOverriddenCount = input<number>(0);
 
+  /**
+   * Games started by every goalie on this player's team, or null when the table has no total it
+   * trusts. Cross-row, so the row cannot work it out for itself.
+   */
+  teamGoalieStarts = input<number | null>(null);
+
   statInput = output<{ playerId: number; key: StatKey; event: Event }>();
   positionsChanged = output<{ playerId: number; positions: SkaterPosition[] | null }>();
   positionsReset = output<void>();
@@ -113,7 +119,7 @@ export class PlayerRowComponent {
   private readonly statWarningService = inject(StatWarningService);
   private readonly statInfoService = inject(StatInfoService);
   private readonly warnings = computed(() =>
-    this.statWarningService.warningsFor(this.projection()),
+    this.statWarningService.warningsFor(this.projection(), this.teamGoalieStarts()),
   );
 
   warningFor(key: StatKey): string | null {
