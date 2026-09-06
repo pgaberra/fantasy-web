@@ -671,7 +671,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
     );
   }
 
-  applyFullSeasonGames(scaleStats: boolean, minGamesToScale: number): void {
+  applyFullSeasonGames(scaleStats: boolean, minGamesToScale: number, scaleGoalies = false): void {
     // A unique signature keeps each "Full season" bulk edit as its own undo step.
     this.fullSeasonEditCounter += 1;
     this.commitEdit(`full-season:${this.fullSeasonEditCounter}`, (playerProjections) =>
@@ -680,6 +680,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
         this.scaleSettings(),
         scaleStats,
         minGamesToScale,
+        scaleGoalies,
       ),
     );
   }

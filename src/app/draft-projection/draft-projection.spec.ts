@@ -573,10 +573,23 @@ describe('DraftProjectionComponent', () => {
       const applySpy = vi.spyOn(table, 'applyFullSeasonGames');
 
       component.openFullSeasonDialog();
-      component.applyFullSeason({ scaleStats: true, minGamesToScale: 20 });
+      component.applyFullSeason({ scaleStats: true, minGamesToScale: 20, scaleGoalies: false });
 
-      expect(applySpy).toHaveBeenCalledWith(true, 20);
+      expect(applySpy).toHaveBeenCalledWith(true, 20, false);
       expect(component.showFullSeasonDialog()).toEqual(false);
+    });
+
+    it("passes the dialog's goalie choice through to the table", async () => {
+      const fixture = MockRender(DraftProjectionComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+      const component = fixture.point.componentInstance;
+      const table = ngMocks.findInstance(PlayerProjectionsTableComponent);
+      const applySpy = vi.spyOn(table, 'applyFullSeasonGames');
+
+      component.applyFullSeason({ scaleStats: true, minGamesToScale: 20, scaleGoalies: true });
+
+      expect(applySpy).toHaveBeenCalledWith(true, 20, true);
     });
 
     it('renders the confirmation dialog only while it is open', async () => {

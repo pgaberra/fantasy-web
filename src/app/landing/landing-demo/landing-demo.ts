@@ -116,7 +116,11 @@ export class LandingDemoComponent {
   }
 
   applyFullSeason(config: FullSeasonConfig): void {
-    this.table()?.applyFullSeasonGames(config.scaleStats, config.minGamesToScale);
+    this.table()?.applyFullSeasonGames(
+      config.scaleStats,
+      config.minGamesToScale,
+      config.scaleGoalies,
+    );
     this.showFullSeasonDialog.set(false);
   }
 

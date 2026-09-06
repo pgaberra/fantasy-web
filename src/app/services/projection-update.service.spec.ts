@@ -305,26 +305,44 @@ describe('ProjectionUpdateService', () => {
       expect((result[0] as SkaterProjection).stats.scoring.shPct).toEqual(10);
     });
 
-    it('scales goalie games proportionally (×84/82), rounded — 42 becomes 43', () => {
+    it('leaves goalies exactly as they are by default', () => {
       const service = getService();
       const projections: Projection[] = [makeGoalieProjection(1, 42)];
       const result = service.applyFullSeasonGames(projections, goalieScaleSettings, true, 0);
+      expect(result[0]).toBe(projections[0]);
+    });
+
+    it('scales goalie games proportionally (×84/82) when asked, rounded — 42 becomes 43', () => {
+      const service = getService();
+      const projections: Projection[] = [makeGoalieProjection(1, 42)];
+      const result = service.applyFullSeasonGames(projections, goalieScaleSettings, true, 0, true);
       expect((result[0] as GoalieProjection).stats.utility.gp).toEqual(43);
     });
 
     it("scales a goalie's scalable stats by the same games ratio", () => {
       const service = getService();
       const projections: Projection[] = [makeGoalieProjection(1, 42)];
-      const result = service.applyFullSeasonGames(projections, goalieScaleSettings, true, 0);
+      const result = service.applyFullSeasonGames(projections, goalieScaleSettings, true, 0, true);
       const ratio = 43 / 42;
       expect((result[0] as GoalieProjection).stats.scoring.w).toBeCloseTo(30 * ratio);
       expect((result[0] as GoalieProjection).stats.scoring.sv).toBeCloseTo(1440 * ratio);
     });
 
+    it('leaves games started alone unless goalies are opted in', () => {
+      // The projection model divides one net between a team's goalies, so their games started
+      // add up to exactly the schedule. A blanket ×84/82 pushed that total past it.
+      const service = getService();
+      const projections: Projection[] = [makeGoalieProjection(1, 42)];
+      const left = service.applyFullSeasonGames(projections, goalieScaleSettings, true, 0);
+      const scaled = service.applyFullSeasonGames(projections, goalieScaleSettings, true, 0, true);
+      expect((left[0] as GoalieProjection).stats.scoring.gs).toEqual(55);
+      expect((scaled[0] as GoalieProjection).stats.scoring.gs).toBeCloseTo(55 * (43 / 42));
+    });
+
     it('leaves goalie rate stats untouched', () => {
       const service = getService();
       const projections: Projection[] = [makeGoalieProjection(1, 42)];
-      const result = service.applyFullSeasonGames(projections, goalieScaleSettings, true, 0);
+      const result = service.applyFullSeasonGames(projections, goalieScaleSettings, true, 0, true);
       expect((result[0] as GoalieProjection).stats.scoring.svPct).toBeCloseTo(0.92);
       expect((result[0] as GoalieProjection).stats.scoring.gaa).toBeCloseTo(2.5);
     });
@@ -358,7 +376,7 @@ describe('ProjectionUpdateService', () => {
     it('leaves a goalie with zero games at zero (no divide-by-zero)', () => {
       const service = getService();
       const projections: Projection[] = [makeGoalieProjection(1, 0)];
-      const result = service.applyFullSeasonGames(projections, goalieScaleSettings, true, 0);
+      const result = service.applyFullSeasonGames(projections, goalieScaleSettings, true, 0, true);
       expect((result[0] as GoalieProjection).stats.utility.gp).toEqual(0);
       expect((result[0] as GoalieProjection).stats.scoring.w).toEqual(30);
     });
@@ -371,13 +389,24 @@ describe('ProjectionUpdateService', () => {
       expect((result[0] as SkaterProjection).stats.scoring.goals).toEqual(10);
     });
 
-    it('handles a mixed skater/goalie list in one pass', () => {
+    it('sets the skaters to 84 and leaves the goalies out of it in one pass', () => {
       const service = getService();
       const projections: Projection[] = [
         makeSkaterProjection(1, 1200, 82),
         makeGoalieProjection(2, 42),
       ];
       const result = service.applyFullSeasonGames(projections, skaterScaleSettings, true, 0);
+      expect((result[0] as SkaterProjection).stats.utility.gp).toEqual(84);
+      expect((result[1] as GoalieProjection).stats.utility.gp).toEqual(42);
+    });
+
+    it('handles a mixed skater/goalie list in one pass when goalies are opted in', () => {
+      const service = getService();
+      const projections: Projection[] = [
+        makeSkaterProjection(1, 1200, 82),
+        makeGoalieProjection(2, 42),
+      ];
+      const result = service.applyFullSeasonGames(projections, skaterScaleSettings, true, 0, true);
       expect((result[0] as SkaterProjection).stats.utility.gp).toEqual(84);
       expect((result[1] as GoalieProjection).stats.utility.gp).toEqual(43);
     });
