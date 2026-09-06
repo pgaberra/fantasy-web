@@ -1017,7 +1017,7 @@ describe('PlayerProjectionsTableComponent', () => {
   });
 
   describe('applyFullSeasonGames', () => {
-    it('sets skaters to 84 games and scales goalies proportionally', () => {
+    it('sets skaters to 84 games and leaves goalies alone', () => {
       const component = getComponent();
       component.applyFullSeasonGames(true, 0);
       const projections = component.playerProjections();
@@ -1027,6 +1027,15 @@ describe('PlayerProjectionsTableComponent', () => {
       expect(
         (projections.find((p) => p.playerId === 2) as SkaterProjection).stats.utility.gp,
       ).toEqual(84);
+      expect(
+        (projections.find((p) => p.playerId === 3) as GoalieProjection).stats.utility.gp,
+      ).toEqual(64);
+    });
+
+    it('scales goalies proportionally when they are opted in', () => {
+      const component = getComponent();
+      component.applyFullSeasonGames(true, 0, true);
+      const projections = component.playerProjections();
       // Goalie gp 64 -> round(64 * 84 / 82) = 66
       expect(
         (projections.find((p) => p.playerId === 3) as GoalieProjection).stats.utility.gp,

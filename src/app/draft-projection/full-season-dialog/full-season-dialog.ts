@@ -5,13 +5,17 @@ import { OpenPopovers } from '../../shared/popover/open-popovers';
 export interface FullSeasonConfig {
   scaleStats: boolean;
   minGamesToScale: number;
+  scaleGoalies: boolean;
 }
 
 /**
- * Confirmation shown before the one-click "full season" bulk action. It sets every player's
- * games played to a full 84-game season (skaters to 84, goalies scaled ×84/82) and optionally
- * rescales each player's stats — with a minimum games-played threshold so a small sample isn't
- * extrapolated up to a full season.
+ * Confirmation shown before the one-click "full season" bulk action. It sets every skater's
+ * games played to a full 84-game season and optionally rescales each player's stats — with a
+ * minimum games-played threshold so a small sample isn't extrapolated up to a full season.
+ *
+ * Goalies are opted out by default and warned about when opted in: the ×84/82 they would take
+ * assumes the line came from an 82-game season, which the AI projection did not, and a blanket
+ * scaling breaks the one-net invariant its allocation holds.
  */
 @Component({
   selector: 'app-full-season-dialog',
@@ -30,6 +34,7 @@ export class FullSeasonDialogComponent {
 
   readonly scaleStats = signal<boolean>(true);
   readonly minGamesToScale = signal<number>(20);
+  readonly scaleGoalies = signal<boolean>(false);
 
   readonly scalingTooltip =
     'Counting stats (goals, assists, …) scale with games played; rate stats like ' +
@@ -37,6 +42,10 @@ export class FullSeasonDialogComponent {
 
   toggleScaleStats(): void {
     this.scaleStats.update((enabled) => !enabled);
+  }
+
+  toggleScaleGoalies(): void {
+    this.scaleGoalies.update((enabled) => !enabled);
   }
 
   onMinGamesInput(event: Event): void {
@@ -47,6 +56,10 @@ export class FullSeasonDialogComponent {
   }
 
   onConfirm(): void {
-    this.confirm.emit({ scaleStats: this.scaleStats(), minGamesToScale: this.minGamesToScale() });
+    this.confirm.emit({
+      scaleStats: this.scaleStats(),
+      minGamesToScale: this.minGamesToScale(),
+      scaleGoalies: this.scaleGoalies(),
+    });
   }
 }

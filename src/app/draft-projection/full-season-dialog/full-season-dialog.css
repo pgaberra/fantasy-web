@@ -81,3 +81,16 @@
   width: 56px;
   text-align: center;
 }
+
+/* Same shape as the table's notice: the warning colour carries the tint from the border and the
+   text stays on a surface it has full contrast against. */
+.option-warning {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--color-warning);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  line-height: 1.5;
+}

@@ -79,10 +79,14 @@ export const DEFAULT_MIN_GOALIE_GAMES = 30;
 
 /**
  * NHL regular-season length. From 2026-27 the season expands from 82 to 84 games.
- * The player stats we project from come from an 82-game season, so the one-click
- * "full season" action scales goalie games by FULL_SEASON_GAMES / PREVIOUS_SEASON_GAMES
- * (keeping their share of the season constant), while skaters — assumed to play the whole
- * season — are set to 84 outright.
+ * Skaters — assumed to play the whole season — are set to 84 outright by the one-click
+ * "full season" action.
+ *
+ * Goalies are left out of it unless the action is explicitly told to include them, in which
+ * case their games scale by FULL_SEASON_GAMES / PREVIOUS_SEASON_GAMES, keeping their share of
+ * the season constant. That ratio only makes sense for a line that came from an 82-game
+ * season: the model's own projection is already cut to 84, and a team's goalies share one net,
+ * so scaling them all breaks the schedule their starts add up to.
  */
 export const FULL_SEASON_GAMES = 84;
 export const PREVIOUS_SEASON_GAMES = 82;

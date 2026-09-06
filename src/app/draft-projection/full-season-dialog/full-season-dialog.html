@@ -8,9 +8,32 @@
   >
     <h2 id="full-season-title" class="dialog-title">Set a full 84-game season?</h2>
     <p id="full-season-body" class="dialog-body">
-      Every skater's games played will be set to <strong>84</strong>, and goalies scaled
-      proportionally (×84/82). A goalie who played 42 games becomes 43.
+      Every skater's games played will be set to <strong>84</strong>. Goalies are left as they are:
+      they share one net, so their games are a share of the schedule rather than all of it.
     </p>
+
+    <div class="scale-option">
+      <div class="scale-toggle-row">
+        <label class="scale-toggle">
+          <input
+            type="checkbox"
+            [checked]="scaleGoalies()"
+            [attr.aria-describedby]="scaleGoalies() ? 'full-season-goalie-warning' : null"
+            (change)="toggleScaleGoalies()"
+          />
+          <span>Scale goalies to the 84-game season too</span>
+        </label>
+      </div>
+
+      @if (scaleGoalies()) {
+        <p id="full-season-goalie-warning" class="option-warning" role="alert">
+          Only do this if the projection is built on an 82-game season. Each goalie's games are
+          multiplied by 84/82, so a goalie who played 42 games becomes 43. The AI projection already
+          runs to 84 games, and scaling it again adds about 2% to every goalie and pushes a team's
+          games started past the 84 it plays.
+        </p>
+      }
+    </div>
 
     <div class="scale-option">
       <div class="scale-toggle-row">
