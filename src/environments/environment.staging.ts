@@ -32,5 +32,9 @@ export const environment = {
   // AI_PROJECTION_ENABLED=false.
   aiProjectionEnabled: true,
   // Off for local staging runs, matching deployed staging, which sets OFFSEASON_ENABLED=false.
+  // Empty on purpose: this file only backs `npm run start:staging`. The deployed staging app
+  // builds from environment.prod.ts with PADDLE_CLIENT_TOKEN injected.
+  paddleClientToken: '',
+  paddleEnvironment: 'sandbox',
   offseasonEnabled: false,
 };

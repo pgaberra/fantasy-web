@@ -46,5 +46,12 @@ export const environment = {
   // the draft picker). On by default, like whosHotEnabled and for the same reason: the preset
   // already ships, so an unset flag has to mean "carry on offering it". Deployed builds turn it
   // off with the AI_PROJECTION_ENABLED=false build arg.
+  // Public Paddle client token (not a secret - it is shipped to the browser by design; it only
+  // permits opening a checkout). Empty means the /pay page cannot open one, which is the right
+  // local default: local dev runs the mock payment provider, which never sends anyone here.
+  paddleClientToken: '',
+  // Which Paddle environment the client token belongs to: "sandbox" or "production". Tokens and
+  // price ids are environment-scoped, so this has to move together with the token.
+  paddleEnvironment: 'sandbox',
   aiProjectionEnabled: true,
 };
