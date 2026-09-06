@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AccountComponent } from './account';
 import { BillingService } from '../services/billing.service';
@@ -10,6 +10,7 @@ import { NotificationService } from '../services/notification.service';
 
 describe('AccountComponent', () => {
   const openPortal = vi.fn();
+  const notifyError = vi.fn();
   const refresh = vi.fn();
   const premium = signal(false);
   const status = signal('none');
@@ -21,6 +22,7 @@ describe('AccountComponent', () => {
 
   beforeEach(() => {
     openPortal.mockReset();
+    notifyError.mockReset();
     refresh.mockReset();
     premium.set(false);
     status.set('none');
@@ -38,7 +40,7 @@ describe('AccountComponent', () => {
         loadState,
         refresh,
       })
-      .mock(NotificationService, { error: vi.fn() })
+      .mock(NotificationService, { error: notifyError })
       .provide({ provide: ActivatedRoute, useValue: route });
   });
 
@@ -72,5 +74,22 @@ describe('AccountComponent', () => {
 
     expect(openPortal).toHaveBeenCalled();
     expect(window.location.href).toEqual('https://portal.example/go');
+  });
+
+  /**
+   * Opening the portal fails when something on our side is wrong, never because the user did
+   * anything, so the copy says what is safe rather than telling them to retry: the
+   * subscription is untouched. Pinned so that promise cannot quietly stop being true.
+   */
+  it('says the subscription is unchanged when the portal cannot be opened', () => {
+    openPortal.mockReturnValue(throwError(() => new Error('502')));
+
+    const fixture = MockRender(AccountComponent);
+    fixture.point.componentInstance.manageBilling();
+
+    expect(notifyError).toHaveBeenCalledWith(
+      expect.stringContaining('Your subscription is unchanged'),
+    );
+    expect(notifyError).not.toHaveBeenCalledWith(expect.stringContaining('try again'));
   });
 });
