@@ -1,264 +1,251 @@
 <div class="privacy">
-  <h1 class="privacy__title">Privacy policy</h1>
-  <p class="privacy__updated">Last updated {{ lastUpdated }}</p>
+  <h1 class="privacy__title">Privacy Policy</h1>
+  <p class="privacy__updated">Last updated: {{ lastUpdated }}</p>
 
   <p class="privacy__lead">
-    SlapStat is a fantasy hockey projection tool. This page explains exactly what we store about
-    you, who else sees it, and what you can ask us to do about it. It describes what the software
-    actually does, not what a template says it might.
+    This Privacy Policy explains what personal data SlapStat collects, how it is used, who it is
+    shared with, and how long it is retained.
   </p>
 
   <h2>Who is responsible</h2>
+  <p>SlapStat is operated by <strong>Alexander Berglund</strong>, an individual based in Sweden.</p>
   <p>
-    SlapStat is run by <strong>Alexander Berglund</strong>, an individual in Sweden, not a company.
-    That makes him the controller of your personal data. If you have a question about your data, or
-    want to exercise any of the rights below, email
-    <a href="mailto:privacy@slapstat.com">privacy&#64;slapstat.com</a> and it reaches him directly.
+    For questions about your personal data or to exercise your rights, contact
+    <a href="mailto:privacy@slapstat.com">privacy&#64;slapstat.com</a>.
   </p>
 
-  <h2>What we store, and why</h2>
+  <h2>What data we collect</h2>
 
-  <h3>Your account</h3>
-  <p>Created when you register, and kept for as long as your account exists:</p>
+  <h3>Account information</h3>
+  <p>When you create a SlapStat account, we store:</p>
   <ul>
     <li>
-      Your <strong>email address</strong>. It identifies your account and is where we send
-      verification and password-reset messages.
+      Your <strong>email address</strong>, used to identify your account and send verification and
+      password-reset emails.
     </li>
     <li>
-      A <strong>hash of your password</strong>, never the password itself. If you signed up with
-      Google or Facebook, there is no password at all, only an opaque account identifier from that
-      provider.
+      A <strong>hash of your password</strong>, rather than the password itself. If you sign in with
+      Google or Facebook, we store an identifier provided by the relevant provider instead.
     </li>
     <li>
-      An internal <strong>account ID</strong>, whether your email is verified, and when the account
-      was created.
+      An internal <strong>account ID</strong>, your email verification status, and the date your
+      account was created.
     </li>
   </ul>
+  <p>We do not store your name, phone number, physical address, or date of birth.</p>
+
+  <h3>Projections</h3>
+  <p>We store the projections you create, including:</p>
+  <ul>
+    <li>Projection name</li>
+    <li>Season</li>
+    <li>Player selections</li>
+    <li>Scoring and projection settings</li>
+  </ul>
   <p>
-    We store no name, phone number, address or date of birth. We rely on the above to give you the
-    service you asked for: without an account we cannot save your work or let you sign back in.
+    If you sync a projection from a Yahoo Fantasy league, it may also contain your league name and
+    the team names of other managers in that league.
+  </p>
+  <p>Your saved projections are private and can be deleted from your account.</p>
+
+  <h3>Yahoo Fantasy</h3>
+  <p>Connecting a Yahoo Fantasy account is optional.</p>
+  <p>
+    If you connect your account, we store your <strong>Yahoo user ID</strong> and encrypted
+    <strong>access and refresh tokens</strong>. These allow SlapStat to access your Yahoo Fantasy
+    data when you use the integration.
+  </p>
+  <p>
+    League and team data is not stored separately, except for information that you choose to save as
+    part of a projection.
+  </p>
+  <p>
+    SlapStat does not currently provide a self-service option to disconnect a Yahoo account. To
+    disconnect your account, contact
+    <a href="mailto:privacy@slapstat.com">privacy&#64;slapstat.com</a>.
   </p>
 
-  <h3>Your projections</h3>
+  <h3>Analytics</h3>
   <p>
-    The projections you create: their name, the season, and the player numbers and scoring settings
-    you entered.
+    If you accept analytics cookies, we use <strong>PostHog</strong> to collect information about
+    how you use SlapStat, including pages visited and certain actions such as registering, creating
+    a projection, or starting a draft.
   </p>
   <p>
-    If you sync a projection from a Yahoo league, it also saves
-    <strong>your league's name and the team names of the other managers in it</strong>. Those names
-    are often real names or nicknames, so a projection can contain information about people other
-    than you. Only you can see your own projections, and you can delete any of them at any time.
-  </p>
-
-  <h3>Yahoo Fantasy (only if you connect it)</h3>
-  <p>
-    Connecting your Yahoo account is entirely optional and nothing happens until you choose it. If
-    you do, we store your Yahoo access and refresh tokens <strong>encrypted</strong>, along with
-    your Yahoo user identifier, so we can read your league's scoring settings. Your league and team
-    data itself is read from Yahoo as you use the app and is not stored, except for what you
-    deliberately save into a projection.
+    When you are signed in, analytics events are linked to your internal account ID, but not to your
+    email address.
   </p>
   <p>
-    <strong>There is no disconnect button yet.</strong> Once connected, those tokens stay until we
-    remove them for you. Email us and we will.
+    If you decline analytics cookies, no analytics cookie is set. PostHog still receives basic usage
+    information using a privacy-preserving identifier that is not linked to your account or used to
+    recognise you across different days.
+  </p>
+  <p>
+    Authentication tokens in password-reset and email-verification links are removed before
+    analytics data is sent.
   </p>
 
-  <h3>Usage analytics (only if you agree)</h3>
+  <h3>Emails</h3>
   <p>
-    If you accept the cookie banner, we record which pages you visit and a few actions (registering,
-    creating a projection, starting a draft) so we can see what people use and where they get stuck.
-    While signed in, this is linked to your account ID, <strong>never your email address</strong>.
+    If you contact us at <a href="mailto:info@slapstat.com">info&#64;slapstat.com</a> or
+    <a href="mailto:privacy@slapstat.com">privacy&#64;slapstat.com</a>, we store your message and
+    email address so that we can respond to you.
   </p>
-  <p>
-    If you decline, we still count the visit, but through a privacy-preserving hash generated on
-    PostHog's servers rather than a cookie, and it is not linked to you or to any other day's visit.
-    You can change your mind at any time by clearing this site's data in your browser.
-  </p>
-  <p>
-    Links that carry a single-use token (password resets and email verification) have that token
-    stripped out before any analytics event leaves your browser.
-  </p>
+  <p>Messages are forwarded by Cloudflare and stored in a Google mailbox.</p>
+  <p>You can request deletion of an email conversation by contacting us.</p>
 
-  <h3>If you email us</h3>
-  <p>
-    Writing to <a href="mailto:info@slapstat.com">info&#64;slapstat.com</a> or
-    <a href="mailto:privacy@slapstat.com">privacy&#64;slapstat.com</a> means we hold your message
-    and the address you sent it from, for as long as it takes to answer you and for as long as the
-    thread stays in the mailbox afterwards. There is no ticket system behind those addresses:
-    Cloudflare forwards mail sent to this domain into a Google mailbox that Alexander reads. Ask us
-    to delete a conversation and we will.
-  </p>
-
-  <h2>What we put in your browser</h2>
+  <h2>Cookies and browser storage</h2>
+  <p>SlapStat stores the following information in your browser:</p>
   <div class="privacy__table-wrap">
     <table class="privacy__table">
       <thead>
         <tr>
-          <th>Stored</th>
+          <th>Data</th>
           <th>Purpose</th>
-          <th>Set when</th>
+          <th>When</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td>Sign-in tokens</td>
-          <td>
-            Keeps you signed in between visits. Your email address is readable inside these tokens,
-            so treat them as you would a password.
-          </td>
-          <td>You sign in. Necessary: the site cannot work without it.</td>
+          <td><strong>Authentication tokens</strong></td>
+          <td>Keeps you signed in between visits</td>
+          <td>When you sign in</td>
         </tr>
         <tr>
-          <td>Your cookie choice</td>
-          <td>Remembers your answer so we stop asking.</td>
-          <td>You answer the banner.</td>
+          <td><strong>Cookie preference</strong></td>
+          <td>Remembers your cookie preference</td>
+          <td>When you respond to the cookie banner</td>
         </tr>
         <tr>
-          <td>PostHog analytics cookie</td>
-          <td>Recognises a returning visitor.</td>
-          <td>Only if you accept. Declining means no cookie is ever set.</td>
+          <td><strong>PostHog analytics cookie</strong></td>
+          <td>Used for analytics</td>
+          <td>Only if you accept analytics cookies</td>
         </tr>
       </tbody>
     </table>
   </div>
+  <p>Authentication tokens contain your email address and should be treated as confidential.</p>
 
-  <h2>Who else sees your data</h2>
-  <p>
-    We do not sell your data and we do not share it for advertising. We use a small number of
-    suppliers to run the service, and they may only process data on our instructions:
-  </p>
+  <h2>Third-party service providers</h2>
+  <p>We use the following third-party services to operate SlapStat:</p>
   <div class="privacy__table-wrap">
     <table class="privacy__table">
       <thead>
         <tr>
-          <th>Supplier</th>
-          <th>What they get</th>
-          <th>Where</th>
+          <th>Provider</th>
+          <th>Purpose</th>
+          <th>Data / access</th>
+          <th>Location</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td>Cloudflare</td>
-          <td>
-            Email you send to an address at this domain, which it forwards to the mailbox below. It
-            also answers DNS for us, but it does not sit in front of the site, so it never sees your
-            visits.
-          </td>
-          <td>United States, on a network spanning many countries</td>
+          <td><strong>Cloudflare</strong></td>
+          <td>Email forwarding and DNS</td>
+          <td>Emails sent to SlapStat</td>
+          <td>United States / global</td>
         </tr>
         <tr>
-          <td>Google (Gmail)</td>
-          <td>The mailbox that email you send us is delivered to and kept in.</td>
+          <td><strong>Google</strong></td>
+          <td>Email hosting</td>
+          <td>Emails sent to SlapStat</td>
           <td>United States</td>
         </tr>
         <tr>
-          <td>Hetzner</td>
-          <td>Hosts the servers and databases, so everything above lives there.</td>
-          <td>Helsinki, Finland (EU)</td>
+          <td><strong>Hetzner</strong></td>
+          <td>Hosting and databases</td>
+          <td>Account and application data</td>
+          <td>Finland, EU</td>
         </tr>
         <tr>
-          <td>Paddle</td>
-          <td>
-            Only if you subscribe. Paddle are the merchant of record for the sale, so they take your
-            payment details, your billing country and the email on your account, and they keep the
-            record of the transaction. We never see your card number.
-          </td>
-          <td>United Kingdom, and the United States for card processing</td>
+          <td><strong>Paddle</strong></td>
+          <td>Payments</td>
+          <td>Email, billing and payment information</td>
+          <td>United Kingdom / United States</td>
         </tr>
         <tr>
-          <td>PostHog</td>
-          <td>Usage analytics, only if you accept the banner.</td>
-          <td>Frankfurt, Germany (EU)</td>
+          <td><strong>PostHog</strong></td>
+          <td>Analytics</td>
+          <td>Usage data</td>
+          <td>Germany, EU</td>
         </tr>
         <tr>
-          <td>Resend</td>
-          <td>
-            Your email address and a sign-in link, to deliver exactly two messages: verify your
-            email, and reset your password.
-          </td>
+          <td><strong>Resend</strong></td>
+          <td>Email delivery</td>
+          <td>Email address and authentication links</td>
           <td>United States</td>
         </tr>
         <tr>
-          <td>Sentry</td>
-          <td>
-            Technical error reports when something breaks: stack traces, not your account details.
-          </td>
-          <td>Germany (EU)</td>
+          <td><strong>Sentry</strong></td>
+          <td>Error monitoring</td>
+          <td>Technical error reports and stack traces</td>
+          <td>Germany, EU</td>
         </tr>
       </tbody>
     </table>
   </div>
-
+  <p>We do not sell your personal data or share it for advertising.</p>
   <p>
-    Your account, your projections and everything else we store stay inside the EU. Email is the
-    exception, and it is one in both directions. Resend is in the United States, so your address
-    leaves the EU when we send you a verification or password-reset message. Anything you write to
-    us leaves it too, since Cloudflare forwards that mail and Google stores it, and both are United
-    States companies.
+    Your account and projection data are hosted within the EU. Some services, including email
+    providers, process data outside the EU.
   </p>
 
-  <h3>Companies your browser contacts directly</h3>
+  <h2>Third-party services loaded by your browser</h2>
   <p>
-    Some things on the page are loaded from other companies' servers. That means those companies
-    receive your IP address and browser details simply because the page rendered. We never send them
-    your account data, but we cannot hide the request from them either:
+    Some pages on SlapStat load content or functionality directly from third-party services. These
+    services may receive your IP address and browser information when your browser connects to them.
   </p>
+  <p>These include:</p>
   <ul>
+    <li><strong>Google Fonts</strong>, used to load fonts.</li>
     <li>
-      <strong>Google Fonts</strong>: our typeface loads from Google on every page, whether or not
-      you have an account or accepted cookies.
+      <strong>Google</strong> and <strong>Facebook</strong>, whose sign-in components are loaded on
+      the sign-in and registration pages.
     </li>
-    <li>
-      <strong>Google</strong> and <strong>Facebook</strong>: their sign-in buttons load their code
-      on the sign-in and registration pages, whether or not you use them.
-    </li>
-    <li>
-      <strong>Yahoo</strong>: player photos are served from Yahoo's servers wherever players are
-      listed.
-    </li>
-    <li>
-      <strong>Paddle</strong>: our pricing and checkout pages load their code, the pricing page so
-      that it can quote the price in your own currency. Those two pages only. If you never look at
-      what Premium costs, your browser never contacts them.
-    </li>
+    <li><strong>Yahoo</strong>, which hosts player images displayed on SlapStat.</li>
+    <li><strong>Paddle</strong>, which is loaded on the pricing and checkout pages.</li>
   </ul>
   <p>
-    If you sign in with Google or Facebook, or connect Yahoo, those companies also handle your data
-    under their own privacy policies. That relationship is between you and them.
+    If you use Google, Facebook, or Yahoo integrations, those services may also process your data
+    under their own privacy policies.
   </p>
 
-  <h2>How long we keep it</h2>
+  <h2>How long we keep your data</h2>
+  <p>Your account and saved projections are retained until your account is deleted.</p>
+  <p>Analytics data is retained for <strong>one year</strong>.</p>
   <p>
-    Your account and projections stay until the account is deleted. Analytics data is kept for one
-    year. Password-reset and email-verification links stop working quickly and can only be used
-    once, but the used-up record of one is not currently swept away on a schedule. It stays until
-    you request another, or until we delete your account.
+    Password-reset and email-verification links are single-use and expire after a short period.
+    Records associated with used links may remain until another authentication request is made or
+    your account is deleted.
   </p>
 
   <h2>Your rights</h2>
+  <p>Under the GDPR, you may have the right to:</p>
+  <ul>
+    <li>Access your personal data</li>
+    <li>Correct inaccurate data</li>
+    <li>Request deletion of your data</li>
+    <li>Receive your data in a portable format</li>
+    <li>Restrict certain processing</li>
+    <li>Withdraw consent where processing is based on consent</li>
+  </ul>
   <p>
-    Under the GDPR you can ask us to give you a copy of your data, correct it, delete it, hand it
-    over in a portable form, or stop a particular use of it. Where we rely on your consent (that is,
-    analytics), you can withdraw it at any time, and doing so is as easy as giving it.
+    SlapStat does not currently provide self-service options for account deletion or data export. To
+    exercise these rights, contact
+    <a href="mailto:privacy@slapstat.com">privacy&#64;slapstat.com</a>.
   </p>
   <p>
-    <strong>SlapStat has no self-service delete or export button yet.</strong> Until it does, email
-    the address above and we will do it by hand. We would rather say that plainly than imply a
-    button exists.
-  </p>
-  <p>
-    If you think we are handling your data wrongly, you can complain to your local data protection
-    authority. In Sweden that is
+    You also have the right to lodge a complaint with your local data protection authority. In
+    Sweden, this is
     <a href="https://www.imy.se" target="_blank" rel="noopener noreferrer"
       >Integritetsskyddsmyndigheten (IMY)</a
     >.
   </p>
 
-  <h2>Changes</h2>
+  <h2>Changes to this Privacy Policy</h2>
+  <p>We may update this Privacy Policy when our data practices change.</p>
   <p>
-    If we change what we collect or who we send it to, we will update this page and move the date at
-    the top. Where a change needs your agreement, we will ask for it rather than assume it.
+    The date at the top of this page indicates when the policy was last updated. Where required, we
+    will ask for your consent before introducing changes that require it.
   </p>
 </div>

@@ -19,7 +19,7 @@ describe('PrivacyComponent', () => {
   // with it — a privacy policy that has drifted from the code is worse than none.
   it.each([
     'Cloudflare',
-    'Gmail',
+    'Google mailbox',
     'Paddle',
     'Hetzner',
     'PostHog',
@@ -50,7 +50,9 @@ describe('PrivacyComponent', () => {
     await MockBuilder(PrivacyComponent);
     MockRender(PrivacyComponent);
 
-    expect(text()).toContain('no self-service delete or export button');
+    expect(text()).toContain(
+      'does not currently provide self-service options for account deletion or data export',
+    );
   });
 
   it('points at the Swedish supervisory authority', async () => {
@@ -70,12 +72,12 @@ describe('PrivacyComponent', () => {
     expect(text()).toContain('privacy@slapstat.com');
   });
 
-  // Resend is the one processor outside the EU, so the transfer has to be disclosed rather
-  // than buried in a table cell.
-  it('discloses that email delivery leaves the EU', async () => {
+  // Several processors sit outside the EU (Resend, Cloudflare, Google, Paddle), so the
+  // transfer has to be stated in prose rather than left to be inferred from a table cell.
+  it('discloses that some data is processed outside the EU', async () => {
     await MockBuilder(PrivacyComponent);
     MockRender(PrivacyComponent);
 
-    expect(text()).toContain('leaves the EU');
+    expect(text()).toContain('process data outside the EU');
   });
 });
