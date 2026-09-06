@@ -1,9 +1,15 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, effect, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BillingService } from '../services/billing.service';
 import { EntitlementService } from '../services/entitlement.service';
 import { NotificationService } from '../services/notification.service';
+
+/** How long to keep waiting for the subscription to reach us before saying so, in milliseconds. */
+const CONFIRMATION_TIMEOUT_MS = 30_000;
+
+/** How long to wait between reads while confirming, in milliseconds. */
+const CONFIRMATION_POLL_MS = 2_000;
 
 @Component({
   selector: 'app-account',
@@ -11,7 +17,7 @@ import { NotificationService } from '../services/notification.service';
   templateUrl: './account.html',
   styleUrl: './account.css',
 })
-export class AccountComponent implements OnInit {
+export class AccountComponent implements OnInit, OnDestroy {
   private readonly billing = inject(BillingService);
   private readonly notifications = inject(NotificationService);
   private readonly route = inject(ActivatedRoute);
@@ -19,15 +25,53 @@ export class AccountComponent implements OnInit {
   protected readonly openingPortal = signal(false);
   protected readonly justSubscribed = signal(false);
 
+  /**
+   * True while we are back from a completed checkout but the subscription has not reached us yet.
+   *
+   * Paddle redirects the browser the moment the payment clears and tells our server separately,
+   * over a webhook. The redirect usually wins that race, so the first read of the entitlement
+   * says the account is on the free plan. Rendering that verdict told someone who had just paid
+   * that they had no subscription, directly beneath a banner thanking them for subscribing;
+   * reloading a few seconds later put it right. So the free-plan card is held back and we keep
+   * asking, rather than reporting an absence that is really a race.
+   */
+  protected readonly confirming = signal(false);
+
+  /** Set when the wait ran out. Distinguishes "still on its way" from "never arrived". */
+  protected readonly confirmationTimedOut = signal(false);
+
+  private pollTimer?: ReturnType<typeof setTimeout>;
+  private giveUpTimer?: ReturnType<typeof setTimeout>;
+
+  constructor() {
+    // Whichever read sees it first, the initial one or a poll, ends the wait.
+    effect(() => {
+      if (this.entitlement.premium() && this.confirming()) {
+        this.stopConfirming();
+      }
+    });
+  }
+
   ngOnInit(): void {
     // Returning from checkout or the billing portal — re-read the possibly just-changed entitlement.
     if (this.route.snapshot.queryParamMap.get('checkout') === 'success') {
       this.justSubscribed.set(true);
+      this.confirming.set(true);
+      this.giveUpTimer = setTimeout(() => {
+        this.confirming.set(false);
+        this.confirmationTimedOut.set(true);
+      }, CONFIRMATION_TIMEOUT_MS);
+      this.scheduleNextRead();
     }
     this.entitlement.refresh();
   }
 
+  ngOnDestroy(): void {
+    this.stopConfirming();
+  }
+
   reload(): void {
+    this.confirmationTimedOut.set(false);
     this.entitlement.refresh();
   }
 
@@ -39,8 +83,28 @@ export class AccountComponent implements OnInit {
       },
       error: () => {
         this.openingPortal.set(false);
-        this.notifications.error('Could not open the billing portal. Please try again.');
+        // Same reasoning as the checkout message: this fails when something on our side is
+        // wrong, so the useful thing to say is that the subscription itself is untouched.
+        this.notifications.error(
+          'The billing portal could not be opened. Your subscription is unchanged, and we have been notified.',
+        );
       },
     });
+  }
+
+  private scheduleNextRead(): void {
+    this.pollTimer = setTimeout(() => {
+      if (!this.confirming()) {
+        return;
+      }
+      this.entitlement.refresh();
+      this.scheduleNextRead();
+    }, CONFIRMATION_POLL_MS);
+  }
+
+  private stopConfirming(): void {
+    this.confirming.set(false);
+    clearTimeout(this.pollTimer);
+    clearTimeout(this.giveUpTimer);
   }
 }

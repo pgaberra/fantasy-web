@@ -138,14 +138,20 @@ describe('App', () => {
     expect(identity).toContain('alex@example.com');
   });
 
-  it('says so when the account has not picked a username yet', () => {
+  /**
+   * An account without a name should not just be told it has none: the line that says so is the
+   * link to the field that fixes it, so nobody has to go looking for it under Profile.
+   */
+  it('links to the username field when the account has not picked a name yet', () => {
     username.set(null);
     const fixture = render();
     openAccountMenu(fixture);
 
-    expect(document.querySelector('.account-menu-name')?.textContent?.trim()).toEqual(
-      'No username yet',
-    );
+    const link = document.querySelector('a.account-menu-name');
+
+    expect(link?.textContent?.trim()).toEqual('Set a username');
+    expect(link?.getAttribute('routerLink')).toEqual('/profile');
+    expect(link?.getAttribute('fragment')).toEqual('username');
   });
 
   it('signs out from the account menu', () => {

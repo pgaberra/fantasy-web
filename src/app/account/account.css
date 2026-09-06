@@ -50,6 +50,11 @@
   color: var(--color-text-muted);
 }
 
+/* Waiting on the provider, which is neither active nor free. */
+.status-pending {
+  color: var(--color-gold-strong);
+}
+
 .account-note {
   margin: 0;
   color: var(--color-text-muted);

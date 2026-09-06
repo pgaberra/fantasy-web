@@ -50,6 +50,9 @@ jobs:
       - name: Generate API client
         run: npm run generate:api
 
+      - name: Verify every build placeholder is substituted
+        run: bash .github/scripts/check-build-placeholders.sh
+
       - name: Lint
         run: npm run lint
 

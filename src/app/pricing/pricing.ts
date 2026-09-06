@@ -61,7 +61,12 @@ export class PricingComponent implements OnInit {
       },
       error: () => {
         this.starting.set(false);
-        this.notifications.error('Could not start checkout. Please try again.');
+        // No "please try again". The BFF answers 502 here, and it does so for faults on our
+        // side: a misconfigured payment provider, a key that stopped working. Retrying that
+        // never helps, and at a payment step the thing worth saying is that no money moved.
+        this.notifications.error(
+          'Checkout could not be started. Nothing has been charged, and we have been notified.',
+        );
       },
     });
   }
