@@ -37,6 +37,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { PinnedTableHeaderDirective } from '../shared/pinned-table-header/pinned-table-header.directive';
+import { TableScrollDirective } from '../shared/table-scroll/table-scroll.directive';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 
 /**
@@ -86,6 +87,7 @@ interface SharedRow {
     PositionFilterComponent,
     ProjectionsTableHeaderComponent,
     PinnedTableHeaderDirective,
+    TableScrollDirective,
     TooltipDirective,
   ],
   templateUrl: './shared-projection.html',

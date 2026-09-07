@@ -415,6 +415,82 @@ a.premium-badge:focus-visible {
   }
 }
 
+/* --- Reaching a wide table's stat columns ---------------------------------------------------
+   The scrolling box is `.table-wrapper` above; these are the two things drawn around it by
+   `TableScrollDirective`, which also makes the box a focusable region while it overflows (the
+   ring for that comes from the `[tabindex]` rule near the top of this file). Both are created at
+   runtime and so carry no component scoping attribute, which is why they live here. */
+
+/* The box the fade is positioned against. It has to be the table's own box and nothing wider,
+   so each table wraps its scrolling box in one of these and nothing else. */
+.table-scroll {
+  position: relative;
+}
+
+/* The clipped right edge, so what is cut off reads as columns passing under it rather than a
+   table that ends oddly. A shadow rather than a fade to the page: the rows are white already, so
+   a fade would be invisible over them and would show only where it must not, as a white wash over
+   the navy header. Above the sticky cells rather than under them, since the frozen columns and
+   the pinned header carry z-indexes up to 3 (further up this file). Shown only while there is
+   more to the right, and only where nothing is frozen against that edge: from 1024px up the
+   summary column is, and it draws this same shadow itself. */
+.table-scroll-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  z-index: 4;
+  width: 1.5rem;
+  pointer-events: none;
+  /* Weighted towards the edge rather than spread evenly across the strip, so it reads as a
+     shadow cast by the edge and not as a wash over the last column. */
+  background: linear-gradient(
+    to right,
+    rgba(15, 52, 96, 0) 0%,
+    rgba(15, 52, 96, 0.06) 55%,
+    rgba(15, 52, 96, 0.22) 100%
+  );
+}
+
+/* The table's sideways scroll, pinned to the bottom of the window while the table's own scrollbar
+   is below the fold. It is a real scroll container over a spacer as wide as the table, not a
+   drawing of one: dragging it is the browser's own scrollbar behaviour, keyboard and all. */
+.table-scroll-bar {
+  position: fixed;
+  bottom: 0;
+  z-index: var(--z-sticky);
+  box-sizing: border-box;
+  height: 15px;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  /* The page must not start scrolling when this one reaches its end. */
+  overscroll-behavior: contain;
+  background: var(--color-surface-alt);
+  box-shadow: 0 -2px 6px rgba(15, 52, 96, 0.12);
+  /* Drawn rather than left to the platform. macOS hides an overlay scrollbar until something is
+     already scrolling, and a bar nobody can see until they have found it is not worth pinning. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-control) var(--color-surface-alt);
+}
+.table-scroll-bar::-webkit-scrollbar {
+  height: 13px;
+}
+.table-scroll-bar::-webkit-scrollbar-track {
+  background: var(--color-surface-alt);
+}
+.table-scroll-bar::-webkit-scrollbar-thumb {
+  background: var(--color-border-control);
+  border: 3px solid var(--color-surface-alt);
+  border-radius: 7px;
+}
+.table-scroll-bar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+/* Only there to give the bar something as wide as the table to scroll over. */
+.table-scroll-bar-spacer {
+  height: 1px;
+}
+
 /* On narrow screens the sticky rank + player columns must stay compact so the
    scrollable stat columns remain visible — cap the player column and truncate
    long names instead of letting them push the stats off-screen. */
