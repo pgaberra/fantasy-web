@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SCORING_COLUMNS, DEFAULT_STAT_WEIGHTS } from './projection-defaults';
+import { DEFAULT_DECIMAL_SETTINGS } from './projection-settings-section/model';
 import { SCORING_STAT_KEYS, ScoringStatKey } from '../models/stat-key.model';
 
 /**
@@ -52,5 +53,15 @@ describe('DEFAULT_STAT_WEIGHTS', () => {
       (statKey) => DEFAULT_STAT_WEIGHTS[statKey] === 0,
     );
     expect(inertColumns).toEqual([]);
+  });
+});
+
+describe('DEFAULT_DECIMAL_SETTINGS', () => {
+  it('gives hat tricks a decimal place, which no other counting stat gets', () => {
+    // The model projects fractions of a hat trick, because a season holds fewer than one of
+    // them for nine skaters in ten. Rounded to none, the column reads 0 for nearly the whole
+    // pool and stops separating anyone below the top fifty.
+    expect(DEFAULT_DECIMAL_SETTINGS.hatTricks).toEqual(1);
+    expect(DEFAULT_DECIMAL_SETTINGS.gwg).toEqual(0);
   });
 });

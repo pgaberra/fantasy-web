@@ -60,7 +60,10 @@ export const DEFAULT_DECIMAL_SETTINGS: Record<DecimalStatKey, number> = {
   stpa: 0,
   stp: 0,
   gwg: 0,
-  hatTricks: 0,
+  // The only counting stat a full season holds fewer than one of for most of the league. At no
+  // decimals the model's column reads 0 for nine skaters in ten and the ordering under the top
+  // fifty is gone, so this one starts at a decimal place where the rest start at none.
+  hatTricks: 1,
   sog: 0,
   shPct: 1,
   fw: 0,
