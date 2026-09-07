@@ -83,10 +83,39 @@
           <h2>Player projections</h2>
         </div>
         <div class="table-controls">
+          <div class="search-control">
+            <label for="shared-player-search">Search</label>
+            <input
+              id="shared-player-search"
+              type="search"
+              placeholder="Search player…"
+              [value]="searchTerm()"
+              (input)="onSearchInput($event)"
+            />
+          </div>
           <app-position-filter
             [value]="positionFilter()"
             (valueChange)="setPositionFilter($event)"
           />
+          @if (availableTeams().length) {
+            <app-team-filter [teams]="availableTeams()" [(value)]="teamFilter" />
+          }
+          <!-- Only where the season's rookies are known, which is the same condition the editor's
+               table puts on the same control: a server that cannot say who is one would otherwise
+               offer a filter that narrows the board to nobody. -->
+          @if (rookiesAvailable()) {
+            <div class="filter-control filter-control--check">
+              <label for="shared-rookies-only">
+                <input
+                  id="shared-rookies-only"
+                  type="checkbox"
+                  [checked]="rookiesOnly()"
+                  (change)="rookiesOnly.set(!rookiesOnly())"
+                />
+                Rookies only
+              </label>
+            </div>
+          }
         </div>
       </div>
 
@@ -123,6 +152,7 @@
                   [activeColumns]="filteredActiveColumns()"
                   [scoringType]="scoringType()"
                   [decimalSettings]="decimalSettings()"
+                  [rookie]="isRookie(row.shared.playerId)"
                   [readonly]="true"
                 ></tr>
               }
