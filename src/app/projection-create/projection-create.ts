@@ -22,6 +22,7 @@ import {
 } from '../models/projection.model';
 import { PlayerRowComponent } from '../draft-projection/player-projections-table/player-row/player-row';
 import { ProjectionsTableHeaderComponent } from '../draft-projection/player-projections-table/projections-table-header/projections-table-header';
+import { TableScrollDirective } from '../shared/table-scroll/table-scroll.directive';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { ProjectionResponse } from '../api/models/projection-response';
 import { CreateProjectionRequest } from '../api/models/create-projection-request';
@@ -186,6 +187,7 @@ const ZEROED_GOALIE_STATS: GoalieStats = {
     RouterLink,
     PlayerRowComponent,
     ProjectionsTableHeaderComponent,
+    TableScrollDirective,
     ShareImportComponent,
     RelativeTimePipe,
   ],

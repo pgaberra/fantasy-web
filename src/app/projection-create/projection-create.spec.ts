@@ -781,6 +781,20 @@ describe('ProjectionCreateComponent', () => {
     expect(fixture.point.componentInstance.previewRows()).toHaveLength(5);
   });
 
+  // The preview is the editor's table in a card, so it takes the same scroll shell: its stat
+  // columns run off the right edge here exactly as they do there, and the card is 760px wide.
+  it("gives the preview table the editor's scroll shell", async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const wrapper = fixture.nativeElement.querySelector(
+      '.preview-card > .table-scroll > .table-wrapper',
+    );
+    expect(wrapper).not.toBeNull();
+    expect(wrapper.getAttribute('appTableScroll')).toEqual('Preview');
+  });
+
   it('marks the rookies the editor would mark', async () => {
     const fixture = MockRender(ProjectionCreateComponent);
     await fixture.whenStable();

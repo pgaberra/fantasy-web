@@ -315,39 +315,41 @@
         <!-- The editor's own header and rows, read-only: the preview is the table it previews,
              not a drawing of it. -->
         <div class="preview-card">
-          <div class="table-wrapper table-wrapper--compact-identity">
-            <table>
-              <thead
-                app-projections-table-header
-                [activeColumns]="previewActiveColumns()"
-                [scoringType]="previewScoringType()"
-                [statWeights]="previewStatWeights()"
-                [useDefaultDecimals]="previewUseDefaultDecimals()"
-                [decimalSettings]="previewDecimalSettings()"
-                [sortColumn]="'summary'"
-                [sortDirection]="'desc'"
-                [readonly]="true"
-                [sortable]="false"
-              ></thead>
-              <tbody>
-                @for (row of previewRows(); track row.projection.playerId) {
-                  <tr
-                    app-player-row
-                    [positionRank]="row.rank"
-                    [totalRank]="null"
-                    [projection]="row.projection"
-                    [playerScore]="row.score"
-                    [player]="row.player"
-                    [rookie]="row.rookie"
-                    [belowMinGames]="row.belowMinGames"
-                    [activeColumns]="previewActiveColumns()"
-                    [scoringType]="previewScoringType()"
-                    [decimalSettings]="previewDecimalSettings()"
-                    [readonly]="true"
-                  ></tr>
-                }
-              </tbody>
-            </table>
+          <div class="table-scroll">
+            <div class="table-wrapper table-wrapper--compact-identity" appTableScroll="Preview">
+              <table>
+                <thead
+                  app-projections-table-header
+                  [activeColumns]="previewActiveColumns()"
+                  [scoringType]="previewScoringType()"
+                  [statWeights]="previewStatWeights()"
+                  [useDefaultDecimals]="previewUseDefaultDecimals()"
+                  [decimalSettings]="previewDecimalSettings()"
+                  [sortColumn]="'summary'"
+                  [sortDirection]="'desc'"
+                  [readonly]="true"
+                  [sortable]="false"
+                ></thead>
+                <tbody>
+                  @for (row of previewRows(); track row.projection.playerId) {
+                    <tr
+                      app-player-row
+                      [positionRank]="row.rank"
+                      [totalRank]="null"
+                      [projection]="row.projection"
+                      [playerScore]="row.score"
+                      [player]="row.player"
+                      [rookie]="row.rookie"
+                      [belowMinGames]="row.belowMinGames"
+                      [activeColumns]="previewActiveColumns()"
+                      [scoringType]="previewScoringType()"
+                      [decimalSettings]="previewDecimalSettings()"
+                      [readonly]="true"
+                    ></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
         @if (modelCoverage(); as coverage) {
