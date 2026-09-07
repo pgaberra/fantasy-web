@@ -25,10 +25,10 @@ import { environment } from '../../environments/environment';
  * The name the preset draft is stored under. It doubles as the label on the board, so the
  * heading there reads the same as the row the draft was started from.
  */
-export const LAST_SEASON_PRESET_NAME = "Last Season's Stats";
+export const LAST_SEASON_PRESET_NAME = "Last season's stats";
 
 /** The model's own estimate for the coming season. Named by the server, like the other preset. */
-export const MODEL_PRESET_NAME = 'AI Projection';
+export const MODEL_PRESET_NAME = 'AI projection';
 
 /**
  * A starting point everyone shares, as opposed to a projection someone owns.

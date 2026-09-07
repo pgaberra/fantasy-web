@@ -1,11 +1,7 @@
 @if (isLoading()) {
   <app-loading-indicator />
 } @else if (loadError()) {
-  <app-error-state
-    title="Couldn't load the page"
-    message="We couldn't load your player data. Check your connection and try again."
-    (retry)="retryLoad()"
-  />
+  <app-error-state title="Couldn't load your player data" (retry)="retryLoad()" />
 } @else {
   <div class="projection-create">
     <div class="page-header">
@@ -31,7 +27,7 @@
            that has to change is the one right above this. -->
       @if (nameTaken()) {
         <p class="field-error" id="projection-name-error">
-          You already have a projection with that name. Pick another one.
+          You already have a projection with that name.
         </p>
       }
     </div>
@@ -48,7 +44,7 @@
         <span class="field-label" id="starting-point-label">Starting point</span>
         <app-help-tip
           label="What the starting point decides"
-          text="The initial stats each player is given."
+          text="The stats players start with."
         />
       </legend>
 
@@ -71,7 +67,7 @@
           @case ('projection') {
             @if (ownProjections().length === 0) {
               <p class="group-empty">
-                You have no projections yet. Start from a preset, and copies of it belong here.
+                No projections yet. Start from a preset, and your copy shows up here.
               </p>
             } @else {
               <ul class="rows">
@@ -117,7 +113,7 @@
           @case ('imported') {
             @if (importedBoards().length === 0) {
               <p class="group-empty">
-                Nobody's board here yet. Paste a SlapStat share link below to copy one.
+                No shared boards yet. Paste a SlapStat share link to copy one.
               </p>
             } @else {
               <ul class="rows">
@@ -289,15 +285,15 @@
           </h3>
           <p class="pitch-text">
             A model-built line for every player it can reach, from last season's numbers, ice time
-            and workload. Start your board from it instead of from last season, then tune whatever
-            you disagree with, exactly as you would any other projection.
+            and workload. Start from it instead of last season's stats, then change whatever you
+            disagree with.
           </p>
           <ul class="pitch-points">
-            <li>Every skater and goalie the model reaches, ranked to your own scoring settings</li>
-            <li>Yours to edit: a starting point, not a locked board</li>
+            <li>Every player ranked to your league's scoring settings</li>
+            <li>Yours to edit: a starting point, not a fixed list</li>
             <li>Draft against it straight from Draft mode</li>
           </ul>
-          <a routerLink="/pricing" class="btn btn-primary">Unlock with Premium</a>
+          <a routerLink="/pricing" class="btn btn-primary">Get Premium</a>
         </section>
       } @else if (isPreviewLoading() || isModelPreviewLoading()) {
         <p class="preview-note">Loading preview…</p>
@@ -353,10 +349,9 @@
         @if (modelCoverage(); as coverage) {
           <p class="preview-note">
             The model has lines for {{ coverage.skaters }} skaters and
-            {{ coverage.goalies }} goalies. Players it cannot reach (prospects yet to play, goalies
-            it projects no starts for, and anyone it has no basis for) are left out, so this
-            projection opens with fewer rows than the other starting points give. Data ©
-            MoneyPuck.com.
+            {{ coverage.goalies }} goalies. Prospects yet to play, goalies it projects no starts
+            for, and anyone else it has no basis for are left out, so this projection opens with
+            fewer rows than the other starting points. Data © MoneyPuck.com.
           </p>
         }
       }

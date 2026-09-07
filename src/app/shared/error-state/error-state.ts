@@ -7,8 +7,8 @@ import { Component, input, output } from '@angular/core';
   styleUrl: './error-state.css',
 })
 export class ErrorStateComponent {
-  readonly title = input('Something went wrong');
-  readonly message = input('Check your connection and try again.');
+  readonly title = input("Couldn't load this page");
+  readonly message = input('Check your connection.');
   readonly retryable = input(true);
   readonly retry = output<void>();
 }

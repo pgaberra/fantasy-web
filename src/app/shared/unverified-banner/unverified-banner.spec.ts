@@ -29,7 +29,7 @@ describe('UnverifiedBannerComponent', () => {
     await setup();
     MockRender(UnverifiedBannerComponent);
     const text = ngMocks.find('.unverified-banner__text').nativeElement as HTMLElement;
-    expect(text.textContent).toContain('verify your email');
+    expect(text.textContent).toContain('Verify your email');
   });
 
   it('renders nothing when the email is verified', async () => {

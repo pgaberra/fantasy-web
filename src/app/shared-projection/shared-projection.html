@@ -8,18 +8,14 @@
     <div class="gone-card">
       <h1 class="gone-title">This link isn't active</h1>
       <p class="gone-body">
-        Whoever shared this projection has taken the link down, or it never existed. You can still
-        build your own. It's free to start.
+        Whoever shared this projection has taken the link down, or it never existed. Building your
+        own is free.
       </p>
       <a routerLink="/" class="btn btn-primary">Make your own projection</a>
     </div>
   </div>
 } @else if (sharedResource.error()) {
-  <app-error-state
-    title="Couldn't load this projection"
-    message="Check your connection and try again."
-    (retry)="sharedResource.reload()"
-  />
+  <app-error-state title="Couldn't load this projection" (retry)="sharedResource.reload()" />
 } @else if (shared(); as projection) {
   <div class="shared-projection">
     <header class="shared-header">
@@ -57,7 +53,7 @@
       </div>
       @if (signInPromptFor(); as intent) {
         <p class="board-actions-prompt" role="status" data-testid="sign-in-prompt">
-          Your copy of this board lives in your account, so
+          Your copy lives in your account, so
           <a
             routerLink="/login"
             [queryParams]="{ returnUrl: promptReturnUrl() }"
@@ -69,10 +65,9 @@
             routerLink="/register"
             [queryParams]="{ returnUrl: promptReturnUrl() }"
             data-testid="prompt-register"
-            >create an account</a
+            >create a free account</a
           >
-          {{ intent === 'draft' ? 'to draft against it.' : 'to make it yours.' }} Free to start, and
-          this carries on where you left off.
+          {{ intent === 'draft' ? 'to draft against it.' : 'to make it yours.' }}
         </p>
       }
     </header>
@@ -150,8 +145,8 @@
             {{ totalPlayers() }} players
           </h2>
           <p class="cta-body">
-            Sign in to read the rest of {{ authorLabel() }}'s board (every player they ranked, under
-            their league's scoring settings) and take a copy to draft against. Free to start.
+            Sign in to see every player {{ authorLabel() }} ranked, and take a copy to draft
+            against. Free to start.
           </p>
           <div class="cta-actions">
             <a
@@ -172,8 +167,8 @@
         } @else {
           <h2 class="cta-title">This is one manager's board</h2>
           <p class="cta-body">
-            Build your own projections, tuned to your league's scoring settings, and rank every
-            player the way this one does, or draft straight against this one. Free to start.
+            Build your own, ranked to your league's scoring settings. Or draft straight against this
+            one. Free to start.
           </p>
           <a routerLink="/register" class="btn btn-primary">Make your own projection</a>
         }

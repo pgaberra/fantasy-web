@@ -1,11 +1,7 @@
 @if (isLoading()) {
   <app-loading-indicator />
 } @else if (playersUnavailable()) {
-  <app-error-state
-    title="Couldn't load player data"
-    message="A projection can't be shown without it. Check your connection and try again."
-    (retry)="reloadPlayers()"
-  />
+  <app-error-state title="Couldn't load player data" (retry)="reloadPlayers()" />
 } @else {
   <div class="draft-projection">
     <div class="page-header">

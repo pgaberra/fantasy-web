@@ -21,12 +21,12 @@
     <div class="pool-notice__body">
       <p class="pool-notice__title">The player list has been updated</p>
       <p class="pool-notice__body-text">
-        {{ added() }} {{ added() === 1 ? 'player has' : 'players have' }} been added, new to the
-        league since you started this projection.
+        {{ added() }} {{ added() === 1 ? 'player has' : 'players have' }} joined the league since
+        you started this projection.
       </p>
       <p class="pool-notice__footer">
         Your own numbers are untouched. Added players start from last season's stats, or at zero if
-        you built this projection from scratch. Worth a look before you draft.
+        you built this projection from scratch.
       </p>
     </div>
     <button type="button" class="pool-notice__dismiss" aria-label="Dismiss" (click)="dismiss()">

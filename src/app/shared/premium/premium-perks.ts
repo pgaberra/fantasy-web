@@ -33,11 +33,11 @@ export function premiumPerks(): readonly PremiumPerk[] {
   }
   if (environment.whosHotEnabled) {
     perks.push({
-      title: "Any game range on Who's hot",
+      title: "Any game range on Who's Hot",
       description:
         'Every preset and the slider, from the last 10 games to the full season. Free accounts see the last 5.',
       link: '/whos-hot',
-      linkLabel: "Pick a range on Who's hot",
+      linkLabel: "Pick a range on Who's Hot",
     });
   }
   perks.push({
@@ -58,7 +58,7 @@ export function freeFeatures(): readonly string[] {
     'Share a projection as a link',
   ];
   if (environment.whosHotEnabled) {
-    features.splice(2, 0, "Who's hot over the last 5 games");
+    features.splice(2, 0, "Who's Hot over the last 5 games");
   }
   return features;
 }

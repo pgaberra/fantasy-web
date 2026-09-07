@@ -34,9 +34,7 @@
       <span class="player-team">{{ player().teamAbbrev }}</span>
     }
     @if (belowMinGames()) {
-      <span
-        class="below-min-games"
-        appTooltip="Projected for fewer games than the league's goalie minimum, so this goalie is ranked last."
+      <span class="below-min-games" appTooltip="Projected below the league minimum in games played."
         >Below min. games</span
       >
     }

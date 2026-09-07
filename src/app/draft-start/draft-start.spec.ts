@@ -444,7 +444,7 @@ describe('DraftStartComponent', () => {
     // Nothing to open on, so the page lands on the last kind, whose empty state offers the
     // one way to get something: the paste field.
     expect(fixture.point.componentInstance.sourceKind()).toEqual('imported');
-    expect(texts(fixture, '.group-empty')[0]).toContain("Nobody's board here yet");
+    expect(texts(fixture, '.group-empty')[0]).toContain('No shared boards yet');
   });
 
   // One press to a draft: the first row of the open kind is checked from the start, and the
@@ -816,7 +816,7 @@ describe('DraftStartComponent', () => {
 
         expect(component.selectionLocked()).toBe(true);
         const link = fixture.nativeElement.querySelector('.start-row a');
-        expect(link?.textContent?.trim()).toEqual('Unlock with Premium');
+        expect(link?.textContent?.trim()).toEqual('Get Premium');
         expect(link?.getAttribute('routerLink')).toEqual('/pricing');
         expect(fixture.nativeElement.querySelector('.start-row button')).toBeNull();
       });

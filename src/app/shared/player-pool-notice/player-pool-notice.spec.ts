@@ -15,13 +15,13 @@ describe('PlayerPoolNoticeComponent', () => {
 
     const text = fixture.nativeElement.textContent as string;
     expect(fixture.nativeElement.querySelector('.pool-notice')).not.toBeNull();
-    expect(text).toContain('12 players have been added');
+    expect(text).toContain('12 players have joined the league');
     expect(text).toContain('Your own numbers are untouched');
   });
 
   it('reads as one player for a single addition', () => {
     expect(render({ added: 1 }).nativeElement.textContent as string).toContain(
-      '1 player has been added',
+      '1 player has joined the league',
     );
   });
 

@@ -1,11 +1,7 @@
 @if (playersResource.isLoading()) {
   <app-loading-indicator />
 } @else if (playersResource.error()) {
-  <app-error-state
-    title="Couldn't load the demo"
-    message="We couldn't load the player data. Check your connection and try again."
-    (retry)="retryLoad()"
-  />
+  <app-error-state title="Couldn't load the demo" (retry)="retryLoad()" />
 } @else {
   <div class="demo-card">
     <app-offseason-data-notice />

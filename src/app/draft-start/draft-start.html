@@ -167,7 +167,7 @@
         still carries its count, so the two kinds not open are accounted for, not hidden.
       -->
       <div class="kinds">
-        <span class="kinds-label" id="kinds-label">What do you want to draft against?</span>
+        <span class="kinds-label" id="kinds-label">Draft against</span>
         <div class="segmented" role="group" aria-labelledby="kinds-label">
           @for (option of sourceKinds; track option.kind) {
             <button
@@ -198,7 +198,7 @@
             @if (projections().length === 0) {
               <p class="group-empty">
                 @if (drafts().length > 0) {
-                  Every projection you have is drafted against already.
+                  Every projection you have already has a draft.
                   <a routerLink="/projections/new">Create another</a> to draft against fresh
                   numbers.
                 } @else {
@@ -259,8 +259,8 @@
           @case ('imported') {
             @if (imported().length === 0) {
               <p class="group-empty">
-                Nobody's board here yet. Paste a SlapStat share link below to copy one, and the copy
-                is yours to draft against.
+                No shared boards yet. Paste a SlapStat share link to copy one, and draft against the
+                copy.
               </p>
             } @else {
               <ul class="rows">
@@ -413,9 +413,9 @@
            to the pricing page it is the one thing that can actually be done next. -->
       <div class="start-row">
         @if (selectionLocked()) {
-          <a routerLink="/pricing" class="btn btn-primary start">Unlock with Premium</a>
+          <a routerLink="/pricing" class="btn btn-primary start">Get Premium</a>
           <span class="start-note">
-            Premium adds the AI projection, and any game range on Who's hot.
+            Premium adds the AI projection, and any game range on Who's Hot.
           </span>
         } @else {
           <button

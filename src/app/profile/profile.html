@@ -1,11 +1,7 @@
 @if (isLoading()) {
   <app-loading-indicator />
 } @else if (loadFailed()) {
-  <app-error-state
-    title="Couldn't load your profile"
-    message="Check your connection and try again."
-    (retry)="load()"
-  />
+  <app-error-state title="Couldn't load your profile" (retry)="load()" />
 } @else {
   <div class="profile">
     <h1 class="profile-title">Profile</h1>

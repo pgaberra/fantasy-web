@@ -23,8 +23,14 @@
         </button>
       </div>
     } @else {
+      <p class="dialog-body">
+        Anyone with the link can see the players in this projection and the scoring settings they
+        were ranked under. Your email is never shown. The link is a snapshot of the projection as it
+        is now.
+      </p>
+
       @if (needsUsername()) {
-        <p class="dialog-body">To share a projection you need to pick a username.</p>
+        <p class="username-hint">A share link is credited to your username.</p>
 
         <label class="username-label" for="share-username">Pick a username</label>
         <input

@@ -21,19 +21,19 @@ export class LandingComponent {
 
   readonly features: Feature[] = [
     {
-      title: 'Ditch the Excel Sheets',
+      title: 'Your scoring, not a generic top 200',
       description:
-        'Tailor projections directly to your league settings, whether you play points or categories. No more manual formulas or messy spreadsheets.',
+        'Points or categories, custom weights included. The rankings reorder around what your league actually does.',
     },
     {
-      title: 'Category Scoring, Solved',
+      title: 'Category leagues in one ranking',
       description:
-        "Comparing player value in category leagues used to be guesswork. Our Z-Score ranking combines all your league's categories into a single, easy-to-read board.",
+        'Z-Scores put hits, saves and plus-minus on the same scale, so a defenseman and a goalie become comparable numbers.',
     },
     {
-      title: 'Built for Draft Day',
+      title: 'Built for draft day',
       description:
-        'Run your draft in real-time with an interactive draft board, track picks seamlessly, and see instant post-draft power rankings to compare every team.',
+        'Draft mode updates as picks come off the board, and ends with power rankings for every team.',
     },
   ];
 }
