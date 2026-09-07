@@ -55,13 +55,7 @@
           {{ importingInto() === 'draft' ? 'Copying…' : 'Draft mode' }}
         </button>
       </div>
-      @if (alreadyImported()) {
-        <p class="board-actions-note">
-          You already have a copy of this board.
-          <a routerLink="/projections">Open your projections</a> to edit it, or
-          <a routerLink="/draft">go to Draft mode</a> to draft against it.
-        </p>
-      } @else if (signInPromptFor(); as intent) {
+      @if (signInPromptFor(); as intent) {
         <p class="board-actions-prompt" role="status" data-testid="sign-in-prompt">
           Your copy of this board lives in your account, so
           <a

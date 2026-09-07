@@ -748,8 +748,30 @@ describe('SharedProjectionComponent', () => {
       expect(navigate).toHaveBeenCalledWith(['/projections', 'copy1', 'draft']);
     });
 
-    /** A clash on the shared name means this same board is already in their account. */
-    it('points at the copy they already have rather than making a second one', async () => {
+    /**
+     * The page used to catch a name clash here and answer "you already have a copy of this
+     * board", with links to go and find it. Someone who pressed a button on a board wanted a
+     * board; db-service numbers the second copy now, so both buttons keep working and this
+     * page has nothing to say about it.
+     */
+    it('makes another copy when pressed again, rather than sending them off to find the first', async () => {
+      isLoggedIn.set(true);
+      importFromShare.mockReturnValue(of({ id: 'copy2', name: 'Shared board (2)' }));
+      const fixture = await render();
+
+      fixture.point.componentInstance.draftAgainstThis();
+      fixture.detectChanges();
+
+      expect(navigate).toHaveBeenCalledWith(['/projections', 'copy2', 'draft']);
+      expect(fixture.nativeElement.textContent).not.toContain('You already have a copy');
+      expect(notifyError).not.toHaveBeenCalled();
+    });
+
+    /**
+     * A clash can still reach us, but only from two imports landing together — the unique index
+     * is what settles that race. It is a failure worth retrying, unlike the one it replaces.
+     */
+    it('treats a name clash as an ordinary failure now, not as a dead end', async () => {
       isLoggedIn.set(true);
       importFromShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
       const fixture = await render();
@@ -757,10 +779,9 @@ describe('SharedProjectionComponent', () => {
       fixture.point.componentInstance.draftAgainstThis();
       fixture.detectChanges();
 
-      expect(fixture.point.componentInstance.alreadyImported()).toEqual(true);
-      expect(fixture.nativeElement.textContent).toContain('You already have a copy of this board');
-      expect(navigate).not.toHaveBeenCalled();
-      expect(notifyError).not.toHaveBeenCalled();
+      expect(notifyError).toHaveBeenCalledOnce();
+      expect(fixture.nativeElement.textContent).not.toContain('You already have a copy');
+      expect(fixture.point.componentInstance.isImporting()).toEqual(false);
     });
 
     it('surfaces any other failure and lets them try again', async () => {

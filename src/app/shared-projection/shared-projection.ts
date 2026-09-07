@@ -107,7 +107,6 @@ export class SharedProjectionComponent {
   /** Which of the two buttons is waiting on the copy, so only that one says so. */
   readonly importingInto = signal<ImportDestination | null>(null);
   readonly isImporting = computed(() => this.importingInto() !== null);
-  readonly alreadyImported = signal(false);
 
   /**
    * Which button a visitor without an account pressed, and therefore what the sign-in prompt is
@@ -160,6 +159,14 @@ export class SharedProjectionComponent {
    * The copy behind both buttons. What the visitor is looking at is a snapshot, and so is the
    * copy: the author's later edits are theirs, and their picks do not come along. Only where it
    * lands differs, which is the whole difference between the two buttons.
+   *
+   * <p>Pressing either a second time makes a second copy, and that is the point. The name it
+   * was shared under is taken by then, which db-service used to answer with a 409 — this page
+   * turned that into "you already have a copy of this board", with links to go and find it.
+   * Someone who pressed a button on a board wanted a board, and being handed directions
+   * instead was the annoyance. The server now numbers the copy (`My league (2)`), so both
+   * buttons simply do what they say however often they are pressed, and a 409 goes back to
+   * meaning something went wrong.
    */
   private importThen(destination: ImportDestination): void {
     // A copy has to live in an account, so someone without one is asked for it here rather than
@@ -169,7 +176,6 @@ export class SharedProjectionComponent {
       return;
     }
     this.importingInto.set(destination);
-    this.alreadyImported.set(false);
     this.storage
       .importFromShare(this.token)
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -182,14 +188,8 @@ export class SharedProjectionComponent {
               : ['/projections', projection.id],
           );
         },
-        error: (error: unknown) => {
+        error: () => {
           this.importingInto.set(null);
-          // A clash on the name it was shared under almost always means this same board is
-          // already in their account: nothing to fix, just somewhere else to go.
-          if (error instanceof HttpErrorResponse && error.status === 409) {
-            this.alreadyImported.set(true);
-            return;
-          }
           this.notification.error("Couldn't copy this board. Please try again.");
         },
       });

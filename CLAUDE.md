@@ -100,7 +100,9 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   makes it real. The radio stays real and visible on purpose: it is what the E2E suite
   checks (`li.row` + `getByRole('radio')`). The shared kind carries the paste
   field; `shareTokenFrom` accepts a whole URL, a `/s/…` path, or a bare token, and a name
-  clash (409) asks for a name rather than reporting a failure the user cannot act on. An
+  clash (409) asks for a name rather than reporting a failure the user cannot act on — which
+  is now a rare path, since db-service numbers a taken name rather than refusing unless the
+  caller chose it. An
   import switches to that kind and checks the copy.
   History, for anyone tempted to relitigate: the three kinds were tabs (#406), then all
   three lists at once with a button per row (#459, #503), then a hierarchy of filled and
@@ -120,8 +122,11 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
 - `shared-projection/` — the page behind a share link (`/s/:token`), public and unguarded: a
   share link has to open for someone who has never signed in. A signed-in visitor is offered
   "Draft Mode", which copies the snapshot into their own projections and opens the board; a
-  signed-out one still gets the sign-up. A 409 there means they already hold a copy, so it
-  points at Draft Mode instead of reporting an error. It renders the **snapshot** the
+  signed-out one still gets the sign-up. Pressing either button again makes **another**
+  copy: the name the board was shared under is taken by then, and db-service numbers the new
+  one (`My league (2)`) rather than refusing. This page used to catch that 409 and answer
+  "you already have a copy of this board", with links to go and find it, which left someone
+  who had pressed a button on a board doing the navigating themselves. It renders the **snapshot** the
   owner published — the top rows with identity, rank and value frozen into them — so it needs
   no player read model and no ranking of its own. It renders the editor's own `player-row` and
   `projections-table-header` in a **read-only** mode, so a shared projection looks like the
