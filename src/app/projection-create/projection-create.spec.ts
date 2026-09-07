@@ -1,4 +1,5 @@
-import { MockBuilder, MockInstance, MockRender } from 'ng-mocks';
+import { MockBuilder, MockedComponentFixture, MockInstance, MockRender } from 'ng-mocks';
+import { signal } from '@angular/core';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Observable, of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -13,6 +14,7 @@ import { PlayerService } from '../services/player.service';
 import { NotificationService } from '../services/notification.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { ProjectionModelService } from '../services/projection-model.service';
+import { EntitlementService } from '../services/entitlement.service';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import { SeededProjectionResponse } from '../api/models/seeded-projection-response';
 import { ProjectionCalculationService } from '../services/projection-calculation.service';
@@ -170,11 +172,15 @@ describe('ProjectionCreateComponent', () => {
 
   const navigate = vi.fn();
   const notifyError = vi.fn();
+  const premium = signal(false);
+  const entitlementLoadState = signal<'idle' | 'loading' | 'loaded' | 'error'>('loaded');
   const createProjection = vi.fn<
     (request: CreateProjectionRequest) => Observable<ProjectionResponse>
   >(() => of(created));
 
   beforeEach(() => {
+    premium.set(false);
+    entitlementLoadState.set('loaded');
     navigate.mockClear();
     notifyError.mockClear();
     createProjection.mockClear();
@@ -195,6 +201,7 @@ describe('ProjectionCreateComponent', () => {
         loadProjection: () => of(source),
       })
       .mock(NotificationService, { error: notifyError })
+      .mock(EntitlementService, { premium, loadState: entitlementLoadState })
       .provide({ provide: Router, useValue: { navigate } });
   });
 
@@ -906,5 +913,117 @@ describe('ProjectionCreateComponent', () => {
     await fixture.whenStable();
 
     expect(component.modelCoverage()).toEqual({ skaters: 3, goalies: 0 });
+  });
+
+  /**
+   * Locked, not hidden: someone who cannot see the AI projection has no reason to buy it. The
+   * card stays pickable so it can be read about, and the slot the preview would fill carries
+   * the pitch instead of the model's numbers, which are the thing being sold.
+   */
+  describe('when the AI projection is behind a subscription', () => {
+    const withPayments = async (
+      test: (fixture: MockedComponentFixture<ProjectionCreateComponent>) => void | Promise<void>,
+    ) => {
+      const original = environment.paymentsEnabled;
+      environment.paymentsEnabled = true;
+      try {
+        const fixture = MockRender(ProjectionCreateComponent);
+        await fixture.whenStable();
+        await test(fixture);
+      } finally {
+        environment.paymentsEnabled = original;
+      }
+    };
+
+    it('marks the card locked but leaves it on the page and pickable', async () => {
+      await withPayments(async (fixture) => {
+        const component = fixture.point.componentInstance;
+        component.selectPreset('model');
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(component.aiProjectionLocked()).toBe(true);
+        expect(component.isPreset('model')).toBe(true);
+        expect(fixture.nativeElement.querySelectorAll('.row--locked').length).toEqual(1);
+      });
+    });
+
+    /**
+     * The BFF refuses the model's lines to this account, so asking would spend a request only
+     * to draw the page's failure state over the pitch that belongs there.
+     */
+    it('never asks the model for lines it would be refused', async () => {
+      await withPayments(async (fixture) => {
+        fixture.point.componentInstance.selectPreset('model');
+        await fixture.whenStable();
+
+        expect(seed).not.toHaveBeenCalled();
+      });
+    });
+
+    it('puts the pitch where the preview would go, with the way to Premium in it', async () => {
+      await withPayments(async (fixture) => {
+        fixture.point.componentInstance.selectPreset('model');
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        const pitch = fixture.nativeElement.querySelector('.pitch');
+        expect(pitch).not.toBeNull();
+        expect(pitch.textContent).toContain('The AI projection');
+        expect(pitch.querySelector('a')?.getAttribute('routerLink')).toEqual('/pricing');
+        // The preview's table must not be drawn beside it: there is nothing to draw.
+        expect(fixture.nativeElement.querySelector('.preview-card')).toBeNull();
+      });
+    });
+
+    /** A Create button that can only be refused is worse than one that is plainly not offered. */
+    it('stands the Create button down while the locked starting point is picked', async () => {
+      await withPayments(async (fixture) => {
+        const component = fixture.point.componentInstance;
+        component.selectPreset('model');
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(component.canCreate()).toBe(false);
+        expect(fixture.nativeElement.querySelector('.create-button')).toBeNull();
+
+        component.selectPreset('default');
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(component.canCreate()).toBe(true);
+        expect(fixture.nativeElement.querySelector('.create-button')).not.toBeNull();
+      });
+    });
+
+    it('previews the model as before for a subscriber', async () => {
+      premium.set(true);
+      await withPayments(async (fixture) => {
+        fixture.point.componentInstance.selectPreset('model');
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(seed).toHaveBeenCalled();
+        expect(fixture.nativeElement.querySelector('.pitch')).toBeNull();
+        expect(fixture.point.componentInstance.canCreate()).toBe(true);
+      });
+    });
+
+    /**
+     * A subscription that lapsed while the page was open is the one way to reach the server's
+     * refusal from here, and telling someone to retry it would be telling them to keep failing.
+     */
+    it('says what a refused create actually needs, rather than telling anyone to retry', async () => {
+      createProjection.mockReturnValueOnce(
+        throwError(() => new HttpErrorResponse({ status: 403 })),
+      );
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+
+      fixture.point.componentInstance.create();
+
+      expect(notifyError).toHaveBeenCalledWith(expect.stringContaining('part of Premium'));
+      expect(notifyError).not.toHaveBeenCalledWith(expect.stringContaining('try again'));
+    });
   });
 });

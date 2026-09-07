@@ -284,6 +284,76 @@
   background: var(--color-surface-hover);
 }
 
+/* Stands where the preview's table would, so picking the AI projection does not drop the page
+   by the height of a table. Gold-edged like the card that opened it, and it carries the only
+   button on the page while it is showing. */
+.pitch {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 1px solid var(--color-gold);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-gold) 8%, var(--color-surface));
+}
+
+.pitch-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.pitch-text {
+  margin: 0;
+  max-width: 46rem;
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+.pitch-points {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.pitch-points li {
+  position: relative;
+  padding-left: 1.5rem;
+  line-height: 1.5;
+}
+
+.pitch-points li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--color-gold-strong);
+  font-weight: var(--weight-bold);
+}
+
+/* A locked starting point keeps its place and its weight; only the gold edge says it is not
+   yours yet. Faded it would read as broken, and hidden it would sell nothing. */
+.row--locked {
+  border-color: color-mix(in srgb, var(--color-gold) 55%, var(--color-border));
+  background: color-mix(in srgb, var(--color-gold) 6%, var(--color-surface));
+}
+
+.row--locked.row--selected {
+  border-color: var(--color-gold);
+}
+
+.row--locked .row-icon {
+  color: var(--color-gold-strong);
+}
+
 .preview-note {
   margin: 0.4rem 0 0;
   font-size: var(--text-xs);

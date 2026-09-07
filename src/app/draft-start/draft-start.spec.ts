@@ -1,5 +1,7 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { provideLocationMocks } from '@angular/common/testing';
@@ -11,6 +13,7 @@ import {
   PRESETS,
 } from './draft-start';
 import { ProjectionStorageService } from '../services/projection-storage.service';
+import { EntitlementService } from '../services/entitlement.service';
 import { NotificationService } from '../services/notification.service';
 import { PopoverTriggerDirective } from '../shared/popover/popover-trigger.directive';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
@@ -53,8 +56,12 @@ describe('DraftStartComponent', () => {
   const deleteProjection = vi.fn();
   const clearDraft = vi.fn();
   const notifyError = vi.fn();
+  const premium = signal(false);
+  const loadState = signal<'idle' | 'loading' | 'loaded' | 'error'>('loaded');
 
   beforeEach(() => {
+    premium.set(false);
+    loadState.set('loaded');
     navigate.mockClear();
     listWithPresetDrafts.mockClear();
     createProjection.mockClear();
@@ -76,6 +83,7 @@ describe('DraftStartComponent', () => {
           clearDraft,
         })
         .mock(NotificationService, { error: notifyError })
+        .mock(EntitlementService, { premium, loadState })
         .provide({ provide: Router, useValue: { navigate } })
         // The component pulls in RouterLink, which has ng-mocks mock the router's location
         // providers too — and the CDK overlay behind the row menu needs a real one to open.
@@ -765,5 +773,90 @@ describe('DraftStartComponent', () => {
 
     expect(ngMocks.input(link, 'routerLink')).toEqual('/projections/new');
     expect(link.nativeElement.textContent?.trim()).toEqual('+ Create a new projection');
+  });
+
+  /**
+   * Locked, not hidden. Someone who cannot see the AI projection has no reason to buy it, so
+   * the card keeps its place among the presets and the padlock and the button say the rest.
+   */
+  describe('when the AI projection is behind a subscription', () => {
+    const withPayments = async (
+      test: (fixture: Awaited<ReturnType<typeof renderFixture>>) => void,
+    ) => {
+      const original = environment.paymentsEnabled;
+      environment.paymentsEnabled = true;
+      try {
+        test(await renderFixture());
+      } finally {
+        environment.paymentsEnabled = original;
+      }
+    };
+
+    it('keeps the card on the page, marked and locked', async () => {
+      await withPayments((fixture) => {
+        const component = fixture.point.componentInstance;
+
+        expect(component.isPresetLocked(MODEL)).toBe(true);
+        expect(component.isPresetLocked(LAST_SEASON)).toBe(false);
+        // Still listed, still named, still one of the two starting points on offer.
+        expect(texts(fixture, '.row-name')).toEqual([LAST_SEASON_PRESET_NAME, MODEL_PRESET_NAME]);
+        expect(fixture.nativeElement.querySelectorAll('.row--locked').length).toEqual(1);
+      });
+    });
+
+    /**
+     * The Start button is the page's one primary action. Over a locked preset it could only
+     * produce a refusal, so it becomes the thing that can actually be done next.
+     */
+    it('turns the Start button into the way to Premium once the locked card is picked', async () => {
+      await withPayments((fixture) => {
+        const component = fixture.point.componentInstance;
+        component.selectPreset(MODEL);
+        fixture.detectChanges();
+
+        expect(component.selectionLocked()).toBe(true);
+        const link = fixture.nativeElement.querySelector('.start-row a');
+        expect(link?.textContent?.trim()).toEqual('Unlock with Premium');
+        expect(link?.getAttribute('routerLink')).toEqual('/pricing');
+        expect(fixture.nativeElement.querySelector('.start-row button')).toBeNull();
+      });
+    });
+
+    it('leaves the free preset able to start a draft as it always could', async () => {
+      await withPayments((fixture) => {
+        const component = fixture.point.componentInstance;
+        component.selectPreset(LAST_SEASON);
+        fixture.detectChanges();
+
+        expect(component.selectionLocked()).toBe(false);
+        expect(
+          fixture.nativeElement.querySelector('.start-row button')?.textContent?.trim(),
+        ).toEqual('Start draft');
+      });
+    });
+
+    it('unlocks the card for a subscriber, badge and all', async () => {
+      premium.set(true);
+      await withPayments((fixture) => {
+        expect(fixture.point.componentInstance.isPresetLocked(MODEL)).toBe(false);
+        expect(fixture.nativeElement.querySelector('.row--locked')).toBeNull();
+        // The badge stays: it names the plan the starting point belongs to.
+        expect(texts(fixture, '.row-badge')).toEqual(['Premium']);
+      });
+    });
+
+    /**
+     * A lapsed subscription is the one way to reach the server's refusal from this page, and
+     * "please try again" over it would send someone at something that cannot work.
+     */
+    it('says what a refused draft actually needs, rather than telling anyone to retry', async () => {
+      createProjection.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
+      const component = await render();
+
+      component.startPreset(MODEL);
+
+      expect(notifyError).toHaveBeenCalledWith(expect.stringContaining('part of Premium'));
+      expect(notifyError).not.toHaveBeenCalledWith(expect.stringContaining('try again'));
+    });
   });
 });

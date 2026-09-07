@@ -85,7 +85,19 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   footnote. It carries a gold **Premium** badge, and `showsPremiumBadge` holds that badge
   back wherever `paymentsEnabled` is off — without payments the preset is free and
   ungated, and a badge naming a subscription the build cannot sell promises something
-  nobody can act on. The radio stays real and visible on purpose: it is what the E2E suite
+  nobody can act on. **It is also locked**, and the two are different
+  questions: the badge says which plan it belongs to, the padlock says this account has not
+  bought it. `shared/premium/ai-projection-access.ts` answers the second for both pages so
+  they cannot lock the same starting point on different terms, and holds off until the
+  entitlement has landed — locking on a live read that says non-premium until it answers would
+  put a padlock on a subscriber's own feature every time they open the page.
+  **Locked is not hidden, deliberately.** The card keeps its place, its icon and its full-weight
+  name; only a gold edge and the padlock say it is not yours yet, and picking it swaps the page's
+  primary button for the way to `/pricing`. Someone who cannot see the thing has no reason to buy
+  it. (`isAiProjectionEnabled` is the switch that genuinely hides it, and it is a third question:
+  a build without the model has nothing to sell either.) The gate is only what the pages draw —
+  the BFF refuses `source=model` and the model's own lines to the same accounts, which is what
+  makes it real. The radio stays real and visible on purpose: it is what the E2E suite
   checks (`li.row` + `getByRole('radio')`). The shared kind carries the paste
   field; `shareTokenFrom` accepts a whole URL, a `/s/…` path, or a bare token, and a name
   clash (409) asks for a name rather than reporting a failure the user cannot act on. An
@@ -162,6 +174,15 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   landed, so nothing is said of a subscriber a request too early), and the pricing page is in
   the footer and the landing nav wherever payments are on, since the price has to be reachable
   from the navigation for Paddle's review.
+- The **new-projection page's preview** is the other half of that: while the AI projection is
+  locked, `projection-create` never asks for the model's lines (the BFF would refuse them, and
+  the request would only draw the page's failure state) and fills the preview's slot with a
+  pitch panel instead — what the model is and what it is worth, never a row of it. The slot is
+  the same height either way, so picking a starting point does not drop the page.
+  Both pages still handle a **403** from the server: the pages hold the locked request back
+  themselves, so reaching one means a subscription lapsed mid-session or the entitlement read
+  failed. `shared/premium/premium-refused.ts` is the one message for it, and it deliberately
+  does not say "try again".
 - `services/` — app services (auth, projections, etc.)
 - `interceptors/` — HTTP interceptors: `authInterceptor` attaches the JWT and refreshes
   once on 401 (all environments). `retryInterceptor` (outermost) is a small **always-on**

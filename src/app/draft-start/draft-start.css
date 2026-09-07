@@ -465,8 +465,23 @@
   color: var(--color-text-subtle);
 }
 
-/* Gold, and the dark gold for the text: the tint alone does not carry 4.5:1. It is the app's
-   only ornamental colour, and this is the one place on the page selling anything. */
+/* A locked starting point is still a starting point: it keeps its place, its icon and its
+   full-strength name, and only the gold edge says it is not yours yet. Faded out it would
+   read as broken, and hidden it would sell nothing at all — which is the point of leaving
+   it here. */
+.row--locked {
+  border-color: color-mix(in srgb, var(--color-gold) 55%, var(--color-border));
+  background: color-mix(in srgb, var(--color-gold) 6%, var(--color-surface));
+}
+
+.row--locked.row--selected {
+  border-color: var(--color-gold);
+}
+
+.row--locked .row-icon {
+  color: var(--color-gold-strong);
+}
+
 .panel app-share-import {
   display: block;
 }
@@ -476,7 +491,16 @@
 .start-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
   margin-top: var(--space-4);
+}
+
+/* Beside the button rather than under the card: it explains the button, which is the thing
+   that changed, and the card above it already says which starting point is meant. */
+.start-note {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
 }
 
 @media (max-width: 640px) {
