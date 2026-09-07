@@ -677,7 +677,7 @@ export class ProjectionCreateComponent {
           next: (projection) => this.persist({ ...projection.data, draft: undefined }),
           error: () => {
             this.isCreating.set(false);
-            this.notification.error("Couldn't load the projection to copy. Please try again.");
+            this.notification.error("Couldn't load the projection to copy. Try again.");
           },
         });
       return;
@@ -714,7 +714,7 @@ export class ProjectionCreateComponent {
             // lapsed while the page was open, or an entitlement read that never landed.
             this.notification.error(PREMIUM_REFUSED_MESSAGE);
           } else {
-            this.notification.error("Couldn't create the projection. Please try again.");
+            this.notification.error("Couldn't create the projection. Try again.");
           }
         },
       });

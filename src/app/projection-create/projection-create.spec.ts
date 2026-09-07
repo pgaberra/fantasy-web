@@ -464,9 +464,9 @@ describe('ProjectionCreateComponent', () => {
       expect(component.startingPoint()).toEqual({ kind: 'copy', id: null });
       expect(component.copiedBoard()).toBeNull();
       expect(component.canCreate()).toEqual(false);
-      expect(root.querySelector('.group-empty')?.textContent).toContain('no projections yet');
+      expect(root.querySelector('.group-empty')?.textContent).toContain('No projections yet');
       expect(root.querySelector('.row')).toBeNull();
-      expect(root.querySelector('.preview-note')?.textContent).toContain('nothing to copy');
+      expect(root.querySelector('.preview-note')?.textContent).toContain('Nothing to copy');
 
       component.sourceKind.set('preset');
       expect(component.canCreate()).toEqual(true);

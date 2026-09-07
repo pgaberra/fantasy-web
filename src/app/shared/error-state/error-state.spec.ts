@@ -10,13 +10,13 @@ describe('ErrorStateComponent', () => {
   it('renders the given title and message', () => {
     const fixture = MockRender(ErrorStateComponent, {
       title: 'Could not load',
-      message: 'Please try again.',
+      message: 'Try again.',
     });
 
     const title = fixture.nativeElement.querySelector('.state-title');
     const message = fixture.nativeElement.querySelector('.state-message');
     expect(title?.textContent?.trim()).toEqual('Could not load');
-    expect(message?.textContent?.trim()).toEqual('Please try again.');
+    expect(message?.textContent?.trim()).toEqual('Try again.');
   });
 
   it('emits retry when the button is clicked', () => {

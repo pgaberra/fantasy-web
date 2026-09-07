@@ -1,9 +1,7 @@
 <section class="pricing">
   <header class="pricing-header">
     <h1 class="pricing-title">SlapStat <span class="pricing-title-accent">Premium</span></h1>
-    <p class="pricing-sub">
-      One plan, billed monthly, cancel anytime. Here is what it adds to the free app.
-    </p>
+    <p class="pricing-sub">One plan, billed monthly. Cancel anytime.</p>
   </header>
 
   <div class="plans">
@@ -35,12 +33,12 @@
             <span class="plan-price-period">per month</span>
           </p>
           <p class="plan-price-note">
-            Shown in your own currency. Tax is added or included as your country requires, and the
-            exact total is confirmed at checkout.
+            Shown in your currency. Tax is applied as your country requires, and the total is
+            confirmed at checkout.
           </p>
         } @else {
           <p class="plan-tagline">
-            Billed monthly. The price, in your own currency, is confirmed at checkout.
+            Billed monthly. The price in your currency is confirmed at checkout.
           </p>
         }
       </div>
@@ -61,11 +59,11 @@
         @if (!authService.isLoggedIn()) {
           <a routerLink="/login" class="btn btn-primary btn-lg btn-block">Sign in to subscribe</a>
           <p class="plan-note">
-            New here? <a routerLink="/register">Create a free account</a> first, then come back.
+            New here? <a routerLink="/register">Create a free account</a> first.
           </p>
         } @else if (entitlement.premium()) {
           <p class="plan-current plan-current--premium">
-            <span class="premium-badge">Premium</span> You already have it.
+            <span class="premium-badge">Premium</span> Your current plan.
           </p>
           <a routerLink="/account" class="btn btn-secondary btn-block">Manage subscription</a>
         } @else {
@@ -78,8 +76,8 @@
             {{ starting() ? 'Starting…' : 'Subscribe' }}
           </button>
           <p class="plan-note">
-            Secure checkout by Paddle, our merchant of record. Cancel anytime from your subscription
-            page.
+            Checkout is handled by Paddle, our merchant of record. Cancel anytime from your
+            subscription page.
           </p>
         }
       </div>
@@ -94,29 +92,29 @@
       <div class="faq-item">
         <dt>Can I cancel?</dt>
         <dd>
-          Any time, from your subscription page. Cancelling stops the next charge, and you keep
-          Premium until the end of the month you have already paid for.
+          Any time, from your subscription page. You keep Premium until the end of the month you
+          have already paid for.
         </dd>
       </div>
       <div class="faq-item">
         <dt>Who charges my card?</dt>
         <dd>
-          Paddle, who sell SlapStat Premium on our behalf and handle payment and tax. Their name is
-          what appears on your statement.
+          Paddle, who sell SlapStat Premium on our behalf. Their name is what appears on your
+          statement.
         </dd>
       </div>
       <div class="faq-item">
         <dt>What if it is not for me?</dt>
         <dd>
-          Write to us within 14 days of your first payment and we refund the month in full. The
+          Email us within 14 days of your first payment and we refund the month in full. The
           <a routerLink="/refunds">refund policy</a> has the details.
         </dd>
       </div>
       <div class="faq-item">
         <dt>Will the price change?</dt>
         <dd>
-          The price you sign up at is the price you keep, unless we tell you first. The
-          <a routerLink="/terms">terms</a> say so.
+          The price you sign up at is the price you keep, unless we tell you first. See the
+          <a routerLink="/terms">terms</a>.
         </dd>
       </div>
     </dl>

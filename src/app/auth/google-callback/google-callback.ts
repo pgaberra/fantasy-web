@@ -32,14 +32,14 @@ export class GoogleCallbackComponent implements OnInit {
       this.errorMessage.set(
         errorParam === 'access_denied'
           ? 'Google sign-in was cancelled. You can try again or use your email and password.'
-          : 'Google sign-in failed. Please try again.',
+          : 'Google sign-in failed. Try again.',
       );
       return;
     }
 
     this.authService.completeGoogleLogin(code, state).subscribe({
       error: (error: unknown) =>
-        this.errorMessage.set(messageForError(error, 'Google sign-in failed. Please try again.')),
+        this.errorMessage.set(messageForError(error, 'Google sign-in failed. Try again.')),
     });
   }
 }

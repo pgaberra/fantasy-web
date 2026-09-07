@@ -62,7 +62,7 @@ export class LeagueSyncComponent {
 
   private buildHint(): string {
     if (this.yahooAvailable && this.espnAvailable) {
-      return 'On Yahoo or ESPN? Choose your platform to auto-fill scoring and roster settings from your league.';
+      return 'Import scoring and roster settings from your Yahoo or ESPN league.';
     }
     const platform = this.yahooAvailable ? 'Yahoo' : 'ESPN';
     return `On ${platform}? Auto-fill scoring and roster settings from your league.`;

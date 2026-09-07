@@ -26,10 +26,10 @@ export function handleNavigationError(error: unknown): void {
     // Reloading did not help, so the build is broken rather than merely stale. Say so instead of
     // reloading again.
     inject(NotificationService).error(
-      "Couldn't load that page. Please refresh. A new version may have just been released.",
+      "Couldn't load that page. Refresh the page. A new version may have just been released.",
     );
     return;
   }
 
-  inject(NotificationService).error("Couldn't open that page. Please try again.");
+  inject(NotificationService).error("Couldn't open that page. Try again.");
 }

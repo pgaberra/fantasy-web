@@ -171,6 +171,6 @@ export class EspnLeagueSyncComponent implements OnInit {
     if (status === 404) {
       return 'No ESPN league found for that id.';
     }
-    return 'Could not load the league settings from ESPN. Please try again.';
+    return 'Could not load the league settings from ESPN. Try again.';
   }
 }

@@ -198,7 +198,7 @@
             @if (projections().length === 0) {
               <p class="group-empty">
                 @if (drafts().length > 0) {
-                  Every projection you have is drafted against already.
+                  Every projection already has a draft.
                   <a routerLink="/projections/new">Create another</a> to draft against fresh
                   numbers.
                 } @else {
@@ -259,8 +259,7 @@
           @case ('imported') {
             @if (imported().length === 0) {
               <p class="group-empty">
-                Nobody's board here yet. Paste a SlapStat share link below to copy one, and the copy
-                is yours to draft against.
+                No imported projections yet. Paste a share link below to copy one.
               </p>
             } @else {
               <ul class="rows">
@@ -306,7 +305,7 @@
           @default {
             @if (availablePresets().length === 0) {
               <p class="group-empty">
-                Every preset has a draft above. Discard that draft to start the preset fresh.
+                Every preset already has a draft. Discard one to start it fresh.
               </p>
             } @else {
               <!--
@@ -394,9 +393,7 @@
                           }
                         </span>
                         @if (isPresetLocked(preset)) {
-                          <span class="row-meta">
-                            The model's own line for every player. Part of Premium.
-                          </span>
+                          <span class="row-meta"> The model's own line for every player. </span>
                         }
                       </span>
                     </label>
@@ -415,7 +412,7 @@
         @if (selectionLocked()) {
           <a routerLink="/pricing" class="btn btn-primary start">Unlock with Premium</a>
           <span class="start-note">
-            Premium adds the AI projection, and any game range on Who's hot.
+            Premium adds the AI projection and any game range on Who's hot.
           </span>
         } @else {
           <button

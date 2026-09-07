@@ -138,11 +138,10 @@
             <h2 class="modal-title">Finish the draft?</h2>
             <p class="modal-text">
               @if (isComplete()) {
-                Finishing marks the draft done and opens its summary. You can head back to the board
-                and edit anytime.
+                Marks the draft done and opens the summary. You can come back and edit anytime.
               } @else {
-                The draft isn't finished yet, {{ picks().length }} of {{ totalPicks() }} picks made.
-                You can still finish and view the summary, then come back to keep drafting.
+                {{ picks().length }} of {{ totalPicks() }} picks made. You can finish now and come
+                back to keep drafting.
               }
             </p>
             <div class="modal-actions">

@@ -13,4 +13,4 @@ export function isPremiumRefusal(error: unknown): boolean {
 }
 
 export const PREMIUM_REFUSED_MESSAGE =
-  'The AI projection is part of Premium. Open Premium from the account menu to subscribe.';
+  'The AI projection is part of Premium. Subscribe from the Premium page.';

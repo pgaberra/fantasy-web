@@ -26,7 +26,7 @@ export function premiumPerks(): readonly PremiumPerk[] {
     perks.push({
       title: 'The AI projection',
       description:
-        'A model-built line for every player, ready to draft from as it is or to tune into your own.',
+        'A model-built line for every player, ready to draft from or edit into your own.',
       link: '/projections/new',
       linkLabel: 'Start an AI projection',
     });
@@ -42,7 +42,7 @@ export function premiumPerks(): readonly PremiumPerk[] {
   }
   perks.push({
     title: 'New tools first',
-    description: 'New premium features land here as they are built, at the price you signed up at.',
+    description: 'New Premium features as they land, at the price you signed up at.',
   });
   return perks;
 }

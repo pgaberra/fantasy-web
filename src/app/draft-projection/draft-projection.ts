@@ -268,7 +268,7 @@ export class DraftProjectionComponent implements OnInit {
   constructor() {
     effect(() => {
       if (this.playersResource.error()) {
-        this.notification.error("Couldn't load player data. Please try again.");
+        this.notification.error("Couldn't load player data. Try again.");
         void this.router.navigate(['/projections']);
       }
     });
@@ -463,7 +463,7 @@ export class DraftProjectionComponent implements OnInit {
           this.autosaveEnabled.set(true);
         },
         error: () => {
-          this.notification.error("Couldn't open the projection. Please try again.");
+          this.notification.error("Couldn't open the projection. Try again.");
           void this.router.navigate(['/projections']);
         },
       });
@@ -631,7 +631,7 @@ export class DraftProjectionComponent implements OnInit {
           const conflict = error instanceof HttpErrorResponse && error.status === 409;
           this.renameError.set(
             conflict
-              ? 'A projection with that name already exists.'
+              ? 'You already have a projection with that name.'
               : 'Could not rename the projection.',
           );
         },

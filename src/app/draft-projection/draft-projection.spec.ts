@@ -295,7 +295,7 @@ describe('DraftProjectionComponent', () => {
     component.saveRename();
     await fixture.whenStable();
 
-    expect(component.renameError()).toContain('already exists');
+    expect(component.renameError()).toContain('already have a projection with that name');
     expect(component.projectionName()).toEqual('My league');
     expect(component.isRenaming()).toEqual(true);
   });

@@ -107,6 +107,6 @@ describe('handleNavigationError', () => {
     handle(new Error('Cannot read properties of undefined'));
 
     expect(reload).not.toHaveBeenCalled();
-    expect(error).toHaveBeenCalledWith("Couldn't open that page. Please try again.");
+    expect(error).toHaveBeenCalledWith("Couldn't open that page. Try again.");
   });
 });

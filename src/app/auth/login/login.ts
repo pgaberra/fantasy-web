@@ -39,9 +39,7 @@ export class LoginComponent implements OnInit {
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         error: (error: unknown) => {
-          this.errorMessage.set(
-            messageForError(error, 'Invalid email or password. Please try again.'),
-          );
+          this.errorMessage.set(messageForError(error, 'Invalid email or password. Try again.'));
         },
       });
   }
@@ -61,9 +59,7 @@ export class LoginComponent implements OnInit {
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         error: (error: unknown) => {
-          this.errorMessage.set(
-            messageForError(error, 'Facebook sign-in failed. Please try again.'),
-          );
+          this.errorMessage.set(messageForError(error, 'Facebook sign-in failed. Try again.'));
         },
       });
   }

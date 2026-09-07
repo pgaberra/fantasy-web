@@ -516,8 +516,8 @@ describe('SharedProjectionComponent', () => {
       const fixture = await render();
 
       for (const [testId, text] of [
-        ['copy-board', 'Create your own projection from a copy of this one'],
-        ['draft-board', 'Enter Draft mode with a copy of this projection'],
+        ['copy-board', 'Save a copy you can edit'],
+        ['draft-board', 'Draft against a copy of this projection'],
       ]) {
         const button = fixture.nativeElement.querySelector(`[data-testid="${testId}"]`);
         button.dispatchEvent(new MouseEvent('mouseenter'));
@@ -548,7 +548,7 @@ describe('SharedProjectionComponent', () => {
       fixture.nativeElement.querySelector('[data-testid="copy-board"]').click();
       fixture.detectChanges();
 
-      expect(fixture.nativeElement.textContent).toContain('to make it yours');
+      expect(fixture.nativeElement.textContent).toContain('keep editing it');
     });
 
     it('sends them back to this board once they have signed in from the ask', async () => {

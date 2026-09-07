@@ -28,7 +28,7 @@ describe('LeagueSyncComponent', () => {
     const fixture = await render(false, true);
 
     expect(fixture.nativeElement.querySelectorAll('.provider-tab').length).toEqual(2);
-    expect(fixture.nativeElement.textContent).toContain('On Yahoo or ESPN?');
+    expect(fixture.nativeElement.textContent).toContain('Import scoring and roster settings');
     // Nothing pre-selected — no sync widget until the user picks a platform.
     expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeNull();
     expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeNull();

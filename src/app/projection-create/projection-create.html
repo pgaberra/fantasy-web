@@ -31,7 +31,7 @@
            that has to change is the one right above this. -->
       @if (nameTaken()) {
         <p class="field-error" id="projection-name-error">
-          You already have a projection with that name. Pick another one.
+          You already have a projection with that name.
         </p>
       }
     </div>
@@ -48,7 +48,7 @@
         <span class="field-label" id="starting-point-label">Starting point</span>
         <app-help-tip
           label="What the starting point decides"
-          text="The initial stats each player is given."
+          text="The stats each player starts with."
         />
       </legend>
 
@@ -71,7 +71,7 @@
           @case ('projection') {
             @if (ownProjections().length === 0) {
               <p class="group-empty">
-                You have no projections yet. Start from a preset, and copies of it belong here.
+                No projections yet. Start from a preset, and your copies show up here.
               </p>
             } @else {
               <ul class="rows">
@@ -117,7 +117,7 @@
           @case ('imported') {
             @if (importedBoards().length === 0) {
               <p class="group-empty">
-                Nobody's board here yet. Paste a SlapStat share link below to copy one.
+                No imported projections yet. Paste a share link below to copy one.
               </p>
             } @else {
               <ul class="rows">
@@ -269,7 +269,7 @@
         <span class="field-label">Preview</span>
         <app-help-tip
           label="What the preview shows"
-          text="The first rows of the editor, as this starting point would fill them in."
+          text="The first rows, as this starting point would fill them in."
         />
       </div>
       <!--
@@ -288,14 +288,13 @@
             The AI projection
           </h3>
           <p class="pitch-text">
-            A model-built line for every player it can reach, from last season's numbers, ice time
-            and workload. Start your board from it instead of from last season, then tune whatever
-            you disagree with, exactly as you would any other projection.
+            A model-built line for every player, from last season's numbers, ice time and workload.
+            Start here instead of from last season, then change whatever you disagree with.
           </p>
           <ul class="pitch-points">
-            <li>Every skater and goalie the model reaches, ranked to your own scoring settings</li>
-            <li>Yours to edit: a starting point, not a locked board</li>
-            <li>Draft against it straight from Draft mode</li>
+            <li>Every skater and goalie the model covers, ranked by your scoring settings</li>
+            <li>Fully editable. Use it as a starting point and make it your own</li>
+            <li>Draft against it in Draft mode</li>
           </ul>
           <a routerLink="/pricing" class="btn btn-primary">Unlock with Premium</a>
         </section>
@@ -303,13 +302,11 @@
         <p class="preview-note">Loading preview…</p>
       } @else if (previewFailed() || !previewRows().length) {
         @if (copiedBoard(); as board) {
-          <p class="preview-note">
-            Starts as an exact copy of {{ board.name }}, with the numbers it was last saved with.
-          </p>
+          <p class="preview-note">An exact copy of {{ board.name }}, as it was last saved.</p>
         } @else if (isCopy()) {
-          <p class="preview-note">There is nothing to copy here yet.</p>
+          <p class="preview-note">Nothing to copy yet.</p>
         } @else {
-          <p class="preview-note">Preview unavailable right now.</p>
+          <p class="preview-note">Preview unavailable.</p>
         }
       } @else {
         <!-- The editor's own header and rows, read-only: the preview is the table it previews,
@@ -352,10 +349,9 @@
         </div>
         @if (modelCoverage(); as coverage) {
           <p class="preview-note">
-            The model has lines for {{ coverage.skaters }} skaters and
-            {{ coverage.goalies }} goalies. Players it cannot reach (prospects yet to play, goalies
-            it projects no starts for, and anyone it has no basis for) are left out, so this
-            projection opens with fewer rows than the other starting points give. Data ©
+            The model covers {{ coverage.skaters }} skaters and {{ coverage.goalies }} goalies.
+            Players it has no basis for (prospects yet to play, goalies projected for no starts) are
+            left out, so this starting point opens with fewer rows than the others. Data ©
             MoneyPuck.com.
           </p>
         }

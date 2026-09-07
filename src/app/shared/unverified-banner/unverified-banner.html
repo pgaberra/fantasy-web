@@ -5,9 +5,7 @@
         Verification email sent. Check your inbox (and your spam folder).
       </span>
     } @else {
-      <span class="unverified-banner__text">
-        Please verify your email to secure your account.
-      </span>
+      <span class="unverified-banner__text"> Verify your email to secure your account. </span>
       <button
         type="button"
         class="unverified-banner__button"
@@ -21,7 +19,7 @@
         }
       </button>
       @if (failed()) {
-        <span class="unverified-banner__error">Couldn't send. Please try again.</span>
+        <span class="unverified-banner__error">Couldn't send. Try again.</span>
       }
     }
   </div>

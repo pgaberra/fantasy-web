@@ -12,17 +12,14 @@
       }
       @case ('succeeded') {
         <h1 class="auth-title">Email verified</h1>
-        <p class="auth-subtitle">Thanks, your email address is confirmed. You're all set.</p>
+        <p class="auth-subtitle">Your email address is confirmed.</p>
         <a routerLink="/projections" class="btn btn-primary btn-block btn-lg"
           >Go to your projections</a
         >
       }
       @case ('failed') {
         <h1 class="auth-title">Verification failed</h1>
-        <p class="auth-subtitle">
-          This verification link is invalid or has expired. Sign in and use the banner to send a
-          fresh one.
-        </p>
+        <p class="auth-subtitle">This link is invalid or has expired. Sign in to send a new one.</p>
         <a routerLink="/login" class="btn btn-primary btn-block btn-lg">Go to sign in</a>
       }
       @case ('no-token') {

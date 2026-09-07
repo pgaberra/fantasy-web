@@ -1,7 +1,6 @@
 <section class="account">
   <header class="account-header">
     <h1>Subscription</h1>
-    <p class="account-sub">Your plan, and where to change it.</p>
   </header>
 
   <!-- Straight after checkout. Once the subscription has landed the useful thing to say is where
@@ -11,7 +10,7 @@
     @if (entitlement.premium()) {
       <section class="account-welcome" role="status">
         <h2 class="account-welcome-title">Welcome to Premium</h2>
-        <p class="account-welcome-text">Thanks for subscribing! Everything below is yours now.</p>
+        <p class="account-welcome-text">Thanks for subscribing. Everything below is yours now.</p>
         @if (nextSteps.length > 0) {
           <ul class="account-welcome-links">
             @for (perk of nextSteps; track perk.title) {
@@ -74,25 +73,23 @@
             </button>
           </div>
           <p class="account-hint">
-            Change your card, download receipts or cancel in the billing portal. Paddle, our
-            merchant of record, runs it on our behalf.
+            Change your card, download receipts or cancel in the billing portal, run by Paddle.
           </p>
         } @else if (confirming()) {
           <div class="plan-status">
             <span class="status status-pending">Confirming</span>
           </div>
           <p class="account-note">
-            Your payment went through. We are waiting for the confirmation, which usually takes a
-            few seconds.
+            Payment went through. Waiting for confirmation, usually a few seconds.
           </p>
         } @else if (confirmationTimedOut()) {
           <div class="plan-status">
             <span class="status status-pending">Confirming</span>
           </div>
           <p class="account-note">
-            Your payment went through, but the confirmation has not reached us yet. It will arrive
-            on its own. If this page still looks wrong in a few minutes, write to
-            <a href="mailto:info@slapstat.com">info&#64;slapstat.com</a> and we will sort it out.
+            Payment went through, but the confirmation has not reached us yet. It should arrive on
+            its own. If this page still looks wrong in a few minutes, email
+            <a href="mailto:info@slapstat.com">info&#64;slapstat.com</a>.
           </p>
           <div class="account-actions">
             <button type="button" class="btn btn-secondary" (click)="reload()">Check again</button>
@@ -101,7 +98,7 @@
           <div class="plan-status">
             <span class="status status-off">Free plan</span>
           </div>
-          <p class="account-note">You have everything in the free app. Premium adds:</p>
+          <p class="account-note">Premium adds:</p>
           <ul class="perk-list">
             @for (perk of perks; track perk.title) {
               <li>

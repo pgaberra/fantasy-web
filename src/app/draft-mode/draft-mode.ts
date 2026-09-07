@@ -501,7 +501,7 @@ export class DraftModeComponent implements OnInit {
           this.loaded.set(true);
         },
         error: () => {
-          this.notification.error("Couldn't load the draft. Please try again.");
+          this.notification.error("Couldn't load the draft. Try again.");
           void this.router.navigate(['/projections']);
         },
       });

@@ -7,10 +7,6 @@
   <div class="shared-projection">
     <div class="gone-card">
       <h1 class="gone-title">This link isn't active</h1>
-      <p class="gone-body">
-        Whoever shared this projection has taken the link down, or it never existed. You can still
-        build your own. It's free to start.
-      </p>
       <a routerLink="/" class="btn btn-primary">Make your own projection</a>
     </div>
   </div>
@@ -37,7 +33,7 @@
         <button
           type="button"
           class="btn btn-secondary"
-          appTooltip="Create your own projection from a copy of this one"
+          appTooltip="Save a copy you can edit"
           [disabled]="isImporting()"
           (click)="copyToMyProjections()"
           data-testid="copy-board"
@@ -47,7 +43,7 @@
         <button
           type="button"
           class="btn btn-primary"
-          appTooltip="Enter Draft mode with a copy of this projection"
+          appTooltip="Draft against a copy of this projection"
           [disabled]="isImporting()"
           (click)="draftAgainstThis()"
           data-testid="draft-board"
@@ -57,22 +53,22 @@
       </div>
       @if (signInPromptFor(); as intent) {
         <p class="board-actions-prompt" role="status" data-testid="sign-in-prompt">
-          Your copy of this board lives in your account, so
+          Save a copy to your account to
+          {{ intent === 'draft' ? 'draft against it' : 'keep editing it' }}.
           <a
             routerLink="/login"
             [queryParams]="{ returnUrl: promptReturnUrl() }"
             data-testid="prompt-login"
-            >log in</a
+            >Sign in</a
           >
           or
           <a
             routerLink="/register"
             [queryParams]="{ returnUrl: promptReturnUrl() }"
             data-testid="prompt-register"
-            >create an account</a
+            >create a free account</a
           >
-          {{ intent === 'draft' ? 'to draft against it.' : 'to make it yours.' }} Free to start, and
-          this carries on where you left off.
+          to continue.
         </p>
       }
     </header>
@@ -150,8 +146,7 @@
             {{ totalPlayers() }} players
           </h2>
           <p class="cta-body">
-            Sign in to read the rest of {{ authorLabel() }}'s board (every player they ranked, under
-            their league's scoring settings) and take a copy to draft against. Free to start.
+            Sign in to see all {{ totalPlayers() }} players and take a copy to draft against.
           </p>
           <div class="cta-actions">
             <a
@@ -170,10 +165,9 @@
             >
           </div>
         } @else {
-          <h2 class="cta-title">This is one manager's board</h2>
+          <h2 class="cta-title">This is one manager's projection</h2>
           <p class="cta-body">
-            Build your own projections, tuned to your league's scoring settings, and rank every
-            player the way this one does, or draft straight against this one. Free to start.
+            Build your own, ranked by your league's scoring settings. Free to start.
           </p>
           <a routerLink="/register" class="btn btn-primary">Make your own projection</a>
         }

@@ -137,9 +137,7 @@ describe('ProfileComponent', () => {
     await pick(fixture, picked);
 
     expect(setAvatar).not.toHaveBeenCalled();
-    expect(text(fixture)).toContain(
-      'Unsupported file format. Please upload a PNG, JPEG, or WebP image.',
-    );
+    expect(text(fixture)).toContain('Unsupported format. Upload a PNG, JPEG or WebP image.');
     expect(fixture.point.componentInstance.isUploading()).toEqual(false);
   });
 
@@ -167,7 +165,7 @@ describe('ProfileComponent', () => {
 
     await pick(fixture, picked);
 
-    expect(text(fixture)).toContain("can't reach the server");
+    expect(text(fixture)).toContain("Can't reach the server");
   });
 
   it('does nothing when the picker is dismissed without a file', async () => {
@@ -215,7 +213,7 @@ describe('ProfileComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(text(fixture)).toContain("can't reach the server");
+    expect(text(fixture)).toContain("Can't reach the server");
   });
 
   it('still saves the username', async () => {

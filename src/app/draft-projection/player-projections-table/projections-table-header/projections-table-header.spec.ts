@@ -351,19 +351,19 @@ describe('ProjectionsTableHeaderComponent', () => {
 
     it('says what a utility column is for, which its label cannot', () => {
       expect(scalingHeader().utilityTooltip('gp')).toEqual(
-        'Games Played. A Utility Stat that can be used to scale and project other stats.',
+        'Games Played. Utility stat, can scale other stats when you edit it.',
       );
     });
 
     it('keeps expanding the abbreviation, which is the only place TOI/G is spelled out', () => {
       expect(scalingHeader().utilityTooltip('toiPerGame')).toEqual(
-        'Time on Ice per Game. A Utility Stat that can be used to scale and project other stats.',
+        'Time on Ice per Game. Utility stat, can scale other stats when you edit it.',
       );
     });
 
     it('promises no scaling where there is no projection to scale', () => {
       expect(getComponent().utilityTooltip('toiPerGame')).toEqual(
-        'Time on Ice per Game. A Utility Stat: it takes no weight and adds nothing to the total.',
+        'Time on Ice per Game. Utility stat, not scored.',
       );
     });
 
@@ -372,14 +372,12 @@ describe('ProjectionsTableHeaderComponent', () => {
       // heading alone cannot tell them apart.
       expect(
         getComponent({ gamesPlayedScope: 'the selected game range' }).utilityTooltip('gp'),
-      ).toEqual(
-        'Games Played, games within the selected game range. A Utility Stat: it takes no weight and adds nothing to the total.',
-      );
+      ).toEqual('Games Played within the selected game range. Utility stat, not scored.');
     });
 
     it('leaves GP unqualified where the projection is of a whole season', () => {
       expect(getComponent().utilityTooltip('gp')).toEqual(
-        'Games Played. A Utility Stat: it takes no weight and adds nothing to the total.',
+        'Games Played. Utility stat, not scored.',
       );
     });
 

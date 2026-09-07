@@ -175,7 +175,7 @@ export class ProfileComponent implements OnInit {
    */
   private messageForAvatarError(error: unknown): string {
     if (error instanceof UnsupportedImageTypeError) {
-      return 'Unsupported file format. Please upload a PNG, JPEG, or WebP image.';
+      return 'Unsupported format. Upload a PNG, JPEG or WebP image.';
     }
     if (error instanceof UnreadableImageError) {
       return "Couldn't read that file as a picture. Try a PNG or JPEG.";

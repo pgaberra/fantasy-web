@@ -358,7 +358,7 @@ export class DraftStartComponent {
       },
       error: () => {
         this.discarding.set(null);
-        this.notification.error("Couldn't discard the draft. Please try again.");
+        this.notification.error("Couldn't discard the draft. Try again.");
       },
     });
   }
@@ -430,7 +430,7 @@ export class DraftStartComponent {
         this.notification.error(
           isPremiumRefusal(error)
             ? PREMIUM_REFUSED_MESSAGE
-            : "Couldn't start the draft. Please try again.",
+            : "Couldn't start the draft. Try again.",
         );
       },
     });

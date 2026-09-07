@@ -97,7 +97,7 @@ export class ProjectionListComponent {
         // Keep the stash: reloading retries rather than silently losing their work.
         error: () => {
           this.isSavingDemo.set(false);
-          this.notification.error("Couldn't save your projection from the demo. Please try again.");
+          this.notification.error("Couldn't save your projection from the demo. Try again.");
         },
       });
   }
@@ -147,7 +147,7 @@ export class ProjectionListComponent {
         },
         error: () => {
           this.preparingShareFor.set(null);
-          this.notification.error("Couldn't open sharing for this projection. Please try again.");
+          this.notification.error("Couldn't open sharing for this projection. Try again.");
         },
       });
   }
@@ -166,7 +166,7 @@ export class ProjectionListComponent {
       .then(() => {
         this.projectionsResource.reload();
       })
-      .catch(() => this.notification.error("Couldn't discard the draft. Please try again."));
+      .catch(() => this.notification.error("Couldn't discard the draft. Try again."));
   }
 
   remove(id: string): Promise<void> {
@@ -174,7 +174,7 @@ export class ProjectionListComponent {
       .then(() => {
         this.projectionsResource.reload();
       })
-      .catch(() => this.notification.error("Couldn't delete the projection. Please try again."));
+      .catch(() => this.notification.error("Couldn't delete the projection. Try again."));
   }
 
   /** Every board the user keeps shares one pool of names, imported ones included. */

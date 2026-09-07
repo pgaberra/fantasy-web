@@ -56,7 +56,7 @@ export class ResetPasswordComponent {
       });
       validate(fields.confirmPassword, (ctx) => {
         if (ctx.value().length === 0) {
-          return { kind: 'required', message: 'Please confirm your password.' };
+          return { kind: 'required', message: 'Confirm your password.' };
         }
         if (ctx.value() !== ctx.valueOf(fields.password)) {
           return { kind: 'passwordMismatch', message: 'Passwords do not match.' };
@@ -75,9 +75,7 @@ export class ResetPasswordComponent {
         await firstValueFrom(this.authService.resetPassword(this.token, this.model().password));
         this.succeeded.set(true);
       } catch {
-        this.errorMessage.set(
-          'This reset link is invalid or has expired. Please request a new one.',
-        );
+        this.errorMessage.set('This reset link is invalid or has expired. Request a new one.');
       } finally {
         this.isLoading.set(false);
       }
