@@ -90,42 +90,45 @@
         </div>
       </div>
 
-      <div
-        class="table-wrapper table-wrapper--compact-identity"
-        [class.table-wrapper--reordering]="isReordering()"
-        [attr.aria-busy]="isReordering()"
-        appPinnedTableHeader
-      >
-        <table>
-          <thead
-            app-projections-table-header
-            [activeColumns]="filteredActiveColumns()"
-            [scoringType]="scoringType()"
-            [statWeights]="statWeights()"
-            [useDefaultDecimals]="true"
-            [decimalSettings]="decimalSettings()"
-            [sortColumn]="sortColumn()"
-            [sortDirection]="sortDirection()"
-            [readonly]="true"
-            (sort)="onSort($event)"
-          ></thead>
-          <tbody>
-            @for (row of visibleRows(); track row.shared.playerId) {
-              <tr
-                app-player-row
-                [positionRank]="rankOf(row)"
-                [totalRank]="overallRankOf(row)"
-                [projection]="row.projection"
-                [playerScore]="row.score"
-                [player]="row.player"
-                [activeColumns]="filteredActiveColumns()"
-                [scoringType]="scoringType()"
-                [decimalSettings]="decimalSettings()"
-                [readonly]="true"
-              ></tr>
-            }
-          </tbody>
-        </table>
+      <div class="table-scroll">
+        <div
+          class="table-wrapper table-wrapper--compact-identity"
+          [class.table-wrapper--reordering]="isReordering()"
+          [attr.aria-busy]="isReordering()"
+          appPinnedTableHeader
+          appTableScroll="Player projections"
+        >
+          <table>
+            <thead
+              app-projections-table-header
+              [activeColumns]="filteredActiveColumns()"
+              [scoringType]="scoringType()"
+              [statWeights]="statWeights()"
+              [useDefaultDecimals]="true"
+              [decimalSettings]="decimalSettings()"
+              [sortColumn]="sortColumn()"
+              [sortDirection]="sortDirection()"
+              [readonly]="true"
+              (sort)="onSort($event)"
+            ></thead>
+            <tbody>
+              @for (row of visibleRows(); track row.shared.playerId) {
+                <tr
+                  app-player-row
+                  [positionRank]="rankOf(row)"
+                  [totalRank]="overallRankOf(row)"
+                  [projection]="row.projection"
+                  [playerScore]="row.score"
+                  [player]="row.player"
+                  [activeColumns]="filteredActiveColumns()"
+                  [scoringType]="scoringType()"
+                  [decimalSettings]="decimalSettings()"
+                  [readonly]="true"
+                ></tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
 
       @if (matchingCount() > 0) {

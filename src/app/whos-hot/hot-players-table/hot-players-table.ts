@@ -51,6 +51,7 @@ import { LeagueSettingsMenuComponent } from '../../draft-projection/player-proje
 import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import { PinnedTableHeaderDirective } from '../../shared/pinned-table-header/pinned-table-header.directive';
+import { TableScrollDirective } from '../../shared/table-scroll/table-scroll.directive';
 import { FormatToiPipe } from '../../pipes/format-toi.pipe';
 import { DecimalPipe } from '@angular/common';
 
@@ -87,6 +88,7 @@ interface RankedPlayer extends ScoredProjection {
     PopoverTriggerDirective,
     TooltipDirective,
     PinnedTableHeaderDirective,
+    TableScrollDirective,
     LeagueSettingsMenuComponent,
     ColumnsMenuComponent,
     FormatToiPipe,
