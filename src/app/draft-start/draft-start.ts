@@ -16,6 +16,8 @@ import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { PopoverTriggerDirective } from '../shared/popover/popover-trigger.directive';
 import { ShareImportComponent } from '../shared/share-import/share-import';
 import { offeredPresets } from '../models/ai-projection';
+import { AiProjectionAccess } from '../shared/premium/ai-projection-access';
+import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/premium-refused';
 import { SOURCE_KINDS, SourceKind } from '../models/source-kind';
 import { environment } from '../../environments/environment';
 
@@ -99,6 +101,7 @@ export class DraftStartComponent {
   private readonly notification = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly aiAccess = inject(AiProjectionAccess);
 
   readonly sourceKinds = SOURCE_KINDS;
 
@@ -236,6 +239,21 @@ export class DraftStartComponent {
   showsPremiumBadge(preset: Preset): boolean {
     return !!preset.premium && environment.paymentsEnabled;
   }
+
+  /**
+   * Whether this account would have to subscribe before it could draft against a preset. The
+   * card stays where it is and stays pickable: picking it is how someone reads what it is and
+   * finds the way to it, and a starting point nobody can look at sells nothing.
+   */
+  isPresetLocked(preset: Preset): boolean {
+    return !!preset.premium && this.aiAccess.locked();
+  }
+
+  /** Whether what is picked right now is behind the subscription, so the Start button is not it. */
+  readonly selectionLocked = computed(() => {
+    const chosen = this.selection();
+    return chosen?.kind === 'preset' && this.isPresetLocked(chosen.preset);
+  });
 
   /**
    * How many choices a kind holds, shown on its segment so the two kinds not open are still
@@ -403,10 +421,17 @@ export class DraftStartComponent {
     this.isStarting.set(true);
     started.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (projection) => this.openDraft(projection.id),
-      error: () => {
+      error: (error: unknown) => {
         this.isStarting.set(false);
         this.sourcesResource.reload();
-        this.notification.error("Couldn't start the draft. Please try again.");
+        // The page holds a locked preset back itself, so a refusal here means the two
+        // disagreed — most likely a subscription that lapsed while this tab was open. Telling
+        // them to try again would send them at something that cannot work.
+        this.notification.error(
+          isPremiumRefusal(error)
+            ? PREMIUM_REFUSED_MESSAGE
+            : "Couldn't start the draft. Please try again.",
+        );
       },
     });
   }

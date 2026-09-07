@@ -47,6 +47,8 @@ import { ProjectionModelService } from '../services/projection-model.service';
 import { freeProjectionName } from '../services/projection-name';
 import { SeededProjectionResponse } from '../api/models/seeded-projection-response';
 import { offeredPresets } from '../models/ai-projection';
+import { AiProjectionAccess } from '../shared/premium/ai-projection-access';
+import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/premium-refused';
 import { SOURCE_KINDS, SourceKind } from '../models/source-kind';
 import { environment } from '../../environments/environment';
 
@@ -200,6 +202,7 @@ export class ProjectionCreateComponent {
   private readonly analytics = inject(AnalyticsService);
   private readonly playerService = inject(PlayerService);
   private readonly projectionModel = inject(ProjectionModelService);
+  private readonly aiAccess = inject(AiProjectionAccess);
   private readonly ranking = inject(ProjectionRankingService);
 
   // Only the boards themselves are needed here: the player rows of a new projection are
@@ -301,7 +304,10 @@ export class ProjectionCreateComponent {
    * whole either way, so the note under the table still speaks for the whole league.
    */
   private readonly modelSeedResource = rxResource({
-    params: () => (this.isModelPreset() ? {} : undefined),
+    // Not while it is locked: the BFF refuses the model's lines to an account without premium,
+    // so asking would spend a request to draw the page's error state over the pitch that is
+    // supposed to be there instead.
+    params: () => (this.isModelPreset() && !this.aiProjectionLocked() ? {} : undefined),
     stream: () =>
       this.projectionModel.seed({
         skaterLimit: PREVIEW_FETCH_LIMITS.skaters,
@@ -523,7 +529,10 @@ export class ProjectionCreateComponent {
       !this.isCreating() &&
       this.name().trim().length > 0 &&
       !this.nameTaken() &&
-      this.hasStartingPoint(),
+      this.hasStartingPoint() &&
+      // A locked starting point can be picked and read about, but not created from: the button
+      // becomes the way to Premium instead, and this keeps the two from disagreeing.
+      !this.aiProjectionLocked(),
   );
 
   onNameInput(event: Event): void {
@@ -558,6 +567,18 @@ export class ProjectionCreateComponent {
   showsPremiumBadge(preset: CreatePreset): boolean {
     return !!preset.premium && environment.paymentsEnabled;
   }
+
+  /**
+   * Whether this account would have to subscribe before it could start from a preset. The card
+   * stays pickable: picking it is how someone reads what the AI projection is, and the preview
+   * slot becomes the pitch rather than a table.
+   */
+  isPresetLocked(preset: CreatePreset): boolean {
+    return !!preset.premium && this.aiAccess.locked();
+  }
+
+  /** Whether the starting point picked right now is the one behind the subscription. */
+  readonly aiProjectionLocked = computed(() => this.isModelPreset() && this.aiAccess.locked());
 
   isPreset(source: CreatePreset['source']): boolean {
     const point = this.startingPoint();
@@ -688,6 +709,10 @@ export class ProjectionCreateComponent {
           // something to say on the page rather than a reason to navigate away from it.
           if (error instanceof HttpErrorResponse && error.status === 409) {
             this.notification.error('You already have a projection with that name.');
+          } else if (isPremiumRefusal(error)) {
+            // Held back by `canCreate`, so this is the two disagreeing: a subscription that
+            // lapsed while the page was open, or an entitlement read that never landed.
+            this.notification.error(PREMIUM_REFUSED_MESSAGE);
           } else {
             this.notification.error("Couldn't create the projection. Please try again.");
           }

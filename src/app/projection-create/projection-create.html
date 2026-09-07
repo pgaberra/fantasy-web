@@ -163,7 +163,11 @@
           @default {
             <ul class="rows">
               @for (preset of presets; track preset.source) {
-                <li class="row" [class.row--selected]="isPreset(preset.source)">
+                <li
+                  class="row"
+                  [class.row--selected]="isPreset(preset.source)"
+                  [class.row--locked]="isPresetLocked(preset)"
+                >
                   <label class="row-choice">
                     <input
                       type="radio"
@@ -228,7 +232,26 @@
                       <span class="row-heading">
                         <span class="row-name">{{ preset.name }}</span>
                         @if (showsPremiumBadge(preset)) {
-                          <span class="row-badge premium-badge">Premium</span>
+                          <span class="row-badge premium-badge">
+                            <!-- The padlock only once it is actually shut: with a subscription
+                                 the badge names the plan, it does not bar the way. -->
+                            @if (isPresetLocked(preset)) {
+                              <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2.4"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                aria-hidden="true"
+                                focusable="false"
+                              >
+                                <rect x="3" y="11" width="18" height="11" rx="2" />
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                              </svg>
+                            }
+                            Premium
+                          </span>
                         }
                       </span>
                     </span>
@@ -255,7 +278,28 @@
         cannot be drawn keeps the slot filled with a line rather than letting the page jump by
         the height of a table whenever the picked card changes.
       -->
-      @if (isPreviewLoading() || isModelPreviewLoading()) {
+      @if (aiProjectionLocked()) {
+        <!-- The slot the preview would fill, filled with what the preview would have shown if
+             it could: not the model's numbers, which are the thing being sold, but what they
+             are and what having them is worth. -->
+        <section class="pitch">
+          <h3 class="pitch-title">
+            <span class="premium-badge">Premium</span>
+            The AI projection
+          </h3>
+          <p class="pitch-text">
+            A model-built line for every player it can reach, from last season's numbers, ice time
+            and workload. Start your board from it instead of from last season, then tune whatever
+            you disagree with, exactly as you would any other projection.
+          </p>
+          <ul class="pitch-points">
+            <li>Every skater and goalie the model reaches, ranked to your own scoring settings</li>
+            <li>Yours to edit: a starting point, not a locked board</li>
+            <li>Draft against it straight from Draft mode</li>
+          </ul>
+          <a routerLink="/pricing" class="btn btn-primary">Unlock with Premium</a>
+        </section>
+      } @else if (isPreviewLoading() || isModelPreviewLoading()) {
         <p class="preview-note">Loading preview…</p>
       } @else if (previewFailed() || !previewRows().length) {
         @if (copiedBoard(); as board) {
@@ -318,13 +362,18 @@
       }
     </div>
 
-    <button
-      type="button"
-      class="create-button btn btn-primary btn-lg"
-      [disabled]="!canCreate()"
-      (click)="create()"
-    >
-      {{ isCreating() ? 'Creating…' : 'Create projection' }}
-    </button>
+    <!-- The pitch above already carries the way to Premium, so the page's main button stands
+         down rather than repeating it: a Create button that can only refuse is worse than one
+         that is plainly not for this starting point. -->
+    @if (!aiProjectionLocked()) {
+      <button
+        type="button"
+        class="create-button btn btn-primary btn-lg"
+        [disabled]="!canCreate()"
+        (click)="create()"
+      >
+        {{ isCreating() ? 'Creating…' : 'Create projection' }}
+      </button>
+    }
   </div>
 }
