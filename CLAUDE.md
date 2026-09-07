@@ -100,7 +100,9 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   makes it real. The radio stays real and visible on purpose: it is what the E2E suite
   checks (`li.row` + `getByRole('radio')`). The shared kind carries the paste
   field; `shareTokenFrom` accepts a whole URL, a `/s/…` path, or a bare token, and a name
-  clash (409) asks for a name rather than reporting a failure the user cannot act on. An
+  clash (409) asks for a name rather than reporting a failure the user cannot act on — which
+  is now a rare path, since db-service numbers a taken name rather than refusing unless the
+  caller chose it. An
   import switches to that kind and checks the copy.
   History, for anyone tempted to relitigate: the three kinds were tabs (#406), then all
   three lists at once with a button per row (#459, #503), then a hierarchy of filled and
