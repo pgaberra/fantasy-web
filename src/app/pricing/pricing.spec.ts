@@ -31,7 +31,10 @@ describe('PricingComponent', () => {
     initializePaddle.mockReset();
     PricePreview.mockReset();
     PricePreview.mockResolvedValue({
-      data: { details: { lineItems: [{ formattedTotals: { total: '$4.99' } }] } },
+      data: {
+        currencyCode: 'USD',
+        details: { lineItems: [{ formattedTotals: { total: '$4.99' } }] },
+      },
     });
     initializePaddle.mockResolvedValue({ PricePreview });
     environment.paddleClientToken = 'test_token';
@@ -46,6 +49,7 @@ describe('PricingComponent', () => {
 
   afterEach(() => {
     Object.defineProperty(window, 'location', { configurable: true, value: realLocation });
+    vi.restoreAllMocks();
   });
 
   it('shows a Subscribe button for a signed-in user', () => {
@@ -118,6 +122,47 @@ describe('PricingComponent', () => {
     expect(ngMocks.formatText(ngMocks.find('.plan-card--premium .plan-price-amount'))).toContain(
       '$4.99',
     );
+  });
+
+  /**
+   * Zero costs the same everywhere, but it is not written the same everywhere: a Swedish
+   * reader is quoted "0 kr" and an American "$0". The currency is taken from the same preview
+   * as the Premium price, so the two columns can never be priced in different money.
+   */
+  it('prices the free plan at zero in the currency Paddle quoted', async () => {
+    const fixture = MockRender(PricingComponent);
+
+    await settle(fixture);
+
+    expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toEqual('$0');
+  });
+
+  it('writes the free plan’s zero in a Swedish reader’s own currency', async () => {
+    vi.spyOn(navigator, 'language', 'get').mockReturnValue('sv-SE');
+    PricePreview.mockResolvedValue({
+      data: {
+        currencyCode: 'SEK',
+        details: { lineItems: [{ formattedTotals: { total: '49 kr' } }] },
+      },
+    });
+
+    const fixture = MockRender(PricingComponent);
+    await settle(fixture);
+
+    expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toContain('kr');
+  });
+
+  // Without a currency there is no way to write the zero, and an unpriced free card is better
+  // than one guessing at dollars. The space it would take is held, so the perk lists still
+  // start on the same line.
+  it('leaves the free plan unpriced when Paddle cannot be reached', async () => {
+    initializePaddle.mockRejectedValue(new Error('offline'));
+
+    const fixture = MockRender(PricingComponent);
+    await settle(fixture);
+
+    expect(ngMocks.findAll('.plan-card--free .plan-price-amount').length).toEqual(0);
+    expect(ngMocks.findAll('.plan-card--free .plan-price--placeholder').length).toEqual(1);
   });
 
   // A build that sells nothing has no price id, and must not call Paddle at all - that call is
