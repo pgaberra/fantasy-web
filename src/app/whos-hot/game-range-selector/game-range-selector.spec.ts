@@ -268,9 +268,9 @@ describe('GameRangeSelectorComponent', () => {
     const lock = ngMocks.find('.premium-lock');
 
     expect((lock.nativeElement as HTMLElement).textContent.trim()).toEqual('Premium');
-    // A link to the pricing page rather than a dead badge: being told the feature is paid for
+    // A link to the Premium page rather than a dead badge: being told the feature is paid for
     // is only half of it.
-    expect(ngMocks.input(lock, 'routerLink')).toEqual('/pricing');
+    expect(ngMocks.input(lock, 'routerLink')).toEqual('/premium');
     expect(ngMocks.find('.presets').nativeElement.contains(lock.nativeElement)).toEqual(true);
   });
 

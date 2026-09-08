@@ -27,7 +27,7 @@ export const environment = {
   // builds inject it via the YAHOO_SYNC_DISABLED build arg.
   yahooSyncDisabled: false,
   // Subscription billing. Off by default; deployed builds drive it via the PAYMENTS_ENABLED
-  // build arg. When false the pricing/account routes redirect away and no entitlement is fetched.
+  // build arg. When false the /premium and /pay routes redirect away and no entitlement is fetched.
   paymentsEnabled: false,
   // Feature toggle for ESPN league sync (the ESPN option in the projection's league-sync UI).
   // Off by default; deployed builds drive it via the ESPN_LEAGUES_ENABLED build arg. Mirrors the

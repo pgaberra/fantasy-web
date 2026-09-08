@@ -819,7 +819,7 @@ describe('DraftStartComponent', () => {
         expect(component.selectionLocked()).toBe(true);
         const link = fixture.nativeElement.querySelector('.start-row a');
         expect(link?.textContent?.trim()).toEqual('Unlock with Premium');
-        expect(link?.getAttribute('routerLink')).toEqual('/pricing');
+        expect(link?.getAttribute('routerLink')).toEqual('/premium');
         expect(fixture.nativeElement.querySelector('.start-row button')).toBeNull();
       });
     });

@@ -49,7 +49,7 @@
                avatar that also opened an account menu: two doors marked the same, one of them
                leading to a page that told a free account it had no subscription. -->
           @if (showsPremiumLink()) {
-            <a routerLink="/pricing" routerLinkActive="active" class="nav-premium">Premium</a>
+            <a routerLink="/premium" routerLinkActive="active" class="nav-premium">Premium</a>
           }
           @if (authService.isAdmin()) {
             <a routerLink="/admin" routerLinkActive="active">Admin</a>
@@ -65,7 +65,7 @@
           </button>
         } @else {
           @if (showsPremiumLink()) {
-            <a routerLink="/pricing" routerLinkActive="active" class="nav-premium">Premium</a>
+            <a routerLink="/premium" routerLinkActive="active" class="nav-premium">Premium</a>
           }
           <a routerLink="/login" routerLinkActive="active">Sign in</a>
         }
@@ -107,7 +107,7 @@
       <a
         class="nav-menu-item nav-menu-item--collapsed nav-menu-item--premium"
         cdkMenuItem
-        routerLink="/pricing"
+        routerLink="/premium"
         routerLinkActive="active"
         ariaCurrentWhenActive="page"
       >
@@ -164,31 +164,19 @@
     >
       Profile
     </a>
-    <!-- One subscription item. A free account has nothing to manage, so it goes to the pricing
-         page; everyone else, including an account whose plan is still loading or failed to
-         load, goes to the subscription page, which can say so and try again. -->
+    <!-- One Premium item, to the one page: it sells to an account that has not bought Premium
+         and manages the subscription of one that has, so there is nothing here to choose
+         between, and nothing to get wrong while the plan is still loading. -->
     @if (paymentsEnabled) {
-      @if (plan() === 'free') {
-        <a
-          class="nav-menu-item"
-          cdkMenuItem
-          routerLink="/pricing"
-          routerLinkActive="active"
-          ariaCurrentWhenActive="page"
-        >
-          Get Premium
-        </a>
-      } @else {
-        <a
-          class="nav-menu-item"
-          cdkMenuItem
-          routerLink="/account"
-          routerLinkActive="active"
-          ariaCurrentWhenActive="page"
-        >
-          Subscription
-        </a>
-      }
+      <a
+        class="nav-menu-item"
+        cdkMenuItem
+        routerLink="/premium"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+      >
+        Premium
+      </a>
     }
     <button
       type="button"
