@@ -106,7 +106,9 @@
             @for (perk of perks; track perk.title) {
               <li>
                 <span class="perk-title">{{ perk.title }}</span>
-                <span class="perk-desc">{{ perk.description }}</span>
+                @if (perk.description) {
+                  <span class="perk-desc">{{ perk.description }}</span>
+                }
               </li>
             }
           </ul>

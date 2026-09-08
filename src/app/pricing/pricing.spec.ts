@@ -82,7 +82,7 @@ describe('PricingComponent', () => {
     const text = fixture.nativeElement.textContent;
     expect(ngMocks.findAll('.plan-card--free .plan-perks li').length).toBeGreaterThan(2);
     expect(text).toContain('Everything in Free');
-    expect(text).toContain('The AI projection');
+    expect(text).toContain('AI projection');
   });
 
   it('redirects to the checkout URL when Subscribe is clicked', () => {

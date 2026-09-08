@@ -3,7 +3,8 @@ import { environment } from '../../../environments/environment';
 /** One thing Premium adds, and where a subscriber goes to use it. */
 export interface PremiumPerk {
   readonly title: string;
-  readonly description: string;
+  /** Absent where the title says the whole thing on its own. */
+  readonly description?: string;
   /**
    * The page the perk lives on, for the moment straight after checkout when the useful thing to
    * say is where to go. Absent for a promise rather than a page.
@@ -24,24 +25,22 @@ export function premiumPerks(): readonly PremiumPerk[] {
   const perks: PremiumPerk[] = [];
   if (environment.aiProjectionEnabled) {
     perks.push({
-      title: 'The AI projection',
-      description: 'A projected stat line for every player, ready to use or edit.',
+      title: 'AI projection',
+      description: 'Every player projected for the 2026-27 season with our AI model.',
       link: '/projections/new',
       linkLabel: 'Start an AI projection',
     });
   }
   if (environment.whosHotEnabled) {
     perks.push({
-      title: "Any game range on Who's hot",
-      description:
-        'Every preset and the slider, from the last 10 games to the full season. Free accounts get the last 5 games.',
+      title: "Custom range on Who's Hot",
       link: '/whos-hot',
-      linkLabel: "Pick a range on Who's hot",
+      linkLabel: "Pick a range on Who's Hot",
     });
   }
   perks.push({
-    title: 'New tools first',
-    description: 'New Premium features will appear here as they are added.',
+    title: 'More Premium features',
+    description: 'New Premium features will be added regularly.',
   });
   return perks;
 }
@@ -49,15 +48,15 @@ export function premiumPerks(): readonly PremiumPerk[] {
 /** What the free app already includes, so the pricing page can say what Premium is on top of. */
 export function freeFeatures(): readonly string[] {
   const features = [
-    'Projections tailored to your league, for points or categories',
-    'Live draft board and post-draft power rankings',
+    "Projections tailored to your league's scoring",
+    'Live draft board and post-draft rankings',
     environment.espnLeaguesEnabled
-      ? 'League settings imported from Yahoo or ESPN'
-      : 'League settings imported from Yahoo',
-    'Share a projection as a link',
+      ? 'Import league settings from Yahoo or ESPN'
+      : 'Import league settings from Yahoo',
+    'Share projections',
   ];
   if (environment.whosHotEnabled) {
-    features.splice(2, 0, "Who's hot over the last 5 games");
+    features.splice(2, 0, "Who's Hot");
   }
   return features;
 }
