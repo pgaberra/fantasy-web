@@ -1,0 +1,138 @@
+<article class="admin-card">
+  <h2>Premium members</h2>
+  <p class="admin-card-desc">Paying subscribers, and accounts you have given Premium to.</p>
+
+  @if (loadError()) {
+    <p class="admin-error" role="alert">{{ loadError() }}</p>
+  }
+  @if (revokeError()) {
+    <p class="admin-error" role="alert">{{ revokeError() }}</p>
+  }
+
+  @if (loading() && customers().length === 0) {
+    <p class="admin-card-desc">Loading…</p>
+  } @else if (customers().length === 0) {
+    <p class="admin-card-desc">Nobody has Premium yet.</p>
+  } @else {
+    <div class="premium-table-wrap">
+      <table class="premium-table">
+        <thead>
+          <tr>
+            <th scope="col">Account</th>
+            <th scope="col">Source</th>
+            <th scope="col">Until</th>
+            <th scope="col">Note</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (customer of customers(); track customer.userId) {
+            <tr>
+              <td>
+                <span class="premium-email">{{ customer.email }}</span>
+                @if (customer.username) {
+                  <span class="premium-username">{{ customer.username }}</span>
+                }
+              </td>
+              <td>
+                <span class="premium-source" [class.premium-source--given]="givesPremium(customer)">
+                  {{ sourceLabel(customer) }}
+                </span>
+              </td>
+              <td>
+                @if (customer.premiumUntil) {
+                  {{ customer.premiumUntil | date: 'longDate' }}
+                } @else {
+                  –
+                }
+              </td>
+              <td class="premium-note">{{ customer.grantReason ?? '' }}</td>
+              <td class="premium-actions">
+                @if (givesPremium(customer)) {
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm"
+                    [disabled]="revokingUserId() === customer.userId"
+                    (click)="revoke(customer)"
+                  >
+                    {{ revokingUserId() === customer.userId ? 'Ending…' : 'End' }}
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <div class="admin-actions">
+    <button
+      type="button"
+      class="btn btn-secondary"
+      [disabled]="loading()"
+      (click)="loadCustomers()"
+    >
+      Refresh
+    </button>
+  </div>
+</article>
+
+<article class="admin-card">
+  <h2>Give Premium</h2>
+  <p class="admin-card-desc">
+    Free Premium for an account that already exists. Nothing is billed, and a paid subscription is
+    left alone.
+  </p>
+
+  @if (grantError()) {
+    <p class="admin-error" role="alert">{{ grantError() }}</p>
+  }
+  @if (grantMessage()) {
+    <p class="admin-success" role="status">{{ grantMessage() }}</p>
+  }
+
+  <div class="grant-form">
+    <label class="grant-field">
+      <span class="grant-label">Email</span>
+      <input
+        type="email"
+        autocomplete="off"
+        maxlength="255"
+        [value]="email()"
+        (input)="onEmailInput($event)"
+      />
+    </label>
+
+    <label class="grant-field grant-field--months">
+      <span class="grant-label">Months</span>
+      <select (change)="onMonthsChange($event)">
+        @for (option of monthOptions; track option) {
+          <option [value]="option" [selected]="option === months()">{{ option }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="grant-field">
+      <span class="grant-label">Note</span>
+      <input
+        type="text"
+        autocomplete="off"
+        maxlength="255"
+        [value]="reason()"
+        (input)="onReasonInput($event)"
+      />
+    </label>
+  </div>
+
+  <div class="admin-actions">
+    <button
+      type="button"
+      class="btn btn-primary"
+      [disabled]="granting() || !email().trim()"
+      (click)="grant()"
+    >
+      {{ granting() ? 'Giving…' : 'Give Premium' }}
+    </button>
+  </div>
+</article>

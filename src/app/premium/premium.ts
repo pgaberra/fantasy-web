@@ -75,10 +75,22 @@ export class PremiumComponent implements OnInit, OnDestroy {
    * has not landed yet must not be reported as a free plan.
    */
   protected readonly cta = computed<
-    'signed-out' | 'premium' | 'confirming' | 'confirmation-timeout' | 'loading' | 'error' | 'buy'
+    | 'signed-out'
+    | 'premium'
+    | 'granted'
+    | 'confirming'
+    | 'confirmation-timeout'
+    | 'loading'
+    | 'error'
+    | 'buy'
   >(() => {
     if (!this.authService.isLoggedIn()) {
       return 'signed-out';
+    }
+    // Premium that was given rather than bought has no subscription behind it, so the portal
+    // would open on nothing. 'both' is not one of these: there is still a subscription to manage.
+    if (this.entitlement.premium() && this.entitlement.granted()) {
+      return 'granted';
     }
     if (this.entitlement.premium()) {
       return 'premium';

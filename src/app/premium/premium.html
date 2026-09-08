@@ -127,6 +127,20 @@
               billing for SlapStat.
             </p>
           }
+          @case ('granted') {
+            <p class="plan-status"><span class="status status-ok">Premium active</span></p>
+            @if (entitlement.premiumUntil()) {
+              <p class="plan-state">
+                Premium was given to you, free, until
+                {{ entitlement.premiumUntil() | date: 'longDate' }}. There is nothing to pay and
+                nothing to cancel.
+              </p>
+            } @else {
+              <p class="plan-state">
+                Premium was given to you, free. There is nothing to pay and nothing to cancel.
+              </p>
+            }
+          }
           @case ('confirming') {
             <p class="plan-status"><span class="status status-pending">Confirming</span></p>
             <p class="plan-state">

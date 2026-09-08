@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { signal } from '@angular/core';
+import { computed, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { of, throwError } from 'rxjs';
@@ -28,6 +28,9 @@ describe('PremiumComponent', () => {
   const status = signal('none');
   const currentPeriodEnd = signal<string | null>(null);
   const cancelAtPeriodEnd = signal(false);
+  const source = signal('none');
+  const premiumUntil = signal<string | null>(null);
+  const granted = computed(() => source() === 'grant');
   const loadState = signal<'idle' | 'loading' | 'loaded' | 'error'>('loaded');
   const checkoutParam = signal<string | null>(null);
   const route = { snapshot: { queryParamMap: { get: () => checkoutParam() } } };
@@ -43,6 +46,8 @@ describe('PremiumComponent', () => {
     status.set('none');
     currentPeriodEnd.set(null);
     cancelAtPeriodEnd.set(false);
+    source.set('none');
+    premiumUntil.set(null);
     loadState.set('loaded');
     checkoutParam.set(null);
     initializePaddle.mockReset();
@@ -68,6 +73,9 @@ describe('PremiumComponent', () => {
           status,
           currentPeriodEnd,
           cancelAtPeriodEnd,
+          source,
+          premiumUntil,
+          granted,
           loadState,
           refresh,
         })
@@ -79,6 +87,22 @@ describe('PremiumComponent', () => {
   afterEach(() => {
     Object.defineProperty(window, 'location', { configurable: true, value: realLocation });
     vi.restoreAllMocks();
+  });
+
+  /**
+   * Premium given by an admin has no subscription behind it, so the billing portal would open on
+   * nothing. The page has to say where the membership came from and offer no way to manage it.
+   */
+  it('says Premium was given, and offers no portal, when nothing was paid for it', () => {
+    premium.set(true);
+    source.set('grant');
+    premiumUntil.set('2026-11-09T00:00:00Z');
+
+    const fixture = MockRender(PremiumComponent);
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(text).toContain('Premium was given to you, free, until');
+    expect(text).not.toContain('Manage subscription');
   });
 
   it('shows a Subscribe button for a signed-in user without Premium', () => {

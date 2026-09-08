@@ -1,0 +1,139 @@
+:host {
+  display: contents;
+}
+
+/* The card shell matches the rest of the admin page. Its rules live in admin.css, which is
+   scoped to that component, so they are repeated here rather than reached into. */
+.admin-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.admin-card h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.admin-card-desc {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.admin-actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.admin-error {
+  color: var(--color-danger, #b91c1c);
+  margin: 0;
+}
+
+.admin-success {
+  color: var(--color-success, #15803d);
+  margin: 0;
+}
+
+.premium-table-wrap {
+  overflow-x: auto;
+}
+
+.premium-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.premium-table th {
+  text-align: left;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  padding: 0 var(--space-3) var(--space-2) 0;
+  white-space: nowrap;
+}
+
+.premium-table td {
+  padding: var(--space-2) var(--space-3) var(--space-2) 0;
+  border-top: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.premium-email {
+  display: block;
+  color: var(--color-text);
+}
+
+.premium-username {
+  display: block;
+  color: var(--color-text-muted);
+}
+
+.premium-source {
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.premium-source--given {
+  color: var(--color-success, #15803d);
+  font-weight: var(--weight-semibold);
+}
+
+.premium-note {
+  color: var(--color-text-muted);
+}
+
+.premium-actions {
+  text-align: right;
+}
+
+.grant-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.grant-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1 1 12rem;
+}
+
+.grant-field--months {
+  flex: 0 0 6rem;
+}
+
+.grant-label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.grant-field input,
+.grant-field select {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: var(--space-2);
+  font: inherit;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
