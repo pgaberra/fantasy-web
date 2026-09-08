@@ -113,10 +113,16 @@
 .lp-feature-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-rows: auto auto;
   gap: var(--space-4);
 }
 
 .lp-feature {
+  display: grid;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
+  align-content: start;
+  gap: var(--space-2);
   padding: var(--space-5);
   background: var(--color-bg);
   border: 1px solid var(--color-border);
@@ -134,7 +140,7 @@
 }
 
 .lp-feature-title {
-  margin: 0 0 var(--space-2);
+  margin: 0;
   font-size: var(--text-lg);
   font-weight: var(--weight-semibold);
   color: var(--color-primary);
