@@ -143,4 +143,12 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./auth/verify-email/verify-email').then((m) => m.VerifyEmailComponent),
   },
+  // Last, and matching everything left. Without it the router threw NG04002 on any address
+  // the app does not have — a mistyped URL, a link to a page that has since been renamed, a
+  // crawler guessing — which reported to Sentry as an application error and left the visitor
+  // with the header above nothing at all.
+  {
+    path: '**',
+    loadComponent: () => import('./not-found/not-found').then((m) => m.NotFoundComponent),
+  },
 ];
