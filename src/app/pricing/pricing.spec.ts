@@ -115,7 +115,9 @@ describe('PricingComponent', () => {
     await settle(fixture);
 
     expect(PricePreview).toHaveBeenCalledWith({ items: [{ priceId: 'pri_1', quantity: 1 }] });
-    expect(ngMocks.formatText(ngMocks.find('.plan-price-amount'))).toContain('$4.99');
+    expect(ngMocks.formatText(ngMocks.find('.plan-card--premium .plan-price-amount'))).toContain(
+      '$4.99',
+    );
   });
 
   // A build that sells nothing has no price id, and must not call Paddle at all - that call is
@@ -127,7 +129,7 @@ describe('PricingComponent', () => {
     await settle(fixture);
 
     expect(initializePaddle).not.toHaveBeenCalled();
-    expect(ngMocks.findAll('.plan-price-amount').length).toEqual(0);
+    expect(ngMocks.findAll('.plan-card--premium .plan-price-amount').length).toEqual(0);
   });
 
   // Losing the price is not worth an error toast on a marketing page. The card still reads.
@@ -137,7 +139,7 @@ describe('PricingComponent', () => {
     const fixture = MockRender(PricingComponent);
     await settle(fixture);
 
-    expect(ngMocks.findAll('.plan-price-amount').length).toEqual(0);
+    expect(ngMocks.findAll('.plan-card--premium .plan-price-amount').length).toEqual(0);
     expect(error).not.toHaveBeenCalled();
     expect(ngMocks.findAll('.plan-card--premium .plan-name').length).toEqual(1);
   });

@@ -8,7 +8,10 @@
     <article class="plan-card plan-card--free">
       <div class="plan-head">
         <h2 class="plan-name">Free</h2>
-        <p class="plan-tagline">No card required. No time limit.</p>
+        <p class="plan-price">
+          <span class="plan-price-amount">Free</span>
+          <span class="plan-price-period">forever</span>
+        </p>
       </div>
       <ul class="plan-perks">
         @for (feature of freeFeatures; track feature) {
@@ -17,10 +20,15 @@
       </ul>
       <div class="plan-cta">
         @if (!authService.isLoggedIn()) {
-          <a routerLink="/register" class="btn btn-secondary btn-block">Create a free account</a>
+          <a routerLink="/register" class="btn btn-secondary btn-lg btn-block"
+            >Create a free account</a
+          >
         } @else if (!entitlement.premium()) {
           <p class="plan-current">Your current plan</p>
+        } @else {
+          <p class="plan-current">Included in Premium</p>
         }
+        <p class="plan-note">No card required. No time limit.</p>
       </div>
     </article>
 
