@@ -3,7 +3,8 @@ import { environment } from '../../../environments/environment';
 /** One thing Premium adds, and where a subscriber goes to use it. */
 export interface PremiumPerk {
   readonly title: string;
-  readonly description: string;
+  /** Absent where the title says the whole thing on its own. */
+  readonly description?: string;
   /**
    * The page the perk lives on, for the moment straight after checkout when the useful thing to
    * say is where to go. Absent for a promise rather than a page.
@@ -24,24 +25,22 @@ export function premiumPerks(): readonly PremiumPerk[] {
   const perks: PremiumPerk[] = [];
   if (environment.aiProjectionEnabled) {
     perks.push({
-      title: 'The AI projection',
-      description: 'A projected stat line for every player, ready to use or edit.',
+      title: 'AI projection',
+      description: 'Every player projected for the 2026-27 season with our AI model.',
       link: '/projections/new',
       linkLabel: 'Start an AI projection',
     });
   }
   if (environment.whosHotEnabled) {
     perks.push({
-      title: "Any game range on Who's hot",
-      description:
-        'Every preset and the slider, from the last 10 games to the full season. Free accounts get the last 5 games.',
+      title: "Custom game range on Who's Hot",
       link: '/whos-hot',
       linkLabel: "Pick a range on Who's hot",
     });
   }
   perks.push({
-    title: 'New tools first',
-    description: 'New Premium features will appear here as they are added.',
+    title: 'More Premium features',
+    description: 'New Premium features will be added regularly.',
   });
   return perks;
 }
