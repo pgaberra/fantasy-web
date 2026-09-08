@@ -40,6 +40,18 @@ describe('TermsComponent', () => {
     expect(text()).toContain(phrase);
   });
 
+  // The refund policy was a page of its own until these terms absorbed it. Paddle's review
+  // checks that it is reachable without an account, so the section has to stay here.
+  it.each(['Cancellation and refunds', 'buyer terms and refund policy'])(
+    'carries the refund policy: %s',
+    async (phrase) => {
+      await MockBuilder(TermsComponent);
+      MockRender(TermsComponent);
+
+      expect(text()).toContain(phrase);
+    },
+  );
+
   // The model is sold on its numbers, so the page has to be plain that they are estimates
   // before anyone pays for them, not after.
   it('says the projections are estimates', async () => {
