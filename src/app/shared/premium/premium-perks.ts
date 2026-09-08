@@ -35,7 +35,7 @@ export function premiumPerks(): readonly PremiumPerk[] {
     perks.push({
       title: "Custom game range on Who's Hot",
       link: '/whos-hot',
-      linkLabel: "Pick a range on Who's hot",
+      linkLabel: "Pick a range on Who's Hot",
     });
   }
   perks.push({
@@ -56,7 +56,7 @@ export function freeFeatures(): readonly string[] {
     'Share projections',
   ];
   if (environment.whosHotEnabled) {
-    features.splice(2, 0, "Who's hot");
+    features.splice(2, 0, "Who's Hot");
   }
   return features;
 }

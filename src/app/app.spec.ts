@@ -89,7 +89,7 @@ describe('App', () => {
 
     const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
 
-    expect(items).toEqual(['Draft mode', 'My projections', "Who's hot", 'Admin']);
+    expect(items).toEqual(['Draft mode', 'My projections', "Who's Hot", 'Admin']);
   });
 
   it('leaves out the links the header itself leaves out', () => {
@@ -99,7 +99,7 @@ describe('App', () => {
     const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
 
     expect(items).not.toContain('Admin');
-    expect(items).toContain("Who's hot");
+    expect(items).toContain("Who's Hot");
   });
 
   /**
@@ -113,9 +113,9 @@ describe('App', () => {
       const fixture = render();
 
       const header = fixture.nativeElement.textContent ?? '';
-      expect(header).not.toContain("Who's hot");
+      expect(header).not.toContain("Who's Hot");
       expect(openNavMenu(fixture).map((item) => item.textContent?.trim())).not.toContain(
-        "Who's hot",
+        "Who's Hot",
       );
     } finally {
       environment.whosHotEnabled = original;
