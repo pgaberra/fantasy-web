@@ -49,15 +49,15 @@ export function premiumPerks(): readonly PremiumPerk[] {
 /** What the free app already includes, so the pricing page can say what Premium is on top of. */
 export function freeFeatures(): readonly string[] {
   const features = [
-    'Projections tailored to your league, for points or categories',
-    'Live draft board and post-draft power rankings',
+    "Projections tailored to your league's scoring",
+    'Live draft board and post-draft rankings',
     environment.espnLeaguesEnabled
-      ? 'League settings imported from Yahoo or ESPN'
-      : 'League settings imported from Yahoo',
-    'Share a projection as a link',
+      ? 'Import league settings from Yahoo or ESPN'
+      : 'Import league settings from Yahoo',
+    'Share projections',
   ];
   if (environment.whosHotEnabled) {
-    features.splice(2, 0, "Who's hot over the last 5 games");
+    features.splice(2, 0, "Who's hot");
   }
   return features;
 }
