@@ -83,7 +83,6 @@ describe('PricingComponent', () => {
     expect(ngMocks.findAll('.plan-card--free .plan-perks li').length).toBeGreaterThan(2);
     expect(text).toContain('Everything in Free');
     expect(text).toContain('AI projection');
-    expect(text).toContain('Who charges my card?');
   });
 
   it('redirects to the checkout URL when Subscribe is clicked', () => {

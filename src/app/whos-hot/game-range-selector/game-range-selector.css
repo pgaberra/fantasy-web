@@ -406,19 +406,6 @@
   width: 4rem;
 }
 
-/* Quieter than the label it follows: it explains a number that is already correct on screen,
-   so it is a footnote to the control rather than a fault being reported.
-   It sits beside the box while there is room for a sentence and drops under the row when there
-   is not — squeezed into whatever width is left over it became a column three words wide that
-   ran off the edge of the card on a phone. */
-.min-games-note {
-  color: var(--color-text-muted);
-  flex: 1 1 11rem;
-  font-size: var(--text-xs);
-  line-height: 1.2;
-  max-width: 18rem;
-}
-
 /* Room for two columns runs out before the window does — the options are wide, and squeezing
    the range beside them turns the row of pills into a column of them. Past that point the
    options drop under the range instead. Measured rather than guessed: the pills need 571px and

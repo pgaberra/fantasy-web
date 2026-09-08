@@ -64,6 +64,9 @@
             <app-player-headshot [src]="account.avatarUrl() ?? undefined" [name]="displayName()" />
           </button>
         } @else {
+          @if (showsPremiumLink()) {
+            <a routerLink="/pricing" routerLinkActive="active" class="nav-premium">Premium</a>
+          }
           <a routerLink="/login" routerLinkActive="active">Sign in</a>
         }
       </nav>

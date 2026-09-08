@@ -188,6 +188,31 @@ describe('App', () => {
       });
     });
 
+    // A signed-out visitor never loads an entitlement, so the plan cannot say whether they
+    // would benefit. They are the likeliest buyer, and away from the landing page the header is
+    // the only navigation they have, so they are offered the price outright.
+    it('offers a signed-out visitor the pricing page from the header', () => {
+      withPayments(() => {
+        isLoggedIn.set(false);
+        loadState.set('idle');
+        const fixture = render();
+
+        const link = fixture.nativeElement.querySelector('.app-nav a.nav-premium');
+        expect(link?.textContent?.trim()).toEqual('Premium');
+        expect(link?.getAttribute('routerLink')).toEqual('/pricing');
+      });
+    });
+
+    // Nothing is for sale before launch, and the pricing page redirects home, so the link goes
+    // with it for a visitor as much as for an account.
+    it('offers a signed-out visitor nothing where payments are off', () => {
+      isLoggedIn.set(false);
+      loadState.set('idle');
+      const fixture = render();
+
+      expect(fixture.nativeElement.querySelector('.app-nav a.nav-premium')).toBeNull();
+    });
+
     it('states the free plan and leads to pricing from the account menu', () => {
       withPayments(() => {
         const fixture = render();
