@@ -112,6 +112,21 @@ export class PremiumComponent implements OnInit, OnDestroy {
    */
   protected readonly formattedPrice = signal<string | null>(null);
 
+  /**
+   * The free plan's price, zero in the same currency Paddle quoted the paid one in. Null until
+   * that currency is known, and if it never arrives.
+   *
+   * Zero is the same number everywhere, but "0 kr" and "$0" are not the same sentence, and a
+   * free column priced in a currency the paid column does not use reads as two different
+   * shops. The currency therefore comes from the same preview as the Premium price rather than
+   * from a guess about where the reader is.
+   *
+   * That ties this figure to a third party the free plan has nothing to do with, so the card
+   * falls back to the word "Free" when the preview does not arrive. Paddle being unreachable
+   * costs the paid card its price; it must not also leave the free one unpriced.
+   */
+  protected readonly freePrice = signal<string | null>(null);
+
   private pollTimer?: ReturnType<typeof setTimeout>;
   private giveUpTimer?: ReturnType<typeof setTimeout>;
 
@@ -153,10 +168,17 @@ export class PremiumComponent implements OnInit, OnDestroy {
         if (lineItem) {
           this.formattedPrice.set(lineItem.formattedTotals.total);
         }
+        const currencyCode = preview?.data.currencyCode;
+        if (currencyCode) {
+          this.freePrice.set(formatZero(currencyCode));
+        }
       })
       // Deliberately quiet. A price we could not fetch is a smaller problem than an error
       // toast on a marketing page, and the card still reads correctly without it.
-      .catch(() => this.formattedPrice.set(null));
+      .catch(() => {
+        this.formattedPrice.set(null);
+        this.freePrice.set(null);
+      });
   }
 
   ngOnDestroy(): void {
@@ -215,5 +237,24 @@ export class PremiumComponent implements OnInit, OnDestroy {
     this.confirming.set(false);
     clearTimeout(this.pollTimer);
     clearTimeout(this.giveUpTimer);
+  }
+}
+
+/**
+ * Zero in the given currency, in the reader's own number format: "0 kr" for a Swedish reader,
+ * "$0" for an American one. Written without decimals because a price of nothing has none to
+ * say, and null if the runtime does not know the currency, which leaves the card to fall back
+ * to no figure at all rather than a broken one.
+ */
+function formatZero(currencyCode: string): string | null {
+  try {
+    return new Intl.NumberFormat(navigator.language, {
+      style: 'currency',
+      currency: currencyCode,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(0);
+  } catch {
+    return null;
   }
 }

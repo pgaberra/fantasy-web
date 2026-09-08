@@ -34,8 +34,7 @@
       <div class="plan-head">
         <h2 class="plan-name">Free</h2>
         <p class="plan-price">
-          <span class="plan-price-amount">Free</span>
-          <span class="plan-price-period">forever</span>
+          <span class="plan-price-amount">{{ freePrice() ?? 'Free' }}</span>
         </p>
       </div>
       <ul class="plan-perks">
