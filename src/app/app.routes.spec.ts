@@ -19,4 +19,11 @@ describe('routes', () => {
     expect(routeFor('s/:token').canActivate).toBeUndefined();
     expect(routeFor('privacy').canActivate).toBeUndefined();
   });
+
+  it('catches an unknown address instead of letting the router throw', () => {
+    // NG04002 reached Sentry as an application error and the visitor saw an empty page.
+    // It has to be last: a wildcard earlier in the list would swallow every route after it.
+    expect(routes.at(-1)?.path).toEqual('**');
+    expect(routeFor('**').canActivate).toBeUndefined();
+  });
 });

@@ -1,0 +1,18 @@
+.not-found {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--color-text);
+}
+
+.not-found__title {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  margin: 0 0 var(--space-4);
+}
+
+.not-found__home {
+  font-size: var(--text-base);
+  color: var(--color-accent);
+}
