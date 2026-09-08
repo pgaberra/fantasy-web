@@ -29,20 +29,19 @@ describe('TermsComponent', () => {
 
   // The subscription mechanics people actually get caught out by. If any of these change in
   // the code, this page has to change with them.
-  it.each([
-    'renews automatically',
-    'Cancel anytime',
-    'end of the period you have already paid for',
-  ])('states the subscription term %s', async (phrase) => {
-    await MockBuilder(TermsComponent);
-    MockRender(TermsComponent);
+  it.each(['renews automatically', 'cancel at any time', 'end of the current billing period'])(
+    'states the subscription term %s',
+    async (phrase) => {
+      await MockBuilder(TermsComponent);
+      MockRender(TermsComponent);
 
-    expect(text()).toContain(phrase);
-  });
+      expect(text()).toContain(phrase);
+    },
+  );
 
   // The refund policy was a page of its own until these terms absorbed it. Paddle's review
-  // checks that it is reachable without an account, so the section has to stay here.
-  it.each(['Cancellation and refunds', 'buyer terms and refund policy'])(
+  // checks that it is reachable without an account, so the wording has to stay here.
+  it.each(['buyer terms and refund policy', 'refund for any unused portion'])(
     'carries the refund policy: %s',
     async (phrase) => {
       await MockBuilder(TermsComponent);
