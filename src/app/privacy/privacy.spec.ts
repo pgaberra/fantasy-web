@@ -50,7 +50,7 @@ describe('PrivacyComponent', () => {
     await MockBuilder(PrivacyComponent);
     MockRender(PrivacyComponent);
 
-    expect(text()).toContain('no self-service delete or export button');
+    expect(text()).toContain('not yet have self-service delete or export controls');
   });
 
   it('points at the Swedish supervisory authority', async () => {
@@ -76,6 +76,6 @@ describe('PrivacyComponent', () => {
     await MockBuilder(PrivacyComponent);
     MockRender(PrivacyComponent);
 
-    expect(text()).toContain('leaves the EU');
+    expect(text()).toContain('Resend is in the United States');
   });
 });

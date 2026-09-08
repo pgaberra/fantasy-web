@@ -97,7 +97,7 @@ export class ProjectionListComponent {
         // Keep the stash: reloading retries rather than silently losing their work.
         error: () => {
           this.isSavingDemo.set(false);
-          this.notification.error("Couldn't save your projection from the demo. Please try again.");
+          this.notification.error("Couldn't save the demo projection. Please try again.");
         },
       });
   }
@@ -147,7 +147,7 @@ export class ProjectionListComponent {
         },
         error: () => {
           this.preparingShareFor.set(null);
-          this.notification.error("Couldn't open sharing for this projection. Please try again.");
+          this.notification.error("Couldn't open sharing for this projection.");
         },
       });
   }

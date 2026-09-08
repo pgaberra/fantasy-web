@@ -1,7 +1,7 @@
 <div class="projection-list">
   <div class="page-header">
     <h1>My projections</h1>
-    <p class="subtitle">Create a new projection or pick one to keep editing.</p>
+    <p class="subtitle">Create a new projection or open one to keep editing.</p>
   </div>
 
   @if (!projectionsResource.isLoading() && !isSavingDemo()) {
@@ -35,9 +35,7 @@
         <line x1="9" y1="16" x2="13" y2="16" />
       </svg>
       <p class="state-title">No projections yet</p>
-      <p class="state-message">
-        Create your first projection to start ranking players for your league.
-      </p>
+      <p class="state-message">Create a projection to start ranking players for your league.</p>
     </div>
   } @else {
     <ul class="cards">

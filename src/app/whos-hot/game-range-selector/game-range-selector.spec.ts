@@ -137,7 +137,7 @@ describe('GameRangeSelectorComponent', () => {
       // on the panel that can say why.
       expect(note()).toHaveLength(1);
       expect(note()[0].nativeElement.textContent.trim()).toEqual(
-        'Your minimum of 25 is more than this range holds.',
+        'The minimum of 25 is longer than this game range.',
       );
     });
 

@@ -47,7 +47,7 @@ export class ForgotPasswordComponent {
         await firstValueFrom(this.authService.forgotPassword(this.model().email));
         this.submitted.set(true);
       } catch {
-        this.errorMessage.set('Something went wrong. Please try again.');
+        this.errorMessage.set("Couldn't complete the request. Please try again.");
       } finally {
         this.isLoading.set(false);
       }

@@ -31,7 +31,7 @@ describe('TermsComponent', () => {
   // the code, this page has to change with them.
   it.each([
     'renews automatically',
-    'cancel at any time',
+    'Cancel anytime',
     'end of the period you have already paid for',
   ])('states the subscription term %s', async (phrase) => {
     await MockBuilder(TermsComponent);

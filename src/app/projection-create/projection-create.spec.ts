@@ -279,7 +279,7 @@ describe('ProjectionCreateComponent', () => {
     expect(component.nameTaken()).toBe(true);
     expect(component.canCreate()).toEqual(false);
     expect(fixture.nativeElement.querySelector('.field-error').textContent).toContain(
-      'You already have a projection with that name',
+      'A projection with that name already exists',
     );
 
     component.name.set('Something else');
@@ -310,7 +310,7 @@ describe('ProjectionCreateComponent', () => {
     component.name.set('Dynasty');
     component.create();
 
-    expect(notifyError).toHaveBeenCalledWith('You already have a projection with that name.');
+    expect(notifyError).toHaveBeenCalledWith('A projection with that name already exists.');
     expect(navigate).not.toHaveBeenCalled();
     expect(component.isCreating()).toEqual(false);
   });
@@ -464,9 +464,9 @@ describe('ProjectionCreateComponent', () => {
       expect(component.startingPoint()).toEqual({ kind: 'copy', id: null });
       expect(component.copiedBoard()).toBeNull();
       expect(component.canCreate()).toEqual(false);
-      expect(root.querySelector('.group-empty')?.textContent).toContain('no projections yet');
+      expect(root.querySelector('.group-empty')?.textContent).toContain('no saved projections yet');
       expect(root.querySelector('.row')).toBeNull();
-      expect(root.querySelector('.preview-note')?.textContent).toContain('nothing to copy');
+      expect(root.querySelector('.preview-note')?.textContent).toContain('Nothing to copy');
 
       component.sourceKind.set('preset');
       expect(component.canCreate()).toEqual(true);
@@ -705,7 +705,7 @@ describe('ProjectionCreateComponent', () => {
 
   // The goalie minimum is a category-league rule (see ProjectionRankingService.isQualified), and
   // a new projection opens in points mode — so the preview must not put the editor's
-  // "Below min. games" marker on a goalie who would never carry one there.
+  // "Below league minimum" marker on a goalie who would never carry one there.
   it('leaves a barely-played goalie unmarked, as points scoring does', async () => {
     // A board short enough that the goalie is in the preview on its own merits — there is no
     // reserved seat lifting it in any more.

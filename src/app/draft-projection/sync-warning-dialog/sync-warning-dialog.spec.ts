@@ -20,7 +20,7 @@ describe('SyncWarningDialogComponent', () => {
       platform: 'ESPN',
     });
 
-    expect(fixture.nativeElement.textContent).toContain('changed in ESPN');
+    expect(fixture.nativeElement.textContent).toContain('changed on ESPN');
   });
 
   it('undoes the edit from the cross, which is the only way out that keeps the league', () => {

@@ -8,8 +8,7 @@
     <div class="gone-card">
       <h1 class="gone-title">This link isn't active</h1>
       <p class="gone-body">
-        Whoever shared this projection has taken the link down, or it never existed. You can still
-        build your own. It's free to start.
+        This share link is no longer available. You can still create your own projection.
       </p>
       <a routerLink="/" class="btn btn-primary">Make your own projection</a>
     </div>
@@ -37,7 +36,7 @@
         <button
           type="button"
           class="btn btn-secondary"
-          appTooltip="Create your own projection from a copy of this one"
+          appTooltip="Create a copy of this projection"
           [disabled]="isImporting()"
           (click)="copyToMyProjections()"
           data-testid="copy-board"
@@ -47,7 +46,7 @@
         <button
           type="button"
           class="btn btn-primary"
-          appTooltip="Enter Draft mode with a copy of this projection"
+          appTooltip="Draft against a copy of this projection"
           [disabled]="isImporting()"
           (click)="draftAgainstThis()"
           data-testid="draft-board"
@@ -55,24 +54,23 @@
           {{ importingInto() === 'draft' ? 'Copying…' : 'Draft mode' }}
         </button>
       </div>
-      @if (signInPromptFor(); as intent) {
+      @if (signInPromptFor()) {
         <p class="board-actions-prompt" role="status" data-testid="sign-in-prompt">
-          Your copy of this board lives in your account, so
+          Save a copy to your account to keep editing it or use it in Draft mode.
           <a
             routerLink="/login"
             [queryParams]="{ returnUrl: promptReturnUrl() }"
             data-testid="prompt-login"
-            >log in</a
+            >Sign in</a
           >
           or
           <a
             routerLink="/register"
             [queryParams]="{ returnUrl: promptReturnUrl() }"
             data-testid="prompt-register"
-            >create an account</a
+            >create a free account</a
           >
-          {{ intent === 'draft' ? 'to draft against it.' : 'to make it yours.' }} Free to start, and
-          this carries on where you left off.
+          to continue.
         </p>
       }
     </header>
@@ -179,12 +177,12 @@
       <section class="cta">
         @if (isTruncated()) {
           <h2 class="cta-title">
-            This link opens the top {{ projection.data.players.length }} of
+            This projection includes the top {{ projection.data.players.length }} of
             {{ totalPlayers() }} players
           </h2>
           <p class="cta-body">
-            Sign in to read the rest of {{ authorLabel() }}'s board (every player they ranked, under
-            their league's scoring settings) and take a copy to draft against. Free to start.
+            Sign in to see the rest of {{ authorLabel() }}'s rankings and copy the projection into
+            your account. Free to start.
           </p>
           <div class="cta-actions">
             <a
@@ -203,10 +201,10 @@
             >
           </div>
         } @else {
-          <h2 class="cta-title">This is one manager's board</h2>
+          <h2 class="cta-title">This is one manager's projection</h2>
           <p class="cta-body">
-            Build your own projections, tuned to your league's scoring settings, and rank every
-            player the way this one does, or draft straight against this one. Free to start.
+            Build your own rankings around your league's scoring settings, or draft directly against
+            this projection.
           </p>
           <a routerLink="/register" class="btn btn-primary">Make your own projection</a>
         }
@@ -215,7 +213,7 @@
 
     <div class="shared-footer">
       <p>
-        Projections are the work of {{ authorLabel() }}, not SlapStat. Underlying data ©
+        Projection created by {{ authorLabel() }}. Underlying data ©
         <a href="https://moneypuck.com" rel="noopener noreferrer" target="_blank">MoneyPuck.com</a>
         and the NHL.
       </p>

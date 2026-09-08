@@ -165,12 +165,12 @@ export class EspnLeagueSyncComponent implements OnInit {
     const status = err instanceof HttpErrorResponse ? err.status : 0;
     if (status === 400) {
       return hadCredentials
-        ? 'ESPN would not accept those cookies. Check the league id, and that espn_s2 and SWID were copied in full.'
+        ? 'ESPN did not accept those cookies. Check the league ID and make sure espn_s2 and SWID were copied in full.'
         : 'This league is private. Add your espn_s2 and SWID cookies, then sync again.';
     }
     if (status === 404) {
       return 'No ESPN league found for that id.';
     }
-    return 'Could not load the league settings from ESPN. Please try again.';
+    return "Couldn't load the league settings from ESPN. Please try again.";
   }
 }

@@ -141,7 +141,7 @@ export class ProfileComponent implements OnInit {
         this.isSaving.set(false);
         this.errorMessage.set(
           error instanceof HttpErrorResponse && error.status === 409
-            ? 'That name is taken. Try another.'
+            ? 'That username is already taken. Choose another.'
             : messageForError(error, "Couldn't save your name."),
         );
       },
@@ -175,10 +175,10 @@ export class ProfileComponent implements OnInit {
    */
   private messageForAvatarError(error: unknown): string {
     if (error instanceof UnsupportedImageTypeError) {
-      return 'Unsupported file format. Please upload a PNG, JPEG, or WebP image.';
+      return 'Unsupported file format. Use a PNG, JPEG, or WebP image.';
     }
     if (error instanceof UnreadableImageError) {
-      return "Couldn't read that file as a picture. Try a PNG or JPEG.";
+      return 'That file could not be read as an image. Use a PNG or JPEG.';
     }
     return messageForError(error, "Couldn't save your picture.");
   }

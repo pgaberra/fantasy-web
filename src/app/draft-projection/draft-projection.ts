@@ -385,7 +385,7 @@ export class DraftProjectionComponent implements OnInit {
       },
       error: () => {
         this.reSyncing.set(false);
-        this.reSyncError.set(`Could not re-sync from ${platform}. Try again.`);
+        this.reSyncError.set(`Could not re-sync from ${platform}. Please try again.`);
       },
     });
   }
@@ -632,7 +632,7 @@ export class DraftProjectionComponent implements OnInit {
           this.renameError.set(
             conflict
               ? 'A projection with that name already exists.'
-              : 'Could not rename the projection.',
+              : "Couldn't rename the projection.",
           );
         },
       });

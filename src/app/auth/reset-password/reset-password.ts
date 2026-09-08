@@ -49,7 +49,7 @@ export class ResetPasswordComponent {
         if (unmetPasswordRequirements(ctx.value()).length > 0) {
           return {
             kind: 'weakPassword',
-            message: 'Password does not meet the requirements below.',
+            message: 'Password does not meet the requirements.',
           };
         }
         return undefined;
@@ -75,9 +75,7 @@ export class ResetPasswordComponent {
         await firstValueFrom(this.authService.resetPassword(this.token, this.model().password));
         this.succeeded.set(true);
       } catch {
-        this.errorMessage.set(
-          'This reset link is invalid or has expired. Please request a new one.',
-        );
+        this.errorMessage.set('This reset link is invalid or has expired. Request a new one.');
       } finally {
         this.isLoading.set(false);
       }

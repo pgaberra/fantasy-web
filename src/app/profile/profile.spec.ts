@@ -123,7 +123,7 @@ describe('ProfileComponent', () => {
     await pick(fixture, picked);
 
     expect(setAvatar).not.toHaveBeenCalled();
-    expect(text(fixture)).toContain("Couldn't read that file as a picture");
+    expect(text(fixture)).toContain('That file could not be read as an image');
   });
 
   /**
@@ -137,9 +137,7 @@ describe('ProfileComponent', () => {
     await pick(fixture, picked);
 
     expect(setAvatar).not.toHaveBeenCalled();
-    expect(text(fixture)).toContain(
-      'Unsupported file format. Please upload a PNG, JPEG, or WebP image.',
-    );
+    expect(text(fixture)).toContain('Unsupported file format. Use a PNG, JPEG, or WebP image.');
     expect(fixture.point.componentInstance.isUploading()).toEqual(false);
   });
 
@@ -248,7 +246,7 @@ describe('ProfileComponent', () => {
     };
 
     const RULE =
-      'Username must be 3–20 characters long and can only contain letters, numbers, and underscores.';
+      'Username must be 3–20 characters and may contain only letters, numbers, and underscores.';
 
     /**
      * The card's heading says "Username" already, so drawing the label too said it twice. It is

@@ -37,7 +37,7 @@ export class ShareImportComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   /** Names what the copy is for, which differs between the pages that take one. */
-  readonly label = input('Add a shared board');
+  readonly label = input('Add a shared projection');
 
   readonly imported = output<ProjectionResponse>();
 
@@ -66,7 +66,7 @@ export class ShareImportComponent {
     }
     const chosenName = this.importName()?.trim();
     if (this.importName() !== null && !chosenName) {
-      this.importHint.set('Give the copy a name.');
+      this.importHint.set('Enter a name for this copy.');
       return;
     }
     this.importHint.set(null);
@@ -96,11 +96,11 @@ export class ShareImportComponent {
   private onFailed(error: unknown): void {
     if (error instanceof HttpErrorResponse && error.status === 409) {
       this.importName.set(this.importName() ?? '');
-      this.importHint.set('You already have a board with that name. Give this copy another.');
+      this.importHint.set('A board with that name already exists. Choose another name.');
       return;
     }
     if (error instanceof HttpErrorResponse && error.status === 404) {
-      this.importHint.set("That link isn't active any more.");
+      this.importHint.set('That share link is no longer active.');
       return;
     }
     this.notification.error("Couldn't import that board. Please try again.");

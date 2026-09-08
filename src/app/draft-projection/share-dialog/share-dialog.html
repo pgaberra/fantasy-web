@@ -24,7 +24,7 @@
       </div>
     } @else {
       @if (needsUsername()) {
-        <p class="dialog-body">To share a projection you need to pick a username.</p>
+        <p class="dialog-body">Choose a username before sharing a projection.</p>
 
         <label class="username-label" for="share-username">Pick a username</label>
         <input
@@ -39,8 +39,8 @@
         />
       } @else {
         <p class="username-hint">
-          Credited to <strong>{{ username() }}</strong
-          >. Change it on your profile.
+          Shared by <strong>{{ username() }}</strong
+          >. Change your username in your profile.
         </p>
       }
 

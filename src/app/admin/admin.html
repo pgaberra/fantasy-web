@@ -11,8 +11,8 @@
   <article class="admin-card">
     <h2>Yahoo service account</h2>
     <p class="admin-card-desc">
-      The app uses one Yahoo account to fetch all player data (identity, eligible positions and
-      season stats). Connect it once; it stays connected until Yahoo revokes access.
+      SlapStat uses one Yahoo account to fetch player data. Connect it once; it stays connected
+      until Yahoo revokes access.
     </p>
 
     <div class="admin-status">
@@ -56,8 +56,8 @@
   <article class="admin-card">
     <h2>Player data sync</h2>
     <p class="admin-card-desc">
-      Pull the latest player data from Yahoo and rebuild the player list. Also runs automatically on
-      a daily schedule.
+      Fetch the latest player data from Yahoo and rebuild the player list. This also runs
+      automatically once a day.
     </p>
 
     @if (syncMessage()) {
@@ -141,9 +141,8 @@
   <article class="admin-card">
     <h2>Yahoo access probe</h2>
     <p class="admin-card-desc">
-      Ask Yahoo one question: will it serve this game's players? A failed sync only says that
-      something was refused; vary the game key and season here to find out what. Reads nothing into
-      the cache and writes nothing, so it is safe to fire at anything.
+      Test whether Yahoo will return player data for a game or league. Use the game key, league key,
+      and season fields to narrow the request. This probe does not write to the cache.
     </p>
 
     <div class="probe-inputs">
@@ -156,7 +155,7 @@
           (input)="onProbeGameKeyInput($event)"
         />
         <span class="probe-hint"
-          >"nhl" is whichever season is current; a number pins a past one</span
+          >“nhl” uses the current season. A number selects a specific past season.</span
         >
       </div>
       <div class="probe-field">
@@ -197,9 +196,8 @@
       </button>
     </div>
     <p class="probe-hint">
-      The second button ignores the fields above and asks the simplest question there is: will Yahoo
-      list this account's own leagues? That is the floor. If even that is refused, no route into the
-      Fantasy API is open to us, and no choice of endpoint will help.
+      This checks whether Yahoo can list this account's leagues. If Yahoo refuses this request,
+      other Fantasy API endpoints are unlikely to work either.
     </p>
 
     @if (leagues().length) {

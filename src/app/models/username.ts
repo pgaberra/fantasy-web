@@ -13,4 +13,4 @@ export const USERNAME_MAX_LENGTH = 20;
  * on its own — there is no hint left above it to lean on.
  */
 export const USERNAME_RULE =
-  'Username must be 3–20 characters long and can only contain letters, numbers, and underscores.';
+  'Username must be 3–20 characters and may contain only letters, numbers, and underscores.';

@@ -3,7 +3,7 @@
     <h1>Who's hot</h1>
     <app-help-tip
       label="What this page shows"
-      text="Check which players have performed the best over a selected time period, customized to your league settings."
+      text="See which players have performed best over the selected range using your league's scoring settings."
     />
 
     <!-- Beside the title rather than down in the range bar, because that is what it is: the
@@ -71,7 +71,7 @@
             table-toolbar-actions
             type="button"
             class="btn btn-secondary btn-sm synced-league"
-            [appTooltip]="'Imported from ' + leagueName + ' (click to re-sync or change league)'"
+            [appTooltip]="'Imported from ' + leagueName + ' · click to re-sync or change league'"
             (click)="showSyncDialog.set(true)"
           >
             <span class="synced-dot" aria-hidden="true"></span>

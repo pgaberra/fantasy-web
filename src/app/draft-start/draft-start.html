@@ -198,12 +198,13 @@
             @if (projections().length === 0) {
               <p class="group-empty">
                 @if (drafts().length > 0) {
-                  Every projection you have is drafted against already.
-                  <a routerLink="/projections/new">Create another</a> to draft against fresh
-                  numbers.
+                  You already have a draft for every projection.
+                  <a routerLink="/projections/new">Create another projection</a> to draft against
+                  fresh numbers.
                 } @else {
                   No projections yet.
-                  <a routerLink="/projections/new">Create one</a> to draft against your own numbers.
+                  <a routerLink="/projections/new">Create one</a> to draft against your own
+                  rankings.
                 }
               </p>
             } @else {
@@ -259,8 +260,8 @@
           @case ('imported') {
             @if (imported().length === 0) {
               <p class="group-empty">
-                Nobody's board here yet. Paste a SlapStat share link below to copy one, and the copy
-                is yours to draft against.
+                No shared projections yet. Paste a SlapStat share link below to import one and draft
+                against it.
               </p>
             } @else {
               <ul class="rows">
@@ -306,7 +307,7 @@
           @default {
             @if (availablePresets().length === 0) {
               <p class="group-empty">
-                Every preset has a draft above. Discard that draft to start the preset fresh.
+                Each preset already has a draft. Discard it to start a fresh one.
               </p>
             } @else {
               <!--
@@ -395,7 +396,7 @@
                         </span>
                         @if (isPresetLocked(preset)) {
                           <span class="row-meta">
-                            The model's own line for every player. Part of Premium.
+                            The model's projected line for every player. Part of Premium.
                           </span>
                         }
                       </span>
@@ -415,7 +416,7 @@
         @if (selectionLocked()) {
           <a routerLink="/pricing" class="btn btn-primary start">Unlock with Premium</a>
           <span class="start-note">
-            Premium adds the AI projection, and any game range on Who's hot.
+            Premium adds the AI projection and all game ranges on Who's hot.
           </span>
         } @else {
           <button

@@ -710,7 +710,7 @@ export class ProjectionCreateComponent {
           // Names are unique per user, and the name is right there to change — so a 409 is
           // something to say on the page rather than a reason to navigate away from it.
           if (error instanceof HttpErrorResponse && error.status === 409) {
-            this.notification.error('You already have a projection with that name.');
+            this.notification.error('A projection with that name already exists.');
           } else if (isPremiumRefusal(error)) {
             // Held back by `canCreate`, so this is the two disagreeing: a subscription that
             // lapsed while the page was open, or an entitlement read that never landed.

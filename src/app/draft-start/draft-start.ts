@@ -331,8 +331,8 @@ export class DraftStartComponent {
   /** What is actually lost, which is not the same thing for a preset draft as for a board. */
   discardPrompt(draft: ProjectionSummaryResponse): string {
     return draft.kind === 'preset_draft'
-      ? 'Discard this draft? The picks are lost.'
-      : 'Discard the picks? The projection stays.';
+      ? 'Discard this draft? Your picks will be lost.'
+      : 'Discard the picks? The projection will stay.';
   }
 
   /**

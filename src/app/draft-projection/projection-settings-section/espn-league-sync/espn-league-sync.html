@@ -78,12 +78,12 @@
             in your browser.
           </li>
           <li>
-            Open your browser's developer tools (F12) → Application (or Storage) → Cookies →
+            Open your browser developer tools (F12), then go to Application (or Storage) → Cookies →
             fantasy.espn.com.
           </li>
           <li>
-            Copy the values of <code>espn_s2</code> and <code>SWID</code> (include SWID's braces)
-            and paste them above.
+            Copy the <code>espn_s2</code> and <code>SWID</code> values, including SWID's braces, and
+            paste them above.
           </li>
         </ol>
       }
@@ -119,6 +119,6 @@
     </p>
   }
   @if (unsupportedStats().length) {
-    <p class="espn-sync-muted">Not synced (no equivalent): {{ unsupportedStats().join(', ') }}</p>
+    <p class="espn-sync-muted">Not synced: {{ unsupportedStats().join(', ') }}</p>
   }
 </div>

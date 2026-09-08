@@ -46,7 +46,7 @@
       <label for="min-goalie-games-input">Minimum goalie games</label>
       <app-help-tip
         label="What the goalie minimum does"
-        text="Goalies projected for fewer games than this are ranked last."
+        text="Goalies projected below this minimum are ranked last."
       />
     </span>
     <input
@@ -62,5 +62,5 @@
   <div class="menu-separator"></div>
   <p class="menu-title">Roster slots</p>
   <app-roster-slots-editor [(rosterSlots)]="rosterSlots" />
-  <p class="menu-note">League size and roster slots tune the rankings for your league.</p>
+  <p class="menu-note">League size and roster slots affect player values in your rankings.</p>
 }

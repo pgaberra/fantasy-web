@@ -18,7 +18,9 @@
             <span class="save-status">Saved</span>
           }
           @case ('error') {
-            <span class="save-status save-status--error">Couldn't save, changes are unsaved</span>
+            <span class="save-status save-status--error"
+              >Couldn't save. Your changes are still unsaved.</span
+            >
           }
         }
       </div>
@@ -138,11 +140,11 @@
             <h2 class="modal-title">Finish the draft?</h2>
             <p class="modal-text">
               @if (isComplete()) {
-                Finishing marks the draft done and opens its summary. You can head back to the board
-                and edit anytime.
+                Finishing marks the draft complete and opens the summary. You can return to the
+                board and keep editing.
               } @else {
-                The draft isn't finished yet, {{ picks().length }} of {{ totalPicks() }} picks made.
-                You can still finish and view the summary, then come back to keep drafting.
+                The draft is not finished yet, {{ picks().length }} of {{ totalPicks() }} picks
+                made. You can finish now and return to the board later.
               }
             </p>
             <div class="modal-actions">
@@ -162,9 +164,8 @@
           <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
             <h2 class="modal-title">Remove pick #{{ preview.overall }}?</h2>
             <p class="modal-text">
-              Removing <strong>{{ lookup.name(preview.playerId) }}</strong> ({{
-                preview.mine ? 'You' : preview.teamName
-              }}) will affect the following picks:
+              Removing <strong>{{ lookup.name(preview.playerId) }}</strong> will affect the
+              following picks:
             </p>
             <div class="modal-changes">
               @for (change of preview.changes; track change.oldOverall) {

@@ -3,7 +3,7 @@
 } @else if (playersUnavailable()) {
   <app-error-state
     title="Couldn't load player data"
-    message="A projection can't be shown without it. Check your connection and try again."
+    message="Your projection can't be loaded without player data. Check your connection and try again."
     (retry)="reloadPlayers()"
   />
 } @else {
@@ -126,7 +126,7 @@
             table-toolbar-actions
             type="button"
             class="btn btn-secondary btn-sm synced-league"
-            [appTooltip]="'Imported from ' + leagueName + ' (click to re-sync or change league)'"
+            [appTooltip]="'Imported from ' + leagueName + ' · click to re-sync or change league'"
             (click)="showSyncDialog.set(true)"
           >
             <span class="synced-dot" aria-hidden="true"></span>

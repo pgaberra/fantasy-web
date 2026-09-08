@@ -6,10 +6,9 @@
     aria-labelledby="full-season-title"
     aria-describedby="full-season-body"
   >
-    <h2 id="full-season-title" class="dialog-title">Set a full 84-game season?</h2>
+    <h2 id="full-season-title" class="dialog-title">Set to 84 games?</h2>
     <p id="full-season-body" class="dialog-body">
-      Every skater's games played will be set to <strong>84</strong>. Goalies are left as they are:
-      they share one net, so their games are a share of the schedule rather than all of it.
+      Set every skater to <strong>84</strong> games. Goalie totals stay unchanged.
     </p>
 
     <div class="scale-option">
@@ -21,16 +20,15 @@
             [attr.aria-describedby]="scaleGoalies() ? 'full-season-goalie-warning' : null"
             (change)="toggleScaleGoalies()"
           />
-          <span>Scale goalies to the 84-game season too</span>
+          <span>Scale goalies to 84 games too</span>
         </label>
       </div>
 
       @if (scaleGoalies()) {
         <p id="full-season-goalie-warning" class="option-warning" role="alert">
-          Only do this if the projection is built on an 82-game season. Each goalie's games are
-          multiplied by 84/82, so a goalie who played 42 games becomes 43. The AI projection already
-          runs to 84 games, and scaling it again adds about 2% to every goalie and pushes a team's
-          games started past the 84 it plays.
+          Only use this for projections built on an 82-game season. Goalies are scaled from 82 to 84
+          games, so 42 projected games becomes 43. Do not use this with the AI projection, which
+          already uses 84 games.
         </p>
       }
     </div>

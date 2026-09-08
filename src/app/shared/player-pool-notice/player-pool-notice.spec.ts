@@ -16,7 +16,7 @@ describe('PlayerPoolNoticeComponent', () => {
     const text = fixture.nativeElement.textContent as string;
     expect(fixture.nativeElement.querySelector('.pool-notice')).not.toBeNull();
     expect(text).toContain('12 players have been added');
-    expect(text).toContain('Your own numbers are untouched');
+    expect(text).toContain('Your existing projections are unchanged');
   });
 
   it('reads as one player for a single addition', () => {

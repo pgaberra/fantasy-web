@@ -81,8 +81,8 @@ describe('AccountComponent', () => {
     const fixture = MockRender(AccountComponent);
 
     const text = fixture.nativeElement.textContent;
-    expect(text).toContain('You keep Premium until October 7, 2026');
-    expect(text).toContain('nothing more is charged');
+    expect(text).toContain('Premium remains active until October 7, 2026');
+    expect(text).toContain('No further charges will be made');
     expect(text).not.toContain('Renews on');
   });
 

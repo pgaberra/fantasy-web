@@ -89,7 +89,7 @@ export class AuthService {
     const expectedState = sessionStorage.getItem(this.googleStateKey);
     sessionStorage.removeItem(this.googleStateKey);
     if (!expectedState || expectedState !== state) {
-      return throwError(() => new Error('Google sign-in could not be verified. Please try again.'));
+      return throwError(() => new Error('Google sign-in could not be verified.'));
     }
     return from(
       this.api.invoke(googleCodeLogin, { body: { code, redirectUri: this.googleRedirectUri() } }),

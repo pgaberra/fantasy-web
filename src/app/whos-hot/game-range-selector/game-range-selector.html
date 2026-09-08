@@ -43,7 +43,7 @@
           </a>
           <app-help-tip
             label="Why the other ranges are off"
-            text="A free account sees the last 5 games. Premium membership unlocks the rest of the presets and the slider, so you can measure any stretch of the season."
+            text="Free accounts see the last 5 games. Premium unlocks the other presets and the slider, so you can choose any stretch of the season."
           />
         }
       </div>
@@ -120,7 +120,7 @@
       </button>
       <app-help-tip
         label="What per game does"
-        text="Off, the leaderboard shows totals over the range, so a player who missed games shows less, which is usually the point. On, it divides by the games each player actually dressed for, so someone who missed half the range isn't buried."
+        text="Off: show totals over the selected range. Players who miss games will naturally score lower. On: divide by games played in the range, reducing the impact of missed games."
       />
     </div>
 
@@ -134,7 +134,7 @@
         <label for="min-games">Min. games</label>
         <app-help-tip
           label="What the minimum does"
-          text="Hide players with fewer appearances in the range."
+          text="Hide players with fewer appearances than this minimum."
         />
         <input
           id="min-games"
@@ -151,7 +151,7 @@
              the range cannot hold what they asked for, and their figure is still theirs. -->
         @if (minGamesCapped()) {
           <span class="min-games-note" role="status">
-            Your minimum of {{ minGamesRequested() }} is more than this range holds.
+            The minimum of {{ minGamesRequested() }} is longer than this game range.
           </span>
         }
       </div>

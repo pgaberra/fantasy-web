@@ -4,15 +4,12 @@
       @case ('verifying') {
         <h1 class="auth-title">Verifying your email</h1>
         <p class="auth-subtitle">
-          One moment while we confirm your email address<span
-            class="loading-dots"
-            aria-hidden="true"
-          ></span>
+          Confirming your email address…<span class="loading-dots" aria-hidden="true"></span>
         </p>
       }
       @case ('succeeded') {
         <h1 class="auth-title">Email verified</h1>
-        <p class="auth-subtitle">Thanks, your email address is confirmed. You're all set.</p>
+        <p class="auth-subtitle">Your email address is confirmed.</p>
         <a routerLink="/projections" class="btn btn-primary btn-block btn-lg"
           >Go to your projections</a
         >
@@ -20,8 +17,7 @@
       @case ('failed') {
         <h1 class="auth-title">Verification failed</h1>
         <p class="auth-subtitle">
-          This verification link is invalid or has expired. Sign in and use the banner to send a
-          fresh one.
+          This verification link is invalid or has expired. Sign in and request a new one.
         </p>
         <a routerLink="/login" class="btn btn-primary btn-block btn-lg">Go to sign in</a>
       }
