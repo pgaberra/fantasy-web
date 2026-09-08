@@ -65,13 +65,6 @@ export class GameRangeSelectorComponent {
   readonly perGame = model.required<boolean>();
   readonly minGames = model.required<number>();
 
-  /**
-   * The minimum the user asked for, when the range has since made it impossible. The box shows
-   * the minimum actually in force, which the page clamps to the span; this is the number it was
-   * cut down from, and without it the figure on screen silently stops being the one they typed.
-   */
-  readonly minGamesRequested = input<number | null>(null);
-
   readonly presets = PRESETS;
 
   /**
@@ -82,9 +75,6 @@ export class GameRangeSelectorComponent {
   readonly activeThumb = signal<Thumb>('to');
 
   readonly spanLength = computed(() => this.toGame() - this.fromGame() + 1);
-
-  /** Whether the range, not the user, is deciding the minimum currently in force. */
-  readonly minGamesCapped = computed(() => (this.minGamesRequested() ?? 0) > this.minGames());
 
   /**
    * Only the span length. The two bounds sit in the boxes at either end of the rail, so
