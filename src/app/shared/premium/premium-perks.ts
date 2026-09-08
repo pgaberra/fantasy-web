@@ -33,7 +33,7 @@ export function premiumPerks(): readonly PremiumPerk[] {
   }
   if (environment.whosHotEnabled) {
     perks.push({
-      title: "Custom game range on Who's Hot",
+      title: "Custom range on Who's Hot",
       link: '/whos-hot',
       linkLabel: "Pick a range on Who's Hot",
     });
