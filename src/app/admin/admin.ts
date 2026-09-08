@@ -2,6 +2,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { AdminService } from '../services/admin.service';
+import { AdminPremiumComponent } from './premium/admin-premium';
 import { LeagueSummary, SyncRunResponse, YahooProbeResponse } from '../api/models';
 
 /**
@@ -41,7 +42,7 @@ const YAHOO_ERRORS: Record<string, string> = {
 
 @Component({
   selector: 'app-admin',
-  imports: [RelativeTimePipe],
+  imports: [RelativeTimePipe, AdminPremiumComponent],
   templateUrl: './admin.html',
   styleUrl: './admin.css',
 })

@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { signal } from '@angular/core';
+import { signal, computed } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { of, throwError } from 'rxjs';
@@ -17,6 +17,9 @@ describe('AccountComponent', () => {
   const status = signal('none');
   const currentPeriodEnd = signal<string | null>(null);
   const cancelAtPeriodEnd = signal(false);
+  const source = signal('none');
+  const premiumUntil = signal<string | null>(null);
+  const granted = computed(() => source() === 'grant');
   const loadState = signal<'idle' | 'loading' | 'loaded' | 'error'>('loaded');
   const realLocation = window.location;
   const checkoutParam = signal<string | null>(null);
@@ -27,6 +30,8 @@ describe('AccountComponent', () => {
     notifyError.mockReset();
     refresh.mockReset();
     premium.set(false);
+    source.set('none');
+    premiumUntil.set(null);
     status.set('none');
     currentPeriodEnd.set(null);
     cancelAtPeriodEnd.set(false);
@@ -43,6 +48,9 @@ describe('AccountComponent', () => {
           status,
           currentPeriodEnd,
           cancelAtPeriodEnd,
+          source,
+          premiumUntil,
+          granted,
           loadState,
           refresh,
         })
@@ -53,6 +61,22 @@ describe('AccountComponent', () => {
 
   afterEach(() => {
     Object.defineProperty(window, 'location', { configurable: true, value: realLocation });
+  });
+
+  /**
+   * Premium given by an admin has no subscription behind it, so the billing portal would open on
+   * nothing. The page has to say where the membership came from and offer no way to manage it.
+   */
+  it('says premium was given, and offers no portal, when there is no subscription behind it', () => {
+    premium.set(true);
+    source.set('grant');
+    premiumUntil.set('2026-11-09T00:00:00Z');
+
+    const fixture = MockRender(AccountComponent);
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(text).toContain('Premium was given to you, free, until');
+    expect(text).not.toContain('Manage subscription');
   });
 
   it('refreshes the entitlement on init', () => {

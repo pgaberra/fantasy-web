@@ -41,7 +41,22 @@
         </div>
       }
       @default {
-        @if (entitlement.premium()) {
+        @if (entitlement.premium() && entitlement.granted()) {
+          <div class="plan-status">
+            <span class="status status-ok">Premium active</span>
+          </div>
+          @if (entitlement.premiumUntil()) {
+            <p class="account-note">
+              Premium was given to you, free, until
+              {{ entitlement.premiumUntil() | date: 'longDate' }}. There is nothing to pay and
+              nothing to cancel.
+            </p>
+          } @else {
+            <p class="account-note">
+              Premium was given to you, free. There is nothing to pay and nothing to cancel.
+            </p>
+          }
+        } @else if (entitlement.premium()) {
           <div class="plan-status">
             <span class="status status-ok">Premium active</span>
           </div>

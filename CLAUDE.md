@@ -142,6 +142,11 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   `/s/:token/og-image.png` so the tags and the image they point at share a host. That
   location must stay above the static-asset location, which would otherwise claim any URL
   ending in `.png` and 404 it.
+- `admin/premium/` — the Premium section of `/admin`: everyone who has Premium, and a form that
+  gives an account a number of months of it for nothing. A given membership is stored apart from
+  any subscription, so ending one here never touches what a paying member is billed, and only a
+  given one offers the End button. The card styles are repeated in its own CSS because
+  `admin.css` is scoped to the parent component.
 - `admin/` — admin-only tools (`/admin`): the Yahoo service account, the player sync, and a
   **Yahoo access probe**. The probe asks Yahoo one question — will it serve this game's players? —
   for a game key and season you type in, and shows the status and Yahoo's own error wording. A

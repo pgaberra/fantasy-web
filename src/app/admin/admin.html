@@ -1,12 +1,14 @@
 <section class="admin">
   <header class="admin-header">
     <h1>Admin</h1>
-    <p class="admin-sub">Manage the Yahoo service account and refresh player data.</p>
+    <p class="admin-sub">Premium members, the Yahoo service account, and player data.</p>
   </header>
 
   @if (error()) {
     <p class="admin-error" role="alert">{{ error() }}</p>
   }
+
+  <app-admin-premium />
 
   <article class="admin-card">
     <h2>Yahoo service account</h2>
