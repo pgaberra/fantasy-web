@@ -152,17 +152,16 @@ describe('PricingComponent', () => {
     expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toContain('kr');
   });
 
-  // Without a currency there is no way to write the zero, and an unpriced free card is better
-  // than one guessing at dollars. The space it would take is held, so the perk lists still
-  // start on the same line.
-  it('leaves the free plan unpriced when Paddle cannot be reached', async () => {
+  // Without a currency there is no way to write the zero, and guessing at dollars would price
+  // the plan in money the reader may never be charged in. The card says the word instead: the
+  // paid price depends on Paddle, the free one must not.
+  it('says the free plan is free when Paddle cannot be reached', async () => {
     initializePaddle.mockRejectedValue(new Error('offline'));
 
     const fixture = MockRender(PricingComponent);
     await settle(fixture);
 
-    expect(ngMocks.findAll('.plan-card--free .plan-price-amount').length).toEqual(0);
-    expect(ngMocks.findAll('.plan-card--free .plan-price--placeholder').length).toEqual(1);
+    expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toEqual('Free');
   });
 
   // A build that sells nothing has no price id, and must not call Paddle at all - that call is
