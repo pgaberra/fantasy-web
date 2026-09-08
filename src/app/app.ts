@@ -92,8 +92,12 @@ export class App {
   });
 
   /**
-   * Whether the header offers the pricing page. Only to an account that could act on it: a
-   * subscriber's header says nothing about Premium, and their plan lives in the account menu.
+   * Whether the header offers the pricing page. Only where it could be acted on: a subscriber's
+   * header says nothing about Premium, and their plan lives in the account menu. A signed-out
+   * visitor is offered it too, since they have no entitlement to load and every other route to
+   * the price sits behind a session or on the landing page.
    */
-  protected readonly showsPremiumLink = computed(() => this.plan() === 'free');
+  protected readonly showsPremiumLink = computed(
+    () => this.paymentsEnabled && (!this.authService.isLoggedIn() || this.plan() === 'free'),
+  );
 }
