@@ -34,9 +34,9 @@
       </button>
     </div>
     <p id="sync-warning-body" class="dialog-body">
-      Changing this setting will take this projection out of sync with
+      Changing this setting will disconnect this projection from
       <strong>{{ leagueName() }}</strong
-      >. If the league's settings changed in {{ platform() }}, re-sync to pull the latest instead.
+      >. If the league changed on {{ platform() }}, re-sync to import the latest settings.
     </p>
     @if (error()) {
       <p class="dialog-error" role="alert">{{ error() }}</p>

@@ -72,7 +72,7 @@ describe('AdminComponent', () => {
       const fixture = MockRender(AdminComponent);
 
       const text = fixture.nativeElement.textContent as string;
-      expect(text).toContain('Yahoo sent no authorization code back');
+      expect(text).toContain('Yahoo did not return an authorization code');
       expect(text).toContain('no longer allowed to ask for Fantasy Sports data');
     });
 
@@ -83,7 +83,9 @@ describe('AdminComponent', () => {
 
       const fixture = MockRender(AdminComponent);
 
-      expect(fixture.nativeElement.textContent).toContain('Yahoo sent no authorization code back');
+      expect(fixture.nativeElement.textContent).toContain(
+        'Yahoo did not return an authorization code',
+      );
     });
 
     it('tells you to retry without pausing when the link had expired', () => {
@@ -102,7 +104,7 @@ describe('AdminComponent', () => {
 
       const fixture = MockRender(AdminComponent);
 
-      expect(fixture.nativeElement.textContent).toContain('did not say why');
+      expect(fixture.nativeElement.textContent).toContain('did not provide a reason');
     });
 
     it('says nothing when we did not just come back from Yahoo', () => {

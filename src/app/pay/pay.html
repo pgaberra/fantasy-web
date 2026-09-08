@@ -2,7 +2,7 @@
   @if (failed()) {
     <h1 class="pay__title">Checkout could not be opened</h1>
     <p class="pay__text">
-      Something went wrong on the way to the payment window. Nothing has been charged.
+      Something went wrong while opening the payment window. Nothing was charged.
     </p>
     <a routerLink="/pricing" class="btn btn-primary">Back to pricing</a>
   } @else {
@@ -10,7 +10,7 @@
          not as a page that has stopped. -->
     <div class="pay__spinner" aria-hidden="true"></div>
     <h1 class="pay__title">Opening secure checkout</h1>
-    <p class="pay__text">This takes a moment. Please do not close this page.</p>
-    <p class="pay__hint">Nothing is charged until you confirm in the payment window.</p>
+    <p class="pay__text">This may take a moment. Please keep this page open.</p>
+    <p class="pay__hint">Nothing is charged until you confirm the payment.</p>
   }
 </section>

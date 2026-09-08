@@ -79,7 +79,7 @@ export class AuthFormComponent {
         if (unmetPasswordRequirements(ctx.value()).length > 0) {
           return {
             kind: 'weakPassword',
-            message: 'Password does not meet the requirements below.',
+            message: 'Password does not meet the requirements.',
           };
         }
         return undefined;

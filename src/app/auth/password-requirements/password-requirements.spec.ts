@@ -35,8 +35,6 @@ describe('PasswordRequirementsComponent', () => {
   it('announces the number of met requirements for screen readers', () => {
     const fixture = render('Password1');
 
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
-      '4 of 4 password requirements met',
-    );
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('4 of 4 requirements met');
   });
 });

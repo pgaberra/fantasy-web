@@ -69,7 +69,7 @@ describe('PricingComponent', () => {
 
     const fixture = MockRender(PricingComponent);
 
-    expect(fixture.nativeElement.textContent).toContain('You already have it');
+    expect(fixture.nativeElement.textContent).toContain('You already have Premium');
     expect(ngMocks.findAll('button.btn-primary').length).toEqual(0);
     expect(ngMocks.find('.plan-card--premium a.btn').attributes['routerLink']).toEqual('/account');
   });
@@ -155,7 +155,7 @@ describe('PricingComponent', () => {
     const fixture = MockRender(PricingComponent);
     fixture.point.componentInstance.subscribe();
 
-    expect(error).toHaveBeenCalledWith(expect.stringContaining('Nothing has been charged'));
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('Nothing was charged'));
     expect(error).not.toHaveBeenCalledWith(expect.stringContaining('try again'));
   });
 });

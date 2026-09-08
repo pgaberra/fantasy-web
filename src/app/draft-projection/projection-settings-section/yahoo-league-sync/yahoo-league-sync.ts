@@ -69,7 +69,7 @@ export class YahooLeagueSyncComponent implements OnInit {
       },
       error: () => {
         this.connecting.set(false);
-        this.error.set('Could not start the Yahoo connection.');
+        this.error.set("Couldn't start the Yahoo connection.");
       },
     });
   }

@@ -45,7 +45,10 @@ export class RegisterComponent implements OnInit {
       .subscribe({
         error: (error: unknown) => {
           this.errorMessage.set(
-            messageForError(error, 'Registration failed. Please check your details and try again.'),
+            messageForError(
+              error,
+              'Could not create your account. Check your details and try again.',
+            ),
           );
         },
       });
@@ -66,9 +69,7 @@ export class RegisterComponent implements OnInit {
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         error: (error: unknown) => {
-          this.errorMessage.set(
-            messageForError(error, 'Facebook sign-in failed. Please try again.'),
-          );
+          this.errorMessage.set(messageForError(error, 'Facebook sign-in failed.'));
         },
       });
   }

@@ -131,7 +131,7 @@
                       <span
                         class="below-min-games"
                         appTooltip="Fewer games than the league's goalie minimum, so this goalie is ranked last."
-                        >Below min. games</span
+                        >Below league minimum</span
                       >
                     }
                   </div>
@@ -169,7 +169,7 @@
     <p class="table-empty">No games have been played in the {{ seasonLabel() }} season yet.</p>
   } @else if (matchingCount() === 0) {
     <p class="table-empty">
-      No players match. Try a wider game range, a lower minimum, or a different filter.
+      No players match. Try a wider range, a lower minimum, or another filter.
     </p>
   } @else {
     <div class="table-footer">

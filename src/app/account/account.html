@@ -1,7 +1,7 @@
 <section class="account">
   <header class="account-header">
     <h1>Subscription</h1>
-    <p class="account-sub">Your plan, and where to change it.</p>
+    <p class="account-sub">Your plan and subscription settings.</p>
   </header>
 
   <!-- Straight after checkout. Once the subscription has landed the useful thing to say is where
@@ -11,7 +11,7 @@
     @if (entitlement.premium()) {
       <section class="account-welcome" role="status">
         <h2 class="account-welcome-title">Welcome to Premium</h2>
-        <p class="account-welcome-text">Thanks for subscribing! Everything below is yours now.</p>
+        <p class="account-welcome-text">Thanks for subscribing. Premium is now active.</p>
         @if (nextSteps.length > 0) {
           <ul class="account-welcome-links">
             @for (perk of nextSteps; track perk.title) {
@@ -25,7 +25,7 @@
         }
       </section>
     } @else {
-      <p class="account-success" role="status">Thanks for subscribing!</p>
+      <p class="account-success" role="status">Thanks for subscribing.</p>
     }
   }
 
@@ -48,14 +48,14 @@
           @if (entitlement.cancelAtPeriodEnd()) {
             @if (entitlement.currentPeriodEnd()) {
               <p class="account-note account-note--ending">
-                Cancelled. You keep Premium until
-                {{ entitlement.currentPeriodEnd() | date: 'longDate' }}, and nothing more is
-                charged.
+                Cancelled. Premium remains active until
+                {{ entitlement.currentPeriodEnd() | date: 'longDate' }}. No further charges will be
+                made.
               </p>
             } @else {
               <p class="account-note account-note--ending">
-                Cancelled. You keep Premium until the end of the period you have paid for, and
-                nothing more is charged.
+                Cancelled. Premium remains active until the end of the period you paid for. No
+                further charges will be made.
               </p>
             }
           } @else if (entitlement.currentPeriodEnd()) {
@@ -74,25 +74,25 @@
             </button>
           </div>
           <p class="account-hint">
-            Change your card, download receipts or cancel in the billing portal. Paddle, our
-            merchant of record, runs it on our behalf.
+            Change your card, download receipts, or cancel in the billing portal. Paddle handles
+            billing for SlapStat.
           </p>
         } @else if (confirming()) {
           <div class="plan-status">
             <span class="status status-pending">Confirming</span>
           </div>
           <p class="account-note">
-            Your payment went through. We are waiting for the confirmation, which usually takes a
-            few seconds.
+            Your payment went through. We are waiting for confirmation, which usually takes a few
+            seconds.
           </p>
         } @else if (confirmationTimedOut()) {
           <div class="plan-status">
             <span class="status status-pending">Confirming</span>
           </div>
           <p class="account-note">
-            Your payment went through, but the confirmation has not reached us yet. It will arrive
-            on its own. If this page still looks wrong in a few minutes, write to
-            <a href="mailto:info@slapstat.com">info&#64;slapstat.com</a> and we will sort it out.
+            Your payment went through, but we haven't received confirmation yet. It should arrive
+            automatically. If the page still looks wrong after a few minutes, email
+            <a href="mailto:info@slapstat.com">info&#64;slapstat.com</a>.
           </p>
           <div class="account-actions">
             <button type="button" class="btn btn-secondary" (click)="reload()">Check again</button>

@@ -25,8 +25,7 @@ export function premiumPerks(): readonly PremiumPerk[] {
   if (environment.aiProjectionEnabled) {
     perks.push({
       title: 'The AI projection',
-      description:
-        'A model-built line for every player, ready to draft from as it is or to tune into your own.',
+      description: 'A projected stat line for every player, ready to use or edit.',
       link: '/projections/new',
       linkLabel: 'Start an AI projection',
     });
@@ -35,14 +34,14 @@ export function premiumPerks(): readonly PremiumPerk[] {
     perks.push({
       title: "Any game range on Who's hot",
       description:
-        'Every preset and the slider, from the last 10 games to the full season. Free accounts see the last 5.',
+        'Every preset and the slider, from the last 10 games to the full season. Free accounts get the last 5 games.',
       link: '/whos-hot',
       linkLabel: "Pick a range on Who's hot",
     });
   }
   perks.push({
     title: 'New tools first',
-    description: 'New premium features land here as they are built, at the price you signed up at.',
+    description: 'New Premium features will appear here as they are added.',
   });
   return perks;
 }
@@ -50,8 +49,8 @@ export function premiumPerks(): readonly PremiumPerk[] {
 /** What the free app already includes, so the pricing page can say what Premium is on top of. */
 export function freeFeatures(): readonly string[] {
   const features = [
-    'Projections tailored to your league, points or categories',
-    'The live draft board and post-draft power rankings',
+    'Projections tailored to your league, for points or categories',
+    'Live draft board and post-draft power rankings',
     environment.espnLeaguesEnabled
       ? 'League settings imported from Yahoo or ESPN'
       : 'League settings imported from Yahoo',

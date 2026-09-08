@@ -130,7 +130,7 @@ describe('ShareDialogComponent', () => {
 
     component.publish();
 
-    expect(component.errorMessage()).toEqual('That name is taken. Try another.');
+    expect(component.errorMessage()).toEqual('That username is already taken. Choose another.');
     expect(share).not.toHaveBeenCalled();
   });
 

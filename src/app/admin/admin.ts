@@ -10,7 +10,8 @@ import { LeagueSummary, SyncRunResponse, YahooProbeResponse } from '../api/model
  * must not render as a blank banner.
  */
 const CONNECT_OUTCOMES: Record<string, string> = {
-  declined: 'Yahoo sent no authorization code back. The consent was declined or cancelled.',
+  declined:
+    'Yahoo did not return an authorization code. The consent step was declined or cancelled.',
   invalid_state:
     'The connection link had expired before Yahoo sent you back. Press reconnect and approve it ' +
     'without pausing. The link is good for ten minutes.',
@@ -25,17 +26,17 @@ const CONNECT_OUTCOMES: Record<string, string> = {
  * completely different responses.
  */
 const YAHOO_ERRORS: Record<string, string> = {
-  access_denied: 'Yahoo calls it a declined request.',
+  access_denied: 'Yahoo reported that the request was declined.',
   invalid_scope:
     'Yahoo rejected the fspt-r scope outright. This app is no longer allowed to ask for ' +
     'Fantasy Sports data. Retrying will not help.',
   unauthorized_client:
     'Yahoo does not accept this app for this flow. Check the client type and its API ' +
     'permissions. Retrying will not help.',
-  invalid_request: 'Yahoo called the request itself malformed.',
-  unsupported_response_type: 'Yahoo rejected the response type the app asked for.',
-  server_error: 'Yahoo reported a fault on its own side, so this one is worth simply retrying.',
-  temporarily_unavailable: 'Yahoo says it is temporarily unavailable, so this is worth retrying.',
+  invalid_request: 'Yahoo reported a malformed request.',
+  unsupported_response_type: 'Yahoo rejected the response type requested by the app.',
+  server_error: 'Yahoo reported an error on its side. Retrying may help.',
+  temporarily_unavailable: 'Yahoo is temporarily unavailable. Retrying may help.',
 };
 
 @Component({
@@ -96,7 +97,8 @@ export class AdminComponent implements OnInit {
     const detail = params['detail'];
     const explained = reason ? CONNECT_OUTCOMES[reason] : undefined;
     const fromYahoo = detail ? YAHOO_ERRORS[detail] : undefined;
-    const failure = explained ?? 'Yahoo did not complete the connection, and did not say why.';
+    const failure =
+      explained ?? 'Yahoo did not complete the connection and did not provide a reason.';
     this.connectOutcome.set(outcome);
     this.connectMessage.set(
       outcome === 'connected'
@@ -129,7 +131,7 @@ export class AdminComponent implements OnInit {
       next: (response) => this.connected.set(response.connected),
       error: () => {
         this.connected.set(false);
-        this.error.set('Could not load the Yahoo connection status.');
+        this.error.set("Couldn't load the Yahoo connection status.");
       },
     });
   }
@@ -152,7 +154,7 @@ export class AdminComponent implements OnInit {
       },
       error: () => {
         this.connecting.set(false);
-        this.error.set('Could not start the Yahoo connection.');
+        this.error.set("Couldn't start the Yahoo connection.");
       },
     });
   }
@@ -198,7 +200,9 @@ export class AdminComponent implements OnInit {
         },
         error: () => {
           this.probing.set(false);
-          this.probeError.set('Could not reach the probe itself. That is our side, not Yahoo.');
+          this.probeError.set(
+            "Couldn't reach the Yahoo probe. This appears to be a problem on our side.",
+          );
         },
       });
   }
@@ -210,12 +214,12 @@ export class AdminComponent implements OnInit {
     const beforeId = this.latestRun()?.id ?? null;
     this.adminService.triggerSync().subscribe({
       next: () => {
-        this.syncMessage.set('Sync started, waiting for the result…');
+        this.syncMessage.set('Sync started. Waiting for the result…');
         this.pollForNewRun(beforeId, 0);
       },
       error: () => {
         this.syncing.set(false);
-        this.error.set('Could not start the sync.');
+        this.error.set("Couldn't start the sync.");
       },
     });
   }
@@ -223,7 +227,7 @@ export class AdminComponent implements OnInit {
   private pollForNewRun(beforeId: number | null, attempt: number): void {
     if (attempt >= 20) {
       this.syncing.set(false);
-      this.syncMessage.set('Sync is taking longer than expected. Use Refresh to check.');
+      this.syncMessage.set('Sync is taking longer than expected. Refresh to check the status.');
       return;
     }
     setTimeout(() => {

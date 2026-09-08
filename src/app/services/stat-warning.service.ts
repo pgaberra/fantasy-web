@@ -42,7 +42,7 @@ export class StatWarningService {
     const warnings = new Map<StatKey, string>();
 
     if (projection.stats.utility.gp > FULL_SEASON_GAMES) {
-      this.warn(warnings, 'gp', `Projected over the ${FULL_SEASON_GAMES}-game season`);
+      this.warn(warnings, 'gp', `Projected beyond the ${FULL_SEASON_GAMES}-game season`);
     }
 
     if (projection.type === 'skater') {

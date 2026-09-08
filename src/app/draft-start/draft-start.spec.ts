@@ -444,7 +444,7 @@ describe('DraftStartComponent', () => {
     // Nothing to open on, so the page lands on the last kind, whose empty state offers the
     // one way to get something: the paste field.
     expect(fixture.point.componentInstance.sourceKind()).toEqual('imported');
-    expect(texts(fixture, '.group-empty')[0]).toContain("Nobody's board here yet");
+    expect(texts(fixture, '.group-empty')[0]).toContain('No shared projections yet');
   });
 
   // One press to a draft: the first row of the open kind is checked from the start, and the
@@ -719,10 +719,10 @@ describe('DraftStartComponent', () => {
     const component = await render();
 
     expect(component.discardPrompt(summary('preset1', 'preset_draft', 'in_progress'))).toEqual(
-      'Discard this draft? The picks are lost.',
+      'Discard this draft? Your picks will be lost.',
     );
     expect(component.discardPrompt(summary('p1', 'projection', 'in_progress'))).toEqual(
-      'Discard the picks? The projection stays.',
+      'Discard the picks? The projection will stay.',
     );
   });
 
@@ -735,7 +735,9 @@ describe('DraftStartComponent', () => {
     fixture.detectChanges();
 
     expect(texts(fixture, '.draft-actions button')).toEqual(['Yes, discard', 'Cancel']);
-    expect(texts(fixture, '.confirm-text')).toEqual(['Discard the picks? The projection stays.']);
+    expect(texts(fixture, '.confirm-text')).toEqual([
+      'Discard the picks? The projection will stay.',
+    ]);
   });
 
   it('discarding a finished draft leaves the projection to be drafted again', async () => {

@@ -65,7 +65,7 @@
               Saved
             }
             @case ('error') {
-              Couldn't save, changes are unsaved
+              Couldn't save. Your changes are still unsaved.
             }
           }
         </span>
@@ -173,7 +173,7 @@
               type="button"
               class="btn btn-secondary btn-sm"
               (click)="positionsReset.emit()"
-              appTooltip="Put every player back on their default positions"
+              appTooltip="Reset all players to their default positions"
             >
               Reset all positions
             </button>
@@ -198,7 +198,7 @@
   @if (droppedPlayerCount(); as dropped) {
     <p class="table-notice" role="status">
       {{ dropped }} {{ dropped === 1 ? 'player is' : 'players are' }} no longer in the league and
-      hidden here. Your projected numbers for them are kept, and reappear if they return.
+      are hidden. Their projections are kept and will reappear if they return.
     </p>
   }
   <div class="table-scroll">
@@ -265,7 +265,7 @@
     <!-- "Nothing here" and "nothing matches what you typed" are different problems with different
          fixes, and saying the latter for both is what an emptied projection looked like. -->
     @if (playerProjections().length === 0) {
-      <p class="table-empty">This projection has no players.</p>
+      <p class="table-empty">No players in this projection.</p>
     } @else {
       <p class="table-empty">No players match your search.</p>
     }

@@ -81,7 +81,7 @@ export class ShareDialogComponent implements OnInit {
         if (error instanceof HttpErrorResponse && error.status === 404) {
           return;
         }
-        this.errorMessage.set(messageForError(error, "Couldn't check whether this is shared."));
+        this.errorMessage.set(messageForError(error, "Couldn't check the sharing status."));
       },
     });
   }
@@ -119,7 +119,7 @@ export class ShareDialogComponent implements OnInit {
   /** A taken name is the one failure a user can actually do something about, so it says so. */
   private publishError(error: unknown): string {
     if (error instanceof HttpErrorResponse && error.status === 409 && this.needsUsername()) {
-      return 'That name is taken. Try another.';
+      return 'That username is already taken. Choose another.';
     }
     return messageForError(error, "Couldn't share this projection.");
   }
@@ -135,7 +135,7 @@ export class ShareDialogComponent implements OnInit {
     } catch {
       // Clipboard access can be denied outright (permissions, an insecure context); the link is
       // on screen and selectable, so say so rather than failing silently.
-      this.notification.error('Copying failed. Select the link and copy it manually.');
+      this.notification.error('Copy failed. Select the link and copy it manually.');
     }
   }
 }
