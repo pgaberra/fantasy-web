@@ -2,7 +2,8 @@ import { Component, computed, effect, inject, linkedSignal, Signal, signal } fro
 import { HttpErrorResponse } from '@angular/common/http';
 import { Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { rxResource } from '@angular/core/rxjs-interop';
+import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { debounceTime } from 'rxjs';
 import { SharedPlayer } from '../api/models/shared-player';
 import { SharedProjectionResponse } from '../api/models/shared-projection-response';
 import { Player } from '../models/player.model';
@@ -25,6 +26,7 @@ import {
 } from '../draft-projection/projection-settings-section/model';
 import { PlayerRowComponent } from '../draft-projection/player-projections-table/player-row/player-row';
 import { PositionFilterComponent } from '../draft-projection/player-projections-table/position-filter/position-filter';
+import { TeamFilterComponent } from '../draft-projection/player-projections-table/team-filter/team-filter';
 import { ProjectionsTableHeaderComponent } from '../draft-projection/player-projections-table/projections-table-header/projections-table-header';
 import { ActiveColumnsService } from '../services/active-columns.service';
 import { AnalyticsService } from '../services/analytics.service';
@@ -46,6 +48,14 @@ import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
  */
 const INITIAL_ROWS = 50;
 const ROWS_PER_PAGE = 100;
+
+/**
+ * How long the search box settles before it becomes a request. Only a visitor behind the sign-in
+ * gate makes one — the board is searched on the server there, since the rows they hold are its top
+ * and the player they are looking for may be further down — and a request per keystroke would be
+ * one answer arriving for every letter typed.
+ */
+const SEARCH_DEBOUNCE_MS = 250;
 
 /** Where a copy of the board lands: open for editing, or straight into a draft against it. */
 type ImportDestination = 'projection' | 'draft';
@@ -85,6 +95,7 @@ interface SharedRow {
     ErrorStateComponent,
     PlayerRowComponent,
     PositionFilterComponent,
+    TeamFilterComponent,
     ProjectionsTableHeaderComponent,
     PinnedTableHeaderDirective,
     TableScrollDirective,
@@ -201,8 +212,46 @@ export class SharedProjectionComponent {
 
   private readonly positionFilterState = signal<PositionFilter>('ALL');
   readonly positionFilter: Signal<PositionFilter> = this.positionFilterState.asReadonly();
+  readonly searchTerm = signal('');
+  readonly teamFilter = signal('ALL');
+  readonly rookiesOnly = signal(false);
   readonly sortColumn = signal<SortColumn>('summary');
   readonly sortDirection = signal<SortDirection>('desc');
+
+  onSearchInput(event: Event): void {
+    this.searchTerm.set((event.target as HTMLInputElement).value);
+  }
+
+  private readonly settledSearch = toSignal(
+    toObservable(this.searchTerm).pipe(debounceTime(SEARCH_DEBOUNCE_MS)),
+    { initialValue: '' },
+  );
+
+  /**
+   * The term the rows on screen were chosen by. For a reader holding the whole board that is
+   * whatever is in the box, filtered as they type; behind the gate the rows are the server's
+   * answer to the settled term, and narrowing them by a half-typed name would empty the table
+   * between the keystroke and the answer.
+   */
+  private readonly appliedSearch = computed(() =>
+    this.isLoggedIn() ? this.searchTerm() : this.settledSearch(),
+  );
+
+  /**
+   * The teams and the rookies the controls offer, both read off the whole published board rather
+   * than the rows in hand: behind the gate those are its top 25, and a team list built from them
+   * would offer a handful of clubs and quietly hide the rest.
+   */
+  readonly availableTeams = computed<string[]>(() => this.shared()?.teams ?? []);
+
+  private readonly rookieIds = computed(() => new Set(this.shared()?.rookieIds ?? []));
+
+  /** Nobody being a rookie and nobody being able to say read the same here: no filter, no mark. */
+  readonly rookiesAvailable = computed(() => this.rookieIds().size > 0);
+
+  isRookie(playerId: number): boolean {
+    return this.rookieIds().has(playerId);
+  }
 
   /**
    * Narrowing to a position can take the sorted column off the screen with it: a board of left
@@ -235,6 +284,9 @@ export class SharedProjectionComponent {
         ? null
         : {
             position: this.positionFilter(),
+            search: this.settledSearch(),
+            team: this.teamFilter(),
+            rookies: this.rookiesOnly(),
             sort: this.sortColumn(),
             direction: this.sortDirection(),
           },
@@ -349,7 +401,7 @@ export class SharedProjectionComponent {
       return new Map();
     }
     const withinPosition = this.rows()
-      .filter((row) => this.matchesFilter(row))
+      .filter((row) => this.matchesPosition(row))
       .sort((first, second) => first.shared.rank - second.shared.rank);
     return new Map(withinPosition.map((row, index) => [row.shared.playerId, index + 1]));
   });
@@ -370,7 +422,7 @@ export class SharedProjectionComponent {
    * order the editor's table would. Two orderings that agree, rather than one trusted blindly.
    */
   private readonly sortedRows = computed<SharedRow[]>(() => {
-    const filtered = this.rows().filter((row) => this.matchesFilter(row));
+    const filtered = this.rows().filter((row) => this.matches(row));
     const column = this.sortColumn();
     const sign = this.sortDirection() === 'asc' ? 1 : -1;
     return [...filtered].sort((first, second) => this.compare(first, second, column, sign));
@@ -381,6 +433,9 @@ export class SharedProjectionComponent {
   readonly visibleCount = linkedSignal({
     source: () => ({
       position: this.positionFilter(),
+      search: this.appliedSearch(),
+      team: this.teamFilter(),
+      rookiesOnly: this.rookiesOnly(),
       sortColumn: this.sortColumn(),
       sortDirection: this.sortDirection(),
     }),
@@ -437,7 +492,17 @@ export class SharedProjectionComponent {
     return stats[key] ?? null;
   }
 
-  private matchesFilter(row: SharedRow): boolean {
+  /** Every control at once, which is what decides whether a row is on screen. */
+  private matches(row: SharedRow): boolean {
+    return (
+      this.matchesPosition(row) &&
+      this.matchesSearch(row) &&
+      this.matchesTeam(row) &&
+      this.matchesRookie(row)
+    );
+  }
+
+  private matchesPosition(row: SharedRow): boolean {
     const filter = this.positionFilter();
     if (filter === 'ALL') {
       return true;
@@ -449,6 +514,24 @@ export class SharedProjectionComponent {
       return row.shared.type === 'skater';
     }
     return (row.shared.positions ?? []).includes(filter);
+  }
+
+  private matchesSearch(row: SharedRow): boolean {
+    const term = this.appliedSearch().trim().toLowerCase();
+    return !term || row.shared.name.toLowerCase().includes(term);
+  }
+
+  private matchesTeam(row: SharedRow): boolean {
+    const team = this.teamFilter();
+    return team === 'ALL' || row.shared.teamAbbrev === team;
+  }
+
+  /** A board nobody can name the rookies on is left whole rather than narrowed to nothing. */
+  private matchesRookie(row: SharedRow): boolean {
+    if (!this.rookiesOnly() || !this.rookiesAvailable()) {
+      return true;
+    }
+    return this.rookieIds().has(row.shared.playerId);
   }
 
   /**

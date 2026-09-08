@@ -25,6 +25,8 @@ describe('SharedProjectionComponent', () => {
     updatedAt: '2026-08-02T10:00:00Z',
     totalPlayers: 2,
     truncated: false,
+    teams: ['EDM', 'NYR'],
+    rookieIds: [],
     data: {
       settings: {
         scoringType: 'points',
@@ -429,6 +431,9 @@ describe('SharedProjectionComponent', () => {
 
       expect(loadShared).toHaveBeenCalledWith('abc123', {
         position: 'ALL',
+        search: '',
+        team: 'ALL',
+        rookies: false,
         sort: 'summary',
         direction: 'desc',
       });
@@ -442,6 +447,9 @@ describe('SharedProjectionComponent', () => {
 
       expect(loadShared).toHaveBeenLastCalledWith('abc123', {
         position: 'ALL',
+        search: '',
+        team: 'ALL',
+        rookies: false,
         sort: 'goals',
         direction: 'desc',
       });
@@ -455,6 +463,9 @@ describe('SharedProjectionComponent', () => {
 
       expect(loadShared).toHaveBeenLastCalledWith('abc123', {
         position: 'D',
+        search: '',
+        team: 'ALL',
+        rookies: false,
         sort: 'summary',
         direction: 'desc',
       });
@@ -492,6 +503,133 @@ describe('SharedProjectionComponent', () => {
       expect(loadShared).toHaveBeenCalledWith('abc123', undefined);
 
       fixture.point.componentInstance.onSort('goals');
+      await fixture.whenStable();
+
+      expect(loadShared).toHaveBeenCalledOnce();
+    });
+  });
+
+  /**
+   * The board carries the same four controls the editor's table has. Behind the sign-in gate each
+   * of them is a question for the server, for the same reason a column heading is: the rows on
+   * screen are the top of the board, and the player being searched for may not be among them.
+   */
+  describe('narrowing a shared board', () => {
+    const rookieBoard: SharedProjectionResponse = { ...shared, rookieIds: [101] };
+
+    it('searches the rows by name', async () => {
+      isLoggedIn.set(true);
+      const fixture = await render();
+      const component = fixture.point.componentInstance;
+
+      component.searchTerm.set('shester');
+      fixture.detectChanges();
+
+      expect(component.visibleRows().map((row) => row.player.name)).toEqual(['Igor Shesterkin']);
+    });
+
+    it('narrows to one team', async () => {
+      const fixture = await render();
+      const component = fixture.point.componentInstance;
+
+      component.teamFilter.set('NYR');
+      fixture.detectChanges();
+
+      expect(component.visibleRows().map((row) => row.player.name)).toEqual(['Igor Shesterkin']);
+    });
+
+    it('offers the teams of the whole board, not of the rows it was sent', async () => {
+      const fixture = await render();
+
+      expect(fixture.point.componentInstance.availableTeams()).toEqual(['EDM', 'NYR']);
+    });
+
+    it('keeps only the rookies when the filter is on', async () => {
+      loadShared.mockReturnValue(of(rookieBoard));
+      const fixture = await render();
+      const component = fixture.point.componentInstance;
+
+      expect(component.rookiesAvailable()).toEqual(true);
+      expect(component.isRookie(101)).toEqual(true);
+      expect(component.isRookie(1)).toEqual(false);
+
+      component.rookiesOnly.set(true);
+      fixture.detectChanges();
+
+      expect(component.visibleRows().map((row) => row.player.name)).toEqual(['Igor Shesterkin']);
+    });
+
+    /** Which is the ordinary answer wherever the projection service is not running. */
+    it('offers no rookie filter when the server could not say who is one', async () => {
+      const fixture = await render();
+
+      expect(fixture.point.componentInstance.rookiesAvailable()).toEqual(false);
+      expect(fixture.nativeElement.querySelector('#shared-rookies-only')).toBeNull();
+    });
+
+    it('asks the server again when the team filter changes', async () => {
+      const fixture = await render();
+
+      fixture.point.componentInstance.teamFilter.set('NYR');
+      await fixture.whenStable();
+
+      expect(loadShared).toHaveBeenLastCalledWith('abc123', {
+        position: 'ALL',
+        search: '',
+        team: 'NYR',
+        rookies: false,
+        sort: 'summary',
+        direction: 'desc',
+      });
+    });
+
+    it('asks the server again when the rookie filter goes on', async () => {
+      loadShared.mockReturnValue(of(rookieBoard));
+      const fixture = await render();
+
+      fixture.point.componentInstance.rookiesOnly.set(true);
+      await fixture.whenStable();
+
+      expect(loadShared).toHaveBeenLastCalledWith('abc123', {
+        position: 'ALL',
+        search: '',
+        team: 'ALL',
+        rookies: true,
+        sort: 'summary',
+        direction: 'desc',
+      });
+    });
+
+    /** A request per keystroke would be an answer arriving for every letter typed. */
+    it('waits for the search box to settle before asking the server', async () => {
+      const fixture = await render();
+      const component = fixture.point.componentInstance;
+
+      component.searchTerm.set('shester');
+      fixture.detectChanges();
+      expect(loadShared).toHaveBeenCalledOnce();
+
+      // Waited out rather than faked: the box settles on a timer the component owns, and a fake
+      // clock here would also stop the one the framework schedules its own work on.
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(loadShared).toHaveBeenLastCalledWith('abc123', {
+        position: 'ALL',
+        search: 'shester',
+        team: 'ALL',
+        rookies: false,
+        sort: 'summary',
+        direction: 'desc',
+      });
+    });
+
+    it('leaves a reader who holds the whole board to narrow it in the browser', async () => {
+      isLoggedIn.set(true);
+      const fixture = await render();
+
+      fixture.point.componentInstance.teamFilter.set('NYR');
       await fixture.whenStable();
 
       expect(loadShared).toHaveBeenCalledOnce();

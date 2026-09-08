@@ -16,9 +16,16 @@ import {
   SortDirection,
 } from '../models/projection.model';
 
-/** How a visitor has asked a shared board to be ordered, as the public read takes it. */
-export interface SharedBoardOrder {
+/**
+ * How a visitor has narrowed and ordered a shared board, as the public read takes it. The four
+ * filters travel with the order because the server applies them together: they decide which rows
+ * a visitor behind the sign-in gate is sent, not just how the ones they hold are arranged.
+ */
+export interface SharedBoardQuery {
   readonly position: PositionFilter;
+  readonly search: string;
+  readonly team: string;
+  readonly rookies: boolean;
   readonly sort: SortColumn;
   readonly direction: SortDirection;
 }
@@ -46,13 +53,13 @@ export class ProjectionShareService {
   }
 
   /**
-   * Reads a published board. The order is asked for rather than applied on arrival because it
-   * decides *which* rows come back: a visitor who is not signed in receives the top of the board
-   * under this order, not the top of the published one re-sorted in the browser. Someone holding
-   * the whole board is unaffected, and passes nothing.
+   * Reads a published board. The filters and the order are asked for rather than applied on
+   * arrival because they decide *which* rows come back: a visitor who is not signed in receives
+   * the top of the board under them, not the top of the published one narrowed and re-sorted in
+   * the browser. Someone holding the whole board is unaffected, and passes nothing.
    */
-  loadShared(token: string, order?: SharedBoardOrder): Observable<SharedProjectionResponse> {
-    return from(this.api.invoke(getSharedProjection, { token, ...order }));
+  loadShared(token: string, query?: SharedBoardQuery): Observable<SharedProjectionResponse> {
+    return from(this.api.invoke(getSharedProjection, { token, ...query }));
   }
 
   /**
