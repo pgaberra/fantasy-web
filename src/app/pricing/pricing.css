@@ -175,38 +175,9 @@
   line-height: 1.5;
 }
 
-.plan-note a,
-.faq a {
+.plan-note a {
   color: var(--color-primary);
   font-weight: var(--weight-semibold);
-}
-
-.pricing-faq-title {
-  margin: 0 0 var(--space-4);
-  font-size: var(--text-lg);
-  font-weight: var(--weight-semibold);
-  color: var(--color-text);
-  text-align: center;
-}
-
-.faq {
-  margin: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-4) var(--space-5);
-}
-
-.faq dt {
-  margin: 0 0 var(--space-1);
-  font-weight: var(--weight-semibold);
-  color: var(--color-text);
-}
-
-.faq dd {
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-  line-height: 1.6;
 }
 
 @media (max-width: 720px) {
@@ -217,10 +188,6 @@
   /* On one column the sale comes first; the free card is the footnote here, not the lead. */
   .plan-card--premium {
     order: -1;
-  }
-
-  .faq {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 
