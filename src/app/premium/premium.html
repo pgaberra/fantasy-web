@@ -1,0 +1,175 @@
+<section class="premium-page">
+  <header class="premium-header">
+    <h1 class="premium-title">SlapStat <span class="premium-title-accent">Premium</span></h1>
+    <p class="premium-sub">One monthly plan. Cancel anytime.</p>
+  </header>
+
+  <!-- Straight after checkout. Once the subscription has landed the useful thing to say is where
+       the things just paid for live; until then, only the thanks, and the card below says what is
+       true at that moment. -->
+  @if (justSubscribed()) {
+    @if (entitlement.premium()) {
+      <section class="checkout-welcome" role="status">
+        <h2 class="checkout-welcome-title">Welcome to Premium</h2>
+        <p class="checkout-welcome-text">Thanks for subscribing. Premium is now active.</p>
+        @if (nextSteps.length > 0) {
+          <ul class="checkout-welcome-links">
+            @for (perk of nextSteps; track perk.title) {
+              <li>
+                <a [routerLink]="perk.link" class="btn btn-secondary btn-sm">{{
+                  perk.linkLabel
+                }}</a>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    } @else {
+      <p class="checkout-thanks" role="status">Thanks for subscribing.</p>
+    }
+  }
+
+  <div class="plans">
+    <article class="plan-card plan-card--free">
+      <div class="plan-head">
+        <h2 class="plan-name">Free</h2>
+        <p class="plan-price">
+          <span class="plan-price-amount">{{ freePrice() ?? 'Free' }}</span>
+        </p>
+      </div>
+      <ul class="plan-perks">
+        @for (feature of freeFeatures; track feature) {
+          <li>{{ feature }}</li>
+        }
+      </ul>
+      <div class="plan-cta">
+        @if (!authService.isLoggedIn()) {
+          <a routerLink="/register" class="btn btn-secondary btn-lg btn-block"
+            >Create a free account</a
+          >
+        } @else if (!entitlement.premium()) {
+          <p class="plan-current">Your current plan</p>
+        } @else {
+          <p class="plan-current">Included in Premium</p>
+        }
+        <p class="plan-note">No card required. No time limit.</p>
+      </div>
+    </article>
+
+    <article class="plan-card plan-card--premium">
+      <div class="plan-head">
+        <h2 class="plan-name plan-name--premium">Premium</h2>
+        @if (formattedPrice(); as price) {
+          <p class="plan-price">
+            <span class="plan-price-amount">{{ price }}</span>
+            <span class="plan-price-period">per month</span>
+          </p>
+        } @else {
+          <p class="plan-tagline">Billed monthly. Your exact price is confirmed at checkout.</p>
+        }
+      </div>
+
+      <ul class="plan-perks plan-perks--premium">
+        <li>
+          <span class="perk-title">Everything in Free</span>
+        </li>
+        @for (perk of perks; track perk.title) {
+          <li>
+            <span class="perk-title">{{ perk.title }}</span>
+            @if (perk.description) {
+              <span class="perk-desc">{{ perk.description }}</span>
+            }
+          </li>
+        }
+      </ul>
+
+      <!-- The plan and the one thing to do about it, in the same place for everyone: the way in
+           for an account without Premium, the billing portal for one that has it. -->
+      <div class="plan-cta">
+        @switch (cta()) {
+          @case ('signed-out') {
+            <a routerLink="/login" class="btn btn-primary btn-lg btn-block">Sign in to subscribe</a>
+            <p class="plan-note">
+              New here? <a routerLink="/register">Create a free account</a> first, then come back to
+              subscribe.
+            </p>
+          }
+          @case ('premium') {
+            <p class="plan-status"><span class="status status-ok">Premium active</span></p>
+            @if (entitlement.cancelAtPeriodEnd()) {
+              @if (entitlement.currentPeriodEnd()) {
+                <p class="plan-state plan-state--ending">
+                  Cancelled. Premium remains active until
+                  {{ entitlement.currentPeriodEnd() | date: 'longDate' }}. No further charges will
+                  be made.
+                </p>
+              } @else {
+                <p class="plan-state plan-state--ending">
+                  Cancelled. Premium remains active until the end of the period you paid for. No
+                  further charges will be made.
+                </p>
+              }
+            } @else if (entitlement.currentPeriodEnd()) {
+              <p class="plan-state">
+                Renews on {{ entitlement.currentPeriodEnd() | date: 'longDate' }}.
+              </p>
+            }
+            <button
+              type="button"
+              class="btn btn-secondary btn-block"
+              [disabled]="openingPortal()"
+              (click)="manageBilling()"
+            >
+              {{ openingPortal() ? 'Opening…' : 'Manage subscription' }}
+            </button>
+            <p class="plan-note">
+              Change your card, download receipts, or cancel in the billing portal. Paddle handles
+              billing for SlapStat.
+            </p>
+          }
+          @case ('confirming') {
+            <p class="plan-status"><span class="status status-pending">Confirming</span></p>
+            <p class="plan-state">
+              Your payment went through. We are waiting for confirmation, which usually takes a few
+              seconds.
+            </p>
+          }
+          @case ('confirmation-timeout') {
+            <p class="plan-status"><span class="status status-pending">Confirming</span></p>
+            <p class="plan-state">
+              Your payment went through, but we haven't received confirmation yet. It should arrive
+              automatically. If the page still looks wrong after a few minutes, email
+              <a href="mailto:info@slapstat.com">info&#64;slapstat.com</a>.
+            </p>
+            <button type="button" class="btn btn-secondary btn-block" (click)="reload()">
+              Check again
+            </button>
+          }
+          @case ('error') {
+            <p class="plan-state plan-state--error" role="alert">Couldn't load your plan.</p>
+            <button type="button" class="btn btn-secondary btn-block" (click)="reload()">
+              Try again
+            </button>
+          }
+          @case ('loading') {
+            <!-- No Subscribe button until the plan is known: offered to a subscriber whose
+                 entitlement has not landed yet, it starts a second checkout for what they
+                 already pay for. -->
+            <p class="plan-state">Loading your plan…</p>
+          }
+          @default {
+            <button
+              type="button"
+              class="btn btn-primary btn-lg btn-block"
+              [disabled]="starting()"
+              (click)="subscribe()"
+            >
+              {{ starting() ? 'Starting…' : 'Subscribe' }}
+            </button>
+            <p class="plan-note">Secure checkout through Paddle. Cancel anytime.</p>
+          }
+        }
+      </div>
+    </article>
+  </div>
+</section>

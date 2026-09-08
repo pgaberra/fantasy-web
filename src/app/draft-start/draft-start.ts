@@ -233,7 +233,7 @@ export class DraftStartComponent {
   /**
    * Whether to mark a preset as Premium. Only where payments exist: without them the AI
    * projection is free and ungated, and a badge advertising a subscription the build cannot
-   * sell is a promise nobody can act on. Gated on the same flag as the pricing and account
+   * sell is a promise nobody can act on. Gated on the same flag as the Premium and checkout
    * routes, so the payments story appears and disappears in one piece.
    */
   showsPremiumBadge(preset: Preset): boolean {

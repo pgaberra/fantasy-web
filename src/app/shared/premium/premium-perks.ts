@@ -16,8 +16,8 @@ export interface PremiumPerk {
 /**
  * What Premium includes, in the order it is worth saying.
  *
- * One list for the pricing page, the account page and the welcome after checkout, so the three
- * cannot drift into promising three different things. It follows the build flags: a build with
+ * One list for the Premium page and the welcome after checkout, so the two cannot drift into
+ * promising different things. It follows the build flags: a build with
  * the AI projection or Who's hot switched off must not sell them, since a perk nobody can reach is
  * a refund request.
  */
@@ -45,7 +45,7 @@ export function premiumPerks(): readonly PremiumPerk[] {
   return perks;
 }
 
-/** What the free app already includes, so the pricing page can say what Premium is on top of. */
+/** What the free app already includes, so the Premium page can say what Premium is on top of. */
 export function freeFeatures(): readonly string[] {
   const features = [
     "Projections tailored to your league's scoring",
