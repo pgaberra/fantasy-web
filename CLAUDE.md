@@ -93,7 +93,7 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   put a padlock on a subscriber's own feature every time they open the page.
   **Locked is not hidden, deliberately.** The card keeps its place, its icon and its full-weight
   name; only a gold edge and the padlock say it is not yours yet, and picking it swaps the page's
-  primary button for the way to `/pricing`. Someone who cannot see the thing has no reason to buy
+  primary button for the way to `/premium`. Someone who cannot see the thing has no reason to buy
   it. (`isAiProjectionEnabled` is the switch that genuinely hides it, and it is a third question:
   a build without the model has nothing to sell either.) The gate is only what the pages draw —
   the BFF refuses `source=model` and the model's own lines to the same accounts, which is what
@@ -161,24 +161,28 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`
   browser** before upload, so a phone photo becomes a few tens of KB and the server never decodes
   an untrusted image; the header and the profile page both draw it with the table's
   `app-player-headshot`, whose initials fallback covers an account without a picture.
-- `pricing/`, `pay/`, `account/` and `shared/premium/` — the **Premium** subscription, sold
-  through Paddle (see `BillingService`, `EntitlementService`). The four surfaces agree on what
-  Premium _is_ through one list, `shared/premium/premium-perks.ts`, which follows the build
-  flags so a build with the AI projection or Who's hot switched off cannot sell them; and on
-  what it _looks like_ through one global class, `.premium-badge` in `styles.css` (a class
-  rather than a component so it can sit inside a radio's label). `/pricing` puts Free and
-  Premium side by side and answers the questions that otherwise arrive by mail after the first
-  charge; it knows who is looking, so a subscriber sees the way to their subscription and never
-  a second Subscribe button. `/pay` is only where Paddle's checkout opens (its comment says why
-  it is not behind `authGuard`). `/account` is the subscription page: reached from the account
-  menu, never from a header link, and straight after checkout it is the welcome, with a link
-  into each perk. `EntitlementService` **follows the session** like `AccountService` (an
+- `premium/`, `pay/` and `shared/premium/` — the **Premium** subscription, sold through Paddle
+  (see `BillingService`, `EntitlementService`). The surfaces agree on what Premium _is_ through
+  one list, `shared/premium/premium-perks.ts`, which follows the build flags so a build with the
+  AI projection or Who's hot switched off cannot sell them; and on what it _looks like_ through
+  one global class, `.premium-badge` in `styles.css` (a class rather than a component so it can
+  sit inside a radio's label). `/premium` is the only page for any of it: Free and Premium side
+  by side, the questions that otherwise arrive by mail after the first charge, and, in the place
+  the Subscribe button sits for everyone else, a subscriber's status, their next charge or their
+  last day, and the billing portal. It is also the welcome straight after checkout, with a link
+  into each perk. There was a second page, `/account`, that carried the subscription half; it
+  said what the cards already said, and a free account that reached it was told it had no
+  subscription and sent to the pricing page anyway. `/pricing` and `/account` survive only as
+  redirects here, built as a `RedirectFunction` so the query string comes with them: a checkout
+  Paddle already redirected still returns to `/account?checkout=success`, and dropping that
+  parameter would greet a new subscriber as a visitor. `/pay` is only where Paddle's checkout
+  opens (its comment says why it is not behind `authGuard`). `EntitlementService` **follows the session** like `AccountService` (an
   `effect` on `isLoggedIn`), because sign-in is a router navigation and a load done once at
   bootstrap missed everyone who signed in during the session. The header sells Premium only to
   an account that has not bought it (`plan()` in `app.ts`, null until the entitlement has
-  landed, so nothing is said of a subscriber a request too early), and the pricing page is in
-  the footer and the landing nav wherever payments are on, since the price has to be reachable
-  from the navigation for Paddle's review.
+  landed, so nothing is said of a subscriber a request too early). The account menu carries one
+  Premium item for everyone, to that same page, and the landing nav links the price wherever
+  payments are on, since it has to be reachable from the navigation for Paddle's review.
 - The **new-projection page's preview** is the other half of that: while the AI projection is
   locked, `projection-create` never asks for the model's lines (the BFF would refuse them, and
   the request would only draw the page's failure state) and fills the preview's slot with a

@@ -1,9 +1,19 @@
-import { Routes } from '@angular/router';
+import { RedirectFunction, Router, Routes } from '@angular/router';
+import { inject } from '@angular/core';
 import { landingRedirectGuard } from './guards/landing-redirect.guard';
 import { adminGuard } from './guards/admin.guard';
 import { authGuard } from './guards/auth.guard';
 import { paymentsEnabledGuard } from './guards/payments-enabled.guard';
 import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
+
+/**
+ * The old payment addresses, /pricing and /account, both land on /premium with whatever they were
+ * carrying. Built rather than written as a plain string because the query string has to come with
+ * it explicitly: ?checkout=success is what tells the page it is the welcome after a payment, and a
+ * redirect that dropped it would greet a new subscriber as a visitor.
+ */
+const toPremium: RedirectFunction = (route) =>
+  inject(Router).createUrlTree(['/premium'], { queryParams: route.queryParams });
 
 /**
  * Every route is loaded on demand. Statically importing the components put each feature —
@@ -85,12 +95,27 @@ export const routes: Routes = [
     path: 'terms',
     loadComponent: () => import('./terms/terms').then((m) => m.TermsComponent),
   },
-  // Payments UI stays dark until the PAYMENTS_ENABLED build flag is on — the guard redirects both
-  // routes home otherwise. Account additionally requires being signed in.
+  // Payments UI stays dark until the PAYMENTS_ENABLED build flag is on — the guard redirects
+  // these routes home otherwise.
+  //
+  // One page for the plans and for the subscription on them, so /pricing and /account are kept
+  // only as the way here: a checkout Paddle has already redirected, a bookmark, a link posted
+  // somewhere we cannot edit. The redirect carries the query string, since ?checkout=success is
+  // what tells the page it is the welcome.
+  {
+    path: 'premium',
+    loadComponent: () => import('./premium/premium').then((m) => m.PremiumComponent),
+    canActivate: [paymentsEnabledGuard],
+  },
   {
     path: 'pricing',
-    loadComponent: () => import('./pricing/pricing').then((m) => m.PricingComponent),
-    canActivate: [paymentsEnabledGuard],
+    pathMatch: 'full',
+    redirectTo: toPremium,
+  },
+  {
+    path: 'account',
+    pathMatch: 'full',
+    redirectTo: toPremium,
   },
   // Where Paddle's checkout opens. Behind the payments flag like the rest, but deliberately
   // not behind authGuard: a session that lapsed between starting checkout and landing here
@@ -100,11 +125,6 @@ export const routes: Routes = [
     path: 'pay',
     loadComponent: () => import('./pay/pay').then((m) => m.PayComponent),
     canActivate: [paymentsEnabledGuard],
-  },
-  {
-    path: 'account',
-    loadComponent: () => import('./account/account').then((m) => m.AccountComponent),
-    canActivate: [paymentsEnabledGuard, authGuard],
   },
   {
     path: 'profile',

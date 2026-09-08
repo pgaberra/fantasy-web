@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Route } from '@angular/router';
+import { TestBed } from '@angular/core/testing';
+import { provideRouter, RedirectFunction, Route, UrlTree } from '@angular/router';
 import { routes } from './app.routes';
 import { authGuard } from './guards/auth.guard';
 import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
@@ -18,6 +19,30 @@ describe('routes', () => {
     // anyone has agreed to anything — neither may bounce a visitor to the login page.
     expect(routeFor('s/:token').canActivate).toBeUndefined();
     expect(routeFor('privacy').canActivate).toBeUndefined();
+  });
+
+  /**
+   * The plans and the subscription on them are one page now, and Paddle sends a finished
+   * checkout back to whatever URL it was given when the transaction was created, which for
+   * anything already in flight is the old one. So /pricing and /account still have to arrive
+   * here, and arrive carrying ?checkout=success: without it the page greets a new subscriber
+   * as a visitor and offers them a second checkout.
+   */
+  it('keeps the old payment addresses pointed here, query string and all', () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+
+    for (const path of ['pricing', 'account']) {
+      const route = routeFor(path);
+      expect(route.pathMatch).toEqual('full');
+      const redirect = route.redirectTo as RedirectFunction;
+      const target = TestBed.runInInjectionContext(() =>
+        redirect({
+          queryParams: { checkout: 'success' },
+        } as unknown as Parameters<RedirectFunction>[0]),
+      );
+
+      expect((target as UrlTree).toString()).toEqual('/premium?checkout=success');
+    }
   });
 
   it('catches an unknown address instead of letting the router throw', () => {

@@ -142,7 +142,7 @@ export class WhosHotComponent {
 
   /**
    * Whether this account may pick its own range. Premium buys it; with payments switched off
-   * nobody can, so nobody is held to the free range either. /pricing redirects home while the
+   * nobody can, so nobody is held to the free range either. /premium redirects home while the
    * flag is off, so locking the control then would point at a page that does not exist and
    * leave the range unbuyable rather than unbought.
    */
