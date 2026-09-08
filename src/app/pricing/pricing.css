@@ -97,13 +97,6 @@
   color: var(--color-text-muted);
 }
 
-.plan-price-note {
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--color-text-subtle);
-  line-height: 1.5;
-}
-
 /* The lists take whatever height is left, so the two cards' buttons land on the same line. */
 .plan-perks {
   margin: 0;
