@@ -15,7 +15,7 @@ interface Feature {
   styleUrl: './landing.css',
 })
 export class LandingComponent {
-  // A visitor weighing up the app should find the price from the front page, and the pricing
+  // A visitor weighing up the app should find the price from the front page, and the Premium
   // page is only there to find where a build sells something.
   readonly paymentsEnabled = environment.paymentsEnabled;
 

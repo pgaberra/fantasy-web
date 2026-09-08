@@ -37,7 +37,7 @@ describe('AiProjectionAccess', () => {
   /**
    * Where premium is not sold the AI projection is free, and the BFF agrees: it checks
    * `payments.enabled` before it checks anyone's subscription. A lock here would be a door
-   * with no handle, since the pricing page redirects home in that build.
+   * with no handle, since the Premium page redirects home in that build.
    */
   it('locks nothing where there is no way to buy anything', () => {
     environment.paymentsEnabled = false;

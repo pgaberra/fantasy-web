@@ -1,4 +1,4 @@
-.pricing {
+.premium-page {
   max-width: 880px;
   margin: 0 auto;
   padding: var(--space-6) var(--space-4);
@@ -7,22 +7,22 @@
   gap: var(--space-6);
 }
 
-.pricing-header {
+.premium-header {
   text-align: center;
 }
 
-.pricing-title {
+.premium-title {
   margin: 0 0 var(--space-2);
   font-size: var(--text-2xl);
   font-weight: var(--weight-bold);
   color: var(--color-text);
 }
 
-.pricing-title-accent {
+.premium-title-accent {
   color: var(--color-gold-strong);
 }
 
-.pricing-sub {
+.premium-sub {
   margin: 0 auto;
   max-width: 34rem;
   color: var(--color-text-muted);
@@ -186,6 +186,118 @@
   font-weight: var(--weight-semibold);
 }
 
+/* The welcome after checkout: gold rather than the green of the plain thanks, because it is
+   the one moment the page is about Premium itself rather than about what the reader may buy. */
+.checkout-welcome {
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-gold);
+  border-radius: var(--radius-lg);
+  background: rgba(230, 184, 74, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.checkout-welcome-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-gold-strong);
+}
+
+.checkout-welcome-text {
+  margin: 0;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.checkout-welcome-links {
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.checkout-thanks {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-md);
+  background: #ecfdf3;
+  color: var(--color-success);
+}
+
+.plan-status {
+  margin: 0;
+}
+
+/* The plan as a pill with a dot, in the colour of its state. The dot is drawn, not typed: a
+   bullet character in the text read aloud as "black circle" and never lined up with the words. */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.2rem 0.7rem 0.2rem 0.6rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.status::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.status-ok {
+  color: var(--color-success);
+  background: #ecfdf3;
+}
+
+/* Waiting on the provider, which is neither active nor free. The dot breathes, so the row
+   reads as something in progress rather than as a verdict. */
+.status-pending {
+  color: var(--color-gold-strong);
+  background: rgba(230, 184, 74, 0.15);
+}
+
+.status-pending::before {
+  animation: breathe 1.4s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* What the card says about a plan the reader already has, as against .plan-note, which is the
+   small print under a button. */
+.plan-state {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+/* A cancelled subscription is still running, so this is a note rather than an alarm, but it
+   is the one line on the page a subscriber might be surprised by, and it should not hide. */
+.plan-state--ending {
+  color: var(--color-text);
+}
+
+.plan-state--error {
+  color: var(--color-danger);
+}
+
+.plan-state a {
+  color: var(--color-primary);
+}
+
 @media (max-width: 720px) {
   .plans {
     grid-template-columns: minmax(0, 1fr);
@@ -198,7 +310,7 @@
 }
 
 @media (max-width: 640px) {
-  .pricing {
+  .premium-page {
     padding: var(--space-5) var(--space-4);
     gap: var(--space-5);
   }

@@ -55,7 +55,7 @@ describe('PayComponent', () => {
     expect(open).toHaveBeenCalledWith(
       expect.objectContaining({
         settings: expect.objectContaining({
-          successUrl: `${window.location.origin}/account?checkout=success`,
+          successUrl: `${window.location.origin}/premium?checkout=success`,
         }),
       }),
     );
