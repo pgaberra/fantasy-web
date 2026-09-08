@@ -145,15 +145,6 @@
           [value]="minGames()"
           (input)="onMinGamesInput($event)"
         />
-
-        <!-- The number in the box changes without the user touching it, which is the one moment
-             this control can be read as having lost their setting. Say what happened instead:
-             the range cannot hold what they asked for, and their figure is still theirs. -->
-        @if (minGamesCapped()) {
-          <span class="min-games-note" role="status">
-            The minimum of {{ minGamesRequested() }} is longer than this game range.
-          </span>
-        }
       </div>
     }
   </div>

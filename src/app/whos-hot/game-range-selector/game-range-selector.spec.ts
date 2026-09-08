@@ -117,45 +117,6 @@ describe('GameRangeSelectorComponent', () => {
     expect(component.minGames()).toEqual(13);
   });
 
-  describe('a minimum the range can no longer hold', () => {
-    const renderMinimum = (minGames: number, minGamesRequested: number | null) =>
-      MockRender(GameRangeSelectorComponent, {
-        scheduleLength: 82,
-        fromGame: 60,
-        toGame: 82,
-        perGame: true,
-        minGames,
-        minGamesRequested,
-      });
-
-    const note = () => ngMocks.findAll('.min-games-note');
-
-    it('says whose number is on screen once the range has cut it down', () => {
-      renderMinimum(23, 25);
-
-      // The box changed from 25 to 23 without the user touching it, and this is the only thing
-      // on the panel that can say why.
-      expect(note()).toHaveLength(1);
-      expect(note()[0].nativeElement.textContent.trim()).toEqual(
-        'The minimum of 25 is longer than this game range.',
-      );
-    });
-
-    it('stays quiet while the minimum on screen is the one that was asked for', () => {
-      expect(note()).toHaveLength(0);
-
-      renderMinimum(23, 23);
-
-      expect(note()).toHaveLength(0);
-    });
-
-    it('stays quiet for a page that never says what was asked for', () => {
-      renderMinimum(23, null);
-
-      expect(note()).toHaveLength(0);
-    });
-  });
-
   it('offers the minimum-games filter only while the leaderboard is scored per game', () => {
     const fixture = MockRender(GameRangeSelectorComponent, {
       scheduleLength: 82,
