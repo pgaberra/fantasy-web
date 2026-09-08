@@ -8,13 +8,9 @@
     <article class="plan-card plan-card--free">
       <div class="plan-head">
         <h2 class="plan-name">Free</h2>
-        @if (freePrice(); as price) {
-          <p class="plan-price">
-            <span class="plan-price-amount">{{ price }}</span>
-          </p>
-        } @else {
-          <p class="plan-price plan-price--placeholder" aria-hidden="true"></p>
-        }
+        <p class="plan-price">
+          <span class="plan-price-amount">{{ freePrice() ?? 'Free' }}</span>
+        </p>
       </div>
       <ul class="plan-perks">
         @for (feature of freeFeatures; track feature) {

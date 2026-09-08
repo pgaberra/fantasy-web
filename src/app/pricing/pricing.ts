@@ -56,6 +56,10 @@ export class PricingComponent implements OnInit {
    * free column priced in a currency the paid column does not use reads as two different
    * shops. The currency therefore comes from the same preview as the Premium price rather than
    * from a guess about where the reader is.
+   *
+   * That ties this figure to a third party the free plan has nothing to do with, so the card
+   * falls back to the word "Free" when the preview does not arrive. Paddle being unreachable
+   * costs the paid card its price; it must not also leave the free one unpriced.
    */
   protected readonly freePrice = signal<string | null>(null);
 
