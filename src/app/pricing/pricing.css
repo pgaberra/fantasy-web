@@ -86,6 +86,13 @@
   flex-wrap: wrap;
 }
 
+/* The free card states no price, but it keeps the price line's height so both cards' perk
+   lists start on the same line. */
+.plan-price--placeholder {
+  font-size: var(--text-2xl);
+  min-height: 1lh;
+}
+
 .plan-price-amount {
   font-size: var(--text-2xl);
   font-weight: var(--weight-bold);
