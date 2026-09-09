@@ -53,6 +53,9 @@ jobs:
       - name: Verify every build placeholder is substituted
         run: bash .github/scripts/check-build-placeholders.sh
 
+      - name: Check copy against COPY-RULES.md
+        run: npm run check:copy
+
       - name: Lint
         run: npm run lint
 

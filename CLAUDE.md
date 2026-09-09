@@ -24,9 +24,10 @@ npm run format         # prettier --write
 npm run format:check   # prettier --check (CI uses this — must pass)
 npm run build          # production build → dist/fantasy-web/browser
 npm run generate:api   # generate src/app/api from specs/bff-openapi.yaml
+npm run check:copy     # hold user-facing copy to COPY-RULES.md (CI uses this)
 ```
 
-CI runs (and must pass): `generate:api`, `lint`, `format:check`, `test`, `build`.
+CI runs (and must pass): `generate:api`, `lint`, `format:check`, `check:copy`, `test`, `build`.
 
 > **After cloning, run `npm run generate:api` once** — `src/app/api` is generated,
 > not committed, so lint/test/build will fail until it exists.
@@ -393,6 +394,11 @@ doesn't replace them.
 
 - `.github/workflows/pr-checks.yml`: Node 22, generates the API client then runs
   lint + format:check + test + build on PRs to `master`.
+- **Copy is checked, not merely guided.** `npm run check:copy` reads `COPY-RULES.md` and fails
+  on a new terminology or vocabulary violation, ratcheted against `.github/copy-baseline.json`.
+  It settles only what a script can settle: naming the same thing the same way, and the banned
+  phrases. Tone, rhythm and whether a sentence should exist at all are the `slapstat-copy`
+  skill's job, and no rule in `COPY-RULES.md` tries to reach them.
 - A **spec drift check** runs first: it fetches `fantasy-bff`'s `specs/bff-openapi.yaml`
   from `master` and fails if the pinned `specs/bff-openapi.yaml` differs. Needs a repo
   secret `SPEC_READ_TOKEN` — a fine-grained PAT with read access to `fantasy-bff`.
