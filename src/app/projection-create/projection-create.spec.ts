@@ -931,8 +931,8 @@ describe('ProjectionCreateComponent', () => {
 
   /**
    * Locked, not hidden: someone who cannot see the AI projection has no reason to buy it. The
-   * card stays pickable so it can be read about, and the slot the preview would fill carries
-   * the pitch instead of the model's numbers, which are the thing being sold.
+   * card stays pickable, the preview draws the model's own top five for anyone, and the pitch
+   * sits under those rows selling the rest of the board.
    */
   describe('when the AI projection is behind a subscription', () => {
     const withPayments = async (
@@ -963,19 +963,23 @@ describe('ProjectionCreateComponent', () => {
     });
 
     /**
-     * The BFF refuses the model's lines to this account, so asking would spend a request only
-     * to draw the page's failure state over the pitch that belongs there.
+     * The teaser. A request this narrow is the preview the BFF serves to everyone, so a free
+     * account sees the model's own top five rather than a description of them.
      */
-    it('never asks the model for lines it would be refused', async () => {
+    it('previews the top of the model even while it is locked', async () => {
       await withPayments(async (fixture) => {
-        fixture.point.componentInstance.selectPreset('model');
+        const component = fixture.point.componentInstance;
+        component.selectPreset('model');
         await fixture.whenStable();
+        fixture.detectChanges();
 
-        expect(seed).not.toHaveBeenCalled();
+        expect(seed).toHaveBeenCalled();
+        expect(component.previewRows().length).toBeGreaterThan(0);
+        expect(fixture.nativeElement.querySelector('.preview-card')).not.toBeNull();
       });
     });
 
-    it('puts the pitch where the preview would go, with the way to Premium in it', async () => {
+    it('puts the pitch under those rows, with the way to Premium in it', async () => {
       await withPayments(async (fixture) => {
         fixture.point.componentInstance.selectPreset('model');
         await fixture.whenStable();
@@ -983,10 +987,8 @@ describe('ProjectionCreateComponent', () => {
 
         const pitch = fixture.nativeElement.querySelector('.pitch');
         expect(pitch).not.toBeNull();
-        expect(pitch.textContent).toContain('AI projection');
+        expect(pitch.textContent).toContain('Premium');
         expect(pitch.querySelector('a')?.getAttribute('routerLink')).toEqual('/premium');
-        // The preview's table must not be drawn beside it: there is nothing to draw.
-        expect(fixture.nativeElement.querySelector('.preview-card')).toBeNull();
       });
     });
 
