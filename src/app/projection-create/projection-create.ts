@@ -99,6 +99,9 @@ const PREVIEW_ROWS = 5;
  * preview wants is not exactly the order it receives — these are wide enough that the players it
  * would pick out of the whole pool are certainly inside, and narrow enough to be a few kilobytes
  * rather than the half-megabyte the editor needs.
+ *
+ * <p>They are also the width the BFF serves without a subscription, so the AI preset previews
+ * for everyone. Widen either one and a free account gets a 403 instead of a preview.
  */
 const PREVIEW_FETCH_LIMITS = { skaters: 25, goalies: 10 };
 
@@ -304,12 +307,16 @@ export class ProjectionCreateComponent {
    * The model's lines for the preview, fetched only once the AI preset is picked — and only the
    * top of them, the same slice of the board the pool itself is asked for. The counts come back
    * whole either way, so the note under the table still speaks for the whole league.
+   *
+   * <p>{@link PREVIEW_FETCH_LIMITS} is also what makes this free: the BFF serves a request this
+   * narrow to an account without premium, so widening it here would take the preview away from
+   * everyone who has not paid.
    */
   private readonly modelSeedResource = rxResource({
-    // Not while it is locked: the BFF refuses the model's lines to an account without premium,
-    // so asking would spend a request to draw the page's error state over the pitch that is
-    // supposed to be there instead.
-    params: () => (this.isModelPreset() && !this.aiProjectionLocked() ? {} : undefined),
+    // Locked or not: a request this narrow is the preview the BFF serves to everyone, and the
+    // five rows it draws are the teaser. Anything wider is still refused, which is why the
+    // limits below are the ones the gate is written against.
+    params: () => (this.isModelPreset() ? {} : undefined),
     stream: () =>
       this.projectionModel.seed({
         skaterLimit: PREVIEW_FETCH_LIMITS.skaters,
@@ -572,8 +579,8 @@ export class ProjectionCreateComponent {
 
   /**
    * Whether this account would have to subscribe before it could start from a preset. The card
-   * stays pickable: picking it is how someone reads what the AI projection is, and the preview
-   * slot becomes the pitch rather than a table.
+   * stays pickable: picking it previews the top of the model like any other starting point, and
+   * puts the pitch for the rest of the board under those rows.
    */
   isPresetLocked(preset: CreatePreset): boolean {
     return !!preset.premium && this.aiAccess.locked();

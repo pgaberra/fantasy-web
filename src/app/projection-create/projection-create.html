@@ -272,27 +272,7 @@
         cannot be drawn keeps the slot filled with a line rather than letting the page jump by
         the height of a table whenever the picked card changes.
       -->
-      @if (aiProjectionLocked()) {
-        <!-- The slot the preview would fill, filled with what the preview would have shown if
-             it could: not the model's numbers, which are the thing being sold, but what they
-             are and what having them is worth. -->
-        <section class="pitch">
-          <h3 class="pitch-title">
-            <span class="premium-badge">Premium</span>
-            AI projection
-          </h3>
-          <p class="pitch-text">
-            Every player projected for the 2026-27 season with our AI model. Use it as a starting
-            point and adjust any numbers you disagree with.
-          </p>
-          <ul class="pitch-points">
-            <li>Every player ranked to your league's scoring settings</li>
-            <li>Fully editable. Make it your own.</li>
-            <li>Use it directly in Draft mode</li>
-          </ul>
-          <a routerLink="/premium" class="btn btn-primary">Unlock with Premium</a>
-        </section>
-      } @else if (isPreviewLoading() || isModelPreviewLoading()) {
+      @if (isPreviewLoading() || isModelPreviewLoading()) {
         <p class="preview-note">Loading preview…</p>
       } @else if (previewFailed() || !previewRows().length) {
         @if (copiedBoard(); as board) {
@@ -351,6 +331,24 @@
             Players without enough data to project are left out. Data © MoneyPuck.com.
           </p>
         }
+      }
+
+      <!-- Under the rows rather than instead of them: the top five are the model talking, which
+           is the point of showing them, and what is being sold is the rest of the board. -->
+      @if (aiProjectionLocked()) {
+        <section class="pitch">
+          <h3 class="pitch-title">
+            <span class="premium-badge">Premium</span>
+            The rest of the board
+          </h3>
+          <ul class="pitch-points">
+            <li>Every player the model projects, not just the top 5</li>
+            <li>Ranked to your league's scoring settings</li>
+            <li>Fully editable. Make it your own.</li>
+            <li>Use it directly in Draft mode</li>
+          </ul>
+          <a routerLink="/premium" class="btn btn-primary">Unlock with Premium</a>
+        </section>
       }
     </div>
 
