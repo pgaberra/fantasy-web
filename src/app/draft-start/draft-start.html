@@ -259,10 +259,7 @@
           }
           @case ('imported') {
             @if (imported().length === 0) {
-              <p class="group-empty">
-                No shared projections yet. Paste a SlapStat share link below to import one and draft
-                against it.
-              </p>
+              <p class="group-empty">No imports yet. Paste a SlapStat share link below.</p>
             } @else {
               <ul class="rows">
                 @for (board of imported(); track board.id) {

@@ -336,7 +336,7 @@
   box-shadow: var(--shadow-sm);
 }
 
-/* The count is what keeps the two kinds not open honest: "Shared board 0" says there is nothing
+/* The count is what keeps the two kinds not open honest: "Imports 0" says there is nothing
    there before anyone presses it. Quieter than the name, so the pill still reads as its name. */
 .kind-count {
   font-size: var(--text-xs);
