@@ -1,4 +1,4 @@
-import { effect, inject, Injectable, signal, untracked } from '@angular/core';
+import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import { AuthService } from './auth.service';
 import { BillingService } from './billing.service';
 import { EntitlementsResponse } from '../api/models';
@@ -27,6 +27,15 @@ export class EntitlementService {
   readonly status = signal<string>('none');
   readonly currentPeriodEnd = signal<string | null>(null);
   readonly cancelAtPeriodEnd = signal<boolean>(false);
+  /** What premium rests on: 'none', 'subscription', 'grant' or 'both'. */
+  readonly source = signal<string>('none');
+  readonly premiumUntil = signal<string | null>(null);
+
+  /**
+   * Premium that was given rather than bought, with no subscription behind it. 'both' is not one
+   * of these: there is still a subscription to manage, so the account page keeps the portal.
+   */
+  readonly granted = computed(() => this.source() === 'grant');
   readonly loadState = signal<'idle' | 'loading' | 'loaded' | 'error'>('idle');
 
   constructor() {
@@ -64,6 +73,8 @@ export class EntitlementService {
     this.status.set(entitlement.status);
     this.currentPeriodEnd.set(entitlement.currentPeriodEnd ?? null);
     this.cancelAtPeriodEnd.set(entitlement.cancelAtPeriodEnd);
+    this.source.set(entitlement.source);
+    this.premiumUntil.set(entitlement.premiumUntil ?? null);
   }
 
   /** Back to knowing nothing, so the next account to sign in never inherits the last one's plan. */
@@ -77,5 +88,7 @@ export class EntitlementService {
     this.status.set('none');
     this.currentPeriodEnd.set(null);
     this.cancelAtPeriodEnd.set(false);
+    this.source.set('none');
+    this.premiumUntil.set(null);
   }
 }

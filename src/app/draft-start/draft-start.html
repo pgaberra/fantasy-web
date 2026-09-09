@@ -411,10 +411,10 @@
 
       <!-- The page's one primary action, and it follows what is picked. Left as "Start draft"
            over a locked preset it would be a button whose only outcome is a refusal; as a link
-           to the pricing page it is the one thing that can actually be done next. -->
+           to the Premium page it is the one thing that can actually be done next. -->
       <div class="start-row">
         @if (selectionLocked()) {
-          <a routerLink="/pricing" class="btn btn-primary start">Unlock with Premium</a>
+          <a routerLink="/premium" class="btn btn-primary start">Unlock with Premium</a>
           <span class="start-note">
             Premium adds the AI projection and custom ranges on Who's Hot.
           </span>

@@ -162,8 +162,8 @@ describe('App', () => {
 
   /**
    * Where a build sells Premium, the nav has to say what the account has and offer the way to
-   * the rest: the plan under the name, one subscription item in the account menu, and a header
-   * link to the pricing page for an account that could use it. Each in one place, and never a
+   * the rest: the plan under the name, one Premium item in the account menu, and a header link
+   * to the Premium page for an account that could use it. Each in one place, and never a
    * "Free plan" or an offer to buy said of a subscriber.
    */
   describe('where payments are on', () => {
@@ -177,13 +177,13 @@ describe('App', () => {
       }
     };
 
-    it('offers a free account the pricing page from the header and the burger', () => {
+    it('offers a free account the Premium page from the header and the burger', () => {
       withPayments(() => {
         const fixture = render();
 
         const link = fixture.nativeElement.querySelector('.app-nav a.nav-premium');
         expect(link?.textContent?.trim()).toEqual('Premium');
-        expect(link?.getAttribute('routerLink')).toEqual('/pricing');
+        expect(link?.getAttribute('routerLink')).toEqual('/premium');
         expect(openNavMenu(fixture).map((item) => item.textContent?.trim())).toContain('Premium');
       });
     });
@@ -191,7 +191,7 @@ describe('App', () => {
     // A signed-out visitor never loads an entitlement, so the plan cannot say whether they
     // would benefit. They are the likeliest buyer, and away from the landing page the header is
     // the only navigation they have, so they are offered the price outright.
-    it('offers a signed-out visitor the pricing page from the header', () => {
+    it('offers a signed-out visitor the Premium page from the header', () => {
       withPayments(() => {
         isLoggedIn.set(false);
         loadState.set('idle');
@@ -199,11 +199,11 @@ describe('App', () => {
 
         const link = fixture.nativeElement.querySelector('.app-nav a.nav-premium');
         expect(link?.textContent?.trim()).toEqual('Premium');
-        expect(link?.getAttribute('routerLink')).toEqual('/pricing');
+        expect(link?.getAttribute('routerLink')).toEqual('/premium');
       });
     });
 
-    // Nothing is for sale before launch, and the pricing page redirects home, so the link goes
+    // Nothing is for sale before launch, and the Premium page redirects home, so the link goes
     // with it for a visitor as much as for an account.
     it('offers a signed-out visitor nothing where payments are off', () => {
       isLoggedIn.set(false);
@@ -213,13 +213,13 @@ describe('App', () => {
       expect(fixture.nativeElement.querySelector('.app-nav a.nav-premium')).toBeNull();
     });
 
-    it('states the free plan and leads to pricing from the account menu', () => {
+    it('states the free plan and leads to Premium from the account menu', () => {
       withPayments(() => {
         const fixture = render();
 
         const items = openAccountMenu(fixture);
-        const subscription = items.find((item) => item.textContent?.trim() === 'Get Premium');
-        expect(subscription?.getAttribute('routerLink')).toEqual('/pricing');
+        const subscription = items.find((item) => item.textContent?.trim() === 'Premium');
+        expect(subscription?.getAttribute('routerLink')).toEqual('/premium');
         expect(document.querySelector('.account-menu-plan')?.textContent?.trim()).toEqual(
           'Free plan',
         );
@@ -235,14 +235,12 @@ describe('App', () => {
         const items = openAccountMenu(fixture);
         expect(items.map((item) => item.textContent?.trim())).toEqual([
           'Profile',
-          'Subscription',
+          'Premium',
           'Sign out',
         ]);
         expect(
-          items
-            .find((item) => item.textContent?.trim() === 'Subscription')
-            ?.getAttribute('routerLink'),
-        ).toEqual('/account');
+          items.find((item) => item.textContent?.trim() === 'Premium')?.getAttribute('routerLink'),
+        ).toEqual('/premium');
         expect(document.querySelector('.account-menu-plan')?.textContent?.trim()).toEqual(
           'Premium',
         );
@@ -258,7 +256,7 @@ describe('App', () => {
 
         expect(fixture.nativeElement.querySelector('.app-nav a.nav-premium')).toBeNull();
         const items = openAccountMenu(fixture).map((item) => item.textContent?.trim());
-        expect(items).toContain('Subscription');
+        expect(items).toContain('Premium');
         expect(document.querySelector('.account-menu-plan')).toBeNull();
       });
     });

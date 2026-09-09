@@ -60,7 +60,7 @@ export class PayComponent implements OnInit {
           transactionId,
           settings: {
             // Absolute by Paddle's rule. The account page reads ?checkout=success already.
-            successUrl: `${window.location.origin}/account?checkout=success`,
+            successUrl: `${window.location.origin}/premium?checkout=success`,
           },
         });
       })

@@ -60,7 +60,7 @@ describe('WhosHotComponent', () => {
 
       const component = MockRender(WhosHotComponent).point.componentInstance;
 
-      // Nobody can buy premium with the flag off, and /pricing redirects home, so locking the
+      // Nobody can buy premium with the flag off, and /premium redirects home, so locking the
       // control would make the range unbuyable rather than unbought.
       expect(component.canPickRange()).toEqual(true);
       expect(component.fromGame()).toEqual(1);

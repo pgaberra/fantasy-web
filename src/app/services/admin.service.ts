@@ -7,7 +7,13 @@ import { triggerPlayerSync } from '../api/fn/admin/trigger-player-sync';
 import { playerSyncRuns } from '../api/fn/admin/player-sync-runs';
 import { probeYahooAccess } from '../api/fn/admin/probe-yahoo-access';
 import { yahooServiceAccountLeagues } from '../api/fn/admin/yahoo-service-account-leagues';
+import { premiumCustomers } from '../api/fn/admin/premium-customers';
+import { grantPremium } from '../api/fn/admin/grant-premium';
+import { revokePremiumGrants } from '../api/fn/admin/revoke-premium-grants';
 import {
+  AdminGrantPremiumRequest,
+  AdminPremiumCustomerResponse,
+  AdminPremiumGrantResponse,
   AuthorizeUrlResponse,
   ConnectionResponse,
   SyncAcceptedResponse,
@@ -54,5 +60,18 @@ export class AdminService {
   /** The service account's own leagues — where a league key for the probe comes from. */
   yahooLeagues(): Observable<LeaguesResponse> {
     return from(this.api.invoke(yahooServiceAccountLeagues));
+  }
+
+  /** Everyone with Premium right now, paying and given alike. */
+  premiumCustomers(): Observable<AdminPremiumCustomerResponse[]> {
+    return from(this.api.invoke(premiumCustomers));
+  }
+
+  grantPremium(body: AdminGrantPremiumRequest): Observable<AdminPremiumGrantResponse> {
+    return from(this.api.invoke(grantPremium, { body }));
+  }
+
+  revokePremiumGrants(userId: string): Observable<void> {
+    return from(this.api.invoke(revokePremiumGrants, { userId }));
   }
 }

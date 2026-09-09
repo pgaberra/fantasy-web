@@ -23,10 +23,10 @@ describe('premiumGuard', () => {
     expect(runGuard(true).result).toEqual(true);
   });
 
-  it('redirects a non-premium user to pricing', () => {
+  it('redirects a non-premium user to the Premium page', () => {
     const { result, createUrlTree } = runGuard(false);
 
-    expect(createUrlTree).toHaveBeenCalledWith(['/pricing']);
+    expect(createUrlTree).toHaveBeenCalledWith(['/premium']);
     expect(result).not.toEqual(true);
   });
 });

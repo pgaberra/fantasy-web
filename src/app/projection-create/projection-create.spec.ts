@@ -984,7 +984,7 @@ describe('ProjectionCreateComponent', () => {
         const pitch = fixture.nativeElement.querySelector('.pitch');
         expect(pitch).not.toBeNull();
         expect(pitch.textContent).toContain('AI projection');
-        expect(pitch.querySelector('a')?.getAttribute('routerLink')).toEqual('/pricing');
+        expect(pitch.querySelector('a')?.getAttribute('routerLink')).toEqual('/premium');
         // The preview's table must not be drawn beside it: there is nothing to draw.
         expect(fixture.nativeElement.querySelector('.preview-card')).toBeNull();
       });

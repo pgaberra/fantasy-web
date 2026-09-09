@@ -63,11 +63,9 @@ export class App {
     () => this.path().startsWith('/draft') || this.path().startsWith('/projections'),
   );
 
-  // Everything behind the avatar: the profile, and the subscription page the account menu
-  // leads to. The avatar is the only way to either, so it is the thing to mark "you are here".
-  protected readonly isAccountSection = computed(
-    () => this.path() === '/profile' || this.path() === '/account',
-  );
+  // Everything behind the avatar: the profile. Premium is in the menu too, but it is also a
+  // header link with its own highlight, so marking the avatar for it would light up two places.
+  protected readonly isAccountSection = computed(() => this.path() === '/profile');
 
   // What the avatar falls back to when there is no picture: the first letter of the username,
   // or of the email while the account has not picked one.
@@ -92,7 +90,7 @@ export class App {
   });
 
   /**
-   * Whether the header offers the pricing page. Only where it could be acted on: a subscriber's
+   * Whether the header offers the Premium page. Only where it could be acted on: a subscriber's
    * header says nothing about Premium, and their plan lives in the account menu. A signed-out
    * visitor is offered it too, since they have no entitlement to load and every other route to
    * the price sits behind a session or on the landing page.
