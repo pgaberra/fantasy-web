@@ -126,7 +126,7 @@
     {{ summaryLabel() }}
   </th>
 </tr>
-@if (scoringType() === 'points' && !readonly()) {
+@if (scoringType() === 'points' && (!readonly() || showWeights())) {
   <tr class="weight-row">
     <th class="col-rank"></th>
     <th class="col-name"><span class="weight-label">Stat weights (pts)</span></th>
@@ -135,18 +135,25 @@
     }
     @for (col of activeColumns().scoring; track col) {
       <th [class.group-start]="$first && hasUtilityColumns()">
-        <!-- A text field, not a number field: the browser would print a weight of 4.5 in the
-             machine's locale, which on a Swedish one is `4,5` beside a table full of points. -->
-        <input
-          type="text"
-          inputmode="decimal"
-          class="weight-input"
-          [value]="statWeights()[col]"
-          [attr.aria-label]="'Points per ' + (col | statLabel)"
-          (input)="onWeightInput(col, $event)"
-          (keydown)="onWeightKeydown(col, $event)"
-          (blur)="onWeightBlur(col, $event)"
-        />
+        @if (readonly()) {
+          <!-- The same number in the same place, without the box that says it can be changed. -->
+          <span class="weight-value" [attr.aria-label]="'Points per ' + (col | statLabel)">{{
+            statWeights()[col]
+          }}</span>
+        } @else {
+          <!-- A text field, not a number field: the browser would print a weight of 4.5 in the
+               machine's locale, which on a Swedish one is `4,5` beside a table full of points. -->
+          <input
+            type="text"
+            inputmode="decimal"
+            class="weight-input"
+            [value]="statWeights()[col]"
+            [attr.aria-label]="'Points per ' + (col | statLabel)"
+            (input)="onWeightInput(col, $event)"
+            (keydown)="onWeightKeydown(col, $event)"
+            (blur)="onWeightBlur(col, $event)"
+          />
+        }
       </th>
     }
     <th class="summary-pts-col"></th>

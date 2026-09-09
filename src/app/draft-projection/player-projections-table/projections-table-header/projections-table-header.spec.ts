@@ -64,6 +64,7 @@ describe('ProjectionsTableHeaderComponent', () => {
         [scaleSettings]="scaleSettings"
         [gamesPlayedScope]="gamesPlayedScope"
         [readonly]="readonly"
+        [showWeights]="showWeights"
       ></thead>
     </table>
   `;
@@ -99,6 +100,7 @@ describe('ProjectionsTableHeaderComponent', () => {
       scaleSettings: null,
       gamesPlayedScope: null,
       readonly: false,
+      showWeights: false,
       ...overrides,
     });
 
@@ -232,6 +234,25 @@ describe('ProjectionsTableHeaderComponent', () => {
     it('should not render the weight-row when scoringType is "category"', () => {
       getFixture({ scoringType: 'category' });
       expect(ngMocks.findAll('.weight-row')).toHaveLength(0);
+    });
+
+    it('drops the weight-row on a read-only table', () => {
+      getFixture({ scoringType: 'points', readonly: true });
+      expect(ngMocks.findAll('.weight-row')).toHaveLength(0);
+    });
+
+    /**
+     * A table read for its totals and nothing else has to say what those totals were scored
+     * with. The numbers come back, the inputs do not.
+     */
+    it('keeps the weight-row on a read-only table that asks for it, as text', () => {
+      getFixture({ scoringType: 'points', readonly: true, showWeights: true });
+
+      expect(ngMocks.findAll('.weight-row')).toHaveLength(1);
+      expect(ngMocks.findAll('.weight-row input')).toHaveLength(0);
+      expect(
+        ngMocks.findAll('.weight-row .weight-value').map((cell) => cell.nativeElement.textContent),
+      ).toEqual(['4.5', '3']);
     });
 
     it('keeps the weight-row on the surfaces with column menus too', () => {
