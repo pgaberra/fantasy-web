@@ -1,5 +1,6 @@
 import { Component, computed, input, signal } from '@angular/core';
 import { PoolReconciliation } from '../../api/models/pool-reconciliation';
+import { IconComponent } from '../icon/icon';
 
 /**
  * Says how many players a projection gained when it was squared with the player pool. The pool
@@ -15,6 +16,7 @@ import { PoolReconciliation } from '../../api/models/pool-reconciliation';
  */
 @Component({
   selector: 'app-player-pool-notice',
+  imports: [IconComponent],
   templateUrl: './player-pool-notice.html',
   styleUrl: './player-pool-notice.css',
 })

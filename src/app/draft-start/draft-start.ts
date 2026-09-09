@@ -20,6 +20,7 @@ import { AiProjectionAccess } from '../shared/premium/ai-projection-access';
 import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/premium-refused';
 import { SOURCE_KINDS, SourceKind } from '../models/source-kind';
 import { environment } from '../../environments/environment';
+import { IconComponent } from '../shared/icon/icon';
 
 /**
  * The name the preset draft is stored under. It doubles as the label on the board, so the
@@ -90,6 +91,7 @@ export type DraftSource =
     RelativeTimePipe,
     PopoverTriggerDirective,
     ShareImportComponent,
+    IconComponent,
   ],
   templateUrl: './draft-start.html',
   styleUrl: './draft-start.css',

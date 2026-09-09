@@ -1,4 +1,5 @@
 import { Component, output } from '@angular/core';
+import { IconComponent } from '../../shared/icon/icon';
 
 /**
  * Importing a league is a short flow with real consequences — it overwrites the scoring type,
@@ -7,6 +8,7 @@ import { Component, output } from '@angular/core';
  */
 @Component({
   selector: 'app-league-sync-dialog',
+  imports: [IconComponent],
   templateUrl: './league-sync-dialog.html',
   styleUrl: './league-sync-dialog.css',
   host: {

@@ -1,6 +1,7 @@
 import { Component, inject, input, output } from '@angular/core';
 import { OpenPopovers } from '../../shared/popover/open-popovers';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
+import { IconComponent } from '../../shared/icon/icon';
 
 /**
  * Blocking warning shown when the user changes a setting that came from a synced league.
@@ -8,7 +9,7 @@ import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
  */
 @Component({
   selector: 'app-sync-warning-dialog',
-  imports: [TooltipDirective],
+  imports: [TooltipDirective, IconComponent],
   templateUrl: './sync-warning-dialog.html',
   styleUrl: './sync-warning-dialog.css',
 })

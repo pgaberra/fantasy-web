@@ -379,7 +379,7 @@ tr.decimal-row th {
   box-shadow: 0 0 0 2px rgba(230, 184, 74, 0.35);
 }
 
-.full-season-pill svg {
+.full-season-pill app-icon {
   display: block;
 }
 
@@ -426,7 +426,7 @@ tr.decimal-row th {
   background: var(--color-surface-hover);
 }
 
-.column-menu .menu-item svg {
+.column-menu .menu-item app-icon {
   flex: none;
   color: var(--color-text-subtle);
 }
@@ -441,7 +441,7 @@ tr.decimal-row th {
   color: var(--color-danger);
 }
 
-.column-menu .menu-item--danger svg {
+.column-menu .menu-item--danger app-icon {
   color: currentColor;
 }
 

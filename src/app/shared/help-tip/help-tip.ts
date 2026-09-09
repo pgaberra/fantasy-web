@@ -1,5 +1,6 @@
 import { Component, input } from '@angular/core';
 import { TooltipDirective } from '../tooltip/tooltip.directive';
+import { IconComponent } from '../icon/icon';
 
 /**
  * A small info icon that explains the control it sits next to, without spending a line of the
@@ -11,7 +12,7 @@ import { TooltipDirective } from '../tooltip/tooltip.directive';
  */
 @Component({
   selector: 'app-help-tip',
-  imports: [TooltipDirective],
+  imports: [TooltipDirective, IconComponent],
   templateUrl: './help-tip.html',
   styleUrl: './help-tip.css',
 })

@@ -410,7 +410,7 @@ describe('ProjectionCreateComponent', () => {
 
       // The presets are the open kind, one card each, with the first checked.
       expect(texts('.row-name')).toEqual(CREATE_PRESETS.map((preset) => preset.name));
-      expect(root.querySelectorAll('.row-icon svg')).toHaveLength(CREATE_PRESETS.length);
+      expect(root.querySelectorAll('.row-icon app-icon')).toHaveLength(CREATE_PRESETS.length);
       expect(root.querySelector('.row')?.classList.contains('row--selected')).toBe(true);
       // Folded, not gone: the segments say how many boards there are, one press away.
       expect(root.querySelector('app-share-import')).toBeNull();

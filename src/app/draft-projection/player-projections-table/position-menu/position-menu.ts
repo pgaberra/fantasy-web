@@ -1,6 +1,7 @@
 import { Component, computed, input, output } from '@angular/core';
 import { SKATER_POSITIONS, SkaterPosition } from '../../../models/position.model';
 import { TooltipDirective } from '../../../shared/tooltip/tooltip.directive';
+import { IconComponent } from '../../../shared/icon/icon';
 
 /**
  * Corrects which positions one skater is eligible for.
@@ -12,7 +13,7 @@ import { TooltipDirective } from '../../../shared/tooltip/tooltip.directive';
  */
 @Component({
   selector: 'app-position-menu',
-  imports: [TooltipDirective],
+  imports: [TooltipDirective, IconComponent],
   templateUrl: './position-menu.html',
   styleUrl: './position-menu.css',
 })
