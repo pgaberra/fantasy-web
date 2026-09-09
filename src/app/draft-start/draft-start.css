@@ -1,5 +1,7 @@
 .draft-start {
-  max-width: 720px;
+  /* The same width as the projection pages, and for the same reason: this page now draws the
+     same preview table, and at 720px its stat columns were cut off behind a scrollbar. */
+  max-width: 1100px;
   margin: 0 auto;
   padding: 1.5rem 1rem;
 }
@@ -575,4 +577,18 @@
   .import-controls {
     flex-direction: column;
   }
+}
+
+/* The preview sits between the choice and the Start button, where the reader's eye already is
+   after picking a card. */
+.preview {
+  margin-top: var(--space-5);
+}
+
+.preview-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
 }

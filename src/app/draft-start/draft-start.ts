@@ -16,6 +16,11 @@ import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { PopoverTriggerDirective } from '../shared/popover/popover-trigger.directive';
 import { ShareImportComponent } from '../shared/share-import/share-import';
 import { offeredPresets } from '../models/ai-projection';
+import {
+  PreviewSource,
+  StartingPointPreviewComponent,
+} from '../shared/starting-point-preview/starting-point-preview';
+import { ProjectionBoardCache } from '../services/projection-board-cache';
 import { AiProjectionAccess } from '../shared/premium/ai-projection-access';
 import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/premium-refused';
 import { SOURCE_KINDS, SourceKind } from '../models/source-kind';
@@ -92,9 +97,13 @@ export type DraftSource =
     PopoverTriggerDirective,
     ShareImportComponent,
     IconComponent,
+    StartingPointPreviewComponent,
   ],
   templateUrl: './draft-start.html',
   styleUrl: './draft-start.css',
+  // The preview inside this page loads boards through it. Page-scoped, so a board edited in the
+  // editor is drawn as it is now rather than as this page last saw it.
+  providers: [ProjectionBoardCache],
 })
 export class DraftStartComponent {
   private readonly storage = inject(ProjectionStorageService);
@@ -250,6 +259,35 @@ export class DraftStartComponent {
   isPresetLocked(preset: Preset): boolean {
     return !!preset.premium && this.aiAccess.locked();
   }
+
+  /**
+   * What the preview draws: whatever is picked. Null when the open kind holds nothing, where the
+   * panel's own empty state is the whole answer and a preview would only say so again.
+   */
+  readonly previewSource = computed<PreviewSource | null>(() => {
+    const chosen = this.selection();
+    if (!chosen) {
+      return null;
+    }
+    if (chosen.kind === 'board') {
+      return { kind: 'board', id: chosen.id };
+    }
+    const preset = chosen.preset.source;
+    return preset ? { kind: 'preset', preset } : null;
+  });
+
+  /**
+   * What the preview says when a board will not download. The page knows its name, and naming
+   * what a draft would be run against beats the preview's own "unavailable".
+   */
+  readonly previewFallbackNote = computed<string | null>(() => {
+    const chosen = this.selection();
+    if (chosen?.kind !== 'board') {
+      return null;
+    }
+    const board = this.sourcesResource.value().find((source) => source.id === chosen.id);
+    return board ? `Drafts against ${board.name}, using its saved numbers.` : null;
+  });
 
   /** Whether what is picked right now is behind the subscription, so the Start button is not it. */
   readonly selectionLocked = computed(() => {

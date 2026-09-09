@@ -6,7 +6,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { CREATE_PRESETS, ProjectionCreateComponent } from './projection-create';
 import { ProjectionStorageService } from '../services/projection-storage.service';
-import { ProjectionsTableHeaderComponent } from '../draft-projection/player-projections-table/projections-table-header/projections-table-header';
+import { StartingPointPreviewComponent } from '../shared/starting-point-preview/starting-point-preview';
+import { ProjectionBoardCache } from '../services/projection-board-cache';
 import { StatInfoService } from '../services/stat-info.service';
 import { CreateProjectionRequest } from '../api/models/create-projection-request';
 import { ProjectionResponse } from '../api/models/projection-response';
@@ -27,6 +28,10 @@ import { environment } from '../../environments/environment';
 
 describe('ProjectionCreateComponent', () => {
   MockInstance.scope();
+
+  /** The preview the page draws, read where these tests used to read the page itself. */
+  const previewOf = (fixture: MockedComponentFixture<ProjectionCreateComponent>) =>
+    ngMocks.find(fixture.debugElement, StartingPointPreviewComponent).componentInstance;
 
   const created: ProjectionResponse = {
     id: 'new-id',
@@ -186,24 +191,31 @@ describe('ProjectionCreateComponent', () => {
     notifyError.mockClear();
     createProjection.mockClear();
     seed.mockClear();
-    return MockBuilder(ProjectionCreateComponent)
-      .keep(StatInfoService)
-      .keep(ProjectionRankingService)
-      .keep(ProjectionCalculationService)
-      .keep(ProjectionSerializerService)
-      .mock(ProjectionModelService, { seed })
-      .mock(PlayerService, {
-        getPlayers: () => of(players),
-        getRookieIds: () => of(new Set([3])),
-      })
-      .mock(ProjectionStorageService, {
-        listEditable: () => of([]),
-        createProjection,
-        loadProjection: () => of(source),
-      })
-      .mock(NotificationService, { error: notifyError })
-      .mock(EntitlementService, { premium, loadState: entitlementLoadState })
-      .provide({ provide: Router, useValue: { navigate } });
+    return (
+      MockBuilder(ProjectionCreateComponent)
+        // The preview is kept real: these tests read the page through the table it draws, which is
+        // what the page is for. Its own contract is covered in starting-point-preview.spec.ts.
+        .keep(StartingPointPreviewComponent)
+        // The page provides it and the preview shares it; mocked, neither can load a board.
+        .keep(ProjectionBoardCache)
+        .keep(StatInfoService)
+        .keep(ProjectionRankingService)
+        .keep(ProjectionCalculationService)
+        .keep(ProjectionSerializerService)
+        .mock(ProjectionModelService, { seed })
+        .mock(PlayerService, {
+          getPlayers: () => of(players),
+          getRookieIds: () => of(new Set([3])),
+        })
+        .mock(ProjectionStorageService, {
+          listEditable: () => of([]),
+          createProjection,
+          loadProjection: () => of(source),
+        })
+        .mock(NotificationService, { error: notifyError })
+        .mock(EntitlementService, { premium, loadState: entitlementLoadState })
+        .provide({ provide: Router, useValue: { navigate } })
+    );
   });
 
   it('loads the existing projections', async () => {
@@ -495,7 +507,7 @@ describe('ProjectionCreateComponent', () => {
       expect(component.copiedBoard()?.id).toEqual('shared1');
       // The board's own row, with the board's own number on it — not the 60 goals last season
       // gave the same player, which is what every preset preview would show.
-      const rows = component.previewRows();
+      const rows = previewOf(fixture).previewRows();
       expect(rows.map((row) => row.player.name)).toEqual(['Best Player']);
       expect((rows[0].projection.stats.scoring as SkaterScoringStats).goals).toEqual(64);
       expect(fixture.nativeElement.querySelector('.preview-card')).not.toBeNull();
@@ -517,11 +529,11 @@ describe('ProjectionCreateComponent', () => {
       component.selectCopyFrom('own1');
       await fixture.whenStable();
 
-      expect(component.previewScoringType()).toEqual('category');
-      expect([...component.previewActiveColumns().scoring]).toEqual(['goals']);
-      expect([...component.previewActiveColumns().utility]).toEqual(['gp']);
-      expect(component.previewUseDefaultDecimals()).toEqual(false);
-      expect(component.previewDecimalSettings().goals).toEqual(0);
+      expect(previewOf(fixture).previewScoringType()).toEqual('category');
+      expect([...previewOf(fixture).previewActiveColumns().scoring]).toEqual(['goals']);
+      expect([...previewOf(fixture).previewActiveColumns().utility]).toEqual(['gp']);
+      expect(previewOf(fixture).previewUseDefaultDecimals()).toEqual(false);
+      expect(previewOf(fixture).previewDecimalSettings().goals).toEqual(0);
     });
 
     // Half a megabyte a board, so the preview's copy is the one Create sends — and picking a
@@ -574,7 +586,7 @@ describe('ProjectionCreateComponent', () => {
       await fixture.whenStable();
       fixture.detectChanges();
 
-      expect(component.previewFailed()).toEqual(true);
+      expect(previewOf(fixture).hasFailed()).toEqual(true);
       expect(component.canCreate()).toEqual(true);
       expect(fixture.nativeElement.querySelector('.preview-note').textContent).toContain(
         'exact copy of',
@@ -690,9 +702,8 @@ describe('ProjectionCreateComponent', () => {
   it('previews the top players with the stats last season gave them', async () => {
     const fixture = MockRender(ProjectionCreateComponent);
     await fixture.whenStable();
-    const component = fixture.point.componentInstance;
 
-    const rows = component.previewRows();
+    const rows = previewOf(fixture).previewRows();
     expect(rows.map((row) => row.player.name)).toEqual(topFive);
     // Numbered by their place in the preview, the way the editor numbers its own view.
     expect(rows.map((row) => row.rank)).toEqual([1, 2, 3, 4, 5]);
@@ -721,7 +732,7 @@ describe('ProjectionCreateComponent', () => {
     const fixture = MockRender(ProjectionCreateComponent);
     await fixture.whenStable();
 
-    const goalieRow = fixture.point.componentInstance
+    const goalieRow = previewOf(fixture)
       .previewRows()
       .find((row) => row.player.name === 'Only Goalie');
     expect(goalieRow).toBeDefined();
@@ -733,10 +744,9 @@ describe('ProjectionCreateComponent', () => {
   it('previews the columns a new projection opens with', async () => {
     const fixture = MockRender(ProjectionCreateComponent);
     await fixture.whenStable();
-    const component = fixture.point.componentInstance;
 
-    expect([...component.previewActiveColumns().utility]).toEqual(['gp']);
-    expect([...component.previewActiveColumns().scoring]).toEqual([
+    expect([...previewOf(fixture).previewActiveColumns().utility]).toEqual(['gp']);
+    expect([...previewOf(fixture).previewActiveColumns().scoring]).toEqual([
       'goals',
       'assists',
       'ppp',
@@ -756,8 +766,10 @@ describe('ProjectionCreateComponent', () => {
     const component = fixture.point.componentInstance;
 
     component.selectPreset('blank');
+    // The preview is a child now, so the pick reaches it on the next round of change detection.
+    fixture.detectChanges();
 
-    const rows = component.previewRows();
+    const rows = previewOf(fixture).previewRows();
     expect(rows.map((row) => row.player.name)).toEqual(topFive);
     const values = rows.flatMap((row) => [
       ...Object.values(row.projection.stats.scoring),
@@ -779,7 +791,7 @@ describe('ProjectionCreateComponent', () => {
     await fixture.whenStable();
 
     expect(getPlayers).toHaveBeenCalledWith({ skaters: 25, goalies: 10 });
-    expect(fixture.point.componentInstance.previewRows()).toHaveLength(5);
+    expect(previewOf(fixture).previewRows()).toHaveLength(5);
   });
 
   // The preview is the editor's table in a card, so it takes the same scroll shell: its stat
@@ -800,7 +812,7 @@ describe('ProjectionCreateComponent', () => {
     const fixture = MockRender(ProjectionCreateComponent);
     await fixture.whenStable();
 
-    const rows = fixture.point.componentInstance.previewRows();
+    const rows = previewOf(fixture).previewRows();
     expect(rows.filter((row) => row.rookie).map((row) => row.player.name)).toEqual([
       'Third Player',
     ]);
@@ -818,7 +830,7 @@ describe('ProjectionCreateComponent', () => {
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
 
-    expect(component.previewFailed()).toEqual(true);
+    expect(previewOf(fixture).hasFailed()).toEqual(true);
     expect(component.loadError()).toEqual(false);
     expect(component.canCreate()).toEqual(true);
   });
@@ -889,7 +901,7 @@ describe('ProjectionCreateComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const rows = component.previewRows();
+    const rows = previewOf(fixture).previewRows();
     expect(rows.map((row) => row.player.name)).toEqual([
       'Sixth Player',
       'Fifth Player',
@@ -905,30 +917,19 @@ describe('ProjectionCreateComponent', () => {
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
 
-    const lastSeason = component.previewRows().find((row) => row.player.id === 6);
+    const lastSeason = previewOf(fixture)
+      .previewRows()
+      .find((row) => row.player.id === 6);
     component.selectPreset('model');
     await fixture.whenStable();
-    const projected = component.previewRows().find((row) => row.player.id === 6);
+    const projected = previewOf(fixture)
+      .previewRows()
+      .find((row) => row.player.id === 6);
 
     expect(lastSeason).toBeUndefined();
     expect(projected?.projection.type).toEqual('skater');
     expect((projected?.projection.stats.scoring as SkaterScoringStats).goals).toEqual(60);
     expect(projected?.score.fantasyPoints).toBeGreaterThan(0);
-  });
-
-  /**
-   * A preview is read for its Total Points column, and 4.5 a goal against 6 is the difference
-   * between two different boards. The row is the editor's own, minus the inputs.
-   */
-  it('says what the preview totals were scored with', async () => {
-    const fixture = MockRender(ProjectionCreateComponent);
-    await fixture.whenStable();
-    fixture.detectChanges();
-
-    const header = ngMocks.find(fixture.debugElement, ProjectionsTableHeaderComponent);
-
-    expect(ngMocks.input(header, 'showWeights')).toBe(true);
-    expect(ngMocks.input(header, 'readonly')).toBe(true);
   });
 
   /** MoneyPuck's terms require the credit, so it has to travel with the model's own numbers. */
@@ -993,7 +994,7 @@ describe('ProjectionCreateComponent', () => {
         fixture.detectChanges();
 
         expect(seed).toHaveBeenCalled();
-        expect(component.previewRows().length).toBeGreaterThan(0);
+        expect(previewOf(fixture).previewRows().length).toBeGreaterThan(0);
         expect(fixture.nativeElement.querySelector('.preview-card')).not.toBeNull();
       });
     });
