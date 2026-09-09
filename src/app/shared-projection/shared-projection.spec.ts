@@ -14,6 +14,7 @@ import { ProjectionShareService } from '../services/projection-share.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { SharedProjectionResponse } from '../api/models/shared-projection-response';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
+import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 
 describe('SharedProjectionComponent', () => {
   const shared: SharedProjectionResponse = {
@@ -745,7 +746,10 @@ describe('SharedProjectionComponent', () => {
 
       const copy = fixture.nativeElement.querySelector('[data-testid="copy-board"]');
       const draft = fixture.nativeElement.querySelector('[data-testid="draft-board"]');
-      expect(draft.textContent).toContain('Copying…');
+      // Only the pressed button gets an indicator, which is the whole claim of this test.
+      const pending = ngMocks.find(LoadingIndicatorComponent);
+      expect(ngMocks.input(pending, 'label')).toEqual('Copying');
+      expect(draft.contains(pending.nativeElement)).toBe(true);
       expect(copy.textContent).toContain('Create projection');
       expect(copy.disabled).toEqual(true);
     });

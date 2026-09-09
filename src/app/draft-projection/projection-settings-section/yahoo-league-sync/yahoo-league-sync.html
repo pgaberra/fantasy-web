@@ -19,7 +19,9 @@
       <span class="yahoo-sync-action">
         @switch (connected()) {
           @case (null) {
-            <span class="yahoo-sync-status">Checking…</span>
+            <span class="yahoo-sync-status"
+              ><app-loading-indicator variant="inline" label="Checking"
+            /></span>
           }
           @case (false) {
             <button
@@ -28,12 +30,18 @@
               [disabled]="connecting()"
               (click)="connect()"
             >
-              {{ connecting() ? 'Connecting…' : 'Connect Yahoo account' }}
+              @if (connecting()) {
+                <app-loading-indicator variant="inline" label="Connecting" />
+              } @else {
+                Connect Yahoo account
+              }
             </button>
           }
           @default {
             @if (loadingLeagues()) {
-              <span class="yahoo-sync-status">Loading your leagues…</span>
+              <span class="yahoo-sync-status"
+                ><app-loading-indicator variant="inline" label="Loading your leagues"
+              /></span>
             } @else if (leagues().length === 0) {
               <span class="yahoo-sync-status">No NHL leagues found.</span>
             } @else {
@@ -59,7 +67,11 @@
                   [disabled]="!selectedKey() || syncing()"
                   (click)="sync()"
                 >
-                  {{ syncing() ? 'Syncing…' : lastSync() ? 'Re-sync settings' : 'Sync settings' }}
+                  @if (syncing()) {
+                    <app-loading-indicator variant="inline" label="Syncing" />
+                  } @else {
+                    {{ lastSync() ? 'Re-sync settings' : 'Sync settings' }}
+                  }
                 </button>
               </span>
             }

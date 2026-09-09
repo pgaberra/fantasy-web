@@ -33,7 +33,7 @@
         <span class="save-status" [class.save-status--error]="saveStatus() === 'error'">
           @switch (saveStatus()) {
             @case ('saving') {
-              Saving…
+              <app-loading-indicator variant="inline" label="Saving" />
             }
             @case ('saved') {
               Saved

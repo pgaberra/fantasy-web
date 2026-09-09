@@ -56,6 +56,9 @@ jobs:
       - name: Verify no icon is drawn inline
         run: bash .github/scripts/check-inline-icons.sh
 
+      - name: Verify no pending state is written out as text
+        run: bash .github/scripts/check-pending-states.sh
+
       - name: Lint
         run: npm run lint
 

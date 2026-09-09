@@ -97,7 +97,11 @@
       [disabled]="!leagueId().trim() || syncing()"
       (click)="sync()"
     >
-      {{ syncing() ? 'Syncing…' : syncedLeagueId() ? 'Re-sync settings' : 'Sync settings' }}
+      @if (syncing()) {
+        <app-loading-indicator variant="inline" label="Syncing" />
+      } @else {
+        {{ syncedLeagueId() ? 'Re-sync settings' : 'Sync settings' }}
+      }
     </button>
   </div>
 

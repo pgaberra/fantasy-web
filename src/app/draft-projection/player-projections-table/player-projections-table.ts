@@ -65,6 +65,7 @@ import { LeagueSettingsMenuComponent } from './league-settings-menu/league-setti
 import { ColumnsMenuComponent } from './columns-menu/columns-menu';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import { IconComponent } from '../../shared/icon/icon';
+import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 
 const PLAYERS_PER_PAGE = 250;
 
@@ -100,6 +101,7 @@ function toggledSet<T>(members: ReadonlySet<T>, member: T): Set<T> {
     ColumnsMenuComponent,
     TooltipDirective,
     IconComponent,
+    LoadingIndicatorComponent,
   ],
   templateUrl: './player-projections-table.html',
   styleUrl: './player-projections-table.css',

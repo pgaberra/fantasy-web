@@ -57,7 +57,11 @@
         (click)="share.emit()"
       >
         <app-icon name="share" [size]="15" />
-        {{ isPreparingShare() ? 'Opening…' : 'Share' }}
+        @if (isPreparingShare()) {
+          <app-loading-indicator variant="inline" label="Opening" />
+        } @else {
+          Share
+        }
       </button>
     }
     @if (hasDraft()) {

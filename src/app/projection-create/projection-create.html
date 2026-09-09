@@ -194,7 +194,9 @@
         the height of a table whenever the picked card changes.
       -->
       @if (isPreviewLoading() || isModelPreviewLoading()) {
-        <p class="preview-note">Loading preview…</p>
+        <p class="preview-note">
+          <app-loading-indicator variant="inline" label="Loading preview" />
+        </p>
       } @else if (previewFailed() || !previewRows().length) {
         @if (copiedBoard(); as board) {
           <p class="preview-note">
@@ -271,7 +273,11 @@
         [disabled]="!canCreate()"
         (click)="create()"
       >
-        {{ isCreating() ? 'Creating…' : 'Create projection' }}
+        @if (isCreating()) {
+          <app-loading-indicator variant="inline" label="Creating" />
+        } @else {
+          Create projection
+        }
       </button>
     }
   </div>
