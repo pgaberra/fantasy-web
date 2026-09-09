@@ -347,7 +347,7 @@ describe('DraftStartComponent', () => {
 
     // Nothing is drafted yet, so the page is one question rather than two.
     expect(texts(fixture, '.section-title')).toEqual(['Start a new draft']);
-    expect(texts(fixture, '.kind-name')).toEqual(['Preset', 'Your projection', 'Shared board']);
+    expect(texts(fixture, '.kind-name')).toEqual(['Preset', 'Your projection', 'Imports']);
     expect(texts(fixture, '.kind-count')).toEqual(['2', '1', '1']);
     // A segmented control, not radios: the pressed one is said on the button itself.
     const pressed = Array.from(
@@ -444,7 +444,7 @@ describe('DraftStartComponent', () => {
     // Nothing to open on, so the page lands on the last kind, whose empty state offers the
     // one way to get something: the paste field.
     expect(fixture.point.componentInstance.sourceKind()).toEqual('imported');
-    expect(texts(fixture, '.group-empty')[0]).toContain('No shared projections yet');
+    expect(texts(fixture, '.group-empty')[0]).toContain('No imports yet');
   });
 
   // One press to a draft: the first row of the open kind is checked from the start, and the

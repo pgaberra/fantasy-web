@@ -17,5 +17,5 @@ export interface SourceKindOption {
 export const SOURCE_KINDS: readonly SourceKindOption[] = [
   { kind: 'preset', name: 'Preset' },
   { kind: 'projection', name: 'Your projection' },
-  { kind: 'imported', name: 'Shared board' },
+  { kind: 'imported', name: 'Imports' },
 ];

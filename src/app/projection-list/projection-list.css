@@ -1,5 +1,7 @@
 .projection-list {
-  max-width: 720px;
+  /* The same width as the page it leads to (projection-create.css), so the step from the list to
+     a new projection does not move the layout under the reader. */
+  max-width: 1100px;
   margin: 0 auto;
   padding: 1.5rem 1rem;
 }

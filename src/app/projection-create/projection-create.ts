@@ -336,7 +336,7 @@ export class ProjectionCreateComponent {
     return point.kind === 'copy' && point.id !== null;
   });
   /** Whether the AI preset is what the page is showing, which is what its extra fetch follows. */
-  private readonly isModelPreset = computed(() => this.isPreset('model'));
+  readonly isModelPreset = computed(() => this.isPreset('model'));
   /**
    * The board a copy would be made of, as the list has it, or null when a preset is picked or
    * there is no board to copy yet. Its name is what the preview falls back to when the board
@@ -519,15 +519,6 @@ export class ProjectionCreateComponent {
   readonly isModelPreviewLoading = computed(
     () => this.isModelPreset() && this.modelSeedResource.isLoading(),
   );
-
-  /**
-   * How much of the board the model reached, so the page can say the projection will be smaller
-   * rather than quietly opening with fewer rows than the other presets give.
-   */
-  readonly modelCoverage = computed(() => {
-    const seeded = this.modelSeedResource.value();
-    return seeded ? { skaters: seeded.skaters, goalies: seeded.goalies } : null;
-  });
 
   /** Whether the answer names something to start from: a preset always does, a copy needs a board. */
   private readonly hasStartingPoint = computed(() => {
