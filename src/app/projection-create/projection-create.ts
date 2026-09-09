@@ -52,6 +52,7 @@ import { AiProjectionAccess } from '../shared/premium/ai-projection-access';
 import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/premium-refused';
 import { SOURCE_KINDS, SourceKind } from '../models/source-kind';
 import { environment } from '../../environments/environment';
+import { IconComponent } from '../shared/icon/icon';
 
 /**
  * What the projection opens with: a preset everybody has, or a copy of a board the user can
@@ -193,6 +194,7 @@ const ZEROED_GOALIE_STATS: GoalieStats = {
     TableScrollDirective,
     ShareImportComponent,
     RelativeTimePipe,
+    IconComponent,
   ],
   templateUrl: './projection-create.html',
   styleUrl: './projection-create.css',

@@ -258,7 +258,7 @@
   background: var(--color-surface-hover);
 }
 
-.draft-menu-panel .menu-item svg {
+.draft-menu-panel .menu-item app-icon {
   flex: none;
   color: var(--color-text-subtle);
 }
@@ -267,7 +267,7 @@
   color: var(--color-danger);
 }
 
-.draft-menu-panel .menu-item--danger svg {
+.draft-menu-panel .menu-item--danger app-icon {
   color: currentColor;
 }
 

@@ -42,11 +42,7 @@
       [attr.aria-label]="'More actions for ' + projection().name"
       [appPopover]="cardMenu"
     >
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
-        <circle cx="12" cy="5" r="2.1" />
-        <circle cx="12" cy="12" r="2.1" />
-        <circle cx="12" cy="19" r="2.1" />
-      </svg>
+      <app-icon name="more-vertical" />
     </button>
   }
 </div>
@@ -60,59 +56,18 @@
         [disabled]="isPreparingShare()"
         (click)="share.emit()"
       >
-        <svg
-          viewBox="0 0 24 24"
-          width="15"
-          height="15"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-          <polyline points="16 6 12 2 8 6" />
-          <line x1="12" y1="2" x2="12" y2="15" />
-        </svg>
+        <app-icon name="share" [size]="15" />
         {{ isPreparingShare() ? 'Opening…' : 'Share' }}
       </button>
     }
     @if (hasDraft()) {
       <button type="button" class="menu-item menu-item--danger discard" (click)="startDiscard()">
-        <svg
-          viewBox="0 0 24 24"
-          width="15"
-          height="15"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M3 12a9 9 0 1 0 2.6-6.4" />
-          <polyline points="3 4 3 9.5 8.5 9.5" />
-        </svg>
+        <app-icon name="rotate-ccw" [size]="15" />
         Discard draft
       </button>
     }
     <button type="button" class="menu-item menu-item--danger delete" (click)="startDelete()">
-      <svg
-        viewBox="0 0 24 24"
-        width="15"
-        height="15"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M3 6h18" />
-        <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
-        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-      </svg>
+      <app-icon name="clipboard-list" [size]="15" />
       Delete
     </button>
   </div>

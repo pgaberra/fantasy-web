@@ -16,6 +16,7 @@ import { ProjectionSerializerService } from '../services/projection-serializer.s
 import { ProjectionShareService } from '../services/projection-share.service';
 import { freeProjectionName } from '../services/projection-name';
 import { SharedPlayer } from '../api/models/shared-player';
+import { IconComponent } from '../shared/icon/icon';
 
 @Component({
   selector: 'app-projection-list',
@@ -24,6 +25,7 @@ import { SharedPlayer } from '../api/models/shared-player';
     ErrorStateComponent,
     ProjectionCardComponent,
     ShareDialogComponent,
+    IconComponent,
   ],
   templateUrl: './projection-list.html',
   styleUrl: './projection-list.css',

@@ -25,6 +25,7 @@ import {
 } from '../../projection-settings-section/model';
 import { StatInfoService } from '../../../services/stat-info.service';
 import { parseDecimalInput, steppedDecimalInput } from '../../../shared/decimal-input';
+import { IconComponent } from '../../../shared/icon/icon';
 
 /** What an arrow key moves a weight by, matching the two decimals a weight is written with. */
 const WEIGHT_STEP = 0.01;
@@ -38,6 +39,7 @@ const WEIGHT_STEP = 0.01;
     PopoverTriggerDirective,
     ToggleSwitchComponent,
     HelpTipComponent,
+    IconComponent,
   ],
   templateUrl: './projections-table-header.html',
   styleUrl: './projections-table-header.css',

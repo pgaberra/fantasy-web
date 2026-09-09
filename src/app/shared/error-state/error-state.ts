@@ -1,7 +1,9 @@
 import { Component, input, output } from '@angular/core';
+import { IconComponent } from '../icon/icon';
 
 @Component({
   selector: 'app-error-state',
+  imports: [IconComponent],
   standalone: true,
   templateUrl: './error-state.html',
   styleUrl: './error-state.css',

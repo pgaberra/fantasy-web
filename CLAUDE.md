@@ -345,6 +345,28 @@ narrow: a stream of spans would bury the faults this exists to surface.
 - Keep API calls going through the generated client + a service wrapper, not raw
   `HttpClient` in components.
 
+### Icons
+
+**Every icon comes from `<app-icon name="…" />`** (`src/app/shared/icon/`). Never write an
+`<svg>` into a template: `.github/scripts/check-inline-icons.sh` fails the build on one, and
+it runs in `pr-checks.yml`.
+
+One spec, set once on the component: a 24x24 grid, `fill="none"`, `stroke="currentColor"`,
+stroke width 2, round caps and joins, `aria-hidden`. Only the size is settable per call site
+(`[size]`, default 16; the scale is 14 inline with text, 16, 20 standalone). Colour comes from
+the surrounding text, so an icon follows hover, disabled and danger states without being told.
+
+Adding one: draw it on the same 24 grid as a `@case` in `icon.html`, taking the geometry from
+Lucide rather than by hand, and add the name to `ICON_NAMES`. The spec walks that array, so a
+name with no case fails rather than rendering an empty box.
+
+**Brand marks are not icons.** Yahoo, Google and Facebook are multi-colour logos at their
+owners' scales; they stay inline, in the allowlist at the top of the guard script.
+
+Why the guard exists: the app previously held 61 hand-drawn inline SVGs with six stroke widths,
+four viewBoxes and three icon families mixed together, refresh drawn three ways and the check
+drawn three ways. None of it broke anything, which is why it accumulated for a year.
+
 ### Mobile / responsive layout
 
 Mobile users aren't our top priority, but they must still get an **at least
