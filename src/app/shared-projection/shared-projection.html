@@ -134,6 +134,8 @@
           appTableScroll="Player projections"
         >
           <table>
+            <!-- `showWeights`: a visitor cannot open the settings this board was scored with, so
+                 the weights behind its totals are said on the board itself or nowhere. -->
             <thead
               app-projections-table-header
               [activeColumns]="filteredActiveColumns()"
@@ -144,6 +146,7 @@
               [sortColumn]="sortColumn()"
               [sortDirection]="sortDirection()"
               [readonly]="true"
+              [showWeights]="true"
               (sort)="onSort($event)"
             ></thead>
             <tbody>

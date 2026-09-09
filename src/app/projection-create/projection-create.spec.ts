@@ -1,4 +1,4 @@
-import { MockBuilder, MockedComponentFixture, MockInstance, MockRender } from 'ng-mocks';
+import { MockBuilder, MockedComponentFixture, MockInstance, MockRender, ngMocks } from 'ng-mocks';
 import { signal } from '@angular/core';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Observable, of, throwError } from 'rxjs';
@@ -6,6 +6,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { CREATE_PRESETS, ProjectionCreateComponent } from './projection-create';
 import { ProjectionStorageService } from '../services/projection-storage.service';
+import { ProjectionsTableHeaderComponent } from '../draft-projection/player-projections-table/projections-table-header/projections-table-header';
 import { StatInfoService } from '../services/stat-info.service';
 import { CreateProjectionRequest } from '../api/models/create-projection-request';
 import { ProjectionResponse } from '../api/models/projection-response';
@@ -853,6 +854,38 @@ describe('ProjectionCreateComponent', () => {
     expect(createProjection.mock.calls[0][0].source).toEqual('model');
   });
 
+  /**
+   * The model projects a season in fractions. Shown at the defaults, which were written for last
+   * season's counted stats, every one of them would be printed as a whole number and the preview
+   * of the AI projection would be indistinguishable from the preview of last season.
+   */
+  it("shows the model's fractions rather than rounding them to whole numbers", async () => {
+    seed.mockReturnValueOnce(
+      of({
+        ...seeded,
+        players: seeded.players.map((player) => ({
+          ...player,
+          stats: {
+            utility: { ...player.stats.utility, gp: 78.6 },
+            scoring: { ...player.stats.scoring, goals: 49.43, assists: 40 },
+          },
+        })),
+      }),
+    );
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.selectPreset('model');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(component.previewDecimalSettings().goals).toEqual(1);
+    expect(component.previewDecimalSettings().gp).toEqual(1);
+    // Whole in every row the model returned, so it is still written as one.
+    expect(component.previewDecimalSettings().assists).toEqual(0);
+  });
+
   // Five rows do not need the model's whole board either, the same reason the pool is asked
   // for a slice. It is also the width the BFF serves without a subscription.
   it('asks the model for the same slice of the board the pool is asked for', async () => {
@@ -913,6 +946,21 @@ describe('ProjectionCreateComponent', () => {
     expect(projected?.projection.type).toEqual('skater');
     expect((projected?.projection.stats.scoring as SkaterScoringStats).goals).toEqual(60);
     expect(projected?.score.fantasyPoints).toBeGreaterThan(0);
+  });
+
+  /**
+   * A preview is read for its Total Points column, and 4.5 a goal against 6 is the difference
+   * between two different boards. The row is the editor's own, minus the inputs.
+   */
+  it('says what the preview totals were scored with', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const header = ngMocks.find(fixture.debugElement, ProjectionsTableHeaderComponent);
+
+    expect(ngMocks.input(header, 'showWeights')).toBe(true);
+    expect(ngMocks.input(header, 'readonly')).toBe(true);
   });
 
   /** MoneyPuck's terms require the credit, so it has to travel with the model's own numbers. */

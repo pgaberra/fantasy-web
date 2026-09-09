@@ -70,6 +70,13 @@ export class ProjectionsTableHeaderComponent {
    * heading that looks clickable and isn't is worse than one that never offered.
    */
   readonly sortable = input<boolean>(true);
+  /**
+   * Whether a read-only table still shows what the totals were scored with. The weight row is
+   * normally a row of inputs and goes with them, but a table read for its totals and nothing else
+   * — the new-projection page's preview — leaves the reader with a Total Points column and no way
+   * to know 4.5 a goal from 6. Shown as text there; a table that can be edited is unaffected.
+   */
+  readonly showWeights = input<boolean>(false);
   readonly fullSeason = output<void>();
 
   /**

@@ -731,27 +731,41 @@ describe('PlayerProjectionsTableComponent', () => {
 
       const zScoreOf = (id: number) =>
         component.scoredProjections().find((sp) => sp.projection.playerId === id)!.score.zScore;
+      const setWins = (wins: number) =>
+        component.playerProjections.update((ps) =>
+          ps.map((p) =>
+            p.playerId === 10 && p.type === 'goalie'
+              ? {
+                  ...p,
+                  stats: {
+                    ...p.stats,
+                    scoring: {
+                      ...p.stats.scoring,
+                      w: wins,
+                    },
+                  },
+                }
+              : p,
+          ),
+        );
       const before = zScoreOf(10);
 
-      // Wins shows 0 decimals, so a raw 35 -> 35.4 nudge leaves the displayed value at 35.
-      component.playerProjections.update((ps) =>
-        ps.map((p) =>
-          p.playerId === 10 && p.type === 'goalie'
-            ? {
-                ...p,
-                stats: {
-                  ...p.stats,
-                  scoring: {
-                    ...p.stats.scoring,
-                    w: 35.4,
-                  },
-                },
-              }
-            : p,
-        ),
-      );
+      // A column of whole numbers shows none, so wins reads 35 either way.
+      setWins(35.000001);
 
       expect(zScoreOf(10)).toEqual(before);
+
+      // 35.4 is not below the precision: a column holding a fraction is shown with a decimal
+      // place, so this is a change the reader can see and the score follows it.
+      setWins(35.4);
+
+      expect(zScoreOf(10)).not.toEqual(before);
+
+      // And below that place it holds still again — 35.44 and 35.4 are the same displayed number.
+      const withDecimal = zScoreOf(10);
+      setWins(35.44);
+
+      expect(zScoreOf(10)).toEqual(withDecimal);
     });
   });
 

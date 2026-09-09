@@ -8,6 +8,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { SharedProjectionComponent } from './shared-projection';
 import { PlayerRowComponent } from '../draft-projection/player-projections-table/player-row/player-row';
+import { ProjectionsTableHeaderComponent } from '../draft-projection/player-projections-table/projections-table-header/projections-table-header';
 import { AuthService } from '../services/auth.service';
 import { NotificationService } from '../services/notification.service';
 import { ProjectionShareService } from '../services/projection-share.service';
@@ -145,6 +146,21 @@ describe('SharedProjectionComponent', () => {
     expect(fixture.point.componentInstance.visibleRows()[0].player.headshot).toEqual(
       'https://example.test/mcdavid.png',
     );
+  });
+
+  /**
+   * A visitor cannot open the settings this board was scored with, so a Total Points column with
+   * the weights hidden is a number nobody can check.
+   */
+  it('says what the published totals were scored with', async () => {
+    const fixture = MockRender(SharedProjectionComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const header = ngMocks.find(fixture.debugElement, ProjectionsTableHeaderComponent);
+
+    expect(ngMocks.input(header, 'showWeights')).toBe(true);
+    expect(ngMocks.input(header, 'readonly')).toBe(true);
   });
 
   it('renders the published value rather than recomputing it', async () => {
