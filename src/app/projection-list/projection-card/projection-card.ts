@@ -11,10 +11,11 @@ import {
 import { ProjectionSummaryResponse } from '../../api/models/projection-summary-response';
 import { RelativeTimePipe } from '../../pipes/relative-time.pipe';
 import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
+import { IconComponent } from '../../shared/icon/icon';
 
 @Component({
   selector: 'li[app-projection-card]',
-  imports: [RelativeTimePipe, PopoverTriggerDirective],
+  imports: [RelativeTimePipe, PopoverTriggerDirective, IconComponent],
   templateUrl: './projection-card.html',
   styleUrl: './projection-card.css',
 })

@@ -73,11 +73,6 @@
   border-bottom-color: var(--color-accent);
 }
 
-.nav-caret {
-  width: 14px;
-  height: 14px;
-}
-
 /*
  * The nav's stand-in where its items no longer fit beside the logo. Every link goes into the
  * menu it opens rather than being dropped: on a phone the four of them plus Sign Out came to
@@ -95,11 +90,6 @@
   border-radius: var(--radius-sm);
   color: var(--color-primary);
   cursor: pointer;
-}
-
-.nav-burger svg {
-  width: 22px;
-  height: 22px;
 }
 
 .nav-burger:hover,

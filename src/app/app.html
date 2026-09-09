@@ -8,18 +8,7 @@
       <nav class="app-nav">
         @if (authService.isLoggedIn()) {
           <button type="button" class="nav-burger" aria-label="Menu" [cdkMenuTriggerFor]="navMenu">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.2"
-              stroke-linecap="round"
-              aria-hidden="true"
-            >
-              <line x1="4" y1="7" x2="20" y2="7" />
-              <line x1="4" y1="12" x2="20" y2="12" />
-              <line x1="4" y1="17" x2="20" y2="17" />
-            </svg>
+            <app-icon name="menu" [size]="22" />
           </button>
           <button
             type="button"
@@ -28,18 +17,7 @@
             [cdkMenuTriggerFor]="navMenu"
           >
             Draft
-            <svg
-              class="nav-caret"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
+            <app-icon name="chevron-down" [size]="14" />
           </button>
           @if (whosHotEnabled) {
             <a routerLink="/whos-hot" routerLinkActive="active">Who's Hot</a>

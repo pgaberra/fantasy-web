@@ -142,11 +142,6 @@
   color: var(--color-primary);
 }
 
-.drag-icon {
-  width: 1rem;
-  height: 1rem;
-}
-
 .cdk-drag-preview {
   box-sizing: border-box;
   border-radius: var(--radius-sm);

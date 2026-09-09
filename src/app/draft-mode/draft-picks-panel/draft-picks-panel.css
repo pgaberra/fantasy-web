@@ -121,11 +121,6 @@
   border-radius: var(--radius-sm);
 }
 
-.feed-change svg {
-  width: 0.85rem;
-  height: 0.85rem;
-}
-
 .feed-change:hover {
   color: var(--color-primary);
   background: var(--color-surface-hover);

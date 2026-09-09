@@ -1,6 +1,7 @@
 import { Component, computed, input, model, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { HelpTipComponent } from '../../shared/help-tip/help-tip';
+import { IconComponent } from '../../shared/icon/icon';
 
 export interface RangePreset {
   label: string;
@@ -46,7 +47,7 @@ export const FREE_PRESET: RangePreset = PRESETS[0];
  */
 @Component({
   selector: 'app-game-range-selector',
-  imports: [HelpTipComponent, RouterLink],
+  imports: [HelpTipComponent, RouterLink, IconComponent],
   templateUrl: './game-range-selector.html',
   styleUrl: './game-range-selector.css',
 })

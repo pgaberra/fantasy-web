@@ -54,6 +54,7 @@ import { PinnedTableHeaderDirective } from '../../shared/pinned-table-header/pin
 import { TableScrollDirective } from '../../shared/table-scroll/table-scroll.directive';
 import { FormatToiPipe } from '../../pipes/format-toi.pipe';
 import { DecimalPipe } from '@angular/common';
+import { IconComponent } from '../../shared/icon/icon';
 
 const PLAYERS_PER_PAGE = 100;
 
@@ -93,6 +94,7 @@ interface RankedPlayer extends ScoredProjection {
     ColumnsMenuComponent,
     FormatToiPipe,
     DecimalPipe,
+    IconComponent,
   ],
   templateUrl: './hot-players-table.html',
   styleUrl: './hot-players-table.css',

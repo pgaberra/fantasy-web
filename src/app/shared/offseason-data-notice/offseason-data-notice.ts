@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { environment } from '../../../environments/environment';
+import { IconComponent } from '../icon/icon';
 
 /**
  * Off-season heads-up about the cached Yahoo player data: while the daily player sync is paused
@@ -13,6 +14,7 @@ import { environment } from '../../../environments/environment';
  */
 @Component({
   selector: 'app-offseason-data-notice',
+  imports: [IconComponent],
   templateUrl: './offseason-data-notice.html',
   styleUrl: './offseason-data-notice.css',
 })
