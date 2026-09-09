@@ -23,7 +23,7 @@ export class LandingComponent {
     {
       title: 'Category Scoring, Solved',
       description:
-        'Compare players using the scoring system your league actually uses. Z-Scores make category values easy to compare in one ranking.',
+        'Playing in a Category League? No problem. Compare every player in a single ranking using our Z-Score algorithm.',
     },
     {
       title: 'Built for Draft Day',
