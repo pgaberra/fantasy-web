@@ -281,6 +281,17 @@ tr.weight-row th {
     background var(--transition-fast);
 }
 
+/* Where the input would be, and the same size, so the row reads as one line of numbers whether
+   or not they can be typed over. */
+.weight-value {
+  display: inline-block;
+  width: 52px;
+  padding: 0.2rem 0.25rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--color-text-on-dark);
+}
+
 .weight-input:hover {
   border-color: rgba(255, 255, 255, 0.6);
   background: rgba(255, 255, 255, 0.2);
