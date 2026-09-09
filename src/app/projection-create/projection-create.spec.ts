@@ -399,7 +399,7 @@ describe('ProjectionCreateComponent', () => {
           element.textContent?.trim(),
         );
 
-      expect(texts('.kind-name')).toEqual(['Preset', 'Your projection', 'Shared board']);
+      expect(texts('.kind-name')).toEqual(['Preset', 'Your projection', 'Imports']);
       expect(texts('.kind-count')).toEqual([`${CREATE_PRESETS.length}`, '1', '1']);
       expect(
         Array.from(root.querySelectorAll<HTMLElement>('.segmented .kind')).map((segment) =>

@@ -347,7 +347,7 @@ describe('DraftStartComponent', () => {
 
     // Nothing is drafted yet, so the page is one question rather than two.
     expect(texts(fixture, '.section-title')).toEqual(['Start a new draft']);
-    expect(texts(fixture, '.kind-name')).toEqual(['Preset', 'Your projection', 'Shared board']);
+    expect(texts(fixture, '.kind-name')).toEqual(['Preset', 'Your projection', 'Imports']);
     expect(texts(fixture, '.kind-count')).toEqual(['2', '1', '1']);
     // A segmented control, not radios: the pressed one is said on the button itself.
     const pressed = Array.from(
