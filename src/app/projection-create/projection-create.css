@@ -1,5 +1,10 @@
 .projection-create {
-  max-width: 760px;
+  /* Wide enough for the preview to be the table it previews. The editor runs to 1400px and the
+     760px this page used cut the stat columns off behind a scrollbar; the form does not want the
+     room (the name field is capped at 380px and the cards are a grid), so 1100px is where the
+     table gains columns without the fields being stranded. Draft mode and the shared board are
+     the same width. */
+  max-width: 1100px;
   margin: 0 auto;
   padding: 1.5rem 1rem;
 }
@@ -149,7 +154,10 @@
 
 .rows {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  /* 20rem rather than 16: at 1100px the narrower track fits four cards across, which leaves a
+     board's name and its "updated" line fighting for about 270px. Three is the width these rows
+     were written for, and it still falls to two on a narrow window. */
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
   gap: var(--space-2);
   list-style: none;
   margin: 0;
@@ -255,8 +263,9 @@
    read for. The card around it carries the border and the padding the editor gets from its
    .table-section, so the table isn't flush against its own frame. */
 .preview-card {
-  /* A step tighter than the editor's --space-5: this table sits in a 760px column rather than
-     the full page, and every pixel of padding is a pixel of stats the preview can't show. */
+  /* A step tighter than the editor's --space-5: this table sits in a 1100px column rather than
+     the editor's full width, and every pixel of padding is a pixel of stats the preview can't
+     show. */
   padding: var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
