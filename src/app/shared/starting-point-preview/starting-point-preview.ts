@@ -33,6 +33,7 @@ import {
   DEFAULT_UTILITY_COLUMNS,
 } from '../../draft-projection/projection-defaults';
 import { DEFAULT_DECIMAL_SETTINGS } from '../../draft-projection/projection-settings-section/model';
+import { readableDecimalSettings } from '../../draft-projection/projection-settings-section/model-decimals';
 
 /** A starting point the server derives on its own, from nothing the user has to supply. */
 export type PresetSource = NonNullable<CreateProjectionRequest['source']>;
@@ -254,7 +255,18 @@ export class StartingPointPreviewComponent {
   }));
   readonly previewScoringType = computed(() => this.previewSettings().scoringType);
   readonly previewStatWeights = computed(() => this.previewSettings().statWeights);
-  readonly previewDecimalSettings = computed(() => this.previewSettings().decimalSettings);
+  /**
+   * The model's lines are fractional, and at the defaults every one of them would be printed as
+   * a whole number — the preview of the AI projection would look exactly like the preview of last
+   * season's stats. The rows decide, so a preset of whole numbers is untouched.
+   */
+  readonly previewDecimalSettings = computed(() =>
+    readableDecimalSettings(
+      this.previewProjections(),
+      this.previewSettings().decimalSettings,
+      this.previewSettings().useDefaultDecimals,
+    ),
+  );
   readonly previewUseDefaultDecimals = computed(() => this.previewSettings().useDefaultDecimals);
 
   /** Whatever the picked starting point has to download before the preview can be drawn. */
@@ -341,7 +353,8 @@ export class StartingPointPreviewComponent {
         leagueSize: settings.leagueSize,
         rosterSlots: settings.rosterSlots,
         minGoalieGames: settings.minGoalieGames,
-        decimalSettings: settings.decimalSettings,
+        // What the rows are printed with, so the total column adds up to the numbers beside it.
+        decimalSettings: this.previewDecimalSettings(),
       })
       .map((scored) => ({
         player: byId.get(scored.projection.playerId),
