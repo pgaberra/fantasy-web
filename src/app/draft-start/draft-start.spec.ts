@@ -444,7 +444,7 @@ describe('DraftStartComponent', () => {
     // Nothing to open on, so the page lands on the last kind, whose empty state offers the
     // one way to get something: the paste field.
     expect(fixture.point.componentInstance.sourceKind()).toEqual('imported');
-    expect(texts(fixture, '.group-empty')[0]).toContain('No shared projections yet');
+    expect(texts(fixture, '.group-empty')[0]).toContain('No imports yet');
   });
 
   // One press to a draft: the first row of the open kind is checked from the start, and the
