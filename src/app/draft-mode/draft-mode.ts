@@ -36,6 +36,8 @@ import {
   DEFAULT_MIN_GOALIE_GAMES,
   DEFAULT_ROSTER_SLOTS,
 } from '../draft-projection/projection-defaults';
+import { DecimalStatKey } from '../draft-projection/projection-settings-section/model';
+import { readableDecimalSettings } from '../draft-projection/projection-settings-section/model-decimals';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { DraftRosterService } from './draft-roster.service';
 import { DraftSnakeService } from './draft-snake.service';
@@ -183,7 +185,13 @@ export class DraftModeComponent implements OnInit {
       leagueSize: settings.leagueSize ?? DEFAULT_LEAGUE_SIZE,
       rosterSlots: settings.rosterSlots ?? DEFAULT_ROSTER_SLOTS,
       minGoalieGames: settings.minGoalieGames ?? DEFAULT_MIN_GOALIE_GAMES,
-      decimalSettings: settings.decimalSettings,
+      // As the editor reads them: a board of the model's fractional lines is ranked here the way
+      // it was ranked there, rather than on numbers rounded to whole ones on the way in.
+      decimalSettings: readableDecimalSettings(
+        this.projections(),
+        settings.decimalSettings as Record<DecimalStatKey, number>,
+        settings.useDefaultDecimals ?? true,
+      ),
     };
   });
 

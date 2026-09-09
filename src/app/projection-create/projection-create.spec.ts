@@ -853,6 +853,38 @@ describe('ProjectionCreateComponent', () => {
     expect(createProjection.mock.calls[0][0].source).toEqual('model');
   });
 
+  /**
+   * The model projects a season in fractions. Shown at the defaults, which were written for last
+   * season's counted stats, every one of them would be printed as a whole number and the preview
+   * of the AI projection would be indistinguishable from the preview of last season.
+   */
+  it("shows the model's fractions rather than rounding them to whole numbers", async () => {
+    seed.mockReturnValueOnce(
+      of({
+        ...seeded,
+        players: seeded.players.map((player) => ({
+          ...player,
+          stats: {
+            utility: { ...player.stats.utility, gp: 78.6 },
+            scoring: { ...player.stats.scoring, goals: 49.43, assists: 40 },
+          },
+        })),
+      }),
+    );
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.selectPreset('model');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(component.previewDecimalSettings().goals).toEqual(1);
+    expect(component.previewDecimalSettings().gp).toEqual(1);
+    // Whole in every row the model returned, so it is still written as one.
+    expect(component.previewDecimalSettings().assists).toEqual(0);
+  });
+
   // Five rows do not need the model's whole board either, the same reason the pool is asked
   // for a slice. It is also the width the BFF serves without a subscription.
   it('asks the model for the same slice of the board the pool is asked for', async () => {

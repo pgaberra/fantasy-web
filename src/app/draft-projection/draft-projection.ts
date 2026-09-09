@@ -46,6 +46,7 @@ import {
   DEFAULT_DECIMAL_SETTINGS,
   ScaleConfig,
 } from './projection-settings-section/model';
+import { readableDecimalSettings } from './projection-settings-section/model-decimals';
 import {
   createDefaultScaleSettings,
   DEFAULT_LEAGUE_SIZE,
@@ -226,7 +227,13 @@ export class DraftProjectionComponent implements OnInit {
       leagueSize: this.leagueSize(),
       rosterSlots: this.rosterSlots(),
       minGoalieGames: this.minGoalieGames(),
-      decimalSettings: this.decimalSettings(),
+      // The decimals the table is read with, not the ones stored: a board scored one way and
+      // shown another would publish totals nobody could reproduce on the page.
+      decimalSettings: readableDecimalSettings(
+        projections,
+        this.decimalSettings(),
+        this.useDefaultDecimals(),
+      ),
     });
     const playersById = new Map(this.players().map((player) => [player.id, player]));
     return this.projectionShare.toSharedPlayers(ranked, playersById, this.scoringType());
