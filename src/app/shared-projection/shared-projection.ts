@@ -24,6 +24,7 @@ import {
   DecimalStatKey,
   DEFAULT_DECIMAL_SETTINGS,
 } from '../draft-projection/projection-settings-section/model';
+import { readableDecimalSettings } from '../draft-projection/projection-settings-section/model-decimals';
 import { PlayerRowComponent } from '../draft-projection/player-projections-table/player-row/player-row';
 import { PositionFilterComponent } from '../draft-projection/player-projections-table/position-filter/position-filter';
 import { TeamFilterComponent } from '../draft-projection/player-projections-table/team-filter/team-filter';
@@ -378,10 +379,21 @@ export class SharedProjectionComponent {
   readonly statWeights = signal<Record<ScoringStatKey, number>>(
     {} as Record<ScoringStatKey, number>,
   );
-  readonly decimalSettings = computed<Record<DecimalStatKey, number>>(() => ({
-    ...DEFAULT_DECIMAL_SETTINGS,
-    ...((this.shared()?.data.settings.decimalSettings ?? {}) as Record<DecimalStatKey, number>),
-  }));
+  /**
+   * The published board's own decimals, and a place after the point for any column whose numbers
+   * have one — the AI projection's do, and the editor this snapshot was taken in shows them.
+   * A shared board has to read as the board it was.
+   */
+  readonly decimalSettings = computed<Record<DecimalStatKey, number>>(() =>
+    readableDecimalSettings(
+      this.rows().map((row) => row.projection),
+      {
+        ...DEFAULT_DECIMAL_SETTINGS,
+        ...((this.shared()?.data.settings.decimalSettings ?? {}) as Record<DecimalStatKey, number>),
+      },
+      this.shared()?.data.settings.useDefaultDecimals ?? true,
+    ),
+  );
 
   private readonly rows = computed<SharedRow[]>(() =>
     (this.shared()?.data.players ?? []).map((shared) => this.toRow(shared)),
