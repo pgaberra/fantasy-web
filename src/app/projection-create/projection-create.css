@@ -284,10 +284,11 @@
   background: var(--color-surface-hover);
 }
 
-/* Stands where the preview's table would, so picking the AI projection does not drop the page
-   by the height of a table. Gold-edged like the card that opened it, and it carries the only
-   button on the page while it is showing. */
+/* Sits under the preview's table rather than instead of it: the top five rows are the teaser,
+   and this is what buying the rest of them gets. Gold-edged like the card that opened it, and
+   it carries the only button on the page while it is showing. */
 .pitch {
+  margin-top: var(--space-4);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
