@@ -854,7 +854,7 @@ describe('ProjectionCreateComponent', () => {
   });
 
   // Five rows do not need the model's whole board either, the same reason the pool is asked
-  // for a slice. The counts still cover the league, which is what the note under it reports.
+  // for a slice. It is also the width the BFF serves without a subscription.
   it('asks the model for the same slice of the board the pool is asked for', async () => {
     const fixture = MockRender(ProjectionCreateComponent);
     await fixture.whenStable();
@@ -863,7 +863,6 @@ describe('ProjectionCreateComponent', () => {
     await fixture.whenStable();
 
     expect(seed).toHaveBeenCalledWith({ skaterLimit: 25, goalieLimit: 10 });
-    expect(fixture.point.componentInstance.modelCoverage()).toEqual({ skaters: 3, goalies: 0 });
   });
 
   it('does not download the model until the AI preset is picked', async () => {
@@ -916,23 +915,27 @@ describe('ProjectionCreateComponent', () => {
     expect(projected?.score.fantasyPoints).toBeGreaterThan(0);
   });
 
-  it('says how much of the league the model reached', async () => {
+  /** MoneyPuck's terms require the credit, so it has to travel with the model's own numbers. */
+  it('says what the model is made of, under the model and nowhere else', async () => {
     const fixture = MockRender(ProjectionCreateComponent);
     await fixture.whenStable();
-    const component = fixture.point.componentInstance;
+    fixture.detectChanges();
 
-    expect(component.modelCoverage()).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('MoneyPuck');
 
-    component.selectPreset('model');
+    fixture.point.componentInstance.selectPreset('model');
     await fixture.whenStable();
+    fixture.detectChanges();
 
-    expect(component.modelCoverage()).toEqual({ skaters: 3, goalies: 0 });
+    const note = fixture.nativeElement.querySelector('.preview-note');
+    expect(note.textContent).toContain('last three seasons');
+    expect(note.textContent).toContain('Data © MoneyPuck.com');
   });
 
   /**
    * Locked, not hidden: someone who cannot see the AI projection has no reason to buy it. The
-   * card stays pickable, the preview draws the model's own top five for anyone, and the pitch
-   * sits under those rows selling the rest of the board.
+   * card stays pickable, the preview draws the model's own top five for anyone, and the page's
+   * one button becomes the way to Premium.
    */
   describe('when the AI projection is behind a subscription', () => {
     const withPayments = async (
@@ -979,16 +982,16 @@ describe('ProjectionCreateComponent', () => {
       });
     });
 
-    it('puts the pitch under those rows, with the way to Premium in it', async () => {
+    it('offers the way to Premium where the Create button would be', async () => {
       await withPayments(async (fixture) => {
         fixture.point.componentInstance.selectPreset('model');
         await fixture.whenStable();
         fixture.detectChanges();
 
-        const pitch = fixture.nativeElement.querySelector('.pitch');
-        expect(pitch).not.toBeNull();
-        expect(pitch.textContent).toContain('Premium');
-        expect(pitch.querySelector('a')?.getAttribute('routerLink')).toEqual('/premium');
+        const action = fixture.nativeElement.querySelector('a.create-button');
+        expect(action).not.toBeNull();
+        expect(action.textContent.trim()).toEqual('Unlock with Premium');
+        expect(action.getAttribute('routerLink')).toEqual('/premium');
       });
     });
 
@@ -1001,14 +1004,15 @@ describe('ProjectionCreateComponent', () => {
         fixture.detectChanges();
 
         expect(component.canCreate()).toBe(false);
-        expect(fixture.nativeElement.querySelector('.create-button')).toBeNull();
+        expect(fixture.nativeElement.querySelector('button.create-button')).toBeNull();
 
         component.selectPreset('default');
         await fixture.whenStable();
         fixture.detectChanges();
 
         expect(component.canCreate()).toBe(true);
-        expect(fixture.nativeElement.querySelector('.create-button')).not.toBeNull();
+        expect(fixture.nativeElement.querySelector('button.create-button')).not.toBeNull();
+        expect(fixture.nativeElement.querySelector('a.create-button')).toBeNull();
       });
     });
 
@@ -1020,7 +1024,7 @@ describe('ProjectionCreateComponent', () => {
         fixture.detectChanges();
 
         expect(seed).toHaveBeenCalled();
-        expect(fixture.nativeElement.querySelector('.pitch')).toBeNull();
+        expect(fixture.nativeElement.querySelector('a.create-button')).toBeNull();
         expect(fixture.point.componentInstance.canCreate()).toBe(true);
       });
     });

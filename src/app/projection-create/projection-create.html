@@ -325,37 +325,25 @@
             </div>
           </div>
         </div>
-        @if (modelCoverage(); as coverage) {
+        <!-- What the rows above are, rather than how many of them there are: a count of the
+             board is not something anyone reads a preview to learn, and the credit MoneyPuck's
+             terms require has to sit somewhere the numbers are. -->
+        @if (isModelPreset()) {
           <p class="preview-note">
-            The model covers {{ coverage.skaters }} skaters and {{ coverage.goalies }} goalies.
-            Players without enough data to project are left out. Data © MoneyPuck.com.
+            Each player is projected from his last three seasons, weighted toward the most recent,
+            adjusted for age and set against how the league is scoring now. Shot quality, hits,
+            blocks and faceoffs come from MoneyPuck. Data © MoneyPuck.com.
           </p>
         }
       }
-
-      <!-- Under the rows rather than instead of them: the top five are the model talking, which
-           is the point of showing them, and what is being sold is the rest of the board. -->
-      @if (aiProjectionLocked()) {
-        <section class="pitch">
-          <h3 class="pitch-title">
-            <span class="premium-badge">Premium</span>
-            The rest of the board
-          </h3>
-          <ul class="pitch-points">
-            <li>Every player the model projects, not just the top 5</li>
-            <li>Ranked to your league's scoring settings</li>
-            <li>Fully editable. Make it your own.</li>
-            <li>Use it directly in Draft mode</li>
-          </ul>
-          <a routerLink="/premium" class="btn btn-primary">Unlock with Premium</a>
-        </section>
-      }
     </div>
 
-    <!-- The pitch above already carries the way to Premium, so the page's main button stands
-         down rather than repeating it: a Create button that can only refuse is worse than one
-         that is plainly not for this starting point. -->
-    @if (!aiProjectionLocked()) {
+    <!-- One button, and which one it is says what the picked starting point costs. A Create
+         button that can only refuse is worse than one that is plainly not for this starting
+         point, so under the lock the way to Premium takes its place. -->
+    @if (aiProjectionLocked()) {
+      <a routerLink="/premium" class="create-button btn btn-primary btn-lg">Unlock with Premium</a>
+    } @else {
       <button
         type="button"
         class="create-button btn btn-primary btn-lg"
