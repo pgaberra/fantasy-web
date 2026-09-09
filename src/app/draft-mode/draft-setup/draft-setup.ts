@@ -27,6 +27,7 @@ import { YahooSyncResult } from '../../draft-projection/projection-settings-sect
 import { EspnSyncResult } from '../../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
 import { LeagueSyncComponent } from '../../draft-projection/projection-settings-section/league-sync/league-sync';
 import { EspnService } from '../../services/espn.service';
+import { IconComponent } from '../../shared/icon/icon';
 import {
   CdkDrag,
   CdkDragDrop,
@@ -59,6 +60,7 @@ const MINE_ID = 'team-me';
     RosterSlotsEditorComponent,
     LeagueSyncComponent,
     LoadingIndicatorComponent,
+    IconComponent,
   ],
   templateUrl: './draft-setup.html',
   styleUrl: './draft-setup.css',

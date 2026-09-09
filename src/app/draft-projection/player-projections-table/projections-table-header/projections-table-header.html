@@ -38,21 +38,7 @@
             appTooltip="Set every skater to 84 games"
             (click)="fullSeason.emit()"
           >
-            <svg
-              viewBox="0 0 24 24"
-              width="13"
-              height="13"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M12 20v-11" />
-              <path d="M8 13l4 -4l4 4" />
-              <path d="M5 4h14" />
-            </svg>
+            <app-icon name="arrow-up-to-line" [size]="13" />
             84
           </button>
         }
@@ -64,11 +50,7 @@
             [appPopover]="columnMenu"
             [popoverContext]="{ $implicit: col }"
           >
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
-              <circle cx="12" cy="5" r="2.1" />
-              <circle cx="12" cy="12" r="2.1" />
-              <circle cx="12" cy="19" r="2.1" />
-            </svg>
+            <app-icon name="more-vertical" [size]="15" />
           </button>
         }
       </span>
@@ -104,11 +86,7 @@
             [appPopover]="columnMenu"
             [popoverContext]="{ $implicit: col }"
           >
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
-              <circle cx="12" cy="5" r="2.1" />
-              <circle cx="12" cy="12" r="2.1" />
-              <circle cx="12" cy="19" r="2.1" />
-            </svg>
+            <app-icon name="more-vertical" [size]="15" />
           </button>
         }
       </span>
@@ -126,7 +104,7 @@
     {{ summaryLabel() }}
   </th>
 </tr>
-@if (scoringType() === 'points' && !readonly()) {
+@if (scoringType() === 'points' && (!readonly() || showWeights())) {
   <tr class="weight-row">
     <th class="col-rank"></th>
     <th class="col-name"><span class="weight-label">Stat weights (pts)</span></th>
@@ -135,18 +113,25 @@
     }
     @for (col of activeColumns().scoring; track col) {
       <th [class.group-start]="$first && hasUtilityColumns()">
-        <!-- A text field, not a number field: the browser would print a weight of 4.5 in the
-             machine's locale, which on a Swedish one is `4,5` beside a table full of points. -->
-        <input
-          type="text"
-          inputmode="decimal"
-          class="weight-input"
-          [value]="statWeights()[col]"
-          [attr.aria-label]="'Points per ' + (col | statLabel)"
-          (input)="onWeightInput(col, $event)"
-          (keydown)="onWeightKeydown(col, $event)"
-          (blur)="onWeightBlur(col, $event)"
-        />
+        @if (readonly()) {
+          <!-- The same number in the same place, without the box that says it can be changed. -->
+          <span class="weight-value" [attr.aria-label]="'Points per ' + (col | statLabel)">{{
+            statWeights()[col]
+          }}</span>
+        } @else {
+          <!-- A text field, not a number field: the browser would print a weight of 4.5 in the
+               machine's locale, which on a Swedish one is `4,5` beside a table full of points. -->
+          <input
+            type="text"
+            inputmode="decimal"
+            class="weight-input"
+            [value]="statWeights()[col]"
+            [attr.aria-label]="'Points per ' + (col | statLabel)"
+            (input)="onWeightInput(col, $event)"
+            (keydown)="onWeightKeydown(col, $event)"
+            (blur)="onWeightBlur(col, $event)"
+          />
+        }
       </th>
     }
     <th class="summary-pts-col"></th>
@@ -196,21 +181,7 @@
 
     @if (showFullSeasonButton() && col === 'gp') {
       <button type="button" class="menu-item" (click)="fullSeason.emit()">
-        <svg
-          viewBox="0 0 24 24"
-          width="15"
-          height="15"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M12 20v-11" />
-          <path d="M8 13l4 -4l4 4" />
-          <path d="M5 4h14" />
-        </svg>
+        <app-icon name="arrow-up-to-line" [size]="15" />
         Set a full 84-game season
       </button>
       <div class="menu-separator"></div>
@@ -262,19 +233,7 @@
           [attr.aria-expanded]="expandedScaleList() === col"
           (click)="toggleScaleList(col)"
         >
-          <svg
-            viewBox="0 0 24 24"
-            width="15"
-            height="15"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M4 20V10M10 20V4M16 20v-8M22 20V7" />
-          </svg>
+          <app-icon name="chart-columns" [size]="15" />
           Stats to scale
           <span class="menu-item-value">{{ scaledStatSummary(col) }}</span>
         </button>
@@ -297,19 +256,7 @@
 
     <div class="menu-separator"></div>
     <button type="button" class="menu-item menu-item--danger" (click)="removeColumn(col)">
-      <svg
-        viewBox="0 0 24 24"
-        width="15"
-        height="15"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
-      </svg>
+      <app-icon name="trash" [size]="15" />
       Remove column
     </button>
   </div>

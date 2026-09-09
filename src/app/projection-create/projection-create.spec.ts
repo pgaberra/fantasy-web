@@ -1,4 +1,4 @@
-import { MockBuilder, MockedComponentFixture, MockInstance, MockRender } from 'ng-mocks';
+import { MockBuilder, MockedComponentFixture, MockInstance, MockRender, ngMocks } from 'ng-mocks';
 import { signal } from '@angular/core';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Observable, of, throwError } from 'rxjs';
@@ -6,6 +6,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { CREATE_PRESETS, ProjectionCreateComponent } from './projection-create';
 import { ProjectionStorageService } from '../services/projection-storage.service';
+import { ProjectionsTableHeaderComponent } from '../draft-projection/player-projections-table/projections-table-header/projections-table-header';
 import { StatInfoService } from '../services/stat-info.service';
 import { CreateProjectionRequest } from '../api/models/create-projection-request';
 import { ProjectionResponse } from '../api/models/projection-response';
@@ -409,7 +410,7 @@ describe('ProjectionCreateComponent', () => {
 
       // The presets are the open kind, one card each, with the first checked.
       expect(texts('.row-name')).toEqual(CREATE_PRESETS.map((preset) => preset.name));
-      expect(root.querySelectorAll('.row-icon svg')).toHaveLength(CREATE_PRESETS.length);
+      expect(root.querySelectorAll('.row-icon app-icon')).toHaveLength(CREATE_PRESETS.length);
       expect(root.querySelector('.row')?.classList.contains('row--selected')).toBe(true);
       // Folded, not gone: the segments say how many boards there are, one press away.
       expect(root.querySelector('app-share-import')).toBeNull();
@@ -945,6 +946,21 @@ describe('ProjectionCreateComponent', () => {
     expect(projected?.projection.type).toEqual('skater');
     expect((projected?.projection.stats.scoring as SkaterScoringStats).goals).toEqual(60);
     expect(projected?.score.fantasyPoints).toBeGreaterThan(0);
+  });
+
+  /**
+   * A preview is read for its Total Points column, and 4.5 a goal against 6 is the difference
+   * between two different boards. The row is the editor's own, minus the inputs.
+   */
+  it('says what the preview totals were scored with', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const header = ngMocks.find(fixture.debugElement, ProjectionsTableHeaderComponent);
+
+    expect(ngMocks.input(header, 'showWeights')).toBe(true);
+    expect(ngMocks.input(header, 'readonly')).toBe(true);
   });
 
   /** MoneyPuck's terms require the credit, so it has to travel with the model's own numbers. */

@@ -9,6 +9,7 @@ import {
 } from '../../../models/stat-key.model';
 import { StatLabelPipe } from '../../../pipes/stat-label.pipe';
 import { STAT_FULL_NAMES } from '../../../pipes/stat-tooltip.pipe';
+import { IconComponent } from '../../../shared/icon/icon';
 
 export type StatGroup = 'skater' | 'goalie' | 'utility';
 
@@ -38,7 +39,7 @@ const GROUP_LABELS: Record<StatGroup, string> = {
   selector: 'app-columns-menu',
   templateUrl: './columns-menu.html',
   styleUrl: './columns-menu.css',
-  imports: [StatLabelPipe],
+  imports: [StatLabelPipe, IconComponent],
 })
 export class ColumnsMenuComponent {
   readonly activeScoringColumns = input.required<Set<ScoringStatKey>>();

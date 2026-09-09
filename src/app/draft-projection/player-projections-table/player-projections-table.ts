@@ -65,6 +65,7 @@ import { TableScrollDirective } from '../../shared/table-scroll/table-scroll.dir
 import { LeagueSettingsMenuComponent } from './league-settings-menu/league-settings-menu';
 import { ColumnsMenuComponent } from './columns-menu/columns-menu';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
+import { IconComponent } from '../../shared/icon/icon';
 
 const PLAYERS_PER_PAGE = 250;
 
@@ -99,6 +100,7 @@ function toggledSet<T>(members: ReadonlySet<T>, member: T): Set<T> {
     LeagueSettingsMenuComponent,
     ColumnsMenuComponent,
     TooltipDirective,
+    IconComponent,
   ],
   templateUrl: './player-projections-table.html',
   styleUrl: './player-projections-table.css',

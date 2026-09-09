@@ -17,20 +17,7 @@
             aria-label="Undo last change"
             (click)="undo()"
           >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M9 14 4 9l5-5" />
-              <path d="M4 9h11a5 5 0 0 1 0 10h-4" />
-            </svg>
+            <app-icon name="undo" [size]="15" />
           </button>
           <button
             type="button"
@@ -40,20 +27,7 @@
             aria-label="Redo change"
             (click)="redo()"
           >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="m15 14 5-5-5-5" />
-              <path d="M20 9H9a5 5 0 0 0 0 10h4" />
-            </svg>
+            <app-icon name="redo" [size]="15" />
           </button>
         </div>
         <span class="save-status" [class.save-status--error]="saveStatus() === 'error'">
@@ -101,19 +75,7 @@
               class="btn btn-secondary btn-sm league-setup-btn"
               [appPopover]="leagueMenu"
             >
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" />
-              </svg>
+              <app-icon name="columns" [size]="15" />
               League setup
             </button>
           }
@@ -121,21 +83,7 @@
           <!-- Which stats are active is what the projection is scored on, not merely what the
                table shows, so the picker belongs with the settings that shape the ranking. -->
           <button type="button" class="btn btn-secondary btn-sm" [appPopover]="columnsMenu">
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="3" y="4" width="5.5" height="16" rx="1" />
-              <rect x="10.5" y="4" width="5.5" height="16" rx="1" />
-              <path d="M19.5 9v11M18 4h5" />
-            </svg>
+            <app-icon name="check" [size]="15" />
             Stats
           </button>
 

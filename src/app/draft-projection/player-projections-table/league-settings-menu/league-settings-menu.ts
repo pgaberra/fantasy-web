@@ -3,6 +3,7 @@ import { HelpTipComponent } from '../../../shared/help-tip/help-tip';
 import { RosterSlotsEditorComponent } from '../../../shared/roster-slots-editor/roster-slots-editor';
 import { RosterSlots } from '../../../api/models/roster-slots';
 import { ScoringType } from '../../../models/projection.model';
+import { IconComponent } from '../../../shared/icon/icon';
 import {
   DEFAULT_LEAGUE_SIZE,
   DEFAULT_MIN_GOALIE_GAMES,
@@ -24,7 +25,7 @@ import {
   selector: 'app-league-settings-menu',
   templateUrl: './league-settings-menu.html',
   styleUrl: './league-settings-menu.css',
-  imports: [HelpTipComponent, RosterSlotsEditorComponent],
+  imports: [HelpTipComponent, RosterSlotsEditorComponent, IconComponent],
 })
 export class LeagueSettingsMenuComponent {
   readonly scoringType = input.required<ScoringType>();
