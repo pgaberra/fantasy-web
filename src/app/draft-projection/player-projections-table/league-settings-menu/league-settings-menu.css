@@ -115,7 +115,7 @@
   background: var(--color-surface-hover);
 }
 
-.menu-item svg {
+.menu-item app-icon {
   flex: none;
   color: var(--color-text-subtle);
 }

@@ -34,6 +34,7 @@ import {
   DEFAULT_UTILITY_COLUMNS,
 } from '../../draft-projection/projection-defaults';
 import { environment } from '../../../environments/environment';
+import { IconComponent } from '../../shared/icon/icon';
 
 /**
  * How much of the player list the demo shows. The BFF still sends every player — the editor
@@ -52,6 +53,7 @@ const DEMO_VISIBLE_PLAYERS = 50;
     LoadingIndicatorComponent,
     ErrorStateComponent,
     OffseasonDataNoticeComponent,
+    IconComponent,
   ],
   templateUrl: './landing-demo.html',
   styleUrl: './landing-demo.css',

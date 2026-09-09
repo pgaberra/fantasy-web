@@ -13,6 +13,7 @@ import { SiteFooterComponent } from './shared/site-footer/site-footer';
 import { ToastComponent } from './shared/toast/toast';
 import { UnverifiedBannerComponent } from './shared/unverified-banner/unverified-banner';
 import { environment } from '../environments/environment';
+import { IconComponent } from './shared/icon/icon';
 
 @Component({
   selector: 'app-root',
@@ -29,6 +30,7 @@ import { environment } from '../environments/environment';
     SiteFooterComponent,
     ToastComponent,
     UnverifiedBannerComponent,
+    IconComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',

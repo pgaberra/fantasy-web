@@ -43,7 +43,7 @@
   flex-wrap: wrap;
 }
 
-.league-controls .btn svg {
+.league-controls .btn app-icon {
   flex: none;
   margin-right: 0.35rem;
   vertical-align: -2px;

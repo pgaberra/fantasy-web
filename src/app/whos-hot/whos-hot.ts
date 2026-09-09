@@ -37,6 +37,7 @@ import {
   seasonLabelOf,
 } from './season.model';
 import { HotPlayersTableComponent } from './hot-players-table/hot-players-table';
+import { IconComponent } from '../shared/icon/icon';
 
 /**
  * How long the game range has to hold still before it is worth a request. Long enough that a
@@ -66,6 +67,7 @@ function isSameSpan(a: GameSpan, b: GameSpan): boolean {
     ErrorStateComponent,
     TooltipDirective,
     HelpTipComponent,
+    IconComponent,
   ],
   templateUrl: './whos-hot.html',
   styleUrl: './whos-hot.css',

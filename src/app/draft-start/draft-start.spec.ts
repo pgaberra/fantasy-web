@@ -374,7 +374,7 @@ describe('DraftStartComponent', () => {
 
     // Presets: two cards, an icon on each, the checked one marked on the card itself.
     expect(cards()).toHaveLength(PRESETS.length);
-    expect(root.querySelectorAll('.row-icon svg')).toHaveLength(PRESETS.length);
+    expect(root.querySelectorAll('.row-icon app-icon')).toHaveLength(PRESETS.length);
     expect(selected()).toEqual([true, false]);
     component.selectPreset(MODEL);
     fixture.detectChanges();
@@ -385,7 +385,7 @@ describe('DraftStartComponent', () => {
       component.sourceKind.set(kind);
       fixture.detectChanges();
       expect(cards()).toHaveLength(1);
-      expect(root.querySelectorAll('.row-icon svg')).toHaveLength(1);
+      expect(root.querySelectorAll('.row-icon app-icon')).toHaveLength(1);
       expect(root.querySelectorAll('.row-choice input[type="radio"]')).toHaveLength(1);
       expect(selected()).toEqual([true]);
       expect(root.querySelector('.row-meta')).not.toBeNull();
