@@ -51,32 +51,6 @@ describe('AdminComponent', () => {
       expect(fixture.nativeElement.textContent).toContain('Yahoo account connected.');
     });
 
-    it.each([
-      {
-        name: 'explains a refused code exchange instead of just saying it failed',
-        reason: 'exchange_failed',
-        says: 'Yahoo refused to exchange the code',
-      },
-      {
-        name: 'tells you to retry without pausing when the link had expired',
-        reason: 'invalid_state',
-        says: 'had expired',
-      },
-      // A slug we do not recognise must still produce a sentence, not an empty banner.
-      {
-        name: 'falls back to plain words for an unknown reason',
-        reason: 'something-we-have-not-seen',
-        says: 'did not provide a reason',
-      },
-    ])('$name', ({ reason, says }) => {
-      queryParams['yahoo'] = 'error';
-      queryParams['reason'] = reason;
-
-      const fixture = MockRender(AdminComponent);
-
-      expect(fixture.nativeElement.textContent).toContain(says);
-    });
-
     /**
      * The distinction the whole banner exists for: Yahoo refusing the scope is not a mis-click,
      * and reading it as one sends you round the retry loop for nothing.
@@ -103,6 +77,32 @@ describe('AdminComponent', () => {
       expect(fixture.nativeElement.textContent).toContain(
         'Yahoo did not return an authorization code',
       );
+    });
+
+    it.each([
+      {
+        outcome: 'explains a refused code exchange instead of just saying it failed',
+        reason: 'exchange_failed',
+        phrase: 'Yahoo refused to exchange the code',
+      },
+      {
+        outcome: 'tells you to retry without pausing when the link had expired',
+        reason: 'invalid_state',
+        phrase: 'had expired',
+      },
+      // A slug we do not recognise must still produce a sentence, not an empty banner.
+      {
+        outcome: 'falls back to plain words for an unknown reason',
+        reason: 'something-we-have-not-seen',
+        phrase: 'did not provide a reason',
+      },
+    ])('$outcome', ({ reason, phrase }) => {
+      queryParams['yahoo'] = 'error';
+      queryParams['reason'] = reason;
+
+      const fixture = MockRender(AdminComponent);
+
+      expect(fixture.nativeElement.textContent).toContain(phrase);
     });
 
     it('says nothing when we did not just come back from Yahoo', () => {

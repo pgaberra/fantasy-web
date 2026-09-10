@@ -41,28 +41,28 @@ describe('PrivacyComponent', () => {
     // The consent gate is the one promise a visitor can check for themselves, and the one the
     // consent banner is built around: declining must mean no analytics cookie at all.
     {
-      name: 'states that analytics happen only with consent',
-      says: 'If you do not consent, we do not set analytics cookies',
+      promise: 'states that analytics happen only with consent',
+      phrase: 'If you do not consent, we do not set analytics cookies',
     },
     // Yahoo tokens are the most sensitive thing stored, and there is still no disconnect button
     // in the app, so the page has to say how to get them removed. Revisit the day one ships.
     {
-      name: 'says how to have the stored Yahoo connection removed',
-      says: 'removal of the stored Yahoo connection',
+      promise: 'says how to have the stored Yahoo connection removed',
+      phrase: 'removal of the stored Yahoo connection',
     },
     {
-      name: 'does not sell personal data or use it for advertising',
-      says: 'We do not sell your personal data',
+      promise: 'does not sell personal data or use it for advertising',
+      phrase: 'We do not sell your personal data',
     },
     {
-      name: 'points at the Swedish supervisory authority',
-      says: 'Integritetsskyddsmyndigheten',
+      promise: 'points at the Swedish supervisory authority',
+      phrase: 'Integritetsskyddsmyndigheten',
     },
-  ])('$name', async ({ says }) => {
+  ])('$promise', async ({ phrase }) => {
     await MockBuilder(PrivacyComponent);
     MockRender(PrivacyComponent);
 
-    expect(text()).toContain(says);
+    expect(text()).toContain(phrase);
   });
 
   // Hosting, analytics and error monitoring sit in the EU; email delivery and payments do not.
