@@ -15,7 +15,6 @@ unless they refer to something genuinely different.
 | The league's categories or point values | scoring settings | scoring system, scoring format |
 | Everything else configured about the league | league settings | league config |
 | The live drafting feature | Draft mode | draft board mode, live draft |
-| Games a goalie started | games started | games-started count |
 | The paid membership | Premium | premium tier, premium plan, Pro plan |
 
 ## Spelling and casing
@@ -74,7 +73,7 @@ the thing literally rather than dressing it up.
 ## Scope
 
 The check scans Angular templates (`src/app/**/*.html`) only. TypeScript strings are reviewed by
-the `slapstat-copy` skill.
+the `copy-check` skill.
 
 ## Baseline
 
