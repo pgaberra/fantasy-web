@@ -1,4 +1,4 @@
-import { Component, computed, input, signal } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
 import { PoolReconciliation } from '../../api/models/pool-reconciliation';
 import { IconComponent } from '../icon/icon';
 
@@ -13,6 +13,9 @@ import { IconComponent } from '../icon/icon';
  *
  * The server reports the addition only on the read that made it, so this shows up once per pool
  * change; dismissing it just takes it off the screen for the rest of the visit.
+ *
+ * Forty new rows in a table of sixteen hundred are not findable by eye, so the notice offers to
+ * narrow the table to them — it only asks; the table owns the filter, and the page relays.
  */
 @Component({
   selector: 'app-player-pool-notice',
@@ -23,9 +26,11 @@ import { IconComponent } from '../icon/icon';
 export class PlayerPoolNoticeComponent {
   readonly reconciliation = input<PoolReconciliation | null>(null);
 
+  readonly showNewPlayers = output<void>();
+
   private readonly dismissed = signal(false);
 
-  protected readonly added = computed(() => this.reconciliation()?.added ?? 0);
+  protected readonly added = computed(() => this.reconciliation()?.addedPlayerIds.length ?? 0);
 
   protected readonly show = computed(() => !this.dismissed() && this.added() > 0);
 
