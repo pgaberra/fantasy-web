@@ -51,15 +51,6 @@ describe('AdminComponent', () => {
       expect(fixture.nativeElement.textContent).toContain('Yahoo account connected.');
     });
 
-    it('explains a refused code exchange instead of just saying it failed', () => {
-      queryParams['yahoo'] = 'error';
-      queryParams['reason'] = 'exchange_failed';
-
-      const fixture = MockRender(AdminComponent);
-
-      expect(fixture.nativeElement.textContent).toContain('Yahoo refused to exchange the code');
-    });
-
     /**
      * The distinction the whole banner exists for: Yahoo refusing the scope is not a mis-click,
      * and reading it as one sends you round the retry loop for nothing.
@@ -88,23 +79,30 @@ describe('AdminComponent', () => {
       );
     });
 
-    it('tells you to retry without pausing when the link had expired', () => {
+    it.each([
+      {
+        outcome: 'explains a refused code exchange instead of just saying it failed',
+        reason: 'exchange_failed',
+        phrase: 'Yahoo refused to exchange the code',
+      },
+      {
+        outcome: 'tells you to retry without pausing when the link had expired',
+        reason: 'invalid_state',
+        phrase: 'had expired',
+      },
+      // A slug we do not recognise must still produce a sentence, not an empty banner.
+      {
+        outcome: 'falls back to plain words for an unknown reason',
+        reason: 'something-we-have-not-seen',
+        phrase: 'did not provide a reason',
+      },
+    ])('$outcome', ({ reason, phrase }) => {
       queryParams['yahoo'] = 'error';
-      queryParams['reason'] = 'invalid_state';
+      queryParams['reason'] = reason;
 
       const fixture = MockRender(AdminComponent);
 
-      expect(fixture.nativeElement.textContent).toContain('had expired');
-    });
-
-    /** A slug we do not recognise must still produce a sentence, not an empty banner. */
-    it('falls back to plain words for an unknown reason', () => {
-      queryParams['yahoo'] = 'error';
-      queryParams['reason'] = 'something-we-have-not-seen';
-
-      const fixture = MockRender(AdminComponent);
-
-      expect(fixture.nativeElement.textContent).toContain('did not provide a reason');
+      expect(fixture.nativeElement.textContent).toContain(phrase);
     });
 
     it('says nothing when we did not just come back from Yahoo', () => {
