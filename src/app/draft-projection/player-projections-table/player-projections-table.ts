@@ -611,29 +611,29 @@ export class PlayerProjectionsTableComponent implements OnInit {
         this.playerProjections.set(initial);
         return;
       }
-      const kept = initial.filter((projection) => players.has(projection.playerId));
+      const kept: Projection[] = [];
+      for (const projection of initial) {
+        const player = players.get(projection.playerId);
+        if (!player) continue;
+        // A saved row is the stat line of the kind of player it was saved as. When the pool now
+        // says otherwise (ESPN listing a goalie as a centre), the row holds none of the stats the
+        // table draws for that player, and every cell that reads one throws. The player's own
+        // line, the one a new projection starts from, is the only line of the right shape.
+        kept.push(player.type === projection.type ? projection : this.ownLine(player));
+      }
       this.droppedPlayerCount.set(initial.length - kept.length);
       this.playerProjections.set(kept);
       return;
     }
 
-    const projections: Projection[] = this.players().map((player) => {
-      if (player.type === 'skater') {
-        return {
-          type: 'skater',
-          playerId: player.id,
-          stats: player.stats,
-        };
-      } else {
-        return {
-          type: 'goalie',
-          playerId: player.id,
-          stats: player.stats,
-        };
-      }
-    });
+    this.playerProjections.set(this.players().map((player) => this.ownLine(player)));
+  }
 
-    this.playerProjections.set(projections);
+  /** The line a player starts from before anyone edits it: their own stats from the pool. */
+  private ownLine(player: Player): Projection {
+    return player.type === 'skater'
+      ? { type: 'skater', playerId: player.id, stats: player.stats }
+      : { type: 'goalie', playerId: player.id, stats: player.stats };
   }
 
   private roundStat(value: number, key: DecimalStatKey): number {
