@@ -33,6 +33,12 @@
   margin: 0 0 var(--space-6);
   font-size: 0.95rem;
 }
+/* The subtitle is optional. Without it the form would sit on the title's small bottom margin, so
+   it takes the gap the subtitle would have left. Adjacent margins collapse, so this matches that
+   gap instead of adding to it. */
+.auth-title + form {
+  margin-top: var(--space-6);
+}
 .form-group {
   display: flex;
   flex-direction: column;

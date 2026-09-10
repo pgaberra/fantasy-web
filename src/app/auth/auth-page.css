@@ -33,6 +33,11 @@
   margin: 0 0 var(--space-6);
   font-size: 0.95rem;
 }
+/* A state with nothing to say under its title goes straight to its action, which then needs the
+   room the subtitle's margin would have given it. */
+.auth-title + .btn {
+  margin-top: var(--space-6);
+}
 .form-group {
   display: flex;
   flex-direction: column;
