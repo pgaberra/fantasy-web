@@ -59,6 +59,9 @@ jobs:
       - name: Verify no pending state is written out as text
         run: bash .github/scripts/check-pending-states.sh
 
+      - name: Check copy against COPY-RULES.md
+        run: npm run check:copy
+
       - name: Lint
         run: npm run lint
 

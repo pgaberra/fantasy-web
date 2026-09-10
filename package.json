@@ -13,7 +13,8 @@
     "format": "prettier --write \"src/**/*.{ts,html,css,json}\"",
     "format:check": "prettier --check \"src/**/*.{ts,html,css,json}\"",
     "generate:api": "ng-openapi-gen",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "check:copy": "node .github/scripts/check-copy.mjs"
   },
   "private": true,
   "packageManager": "npm@11.19.1",
