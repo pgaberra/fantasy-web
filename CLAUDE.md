@@ -348,25 +348,34 @@ narrow: a stream of spans would bury the faults this exists to surface.
 
 ### Icons
 
-**Every icon comes from `<app-icon name="…" />`** (`src/app/shared/icon/`). Never write an
-`<svg>` into a template: `.github/scripts/check-inline-icons.sh` fails the build on one, and
-it runs in `pr-checks.yml`.
+**Every icon comes from `<app-icon name="…" />`** (`src/app/shared/icon/`), which draws it from
+the Lucide set through `@ng-icons/lucide`. Never write an `<svg>` into a template, and never type a
+character where an icon belongs (an arrow such as `←` or `▼`, a check `✓`, a pencil `✎`), whether
+in a template, in a string a component returns, or in a CSS `content`.
+`.github/scripts/check-inline-icons.sh` fails the build on either, and it runs in `pr-checks.yml`.
 
-One spec, set once on the component: a 24x24 grid, `fill="none"`, `stroke="currentColor"`,
-stroke width 2, round caps and joins, `aria-hidden`. Only the size is settable per call site
-(`[size]`, default 16; the scale is 14 inline with text, 16, 20 standalone). Colour comes from
-the surrounding text, so an icon follows hover, disabled and danger states without being told.
+One spec for every icon, Lucide's: a 24x24 grid, no fill, `currentColor`, stroke width 2, round
+caps and joins, `aria-hidden`. Only the size is settable per call site. A number is pixels
+(default 16; the scale is 14 inline with text, 16, 20 standalone), and a CSS length is for an icon
+that has to scale with its text, like `size="0.85em"` in a Premium badge. Colour comes from the
+surrounding text, so an icon follows hover, disabled and danger states without being told.
 
-Adding one: draw it on the same 24 grid as a `@case` in `icon.html`, taking the geometry from
-Lucide rather than by hand, and add the name to `ICON_NAMES`. The spec walks that array, so a
-name with no case fails rather than rendering an empty box.
+Adding one: import the Lucide export in `icon.ts` and give it a line in `ICONS`, named for what
+the icon is for rather than what it looks like (`close`, not `x`). Look on lucide.dev first:
+almost every UI concept is already there. The spec walks the whole set, so a name that draws
+nothing, or two names that draw the same thing, fails.
+
+**Never draw an icon by hand.** If nothing in Lucide fits, don't draw one: write a prompt
+Alexander can give an image generator, and say that what comes back still has to become a 24x24
+stroke drawing before it can join the set.
 
 **Brand marks are not icons.** Yahoo, Google and Facebook are multi-colour logos at their
 owners' scales; they stay inline, in the allowlist at the top of the guard script.
 
-Why the guard exists: the app previously held 61 hand-drawn inline SVGs with six stroke widths,
-four viewBoxes and three icon families mixed together, refresh drawn three ways and the check
-drawn three ways. None of it broke anything, which is why it accumulated for a year.
+Why the guard exists: the app once held 61 hand-drawn inline SVGs with six stroke widths and three
+icon families mixed, refresh and the check each drawn three ways, and a dozen typed characters
+standing in for icons on the same rows as real ones. None of it broke anything, which is why it
+accumulated for a year.
 
 ### Mobile / responsive layout
 

@@ -39,7 +39,7 @@
       </div>
       <ul class="plan-perks">
         @for (feature of freeFeatures; track feature) {
-          <li>{{ feature }}</li>
+          <li><app-icon name="check" class="perk-check" />{{ feature }}</li>
         }
       </ul>
       <div class="plan-cta">
@@ -71,10 +71,12 @@
 
       <ul class="plan-perks plan-perks--premium">
         <li>
+          <app-icon name="check" class="perk-check" />
           <span class="perk-title">Everything in Free</span>
         </li>
         @for (perk of perks; track perk.title) {
           <li>
+            <app-icon name="check" class="perk-check" />
             <span class="perk-title">{{ perk.title }}</span>
             @if (perk.description) {
               <span class="perk-desc">{{ perk.description }}</span>

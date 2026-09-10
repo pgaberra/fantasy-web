@@ -42,7 +42,9 @@
 }
 
 .back-link {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   width: fit-content;
   margin-bottom: 0.5rem;
   font-size: 0.875rem;
@@ -73,7 +75,8 @@
 }
 
 .rename-icon {
-  font-size: 1rem;
+  display: inline-flex;
+  vertical-align: middle;
   color: #b8c2d6;
   opacity: 0;
   transition: opacity 0.2s;

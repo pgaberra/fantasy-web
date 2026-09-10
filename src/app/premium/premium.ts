@@ -8,6 +8,7 @@ import { EntitlementService } from '../services/entitlement.service';
 import { NotificationService } from '../services/notification.service';
 import { freeFeatures, premiumPerks } from '../shared/premium/premium-perks';
 import { environment } from '../../environments/environment';
+import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 
 /** How long to keep waiting for the subscription to reach us before saying so, in milliseconds. */
@@ -34,7 +35,7 @@ const CONFIRMATION_POLL_MS = 2_000;
  */
 @Component({
   selector: 'app-premium',
-  imports: [RouterLink, DatePipe, LoadingIndicatorComponent],
+  imports: [RouterLink, DatePipe, LoadingIndicatorComponent, IconComponent],
   templateUrl: './premium.html',
   styleUrl: './premium.css',
 })

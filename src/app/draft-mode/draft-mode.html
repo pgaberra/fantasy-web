@@ -3,7 +3,9 @@
 } @else {
   <div class="draft-mode">
     <div class="draft-header">
-      <a [routerLink]="exitLink()" class="back-link">← Exit draft mode</a>
+      <a [routerLink]="exitLink()" class="back-link"
+        ><app-icon name="arrow-left" [size]="14" />Exit draft mode</a
+      >
       <div class="draft-title">
         <h1>{{ projectionName() }}</h1>
         <span class="draft-tag">Draft mode</span>
@@ -179,7 +181,10 @@
                   <span class="change-player">{{ lookup.name(change.playerId) }}</span>
                   <span class="change-move">
                     #{{ change.oldOverall }} {{ change.oldTeamName }}
-                    <span class="change-arrow">→</span>
+                    <app-icon name="arrow-right" [size]="14" class="change-arrow" /><span
+                      class="sr-only"
+                      >to</span
+                    >
                     #{{ change.newOverall }} {{ change.newTeamName }}
                   </span>
                 </div>

@@ -2,6 +2,7 @@ import { Component, input, output, signal } from '@angular/core';
 import { ScoringType } from '../../models/projection.model';
 import { LeagueProjectionData } from '../league-projection';
 import { LeagueProjectionTableComponent } from '../league-projection-table/league-projection-table';
+import { IconComponent } from '../../shared/icon/icon';
 import {
   DraftResultRound,
   DraftResultTeam,
@@ -10,7 +11,7 @@ import {
 
 @Component({
   selector: 'app-draft-summary',
-  imports: [LeagueProjectionTableComponent, DraftResultsComponent],
+  imports: [LeagueProjectionTableComponent, DraftResultsComponent, IconComponent],
   templateUrl: './draft-summary.html',
   styleUrl: './draft-summary.css',
 })

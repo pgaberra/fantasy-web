@@ -1,71 +1,129 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { NgIcon } from '@ng-icons/core';
+import {
+  lucideArrowDown,
+  lucideArrowLeft,
+  lucideArrowRight,
+  lucideArrowUp,
+  lucideArrowUpToLine,
+  lucideChartColumn,
+  lucideChartNoAxesColumn,
+  lucideCheck,
+  lucideChevronDown,
+  lucideChevronRight,
+  lucideCircle,
+  lucideCircleCheck,
+  lucideClipboardList,
+  lucideColumns3,
+  lucideEllipsisVertical,
+  lucideGripVertical,
+  lucideInfo,
+  lucideLink,
+  lucideLock,
+  lucideMenu,
+  lucidePencil,
+  lucidePlay,
+  lucideRedo2,
+  lucideRefreshCw,
+  lucideRotateCcw,
+  lucideShare,
+  lucideSlidersVertical,
+  lucideSparkles,
+  lucideSquareDashed,
+  lucideTable,
+  lucideTrash,
+  lucideTriangleAlert,
+  lucideUndo2,
+  lucideX,
+} from '@ng-icons/lucide';
 
 /**
- * Every icon name the app can draw. A runtime array rather than a bare union so the spec can walk
- * it: a name added here but never given a `@case` in `icon.html` would otherwise compile, render
- * nothing, and leave an empty gap on a screen that nobody diffs.
+ * Every icon the app shows, under the name the app gives it, mapped to the Lucide drawing it is.
+ *
+ * The app's names say what the icon is for (`close`, `refresh`, `more-vertical`) and Lucide's say
+ * what it looks like (`x`, `refresh-cw`, `ellipsis-vertical`), so a call site never changes when a
+ * drawing does. Adding an icon is one import and one line here: `@ng-icons/lucide` exports every
+ * Lucide icon, and only the ones imported reach the bundle.
  */
-export const ICON_NAMES = [
-  'alert-triangle',
-  'arrow-up-to-line',
-  'chart-bar',
-  'chart-columns',
-  'check',
-  'check-circle',
-  'chevron-down',
-  'chevron-right',
-  'clipboard-list',
-  'close',
-  'columns',
-  'grip-vertical',
-  'info',
-  'link',
-  'lock',
-  'menu',
-  'more-vertical',
-  'pencil',
-  'play',
-  'redo',
-  'refresh',
-  'rotate-ccw',
-  'share',
-  'sliders',
-  'sparkles',
-  'table',
-  'trash',
-  'undo',
-] as const;
+const ICONS = {
+  'alert-triangle': lucideTriangleAlert,
+  'arrow-down': lucideArrowDown,
+  'arrow-left': lucideArrowLeft,
+  'arrow-right': lucideArrowRight,
+  'arrow-up': lucideArrowUp,
+  'arrow-up-to-line': lucideArrowUpToLine,
+  'chart-bar': lucideChartColumn,
+  'chart-columns': lucideChartNoAxesColumn,
+  check: lucideCheck,
+  'check-circle': lucideCircleCheck,
+  'chevron-down': lucideChevronDown,
+  'chevron-right': lucideChevronRight,
+  circle: lucideCircle,
+  'clipboard-list': lucideClipboardList,
+  close: lucideX,
+  columns: lucideColumns3,
+  'grip-vertical': lucideGripVertical,
+  info: lucideInfo,
+  link: lucideLink,
+  lock: lucideLock,
+  menu: lucideMenu,
+  'more-vertical': lucideEllipsisVertical,
+  pencil: lucidePencil,
+  play: lucidePlay,
+  redo: lucideRedo2,
+  refresh: lucideRefreshCw,
+  'rotate-ccw': lucideRotateCcw,
+  share: lucideShare,
+  sliders: lucideSlidersVertical,
+  sparkles: lucideSparkles,
+  'square-dashed': lucideSquareDashed,
+  table: lucideTable,
+  trash: lucideTrash,
+  undo: lucideUndo2,
+} satisfies Record<string, string>;
 
-export type IconName = (typeof ICON_NAMES)[number];
+export type IconName = keyof typeof ICONS;
+
+/** Every name, so the spec can walk the whole set. */
+export const ICON_NAMES = Object.keys(ICONS) as IconName[];
 
 /**
- * Every icon in the app, drawn to one spec: a 24x24 grid, `currentColor`, no fill, stroke width
- * 2, round caps and joins. That is the Feather/Lucide convention the app's icons were already
- * reaching for by hand, and drawing them one at a time is what made them drift: before this
- * component the 61 inline SVGs carried six stroke widths (1.6 through 3), four viewBoxes, and
- * three families at once, with refresh drawn three different ways and the check drawn as a
- * stroke twice and a filled Heroicons circle once.
+ * An icon from the Lucide set, drawn by ng-icon: a 24x24 grid, `currentColor`, no fill, stroke
+ * width 2, round caps and joins, the same for every icon.
  *
- * The stroke lives on the `<svg>`, so it scales with `size` and an icon keeps the same relative
- * weight at 12px as at 20px. Nothing about an icon is settable from a call site except its size:
- * an icon that needs its own weight or its own grid is a sign the shape is wrong, not the spec.
+ * One set is the point. The app's icons were once drawn by hand in each template, 61 inline SVGs
+ * with six stroke widths and three icon families mixed, refresh drawn three ways. Collecting them
+ * into hand-copied drawings in one file fixed the drift but left every new icon to be copied by
+ * hand as well; sourcing them from the package means the drawing is Lucide's own every time.
  *
- * Colour comes from the surrounding text, so an icon inherits state (disabled, hover, danger)
- * without knowing about it. Icons are `aria-hidden`: they never carry the accessible name, which
- * belongs on the button or link they sit in.
+ * Only the size is settable. A number is pixels; a CSS length such as `0.85em` lets an icon scale
+ * with the text around it, which the padlock in a Premium badge relies on. Colour comes from the
+ * surrounding text, so an icon follows hover, disabled and danger states without being told.
+ * Icons are `aria-hidden`: the accessible name belongs on the button or link around them.
  *
- * Brand marks (Yahoo, Google, Facebook) are deliberately NOT here. They are multi-colour logos
- * with fixed fills at their own scale, and normalising them would misdraw someone's trademark.
- * `.github/scripts/check-inline-icons.sh` allows those files an inline `<svg>` and no others.
+ * Brand marks (Yahoo, Google, Facebook) are not icons and are not here. They are multi-colour
+ * logos at their owners' own scales. `.github/scripts/check-inline-icons.sh` allows those files an
+ * inline `<svg>`, and fails the build on any other, and on a character typed where an icon belongs.
  */
 @Component({
   selector: 'app-icon',
-  templateUrl: './icon.html',
+  imports: [NgIcon],
+  template: '<ng-icon [svg]="svg()" [size]="cssSize()" aria-hidden="true" />',
   styleUrl: './icon.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IconComponent {
   readonly name = input.required<IconName>();
-  /** Edge length in pixels. The scale is 14 (inline with text), 16 (default) and 20 (standalone). */
-  readonly size = input(16);
+  /** Pixels, or any CSS length. The pixel scale is 14 (inline with text), 16 (default) and 20. */
+  readonly size = input<number | string>(16);
+
+  /** Undefined for a name outside the set, which ng-icon draws as nothing and does not warn about. */
+  protected readonly svg = computed<string | undefined>(
+    () => (ICONS as Record<string, string>)[this.name()],
+  );
+
+  protected readonly cssSize = computed(() => {
+    const size = this.size();
+    return typeof size === 'number' ? `${size}px` : size;
+  });
 }
