@@ -122,19 +122,19 @@ describe('ProjectionsTableHeaderComponent', () => {
     it('shows a down arrow for the descending sorted column', () => {
       expect(
         getComponent({ sortColumn: 'goals', sortDirection: 'desc' }).sortIndicator('goals'),
-      ).toEqual('▼');
+      ).toEqual('arrow-down');
     });
 
     it('shows an up arrow for the ascending sorted column', () => {
       expect(
         getComponent({ sortColumn: 'goals', sortDirection: 'asc' }).sortIndicator('goals'),
-      ).toEqual('▲');
+      ).toEqual('arrow-up');
     });
 
     it('shows nothing for a column that is not the sorted one', () => {
       expect(
         getComponent({ sortColumn: 'goals', sortDirection: 'desc' }).sortIndicator('assists'),
-      ).toEqual('');
+      ).toBeNull();
     });
   });
 

@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { ScoringType } from '../../models/projection.model';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
+import { IconComponent, type IconName } from '../../shared/icon/icon';
 import {
   LeagueProjectionColumn,
   LeagueProjectionContributor,
@@ -36,7 +37,7 @@ const HEAT_LAGGARD_MAX_ALPHA = 0.2;
 
 @Component({
   selector: 'app-league-projection-table',
-  imports: [TooltipDirective],
+  imports: [TooltipDirective, IconComponent],
   templateUrl: './league-projection-table.html',
   styleUrl: './league-projection-table.css',
   host: { '(window:resize)': 'onScroll()' },
@@ -223,11 +224,11 @@ export class LeagueProjectionTableComponent {
     }
   }
 
-  sortIndicator(key: string): string {
+  sortIndicator(key: string): IconName | null {
     if (this.sortKey() !== key) {
-      return '';
+      return null;
     }
-    return this.sortDir() === 'desc' ? '▼' : '▲';
+    return this.sortDir() === 'desc' ? 'arrow-down' : 'arrow-up';
   }
 
   shade(key: string, value: number | null | undefined): string {

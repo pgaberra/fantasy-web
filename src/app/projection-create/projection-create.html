@@ -9,7 +9,9 @@
 } @else {
   <div class="projection-create">
     <div class="page-header">
-      <a routerLink="/projections" class="back-link">← My projections</a>
+      <a routerLink="/projections" class="back-link"
+        ><app-icon name="arrow-left" [size]="14" />My projections</a
+      >
       <h1>New projection</h1>
     </div>
 
@@ -154,7 +156,7 @@
                           <app-icon name="sparkles" [size]="20" />
                         }
                         @case ('blank') {
-                          <app-icon name="pencil" [size]="20" />
+                          <app-icon name="square-dashed" [size]="20" />
                         }
                         @default {
                           <app-icon name="chart-bar" [size]="20" />
@@ -169,7 +171,7 @@
                             <!-- The padlock only once it is actually shut: with a subscription
                                  the badge names the plan, it does not bar the way. -->
                             @if (isPresetLocked(preset)) {
-                              <app-icon name="lock" />
+                              <app-icon name="lock" size="0.85em" />
                             }
                             Premium
                           </span>

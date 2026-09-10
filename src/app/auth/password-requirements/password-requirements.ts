@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { PASSWORD_REQUIREMENTS } from '../password-policy';
+import { IconComponent } from '../../shared/icon/icon';
 
 @Component({
   selector: 'app-password-requirements',
+  imports: [IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './password-requirements.html',
   styleUrl: './password-requirements.css',
