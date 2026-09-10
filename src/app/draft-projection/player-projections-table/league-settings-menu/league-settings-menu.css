@@ -3,6 +3,9 @@
   width: 20rem;
   max-width: 92vw;
   padding: 0.5rem 0.25rem 0.6rem;
+  /* Every numeric control in the menu shares one width so their boxes line up
+     down the right edge, unit suffix or not. */
+  --menu-control-width: 6rem;
 }
 
 .menu-title {
@@ -29,14 +32,21 @@
   color: var(--color-text-muted);
 }
 
+/* Inline, not flex: a label long enough to wrap keeps its help icon on the last word instead
+   of leaving it stranded between the text and the input. */
 .field-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
+  display: inline;
+}
+
+.field-label app-help-tip {
+  margin-left: 0.3rem;
 }
 
 .menu-field input[type='number'] {
-  width: 4.5rem;
+  flex: none;
+  box-sizing: border-box;
+  width: var(--menu-control-width);
+  min-width: 0;
   font: inherit;
   font-size: var(--text-sm);
   text-align: right;
@@ -48,20 +58,53 @@
   font-variant-numeric: tabular-nums;
 }
 
+.menu-field input[type='number']:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
+}
+
+/* The unit lives inside the box, so a field with a unit is the same size as one
+   without and the input group takes the border and focus ring instead. */
 .field-with-unit {
+  flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  box-sizing: border-box;
+  width: var(--menu-control-width);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.field-with-unit:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
+}
+
+.menu-field .field-with-unit input[type='number'] {
+  flex: 1 1 auto;
+  width: auto;
+  padding-right: 0.25rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.menu-field .field-with-unit input[type='number']:focus {
+  box-shadow: none;
 }
 
 .field-unit {
+  flex: none;
+  padding-right: 0.45rem;
   font-size: var(--text-xs);
   color: var(--color-text-subtle);
 }
 
 .menu-note {
   margin: 0;
-  padding: 0 0.75rem 0.4rem;
+  padding: 0.7rem 0.75rem 0.4rem;
   font-size: var(--text-xs);
   line-height: 1.45;
   color: var(--color-text-subtle);
