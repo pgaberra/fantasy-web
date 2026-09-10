@@ -355,10 +355,13 @@ in a template, in a string a component returns, or in a CSS `content`.
 `.github/scripts/check-inline-icons.sh` fails the build on either, and it runs in `pr-checks.yml`.
 
 One spec for every icon, Lucide's: a 24x24 grid, no fill, `currentColor`, stroke width 2, round
-caps and joins, `aria-hidden`. Only the size is settable per call site. A number is pixels
-(default 16; the scale is 14 inline with text, 16, 20 standalone), and a CSS length is for an icon
-that has to scale with its text, like `size="0.85em"` in a Premium badge. Colour comes from the
-surrounding text, so an icon follows hover, disabled and danger states without being told.
+caps and joins, `aria-hidden`. Only the size is settable per call site, and only to a step on the
+scale: 14 inline with text (a back link, a sort arrow, a checkbox tick), 16 on a button or in a
+menu (the default, so leave it out), 20 standalone (a dialog close, a card's icon box), 48 for an
+empty or error state. An `em` length is for an icon that has to scale with its text, like
+`size="0.85em"` in a Premium badge. The `IconSize` type holds the scale, so any other size fails
+the build. Colour comes from the surrounding text, so an icon follows hover, disabled and danger
+states without being told.
 
 Adding one: import the Lucide export in `icon.ts` and give it a line in `ICONS`, named for what
 the icon is for rather than what it looks like (`close`, not `x`). Look on lucide.dev first:
