@@ -13,7 +13,7 @@ unless they refer to something genuinely different.
 | The saved artifact a manager creates | projection | ranking model, projection board |
 | The ranked output of a projection | player rankings | the sheet |
 | The league's categories or point values | scoring settings | scoring system, scoring format |
-| Everything else configured about the league | league settings | league config, league setup |
+| Everything else configured about the league | league settings | league config |
 | The live drafting feature | Draft mode | draft board mode, live draft |
 | Games a goalie started | games started | games-started count |
 | The paid membership | Premium | premium tier, premium plan, Pro plan |

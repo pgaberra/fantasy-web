@@ -5,10 +5,9 @@
  * The rules that need a machine are not the ones banning a word. Those hold by themselves,
  * because "supercharge" is conspicuous the moment you type it: the whole marketing-vocabulary
  * list came to two hits across 68 templates. The ones that need a machine are the pick-one-name
- * rules, where both options read fine: `league setup` sat on three buttons and menu titles
- * against a single `league settings`. Nothing feels wrong while writing it, so nothing sends
- * anyone to look the rule up, and no reviewer diffs vocabulary across 68 files. A script settles
- * it in a millisecond.
+ * rules, where both options read fine: nothing feels wrong while writing the wrong one, so nothing
+ * sends anyone to look the rule up, and no reviewer diffs vocabulary across 68 files. A script
+ * settles it in a millisecond.
  *
  * Scope is deliberately narrow: templates only, visible text plus the attributes that carry copy.
  * A `.ts` string literal sits next to identifiers, css classes and urls that trip every word
