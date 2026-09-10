@@ -7,9 +7,10 @@
 #  1. An <svg> written into a template. Drawn one at a time, these drifted: before the icon
 #     component the app held 61 of them, with six stroke widths and three icon families mixed.
 #
-#  2. A character standing in for an icon: an arrow, a geometric shape, a dingbat, or a plus sign
-#     in front of a label ("+ Create"), typed into a template, returned from a component as a
-#     string, or put in a CSS `content`. These slipped
+#  2. A character standing in for an icon: an arrow, a geometric shape, a dingbat, a plus sign
+#     in front of a label ("+ Create"), or a multiplication sign alone in a close button
+#     (`&times;`), typed into a template, returned from a component as a string, or put in a CSS
+#     `content`. These slipped
 #     past the first check, sat on the same row as real icons (a typed cross beside a drawn
 #     pencil), and are not even guaranteed to exist in the user's font: undo and redo were already
 #     drawn rather than typed because their arrows render as empty boxes in several Windows UI
@@ -75,8 +76,11 @@ done < <(
       }
       # The plus is only an icon where it leads a label: first in an element, or first in a
       # string. Arithmetic and string concatenation (`" + name`) have a space before the plus.
+      # The multiplication sign is only an icon where it is the whole of an element, as in a close
+      # button; a multiplier such as `×1.5` has its number beside it.
       print "$file\n" if $text =~ /[\x{2190}-\x{21FF}\x{25A0}-\x{25FF}\x{2700}-\x{27BF}]/
-        || $text =~ />\s*\+\s+\p{L}|[\x22\x27\x60]\+\s+\p{L}/;
+        || $text =~ />\s*\+\s+\p{L}|[\x22\x27\x60]\+\s+\p{L}/
+        || $text =~ />\s*(?:&times;|\x{00D7})\s*</;
     '
 )
 

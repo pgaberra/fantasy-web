@@ -31,11 +31,14 @@
 
 .toast-close {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
   border: none;
   background: none;
   color: var(--color-text-subtle);
-  font-size: 1.25rem;
-  line-height: 1;
   cursor: pointer;
   padding: 0;
 }
