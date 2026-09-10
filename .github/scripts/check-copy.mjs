@@ -5,9 +5,8 @@
  * The rules that need a machine are not the ones banning a word. Those hold by themselves,
  * because "supercharge" is conspicuous the moment you type it: the whole marketing-vocabulary
  * list came to two hits across 68 templates. The ones that need a machine are the pick-one-name
- * rules, where both options read fine. `player rankings`, the canonical name of the central
- * thing this product makes, appeared ZERO times in the shipping app, while `player list` and
- * `the board` were in use. Nothing feels wrong while writing `player list`, so nothing sends
+ * rules, where both options read fine: `league setup` sat on three buttons and menu titles
+ * against a single `league settings`. Nothing feels wrong while writing it, so nothing sends
  * anyone to look the rule up, and no reviewer diffs vocabulary across 68 files. A script settles
  * it in a millisecond.
  *
@@ -68,6 +67,16 @@ const rules = [
     why: 'spelled or cased wrong',
     exact: true,
   })),
+  // A cell names its mark and gives the character in parentheses: "em dash (—)". The character is
+  // what gets matched, and anywhere, not as a whole word: "season—every" has letters on both sides
+  // and a word-boundary match would never see it.
+  ...table(markdown, 'Punctuation').map(([cell, instead]) => ({
+    term: cell.match(/\(([^)]+)\)/)?.[1] ?? cell,
+    label: cell,
+    instead,
+    why: 'punctuation',
+    anywhere: true,
+  })),
 ];
 
 function templates(dir) {
@@ -87,7 +96,8 @@ function copyIn(html) {
   const attrs = [...html.matchAll(/(?:appTooltip|aria-label|placeholder|title|alt)="([^"]*)"/g)]
     .map((match) => match[1])
     .join(' ');
-  return `${visible} ${attrs}`;
+  // The entity renders as the character, so it is the character as far as a reader is concerned.
+  return `${visible} ${attrs}`.replace(/&mdash;/g, '—');
 }
 
 const ESCAPE = /[.*+?^${}()|[\]\\]/g;
@@ -96,12 +106,11 @@ const found = {};
 for (const path of templates(SCAN)) {
   const file = relative(ROOT, path).split(sep).join('/');
   const haystack = copyIn(readFileSync(path, 'utf8'));
-  for (const { term, exact } of rules) {
-    // Whole phrases only, so "starts" never fires inside "restarts".
-    const pattern = new RegExp(
-      String.raw`(?<![\w-])` + term.replace(ESCAPE, String.raw`\$&`) + String.raw`(?![\w-])`,
-      exact ? 'g' : 'gi',
-    );
+  for (const { term, exact, anywhere } of rules) {
+    const escaped = term.replace(ESCAPE, String.raw`\$&`);
+    // Whole phrases only, so "starts" never fires inside "restarts". Punctuation is the exception.
+    const source = anywhere ? escaped : String.raw`(?<![\w-])` + escaped + String.raw`(?![\w-])`;
+    const pattern = new RegExp(source, exact || anywhere ? 'g' : 'gi');
     const count = (haystack.match(pattern) ?? []).length;
     if (count) found[`${file} :: ${term}`] = count;
   }
@@ -132,11 +141,11 @@ if (added.length) {
     const allowed = baseline[key] ?? 0;
     console.error(`  ${file}`);
     console.error(
-      `    "${term}" x${n}${allowed ? ` (baseline allows ${allowed})` : ''}` +
+      `    "${rule.label ?? term}" x${n}${allowed ? ` (baseline allows ${allowed})` : ''}` +
         ` - ${rule.why}: write "${rule.instead}"`,
     );
   }
-  console.error('Reasoning: COPY-RULES.md. Judgement rather than rules: the slapstat-copy skill.');
+  console.error('Rules: COPY-RULES.md. Judgement rather than rules: the slapstat-copy skill.');
   process.exit(1);
 }
 

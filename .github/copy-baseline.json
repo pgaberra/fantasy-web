@@ -1,10 +1,8 @@
 {
-  "src/app/admin/admin.html :: player list": 1,
+  "src/app/draft-mode/league-projection-table/league-projection-table.html :: —": 1,
   "src/app/draft-projection/player-projections-table/league-settings-menu/league-settings-menu.html :: league setup": 1,
   "src/app/draft-projection/player-projections-table/player-projections-table.html :: league setup": 1,
   "src/app/pay/pay.html :: Something went wrong": 1,
-  "src/app/shared/offseason-data-notice/offseason-data-notice.html :: player list": 1,
-  "src/app/shared/player-pool-notice/player-pool-notice.html :: player list": 1,
-  "src/app/shared/unverified-banner/unverified-banner.html :: Please try again": 1,
+  "src/app/shared/environment-banner/environment-banner.html :: —": 1,
   "src/app/whos-hot/hot-players-table/hot-players-table.html :: league setup": 1
 }

@@ -417,9 +417,9 @@ doesn't replace them.
 - `.github/workflows/pr-checks.yml`: Node 22, generates the API client then runs
   lint + format:check + test + build on PRs to `master`.
 - **Copy is checked, not merely guided.** `npm run check:copy` reads `COPY-RULES.md` and fails
-  on a new terminology or vocabulary violation, ratcheted against `.github/copy-baseline.json`.
-  It settles only what a script can settle: naming the same thing the same way, and the banned
-  phrases. Tone, rhythm and whether a sentence should exist at all are the `slapstat-copy`
+  on a new terminology, vocabulary or punctuation violation, ratcheted against `.github/copy-baseline.json`.
+  It settles only what a script can settle: naming the same thing the same way, the banned
+  phrases, and the em dash. Tone, rhythm and whether a sentence should exist at all are the `slapstat-copy`
   skill's job, and no rule in `COPY-RULES.md` tries to reach them.
 - A **spec drift check** runs first: it fetches `fantasy-bff`'s `specs/bff-openapi.yaml`
   from `master` and fails if the pinned `specs/bff-openapi.yaml` differs. Needs a repo
