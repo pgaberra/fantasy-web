@@ -806,7 +806,8 @@ describe('DraftStartComponent', () => {
     const link = ngMocks.find(fixture, '.create-projection');
 
     expect(ngMocks.input(link, 'routerLink')).toEqual('/projections/new');
-    expect(link.nativeElement.textContent?.trim()).toEqual('+ Create a new projection');
+    expect(link.nativeElement.textContent?.trim()).toEqual('Create a new projection');
+    expect(ngMocks.input(ngMocks.find(link, 'app-icon'), 'name')).toEqual('plus');
   });
 
   /**
