@@ -162,6 +162,12 @@ export class DraftProjectionComponent implements OnInit {
   playerPoolSyncedAt = signal<string | null>(null);
   /** What the server had to add and drop to match the current pool, on the read that did it. */
   readonly poolReconciliation = signal<PoolReconciliation | null>(null);
+
+  /** The players that reconciliation added, as the table wants them; null when it added none. */
+  readonly newPlayerIds = computed<ReadonlySet<number> | null>(() => {
+    const ids = this.poolReconciliation()?.addedPlayerIds;
+    return ids?.length ? new Set(ids) : null;
+  });
   draft = signal<DraftState | null>(null);
   /** The positions the owner corrected by hand, keyed by player. Empty when none have been. */
   readonly positionOverrides = signal<PositionOverrides>(new Map());
@@ -537,6 +543,11 @@ export class DraftProjectionComponent implements OnInit {
       }
       return next;
     });
+  }
+
+  /** The notice's offer to narrow the table to the players it is talking about. */
+  showNewPlayers(): void {
+    this.table()?.newPlayersOnly.set(true);
   }
 
   /** Drops every correction at once, putting the whole pool back on the reported positions. */

@@ -220,6 +220,7 @@ describe('PlayerProjectionsTableComponent', () => {
       columnControls: boolean;
       syncedLeagueName: string | null;
       maxVisiblePlayers: number | null;
+      newPlayerIds: ReadonlySet<number> | null;
     }> = {},
   ) =>
     MockRender(PlayerProjectionsTableComponent, {
@@ -300,6 +301,35 @@ describe('PlayerProjectionsTableComponent', () => {
       const component = await renderWithRookies(of(null));
 
       component.rookiesOnly.set(true);
+
+      expect(component.visibleProjections().length).toEqual(mockPlayerProjections.length);
+    });
+  });
+
+  /**
+   * The players a reconciliation added are the page's to know and the table's to find: a
+   * filter, offered only while there is someone to find.
+   */
+  describe('new players', () => {
+    it('narrows the table to the added players when the filter is on', () => {
+      const component = getComponent({ newPlayerIds: new Set([2]) });
+
+      expect(component.newPlayersAvailable()).toEqual(true);
+      component.newPlayersOnly.set(true);
+
+      expect(component.visibleProjections().map((sp) => sp.projection.playerId)).toEqual([2]);
+    });
+
+    it('offers no filter when nothing was added', () => {
+      expect(getComponent().newPlayersAvailable()).toEqual(false);
+    });
+
+    // An id the pool cannot draw a row for is nothing to filter to either.
+    it('offers no filter when none of the added players are in the pool', () => {
+      const component = getComponent({ newPlayerIds: new Set([999]) });
+
+      expect(component.newPlayersAvailable()).toEqual(false);
+      component.newPlayersOnly.set(true);
 
       expect(component.visibleProjections().length).toEqual(mockPlayerProjections.length);
     });

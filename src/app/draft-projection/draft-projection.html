@@ -80,7 +80,10 @@
 
     <app-offseason-data-notice />
 
-    <app-player-pool-notice [reconciliation]="poolReconciliation()" />
+    <app-player-pool-notice
+      [reconciliation]="poolReconciliation()"
+      (showNewPlayers)="showNewPlayers()"
+    />
 
     <div class="projections-tables">
       <app-player-projections-table
@@ -102,6 +105,7 @@
         [syncedLeagueName]="syncedLeagueName()"
         [positionControls]="true"
         [positionOverrides]="positionOverrides()"
+        [newPlayerIds]="newPlayerIds()"
         (manageSyncRequested)="showSyncDialog.set(true)"
         (fullSeasonRequested)="openFullSeasonDialog()"
         (positionsChanged)="onPositionsChanged($event)"
@@ -147,7 +151,7 @@
             class="btn btn-primary btn-sm"
             (click)="showSyncDialog.set(true)"
           >
-            <app-icon name="refresh" [size]="15" />
+            <app-icon name="import" [size]="15" />
             Import league
           </button>
         }
