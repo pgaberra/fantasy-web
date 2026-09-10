@@ -13,6 +13,7 @@ import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { PasswordRequirementsComponent } from '../password-requirements/password-requirements';
 import { PASSWORD_MAX_LENGTH, unmetPasswordRequirements } from '../password-policy';
+import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 
 interface ResetFormValue {
   password: string;
@@ -21,7 +22,7 @@ interface ResetFormValue {
 
 @Component({
   selector: 'app-reset-password',
-  imports: [FormField, RouterLink, PasswordRequirementsComponent],
+  imports: [FormField, RouterLink, PasswordRequirementsComponent, LoadingIndicatorComponent],
   templateUrl: './reset-password.html',
   styleUrl: '../auth-page.css',
 })

@@ -13,7 +13,7 @@
         [disabled]="isSending()"
       >
         @if (isSending()) {
-          <span>Sending<span class="loading-dots" aria-hidden="true"></span></span>
+          <app-loading-indicator variant="inline" label="Sending" />
         } @else {
           Resend email
         }

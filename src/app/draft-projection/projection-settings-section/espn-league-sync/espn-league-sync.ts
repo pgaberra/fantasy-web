@@ -6,6 +6,7 @@ import { EspnService } from '../../../services/espn.service';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
 import { CredentialValuesResponse } from '../../../api/models/credential-values-response';
 import { IconComponent } from '../../../shared/icon/icon';
+import { LoadingIndicatorComponent } from '../../../shared/loading-indicator/loading-indicator';
 
 export interface EspnSyncResult {
   settings: LeagueProjectionSettingsResponse;
@@ -32,7 +33,7 @@ export interface EspnSyncResult {
  */
 @Component({
   selector: 'app-espn-league-sync',
-  imports: [DatePipe, IconComponent],
+  imports: [DatePipe, IconComponent, LoadingIndicatorComponent],
   templateUrl: './espn-league-sync.html',
   styleUrl: './espn-league-sync.css',
 })

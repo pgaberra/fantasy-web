@@ -10,6 +10,7 @@ import { BillingService } from '../services/billing.service';
 import { AuthService } from '../services/auth.service';
 import { EntitlementService } from '../services/entitlement.service';
 import { NotificationService } from '../services/notification.service';
+import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 
 const initializePaddle = vi.fn();
 const PricePreview = vi.fn();
@@ -216,7 +217,9 @@ describe('PremiumComponent', () => {
     MockRender(PremiumComponent);
 
     const card = ngMocks.find('.plan-card--premium').nativeElement as HTMLElement;
-    expect(card.textContent).toContain('Loading your plan');
+    const pending = ngMocks.find(LoadingIndicatorComponent);
+    expect(ngMocks.input(pending, 'label')).toEqual('Loading your plan');
+    expect(card.contains(pending.nativeElement)).toBe(true);
     expect(card.textContent).not.toContain('Subscribe');
   });
 

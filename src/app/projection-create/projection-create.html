@@ -202,7 +202,11 @@
         [disabled]="!canCreate()"
         (click)="create()"
       >
-        {{ isCreating() ? 'Creating…' : 'Create projection' }}
+        @if (isCreating()) {
+          <app-loading-indicator variant="inline" label="Creating" />
+        } @else {
+          Create projection
+        }
       </button>
     }
   </div>

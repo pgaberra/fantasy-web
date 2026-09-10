@@ -2,6 +2,7 @@ import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { RouterLink } from '@angular/router';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { AuthFormComponent } from './auth-form';
+import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 import { AuthCredentials } from './model';
 import { GoogleSignInButtonComponent } from '../google-sign-in-button/google-sign-in-button';
 import { FacebookSignInButtonComponent } from '../facebook-sign-in-button/facebook-sign-in-button';
@@ -56,16 +57,20 @@ describe('AuthFormComponent', () => {
 
     expect(button.disabled).toEqual(false);
     expect(button.textContent).toContain('Sign in');
-    expect(ngMocks.findAll('.loading-dots')).toHaveLength(0);
+    expect(ngMocks.findAll(LoadingIndicatorComponent)).toHaveLength(0);
   });
 
-  it('shows the loading label with an animated dots element and disables the button while loading', () => {
+  it('hands the loading label to the indicator and disables the button while loading', () => {
     render(true);
     const button = ngMocks.find('button.btn-primary').nativeElement as HTMLButtonElement;
+    const indicators = ngMocks.findAll(LoadingIndicatorComponent);
 
     expect(button.disabled).toEqual(true);
-    expect(button.textContent).toContain('Signing in');
-    expect(ngMocks.findAll('.loading-dots')).toHaveLength(1);
+    // The label reaches the indicator rather than the button's own text: the component draws it,
+    // together with the dots that make the wait visibly a wait.
+    expect(indicators).toHaveLength(1);
+    expect(ngMocks.input(indicators[0], 'label')).toEqual('Signing in');
+    expect(ngMocks.input(indicators[0], 'variant')).toEqual('inline');
   });
 
   it('renders the Google sign-in button and a divider when a client id is configured', () => {

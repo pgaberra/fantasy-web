@@ -5,7 +5,9 @@
   picked card changes.
 -->
 @if (isLoading()) {
-  <p class="preview-note">Loading preview…</p>
+  <p class="preview-note">
+    <app-loading-indicator variant="inline" label="Loading preview" />
+  </p>
 } @else if (hasFailed() || !previewRows().length) {
   <p class="preview-note">{{ fallbackNote() ?? 'Preview unavailable right now.' }}</p>
 } @else {

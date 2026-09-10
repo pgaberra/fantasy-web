@@ -10,6 +10,7 @@ import { ProjectionShareService } from '../../services/projection-share.service'
 import { USERNAME_PATTERN, USERNAME_MAX_LENGTH } from '../../models/username';
 import { messageForError } from '../../shared/http-error';
 import { OpenPopovers } from '../../shared/popover/open-popovers';
+import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 
 /**
  * Publishing a projection as a public link. Opening the dialog only reads the current state —
@@ -21,7 +22,7 @@ import { OpenPopovers } from '../../shared/popover/open-popovers';
  */
 @Component({
   selector: 'app-share-dialog',
-  imports: [],
+  imports: [LoadingIndicatorComponent],
   templateUrl: './share-dialog.html',
   styleUrl: './share-dialog.css',
 })

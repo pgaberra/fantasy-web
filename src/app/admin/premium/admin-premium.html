@@ -10,7 +10,7 @@
   }
 
   @if (loading() && customers().length === 0) {
-    <p class="admin-card-desc">Loading…</p>
+    <p class="admin-card-desc"><app-loading-indicator variant="inline" label="Loading" /></p>
   } @else if (customers().length === 0) {
     <p class="admin-card-desc">Nobody has Premium yet.</p>
   } @else {
@@ -55,7 +55,11 @@
                     [disabled]="revokingUserId() === customer.userId"
                     (click)="revoke(customer)"
                   >
-                    {{ revokingUserId() === customer.userId ? 'Ending…' : 'End' }}
+                    @if (revokingUserId() === customer.userId) {
+                      <app-loading-indicator variant="inline" label="Ending" />
+                    } @else {
+                      End
+                    }
                   </button>
                 }
               </td>
@@ -132,7 +136,11 @@
       [disabled]="granting() || !email().trim()"
       (click)="grant()"
     >
-      {{ granting() ? 'Giving…' : 'Give Premium' }}
+      @if (granting()) {
+        <app-loading-indicator variant="inline" label="Giving" />
+      } @else {
+        Give Premium
+      }
     </button>
   </div>
 </article>

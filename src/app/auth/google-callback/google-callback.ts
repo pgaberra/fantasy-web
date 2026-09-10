@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { messageForError } from '../../shared/http-error';
+import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 
 /**
  * Lands the Google OAuth redirect (`/auth/google/callback?code=…&state=…`). It hands the code
@@ -11,7 +12,7 @@ import { messageForError } from '../../shared/http-error';
  */
 @Component({
   selector: 'app-google-callback',
-  imports: [RouterLink],
+  imports: [RouterLink, LoadingIndicatorComponent],
   templateUrl: './google-callback.html',
   styleUrl: '../auth-page.css',
 })

@@ -41,7 +41,11 @@
           (click)="copyToMyProjections()"
           data-testid="copy-board"
         >
-          {{ importingInto() === 'projection' ? 'Copying…' : 'Create projection' }}
+          @if (importingInto() === 'projection') {
+            <app-loading-indicator variant="inline" label="Copying" />
+          } @else {
+            Create projection
+          }
         </button>
         <button
           type="button"
@@ -51,7 +55,11 @@
           (click)="draftAgainstThis()"
           data-testid="draft-board"
         >
-          {{ importingInto() === 'draft' ? 'Copying…' : 'Draft mode' }}
+          @if (importingInto() === 'draft') {
+            <app-loading-indicator variant="inline" label="Copying" />
+          } @else {
+            Draft mode
+          }
         </button>
       </div>
       @if (signInPromptFor()) {

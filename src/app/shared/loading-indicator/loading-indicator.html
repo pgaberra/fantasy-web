@@ -1,3 +1,12 @@
-<div class="loading-container">
-  <div class="loading-spinner"></div>
-</div>
+@if (variant() === 'inline') {
+  <span class="loading-inline"
+    >{{ label() }}<span class="loading-dots" aria-hidden="true"></span
+  ></span>
+} @else {
+  <!-- role="status" with a name, because the page shape has no text of its own: without it a
+       screen reader is handed an empty box for however long the wait lasts. The inline shape
+       needs none, its label is already the text. -->
+  <div class="loading-container" role="status" aria-label="Loading">
+    <div class="loading-spinner"></div>
+  </div>
+}

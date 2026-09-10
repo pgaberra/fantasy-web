@@ -34,6 +34,7 @@ import {
 } from '../../draft-projection/projection-defaults';
 import { DEFAULT_DECIMAL_SETTINGS } from '../../draft-projection/projection-settings-section/model';
 import { readableDecimalSettings } from '../../draft-projection/projection-settings-section/model-decimals';
+import { LoadingIndicatorComponent } from '../loading-indicator/loading-indicator';
 
 /** A starting point the server derives on its own, from nothing the user has to supply. */
 export type PresetSource = NonNullable<CreateProjectionRequest['source']>;
@@ -152,7 +153,12 @@ const ZEROED_GOALIE_STATS: GoalieStats = {
  */
 @Component({
   selector: 'app-starting-point-preview',
-  imports: [PlayerRowComponent, ProjectionsTableHeaderComponent, TableScrollDirective],
+  imports: [
+    PlayerRowComponent,
+    ProjectionsTableHeaderComponent,
+    TableScrollDirective,
+    LoadingIndicatorComponent,
+  ],
   templateUrl: './starting-point-preview.html',
   styleUrl: './starting-point-preview.css',
 })

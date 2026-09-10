@@ -11,12 +11,13 @@ import {
 } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
+import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 
 const EMAIL_MAX_LENGTH = 254;
 
 @Component({
   selector: 'app-forgot-password',
-  imports: [FormField, RouterLink],
+  imports: [FormField, RouterLink, LoadingIndicatorComponent],
   templateUrl: './forgot-password.html',
   styleUrl: '../auth-page.css',
 })

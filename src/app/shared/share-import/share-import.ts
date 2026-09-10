@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProjectionStorageService } from '../../services/projection-storage.service';
 import { NotificationService } from '../../services/notification.service';
 import { ProjectionResponse } from '../../api/models/projection-response';
+import { LoadingIndicatorComponent } from '../loading-indicator/loading-indicator';
 
 /**
  * Pulls the token out of whatever gets pasted: a whole share URL, the path from one, or the
@@ -28,6 +29,7 @@ export function shareTokenFrom(pasted: string): string | null {
  */
 @Component({
   selector: 'app-share-import',
+  imports: [LoadingIndicatorComponent],
   templateUrl: './share-import.html',
   styleUrl: './share-import.css',
 })

@@ -19,3 +19,51 @@
     transform: rotate(360deg);
   }
 }
+
+/* Inline: the label stays ordinary text so it inherits the size, weight and colour of whatever it
+   is standing in, which is a button label as often as a status line. Only the dots are ours. */
+.loading-inline {
+  display: inline;
+}
+
+/* The dots are drawn in ::after and cycle through one, two and three. Reserving 1.5ch keeps the
+   box a fixed width: sized to its content it would grow and shrink three times a second, nudging
+   a button's edge or the text after it. `steps(1, end)` holds each count for its whole third
+   rather than easing between them, which is what makes it read as counting instead of pulsing. */
+.loading-dots {
+  display: inline-block;
+  width: 1.5ch;
+  text-align: left;
+}
+
+.loading-dots::after {
+  content: '.';
+  animation: loading-dots 1.2s steps(1, end) infinite;
+}
+
+@keyframes loading-dots {
+  0% {
+    content: '.';
+  }
+  33% {
+    content: '..';
+  }
+  66% {
+    content: '...';
+  }
+}
+
+/* Someone who has asked for less motion still has to be able to tell that something is running,
+   so the spinner keeps turning, slowly, rather than stopping dead: a frozen spinner reads as a
+   hung page, which is the exact confusion this component exists to remove. The dots have no such
+   option (there is no slow way to swap a character), so they settle on the still ellipsis. */
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner {
+    animation-duration: 2.4s;
+  }
+
+  .loading-dots::after {
+    content: '…';
+    animation: none;
+  }
+}

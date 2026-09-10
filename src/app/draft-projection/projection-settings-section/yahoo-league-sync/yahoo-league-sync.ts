@@ -6,6 +6,7 @@ import { LeagueSummary } from '../../../api/models/league-summary';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
 import { YahooSync } from '../../../api/models/yahoo-sync';
 import { IconComponent } from '../../../shared/icon/icon';
+import { LoadingIndicatorComponent } from '../../../shared/loading-indicator/loading-indicator';
 
 export interface YahooSyncResult {
   settings: LeagueProjectionSettingsResponse;
@@ -20,7 +21,7 @@ export interface YahooSyncResult {
  */
 @Component({
   selector: 'app-yahoo-league-sync',
-  imports: [DatePipe, IconComponent],
+  imports: [DatePipe, IconComponent, LoadingIndicatorComponent],
   templateUrl: './yahoo-league-sync.html',
   styleUrl: './yahoo-league-sync.css',
 })
