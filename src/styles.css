@@ -209,6 +209,9 @@ summary:focus-visible,
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   cursor: pointer;
+  /* An <a> styled as a button otherwise keeps the browser's link underline, so a link and a
+     <button> with the same classes looked different. Its shape already says it is clickable. */
+  text-decoration: none;
   transition:
     background var(--transition),
     border-color var(--transition),
