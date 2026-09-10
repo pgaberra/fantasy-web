@@ -54,12 +54,12 @@
   </div>
   <!-- What the rows above are, rather than how many of them there are: a count of the board is
        not something anyone reads a preview to learn, and the credit MoneyPuck's terms require has
-       to sit somewhere the numbers are. -->
+       to sit somewhere the numbers are. It names the source and nothing about the method: the
+       model's window, weights and adjustments change from version to version, and a line here
+       that described one of them was true only until the next one shipped. -->
   @if (isModelPreset()) {
     <p class="preview-note">
-      Each player is projected from his last three seasons, weighted toward the most recent,
-      adjusted for age and set against how the league is scoring now. Shot quality, hits, blocks and
-      faceoffs come from MoneyPuck. Data © MoneyPuck.com.
+      The AI projection uses advanced stats from MoneyPuck. Data © MoneyPuck.com.
     </p>
   }
 }

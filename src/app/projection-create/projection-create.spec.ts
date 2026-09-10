@@ -978,7 +978,7 @@ describe('ProjectionCreateComponent', () => {
     fixture.detectChanges();
 
     const note = fixture.nativeElement.querySelector('.preview-note');
-    expect(note.textContent).toContain('last three seasons');
+    expect(note.textContent).toContain('advanced stats from MoneyPuck');
     expect(note.textContent).toContain('Data © MoneyPuck.com');
   });
 
