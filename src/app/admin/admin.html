@@ -20,7 +20,9 @@
     <div class="admin-status">
       @switch (connected()) {
         @case (null) {
-          <span class="status status-loading">Checking…</span>
+          <span class="status status-loading"
+            ><app-loading-indicator variant="inline" label="Checking"
+          /></span>
         }
         @case (true) {
           <span class="status status-ok">● Connected</span>
@@ -114,7 +116,11 @@
 
     <div class="admin-actions">
       <button type="button" class="btn btn-secondary" [disabled]="syncing()" (click)="runSync()">
-        {{ syncing() ? 'Syncing…' : 'Run sync now' }}
+        @if (syncing()) {
+          <app-loading-indicator variant="inline" label="Syncing" />
+        } @else {
+          Run sync now
+        }
       </button>
     </div>
 
@@ -186,7 +192,11 @@
 
     <div class="admin-actions">
       <button type="button" class="btn btn-secondary" [disabled]="probing()" (click)="runProbe()">
-        {{ probing() ? 'Asking Yahoo…' : 'Run probe' }}
+        @if (probing()) {
+          <app-loading-indicator variant="inline" label="Asking Yahoo" />
+        } @else {
+          Run probe
+        }
       </button>
       <button
         type="button"

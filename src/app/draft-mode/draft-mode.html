@@ -14,7 +14,9 @@
         }
         @switch (saveStatus()) {
           @case ('saving') {
-            <span class="save-status">Saving…</span>
+            <span class="save-status"
+              ><app-loading-indicator variant="inline" label="Saving"
+            /></span>
           }
           @case ('saved') {
             <span class="save-status">Saved</span>

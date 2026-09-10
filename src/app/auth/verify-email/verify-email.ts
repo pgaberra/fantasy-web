@@ -2,12 +2,13 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
+import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 
 type VerifyStatus = 'verifying' | 'succeeded' | 'failed' | 'no-token';
 
 @Component({
   selector: 'app-verify-email',
-  imports: [RouterLink],
+  imports: [RouterLink, LoadingIndicatorComponent],
   templateUrl: './verify-email.html',
   styleUrl: '../auth-page.css',
 })

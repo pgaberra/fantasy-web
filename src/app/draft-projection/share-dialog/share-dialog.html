@@ -8,7 +8,7 @@
     </div>
 
     @if (isLoading()) {
-      <p class="dialog-body">Checking…</p>
+      <p class="dialog-body"><app-loading-indicator variant="inline" label="Checking" /></p>
     } @else if (share(); as activeShare) {
       <div class="link-row">
         <input
@@ -54,7 +54,11 @@
           [disabled]="isSaving() || !canPublish()"
           (click)="publish()"
         >
-          {{ isSaving() ? 'Sharing…' : 'Create link' }}
+          @if (isSaving()) {
+            <app-loading-indicator variant="inline" label="Sharing" />
+          } @else {
+            Create link
+          }
         </button>
       </div>
     }

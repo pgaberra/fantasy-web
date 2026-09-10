@@ -88,7 +88,9 @@
               </button>
               @if (isDiscarding(draft)) {
                 <div class="draft-actions">
-                  <span class="row-busy">Discarding…</span>
+                  <span class="row-busy"
+                    ><app-loading-indicator variant="inline" label="Discarding"
+                  /></span>
                 </div>
               } @else if (isConfirmingDiscard(draft)) {
                 <div class="draft-actions">
@@ -333,7 +335,11 @@
             [disabled]="!selection() || isStarting()"
             (click)="start()"
           >
-            {{ isStarting() ? 'Starting…' : 'Start draft' }}
+            @if (isStarting()) {
+              <app-loading-indicator variant="inline" label="Starting" />
+            } @else {
+              Start draft
+            }
           </button>
         }
       </div>

@@ -73,7 +73,7 @@
 
       <button type="submit" class="btn btn-primary btn-block btn-lg" [disabled]="isLoading()">
         @if (isLoading()) {
-          <span>{{ loadingLabel() }}<span class="loading-dots" aria-hidden="true"></span></span>
+          <app-loading-indicator variant="inline" [label]="loadingLabel()" />
         } @else {
           {{ submitLabel() }}
         }

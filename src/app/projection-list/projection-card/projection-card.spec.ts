@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ProjectionCardComponent } from './projection-card';
 import { ProjectionSummaryResponse } from '../../api/models/projection-summary-response';
 import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
+import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 
 describe('ProjectionCardComponent', () => {
   const projection: ProjectionSummaryResponse = {
@@ -108,8 +109,10 @@ describe('ProjectionCardComponent', () => {
     render(true);
     openMenu();
 
-    const share = menuItem('Opening…');
-    expect(share.disabled).toBe(true);
+    // The busy label is drawn by the indicator now, so the menu item carries no text of its own.
+    const pending = ngMocks.find(LoadingIndicatorComponent);
+    expect(ngMocks.input(pending, 'label')).toEqual('Opening');
+    expect((pending.nativeElement.closest('button') as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('asks for confirmation before removing, then emits on confirm', () => {

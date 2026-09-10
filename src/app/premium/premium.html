@@ -122,7 +122,11 @@
               [disabled]="openingPortal()"
               (click)="manageBilling()"
             >
-              {{ openingPortal() ? 'Opening…' : 'Manage subscription' }}
+              @if (openingPortal()) {
+                <app-loading-indicator variant="inline" label="Opening" />
+              } @else {
+                Manage subscription
+              }
             </button>
             <p class="plan-note">
               Change your card, download receipts, or cancel in the billing portal. Paddle handles
@@ -171,7 +175,9 @@
             <!-- No Subscribe button until the plan is known: offered to a subscriber whose
                  entitlement has not landed yet, it starts a second checkout for what they
                  already pay for. -->
-            <p class="plan-state">Loading your plan…</p>
+            <p class="plan-state">
+              <app-loading-indicator variant="inline" label="Loading your plan" />
+            </p>
           }
           @default {
             <button
@@ -180,7 +186,11 @@
               [disabled]="starting()"
               (click)="subscribe()"
             >
-              {{ starting() ? 'Starting…' : 'Subscribe' }}
+              @if (starting()) {
+                <app-loading-indicator variant="inline" label="Starting" />
+              } @else {
+                Subscribe
+              }
             </button>
             <p class="plan-note">Secure checkout through Paddle. Cancel anytime.</p>
           }
