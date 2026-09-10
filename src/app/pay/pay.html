@@ -1,16 +1,14 @@
 <section class="pay">
   @if (failed()) {
     <h1 class="pay__title">Checkout could not be opened</h1>
-    <p class="pay__text">
-      Something went wrong while opening the payment window. Nothing was charged.
-    </p>
+    <p class="pay__text">Couldn't open the payment window. Nothing was charged.</p>
     <a routerLink="/premium" class="btn btn-primary">Back to Premium</a>
   } @else {
     <!-- Something moving while Paddle's script loads, so a blank second reads as loading and
          not as a page that has stopped. -->
     <div class="pay__spinner" aria-hidden="true"></div>
     <h1 class="pay__title">Opening secure checkout</h1>
-    <p class="pay__text">This may take a moment. Please keep this page open.</p>
+    <p class="pay__text">Keep this page open.</p>
     <p class="pay__hint">Nothing is charged until you confirm the payment.</p>
   }
 </section>
