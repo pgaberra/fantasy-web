@@ -38,6 +38,20 @@ describe('AuthFormComponent', () => {
       isLoading: false,
     });
 
+  it('renders no subtitle line when the page passes none', () => {
+    const fixture = MockRender(AuthFormComponent, {
+      title: 'Create account',
+      submitLabel: 'Create account',
+      loadingLabel: 'Creating account',
+      footerText: 'Already have an account?',
+      footerLinkLabel: 'Sign in',
+      footerLinkRoute: '/login',
+      isLoading: false,
+    });
+
+    expect(fixture.nativeElement.querySelector('.auth-subtitle')).toBeNull();
+  });
+
   /**
    * Where a visitor was headed rides on the URL as ?returnUrl=, and changing their mind about
    * which form they wanted should not lose it. AuthService forgets a return URL it is not handed

@@ -26,7 +26,7 @@ export function premiumPerks(): readonly PremiumPerk[] {
   if (environment.aiProjectionEnabled) {
     perks.push({
       title: 'AI projection',
-      description: 'Every player projected for the 2026-27 season with our AI model.',
+      description: 'Every player projected for the 2026-27 season.',
       link: '/projections/new',
       linkLabel: 'Start an AI projection',
     });
@@ -39,8 +39,8 @@ export function premiumPerks(): readonly PremiumPerk[] {
     });
   }
   perks.push({
-    title: 'More Premium features',
-    description: 'New Premium features will be added regularly.',
+    title: 'New features first',
+    description: 'Get new Premium features as they are released.',
   });
   return perks;
 }
@@ -49,7 +49,7 @@ export function premiumPerks(): readonly PremiumPerk[] {
 export function freeFeatures(): readonly string[] {
   const features = [
     "Projections tailored to your league's scoring",
-    'Live draft board and post-draft rankings',
+    'Draft mode and post-draft team rankings',
     environment.espnLeaguesEnabled
       ? 'Import league settings from Yahoo or ESPN'
       : 'Import league settings from Yahoo',
