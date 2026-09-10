@@ -188,12 +188,11 @@
       <section class="cta">
         @if (isTruncated()) {
           <h2 class="cta-title">
-            This projection includes the top {{ projection.data.players.length }} of
-            {{ totalPlayers() }} players
+            The top {{ projection.data.players.length }} of {{ totalPlayers() }} players
           </h2>
           <p class="cta-body">
             Sign in to see the rest of {{ authorLabel() }}'s rankings and copy the projection into
-            your account. Free to start.
+            your account.
           </p>
           <div class="cta-actions">
             <a
