@@ -37,22 +37,32 @@ describe('PrivacyComponent', () => {
     },
   );
 
-  // The consent gate is the one promise a visitor can check for themselves, and the one the
-  // consent banner is built around: declining must mean no analytics cookie at all.
-  it('states that analytics happen only with consent', async () => {
+  it.each([
+    // The consent gate is the one promise a visitor can check for themselves, and the one the
+    // consent banner is built around: declining must mean no analytics cookie at all.
+    {
+      name: 'states that analytics happen only with consent',
+      says: 'If you do not consent, we do not set analytics cookies',
+    },
+    // Yahoo tokens are the most sensitive thing stored, and there is still no disconnect button
+    // in the app, so the page has to say how to get them removed. Revisit the day one ships.
+    {
+      name: 'says how to have the stored Yahoo connection removed',
+      says: 'removal of the stored Yahoo connection',
+    },
+    {
+      name: 'does not sell personal data or use it for advertising',
+      says: 'We do not sell your personal data',
+    },
+    {
+      name: 'points at the Swedish supervisory authority',
+      says: 'Integritetsskyddsmyndigheten',
+    },
+  ])('$name', async ({ says }) => {
     await MockBuilder(PrivacyComponent);
     MockRender(PrivacyComponent);
 
-    expect(text()).toContain('If you do not consent, we do not set analytics cookies');
-  });
-
-  // Yahoo tokens are the most sensitive thing stored, and there is still no disconnect button
-  // in the app, so the page has to say how to get them removed. Revisit the day one ships.
-  it('says how to have the stored Yahoo connection removed', async () => {
-    await MockBuilder(PrivacyComponent);
-    MockRender(PrivacyComponent);
-
-    expect(text()).toContain('removal of the stored Yahoo connection');
+    expect(text()).toContain(says);
   });
 
   // Hosting, analytics and error monitoring sit in the EU; email delivery and payments do not.
@@ -63,19 +73,5 @@ describe('PrivacyComponent', () => {
 
     expect(text()).toContain('outside the European Economic Area');
     expect(text()).toContain('standard contractual clauses');
-  });
-
-  it('does not sell personal data or use it for advertising', async () => {
-    await MockBuilder(PrivacyComponent);
-    MockRender(PrivacyComponent);
-
-    expect(text()).toContain('We do not sell your personal data');
-  });
-
-  it('points at the Swedish supervisory authority', async () => {
-    await MockBuilder(PrivacyComponent);
-    MockRender(PrivacyComponent);
-
-    expect(text()).toContain('Integritetsskyddsmyndigheten');
   });
 });

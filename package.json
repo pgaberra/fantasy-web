@@ -9,7 +9,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:coverage": "ng test --coverage",
-    "lint": "eslint src/**/*.ts",
+    "lint": "eslint \"src/**/*.ts\"",
     "format": "prettier --write \"src/**/*.{ts,html,css,json}\"",
     "format:check": "prettier --check \"src/**/*.{ts,html,css,json}\"",
     "generate:api": "ng-openapi-gen",
