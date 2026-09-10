@@ -48,9 +48,9 @@
               >
                 <span class="draft-icon" aria-hidden="true">
                   @if (draft.draftStatus === 'finished') {
-                    <app-icon name="check" [size]="18" />
+                    <app-icon name="check" [size]="20" />
                   } @else {
-                    <app-icon name="play" [size]="18" />
+                    <app-icon name="play" [size]="20" />
                   }
                 </span>
                 <span class="draft-main">
@@ -347,7 +347,7 @@
   <div class="draft-menu-panel">
     @if (canOpenBoard(draft)) {
       <button type="button" class="menu-item open-board" (click)="openBoard(draft.id)">
-        <app-icon name="table" [size]="15" />
+        <app-icon name="table" />
         Open the projection
       </button>
     }
@@ -356,7 +356,7 @@
       class="menu-item menu-item--danger discard"
       (click)="requestDiscard(draft)"
     >
-      <app-icon name="rotate-ccw" [size]="15" />
+      <app-icon name="rotate-ccw" />
       Discard draft
     </button>
   </div>

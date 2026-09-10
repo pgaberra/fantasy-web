@@ -156,7 +156,7 @@ th.summary-pts-col.sortable.sorted {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 12px;
+  width: 14px;
   margin-right: 0.15em;
   vertical-align: middle;
   color: var(--color-gold);
