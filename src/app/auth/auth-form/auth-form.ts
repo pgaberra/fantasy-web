@@ -42,7 +42,8 @@ export class AuthFormComponent {
   readonly facebookEnabled = !!environment.facebookAppId && environment.facebookLoginEnabled;
 
   readonly title = input.required<string>();
-  readonly subtitle = input.required<string>();
+  /** Optional: a form whose title already says what it is for passes none, and no line renders. */
+  readonly subtitle = input<string>();
   readonly submitLabel = input.required<string>();
   readonly loadingLabel = input.required<string>();
   readonly footerText = input.required<string>();
