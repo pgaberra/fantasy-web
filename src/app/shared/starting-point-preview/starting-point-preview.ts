@@ -35,6 +35,7 @@ import {
 import { DEFAULT_DECIMAL_SETTINGS } from '../../draft-projection/projection-settings-section/model';
 import { readableDecimalSettings } from '../../draft-projection/projection-settings-section/model-decimals';
 import { LoadingIndicatorComponent } from '../loading-indicator/loading-indicator';
+import { ownLine, squaredWithPool } from '../pool-line';
 
 /** A starting point the server derives on its own, from nothing the user has to supply. */
 export type PresetSource = NonNullable<CreateProjectionRequest['source']>;
@@ -313,19 +314,19 @@ export class StartingPointPreviewComponent {
       // board that is not on offer.
       return [];
     }
+    const players = this.previewPool();
+    // Squared with the pool the rows are drawn from, as the editor squares them when it opens, so
+    // a line of the other kind of player is neither ranked nor drawn.
+    const byId = new Map(players.map((player) => [player.id, player]));
     if (this.isBoard()) {
       // The board whole, not the slice of it this page holds names for: ranked whole, its top
       // five are its own top five, and in category scoring the z-scores are the board's too.
-      return this.boardState()?.playerProjections ?? [];
+      return (this.boardState()?.playerProjections ?? []).map((projection) =>
+        squaredWithPool(projection, byId.get(projection.playerId)),
+      );
     }
-    const players = this.previewPool();
-    const own = players.map((player) =>
-      player.type === 'skater'
-        ? { type: 'skater' as const, playerId: player.id, stats: player.stats }
-        : { type: 'goalie' as const, playerId: player.id, stats: player.stats },
-    );
     if (!this.isModelPreset()) {
-      return own;
+      return players.map((player) => ownLine(player));
     }
     const seeded = this.modelSeedResource.value();
     if (!seeded) {
@@ -335,10 +336,11 @@ export class StartingPointPreviewComponent {
     }
     // Only the players whose identity this page holds: it fetches the top of the board, not the
     // pool, so a model line for anyone further down has no name to put beside it.
-    const inPreviewPool = new Set(players.map((player) => player.id));
     return seeded.players
-      .filter((player) => inPreviewPool.has(player.playerId))
-      .map((player) => this.serializer.toProjection(player));
+      .filter((player) => byId.has(player.playerId))
+      .map((player) =>
+        squaredWithPool(this.serializer.toProjection(player), byId.get(player.playerId)),
+      );
   });
 
   /** Every player, scored and ordered exactly as the editor scores and orders them. */

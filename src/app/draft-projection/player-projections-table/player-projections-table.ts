@@ -60,6 +60,7 @@ import {
 import { StatInfoService } from '../../services/stat-info.service';
 import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
 import { parseDecimalInput } from '../../shared/decimal-input';
+import { ownLine, squaredWithPool } from '../../shared/pool-line';
 import { PinnedTableHeaderDirective } from '../../shared/pinned-table-header/pinned-table-header.directive';
 import { TableScrollDirective } from '../../shared/table-scroll/table-scroll.directive';
 import { LeagueSettingsMenuComponent } from './league-settings-menu/league-settings-menu';
@@ -611,29 +612,15 @@ export class PlayerProjectionsTableComponent implements OnInit {
         this.playerProjections.set(initial);
         return;
       }
-      const kept: Projection[] = [];
-      for (const projection of initial) {
-        const player = players.get(projection.playerId);
-        if (!player) continue;
-        // A saved row is the stat line of the kind of player it was saved as. When the pool now
-        // says otherwise (ESPN listing a goalie as a centre), the row holds none of the stats the
-        // table draws for that player, and every cell that reads one throws. The player's own
-        // line, the one a new projection starts from, is the only line of the right shape.
-        kept.push(player.type === projection.type ? projection : this.ownLine(player));
-      }
+      const kept = initial
+        .filter((projection) => players.has(projection.playerId))
+        .map((projection) => squaredWithPool(projection, players.get(projection.playerId)));
       this.droppedPlayerCount.set(initial.length - kept.length);
       this.playerProjections.set(kept);
       return;
     }
 
-    this.playerProjections.set(this.players().map((player) => this.ownLine(player)));
-  }
-
-  /** The line a player starts from before anyone edits it: their own stats from the pool. */
-  private ownLine(player: Player): Projection {
-    return player.type === 'skater'
-      ? { type: 'skater', playerId: player.id, stats: player.stats }
-      : { type: 'goalie', playerId: player.id, stats: player.stats };
+    this.playerProjections.set(this.players().map((player) => ownLine(player)));
   }
 
   private roundStat(value: number, key: DecimalStatKey): number {
