@@ -835,9 +835,7 @@ describe('SharedProjectionComponent', () => {
       loadShared.mockReturnValue(of(truncated));
       const fixture = await render();
 
-      expect(fixture.nativeElement.textContent).toContain(
-        'This projection includes the top 2 of 1489',
-      );
+      expect(fixture.nativeElement.textContent).toContain('The top 2 of 1489');
       expect(fixture.nativeElement.textContent).not.toContain('Make your own projection');
     });
 
@@ -867,9 +865,7 @@ describe('SharedProjectionComponent', () => {
       const fixture = await render();
 
       expect(fixture.nativeElement.textContent).toContain('Showing 50 of 100');
-      expect(fixture.nativeElement.textContent).toContain(
-        'This projection includes the top 100 of 1489',
-      );
+      expect(fixture.nativeElement.textContent).toContain('The top 100 of 1489');
     });
 
     it('sends them back to this board once they have signed in', async () => {
@@ -887,7 +883,7 @@ describe('SharedProjectionComponent', () => {
     it('does not claim rows are missing when the whole board came back', async () => {
       const fixture = await render();
 
-      expect(fixture.nativeElement.textContent).not.toContain('This projection includes the top');
+      expect(fixture.nativeElement.textContent).not.toMatch(/The top \d+ of/);
       expect(fixture.nativeElement.textContent).toContain('Make your own projection');
     });
 
@@ -897,7 +893,7 @@ describe('SharedProjectionComponent', () => {
       const fixture = await render();
 
       expect(fixture.nativeElement.textContent).toContain('Draft mode');
-      expect(fixture.nativeElement.textContent).not.toContain('This projection includes the top');
+      expect(fixture.nativeElement.textContent).not.toMatch(/The top \d+ of/);
     });
 
     it('copies the board and opens a draft against it', async () => {

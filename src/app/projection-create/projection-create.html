@@ -105,7 +105,7 @@
           }
           @case ('imported') {
             @if (importedBoards().length === 0) {
-              <p class="group-empty">No imports yet. Paste a SlapStat share link below.</p>
+              <p class="group-empty">No imports yet.</p>
             } @else {
               <ul class="rows">
                 @for (board of importedBoards(); track board.id) {

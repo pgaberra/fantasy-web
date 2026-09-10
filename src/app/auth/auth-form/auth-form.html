@@ -1,7 +1,9 @@
 <div class="auth-container">
   <div class="auth-card">
     <h1 class="auth-title">{{ title() }}</h1>
-    <p class="auth-subtitle">{{ subtitle() }}</p>
+    @if (subtitle()) {
+      <p class="auth-subtitle">{{ subtitle() }}</p>
+    }
 
     <form (submit)="onSubmit($event)" novalidate>
       <div class="form-group">
