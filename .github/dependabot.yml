@@ -8,6 +8,13 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    # Angular pins TypeScript to a single minor (>=6.0 <6.1 on 22.x), so a TypeScript major can
+    # only land together with an Angular major. Left in the group, npm hung resolving
+    # typescript@7 until the job's time limit and cancelled every weekly update from July on.
+    ignore:
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
     groups:
       all-dependencies:
         applies-to: version-updates
