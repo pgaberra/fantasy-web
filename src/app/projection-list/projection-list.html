@@ -7,7 +7,8 @@
   @if (!projectionsResource.isLoading() && !isSavingDemo()) {
     <div class="create-row">
       <button type="button" class="create-button btn btn-primary" (click)="createNew()">
-        + Create new projection
+        <app-icon name="plus" />
+        Create new projection
       </button>
     </div>
   }
