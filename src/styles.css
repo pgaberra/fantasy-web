@@ -307,9 +307,7 @@ summary:focus-visible,
     color var(--transition);
 }
 
-.premium-badge svg {
-  width: 0.85em;
-  height: 0.85em;
+.premium-badge app-icon {
   flex: none;
 }
 

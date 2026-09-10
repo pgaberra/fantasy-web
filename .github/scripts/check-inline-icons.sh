@@ -1,51 +1,97 @@
 #!/usr/bin/env bash
 #
-# Icons come from <app-icon>, never from an <svg> written into a template.
+# Icons come from <app-icon>, never from something drawn or typed into the app.
 #
-# Drawing them one at a time is what made them drift. Before the icon component the app held 61
-# inline SVGs carrying six stroke widths (1.6 to 3) and four viewBoxes, mixing three families at
-# once: refresh existed in three shapes, the check as two strokes and one filled Heroicons circle,
-# the pencil as both a Bootstrap 16-grid drawing and a Lucide 24-grid one. Nothing was broken and
-# nothing failed, which is exactly why it accumulated — an off icon looks like a slightly wrong
-# screen, not like a bug, and no reviewer diffs stroke widths across 27 files.
+# An icon can escape the set in two ways, and this catches both:
 #
-# So the guard is on the shape of the change rather than on the drawing: a template may not
-# contain an <svg> at all. Adding an icon means adding a case to src/app/shared/icon/icon.html on
-# the same grid, which is one place to get right and one place to review.
+#  1. An <svg> written into a template. Drawn one at a time, these drifted: before the icon
+#     component the app held 61 of them, with six stroke widths and three icon families mixed.
 #
-# Brand marks are exempt and listed below. They are multi-colour logos at their owners' own
-# scales, and normalising one would misdraw somebody's trademark.
+#  2. A character standing in for an icon: an arrow, a geometric shape or a dingbat, typed into a
+#     template, returned from a component as a string, or put in a CSS `content`. These slipped
+#     past the first check, sat on the same row as real icons (a typed cross beside a drawn
+#     pencil), and are not even guaranteed to exist in the user's font: undo and redo were already
+#     drawn rather than typed because their arrows render as empty boxes in several Windows UI
+#     fonts.
+#
+# Comments are ignored, so prose that mentions an arrow is fine. A character that is genuinely
+# text rather than an icon goes in the allowlist below, with the reason.
+#
+# The files are read by one perl process rather than one process each: spawning a few hundred of
+# them made a single run take the better part of a minute on Windows.
 set -euo pipefail
+export LC_ALL=C.UTF-8
 
-# Files allowed to hold an inline <svg>, each for a stated reason.
-allowed=(
-  "src/app/shared/icon/icon.html"                                                  # the icon set itself
-  "src/app/auth/facebook-sign-in-button/facebook-sign-in-button.html"              # Facebook mark
-  "src/app/auth/google-sign-in-button/google-sign-in-button.html"                  # Google mark
-  "src/app/draft-projection/draft-projection.html"                                 # Yahoo mark
-  "src/app/draft-projection/projection-settings-section/league-sync/league-sync.html"              # Yahoo mark
-  "src/app/draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync.html"  # Yahoo mark
-  "src/app/whos-hot/whos-hot.html"                                                 # Yahoo mark
+in_list() {
+  local needle=$1
+  shift
+  for item in "$@"; do [ "$item" = "$needle" ] && return 0; done
+  return 1
+}
+
+# Templates allowed an inline <svg>: brand marks only. They are multi-colour logos at their
+# owners' own scales, and normalising one would misdraw somebody's trademark.
+svg_allowed=(
+  "src/app/auth/facebook-sign-in-button/facebook-sign-in-button.html"
+  "src/app/auth/google-sign-in-button/google-sign-in-button.html"
+  "src/app/draft-projection/draft-projection.html"
+  "src/app/draft-projection/projection-settings-section/league-sync/league-sync.html"
+  "src/app/draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync.html"
+  "src/app/whos-hot/whos-hot.html"
 )
 
-offenders=()
-while read -r file; do
-  permitted=false
-  for a in "${allowed[@]}"; do
-    [ "$file" = "$a" ] && permitted=true && break
-  done
-  $permitted || offenders+=("$file")
-done < <(grep -rl --include='*.html' -- '<svg' src/app | tr '\\' '/' | sort)
+# Files allowed an icon-like character, because there it is text.
+glyph_allowed=(
+  "src/app/admin/admin.html" # coloured status dots in the internal admin page
+  "src/app/draft-projection/projection-settings-section/espn-league-sync/espn-league-sync.html" # arrows between browser menu names in written steps
+)
 
-if [ ${#offenders[@]} -gt 0 ]; then
-  echo "::error::${#offenders[@]} template(s) draw an icon inline instead of using <app-icon>:"
-  for f in "${offenders[@]}"; do
-    echo "  ${f}"
-  done
-  echo "Add the shape as a case in src/app/shared/icon/icon.html (24x24 grid, no fill, currentColor,"
-  echo "stroke width 2, round caps and joins), add its name to IconName, then use <app-icon name=\"…\" />."
-  echo "A new brand mark is the one exception: add it to the allowlist in this script, with the reason."
+svg_offenders=()
+while read -r file; do
+  in_list "$file" "${svg_allowed[@]}" || svg_offenders+=("$file")
+done < <(grep -rl --include='*.html' -- '<svg' src/app | sort)
+
+# Arrows (U+2190-21FF), geometric shapes (U+25A0-25FF) and dingbats (U+2700-27BF), looked for in
+# what each kind of file actually shows: a template without its comments, a component without its
+# comment lines, and only the `content` values of a stylesheet.
+glyph_offenders=()
+while read -r file; do
+  in_list "$file" "${glyph_allowed[@]}" || glyph_offenders+=("$file")
+done < <(
+  find src/app src/styles.css \( -name '*.html' -o -name '*.css' -o \( -name '*.ts' ! -name '*.spec.ts' \) \) |
+    sort |
+    perl -CSD -ne '
+      chomp(my $file = $_);
+      open(my $fh, "<:encoding(UTF-8)", $file) or die "$file: $!";
+      my $text = do { local $/; <$fh> };
+      close $fh;
+      if ($file =~ /\.html$/) {
+        $text =~ s/<!--.*?-->//gs;
+      } elsif ($file =~ /\.ts$/) {
+        $text = join "", grep { !/^\s*(\*|\/\/|\/\*)/ } split /^/m, $text;
+      } else {
+        $text = join "\n", $text =~ /content:\s*([^;]*);/g;
+      }
+      print "$file\n" if $text =~ /[\x{2190}-\x{21FF}\x{25A0}-\x{25FF}\x{2700}-\x{27BF}]/;
+    '
+)
+
+status=0
+if [ ${#svg_offenders[@]} -gt 0 ]; then
+  echo "::error::${#svg_offenders[@]} template(s) draw an icon inline instead of using <app-icon>:"
+  printf '  %s\n' "${svg_offenders[@]}"
+  status=1
+fi
+if [ ${#glyph_offenders[@]} -gt 0 ]; then
+  echo "::error::${#glyph_offenders[@]} file(s) type a character where an icon belongs:"
+  printf '  %s\n' "${glyph_offenders[@]}"
+  status=1
+fi
+if [ $status -ne 0 ]; then
+  echo "Use <app-icon name=\"…\" />. A name that is not in the set yet is one import from"
+  echo "@ng-icons/lucide in src/app/shared/icon/icon.ts. If the character is genuinely text there,"
+  echo "add the file to the matching allowlist in this script with the reason."
   exit 1
 fi
 
-echo "No inline icons: every template draws its icons through <app-icon>."
+echo "No inline icons: every icon comes from <app-icon>, drawn or typed nowhere else."

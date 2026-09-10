@@ -120,12 +120,12 @@
   line-height: 1.5;
 }
 
-.plan-perks li::before {
-  content: '✓';
+.plan-perks .perk-check {
   position: absolute;
   left: 0;
+  /* Centred on the first line (line-height 1.5), where the typed check used to sit. */
+  top: calc((1.5em - 16px) / 2);
   color: var(--color-text-muted);
-  font-weight: var(--weight-bold);
 }
 
 .plan-perks--premium li {
@@ -134,7 +134,7 @@
   gap: 0.1rem;
 }
 
-.plan-perks--premium li::before {
+.plan-perks--premium .perk-check {
   color: var(--color-gold-strong);
 }
 

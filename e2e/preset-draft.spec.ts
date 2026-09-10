@@ -68,7 +68,7 @@ test.describe('draft mode from a preset', () => {
     if (await confirmSetup.isVisible().catch(() => false)) {
       await confirmSetup.click();
     }
-    // `exact` matters: a loose match would also hit "← Exit draft mode" and trip strict mode.
+    // `exact` matters: a loose match would also hit "Exit draft mode" and trip strict mode.
     await expect(page.getByText('Draft mode', { exact: true })).toBeVisible();
 
     // 4) Leaving the board returns to the source picker, not to a projection that isn't theirs.

@@ -9,7 +9,9 @@
 } @else {
   <div class="draft-projection">
     <div class="page-header">
-      <a routerLink="/projections" class="back-link">← My projections</a>
+      <a routerLink="/projections" class="back-link"
+        ><app-icon name="arrow-left" [size]="14" />My projections</a
+      >
       @if (isRenaming()) {
         <div class="rename-row">
           <input
@@ -55,7 +57,9 @@
               (click)="startRename()"
             >
               {{ projectionName() }}
-              <span class="rename-icon" aria-hidden="true">✎</span>
+              <span class="rename-icon" aria-hidden="true"
+                ><app-icon name="pencil" [size]="16"
+              /></span>
             </button>
           </h1>
           <div class="page-header-actions">

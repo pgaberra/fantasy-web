@@ -8,6 +8,7 @@ import { EntitlementService } from '../services/entitlement.service';
 import { NotificationService } from '../services/notification.service';
 import { freeFeatures, premiumPerks } from '../shared/premium/premium-perks';
 import { environment } from '../../environments/environment';
+import { IconComponent } from '../shared/icon/icon';
 
 /** How long to keep waiting for the subscription to reach us before saying so, in milliseconds. */
 const CONFIRMATION_TIMEOUT_MS = 30_000;
@@ -33,7 +34,7 @@ const CONFIRMATION_POLL_MS = 2_000;
  */
 @Component({
   selector: 'app-premium',
-  imports: [RouterLink, DatePipe],
+  imports: [RouterLink, DatePipe, IconComponent],
   templateUrl: './premium.html',
   styleUrl: './premium.css',
 })
