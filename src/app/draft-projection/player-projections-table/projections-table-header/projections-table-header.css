@@ -224,6 +224,20 @@ th.summary-pts-col .sort-arrow {
   left: calc(var(--stat-value-inset) / 2);
 }
 
+/* Moving the rule in leaves half an inset of the scoring cell on the utility side of it, and the
+   cell's hover and sorted backgrounds still paint from the cell edge — so the highlight spills
+   past the rule onto the utility group. An inset shadow in the header's own blue repaints that
+   strip above the cell background, and the sort button (whose own hover spans the cell) starts
+   at the rule instead. A margin rather than an overlay: nothing can cover the label's first
+   letter in a narrow column. The weight and decimal rows carry no highlight and need neither. */
+:host(.has-column-menus) th.col-stat.group-start {
+  box-shadow: inset calc(var(--stat-value-inset) / 2) 0 0 0 var(--color-primary);
+}
+
+:host(.has-column-menus) th.col-stat.group-start .th-sort {
+  margin-left: calc(var(--stat-value-inset) / 2);
+}
+
 th.summary-pts-col {
   background: var(--color-gold-strong);
   color: var(--color-text-on-dark);
