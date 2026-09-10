@@ -19,7 +19,7 @@
     <app-error-state title="Couldn't load your projections" (retry)="retry()" />
   } @else if (projectionsResource.value().length === 0) {
     <div class="state">
-      <app-icon name="trash" [size]="48" class="state-icon" />
+      <app-icon name="clipboard-list" [size]="48" class="state-icon" />
       <p class="state-title">No projections yet</p>
       <p class="state-message">Create a projection to start ranking players for your league.</p>
     </div>
