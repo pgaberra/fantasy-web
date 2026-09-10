@@ -16,6 +16,7 @@ import { FacebookSignInButtonComponent } from '../facebook-sign-in-button/facebo
 import { PasswordRequirementsComponent } from '../password-requirements/password-requirements';
 import { PASSWORD_MAX_LENGTH, unmetPasswordRequirements } from '../password-policy';
 import { environment } from '../../../environments/environment';
+import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 
 const EMAIL_MAX_LENGTH = 254;
 
@@ -31,6 +32,7 @@ interface AuthFormValue extends AuthCredentials {
     GoogleSignInButtonComponent,
     FacebookSignInButtonComponent,
     PasswordRequirementsComponent,
+    LoadingIndicatorComponent,
   ],
   templateUrl: './auth-form.html',
   styleUrl: './auth-form.css',

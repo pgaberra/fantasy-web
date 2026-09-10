@@ -13,7 +13,9 @@
     @if (open()) {
       <div class="version-panel" role="dialog" aria-label="Service versions">
         @if (versionsResource.isLoading()) {
-          <p class="version-status">Loading versions…</p>
+          <p class="version-status">
+            <app-loading-indicator variant="inline" label="Loading versions" />
+          </p>
         } @else if (versionsResource.error()) {
           <p class="version-status">Could not load versions</p>
         } @else {

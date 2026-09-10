@@ -1,6 +1,13 @@
-import { Component, computed, DestroyRef, inject, linkedSignal, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  linkedSignal,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Observable, of, tap } from 'rxjs';
 import { Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AnalyticsService } from '../services/analytics.service';
@@ -8,21 +15,11 @@ import { ProjectionStorageService } from '../services/projection-storage.service
 import { NotificationService } from '../services/notification.service';
 import { StatInfoService } from '../services/stat-info.service';
 import { PlayerService } from '../services/player.service';
-import { ProjectionRankingService } from '../services/projection-ranking.service';
-import { Player } from '../models/player.model';
-import { GOALIE_SCORING_STAT_KEYS, SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
 import {
-  ActiveColumns,
-  GoalieScoringStats,
-  GoalieStats,
-  PlayerScore,
-  Projection,
-  SkaterScoringStats,
-  SkaterStats,
-} from '../models/projection.model';
-import { PlayerRowComponent } from '../draft-projection/player-projections-table/player-row/player-row';
-import { ProjectionsTableHeaderComponent } from '../draft-projection/player-projections-table/projections-table-header/projections-table-header';
-import { TableScrollDirective } from '../shared/table-scroll/table-scroll.directive';
+  PreviewSource,
+  StartingPointPreviewComponent,
+} from '../shared/starting-point-preview/starting-point-preview';
+import { ProjectionBoardCache } from '../services/projection-board-cache';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { ProjectionResponse } from '../api/models/projection-response';
 import { CreateProjectionRequest } from '../api/models/create-projection-request';
@@ -32,21 +29,10 @@ import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { ShareImportComponent } from '../shared/share-import/share-import';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
-import {
-  createDefaultProjectionState,
-  DEFAULT_LEAGUE_SIZE,
-  DEFAULT_MIN_GOALIE_GAMES,
-  DEFAULT_ROSTER_SLOTS,
-  DEFAULT_SCORING_COLUMNS,
-  DEFAULT_STAT_WEIGHTS,
-  DEFAULT_UTILITY_COLUMNS,
-} from '../draft-projection/projection-defaults';
-import { DEFAULT_DECIMAL_SETTINGS } from '../draft-projection/projection-settings-section/model';
+import { createDefaultProjectionState } from '../draft-projection/projection-defaults';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
-import { ProjectionState } from '../services/projection-serializer';
 import { ProjectionModelService } from '../services/projection-model.service';
 import { freeProjectionName } from '../services/projection-name';
-import { SeededProjectionResponse } from '../api/models/seeded-projection-response';
 import { offeredPresets } from '../models/ai-projection';
 import { AiProjectionAccess } from '../shared/premium/ai-projection-access';
 import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/premium-refused';
@@ -88,100 +74,6 @@ export const CREATE_PRESETS: readonly CreatePreset[] = [
   { name: 'From scratch', source: 'blank' },
 ];
 
-/**
- * How many rows the preview shows. Enough to see what the editor opens as — the columns, the
- * order, whether the numbers are real or zeroed — without turning this page into the editor.
- */
-const PREVIEW_ROWS = 5;
-
-/**
- * How much of the board a preset's preview downloads to fill those rows. The BFF serves skaters by
- * points and goalies by wins; the default weights score hits and blocks too, so the order the
- * preview wants is not exactly the order it receives — these are wide enough that the players it
- * would pick out of the whole pool are certainly inside, and narrow enough to be a few kilobytes
- * rather than the half-megabyte the editor needs.
- *
- * <p>They are also the width the BFF serves without a subscription, so the AI preset previews
- * for everyone. Widen either one and a free account gets a 403 instead of a preview.
- */
-const PREVIEW_FETCH_LIMITS = { skaters: 25, goalies: 10 };
-
-/**
- * What the preview scores and draws with. A preset's is the same for everyone, since a new
- * projection opens on the defaults; a copy's is the copied board's own, since that is what the
- * copy opens with.
- */
-type PreviewSettings = Pick<
-  ProjectionState,
-  | 'scoringType'
-  | 'statWeights'
-  | 'activeScoringColumns'
-  | 'activeUtilityColumns'
-  | 'decimalSettings'
-  | 'useDefaultDecimals'
-  | 'leagueSize'
-  | 'rosterSlots'
-  | 'minGoalieGames'
->;
-
-/** Exactly what a projection created from a preset opens with. */
-const DEFAULT_PREVIEW_SETTINGS: PreviewSettings = {
-  scoringType: 'points',
-  statWeights: DEFAULT_STAT_WEIGHTS,
-  // The goalie columns included, so they read as the editor's empty cells rather than being
-  // quietly left out of the preview.
-  activeScoringColumns: new Set(DEFAULT_SCORING_COLUMNS),
-  activeUtilityColumns: new Set(DEFAULT_UTILITY_COLUMNS),
-  decimalSettings: DEFAULT_DECIMAL_SETTINGS,
-  useDefaultDecimals: true,
-  leagueSize: DEFAULT_LEAGUE_SIZE,
-  rosterSlots: DEFAULT_ROSTER_SLOTS,
-  minGoalieGames: DEFAULT_MIN_GOALIE_GAMES,
-};
-
-/** One preview row, in the shapes the editor's own table components expect. */
-interface PreviewRow {
-  rank: number;
-  player: Player;
-  projection: Projection;
-  score: PlayerScore;
-  rookie: boolean;
-  belowMinGames: boolean;
-}
-
-/** A player with the value the editor's default settings give them. */
-interface ScoredPlayer {
-  player: Player;
-  /** The line it was scored on — the model's when the AI preset is picked, its own otherwise. */
-  projection: Projection;
-  score: PlayerScore;
-  qualified: boolean;
-}
-
-const ZERO_SCORE: PlayerScore = { fantasyPoints: 0, zScore: 0 };
-
-/** The row 'From scratch' gives a player: their own seat on the board, with nothing in it. */
-function zeroedProjection(player: Player): Projection {
-  return player.type === 'skater'
-    ? { type: 'skater', playerId: player.id, stats: ZEROED_SKATER_STATS }
-    : { type: 'goalie', playerId: player.id, stats: ZEROED_GOALIE_STATS };
-}
-
-/** What 'From scratch' gives every player. Read-only rows, so one instance serves them all. */
-const ZEROED_SKATER_STATS: SkaterStats = {
-  utility: { gp: 0, toiPerGame: 0 },
-  scoring: Object.fromEntries(
-    SKATER_SCORING_STAT_KEYS.map((key) => [key, 0]),
-  ) as SkaterScoringStats,
-};
-
-const ZEROED_GOALIE_STATS: GoalieStats = {
-  utility: { gp: 0 },
-  scoring: Object.fromEntries(
-    GOALIE_SCORING_STAT_KEYS.map((key) => [key, 0]),
-  ) as GoalieScoringStats,
-};
-
 @Component({
   selector: 'app-projection-create',
   imports: [
@@ -189,15 +81,16 @@ const ZEROED_GOALIE_STATS: GoalieStats = {
     ErrorStateComponent,
     HelpTipComponent,
     RouterLink,
-    PlayerRowComponent,
-    ProjectionsTableHeaderComponent,
-    TableScrollDirective,
+    StartingPointPreviewComponent,
     ShareImportComponent,
     RelativeTimePipe,
     IconComponent,
   ],
   templateUrl: './projection-create.html',
   styleUrl: './projection-create.css',
+  // Shared with the preview inside this page, so picking a board and then creating from it
+  // downloads it once. Page-scoped, so a board edited in the editor comes back changed.
+  providers: [ProjectionBoardCache],
 })
 export class ProjectionCreateComponent {
   private readonly projectionStorage = inject(ProjectionStorageService);
@@ -210,7 +103,9 @@ export class ProjectionCreateComponent {
   private readonly playerService = inject(PlayerService);
   private readonly projectionModel = inject(ProjectionModelService);
   private readonly aiAccess = inject(AiProjectionAccess);
-  private readonly ranking = inject(ProjectionRankingService);
+  private readonly boardCache = inject(ProjectionBoardCache);
+
+  private readonly preview = viewChild(StartingPointPreviewComponent);
 
   // Only the boards themselves are needed here: the player rows of a new projection are
   // filled in server-side from `source`, so this page no longer downloads every player just
@@ -219,57 +114,6 @@ export class ProjectionCreateComponent {
   private readonly dataResource = rxResource({
     stream: () => this.projectionStorage.listEditable(),
     defaultValue: [] as ProjectionSummaryResponse[],
-  });
-
-  /**
-   * The preview's own fetch, kept apart from `dataResource`: it is decoration, so a slow or
-   * failed player read model must not stop anyone creating a projection. Only the top of the
-   * board, since only five rows are drawn — and the goalies come with the skaters because one of
-   * those rows is kept for a goalie (see `previewPlayers`).
-   */
-  private readonly previewPlayersResource = rxResource({
-    stream: () => this.playerService.getPlayers(PREVIEW_FETCH_LIMITS),
-    defaultValue: [] as Player[],
-  });
-
-  /**
-   * The board a copy would be made of: its rows and its settings, so the copy is previewed as the
-   * editor will open it rather than described in a sentence.
-   *
-   * <p>Fetched only once a copy is picked, and read again by `create()` — so previewing a board
-   * and then creating from it downloads it once, which is what creating from it cost when there
-   * was no preview.
-   */
-  private readonly copiedBoardResource = rxResource({
-    params: () => {
-      const point = this.startingPoint();
-      return point.kind === 'copy' ? (point.id ?? undefined) : undefined;
-    },
-    stream: ({ params: id }) => this.board(id),
-    defaultValue: undefined as ProjectionResponse | undefined,
-  });
-
-  /**
-   * The whole pool, fetched only once a copy is picked. The preset previews get by on the top of
-   * the board, but a copy's five rows are its own top five and can be anyone on it — a player
-   * outside that slice would have no name to put beside their numbers.
-   */
-  private readonly copyPoolResource = rxResource({
-    // On a picked board rather than on the copy card, so opening a kind holding nothing to copy
-    // does not download the pool to draw nothing with it.
-    params: () => (this.previewsCopy() ? {} : undefined),
-    stream: () => this.wholePool(),
-    defaultValue: [] as Player[],
-  });
-
-  /** Boards already downloaded, so picking through them and back costs one fetch each. */
-  private readonly boards = new Map<string, ProjectionResponse>();
-  private pool: Player[] | null = null;
-
-  /** The rookie markers the editor's rows draw. Null means "couldn't tell", so nothing is marked. */
-  private readonly rookieIdsResource = rxResource({
-    stream: () => this.playerService.getRookieIds(),
-    defaultValue: null as Set<number> | null,
   });
 
   /**
@@ -305,36 +149,10 @@ export class ProjectionCreateComponent {
     },
   });
 
-  /**
-   * The model's lines for the preview, fetched only once the AI preset is picked — and only the
-   * top of them, the same slice of the board the pool itself is asked for. The counts come back
-   * whole either way, so the note under the table still speaks for the whole league.
-   *
-   * <p>{@link PREVIEW_FETCH_LIMITS} is also what makes this free: the BFF serves a request this
-   * narrow to an account without premium, so widening it here would take the preview away from
-   * everyone who has not paid.
-   */
-  private readonly modelSeedResource = rxResource({
-    // Locked or not: a request this narrow is the preview the BFF serves to everyone, and the
-    // five rows it draws are the teaser. Anything wider is still refused, which is why the
-    // limits below are the ones the gate is written against.
-    params: () => (this.isModelPreset() ? {} : undefined),
-    stream: () =>
-      this.projectionModel.seed({
-        skaterLimit: PREVIEW_FETCH_LIMITS.skaters,
-        goalieLimit: PREVIEW_FETCH_LIMITS.goalies,
-      }),
-    defaultValue: undefined as SeededProjectionResponse | undefined,
-  });
   readonly ownProjections = computed(() => this.byKind('projection'));
   readonly importedBoards = computed(() => this.byKind('imported'));
   /** Whether a copy is what is picked, board or not — the preview draws only once one is. */
   readonly isCopy = computed(() => this.startingPoint().kind === 'copy');
-  /** Whether a board is picked, which is what the preview downloads and draws. */
-  private readonly previewsCopy = computed(() => {
-    const point = this.startingPoint();
-    return point.kind === 'copy' && point.id !== null;
-  });
   /** Whether the AI preset is what the page is showing, which is what its extra fetch follows. */
   readonly isModelPreset = computed(() => this.isPreset('model'));
   /**
@@ -349,6 +167,31 @@ export class ProjectionCreateComponent {
     }
     return this.dataResource.value().find((board) => board.id === point.id) ?? null;
   });
+  /**
+   * What the preview draws. A copy card with no board behind it yet has nothing to preview, so
+   * it says so rather than drawing the board that was picked before it.
+   */
+  readonly previewSource = computed<PreviewSource | null>(() => {
+    const point = this.startingPoint();
+    if (point.kind === 'preset') {
+      return { kind: 'preset', preset: point.source };
+    }
+    return point.id === null ? null : { kind: 'board', id: point.id };
+  });
+
+  /**
+   * What the preview says when it cannot draw the table. A board that will not download is still
+   * a board this page knows the name of, and "an exact copy of X" is the whole of what copying
+   * it means — which is more use than the preview's own "unavailable".
+   */
+  readonly fallbackNote = computed<string | null>(() => {
+    const board = this.copiedBoard();
+    if (board) {
+      return `Starts as an exact copy of ${board.name}, using its saved numbers.`;
+    }
+    return this.isCopy() ? 'Nothing to copy yet.' : null;
+  });
+
   readonly isLoading = this.dataResource.isLoading;
   readonly loadError = computed(() => !!this.dataResource.error());
   readonly isCreating = signal<boolean>(false);
@@ -371,154 +214,6 @@ export class ProjectionCreateComponent {
       typed.length > 0 && this.dataResource.value().some((projection) => projection.name === typed)
     );
   });
-
-  /**
-   * The picked board as the editor would open it. Null while a preset is picked, and while a
-   * board is still on its way.
-   */
-  private readonly copiedState = computed<ProjectionState | null>(() => {
-    const board = this.copiedBoardResource.hasValue()
-      ? this.copiedBoardResource.value()
-      : undefined;
-    return board ? this.serializer.fromProjectionData(board.data) : null;
-  });
-
-  /** What the preview scores and draws with: the copied board's settings, or the defaults. */
-  private readonly previewSettings = computed<PreviewSettings>(
-    () => this.copiedState() ?? DEFAULT_PREVIEW_SETTINGS,
-  );
-
-  readonly previewActiveColumns = computed<ActiveColumns>(() => ({
-    scoring: this.previewSettings().activeScoringColumns,
-    utility: this.previewSettings().activeUtilityColumns,
-  }));
-  readonly previewScoringType = computed(() => this.previewSettings().scoringType);
-  readonly previewStatWeights = computed(() => this.previewSettings().statWeights);
-  readonly previewDecimalSettings = computed(() => this.previewSettings().decimalSettings);
-  readonly previewUseDefaultDecimals = computed(() => this.previewSettings().useDefaultDecimals);
-
-  /** Whatever the picked starting point has to download before the preview can be drawn. */
-  readonly isPreviewLoading = computed(() =>
-    this.isCopy()
-      ? this.copiedBoardResource.isLoading() || this.copyPoolResource.isLoading()
-      : this.previewPlayersResource.isLoading(),
-  );
-
-  readonly previewFailed = computed(() =>
-    this.isCopy()
-      ? !!this.copiedBoardResource.error() || !!this.copyPoolResource.error()
-      : !!this.previewPlayersResource.error(),
-  );
-
-  /** Who the preview can name: the whole pool for a copy, the top of the board for a preset. */
-  private readonly previewPool = computed<Player[]>(() => {
-    // Via hasValue(): reading a resource that failed throws, and neither fetch is worth taking
-    // the page down for.
-    const players = this.isCopy() ? this.copyPoolResource : this.previewPlayersResource;
-    return players.hasValue() ? players.value() : [];
-  });
-
-  /**
-   * The lines the preview ranks. Every player's own stats, except under the AI preset, where
-   * they are the model's estimates instead, and under a copy, where they are the board's own.
-   *
-   * <p>The model reaches fewer players than the pool does, and a projection seeded from it holds
-   * only the ones it reached — so the rows missing here are exactly the rows the editor will not
-   * open with. Ranking the model's own lines rather than filtering last season's also gives the
-   * preview the model's order and the model's totals, which is what the finished board shows.
-   */
-  private readonly previewProjections = computed<Projection[]>(() => {
-    if (this.isCopy()) {
-      // The board whole, not the slice of it this page holds names for: ranked whole, its top
-      // five are its own top five, and in category scoring the z-scores are the board's too.
-      // Nothing at all until the board is here — last season's numbers under a copy card would
-      // be a preview of a board nobody picked.
-      return this.copiedState()?.playerProjections ?? [];
-    }
-    const players = this.previewPool();
-    const own = players.map((player) =>
-      player.type === 'skater'
-        ? { type: 'skater' as const, playerId: player.id, stats: player.stats }
-        : { type: 'goalie' as const, playerId: player.id, stats: player.stats },
-    );
-    if (!this.isModelPreset()) {
-      return own;
-    }
-    const seeded = this.modelSeedResource.value();
-    if (!seeded) {
-      // Still loading, or the fetch failed. The template says so rather than showing the board
-      // this preset would not produce.
-      return [];
-    }
-    // Only the players whose identity this page holds: it fetches the top of the board, not the
-    // pool, so a model line for anyone further down has no name to put beside it.
-    const inPreviewPool = new Set(players.map((player) => player.id));
-    return seeded.players
-      .filter((player) => inPreviewPool.has(player.playerId))
-      .map((player) => this.serializer.toProjection(player));
-  });
-
-  /** Every player, scored and ordered exactly as the editor scores and orders them by default. */
-  private readonly rankedPlayers = computed<ScoredPlayer[]>(() => {
-    const players = this.previewPool();
-    const projections = this.previewProjections();
-    if (!players.length || !projections.length) {
-      return [];
-    }
-    const settings = this.previewSettings();
-    const byId = new Map(players.map((player) => [player.id, player]));
-    return this.ranking
-      .rankOverall({
-        projections,
-        scoringType: settings.scoringType,
-        statWeights: settings.statWeights,
-        activeScoringColumns: settings.activeScoringColumns,
-        leagueSize: settings.leagueSize,
-        rosterSlots: settings.rosterSlots,
-        minGoalieGames: settings.minGoalieGames,
-        decimalSettings: settings.decimalSettings,
-      })
-      .map((scored) => ({
-        player: byId.get(scored.projection.playerId),
-        projection: scored.projection,
-        score: scored.score,
-        qualified: scored.qualified,
-      }))
-      .filter((row): row is ScoredPlayer => !!row.player);
-  });
-
-  /**
-   * The rows shown: the top of the board as the ranking leaves it. A goalie used to be lifted
-   * into the last seat whenever the ranking hadn't put one there, so the goalie columns had
-   * something in them — but that row was never the board's fifth-best player, and under the AI
-   * preset there is not always a goalie to lift. The preview shows the top five, whoever they are.
-   */
-  private readonly previewPlayers = computed<ScoredPlayer[]>(() =>
-    this.rankedPlayers().slice(0, PREVIEW_ROWS),
-  );
-
-  readonly previewRows = computed<PreviewRow[]>(() => {
-    // 'From scratch' is the same players in the same rows, just emptied — which is the whole
-    // point of showing it: the board doesn't change, only the numbers on it.
-    const zeroed = this.isPreset('blank');
-    const rookieIds = this.rookieIdsResource.hasValue() ? this.rookieIdsResource.value() : null;
-    return this.previewPlayers().map(({ player, projection, score, qualified }, index) => ({
-      // Numbered by their place in the preview, which is also their place on the board.
-      rank: index + 1,
-      player,
-      projection: zeroed ? zeroedProjection(player) : projection,
-      score: zeroed ? ZERO_SCORE : score,
-      rookie: rookieIds?.has(player.id) ?? false,
-      // The editor marks a goalie projected for fewer games than the league minimum, which is
-      // why it ranks last — a category-league rule, so `qualified` only says no on a board
-      // scored that way. From scratch nobody is projected for anything yet.
-      belowMinGames: !zeroed && player.type === 'goalie' && !qualified,
-    }));
-  });
-
-  readonly isModelPreviewLoading = computed(
-    () => this.isModelPreset() && this.modelSeedResource.isLoading(),
-  );
 
   /** Whether the answer names something to start from: a preset always does, a copy needs a board. */
   private readonly hasStartingPoint = computed(() => {
@@ -635,29 +330,7 @@ export class ProjectionCreateComponent {
 
   retryLoad(): void {
     this.dataResource.reload();
-    this.previewPlayersResource.reload();
-    this.copyPoolResource.reload();
-  }
-
-  /**
-   * One board, downloaded once. Both the preview and Create read it here, so picking a board and
-   * then creating from it costs the one fetch rather than the same half-megabyte twice.
-   */
-  private board(id: string): Observable<ProjectionResponse> {
-    const held = this.boards.get(id);
-    return held
-      ? of(held)
-      : this.projectionStorage
-          .loadProjection(id)
-          .pipe(tap((loaded) => this.boards.set(id, loaded)));
-  }
-
-  /** The pool, downloaded once, however often the picked kind leaves the copies and comes back. */
-  private wholePool(): Observable<Player[]> {
-    const held = this.pool;
-    return held
-      ? of(held)
-      : this.playerService.getPlayers().pipe(tap((players) => (this.pool = players)));
+    this.preview()?.reload();
   }
 
   create(): void {
@@ -673,7 +346,8 @@ export class ProjectionCreateComponent {
         this.isCreating.set(false);
         return;
       }
-      this.board(point.id)
+      this.boardCache
+        .load(point.id)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (projection) => this.persist({ ...projection.data, draft: undefined }),

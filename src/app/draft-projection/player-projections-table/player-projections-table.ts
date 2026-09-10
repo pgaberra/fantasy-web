@@ -39,6 +39,7 @@ import {
   DEFAULT_DECIMAL_SETTINGS,
   ScaleConfig,
 } from '../projection-settings-section/model';
+import { readableDecimalSettings } from '../projection-settings-section/model-decimals';
 import {
   DEFAULT_LEAGUE_SIZE,
   DEFAULT_MIN_GOALIE_GAMES,
@@ -65,6 +66,7 @@ import { LeagueSettingsMenuComponent } from './league-settings-menu/league-setti
 import { ColumnsMenuComponent } from './columns-menu/columns-menu';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import { IconComponent } from '../../shared/icon/icon';
+import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 
 const PLAYERS_PER_PAGE = 250;
 
@@ -100,6 +102,7 @@ function toggledSet<T>(members: ReadonlySet<T>, member: T): Set<T> {
     ColumnsMenuComponent,
     TooltipDirective,
     IconComponent,
+    LoadingIndicatorComponent,
   ],
   templateUrl: './player-projections-table.html',
   styleUrl: './player-projections-table.css',
@@ -188,6 +191,20 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly scaleSettings = model.required<Record<UtilityStatKey, ScaleConfig>>();
   readonly decimalSettings = model<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
   readonly useDefaultDecimals = model.required<boolean>();
+
+  /**
+   * What the table is actually written and scored with. Identical to the settings above unless
+   * the board holds fractions the defaults would round away — the AI projection's lines do, and
+   * printing 49.4 goals as 49 threw away both the number and the point of it. See
+   * {@link readableDecimalSettings}.
+   */
+  readonly readableDecimals = computed(() =>
+    readableDecimalSettings(
+      this.playerProjections(),
+      this.decimalSettings(),
+      this.useDefaultDecimals(),
+    ),
+  );
 
   readonly sortColumn = signal<SortColumn>('summary');
   readonly sortDirection = signal<SortDirection>('desc');
@@ -620,7 +637,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
   }
 
   private roundStat(value: number, key: DecimalStatKey): number {
-    return parseFloat(value.toFixed(this.decimalSettings()[key]));
+    return parseFloat(value.toFixed(this.readableDecimals()[key]));
   }
 
   onRowFocusIn(playerId: number): void {
@@ -658,7 +675,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
     const parsed = this.statInfoService.isToiStat(key)
       ? this.toiService.parseToi(raw)
       : parseDecimalInput(raw);
-    const decimals = this.decimalSettings();
+    const decimals = this.readableDecimals();
     const rounded = key in decimals ? this.roundStat(parsed, key as DecimalStatKey) : parsed;
     let value = this.statInfoService.canStatBeNegative(key) ? rounded : Math.max(0, rounded);
     if (this.statInfoService.isPercentageStat(key)) {

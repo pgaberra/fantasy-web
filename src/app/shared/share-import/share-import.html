@@ -27,7 +27,11 @@
       class="btn btn-primary btn-sm"
       [disabled]="isImporting() || shareInput().trim().length === 0"
     >
-      {{ isImporting() ? 'Importing…' : 'Import' }}
+      @if (isImporting()) {
+        <app-loading-indicator variant="inline" label="Importing" />
+      } @else {
+        Import
+      }
     </button>
   </div>
   @if (importHint()) {

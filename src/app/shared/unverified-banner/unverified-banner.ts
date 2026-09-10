@@ -1,9 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
+import { LoadingIndicatorComponent } from '../loading-indicator/loading-indicator';
 
 @Component({
   selector: 'app-unverified-banner',
+  imports: [LoadingIndicatorComponent],
   templateUrl: './unverified-banner.html',
   styleUrl: './unverified-banner.css',
 })

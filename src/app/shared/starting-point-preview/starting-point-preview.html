@@ -1,0 +1,65 @@
+<!--
+  A starting point is previewed out of the board it would open: that board's own top rows, in its
+  own columns, with the numbers it would be scored with. What cannot be drawn keeps the slot
+  filled with a line rather than letting the page jump by the height of a table whenever the
+  picked card changes.
+-->
+@if (isLoading()) {
+  <p class="preview-note">
+    <app-loading-indicator variant="inline" label="Loading preview" />
+  </p>
+} @else if (hasFailed() || !previewRows().length) {
+  <p class="preview-note">{{ fallbackNote() ?? 'Preview unavailable right now.' }}</p>
+} @else {
+  <!-- The editor's own header and rows, read-only: the preview is the table it previews, not a
+       drawing of it. -->
+  <div class="preview-card">
+    <div class="table-scroll">
+      <div class="table-wrapper table-wrapper--compact-identity" appTableScroll="Preview">
+        <table>
+          <thead
+            app-projections-table-header
+            [activeColumns]="previewActiveColumns()"
+            [scoringType]="previewScoringType()"
+            [statWeights]="previewStatWeights()"
+            [useDefaultDecimals]="previewUseDefaultDecimals()"
+            [decimalSettings]="previewDecimalSettings()"
+            [sortColumn]="'summary'"
+            [sortDirection]="'desc'"
+            [readonly]="true"
+            [sortable]="false"
+            [showWeights]="true"
+          ></thead>
+          <tbody>
+            @for (row of previewRows(); track row.projection.playerId) {
+              <tr
+                app-player-row
+                [positionRank]="row.rank"
+                [totalRank]="null"
+                [projection]="row.projection"
+                [playerScore]="row.score"
+                [player]="row.player"
+                [rookie]="row.rookie"
+                [belowMinGames]="row.belowMinGames"
+                [activeColumns]="previewActiveColumns()"
+                [scoringType]="previewScoringType()"
+                [decimalSettings]="previewDecimalSettings()"
+                [readonly]="true"
+              ></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <!-- What the rows above are, rather than how many of them there are: a count of the board is
+       not something anyone reads a preview to learn, and the credit MoneyPuck's terms require has
+       to sit somewhere the numbers are. -->
+  @if (isModelPreset()) {
+    <p class="preview-note">
+      Each player is projected from his last three seasons, weighted toward the most recent,
+      adjusted for age and set against how the league is scoring now. Shot quality, hits, blocks and
+      faceoffs come from MoneyPuck. Data © MoneyPuck.com.
+    </p>
+  }
+}
