@@ -140,6 +140,13 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly positionControls = input<boolean>(false);
   /** The corrections already made, so a row can show it carries one and the toolbar can count. */
   readonly positionOverrides = input<PositionOverrides>(new Map());
+
+  /**
+   * The players whose rows the server added to this projection on the read that opened it, or
+   * null when it added none. They come as a filter rather than a marker: the rows look like every
+   * other row, and forty of them in a table of sixteen hundred cannot be found by eye.
+   */
+  readonly newPlayerIds = input<ReadonlySet<number> | null>(null);
   readonly positionsChanged = output<{ playerId: number; positions: SkaterPosition[] | null }>();
   readonly positionsReset = output<void>();
 
@@ -295,7 +302,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
         players.has(sp.projection.playerId) &&
         this.positionFilterService.matches(sp.projection, players, filter),
     );
-    return this.filterByRookie(this.filterByTeam(byPosition));
+    return this.filterByNew(this.filterByRookie(this.filterByTeam(byPosition)));
   });
   filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit: Signal<ScoredProjection[]> =
     computed(() => {
@@ -312,7 +319,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
       const byPosition = lockedProjections.filter((sp) =>
         this.positionFilterService.matches(sp.projection, players, filter),
       );
-      return this.filterByRookie(this.filterByTeam(byPosition));
+      return this.filterByNew(this.filterByRookie(this.filterByTeam(byPosition)));
     });
 
   private readonly projectionCalculationService = inject(ProjectionCalculationService);
@@ -472,6 +479,22 @@ export class PlayerProjectionsTableComponent implements OnInit {
     return scored.filter((sp) => rookies.has(sp.projection.playerId));
   }
 
+  readonly newPlayersOnly = signal(false);
+
+  /** Only offer the filter when there is something to filter to. */
+  readonly newPlayersAvailable = computed(() => {
+    const ids = this.newPlayerIds();
+    return !!ids && this.players().some((player) => ids.has(player.id));
+  });
+
+  private filterByNew(scored: ScoredProjection[]): ScoredProjection[] {
+    if (!this.newPlayersOnly() || !this.newPlayersAvailable()) {
+      return scored;
+    }
+    const ids = this.newPlayerIds()!;
+    return scored.filter((sp) => ids.has(sp.projection.playerId));
+  }
+
   readonly teamFilter = signal<string>('ALL');
   readonly availableTeams = computed<string[]>(() => {
     const teams = new Set<string>();
@@ -514,6 +537,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
       position: this.positionFilter(),
       team: this.teamFilter(),
       rookiesOnly: this.rookiesOnly(),
+      newPlayersOnly: this.newPlayersOnly(),
       sortColumn: this.sortColumn(),
       sortDirection: this.sortDirection(),
     }),

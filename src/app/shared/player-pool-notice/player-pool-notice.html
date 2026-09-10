@@ -1,7 +1,7 @@
 @if (show()) {
-  <aside class="pool-notice" role="status">
+  <aside class="pool-notice" role="note">
     <span class="pool-notice__icon">
-      <app-icon name="refresh" />
+      <app-icon name="info" />
     </span>
     <div class="pool-notice__body">
       <p class="pool-notice__title">Player list updated</p>
@@ -13,6 +13,11 @@
         Your existing projections are unchanged. New players start with last season's stats, or zero
         for projections built from scratch.
       </p>
+      <div class="pool-notice__actions">
+        <button type="button" class="btn btn-secondary btn-sm" (click)="showNewPlayers.emit()">
+          Show new players
+        </button>
+      </div>
     </div>
     <button type="button" class="pool-notice__dismiss" aria-label="Dismiss" (click)="dismiss()">
       <app-icon name="close" />
