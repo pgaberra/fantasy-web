@@ -126,6 +126,38 @@ describe('DraftStartComponent', () => {
     expect(component.presetDraft(LAST_SEASON)?.id).toEqual('preset1');
   });
 
+  /**
+   * The pick is made against the board it would draft, the same way the new-projection page
+   * previews a starting point. What the preview does with it is its own spec's business; what
+   * matters here is that it is told what is picked.
+   */
+  it('previews whatever is picked', async () => {
+    listWithPresetDrafts.mockReturnValue(of([summary('p1', 'projection')]));
+
+    const component = await render();
+
+    expect(component.previewSource()).toEqual({ kind: 'preset', preset: 'default' });
+
+    component.selectPreset(MODEL);
+    expect(component.previewSource()).toEqual({ kind: 'preset', preset: 'model' });
+
+    component.sourceKind.set('projection');
+    expect(component.previewSource()).toEqual({ kind: 'board', id: 'p1' });
+    expect(component.previewFallbackNote()).toEqual(
+      'Drafts against Projection p1, using its saved numbers.',
+    );
+  });
+
+  it('previews nothing when the open kind holds nothing', async () => {
+    listWithPresetDrafts.mockReturnValue(of([]));
+
+    const component = await render();
+    component.sourceKind.set('imported');
+
+    expect(component.selection()).toBeNull();
+    expect(component.previewSource()).toBeNull();
+  });
+
   it('opens the draft board for a projection', async () => {
     const component = await render();
 
