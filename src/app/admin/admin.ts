@@ -4,6 +4,7 @@ import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { AdminService } from '../services/admin.service';
 import { AdminPremiumComponent } from './premium/admin-premium';
 import { LeagueSummary, SyncRunResponse, YahooProbeResponse } from '../api/models';
+import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 
 /**
  * What the Yahoo callback said about the connect attempt it just finished, in words rather than
@@ -42,7 +43,7 @@ const YAHOO_ERRORS: Record<string, string> = {
 
 @Component({
   selector: 'app-admin',
-  imports: [RelativeTimePipe, AdminPremiumComponent],
+  imports: [RelativeTimePipe, AdminPremiumComponent, LoadingIndicatorComponent],
   templateUrl: './admin.html',
   styleUrl: './admin.css',
 })

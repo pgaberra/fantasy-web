@@ -84,35 +84,6 @@
   text-decoration: underline;
 }
 
-.loading-dots {
-  display: inline-block;
-  width: 1.5ch;
-  text-align: left;
-}
-
-.loading-dots::after {
-  content: '.';
-  animation: loading-dots 1.2s steps(1, end) infinite;
-}
-
-@keyframes loading-dots {
-  0% {
-    content: '.';
-  }
-  33% {
-    content: '..';
-  }
-  66% {
-    content: '...';
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .loading-dots::after {
-    content: '…';
-    animation: none;
-  }
-}
 .auth-divider {
   display: flex;
   align-items: center;

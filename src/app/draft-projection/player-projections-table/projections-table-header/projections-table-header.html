@@ -8,7 +8,11 @@
   >
     Player
     @if (sortable()) {
-      <span class="sort-arrow sort-arrow--trailing">{{ sortIndicator('name') }}</span>
+      <span class="sort-arrow sort-arrow--trailing">
+        @if (sortIndicator('name'); as icon) {
+          <app-icon [name]="icon" [size]="12" />
+        }
+      </span>
     }
   </th>
   @for (col of activeColumns().utility; track col) {
@@ -21,7 +25,10 @@
             [appTooltip]="utilityTooltip(col)"
             (click)="sort.emit(col)"
           >
-            <span class="sort-arrow">{{ sortIndicator(col) }}</span
+            <span class="sort-arrow">
+              @if (sortIndicator(col); as icon) {
+                <app-icon [name]="icon" [size]="12" />
+              }</span
             >{{ col | statLabel }}
           </button>
         } @else {
@@ -70,7 +77,10 @@
             [appTooltip]="col | statTooltip"
             (click)="sort.emit(col)"
           >
-            <span class="sort-arrow">{{ sortIndicator(col) }}</span
+            <span class="sort-arrow">
+              @if (sortIndicator(col); as icon) {
+                <app-icon [name]="icon" [size]="12" />
+              }</span
             >{{ col | statLabel }}
           </button>
         } @else {
@@ -99,7 +109,11 @@
     (click)="sortable() && sort.emit('summary')"
   >
     @if (sortable()) {
-      <span class="sort-arrow">{{ sortIndicator('summary') }}</span>
+      <span class="sort-arrow">
+        @if (sortIndicator('summary'); as icon) {
+          <app-icon [name]="icon" [size]="12" />
+        }
+      </span>
     }
     {{ summaryLabel() }}
   </th>

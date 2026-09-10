@@ -88,7 +88,9 @@
               </button>
               @if (isDiscarding(draft)) {
                 <div class="draft-actions">
-                  <span class="row-busy">Discarding…</span>
+                  <span class="row-busy"
+                    ><app-loading-indicator variant="inline" label="Discarding"
+                  /></span>
                 </div>
               } @else if (isConfirmingDiscard(draft)) {
                 <div class="draft-actions">
@@ -284,7 +286,7 @@
                                    the badge says which plan this belongs to, not that it is out
                                    of reach. -->
                               @if (isPresetLocked(preset)) {
-                                <app-icon name="lock" />
+                                <app-icon name="lock" size="0.85em" />
                               }
                               Premium
                             </span>
@@ -305,6 +307,18 @@
         }
       </fieldset>
 
+      <!--
+        The pick is made against the board it would draft: the same preview the new-projection
+        page draws, out of the same starting points. Only when something is picked — an empty
+        kind has its own line in the panel above, and a preview would only say so again.
+      -->
+      @if (previewSource(); as previewed) {
+        <div class="preview">
+          <span class="preview-label">Preview</span>
+          <app-starting-point-preview [source]="previewed" [fallbackNote]="previewFallbackNote()" />
+        </div>
+      }
+
       <!-- The page's one primary action, and it follows what is picked. Left as "Start draft"
            over a locked preset it would be a button whose only outcome is a refusal; as a link
            to the Premium page it is the one thing that can actually be done next. -->
@@ -321,7 +335,11 @@
             [disabled]="!selection() || isStarting()"
             (click)="start()"
           >
-            {{ isStarting() ? 'Starting…' : 'Start draft' }}
+            @if (isStarting()) {
+              <app-loading-indicator variant="inline" label="Starting" />
+            } @else {
+              Start draft
+            }
           </button>
         }
       </div>

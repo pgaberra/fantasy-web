@@ -49,6 +49,7 @@ import { DraftRosterPanelComponent } from './draft-roster-panel/draft-roster-pan
 import { DraftAvailablePanelComponent } from './draft-available-panel/draft-available-panel';
 import { DraftPicksPanelComponent } from './draft-picks-panel/draft-picks-panel';
 import { DraftSummaryComponent } from './draft-summary/draft-summary';
+import { IconComponent } from '../shared/icon/icon';
 import {
   buildLeagueProjection,
   LeagueProjectionData,
@@ -68,6 +69,7 @@ const DEFAULT_PAGE_SIZE = 50;
     DraftAvailablePanelComponent,
     DraftPicksPanelComponent,
     DraftSummaryComponent,
+    IconComponent,
   ],
   providers: [DraftPlayerLookupService],
   templateUrl: './draft-mode.html',

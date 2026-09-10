@@ -37,7 +37,11 @@
         [disabled]="reSyncing()"
         (click)="reSync.emit()"
       >
-        {{ reSyncing() ? 'Re-syncing…' : 'Re-sync settings' }}
+        @if (reSyncing()) {
+          <app-loading-indicator variant="inline" label="Re-syncing" />
+        } @else {
+          Re-sync settings
+        }
       </button>
       <button
         type="button"

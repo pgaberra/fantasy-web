@@ -1,7 +1,6 @@
-/* The host wraps the `<svg>`, so it has to lay out like the bare `<svg>` these replaced: inline
-   with the text, aligned on its box rather than its baseline (an icon has no baseline, and left
-   to one it sits a few pixels low next to a label), and never squeezed by a flex row that runs
-   short of room. */
+/* The host lays out like a bare inline icon: inline with the text, centred on its box rather than
+   sitting on a baseline (an icon has none, and left to one it sits a few pixels low next to a
+   label), and never squeezed by a flex row that runs short of room. */
 :host {
   display: inline-flex;
   align-items: center;
@@ -10,6 +9,10 @@
   vertical-align: middle;
 }
 
-:host svg {
-  display: block;
+/* ng-icon puts the svg inline inside an inline-block that has `line-height: normal` and
+   `overflow: hidden`. When the icon is smaller than the text around it, that line box is taller
+   than the icon, the svg sits on its baseline, and the bottom of the drawing can be cut off. As a
+   flex container there is no line box: the svg is laid out as a plain box that fills it. */
+:host ng-icon {
+  display: flex;
 }

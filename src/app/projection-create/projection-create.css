@@ -10,7 +10,9 @@
 }
 
 .back-link {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   margin-bottom: var(--space-2);
   font-size: var(--text-sm);
   color: var(--color-text-subtle);
@@ -306,6 +308,12 @@
 
 .row--locked .row-icon {
   color: var(--color-gold-strong);
+}
+
+/* Checked, the tile turns navy, and the dark gold that reads on the pale tile sinks into it
+   (about 2:1). The light gold holds about 7:1 there. */
+.row--locked.row--selected .row-icon {
+  color: var(--color-gold);
 }
 
 .preview-note {

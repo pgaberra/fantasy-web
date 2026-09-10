@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { AdminService } from '../../services/admin.service';
 import { AdminPremiumCustomerResponse } from '../../api/models';
+import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 
 /** How long a grant can run, in the lengths worth offering. */
 const MONTH_OPTIONS = [1, 2, 3, 6, 12] as const;
@@ -14,7 +15,7 @@ const MONTH_OPTIONS = [1, 2, 3, 6, 12] as const;
  */
 @Component({
   selector: 'app-admin-premium',
-  imports: [DatePipe],
+  imports: [DatePipe, LoadingIndicatorComponent],
   templateUrl: './admin-premium.html',
   styleUrl: './admin-premium.css',
 })

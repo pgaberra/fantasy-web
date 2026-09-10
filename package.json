@@ -25,6 +25,8 @@
     "@angular/forms": "^22.0.5",
     "@angular/platform-browser": "^22.0.5",
     "@angular/router": "^22.0.5",
+    "@ng-icons/core": "^36.0.0",
+    "@ng-icons/lucide": "^36.0.0",
     "@paddle/paddle-js": "^1.6.5",
     "@sentry/browser": "^10.70.0",
     "posthog-js": "^1.403.0",

@@ -153,11 +153,19 @@ th.summary-pts-col.sortable.sorted {
    the heading out of line with the values below it. The one left-aligned heading (Player) keeps
    the arrow trailing, where the same reasoning puts it on the outside. */
 .sort-arrow {
-  display: inline-block;
-  width: 0.75em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
   margin-right: 0.15em;
-  font-size: 0.7em;
+  vertical-align: middle;
   color: var(--color-gold);
+}
+
+/* Gold is for the blue stat headers. On the gold total column a gold arrow all but disappears,
+   so there it takes the header's own text colour. */
+th.summary-pts-col .sort-arrow {
+  color: inherit;
 }
 
 .sort-arrow--trailing {

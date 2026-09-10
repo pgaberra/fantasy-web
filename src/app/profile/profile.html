@@ -33,7 +33,11 @@
             [disabled]="isUploading()"
             (click)="avatarFile.click()"
           >
-            {{ isUploading() ? 'Saving…' : avatarUrl() ? 'Change picture' : 'Upload picture' }}
+            @if (isUploading()) {
+              <app-loading-indicator variant="inline" label="Saving" />
+            } @else {
+              {{ avatarUrl() ? 'Change picture' : 'Upload picture' }}
+            }
           </button>
           @if (avatarUrl()) {
             <button
@@ -85,7 +89,11 @@
           [disabled]="isSaving() || !canSave()"
           (click)="save()"
         >
-          {{ isSaving() ? 'Saving…' : 'Save' }}
+          @if (isSaving()) {
+            <app-loading-indicator variant="inline" label="Saving" />
+          } @else {
+            Save
+          }
         </button>
         @if (justSaved()) {
           <span class="saved-note">Saved</span>

@@ -128,8 +128,10 @@
 }
 
 .sort-arrow {
-  font-size: 0.7em;
+  display: inline-flex;
+  align-items: center;
   margin-left: 2px;
+  vertical-align: middle;
 }
 
 /* Points-league scoring weight, under the column label — the multiplier behind every value in
@@ -164,7 +166,7 @@
    primary colour once its row is open, so expanded vs. collapsed reads at a glance. */
 .lp-chevron {
   display: inline-block;
-  font-size: 0.72rem;
+  vertical-align: middle;
   color: var(--color-text-muted);
   margin-right: 3px;
   transition:

@@ -9,7 +9,9 @@
 } @else {
   <div class="projection-create">
     <div class="page-header">
-      <a routerLink="/projections" class="back-link">← My projections</a>
+      <a routerLink="/projections" class="back-link"
+        ><app-icon name="arrow-left" [size]="14" />My projections</a
+      >
       <h1>New projection</h1>
     </div>
 
@@ -154,7 +156,7 @@
                           <app-icon name="sparkles" [size]="20" />
                         }
                         @case ('blank') {
-                          <app-icon name="pencil" [size]="20" />
+                          <app-icon name="square-dashed" [size]="20" />
                         }
                         @default {
                           <app-icon name="chart-bar" [size]="20" />
@@ -169,7 +171,7 @@
                             <!-- The padlock only once it is actually shut: with a subscription
                                  the badge names the plan, it does not bar the way. -->
                             @if (isPresetLocked(preset)) {
-                              <app-icon name="lock" />
+                              <app-icon name="lock" size="0.85em" />
                             }
                             Premium
                           </span>
@@ -187,77 +189,7 @@
 
     <div class="preview">
       <span class="field-label">Preview</span>
-      <!--
-        A copy is previewed like any other starting point, out of the board it would copy: the
-        board's own top rows, in its own columns, with the numbers it was last saved with. What
-        cannot be drawn keeps the slot filled with a line rather than letting the page jump by
-        the height of a table whenever the picked card changes.
-      -->
-      @if (isPreviewLoading() || isModelPreviewLoading()) {
-        <p class="preview-note">Loading preview…</p>
-      } @else if (previewFailed() || !previewRows().length) {
-        @if (copiedBoard(); as board) {
-          <p class="preview-note">
-            Starts as an exact copy of {{ board.name }}, using its saved numbers.
-          </p>
-        } @else if (isCopy()) {
-          <p class="preview-note">Nothing to copy yet.</p>
-        } @else {
-          <p class="preview-note">Preview unavailable right now.</p>
-        }
-      } @else {
-        <!-- The editor's own header and rows, read-only: the preview is the table it previews,
-             not a drawing of it. -->
-        <div class="preview-card">
-          <div class="table-scroll">
-            <div class="table-wrapper table-wrapper--compact-identity" appTableScroll="Preview">
-              <table>
-                <thead
-                  app-projections-table-header
-                  [activeColumns]="previewActiveColumns()"
-                  [scoringType]="previewScoringType()"
-                  [statWeights]="previewStatWeights()"
-                  [useDefaultDecimals]="previewUseDefaultDecimals()"
-                  [decimalSettings]="previewDecimalSettings()"
-                  [sortColumn]="'summary'"
-                  [sortDirection]="'desc'"
-                  [readonly]="true"
-                  [sortable]="false"
-                  [showWeights]="true"
-                ></thead>
-                <tbody>
-                  @for (row of previewRows(); track row.projection.playerId) {
-                    <tr
-                      app-player-row
-                      [positionRank]="row.rank"
-                      [totalRank]="null"
-                      [projection]="row.projection"
-                      [playerScore]="row.score"
-                      [player]="row.player"
-                      [rookie]="row.rookie"
-                      [belowMinGames]="row.belowMinGames"
-                      [activeColumns]="previewActiveColumns()"
-                      [scoringType]="previewScoringType()"
-                      [decimalSettings]="previewDecimalSettings()"
-                      [readonly]="true"
-                    ></tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-        <!-- What the rows above are, rather than how many of them there are: a count of the
-             board is not something anyone reads a preview to learn, and the credit MoneyPuck's
-             terms require has to sit somewhere the numbers are. -->
-        @if (isModelPreset()) {
-          <p class="preview-note">
-            Each player is projected from his last three seasons, weighted toward the most recent,
-            adjusted for age and set against how the league is scoring now. Shot quality, hits,
-            blocks and faceoffs come from MoneyPuck. Data © MoneyPuck.com.
-          </p>
-        }
-      }
+      <app-starting-point-preview [source]="previewSource()" [fallbackNote]="fallbackNote()" />
     </div>
 
     <!-- One button, and which one it is says what the picked starting point costs. A Create
@@ -272,7 +204,11 @@
         [disabled]="!canCreate()"
         (click)="create()"
       >
-        {{ isCreating() ? 'Creating…' : 'Create projection' }}
+        @if (isCreating()) {
+          <app-loading-indicator variant="inline" label="Creating" />
+        } @else {
+          Create projection
+        }
       </button>
     }
   </div>

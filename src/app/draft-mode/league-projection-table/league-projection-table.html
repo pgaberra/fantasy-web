@@ -41,7 +41,12 @@
                 [appTooltip]="column.tooltip"
                 (click)="sortBy(column.key)"
               >
-                {{ column.label }}<span class="sort-arrow">{{ sortIndicator(column.key) }}</span>
+                {{ column.label
+                }}<span class="sort-arrow">
+                  @if (sortIndicator(column.key); as icon) {
+                    <app-icon [name]="icon" [size]="12" />
+                  }
+                </span>
                 @if (column.weight !== null) {
                   <span class="lp-weight">×{{ formatWeight(column.weight) }}</span>
                 }
@@ -52,7 +57,12 @@
               [class.sorted]="sortKey() === 'total'"
               (click)="sortBy('total')"
             >
-              {{ scoreHeading() }}<span class="sort-arrow">{{ sortIndicator('total') }}</span>
+              {{ scoreHeading()
+              }}<span class="sort-arrow">
+                @if (sortIndicator('total'); as icon) {
+                  <app-icon [name]="icon" [size]="12" />
+                }
+              </span>
             </th>
           </tr>
         </thead>
@@ -70,8 +80,8 @@
                   class="lp-chevron"
                   [class.expanded]="isExpanded(team.teamId)"
                   aria-hidden="true"
-                  >▸</span
-                >
+                  ><app-icon name="chevron-right" [size]="12"
+                /></span>
                 {{ i + 1 }}
               </td>
               <td class="col-team">
