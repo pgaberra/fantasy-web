@@ -25,9 +25,8 @@ describe('SiteFooterComponent', () => {
     expect(contact.textContent?.trim()).toEqual('info@slapstat.com');
   });
 
-  // Paddle's domain review wants the refund policy reachable from the navigation. Refunds are a
-  // section of the terms, so the link is the terms page with that section's fragment.
-  it.each([true, false])('links the refund section while signed in is %s', async (loggedIn) => {
+  // Paddle wants the refund policy reachable from the navigation, and it has a page of its own.
+  it.each([true, false])('links the refund policy while signed in is %s', async (loggedIn) => {
     await render(loggedIn);
 
     const link = ngMocks
@@ -36,7 +35,6 @@ describe('SiteFooterComponent', () => {
     if (!link) {
       throw new Error('The footer has no Refunds link');
     }
-    expect(ngMocks.input(link, 'routerLink')).toEqual('/terms');
-    expect(ngMocks.input(link, 'fragment')).toEqual('refunds');
+    expect(ngMocks.input(link, 'routerLink')).toEqual('/refunds');
   });
 });
