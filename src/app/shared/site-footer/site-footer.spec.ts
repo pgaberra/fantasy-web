@@ -24,4 +24,19 @@ describe('SiteFooterComponent', () => {
     // off the page without clicking anything.
     expect(contact.textContent?.trim()).toEqual('info@slapstat.com');
   });
+
+  // Paddle's domain review wants the refund policy reachable from the navigation. Refunds are a
+  // section of the terms, so the link is the terms page with that section's fragment.
+  it.each([true, false])('links the refund section while signed in is %s', async (loggedIn) => {
+    await render(loggedIn);
+
+    const link = ngMocks
+      .findAll('.site-footer-links a')
+      .find((anchor) => (anchor.nativeElement as HTMLElement).textContent?.trim() === 'Refunds');
+    if (!link) {
+      throw new Error('The footer has no Refunds link');
+    }
+    expect(ngMocks.input(link, 'routerLink')).toEqual('/terms');
+    expect(ngMocks.input(link, 'fragment')).toEqual('refunds');
+  });
 });
