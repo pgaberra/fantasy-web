@@ -79,8 +79,9 @@
     <app-offseason-data-notice />
 
     <app-player-pool-notice
-      [reconciliation]="poolReconciliation()"
-      (showNewPlayers)="showNewPlayers()"
+      [newPlayerCount]="unacknowledgedNewPlayerIds().length"
+      [(newPlayersOnly)]="newPlayersOnly"
+      (acknowledged)="acknowledgeNewPlayers()"
     />
 
     <div class="projections-tables">
@@ -104,6 +105,7 @@
         [positionControls]="true"
         [positionOverrides]="positionOverrides()"
         [newPlayerIds]="newPlayerIds()"
+        [(newPlayersOnly)]="newPlayersOnly"
         (manageSyncRequested)="showSyncDialog.set(true)"
         (fullSeasonRequested)="openFullSeasonDialog()"
         (positionsChanged)="onPositionsChanged($event)"

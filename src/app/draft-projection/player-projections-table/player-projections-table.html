@@ -140,19 +140,6 @@
             </label>
           </div>
         }
-        @if (newPlayersAvailable()) {
-          <div class="filter-control filter-control--check">
-            <label for="new-players-only">
-              <input
-                id="new-players-only"
-                type="checkbox"
-                [checked]="newPlayersOnly()"
-                (change)="newPlayersOnly.set(!newPlayersOnly())"
-              />
-              New players only
-            </label>
-          </div>
-        }
       </div>
     </div>
   </div>

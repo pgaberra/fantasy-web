@@ -1,22 +1,16 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PlayerPoolNoticeComponent } from './player-pool-notice';
-import { PoolReconciliation } from '../../api/models/pool-reconciliation';
 
 describe('PlayerPoolNoticeComponent', () => {
   beforeEach(() => MockBuilder(PlayerPoolNoticeComponent));
 
-  function render(reconciliation: PoolReconciliation | null) {
-    return MockRender(PlayerPoolNoticeComponent, { reconciliation });
+  function render(newPlayerCount: number, newPlayersOnly = false) {
+    return MockRender(PlayerPoolNoticeComponent, { newPlayerCount, newPlayersOnly });
   }
 
-  /** A reconciliation that added this many players, ids 1..n. */
-  const added = (count: number): PoolReconciliation => ({
-    addedPlayerIds: Array.from({ length: count }, (_, i) => i + 1),
-  });
-
   it('says how many players were added', () => {
-    const fixture = render(added(12));
+    const fixture = render(12);
 
     const text = fixture.nativeElement.textContent as string;
     expect(fixture.nativeElement.querySelector('.pool-notice')).not.toBeNull();
@@ -25,9 +19,7 @@ describe('PlayerPoolNoticeComponent', () => {
   });
 
   it('reads as one player for a single addition', () => {
-    expect(render(added(1)).nativeElement.textContent as string).toContain(
-      '1 player has been added',
-    );
+    expect(render(1).nativeElement.textContent as string).toContain('1 player has been added');
   });
 
   /**
@@ -35,35 +27,46 @@ describe('PlayerPoolNoticeComponent', () => {
    * and hidden, and saying "removed" here would claim something that did not happen.
    */
   it('says nothing about players leaving', () => {
-    const text = render(added(12)).nativeElement.textContent as string;
+    const text = render(12).nativeElement.textContent as string;
 
     expect(text).not.toContain('removed');
   });
 
-  // A read that had nothing to add still reports zero, which is not news.
-  it('renders nothing when nothing was added', () => {
-    expect(render(added(0)).nativeElement.querySelector('.pool-notice')).toBeNull();
-    expect(render(null).nativeElement.querySelector('.pool-notice')).toBeNull();
+  it('renders nothing when no one is waiting to be acknowledged', () => {
+    expect(render(0).nativeElement.querySelector('.pool-notice')).toBeNull();
   });
 
-  it('asks to show the new players, and leaves the narrowing to the table', () => {
-    const fixture = render(added(12));
-    const shown = vi.fn();
-    fixture.point.componentInstance.showNewPlayers.subscribe(shown);
+  // The filter lives in the notice now, bound both ways to the table's.
+  it('narrows to the new players from its own checkbox', () => {
+    const fixture = render(12);
+    const checkbox: HTMLInputElement = ngMocks.find(fixture, '#new-players-only').nativeElement;
 
-    ngMocks.click(ngMocks.find(fixture, 'button.btn'));
-
-    expect(shown).toHaveBeenCalledOnce();
-    // Still on screen: the user may want the count and the caveat while looking at the rows.
-    expect(fixture.nativeElement.querySelector('.pool-notice')).not.toBeNull();
-  });
-
-  it('goes away when dismissed', () => {
-    const fixture = render(added(12));
-
-    fixture.nativeElement.querySelector('.pool-notice__dismiss').click();
+    expect(checkbox.checked).toBe(false);
+    checkbox.click();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.pool-notice')).toBeNull();
+    expect(fixture.point.componentInstance.newPlayersOnly()).toBe(true);
+  });
+
+  it('shows the filter as on when the table already is', () => {
+    const fixture = render(12, true);
+
+    expect(ngMocks.find(fixture, '#new-players-only').nativeElement.checked).toBe(true);
+  });
+
+  /**
+   * No close icon: the notice stays until it is acknowledged, and acknowledging is the page's to
+   * do, since it is the page that saves the projection.
+   */
+  it('asks to be acknowledged rather than closing itself', () => {
+    const fixture = render(12);
+    const acknowledged = vi.fn();
+    fixture.point.componentInstance.acknowledged.subscribe(acknowledged);
+
+    expect(fixture.nativeElement.querySelector('.pool-notice__dismiss')).toBeNull();
+    ngMocks.click(ngMocks.find(fixture, 'button.btn'));
+
+    expect(acknowledged).toHaveBeenCalledOnce();
+    expect(fixture.nativeElement.querySelector('.pool-notice')).not.toBeNull();
   });
 });

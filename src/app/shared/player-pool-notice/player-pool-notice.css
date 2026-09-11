@@ -48,27 +48,21 @@
   color: var(--color-text-muted);
 }
 
+/* The filter and the acknowledgement share a row, and wrap onto two on a narrow screen. */
 .pool-notice__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
   margin-top: var(--space-1);
 }
 
-.pool-notice__dismiss {
-  flex-shrink: 0;
-  align-self: flex-start;
+.pool-notice__filter {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  height: 1.6rem;
-  width: 1.6rem;
-  padding: 0;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.pool-notice__dismiss:hover {
+  gap: var(--space-2);
+  font-size: var(--text-sm);
   color: var(--color-text);
-  background: var(--color-surface-hover);
+  cursor: pointer;
 }

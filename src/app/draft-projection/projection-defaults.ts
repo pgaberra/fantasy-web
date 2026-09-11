@@ -139,6 +139,7 @@ export function createDefaultProjectionState(
     lastEspnLeagueId: null,
     playerBasis: null,
     playerPoolSyncedAt: null,
+    unacknowledgedNewPlayerIds: [],
     draft: null,
     positionOverrides: new Map(),
     playerProjections: [],
