@@ -119,7 +119,7 @@ export class EspnLeagueSyncComponent implements OnInit {
   sync(): void {
     const leagueId = this.leagueId().trim();
     if (!leagueId) {
-      this.error.set('Enter your ESPN league id.');
+      this.error.set('Enter your ESPN league ID.');
       return;
     }
     const espnS2 = this.espnS2().trim();

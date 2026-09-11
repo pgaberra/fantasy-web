@@ -16,7 +16,7 @@
 } @else if (sharedResource.error()) {
   <app-error-state
     title="Couldn't load this projection"
-    message="Check your connection and try again."
+    message="Check your connection."
     (retry)="sharedResource.reload()"
   />
 } @else if (shared(); as projection) {

@@ -102,7 +102,7 @@ export class YahooLeagueSyncComponent implements OnInit {
       },
       error: () => {
         this.syncing.set(false);
-        this.error.set('Could not load the league settings from Yahoo.');
+        this.error.set("Couldn't load the league settings from Yahoo.");
       },
     });
   }
@@ -119,7 +119,7 @@ export class YahooLeagueSyncComponent implements OnInit {
       },
       error: () => {
         this.loadingLeagues.set(false);
-        this.error.set('Could not load your Yahoo leagues.');
+        this.error.set("Couldn't load your Yahoo leagues.");
       },
     });
   }

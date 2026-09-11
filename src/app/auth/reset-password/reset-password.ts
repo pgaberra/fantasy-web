@@ -57,7 +57,7 @@ export class ResetPasswordComponent {
       });
       validate(fields.confirmPassword, (ctx) => {
         if (ctx.value().length === 0) {
-          return { kind: 'required', message: 'Please confirm your password.' };
+          return { kind: 'required', message: 'Confirm your password.' };
         }
         if (ctx.value() !== ctx.valueOf(fields.password)) {
           return { kind: 'passwordMismatch', message: 'Passwords do not match.' };

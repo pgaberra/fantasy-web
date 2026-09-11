@@ -611,7 +611,7 @@ describe('DraftStartComponent', () => {
       'Resume draft: Projection p1',
       'View summary: Projection p2',
     ]);
-    expect(texts(fixture, '.draft-status')).toEqual(['In progress', 'Complete']);
+    expect(texts(fixture, '.draft-status')).toEqual(['In progress', 'Finished']);
     expect(fixture.nativeElement.querySelectorAll('.draft .btn')).toHaveLength(0);
     expect(fixture.nativeElement.querySelectorAll('.btn-primary')).toHaveLength(1);
 
@@ -635,7 +635,7 @@ describe('DraftStartComponent', () => {
     const items = Array.from(menuPanel()?.querySelectorAll('.menu-item') ?? []).map((item) =>
       item.textContent?.trim(),
     );
-    expect(items).toEqual(['Open the projection', 'Discard draft']);
+    expect(items).toEqual(['Open projection', 'Discard draft']);
     expect(menuPanel()?.querySelector('.discard')?.classList.contains('menu-item--danger')).toBe(
       true,
     );
@@ -806,7 +806,7 @@ describe('DraftStartComponent', () => {
     const link = ngMocks.find(fixture, '.create-projection');
 
     expect(ngMocks.input(link, 'routerLink')).toEqual('/projections/new');
-    expect(link.nativeElement.textContent?.trim()).toEqual('Create a new projection');
+    expect(link.nativeElement.textContent?.trim()).toEqual('Create projection');
     expect(ngMocks.input(ngMocks.find(link, 'app-icon'), 'name')).toEqual('plus');
   });
 

@@ -3,7 +3,7 @@
 } @else if (loadFailed()) {
   <app-error-state
     title="Couldn't load your profile"
-    message="Check your connection and try again."
+    message="Check your connection."
     (retry)="load()"
   />
 } @else {

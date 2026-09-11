@@ -215,7 +215,7 @@ export class PremiumComponent implements OnInit, OnDestroy {
         // No "please try again". The BFF answers 502 here, and it does so for faults on our
         // side: a misconfigured payment provider, a key that stopped working. Retrying that
         // never helps, and at a payment step the thing worth saying is that no money moved.
-        this.notifications.error('Checkout could not be started. Nothing was charged.');
+        this.notifications.error("Couldn't start checkout. Nothing was charged.");
       },
     });
   }
@@ -231,7 +231,7 @@ export class PremiumComponent implements OnInit, OnDestroy {
         // Same reasoning as the checkout message: this fails when something on our side is
         // wrong, so the useful thing to say is that the subscription itself is untouched.
         this.notifications.error(
-          'The billing portal could not be opened. Your subscription is unchanged, and we have been notified.',
+          "Couldn't open the billing portal. Your subscription is unchanged, and we have been notified.",
         );
       },
     });

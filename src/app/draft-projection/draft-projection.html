@@ -3,7 +3,7 @@
 } @else if (playersUnavailable()) {
   <app-error-state
     title="Couldn't load player data"
-    message="Your projection can't be loaded without player data. Check your connection and try again."
+    message="Your projection can't be loaded without player data. Check your connection."
     (retry)="reloadPlayers()"
   />
 } @else {

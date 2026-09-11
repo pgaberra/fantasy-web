@@ -98,13 +98,13 @@ export class ShareImportComponent {
   private onFailed(error: unknown): void {
     if (error instanceof HttpErrorResponse && error.status === 409) {
       this.importName.set(this.importName() ?? '');
-      this.importHint.set('A board with that name already exists. Choose another name.');
+      this.importHint.set('A projection with that name already exists. Choose another name.');
       return;
     }
     if (error instanceof HttpErrorResponse && error.status === 404) {
       this.importHint.set('That share link is no longer active.');
       return;
     }
-    this.notification.error("Couldn't import that board. Please try again.");
+    this.notification.error("Couldn't import that projection. Please try again.");
   }
 }

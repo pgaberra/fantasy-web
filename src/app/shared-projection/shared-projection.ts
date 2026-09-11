@@ -204,7 +204,7 @@ export class SharedProjectionComponent {
         },
         error: () => {
           this.importingInto.set(null);
-          this.notification.error("Couldn't copy this board. Please try again.");
+          this.notification.error("Couldn't copy this projection. Please try again.");
         },
       });
   }

@@ -2,8 +2,8 @@
   <app-loading-indicator />
 } @else if (loadError()) {
   <app-error-state
-    title="Couldn't load the page"
-    message="Couldn't load your player data. Check your connection and try again."
+    title="Couldn't load your player data"
+    message="Check your connection."
     (retry)="retryLoad()"
   />
 } @else {
@@ -72,9 +72,7 @@
         @switch (sourceKind()) {
           @case ('projection') {
             @if (ownProjections().length === 0) {
-              <p class="group-empty">
-                You have no saved projections yet. Start with a preset or create one from scratch.
-              </p>
+              <p class="group-empty">No projections yet.</p>
             } @else {
               <ul class="rows">
                 @for (projection of ownProjections(); track projection.id) {

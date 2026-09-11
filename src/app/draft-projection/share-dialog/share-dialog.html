@@ -19,14 +19,14 @@
           aria-label="Share link"
         />
         <button type="button" class="btn btn-primary btn-sm" (click)="copyLink()">
-          {{ copied() ? 'Copied!' : 'Copy' }}
+          {{ copied() ? 'Copied' : 'Copy' }}
         </button>
       </div>
     } @else {
       @if (needsUsername()) {
         <p class="dialog-body">Choose a username before sharing a projection.</p>
 
-        <label class="username-label" for="share-username">Pick a username</label>
+        <label class="username-label" for="share-username">Username</label>
         <input
           id="share-username"
           class="username-input"

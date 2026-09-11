@@ -162,7 +162,7 @@ describe('ProjectionCardComponent', () => {
       'Draft mode',
     );
     expect(fixture.nativeElement.textContent).not.toContain('Draft in progress');
-    expect(fixture.nativeElement.textContent).not.toContain('Draft complete');
+    expect(fixture.nativeElement.textContent).not.toContain('Draft finished');
   });
 
   it('labels the draft action "Resume draft" and shows an in-progress pill', () => {
@@ -180,7 +180,7 @@ describe('ProjectionCardComponent', () => {
     expect(ngMocks.find<HTMLButtonElement>('.draft').nativeElement.textContent).toContain(
       'View summary',
     );
-    expect(fixture.nativeElement.textContent).toContain('Draft complete');
+    expect(fixture.nativeElement.textContent).toContain('Draft finished');
   });
 
   describe('a board imported from a share link', () => {

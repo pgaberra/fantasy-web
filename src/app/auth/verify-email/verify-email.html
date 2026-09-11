@@ -4,12 +4,11 @@
       @case ('verifying') {
         <h1 class="auth-title">Verifying your email</h1>
         <p class="auth-subtitle">
-          <app-loading-indicator variant="inline" label="Confirming your email address" />
+          <app-loading-indicator variant="inline" label="Verifying" />
         </p>
       }
       @case ('succeeded') {
         <h1 class="auth-title">Email verified</h1>
-        <p class="auth-subtitle">Your email address is confirmed.</p>
         <a routerLink="/projections" class="btn btn-primary btn-block btn-lg"
           >Go to your projections</a
         >
@@ -23,7 +22,6 @@
       }
       @case ('no-token') {
         <h1 class="auth-title">Invalid link</h1>
-        <p class="auth-subtitle">This verification link is missing or invalid.</p>
         <p class="auth-footer"><a routerLink="/login">Back to sign in</a></p>
       }
     }

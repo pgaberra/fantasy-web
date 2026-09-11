@@ -31,9 +31,7 @@ export class GoogleCallbackComponent implements OnInit {
     if (errorParam || !code || !state) {
       // Google appends ?error=access_denied when the user cancels the consent screen.
       this.errorMessage.set(
-        errorParam === 'access_denied'
-          ? 'Google sign-in was cancelled. You can sign in with Google again or use your email and password.'
-          : 'Google sign-in failed.',
+        errorParam === 'access_denied' ? 'Google sign-in was cancelled.' : 'Google sign-in failed.',
       );
       return;
     }

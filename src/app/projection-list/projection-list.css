@@ -7,13 +7,8 @@
 }
 
 .page-header h1 {
-  margin: 0;
+  margin: 0 0 var(--space-5);
   color: var(--color-primary);
-}
-
-.subtitle {
-  color: var(--color-text-subtle);
-  margin: var(--space-1) 0 var(--space-5);
 }
 
 .create-row {

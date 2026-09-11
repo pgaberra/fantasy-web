@@ -2,8 +2,8 @@
   <app-loading-indicator />
 } @else if (playersResource.error()) {
   <app-error-state
-    title="Couldn't load the demo"
-    message="We couldn't load the player data. Check your connection and try again."
+    title="Couldn't load the player data"
+    message="Check your connection."
     (retry)="retryLoad()"
   />
 } @else {
@@ -50,9 +50,7 @@
           table-toolbar-actions
           routerLink="/register"
           class="btn btn-secondary btn-sm demo-import"
-          [appTooltip]="
-            'Sign in to import your ' + syncablePlatforms + ' league settings and roster'
-          "
+          [appTooltip]="'Sign in to import your league settings from ' + syncablePlatforms"
         >
           <app-icon name="import" />
           Import league

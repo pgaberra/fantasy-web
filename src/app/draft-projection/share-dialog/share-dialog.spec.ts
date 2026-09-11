@@ -86,7 +86,7 @@ describe('ShareDialogComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.point.componentInstance.needsUsername()).toEqual(true);
-    expect(fixture.nativeElement.textContent).toContain('Pick a username');
+    expect(fixture.nativeElement.textContent).toContain('Choose a username before sharing');
   });
 
   it('refuses to publish until the chosen name is a valid one', async () => {
