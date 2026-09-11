@@ -26,16 +26,20 @@
 
 .dialog-close {
   flex: none;
-  padding: 0 var(--space-1);
-  font-size: 1.5rem;
-  line-height: 1;
-  color: var(--color-text-muted);
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  margin: -0.25rem -0.25rem 0 0;
   background: none;
   border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
   cursor: pointer;
 }
 
 .dialog-close:hover {
+  background: var(--color-surface-hover);
   color: var(--color-text);
 }
 

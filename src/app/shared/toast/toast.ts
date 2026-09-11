@@ -1,8 +1,10 @@
 import { Component, inject } from '@angular/core';
 import { NotificationService } from '../../services/notification.service';
+import { IconComponent } from '../icon/icon';
 
 @Component({
   selector: 'app-toast',
+  imports: [IconComponent],
   templateUrl: './toast.html',
   styleUrl: './toast.css',
 })
