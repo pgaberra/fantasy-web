@@ -145,6 +145,13 @@ export class PremiumComponent implements OnInit, OnDestroy {
    */
   protected readonly freePrice = signal<string | null>(null);
 
+  /**
+   * True until Paddle has answered or failed to. Not the same as the price being null, which is
+   * also what a failure leaves: while waiting the card says it is loading, after a failure it says
+   * where the price will be confirmed instead.
+   */
+  protected readonly pricePending = signal(true);
+
   private pollTimer?: ReturnType<typeof setTimeout>;
   private giveUpTimer?: ReturnType<typeof setTimeout>;
 
@@ -173,6 +180,7 @@ export class PremiumComponent implements OnInit, OnDestroy {
 
     const priceId = environment.paddlePriceId;
     if (!environment.paddleClientToken || !priceId) {
+      this.pricePending.set(false);
       return;
     }
 
@@ -199,7 +207,8 @@ export class PremiumComponent implements OnInit, OnDestroy {
         }
         this.formattedPrice.set(null);
         this.freePrice.set(null);
-      });
+      })
+      .finally(() => this.pricePending.set(false));
   }
 
   ngOnDestroy(): void {
