@@ -1,30 +1,16 @@
-import { ActivatedRoute } from '@angular/router';
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
-import { of } from 'rxjs';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { TermsComponent } from './terms';
 
 function text(): string {
   return (ngMocks.find('.terms').nativeElement as HTMLElement).textContent ?? '';
 }
 
-async function render(fragment: string | null = null) {
-  await MockBuilder(TermsComponent).provide({
-    provide: ActivatedRoute,
-    useValue: { fragment: of(fragment) },
-  });
-  return MockRender(TermsComponent);
-}
-
 describe('TermsComponent', () => {
-  const realScrollIntoView = Element.prototype.scrollIntoView;
+  beforeEach(() => MockBuilder(TermsComponent));
 
-  afterEach(() => {
-    Element.prototype.scrollIntoView = realScrollIntoView;
-  });
-
-  it('renders the page', async () => {
-    await render();
+  it('renders the page', () => {
+    MockRender(TermsComponent);
 
     expect(ngMocks.findAll('.terms__title').length).toEqual(1);
   });
@@ -34,8 +20,8 @@ describe('TermsComponent', () => {
   // answer to the support mail that otherwise arrives asking who charged them.
   it.each(['Alexander Berglund', 'Paddle', 'merchant of record'])(
     'names %s so the customer knows who they are dealing with',
-    async (phrase) => {
-      await render();
+    (phrase) => {
+      MockRender(TermsComponent);
 
       expect(text()).toContain(phrase);
     },
@@ -45,50 +31,34 @@ describe('TermsComponent', () => {
   // the code, this page has to change with them.
   it.each(['renews automatically', 'cancel at any time', 'end of the current billing period'])(
     'states the subscription term %s',
-    async (phrase) => {
-      await render();
+    (phrase) => {
+      MockRender(TermsComponent);
 
       expect(text()).toContain(phrase);
     },
   );
 
-  // The refund policy was a page of its own until these terms absorbed it. Paddle's review
-  // checks that it is reachable without an account, so the wording has to stay here.
-  it.each(['buyer terms and refund policy', 'refund for any unused portion'])(
-    'carries the refund policy: %s',
-    async (phrase) => {
-      await render();
+  // Refunds have their own page, which Paddle's live checklist asks for. The terms point to it
+  // rather than repeating it, so the refund wording cannot drift between two places.
+  it('points to the refund policy for refunds', () => {
+    MockRender(TermsComponent);
 
-      expect(text()).toContain(phrase);
-    },
-  );
-
-  // Paddle's review also wants the refund policy reachable from the navigation, and the footer
-  // links to this heading by its id. Renaming the id would break that link and nothing else.
-  it('gives refunds a section of their own, with the id the footer links to', async () => {
-    await render();
-
-    const heading = ngMocks.find('h2#refunds').nativeElement as HTMLElement;
-    expect(heading.textContent?.trim()).toEqual('Refunds');
-  });
-
-  it('scrolls to the refunds section when a link lands on it', async () => {
-    const scrollIntoView = vi.fn();
-    // jsdom lays nothing out, so it has no scrollIntoView of its own to call.
-    Element.prototype.scrollIntoView = scrollIntoView;
-
-    const fixture = await render('refunds');
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(scrollIntoView).toHaveBeenCalled();
-    expect(scrollIntoView.mock.contexts[0]).toEqual(ngMocks.find('h2#refunds').nativeElement);
+    const link = ngMocks
+      .findAll('.terms a')
+      .find(
+        (anchor) => (anchor.nativeElement as HTMLElement).textContent?.trim() === 'Refund Policy',
+      );
+    if (!link) {
+      throw new Error('The terms have no link to the refund policy');
+    }
+    expect(ngMocks.input(link, 'routerLink')).toEqual('/refunds');
+    expect(text()).not.toContain('refund for any unused portion');
   });
 
   // The model is sold on its numbers, so the page has to be plain that they are estimates
   // before anyone pays for them, not after.
-  it('says the projections are estimates', async () => {
-    await render();
+  it('says the projections are estimates', () => {
+    MockRender(TermsComponent);
 
     expect(text()).toContain('estimates');
   });

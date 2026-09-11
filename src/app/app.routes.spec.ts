@@ -19,6 +19,10 @@ describe('routes', () => {
     // anyone has agreed to anything — neither may bounce a visitor to the login page.
     expect(routeFor('s/:token').canActivate).toBeUndefined();
     expect(routeFor('privacy').canActivate).toBeUndefined();
+    // Paddle reviews the terms and the refund policy from a signed-out browser, and a customer
+    // has to be able to read both before paying.
+    expect(routeFor('terms').canActivate).toBeUndefined();
+    expect(routeFor('refunds').canActivate).toBeUndefined();
   });
 
   /**
