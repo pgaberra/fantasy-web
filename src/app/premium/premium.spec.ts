@@ -5,7 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { of, throwError } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { PremiumComponent } from './premium';
+import { PremiumComponent, zeroIn } from './premium';
 import { environment } from '../../environments/environment';
 import { BillingService } from '../services/billing.service';
 import { AuthService } from '../services/auth.service';
@@ -317,8 +317,8 @@ describe('PremiumComponent', () => {
 
   /**
    * Zero costs the same everywhere, but it is not written the same everywhere: a Swedish
-   * reader is quoted "0 kr" and an American "$0". The currency is taken from the same preview
-   * as the Premium price, so the two columns can never be priced in different money.
+   * buyer is quoted "0 kr" and an American "$0". The zero is cut from Paddle's own Premium
+   * price, so the two columns are always in the same money and the same format.
    */
   it('prices the free plan at zero in the currency Paddle quoted', async () => {
     const fixture = MockRender(PremiumComponent);
@@ -328,31 +328,50 @@ describe('PremiumComponent', () => {
     expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toEqual('$0');
   });
 
-  it('writes the free plan’s zero in a Swedish reader’s own currency', async () => {
-    vi.spyOn(navigator, 'language', 'get').mockReturnValue('sv-SE');
+  // Paddle formats for the buyer's country, the browser's language is something else. Formatting
+  // the zero for the language wrote "SEK 0" beside Paddle's "49,00 kr" in an English browser.
+  it('writes the free zero the way Paddle wrote the Premium price, whatever the browser language', async () => {
+    vi.spyOn(navigator, 'language', 'get').mockReturnValue('en-US');
     PricePreview.mockResolvedValue({
       data: {
         currencyCode: 'SEK',
-        details: { lineItems: [{ formattedTotals: { total: '49 kr' } }] },
+        details: { lineItems: [{ formattedTotals: { total: '49,00 kr' } }] },
       },
     });
 
     const fixture = MockRender(PremiumComponent);
     await settle(fixture);
 
-    expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toContain('kr');
+    expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toEqual('0 kr');
   });
 
-  // Without a currency there is no way to write the zero, and guessing at dollars would price
-  // the plan in money the reader may never be charged in. The card says the word instead: the
-  // paid price depends on Paddle, the free one must not.
-  it('says the free plan is free when Paddle cannot be reached', async () => {
+  // Without Paddle's price there is nothing to write the zero in, and the word "Free" in its place
+  // sat directly under the card's heading, which already says it.
+  it('leaves the free price empty, rather than repeating the heading, when Paddle cannot be reached', async () => {
     initializePaddle.mockRejectedValue(new Error('offline'));
 
     const fixture = MockRender(PremiumComponent);
     await settle(fixture);
 
-    expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toEqual('Free');
+    expect(ngMocks.findAll('.plan-card--free .plan-price-amount').length).toEqual(0);
+    const card = ngMocks.find('.plan-card--free .plan-head').nativeElement as HTMLElement;
+    expect(card.textContent?.match(/Free/g)).toHaveLength(1);
+  });
+
+  describe('zeroIn', () => {
+    it.each([
+      ['$4.99', '$0'],
+      ['49,00 kr', '0 kr'],
+      ['SEK 1 234.00', 'SEK 0'],
+      ['€4,99', '€0'],
+      ['¥500', '¥0'],
+    ])('turns %s into %s', (price, zero) => {
+      expect(zeroIn(price)).toEqual(zero);
+    });
+
+    it('gives nothing for a string with no number in it', () => {
+      expect(zeroIn('free')).toBeNull();
+    });
   });
 
   /**

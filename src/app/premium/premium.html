@@ -21,13 +21,12 @@
     <article class="plan-card plan-card--free">
       <div class="plan-head">
         <h2 class="plan-name">Free</h2>
-        <!-- Empty while the Premium price loads, so the two figures land together rather than
-             "Free" turning into "0 kr" a moment after the page draws. -->
+        <!-- Zero in Paddle's own format, or nothing: the word "Free" here sat directly under the
+             heading that already says it. Empty while the Premium price loads, so both figures
+             land together. -->
         <p class="plan-price">
           @if (freePrice(); as price) {
             <span class="plan-price-amount">{{ price }}</span>
-          } @else if (!pricePending()) {
-            <span class="plan-price-amount">Free</span>
           }
         </p>
       </div>
