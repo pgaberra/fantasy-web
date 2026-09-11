@@ -34,18 +34,59 @@
 .plans {
   display: grid;
   grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-  gap: var(--space-4);
+  column-gap: var(--space-4);
   align-items: stretch;
 }
 
+/* Both cards lay their parts out on the same five rows (head, perks, what the plan is, the
+   action, the small print), so each row is as tall as the taller card's and the two actions sit
+   level whatever is written above or below them. Pushing the actions to the bottom was not
+   enough: a two-line note under one and a one-line note under the other left them a line
+   apart. Spacing is margin rather than gap, so a row a card leaves empty adds no space. */
 .plan-card {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   padding: var(--space-5);
+  display: grid;
+  grid-row: span 5;
+  grid-template-rows: subgrid;
+  row-gap: 0;
+}
+
+.plan-head {
+  grid-row: 1;
+}
+
+.plan-perks {
+  grid-row: 2;
+}
+
+.plan-lead {
+  grid-row: 3;
+  margin-top: var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
+}
+
+.plan-cta > .btn,
+.plan-current {
+  grid-row: 4;
+  align-self: start;
+}
+
+.plan-cta > .btn {
+  margin-top: var(--space-4);
+}
+
+.plan-cta > .plan-note {
+  grid-row: 5;
+}
+
+/* The footer's parts are placed on the card's rows themselves. */
+.plan-cta {
+  display: contents;
 }
 
 /* The gold edge and the shadow are the only things that say which card is for sale. The edge
@@ -102,16 +143,14 @@
   color: var(--color-text-muted);
 }
 
-/* The lists take whatever height is left, so the two cards' buttons land on the same line. */
 .plan-perks {
-  margin: 0;
+  margin: var(--space-4) 0 0;
   padding: 0;
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   color: var(--color-text);
-  flex: 1 0 auto;
 }
 
 .plan-perks li {
@@ -147,18 +186,12 @@
   color: var(--color-text-muted);
 }
 
-.plan-cta {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
 /* What the free card says to the account already on it: no button, since there is nothing to
    do here, but not nothing either, or the card looks unfinished beside the one with a button.
-   Boxed to the exact size of the Subscribe button next to it, so the two footers sit on the
-   same lines and the free card ends where the paid one does. */
+   Boxed to the exact size of a .btn-lg, the size of every action on the paid card, so the two
+   sit level and match. */
 .plan-current {
-  margin: 0;
+  margin: var(--space-4) 0 0;
   font-size: var(--text-base);
   font-weight: var(--weight-semibold);
   line-height: 1.2;
@@ -179,7 +212,7 @@
 }
 
 .plan-note {
-  margin: 0;
+  margin: var(--space-3) 0 0;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
   text-align: center;
@@ -306,6 +339,7 @@
 @media (max-width: 720px) {
   .plans {
     grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--space-4);
   }
 
   /* On one column the sale comes first; the free card is the footnote here, not the lead. */
