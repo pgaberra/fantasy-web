@@ -85,28 +85,30 @@
             </p>
           }
           @case ('premium') {
-            <p class="plan-status"><span class="status status-ok">Premium active</span></p>
-            @if (entitlement.cancelAtPeriodEnd()) {
-              @if (entitlement.currentPeriodEnd()) {
-                <p class="plan-state plan-state--ending">
-                  Cancelled. Premium remains active until
-                  {{ entitlement.currentPeriodEnd() | date: 'longDate' }}. No further charges will
-                  be made.
-                </p>
-              } @else {
-                <p class="plan-state plan-state--ending">
-                  Cancelled. Premium remains active until the end of the period you paid for. No
-                  further charges will be made.
+            <div class="plan-lead">
+              <p class="plan-status"><span class="status status-ok">Premium active</span></p>
+              @if (entitlement.cancelAtPeriodEnd()) {
+                @if (entitlement.currentPeriodEnd()) {
+                  <p class="plan-state plan-state--ending">
+                    Cancelled. Premium remains active until
+                    {{ entitlement.currentPeriodEnd() | date: 'longDate' }}. No further charges will
+                    be made.
+                  </p>
+                } @else {
+                  <p class="plan-state plan-state--ending">
+                    Cancelled. Premium remains active until the end of the period you paid for. No
+                    further charges will be made.
+                  </p>
+                }
+              } @else if (entitlement.currentPeriodEnd()) {
+                <p class="plan-state">
+                  Renews on {{ entitlement.currentPeriodEnd() | date: 'longDate' }}.
                 </p>
               }
-            } @else if (entitlement.currentPeriodEnd()) {
-              <p class="plan-state">
-                Renews on {{ entitlement.currentPeriodEnd() | date: 'longDate' }}.
-              </p>
-            }
+            </div>
             <button
               type="button"
-              class="btn btn-secondary btn-block"
+              class="btn btn-secondary btn-lg btn-block"
               [disabled]="openingPortal()"
               (click)="manageBilling()"
             >
@@ -122,40 +124,48 @@
             </p>
           }
           @case ('granted') {
-            <p class="plan-status"><span class="status status-ok">Premium active</span></p>
-            @if (entitlement.premiumUntil()) {
-              <p class="plan-state">
-                Premium was given to you, free, until
-                {{ entitlement.premiumUntil() | date: 'longDate' }}. There is nothing to pay and
-                nothing to cancel.
-              </p>
-            } @else {
-              <p class="plan-state">
-                Premium was given to you, free. There is nothing to pay and nothing to cancel.
-              </p>
-            }
+            <div class="plan-lead">
+              <p class="plan-status"><span class="status status-ok">Premium active</span></p>
+              @if (entitlement.premiumUntil()) {
+                <p class="plan-state">
+                  Premium was given to you, free, until
+                  {{ entitlement.premiumUntil() | date: 'longDate' }}. There is nothing to pay and
+                  nothing to cancel.
+                </p>
+              } @else {
+                <p class="plan-state">
+                  Premium was given to you, free. There is nothing to pay and nothing to cancel.
+                </p>
+              }
+            </div>
           }
           @case ('confirming') {
-            <p class="plan-status"><span class="status status-pending">Confirming</span></p>
-            <p class="plan-state">
-              Your payment went through. We are waiting for confirmation, which usually takes a few
-              seconds.
-            </p>
+            <div class="plan-lead">
+              <p class="plan-status"><span class="status status-pending">Confirming</span></p>
+              <p class="plan-state">
+                Your payment went through. We are waiting for confirmation, which usually takes a
+                few seconds.
+              </p>
+            </div>
           }
           @case ('confirmation-timeout') {
-            <p class="plan-status"><span class="status status-pending">Confirming</span></p>
-            <p class="plan-state">
-              Your payment went through, but we haven't received confirmation yet. It should arrive
-              automatically. If the page still looks wrong after a few minutes, email
-              <a href="mailto:info@slapstat.com">info&#64;slapstat.com</a>.
-            </p>
-            <button type="button" class="btn btn-secondary btn-block" (click)="reload()">
+            <div class="plan-lead">
+              <p class="plan-status"><span class="status status-pending">Confirming</span></p>
+              <p class="plan-state">
+                Your payment went through, but we haven't received confirmation yet. It should
+                arrive automatically. If the page still looks wrong after a few minutes, email
+                <a href="mailto:info@slapstat.com">info&#64;slapstat.com</a>.
+              </p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-lg btn-block" (click)="reload()">
               Check again
             </button>
           }
           @case ('error') {
-            <p class="plan-state plan-state--error" role="alert">Couldn't load your plan.</p>
-            <button type="button" class="btn btn-secondary btn-block" (click)="reload()">
+            <div class="plan-lead">
+              <p class="plan-state plan-state--error" role="alert">Couldn't load your plan.</p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-lg btn-block" (click)="reload()">
               Try again
             </button>
           }
@@ -163,9 +173,11 @@
             <!-- No Subscribe button until the plan is known: offered to a subscriber whose
                  entitlement has not landed yet, it starts a second checkout for what they
                  already pay for. -->
-            <p class="plan-state">
-              <app-loading-indicator variant="inline" label="Loading your plan" />
-            </p>
+            <div class="plan-lead">
+              <p class="plan-state">
+                <app-loading-indicator variant="inline" label="Loading your plan" />
+              </p>
+            </div>
           }
           @default {
             <button
