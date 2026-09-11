@@ -1,7 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { from, Observable, throwError } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { defer, from, Observable, throwError } from 'rxjs';
+import { finalize, shareReplay, tap } from 'rxjs/operators';
 import { Api } from '../api/api';
 import { login } from '../api/fn/authentication/login';
 import { register } from '../api/fn/authentication/register';
@@ -32,6 +32,7 @@ export class AuthService {
   private readonly returnUrlKey = 'auth_return_url';
   private readonly googleCallbackPath = '/auth/google/callback';
   private readonly googleAuthEndpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
+  private refreshInFlight: Observable<AuthResponse> | null = null;
 
   readonly isLoggedIn = signal<boolean>(!!localStorage.getItem(this.tokenKey));
   readonly isAdmin = signal<boolean>(localStorage.getItem(this.adminKey) === 'true');
@@ -106,14 +107,24 @@ export class AuthService {
     );
   }
 
+  /**
+   * One refresh at a time. A page that fires several calls just after the access token expires
+   * gets a 401 on each, and each used to start its own refresh; every extra POST was one more
+   * chance to fail on a blip, and a BFF that ever rotates refresh tokens would reject all but the
+   * first. Callers that arrive while one is in flight share its answer.
+   */
   refresh(): Observable<AuthResponse> {
-    const refreshToken = this.getRefreshToken();
-    const body: RefreshRequest = { refreshToken: refreshToken ?? '' };
-    return from(this.api.invoke(refresh, { body })).pipe(
+    this.refreshInFlight ??= defer(() => {
+      const body: RefreshRequest = { refreshToken: this.getRefreshToken() ?? '' };
+      return this.api.invoke(refresh, { body });
+    }).pipe(
       // Stored but not followed by a navigation: a refresh happens silently behind whatever the
       // user is reading, and sending them to /projections for it would yank the page away.
       tap((response) => this.storeTokens(response, { thenNavigate: false })),
+      finalize(() => (this.refreshInFlight = null)),
+      shareReplay({ bufferSize: 1, refCount: false }),
     );
+    return this.refreshInFlight;
   }
 
   forgotPassword(email: string): Observable<void> {

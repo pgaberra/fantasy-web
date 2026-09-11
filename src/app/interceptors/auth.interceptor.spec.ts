@@ -88,10 +88,10 @@ describe('authInterceptor', () => {
     expect(next).toHaveBeenCalledTimes(1);
   });
 
-  it('logs out when the refresh attempt fails', async () => {
+  it.each([401, 403])('ends the session when the refresh itself answers %i', async (status) => {
     authService.getToken.mockReturnValue('stale');
     authService.getRefreshToken.mockReturnValue('refresh');
-    authService.refresh.mockReturnValue(unauthorized());
+    authService.refresh.mockReturnValue(throwError(() => new HttpErrorResponse({ status })));
     const next = vi.fn<HttpHandlerFn>().mockReturnValue(unauthorized());
 
     await expect(run(new HttpRequest('GET', '/api/v1/players/skaters'), next)).rejects.toBeTruthy();
@@ -99,6 +99,50 @@ describe('authInterceptor', () => {
     expect(authService.refresh).toHaveBeenCalledTimes(1);
     expect(authService.endExpiredSession).toHaveBeenCalledTimes(1);
   });
+
+  /**
+   * A blip on the refresh says nothing about the refresh token. Ending the session for one
+   * deleted a token good for weeks: a Wi-Fi handover, a BFF container swap or an edge 429 (which
+   * the browser sees as status 0) signed the user out with nothing to recover from.
+   */
+  it.each([0, 500, 502, 503, 504])(
+    'keeps the session when the refresh fails with status %i, and reports that failure',
+    async (status) => {
+      authService.getToken.mockReturnValue('stale');
+      authService.getRefreshToken.mockReturnValue('refresh');
+      authService.refresh.mockReturnValue(throwError(() => new HttpErrorResponse({ status })));
+      const next = vi.fn<HttpHandlerFn>().mockReturnValue(unauthorized());
+
+      const failure = await run(new HttpRequest('GET', '/api/v1/players/skaters'), next).catch(
+        (error: unknown) => error,
+      );
+
+      expect(failure).toBeInstanceOf(HttpErrorResponse);
+      expect((failure as HttpErrorResponse).status).toEqual(status);
+      expect(authService.endExpiredSession).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  // The retried call's own answer (a Premium 403, a 500) belongs to that call, not to the session.
+  it.each([403, 500])(
+    'keeps the session when the retried request fails with %i after a good refresh',
+    async (status) => {
+      authService.getToken.mockReturnValue('stale');
+      authService.getRefreshToken.mockReturnValue('refresh');
+      authService.refresh.mockReturnValue(of(tokens));
+      const next = vi
+        .fn<HttpHandlerFn>()
+        .mockReturnValueOnce(unauthorized())
+        .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status })));
+
+      await expect(
+        run(new HttpRequest('GET', '/api/v1/players/skaters'), next),
+      ).rejects.toBeTruthy();
+
+      expect(authService.endExpiredSession).not.toHaveBeenCalled();
+    },
+  );
 
   it('ends the session without refreshing when there is no refresh token', async () => {
     authService.getToken.mockReturnValue('stale');
