@@ -83,7 +83,12 @@ FROM nginx:alpine
 # Re-declared because ARGs do not cross stages. nginx needs the BFF origin server-side to fetch
 # the per-share Open Graph document for link-preview crawlers (see nginx.conf).
 ARG API_URL=http://localhost:8080
+# APP_ENV decides whether search engines may index this deployment: every build that is not
+# "production" (staging) sends X-Robots-Tag: noindex on its responses (see nginx.conf).
+ARG APP_ENV=production
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-RUN sed -i "s|__API_ORIGIN__|${API_URL}|g" /etc/nginx/conf.d/default.conf
+RUN if [ "$APP_ENV" = "production" ]; then ROBOTS_TAG=""; else ROBOTS_TAG="noindex"; fi && \
+  sed -i -e "s|__API_ORIGIN__|${API_URL}|g" -e "s|__ROBOTS_TAG__|${ROBOTS_TAG}|g" \
+  /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/fantasy-web/browser /usr/share/nginx/html
 EXPOSE 80
