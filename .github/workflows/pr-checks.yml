@@ -53,6 +53,9 @@ jobs:
       - name: Verify every build placeholder is substituted
         run: bash .github/scripts/check-build-placeholders.sh
 
+      - name: Verify DEPLOYMENT.md documents every build arg
+        run: bash .github/scripts/check-deployment-args.sh
+
       - name: Verify no icon is drawn inline
         run: bash .github/scripts/check-inline-icons.sh
 
