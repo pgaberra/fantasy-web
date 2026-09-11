@@ -131,19 +131,21 @@ export class PremiumComponent implements OnInit, OnDestroy {
   protected readonly formattedPrice = signal<string | null>(null);
 
   /**
-   * The free plan's price, zero in the same currency Paddle quoted the paid one in. Null until
-   * that currency is known, and if it never arrives.
+   * The free plan's price: Paddle's own Premium price with its number swapped for a zero, so
+   * "49,00 kr" gives "0 kr" and "$4.99" gives "$0". Null until that price is known, and if it
+   * never arrives.
    *
-   * Zero is the same number everywhere, but "0 kr" and "$0" are not the same sentence, and a
-   * free column priced in a currency the paid column does not use reads as two different
-   * shops. The currency therefore comes from the same preview as the Premium price rather than
-   * from a guess about where the reader is.
+   * Taken from Paddle's string rather than formatted here because the two figures sit side by
+   * side and have to read as one shop. Paddle formats for the buyer's country; formatting the
+   * zero for the browser's language wrote "SEK 0" beside "49,00 kr" for a Swede whose browser
+   * is in English.
    *
-   * That ties this figure to a third party the free plan has nothing to do with, so the card
-   * falls back to the word "Free" when the preview does not arrive. Paddle being unreachable
-   * costs the paid card its price; it must not also leave the free one unpriced.
+   * With no Paddle price the row stays empty. The word "Free" there only repeated the heading.
    */
-  protected readonly freePrice = signal<string | null>(null);
+  protected readonly freePrice = computed(() => {
+    const price = this.formattedPrice();
+    return price ? zeroIn(price) : null;
+  });
 
   /**
    * True until Paddle has answered or failed to. Not the same as the price being null, which is
@@ -192,10 +194,6 @@ export class PremiumComponent implements OnInit, OnDestroy {
         if (lineItem) {
           this.formattedPrice.set(lineItem.formattedTotals.total);
         }
-        const currencyCode = preview?.data.currencyCode;
-        if (currencyCode) {
-          this.freePrice.set(formatZero(currencyCode));
-        }
       })
       // Deliberately quiet about Paddle being unreachable. A price we could not fetch is a smaller
       // problem than an error toast on a marketing page, and the card still reads correctly
@@ -206,7 +204,6 @@ export class PremiumComponent implements OnInit, OnDestroy {
           this.errorReporting.report(error);
         }
         this.formattedPrice.set(null);
-        this.freePrice.set(null);
       })
       .finally(() => this.pricePending.set(false));
   }
@@ -278,20 +275,12 @@ export class PremiumComponent implements OnInit, OnDestroy {
 }
 
 /**
- * Zero in the given currency, in the reader's own number format: "0 kr" for a Swedish reader,
- * "$0" for an American one. Written without decimals because a price of nothing has none to
- * say, and null if the runtime does not know the currency, which leaves the card to fall back
- * to no figure at all rather than a broken one.
+ * A formatted price with its number, separators and decimals included, replaced by a single
+ * zero: "49,00 kr" is "0 kr", "SEK 1 234.00" is "SEK 0", "$4.99" is "$0". Without decimals
+ * because a price of nothing has none to say. Null when there is no number to replace, so a
+ * string of an unexpected shape leaves the row empty rather than wrong.
  */
-function formatZero(currencyCode: string): string | null {
-  try {
-    return new Intl.NumberFormat(navigator.language, {
-      style: 'currency',
-      currency: currencyCode,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(0);
-  } catch {
-    return null;
-  }
+export function zeroIn(formattedPrice: string): string | null {
+  const zero = formattedPrice.replace(/\d(?:[\d.,'\s]*\d)?/, '0');
+  return zero === formattedPrice ? null : zero;
 }
