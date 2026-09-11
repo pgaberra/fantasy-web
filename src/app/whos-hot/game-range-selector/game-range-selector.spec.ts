@@ -109,12 +109,25 @@ describe('GameRangeSelectorComponent', () => {
     expect(component.fromGame()).toEqual(1);
   });
 
-  it('never lets the minimum-games filter exceed the span itself', () => {
+  it('holds the minimum-games filter to the season, not to the range', () => {
     const component = render(70, 82);
 
     component.onMinGamesInput(inputEvent(40));
+    expect(component.minGames()).toEqual(40);
 
-    expect(component.minGames()).toEqual(13);
+    component.onMinGamesInput(inputEvent(500));
+    expect(component.minGames()).toEqual(82);
+  });
+
+  it('leaves the minimum alone when the range moves', () => {
+    const component = render(1, 82);
+    component.onMinGamesInput(inputEvent(25));
+
+    component.onFromInput(inputEvent(80));
+    component.onToInput(inputEvent(81));
+    component.applyPreset(preset(component, 'Last 5'));
+
+    expect(component.minGames()).toEqual(25);
   });
 
   it('offers the minimum-games filter only while the leaderboard is scored per game', () => {

@@ -123,7 +123,7 @@
           id="min-games"
           type="number"
           min="1"
-          [max]="spanLength()"
+          [max]="scheduleLength()"
           step="1"
           [value]="minGames()"
           (input)="onMinGamesInput($event)"

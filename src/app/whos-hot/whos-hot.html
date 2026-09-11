@@ -35,8 +35,7 @@
       [(fromGame)]="fromGame"
       [(toGame)]="toGame"
       [(perGame)]="perGame"
-      [minGames]="appliedMinGames()"
-      (minGamesChange)="minGames.set($event)"
+      [(minGames)]="minGames"
     />
 
     @if (hasError()) {

@@ -102,6 +102,9 @@ export class WhosHotComponent {
    * they chose, so widening the range brings it back instead of making them type it again — a
    * drag passes through every narrow range on its way to a wide one, and a drag must not be able
    * to destroy the setting.
+   *
+   * Only the table is handed this. The Min. games box shows `minGames` itself, because a number
+   * that changes on its own whenever the range moves reads as the page overriding the user.
    */
   readonly appliedMinGames = computed(() =>
     Math.min(this.minGames(), Math.max(1, this.toGame() - this.fromGame() + 1)),
