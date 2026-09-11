@@ -137,7 +137,7 @@
           }
           @default {
             <ul class="rows">
-              @for (preset of presets; track preset.source) {
+              @for (preset of presets(); track preset.source) {
                 <li
                   class="row"
                   [class.row--selected]="isPreset(preset.source)"

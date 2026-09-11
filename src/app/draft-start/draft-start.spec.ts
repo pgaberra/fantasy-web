@@ -18,6 +18,8 @@ import { NotificationService } from '../services/notification.service';
 import { PopoverTriggerDirective } from '../shared/popover/popover-trigger.directive';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { environment } from '../../environments/environment';
+import { FeatureService } from '../services/feature.service';
+import { MODEL_PRESET_SOURCE } from '../models/ai-projection';
 
 describe('DraftStartComponent', () => {
   const LAST_SEASON = PRESETS.find((preset) => preset.id === 'last_season')!;
@@ -57,10 +59,12 @@ describe('DraftStartComponent', () => {
   const clearDraft = vi.fn();
   const notifyError = vi.fn();
   const premium = signal(false);
+  const aiProjection = signal(true);
   const loadState = signal<'idle' | 'loading' | 'loaded' | 'error'>('loaded');
 
   beforeEach(() => {
     premium.set(false);
+    aiProjection.set(true);
     loadState.set('loaded');
     navigate.mockClear();
     listWithPresetDrafts.mockClear();
@@ -84,6 +88,13 @@ describe('DraftStartComponent', () => {
         })
         .mock(NotificationService, { error: notifyError })
         .mock(EntitlementService, { premium, loadState })
+        .mock(FeatureService, {
+          aiProjection,
+          offeredPresets: <T extends { readonly source?: string | null }>(presets: readonly T[]) =>
+            aiProjection()
+              ? presets
+              : presets.filter((preset) => preset.source !== MODEL_PRESET_SOURCE),
+        })
         .provide({ provide: Router, useValue: { navigate } })
         // The component pulls in RouterLink, which has ng-mocks mock the router's location
         // providers too — and the CDK overlay behind the row menu needs a real one to open.
@@ -323,16 +334,11 @@ describe('DraftStartComponent', () => {
   });
 
   // The row is the only way in here, so dropping it is what switching the feature off means.
-  it('drops the AI preset from the picker when the AI projection is switched off', async () => {
-    const original = environment.aiProjectionEnabled;
-    environment.aiProjectionEnabled = false;
-    try {
-      const component = await render();
+  it('drops the AI preset from the picker where the BFF does not serve the AI projection', async () => {
+    aiProjection.set(false);
+    const component = await render();
 
-      expect(component.presets.map((preset) => preset.id)).toEqual(['last_season']);
-    } finally {
-      environment.aiProjectionEnabled = original;
-    }
+    expect(component.presets().map((preset) => preset.id)).toEqual(['last_season']);
   });
 
   it('keeps the two presets apart, each with its own stored draft', async () => {

@@ -10,6 +10,7 @@ import { BillingService } from '../services/billing.service';
 import { AuthService } from '../services/auth.service';
 import { EntitlementService } from '../services/entitlement.service';
 import { NotificationService } from '../services/notification.service';
+import { FeatureService } from '../services/feature.service';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 
 const initializePaddle = vi.fn();
@@ -81,6 +82,7 @@ describe('PremiumComponent', () => {
           refresh,
         })
         .mock(NotificationService, { error })
+        .mock(FeatureService, { aiProjection: signal(true) })
         .provide({ provide: ActivatedRoute, useValue: route })
     );
   });
