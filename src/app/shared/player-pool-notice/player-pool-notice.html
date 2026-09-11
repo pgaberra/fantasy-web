@@ -6,21 +6,27 @@
     <div class="pool-notice__body">
       <p class="pool-notice__title">Player list updated</p>
       <p class="pool-notice__body-text">
-        {{ added() }} {{ added() === 1 ? 'player has' : 'players have' }} been added to the league
-        since you created this projection.
+        {{ newPlayerCount() }} {{ newPlayerCount() === 1 ? 'player has' : 'players have' }} been
+        added to the league since you created this projection.
       </p>
       <p class="pool-notice__footer">
         Your existing projections are unchanged. New players start with last season's stats, or zero
         for projections built from scratch.
       </p>
       <div class="pool-notice__actions">
-        <button type="button" class="btn btn-secondary btn-sm" (click)="showNewPlayers.emit()">
-          Show new players
+        <label class="pool-notice__filter" for="new-players-only">
+          <input
+            id="new-players-only"
+            type="checkbox"
+            [checked]="newPlayersOnly()"
+            (change)="newPlayersOnly.set(!newPlayersOnly())"
+          />
+          New players only
+        </label>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="acknowledged.emit()">
+          Got it
         </button>
       </div>
     </div>
-    <button type="button" class="pool-notice__dismiss" aria-label="Dismiss" (click)="dismiss()">
-      <app-icon name="close" />
-    </button>
   </aside>
 }
