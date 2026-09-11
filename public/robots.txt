@@ -1,7 +1,8 @@
 # SlapStat - https://slapstat.com
-# Public marketing, legal and sign-in pages are crawlable; sign-in-only areas and
-# one-time-link routes are kept out. src/app/crawl-rules.spec.ts fails for any route
-# that is in neither this file nor sitemap.xml, so a new page has to be placed here.
+# Which pages appear in search is decided by the app: a route not marked indexable in
+# app.routes.ts carries a noindex tag. This file only spares crawlers the sign-in-only
+# areas and the one-time links. A page Google should drop, like /forgot-password, has to
+# stay crawlable here, or Google never reads the noindex that drops it.
 User-agent: *
 Allow: /
 
@@ -12,7 +13,6 @@ Disallow: /profile
 Disallow: /pay
 Disallow: /admin
 Disallow: /auth/
-Disallow: /forgot-password
 Disallow: /reset-password
 Disallow: /verify-email
 

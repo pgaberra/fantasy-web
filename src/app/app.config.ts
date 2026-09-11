@@ -19,6 +19,7 @@ import { AuthService } from './services/auth.service';
 import { ErrorReportingService } from './services/error-reporting.service';
 import { ReportingErrorHandler } from './services/reporting-error-handler';
 import { clearStaleBuildReload, handleNavigationError } from './shared/navigation-error';
+import { initCrawlTags } from './shared/crawl-tags';
 
 // AuthService.storeTokens() only runs on an *active* sign-in, so a returning user whose token
 // is already in localStorage would otherwise stay anonymous — identify them here too. The
@@ -75,6 +76,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([retryInterceptor, authInterceptor])),
     provideApiConfiguration(environment.rootUrl),
     provideAppInitializer(initNavigationRecovery),
+    provideAppInitializer(initCrawlTags),
     provideAppInitializer(initErrorReporting),
     provideAppInitializer(initAnalytics),
   ],

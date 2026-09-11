@@ -5,6 +5,7 @@ import { adminGuard } from './guards/admin.guard';
 import { authGuard } from './guards/auth.guard';
 import { paymentsEnabledGuard } from './guards/payments-enabled.guard';
 import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
+import { INDEXABLE } from './shared/crawl-tags';
 
 /**
  * The old payment addresses, /pricing and /account, both land on /premium with whatever they were
@@ -20,12 +21,17 @@ const toPremium: RedirectFunction = (route) =>
  * the projections table, the draft board, Who's hot, the shared page — into the initial
  * bundle, which was closing in on the 1 MB `maximumError` budget in `angular.json`. The
  * guards stay eagerly imported: they are tiny and have to run before the chunk is fetched.
+ *
+ * `data: { [INDEXABLE]: true }` is what lets search engines list a page; every route without it
+ * is marked noindex (see shared/crawl-tags.ts), and public/sitemap.xml has to list exactly the
+ * ones with it.
  */
 export const routes: Routes = [
   {
     path: '',
     loadComponent: () => import('./landing/landing').then((m) => m.LandingComponent),
     canActivate: [landingRedirectGuard],
+    data: { [INDEXABLE]: true },
   },
   // Picking a draft source needs the user's own projections, so there is nothing to render
   // for a signed-out visitor — send them to sign in rather than to a failed load.
@@ -87,6 +93,7 @@ export const routes: Routes = [
   {
     path: 'privacy',
     loadComponent: () => import('./privacy/privacy').then((m) => m.PrivacyComponent),
+    data: { [INDEXABLE]: true },
   },
   // Public and unguarded like /privacy, and deliberately not behind the payments flag: Paddle's
   // website review reads the terms from a signed-out browser before the feature is ever switched
@@ -94,6 +101,7 @@ export const routes: Routes = [
   {
     path: 'terms',
     loadComponent: () => import('./terms/terms').then((m) => m.TermsComponent),
+    data: { [INDEXABLE]: true },
   },
   // Payments UI stays dark until the PAYMENTS_ENABLED build flag is on — the guard redirects
   // these routes home otherwise.
@@ -134,10 +142,12 @@ export const routes: Routes = [
   {
     path: 'login',
     loadComponent: () => import('./auth/login/login').then((m) => m.LoginComponent),
+    data: { [INDEXABLE]: true },
   },
   {
     path: 'register',
     loadComponent: () => import('./auth/register/register').then((m) => m.RegisterComponent),
+    data: { [INDEXABLE]: true },
   },
   {
     path: 'auth/google/callback',
