@@ -33,7 +33,7 @@ import { createDefaultProjectionState } from '../draft-projection/projection-def
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import { ProjectionModelService } from '../services/projection-model.service';
 import { freeProjectionName } from '../services/projection-name';
-import { offeredPresets } from '../models/ai-projection';
+import { FeatureService } from '../services/feature.service';
 import { AiProjectionAccess } from '../shared/premium/ai-projection-access';
 import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/premium-refused';
 import { SOURCE_KINDS, SourceKind } from '../models/source-kind';
@@ -103,6 +103,7 @@ export class ProjectionCreateComponent {
   private readonly playerService = inject(PlayerService);
   private readonly projectionModel = inject(ProjectionModelService);
   private readonly aiAccess = inject(AiProjectionAccess);
+  private readonly features = inject(FeatureService);
   private readonly boardCache = inject(ProjectionBoardCache);
 
   private readonly preview = viewChild(StartingPointPreviewComponent);
@@ -117,10 +118,11 @@ export class ProjectionCreateComponent {
   });
 
   /**
-   * The presets this build offers. Filtered rather than constant: the AI projection is behind a
-   * build flag, and a row that seeds a projection the build cannot fill in is worse than no row.
+   * The presets this environment offers. Filtered rather than constant: the BFF decides whether
+   * it serves the AI projection, and a row that seeds a projection the server will not fill in
+   * is worse than no row.
    */
-  readonly presets = offeredPresets(CREATE_PRESETS);
+  readonly presets = computed(() => this.features.offeredPresets(CREATE_PRESETS));
 
   readonly sourceKinds = SOURCE_KINDS;
 
@@ -307,7 +309,7 @@ export class ProjectionCreateComponent {
   private optionsOf(kind: SourceKind): readonly StartingPoint[] {
     switch (kind) {
       case 'preset':
-        return this.presets.map((preset) => ({ kind: 'preset', source: preset.source }) as const);
+        return this.presets().map((preset) => ({ kind: 'preset', source: preset.source }) as const);
       case 'projection':
         return this.ownProjections().map(
           (projection) =>

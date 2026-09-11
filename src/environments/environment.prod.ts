@@ -46,11 +46,6 @@ const whosHotEnabledFlag: string = '__WHOS_HOT_ENABLED__';
 // default and has to be turned on deliberately each off-season.
 const offseasonEnabledFlag: string = '__OFFSEASON_ENABLED__';
 
-// AI projection toggle. Reads the same way round as whosHotEnabled — only the literal "false"
-// (via the AI_PROJECTION_ENABLED build arg) drops the preset, and untouched or empty leaves it
-// offered. The preset already ships, so a deploy that forgets the arg must not silently lose it.
-const aiProjectionEnabledFlag: string = '__AI_PROJECTION_ENABLED__';
-
 // Public Paddle client token, injected at build time. Not a secret: it ships to the browser by
 // design and only permits opening a checkout. Untouched it resolves to empty, which leaves the
 // /pay page unable to open one. Which Paddle the token opens is read off its test_ or live_
@@ -73,7 +68,6 @@ export const environment = {
   paymentsEnabled: paymentsEnabledFlag === 'true',
   espnLeaguesEnabled: espnLeaguesEnabledFlag === 'true',
   whosHotEnabled: whosHotEnabledFlag !== 'false',
-  aiProjectionEnabled: aiProjectionEnabledFlag !== 'false',
   paddleClientToken: paddleClientTokenFlag.startsWith('__PADDLE_CLIENT_TOKEN')
     ? ''
     : paddleClientTokenFlag,

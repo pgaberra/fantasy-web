@@ -20,7 +20,13 @@ test.describe('happy path', () => {
     await page.locator('#confirmPassword').fill(password);
     await page.locator('button[type="submit"]').click();
     await expect(page).toHaveURL(/\/projections\/?$/, { timeout: 15_000 });
-    await expect(page.getByRole('button', { name: /sign out/i })).toBeVisible();
+    // Sign out lives in the account menu behind the avatar, as a menu item. Close the menu again
+    // before going on: its overlay sits over the page and would take the next click.
+    await page.getByRole('button', { name: /account menu/i }).click();
+    const signOut = page.getByRole('menuitem', { name: /sign out/i });
+    await expect(signOut).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(signOut).toBeHidden();
 
     // 2) Create a projection from last season's stats (the default source).
     await page.getByRole('button', { name: /create new projection/i }).click();

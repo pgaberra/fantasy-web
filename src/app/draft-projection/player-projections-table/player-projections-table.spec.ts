@@ -543,6 +543,33 @@ describe('PlayerProjectionsTableComponent', () => {
     });
 
     /**
+     * A row saved as a skater for a player the pool now lists as a goalie holds none of the
+     * goalie stats the row's cells read, and the first one to format its value threw (Sentry
+     * FANTASY-WEB-D). The player keeps a row, started from their own line.
+     */
+    it('restarts a saved row from the pool when the pool has the player as the other type', () => {
+      const savedAsSkater: Projection = { ...mockPlayerProjections[0], playerId: 3 };
+      const fixture = MockRender(PlayerProjectionsTableComponent, {
+        players: mockPlayers,
+        scoringType: 'category',
+        initialProjections: [mockPlayerProjections[0], mockPlayerProjections[1], savedAsSkater],
+        statWeights: mockStatWeights,
+        activeScoringColumns: new Set<ScoringStatKey>(['goals', 'w']),
+        activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
+        scaleSettings: mockScaleSettings,
+        useDefaultDecimals: true,
+      });
+
+      const component = fixture.point.componentInstance;
+      expect(component.playerProjections()).toEqual([
+        mockPlayerProjections[0],
+        mockPlayerProjections[1],
+        { type: 'goalie', playerId: 3, stats: (mockPlayers[2] as Goalie).stats },
+      ]);
+      expect(component.droppedPlayerCount()).toEqual(0);
+    });
+
+    /**
      * An empty pool means the read model did not arrive, not that the league emptied. Filtering
      * against it would discard every row of a saved projection.
      */

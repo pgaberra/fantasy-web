@@ -11,6 +11,7 @@ import { AuthService } from '../services/auth.service';
 import { EntitlementService } from '../services/entitlement.service';
 import { ErrorReportingService } from '../services/error-reporting.service';
 import { NotificationService } from '../services/notification.service';
+import { FeatureService } from '../services/feature.service';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { PaddleConfigurationError } from '../shared/paddle/paddle';
 
@@ -86,6 +87,7 @@ describe('PremiumComponent', () => {
         })
         .mock(NotificationService, { error })
         .mock(ErrorReportingService, { report })
+        .mock(FeatureService, { aiProjection: signal(true) })
         .provide({ provide: ActivatedRoute, useValue: route })
     );
   });

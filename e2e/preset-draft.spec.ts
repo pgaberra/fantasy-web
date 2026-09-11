@@ -12,7 +12,7 @@ const PRESET_NAME = "Last Season's Stats";
  * were their work.
  *
  * The test tolerates a preset draft left behind by an earlier run: the account is shared and
- * there is no UI to delete one, so it asserts on where the flow ends up rather than on the
+ * the test does not discard one, so it asserts on where the flow ends up rather than on the
  * account starting empty.
  */
 test.describe('draft mode from a preset', () => {
@@ -33,10 +33,17 @@ test.describe('draft mode from a preset', () => {
 
     // The picker keeps a preset that has been drafted against out of the rows below, so which
     // of the two the preset shows up in says whether this run is the first on the account. The
-    // page's Start button renders with the rows, so waiting for it is waiting for the answer;
-    // count() itself does not wait.
+    // "Start a new draft" section renders once the sources have loaded, so waiting for it is
+    // waiting for the answer; count() itself does not wait.
+    //
+    // This used to wait for the Start button, which stopped rendering once the AI projection was
+    // locked to Premium: with this preset already drafted, the locked AI projection is the only
+    // preset left, it is picked by default, and the page's one action becomes "Unlock with
+    // Premium". The section is there whatever is picked.
     const startDraft = page.getByRole('button', { name: /^start draft$/i });
-    await expect(startDraft).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('region', { name: /start a new draft/i })).toBeVisible({
+      timeout: 15_000,
+    });
     const presetRow = page.locator('li.row').filter({ hasText: PRESET_NAME });
     const presetDraft = page.locator('li.draft').filter({ hasText: PRESET_NAME });
     const startedAlready = (await presetDraft.count()) > 0;

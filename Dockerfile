@@ -48,9 +48,6 @@ ARG ESPN_LEAGUES_ENABLED=
 # WHOS_HOT_ENABLED=false hides the Who's hot page (both nav links and the route); empty/anything
 # else leaves it visible (default), since the page already ships.
 ARG WHOS_HOT_ENABLED=
-# AI_PROJECTION_ENABLED=false drops the AI projection from the presets on the new-projection page
-# and the draft picker; empty/anything else leaves it offered (default), since the preset ships.
-ARG AI_PROJECTION_ENABLED=
 # OFFSEASON_ENABLED=true shows the off-season data notice (stale team affiliations, missing
 # rookies) in the projection editors; empty/anything else keeps it hidden (default).
 ARG OFFSEASON_ENABLED=
@@ -71,7 +68,7 @@ RUN sed -i \
   -e "s|__PADDLE_PRICE_ID__|${PADDLE_PRICE_ID}|g" \
   -e "s|__ESPN_LEAGUES_ENABLED__|${ESPN_LEAGUES_ENABLED}|g" \
   -e "s|__WHOS_HOT_ENABLED__|${WHOS_HOT_ENABLED}|g" \
-  -e "s|__AI_PROJECTION_ENABLED__|${AI_PROJECTION_ENABLED}|g"   -e "s|__OFFSEASON_ENABLED__|${OFFSEASON_ENABLED}|g" \
+  -e "s|__OFFSEASON_ENABLED__|${OFFSEASON_ENABLED}|g" \
   src/environments/environment.prod.ts
 
 RUN npm run build

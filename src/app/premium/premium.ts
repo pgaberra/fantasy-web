@@ -5,6 +5,7 @@ import { AuthService } from '../services/auth.service';
 import { BillingService } from '../services/billing.service';
 import { EntitlementService } from '../services/entitlement.service';
 import { ErrorReportingService } from '../services/error-reporting.service';
+import { FeatureService } from '../services/feature.service';
 import { NotificationService } from '../services/notification.service';
 import { initializePaddleForToken, PaddleConfigurationError } from '../shared/paddle/paddle';
 import { freeFeatures, premiumPerks } from '../shared/premium/premium-perks';
@@ -47,15 +48,16 @@ export class PremiumComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   protected readonly authService = inject(AuthService);
   protected readonly entitlement = inject(EntitlementService);
+  private readonly features = inject(FeatureService);
   protected readonly starting = signal(false);
   protected readonly openingPortal = signal(false);
   protected readonly justSubscribed = signal(false);
 
-  protected readonly perks = premiumPerks();
+  protected readonly perks = computed(() => premiumPerks(this.features.aiProjection()));
   protected readonly freeFeatures = freeFeatures();
 
   /** The perks with a page to go to, for the welcome after checkout. */
-  protected readonly nextSteps = this.perks.filter((perk) => perk.link);
+  protected readonly nextSteps = computed(() => this.perks().filter((perk) => perk.link));
 
   /**
    * True while we are back from a completed checkout but the subscription has not reached us yet.

@@ -35,13 +35,12 @@ describe('PayComponent', () => {
   });
 
   // The failure states differ in when they are reached: a missing transaction id fails inside
-  // ngOnInit, while a rejected initialize fails a tick later, so the view has to be checked
-  // again after the promises settle or the second kind never reaches the DOM.
+  // ngOnInit, while a rejected initialize fails some promise hops later, so the view has to be
+  // checked again after they settle or the second kind never reaches the DOM. A macrotask waits
+  // for all of them, where counting microtasks broke as soon as the chain grew a hop.
   async function render(): Promise<void> {
     const fixture = MockRender(PayComponent);
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve));
     fixture.detectChanges();
   }
 

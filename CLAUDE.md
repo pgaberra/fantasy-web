@@ -95,8 +95,9 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `check:copy`, `
   **Locked is not hidden, deliberately.** The card keeps its place, its icon and its full-weight
   name; only a gold edge and the padlock say it is not yours yet, and picking it swaps the page's
   primary button for the way to `/premium`. Someone who cannot see the thing has no reason to buy
-  it. (`isAiProjectionEnabled` is the switch that genuinely hides it, and it is a third question:
-  a build without the model has nothing to sell either.) The gate is only what the pages draw —
+  it. (`FeatureService.aiProjection` is what genuinely hides it, and it is a third question:
+  it is the BFF's answer from `GET /api/v1/features`, the same one its endpoints enforce, so
+  there is no web build switch for it and the web cannot offer what the BFF refuses.) The gate is only what the pages draw —
   the BFF refuses `source=model` and the model's own lines to the same accounts, which is what
   makes it real. The radio stays real and visible on purpose: it is what the E2E suite
   checks (`li.row` + `getByRole('radio')`). The shared kind carries the paste
