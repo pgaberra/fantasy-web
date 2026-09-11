@@ -1,10 +1,16 @@
 # SlapStat - https://slapstat.com
-# Public marketing/auth pages are crawlable; private app areas and
-# token/code-bearing routes are kept out of search results.
+# Which pages appear in search is decided by the app: a route not marked indexable in
+# app.routes.ts carries a noindex tag. This file only spares crawlers the sign-in-only
+# areas and the one-time links. A page Google should drop, like /forgot-password, has to
+# stay crawlable here, or Google never reads the noindex that drops it.
 User-agent: *
 Allow: /
 
 Disallow: /projections
+Disallow: /draft
+Disallow: /whos-hot
+Disallow: /profile
+Disallow: /pay
 Disallow: /admin
 Disallow: /auth/
 Disallow: /reset-password

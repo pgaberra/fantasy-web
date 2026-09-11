@@ -1,25 +1,18 @@
 import { environment } from '../../../environments/environment';
 
-/** One thing Premium adds, and where a subscriber goes to use it. */
+/** One thing Premium adds. */
 export interface PremiumPerk {
   readonly title: string;
   /** Absent where the title says the whole thing on its own. */
   readonly description?: string;
-  /**
-   * The page the perk lives on, for the moment straight after checkout when the useful thing to
-   * say is where to go. Absent for a promise rather than a page.
-   */
-  readonly link?: string;
-  readonly linkLabel?: string;
 }
 
 /**
  * What Premium includes, in the order it is worth saying.
  *
- * One list for the Premium page and the welcome after checkout, so the two cannot drift into
- * promising different things. It follows what the environment serves: without the AI projection
- * (the BFF's answer, `FeatureService.aiProjection`) or Who's hot (a build flag) it must not sell
- * them, since a perk nobody can reach is a refund request.
+ * It follows what the environment serves: without the AI projection (the BFF's answer,
+ * `FeatureService.aiProjection`) or Who's hot (a build flag) it must not sell them, since a perk
+ * nobody can reach is a refund request.
  */
 export function premiumPerks(aiProjectionServed: boolean): readonly PremiumPerk[] {
   const perks: PremiumPerk[] = [];
@@ -27,16 +20,10 @@ export function premiumPerks(aiProjectionServed: boolean): readonly PremiumPerk[
     perks.push({
       title: 'AI projection',
       description: 'Every player projected for the 2026-27 season.',
-      link: '/projections/new',
-      linkLabel: 'Start an AI projection',
     });
   }
   if (environment.whosHotEnabled) {
-    perks.push({
-      title: "Custom range on Who's Hot",
-      link: '/whos-hot',
-      linkLabel: "Pick a range on Who's Hot",
-    });
+    perks.push({ title: "Custom range on Who's Hot" });
   }
   perks.push({
     title: 'New features first',

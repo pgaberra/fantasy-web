@@ -4,25 +4,13 @@
     <p class="premium-sub">One monthly plan. Cancel anytime.</p>
   </header>
 
-  <!-- Straight after checkout. Once the subscription has landed the useful thing to say is where
-       the things just paid for live; until then, only the thanks, and the card below says what is
-       true at that moment. -->
+  <!-- Straight after checkout. Once the subscription has landed, the welcome; until then, only the
+       thanks, and the card below says what is true at that moment. -->
   @if (justSubscribed()) {
     @if (entitlement.premium()) {
       <section class="checkout-welcome" role="status">
         <h2 class="checkout-welcome-title">Welcome to Premium</h2>
         <p class="checkout-welcome-text">Thanks for subscribing. Premium is now active.</p>
-        @if (nextSteps().length > 0) {
-          <ul class="checkout-welcome-links">
-            @for (perk of nextSteps(); track perk.title) {
-              <li>
-                <a [routerLink]="perk.link" class="btn btn-secondary btn-sm">{{
-                  perk.linkLabel
-                }}</a>
-              </li>
-            }
-          </ul>
-        }
       </section>
     } @else {
       <p class="checkout-thanks" role="status">Thanks for subscribing.</p>
