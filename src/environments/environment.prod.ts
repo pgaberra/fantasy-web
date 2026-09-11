@@ -48,9 +48,9 @@ const offseasonEnabledFlag: string = '__OFFSEASON_ENABLED__';
 
 // Public Paddle client token, injected at build time. Not a secret: it ships to the browser by
 // design and only permits opening a checkout. Untouched it resolves to empty, which leaves the
-// /pay page unable to open one. PADDLE_ENVIRONMENT picks which Paddle the token belongs to.
+// /pay page unable to open one. Which Paddle the token opens is read off its test_ or live_
+// prefix (shared/paddle), so there is no separate environment flag to disagree with it.
 const paddleClientTokenFlag: string = '__PADDLE_CLIENT_TOKEN__';
-const paddleEnvironmentFlag: string = '__PADDLE_ENVIRONMENT__';
 const paddlePriceIdFlag: string = '__PADDLE_PRICE_ID__';
 
 export const environment = {
@@ -71,9 +71,6 @@ export const environment = {
   paddleClientToken: paddleClientTokenFlag.startsWith('__PADDLE_CLIENT_TOKEN')
     ? ''
     : paddleClientTokenFlag,
-  paddleEnvironment: paddleEnvironmentFlag.startsWith('__PADDLE_ENVIRONMENT')
-    ? 'production'
-    : paddleEnvironmentFlag,
   paddlePriceId: paddlePriceIdFlag.startsWith('__PADDLE_PRICE_ID') ? '' : paddlePriceIdFlag,
   offseasonEnabled: offseasonEnabledFlag === 'true',
 };

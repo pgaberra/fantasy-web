@@ -1,12 +1,14 @@
 import { Component, computed, effect, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { initializePaddle, type Environments } from '@paddle/paddle-js';
 import { AuthService } from '../services/auth.service';
 import { BillingService } from '../services/billing.service';
 import { EntitlementService } from '../services/entitlement.service';
+import { ErrorReportingService } from '../services/error-reporting.service';
 import { FeatureService } from '../services/feature.service';
 import { NotificationService } from '../services/notification.service';
+import { PaddleConfigurationError } from '../shared/paddle/paddle';
+import { PaddleService } from '../shared/paddle/paddle.service';
 import { freeFeatures, premiumPerks } from '../shared/premium/premium-perks';
 import { environment } from '../../environments/environment';
 import { IconComponent } from '../shared/icon/icon';
@@ -43,6 +45,8 @@ const CONFIRMATION_POLL_MS = 2_000;
 export class PremiumComponent implements OnInit, OnDestroy {
   private readonly billing = inject(BillingService);
   private readonly notifications = inject(NotificationService);
+  private readonly errorReporting = inject(ErrorReportingService);
+  private readonly paddle = inject(PaddleService);
   private readonly route = inject(ActivatedRoute);
   protected readonly authService = inject(AuthService);
   protected readonly entitlement = inject(EntitlementService);
@@ -174,10 +178,8 @@ export class PremiumComponent implements OnInit, OnDestroy {
       return;
     }
 
-    initializePaddle({
-      token: environment.paddleClientToken,
-      environment: environment.paddleEnvironment as Environments,
-    })
+    this.paddle
+      .initialize({ token: environment.paddleClientToken })
       .then((paddle) => paddle?.PricePreview({ items: [{ priceId, quantity: 1 }] }))
       .then((preview) => {
         const lineItem = preview?.data.details.lineItems[0];
@@ -189,9 +191,14 @@ export class PremiumComponent implements OnInit, OnDestroy {
           this.freePrice.set(formatZero(currencyCode));
         }
       })
-      // Deliberately quiet. A price we could not fetch is a smaller problem than an error
-      // toast on a marketing page, and the card still reads correctly without it.
-      .catch(() => {
+      // Deliberately quiet about Paddle being unreachable. A price we could not fetch is a smaller
+      // problem than an error toast on a marketing page, and the card still reads correctly
+      // without it. A token that names no Paddle environment is a broken build instead, and is
+      // reported, since a card that reads fine would otherwise hide it.
+      .catch((error: unknown) => {
+        if (error instanceof PaddleConfigurationError) {
+          this.errorReporting.report(error);
+        }
         this.formattedPrice.set(null);
         this.freePrice.set(null);
       });

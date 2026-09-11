@@ -45,10 +45,8 @@ export const environment = {
   // Public Paddle client token (not a secret - it is shipped to the browser by design; it only
   // permits opening a checkout). Empty means the /pay page cannot open one, which is the right
   // local default: local dev runs the mock payment provider, which never sends anyone here.
+  // Which Paddle environment it opens is read off its prefix (test_ or live_), not set separately.
   paddleClientToken: '',
-  // Which Paddle environment the client token belongs to: "sandbox" or "production". Tokens and
-  // price ids are environment-scoped, so this has to move together with the token.
-  paddleEnvironment: 'sandbox',
   // The recurring price the pricing page asks Paddle to quote. Empty locally, where the mock
   // provider is in use and no Paddle catalog exists.
   paddlePriceId: '',

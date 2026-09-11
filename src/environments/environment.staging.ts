@@ -32,7 +32,6 @@ export const environment = {
   // Empty on purpose: this file only backs `npm run start:staging`. The deployed staging app
   // builds from environment.prod.ts with PADDLE_CLIENT_TOKEN injected.
   paddleClientToken: '',
-  paddleEnvironment: 'sandbox',
   paddlePriceId: '',
   offseasonEnabled: false,
 };
