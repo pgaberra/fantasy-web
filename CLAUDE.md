@@ -6,10 +6,11 @@ based on their league/scoring settings. Talks only to `fantasy-bff`.
 
 ## Tech stack
 
-- Angular 21.2.6, TypeScript 5.9, RxJS 7.8
+- Angular, TypeScript, RxJS: the versions are whatever `package.json` pins (written out here,
+  they went a major version stale)
 - Standalone components, signals
 - Tests: Vitest (via `ng test`), ng-mocks, jsdom
-- Lint: ESLint 10 + angular-eslint; Format: Prettier
+- Lint: ESLint + angular-eslint; Format: Prettier
 - API client generated from BFF OpenAPI via `ng-openapi-gen`
 
 ## Common commands
@@ -27,7 +28,9 @@ npm run generate:api   # generate src/app/api from specs/bff-openapi.yaml
 npm run check:copy     # hold user-facing copy to COPY-RULES.md (CI uses this)
 ```
 
-CI runs (and must pass): `generate:api`, `lint`, `format:check`, `check:copy`, `test`, `build`.
+CI runs (and must pass): `generate:api`, `lint`, `format:check`, `check:copy`, `test`, `build`, and the
+guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deployment-args.sh`,
+`check-inline-icons.sh`, `check-pending-states.sh`).
 
 > **After cloning, run `npm run generate:api` once** — `src/app/api` is generated,
 > not committed, so lint/test/build will fail until it exists.
@@ -249,8 +252,8 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `check:copy`, `
   and `environment.prod.ts` (API URL injected at build time via the `API_URL` build arg —
   see `Dockerfile`). `start:staging` lets you run the web locally against staging without
   booting the backend services — it requires the staging BFF to allow
-  `http://localhost:4200` as a CORS origin (configured in `fantasy-bff`'s
-  `application-staging.yaml`).
+  `http://localhost:4200` as a CORS origin (in staging-bff's `CORS_ALLOWED_ORIGINS` and in the
+  Traefik `api-cors` labels on its router; see `DEPLOYMENT.md`).
 
 ## Error handling
 
@@ -427,8 +430,8 @@ doesn't replace them.
 
 ## CI / workflow
 
-- `.github/workflows/pr-checks.yml`: Node 22, generates the API client then runs
-  lint + format:check + test + build on PRs to `master`.
+- `.github/workflows/pr-checks.yml`: Node 22, generates the API client then runs every check
+  listed under [Common commands](#common-commands) on PRs to `master`.
 - **Copy is checked, not merely guided.** `npm run check:copy` reads `COPY-RULES.md` and fails
   on a new terminology, vocabulary or punctuation violation, ratcheted against `.github/copy-baseline.json`.
   It settles only what a script can settle: naming the same thing the same way, the banned
@@ -459,8 +462,10 @@ in committed config.
 ## Deployment
 
 - Deployed via **Coolify** (Hetzner) using the multi-stage `Dockerfile`: a Node build
-  stage produces `dist/fantasy-web/browser`, served by nginx (SPA rewrite `/* →
-/index.html`, see `nginx.conf`). The BFF URL + Google Client ID are injected into
-  `environment.prod.ts` at build time via the `API_URL` / `GOOGLE_CLIENT_ID` build args.
-  production = `slapstat.com` (`api.slapstat.com`), staging = `staging.slapstat.com`
-  (`api.staging.slapstat.com`). See `DEPLOYMENT.md`.
+  stage produces `dist/fantasy-web/browser`, served by nginx (SPA rewrite `/* → /index.html`,
+  see `nginx.conf`). Every build arg in `DEPLOYMENT.md`'s table is injected into
+  `environment.prod.ts` at build time (`API_URL` also into `nginx.conf`); CI holds the table to
+  the Dockerfile's ARGs. production = `slapstat.com` (`api.slapstat.com`), staging =
+  `staging.slapstat.com` (`api.staging.slapstat.com`).
+- A merge to `master` deploys **staging** (`tag-on-merge.yml` tags it and stamps `APP_VERSION`);
+  **publishing the draft release** deploys production (`promote-to-prod.yml`). See `DEPLOYMENT.md`.
