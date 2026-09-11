@@ -25,6 +25,8 @@ import { SkaterPosition } from '../models/position.model';
 import { GoalieScoringStats, SkaterScoringStats } from '../models/projection.model';
 import { GOALIE_SCORING_STAT_KEYS, SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
 import { environment } from '../../environments/environment';
+import { FeatureService } from '../services/feature.service';
+import { MODEL_PRESET_SOURCE } from '../models/ai-projection';
 
 describe('ProjectionCreateComponent', () => {
   MockInstance.scope();
@@ -179,6 +181,7 @@ describe('ProjectionCreateComponent', () => {
   const navigate = vi.fn();
   const notifyError = vi.fn();
   const premium = signal(false);
+  const aiProjection = signal(true);
   const entitlementLoadState = signal<'idle' | 'loading' | 'loaded' | 'error'>('loaded');
   const createProjection = vi.fn<
     (request: CreateProjectionRequest) => Observable<ProjectionResponse>
@@ -186,6 +189,7 @@ describe('ProjectionCreateComponent', () => {
 
   beforeEach(() => {
     premium.set(false);
+    aiProjection.set(true);
     entitlementLoadState.set('loaded');
     navigate.mockClear();
     notifyError.mockClear();
@@ -214,6 +218,13 @@ describe('ProjectionCreateComponent', () => {
         })
         .mock(NotificationService, { error: notifyError })
         .mock(EntitlementService, { premium, loadState: entitlementLoadState })
+        .mock(FeatureService, {
+          aiProjection,
+          offeredPresets: <T extends { readonly source?: string | null }>(presets: readonly T[]) =>
+            aiProjection()
+              ? presets
+              : presets.filter((preset) => preset.source !== MODEL_PRESET_SOURCE),
+        })
         .provide({ provide: Router, useValue: { navigate } })
     );
   });
@@ -835,22 +846,36 @@ describe('ProjectionCreateComponent', () => {
     expect(component.canCreate()).toEqual(true);
   });
 
-  // The preset list is the whole of this page's offer, so a build with the AI projection off
-  // must not list it — and 'default' is still what the page opens on, so nothing else moves.
-  it('drops the AI preset when the AI projection is switched off', async () => {
-    const original = environment.aiProjectionEnabled;
-    environment.aiProjectionEnabled = false;
-    try {
-      const fixture = MockRender(ProjectionCreateComponent);
-      await fixture.whenStable();
-      const component = fixture.point.componentInstance;
+  // The preset list is the whole of this page's offer, so an environment whose BFF does not serve
+  // the AI projection must not list it, and 'default' is still what the page opens on.
+  it('drops the AI preset where the BFF does not serve the AI projection', async () => {
+    aiProjection.set(false);
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
 
-      expect(component.presets.map((preset) => preset.source)).toEqual(['default', 'blank']);
-      expect(component.isPreset('default')).toBe(true);
-      expect(seed).not.toHaveBeenCalled();
-    } finally {
-      environment.aiProjectionEnabled = original;
-    }
+    expect(component.presets().map((preset) => preset.source)).toEqual(['default', 'blank']);
+    expect(component.isPreset('default')).toBe(true);
+    expect(seed).not.toHaveBeenCalled();
+  });
+
+  // The answer is a request, so it can land after the page is drawn. The card joins the list
+  // then, without moving the pick the page opened on.
+  it('offers the AI preset once the BFF says it serves it', async () => {
+    aiProjection.set(false);
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    aiProjection.set(true);
+    fixture.detectChanges();
+
+    expect(component.presets().map((preset) => preset.source)).toEqual([
+      'default',
+      'model',
+      'blank',
+    ]);
+    expect(component.isPreset('default')).toBe(true);
   });
 
   it("asks the server for the model's lines when the AI preset is picked", async () => {
