@@ -4,7 +4,9 @@ import { forkJoin, map, Observable } from 'rxjs';
 import { ApiConfiguration } from '../api/api-configuration';
 import { skaterSplits } from '../api/fn/projection-model/skater-splits';
 import { goalieSplits } from '../api/fn/projection-model/goalie-splits';
+import { splitSeasons } from '../api/fn/projection-model/split-seasons';
 import { PlayerSplitResponse } from '../api/models/player-split-response';
+import { SplitSeasonListResponse } from '../api/models/split-season-list-response';
 import {
   GOALIE_SCORING_STAT_KEYS,
   GOALIE_UTILITY_STAT_KEYS,
@@ -13,12 +15,14 @@ import {
 } from '../models/stat-key.model';
 import { Projection } from '../models/projection.model';
 
-/** A stretch of a season's schedule, in team game numbers. Both bounds inclusive. */
-export interface GameSpan {
-  season: number;
-  fromGame: number;
-  toGame: number;
-}
+/**
+ * A stretch of a season's schedule, in team game numbers: both bounds, inclusive, or `lastGames`,
+ * each team's own last N, which the server counts back from that team's latest game. Mid-season
+ * teams stand on different game numbers, so no pair of bounds could say "the last 5".
+ */
+export type GameSpan =
+  | { season: number; fromGame: number; toGame: number; lastGames?: undefined }
+  | { season: number; lastGames: number; fromGame?: undefined; toGame?: undefined };
 
 /**
  * One player's measured production over a span, shaped as a {@link Projection} so the same
@@ -54,11 +58,21 @@ export class WhosHotService {
   private readonly http = inject(HttpClient);
   private readonly rootUrl = inject(ApiConfiguration).rootUrl;
 
+  /**
+   * Every season the leaderboard can measure, with its own length and how far it has got, and
+   * the season to open on: the newest with a game played, so last season until the new one is
+   * underway.
+   */
+  seasons(): Observable<SplitSeasonListResponse> {
+    return splitSeasons(this.http, this.rootUrl).pipe(map((sent) => sent.body));
+  }
+
   splits(span: GameSpan): Observable<HotPlayer[]> {
     const params = {
       season: span.season,
       fromGame: span.fromGame,
       toGame: span.toGame,
+      lastGames: span.lastGames,
       limit: MAX_PLAYERS,
     };
     return forkJoin({

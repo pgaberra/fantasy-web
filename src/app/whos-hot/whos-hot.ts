@@ -1,6 +1,6 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { debounceTime, distinctUntilChanged, startWith } from 'rxjs';
+import { debounceTime, distinctUntilChanged, filter, merge, skip, skipWhile, take } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { EntitlementService } from '../services/entitlement.service';
 import { PlayerService } from '../services/player.service';
@@ -30,12 +30,7 @@ import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { FREE_PRESET, GameRangeSelectorComponent } from './game-range-selector/game-range-selector';
-import {
-  DEFAULT_SEASON_START_YEAR,
-  SEASON_SCHEDULE_GAMES,
-  SEASONS,
-  seasonLabelOf,
-} from './season.model';
+import { SEASONS, seasonLabelOf } from './season.model';
 import { HotPlayersTableComponent } from './hot-players-table/hot-players-table';
 import { IconComponent } from '../shared/icon/icon';
 
@@ -45,8 +40,13 @@ import { IconComponent } from '../shared/icon/icon';
  */
 const SPAN_SETTLE_MS = 250;
 
-function isSameSpan(a: GameSpan, b: GameSpan): boolean {
-  return a.season === b.season && a.fromGame === b.fromGame && a.toGame === b.toGame;
+function isSameSpan(a: GameSpan | undefined, b: GameSpan | undefined): boolean {
+  return (
+    a?.season === b?.season &&
+    a?.fromGame === b?.fromGame &&
+    a?.toGame === b?.toGame &&
+    a?.lastGames === b?.lastGames
+  );
 }
 
 /**
@@ -79,18 +79,70 @@ export class WhosHotComponent {
   private readonly entitlement = inject(EntitlementService);
 
   protected readonly seasons = SEASONS;
-  protected readonly scheduleLength = SEASON_SCHEDULE_GAMES;
 
   private readonly stored = this.settingsStore.load();
 
-  readonly season = signal(this.stored?.season ?? DEFAULT_SEASON_START_YEAR);
-  readonly seasonLabel = computed(() => seasonLabelOf(this.season()));
+  /**
+   * Every season the server can measure, with its own length and how far it has got. Asked of
+   * the server rather than written down here: 2025-26 was 82 games and 2026-27 is 84, and a
+   * constant is how this page came to ask November for games 80-84.
+   */
+  private readonly seasonsResource = rxResource({
+    stream: () => this.whosHot.seasons(),
+  });
 
-  /** The stretch a free account is held to, and the range every account opens on. */
-  private readonly freeRange = FREE_PRESET.range(SEASON_SCHEDULE_GAMES);
+  /**
+   * The season the visitor picked, or null to follow the server: the newest season with a game
+   * played, which is last season until the new one is underway. Only a pick is remembered, so a
+   * visit in the summer does not hold the page on last season all winter.
+   */
+  readonly chosenSeason = signal<number | null>(this.stored?.season ?? null);
 
-  readonly fromGame = signal(this.stored?.fromGame ?? this.freeRange.from);
-  readonly toGame = signal(this.stored?.toGame ?? this.freeRange.to);
+  readonly season = computed<number | undefined>(() => {
+    const chosen = this.chosenSeason();
+    if (chosen !== null) {
+      return chosen;
+    }
+    if (!this.seasonsResource.hasValue()) {
+      return undefined;
+    }
+    return this.seasonsResource.value().defaultSeason ?? SEASONS[0].startYear;
+  });
+
+  readonly seasonLabel = computed(() => {
+    const season = this.season();
+    return season === undefined ? '' : seasonLabelOf(season);
+  });
+
+  private readonly seasonProgress = computed(() => {
+    if (!this.seasonsResource.hasValue()) {
+      return undefined;
+    }
+    const season = this.season();
+    return this.seasonsResource.value().seasons.find((listed) => listed.season === season);
+  });
+
+  /** The selected season's own length, once the server has said what it is. */
+  readonly scheduleLength = computed(() => this.seasonProgress()?.scheduleGames ?? null);
+
+  /**
+   * The furthest any team has got in the selected season, which is where "the last N" falls on
+   * the rail. A season with no game yet has no latest game, so the end of its schedule stands in.
+   */
+  readonly latestGame = computed(() => {
+    const progress = this.seasonProgress();
+    return progress ? progress.gamesPlayed || progress.scheduleGames : null;
+  });
+
+  /**
+   * "The last N games" as a count, which is how the server is asked: each team's own last N,
+   * counted back from the latest game that team has played. Null for an explicit range.
+   */
+  readonly lastGames = signal<number | null>(
+    this.stored ? (this.stored.lastGames ?? null) : FREE_PRESET.lastGames,
+  );
+  readonly fromGame = signal(this.stored?.fromGame ?? 1);
+  readonly toGame = signal(this.stored?.toGame ?? 1);
   readonly perGame = signal(this.stored?.perGame ?? false);
   readonly minGames = signal(this.stored?.minGames ?? 1);
 
@@ -169,11 +221,17 @@ export class WhosHotComponent {
     utility: this.activeUtilityColumns(),
   }));
 
-  private readonly span = computed<GameSpan>(() => ({
-    season: this.season(),
-    fromGame: this.fromGame(),
-    toGame: this.toGame(),
-  }));
+  /** Nothing to ask until the season, and its length, are known. */
+  private readonly span = computed<GameSpan | undefined>(() => {
+    const season = this.season();
+    if (season === undefined || this.scheduleLength() === null) {
+      return undefined;
+    }
+    const lastGames = this.lastGames();
+    return lastGames !== null
+      ? { season, lastGames }
+      : { season, fromGame: this.fromGame(), toGame: this.toGame() };
+  });
 
   /**
    * The span the server is actually asked about. Dragging a slider handle passes through every
@@ -183,17 +241,28 @@ export class WhosHotComponent {
    * so the page shows its error state rather than the range the user landed on). Waiting for the
    * range to settle spends one request on the range they meant. Ranges are compared by value, so
    * dragging away and back again costs nothing at all.
+   *
+   * The first span the page can ask about is worth a request straight away rather than a quarter
+   * second later. It is not there at construction (the season's length comes from the server
+   * first), so it is taken the moment it appears and only what follows it waits to settle. It
+   * is also the value the comparison starts from, so a drag that ends where it began settles
+   * back into silence.
    */
+  private readonly spans = toObservable(this.span);
+
   private readonly settledSpan = toSignal(
-    toObservable(this.span).pipe(
-      debounceTime(SPAN_SETTLE_MS),
-      // The range the page opens on is worth a request straight away rather than a quarter
-      // second later, and seeding it here also makes it the value the comparison below starts
-      // from — so a drag that ends where it began settles back into silence.
-      startWith(this.span()),
-      distinctUntilChanged(isSameSpan),
-    ),
-    { requireSync: true },
+    merge(
+      this.spans.pipe(
+        filter((span) => span !== undefined),
+        take(1),
+      ),
+      this.spans.pipe(
+        skipWhile((span) => span === undefined),
+        skip(1),
+        debounceTime(SPAN_SETTLE_MS),
+      ),
+    ).pipe(distinctUntilChanged(isSameSpan)),
+    { initialValue: undefined },
   );
 
   private readonly playersResource = rxResource({
@@ -210,10 +279,16 @@ export class WhosHotComponent {
   readonly players = computed(() => this.playersResource.value());
   readonly hotPlayers = computed(() => this.splitsResource.value());
   readonly isLoading = computed(
-    () => this.playersResource.isLoading() || this.splitsResource.isLoading(),
+    () =>
+      this.seasonsResource.isLoading() ||
+      this.playersResource.isLoading() ||
+      this.splitsResource.isLoading(),
   );
   readonly hasError = computed(
-    () => !!this.playersResource.error() || !!this.splitsResource.error(),
+    () =>
+      !!this.seasonsResource.error() ||
+      !!this.playersResource.error() ||
+      !!this.splitsResource.error(),
   );
 
   constructor() {
@@ -227,15 +302,44 @@ export class WhosHotComponent {
       if (!this.entitlementSettled() || this.canPickRange()) {
         return;
       }
-      this.fromGame.set(this.freeRange.from);
-      this.toGame.set(this.freeRange.to);
+      this.lastGames.set(FREE_PRESET.lastGames);
+    });
+
+    /**
+     * "The last N" is resolved per team by the server, so the rail only shows where it falls:
+     * back from the latest game the season has reached. Moving either handle leaves it for the
+     * explicit range it was showing.
+     */
+    effect(() => {
+      const lastGames = this.lastGames();
+      const latest = this.latestGame();
+      if (lastGames === null || latest === null) {
+        return;
+      }
+      this.fromGame.set(Math.max(1, latest - lastGames + 1));
+      this.toGame.set(latest);
+    });
+
+    /** A range kept from an 84-game season must not point past the end of an 82-game one. */
+    effect(() => {
+      const length = this.scheduleLength();
+      if (length === null) {
+        return;
+      }
+      if (this.toGame() > length) {
+        this.toGame.set(length);
+      }
+      if (this.fromGame() > length) {
+        this.fromGame.set(length);
+      }
     });
 
     effect(() => {
       this.settingsStore.save({
-        season: this.season(),
+        season: this.chosenSeason(),
         fromGame: this.fromGame(),
         toGame: this.toGame(),
+        lastGames: this.lastGames(),
         perGame: this.perGame(),
         minGames: this.minGames(),
         scoringType: this.scoringType(),
@@ -256,11 +360,14 @@ export class WhosHotComponent {
   onSeasonChange(event: Event): void {
     const startYear = Number((event.target as HTMLSelectElement).value);
     if (this.seasons.some((season) => season.startYear === startYear)) {
-      this.season.set(startYear);
+      this.chosenSeason.set(startYear);
     }
   }
 
   retry(): void {
+    if (this.seasonsResource.error()) {
+      this.seasonsResource.reload();
+    }
     if (this.playersResource.error()) {
       this.playersResource.reload();
     }
