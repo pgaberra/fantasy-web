@@ -139,6 +139,51 @@ describe('AuthService', () => {
   });
 
   /**
+   * A page that fires several calls just after the access token expires gets a 401 on each.
+   * One refresh answers all of them, and the next expiry starts a fresh one.
+   */
+  describe('refreshing the session', () => {
+    it('sends one refresh for callers that arrive while it is in flight', async () => {
+      localStorage.setItem('refresh_token', 'refresh-token');
+      let answer!: (response: AuthResponse) => void;
+      invoke.mockReturnValue(
+        new Promise<AuthResponse>((resolve) => {
+          answer = resolve;
+        }),
+      );
+
+      const first = firstValueFrom(service.refresh());
+      const second = firstValueFrom(service.refresh());
+      answer(authResponse(jwtWith({ sub: 'account-uuid' })));
+
+      expect(await first).toEqual(await second);
+      expect(invoke).toHaveBeenCalledTimes(1);
+    });
+
+    it('starts a new refresh once the last one has answered', async () => {
+      localStorage.setItem('refresh_token', 'refresh-token');
+      invoke.mockImplementation(() => Promise.resolve(authResponse(jwtWith({ sub: 'a' }))));
+
+      await firstValueFrom(service.refresh());
+      await firstValueFrom(service.refresh());
+
+      expect(invoke).toHaveBeenCalledTimes(2);
+    });
+
+    it('starts a new refresh after one that failed', async () => {
+      localStorage.setItem('refresh_token', 'refresh-token');
+      invoke.mockReturnValueOnce(Promise.reject(new Error('network down')));
+      invoke.mockReturnValueOnce(Promise.resolve(authResponse(jwtWith({ sub: 'a' }))));
+
+      await expect(firstValueFrom(service.refresh())).rejects.toBeTruthy();
+      await firstValueFrom(service.refresh());
+
+      expect(invoke).toHaveBeenCalledTimes(2);
+      expect(localStorage.getItem('refresh_token')).toEqual('refresh-token');
+    });
+  });
+
+  /**
    * A shared board sends someone here mid-press: the button they chose is on the return URL as
    * `?action=…`, and the board runs it when they land back. Signing up is the path that press is
    * most likely to take, and the one with the most between the press and the landing, so what it

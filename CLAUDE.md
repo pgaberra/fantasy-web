@@ -201,7 +201,10 @@ CI runs (and must pass): `generate:api`, `lint`, `format:check`, `check:copy`, `
   does not say "try again".
 - `services/` — app services (auth, projections, etc.)
 - `interceptors/` — HTTP interceptors: `authInterceptor` attaches the JWT and refreshes
-  once on 401 (all environments). `retryInterceptor` (outermost) is a small **always-on**
+  once on 401 (all environments). **Only a 401/403 from `/auth/refresh` itself ends the
+  session**: a status 0 or 5xx on the refresh keeps both tokens and fails the original call
+  into its own error state, since it says nothing about the refresh token. Parallel 401s share
+  one in-flight refresh (`AuthService.refresh()`). `retryInterceptor` (outermost) is a small **always-on**
   safety net: it retries transient gateway/connection errors (status 0/502/503/504) just
   twice with a short backoff (~250ms, 500ms) to absorb a momentary blip. It deliberately
   does **not** try to ride out a full service restart — that's the job of zero-downtime
