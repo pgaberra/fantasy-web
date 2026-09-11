@@ -28,9 +28,6 @@ export const environment = {
   espnLeaguesEnabled: false,
   // On for local staging runs; the deployed builds hide the page with WHOS_HOT_ENABLED=false.
   whosHotEnabled: true,
-  // On for local staging runs; the deployed builds drop the preset with
-  // AI_PROJECTION_ENABLED=false.
-  aiProjectionEnabled: true,
   // Off for local staging runs, matching deployed staging, which sets OFFSEASON_ENABLED=false.
   // Empty on purpose: this file only backs `npm run start:staging`. The deployed staging app
   // builds from environment.prod.ts with PADDLE_CLIENT_TOKEN injected.

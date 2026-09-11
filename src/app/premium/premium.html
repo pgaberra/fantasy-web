@@ -12,9 +12,9 @@
       <section class="checkout-welcome" role="status">
         <h2 class="checkout-welcome-title">Welcome to Premium</h2>
         <p class="checkout-welcome-text">Thanks for subscribing. Premium is now active.</p>
-        @if (nextSteps.length > 0) {
+        @if (nextSteps().length > 0) {
           <ul class="checkout-welcome-links">
-            @for (perk of nextSteps; track perk.title) {
+            @for (perk of nextSteps(); track perk.title) {
               <li>
                 <a [routerLink]="perk.link" class="btn btn-secondary btn-sm">{{
                   perk.linkLabel
@@ -74,7 +74,7 @@
           <app-icon name="check" class="perk-check" />
           <span class="perk-title">Everything in Free</span>
         </li>
-        @for (perk of perks; track perk.title) {
+        @for (perk of perks(); track perk.title) {
           <li>
             <app-icon name="check" class="perk-check" />
             <span class="perk-title">{{ perk.title }}</span>
