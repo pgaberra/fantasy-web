@@ -8,6 +8,7 @@ import { EntitlementService } from '../services/entitlement.service';
 import { PlayerService } from '../services/player.service';
 import { GameSpan, WhosHotService } from '../services/whos-hot.service';
 import { WhosHotSettings, WhosHotSettingsService } from '../services/whos-hot-settings.service';
+import { SplitSeasonListResponse } from '../api/models/split-season-list-response';
 
 /** Longer than the component's settle delay, so a settled range has had its chance to fetch. */
 const AFTER_THE_DRAG_MS = 400;
@@ -16,8 +17,29 @@ function settle(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, AFTER_THE_DRAG_MS));
 }
 
+/** The summer before 2026-27: last season finished at 82 games, the next one has none yet. */
+const SUMMER: SplitSeasonListResponse = {
+  defaultSeason: 2025,
+  seasons: [
+    { season: 2026, scheduleGames: 84, gamesPlayed: 0 },
+    { season: 2025, scheduleGames: 82, gamesPlayed: 82 },
+  ],
+};
+
+/** November 2026: the furthest team has played twelve of its 84. */
+const NOVEMBER: SplitSeasonListResponse = {
+  defaultSeason: 2026,
+  seasons: [
+    { season: 2026, scheduleGames: 84, gamesPlayed: 12 },
+    { season: 2025, scheduleGames: 82, gamesPlayed: 82 },
+  ],
+};
+
 describe('WhosHotComponent', () => {
   const splits = vi.fn<(span: GameSpan) => ReturnType<WhosHotService['splits']>>(() => of([]));
+  let seasonsAnswer: SplitSeasonListResponse = SUMMER;
+  const seasons = vi.fn(() => of(seasonsAnswer));
+  const save = vi.fn<(settings: WhosHotSettings) => void>();
 
   /** Stands in for the live entitlement read, which is a fetch the page does not wait for. */
   const entitlement = {
@@ -40,25 +62,36 @@ describe('WhosHotComponent', () => {
   beforeEach(() => {
     localStorage.clear();
     splits.mockClear();
+    seasons.mockClear();
+    save.mockClear();
+    seasonsAnswer = SUMMER;
     stored = null;
     entitlement.premium.set(false);
     entitlement.loadState.set('loaded');
     return MockBuilder(WhosHotComponent)
       .mock(PlayerService, { getPlayers: () => of([]) })
-      .mock(WhosHotService, { splits })
-      .mock(WhosHotSettingsService, { load: () => stored, save: () => undefined })
+      .mock(WhosHotService, { splits, seasons })
+      .mock(WhosHotSettingsService, { load: () => stored, save })
       .provide({ provide: EntitlementService, useValue: entitlement });
   });
 
+  /** Rendered, with the seasons and the effects that follow them given their turn. */
+  async function renderSettled() {
+    const fixture = MockRender(WhosHotComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
+  }
+
   describe('the game range behind the paywall', () => {
     /** A range someone picked for themselves, which is the thing premium buys. */
-    const customRange = () => ({ fromGame: 1, toGame: 82 }) as WhosHotSettings;
+    const customRange = () => ({ fromGame: 1, toGame: 82, lastGames: null }) as WhosHotSettings;
 
-    it('leaves the range open to everyone while payments are switched off', () => {
+    it('leaves the range open to everyone while payments are switched off', async () => {
       environment.paymentsEnabled = false;
       stored = customRange();
 
-      const component = MockRender(WhosHotComponent).point.componentInstance;
+      const component = (await renderSettled()).point.componentInstance;
 
       // Nobody can buy premium with the flag off, and /premium redirects home, so locking the
       // control would make the range unbuyable rather than unbought.
@@ -66,47 +99,50 @@ describe('WhosHotComponent', () => {
       expect(component.fromGame()).toEqual(1);
     });
 
-    it('opens on the last 5 games, which is the range a free account is held to', () => {
+    it('opens on the last 5 games, which is the range a free account is held to', async () => {
       environment.paymentsEnabled = true;
 
-      const component = MockRender(WhosHotComponent).point.componentInstance;
+      const component = (await renderSettled()).point.componentInstance;
 
       expect(component.canPickRange()).toEqual(false);
+      expect(component.lastGames()).toEqual(5);
       expect(component.fromGame()).toEqual(78);
       expect(component.toGame()).toEqual(82);
     });
 
-    it('puts a lapsed account back on the free range, rather than stranding it on a custom one', () => {
+    it('puts a lapsed account back on the free range, rather than stranding it on a custom one', async () => {
       environment.paymentsEnabled = true;
       stored = customRange();
 
-      const component = MockRender(WhosHotComponent).point.componentInstance;
+      const component = (await renderSettled()).point.componentInstance;
 
       // The range is saved to the browser and outlives the subscription that bought it. Left
       // alone it would be a range they can no longer change, with every control that could
       // undo it switched off.
+      expect(component.lastGames()).toEqual(5);
       expect(component.fromGame()).toEqual(78);
       expect(component.toGame()).toEqual(82);
     });
 
-    it('keeps a premium account on the range it stored', () => {
+    it('keeps a premium account on the range it stored', async () => {
       environment.paymentsEnabled = true;
       entitlement.premium.set(true);
       stored = customRange();
 
-      const component = MockRender(WhosHotComponent).point.componentInstance;
+      const component = (await renderSettled()).point.componentInstance;
 
       expect(component.canPickRange()).toEqual(true);
+      expect(component.lastGames()).toEqual(null);
       expect(component.fromGame()).toEqual(1);
       expect(component.toGame()).toEqual(82);
     });
 
-    it('waits for the entitlement to land before taking a stored range away', () => {
+    it('waits for the entitlement to land before taking a stored range away', async () => {
       environment.paymentsEnabled = true;
       entitlement.loadState.set('loading');
       stored = customRange();
 
-      const fixture = MockRender(WhosHotComponent);
+      const fixture = await renderSettled();
       const component = fixture.point.componentInstance;
 
       // The entitlement reads as non-premium until it lands, so acting on it early would snap a
@@ -120,12 +156,12 @@ describe('WhosHotComponent', () => {
       expect(component.fromGame()).toEqual(1);
     });
 
-    it('falls back once a failed entitlement read settles, rather than staying open on the error', () => {
+    it('falls back once a failed entitlement read settles, rather than staying open on the error', async () => {
       environment.paymentsEnabled = true;
       entitlement.loadState.set('loading');
       stored = customRange();
 
-      const fixture = MockRender(WhosHotComponent);
+      const fixture = await renderSettled();
       const component = fixture.point.componentInstance;
 
       entitlement.loadState.set('error');
@@ -135,14 +171,76 @@ describe('WhosHotComponent', () => {
       expect(component.fromGame()).toEqual(78);
     });
 
-    it('tells the range bar it is locked, rather than each of them asking separately', () => {
+    it('tells the range bar it is locked, rather than each of them asking separately', async () => {
       environment.paymentsEnabled = true;
 
-      MockRender(WhosHotComponent);
+      await renderSettled();
 
       const selector = ngMocks.find('app-game-range-selector');
 
       expect(ngMocks.input(selector, 'locked')).toEqual(true);
+    });
+  });
+
+  describe('the season the page measures', () => {
+    it('opens on the season the server says has games, which is last season in the summer', async () => {
+      const component = (await renderSettled()).point.componentInstance;
+
+      expect(component.season()).toEqual(2025);
+      expect(component.scheduleLength()).toEqual(82);
+    });
+
+    it('moves on to the new season by itself once it is underway', async () => {
+      seasonsAnswer = NOVEMBER;
+
+      const component = (await renderSettled()).point.componentInstance;
+
+      expect(component.season()).toEqual(2026);
+    });
+
+    it('measures 2026-27 against its own 84 games, not 2025-26 ones', async () => {
+      const fixture = await renderSettled();
+      const component = fixture.point.componentInstance;
+
+      component.onSeasonChange({ target: { value: '2026' } } as unknown as Event);
+      fixture.detectChanges();
+
+      expect(component.scheduleLength()).toEqual(84);
+      expect(ngMocks.input(ngMocks.find('app-game-range-selector'), 'scheduleLength')).toEqual(84);
+    });
+
+    it('asks for the last 5 as a count in a season underway, where each team is on its own game', async () => {
+      seasonsAnswer = NOVEMBER;
+
+      const fixture = await renderSettled();
+      const component = fixture.point.componentInstance;
+
+      expect(splits).toHaveBeenCalledWith({ season: 2026, lastGames: 5 });
+      // And the rail shows it where it falls, not at games 80-84, which nobody has played.
+      expect(component.fromGame()).toEqual(8);
+      expect(component.toGame()).toEqual(12);
+    });
+
+    it('remembers no season until the visitor picks one, so a summer visit does not pin it', async () => {
+      const fixture = await renderSettled();
+
+      expect(save).toHaveBeenLastCalledWith(expect.objectContaining({ season: null }));
+
+      fixture.point.componentInstance.onSeasonChange({
+        target: { value: '2026' },
+      } as unknown as Event);
+      fixture.detectChanges();
+
+      expect(save).toHaveBeenLastCalledWith(expect.objectContaining({ season: 2026 }));
+    });
+
+    it('pulls a range kept from an 84-game season back inside an 82-game one', async () => {
+      environment.paymentsEnabled = false;
+      stored = { season: 2025, fromGame: 80, toGame: 84, lastGames: null } as WhosHotSettings;
+
+      const component = (await renderSettled()).point.componentInstance;
+
+      expect(component.toGame()).toEqual(82);
     });
   });
 
@@ -152,10 +250,10 @@ describe('WhosHotComponent', () => {
       environment.paymentsEnabled = false;
     });
 
-    it('never asks for more games than the range holds', () => {
+    it('never asks for more games than the range holds', async () => {
       stored = { fromGame: 1, toGame: 82, perGame: true, minGames: 25 } as WhosHotSettings;
 
-      const fixture = MockRender(WhosHotComponent);
+      const fixture = await renderSettled();
       const component = fixture.point.componentInstance;
       expect(component.appliedMinGames()).toEqual(25);
 
@@ -167,10 +265,10 @@ describe('WhosHotComponent', () => {
       expect(component.appliedMinGames()).toEqual(23);
     });
 
-    it('keeps the minimum the user chose, so widening the range brings it back', () => {
+    it('keeps the minimum the user chose, so widening the range brings it back', async () => {
       stored = { fromGame: 1, toGame: 82, perGame: true, minGames: 25 } as WhosHotSettings;
 
-      const fixture = MockRender(WhosHotComponent);
+      const fixture = await renderSettled();
       const component = fixture.point.componentInstance;
 
       // A drag passes through every narrow range on its way to a wide one, so clamping the
@@ -189,8 +287,7 @@ describe('WhosHotComponent', () => {
     it('hands the clamped minimum to the range bar and the table alike', async () => {
       stored = { fromGame: 1, toGame: 82, perGame: true, minGames: 25 } as WhosHotSettings;
 
-      const fixture = MockRender(WhosHotComponent);
-      await fixture.whenStable();
+      const fixture = await renderSettled();
       fixture.point.componentInstance.fromGame.set(60);
       fixture.detectChanges();
 
@@ -200,10 +297,10 @@ describe('WhosHotComponent', () => {
       expect(ngMocks.input(ngMocks.find('app-hot-players-table'), 'minGames')).toEqual(23);
     });
 
-    it('clamps a stored minimum against the range stored beside it', () => {
+    it('clamps a stored minimum against the range stored beside it', async () => {
       stored = { fromGame: 73, toGame: 82, perGame: true, minGames: 40 } as WhosHotSettings;
 
-      const component = MockRender(WhosHotComponent).point.componentInstance;
+      const component = (await renderSettled()).point.componentInstance;
 
       expect(component.appliedMinGames()).toEqual(10);
     });
@@ -239,8 +336,8 @@ describe('WhosHotComponent', () => {
     expect(component.season()).toEqual(2026);
   });
 
-  it('ignores a season that is not a number rather than asking for an unnamed one', () => {
-    const component = MockRender(WhosHotComponent).point.componentInstance;
+  it('ignores a season that is not a number rather than asking for an unnamed one', async () => {
+    const component = (await renderSettled()).point.componentInstance;
 
     component.onSeasonChange({ target: { value: '' } } as unknown as Event);
 
@@ -248,9 +345,13 @@ describe('WhosHotComponent', () => {
   });
 
   it('spends one request on the range a drag lands on, not on every game it passes', async () => {
-    const fixture = MockRender(WhosHotComponent);
-    await fixture.whenStable();
+    environment.paymentsEnabled = false;
+    const fixture = await renderSettled();
     const component = fixture.point.componentInstance;
+    // A handle moving is what turns "the last 5" into an explicit range.
+    component.lastGames.set(null);
+    fixture.detectChanges();
+    await settle();
     splits.mockClear();
 
     for (let game = 60; game >= 40; game--) {
@@ -266,9 +367,12 @@ describe('WhosHotComponent', () => {
   });
 
   it('asks for nothing at all when a drag ends back where it started', async () => {
-    const fixture = MockRender(WhosHotComponent);
-    await fixture.whenStable();
+    environment.paymentsEnabled = false;
+    const fixture = await renderSettled();
     const component = fixture.point.componentInstance;
+    component.lastGames.set(null);
+    fixture.detectChanges();
+    await settle();
     const started = component.fromGame();
     splits.mockClear();
 

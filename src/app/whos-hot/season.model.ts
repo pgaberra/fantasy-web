@@ -1,6 +1,10 @@
 /**
  * A season the leaderboard can be measured over, identified by the year it starts in — the same
  * number the splits API takes.
+ *
+ * How long a season is, and which one the page opens on, are not written down here: the server
+ * answers both (`WhosHotService.seasons`). 2025-26 was 82 games and 2026-27 is 84, and a constant
+ * for either is how this page came to measure the wrong games.
  */
 export interface Season {
   startYear: number;
@@ -16,11 +20,6 @@ export const SEASONS: readonly Season[] = [
   { startYear: 2025, label: '2025-26' },
   { startYear: 2026, label: '2026-27' },
 ];
-
-export const DEFAULT_SEASON_START_YEAR = 2025;
-
-/** Every NHL season is the same length, so the range is expressed against one number. */
-export const SEASON_SCHEDULE_GAMES = 82;
 
 export function seasonLabelOf(startYear: number): string {
   return (

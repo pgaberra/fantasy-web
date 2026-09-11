@@ -5,7 +5,6 @@ import { RosterSlots } from '../api/models/roster-slots';
 import { YahooSync } from '../api/models/yahoo-sync';
 import { EspnSync } from '../api/models/espn-sync';
 import { DEFAULT_STAT_WEIGHTS } from '../draft-projection/projection-defaults';
-import { DEFAULT_SEASON_START_YEAR } from '../whos-hot/season.model';
 
 /**
  * Everything the Who's hot page remembers between visits: the span being looked at, how it is
@@ -16,10 +15,15 @@ import { DEFAULT_SEASON_START_YEAR } from '../whos-hot/season.model';
  * and storing them server-side would mean a table and an API for a preference.
  */
 export interface WhosHotSettings {
-  /** The season being measured, as the year it starts in. */
-  season: number;
+  /**
+   * The season the visitor picked, as the year it starts in, or null to follow the server's
+   * default: the newest season with a game played.
+   */
+  season: number | null;
   fromGame: number;
   toGame: number;
+  /** "The last N games" as a count the server resolves per team, or null for an explicit range. */
+  lastGames: number | null;
   perGame: boolean;
   minGames: number;
   scoringType: ScoringType;
@@ -43,8 +47,15 @@ const STORAGE_KEY = 'slapstat.whosHot.settings';
  * out in full, which froze whatever the defaults were on the day of the visit: correcting a
  * default afterwards reached new visitors and nobody else. Those blobs are read for everything
  * except their weights, which are dropped in favour of the current defaults.
+ *
+ * Version 2 saved the season on every visit, picked or not, so a visit in the summer pinned
+ * 2025-26 for good and the page never moved on to 2026-27 once it was underway. Its season is
+ * dropped and the page follows the server's default until the visitor picks one.
  */
-const SETTINGS_VERSION = 2;
+const SETTINGS_VERSION = 3;
+
+/** The first version whose stat weights hold only what the visitor changed. */
+const SPARSE_WEIGHTS_VERSION = 2;
 
 /**
  * Sets don't survive JSON, so the two column sets travel as arrays — and the weights travel as
@@ -79,15 +90,17 @@ export class WhosHotSettingsService {
       // `version` describes the blob rather than the settings, so it is read here and left
       // behind — the caller gets what they saved, not how it was stored.
       const { version, statWeights, ...stored } = JSON.parse(raw) as StoredSettings;
-      const customised = version === SETTINGS_VERSION ? (statWeights ?? {}) : {};
+      const customised = (version ?? 1) >= SPARSE_WEIGHTS_VERSION ? (statWeights ?? {}) : {};
       return {
         ...stored,
         activeScoringColumns: new Set(stored.activeScoringColumns ?? []),
         activeUtilityColumns: new Set(stored.activeUtilityColumns ?? []),
         // Written by a build that only knew about Yahoo: absent is "no ESPN league", not
         // undefined, so callers get the same answer they would from a fresh visit.
-        // Written before the season could be chosen: it could only ever have been the default.
-        season: stored.season ?? DEFAULT_SEASON_START_YEAR,
+        // Before version 3 a season was saved whether or not it had been picked.
+        season: version === SETTINGS_VERSION ? (stored.season ?? null) : null,
+        // Written before "the last N" was a count: the range stands as the bounds it saved.
+        lastGames: stored.lastGames ?? null,
         espnSync: stored.espnSync ?? null,
         lastEspnLeagueId: stored.lastEspnLeagueId ?? null,
         // Defaults first, so a stat this page learns to score later arrives on its own.
