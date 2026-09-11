@@ -60,6 +60,7 @@ import {
 import { StatInfoService } from '../../services/stat-info.service';
 import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
 import { parseDecimalInput } from '../../shared/decimal-input';
+import { ownLine, squaredWithPool } from '../../shared/pool-line';
 import { PinnedTableHeaderDirective } from '../../shared/pinned-table-header/pinned-table-header.directive';
 import { TableScrollDirective } from '../../shared/table-scroll/table-scroll.directive';
 import { LeagueSettingsMenuComponent } from './league-settings-menu/league-settings-menu';
@@ -637,29 +638,15 @@ export class PlayerProjectionsTableComponent implements OnInit {
         this.playerProjections.set(initial);
         return;
       }
-      const kept = initial.filter((projection) => players.has(projection.playerId));
+      const kept = initial
+        .filter((projection) => players.has(projection.playerId))
+        .map((projection) => squaredWithPool(projection, players.get(projection.playerId)));
       this.droppedPlayerCount.set(initial.length - kept.length);
       this.playerProjections.set(kept);
       return;
     }
 
-    const projections: Projection[] = this.players().map((player) => {
-      if (player.type === 'skater') {
-        return {
-          type: 'skater',
-          playerId: player.id,
-          stats: player.stats,
-        };
-      } else {
-        return {
-          type: 'goalie',
-          playerId: player.id,
-          stats: player.stats,
-        };
-      }
-    });
-
-    this.playerProjections.set(projections);
+    this.playerProjections.set(this.players().map((player) => ownLine(player)));
   }
 
   private roundStat(value: number, key: DecimalStatKey): number {
