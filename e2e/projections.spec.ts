@@ -12,6 +12,9 @@ test.describe('signed-in experience', () => {
     await page.locator('#password').fill(password!);
     await page.locator('button[type="submit"]').click();
     await expect(page).toHaveURL(/\/projections/, { timeout: 15000 });
-    await expect(page.getByRole('button', { name: /sign out/i })).toBeVisible();
+    // Sign out lives in the account menu behind the avatar, as a menu item, so being signed in
+    // reads as that menu opening onto it.
+    await page.getByRole('button', { name: /account menu/i }).click();
+    await expect(page.getByRole('menuitem', { name: /sign out/i })).toBeVisible();
   });
 });
