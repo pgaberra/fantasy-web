@@ -3,14 +3,13 @@ import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PayComponent } from './pay';
 import { environment } from '../../environments/environment';
+import { ErrorReportingService } from '../services/error-reporting.service';
+import { PaddleConfigurationError } from '../shared/paddle/paddle';
+import { PaddleService } from '../shared/paddle/paddle.service';
 
 const open = vi.fn();
-const initializePaddle = vi.fn();
-
-vi.mock('@paddle/paddle-js', () => ({
-  initializePaddle: (...args: unknown[]) => initializePaddle(...args),
-  CheckoutEventNames: { CHECKOUT_ERROR: 'checkout.error' },
-}));
+const initialize = vi.fn();
+const report = vi.fn();
 
 describe('PayComponent', () => {
   const queryParams = new Map<string, string>();
@@ -20,32 +19,44 @@ describe('PayComponent', () => {
 
   beforeEach(() => {
     open.mockReset();
-    initializePaddle.mockReset();
-    initializePaddle.mockResolvedValue({ Checkout: { open } });
+    report.mockReset();
+    initialize.mockReset();
+    initialize.mockResolvedValue({ Checkout: { open } });
     queryParams.clear();
     queryParams.set('_ptxn', 'txn_1');
     environment.paddleClientToken = 'test_token';
-    environment.paddleEnvironment = 'sandbox';
-    return MockBuilder(PayComponent).provide({ provide: ActivatedRoute, useValue: route });
+    return MockBuilder(PayComponent)
+      .mock(PaddleService, { initialize })
+      .mock(ErrorReportingService, { report })
+      .provide({ provide: ActivatedRoute, useValue: route });
   });
 
   // The failure states differ in when they are reached: a missing transaction id fails inside
-  // ngOnInit, while a rejected initialize fails a tick later, so the view has to be checked
-  // again after the promises settle or the second kind never reaches the DOM.
+  // ngOnInit, while a rejected initialize fails some promise hops later, so the view has to be
+  // checked again after they settle or the second kind never reaches the DOM. A macrotask waits
+  // for all of them, where counting microtasks breaks as soon as the chain grows a hop.
   async function render(): Promise<void> {
     const fixture = MockRender(PayComponent);
-    await Promise.resolve();
-    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve));
     fixture.detectChanges();
   }
 
   it('opens the checkout for the transaction in the URL', async () => {
     await render();
 
-    expect(initializePaddle).toHaveBeenCalledWith(
-      expect.objectContaining({ token: 'test_token', environment: 'sandbox' }),
-    );
+    expect(initialize).toHaveBeenCalledWith(expect.objectContaining({ token: 'test_token' }));
     expect(open).toHaveBeenCalledWith(expect.objectContaining({ transactionId: 'txn_1' }));
+  });
+
+  /** Email and card on one page: the BFF has usually filled in the email already. */
+  it('opens the one-page overlay checkout', async () => {
+    await render();
+
+    expect(open).toHaveBeenCalledWith(
+      expect.objectContaining({
+        settings: expect.objectContaining({ displayMode: 'overlay', variant: 'one-page' }),
+      }),
+    );
   });
 
   /** Paddle requires an absolute success URL, and the account page is what reads the result. */
@@ -66,7 +77,7 @@ describe('PayComponent', () => {
 
     await render();
 
-    expect(initializePaddle).not.toHaveBeenCalled();
+    expect(initialize).not.toHaveBeenCalled();
     expect(ngMocks.formatText(ngMocks.find('h1'))).toContain('Checkout could not be opened');
   });
 
@@ -79,15 +90,30 @@ describe('PayComponent', () => {
 
     await render();
 
-    expect(initializePaddle).not.toHaveBeenCalled();
+    expect(initialize).not.toHaveBeenCalled();
     expect(ngMocks.formatText(ngMocks.find('h1'))).toContain('Checkout could not be opened');
   });
 
-  it('shows the failure state when Paddle cannot be initialized', async () => {
-    initializePaddle.mockRejectedValue(new Error('nope'));
+  /**
+   * A token that names no environment is the build's fault, so it is reported rather than left
+   * for a buyer to stumble on, and nothing is opened.
+   */
+  it('reports a client token that names no Paddle environment', async () => {
+    initialize.mockRejectedValue(new PaddleConfigurationError('no environment'));
 
     await render();
 
+    expect(open).not.toHaveBeenCalled();
+    expect(report).toHaveBeenCalledWith(expect.any(PaddleConfigurationError));
+    expect(ngMocks.formatText(ngMocks.find('h1'))).toContain('Checkout could not be opened');
+  });
+
+  it('shows the failure state, without reporting it, when Paddle cannot be reached', async () => {
+    initialize.mockRejectedValue(new Error('nope'));
+
+    await render();
+
+    expect(report).not.toHaveBeenCalled();
     expect(ngMocks.formatText(ngMocks.find('h1'))).toContain('Checkout could not be opened');
   });
 });

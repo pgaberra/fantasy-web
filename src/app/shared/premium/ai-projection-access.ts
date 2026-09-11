@@ -11,9 +11,9 @@ import { environment } from '../../../environments/environment';
  * pages draw, and it is deliberately not a security boundary.
  *
  * <p>Locked is not the same as hidden. The card stays on both pages, marked and sold: someone
- * who cannot see the thing has no reason to pay for it. `isAiProjectionEnabled` is the switch
- * that genuinely hides it, and it is a different question — a build without the model has
- * nothing to sell either.
+ * who cannot see the thing has no reason to pay for it. `FeatureService.aiProjection` is what
+ * genuinely hides it, and it is a different question: an environment that does not serve the
+ * model has nothing to sell either.
  */
 @Injectable({ providedIn: 'root' })
 export class AiProjectionAccess {

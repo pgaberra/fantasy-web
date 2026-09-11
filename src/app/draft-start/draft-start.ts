@@ -15,7 +15,7 @@ import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { PopoverTriggerDirective } from '../shared/popover/popover-trigger.directive';
 import { ShareImportComponent } from '../shared/share-import/share-import';
-import { offeredPresets } from '../models/ai-projection';
+import { FeatureService } from '../services/feature.service';
 import {
   PreviewSource,
   StartingPointPreviewComponent,
@@ -113,15 +113,16 @@ export class DraftStartComponent {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly aiAccess = inject(AiProjectionAccess);
+  private readonly features = inject(FeatureService);
 
   readonly sourceKinds = SOURCE_KINDS;
 
   /**
-   * The presets this build knows of. What the page offers is `availablePresets`, the ones with
-   * no draft yet. Filtered rather than constant: the AI projection is behind a build flag, and a
-   * row that starts a draft the build cannot seed is worse than no row.
+   * The presets this environment offers. What the page offers is `availablePresets`, the ones
+   * with no draft yet. Filtered rather than constant: the BFF decides whether it serves the AI
+   * projection, and a row that starts a draft the server will not seed is worse than no row.
    */
-  readonly presets = offeredPresets(PRESETS);
+  readonly presets = computed(() => this.features.offeredPresets(PRESETS));
 
   readonly sourcesResource = rxResource({
     stream: () => this.storage.listWithPresetDrafts(),
@@ -179,7 +180,7 @@ export class DraftStartComponent {
    * this picker had everywhere.
    */
   readonly availablePresets = computed(() =>
-    this.presets.filter((preset) => !this.presetDraft(preset)),
+    this.presets().filter((preset) => !this.presetDraft(preset)),
   );
 
   /**

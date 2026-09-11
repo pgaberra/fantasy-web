@@ -17,13 +17,13 @@ export interface PremiumPerk {
  * What Premium includes, in the order it is worth saying.
  *
  * One list for the Premium page and the welcome after checkout, so the two cannot drift into
- * promising different things. It follows the build flags: a build with
- * the AI projection or Who's hot switched off must not sell them, since a perk nobody can reach is
- * a refund request.
+ * promising different things. It follows what the environment serves: without the AI projection
+ * (the BFF's answer, `FeatureService.aiProjection`) or Who's hot (a build flag) it must not sell
+ * them, since a perk nobody can reach is a refund request.
  */
-export function premiumPerks(): readonly PremiumPerk[] {
+export function premiumPerks(aiProjectionServed: boolean): readonly PremiumPerk[] {
   const perks: PremiumPerk[] = [];
-  if (environment.aiProjectionEnabled) {
+  if (aiProjectionServed) {
     perks.push({
       title: 'AI projection',
       description: 'Every player projected for the 2026-27 season.',
