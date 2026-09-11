@@ -168,10 +168,15 @@ export class GameRangeSelectorComponent {
     }
   }
 
+  /**
+   * Held to the season rather than to the range. The minimum is a setting of its own, not a
+   * function of the stretch it happens to be typed against: moving the range must never change
+   * the number in this box. The page holds the filter itself to the range it is applied to.
+   */
   onMinGamesInput(event: Event): void {
     const raw = Number((event.target as HTMLInputElement).value);
     if (Number.isFinite(raw)) {
-      this.minGames.set(Math.min(this.spanLength(), Math.max(1, Math.round(raw))));
+      this.minGames.set(Math.min(this.scheduleLength(), Math.max(1, Math.round(raw))));
     }
   }
 

@@ -284,16 +284,16 @@ describe('WhosHotComponent', () => {
       expect(component.appliedMinGames()).toEqual(25);
     });
 
-    it('hands the clamped minimum to the range bar and the table alike', async () => {
+    it('shows the chosen minimum in the range bar and filters the table by the clamped one', async () => {
       stored = { fromGame: 1, toGame: 82, perGame: true, minGames: 25 } as WhosHotSettings;
 
       const fixture = await renderSettled();
       fixture.point.componentInstance.fromGame.set(60);
       fixture.detectChanges();
 
-      // The box shows the number that is actually filtering, and the table filters by the
-      // number the box shows, so the two can never disagree about what is being hidden.
-      expect(ngMocks.input(ngMocks.find('app-game-range-selector'), 'minGames')).toEqual(23);
+      // Moving the range must not change the number in the box; only the filter behind it
+      // is held to what the narrower stretch can contain.
+      expect(ngMocks.input(ngMocks.find('app-game-range-selector'), 'minGames')).toEqual(25);
       expect(ngMocks.input(ngMocks.find('app-hot-players-table'), 'minGames')).toEqual(23);
     });
 
