@@ -37,6 +37,7 @@ const sampleState: ProjectionState = {
   lastEspnLeagueId: null,
   playerBasis: 'last_season',
   playerPoolSyncedAt: '2026-08-16T04:12:00.000Z',
+  unacknowledgedNewPlayerIds: [7, 8],
   draft: {
     teams: [
       { id: 'team-me', name: 'My Team', mine: true },
@@ -73,6 +74,14 @@ describe('ProjectionSerializerService', () => {
     const roundTripped = service.fromProjectionData(service.toProjectionData(sampleState));
 
     expect(roundTripped).toEqual(sampleState);
+  });
+
+  // Acknowledging is sending the list back without anyone in it, and the server keeps what it gets.
+  it('leaves the unacknowledged new players out once they are acknowledged', () => {
+    const data = service.toProjectionData({ ...sampleState, unacknowledgedNewPlayerIds: [] });
+
+    expect(data.settings.unacknowledgedNewPlayerIds).toBeUndefined();
+    expect(service.fromProjectionData(data).unacknowledgedNewPlayerIds).toEqual([]);
   });
 
   it('carries the draft finishedAt marker through a save/load round-trip', () => {

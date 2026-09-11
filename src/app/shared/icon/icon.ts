@@ -88,6 +88,14 @@ const ICONS = {
 
 export type IconName = keyof typeof ICONS;
 
+/**
+ * The scale, in pixels: 14 inline with text, 16 (the default) on buttons and in menus, 20 standalone,
+ * 48 for an empty or error state. An `em` length is for an icon that scales with the text around it,
+ * like the padlock in a Premium badge. Anything else is a compile error, which is the point: the app
+ * drifted to seven pixel sizes while the scale was only written down.
+ */
+export type IconSize = 14 | 16 | 20 | 48 | `${number}em`;
+
 /** Every name, so the spec can walk the whole set. */
 export const ICON_NAMES = Object.keys(ICONS) as IconName[];
 
@@ -100,8 +108,8 @@ export const ICON_NAMES = Object.keys(ICONS) as IconName[];
  * into hand-copied drawings in one file fixed the drift but left every new icon to be copied by
  * hand as well; sourcing them from the package means the drawing is Lucide's own every time.
  *
- * Only the size is settable. A number is pixels; a CSS length such as `0.85em` lets an icon scale
- * with the text around it, which the padlock in a Premium badge relies on. Colour comes from the
+ * Only the size is settable, and only to a step on the scale (`IconSize`): a number is pixels, and an
+ * `em` length such as `0.85em` lets an icon scale with the text around it. Colour comes from the
  * surrounding text, so an icon follows hover, disabled and danger states without being told.
  * Icons are `aria-hidden`: the accessible name belongs on the button or link around them.
  *
@@ -118,8 +126,8 @@ export const ICON_NAMES = Object.keys(ICONS) as IconName[];
 })
 export class IconComponent {
   readonly name = input.required<IconName>();
-  /** Pixels, or any CSS length. The pixel scale is 14 (inline with text), 16 (default) and 20. */
-  readonly size = input<number | string>(16);
+  /** A step on the scale in pixels, or an `em` length. See `IconSize`. */
+  readonly size = input<IconSize>(16);
 
   /** Undefined for a name outside the set, which ng-icon draws as nothing and does not warn about. */
   protected readonly svg = computed<string | undefined>(

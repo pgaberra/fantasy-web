@@ -10,7 +10,7 @@
     @if (sortable()) {
       <span class="sort-arrow sort-arrow--trailing">
         @if (sortIndicator('name'); as icon) {
-          <app-icon [name]="icon" [size]="12" />
+          <app-icon [name]="icon" [size]="14" />
         }
       </span>
     }
@@ -27,7 +27,7 @@
           >
             <span class="sort-arrow">
               @if (sortIndicator(col); as icon) {
-                <app-icon [name]="icon" [size]="12" />
+                <app-icon [name]="icon" [size]="14" />
               }</span
             >{{ col | statLabel }}
           </button>
@@ -45,7 +45,7 @@
             appTooltip="Set every skater to 84 games"
             (click)="fullSeason.emit()"
           >
-            <app-icon name="arrow-up-to-line" [size]="13" />
+            <app-icon name="arrow-up-to-line" [size]="14" />
             84
           </button>
         }
@@ -57,7 +57,7 @@
             [appPopover]="columnMenu"
             [popoverContext]="{ $implicit: col }"
           >
-            <app-icon name="more-vertical" [size]="15" />
+            <app-icon name="more-vertical" />
           </button>
         }
       </span>
@@ -79,7 +79,7 @@
           >
             <span class="sort-arrow">
               @if (sortIndicator(col); as icon) {
-                <app-icon [name]="icon" [size]="12" />
+                <app-icon [name]="icon" [size]="14" />
               }</span
             >{{ col | statLabel }}
           </button>
@@ -96,7 +96,7 @@
             [appPopover]="columnMenu"
             [popoverContext]="{ $implicit: col }"
           >
-            <app-icon name="more-vertical" [size]="15" />
+            <app-icon name="more-vertical" />
           </button>
         }
       </span>
@@ -111,7 +111,7 @@
     @if (sortable()) {
       <span class="sort-arrow">
         @if (sortIndicator('summary'); as icon) {
-          <app-icon [name]="icon" [size]="12" />
+          <app-icon [name]="icon" [size]="14" />
         }
       </span>
     }
@@ -195,7 +195,7 @@
 
     @if (showFullSeasonButton() && col === 'gp') {
       <button type="button" class="menu-item" (click)="fullSeason.emit()">
-        <app-icon name="arrow-up-to-line" [size]="15" />
+        <app-icon name="arrow-up-to-line" />
         Set a full 84-game season
       </button>
       <div class="menu-separator"></div>
@@ -247,7 +247,7 @@
           [attr.aria-expanded]="expandedScaleList() === col"
           (click)="toggleScaleList(col)"
         >
-          <app-icon name="chart-columns" [size]="15" />
+          <app-icon name="chart-columns" />
           Stats to scale
           <span class="menu-item-value">{{ scaledStatSummary(col) }}</span>
         </button>
@@ -270,7 +270,7 @@
 
     <div class="menu-separator"></div>
     <button type="button" class="menu-item menu-item--danger" (click)="removeColumn(col)">
-      <app-icon name="trash" [size]="15" />
+      <app-icon name="trash" />
       Remove column
     </button>
   </div>

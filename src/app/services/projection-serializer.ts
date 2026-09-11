@@ -37,6 +37,12 @@ export interface ProjectionState {
    */
   playerBasis: PlayerBasis | null;
   playerPoolSyncedAt: string | null;
+  /**
+   * The players the server added to match the pool that the owner has not acknowledged yet. The
+   * server fills it; the app empties it when the owner presses "Got it", and the save carries that
+   * back. Empty is the normal case.
+   */
+  unacknowledgedNewPlayerIds: number[];
   draft: DraftState | null;
   /**
    * The positions the owner corrected by hand, keyed by player. Empty is the normal case: it

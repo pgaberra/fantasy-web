@@ -72,6 +72,10 @@ export class ProjectionSerializerService {
         lastEspnLeagueId: state.lastEspnLeagueId ?? undefined,
         playerBasis: state.playerBasis ?? undefined,
         playerPoolSyncedAt: state.playerPoolSyncedAt ?? undefined,
+        // Absent once acknowledged, which is how the server learns the owner has seen them.
+        unacknowledgedNewPlayerIds: state.unacknowledgedNewPlayerIds.length
+          ? [...state.unacknowledgedNewPlayerIds]
+          : undefined,
       },
       players: state.playerProjections.map((projection) => ({
         playerId: projection.playerId,
@@ -116,6 +120,7 @@ export class ProjectionSerializerService {
       lastEspnLeagueId: data.settings.lastEspnLeagueId ?? data.settings.espnSync?.leagueId ?? null,
       playerBasis: data.settings.playerBasis ?? null,
       playerPoolSyncedAt: data.settings.playerPoolSyncedAt ?? null,
+      unacknowledgedNewPlayerIds: data.settings.unacknowledgedNewPlayerIds ?? [],
       draft: this.sanitizeDraft(data.draft),
       positionOverrides: this.toPositionOverrides(data.positionOverrides),
       playerProjections: data.players.map((player) => this.toProjection(player)),

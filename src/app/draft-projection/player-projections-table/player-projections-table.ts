@@ -143,9 +143,10 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly positionOverrides = input<PositionOverrides>(new Map());
 
   /**
-   * The players whose rows the server added to this projection on the read that opened it, or
-   * null when it added none. They come as a filter rather than a marker: the rows look like every
-   * other row, and forty of them in a table of sixteen hundred cannot be found by eye.
+   * The players whose rows the server added to this projection that the owner has not
+   * acknowledged, or null when there are none. They come as a filter rather than a marker: the
+   * rows look like every other row, and forty of them in a table of sixteen hundred cannot be
+   * found by eye.
    */
   readonly newPlayerIds = input<ReadonlySet<number> | null>(null);
   readonly positionsChanged = output<{ playerId: number; positions: SkaterPosition[] | null }>();
@@ -480,9 +481,10 @@ export class PlayerProjectionsTableComponent implements OnInit {
     return scored.filter((sp) => rookies.has(sp.projection.playerId));
   }
 
-  readonly newPlayersOnly = signal(false);
+  /** Set from the page's "Player list updated" notice, which carries the checkbox. */
+  readonly newPlayersOnly = model(false);
 
-  /** Only offer the filter when there is something to filter to. */
+  /** Only narrow when there is someone to narrow to. */
   readonly newPlayersAvailable = computed(() => {
     const ids = this.newPlayerIds();
     return !!ids && this.players().some((player) => ids.has(player.id));

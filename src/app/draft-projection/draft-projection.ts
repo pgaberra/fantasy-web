@@ -61,7 +61,6 @@ import { StatInfoService } from '../services/stat-info.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { NotificationService } from '../services/notification.service';
 import { PlayerBasis, ProjectionState } from '../services/projection-serializer';
-import { PoolReconciliation } from '../api/models/pool-reconciliation';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import { ProjectionSyncService, SyncedSettings } from '../services/projection-sync.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
@@ -160,14 +159,20 @@ export class DraftProjectionComponent implements OnInit {
   // Held here only so a save carries them back rather than dropping them.
   playerBasis = signal<PlayerBasis | null>(null);
   playerPoolSyncedAt = signal<string | null>(null);
-  /** What the server had to add and drop to match the current pool, on the read that did it. */
-  readonly poolReconciliation = signal<PoolReconciliation | null>(null);
+  /**
+   * The players the server added to match the pool that the owner has not acknowledged. Kept on
+   * the projection, so the notice about them survives a reload; emptied by "Got it" and saved.
+   */
+  readonly unacknowledgedNewPlayerIds = signal<number[]>([]);
 
-  /** The players that reconciliation added, as the table wants them; null when it added none. */
+  /** Those players, as the table wants them; null when there are none. */
   readonly newPlayerIds = computed<ReadonlySet<number> | null>(() => {
-    const ids = this.poolReconciliation()?.addedPlayerIds;
-    return ids?.length ? new Set(ids) : null;
+    const ids = this.unacknowledgedNewPlayerIds();
+    return ids.length ? new Set(ids) : null;
   });
+
+  /** Whether the table is narrowed to them. The notice and the table share it. */
+  readonly newPlayersOnly = signal(false);
   draft = signal<DraftState | null>(null);
   /** The positions the owner corrected by hand, keyed by player. Empty when none have been. */
   readonly positionOverrides = signal<PositionOverrides>(new Map());
@@ -468,7 +473,6 @@ export class DraftProjectionComponent implements OnInit {
           }
           this.projectionId.set(projection.id);
           this.projectionName.set(projection.name);
-          this.poolReconciliation.set(projection.poolReconciliation ?? null);
           const state = this.serializer.fromProjectionData(projection.data);
           this.applyState(state);
           const loaded = this.serializer.toProjectionData(state);
@@ -501,6 +505,7 @@ export class DraftProjectionComponent implements OnInit {
       lastEspnLeagueId: this.lastEspnLeagueId(),
       playerBasis: this.playerBasis(),
       playerPoolSyncedAt: this.playerPoolSyncedAt(),
+      unacknowledgedNewPlayerIds: this.unacknowledgedNewPlayerIds(),
       draft: this.draft(),
       positionOverrides: this.positionOverrides(),
       playerProjections: this.table()?.playerProjections?.() ?? this.loadedProjections() ?? [],
@@ -523,6 +528,7 @@ export class DraftProjectionComponent implements OnInit {
     this.lastEspnLeagueId.set(state.lastEspnLeagueId);
     this.playerBasis.set(state.playerBasis);
     this.playerPoolSyncedAt.set(state.playerPoolSyncedAt);
+    this.unacknowledgedNewPlayerIds.set(state.unacknowledgedNewPlayerIds);
     this.draft.set(state.draft);
     this.positionOverrides.set(state.positionOverrides);
     this.loadedProjections.set(state.playerProjections);
@@ -545,9 +551,14 @@ export class DraftProjectionComponent implements OnInit {
     });
   }
 
-  /** The notice's offer to narrow the table to the players it is talking about. */
-  showNewPlayers(): void {
-    this.table()?.newPlayersOnly.set(true);
+  /**
+   * The owner has seen the new players. Emptying the list is an edit like any other, so the
+   * autosave carries it to the server and the notice stays gone on the next load. The filter goes
+   * with it, since the notice was the only place to turn it off.
+   */
+  acknowledgeNewPlayers(): void {
+    this.unacknowledgedNewPlayerIds.set([]);
+    this.newPlayersOnly.set(false);
   }
 
   /** Drops every correction at once, putting the whole pool back on the reported positions. */

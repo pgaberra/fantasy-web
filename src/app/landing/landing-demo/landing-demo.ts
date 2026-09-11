@@ -159,6 +159,7 @@ export class LandingDemoComponent {
       // last season starts as — so one redeemed into an account keeps being topped up that way.
       playerBasis: 'last_season',
       playerPoolSyncedAt: null,
+      unacknowledgedNewPlayerIds: [],
       draft: null,
       // The demo has no way to correct a position, so a board redeemed from it starts on
       // whatever the read model reports — which is where a new projection starts anyway.

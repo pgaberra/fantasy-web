@@ -56,7 +56,7 @@
         [disabled]="isPreparingShare()"
         (click)="share.emit()"
       >
-        <app-icon name="share" [size]="15" />
+        <app-icon name="share" />
         @if (isPreparingShare()) {
           <app-loading-indicator variant="inline" label="Opening" />
         } @else {
@@ -66,12 +66,12 @@
     }
     @if (hasDraft()) {
       <button type="button" class="menu-item menu-item--danger discard" (click)="startDiscard()">
-        <app-icon name="rotate-ccw" [size]="15" />
+        <app-icon name="rotate-ccw" />
         Discard draft
       </button>
     }
     <button type="button" class="menu-item menu-item--danger delete" (click)="startDelete()">
-      <app-icon name="trash" [size]="15" />
+      <app-icon name="trash" />
       Delete
     </button>
   </div>

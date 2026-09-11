@@ -57,14 +57,12 @@
               (click)="startRename()"
             >
               {{ projectionName() }}
-              <span class="rename-icon" aria-hidden="true"
-                ><app-icon name="pencil" [size]="16"
-              /></span>
+              <span class="rename-icon" aria-hidden="true"><app-icon name="pencil" /></span>
             </button>
           </h1>
           <div class="page-header-actions">
             <button type="button" class="btn btn-secondary" (click)="showShareDialog.set(true)">
-              <app-icon name="share" [size]="15" />
+              <app-icon name="share" />
               Share
             </button>
             <a
@@ -81,8 +79,9 @@
     <app-offseason-data-notice />
 
     <app-player-pool-notice
-      [reconciliation]="poolReconciliation()"
-      (showNewPlayers)="showNewPlayers()"
+      [newPlayerCount]="unacknowledgedNewPlayerIds().length"
+      [(newPlayersOnly)]="newPlayersOnly"
+      (acknowledged)="acknowledgeNewPlayers()"
     />
 
     <div class="projections-tables">
@@ -106,6 +105,7 @@
         [positionControls]="true"
         [positionOverrides]="positionOverrides()"
         [newPlayerIds]="newPlayerIds()"
+        [(newPlayersOnly)]="newPlayersOnly"
         (manageSyncRequested)="showSyncDialog.set(true)"
         (fullSeasonRequested)="openFullSeasonDialog()"
         (positionsChanged)="onPositionsChanged($event)"
@@ -151,7 +151,7 @@
             class="btn btn-primary btn-sm"
             (click)="showSyncDialog.set(true)"
           >
-            <app-icon name="import" [size]="15" />
+            <app-icon name="import" />
             Import league
           </button>
         }

@@ -44,7 +44,7 @@
                 {{ column.label
                 }}<span class="sort-arrow">
                   @if (sortIndicator(column.key); as icon) {
-                    <app-icon [name]="icon" [size]="12" />
+                    <app-icon [name]="icon" [size]="14" />
                   }
                 </span>
                 @if (column.weight !== null) {
@@ -60,7 +60,7 @@
               {{ scoreHeading()
               }}<span class="sort-arrow">
                 @if (sortIndicator('total'); as icon) {
-                  <app-icon [name]="icon" [size]="12" />
+                  <app-icon [name]="icon" [size]="14" />
                 }
               </span>
             </th>
@@ -80,7 +80,7 @@
                   class="lp-chevron"
                   [class.expanded]="isExpanded(team.teamId)"
                   aria-hidden="true"
-                  ><app-icon name="chevron-right" [size]="12"
+                  ><app-icon name="chevron-right" [size]="14"
                 /></span>
                 {{ i + 1 }}
               </td>
