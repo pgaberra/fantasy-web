@@ -1,4 +1,5 @@
 import { DatePipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { computed, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
@@ -408,5 +409,21 @@ describe('PremiumComponent', () => {
 
     expect(error).toHaveBeenCalledWith(expect.stringContaining('Nothing was charged'));
     expect(error).not.toHaveBeenCalledWith(expect.stringContaining('try again'));
+  });
+
+  /**
+   * A second tab, or a page left open, can ask for a checkout the account no longer needs. The BFF
+   * refuses it with 409 so nobody pays twice, and the page reads the plan again so the card shows
+   * the subscription, rather than an error about a checkout that should never have started.
+   */
+  it('shows the subscription instead of an error when the account already has one', () => {
+    startCheckout.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
+
+    const fixture = MockRender(PremiumComponent);
+    refresh.mockClear();
+    fixture.point.componentInstance.subscribe();
+
+    expect(refresh).toHaveBeenCalled();
+    expect(error).not.toHaveBeenCalled();
   });
 });
