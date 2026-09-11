@@ -7,7 +7,7 @@
     Updated {{ projection().updatedAt | relativeTime }}
   </span>
   @if (projection().draftStatus === 'finished') {
-    <span class="card-status card-status--done">Draft complete</span>
+    <span class="card-status card-status--done">Draft finished</span>
   } @else if (projection().draftStatus === 'in_progress') {
     <span class="card-status">Draft in progress</span>
   }

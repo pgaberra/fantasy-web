@@ -45,10 +45,7 @@ export class RegisterComponent implements OnInit {
       .subscribe({
         error: (error: unknown) => {
           this.errorMessage.set(
-            messageForError(
-              error,
-              'Could not create your account. Check your details and try again.',
-            ),
+            messageForError(error, "Couldn't create your account. Check your details."),
           );
         },
       });

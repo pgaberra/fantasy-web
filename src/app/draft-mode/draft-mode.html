@@ -4,7 +4,7 @@
   <div class="draft-mode">
     <div class="draft-header">
       <a [routerLink]="exitLink()" class="back-link"
-        ><app-icon name="arrow-left" [size]="14" />Exit draft mode</a
+        ><app-icon name="arrow-left" [size]="14" />Exit Draft mode</a
       >
       <div class="draft-title">
         <h1>{{ projectionName() }}</h1>
@@ -144,8 +144,7 @@
             <h2 class="modal-title">Finish the draft?</h2>
             <p class="modal-text">
               @if (isComplete()) {
-                Finishing marks the draft complete and opens the summary. You can return to the
-                board and keep editing.
+                You can return to the draft board and keep editing.
               } @else {
                 The draft is not finished yet, {{ picks().length }} of {{ totalPicks() }} picks
                 made. You can finish now and return to the board later.

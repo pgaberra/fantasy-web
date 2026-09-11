@@ -17,7 +17,7 @@
             <app-loading-indicator variant="inline" label="Loading versions" />
           </p>
         } @else if (versionsResource.error()) {
-          <p class="version-status">Could not load versions</p>
+          <p class="version-status">Couldn't load versions</p>
         } @else {
           <ul class="version-list">
             @for (service of versionsResource.value(); track service.name) {

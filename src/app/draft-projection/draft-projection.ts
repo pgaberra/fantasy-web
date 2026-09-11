@@ -400,7 +400,7 @@ export class DraftProjectionComponent implements OnInit {
       },
       error: () => {
         this.reSyncing.set(false);
-        this.reSyncError.set(`Could not re-sync from ${platform}. Please try again.`);
+        this.reSyncError.set(`Couldn't re-sync from ${platform}. Please try again.`);
       },
     });
   }

@@ -67,7 +67,7 @@ describe('PayComponent', () => {
     await render();
 
     expect(initializePaddle).not.toHaveBeenCalled();
-    expect(ngMocks.formatText(ngMocks.find('h1'))).toContain('Checkout could not be opened');
+    expect(ngMocks.formatText(ngMocks.find('h1'))).toContain("Couldn't open checkout");
   });
 
   /**
@@ -80,7 +80,7 @@ describe('PayComponent', () => {
     await render();
 
     expect(initializePaddle).not.toHaveBeenCalled();
-    expect(ngMocks.formatText(ngMocks.find('h1'))).toContain('Checkout could not be opened');
+    expect(ngMocks.formatText(ngMocks.find('h1'))).toContain("Couldn't open checkout");
   });
 
   it('shows the failure state when Paddle cannot be initialized', async () => {
@@ -88,6 +88,6 @@ describe('PayComponent', () => {
 
     await render();
 
-    expect(ngMocks.formatText(ngMocks.find('h1'))).toContain('Checkout could not be opened');
+    expect(ngMocks.formatText(ngMocks.find('h1'))).toContain("Couldn't open checkout");
   });
 });

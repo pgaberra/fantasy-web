@@ -1,17 +1,6 @@
 <div class="draft-start">
   <div class="page-header">
     <h1>Draft mode</h1>
-    <!--
-      `hasValue` before anything derived from the list: this line sits outside the error branch
-      below, and reading the resource's value while it is in an error state throws.
-    -->
-    <p class="subtitle">
-      @if (sourcesResource.hasValue() && drafts().length > 0) {
-        Pick up a draft, or start a new one.
-      } @else {
-        Pick what you want to draft against.
-      }
-    </p>
   </div>
 
   @if (sourcesResource.isLoading()) {
@@ -57,7 +46,7 @@
                   <span class="draft-heading">
                     <span class="draft-name">{{ draft.name }}</span>
                     @if (draft.draftStatus === 'finished') {
-                      <span class="draft-status draft-status--done">Complete</span>
+                      <span class="draft-status draft-status--done">Finished</span>
                     } @else {
                       <span class="draft-status">In progress</span>
                     }
@@ -165,12 +154,9 @@
               <p class="group-empty">
                 @if (drafts().length > 0) {
                   You already have a draft for every projection.
-                  <a routerLink="/projections/new">Create another projection</a> to draft against
-                  fresh numbers.
+                  <a routerLink="/projections/new">Create another projection</a>.
                 } @else {
-                  No projections yet.
-                  <a routerLink="/projections/new">Create one</a> to draft against your own
-                  rankings.
+                  No projections yet. <a routerLink="/projections/new">Create one</a>.
                 }
               </p>
             } @else {
@@ -206,7 +192,7 @@
               <p class="group-footer">
                 <a class="group-link create-projection" routerLink="/projections/new">
                   <app-icon name="plus" [size]="14" />
-                  Create a new projection
+                  Create projection
                 </a>
               </p>
             }
@@ -348,7 +334,7 @@
     @if (canOpenBoard(draft)) {
       <button type="button" class="menu-item open-board" (click)="openBoard(draft.id)">
         <app-icon name="table" />
-        Open the projection
+        Open projection
       </button>
     }
     <button

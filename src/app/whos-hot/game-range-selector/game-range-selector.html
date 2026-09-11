@@ -104,7 +104,10 @@
         <span class="switch-track" aria-hidden="true"><span class="switch-knob"></span></span>
         Per game
       </button>
-      <app-help-tip label="What per game does" text="Display stats on a per-game basis." />
+      <app-help-tip
+        label="What per game does"
+        text="Counting stats divided by the games each player dressed for in the range. Rate stats stay as they are."
+      />
     </div>
 
     <!-- The minimum only means something once the leaderboard is scored per game: a rate off two
@@ -117,7 +120,7 @@
         <label for="min-games">Min. games</label>
         <app-help-tip
           label="What the minimum does"
-          text="Hide players with fewer appearances than this minimum."
+          text="Hide players with fewer games played than this minimum."
         />
         <input
           id="min-games"

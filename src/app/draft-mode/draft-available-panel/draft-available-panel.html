@@ -109,7 +109,7 @@
     </div>
     @if (hasMore()) {
       <button type="button" class="btn btn-secondary btn-sm show-more" (click)="showMore.emit()">
-        Show more ({{ availableCount() - visibleAvailable().length }} more)
+        Show {{ availableCount() - visibleAvailable().length }} more
       </button>
     }
   } @else {

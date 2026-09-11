@@ -117,12 +117,7 @@
             <span class="position-overrides-count">
               {{ changed }} {{ changed === 1 ? 'position' : 'positions' }} changed
             </span>
-            <button
-              type="button"
-              class="btn btn-secondary btn-sm"
-              (click)="positionsReset.emit()"
-              appTooltip="Reset all players to their default positions"
-            >
+            <button type="button" class="btn btn-secondary btn-sm" (click)="positionsReset.emit()">
               Reset all positions
             </button>
           </div>
