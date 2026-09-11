@@ -249,15 +249,6 @@
   line-height: 1.5;
 }
 
-.checkout-welcome-links {
-  margin: var(--space-2) 0 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
 .checkout-thanks {
   margin: 0;
   padding: var(--space-3) var(--space-4);
