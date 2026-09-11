@@ -178,6 +178,32 @@ describe('StartingPointPreviewComponent', () => {
     ).toEqual(['Sixth Player', 'Fifth Player', 'Fourth Player']);
   });
 
+  /**
+   * The model reads a player's type from the NHL and the pool from ESPN, which has listed a goalie
+   * as a centre. A goalie line drawn in a skater's row holds none of the stats its cells read.
+   */
+  it("gives a player the pool's own line when the model has them as the other type", async () => {
+    const goalieLine = {
+      playerId: 6,
+      type: 'goalie' as const,
+      stats: { utility: { gp: 10 }, scoring: { w: 4, gs: 10 } },
+    };
+    seed.mockReturnValueOnce(
+      of({
+        ...seeded,
+        players: [...seeded.players.filter((p) => p.playerId !== 6), goalieLine],
+      }),
+    );
+    const fixture = render({ source: { kind: 'preset', preset: 'model' } });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const row = previewOf(fixture)
+      .previewRows()
+      .find((r) => r.player.id === 6);
+    expect(row?.projection).toEqual({ type: 'skater', playerId: 6, stats: players[5].stats });
+  });
+
   it('says what the model is made of, under the model and nowhere else', async () => {
     const fixture = render({ source: { kind: 'preset', preset: 'default' } });
     await fixture.whenStable();
