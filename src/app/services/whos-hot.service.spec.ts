@@ -84,6 +84,39 @@ describe('WhosHotService', () => {
     expect(await splits).toEqual([]);
   });
 
+  it('asks for the last N as a count, so mid-season the server counts each team back itself', async () => {
+    const splits = firstValueFrom(service.splits({ season: 2026, lastGames: 5 }));
+
+    for (const half of ['skaters', 'goalies'] as const) {
+      const asked = pending(half);
+      expect(asked.request.params.get('season')).toEqual('2026');
+      expect(asked.request.params.get('lastGames')).toEqual('5');
+      expect(asked.request.params.has('fromGame')).toEqual(false);
+      expect(asked.request.params.has('toGame')).toEqual(false);
+      asked.flush([]);
+    }
+
+    expect(await splits).toEqual([]);
+  });
+
+  it('reads each season with its own length from the server', async () => {
+    const seasons = firstValueFrom(service.seasons());
+
+    httpTesting
+      .expectOne((request) => request.url.endsWith('/splits/seasons'))
+      .flush({
+        defaultSeason: 2025,
+        seasons: [
+          { season: 2026, scheduleGames: 84, gamesPlayed: 0 },
+          { season: 2025, scheduleGames: 82, gamesPlayed: 82 },
+        ],
+      });
+
+    const answer = await seasons;
+    expect(answer.defaultSeason).toEqual(2025);
+    expect(answer.seasons.map((season) => season.scheduleGames)).toEqual([84, 82]);
+  });
+
   it('drops the request when the caller moves on, rather than leaving it running at the server', () => {
     const subscription = service.splits(SPAN).subscribe();
     const inFlight = httpTesting.match(() => true);

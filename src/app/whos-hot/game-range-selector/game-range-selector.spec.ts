@@ -5,9 +5,18 @@ import { FREE_PRESET, GameRangeSelectorComponent } from './game-range-selector';
 describe('GameRangeSelectorComponent', () => {
   beforeEach(() => MockBuilder(GameRangeSelectorComponent));
 
-  const render = (fromGame = 63, toGame = 82, locked = false) =>
-    MockRender(GameRangeSelectorComponent, {
+  const render = (
+    fromGame = 63,
+    toGame = 82,
+    locked = false,
+    season: { scheduleLength: number; latestGame: number; lastGames: number | null } = {
       scheduleLength: 82,
+      latestGame: 82,
+      lastGames: null,
+    },
+  ) =>
+    MockRender(GameRangeSelectorComponent, {
+      ...season,
       fromGame,
       toGame,
       perGame: false,
@@ -16,7 +25,12 @@ describe('GameRangeSelectorComponent', () => {
     }).point.componentInstance;
 
   /** A free account: opened on the one range it is allowed, with everything else shut. */
-  const renderLocked = () => render(73, 82, true);
+  const renderLocked = () =>
+    render(78, 82, true, { scheduleLength: 82, latestGame: 82, lastGames: 5 });
+
+  /** 2026-27 in November: an 84-game season whose furthest team has played twelve. */
+  const renderMidSeason = () =>
+    render(1, 12, false, { scheduleLength: 84, latestGame: 12, lastGames: null });
 
   const preset = (component: GameRangeSelectorComponent, label: string) =>
     component.presets.find((candidate) => candidate.label === label)!;
@@ -49,18 +63,31 @@ describe('GameRangeSelectorComponent', () => {
     expect(render(41, 41).summary()).toEqual('1 game');
   });
 
-  it('resolves the last-N presets against the season length', () => {
+  it('keeps a last-N preset as a count, and shows it back from the latest game', () => {
     const component = render(1, 82);
 
     component.applyPreset(preset(component, 'Last 20'));
 
+    expect(component.lastGames()).toEqual(20);
     expect(component.fromGame()).toEqual(63);
     expect(component.toGame()).toEqual(82);
 
     component.applyPreset(preset(component, 'Last 5'));
 
+    expect(component.lastGames()).toEqual(5);
     expect(component.fromGame()).toEqual(78);
     expect(component.toGame()).toEqual(82);
+  });
+
+  it('shows the last five of a season underway where they are, not at the end of its schedule', () => {
+    const component = renderMidSeason();
+
+    component.applyPreset(preset(component, 'Last 5'));
+
+    // Counting back from 84 asked November for games 80-84, which nobody had played.
+    expect(component.lastGames()).toEqual(5);
+    expect(component.fromGame()).toEqual(8);
+    expect(component.toGame()).toEqual(12);
   });
 
   it('splits the season into halves that meet without overlapping', () => {
@@ -70,8 +97,20 @@ describe('GameRangeSelectorComponent', () => {
     const firstHalfEnd = component.toGame();
     component.applyPreset(preset(component, 'Second half'));
 
+    expect(component.lastGames()).toEqual(null);
     expect(component.fromGame()).toEqual(firstHalfEnd + 1);
     expect(component.toGame()).toEqual(82);
+  });
+
+  it('draws the halves and the full season on an 84-game schedule as 84 games', () => {
+    const component = renderMidSeason();
+
+    component.applyPreset(preset(component, 'First half'));
+    expect(component.toGame()).toEqual(42);
+
+    component.applyPreset(preset(component, 'Full season'));
+    expect(component.fromGame()).toEqual(1);
+    expect(component.toGame()).toEqual(84);
   });
 
   it('marks the preset that matches the current range', () => {
@@ -79,6 +118,23 @@ describe('GameRangeSelectorComponent', () => {
 
     expect(component.isPresetActive()(preset(component, 'Full season'))).toEqual(true);
     expect(component.isPresetActive()(preset(component, 'Last 10'))).toEqual(false);
+  });
+
+  it('marks a last-N preset by its count, not by the games it happens to show', () => {
+    const component = renderLocked();
+
+    expect(component.isPresetActive()(FREE_PRESET)).toEqual(true);
+    expect(component.isPresetActive()(preset(component, 'Second half'))).toEqual(false);
+  });
+
+  it('turns a last-N preset into the range it showed once a handle moves', () => {
+    const component = render(78, 82, false, { scheduleLength: 82, latestGame: 82, lastGames: 5 });
+
+    component.onFromInput(inputEvent(70));
+
+    expect(component.lastGames()).toEqual(null);
+    expect(component.fromGame()).toEqual(70);
+    expect(component.toGame()).toEqual(82);
   });
 
   it('pushes the upper bound along when the lower one passes it', () => {
@@ -109,6 +165,14 @@ describe('GameRangeSelectorComponent', () => {
     expect(component.fromGame()).toEqual(1);
   });
 
+  it('clamps to the season it is showing, which is 84 games from 2026-27', () => {
+    const component = renderMidSeason();
+
+    component.onToInput(inputEvent(500));
+
+    expect(component.toGame()).toEqual(84);
+  });
+
   it('never lets the minimum-games filter exceed the span itself', () => {
     const component = render(70, 82);
 
@@ -120,6 +184,8 @@ describe('GameRangeSelectorComponent', () => {
   it('offers the minimum-games filter only while the leaderboard is scored per game', () => {
     const fixture = MockRender(GameRangeSelectorComponent, {
       scheduleLength: 82,
+      latestGame: 82,
+      lastGames: null,
       fromGame: 63,
       toGame: 82,
       perGame: false,
@@ -234,6 +300,7 @@ describe('GameRangeSelectorComponent', () => {
     ]);
     expect(component.isPresetLocked()(FREE_PRESET)).toEqual(false);
     expect(FREE_PRESET.label).toEqual('Last 5');
+    expect(FREE_PRESET.lastGames).toEqual(5);
   });
 
   it('disables the locked pills and leaves the free one pressable', () => {
