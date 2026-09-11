@@ -13,7 +13,6 @@ import { EntitlementService } from '../services/entitlement.service';
 import { ErrorReportingService } from '../services/error-reporting.service';
 import { NotificationService } from '../services/notification.service';
 import { FeatureService } from '../services/feature.service';
-import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { PaddleConfigurationError } from '../shared/paddle/paddle';
 import { PaddleService } from '../shared/paddle/paddle.service';
 
@@ -223,7 +222,7 @@ describe('PremiumComponent', () => {
     MockRender(PremiumComponent);
 
     const card = ngMocks.find('.plan-card--premium').nativeElement as HTMLElement;
-    const pending = ngMocks.find(LoadingIndicatorComponent);
+    const pending = ngMocks.find('.plan-lead app-loading-indicator');
     expect(ngMocks.input(pending, 'label')).toEqual('Loading your plan');
     expect(card.contains(pending.nativeElement)).toBe(true);
     expect(card.textContent).not.toContain('Subscribe');
@@ -356,8 +355,52 @@ describe('PremiumComponent', () => {
     expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toEqual('Free');
   });
 
+  /**
+   * The price arrives after the page draws. What stood in for it was a small line the price then
+   * replaced, and the taller row pushed the whole card down the moment it landed. Now the wait is
+   * said in the price's own row, and the free card holds its figure back so both land together.
+   */
+  it('says the price is loading, and holds the free figure back, until Paddle answers', async () => {
+    let answer!: (value: unknown) => void;
+    PricePreview.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+
+    const fixture = MockRender(PremiumComponent);
+    await settle(fixture);
+
+    const pending = ngMocks.find('.plan-card--premium .plan-price app-loading-indicator');
+    expect(ngMocks.input(pending, 'label')).toEqual('Loading price');
+    expect(ngMocks.findAll('.plan-card--free .plan-price-amount').length).toEqual(0);
+    expect(fixture.nativeElement.textContent).not.toContain('confirmed at checkout');
+
+    answer({
+      data: {
+        currencyCode: 'USD',
+        details: { lineItems: [{ formattedTotals: { total: '$4.99' } }] },
+      },
+    });
+    await settle(fixture);
+
+    expect(ngMocks.findAll('.plan-price app-loading-indicator').length).toEqual(0);
+    expect(ngMocks.formatText(ngMocks.find('.plan-card--premium .plan-price-amount'))).toContain(
+      '$4.99',
+    );
+    expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toEqual('$0');
+  });
+
+  it('says where the price is confirmed, not that it is loading, once Paddle has failed', async () => {
+    initializePaddle.mockRejectedValue(new Error('offline'));
+
+    const fixture = MockRender(PremiumComponent);
+    await settle(fixture);
+
+    expect(ngMocks.findAll('.plan-price app-loading-indicator').length).toEqual(0);
+    expect(ngMocks.formatText(ngMocks.find('.plan-card--premium .plan-price'))).toEqual(
+      'Your exact price is confirmed at checkout.',
+    );
+  });
+
   // A build that sells nothing has no price id, and must not call Paddle at all - that call is
-  // what puts Paddle's script on a public page.
+  // what puts Paddle's script on a public page. Nor is there anything to wait for.
   it('asks Paddle nothing when the build has no price id', async () => {
     environment.paddlePriceId = '';
 
@@ -366,6 +409,7 @@ describe('PremiumComponent', () => {
 
     expect(initializePaddle).not.toHaveBeenCalled();
     expect(ngMocks.findAll('.plan-card--premium .plan-price-amount').length).toEqual(0);
+    expect(ngMocks.findAll('.plan-price app-loading-indicator').length).toEqual(0);
   });
 
   // Losing the price is not worth an error toast on a marketing page. The card still reads.
