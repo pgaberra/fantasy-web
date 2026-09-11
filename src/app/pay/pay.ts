@@ -1,12 +1,9 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import {
-  CheckoutEventNames,
-  initializePaddle,
-  type Environments,
-  type Paddle,
-} from '@paddle/paddle-js';
+import { CheckoutEventNames, type Paddle } from '@paddle/paddle-js';
 import { environment } from '../../environments/environment';
+import { ErrorReportingService } from '../services/error-reporting.service';
+import { initializePaddleForToken, PaddleConfigurationError } from '../shared/paddle/paddle';
 
 /**
  * The page Paddle's checkout opens on.
@@ -32,6 +29,7 @@ import { environment } from '../../environments/environment';
 })
 export class PayComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly errorReporting = inject(ErrorReportingService);
 
   protected readonly failed = signal(false);
 
@@ -42,9 +40,8 @@ export class PayComponent implements OnInit {
       return;
     }
 
-    initializePaddle({
+    initializePaddleForToken({
       token: environment.paddleClientToken,
-      environment: environment.paddleEnvironment as Environments,
       eventCallback: (event) => {
         if (event.name === CheckoutEventNames.CHECKOUT_ERROR) {
           this.failed.set(true);
@@ -59,11 +56,24 @@ export class PayComponent implements OnInit {
         paddle.Checkout.open({
           transactionId,
           settings: {
+            // Stated rather than inherited from Paddle's defaults. The overlay is theirs already;
+            // the one-page variant asks for the email and the card together, where the default
+            // spends a whole step on the email. When the account's email is verified, the BFF has
+            // attached it to the transaction, so that step would only have been a click.
+            displayMode: 'overlay',
+            variant: 'one-page',
             // Absolute by Paddle's rule. The account page reads ?checkout=success already.
             successUrl: `${window.location.origin}/premium?checkout=success`,
           },
         });
       })
-      .catch(() => this.failed.set(true));
+      .catch((error: unknown) => {
+        // A token whose environment cannot be told is a broken build, and this page saying
+        // checkout failed is all anyone would otherwise hear of it.
+        if (error instanceof PaddleConfigurationError) {
+          this.errorReporting.report(error);
+        }
+        this.failed.set(true);
+      });
   }
 }

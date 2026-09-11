@@ -9,11 +9,14 @@ import { environment } from '../../environments/environment';
 import { BillingService } from '../services/billing.service';
 import { AuthService } from '../services/auth.service';
 import { EntitlementService } from '../services/entitlement.service';
+import { ErrorReportingService } from '../services/error-reporting.service';
 import { NotificationService } from '../services/notification.service';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
+import { PaddleConfigurationError } from '../shared/paddle/paddle';
 
 const initializePaddle = vi.fn();
 const PricePreview = vi.fn();
+const report = vi.fn();
 
 vi.mock('@paddle/paddle-js', () => ({
   initializePaddle: (...args: unknown[]) => initializePaddle(...args),
@@ -53,6 +56,7 @@ describe('PremiumComponent', () => {
     checkoutParam.set(null);
     initializePaddle.mockReset();
     PricePreview.mockReset();
+    report.mockReset();
     PricePreview.mockResolvedValue({
       data: {
         currencyCode: 'USD',
@@ -81,6 +85,7 @@ describe('PremiumComponent', () => {
           refresh,
         })
         .mock(NotificationService, { error })
+        .mock(ErrorReportingService, { report })
         .provide({ provide: ActivatedRoute, useValue: route })
     );
   });
@@ -374,6 +379,21 @@ describe('PremiumComponent', () => {
     await settle(fixture);
 
     expect(ngMocks.findAll('.plan-card--premium .plan-price-amount').length).toEqual(0);
+    expect(error).not.toHaveBeenCalled();
+    expect(report).not.toHaveBeenCalled();
+    expect(ngMocks.findAll('.plan-card--premium .plan-name').length).toEqual(1);
+  });
+
+  // A token that names no Paddle environment is a broken build, not a network blip. The card still
+  // reads, and still says nothing to the visitor, but the fault is reported rather than hidden.
+  it('reports a client token that names no Paddle environment', async () => {
+    environment.paddleClientToken = 'pk_unknown';
+
+    const fixture = MockRender(PremiumComponent);
+    await settle(fixture);
+
+    expect(initializePaddle).not.toHaveBeenCalled();
+    expect(report).toHaveBeenCalledWith(expect.any(PaddleConfigurationError));
     expect(error).not.toHaveBeenCalled();
     expect(ngMocks.findAll('.plan-card--premium .plan-name').length).toEqual(1);
   });
