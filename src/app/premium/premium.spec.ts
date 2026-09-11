@@ -259,11 +259,10 @@ describe('PremiumComponent', () => {
     });
 
     /**
-     * The first thing a new subscriber should see is where the things they just paid for live,
-     * so the welcome carries a link into each of them. Only once the subscription has actually
-     * landed: before that the page cannot vouch for what is theirs.
+     * The welcome waits until the subscription has actually landed: before that the page cannot
+     * vouch that Premium is active.
      */
-    it('welcomes a new subscriber with the way into each perk once the subscription lands', () => {
+    it('welcomes a new subscriber once the subscription lands', () => {
       premium.set(false);
       const fixture = MockRender(PremiumComponent);
       expect(fixture.nativeElement.textContent).not.toContain('Welcome to Premium');
@@ -272,10 +271,7 @@ describe('PremiumComponent', () => {
       fixture.detectChanges();
 
       expect(fixture.nativeElement.textContent).toContain('Welcome to Premium');
-      const links = ngMocks
-        .findAll('.checkout-welcome-links a')
-        .map((link) => ngMocks.input(link, 'routerLink'));
-      expect(links).toContain('/whos-hot');
+      expect(ngMocks.findAll('.checkout-welcome a')).toHaveLength(0);
       const card = ngMocks.find('.plan-card--premium').nativeElement as HTMLElement;
       expect(card.textContent).toContain('Premium active');
       expect(card.textContent).not.toContain('Confirming');
