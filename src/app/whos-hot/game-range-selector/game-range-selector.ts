@@ -3,23 +3,25 @@ import { RouterLink } from '@angular/router';
 import { HelpTipComponent } from '../../shared/help-tip/help-tip';
 import { IconComponent } from '../../shared/icon/icon';
 
-export interface RangePreset {
+/**
+ * "The last N games", sent to the server as a count. Each team's own last N is counted back from
+ * the latest game that team has played, so mid-season, when teams stand on different game
+ * numbers, no pair of bounds could say it.
+ */
+export interface LastGamesPreset {
   label: string;
-  /** Resolved against the season's length, so "last 20" means the same stretch in any season. */
+  lastGames: number;
+}
+
+/** A stretch fixed by the season's length, the same game numbers for every team. */
+export interface SpanPreset {
+  label: string;
   range: (scheduleLength: number) => { from: number; to: number };
 }
 
-type Thumb = 'from' | 'to';
+export type RangePreset = LastGamesPreset | SpanPreset;
 
-const PRESETS: RangePreset[] = [
-  { label: 'Last 5', range: (games) => ({ from: Math.max(1, games - 4), to: games }) },
-  { label: 'Last 10', range: (games) => ({ from: Math.max(1, games - 9), to: games }) },
-  { label: 'Last 20', range: (games) => ({ from: Math.max(1, games - 19), to: games }) },
-  { label: 'Last 30', range: (games) => ({ from: Math.max(1, games - 29), to: games }) },
-  { label: 'First half', range: (games) => ({ from: 1, to: Math.ceil(games / 2) }) },
-  { label: 'Second half', range: (games) => ({ from: Math.ceil(games / 2) + 1, to: games }) },
-  { label: 'Full season', range: (games) => ({ from: 1, to: games }) },
-];
+type Thumb = 'from' | 'to';
 
 /**
  * The one range a free account gets: the most recent form, which is what the page is for at its
@@ -29,7 +31,21 @@ const PRESETS: RangePreset[] = [
  * on this range and falls back to it when an account is not premium, and two independent
  * definitions of "last 5" would drift the first time one of them changed.
  */
-export const FREE_PRESET: RangePreset = PRESETS[0];
+export const FREE_PRESET: LastGamesPreset = { label: 'Last 5', lastGames: 5 };
+
+const PRESETS: RangePreset[] = [
+  FREE_PRESET,
+  { label: 'Last 10', lastGames: 10 },
+  { label: 'Last 20', lastGames: 20 },
+  { label: 'Last 30', lastGames: 30 },
+  { label: 'First half', range: (games) => ({ from: 1, to: Math.ceil(games / 2) }) },
+  { label: 'Second half', range: (games) => ({ from: Math.ceil(games / 2) + 1, to: games }) },
+  { label: 'Full season', range: (games) => ({ from: 1, to: games }) },
+];
+
+function isLastGames(preset: RangePreset): preset is LastGamesPreset {
+  return 'lastGames' in preset;
+}
 
 /**
  * Picks the stretch of schedule to measure, in team game numbers.
@@ -44,6 +60,9 @@ export const FREE_PRESET: RangePreset = PRESETS[0];
  *
  * The bounds push each other rather than allowing an impossible range — dragging `from` past
  * `to` takes `to` with it, which is what a user reaching for a later window means.
+ *
+ * A "Last N" pill is kept as `lastGames` and the rail only shows where it falls, back from
+ * `latestGame`. Moving either handle turns it into the explicit range it was showing.
  */
 @Component({
   selector: 'app-game-range-selector',
@@ -52,7 +71,11 @@ export const FREE_PRESET: RangePreset = PRESETS[0];
   styleUrl: './game-range-selector.css',
 })
 export class GameRangeSelectorComponent {
+  /** The selected season's own length: 82 games in 2025-26, 84 in 2026-27. */
   readonly scheduleLength = input.required<number>();
+
+  /** The furthest the season has got, which is where "the last N" is drawn back from. */
+  readonly latestGame = input.required<number>();
 
   /**
    * Whether picking the range is closed to this account. Everything that moves the bounds goes
@@ -63,6 +86,7 @@ export class GameRangeSelectorComponent {
   readonly locked = input(false);
   readonly fromGame = model.required<number>();
   readonly toGame = model.required<number>();
+  readonly lastGames = model.required<number | null>();
   readonly perGame = model.required<boolean>();
   readonly minGames = model.required<number>();
 
@@ -100,21 +124,35 @@ export class GameRangeSelectorComponent {
   });
 
   readonly isPresetActive = computed(() => {
+    const lastGames = this.lastGames();
     const { from, to } = { from: this.fromGame(), to: this.toGame() };
+    const scheduleLength = this.scheduleLength();
     return (preset: RangePreset) => {
-      const resolved = preset.range(this.scheduleLength());
-      return resolved.from === from && resolved.to === to;
+      if (isLastGames(preset)) {
+        return lastGames === preset.lastGames;
+      }
+      const resolved = preset.range(scheduleLength);
+      return lastGames === null && resolved.from === from && resolved.to === to;
     };
   });
 
   applyPreset(preset: RangePreset): void {
+    if (isLastGames(preset)) {
+      const latest = this.latestGame();
+      this.lastGames.set(preset.lastGames);
+      this.fromGame.set(Math.max(1, latest - preset.lastGames + 1));
+      this.toGame.set(latest);
+      return;
+    }
     const { from, to } = preset.range(this.scheduleLength());
+    this.lastGames.set(null);
     this.fromGame.set(from);
     this.toGame.set(to);
   }
 
   onFromInput(event: Event): void {
     const value = this.clamp(event);
+    this.lastGames.set(null);
     this.fromGame.set(value);
     if (value > this.toGame()) {
       this.toGame.set(value);
@@ -123,6 +161,7 @@ export class GameRangeSelectorComponent {
 
   onToInput(event: Event): void {
     const value = this.clamp(event);
+    this.lastGames.set(null);
     this.toGame.set(value);
     if (value < this.fromGame()) {
       this.fromGame.set(value);

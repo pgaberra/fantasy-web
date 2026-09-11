@@ -7,6 +7,7 @@ const settings: WhosHotSettings = {
   season: 2025,
   fromGame: 50,
   toGame: 82,
+  lastGames: null,
   perGame: true,
   minGames: 5,
   scoringType: 'category',
@@ -70,10 +71,34 @@ describe('WhosHotSettingsService', () => {
     expect(loaded?.lastEspnLeagueId).toEqual('12345');
   });
 
-  it('reads a blob written before the season could be chosen as the season that existed then', () => {
+  it('follows the server for a blob written before the season could be chosen', () => {
     localStorage.setItem('slapstat.whosHot.settings', JSON.stringify({ fromGame: 1, toGame: 82 }));
 
-    expect(service.load()?.season).toEqual(2025);
+    expect(service.load()?.season).toEqual(null);
+  });
+
+  it('drops a season saved by version 2, which saved one whether or not it was picked', () => {
+    // A summer visit wrote 2025 here and held the page on 2025-26 once 2026-27 was underway.
+    localStorage.setItem(
+      'slapstat.whosHot.settings',
+      JSON.stringify({ version: 2, season: 2025, fromGame: 78, toGame: 82 }),
+    );
+
+    expect(service.load()?.season).toEqual(null);
+  });
+
+  it('keeps a season the visitor picked', () => {
+    service.save({ ...settings, season: 2026 });
+
+    expect(service.load()?.season).toEqual(2026);
+  });
+
+  it('keeps "the last N" as a count, and reads a blob from before it as an explicit range', () => {
+    service.save({ ...settings, lastGames: 5 });
+    expect(service.load()?.lastGames).toEqual(5);
+
+    localStorage.setItem('slapstat.whosHot.settings', JSON.stringify({ fromGame: 78, toGame: 82 }));
+    expect(service.load()?.lastGames).toEqual(null);
   });
 
   it('reads a blob written before ESPN was remembered as having no ESPN league', () => {

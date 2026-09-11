@@ -29,14 +29,19 @@
        inside the table so the loading and error states land inside it too, and the range stays
        put instead of the page reflowing around it on every reload. -->
   <div class="leaderboard-card">
-    <app-game-range-selector
-      [scheduleLength]="scheduleLength"
-      [locked]="!canPickRange()"
-      [(fromGame)]="fromGame"
-      [(toGame)]="toGame"
-      [(perGame)]="perGame"
-      [(minGames)]="minGames"
-    />
+    <!-- Drawn once the season's own length is known: 82 games in 2025-26, 84 in 2026-27. -->
+    @if (scheduleLength(); as scheduleLength) {
+      <app-game-range-selector
+        [scheduleLength]="scheduleLength"
+        [latestGame]="latestGame() ?? scheduleLength"
+        [locked]="!canPickRange()"
+        [(fromGame)]="fromGame"
+        [(toGame)]="toGame"
+        [(lastGames)]="lastGames"
+        [(perGame)]="perGame"
+        [(minGames)]="minGames"
+      />
+    }
 
     @if (hasError()) {
       <app-error-state title="Couldn't load the leaderboard" (retry)="retry()" />
