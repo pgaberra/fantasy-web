@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { BillingService } from '../services/billing.service';
@@ -144,6 +145,13 @@ export class PremiumComponent implements OnInit, OnDestroy {
    */
   protected readonly freePrice = signal<string | null>(null);
 
+  /**
+   * True until Paddle has answered or failed to. Not the same as the price being null, which is
+   * also what a failure leaves: while waiting the card says it is loading, after a failure it says
+   * where the price will be confirmed instead.
+   */
+  protected readonly pricePending = signal(true);
+
   private pollTimer?: ReturnType<typeof setTimeout>;
   private giveUpTimer?: ReturnType<typeof setTimeout>;
 
@@ -172,6 +180,7 @@ export class PremiumComponent implements OnInit, OnDestroy {
 
     const priceId = environment.paddlePriceId;
     if (!environment.paddleClientToken || !priceId) {
+      this.pricePending.set(false);
       return;
     }
 
@@ -198,7 +207,8 @@ export class PremiumComponent implements OnInit, OnDestroy {
         }
         this.formattedPrice.set(null);
         this.freePrice.set(null);
-      });
+      })
+      .finally(() => this.pricePending.set(false));
   }
 
   ngOnDestroy(): void {
@@ -216,8 +226,15 @@ export class PremiumComponent implements OnInit, OnDestroy {
       next: (response) => {
         window.location.href = response.checkoutUrl;
       },
-      error: () => {
+      error: (error: unknown) => {
         this.starting.set(false);
+        // 409: the account already has a live subscription, say one started in another tab a
+        // moment ago. The BFF refused a second checkout, so nothing was charged, and reading the
+        // plan again turns this card into the subscriber's view, which says the rest.
+        if (error instanceof HttpErrorResponse && error.status === 409) {
+          this.entitlement.refresh();
+          return;
+        }
         // No "please try again". The BFF answers 502 here, and it does so for faults on our
         // side: a misconfigured payment provider, a key that stopped working. Retrying that
         // never helps, and at a payment step the thing worth saying is that no money moved.

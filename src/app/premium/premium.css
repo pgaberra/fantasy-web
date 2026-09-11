@@ -118,14 +118,18 @@
 }
 
 .plan-tagline {
-  margin: 0;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
   line-height: 1.5;
 }
 
+/* Held at the height of the price whatever the row holds (the price, the wait for it, the line
+   that stands in when it never comes, or nothing), so nothing below moves when the price lands.
+   The height is the amount's own line box, which is why the amount's line-height is set here
+   rather than inherited. */
 .plan-price {
   margin: var(--space-1) 0 0;
+  min-height: calc(var(--text-2xl) * 1.2);
   display: flex;
   align-items: baseline;
   gap: var(--space-2);
@@ -135,6 +139,7 @@
 .plan-price-amount {
   font-size: var(--text-2xl);
   font-weight: var(--weight-bold);
+  line-height: 1.2;
   color: var(--color-text);
   font-variant-numeric: tabular-nums;
 }
@@ -200,15 +205,6 @@
   padding: 0.75rem 1.25rem;
   border: 1px dashed var(--color-border-strong);
   border-radius: var(--radius-sm);
-}
-
-.plan-current--premium {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  color: var(--color-text);
-  border-style: solid;
 }
 
 .plan-note {
