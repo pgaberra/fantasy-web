@@ -58,9 +58,6 @@ export class PremiumComponent implements OnInit, OnDestroy {
   protected readonly perks = computed(() => premiumPerks(this.features.aiProjection()));
   protected readonly freeFeatures = freeFeatures();
 
-  /** The perks with a page to go to, for the welcome after checkout. */
-  protected readonly nextSteps = computed(() => this.perks().filter((perk) => perk.link));
-
   /**
    * True while we are back from a completed checkout but the subscription has not reached us yet.
    *
