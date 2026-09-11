@@ -7,7 +7,8 @@ import { EntitlementService } from '../services/entitlement.service';
 import { ErrorReportingService } from '../services/error-reporting.service';
 import { FeatureService } from '../services/feature.service';
 import { NotificationService } from '../services/notification.service';
-import { initializePaddleForToken, PaddleConfigurationError } from '../shared/paddle/paddle';
+import { PaddleConfigurationError } from '../shared/paddle/paddle';
+import { PaddleService } from '../shared/paddle/paddle.service';
 import { freeFeatures, premiumPerks } from '../shared/premium/premium-perks';
 import { environment } from '../../environments/environment';
 import { IconComponent } from '../shared/icon/icon';
@@ -45,6 +46,7 @@ export class PremiumComponent implements OnInit, OnDestroy {
   private readonly billing = inject(BillingService);
   private readonly notifications = inject(NotificationService);
   private readonly errorReporting = inject(ErrorReportingService);
+  private readonly paddle = inject(PaddleService);
   private readonly route = inject(ActivatedRoute);
   protected readonly authService = inject(AuthService);
   protected readonly entitlement = inject(EntitlementService);
@@ -176,7 +178,8 @@ export class PremiumComponent implements OnInit, OnDestroy {
       return;
     }
 
-    initializePaddleForToken({ token: environment.paddleClientToken })
+    this.paddle
+      .initialize({ token: environment.paddleClientToken })
       .then((paddle) => paddle?.PricePreview({ items: [{ priceId, quantity: 1 }] }))
       .then((preview) => {
         const lineItem = preview?.data.details.lineItems[0];

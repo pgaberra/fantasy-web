@@ -14,14 +14,11 @@ import { NotificationService } from '../services/notification.service';
 import { FeatureService } from '../services/feature.service';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { PaddleConfigurationError } from '../shared/paddle/paddle';
+import { PaddleService } from '../shared/paddle/paddle.service';
 
 const initializePaddle = vi.fn();
 const PricePreview = vi.fn();
 const report = vi.fn();
-
-vi.mock('@paddle/paddle-js', () => ({
-  initializePaddle: (...args: unknown[]) => initializePaddle(...args),
-}));
 
 describe('PremiumComponent', () => {
   const startCheckout = vi.fn();
@@ -87,6 +84,7 @@ describe('PremiumComponent', () => {
         })
         .mock(NotificationService, { error })
         .mock(ErrorReportingService, { report })
+        .mock(PaddleService, { initialize: initializePaddle })
         .mock(FeatureService, { aiProjection: signal(true) })
         .provide({ provide: ActivatedRoute, useValue: route })
     );
@@ -389,12 +387,12 @@ describe('PremiumComponent', () => {
   // A token that names no Paddle environment is a broken build, not a network blip. The card still
   // reads, and still says nothing to the visitor, but the fault is reported rather than hidden.
   it('reports a client token that names no Paddle environment', async () => {
-    environment.paddleClientToken = 'pk_unknown';
+    initializePaddle.mockRejectedValue(new PaddleConfigurationError('no environment'));
 
     const fixture = MockRender(PremiumComponent);
     await settle(fixture);
 
-    expect(initializePaddle).not.toHaveBeenCalled();
+    expect(PricePreview).not.toHaveBeenCalled();
     expect(report).toHaveBeenCalledWith(expect.any(PaddleConfigurationError));
     expect(error).not.toHaveBeenCalled();
     expect(ngMocks.findAll('.plan-card--premium .plan-name').length).toEqual(1);

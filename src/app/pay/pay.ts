@@ -3,7 +3,8 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CheckoutEventNames, type Paddle } from '@paddle/paddle-js';
 import { environment } from '../../environments/environment';
 import { ErrorReportingService } from '../services/error-reporting.service';
-import { initializePaddleForToken, PaddleConfigurationError } from '../shared/paddle/paddle';
+import { PaddleConfigurationError } from '../shared/paddle/paddle';
+import { PaddleService } from '../shared/paddle/paddle.service';
 
 /**
  * The page Paddle's checkout opens on.
@@ -29,6 +30,7 @@ import { initializePaddleForToken, PaddleConfigurationError } from '../shared/pa
 })
 export class PayComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly paddle = inject(PaddleService);
   private readonly errorReporting = inject(ErrorReportingService);
 
   protected readonly failed = signal(false);
@@ -40,14 +42,15 @@ export class PayComponent implements OnInit {
       return;
     }
 
-    initializePaddleForToken({
-      token: environment.paddleClientToken,
-      eventCallback: (event) => {
-        if (event.name === CheckoutEventNames.CHECKOUT_ERROR) {
-          this.failed.set(true);
-        }
-      },
-    })
+    this.paddle
+      .initialize({
+        token: environment.paddleClientToken,
+        eventCallback: (event) => {
+          if (event.name === CheckoutEventNames.CHECKOUT_ERROR) {
+            this.failed.set(true);
+          }
+        },
+      })
       .then((paddle: Paddle | undefined) => {
         if (!paddle) {
           this.failed.set(true);

@@ -1,9 +1,4 @@
-import {
-  initializePaddle,
-  type Environments,
-  type Paddle,
-  type PaddleEventData,
-} from '@paddle/paddle-js';
+import type { Environments, PaddleEventData } from '@paddle/paddle-js';
 
 /**
  * Thrown when the build's Paddle client token cannot be matched to a Paddle environment.
@@ -16,6 +11,12 @@ export class PaddleConfigurationError extends Error {
     super(message);
     this.name = 'PaddleConfigurationError';
   }
+}
+
+/** What the app passes to Paddle.js: a client token, and a listener where a page needs one. */
+export interface PaddleTokenOptions {
+  token: string;
+  eventCallback?: (event: PaddleEventData) => void;
 }
 
 /**
@@ -36,24 +37,4 @@ export function paddleEnvironmentFor(clientToken: string): Environments {
   throw new PaddleConfigurationError(
     'The Paddle client token starts with neither test_ nor live_, so its environment is unknown',
   );
-}
-
-/** What the app passes to Paddle.js: a client token, and a listener where a page needs one. */
-export interface PaddleTokenOptions {
-  token: string;
-  eventCallback?: (event: PaddleEventData) => void;
-}
-
-/**
- * Initializes Paddle.js in the environment its token belongs to. Async so that a token of
- * unknown shape rejects, and reaches the caller's catch, like any other failure to initialize.
- */
-export async function initializePaddleForToken(
-  options: PaddleTokenOptions,
-): Promise<Paddle | undefined> {
-  return initializePaddle({
-    token: options.token,
-    eventCallback: options.eventCallback,
-    environment: paddleEnvironmentFor(options.token),
-  });
 }
