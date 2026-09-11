@@ -103,6 +103,13 @@ export const routes: Routes = [
     loadComponent: () => import('./terms/terms').then((m) => m.TermsComponent),
     data: { [INDEXABLE]: true },
   },
+  // Public and unguarded like /terms, for the same reason: Paddle's live account checklist asks for
+  // a publicly accessible refund policy page, and the terms link here for refunds.
+  {
+    path: 'refunds',
+    loadComponent: () => import('./refunds/refunds').then((m) => m.RefundsComponent),
+    data: { [INDEXABLE]: true },
+  },
   // Payments UI stays dark until the PAYMENTS_ENABLED build flag is on — the guard redirects
   // these routes home otherwise.
   //
