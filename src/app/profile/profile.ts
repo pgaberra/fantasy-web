@@ -47,6 +47,7 @@ export class ProfileComponent implements OnInit {
 
   readonly isLoading = signal<boolean>(true);
   readonly loadFailed = signal<boolean>(false);
+  readonly loadFailure = signal<unknown>(undefined);
   readonly isSaving = signal<boolean>(false);
   readonly email = signal<string>('');
   readonly username = signal<string | null>(null);
@@ -112,8 +113,9 @@ export class ProfileComponent implements OnInit {
         this.usernameInput.set(account.username ?? '');
         this.isLoading.set(false);
       },
-      error: () => {
+      error: (error: unknown) => {
         this.isLoading.set(false);
+        this.loadFailure.set(error);
         this.loadFailed.set(true);
       },
     });

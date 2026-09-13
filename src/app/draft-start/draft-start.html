@@ -17,7 +17,11 @@
   @if (sourcesResource.isLoading()) {
     <app-loading-indicator />
   } @else if (sourcesResource.error()) {
-    <app-error-state title="Couldn't load your draft sources" (retry)="retry()" />
+    <app-error-state
+      title="Couldn't load your draft sources"
+      [error]="sourcesResource.error()"
+      (retry)="retry()"
+    />
   } @else {
     <!--
       The drafts, then the sources with none. Every draft is here and nowhere else: it used to be

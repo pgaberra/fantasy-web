@@ -4,6 +4,7 @@
   <app-error-state
     title="Couldn't load the page"
     message="Couldn't load your player data. Check your connection and try again."
+    [error]="loadFailure()"
     (retry)="retryLoad()"
   />
 } @else {

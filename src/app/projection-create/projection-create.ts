@@ -195,7 +195,8 @@ export class ProjectionCreateComponent {
   });
 
   readonly isLoading = this.dataResource.isLoading;
-  readonly loadError = computed(() => !!this.dataResource.error());
+  readonly loadFailure = computed(() => this.dataResource.error());
+  readonly loadError = computed(() => !!this.loadFailure());
   readonly isCreating = signal<boolean>(false);
   readonly name = linkedSignal(() =>
     freeProjectionName(this.dataResource.value().map((projection) => projection.name)),

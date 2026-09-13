@@ -44,7 +44,11 @@
     }
 
     @if (hasError()) {
-      <app-error-state title="Couldn't load the leaderboard" (retry)="retry()" />
+      <app-error-state
+        title="Couldn't load the leaderboard"
+        [error]="loadFailure()"
+        (retry)="retry()"
+      />
     } @else if (isLoading()) {
       <app-loading-indicator />
     } @else {

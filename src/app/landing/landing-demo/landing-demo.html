@@ -4,6 +4,7 @@
   <app-error-state
     title="Couldn't load the demo"
     message="We couldn't load the player data. Check your connection and try again."
+    [error]="playersResource.error()"
     (retry)="retryLoad()"
   />
 } @else {

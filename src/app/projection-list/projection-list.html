@@ -16,7 +16,11 @@
   @if (projectionsResource.isLoading() || isSavingDemo()) {
     <app-loading-indicator />
   } @else if (projectionsResource.error()) {
-    <app-error-state title="Couldn't load your projections" (retry)="retry()" />
+    <app-error-state
+      title="Couldn't load your projections"
+      [error]="projectionsResource.error()"
+      (retry)="retry()"
+    />
   } @else if (projectionsResource.value().length === 0) {
     <div class="state">
       <app-icon name="clipboard-list" [size]="48" class="state-icon" />
