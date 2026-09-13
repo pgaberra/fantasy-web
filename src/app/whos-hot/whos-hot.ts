@@ -287,12 +287,11 @@ export class WhosHotComponent {
       this.playersResource.isLoading() ||
       this.splitsResource.isLoading(),
   );
-  readonly hasError = computed(
+  readonly loadFailure = computed(
     () =>
-      !!this.seasonsResource.error() ||
-      !!this.playersResource.error() ||
-      !!this.splitsResource.error(),
+      this.seasonsResource.error() ?? this.playersResource.error() ?? this.splitsResource.error(),
   );
+  readonly hasError = computed(() => !!this.loadFailure());
 
   constructor() {
     /**

@@ -261,6 +261,7 @@ export class DraftProjectionComponent implements OnInit {
    * error state rather than a table that looks like an empty projection.
    */
   readonly playersUnavailable = computed(() => this.players().length === 0);
+  readonly playersLoadFailure = computed(() => this.playersResource.error());
 
   reloadPlayers(): void {
     this.playersResource.reload();

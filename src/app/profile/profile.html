@@ -4,6 +4,7 @@
   <app-error-state
     title="Couldn't load your profile"
     message="Check your connection and try again."
+    [error]="loadFailure()"
     (retry)="load()"
   />
 } @else {

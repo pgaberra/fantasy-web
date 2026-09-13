@@ -1,7 +1,7 @@
 <div class="state state--error" role="alert">
   <app-icon name="alert-triangle" [size]="48" class="state-icon" />
   <p class="state-title">{{ title() }}</p>
-  <p class="state-message">{{ message() }}</p>
+  <p class="state-message">{{ shownMessage() }}</p>
   @if (retryable()) {
     <button type="button" class="btn btn-secondary" (click)="retry.emit()">Try again</button>
   }

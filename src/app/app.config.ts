@@ -11,6 +11,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { routes } from './app.routes';
 import { retryInterceptor } from './interceptors/retry.interceptor';
+import { timeoutInterceptor } from './interceptors/timeout.interceptor';
 import { authInterceptor } from './interceptors/auth.interceptor';
 import { provideApiConfiguration } from './api/api-configuration';
 import { environment } from '../environments/environment';
@@ -67,13 +68,14 @@ function initNavigationRecovery() {
 
 // retryInterceptor is outermost so it wraps authInterceptor (a retried request still
 // gets a fresh Authorization header). It is a small always-on safety net for transient
-// gateway/connection blips — see retry.interceptor.ts.
+// gateway/connection blips — see retry.interceptor.ts. timeoutInterceptor sits inside it, so
+// each attempt gets its own bound and a timeout is not retried.
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     { provide: ErrorHandler, useClass: ReportingErrorHandler },
     provideRouter(routes, withNavigationErrorHandler(handleNavigationError)),
-    provideHttpClient(withInterceptors([retryInterceptor, authInterceptor])),
+    provideHttpClient(withInterceptors([retryInterceptor, timeoutInterceptor, authInterceptor])),
     provideApiConfiguration(environment.rootUrl),
     provideAppInitializer(initNavigationRecovery),
     provideAppInitializer(initCrawlTags),

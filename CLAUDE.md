@@ -211,7 +211,10 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   safety net: it retries transient gateway/connection errors (status 0/502/503/504) just
   twice with a short backoff (~250ms, 500ms) to absorb a momentary blip. It deliberately
   does **not** try to ride out a full service restart — that's the job of zero-downtime
-  deploys, not a long client-side wait.
+  deploys, not a long client-side wait. `timeoutInterceptor` sits inside it and bounds every
+  attempt (20 s for a read, 60 s for a write), because a server that accepts the connection and
+  never answers raises no error: staging's BFF deadlocked on 2026-09-11 and pages sat on their
+  spinner for minutes. A timeout fails as `RequestTimeoutError` and is not retried.
 - `models/`, `pipes/`, `shared/` (e.g. `loading-indicator`)
   - `shared/pinned-table-header` — holds a wide table's `<thead>` against the top of the window
     while the page scrolls past it. The projections table runs down the page rather than inside a
@@ -268,7 +271,9 @@ When you add or change a BFF call, handle its failure path with one of these pat
   0/502/503/504 twice). Don't add your own retry loops on top.
 - **Page / data loads** (an `rxResource`, or a load in `ngOnInit`): render the shared
   `app-error-state` component (`shared/error-state`) with a message and a **Try again**
-  button that reloads the resource — see `projection-list` / `projection-create`.
+  button that reloads the resource — see `projection-list` / `projection-create`. Pass the
+  failure itself as `[error]`: a failure on our side (a 5xx, a timeout, or status 0 while the
+  browser is online) then says so instead of asking the reader to check their connection.
 - **Discrete user actions** (delete, create, open, connect): show a transient toast via
   `NotificationService.error(...)` (rendered by `app-toast` at the app root), and reset any
   `isLoading` / `isCreating` flag in the same error callback.

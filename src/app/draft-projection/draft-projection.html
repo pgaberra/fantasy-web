@@ -4,6 +4,7 @@
   <app-error-state
     title="Couldn't load player data"
     message="Your projection can't be loaded without player data. Check your connection and try again."
+    [error]="playersLoadFailure()"
     (retry)="reloadPlayers()"
   />
 } @else {
