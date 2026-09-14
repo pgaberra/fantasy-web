@@ -58,7 +58,19 @@ describe('PremiumComponent', () => {
     PricePreview.mockResolvedValue({
       data: {
         currencyCode: 'USD',
-        details: { lineItems: [{ formattedTotals: { total: '$4.99' } }] },
+        details: {
+          lineItems: [
+            {
+              totals: { subtotal: '499', discount: '0', tax: '0', total: '499' },
+              formattedTotals: {
+                subtotal: '$4.99',
+                discount: '$0.00',
+                tax: '$0.00',
+                total: '$4.99',
+              },
+            },
+          ],
+        },
       },
     });
     initializePaddle.mockResolvedValue({ PricePreview });
@@ -364,37 +376,85 @@ describe('PremiumComponent', () => {
     );
   });
 
-  /**
-   * Zero costs the same everywhere, but it is not written the same everywhere: a Swedish
-   * reader is quoted "0 kr" and an American "$0". The currency is taken from the same preview
-   * as the Premium price, so the two columns can never be priced in different money.
-   */
   it('prices the free plan at zero in the currency Paddle quoted', async () => {
     const fixture = MockRender(PremiumComponent);
 
     await settle(fixture);
 
-    expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toEqual('$0');
+    expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toEqual(
+      '$0.00',
+    );
   });
 
-  it('writes the free plan’s zero in a Swedish reader’s own currency', async () => {
-    vi.spyOn(navigator, 'language', 'get').mockReturnValue('sv-SE');
+  /**
+   * Paddle writes the Premium price in its own format whatever the reader's browser language, so
+   * the free plan's zero is Paddle's too: the discount on a price nobody discounted. A zero
+   * formatted here followed the browser instead, and an English one read "SEK 0" beside
+   * "49.00 kr".
+   */
+  it('writes the free plan’s zero exactly as Paddle writes the Premium price', async () => {
+    vi.spyOn(navigator, 'language', 'get').mockReturnValue('en-US');
     PricePreview.mockResolvedValue({
       data: {
         currencyCode: 'SEK',
-        details: { lineItems: [{ formattedTotals: { total: '49 kr' } }] },
+        details: {
+          lineItems: [
+            {
+              totals: { subtotal: '3920', discount: '0', tax: '980', total: '4900' },
+              formattedTotals: {
+                subtotal: '39.20 kr',
+                discount: '0.00 kr',
+                tax: '9.80 kr',
+                total: '49.00 kr',
+              },
+            },
+          ],
+        },
       },
     });
 
     const fixture = MockRender(PremiumComponent);
     await settle(fixture);
 
-    expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toContain('kr');
+    expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toEqual(
+      '0.00 kr',
+    );
+    expect(ngMocks.formatText(ngMocks.find('.plan-card--premium .plan-price-amount'))).toEqual(
+      '49.00 kr',
+    );
   });
 
-  // Without a currency there is no way to write the zero, and guessing at dollars would price
-  // the plan in money the reader may never be charged in. The card says the word instead: the
-  // paid price depends on Paddle, the free one must not.
+  // A discounted preview has no zero to borrow, and the discount figure on the free plan would be
+  // a price it does not have. The card says the word instead.
+  it('says the free plan is free when the preview carries a discount', async () => {
+    PricePreview.mockResolvedValue({
+      data: {
+        currencyCode: 'USD',
+        details: {
+          lineItems: [
+            {
+              totals: { subtotal: '499', discount: '100', tax: '0', total: '399' },
+              formattedTotals: {
+                subtotal: '$4.99',
+                discount: '$1.00',
+                tax: '$0.00',
+                total: '$3.99',
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    const fixture = MockRender(PremiumComponent);
+    await settle(fixture);
+
+    expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toEqual('Free');
+  });
+
+  // Without the preview there is no zero in Paddle's format to borrow, and writing one here would
+  // put the two columns back in different styles. The card says the word instead: the paid price
+  // depends on Paddle, the free one must not.
   it('says the free plan is free when Paddle cannot be reached', async () => {
     initializePaddle.mockRejectedValue(new Error('offline'));
 
@@ -424,7 +484,19 @@ describe('PremiumComponent', () => {
     answer({
       data: {
         currencyCode: 'USD',
-        details: { lineItems: [{ formattedTotals: { total: '$4.99' } }] },
+        details: {
+          lineItems: [
+            {
+              totals: { subtotal: '499', discount: '0', tax: '0', total: '499' },
+              formattedTotals: {
+                subtotal: '$4.99',
+                discount: '$0.00',
+                tax: '$0.00',
+                total: '$4.99',
+              },
+            },
+          ],
+        },
       },
     });
     await settle(fixture);
@@ -433,7 +505,9 @@ describe('PremiumComponent', () => {
     expect(ngMocks.formatText(ngMocks.find('.plan-card--premium .plan-price-amount'))).toContain(
       '$4.99',
     );
-    expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toEqual('$0');
+    expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toEqual(
+      '$0.00',
+    );
   });
 
   it('says where the price is confirmed, not that it is loading, once Paddle has failed', async () => {

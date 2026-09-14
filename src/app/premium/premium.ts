@@ -135,17 +135,20 @@ export class PremiumComponent implements OnInit, OnDestroy {
   protected readonly formattedPrice = signal<string | null>(null);
 
   /**
-   * The free plan's price, zero in the same currency Paddle quoted the paid one in. Null until
-   * that currency is known, and if it never arrives.
+   * The free plan's price: zero, written the way Paddle writes the Premium price. Null until the
+   * preview arrives, and if it never does.
    *
-   * Zero is the same number everywhere, but "0 kr" and "$0" are not the same sentence, and a
-   * free column priced in a currency the paid column does not use reads as two different
-   * shops. The currency therefore comes from the same preview as the Premium price rather than
-   * from a guess about where the reader is.
+   * Zero is the same number everywhere, but "0 kr", "SEK 0" and "0.00 kr" are not the same
+   * sentence, and a free column written differently from the paid one beside it reads as two
+   * different shops. Formatted here, the zero followed the reader's browser language while Paddle
+   * formats the paid price its own way, so an English browser read "SEK 0" beside "49.00 kr".
+   * The preview already carries a zero in Paddle's own format: the discount on a price nobody
+   * discounted.
    *
    * That ties this figure to a third party the free plan has nothing to do with, so the card
-   * falls back to the word "Free" when the preview does not arrive. Paddle being unreachable
-   * costs the paid card its price; it must not also leave the free one unpriced.
+   * falls back to the word "Free" when the preview does not arrive, or carries a discount and so
+   * has no zero to borrow. Paddle being unreachable costs the paid card its price; it must not
+   * also leave the free one unpriced.
    */
   protected readonly freePrice = signal<string | null>(null);
 
@@ -195,10 +198,9 @@ export class PremiumComponent implements OnInit, OnDestroy {
         const lineItem = preview?.data.details.lineItems[0];
         if (lineItem) {
           this.formattedPrice.set(lineItem.formattedTotals.total);
-        }
-        const currencyCode = preview?.data.currencyCode;
-        if (currencyCode) {
-          this.freePrice.set(formatZero(currencyCode));
+          if (lineItem.totals.discount === '0') {
+            this.freePrice.set(lineItem.formattedTotals.discount);
+          }
         }
       })
       // Deliberately quiet about Paddle being unreachable. A price we could not fetch is a smaller
@@ -278,24 +280,5 @@ export class PremiumComponent implements OnInit, OnDestroy {
     this.confirming.set(false);
     clearTimeout(this.pollTimer);
     clearTimeout(this.giveUpTimer);
-  }
-}
-
-/**
- * Zero in the given currency, in the reader's own number format: "0 kr" for a Swedish reader,
- * "$0" for an American one. Written without decimals because a price of nothing has none to
- * say, and null if the runtime does not know the currency, which leaves the card to fall back
- * to no figure at all rather than a broken one.
- */
-function formatZero(currencyCode: string): string | null {
-  try {
-    return new Intl.NumberFormat(navigator.language, {
-      style: 'currency',
-      currency: currencyCode,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(0);
-  } catch {
-    return null;
   }
 }
