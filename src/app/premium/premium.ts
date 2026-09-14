@@ -89,9 +89,13 @@ export class PremiumComponent implements OnInit, OnDestroy {
     | 'loading'
     | 'error'
     | 'buy'
+    | 'coming-soon'
   >(() => {
+    // While Premium is announced but not sold, every card that would lead to checkout, the
+    // sign-in prompt included, says so instead: signing in to reach a disabled button is a
+    // detour with nothing at the end of it.
     if (!this.authService.isLoggedIn()) {
-      return 'signed-out';
+      return environment.premiumComingSoon ? 'coming-soon' : 'signed-out';
     }
     // Premium that was given rather than bought has no subscription behind it, so the portal
     // would open on nothing. 'both' is not one of these: there is still a subscription to manage.
@@ -111,7 +115,7 @@ export class PremiumComponent implements OnInit, OnDestroy {
       case 'error':
         return 'error';
       case 'loaded':
-        return 'buy';
+        return environment.premiumComingSoon ? 'coming-soon' : 'buy';
       default:
         return 'loading';
     }

@@ -125,6 +125,55 @@ describe('PremiumComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Sign in to subscribe');
   });
 
+  /**
+   * Premium is announced before it is sold. Whoever would have been offered checkout, or asked to
+   * sign in for it, gets a disabled Subscribe button and the note instead; a subscriber or a
+   * granted account still sees their own plan.
+   */
+  describe('while Premium is coming soon', () => {
+    beforeEach(() => {
+      environment.premiumComingSoon = true;
+    });
+
+    afterEach(() => {
+      environment.premiumComingSoon = false;
+    });
+
+    it('disables Subscribe for a signed-in user without Premium, and says why', () => {
+      MockRender(PremiumComponent);
+
+      const button = ngMocks.find<HTMLButtonElement>('.plan-card--premium .plan-cta button');
+      expect(button.nativeElement.textContent).toContain('Subscribe');
+      expect(button.nativeElement.disabled).toBe(true);
+      expect(ngMocks.find('.plan-card--premium .plan-cta').nativeElement.textContent).toContain(
+        'Subscriptions open soon.',
+      );
+
+      button.nativeElement.click();
+      expect(startCheckout).not.toHaveBeenCalled();
+    });
+
+    it('offers a signed-out visitor the same note rather than a way to sign in for it', () => {
+      loggedIn.set(false);
+
+      MockRender(PremiumComponent);
+
+      const cta = ngMocks.find('.plan-card--premium .plan-cta').nativeElement as HTMLElement;
+      expect(cta.textContent).toContain('Subscriptions open soon.');
+      expect(cta.textContent).not.toContain('Sign in to subscribe');
+    });
+
+    it('still shows a subscriber their plan', () => {
+      premium.set(true);
+
+      MockRender(PremiumComponent);
+
+      const card = ngMocks.find('.plan-card--premium').nativeElement as HTMLElement;
+      expect(card.textContent).toContain('Premium active');
+      expect(card.textContent).not.toContain('Subscriptions open soon.');
+    });
+  });
+
   // The perks are the page's argument, so both columns have to actually say something: the
   // free plan by name, and Premium as a list of things rather than "features as they roll out".
   it('lists what the free plan has and what Premium adds to it', () => {

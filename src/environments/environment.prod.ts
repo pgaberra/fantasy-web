@@ -32,6 +32,11 @@ const yahooSyncDisabledFlag: string = '__YAHOO_SYNC_DISABLED__';
 // turns it on; untouched or empty resolves to false, keeping payments dark by default.
 const paymentsEnabledFlag: string = '__PAYMENTS_ENABLED__';
 
+// Premium shown but not yet sold. Only the literal "true" (via the PREMIUM_COMING_SOON build arg)
+// disables Subscribe and closes /pay; untouched or empty resolves to false, so a build that sells
+// Premium keeps selling it.
+const premiumComingSoonFlag: string = '__PREMIUM_COMING_SOON__';
+
 // ESPN league-sync toggle. Only the literal "true" (via the ESPN_LEAGUES_ENABLED build arg)
 // turns it on; untouched or empty resolves to false, keeping the ESPN provider hidden by default.
 const espnLeaguesEnabledFlag: string = '__ESPN_LEAGUES_ENABLED__';
@@ -66,6 +71,7 @@ export const environment = {
   sentryDsn: sentryDsnFlag.startsWith('__SENTRY') ? '' : sentryDsnFlag,
   yahooSyncDisabled: yahooSyncDisabledFlag === 'true',
   paymentsEnabled: paymentsEnabledFlag === 'true',
+  premiumComingSoon: premiumComingSoonFlag === 'true',
   espnLeaguesEnabled: espnLeaguesEnabledFlag === 'true',
   whosHotEnabled: whosHotEnabledFlag !== 'false',
   paddleClientToken: paddleClientTokenFlag.startsWith('__PADDLE_CLIENT_TOKEN')

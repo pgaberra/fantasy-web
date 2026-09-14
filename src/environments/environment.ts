@@ -42,6 +42,10 @@ export const environment = {
   // not on its own a reason to tell every visitor it is the off-season. Deployed builds turn it on
   // with the OFFSEASON_ENABLED=true build arg.
   offseasonEnabled: false,
+  // Premium is shown but not yet sold: the Premium page keeps its plans and badges but its
+  // Subscribe button is disabled with a note, and /pay sends visitors back there. Only means
+  // anything with paymentsEnabled. Deployed builds turn it on with PREMIUM_COMING_SOON=true.
+  premiumComingSoon: false,
   // Public Paddle client token (not a secret - it is shipped to the browser by design; it only
   // permits opening a checkout). Empty means the /pay page cannot open one, which is the right
   // local default: local dev runs the mock payment provider, which never sends anyone here.

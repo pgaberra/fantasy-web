@@ -3,6 +3,7 @@ import { inject } from '@angular/core';
 import { landingRedirectGuard } from './guards/landing-redirect.guard';
 import { adminGuard } from './guards/admin.guard';
 import { authGuard } from './guards/auth.guard';
+import { checkoutOpenGuard } from './guards/checkout-open.guard';
 import { paymentsEnabledGuard } from './guards/payments-enabled.guard';
 import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
 import { INDEXABLE } from './shared/crawl-tags';
@@ -139,7 +140,7 @@ export const routes: Routes = [
   {
     path: 'pay',
     loadComponent: () => import('./pay/pay').then((m) => m.PayComponent),
-    canActivate: [paymentsEnabledGuard],
+    canActivate: [paymentsEnabledGuard, checkoutOpenGuard],
   },
   {
     path: 'profile',

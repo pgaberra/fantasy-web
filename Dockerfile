@@ -51,6 +51,9 @@ ARG WHOS_HOT_ENABLED=
 # OFFSEASON_ENABLED=true shows the off-season data notice (stale team affiliations, missing
 # rookies) in the projection editors; empty/anything else keeps it hidden (default).
 ARG OFFSEASON_ENABLED=
+# PREMIUM_COMING_SOON=true keeps the Premium page and badges but disables Subscribe with a note
+# and closes /pay; empty/anything else sells Premium as usual (default). Needs PAYMENTS_ENABLED.
+ARG PREMIUM_COMING_SOON=
 
 # Inject the values into environment.prod.ts (replaces the committed placeholders).
 RUN sed -i \
@@ -64,6 +67,7 @@ RUN sed -i \
   -e "s|__SENTRY_DSN__|${SENTRY_DSN}|g" \
   -e "s|__YAHOO_SYNC_DISABLED__|${YAHOO_SYNC_DISABLED}|g" \
   -e "s|__PAYMENTS_ENABLED__|${PAYMENTS_ENABLED}|g" \
+  -e "s|__PREMIUM_COMING_SOON__|${PREMIUM_COMING_SOON}|g" \
   -e "s|__PADDLE_CLIENT_TOKEN__|${PADDLE_CLIENT_TOKEN}|g" \
   -e "s|__PADDLE_PRICE_ID__|${PADDLE_PRICE_ID}|g" \
   -e "s|__ESPN_LEAGUES_ENABLED__|${ESPN_LEAGUES_ENABLED}|g" \
