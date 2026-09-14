@@ -46,5 +46,45 @@
   </head>
   <body>
     <app-root></app-root>
+    <!-- Read by clients that run no JavaScript; mirrors the landing page, the Premium page and the
+         footer, so keep it in step with them (fantasy-web DECISIONS.md, 2026-09-14). -->
+    <noscript>
+      <main
+        style="
+          max-width: 44rem;
+          margin: 2rem auto;
+          padding: 0 1rem;
+          font-family: Inter, system-ui, sans-serif;
+          line-height: 1.5;
+        "
+      >
+        <h1>SlapStat</h1>
+        <p>Top-Shelf Tools for Fantasy Hockey Managers.</p>
+        <p>
+          Build a projection for your league and rank every player to your scoring settings.
+          SlapStat runs in your browser and needs JavaScript turned on.
+        </p>
+        <h2>Free</h2>
+        <ul>
+          <li>Projections tailored to your league's scoring</li>
+          <li>Draft mode and post-draft team rankings</li>
+          <li>Who's Hot</li>
+          <li>Import league settings from Yahoo or ESPN</li>
+          <li>Share projections</li>
+        </ul>
+        <h2>Premium</h2>
+        <p>One monthly plan. Cancel anytime.</p>
+        <ul>
+          <li>AI projection: every player projected for the 2026-27 season</li>
+          <li>Custom range on Who's Hot</li>
+          <li>New features first</li>
+        </ul>
+        <p><a href="/premium">Premium plans and pricing</a></p>
+        <p>
+          <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> ·
+          <a href="/refunds">Refunds</a> · <a href="mailto:info@slapstat.com">info@slapstat.com</a>
+        </p>
+      </main>
+    </noscript>
   </body>
 </html>
