@@ -191,6 +191,12 @@
               </p>
             </div>
           }
+          @case ('coming-soon') {
+            <button type="button" class="btn btn-primary btn-lg btn-block" disabled>
+              Subscribe
+            </button>
+            <p class="plan-note">Subscriptions open soon.</p>
+          }
           @default {
             <button
               type="button"
