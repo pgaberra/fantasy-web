@@ -336,6 +336,29 @@ describe('PremiumComponent', () => {
       expect(card.textContent).toContain('Premium active');
       expect(card.textContent).not.toContain('Confirming');
     });
+
+    /**
+     * The webhook that grants Premium can land seconds after the redirect, so the page keeps asking
+     * until it does, and stops asking once it has.
+     */
+    it('keeps reading the plan until the subscription lands, then stops', () => {
+      vi.useFakeTimers();
+      try {
+        premium.set(false);
+        const fixture = MockRender(PremiumComponent);
+        expect(refresh).toHaveBeenCalledTimes(1);
+
+        vi.advanceTimersByTime(2_000);
+        expect(refresh).toHaveBeenCalledTimes(2);
+
+        premium.set(true);
+        fixture.detectChanges();
+        vi.advanceTimersByTime(10_000);
+        expect(refresh).toHaveBeenCalledTimes(2);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 
   // Only the return from checkout is a race. An ordinary visit with no subscription is a fact,

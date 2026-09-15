@@ -173,7 +173,8 @@ export class PremiumComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Back from checkout or the billing portal, where the plan is exactly what may have just
-    // changed, so the page re-reads it rather than trusting what the session loaded earlier.
+    // changed, so the page re-reads it rather than trusting what the session loaded earlier. A
+    // signed-out visitor has no plan to read, and the service asks nothing for one.
     if (this.route.snapshot.queryParamMap.get('checkout') === 'success') {
       this.justSubscribed.set(true);
       this.confirming.set(true);

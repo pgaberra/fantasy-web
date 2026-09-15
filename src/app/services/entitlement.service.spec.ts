@@ -37,6 +37,8 @@ describe('EntitlementService', () => {
   });
 
   it('applies a premium entitlement on refresh', () => {
+    isLoggedIn.set(true);
+
     service.refresh();
 
     expect(service.premium()).toEqual(true);
@@ -46,6 +48,7 @@ describe('EntitlementService', () => {
   });
 
   it('falls back to non-premium when the read fails', () => {
+    isLoggedIn.set(true);
     service.premium.set(true);
     getEntitlements.mockReturnValue(throwError(() => new Error('boom')));
 
@@ -54,6 +57,19 @@ describe('EntitlementService', () => {
     expect(service.premium()).toEqual(false);
     expect(service.status()).toEqual('none');
     expect(service.loadState()).toEqual('error');
+  });
+
+  /**
+   * The plan belongs to an account, so a read without one can only be refused: the Premium page
+   * asked on every signed-out visit, and each visit logged a 401 in the browser console. It is also
+   * what a page prerendered at build time would ask, where nobody is ever signed in.
+   */
+  it('asks nothing, and stays idle, for a signed-out visitor', () => {
+    service.refresh();
+
+    expect(getEntitlements).not.toHaveBeenCalled();
+    expect(service.premium()).toEqual(false);
+    expect(service.loadState()).toEqual('idle');
   });
 
   /**
