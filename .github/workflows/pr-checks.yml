@@ -83,3 +83,6 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Verify the public pages are prerendered with their content
+        run: bash .github/scripts/check-prerendered-pages.sh

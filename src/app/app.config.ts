@@ -2,9 +2,11 @@ import {
   ApplicationConfig,
   ErrorHandler,
   inject,
+  PLATFORM_ID,
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { NavigationEnd, provideRouter, Router, withNavigationErrorHandler } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -27,6 +29,10 @@ import { initCrawlTags } from './shared/crawl-tags';
 // wiring lives in this initializer rather than inside AnalyticsService so that
 // AuthService → AnalyticsService stays a one-way dependency (the reverse would be a cycle).
 function initAnalytics() {
+  // A page prerendered at build time has no visitor to count.
+  if (!isPlatformBrowser(inject(PLATFORM_ID))) {
+    return;
+  }
   const analytics = inject(AnalyticsService);
 
   // Safe before init(): the id is stashed and replayed once posthog has loaded.
@@ -45,6 +51,10 @@ function initAnalytics() {
 // and the same refusal to let bootstrap wait on it. A user id makes an error answerable
 // ("whose session was this?") without carrying their email, which sits in the same token.
 function initErrorReporting() {
+  // Nor, at build time, anyone to report an error for.
+  if (!isPlatformBrowser(inject(PLATFORM_ID))) {
+    return;
+  }
   const reporting = inject(ErrorReportingService);
 
   const userId = inject(AuthService).getUserId();
@@ -58,6 +68,10 @@ function initErrorReporting() {
 // A navigation that completes means the tab is running against a build that still exists, so
 // the one-shot reload guard is spent and a later deploy may use it again.
 function initNavigationRecovery() {
+  // The reload guard lives in the tab's sessionStorage, which a build-time render does not have.
+  if (!isPlatformBrowser(inject(PLATFORM_ID))) {
+    return;
+  }
   const router = inject(Router);
   router.events.pipe(takeUntilDestroyed()).subscribe((event) => {
     if (event instanceof NavigationEnd) {

@@ -1,4 +1,5 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { defer, from, Observable, throwError } from 'rxjs';
 import { finalize, shareReplay, tap } from 'rxjs/operators';
@@ -24,6 +25,17 @@ export class AuthService {
   private readonly router = inject(Router);
   private readonly analytics = inject(AnalyticsService);
 
+  /**
+   * The browser's storage, or none while a page is prerendered at build time, where there is no
+   * visitor and so no session: every read then answers "signed out".
+   */
+  private readonly storage: Storage | null = isPlatformBrowser(inject(PLATFORM_ID))
+    ? localStorage
+    : null;
+  private readonly session: Storage | null = isPlatformBrowser(inject(PLATFORM_ID))
+    ? sessionStorage
+    : null;
+
   private readonly tokenKey = 'auth_token';
   private readonly refreshTokenKey = 'refresh_token';
   private readonly adminKey = 'is_admin';
@@ -34,12 +46,12 @@ export class AuthService {
   private readonly googleAuthEndpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
   private refreshInFlight: Observable<AuthResponse> | null = null;
 
-  readonly isLoggedIn = signal<boolean>(!!localStorage.getItem(this.tokenKey));
-  readonly isAdmin = signal<boolean>(localStorage.getItem(this.adminKey) === 'true');
+  readonly isLoggedIn = signal<boolean>(!!this.storage?.getItem(this.tokenKey));
+  readonly isAdmin = signal<boolean>(this.storage?.getItem(this.adminKey) === 'true');
   // Absent means "unknown" — treat as verified so we never nag a session predating this flag;
   // the real value lands on the next login/refresh. Only an explicit 'false' shows the banner.
   readonly isEmailVerified = signal<boolean>(
-    localStorage.getItem(this.emailVerifiedKey) !== 'false',
+    this.storage?.getItem(this.emailVerifiedKey) !== 'false',
   );
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
@@ -65,7 +77,7 @@ export class AuthService {
    */
   startGoogleRedirect(): void {
     const state = crypto.randomUUID();
-    sessionStorage.setItem(this.googleStateKey, state);
+    this.session?.setItem(this.googleStateKey, state);
     window.location.assign(this.buildGoogleAuthUrl(state));
   }
 
@@ -87,8 +99,8 @@ export class AuthService {
    * happens server-side). A missing or mismatched state fails closed.
    */
   completeGoogleLogin(code: string, state: string): Observable<AuthResponse> {
-    const expectedState = sessionStorage.getItem(this.googleStateKey);
-    sessionStorage.removeItem(this.googleStateKey);
+    const expectedState = this.session?.getItem(this.googleStateKey) ?? null;
+    this.session?.removeItem(this.googleStateKey);
     if (!expectedState || expectedState !== state) {
       return throwError(() => new Error('Google sign-in could not be verified.'));
     }
@@ -138,7 +150,7 @@ export class AuthService {
   verifyEmail(token: string): Observable<void> {
     return from(this.api.invoke(verifyEmail, { body: { token } })).pipe(
       tap(() => {
-        localStorage.setItem(this.emailVerifiedKey, 'true');
+        this.storage?.setItem(this.emailVerifiedKey, 'true');
         this.isEmailVerified.set(true);
       }),
     );
@@ -171,10 +183,10 @@ export class AuthService {
   }
 
   private endSession(): void {
-    localStorage.removeItem(this.tokenKey);
-    localStorage.removeItem(this.refreshTokenKey);
-    localStorage.removeItem(this.adminKey);
-    localStorage.removeItem(this.emailVerifiedKey);
+    this.storage?.removeItem(this.tokenKey);
+    this.storage?.removeItem(this.refreshTokenKey);
+    this.storage?.removeItem(this.adminKey);
+    this.storage?.removeItem(this.emailVerifiedKey);
     this.isLoggedIn.set(false);
     this.isAdmin.set(false);
     this.isEmailVerified.set(true);
@@ -183,11 +195,11 @@ export class AuthService {
   }
 
   getToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
+    return this.storage?.getItem(this.tokenKey) ?? null;
   }
 
   getRefreshToken(): string | null {
-    return localStorage.getItem(this.refreshTokenKey);
+    return this.storage?.getItem(this.refreshTokenKey) ?? null;
   }
 
   /** The signed-in user's email, read from the JWT's `email` claim (null if absent/undecodable). */
@@ -241,23 +253,23 @@ export class AuthService {
    */
   rememberReturnUrl(url: string | null | undefined): void {
     if (url && isInternalPath(url)) {
-      sessionStorage.setItem(this.returnUrlKey, url);
+      this.session?.setItem(this.returnUrlKey, url);
       return;
     }
-    sessionStorage.removeItem(this.returnUrlKey);
+    this.session?.removeItem(this.returnUrlKey);
   }
 
   private takeReturnUrl(): string | null {
-    const url = sessionStorage.getItem(this.returnUrlKey);
-    sessionStorage.removeItem(this.returnUrlKey);
+    const url = this.session?.getItem(this.returnUrlKey) ?? null;
+    this.session?.removeItem(this.returnUrlKey);
     return url && isInternalPath(url) ? url : null;
   }
 
   private storeTokens(response: AuthResponse, options = { thenNavigate: true }) {
-    localStorage.setItem(this.tokenKey, response.token);
-    localStorage.setItem(this.refreshTokenKey, response.refreshToken);
-    localStorage.setItem(this.adminKey, String(response.admin));
-    localStorage.setItem(this.emailVerifiedKey, String(response.emailVerified));
+    this.storage?.setItem(this.tokenKey, response.token);
+    this.storage?.setItem(this.refreshTokenKey, response.refreshToken);
+    this.storage?.setItem(this.adminKey, String(response.admin));
+    this.storage?.setItem(this.emailVerifiedKey, String(response.emailVerified));
     this.isLoggedIn.set(true);
     this.isAdmin.set(response.admin);
     this.isEmailVerified.set(response.emailVerified);
