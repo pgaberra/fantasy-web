@@ -42,6 +42,7 @@ import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { PinnedTableHeaderDirective } from '../shared/pinned-table-header/pinned-table-header.directive';
 import { TableScrollDirective } from '../shared/table-scroll/table-scroll.directive';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
+import { hasHeadshots } from '../shared/player-headshot/player-headshot';
 
 /**
  * A published board is the owner's whole pool — some 1600 rows — and someone arriving from a link
@@ -398,6 +399,9 @@ export class SharedProjectionComponent {
   private readonly rows = computed<SharedRow[]>(() =>
     (this.shared()?.data.players ?? []).map((shared) => this.toRow(shared)),
   );
+
+  /** Whether the rows draw headshots at all: not while no published player has a picture. */
+  readonly showHeadshots = computed(() => hasHeadshots(this.shared()?.data.players ?? []));
 
   /**
    * Where each row sits within the position being filtered for. The board ranked every player

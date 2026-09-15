@@ -127,6 +127,7 @@ describe('PlayerRowComponent', () => {
     projection: Projection;
     playerScore: PlayerScore;
     player: Player;
+    showHeadshot: boolean;
     activeColumns: ActiveColumns;
     scoringType: ScoringType;
     decimalSettings: Record<DecimalStatKey, number>;
@@ -141,6 +142,7 @@ describe('PlayerRowComponent', () => {
       projection: mockSkaterProjection,
       playerScore: mockPlayerScore,
       player: mockSkater,
+      showHeadshot: true,
       activeColumns: mockActiveColumns,
       scoringType: 'category',
       decimalSettings: DEFAULT_DECIMAL_SETTINGS,
@@ -204,6 +206,26 @@ describe('PlayerRowComponent', () => {
     setInputs();
     const nameCell = fixture.nativeElement.querySelector('.player-name');
     expect(nameCell.textContent).toContain('Connor McDavid (C)');
+  });
+
+  describe('the headshot', () => {
+    const headshot = () => fixture.nativeElement.querySelector('app-player-headshot');
+
+    // A player without a picture still gets the circle, so his name lines up with the rest.
+    it('draws initials for a player without a picture while the table shows headshots', () => {
+      setInputs({ showHeadshot: true });
+
+      expect(headshot().textContent.trim()).toEqual('CM');
+    });
+
+    it('draws nothing beside the name while the table shows no headshots', () => {
+      setInputs({ showHeadshot: false });
+
+      expect(headshot()).toBeNull();
+      expect(fixture.nativeElement.querySelector('.player-name').textContent).toContain(
+        'Connor McDavid (C)',
+      );
+    });
   });
 
   it('should display goalie name and position', () => {

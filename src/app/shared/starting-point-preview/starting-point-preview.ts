@@ -36,6 +36,7 @@ import { DEFAULT_DECIMAL_SETTINGS } from '../../draft-projection/projection-sett
 import { readableDecimalSettings } from '../../draft-projection/projection-settings-section/model-decimals';
 import { LoadingIndicatorComponent } from '../loading-indicator/loading-indicator';
 import { ownLine, squaredWithPool } from '../pool-line';
+import { hasHeadshots } from '../player-headshot/player-headshot';
 
 /** A starting point the server derives on its own, from nothing the user has to supply. */
 export type PresetSource = NonNullable<CreateProjectionRequest['source']>;
@@ -382,6 +383,13 @@ export class StartingPointPreviewComponent {
   private readonly previewPlayers = computed<ScoredPlayer[]>(() =>
     this.rankedPlayers().slice(0, PREVIEW_ROWS),
   );
+
+  /**
+   * Whether the rows draw headshots at all, asked of the pool rather than the five rows: the
+   * editor this previews decides over its whole pool, and five players who happen to lack a
+   * picture must not make the preview look different from the board it opens.
+   */
+  readonly showHeadshots = computed(() => hasHeadshots(this.previewPool()));
 
   readonly previewRows = computed<PreviewRow[]>(() => {
     // 'From scratch' is the same players in the same rows, just emptied — which is the whole

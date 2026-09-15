@@ -42,7 +42,10 @@ import {
   DEFAULT_MIN_GOALIE_GAMES,
   DEFAULT_ROSTER_SLOTS,
 } from '../../draft-projection/projection-defaults';
-import { PlayerHeadshotComponent } from '../../shared/player-headshot/player-headshot';
+import {
+  hasHeadshots,
+  PlayerHeadshotComponent,
+} from '../../shared/player-headshot/player-headshot';
 import { ProjectionsTableHeaderComponent } from '../../draft-projection/player-projections-table/projections-table-header/projections-table-header';
 import { PositionFilterComponent } from '../../draft-projection/player-projections-table/position-filter/position-filter';
 import { TeamFilterComponent } from '../../draft-projection/player-projections-table/team-filter/team-filter';
@@ -176,6 +179,9 @@ export class HotPlayersTableComponent {
   }
 
   private readonly playerMap = computed(() => new Map(this.players().map((p) => [p.id, p])));
+
+  /** Whether the name column draws headshots at all: not while no player has a picture. */
+  readonly showHeadshots = computed(() => hasHeadshots(this.players()));
 
   readonly availableTeams = computed<string[]>(() => {
     const teams = new Set<string>();

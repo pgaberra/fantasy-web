@@ -121,6 +121,31 @@ describe('HotPlayersTableComponent', () => {
     expect(filteredOut.matchingCount()).toEqual(0);
   });
 
+  describe('headshots', () => {
+    const renderWithPlayers = (players: Player[]) => {
+      const fixture = MockRender(HotPlayersTableComponent, {
+        hotPlayers: [skater(1, 20), skater(2, 20)],
+        players,
+        activeColumns,
+        scoringType: 'points',
+        statWeights: DEFAULT_STAT_WEIGHTS,
+        seasonLabel: '2025-26',
+      });
+      fixture.detectChanges();
+      return fixture.nativeElement.querySelectorAll('app-player-headshot').length;
+    };
+
+    it('draws none while no player has a picture', () => {
+      expect(renderWithPlayers([player(1), player(2)])).toEqual(0);
+    });
+
+    it('draws one on every row once any player has a picture', () => {
+      expect(
+        renderWithPlayers([{ ...player(1), headshot: 'https://cdn.test/1.png' }, player(2)]),
+      ).toEqual(2);
+    });
+  });
+
   it('offers no League setup in a points league that has imported nothing — the menu would be empty', () => {
     const component = render([skater(1, 20)]);
 
