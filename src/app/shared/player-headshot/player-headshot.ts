@@ -1,6 +1,18 @@
 import { ChangeDetectionStrategy, Component, computed, input, linkedSignal } from '@angular/core';
 
 /**
+ * Whether a list of players is worth drawing headshots for at all: true once any of them has a
+ * picture. The initials stand in for the one player in seven the platform has no portrait of, so
+ * the names still line up; where nobody has one (the BFF sends none while player pictures are
+ * switched off) a circle of initials beside every name is a column that says nothing.
+ *
+ * Read off the players rather than a flag, so it holds for whatever leaves the pictures out.
+ */
+export function hasHeadshots(players: readonly { headshot?: string | null }[]): boolean {
+  return players.some((player) => !!player.headshot);
+}
+
+/**
  * A player's picture, or their initials when there isn't one.
  *
  * Two things make the fallback necessary rather than decorative: the platform has no portrait

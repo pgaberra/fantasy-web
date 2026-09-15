@@ -148,6 +148,23 @@ describe('SharedProjectionComponent', () => {
     );
   });
 
+  // What a board looks like while the BFF has player pictures switched off: it sends none.
+  it('draws no headshots when no published player has a picture', async () => {
+    loadShared.mockReturnValue(
+      of({
+        ...shared,
+        data: {
+          ...shared.data,
+          players: shared.data.players.map((player) => ({ ...player, headshot: undefined })),
+        },
+      }),
+    );
+    const fixture = await render();
+
+    expect(fixture.nativeElement.querySelector('app-player-headshot')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Connor McDavid');
+  });
+
   /**
    * A visitor cannot open the settings this board was scored with, so a Total Points column with
    * the weights hidden is a number nobody can check.

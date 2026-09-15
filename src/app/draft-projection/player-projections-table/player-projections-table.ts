@@ -61,6 +61,7 @@ import { StatInfoService } from '../../services/stat-info.service';
 import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
 import { parseDecimalInput } from '../../shared/decimal-input';
 import { ownLine, squaredWithPool } from '../../shared/pool-line';
+import { hasHeadshots } from '../../shared/player-headshot/player-headshot';
 import { PinnedTableHeaderDirective } from '../../shared/pinned-table-header/pinned-table-header.directive';
 import { TableScrollDirective } from '../../shared/table-scroll/table-scroll.directive';
 import { LeagueSettingsMenuComponent } from './league-settings-menu/league-settings-menu';
@@ -610,6 +611,9 @@ export class PlayerProjectionsTableComponent implements OnInit {
   });
 
   private readonly playerMap = computed(() => new Map(this.players().map((p) => [p.id, p])));
+
+  /** Whether the rows draw headshots at all: not while no player in the pool has a picture. */
+  readonly showHeadshots = computed(() => hasHeadshots(this.players()));
 
   getPlayer(playerId: number): Player {
     return this.playerMap().get(playerId)!;

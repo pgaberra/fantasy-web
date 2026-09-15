@@ -86,6 +86,12 @@ export class PlayerRowComponent {
   scoringType = input.required<ScoringType>();
   activeColumns = input.required<ActiveColumns>();
   player = input.required<Player>();
+  /**
+   * Whether the table draws a headshot beside each name — decided over the whole table
+   * (`hasHeadshots`), not per row, so a player without a picture still lines up with those who
+   * have one. Required so no table can forget to decide.
+   */
+  showHeadshot = input.required<boolean>();
   /** Whether this player is a rookie this season. False also covers "we could not find out". */
   rookie = input<boolean>(false);
   /** The current injury report for this player, or null when he is not on it. */

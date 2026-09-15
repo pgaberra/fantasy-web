@@ -1,5 +1,22 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { PlayerHeadshotComponent } from './player-headshot';
+import { hasHeadshots, PlayerHeadshotComponent } from './player-headshot';
+
+describe('hasHeadshots', () => {
+  it('is true once any player has a picture, however many do not', () => {
+    expect(hasHeadshots([{}, { headshot: null }, { headshot: 'https://cdn.test/a.png' }])).toBe(
+      true,
+    );
+  });
+
+  // What every list looks like while the BFF has player pictures switched off.
+  it('is false when no player has one', () => {
+    expect(hasHeadshots([{}, { headshot: null }, { headshot: '' }])).toBe(false);
+  });
+
+  it('is false for an empty list', () => {
+    expect(hasHeadshots([])).toBe(false);
+  });
+});
 
 describe('PlayerHeadshotComponent', () => {
   let fixture: ComponentFixture<PlayerHeadshotComponent>;
