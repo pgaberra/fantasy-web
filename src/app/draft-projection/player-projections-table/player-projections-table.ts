@@ -220,9 +220,6 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   readonly playerProjections = signal<Projection[]>([]);
 
-  /** Rows a stored projection carried for players the league no longer has. Told, never assumed. */
-  readonly droppedPlayerCount = signal(0);
-
   // Undo/redo history for stat edits and column changes. Snapshots are pushed onto `undoStack`
   // before each mutation; consecutive edits to the same cell (same `lastEditSignature`) coalesce
   // into a single step so typing "25" is one undo, not two. Since `ProjectionUpdateService` only
@@ -638,11 +635,11 @@ export class PlayerProjectionsTableComponent implements OnInit {
         this.playerProjections.set(initial);
         return;
       }
-      const kept = initial
-        .filter((projection) => players.has(projection.playerId))
-        .map((projection) => squaredWithPool(projection, players.get(projection.playerId)));
-      this.droppedPlayerCount.set(initial.length - kept.length);
-      this.playerProjections.set(kept);
+      this.playerProjections.set(
+        initial
+          .filter((projection) => players.has(projection.playerId))
+          .map((projection) => squaredWithPool(projection, players.get(projection.playerId))),
+      );
       return;
     }
 

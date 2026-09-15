@@ -526,22 +526,6 @@ describe('PlayerProjectionsTableComponent', () => {
       expect(ids).toEqual([1]);
     });
 
-    it('counts what it dropped so the user can be told', () => {
-      const missing: Projection = { ...mockPlayerProjections[0], playerId: 999 };
-      const fixture = MockRender(PlayerProjectionsTableComponent, {
-        players: mockPlayers,
-        scoringType: 'category',
-        initialProjections: [mockPlayerProjections[0], missing],
-        statWeights: mockStatWeights,
-        activeScoringColumns: new Set<ScoringStatKey>(['goals', 'assists']),
-        activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
-        scaleSettings: mockScaleSettings,
-        useDefaultDecimals: true,
-      });
-
-      expect(fixture.point.componentInstance.droppedPlayerCount()).toEqual(1);
-    });
-
     /**
      * A row saved as a skater for a player the pool now lists as a goalie holds none of the
      * goalie stats the row's cells read, and the first one to format its value threw (Sentry
@@ -566,7 +550,6 @@ describe('PlayerProjectionsTableComponent', () => {
         mockPlayerProjections[1],
         { type: 'goalie', playerId: 3, stats: (mockPlayers[2] as Goalie).stats },
       ]);
-      expect(component.droppedPlayerCount()).toEqual(0);
     });
 
     /**
@@ -587,7 +570,6 @@ describe('PlayerProjectionsTableComponent', () => {
 
       const component = fixture.point.componentInstance;
       expect(component.playerProjections()).toEqual(mockPlayerProjections);
-      expect(component.droppedPlayerCount()).toEqual(0);
     });
   });
 
