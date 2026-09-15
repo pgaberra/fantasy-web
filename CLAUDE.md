@@ -47,10 +47,10 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   The player pool moves under a saved projection — a new season brings a new roster, trades
   and call-ups follow — and the **BFF** adds the newcomers on the read that notices, seeding
   them from what the projection started as. It never removes: a row whose player has left the
-  pool is kept, and **the table is what hides it** (`droppedPlayerCount`, which counts the rows
-  it cannot draw). So the two notices divide the work — `shared/player-pool-notice` reports the
-  additions from `poolReconciliation`, once per pool change, and the table says how many rows are
-  hidden, which only it can know. The editor also carries `playerBasis` / `playerPoolSyncedAt`
+  pool is kept, and **the table is what hides it**, without a word: nearly everyone who leaves a
+  pool is a player no fantasy manager would draft, so a count of them was noise (Alexander's
+  call). `shared/player-pool-notice` still reports the additions from `poolReconciliation`, once
+  per pool change. The editor also carries `playerBasis` / `playerPoolSyncedAt`
   through `ProjectionState` untouched, so a save doesn't drop them.
   The table also marks **rookies** (a badge by the name, plus a "Rookies only" filter) from
   `GET /api/v1/players/rookies`. That endpoint answers `known: false` wherever the projection
