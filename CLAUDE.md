@@ -451,7 +451,6 @@ doesn't replace them.
 - `specs/bff-openapi.yaml` is a **verbatim pinned copy** of the BFF's spec. To update
   after a BFF API change: copy the new `fantasy-bff/specs/bff-openapi.yaml` over it and
   run `npm run generate:api`.
-- `@claude` mentions on issues/PRs trigger `.github/workflows/claude.yml`.
 
 ## Monorepo conventions
 
