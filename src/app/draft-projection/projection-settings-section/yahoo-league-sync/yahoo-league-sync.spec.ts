@@ -1,6 +1,7 @@
 import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, it, expect } from 'vitest';
 import { of, throwError } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { YahooLeagueSyncComponent, YahooSyncResult } from './yahoo-league-sync';
 import { YahooService } from '../../../services/yahoo.service';
 import { ConnectionResponse } from '../../../api/models/connection-response';
@@ -110,6 +111,39 @@ describe('YahooLeagueSyncComponent', () => {
     await fixture.whenStable();
 
     expect(component.error()).toBeTruthy();
+  });
+
+  it('says Yahoo refused, not that loading failed, when Yahoo refuses the leagues', async () => {
+    await MockBuilder(YahooLeagueSyncComponent).mock(YahooService, {
+      connectionStatus: () => of(connected),
+      myLeagues: () =>
+        throwError(
+          () =>
+            new HttpErrorResponse({
+              status: 424,
+              error: { code: 'YAHOO_ACCESS_DENIED', message: 'Yahoo refused the request' },
+            }),
+        ),
+      leagueProjectionSettings: () => of(settings),
+      startConnect: () => of({ authorizeUrl: 'https://example.test/auth' }),
+    });
+    const fixture = MockRender(YahooLeagueSyncComponent);
+    await fixture.whenStable();
+
+    expect(fixture.point.componentInstance.error()).toBe('Yahoo refused access to your leagues.');
+  });
+
+  it('keeps the loading message for a failure that is not a refusal', async () => {
+    await MockBuilder(YahooLeagueSyncComponent).mock(YahooService, {
+      connectionStatus: () => of(connected),
+      myLeagues: () => throwError(() => new HttpErrorResponse({ status: 502 })),
+      leagueProjectionSettings: () => of(settings),
+      startConnect: () => of({ authorizeUrl: 'https://example.test/auth' }),
+    });
+    const fixture = MockRender(YahooLeagueSyncComponent);
+    await fixture.whenStable();
+
+    expect(fixture.point.componentInstance.error()).toBe('Could not load your Yahoo leagues.');
   });
 
   it('renders no sync controls when sync is disabled', async () => {
