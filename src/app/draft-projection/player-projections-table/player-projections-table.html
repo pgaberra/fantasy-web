@@ -143,12 +143,6 @@
       </div>
     </div>
   </div>
-  @if (droppedPlayerCount(); as dropped) {
-    <p class="table-notice" role="status">
-      {{ dropped }} {{ dropped === 1 ? 'player is' : 'players are' }} no longer in the league and
-      are hidden. Their projections are kept and will reappear if they return.
-    </p>
-  }
   <div class="table-scroll">
     <div
       class="table-wrapper table-wrapper--compact-identity"
