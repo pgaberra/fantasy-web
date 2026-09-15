@@ -54,7 +54,18 @@ export class EntitlementService {
     });
   }
 
+  /**
+   * Reads the plan again, for the signed-in account only. The entitlement belongs to an account,
+   * so without one the read can only come back 401, which the browser logs on every signed-out
+   * visit to /premium. The rule sits here rather than with the callers because the Premium page
+   * alone calls this from four places, one of them a poll, and a caller that forgot it cost a
+   * refused request each time; a signed-out visitor's state is already the idle one `forget`
+   * left behind.
+   */
   refresh(): void {
+    if (!this.auth.isLoggedIn()) {
+      return;
+    }
     this.loadState.set('loading');
     this.billing.getEntitlements().subscribe({
       next: (entitlement) => {
