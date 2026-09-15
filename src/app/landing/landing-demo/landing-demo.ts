@@ -1,4 +1,5 @@
-import { Component, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, computed, inject, PLATFORM_ID, signal, viewChild } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { PlayerProjectionsTableComponent } from '../../draft-projection/player-projections-table/player-projections-table';
@@ -84,7 +85,12 @@ export class LandingDemoComponent {
 
   private readonly table = viewChild(PlayerProjectionsTableComponent);
 
+  // Only in the browser: prerendered at build time, the demo would bake a player table that goes
+  // stale with the next sync, or an error for the API it was refused.
+  private readonly inBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+
   readonly playersResource = rxResource({
+    params: () => (this.inBrowser ? true : undefined),
     stream: () => this.playerService.getPlayers(),
     defaultValue: [] as Player[],
   });

@@ -470,8 +470,13 @@ in committed config.
 ## Deployment
 
 - Deployed via **Coolify** (Hetzner) using the multi-stage `Dockerfile`: a Node build
-  stage produces `dist/fantasy-web/browser`, served by nginx (SPA rewrite `/* → /index.html`,
-  see `nginx.conf`). Every build arg in `DEPLOYMENT.md`'s table is injected into
+  stage produces `dist/fantasy-web/browser`, served by nginx (see `nginx.conf`). The public pages
+  (`/`, `/premium`, `/terms`, `/privacy`, `/refunds`) are prerendered at build time into their own
+  `index.html` (`src/app/app.routes.server.ts`, `app.config.server.ts`), so a client that runs no
+  JavaScript reads their content; every other route falls back to the unrendered shell
+  `index.csr.html`. Code that runs while those pages render must not touch browser globals
+  (`localStorage`, `window`) without `isPlatformBrowser`, and prerendering makes no API call but
+  `/api/v1/features`. `check-prerendered-pages.sh` fails CI if a page renders empty. Every build arg in `DEPLOYMENT.md`'s table is injected into
   `environment.prod.ts` at build time (`API_URL` also into `nginx.conf`); CI holds the table to
   the Dockerfile's ARGs. production = `slapstat.com` (`api.slapstat.com`), staging =
   `staging.slapstat.com` (`api.staging.slapstat.com`).

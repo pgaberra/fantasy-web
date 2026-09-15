@@ -14,7 +14,10 @@ the bundle at **build time**, since this is a client-side SPA with no runtime en
 
 The Dockerfile runs `npm ci` → `npm run generate:api` → injects build args into
 `environment.prod.ts` → `npm run build`, then serves `dist/fantasy-web/browser` with
-nginx (SPA rewrite `/* → /index.html`, see [`nginx.conf`](./nginx.conf)). Coolify passes
+nginx (prerendered pages from their own `index.html`, every other route from `index.csr.html`, see
+[`nginx.conf`](./nginx.conf)). The build prerenders the public pages and calls the API's
+`/api/v1/features` while doing so, so `API_URL` has to answer at build time for the Premium page to
+list the AI projection. Coolify passes
 the build args below as Docker `--build-arg` from the app's build-time env vars.
 
 This table is the checklist for configuring or rebuilding a Coolify app, and every row is an
