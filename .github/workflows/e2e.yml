@@ -53,13 +53,17 @@ jobs:
       # a full artifact quota, a rate-limited API call — must not masquerade as a broken staging.
       # That exact confusion cost us a day: the storage quota reddened six green runs and the
       # alarm below dutifully fired on every one of them.
-      - name: Upload Playwright report
+      #
+      # Screenshots only, never the HTML report or a trace (see playwright.config.ts): the repo is
+      # public, anyone signed in to GitHub can download this artifact, and both of those carry the
+      # staging account's password as typed. GitHub's `***` masking covers the log, not artifacts.
+      - name: Upload failure screenshots
         uses: actions/upload-artifact@v7
         if: failure()
         continue-on-error: true
         with:
-          name: playwright-report
-          path: playwright-report/
+          name: playwright-screenshots
+          path: test-results/**/*.png
           retention-days: 3
 
       # Closing it is what keeps the alarm working. While an issue is open every later failure is
@@ -103,7 +107,7 @@ jobs:
             echo "- Triggered by: \`${{ github.event_name }}\`"
             echo "- Commit: ${{ github.sha }}"
             echo
-            echo "The Playwright report is attached to the run as an artifact, with a screenshot per failure."
+            echo "A screenshot of each failure is attached to the run as an artifact. For the full report or a trace, run \`npm run e2e\` locally."
             echo
             echo "Close this issue once the suite is green again; the next failure opens a fresh one."
             echo "While it stays open, further failures are added here as comments instead."
