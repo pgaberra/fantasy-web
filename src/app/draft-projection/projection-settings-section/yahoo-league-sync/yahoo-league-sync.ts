@@ -7,6 +7,7 @@ import { LeagueProjectionSettingsResponse } from '../../../api/models/league-pro
 import { YahooSync } from '../../../api/models/yahoo-sync';
 import { IconComponent } from '../../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../../shared/loading-indicator/loading-indicator';
+import { isYahooRefusal } from '../../../shared/yahoo-refused';
 
 export interface YahooSyncResult {
   settings: LeagueProjectionSettingsResponse;
@@ -100,9 +101,13 @@ export class YahooLeagueSyncComponent implements OnInit {
         });
         this.unsupportedStats.set(settings.unsupportedStats);
       },
-      error: () => {
+      error: (err: unknown) => {
         this.syncing.set(false);
-        this.error.set('Could not load the league settings from Yahoo.');
+        this.error.set(
+          isYahooRefusal(err)
+            ? "Yahoo refused access to this league's settings."
+            : 'Could not load the league settings from Yahoo.',
+        );
       },
     });
   }
@@ -117,9 +122,13 @@ export class YahooLeagueSyncComponent implements OnInit {
         }
         this.loadingLeagues.set(false);
       },
-      error: () => {
+      error: (err: unknown) => {
         this.loadingLeagues.set(false);
-        this.error.set('Could not load your Yahoo leagues.');
+        this.error.set(
+          isYahooRefusal(err)
+            ? 'Yahoo refused access to your leagues.'
+            : 'Could not load your Yahoo leagues.',
+        );
       },
     });
   }

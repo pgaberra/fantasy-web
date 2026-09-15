@@ -1,7 +1,8 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ActivatedRoute } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { AdminComponent } from './admin';
 import { AdminService } from '../services/admin.service';
 
@@ -214,6 +215,40 @@ describe('AdminComponent', () => {
       const text = fixture.nativeElement.textContent as string;
       expect(text).toContain('465.l.999');
       expect(text).toContain('Test League');
+    });
+
+    /**
+     * "Connected" while every call is refused is the state that looked like our bug for weeks:
+     * the page has to say that Yahoo said no, in Yahoo's words.
+     */
+    it("shows Yahoo's own refusal when it will not list the leagues", () => {
+      yahooLeagues.mockReturnValue(
+        throwError(
+          () =>
+            new HttpErrorResponse({
+              status: 424,
+              error: {
+                code: 'YAHOO_ACCESS_DENIED',
+                message:
+                  'Yahoo refused the request: This application is not authorized to perform this action.',
+              },
+            }),
+        ),
+      );
+      const fixture = MockRender(AdminComponent);
+
+      expect(fixture.nativeElement.textContent).toContain(
+        'Yahoo refused the request: This application is not authorized to perform this action.',
+      );
+    });
+
+    it('keeps the generic line when listing the leagues fails for another reason', () => {
+      yahooLeagues.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 502 })));
+      const fixture = MockRender(AdminComponent);
+
+      expect(fixture.nativeElement.textContent).toContain(
+        "Yahoo would not list the service account's leagues.",
+      );
     });
 
     it('falls back to nhl when the game key is blanked out', () => {

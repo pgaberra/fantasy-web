@@ -5,6 +5,7 @@ import { AdminService } from '../services/admin.service';
 import { AdminPremiumComponent } from './premium/admin-premium';
 import { LeagueSummary, SyncRunResponse, YahooProbeResponse } from '../api/models';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
+import { yahooRefusalMessage } from '../shared/yahoo-refused';
 
 /**
  * What the Yahoo callback said about the connect attempt it just finished, in words rather than
@@ -118,7 +119,10 @@ export class AdminComponent implements OnInit {
     this.leaguesError.set(null);
     this.adminService.yahooLeagues().subscribe({
       next: (response) => this.leagues.set(response.leagues ?? []),
-      error: () => this.leaguesError.set("Yahoo would not list the service account's leagues."),
+      error: (err: unknown) =>
+        this.leaguesError.set(
+          yahooRefusalMessage(err) || "Yahoo would not list the service account's leagues.",
+        ),
     });
   }
 
