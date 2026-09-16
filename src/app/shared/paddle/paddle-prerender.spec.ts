@@ -71,12 +71,22 @@ describe('prerenderPaddleInitializer', () => {
   });
 
   it('rejects when Paddle refuses, so the page falls back and the image build catches it', async () => {
-    fetchFn.mockResolvedValue({ ok: false, status: 403 });
+    fetchFn.mockResolvedValue({
+      ok: false,
+      status: 403,
+      text: () => Promise.resolve('{"error":{"code":"forbidden"}}'),
+    });
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const paddle = await initializer()({ token: 'live_abc', environment: 'production' });
 
     await expect(
       paddle!.PricePreview({ items: [{ priceId: 'pri_1', quantity: 1 }] }),
-    ).rejects.toThrow('403');
+    ).rejects.toThrow('403: {"error":{"code":"forbidden"}}');
+    expect(logged).toHaveBeenCalledWith(
+      'Prerender: no Premium price from Paddle.',
+      expect.any(Error),
+    );
+    logged.mockRestore();
   });
 
   it('holds the prerender open until Paddle has answered', async () => {

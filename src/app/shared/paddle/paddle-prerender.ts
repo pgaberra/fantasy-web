@@ -53,6 +53,12 @@ export function prerenderPaddleInitializer(fetchFn: typeof fetch = fetch): typeo
         const done = pendingTasks.add();
         try {
           return await previewOverRest(fetchFn, token, options.environment, request);
+        } catch (error) {
+          // The Premium page swallows a failed quote, which is right in a browser and left the
+          // build log with no word of why staging and production both prerendered without a price.
+          // Written to stderr, it lands in Coolify's build log next to the Dockerfile's warning.
+          console.error('Prerender: no Premium price from Paddle.', error);
+          throw error;
         } finally {
           done();
         }
@@ -79,7 +85,11 @@ async function previewOverRest(
     }),
   });
   if (!response.ok) {
-    throw new Error(`Paddle's pricing preview answered ${response.status}`);
+    // Paddle's error body names the reason (`code`, `detail`); it never echoes the token.
+    const detail = await response.text().catch(() => '');
+    throw new Error(
+      `Paddle's pricing preview answered ${response.status}: ${detail.slice(0, 500)}`,
+    );
   }
   const body = (await response.json()) as RestPricePreview;
   const lineItems = body.data.details.line_items.map((lineItem) => ({
