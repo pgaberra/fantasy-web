@@ -52,6 +52,10 @@ jobs:
       - name: Verify every build placeholder is substituted
         run: bash .github/scripts/check-build-placeholders.sh
 
+      # A config nginx refuses to load fails the deploy on Coolify, far from the change that caused it.
+      - name: Verify nginx.conf loads
+        run: docker run --rm -v "$PWD/nginx.conf:/etc/nginx/conf.d/default.conf:ro" nginx:alpine nginx -t
+
       - name: Verify DEPLOYMENT.md documents every build arg
         run: bash .github/scripts/check-deployment-args.sh
 

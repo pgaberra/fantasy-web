@@ -91,6 +91,16 @@ describe('AdminComponent', () => {
         reason: 'invalid_state',
         phrase: 'had expired',
       },
+      {
+        outcome: 'says a connect started from another account was not saved',
+        reason: 'wrong_account',
+        phrase: 'started from a different SlapStat account',
+      },
+      {
+        outcome: 'says an expired or used link was not saved',
+        reason: 'link_expired',
+        phrase: 'had expired or was already used',
+      },
       // A slug we do not recognise must still produce a sentence, not an empty banner.
       {
         outcome: 'falls back to plain words for an unknown reason',
