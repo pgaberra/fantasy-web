@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { computed, Injectable, signal } from '@angular/core';
 import { Player } from '../models/player.model';
+import { hasHeadshots } from '../shared/player-headshot/player-headshot';
 
 /**
  * Player presentation lookups shared by the draft-mode panels. Provided at the
@@ -8,6 +9,13 @@ import { Player } from '../models/player.model';
 @Injectable()
 export class DraftPlayerLookupService {
   private readonly playersById = signal<Map<number, Player>>(new Map());
+
+  /**
+   * Whether the board draws avatars at all: not while no player in the pool has a picture, as
+   * with player pictures switched off in the BFF. Decided over the pool and not per player, the
+   * same rule as the projection tables, so a player without a picture still lines up.
+   */
+  readonly showAvatars = computed(() => hasHeadshots([...this.playersById().values()]));
 
   setPlayers(players: Player[]): void {
     this.playersById.set(new Map(players.map((player) => [player.id, player])));
