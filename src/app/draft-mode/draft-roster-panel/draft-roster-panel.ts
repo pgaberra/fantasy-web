@@ -3,10 +3,11 @@ import { DraftState } from '../../api/models/draft-state';
 import { DerivedRoster } from '../draft-roster.service';
 import { DraftPlayerLookupService } from '../draft-player-lookup.service';
 import { PlayerAvatarComponent } from '../player-avatar/player-avatar';
+import { PositionChipsComponent } from '../position-chips/position-chips';
 
 @Component({
   selector: 'app-draft-roster-panel',
-  imports: [PlayerAvatarComponent],
+  imports: [PlayerAvatarComponent, PositionChipsComponent],
   templateUrl: './draft-roster-panel.html',
   styleUrl: './draft-roster-panel.css',
 })

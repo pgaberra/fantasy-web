@@ -91,6 +91,13 @@
   white-space: nowrap;
 }
 
+.feed-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
 .feed-team {
   font-size: var(--text-xs);
   color: var(--color-text-subtle);

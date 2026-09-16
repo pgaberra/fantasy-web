@@ -12,6 +12,7 @@ import { StatTooltipPipe } from '../../pipes/stat-tooltip.pipe';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import { DraftPlayerLookupService } from '../draft-player-lookup.service';
 import { PlayerAvatarComponent } from '../player-avatar/player-avatar';
+import { PositionChipsComponent } from '../position-chips/position-chips';
 
 export interface EditingPickInfo {
   overall: number;
@@ -21,7 +22,13 @@ export interface EditingPickInfo {
 
 @Component({
   selector: 'app-draft-available-panel',
-  imports: [StatLabelPipe, StatTooltipPipe, TooltipDirective, PlayerAvatarComponent],
+  imports: [
+    StatLabelPipe,
+    StatTooltipPipe,
+    TooltipDirective,
+    PlayerAvatarComponent,
+    PositionChipsComponent,
+  ],
   templateUrl: './draft-available-panel.html',
   styleUrl: './draft-available-panel.css',
 })
