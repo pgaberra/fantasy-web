@@ -53,7 +53,7 @@
     </div>
   </div>
   @if (availableCount()) {
-    <div class="available-list">
+    <div class="available-list" [class.available-list--no-avatars]="!lookup.showAvatars()">
       <div class="available-list-head">
         <span class="score-heading">{{ scoreHeading() }}</span>
       </div>

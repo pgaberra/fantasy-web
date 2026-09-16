@@ -151,6 +151,16 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+/* No player has a picture, so the avatar hides itself and its column goes with it. */
+.available-list--no-avatars .available-list-head,
+.available-list--no-avatars .available-row {
+  grid-template-columns: 1.6rem 1fr 3.2rem auto;
+}
+
+.available-list--no-avatars .score-heading {
+  grid-column: 3;
+}
+
 .row-rank {
   font-size: var(--text-xs);
   color: var(--color-text-subtle);
@@ -237,6 +247,10 @@
   .available-row,
   .available-list-head {
     grid-template-columns: 1.6rem 2rem 1fr auto;
+  }
+  .available-list--no-avatars .available-row,
+  .available-list--no-avatars .available-list-head {
+    grid-template-columns: 1.6rem 1fr auto;
   }
   .available-row {
     row-gap: 0.4rem;

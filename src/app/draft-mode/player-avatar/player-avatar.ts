@@ -27,9 +27,12 @@ export class PlayerAvatarComponent {
   });
   protected readonly showImage = computed(() => !!this.headshot() && !this.failed());
   readonly initials = computed(() => this.lookup.initials(this.playerId()));
+  // Hidden rather than left out of each panel's template, so the six places that draw an avatar
+  // cannot disagree about whether there are any.
   readonly avatarClass = computed(
     () =>
       `avatar pos--${this.lookup.primaryPosition(this.playerId())}` +
-      (this.small() ? ' avatar-sm' : ''),
+      (this.small() ? ' avatar-sm' : '') +
+      (this.lookup.showAvatars() ? '' : ' avatar--none'),
   );
 }

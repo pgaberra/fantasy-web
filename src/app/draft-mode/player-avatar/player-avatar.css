@@ -24,3 +24,7 @@
   height: 1.6rem;
   font-size: 0.55rem;
 }
+
+:host(.avatar--none) {
+  display: none;
+}
