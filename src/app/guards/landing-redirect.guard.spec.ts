@@ -1,11 +1,23 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Router } from '@angular/router';
+import { firstValueFrom, Observable, of, throwError } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 import { landingRedirectGuard } from './landing-redirect.guard';
+import { AdminService } from '../services/admin.service';
 import { AuthService } from '../services/auth.service';
+import { YahooService } from '../services/yahoo.service';
 
-function runGuard(queryParams: Record<string, string>, loggedIn = true, admin = true) {
-  const createUrlTree = vi.fn().mockReturnValue({});
+function runGuard(
+  queryParams: Record<string, string>,
+  loggedIn = true,
+  admin = true,
+  fragment: string | null = null,
+  claimResult: Observable<unknown> = of({ connected: true }),
+) {
+  const createUrlTree = vi.fn().mockImplementation((commands, extras) => ({ commands, extras }));
+  const completeConnect = vi.fn().mockReturnValue(claimResult);
+  const completeYahooConnect = vi.fn().mockReturnValue(claimResult);
   TestBed.configureTestingModule({
     providers: [
       {
@@ -13,12 +25,21 @@ function runGuard(queryParams: Record<string, string>, loggedIn = true, admin = 
         useValue: { isLoggedIn: () => loggedIn, isAdmin: () => admin },
       },
       { provide: Router, useValue: { createUrlTree } },
+      { provide: YahooService, useValue: { completeConnect } },
+      { provide: AdminService, useValue: { completeYahooConnect } },
     ],
   });
   const result = TestBed.runInInjectionContext(() =>
-    landingRedirectGuard({ queryParams } as unknown as ActivatedRouteSnapshot, {} as never),
+    landingRedirectGuard(
+      { queryParams, fragment } as unknown as ActivatedRouteSnapshot,
+      {} as never,
+    ),
   );
-  return { result, createUrlTree };
+  return { result, createUrlTree, completeConnect, completeYahooConnect };
+}
+
+async function landing(result: unknown) {
+  return firstValueFrom(result as Observable<unknown>);
 }
 
 describe('landingRedirectGuard', () => {
@@ -63,6 +84,85 @@ describe('landingRedirectGuard', () => {
       runGuard({ yahoo: 'error', reason: 'declined', detail: 'invalid_scope' }).createUrlTree,
     ).toHaveBeenCalledWith(['/admin'], {
       queryParams: { yahoo: 'error', reason: 'declined', detail: 'invalid_scope' },
+    });
+  });
+
+  /**
+   * The callback no longer connects anything: it parks the tokens and hands this page a one-time
+   * code, and only a signed-in claim attaches them, to the account that started the connect.
+   */
+  describe('claiming a Yahoo connection', () => {
+    it("claims the user's own connect and goes to projections", async () => {
+      const run = runGuard({ yahoo: 'confirm', account: 'user' }, true, false, 'link=the-code');
+
+      expect(await landing(run.result)).toEqual({
+        commands: ['/projections'],
+        extras: { queryParams: { yahoo: 'connected' } },
+      });
+      expect(run.completeConnect).toHaveBeenCalledWith('the-code');
+      expect(run.completeYahooConnect).not.toHaveBeenCalled();
+    });
+
+    it('claims a service-account connect as an admin and goes back to admin', async () => {
+      const run = runGuard({ yahoo: 'confirm', account: 'service' }, true, true, 'link=the-code');
+
+      expect(await landing(run.result)).toEqual({
+        commands: ['/admin'],
+        extras: { queryParams: { yahoo: 'connected' } },
+      });
+      expect(run.completeYahooConnect).toHaveBeenCalledWith('the-code');
+      expect(run.completeConnect).not.toHaveBeenCalled();
+    });
+
+    /** Someone else's consent link, finished in this browser: said plainly, never connected. */
+    it('reports a connect another account started', async () => {
+      const run = runGuard(
+        { yahoo: 'confirm', account: 'service' },
+        true,
+        true,
+        'link=the-code',
+        throwError(() => new HttpErrorResponse({ status: 409 })),
+      );
+
+      expect(await landing(run.result)).toEqual({
+        commands: ['/admin'],
+        extras: { queryParams: { yahoo: 'error', reason: 'wrong_account' } },
+      });
+    });
+
+    it.each([
+      { status: 404, reason: 'link_expired' },
+      { status: 502, reason: 'claim_failed' },
+    ])('reports a $status as $reason', async ({ status, reason }) => {
+      const run = runGuard(
+        { yahoo: 'confirm', account: 'service' },
+        true,
+        true,
+        'link=the-code',
+        throwError(() => new HttpErrorResponse({ status })),
+      );
+
+      expect(await landing(run.result)).toEqual({
+        commands: ['/admin'],
+        extras: { queryParams: { yahoo: 'error', reason } },
+      });
+    });
+
+    it('claims nothing without a code', async () => {
+      const run = runGuard({ yahoo: 'confirm', account: 'user' }, true, false, null);
+
+      expect(await landing(run.result)).toEqual({
+        commands: ['/projections'],
+        extras: { queryParams: { yahoo: 'error', reason: 'claim_failed' } },
+      });
+      expect(run.completeConnect).not.toHaveBeenCalled();
+    });
+
+    it('claims nothing for a visitor who is not signed in, and drops the code from the URL', () => {
+      const run = runGuard({ yahoo: 'confirm', account: 'user' }, false, false, 'link=the-code');
+
+      expect(run.createUrlTree).toHaveBeenCalledWith(['/']);
+      expect(run.completeConnect).not.toHaveBeenCalled();
     });
   });
 
