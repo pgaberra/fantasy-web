@@ -77,6 +77,19 @@ RUN sed -i \
 
 RUN npm run build
 
+# A build that sells Premium must prerender /premium with its price. The prerender quotes it from
+# Paddle (src/app/shared/paddle/paddle-prerender.ts), and a failed quote leaves only "confirmed at
+# checkout", a paid plan with no price, which Paddle's domain review refuses a site for. Nothing a
+# browser shows would give that away, so the image is not built. CI's prerender check cannot test
+# this: it builds without a Paddle token.
+RUN if [ "$PAYMENTS_ENABLED" = "true" ] && [ -n "$PADDLE_CLIENT_TOKEN" ] && [ -n "$PADDLE_PRICE_ID" ]; then \
+  if ! sed -e 's/<[^>]*>/ /g' dist/fantasy-web/browser/premium/index.html | tr -s ' \n' ' ' \
+    | grep -qE '[0-9][.,][0-9]{2} per month'; then \
+    echo "premium/index.html was prerendered without a price: Paddle's pricing preview failed at build time." >&2; \
+    exit 1; \
+  fi; \
+fi
+
 # ---- Serve stage ----
 FROM nginx:alpine
 # Re-declared because ARGs do not cross stages. nginx needs the BFF origin server-side to fetch
