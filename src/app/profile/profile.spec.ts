@@ -6,6 +6,7 @@ import { ActivatedRoute } from '@angular/router';
 import { BehaviorSubject, of, throwError } from 'rxjs';
 import { ProfileComponent } from './profile';
 import { AccountService } from '../services/account.service';
+import { AuthService } from '../services/auth.service';
 import {
   AvatarImageService,
   UnreadableImageError,
@@ -24,11 +25,12 @@ describe('ProfileComponent', () => {
   const setAvatar = vi.fn();
   const removeAvatar = vi.fn();
   const prepare = vi.fn();
+  const signOutEverywhere = vi.fn();
   const avatarUrl = signal<string | null>(null);
   const fragment = new BehaviorSubject<string | null>(null);
 
   beforeEach(() => {
-    for (const spy of [load, setUsername, setAvatar, removeAvatar, prepare]) {
+    for (const spy of [load, setUsername, setAvatar, removeAvatar, prepare, signOutEverywhere]) {
       spy.mockReset();
     }
     avatarUrl.set(null);
@@ -38,6 +40,7 @@ describe('ProfileComponent', () => {
     setAvatar.mockReturnValue(of(undefined));
     removeAvatar.mockReturnValue(of(undefined));
     prepare.mockResolvedValue(prepared);
+    signOutEverywhere.mockReturnValue(of(undefined));
     return MockBuilder(ProfileComponent)
       .keep(PlayerHeadshotComponent)
       .mock(AccountService, {
@@ -49,6 +52,7 @@ describe('ProfileComponent', () => {
         avatarUrl,
       })
       .mock(AvatarImageService, { prepare })
+      .mock(AuthService, { signOutEverywhere })
       .provide({ provide: ActivatedRoute, useValue: { fragment } });
   });
 
@@ -320,6 +324,33 @@ describe('ProfileComponent', () => {
       await type(fixture, '');
 
       expect(text(fixture)).not.toContain(RULE);
+    });
+  });
+
+  describe('signing out everywhere', () => {
+    const button = (fixture: Awaited<ReturnType<typeof render>>) =>
+      Array.from(
+        fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>,
+      ).find((candidate) => candidate.textContent?.includes('Sign out everywhere'));
+
+    it('revokes every session when asked', async () => {
+      const fixture = await render();
+
+      button(fixture)?.click();
+
+      expect(signOutEverywhere).toHaveBeenCalledTimes(1);
+    });
+
+    it('says the account is still signed in when the revoke fails', async () => {
+      signOutEverywhere.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 400 })));
+      const fixture = await render();
+
+      button(fixture)?.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(text(fixture)).toContain("You're still signed in.");
+      expect(button(fixture)?.disabled).toEqual(false);
     });
   });
 });

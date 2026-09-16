@@ -13,6 +13,7 @@ import { ActivatedRoute } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { from, switchMap } from 'rxjs';
 import { AccountService } from '../services/account.service';
+import { AuthService } from '../services/auth.service';
 import {
   ACCEPTED_AVATAR_ACCEPT,
   AvatarImageService,
@@ -38,6 +39,7 @@ import { messageForError } from '../shared/http-error';
 })
 export class ProfileComponent implements OnInit {
   private readonly account = inject(AccountService);
+  private readonly auth = inject(AuthService);
   private readonly avatarImages = inject(AvatarImageService);
   private readonly route = inject(ActivatedRoute);
 
@@ -58,6 +60,8 @@ export class ProfileComponent implements OnInit {
   readonly avatarUrl = this.account.avatarUrl;
   readonly isUploading = signal<boolean>(false);
   readonly avatarError = signal<string | null>(null);
+  readonly isSigningOutEverywhere = signal<boolean>(false);
+  readonly signOutEverywhereError = signal<string | null>(null);
   readonly displayName = computed(() => this.username() ?? this.email());
 
   readonly canSave = computed(() => {
@@ -193,6 +197,19 @@ export class ProfileComponent implements OnInit {
       error: (error: unknown) => {
         this.isUploading.set(false);
         this.avatarError.set(messageForError(error, "Couldn't remove your picture."));
+      },
+    });
+  }
+
+  signOutEverywhere(): void {
+    this.isSigningOutEverywhere.set(true);
+    this.signOutEverywhereError.set(null);
+    this.auth.signOutEverywhere().subscribe({
+      error: (error: unknown) => {
+        this.isSigningOutEverywhere.set(false);
+        this.signOutEverywhereError.set(
+          messageForError(error, "Couldn't sign you out everywhere. You're still signed in."),
+        );
       },
     });
   }

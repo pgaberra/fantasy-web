@@ -105,5 +105,32 @@
         <p class="field-error">{{ errorMessage() }}</p>
       }
     </section>
+
+    <section class="card">
+      <h2 class="card-title">Sign out everywhere</h2>
+      <p class="card-body">
+        Signs you out on every device, including this one. Other devices lose access within 15
+        minutes.
+      </p>
+
+      <div class="card-actions">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          [disabled]="isSigningOutEverywhere()"
+          (click)="signOutEverywhere()"
+        >
+          @if (isSigningOutEverywhere()) {
+            <app-loading-indicator variant="inline" label="Signing out" />
+          } @else {
+            Sign out everywhere
+          }
+        </button>
+      </div>
+
+      @if (signOutEverywhereError()) {
+        <p class="field-error">{{ signOutEverywhereError() }}</p>
+      }
+    </section>
   </div>
 }
