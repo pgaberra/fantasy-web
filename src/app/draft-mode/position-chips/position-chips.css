@@ -1,0 +1,20 @@
+:host {
+  display: inline-flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+}
+
+.pos-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--pos, #475569);
+  background: var(--pos-bg, #f1f5f9);
+  border-radius: var(--radius-sm);
+  padding: 0.1rem 0.35rem;
+}

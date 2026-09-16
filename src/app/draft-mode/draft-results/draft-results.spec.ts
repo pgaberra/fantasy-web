@@ -1,7 +1,8 @@
-import { MockBuilder, MockRender } from 'ng-mocks';
+import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { DraftResultsComponent, DraftResultRound, DraftResultTeam } from './draft-results';
 import { DraftPlayerLookupService } from '../draft-player-lookup.service';
+import { PositionChipsComponent } from '../position-chips/position-chips';
 
 describe('DraftResultsComponent', () => {
   const rounds: DraftResultRound[] = [
@@ -48,6 +49,23 @@ describe('DraftResultsComponent', () => {
     expect(text).toContain('Player 1');
     expect(text).toContain('My Team');
     expect(text).toContain('(3)');
+  });
+
+  // The avatar's colour used to be the only sign of a pick's position here, and the avatar is
+  // hidden while no player has a picture.
+  it("shows each pick's positions in both views", () => {
+    const fixture = MockRender(DraftResultsComponent, { rounds, teams });
+    const shownFor = () =>
+      ngMocks
+        .findAll(fixture, PositionChipsComponent)
+        .map((chip) => chip.componentInstance.playerId());
+
+    expect(shownFor()).toEqual([1, 2, 3]);
+
+    fixture.point.componentInstance.view.set('team');
+    fixture.detectChanges();
+
+    expect(shownFor()).toEqual([1, 2, 3]);
   });
 
   it('switches to the team view showing overall pick numbers', () => {
