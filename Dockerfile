@@ -77,16 +77,23 @@ RUN sed -i \
 
 RUN npm run build
 
-# A build that sells Premium must prerender /premium with its price. The prerender quotes it from
+# A build that sells Premium should prerender /premium with its price. The prerender quotes it from
 # Paddle (src/app/shared/paddle/paddle-prerender.ts), and a failed quote leaves only "confirmed at
 # checkout", a paid plan with no price, which Paddle's domain review refuses a site for. Nothing a
-# browser shows would give that away, so the image is not built. CI's prerender check cannot test
-# this: it builds without a Paddle token.
+# browser shows would give that away. CI's prerender check cannot test this: it builds without a
+# Paddle token.
+# While Paddle has not approved the domain, the live pricing preview gave the prod build no quote
+# (v0.205.0), so a missing price only warns and the image still builds. PREMIUM_PRICE_REQUIRED=true,
+# set once the domain is approved, makes it fail the build again.
+ARG PREMIUM_PRICE_REQUIRED=
 RUN if [ "$PAYMENTS_ENABLED" = "true" ] && [ -n "$PADDLE_CLIENT_TOKEN" ] && [ -n "$PADDLE_PRICE_ID" ]; then \
   if ! sed -e 's/<[^>]*>/ /g' dist/fantasy-web/browser/premium/index.html | tr -s ' \n' ' ' \
     | grep -qE '[0-9][.,][0-9]{2} per month'; then \
-    echo "premium/index.html was prerendered without a price: Paddle's pricing preview failed at build time." >&2; \
-    exit 1; \
+    if [ "$PREMIUM_PRICE_REQUIRED" = "true" ]; then \
+      echo "premium/index.html was prerendered without a price: Paddle's pricing preview failed at build time." >&2; \
+      exit 1; \
+    fi; \
+    echo "WARNING: premium/index.html was prerendered without a price: Paddle's pricing preview failed at build time. Building anyway, since PREMIUM_PRICE_REQUIRED is not true." >&2; \
   fi; \
 fi
 
