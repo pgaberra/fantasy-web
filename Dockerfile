@@ -110,4 +110,17 @@ RUN if [ "$APP_ENV" = "production" ]; then ROBOTS_TAG=""; else ROBOTS_TAG="noind
   sed -i -e "s|__API_ORIGIN__|${API_URL}|g" -e "s|__ROBOTS_TAG__|${ROBOTS_TAG}|g" \
   /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/fantasy-web/browser /usr/share/nginx/html
+
+# Run nginx as the image's own unprivileged `nginx` user, master process included. The stock image
+# already drops its workers to `nginx`, but its master stays root. It can still listen on 80 because
+# Docker (20.10 and later) sets net.ipv4.ip_unprivileged_port_start=0 inside a container's network
+# namespace, so Coolify's port is unchanged; this would not hold under host networking. A non-root
+# master needs a pid file it can write (/run is root's) and to create its temp directories under
+# /var/cache/nginx; the `user` directive only means something to a root master and would otherwise
+# log a warning on every start. The checks fail the build if a new base image moves those lines.
+RUN sed -i -e '/^user /d' -e 's|^pid .*|pid /tmp/nginx.pid;|' /etc/nginx/nginx.conf \
+  && ! grep -q '^user ' /etc/nginx/nginx.conf \
+  && grep -q '^pid /tmp/nginx.pid;$' /etc/nginx/nginx.conf \
+  && chown -R nginx:nginx /var/cache/nginx
+USER nginx
 EXPOSE 80
