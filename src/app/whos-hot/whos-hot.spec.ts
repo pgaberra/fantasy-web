@@ -13,10 +13,6 @@ import { SplitSeasonListResponse } from '../api/models/split-season-list-respons
 /** Longer than the component's settle delay, so a settled range has had its chance to fetch. */
 const AFTER_THE_DRAG_MS = 400;
 
-function settle(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, AFTER_THE_DRAG_MS));
-}
-
 /** The summer before 2026-27: last season finished at 82 games, the next one has none yet. */
 const SUMMER: SplitSeasonListResponse = {
   defaultSeason: 2025,
@@ -57,6 +53,7 @@ describe('WhosHotComponent', () => {
 
   afterEach(() => {
     environment.paymentsEnabled = paymentsWereEnabled;
+    vi.useRealTimers();
   });
 
   beforeEach(() => {
@@ -81,6 +78,25 @@ describe('WhosHotComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     return fixture;
+  }
+
+  /**
+   * The drag tests count requests around a debounce, so they own the clock from the first render.
+   * On real timers a busy machine let an earlier range's fetch land after the count was reset,
+   * and a drag that went nowhere read as one request.
+   */
+  async function renderOnFakeTimers() {
+    vi.useFakeTimers();
+    const fixture = MockRender(WhosHotComponent);
+    await settle(fixture);
+    return fixture;
+  }
+
+  /** Lets the range's settle delay run out, then the effects the settled range triggers. */
+  async function settle(fixture: ReturnType<typeof MockRender<WhosHotComponent>>) {
+    fixture.detectChanges();
+    await vi.advanceTimersByTimeAsync(AFTER_THE_DRAG_MS);
+    fixture.detectChanges();
   }
 
   describe('the game range behind the paywall', () => {
@@ -346,19 +362,18 @@ describe('WhosHotComponent', () => {
 
   it('spends one request on the range a drag lands on, not on every game it passes', async () => {
     environment.paymentsEnabled = false;
-    const fixture = await renderSettled();
+    const fixture = await renderOnFakeTimers();
     const component = fixture.point.componentInstance;
     // A handle moving is what turns "the last 5" into an explicit range.
     component.lastGames.set(null);
-    fixture.detectChanges();
-    await settle();
+    await settle(fixture);
     splits.mockClear();
 
     for (let game = 60; game >= 40; game--) {
       component.fromGame.set(game);
       fixture.detectChanges();
     }
-    await settle();
+    await settle(fixture);
 
     expect(splits).toHaveBeenCalledTimes(1);
     expect(splits.mock.calls[0][0]).toEqual(
@@ -368,11 +383,10 @@ describe('WhosHotComponent', () => {
 
   it('asks for nothing at all when a drag ends back where it started', async () => {
     environment.paymentsEnabled = false;
-    const fixture = await renderSettled();
+    const fixture = await renderOnFakeTimers();
     const component = fixture.point.componentInstance;
     component.lastGames.set(null);
-    fixture.detectChanges();
-    await settle();
+    await settle(fixture);
     const started = component.fromGame();
     splits.mockClear();
 
@@ -380,7 +394,7 @@ describe('WhosHotComponent', () => {
       component.fromGame.set(game);
       fixture.detectChanges();
     }
-    await settle();
+    await settle(fixture);
 
     expect(splits).not.toHaveBeenCalled();
   });
