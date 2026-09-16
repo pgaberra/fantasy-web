@@ -3,8 +3,7 @@
 # blocking every open PR on it cost more than it caught. That leaves nobody owning the news
 # that the pin has gone stale, which is this workflow's job.
 #
-# It is a checkout and one API call per spec — seconds, not minutes — so it does not undo the
-# saving that dropping the push-to-master build was after.
+# It is a checkout and one API call per spec, a few seconds a run.
 name: Spec freshness
 
 on:
