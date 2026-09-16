@@ -1,103 +1,52 @@
-import { inject, PendingTasks } from '@angular/core';
-import type {
-  Environments,
-  initializePaddle,
-  Paddle,
-  PricePreviewParams,
-  PricePreviewResponse,
-} from '@paddle/paddle-js';
-
-/** The country the prerendered price is quoted for, which is the catalog's base currency, USD. */
-export const PRERENDER_PRICE_COUNTRY = 'US';
-
-interface RestTotals {
-  subtotal: string;
-  discount: string;
-  tax: string;
-  total: string;
-}
-
-/** The parts of Paddle's REST pricing preview the Premium page reads, as the API returns them. */
-interface RestPricePreview {
-  data: {
-    currency_code: string;
-    details: { line_items: { totals: RestTotals; formatted_totals: RestTotals }[] };
-  };
-}
+import type { initializePaddle, Paddle, PricePreviewResponse } from '@paddle/paddle-js';
+import { environment } from '../../../environments/environment';
 
 /**
- * Paddle.js for the prerender, where there is no browser to run it: a stand-in whose only method
- * is `PricePreview`, answered by Paddle's REST API with the same client token.
+ * Paddle.js for the prerender, where there is no browser to run it: a stand-in whose only method,
+ * `PricePreview`, answers with Premium's base price from the build (`PREMIUM_BASE_PRICE_USD`).
  *
  * The Premium page used to prerender with no Paddle at all, so the HTML said only "Your exact price
  * is confirmed at checkout". A reader that runs no JavaScript saw a paid plan with no price, and
- * Paddle's domain review names missing public pricing as a reason to refuse a site. The pricing
- * preview needs no secret, only the public token the bundle already ships.
+ * Paddle's domain review names missing public pricing as a reason to refuse a site. Asking Paddle
+ * at build time does not work: its REST API answers the public client token with 403
+ * `authentication_malformed`, and the key it does accept is a secret that a build arg would print
+ * into the build log. So the figure comes from the build, and a browser still replaces it with the
+ * visitor's own price from Paddle.js.
  *
- * The quote is for the US, the catalog's base price, because the build has no visitor to localize
- * for. A browser replaces it with the visitor's own price as soon as the page loads.
- *
- * The request is held as a pending task, or the prerender would snapshot the page before Paddle
- * answered. A failure rejects, the page falls back to its sentence, and the Docker build refuses
- * the result (see Dockerfile), since a quietly unpriced page is the fault this exists to prevent.
+ * Without the arg there is no stand-in, and the page renders its sentence; the Dockerfile refuses
+ * that in a build that sells Premium.
  */
-export function prerenderPaddleInitializer(fetchFn: typeof fetch = fetch): typeof initializePaddle {
-  const pendingTasks = inject(PendingTasks);
-  return (options) => {
-    const token = options?.token;
-    if (!token) {
+export function prerenderPaddleInitializer(
+  basePriceUsd: string = environment.premiumBasePriceUsd,
+): typeof initializePaddle {
+  return () => {
+    const amount = Number(basePriceUsd);
+    if (!basePriceUsd || !Number.isFinite(amount)) {
       return Promise.resolve(undefined);
     }
     const paddle: Pick<Paddle, 'PricePreview'> = {
-      PricePreview: async (request) => {
-        const done = pendingTasks.add();
-        try {
-          return await previewOverRest(fetchFn, token, options.environment, request);
-        } catch (error) {
-          // The Premium page swallows a failed quote, which is right in a browser and left the
-          // build log with no word of why staging and production both prerendered without a price.
-          // Written to stderr, it lands in Coolify's build log next to the Dockerfile's warning.
-          console.error('Prerender: no Premium price from Paddle.', error);
-          throw error;
-        } finally {
-          done();
-        }
-      },
+      PricePreview: () => Promise.resolve(basePricePreview(amount)),
     };
     return Promise.resolve(paddle as Paddle);
   };
 }
 
-async function previewOverRest(
-  fetchFn: typeof fetch,
-  token: string,
-  environment: Environments | undefined,
-  request: PricePreviewParams,
-): Promise<PricePreviewResponse> {
-  const apiBase =
-    environment === 'sandbox' ? 'https://sandbox-api.paddle.com' : 'https://api.paddle.com';
-  const response = await fetchFn(`${apiBase}/pricing-preview`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      items: request.items.map((item) => ({ price_id: item.priceId, quantity: item.quantity })),
-      address: { country_code: PRERENDER_PRICE_COUNTRY },
-    }),
-  });
-  if (!response.ok) {
-    // Paddle's error body names the reason (`code`, `detail`); it never echoes the token.
-    const detail = await response.text().catch(() => '');
-    throw new Error(
-      `Paddle's pricing preview answered ${response.status}: ${detail.slice(0, 500)}`,
-    );
-  }
-  const body = (await response.json()) as RestPricePreview;
-  const lineItems = body.data.details.line_items.map((lineItem) => ({
-    totals: lineItem.totals,
-    formattedTotals: lineItem.formatted_totals,
-  }));
+/** Formatted the way Paddle formats a US quote, so the prerender and the browser read alike. */
+const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+
+function basePricePreview(amount: number): PricePreviewResponse {
+  const cents = String(Math.round(amount * 100));
+  const lineItem = {
+    totals: { subtotal: cents, discount: '0', tax: '0', total: cents },
+    formattedTotals: {
+      subtotal: usd.format(amount),
+      discount: usd.format(0),
+      tax: usd.format(0),
+      total: usd.format(amount),
+    },
+  };
   // Only the fields the Premium page reads; the rest of Paddle.js's response type is never used.
   return {
-    data: { currencyCode: body.data.currency_code, details: { lineItems } },
+    data: { currencyCode: 'USD', details: { lineItems: [lineItem] } },
   } as unknown as PricePreviewResponse;
 }
