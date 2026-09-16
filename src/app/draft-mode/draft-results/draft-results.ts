@@ -2,6 +2,7 @@ import { Component, inject, input, signal } from '@angular/core';
 import { DraftTeam } from '../../api/models/draft-team';
 import { DraftPlayerLookupService } from '../draft-player-lookup.service';
 import { PlayerAvatarComponent } from '../player-avatar/player-avatar';
+import { PositionChipsComponent } from '../position-chips/position-chips';
 
 export interface DraftResultRoundPick {
   pickInRound: number;
@@ -28,7 +29,7 @@ export interface DraftResultTeam {
 
 @Component({
   selector: 'app-draft-results',
-  imports: [PlayerAvatarComponent],
+  imports: [PlayerAvatarComponent, PositionChipsComponent],
   templateUrl: './draft-results.html',
   styleUrl: './draft-results.css',
 })
