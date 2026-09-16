@@ -54,4 +54,6 @@ export const environment = {
   // The recurring price the pricing page asks Paddle to quote. Empty locally, where the mock
   // provider is in use and no Paddle catalog exists.
   paddlePriceId: '',
+  // The price the prerendered Premium page states. Only the production build prerenders.
+  premiumBasePriceUsd: '',
 };

@@ -42,6 +42,9 @@ ARG PAYMENTS_ENABLED=
 ARG PADDLE_CLIENT_TOKEN=
 # The recurring price the pricing page asks Paddle to quote. Public, like the token.
 ARG PADDLE_PRICE_ID=
+# Premium's base price in US dollars ("4.99"), stated on the prerendered /premium. Must match the
+# base price of PADDLE_PRICE_ID in Paddle's catalog; a browser shows the visitor's local price.
+ARG PREMIUM_BASE_PRICE_USD=
 # ESPN_LEAGUES_ENABLED=true shows the ESPN provider in the projection's league-sync UI;
 # empty/anything else keeps it hidden (default), so ESPN stays dark until enabled per env.
 ARG ESPN_LEAGUES_ENABLED=
@@ -70,6 +73,7 @@ RUN sed -i \
   -e "s|__PREMIUM_COMING_SOON__|${PREMIUM_COMING_SOON}|g" \
   -e "s|__PADDLE_CLIENT_TOKEN__|${PADDLE_CLIENT_TOKEN}|g" \
   -e "s|__PADDLE_PRICE_ID__|${PADDLE_PRICE_ID}|g" \
+  -e "s|__PREMIUM_BASE_PRICE_USD__|${PREMIUM_BASE_PRICE_USD}|g" \
   -e "s|__ESPN_LEAGUES_ENABLED__|${ESPN_LEAGUES_ENABLED}|g" \
   -e "s|__WHOS_HOT_ENABLED__|${WHOS_HOT_ENABLED}|g" \
   -e "s|__OFFSEASON_ENABLED__|${OFFSEASON_ENABLED}|g" \
@@ -77,23 +81,19 @@ RUN sed -i \
 
 RUN npm run build
 
-# A build that sells Premium should prerender /premium with its price. The prerender quotes it from
-# Paddle (src/app/shared/paddle/paddle-prerender.ts), and a failed quote leaves only "confirmed at
-# checkout", a paid plan with no price, which Paddle's domain review refuses a site for. Nothing a
-# browser shows would give that away. CI's prerender check cannot test this: it builds without a
-# Paddle token.
-# While Paddle has not approved the domain, the live pricing preview gave the prod build no quote
-# (v0.205.0), so a missing price only warns and the image still builds. PREMIUM_PRICE_REQUIRED=true,
-# set once the domain is approved, makes it fail the build again.
-ARG PREMIUM_PRICE_REQUIRED=
-RUN if [ "$PAYMENTS_ENABLED" = "true" ] && [ -n "$PADDLE_CLIENT_TOKEN" ] && [ -n "$PADDLE_PRICE_ID" ]; then \
+# A build that sells Premium must prerender /premium with its price, because Paddle's domain review
+# refuses a paid plan with no price, and nothing a browser shows would give a missing one away. The
+# figure is PREMIUM_BASE_PRICE_USD: Paddle.js cannot run here, and Paddle's REST API answers the
+# client token with 403 authentication_malformed (#674). CI's prerender check builds without payments.
+RUN if [ "$PAYMENTS_ENABLED" = "true" ] && [ -n "$PADDLE_PRICE_ID" ]; then \
+  if ! printf '%s' "$PREMIUM_BASE_PRICE_USD" | grep -qE '^[0-9]+\.[0-9]{2}$'; then \
+    echo "PREMIUM_BASE_PRICE_USD must be the Premium price in US dollars, like 4.99, in a build that sells Premium." >&2; \
+    exit 1; \
+  fi; \
   if ! sed -e 's/<[^>]*>/ /g' dist/fantasy-web/browser/premium/index.html | tr -s ' \n' ' ' \
-    | grep -qE '[0-9][.,][0-9]{2} per month'; then \
-    if [ "$PREMIUM_PRICE_REQUIRED" = "true" ]; then \
-      echo "premium/index.html was prerendered without a price: Paddle's pricing preview failed at build time." >&2; \
-      exit 1; \
-    fi; \
-    echo "WARNING: premium/index.html was prerendered without a price: Paddle's pricing preview failed at build time. Building anyway, since PREMIUM_PRICE_REQUIRED is not true." >&2; \
+    | grep -qF "\$${PREMIUM_BASE_PRICE_USD} per month"; then \
+    echo "premium/index.html was prerendered without its price." >&2; \
+    exit 1; \
   fi; \
 fi
 

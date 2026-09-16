@@ -47,9 +47,9 @@ class PrerenderBackend implements HttpBackend {
 const serverConfig: ApplicationConfig = {
   providers: [
     provideServerRendering(withRoutes(serverRoutes)),
-    // Paddle.js is a browser script. At build time the Premium card is quoted Paddle's base price
-    // over the REST API instead, and the browser asks for the visitor's own price when it loads.
-    { provide: PADDLE_INITIALIZER, useFactory: () => prerenderPaddleInitializer() },
+    // Paddle.js is a browser script. At build time the Premium card states the base price the build
+    // was given instead, and the browser asks Paddle for the visitor's own price when it loads.
+    { provide: PADDLE_INITIALIZER, useValue: prerenderPaddleInitializer() },
     FetchBackend,
     { provide: HttpBackend, useClass: PrerenderBackend, deps: [FetchBackend] },
   ],

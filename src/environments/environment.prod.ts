@@ -58,6 +58,12 @@ const offseasonEnabledFlag: string = '__OFFSEASON_ENABLED__';
 const paddleClientTokenFlag: string = '__PADDLE_CLIENT_TOKEN__';
 const paddlePriceIdFlag: string = '__PADDLE_PRICE_ID__';
 
+// Premium's base price in US dollars, as a plain number ("4.99"). Only the prerendered /premium reads
+// it: Paddle.js cannot run at build time, and Paddle's REST API refuses the client token, so the
+// figure a reader without JavaScript sees has to come from the build. A browser still shows the
+// visitor's own price from Paddle. Must match the base price of PADDLE_PRICE_ID in Paddle's catalog.
+const premiumBasePriceUsdFlag: string = '__PREMIUM_BASE_PRICE_USD__';
+
 export const environment = {
   production: true,
   environmentName: appEnvFlag.startsWith('__APP_ENV') ? 'production' : appEnvFlag,
@@ -78,5 +84,8 @@ export const environment = {
     ? ''
     : paddleClientTokenFlag,
   paddlePriceId: paddlePriceIdFlag.startsWith('__PADDLE_PRICE_ID') ? '' : paddlePriceIdFlag,
+  premiumBasePriceUsd: premiumBasePriceUsdFlag.startsWith('__PREMIUM_BASE_PRICE_USD')
+    ? ''
+    : premiumBasePriceUsdFlag,
   offseasonEnabled: offseasonEnabledFlag === 'true',
 };
