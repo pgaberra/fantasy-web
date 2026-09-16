@@ -81,6 +81,7 @@
 
     <app-player-pool-notice
       [newPlayerCount]="unacknowledgedNewPlayerIds().length"
+      [playerBasis]="playerBasis()"
       [(newPlayersOnly)]="newPlayersOnly"
       (acknowledged)="acknowledgeNewPlayers()"
     />
