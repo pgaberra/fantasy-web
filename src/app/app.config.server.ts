@@ -11,6 +11,7 @@ import { Observable, throwError } from 'rxjs';
 import { appConfig } from './app.config';
 import { serverRoutes } from './app.routes.server';
 import { PADDLE_INITIALIZER } from './shared/paddle/paddle.service';
+import { prerenderPaddleInitializer } from './shared/paddle/paddle-prerender';
 
 /**
  * The one request a prerendered page may make at build time: which features this environment
@@ -46,9 +47,9 @@ class PrerenderBackend implements HttpBackend {
 const serverConfig: ApplicationConfig = {
   providers: [
     provideServerRendering(withRoutes(serverRoutes)),
-    // Paddle.js is a browser script. At build time the Premium card renders without a quote, and
-    // the browser asks Paddle for the visitor's own price when the page loads.
-    { provide: PADDLE_INITIALIZER, useValue: () => Promise.resolve(undefined) },
+    // Paddle.js is a browser script. At build time the Premium card is quoted Paddle's base price
+    // over the REST API instead, and the browser asks for the visitor's own price when it loads.
+    { provide: PADDLE_INITIALIZER, useFactory: () => prerenderPaddleInitializer() },
     FetchBackend,
     { provide: HttpBackend, useClass: PrerenderBackend, deps: [FetchBackend] },
   ],
