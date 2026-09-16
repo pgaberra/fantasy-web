@@ -3,10 +3,12 @@ name: E2E (staging)
 on:
   workflow_dispatch:
   # Used to run on every push to master too — "the code that just became staging is the code
-  # nobody has run end to end yet" — but each of those runs installs Node, installs a Chromium,
-  # and waits out staging's redeploy before it even starts testing, and merges land several times
-  # a day. Traded for the daily run catching a break within 24h instead of immediately: dispatch
-  # this manually right after a merge you want checked sooner.
+  # nobody has run end to end yet" — but a run started by a merge has to wait out staging's
+  # redeploy before it tests anything that merge changed, and merges land several times a day.
+  # Every run registers throwaway accounts on staging, and a merge landing while a run waits
+  # cancels it (see concurrency below), so a busy day leaves accounts behind and few results.
+  # Traded for the daily run catching a break within 24h instead of immediately: dispatch this
+  # manually once staging has redeployed a merge you want checked sooner.
   schedule:
     - cron: '0 6 * * *' # daily 06:00 UTC
 
@@ -15,9 +17,10 @@ permissions:
   issues: write
 
 # Every run tests the same deployed staging, so two of them racing tells us nothing twice — e.g.
-# a manual dispatch fired while the daily schedule is already running. Each run costs minutes and
-# leaves a registered account behind, so the newest run wins and the rest are cancelled. A
-# cancelled run is neither success nor failure, so it neither raises nor stands down the alarm.
+# a manual dispatch fired while the daily schedule is already running. Each run also registers
+# throwaway accounts on staging that stay there, so the newest run wins and the rest are
+# cancelled. A cancelled run is neither success nor failure, so it neither raises nor stands down
+# the alarm.
 concurrency:
   group: e2e-staging
   cancel-in-progress: true
