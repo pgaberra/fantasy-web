@@ -1,13 +1,25 @@
 import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, it, expect, beforeEach } from 'vitest';
+import { signal } from '@angular/core';
 import { DraftAvailablePanelComponent } from './draft-available-panel';
 import { PositionFilter } from '../../models/projection.model';
 import { DraftPlayerLookupService } from '../draft-player-lookup.service';
 
 describe('DraftAvailablePanelComponent', () => {
-  beforeEach(() => MockBuilder(DraftAvailablePanelComponent).mock(DraftPlayerLookupService));
+  const showAvatars = signal(true);
 
-  function renderPanel(selectedPositions: readonly PositionFilter[], pageSize = 50) {
+  beforeEach(() => {
+    showAvatars.set(true);
+    return MockBuilder(DraftAvailablePanelComponent).mock(DraftPlayerLookupService, {
+      showAvatars,
+    });
+  });
+
+  function renderPanel(
+    selectedPositions: readonly PositionFilter[],
+    pageSize = 50,
+    availableCount = 0,
+  ) {
     return MockRender(DraftAvailablePanelComponent, {
       editingInfo: null,
       searchTerm: '',
@@ -25,7 +37,7 @@ describe('DraftAvailablePanelComponent', () => {
       pageSize,
       scoreHeading: 'Value',
       visibleAvailable: [],
-      availableCount: 0,
+      availableCount,
       hasMore: false,
       isMyPick: true,
       isComplete: false,
@@ -59,6 +71,18 @@ describe('DraftAvailablePanelComponent', () => {
     chips(fixture)[2].click();
 
     expect(toggled).toEqual(['LW']);
+  });
+
+  // The avatar hides itself; the list has to drop the grid column it sat in, or every row's
+  // name would slide into the avatar's narrow slot.
+  it('drops the avatar column while the board has no avatars to draw', () => {
+    const list = (fixture: ReturnType<typeof renderPanel>): HTMLElement =>
+      fixture.nativeElement.querySelector('.available-list');
+
+    expect(list(renderPanel(['ALL'], 50, 1)).classList).not.toContain('available-list--no-avatars');
+
+    showAvatars.set(false);
+    expect(list(renderPanel(['ALL'], 50, 1)).classList).toContain('available-list--no-avatars');
   });
 
   it('selects the current page size in the dropdown', () => {
