@@ -300,6 +300,26 @@ describe('AuthService', () => {
       });
     });
 
+    it('revokes every session before signing out here', async () => {
+      invoke.mockResolvedValue(undefined);
+      localStorage.setItem('auth_token', 'a-token');
+
+      await firstValueFrom(service.signOutEverywhere(), { defaultValue: undefined });
+
+      expect(invoke).toHaveBeenCalledTimes(1);
+      expect(localStorage.getItem('auth_token')).toEqual(null);
+      expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/login']);
+    });
+
+    it('keeps this session when the revoke fails, since nothing was revoked', async () => {
+      invoke.mockRejectedValue(new Error('offline'));
+      localStorage.setItem('auth_token', 'a-token');
+
+      await expect(firstValueFrom(service.signOutEverywhere())).rejects.toThrow('offline');
+
+      expect(localStorage.getItem('auth_token')).toEqual('a-token');
+    });
+
     it('clears the session either way', () => {
       localStorage.setItem('auth_token', 'a-token');
 
