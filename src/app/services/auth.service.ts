@@ -13,6 +13,7 @@ import { forgotPassword } from '../api/fn/authentication/forgot-password';
 import { resetPassword } from '../api/fn/authentication/reset-password';
 import { verifyEmail } from '../api/fn/authentication/verify-email';
 import { resendVerification } from '../api/fn/authentication/resend-verification';
+import { signOutEverywhere } from '../api/fn/account/sign-out-everywhere';
 import { AuthResponse, LoginRequest, RefreshRequest, RegisterRequest } from '../api/models';
 import { AnalyticsService } from './analytics.service';
 import { environment } from '../../environments/environment';
@@ -160,10 +161,26 @@ export class AuthService {
     return from(this.api.invoke(resendVerification, { body: { email } }));
   }
 
-  /** Signing out on purpose: the form is where they meant to end up, and nothing follows them. */
+  /**
+   * Signing out on purpose: the form is where they meant to end up, and nothing follows them.
+   *
+   * <p>Only this browser. The refresh token stays valid on the server, because the one way to
+   * revoke it ends every session the account has, and signing out of a laptop should not also
+   * sign someone out of their phone. {@link signOutEverywhere} is that choice, made deliberately.
+   */
   logout() {
     this.endSession();
     void this.router.navigate(['/login']);
+  }
+
+  /**
+   * Revokes every session the account holds, this one included, then signs out here. Other
+   * devices keep their access token until it expires (15 minutes) and are signed out at the
+   * refresh after it. When the request fails nothing was revoked, so this session is left alone
+   * for the caller to report.
+   */
+  signOutEverywhere(): Observable<void> {
+    return from(this.api.invoke(signOutEverywhere, {})).pipe(tap(() => this.logout()));
   }
 
   /**
