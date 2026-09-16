@@ -65,6 +65,9 @@
           (input)="onSwidInput($event)"
         />
       </label>
+      @if (hasStoredCredentials()) {
+        <p class="espn-stored-hint">Your ESPN cookies are saved. Paste new ones to replace them.</p>
+      }
       <button type="button" class="espn-help-toggle" (click)="toggleHelp()">
         {{ showHelp() ? 'Hide' : 'How do I find these?' }}
       </button>

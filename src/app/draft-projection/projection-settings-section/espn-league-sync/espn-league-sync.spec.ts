@@ -36,7 +36,6 @@ describe('EspnLeagueSyncComponent', () => {
   it('reflects stored credentials from the status probe on init', async () => {
     await MockBuilder(EspnLeagueSyncComponent).mock(EspnService, {
       credentialStatus: () => of<CredentialStatusResponse>({ hasCredentials: true }),
-      credentialValues: () => of({ espnS2: 'stored-s2', swid: '{STORED}' }),
       saveCredentials: () => of(undefined),
       leagueProjectionSettings: () => of(settings),
     });
@@ -144,11 +143,10 @@ describe('EspnLeagueSyncComponent', () => {
     expect(fixture.nativeElement.querySelector('.espn-synced-status')).toBeNull();
   });
 
-  it('opens the private section filled in for a user whose cookies are on file', async () => {
+  it('opens the private section with empty fields for a user whose cookies are on file', async () => {
     await MockBuilder(EspnLeagueSyncComponent)
       .mock(EspnService, {
         credentialStatus: () => of<CredentialStatusResponse>({ hasCredentials: true }),
-        credentialValues: () => of({ espnS2: 'stored-s2', swid: '{STORED}' }),
         saveCredentials: () => of(undefined),
         leagueProjectionSettings: () => of(settings),
       })
@@ -157,17 +155,20 @@ describe('EspnLeagueSyncComponent', () => {
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
 
+    // The stored cookies are never read back into the page; the note says they are in use.
     expect(component.isPrivate()).toEqual(true);
-    expect(component.espnS2()).toEqual('stored-s2');
-    expect(component.swid()).toEqual('{STORED}');
+    expect(component.espnS2()).toEqual('');
+    expect(component.swid()).toEqual('');
+    expect(fixture.nativeElement.querySelector('.espn-stored-hint')?.textContent).toContain(
+      'Your ESPN cookies are saved.',
+    );
   });
 
-  it('does not write the stored pair back when the fields were not touched', async () => {
+  it('keeps the stored pair when the fields are empty and replaces it with a pasted pair', async () => {
     const saveCredentials = vi.fn(() => of(undefined));
     await MockBuilder(EspnLeagueSyncComponent)
       .mock(EspnService, {
         credentialStatus: () => of<CredentialStatusResponse>({ hasCredentials: true }),
-        credentialValues: () => of({ espnS2: 'stored-s2', swid: '{STORED}' }),
         saveCredentials,
         leagueProjectionSettings: () => of(settings),
       })
@@ -181,29 +182,24 @@ describe('EspnLeagueSyncComponent', () => {
     await fixture.whenStable();
     expect(saveCredentials).not.toHaveBeenCalled();
 
-    // Edited, and it is written.
     component.espnS2.set('fresh-s2');
+    component.swid.set('{FRESH}');
     component.sync();
     await fixture.whenStable();
-    expect(saveCredentials).toHaveBeenCalled();
+    expect(saveCredentials).toHaveBeenCalledWith({ espnS2: 'fresh-s2', swid: '{FRESH}' });
   });
 
-  it('leaves the fields empty when the stored pair cannot be read', async () => {
-    await MockBuilder(EspnLeagueSyncComponent)
-      .mock(EspnService, {
-        credentialStatus: () => of<CredentialStatusResponse>({ hasCredentials: true }),
-        credentialValues: () => throwError(() => new HttpErrorResponse({ status: 500 })),
-        saveCredentials: () => of(undefined),
-        leagueProjectionSettings: () => of(settings),
-      })
-      .keep(DatePipe);
+  it('shows no saved note to a user with nothing on file', async () => {
+    await buildDefault();
     const fixture = MockRender(EspnLeagueSyncComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
 
-    // Empty fields are the form's other working state — a sync then reuses what the server holds.
-    expect(component.isPrivate()).toEqual(true);
-    expect(component.espnS2()).toEqual('');
+    component.isPrivate.set(true);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.espn-cookies')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.espn-stored-hint')).toBeNull();
   });
 
   it('leaves the private section closed for a user with nothing on file', async () => {
@@ -261,7 +257,6 @@ describe('EspnLeagueSyncComponent', () => {
   it('keeps the cookie fields on screen when ESPN refuses the stored pair', async () => {
     await MockBuilder(EspnLeagueSyncComponent).mock(EspnService, {
       credentialStatus: () => of<CredentialStatusResponse>({ hasCredentials: true }),
-      credentialValues: () => of({ espnS2: 'stored-s2', swid: '{STORED}' }),
       saveCredentials: () => of(undefined),
       leagueProjectionSettings: () => throwError(() => new HttpErrorResponse({ status: 400 })),
     });
