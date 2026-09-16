@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { from, Observable } from 'rxjs';
 import { Api } from '../api/api';
+import { completeConnect } from '../api/fn/yahoo/complete-connect';
 import { connect } from '../api/fn/yahoo/connect';
 import { connection } from '../api/fn/yahoo/connection';
 import { leagues } from '../api/fn/yahoo/leagues';
@@ -27,6 +28,11 @@ export class YahooService {
 
   startConnect(): Observable<AuthorizeUrlResponse> {
     return from(this.api.invoke(connect));
+  }
+
+  /** Claims the connection the Yahoo callback parked under this one-time code. */
+  completeConnect(code: string): Observable<ConnectionResponse> {
+    return from(this.api.invoke(completeConnect, { body: { code } }));
   }
 
   myLeagues(): Observable<LeaguesResponse> {

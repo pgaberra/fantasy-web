@@ -18,6 +18,11 @@ const CONNECT_OUTCOMES: Record<string, string> = {
   invalid_state:
     'The connection link had expired before Yahoo sent you back. Press reconnect and approve it ' +
     'without pausing. The link is good for ten minutes.',
+  link_expired:
+    "The Yahoo connection wasn't saved. Its link had expired or was already used. Press reconnect.",
+  wrong_account:
+    "The Yahoo connection wasn't saved. It was started from a different SlapStat account.",
+  claim_failed: "Couldn't save the Yahoo connection. Press reconnect to try again.",
   exchange_failed:
     'Yahoo refused to exchange the code for a token. That is Yahoo turning us away, not a ' +
     'mis-click. Check the app registration and its Fantasy Sports permission.',
