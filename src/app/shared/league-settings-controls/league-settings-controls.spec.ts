@@ -1,8 +1,8 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach } from 'vitest';
-import { DraftLeagueSettingsComponent } from './draft-league-settings';
-import { LeagueSettings } from '../../shared/league-settings/league-settings';
-import { LeagueImportButtonComponent } from '../../shared/league-import-button/league-import-button';
+import { LeagueSettingsControlsComponent } from './league-settings-controls';
+import { LeagueSettings } from '../league-settings/league-settings';
+import { LeagueImportButtonComponent } from '../league-import-button/league-import-button';
 import { LeagueSyncComponent } from '../../draft-projection/projection-settings-section/league-sync/league-sync';
 import { YahooConnectReturnService } from '../../services/yahoo-connect-return.service';
 import { Router } from '@angular/router';
@@ -12,7 +12,7 @@ import {
   DEFAULT_STAT_WEIGHTS,
 } from '../../draft-projection/projection-defaults';
 
-describe('DraftLeagueSettingsComponent', () => {
+describe('LeagueSettingsControlsComponent', () => {
   const league = (): LeagueSettings => ({
     scoringType: 'points',
     statWeights: DEFAULT_STAT_WEIGHTS,
@@ -26,10 +26,10 @@ describe('DraftLeagueSettingsComponent', () => {
     lastEspnLeagueId: null,
   });
 
-  beforeEach(() => MockBuilder(DraftLeagueSettingsComponent).keep(LeagueImportButtonComponent));
+  beforeEach(() => MockBuilder(LeagueSettingsControlsComponent).keep(LeagueImportButtonComponent));
 
   const render = (settings: LeagueSettings = league()) => {
-    const fixture = MockRender(DraftLeagueSettingsComponent, { settings });
+    const fixture = MockRender(LeagueSettingsControlsComponent, { settings });
     fixture.detectChanges();
     return fixture;
   };
@@ -109,7 +109,7 @@ describe('DraftLeagueSettingsComponent', () => {
   });
 
   it('opens the import dialog on Yahoo when a connect started in it comes back to this page', async () => {
-    await MockBuilder(DraftLeagueSettingsComponent)
+    await MockBuilder(LeagueSettingsControlsComponent)
       .keep(LeagueImportButtonComponent)
       .provide({ provide: Router, useValue: { url: '/draft' } })
       .provide({

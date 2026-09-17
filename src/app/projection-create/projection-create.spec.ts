@@ -760,6 +760,90 @@ describe('ProjectionCreateComponent', () => {
     expect(createProjection).toHaveBeenCalledWith(expect.objectContaining({ data: source.data }));
   });
 
+  describe('league settings', () => {
+    it('opens a preset on the league a new projection has, and a copy on its own', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      expect(component.leagueSettings()?.scoringType).toEqual('points');
+
+      component.selectCopyFrom('src');
+      await fixture.whenStable();
+
+      expect(component.leagueSettings()?.scoringType).toEqual('category');
+      expect(component.leagueSettings()?.minGoalieGames).toEqual(25);
+    });
+
+    it('scores the preview by the league set here', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.setLeagueSettings({ ...component.leagueSettings()!, scoringType: 'category' });
+      fixture.detectChanges();
+
+      expect(previewOf(fixture).leagueSettings()?.scoringType).toEqual('category');
+    });
+
+    it('creates a preset with the league set here', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.setLeagueSettings({ ...component.leagueSettings()!, scoringType: 'category' });
+      component.setStatWeights({ ...component.leagueSettings()!.statWeights, goals: 9 });
+      component.create();
+
+      const request = createProjection.mock.calls[0][0];
+      expect(request.source).toEqual('default');
+      expect(request.data.settings.scoringType).toEqual('category');
+      expect(request.data.settings.statWeights['goals']).toEqual(9);
+    });
+
+    it('lays the league set here over a copy, and keeps its rows', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.selectCopyFrom('src');
+      await fixture.whenStable();
+      component.setLeagueSettings({ ...component.leagueSettings()!, scoringType: 'points' });
+      component.create();
+
+      const request = createProjection.mock.calls[0][0];
+      expect(request.data.settings.scoringType).toEqual('points');
+      expect(request.data.settings.decimalSettings['goals']).toEqual(0);
+      expect(request.data.players).toHaveLength(1);
+      expect(request.data.draft).toBeUndefined();
+    });
+
+    // A league belongs to the starting point it was set for: switching away and back keeps it,
+    // and it never spills onto another.
+    it('keeps a league per starting point', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.setLeagueSettings({ ...component.leagueSettings()!, leagueSize: 14 });
+      component.selectPreset('blank');
+      expect(component.leagueSettings()?.leagueSize).not.toEqual(14);
+
+      component.selectPreset('default');
+      expect(component.leagueSettings()?.leagueSize).toEqual(14);
+    });
+
+    it('says the settings can be changed later', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.league .field-hint').textContent).toContain(
+        'change these later',
+      );
+    });
+  });
+
   // The board's own top five, whoever they turn out to be. Under these stats that is all
   // skaters — the goalie ranks below them and is not lifted into the last seat.
   const topFive = ['Best Player', 'Second Player', 'Third Player', 'Fourth Player', 'Fifth Player'];

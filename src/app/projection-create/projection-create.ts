@@ -40,6 +40,9 @@ import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/pre
 import { SOURCE_KINDS, SourceKind } from '../models/source-kind';
 import { environment } from '../../environments/environment';
 import { IconComponent } from '../shared/icon/icon';
+import { LeagueSettingsControlsComponent } from '../shared/league-settings-controls/league-settings-controls';
+import { LeagueSettings, leagueSettingsOf } from '../shared/league-settings/league-settings';
+import { ScoringStatKey } from '../models/stat-key.model';
 
 /**
  * What the projection opens with: a preset everybody has, or a copy of a board the user can
@@ -96,6 +99,7 @@ export function requestedPreset(value: unknown): CreatePreset['source'] | null {
     ShareImportComponent,
     RelativeTimePipe,
     IconComponent,
+    LeagueSettingsControlsComponent,
   ],
   templateUrl: './projection-create.html',
   styleUrl: './projection-create.css',
@@ -205,6 +209,64 @@ export class ProjectionCreateComponent {
     }
     return this.isCopy() ? 'Nothing to copy yet.' : null;
   });
+
+  /** The league a preset opens with until someone changes it: a new projection's. */
+  private readonly defaultLeague = leagueSettingsOf(
+    createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
+  );
+
+  /**
+   * The board a copy would be made of, for the league it opens with. Through the page's cache,
+   * which the preview reads the same board from, so picking one is still one download.
+   */
+  private readonly pickedBoard = rxResource({
+    params: () => {
+      const point = this.startingPoint();
+      return point.kind === 'copy' && point.id !== null ? point.id : undefined;
+    },
+    stream: ({ params: id }) => this.boardCache.load(id),
+    defaultValue: undefined as ProjectionResponse | undefined,
+  });
+
+  /**
+   * The leagues changed on this page, by the starting point they were changed for — as on the
+   * draft picker (draft-start.ts), and for its reason: a board carries a league of its own, and
+   * switching to it and back must neither lose the one set for a preset nor lay that one over it.
+   */
+  private readonly changedLeagues = signal<ReadonlyMap<string, LeagueSettings>>(new Map());
+
+  /**
+   * The league the projection will be created with: what was set here, or else what the starting
+   * point opens with. Set before Create, so the preview is scored the way the user's own league
+   * scores rather than by defaults they would have to fix afterwards. Null while a copied board is
+   * still on its way, which holds the controls back rather than showing defaults that would jump.
+   */
+  readonly leagueSettings = computed<LeagueSettings | null>(() => {
+    const point = this.startingPoint();
+    const changed = this.changedLeagues().get(startingPointKey(point));
+    if (changed) {
+      return changed;
+    }
+    if (point.kind === 'preset') {
+      return this.defaultLeague;
+    }
+    const board = this.pickedBoard.hasValue() ? this.pickedBoard.value() : undefined;
+    return point.id !== null && board?.id === point.id
+      ? leagueSettingsOf(this.serializer.fromProjectionData(board.data))
+      : null;
+  });
+
+  setLeagueSettings(settings: LeagueSettings): void {
+    const key = startingPointKey(this.startingPoint());
+    this.changedLeagues.update((leagues) => new Map(leagues).set(key, settings));
+  }
+
+  setStatWeights(statWeights: Record<ScoringStatKey, number>): void {
+    const league = this.leagueSettings();
+    if (league) {
+      this.setLeagueSettings({ ...league, statWeights });
+    }
+  }
 
   readonly isLoading = this.dataResource.isLoading;
   readonly loadFailure = computed(() => this.dataResource.error());
@@ -371,6 +433,7 @@ export class ProjectionCreateComponent {
     this.isCreating.set(true);
 
     const point = this.startingPoint();
+    const changedLeague = this.changedLeagues().get(startingPointKey(point));
     if (point.kind === 'copy') {
       if (point.id === null) {
         // Unreachable through the button, which `canCreate` holds back; said for the type.
@@ -381,7 +444,14 @@ export class ProjectionCreateComponent {
         .load(point.id)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: (projection) => this.persist({ ...projection.data, draft: undefined }),
+          next: (projection) =>
+            // An untouched league leaves the copy exact: its saved settings go back as they are.
+            this.persist({
+              ...(changedLeague
+                ? this.withLeague(projection.data, changedLeague)
+                : projection.data),
+              draft: undefined,
+            }),
           error: () => {
             this.isCreating.set(false);
             this.notification.error("Couldn't load the projection to copy. Please try again.");
@@ -394,11 +464,20 @@ export class ProjectionCreateComponent {
     // page would otherwise have downloaded and sent straight back (~0.5 MB, and the upload
     // that was failing in production).
     this.persist(
-      this.serializer.toProjectionData(
-        createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
-      ),
+      this.serializer.toProjectionData({
+        ...createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
+        ...changedLeague,
+      }),
       point.source,
     );
+  }
+
+  /** A board's data with a league laid over its settings, read and written the editor's way. */
+  private withLeague(data: ProjectionData, league: LeagueSettings): ProjectionData {
+    return this.serializer.toProjectionData({
+      ...this.serializer.fromProjectionData(data),
+      ...league,
+    });
   }
 
   private persist(data: ProjectionData, source?: CreateProjectionRequest['source']): void {
@@ -434,6 +513,11 @@ export class ProjectionCreateComponent {
  * `hasStartingPoint`.
  */
 const NOTHING_TO_COPY: StartingPoint = { kind: 'copy', id: null };
+
+/** What a league changed on this page is filed under. */
+function startingPointKey(point: StartingPoint): string {
+  return point.kind === 'preset' ? `preset:${point.source}` : `copy:${point.id}`;
+}
 
 function sameStartingPoint(first: StartingPoint, second: StartingPoint): boolean {
   if (first.kind === 'preset' && second.kind === 'preset') {

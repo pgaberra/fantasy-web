@@ -77,6 +77,13 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   calling one group two things; everything else is repeated per page, since component
   styles are scoped. That page went via four cards with the boards folded into a `<select>`
   (#508, #514), which was its own invention and made the reader learn the question twice.
+  Both pages also set the **league** above the preview, with the one
+  `shared/league-settings-controls` component (the editor's toolbar: points/category, League
+  setup, Stats, Import league) and the preview's editable weight row. Each page keeps the
+  changed league per starting point. The draft picker hands it to the draft in history state;
+  the new-projection page lays it over the settings it creates with (a copy stays byte-exact
+  when the league was left alone). A preview scored by defaults read as "not my league" and
+  put people off creating at all.
   The first row of the open kind is
   checked from the start (`selection`, a
   `linkedSignal` that keeps a pick whose row survives a reload), so a preset draft is
