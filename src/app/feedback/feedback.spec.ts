@@ -109,14 +109,6 @@ describe('FeedbackComponent', () => {
       expect(component.feedbackForm.description().value()).toEqual('It froze.');
     });
 
-    it('says so when this environment does not take feedback', async () => {
-      send.mockRejectedValue(new HttpErrorResponse({ status: 404 }));
-
-      const component = await submitted(fill('Board freezes', 'It froze.'));
-
-      expect(component.errorMessage()).toEqual("Feedback isn't available yet.");
-    });
-
     it('starts over empty for another report', async () => {
       const component = await submitted(fill('Board freezes', 'It froze.'));
 

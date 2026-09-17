@@ -1,4 +1,3 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormField, form, maxLength, required, schema, submit } from '@angular/forms/signals';
@@ -66,9 +65,7 @@ export class FeedbackComponent {
         this.submitted.set(true);
       } catch (error) {
         this.errorMessage.set(
-          error instanceof HttpErrorResponse && error.status === 404
-            ? "Feedback isn't available yet."
-            : messageForError(error, "Couldn't send your feedback. Try again in a moment."),
+          messageForError(error, "Couldn't send your feedback. Try again in a moment."),
         );
       } finally {
         this.isLoading.set(false);
