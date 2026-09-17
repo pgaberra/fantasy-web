@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { LeagueSettings, withEspnImport, withYahooImport } from './league-settings';
+import {
+  LeagueSettings,
+  NO_PAGE_LEAGUES,
+  pageLeagueFor,
+  withEspnImport,
+  withPageLeague,
+  withYahooImport,
+} from './league-settings';
 import {
   DEFAULT_LEAGUE_SIZE,
   DEFAULT_ROSTER_SLOTS,
@@ -93,5 +100,59 @@ describe('league settings imports', () => {
     expect(next.lastEspnLeagueId).toEqual('42');
     expect(next.yahooSync).toBeNull();
     expect(next.statWeights).toEqual({ goals: 6, hits: 1 });
+  });
+});
+
+describe('leagues set on a page', () => {
+  const base: LeagueSettings = {
+    scoringType: 'points',
+    statWeights: DEFAULT_STAT_WEIGHTS,
+    activeScoringColumns: new Set(['goals']),
+    activeUtilityColumns: new Set(['gp']),
+    leagueSize: DEFAULT_LEAGUE_SIZE,
+    rosterSlots: DEFAULT_ROSTER_SLOTS,
+    minGoalieGames: 30,
+    yahooSync: null,
+    espnSync: null,
+    lastEspnLeagueId: null,
+  };
+  const board: LeagueSettings = { ...base, scoringType: 'category', minGoalieGames: 20 };
+  const synced = (syncedAt: string): LeagueSettings => ({
+    ...base,
+    leagueSize: 10,
+    yahooSync: { leagueName: 'Mine', leagueKey: '465.l.1', syncedAt },
+  });
+
+  it('keeps a hand edit to what it was made for', () => {
+    const leagues = withPageLeague(NO_PAGE_LEAGUES, 'preset', base, { ...base, leagueSize: 14 });
+
+    expect(pageLeagueFor(leagues, 'preset', base)?.leagueSize).toEqual(14);
+    expect(pageLeagueFor(leagues, 'copy:b', board)).toBeUndefined();
+  });
+
+  it('lays an import over every starting point, keeping its goalie minimum', () => {
+    const leagues = withPageLeague(NO_PAGE_LEAGUES, 'preset', base, synced('t1'));
+
+    const copy = pageLeagueFor(leagues, 'copy:b', board);
+    expect(copy?.yahooSync?.leagueName).toEqual('Mine');
+    expect(copy?.scoringType).toEqual('points');
+    expect(copy?.minGoalieGames).toEqual(20);
+    expect(pageLeagueFor(leagues, 'copy:b', null)).toBeUndefined();
+  });
+
+  it('lets a hand edit after the import win where it was made', () => {
+    let leagues = withPageLeague(NO_PAGE_LEAGUES, 'preset', base, synced('t1'));
+    const onCopy = pageLeagueFor(leagues, 'copy:b', board)!;
+    leagues = withPageLeague(leagues, 'copy:b', onCopy, { ...onCopy, leagueSize: 16 });
+
+    expect(pageLeagueFor(leagues, 'copy:b', board)?.leagueSize).toEqual(16);
+    expect(pageLeagueFor(leagues, 'preset', base)?.leagueSize).toEqual(10);
+  });
+
+  it('drops the edits made before a new import', () => {
+    let leagues = withPageLeague(NO_PAGE_LEAGUES, 'copy:b', board, { ...board, leagueSize: 16 });
+    leagues = withPageLeague(leagues, 'preset', base, synced('t2'));
+
+    expect(pageLeagueFor(leagues, 'copy:b', board)?.leagueSize).toEqual(10);
   });
 });

@@ -860,6 +860,35 @@ describe('ProjectionCreateComponent', () => {
       expect(component.leagueSettings()?.leagueSize).toEqual(14);
     });
 
+    // An import says which league the user plays in, which is as true of a copy as of a preset.
+    it('creates a copy with the league imported while a preset was picked', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.setLeagueSettings({
+        ...component.leagueSettings()!,
+        scoringType: 'points',
+        yahooSync: {
+          leagueName: 'My league',
+          leagueKey: '465.l.1',
+          syncedAt: '2026-09-17T00:00:00Z',
+        },
+      });
+      component.selectCopyFrom('src');
+      await fixture.whenStable();
+
+      expect(component.leagueSettings()?.yahooSync?.leagueName).toEqual('My league');
+      expect(component.leagueSettings()?.scoringType).toEqual('points');
+      // Not something an import sets, so the board's own stays.
+      expect(component.leagueSettings()?.minGoalieGames).toEqual(25);
+      component.create();
+      const request = createProjection.mock.calls[0][0];
+      expect(request.data.settings.yahooSync?.leagueName).toEqual('My league');
+      expect(request.data.settings.scoringType).toEqual('points');
+      expect(request.data.players).toHaveLength(1);
+    });
+
     it('says the settings can be changed later', async () => {
       const fixture = MockRender(ProjectionCreateComponent);
       await fixture.whenStable();

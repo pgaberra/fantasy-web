@@ -38,6 +38,10 @@ import {
   draftSettingsOf,
   LeagueSettings,
   leagueSettingsOf,
+  NO_PAGE_LEAGUES,
+  PageLeagues,
+  pageLeagueFor,
+  withPageLeague,
 } from '../shared/league-settings/league-settings';
 import { ScoringStatKey } from '../models/stat-key.model';
 import { LeagueSettingsControlsComponent } from '../shared/league-settings-controls/league-settings-controls';
@@ -298,36 +302,41 @@ export class DraftStartComponent {
   });
 
   /**
-   * The leagues changed on this page, by the source they were changed for. Kept per source rather
-   * than as one league for the page: a board already carries a league of its own, and switching to
-   * it and back must neither lose the one set for the presets nor lay that one over the board. The
-   * presets share one, since they differ only in their numbers: a league imported with one picked
-   * must still be there when another is.
+   * The leagues set on this page. A hand edit is kept per source rather than as one league for the
+   * page: a board already carries a league of its own, and switching to it and back must neither
+   * lose the one set for the presets nor lay that one over the board. The presets share one, since
+   * they differ only in their numbers. An import is the page's: it says which league the user
+   * plays in, so a board is drafted against it as much as a preset is.
    */
-  private readonly changedLeagues = signal<ReadonlyMap<string, LeagueSettings>>(new Map());
+  private readonly changedLeagues = signal<PageLeagues>(NO_PAGE_LEAGUES);
 
   /**
-   * The league the picked source will be drafted with: what was set here, or else what it opens
-   * with — a new projection's defaults for a preset, a board's own settings for a board. Null
-   * while that board is still on its way, which holds the controls back rather than showing
-   * defaults that would jump the moment it lands.
+   * What a source opens with — a new projection's defaults for a preset, a board's own settings
+   * for a board — or null while that board is still on its way.
    */
-  readonly leagueSettings = computed<LeagueSettings | null>(() => {
-    const chosen = this.selection();
-    if (!chosen) {
-      return null;
-    }
-    const changed = this.changedLeagues().get(sourceKey(chosen));
-    if (changed) {
-      return changed;
-    }
-    if (chosen.kind === 'preset') {
+  private openingLeague(source: DraftSource): LeagueSettings | null {
+    if (source.kind === 'preset') {
       return this.defaultLeague;
     }
     const board = this.pickedBoard.hasValue() ? this.pickedBoard.value() : undefined;
-    return board?.id === chosen.id
+    return board?.id === source.id
       ? leagueSettingsOf(this.serializer.fromProjectionData(board.data))
       : null;
+  }
+
+  /** The league set on this page for a source, or undefined when it opens as it is. */
+  private changedLeague(source: DraftSource): LeagueSettings | undefined {
+    return pageLeagueFor(this.changedLeagues(), sourceKey(source), this.openingLeague(source));
+  }
+
+  /**
+   * The league the picked source will be drafted with: what was set here, or else what it opens
+   * with. Null while a picked board is still on its way, which holds the controls back rather than
+   * showing defaults that would jump the moment it lands.
+   */
+  readonly leagueSettings = computed<LeagueSettings | null>(() => {
+    const chosen = this.selection();
+    return chosen ? (this.changedLeague(chosen) ?? this.openingLeague(chosen)) : null;
   });
 
   setLeagueSettings(settings: LeagueSettings): void {
@@ -335,7 +344,10 @@ export class DraftStartComponent {
     if (!chosen) {
       return;
     }
-    this.changedLeagues.update((leagues) => new Map(leagues).set(sourceKey(chosen), settings));
+    const previous = this.leagueSettings();
+    this.changedLeagues.update((leagues) =>
+      withPageLeague(leagues, sourceKey(chosen), previous, settings),
+    );
   }
 
   setStatWeights(statWeights: Record<ScoringStatKey, number>): void {
@@ -416,7 +428,7 @@ export class DraftStartComponent {
     if (chosen.kind === 'preset') {
       this.startPreset(chosen.preset);
     } else {
-      this.openDraft(chosen.id, this.changedLeagues().get(sourceKey(chosen)));
+      this.openDraft(chosen.id, this.changedLeague(chosen));
     }
   }
 
@@ -508,7 +520,7 @@ export class DraftStartComponent {
     // since the list was read, which would otherwise try to save a second board for the same
     // preset, and a board left without a draft from before boards waited for the setup.
     const existing = this.presetDraft(preset);
-    const changed = this.changedLeagues().get(sourceKey({ kind: 'preset', preset }));
+    const changed = this.changedLeague({ kind: 'preset', preset });
     if (existing) {
       this.openDraft(existing.id, changed);
       return;

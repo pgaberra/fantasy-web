@@ -41,7 +41,14 @@ import { SOURCE_KINDS, SourceKind } from '../models/source-kind';
 import { environment } from '../../environments/environment';
 import { IconComponent } from '../shared/icon/icon';
 import { LeagueSettingsControlsComponent } from '../shared/league-settings-controls/league-settings-controls';
-import { LeagueSettings, leagueSettingsOf } from '../shared/league-settings/league-settings';
+import {
+  LeagueSettings,
+  leagueSettingsOf,
+  NO_PAGE_LEAGUES,
+  PageLeagues,
+  pageLeagueFor,
+  withPageLeague,
+} from '../shared/league-settings/league-settings';
 import { ScoringStatKey } from '../models/stat-key.model';
 
 /**
@@ -229,26 +236,17 @@ export class ProjectionCreateComponent {
   });
 
   /**
-   * The leagues changed on this page, by what they were changed for — as on the draft picker
-   * (draft-start.ts), and for its reason: a board carries a league of its own, and switching to it
-   * and back must neither lose the one set for the presets nor lay that one over it. The presets
-   * share one: they differ only in their numbers, all open on the same league, and a league
-   * imported under one must not fall back to the defaults when the user picks another.
+   * The leagues set on this page — as on the draft picker (draft-start.ts), and for its reason. A
+   * hand edit belongs to what it was made for: a board carries a league of its own, and switching
+   * to it and back must neither lose the one set for the presets nor lay that one over it. The
+   * presets share one, since they differ only in their numbers. An import belongs to the page: it
+   * says which league the user plays in, and that is as true of a copy as of a preset.
    */
-  private readonly changedLeagues = signal<ReadonlyMap<string, LeagueSettings>>(new Map());
+  private readonly changedLeagues = signal<PageLeagues>(NO_PAGE_LEAGUES);
 
-  /**
-   * The league the projection will be created with: what was set here, or else what the starting
-   * point opens with. Set before Create, so the preview is scored the way the user's own league
-   * scores rather than by defaults they would have to fix afterwards. Null while a copied board is
-   * still on its way, which holds the controls back rather than showing defaults that would jump.
-   */
-  readonly leagueSettings = computed<LeagueSettings | null>(() => {
+  /** What the picked starting point opens with, or null while a copied board is on its way. */
+  private readonly openingLeague = computed<LeagueSettings | null>(() => {
     const point = this.startingPoint();
-    const changed = this.changedLeagues().get(startingPointKey(point));
-    if (changed) {
-      return changed;
-    }
     if (point.kind === 'preset') {
       return this.defaultLeague;
     }
@@ -258,9 +256,25 @@ export class ProjectionCreateComponent {
       : null;
   });
 
+  /**
+   * The league the projection will be created with: what was set here, or else what the starting
+   * point opens with. Set before Create, so the preview is scored the way the user's own league
+   * scores rather than by defaults they would have to fix afterwards. Null while a copied board is
+   * still on its way, which holds the controls back rather than showing defaults that would jump.
+   */
+  readonly leagueSettings = computed<LeagueSettings | null>(
+    () =>
+      pageLeagueFor(
+        this.changedLeagues(),
+        startingPointKey(this.startingPoint()),
+        this.openingLeague(),
+      ) ?? this.openingLeague(),
+  );
+
   setLeagueSettings(settings: LeagueSettings): void {
     const key = startingPointKey(this.startingPoint());
-    this.changedLeagues.update((leagues) => new Map(leagues).set(key, settings));
+    const previous = this.leagueSettings();
+    this.changedLeagues.update((leagues) => withPageLeague(leagues, key, previous, settings));
   }
 
   setStatWeights(statWeights: Record<ScoringStatKey, number>): void {
@@ -435,7 +449,7 @@ export class ProjectionCreateComponent {
     this.isCreating.set(true);
 
     const point = this.startingPoint();
-    const changedLeague = this.changedLeagues().get(startingPointKey(point));
+    const key = startingPointKey(point);
     if (point.kind === 'copy') {
       if (point.id === null) {
         // Unreachable through the button, which `canCreate` holds back; said for the type.
@@ -446,14 +460,20 @@ export class ProjectionCreateComponent {
         .load(point.id)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: (projection) =>
+          next: (projection) => {
+            const changedLeague = pageLeagueFor(
+              this.changedLeagues(),
+              key,
+              leagueSettingsOf(this.serializer.fromProjectionData(projection.data)),
+            );
             // An untouched league leaves the copy exact: its saved settings go back as they are.
             this.persist({
               ...(changedLeague
                 ? this.withLeague(projection.data, changedLeague)
                 : projection.data),
               draft: undefined,
-            }),
+            });
+          },
           error: () => {
             this.isCreating.set(false);
             this.notification.error("Couldn't load the projection to copy. Please try again.");
@@ -467,8 +487,8 @@ export class ProjectionCreateComponent {
     // that was failing in production).
     this.persist(
       this.serializer.toProjectionData({
-        ...createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
-        ...changedLeague,
+        ...createDefaultProjectionState((stat) => this.statInfoService.isRateStat(stat)),
+        ...pageLeagueFor(this.changedLeagues(), key, this.defaultLeague),
       }),
       point.source,
     );
