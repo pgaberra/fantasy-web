@@ -359,6 +359,30 @@ describe('DraftStartComponent', () => {
       expect(component.leagueSettings()?.leagueSize).toEqual(14);
     });
 
+    // An import says which league the user plays in, so a board is drafted against it too.
+    it('drafts a board against the league imported while a preset was picked', async () => {
+      loadProjection.mockReturnValue(of(board('p1')));
+      const component = await render();
+      component.setLeagueSettings({
+        ...component.leagueSettings()!,
+        leagueSize: 14,
+        yahooSync: {
+          leagueName: 'My league',
+          leagueKey: '465.l.1',
+          syncedAt: '2026-09-17T00:00:00Z',
+        },
+      });
+
+      await pickProjections();
+      expect(component.leagueSettings()?.leagueSize).toEqual(14);
+      component.start();
+
+      expect(updateProjection).not.toHaveBeenCalled();
+      const [path, extras] = navigate.mock.calls[0];
+      expect(path).toEqual(['/projections', 'p1', 'draft']);
+      expect(extras.state.draftLeagueSettings.yahooSync.leagueName).toEqual('My league');
+    });
+
     // A preset board left without a draft is reopened rather than created again; the league set
     // on the page goes to its draft the same way.
     it('takes the league to a preset board whose setup was abandoned', async () => {
