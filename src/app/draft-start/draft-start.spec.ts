@@ -303,8 +303,8 @@ describe('DraftStartComponent', () => {
       expect(component.leagueSettings()?.leagueSize).toEqual(10);
     });
 
-    // The draft is ranked by the board's settings, so a league changed here is the board's.
-    it('saves a league changed for a board into it before opening the draft', async () => {
+    // Alexander's call: the league belongs to the draft, and the board is never written to.
+    it('takes a league changed for a board to its draft, leaving the board alone', async () => {
       loadProjection.mockReturnValue(of(board('p1')));
       const component = await render();
       await pickProjections();
@@ -313,14 +313,10 @@ describe('DraftStartComponent', () => {
       component.setLeagueSettings({ ...component.leagueSettings()!, scoringType: 'points' });
       component.start();
 
-      expect(updateProjection).toHaveBeenCalledOnce();
-      const [id, request] = updateProjection.mock.calls[0];
-      expect(id).toEqual('p1');
-      expect(request.name).toEqual('Projection p1');
-      expect(request.data.settings.scoringType).toEqual('points');
-      // The rows are kept by leaving them out, rather than uploaded again or emptied.
-      expect(request.data.players).toBeUndefined();
-      expect(navigate).toHaveBeenCalledWith(['/projections', 'p1', 'draft']);
+      expect(updateProjection).not.toHaveBeenCalled();
+      const [path, extras] = navigate.mock.calls[0];
+      expect(path).toEqual(['/projections', 'p1', 'draft']);
+      expect(extras.state.draftLeagueSettings.scoringType).toEqual('points');
     });
 
     it('opens a board without writing to it when its league was left alone', async () => {
@@ -346,19 +342,20 @@ describe('DraftStartComponent', () => {
       expect(component.leagueSettings()?.scoringType).toEqual('category');
     });
 
-    // A preset board whose setup was abandoned is reopened rather than seeded again, so the league
-    // set on the page has to reach it the way it reaches any other board.
-    it('saves the league into a preset board whose setup was abandoned', async () => {
+    // A preset board left without a draft is reopened rather than created again; the league set
+    // on the page goes to its draft the same way.
+    it('takes the league to a preset board whose setup was abandoned', async () => {
       listWithPresetDrafts.mockReturnValue(of([summary('preset1', 'preset_draft', 'none')]));
-      loadProjection.mockReturnValue(of({ ...board('preset1'), kind: 'preset_draft' }));
       const component = await render();
 
       component.setLeagueSettings({ ...component.leagueSettings()!, leagueSize: 14 });
       component.start();
 
       expect(createProjection).not.toHaveBeenCalled();
-      expect(updateProjection).toHaveBeenCalledOnce();
-      expect(navigate).toHaveBeenCalledWith(['/projections', 'preset1', 'draft']);
+      expect(updateProjection).not.toHaveBeenCalled();
+      const [path, extras] = navigate.mock.calls[0];
+      expect(path).toEqual(['/projections', 'preset1', 'draft']);
+      expect(extras.state.draftLeagueSettings.leagueSize).toEqual(14);
     });
   });
 

@@ -314,9 +314,9 @@
       -->
       <!--
         The league the draft is ranked by, set against the preview it ranks: the editor's own
-        toolbar above, and the weights in the preview's weight row. A preset draft has no editor
-        to set these in later, so this is where they are set; a board's are the board's own, and
-        changing them here changes the board.
+        toolbar above, and the weights in the preview's weight row. They start from what the
+        picked source opens with, and belong to the draft: they go to the draft page with Start
+        and are saved with the draft, never into the board it is played against.
       -->
       @if (leagueSettings(); as league) {
         <div class="league">
@@ -350,14 +350,10 @@
           <button
             type="button"
             class="btn btn-primary start"
-            [disabled]="!selection() || isStarting()"
+            [disabled]="!selection()"
             (click)="start()"
           >
-            @if (isStarting()) {
-              <app-loading-indicator variant="inline" label="Starting" />
-            } @else {
-              Start draft
-            }
+            Start draft
           </button>
         }
       </div>

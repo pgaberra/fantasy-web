@@ -32,8 +32,12 @@ import { ProjectionResponse } from '../api/models/projection-response';
 import { UpdateProjectionData } from '../api/models/update-projection-data';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import { StatInfoService } from '../services/stat-info.service';
-import { ProjectionSettings } from '../api/models/projection-settings';
-import { DRAFT_LEAGUE_STATE_KEY } from '../shared/league-settings/league-settings';
+import { DraftSettings } from '../api/models/draft-settings';
+import { LeagueProjectionSettingsResponse } from '../api/models/league-projection-settings-response';
+import {
+  draftLeagueFromHistory,
+  draftSettingsFromProjection,
+} from '../shared/league-settings/league-settings';
 import { Preset, presetById } from '../models/preset';
 import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/premium-refused';
 import {
@@ -137,6 +141,12 @@ export class DraftModeComponent implements OnInit {
   readonly confirmingFinish = signal<boolean>(false);
 
   private readonly data = signal<ProjectionData | null>(null);
+  /**
+   * The league this draft is ranked by. The draft's own once it has one; before that, the one set
+   * on the draft picker, or else the projection's. Every change made here lands in this and is
+   * saved with the draft, never in the projection's settings.
+   */
+  private readonly league = signal<DraftSettings | null>(null);
   private readonly allPlayers = signal<Player[]>([]);
 
   readonly playerMap = computed(
@@ -148,20 +158,20 @@ export class DraftModeComponent implements OnInit {
     return data ? this.serializer.fromProjectionData(data).playerProjections : [];
   });
 
-  readonly scoringType = computed(() => this.data()?.settings.scoringType ?? 'points');
+  readonly scoringType = computed(() => this.league()?.scoringType ?? 'points');
   readonly statColumns = computed<ScoringStatKey[]>(
-    () => (this.data()?.settings.activeScoringColumns ?? []) as ScoringStatKey[],
+    () => (this.league()?.activeScoringColumns ?? []) as ScoringStatKey[],
   );
   readonly scoreHeading = computed(() =>
     this.scoringType() === 'points' ? 'Total Points' : 'Z-Score',
   );
   private readonly statWeights = computed<StatWeights | null>(
-    () => (this.data()?.settings.statWeights as StatWeights | undefined) ?? null,
+    () => (this.league()?.statWeights as StatWeights | undefined) ?? null,
   );
-  readonly rosterSlots = computed(() => this.data()?.settings.rosterSlots ?? DEFAULT_ROSTER_SLOTS);
-  readonly leagueSize = computed(() => this.data()?.settings.leagueSize ?? DEFAULT_LEAGUE_SIZE);
-  readonly yahooSync = computed(() => this.data()?.settings.yahooSync ?? null);
-  readonly espnSync = computed(() => this.data()?.settings.espnSync ?? null);
+  readonly rosterSlots = computed(() => this.league()?.rosterSlots ?? DEFAULT_ROSTER_SLOTS);
+  readonly leagueSize = computed(() => this.league()?.leagueSize ?? DEFAULT_LEAGUE_SIZE);
+  readonly yahooSync = computed(() => this.league()?.yahooSync ?? null);
+  readonly espnSync = computed(() => this.league()?.espnSync ?? null);
 
   readonly teams = computed(() => this.draft()?.teams ?? []);
   readonly order = computed(() => this.draft()?.order ?? []);
@@ -189,18 +199,20 @@ export class DraftModeComponent implements OnInit {
 
   private readonly rankingInput = computed<RankingInput | null>(() => {
     const data = this.data();
-    if (!data) {
+    const league = this.league();
+    if (!data || !league) {
       return null;
     }
+    // How the numbers are rounded is the projection's; how they are scored is the draft's.
     const settings = data.settings;
     return {
       projections: this.projections(),
-      scoringType: settings.scoringType,
-      statWeights: settings.statWeights as StatWeights,
-      activeScoringColumns: new Set(settings.activeScoringColumns as ScoringStatKey[]),
-      leagueSize: settings.leagueSize ?? DEFAULT_LEAGUE_SIZE,
-      rosterSlots: settings.rosterSlots ?? DEFAULT_ROSTER_SLOTS,
-      minGoalieGames: settings.minGoalieGames ?? DEFAULT_MIN_GOALIE_GAMES,
+      scoringType: league.scoringType,
+      statWeights: league.statWeights as StatWeights,
+      activeScoringColumns: new Set(league.activeScoringColumns as ScoringStatKey[]),
+      leagueSize: league.leagueSize ?? DEFAULT_LEAGUE_SIZE,
+      rosterSlots: league.rosterSlots,
+      minGoalieGames: league.minGoalieGames ?? DEFAULT_MIN_GOALIE_GAMES,
       // As the editor reads them: a board of the model's fractional lines is ranked here the way
       // it was ranked there, rather than on numbers rounded to whole ones on the way in.
       decimalSettings: readableDecimalSettings(
@@ -522,6 +534,13 @@ export class DraftModeComponent implements OnInit {
           this.lookup.setPlayers(pool);
           const loadedDraft = this.serializer.fromProjectionData(projection.data).draft;
           this.draft.set(loadedDraft);
+          // A draft saved before drafts held a league is ranked by the projection's, and takes a
+          // copy of it with its next save.
+          this.league.set(
+            loadedDraft?.settings ??
+              draftLeagueFromHistory() ??
+              draftSettingsFromProjection(projection.data.settings),
+          );
           // A finished draft opens straight to its summary — the board stays a click away
           // via "Edit draft", and editing picks doesn't un-finish it.
           if (loadedDraft?.finishedAt) {
@@ -554,10 +573,9 @@ export class DraftModeComponent implements OnInit {
     const defaults = this.serializer.toProjectionData(
       createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
     );
-    // The league set on the draft picker, if one was: the board is created with it.
-    const state = history.state as Record<string, unknown> | null;
-    const league = state?.[DRAFT_LEAGUE_STATE_KEY] as ProjectionSettings | undefined;
-    this.data.set(league ? { ...defaults, settings: league } : defaults);
+    this.data.set(defaults);
+    // The league set on the draft picker, if one was: the draft is created with it.
+    this.league.set(draftLeagueFromHistory() ?? draftSettingsFromProjection(defaults.settings));
     this.playerService
       .getPlayers()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -664,8 +682,8 @@ export class DraftModeComponent implements OnInit {
   }
 
   onSetupConfirmed(result: DraftSetupResult): void {
-    this.data.update((data) =>
-      data ? { ...data, settings: { ...data.settings, rosterSlots: result.rosterSlots } } : data,
+    this.league.update((league) =>
+      league ? { ...league, rosterSlots: result.rosterSlots } : league,
     );
     this.analytics.capture('draft_started');
     const preset = this.unsavedPreset();
@@ -695,7 +713,7 @@ export class DraftModeComponent implements OnInit {
         name: preset.name,
         kind: 'preset_draft',
         source: preset.source,
-        data: { ...data, players: [], draft },
+        data: { ...data, players: [], draft: this.withLeague(draft) },
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -717,62 +735,61 @@ export class DraftModeComponent implements OnInit {
   }
 
   applyEspnSync(result: EspnSyncResult): void {
-    const mapped = result.settings;
-    this.data.update((data) => {
-      if (!data) {
-        return data;
-      }
-      return {
-        ...data,
-        settings: {
-          ...data.settings,
-          scoringType: mapped.scoringType,
-          activeScoringColumns: [...mapped.activeScoringColumns],
-          activeUtilityColumns: [...mapped.activeUtilityColumns],
-          rosterSlots: mapped.rosterSlots,
-          ...(mapped.leagueSize != null ? { leagueSize: mapped.leagueSize } : {}),
-          ...(mapped.statWeights ? { statWeights: mapped.statWeights } : {}),
-          espnSync: {
-            // ESPN names the league in its settings response; the user only ever typed the id.
-            leagueName: result.leagueName ?? result.leagueId,
-            leagueId: result.leagueId,
-            syncedAt: new Date().toISOString(),
-          },
-          lastEspnLeagueId: result.leagueId,
-          // These settings are ESPN's now, so a Yahoo stamp would mislabel them.
-          yahooSync: undefined,
-        },
-      };
+    this.applyImportedLeague(result.settings, {
+      espnSync: {
+        // ESPN names the league in its settings response; the user only ever typed the id.
+        leagueName: result.leagueName ?? result.leagueId,
+        leagueId: result.leagueId,
+        syncedAt: new Date().toISOString(),
+      },
+      lastEspnLeagueId: result.leagueId,
+      // These settings are ESPN's now, so a Yahoo stamp would mislabel them.
+      yahooSync: undefined,
     });
-    this.save();
   }
 
   applyYahooSync(result: YahooSyncResult): void {
-    const mapped = result.settings;
-    this.data.update((data) => {
-      if (!data) {
-        return data;
-      }
-      return {
-        ...data,
-        settings: {
-          ...data.settings,
-          scoringType: mapped.scoringType,
-          activeScoringColumns: [...mapped.activeScoringColumns],
-          activeUtilityColumns: [...mapped.activeUtilityColumns],
-          rosterSlots: mapped.rosterSlots,
-          ...(mapped.leagueSize != null ? { leagueSize: mapped.leagueSize } : {}),
-          ...(mapped.statWeights ? { statWeights: mapped.statWeights } : {}),
-          yahooSync: {
-            leagueName: result.leagueName,
-            leagueKey: result.leagueKey,
-            syncedAt: new Date().toISOString(),
-          },
-          espnSync: undefined,
-        },
-      };
+    this.applyImportedLeague(result.settings, {
+      yahooSync: {
+        leagueName: result.leagueName,
+        leagueKey: result.leagueKey,
+        syncedAt: new Date().toISOString(),
+      },
+      espnSync: undefined,
     });
-    this.save();
+  }
+
+  /**
+   * An import, into the draft's league. Saved at once if the draft already exists; during the
+   * setup of a new one it is held until the setup is confirmed, like the rest of the setup.
+   */
+  private applyImportedLeague(
+    mapped: LeagueProjectionSettingsResponse,
+    stamps: Partial<DraftSettings>,
+  ): void {
+    this.league.update((league) =>
+      league
+        ? {
+            ...league,
+            scoringType: mapped.scoringType,
+            activeScoringColumns: [...mapped.activeScoringColumns],
+            activeUtilityColumns: [...mapped.activeUtilityColumns],
+            rosterSlots: mapped.rosterSlots,
+            ...(mapped.leagueSize != null ? { leagueSize: mapped.leagueSize } : {}),
+            ...(mapped.statWeights ? { statWeights: mapped.statWeights } : {}),
+            ...stamps,
+          }
+        : league,
+    );
+    if (this.draft()) {
+      this.save();
+    }
+  }
+
+  /** A draft as it is saved: with the league it is ranked by. */
+  private withLeague(draft: DraftState): DraftState {
+    const league = this.league();
+    return league ? { ...draft, settings: league } : draft;
   }
 
   applySetup(next: DraftState): void {
@@ -860,8 +877,13 @@ export class DraftModeComponent implements OnInit {
     // Draft mode only ever moves picks around, so the player rows are left out entirely and
     // the server keeps the stored ones. They are ~0.5 MB, and re-uploading them on every pick
     // made saving depend on an upload that fails outright on a slow connection.
+    // The projection's settings go back exactly as they were loaded: the draft's league is saved
+    // with the draft, so nothing done here changes the projection it is played against.
     const draft = this.draft();
-    const updated: UpdateProjectionData = { settings: data.settings, draft: draft ?? undefined };
+    const updated: UpdateProjectionData = {
+      settings: data.settings,
+      draft: draft ? this.withLeague(draft) : undefined,
+    };
     this.saveStatus.set('saving');
     this.projectionStorage
       .updateProjection(id, { name: this.projectionName(), data: updated })

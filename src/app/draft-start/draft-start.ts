@@ -1,14 +1,12 @@
 import { Component, computed, DestroyRef, inject, linkedSignal, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Observable, switchMap } from 'rxjs';
+import { Observable } from 'rxjs';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import { StatInfoService } from '../services/stat-info.service';
 import { ProjectionResponse } from '../api/models/projection-response';
-import { ProjectionSettings } from '../api/models/projection-settings';
 import { createDefaultProjectionState } from '../draft-projection/projection-defaults';
-import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/premium-refused';
 import { NotificationService } from '../services/notification.service';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { Preset, PRESETS } from '../models/preset';
@@ -29,6 +27,7 @@ import { environment } from '../../environments/environment';
 import { IconComponent } from '../shared/icon/icon';
 import {
   DRAFT_LEAGUE_STATE_KEY,
+  draftSettingsOf,
   LeagueSettings,
   leagueSettingsOf,
 } from '../shared/league-settings/league-settings';
@@ -107,8 +106,6 @@ export class DraftStartComponent {
     defaultValue: [] as ProjectionSummaryResponse[],
   });
 
-  /** A league set here being saved into a board before its draft opens. */
-  readonly isStarting = signal(false);
   /** Which draft is being asked about, so two rows cannot share one confirmation. */
   readonly confirmingDiscard = signal<string | null>(null);
   /** The draft being thrown away, so its row says so and cannot be pressed a second time. */
@@ -381,7 +378,7 @@ export class DraftStartComponent {
     if (chosen.kind === 'preset') {
       this.startPreset(chosen.preset);
     } else {
-      this.openWithLeague(chosen.id, this.changedLeagues().get(sourceKey(chosen)));
+      this.openDraft(chosen.id, this.changedLeagues().get(sourceKey(chosen)));
     }
   }
 
@@ -398,8 +395,12 @@ export class DraftStartComponent {
     this.sourcesResource.reload();
   }
 
-  openDraft(id: string): void {
-    void this.router.navigate(['/projections', id, 'draft']);
+  /**
+   * Opens a board's draft page. A league set here goes with it in the navigation's state, for the
+   * draft to be created with: it is the draft's own, and the board is never written to.
+   */
+  openDraft(id: string, league?: LeagueSettings): void {
+    this.navigateWithLeague(['/projections', id, 'draft'], league);
   }
 
   requestDiscard(draft: ProjectionSummaryResponse): void {
@@ -471,18 +472,21 @@ export class DraftStartComponent {
     const existing = this.presetDraft(preset);
     const changed = this.changedLeagues().get(sourceKey({ kind: 'preset', preset }));
     if (existing) {
-      this.openWithLeague(existing.id, changed);
+      this.openDraft(existing.id, changed);
       return;
     }
     // Nothing is saved yet: the draft page asks for the teams and order first and only then
-    // creates the board, so backing out of that setup leaves nothing behind. A league set here
-    // travels with the navigation, and the board is created with it.
-    if (changed) {
-      void this.router.navigate(['/draft/new', preset.id], {
-        state: { [DRAFT_LEAGUE_STATE_KEY]: this.settingsFor(changed) },
+    // creates the board, so backing out of that setup leaves nothing behind.
+    this.navigateWithLeague(['/draft/new', preset.id], changed);
+  }
+
+  private navigateWithLeague(path: string[], league: LeagueSettings | undefined): void {
+    if (league) {
+      void this.router.navigate(path, {
+        state: { [DRAFT_LEAGUE_STATE_KEY]: draftSettingsOf(league) },
       });
     } else {
-      void this.router.navigate(['/draft/new', preset.id]);
+      void this.router.navigate(path);
     }
   }
 
@@ -502,61 +506,6 @@ export class DraftStartComponent {
       .value()
       .filter((projection) => projection.kind === kind && projection.draftStatus === 'none')
       .sort((first, second) => second.updatedAt.localeCompare(first.updatedAt));
-  }
-
-  /**
-   * Opens a board that already exists, with the league set here saved into it first. A board's
-   * draft is ranked by the board's own settings — there is no second copy for the draft to hold —
-   * so a league changed on this page is a change to that board, the same one its editor would
-   * make. Nothing changed, nothing is written.
-   */
-  private openWithLeague(id: string, league: LeagueSettings | undefined): void {
-    if (!league) {
-      this.openDraft(id);
-      return;
-    }
-    this.saveAndOpen(
-      this.boardCache.load(id).pipe(
-        switchMap((board) => {
-          const state = { ...this.serializer.fromProjectionData(board.data), ...league };
-          // Settings and draft only: the rows are kept when absent, which spares the upload.
-          const { settings } = this.serializer.toProjectionData({
-            ...state,
-            playerProjections: [],
-          });
-          return this.storage.updateProjection(id, {
-            name: board.name,
-            data: { settings, draft: board.data.draft },
-          });
-        }),
-      ),
-    );
-  }
-
-  /** A league set here, as the settings a projection stores: laid over a new projection's. */
-  private settingsFor(league: LeagueSettings): ProjectionSettings {
-    return this.serializer.toProjectionData({
-      ...createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
-      ...league,
-    }).settings;
-  }
-
-  private saveAndOpen(started: Observable<ProjectionResponse>): void {
-    this.isStarting.set(true);
-    started.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (projection) => this.openDraft(projection.id),
-      error: (error: unknown) => {
-        this.isStarting.set(false);
-        this.sourcesResource.reload();
-        // A preset board left from before boards waited for the setup is still under Premium, so
-        // a lapsed subscription can refuse the save; retrying that cannot work.
-        this.notification.error(
-          isPremiumRefusal(error)
-            ? PREMIUM_REFUSED_MESSAGE
-            : "Couldn't start the draft. Please try again.",
-        );
-      },
-    });
   }
 }
 

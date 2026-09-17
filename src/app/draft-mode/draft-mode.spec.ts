@@ -1,6 +1,7 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import { createDefaultProjectionState } from '../draft-projection/projection-defaults';
+import { draftSettingsFromProjection } from '../shared/league-settings/league-settings';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Observable, of, throwError } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -98,8 +99,11 @@ describe('DraftModeComponent', () => {
     (id: string, request: UpdateProjectionRequest) => Observable<ProjectionResponse>
   >(() => of(projection));
 
+  let loadedProjection: ProjectionResponse = projection;
+
   beforeEach(() => {
     updateProjection.mockClear();
+    loadedProjection = projection;
     return MockBuilder(DraftModeComponent)
       .keep(ProjectionRankingService)
       .keep(ProjectionCalculationService)
@@ -107,7 +111,7 @@ describe('DraftModeComponent', () => {
       .keep(DraftPlayerLookupService)
       .mock(PlayerService, { getPlayers: () => of(players) })
       .mock(ProjectionStorageService, {
-        loadProjection: () => of(projection),
+        loadProjection: () => of(loadedProjection),
         updateProjection,
       })
       .provide({
@@ -167,10 +171,11 @@ describe('DraftModeComponent', () => {
     expect(component.phase()).toEqual('draft');
   });
 
-  it('applies a Yahoo sync to the settings and records it', async () => {
+  it('applies a Yahoo sync to the draft, never to the projection it is played against', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
+    component.applySetup(draft);
     updateProjection.mockClear();
 
     component.applyYahooSync({
@@ -194,7 +199,67 @@ describe('DraftModeComponent', () => {
       leagueKey: 'nhl.l.123',
       syncedAt: expect.any(String),
     });
-    expect(updateProjection).toHaveBeenCalled();
+    expect(updateProjection).toHaveBeenCalledOnce();
+    const sent = updateProjection.mock.calls[0][1].data;
+    expect(sent.draft?.settings?.yahooSync?.leagueKey).toEqual('nhl.l.123');
+    expect(sent.draft?.settings?.scoringType).toEqual('category');
+    // The projection's own settings go back exactly as they were loaded.
+    expect(sent.settings).toEqual(projection.data.settings);
+  });
+
+  it('holds a sync made before the draft exists until its setup is confirmed', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    updateProjection.mockClear();
+
+    component.applyEspnSync({
+      leagueId: '42',
+      leagueName: 'Puck Luck',
+      settings: {
+        scoringType: 'category',
+        activeScoringColumns: ['goals'],
+        activeUtilityColumns: ['gp'],
+        rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
+        unsupportedRosterCodes: [],
+        unsupportedStats: [],
+      },
+    });
+    expect(updateProjection).not.toHaveBeenCalled();
+
+    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+
+    const sent = updateProjection.mock.calls[0][1].data;
+    expect(sent.draft?.settings?.espnSync?.leagueId).toEqual('42');
+    expect(sent.settings).toEqual(projection.data.settings);
+  });
+
+  it("ranks a draft by the league it holds rather than the projection's", async () => {
+    const withLeague: ProjectionResponse = {
+      ...projection,
+      data: {
+        ...projection.data,
+        draft: {
+          ...draft,
+          settings: {
+            scoringType: 'category',
+            statWeights: {},
+            activeScoringColumns: ['goals'],
+            activeUtilityColumns: ['gp'],
+            leagueSize: 6,
+            rosterSlots: { c: 1, lw: 1, rw: 1, d: 2, util: 0, bn: 1, g: 1 },
+          },
+        },
+      },
+    };
+    loadedProjection = withLeague;
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    expect(component.scoringType()).toEqual('category');
+    expect(component.leagueSize()).toEqual(6);
+    expect(component.scoreHeading()).toEqual('Z-Score');
   });
 
   it('ranks teams by projected total in the league projection', async () => {
@@ -925,7 +990,7 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
 
     component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
 
-    expect(createProjection.mock.calls[0][0].data.settings.yahooSync.leagueKey).toEqual(
+    expect(createProjection.mock.calls[0][0].data.draft.settings.yahooSync.leagueKey).toEqual(
       'nhl.l.123',
     );
   });
@@ -938,15 +1003,17 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
       scoringType: 'category',
       leagueSize: 8,
     });
-    history.replaceState({ draftLeagueSettings: settings }, '');
+    history.replaceState({ draftLeagueSettings: draftSettingsFromProjection(settings) }, '');
     const component = await render();
 
     expect(component.scoringType()).toEqual('category');
     component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
 
     const request = createProjection.mock.calls[0][0];
-    expect(request.data.settings.scoringType).toEqual('category');
-    expect(request.data.settings.leagueSize).toEqual(8);
+    expect(request.data.draft.settings.scoringType).toEqual('category');
+    expect(request.data.draft.settings.leagueSize).toEqual(8);
+    // The board itself keeps a new projection's defaults.
+    expect(request.data.settings.scoringType).toEqual('points');
   });
 
   it('creates the board with its setup once confirmed, then opens the board', async () => {
@@ -962,8 +1029,8 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
     expect(request.kind).toEqual('preset_draft');
     expect(request.source).toEqual('model');
     expect(request.data.players).toEqual([]);
-    expect(request.data.draft).toEqual(draft);
-    expect(request.data.settings.rosterSlots).toEqual({
+    expect(request.data.draft).toEqual({ ...draft, settings: expect.any(Object) });
+    expect(request.data.draft.settings.rosterSlots).toEqual({
       c: 1,
       lw: 0,
       rw: 0,
