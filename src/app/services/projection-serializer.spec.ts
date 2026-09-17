@@ -95,6 +95,26 @@ describe('ProjectionSerializerService', () => {
     expect(roundTripped.draft?.finishedAt).toEqual('2026-07-15T10:00:00.000Z');
   });
 
+  // The editor autosaves the draft back with the projection, so a round-trip that dropped the
+  // draft's own league would hand it back to the projection's the next time anything was edited.
+  it("carries the draft's own league through a save/load round-trip", () => {
+    const settings = {
+      scoringType: 'category' as const,
+      statWeights: { goals: 6 },
+      activeScoringColumns: ['goals', 'hits'],
+      activeUtilityColumns: ['gp'],
+      leagueSize: 10,
+      rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
+      minGoalieGames: 84,
+      espnSync: { leagueName: 'Puck Luck', leagueId: '42', syncedAt: '2026-09-17T08:00:00Z' },
+    };
+    const roundTripped = service.fromProjectionData(
+      service.toProjectionData({ ...sampleState, draft: { ...sampleState.draft!, settings } }),
+    );
+
+    expect(roundTripped.draft?.settings).toEqual(settings);
+  });
+
   it('defaults draft to null for projections without a draft', () => {
     const data = service.toProjectionData(sampleState);
     delete data.draft;

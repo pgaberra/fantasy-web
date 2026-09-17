@@ -1,0 +1,56 @@
+:host {
+  display: inline-flex;
+  min-width: 0;
+}
+
+.import-league app-icon {
+  flex: none;
+  margin-right: 0.35rem;
+  vertical-align: -2px;
+}
+
+/* Reporting rather than asking: the dot leads, so the state reads before the league name does. */
+.synced-league {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 18rem;
+}
+
+.synced-dot {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-success);
+}
+
+/* The platform's own mark, in its own colours: it says where the league lives without spending
+   any of the button's width on the word "ESPN" or "Yahoo". */
+.synced-mark {
+  flex: none;
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.synced-mark--espn {
+  border-radius: 0.15rem;
+}
+
+.synced-mark--yahoo {
+  color: #6001d2;
+}
+
+/* A league name is the user's own words and can run long — it may shorten, but it must never
+   push the buttons beside it off the toolbar. */
+.synced-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .synced-league {
+    max-width: 100%;
+  }
+}

@@ -7,6 +7,9 @@
   <app-league-sync
     class="setup-yahoo"
     [lastSync]="lastSync()"
+    [lastEspnLeagueId]="lastEspnSync()?.leagueId ?? null"
+    [lastEspnSyncedAt]="lastEspnSync()?.syncedAt ?? null"
+    [lastEspnLeagueName]="lastEspnSync()?.leagueName ?? null"
     (yahooSynced)="onYahooSynced($event)"
     (espnSynced)="onEspnSynced($event)"
   />

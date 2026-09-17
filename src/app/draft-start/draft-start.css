@@ -572,8 +572,17 @@
 
 /* The preview sits between the choice and the Start button, where the reader's eye already is
    after picking a card. */
+.league {
+  margin-top: var(--space-5);
+}
+
 .preview {
   margin-top: var(--space-5);
+}
+
+/* Close under the controls: they and the preview are one thing, the league and what it ranks. */
+.league + .preview {
+  margin-top: var(--space-3);
 }
 
 .preview-label {

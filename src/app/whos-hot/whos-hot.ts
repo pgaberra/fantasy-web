@@ -27,12 +27,11 @@ import {
 } from '../draft-projection/projection-defaults';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
-import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
+import { LeagueImportButtonComponent } from '../shared/league-import-button/league-import-button';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { FREE_PRESET, GameRangeSelectorComponent } from './game-range-selector/game-range-selector';
 import { SEASONS, seasonLabelOf } from './season.model';
 import { HotPlayersTableComponent } from './hot-players-table/hot-players-table';
-import { IconComponent } from '../shared/icon/icon';
 
 /**
  * How long the game range has to hold still before it is worth a request. Long enough that a
@@ -65,9 +64,8 @@ function isSameSpan(a: GameSpan | undefined, b: GameSpan | undefined): boolean {
     HotPlayersTableComponent,
     LoadingIndicatorComponent,
     ErrorStateComponent,
-    TooltipDirective,
+    LeagueImportButtonComponent,
     HelpTipComponent,
-    IconComponent,
   ],
   templateUrl: './whos-hot.html',
   styleUrl: './whos-hot.css',
@@ -188,14 +186,6 @@ export class WhosHotComponent {
   readonly syncedLeagueName = computed(
     () => this.yahooSync()?.leagueName ?? this.espnSync()?.leagueName ?? null,
   );
-
-  /** Which platform that league is on, so the toolbar can wear its mark. */
-  readonly syncedProvider = computed<'yahoo' | 'espn' | null>(() => {
-    if (this.yahooSync()) {
-      return 'yahoo';
-    }
-    return this.espnSync() ? 'espn' : null;
-  });
 
   /**
    * Whether this account may pick its own range. Premium buys it; with payments switched off

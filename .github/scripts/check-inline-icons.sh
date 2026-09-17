@@ -36,10 +36,9 @@ in_list() {
 svg_allowed=(
   "src/app/auth/facebook-sign-in-button/facebook-sign-in-button.html"
   "src/app/auth/google-sign-in-button/google-sign-in-button.html"
-  "src/app/draft-projection/draft-projection.html"
   "src/app/draft-projection/projection-settings-section/league-sync/league-sync.html"
   "src/app/draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync.html"
-  "src/app/whos-hot/whos-hot.html"
+  "src/app/shared/league-import-button/league-import-button.html"
 )
 
 # Files allowed an icon-like character, because there it is text.

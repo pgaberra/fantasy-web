@@ -178,6 +178,9 @@ export class ProjectionSerializerService {
       // Carry the finished marker through every save/load round-trip; omit the key entirely
       // while the draft is still in progress so the persisted JSON stays minimal.
       ...(draft.finishedAt ? { finishedAt: draft.finishedAt } : {}),
+      // The league the draft is ranked by. The editor saves the draft back with every autosave,
+      // so a copy that left this out would quietly hand the draft back to the projection's league.
+      ...(draft.settings ? { settings: structuredClone(draft.settings) } : {}),
     };
   }
 
