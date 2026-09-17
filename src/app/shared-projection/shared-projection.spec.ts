@@ -677,7 +677,6 @@ describe('SharedProjectionComponent', () => {
 
       expect(fixture.nativeElement.querySelector('[data-testid="copy-board"]')).not.toBeNull();
       expect(fixture.nativeElement.querySelector('[data-testid="draft-board"]')).not.toBeNull();
-      expect(fixture.nativeElement.querySelector('[data-testid="sign-in-prompt"]')).toBeNull();
     });
 
     /**
@@ -703,38 +702,32 @@ describe('SharedProjectionComponent', () => {
       }
     });
 
-    it('asks a visitor without an account to sign in instead of copying', async () => {
+    /**
+     * The press is the decision; the account is the paperwork. Sending them straight to the form
+     * rather than to a note holding two links is the whole point of this pair of tests, and the
+     * board is not copied on the way.
+     */
+    it('takes a visitor without an account to the account form instead of copying', async () => {
       const fixture = await render();
 
       fixture.nativeElement.querySelector('[data-testid="draft-board"]').click();
       fixture.detectChanges();
 
       expect(importFromShare).not.toHaveBeenCalled();
-      expect(navigate).not.toHaveBeenCalled();
-      expect(fixture.nativeElement.textContent).toContain('Save a copy to your account');
+      expect(navigate).toHaveBeenCalledWith(['/register'], {
+        queryParams: { returnUrl: '/s/abc123?action=draft', reason: 'shared-board' },
+      });
     });
 
-    it('asks the same of a visitor who was reaching for a copy', async () => {
+    it('carries the other button back the same way', async () => {
       const fixture = await render();
 
       fixture.nativeElement.querySelector('[data-testid="copy-board"]').click();
       fixture.detectChanges();
 
-      expect(fixture.nativeElement.textContent).toContain('Save a copy to your account');
-    });
-
-    it('sends them back to this board once they have signed in from the ask', async () => {
-      const fixture = await render();
-
-      fixture.nativeElement.querySelector('[data-testid="draft-board"]').click();
-      fixture.detectChanges();
-
-      const login = ngMocks.get(ngMocks.find('[data-testid="prompt-login"]'), RouterLink);
-      const register = ngMocks.get(ngMocks.find('[data-testid="prompt-register"]'), RouterLink);
-      expect(login.routerLink).toEqual('/login');
-      expect(login.queryParams).toEqual({ returnUrl: '/s/abc123?action=draft' });
-      expect(register.routerLink).toEqual('/register');
-      expect(register.queryParams).toEqual({ returnUrl: '/s/abc123?action=draft' });
+      expect(navigate).toHaveBeenCalledWith(['/register'], {
+        queryParams: { returnUrl: '/s/abc123?action=projection', reason: 'shared-board' },
+      });
     });
 
     /** Both offers are what the page is for, so neither is under a board to be scrolled past. */
@@ -822,25 +815,30 @@ describe('SharedProjectionComponent', () => {
       expect(replaceState).toHaveBeenCalledWith('/s/abc123');
     });
 
-    it('asks again rather than copying when the sign-in did not take', async () => {
+    /**
+     * A link passed on with the action still on it opens the board for whoever follows it. Acting
+     * on it without a session would send every signed-out reader to a signup form instead of the
+     * projection the link points at, and the buttons are right there for the one who wants one.
+     */
+    it('shows the board rather than the form when the sign-in did not take', async () => {
       requestedAction = 'draft';
 
       const fixture = await render();
 
       expect(importFromShare).not.toHaveBeenCalled();
-      expect(fixture.nativeElement.querySelector('[data-testid="sign-in-prompt"]')).not.toBeNull();
+      expect(navigate).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.querySelector('[data-testid="draft-board"]')).not.toBeNull();
     });
 
     it('ignores an action it does not offer', async () => {
       isLoggedIn.set(true);
       requestedAction = 'delete-everything';
 
-      const fixture = await render();
+      await render();
 
       expect(importFromShare).not.toHaveBeenCalled();
       expect(navigate).not.toHaveBeenCalled();
       expect(replaceState).not.toHaveBeenCalled();
-      expect(fixture.nativeElement.querySelector('[data-testid="sign-in-prompt"]')).toBeNull();
     });
   });
 
