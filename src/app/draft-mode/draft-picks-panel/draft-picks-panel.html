@@ -17,7 +17,7 @@
             <span class="feed-info">
               <span class="feed-player">{{ lookup.name(entry.playerId) }}</span>
               <span class="feed-sub">
-                <app-position-chips [playerId]="entry.playerId" />
+                <app-player-position-chips [playerId]="entry.playerId" />
                 <span class="feed-team">{{ entry.mine ? 'You' : entry.teamName }}</span>
               </span>
             </span>

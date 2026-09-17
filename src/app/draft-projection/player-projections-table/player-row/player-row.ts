@@ -19,6 +19,7 @@ import { SkaterPosition } from '../../../models/position.model';
 import { PopoverTriggerDirective } from '../../../shared/popover/popover-trigger.directive';
 import { TooltipDirective } from '../../../shared/tooltip/tooltip.directive';
 import { PositionMenuComponent } from '../position-menu/position-menu';
+import { PositionChipsComponent } from '../../../shared/position-chips/position-chips';
 
 @Component({
   selector: 'tr[app-player-row]',
@@ -29,6 +30,7 @@ import { PositionMenuComponent } from '../position-menu/position-menu';
     PopoverTriggerDirective,
     TooltipDirective,
     PositionMenuComponent,
+    PositionChipsComponent,
   ],
   templateUrl: './player-row.html',
   styleUrl: './player-row.css',
@@ -126,10 +128,14 @@ export class PlayerRowComponent {
     return this.warnings().get(key) ?? null;
   }
 
-  playerPosition = computed(() => {
+  /** The positions drawn as chips, in the order the pool lists them. */
+  readonly positionList = computed<readonly string[]>(() => {
     const p = this.player();
-    return p.type === 'skater' ? Array.from(p.positions).join(', ') : 'G';
+    return p.type === 'skater' ? [...p.positions] : ['G'];
   });
+
+  /** The same positions in words, for the trigger's accessible name. */
+  readonly playerPosition = computed(() => this.positionList().join(', '));
 
   /** Goalies are always and only G, so there is nothing to correct and no menu to offer. */
   readonly canEditPositions = computed(

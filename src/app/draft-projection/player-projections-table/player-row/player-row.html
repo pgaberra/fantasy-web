@@ -24,10 +24,10 @@
               : 'Click to set the positions your league uses'
           "
         >
-          ({{ playerPosition() }})
+          <app-position-chips [positions]="positionList()" />
         </button>
       } @else {
-        <span>({{ playerPosition() }})</span>
+        <app-position-chips class="player-positions-static" [positions]="positionList()" />
       }
     </span>
     @if (rookie()) {

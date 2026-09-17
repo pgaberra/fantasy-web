@@ -18,7 +18,7 @@
           <span class="slot-info">
             <span class="slot-name">{{ lookup.name(slot.playerId) }}</span>
             <span class="slot-sub">
-              <app-position-chips [playerId]="slot.playerId" />
+              <app-player-position-chips [playerId]="slot.playerId" />
               <span class="slot-team">{{ lookup.team(slot.playerId) }}</span>
             </span>
           </span>
@@ -34,7 +34,7 @@
         <span class="slot-info">
           <span class="slot-name">{{ lookup.name(playerId) }}</span>
           <span class="slot-sub">
-            <app-position-chips [playerId]="playerId" />
+            <app-player-position-chips [playerId]="playerId" />
             <span class="slot-team">{{ lookup.team(playerId) }}</span>
           </span>
         </span>

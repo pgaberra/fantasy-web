@@ -202,10 +202,25 @@ describe('PlayerRowComponent', () => {
     });
   });
 
+  /** Each chip's position and its colour class, in the order the name cell draws them. */
+  const positionChips = () =>
+    Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('.player-name .pos-chip')).map(
+      (chip) =>
+        `${chip.textContent?.trim()} ${[...chip.classList].find((name) => name.startsWith('pos--'))}`,
+    );
+
   it('should display skater name and positions', () => {
     setInputs();
     const nameCell = fixture.nativeElement.querySelector('.player-name');
-    expect(nameCell.textContent).toContain('Connor McDavid (C)');
+    expect(nameCell.textContent).toContain('Connor McDavid');
+    expect(positionChips()).toEqual(['C pos--c']);
+  });
+
+  // The same coloured chips the draft board draws, one per position the skater is eligible for.
+  it('draws a coloured chip for every position a skater holds', () => {
+    setInputs({ player: { ...mockSkater, positions: new Set<SkaterPosition>(['C', 'RW']) } });
+
+    expect(positionChips()).toEqual(['C pos--c', 'RW pos--rw']);
   });
 
   describe('the headshot', () => {
@@ -223,7 +238,7 @@ describe('PlayerRowComponent', () => {
 
       expect(headshot()).toBeNull();
       expect(fixture.nativeElement.querySelector('.player-name').textContent).toContain(
-        'Connor McDavid (C)',
+        'Connor McDavid',
       );
     });
   });
@@ -234,7 +249,8 @@ describe('PlayerRowComponent', () => {
       player: mockGoalie,
     });
     const nameCell = fixture.nativeElement.querySelector('.player-name');
-    expect(nameCell.textContent).toContain('Igor Shesterkin (G)');
+    expect(nameCell.textContent).toContain('Igor Shesterkin');
+    expect(positionChips()).toEqual(['G pos--g']);
   });
 
   it('should display rank and total rank', () => {

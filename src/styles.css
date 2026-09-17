@@ -330,7 +330,7 @@ a.premium-badge:focus-visible {
 }
 
 /* Position colour system — sets --pos / --pos-bg, consumed by player avatars and
-   position/slot chips (app-player-avatar and the draft panels). */
+   position/slot chips (app-player-avatar, app-position-chips and the draft roster). */
 .pos--c {
   --pos: #1d4ed8;
   --pos-bg: #eef2ff;
