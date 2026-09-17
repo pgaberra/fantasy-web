@@ -139,14 +139,8 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-2) var(--space-4);
+  gap: var(--space-2) var(--space-3);
   margin-top: var(--space-2);
-}
-
-.feature-link {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  color: var(--color-accent);
 }
 
 /* The AI projection: the one dark card, with a filled gold button (navy text on it reads 6.7:1). */
@@ -179,14 +173,24 @@
   filter: brightness(1.08);
 }
 
-.btn-gold:focus-visible,
-.feature-link-on-dark:focus-visible {
-  outline: 2px solid var(--color-gold);
-  outline-offset: 2px;
+/* The secondary button on the dark card: `btn-secondary` is a white surface, which would outweigh
+   the gold one beside it, so this is an outline (white text on the navy reads 12.5:1). */
+
+.btn-on-dark {
+  background: transparent;
+  color: var(--color-text-on-dark);
+  border-color: rgba(255, 255, 255, 0.55);
 }
 
-.feature-link-on-dark {
-  color: var(--color-gold);
+.btn-on-dark:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--color-text-on-dark);
+}
+
+.btn-gold:focus-visible,
+.btn-on-dark:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
 }
 
 /* The share link, after the features: it is used less often than any of them. */

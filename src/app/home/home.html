@@ -63,7 +63,7 @@
             Create projection
           </a>
           @if (projectionCount() > 0) {
-            <a class="feature-link" routerLink="/projections">
+            <a class="btn btn-secondary" routerLink="/projections">
               My projections ({{ projectionCount() }})
             </a>
           }
@@ -107,12 +107,9 @@
               >
                 Create projection
               </a>
-              <a
-                class="feature-link feature-link-on-dark"
-                routerLink="/draft"
-                [queryParams]="{ start: 'model' }"
-                >Open Draft mode</a
-              >
+              <a class="btn btn-on-dark" routerLink="/draft" [queryParams]="{ start: 'model' }">
+                Open Draft mode
+              </a>
             </div>
           }
         </section>
