@@ -14,6 +14,7 @@ import { DecimalStatKey } from '../../projection-settings-section/model';
 import { PlayerHeadshotComponent } from '../../../shared/player-headshot/player-headshot';
 import { StatInputComponent } from './stat-input/stat-input';
 import { StatWarningService } from '../../../services/stat-warning.service';
+import { TierBadge } from '../../../services/tier.service';
 import { StatInfoService } from '../../../services/stat-info.service';
 import { SkaterPosition } from '../../../models/position.model';
 import { PopoverTriggerDirective } from '../../../shared/popover/popover-trigger.directive';
@@ -101,6 +102,8 @@ export class PlayerRowComponent {
   decimalSettings = input.required<Record<DecimalStatKey, number>>();
   isEditing = input<boolean>(false);
   belowMinGames = input<boolean>(false);
+  /** The tier chip to show beside the positions, or null when tiers are off or he has none. */
+  tierBadge = input<TierBadge | null>(null);
   readonly = input<boolean>(false);
 
   /**
