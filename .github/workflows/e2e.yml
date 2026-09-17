@@ -44,12 +44,41 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      # Staging is locked to the owner's IP by default, and a GitHub runner has a different IP on
+      # every run. The restricted staging-access key lets this runner in, and only this runner:
+      # the server takes the IP from the SSH connection itself, and the rule expires on its own
+      # after 90 minutes should the revoke below never run (staging_access_forced.sh in the
+      # monorepo root). Failing here fails the job, which is right: nothing was tested.
+      - name: Let this runner through the staging firewall
+        env:
+          ACCESS_KEY: ${{ secrets.STAGING_ACCESS_SSH_KEY }}
+        run: |
+          if [ -z "$ACCESS_KEY" ]; then
+            echo "::error::Secret STAGING_ACCESS_SSH_KEY is not set — see staging-access-setup.md."
+            exit 1
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$ACCESS_KEY" > ~/.ssh/id_staging_access
+          chmod 600 ~/.ssh/id_staging_access
+          printf '%s\n' '62.238.17.178 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH9wW3pT4VmX2Y3ny5//zQUa/JFR/6l8b7WGQ70Jhsqh' > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/id_staging_access -o IdentitiesOnly=yes -o UserKnownHostsFile=~/.ssh/known_hosts \
+            root@62.238.17.178 allow
+
       - name: Run E2E tests
         env:
           E2E_BASE_URL: https://staging.slapstat.com
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
         run: npm run e2e
+
+      # Also on failure and cancellation, so the runner is not left allowed until its rule expires.
+      - name: Close the staging firewall behind this runner
+        if: always()
+        continue-on-error: true
+        run: |
+          [ -f ~/.ssh/id_staging_access ] || exit 0
+          ssh -i ~/.ssh/id_staging_access -o IdentitiesOnly=yes -o UserKnownHostsFile=~/.ssh/known_hosts \
+            root@62.238.17.178 revoke
 
       # Only "Run E2E tests" is allowed to decide whether this job is red. Every step below it
       # reports on the result rather than producing it, so a GitHub-side failure in one of them —
