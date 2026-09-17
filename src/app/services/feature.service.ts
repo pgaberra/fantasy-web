@@ -41,6 +41,11 @@ export class FeatureService {
     this.features.hasValue() ? this.features.value().leagueDraftSync : false,
   );
 
+  /** Whether the streamer planner is served here. False until the answer lands, like the others. */
+  readonly streamerPlanner = computed(() =>
+    this.features.hasValue() ? this.features.value().streamerPlanner : false,
+  );
+
   /**
    * The presets this environment offers: every one of them where the AI projection is served,
    * and everything but the model-seeded one where it is not. A starting point the server will not

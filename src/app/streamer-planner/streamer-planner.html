@@ -1,0 +1,138 @@
+<div class="streamer-planner">
+  <div class="page-header">
+    <h1>Streamer Planner</h1>
+    <app-help-tip
+      label="How teams are ranked"
+      text="Each game counts once, or 1.25 times on an off-night, when most lineups have an open slot. Games against opponents that allow more goals count more for skaters. For goalies, games against opponents that score less count more."
+    />
+  </div>
+
+  <div class="planner-card">
+    @if (loadFailure()) {
+      <app-error-state
+        title="Couldn't load the schedule"
+        [error]="loadFailure()"
+        (retry)="retry()"
+      />
+    } @else if (noSchedule()) {
+      <p class="empty">The NHL hasn't published this season's schedule yet.</p>
+    } @else {
+      <div class="toolbar">
+        @if (week(); as week) {
+          <div class="week-picker">
+            <button
+              type="button"
+              class="step"
+              aria-label="Previous week"
+              [disabled]="!canGoBack()"
+              (click)="step(-1)"
+            >
+              ‹
+            </button>
+            <label class="visually-hidden" for="planner-week">Week</label>
+            <select id="planner-week" class="week-select" (change)="selectWeek($event)">
+              @for (option of weeks(); track option.week) {
+                <option [value]="option.week" [selected]="option.week === week.week">
+                  {{ weekLabel(option) }}
+                </option>
+              }
+            </select>
+            <button
+              type="button"
+              class="step"
+              aria-label="Next week"
+              [disabled]="!canGoForward()"
+              (click)="step(1)"
+            >
+              ›
+            </button>
+          </div>
+        }
+
+        <div class="segmented" role="group" aria-label="Rank for">
+          <button
+            type="button"
+            [attr.aria-pressed]="position() === 'skaters'"
+            (click)="position.set('skaters')"
+          >
+            Skaters
+          </button>
+          <button
+            type="button"
+            [attr.aria-pressed]="position() === 'goalies'"
+            (click)="position.set('goalies')"
+          >
+            Goalies
+          </button>
+        </div>
+
+        @if (offNightMaxGames(); as max) {
+          <p class="legend">
+            <span class="legend-swatch legend-swatch--off-night"></span>
+            Off-night: {{ max }} games or fewer
+          </p>
+        }
+      </div>
+
+      @if (isLoading()) {
+        <app-loading-indicator />
+      } @else {
+        <div class="table-scroll">
+          <table class="planner-table">
+            <thead>
+              <tr>
+                <th scope="col" class="num rank-cell">Rank</th>
+                <th scope="col" class="team">Team</th>
+                <th scope="col" class="num">Games</th>
+                <th scope="col" class="num">Off-nights</th>
+                <th scope="col" class="num" title="Back-to-backs">B2B</th>
+                @for (day of days(); track day.date) {
+                  <th scope="col" class="day" [class.off-night]="day.offNight">
+                    <span class="day-name">{{ dayName(day) }}</span>
+                    <span class="day-date">{{ dayOfMonth(day) }}</span>
+                    <span class="day-games"
+                      >{{ day.games }} {{ day.games === 1 ? 'game' : 'games' }}</span
+                    >
+                  </th>
+                }
+                <th scope="col" class="num">Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (team of teams(); track team.team) {
+                <tr>
+                  <td class="num rank-cell">
+                    <span class="rank" [attr.data-tier]="rankTier(team)">{{ rank(team) }}</span>
+                  </td>
+                  <th scope="row" class="team">{{ team.team }}</th>
+                  <td class="num strong">{{ team.games }}</td>
+                  <td class="num">{{ team.offNightGames }}</td>
+                  <td class="num">{{ team.backToBacks }}</td>
+                  @for (day of days(); track day.date) {
+                    @if (gameOn(team, day); as game) {
+                      <td
+                        class="game"
+                        [class.off-night]="day.offNight"
+                        [attr.data-tier]="matchupTier(game)"
+                        [attr.title]="matchupLabel(game)"
+                        [attr.aria-label]="matchupLabel(game)"
+                      >
+                        {{ game.home ? '' : '@' }}{{ game.opponent }}
+                        @if (game.backToBack) {
+                          <span class="b2b" aria-hidden="true">B2B</span>
+                        }
+                      </td>
+                    } @else {
+                      <td class="game game--none" [class.off-night]="day.offNight"></td>
+                    }
+                  }
+                  <td class="num strong">{{ score(team).toFixed(2) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  </div>
+</div>

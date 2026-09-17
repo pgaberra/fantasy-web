@@ -23,6 +23,9 @@
           @if (whosHotEnabled) {
             <a routerLink="/whos-hot" routerLinkActive="active">Who's Hot</a>
           }
+          @if (features.streamerPlanner()) {
+            <a routerLink="/streamer-planner" routerLinkActive="active">Streamer Planner</a>
+          }
           <!-- The one link in the header that sells something, and only to an account that has
                not bought it. It used to be an "Account" link to the subscription page, beside an
                avatar that also opened an account menu: two doors marked the same, one of them
@@ -89,6 +92,17 @@
         ariaCurrentWhenActive="page"
       >
         Who's Hot
+      </a>
+    }
+    @if (features.streamerPlanner()) {
+      <a
+        class="nav-menu-item nav-menu-item--collapsed"
+        cdkMenuItem
+        routerLink="/streamer-planner"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+      >
+        Streamer Planner
       </a>
     }
     @if (showsPremiumLink()) {

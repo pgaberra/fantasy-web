@@ -5,6 +5,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { AccountService } from './services/account.service';
 import { AuthService } from './services/auth.service';
+import { FeatureService } from './services/feature.service';
 import { EntitlementService } from './services/entitlement.service';
 import { ConsentBannerComponent } from './shared/consent-banner/consent-banner';
 import { EnvironmentBannerComponent } from './shared/environment-banner/environment-banner';
@@ -47,6 +48,7 @@ export class App {
   protected readonly appVersion = environment.version;
   protected readonly paymentsEnabled = environment.paymentsEnabled;
   protected readonly whosHotEnabled = environment.whosHotEnabled;
+  protected readonly features = inject(FeatureService);
 
   private readonly currentPath = () => this.router.url.split(/[?#]/)[0];
   private readonly path = toSignal(
