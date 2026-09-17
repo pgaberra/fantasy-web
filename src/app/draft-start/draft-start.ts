@@ -32,7 +32,7 @@ import {
   leagueSettingsOf,
 } from '../shared/league-settings/league-settings';
 import { ScoringStatKey } from '../models/stat-key.model';
-import { DraftLeagueSettingsComponent } from './draft-league-settings/draft-league-settings';
+import { LeagueSettingsControlsComponent } from '../shared/league-settings-controls/league-settings-controls';
 
 /**
  * The one thing the Start button will draft against. A preset is seeded on the server the
@@ -73,7 +73,7 @@ export type DraftSource =
     ShareImportComponent,
     IconComponent,
     StartingPointPreviewComponent,
-    DraftLeagueSettingsComponent,
+    LeagueSettingsControlsComponent,
   ],
   templateUrl: './draft-start.html',
   styleUrl: './draft-start.css',

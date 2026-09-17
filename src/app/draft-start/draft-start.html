@@ -321,7 +321,7 @@
       @if (leagueSettings(); as league) {
         <div class="league">
           <span class="preview-label">League settings</span>
-          <app-draft-league-settings
+          <app-league-settings-controls
             [settings]="league"
             (settingsChange)="setLeagueSettings($event)"
           />
