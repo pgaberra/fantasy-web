@@ -38,6 +38,25 @@ describe('SpreadsheetImportDialogComponent', () => {
     expect(ngMocks.formatText(ngMocks.find('.summary-line'))).toBe('1 of 2 players found.');
   });
 
+  it('shows two values per column, the same rows in each', async () => {
+    const { component } = render();
+    await pick(
+      component,
+      [
+        'Player,GP,G',
+        'Nathan MacKinnon,82,44',
+        'Connor McDavid,82,43',
+        'Auston Matthews,80,40',
+      ].join('\n'),
+    );
+
+    expect(component.columns().map((column) => column.sample)).toEqual([
+      'Nathan MacKinnon, Connor McDavid',
+      '82, 82',
+      '44, 43',
+    ]);
+  });
+
   it('gives a role to one column at a time', async () => {
     const { component } = render();
     await pick(component, 'Player\tG\tGoals\nNathan MacKinnon\t44\t45\n');

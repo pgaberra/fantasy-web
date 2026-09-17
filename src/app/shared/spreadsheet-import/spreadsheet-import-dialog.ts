@@ -1,6 +1,7 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 import { IconComponent } from '../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
+import { HelpTipComponent } from '../help-tip/help-tip';
 import { Player } from '../../models/player.model';
 import {
   GOALIE_SCORING_STAT_KEYS,
@@ -48,6 +49,9 @@ export interface SpreadsheetImport {
 }
 
 const FALLBACK_NAME = 'Spreadsheet import';
+
+/** How many of a column's values are shown under its heading. */
+const SAMPLE_VALUES = 2;
 /** The longest name the server stores for a projection. */
 export const MAX_NAME_LENGTH = 100;
 
@@ -61,8 +65,8 @@ function nameFromFile(fileName: string): string {
 const GOALIE_ONLY = GOALIE_SCORING_STAT_KEYS.filter((key) => key !== 'toi');
 
 /**
- * Brings a projection kept in a spreadsheet into this one: a file (.xlsx, .csv, .tsv) or cells
- * downloaded from Excel or Google Sheets. The sheet is read in the browser and never uploaded.
+ * Reads a projection kept in a spreadsheet: an .xlsx or .csv file saved out of Excel or Google
+ * Sheets. The file is read in the browser and never uploaded.
  *
  * A sheet is laid out however its author liked, so nothing is imported on a guess the user has
  * not seen: the dialog proposes a heading row and a meaning for each column, shows how many
@@ -72,7 +76,7 @@ const GOALIE_ONLY = GOALIE_SCORING_STAT_KEYS.filter((key) => key !== 'toi');
  */
 @Component({
   selector: 'app-spreadsheet-import-dialog',
-  imports: [IconComponent, LoadingIndicatorComponent],
+  imports: [IconComponent, LoadingIndicatorComponent, HelpTipComponent],
   templateUrl: './spreadsheet-import-dialog.html',
   styleUrl: './spreadsheet-import-dialog.css',
   host: {
@@ -132,16 +136,23 @@ export class SpreadsheetImportDialogComponent {
       .map((role, index) => ({
         index,
         heading: text(headings[index]),
+        // Two values, not three: a column of names ran past the row's width and the third name
+        // was cut off. Two is also what the narrowest column can show, so every column reads
+        // from the same players.
         sample: data
           .map((row) => row[index])
           .filter((cell) => (cell ?? null) !== null)
-          .slice(0, 3)
+          .slice(0, SAMPLE_VALUES)
           .map(text)
           .join(', '),
         value: roleValue(role),
       }))
       .filter((column) => column.heading || column.sample);
   });
+
+  readonly headingRowTip =
+    'The row in your file that holds the column names (Player, GP, G). Rows above it are ' +
+    'ignored, so a file that starts with a title, instructions or a row of weights still works.';
 
   readonly hasNameColumn = computed(() => this.roles().some((role) => role?.kind === 'name'));
   readonly statCount = computed(() => this.roles().filter((role) => role?.kind === 'stat').length);

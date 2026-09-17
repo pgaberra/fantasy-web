@@ -130,6 +130,18 @@ select,
   font-size: var(--text-sm);
 }
 
+/* The tip sits beside the label rather than inside it: a label may not hold a button, and inside
+   one a tap on the tip lands on the field. */
+.setting-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.setting-label .field-label {
+  margin-bottom: 0;
+}
+
 .sheet-settings {
   display: flex;
   flex-wrap: wrap;
