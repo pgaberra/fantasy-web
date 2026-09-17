@@ -13,13 +13,13 @@ test.describe('happy path', () => {
     const password = 'E2e-HappyPath-Ok9!';
     const projectionName = 'E2E Happy Path';
 
-    // 1) Register a fresh account and land signed-in on the projections list.
+    // 1) Register a fresh account and land signed-in on home.
     await page.goto('/register');
     await page.locator('#email').fill(email);
     await page.locator('#password').fill(password);
     await page.locator('#confirmPassword').fill(password);
     await page.locator('button[type="submit"]').click();
-    await expect(page).toHaveURL(/\/projections\/?$/, { timeout: 15_000 });
+    await expect(page).toHaveURL(/\/home\/?$/, { timeout: 15_000 });
     // Sign out lives in the account menu behind the avatar, as a menu item. Close the menu again
     // before going on: its overlay sits over the page and would take the next click.
     await page.getByRole('button', { name: /account menu/i }).click();
@@ -29,7 +29,7 @@ test.describe('happy path', () => {
     await expect(signOut).toBeHidden();
 
     // 2) Create a projection from last season's stats (the default source).
-    await page.getByRole('button', { name: /create new projection/i }).click();
+    await page.getByRole('link', { name: /^create projection$/i }).click();
     await expect(page).toHaveURL(/\/projections\/new/);
     await page.locator('#projection-name').fill(projectionName);
     await page.getByRole('button', { name: /^create projection$/i }).click();

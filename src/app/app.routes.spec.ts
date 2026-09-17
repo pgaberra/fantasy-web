@@ -4,6 +4,7 @@ import { provideRouter, RedirectFunction, Route, UrlTree } from '@angular/router
 import { routes } from './app.routes';
 import { authGuard } from './guards/auth.guard';
 import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
+import { demoRedemptionGuard } from './guards/demo-redemption.guard';
 
 describe('routes', () => {
   const routeFor = (path: string): Route => routes.find((route) => route.path === path)!;
@@ -12,6 +13,12 @@ describe('routes', () => {
     // Unguarded, a signed-out visitor with the URL reached the page and was told the
     // leaderboard "couldn't load — check your connection" over what was really a 401.
     expect(routeFor('whos-hot').canActivate).toEqual([whosHotEnabledGuard, authGuard]);
+  });
+
+  it('lets demo work be saved before home is shown', () => {
+    // The projections list is what saves a board carried over from the landing demo; home must
+    // hand such a user over to it rather than leave the work waiting in session storage.
+    expect(routeFor('home').canActivate).toEqual([authGuard, demoRedemptionGuard]);
   });
 
   it('leaves the pages that have to open for a stranger unguarded', () => {
