@@ -4,8 +4,8 @@ const email = process.env.E2E_EMAIL;
 const password = process.env.E2E_PASSWORD;
 
 /**
- * Importing a projection from a spreadsheet, end to end on deployed staging: the cells a user
- * pastes out of Excel or Google Sheets, matched against the real player pool, saved as an imported
+ * Importing a projection from a spreadsheet, end to end on deployed staging: a CSV a user saves
+ * out of Excel or Google Sheets, matched against the real player pool, saved as an imported
  * board through the same import panel a share link goes through, and opened afterwards.
  *
  * The rows are chosen for what they exercise against the live pool: a plain match, a name the
@@ -20,7 +20,7 @@ test.describe('spreadsheet import', () => {
   test.skip(!email || !password, 'Set E2E_EMAIL and E2E_PASSWORD to run the signed-in tests');
   test.setTimeout(180_000);
 
-  test('imports pasted cells as a board and opens it with the numbers intact', async ({ page }) => {
+  test('imports a CSV as a board and opens it with the numbers intact', async ({ page }) => {
     const boardName = `E2E Spreadsheet Import ${Date.now()}`;
 
     await page.goto('/login');
@@ -40,18 +40,20 @@ test.describe('spreadsheet import', () => {
 
     try {
       await importButton.click();
-      await page
-        .locator('#spreadsheet-paste')
-        .fill(
+      // A CSV, as Excel or Google Sheets save one; choosing it moves the dialog on by itself.
+      await page.locator('app-spreadsheet-import-dialog input[type="file"]').setInputFiles({
+        name: 'e2e-projection.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from(
           [
-            'Player\tTeam\tPos\tGP\tG\tA\tPTS\tPPP',
-            'Connor McDavid\tEDM\tC\t82\t50.4\t90.3\t140.8\t50.2',
-            'Yegor Chinakhov\tPIT\tRW\t80\t25\t20\t45\t10',
-            'Elias Pettersson\tVAN\tC2\t80\t30\t50\t80\t25',
-            'Wayne Gretzky\tEDM\tC\t82\t92\t120\t212\t40',
+            'Player,Team,Pos,GP,G,A,PTS,PPP',
+            'Connor McDavid,EDM,C,82,50.4,90.3,140.8,50.2',
+            'Yegor Chinakhov,PIT,RW,80,25,20,45,10',
+            'Elias Pettersson,VAN,C2,80,30,50,80,25',
+            'Wayne Gretzky,EDM,C,82,92,120,212,40',
           ].join('\n'),
-        );
-      await page.getByRole('button', { name: 'Continue' }).click();
+        ),
+      });
 
       const summary = page.locator('.summary');
       await expect(summary).toContainText('3 of 4 players found.');

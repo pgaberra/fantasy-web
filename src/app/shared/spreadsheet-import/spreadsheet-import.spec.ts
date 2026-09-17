@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { StatWarningService } from '../../services/stat-warning.service';
 import { GoalieProjection, SkaterProjection } from '../../models/projection.model';
 import {
   applyImportedStats,
@@ -7,7 +8,7 @@ import {
   proposeColumnRoles,
 } from './spreadsheet-import';
 import { PlayerMatcher } from './spreadsheet-players';
-import { POOL, lineOf } from './spreadsheet-test-players';
+import { POOL, lineOf, skater } from './spreadsheet-test-players';
 import { Goalie, Skater } from '../../models/player.model';
 
 describe('spreadsheet-import', () => {
@@ -88,6 +89,35 @@ describe('spreadsheet-import', () => {
     const skaterLine = lines.find((line) => line.playerId === 1) as SkaterProjection;
     expect(Object.values(skaterLine.stats.scoring).every((value) => value === 0)).toBe(true);
     expect(skaterLine.stats.utility).toEqual({ gp: 0, toiPerGame: 0 });
+  });
+
+  it("fills what the sheet leaves out from a named player's own line, so no warning is left", () => {
+    const player = skater(20, 'A Sniper', 'EDM');
+    Object.assign(player.stats.scoring, {
+      goals: 40,
+      assists: 50,
+      points: 90,
+      ppg: 10,
+      ppa: 20,
+      ppp: 30,
+      stpg: 10,
+      stpa: 20,
+      stp: 30,
+      sog: 300,
+      shPct: (40 / 300) * 100,
+      toi: 82 * 1200,
+    });
+    player.stats.utility.gp = 82;
+    player.stats.utility.toiPerGame = 1200;
+
+    const [line] = linesFromSheet(
+      [player],
+      new Map([[20, { gp: 82, goals: 50.4, assists: 90.3, points: 140.8, ppp: 50.2 }]]),
+    ) as SkaterProjection[];
+
+    expect(line.stats.scoring.sog).toBe(300);
+    expect(line.stats.scoring.goals).toBeCloseTo(50.4);
+    expect(new StatWarningService().warningsFor(line).size).toBe(0);
   });
 
   it("gives a goalie only a goalie's stats", () => {

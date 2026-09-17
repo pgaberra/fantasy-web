@@ -14,7 +14,6 @@ import { buildImportPlan, ImportPlan, proposeColumnRoles, RowChoices } from './s
 import { PlayerMatcher } from './spreadsheet-players';
 import {
   Cell,
-  readPastedCells,
   readSpreadsheetFile,
   SpreadsheetReadError,
   SpreadsheetSheet,
@@ -37,7 +36,7 @@ export interface ColumnRow {
 
 const READ_ERRORS: Record<SpreadsheetReadError['reason'], string> = {
   'legacy-xls': 'This is an old .xls file. Save it as .xlsx or .csv and try again.',
-  unsupported: 'Choose an .xlsx, .csv or .tsv file.',
+  unsupported: 'Choose an .xlsx or .csv file.',
   unreadable: "Couldn't read this file. Save it as .xlsx or .csv and try again.",
   empty: 'This file has no rows to import.',
 };
@@ -48,14 +47,14 @@ export interface SpreadsheetImport {
   readonly name: string;
 }
 
-const PASTED_NAME = 'Spreadsheet import';
+const FALLBACK_NAME = 'Spreadsheet import';
 /** The longest name the server stores for a projection. */
 export const MAX_NAME_LENGTH = 100;
 
 /** "Apples & Ginos 2024-25.xlsx" as "Apples & Ginos 2024-25". */
 function nameFromFile(fileName: string): string {
   const withoutExtension = fileName.replace(/\.[^.]+$/, '').trim();
-  return (withoutExtension || PASTED_NAME).slice(0, MAX_NAME_LENGTH);
+  return (withoutExtension || FALLBACK_NAME).slice(0, MAX_NAME_LENGTH);
 }
 
 /** Goalies' own stats, after the skaters' and the two that both have. */
@@ -63,7 +62,7 @@ const GOALIE_ONLY = GOALIE_SCORING_STAT_KEYS.filter((key) => key !== 'toi');
 
 /**
  * Brings a projection kept in a spreadsheet into this one: a file (.xlsx, .csv, .tsv) or cells
- * pasted from Excel or Google Sheets. The sheet is read in the browser and never uploaded.
+ * downloaded from Excel or Google Sheets. The sheet is read in the browser and never uploaded.
  *
  * A sheet is laid out however its author liked, so nothing is imported on a guess the user has
  * not seen: the dialog proposes a heading row and a meaning for each column, shows how many
@@ -89,13 +88,12 @@ export class SpreadsheetImportDialogComponent {
   readonly closed = output<void>();
   readonly imported = output<SpreadsheetImport>();
 
-  /** What the imported board is called: the file's name, or a plain one for pasted cells. */
+  /** What the imported board is called: the file's name, until the user renames it. */
   readonly name = signal('');
 
   readonly step = signal<'source' | 'columns'>('source');
   readonly reading = signal(false);
   readonly readError = signal<string | null>(null);
-  readonly pasted = signal('');
 
   readonly sheets = signal<SpreadsheetSheet[]>([]);
   readonly sheetIndex = signal(0);
@@ -185,20 +183,6 @@ export class SpreadsheetImportDialogComponent {
       this.readError.set(readErrorMessage(error));
     } finally {
       this.reading.set(false);
-    }
-  }
-
-  onPasteInput(event: Event): void {
-    this.pasted.set((event.target as HTMLTextAreaElement).value);
-  }
-
-  usePasted(): void {
-    this.readError.set(null);
-    try {
-      this.open(readPastedCells(this.pasted()));
-      this.name.set(PASTED_NAME);
-    } catch (error) {
-      this.readError.set(readErrorMessage(error));
     }
   }
 

@@ -10,16 +10,20 @@ describe('SpreadsheetImportDialogComponent', () => {
     return { fixture, component: fixture.point.componentInstance };
   };
 
-  const paste = (component: SpreadsheetImportDialogComponent, text: string) => {
-    component.onPasteInput({ target: { value: text } } as unknown as Event);
-    component.usePasted();
-  };
+  /** Picks a CSV file holding these cells, which is how every sheet reaches the dialog now. */
+  const pick = (component: SpreadsheetImportDialogComponent, text: string, name = 'sheet.csv') =>
+    component.onFilePicked({
+      target: { files: [new File([text], name)], value: name },
+    } as unknown as Event);
 
   const select = (value: string) => ({ target: { value } }) as unknown as Event;
 
-  it('reads pasted cells, proposes the columns and counts the players it finds', () => {
+  it('reads a file, proposes the columns and counts the players it finds', async () => {
     const { fixture, component } = render();
-    paste(component, 'Player\tTeam\tG\tA\nNathan MacKinnon\tCOL\t44\t84\nNobody Here\tEDM\t1\t1\n');
+    await pick(
+      component,
+      'Player\tTeam\tG\tA\nNathan MacKinnon\tCOL\t44\t84\nNobody Here\tEDM\t1\t1\n',
+    );
     fixture.detectChanges();
 
     expect(component.step()).toBe('columns');
@@ -34,9 +38,9 @@ describe('SpreadsheetImportDialogComponent', () => {
     expect(ngMocks.formatText(ngMocks.find('.summary-line'))).toBe('1 of 2 players found.');
   });
 
-  it('gives a role to one column at a time', () => {
+  it('gives a role to one column at a time', async () => {
     const { component } = render();
-    paste(component, 'Player\tG\tGoals\nNathan MacKinnon\t44\t45\n');
+    await pick(component, 'Player\tG\tGoals\nNathan MacKinnon\t44\t45\n');
 
     component.onColumnRoleChange(2, select('goals'));
 
@@ -44,9 +48,9 @@ describe('SpreadsheetImportDialogComponent', () => {
     expect(component.plan()?.stats.get(1)).toEqual({ goals: 45 });
   });
 
-  it('asks for a names column and a stat before it can import', () => {
+  it('asks for a names column and a stat before it can import', async () => {
     const { component } = render();
-    paste(component, 'Player\tG\nNathan MacKinnon\t44\n');
+    await pick(component, 'Player\tG\nNathan MacKinnon\t44\n');
 
     component.onColumnRoleChange(1, select(''));
     expect(component.canImport()).toBe(false);
@@ -56,9 +60,9 @@ describe('SpreadsheetImportDialogComponent', () => {
     expect(component.canImport()).toBe(false);
   });
 
-  it('re-reads the columns from the heading row the user names', () => {
+  it('re-reads the columns from the heading row the user names', async () => {
     const { component } = render();
-    paste(component, 'My sheet\nPlayer\tG\nNathan MacKinnon\t44\n');
+    await pick(component, 'My sheet\nPlayer\tG\nNathan MacKinnon\t44\n');
     expect(component.headingRow()).toBe(1);
 
     component.onHeadingRowChange(select('1'));
@@ -78,9 +82,9 @@ describe('SpreadsheetImportDialogComponent', () => {
     expect(component.readError()).toContain('.xls');
   });
 
-  it('imports a name that fits two players once the user picks one', () => {
+  it('imports a name that fits two players once the user picks one', async () => {
     const { fixture, component } = render();
-    paste(component, 'Player\tTeam\tG\nElias Pettersson\tVAN\t20\n');
+    await pick(component, 'Player\tTeam\tG\nElias Pettersson\tVAN\t20\n');
     fixture.detectChanges();
 
     expect(component.ambiguous().map((row) => row.name)).toEqual(['Elias Pettersson']);
@@ -94,9 +98,9 @@ describe('SpreadsheetImportDialogComponent', () => {
     expect(component.canImport()).toBe(false);
   });
 
-  it('lists a name matched through another spelling, and can leave it out', () => {
+  it('lists a name matched through another spelling, and can leave it out', async () => {
     const { fixture, component } = render();
-    paste(component, 'Player\tG\nTommy Novak\t18\nNathan MacKinnon\t44\n');
+    await pick(component, 'Player\tG\nTommy Novak\t18\nNathan MacKinnon\t44\n');
     fixture.detectChanges();
 
     expect(component.respelled().map((row) => row.player.name)).toEqual(['Thomas Novak']);
@@ -114,11 +118,11 @@ describe('SpreadsheetImportDialogComponent', () => {
     );
   });
 
-  it('emits the plan with the name on confirm', () => {
+  it('emits the plan with the name on confirm', async () => {
     const { component } = render();
     const emit = vi.spyOn(component.imported, 'emit');
-    paste(component, 'Player\tG\nNathan MacKinnon\t44\n');
-    expect(component.name()).toBe('Spreadsheet import');
+    await pick(component, 'Player\tG\nNathan MacKinnon\t44\n');
+    expect(component.name()).toBe('sheet');
 
     component.onNameInput(select('  My sheet  '));
     component.confirm();
@@ -134,11 +138,11 @@ describe('SpreadsheetImportDialogComponent', () => {
     expect(component.name()).toBe('Apples & Ginos 2024-25');
   });
 
-  it('will not import without a name, or a second time while saving', () => {
+  it('will not import without a name, or a second time while saving', async () => {
     const fixture = MockRender(SpreadsheetImportDialogComponent, { players: POOL, saving: true });
     const component = fixture.point.componentInstance;
     const emit = vi.spyOn(component.imported, 'emit');
-    paste(component, 'Player\tG\nNathan MacKinnon\t44\n');
+    await pick(component, 'Player\tG\nNathan MacKinnon\t44\n');
 
     component.confirm();
     expect(emit).not.toHaveBeenCalled();
