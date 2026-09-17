@@ -66,6 +66,15 @@ describe('NotificationService', () => {
   it('reports the failure as well as showing it', () => {
     service.error("Couldn't save your projection");
 
-    expect(reportMessage).toHaveBeenCalledWith("Couldn't save your projection");
+    expect(reportMessage).toHaveBeenCalledWith("Couldn't save your projection", undefined);
+  });
+
+  it('sends the context to the report and keeps it off the screen', () => {
+    service.error("Couldn't open that page", { cause: 'ChunkLoadError' });
+
+    expect(reportMessage).toHaveBeenCalledWith("Couldn't open that page", {
+      cause: 'ChunkLoadError',
+    });
+    expect(service.notifications()[0].message).toEqual("Couldn't open that page");
   });
 });
