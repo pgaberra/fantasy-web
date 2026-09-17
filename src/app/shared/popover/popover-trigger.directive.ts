@@ -21,12 +21,16 @@ import { OpenPopovers } from './open-popovers';
  * Opens a template as a popover anchored to the host element.
  *
  * The table's settings all hang off small triggers — a column's menu button, the toolbar's
- * league button — so this keeps the overlay wiring (positioning, outside-click, Escape) in one
+ * league button — so this keeps the overlay wiring (positioning, outside-click, Escape, Enter) in one
  * place. Content is a plain `<ng-template>` in the declaring component, which means the
  * component's own styles and bindings still apply inside the overlay.
  */
 const FOCUSABLE_SELECTOR =
   'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
+
+// A field that holds a value, as opposed to one that filters a list: a search box keeps its menu
+// open on Enter, because the list under it is what the user came for.
+const VALUE_FIELD_SELECTOR = 'input[type="number"], input[type="text"], input:not([type])';
 
 const POPOVER_POSITIONS: Record<'start' | 'end', ConnectedPosition[]> = {
   start: [
@@ -126,6 +130,15 @@ export class PopoverTriggerDirective {
     this.overlayRef.keydownEvents().subscribe((event) => {
       if (event.key === 'Escape') {
         event.stopPropagation();
+        this.close();
+      } else if (
+        event.key === 'Enter' &&
+        !event.isComposing &&
+        (event.target as Element).matches(VALUE_FIELD_SELECTOR)
+      ) {
+        // Every field in a popover saves as it is typed, so nothing on screen says the value is in.
+        // Enter is how a user says "done" — without it the only way out of a menu they just typed
+        // into is to reach for the mouse and click somewhere else.
         this.close();
       }
     });

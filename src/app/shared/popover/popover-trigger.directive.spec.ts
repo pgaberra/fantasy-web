@@ -12,6 +12,8 @@ import { OpenPopovers } from './open-popovers';
     <button id="elsewhere">Elsewhere</button>
     <ng-template #menu>
       <button id="menu-item">Hide column</button>
+      <input id="decimals" type="number" />
+      <input id="search" type="search" />
     </ng-template>
   `,
 })
@@ -60,6 +62,43 @@ describe('PopoverTriggerDirective and OpenPopovers', () => {
 
     expect(panel()).toBeNull();
     expect(document.activeElement).toEqual(trigger);
+  });
+
+  it('closes on Enter in a value field and hands focus back to the trigger', () => {
+    const { button } = setup();
+    const trigger = button('labelled');
+    trigger.click();
+    const field = document.querySelector<HTMLInputElement>('#decimals')!;
+    field.focus();
+
+    field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    expect(panel()).toBeNull();
+    expect(document.activeElement).toEqual(trigger);
+  });
+
+  it('stays open on Enter in a search box, whose list is what the user is after', () => {
+    const { button } = setup();
+    button('labelled').click();
+
+    document
+      .querySelector('#search')
+      ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    expect(panel()).toBeTruthy();
+  });
+
+  it('stays open on the Enter that confirms an IME composition', () => {
+    const { button } = setup();
+    button('labelled').click();
+
+    document
+      .querySelector('#decimals')
+      ?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true }),
+      );
+
+    expect(panel()).toBeTruthy();
   });
 
   it('closes itself when focus leaves for the rest of the page', () => {
