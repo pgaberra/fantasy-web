@@ -14,10 +14,11 @@ describe('spreadsheet-columns', () => {
   });
 
   it('guesses each column once, so the weighted copies of the stats are left out', () => {
-    const headings = ['Player', 'Team', 'GP', 'G', 'A', 'S%', 'ATOI', 'G', 'A', 'FPTS'];
+    const headings = ['Player', 'Team', 'Proj Pos', 'GP', 'G', 'A', 'S%', 'ATOI', 'G', 'A', 'FPTS'];
     expect(guessColumnRoles(headings, headings.length)).toEqual([
       { kind: 'name' },
       { kind: 'team' },
+      { kind: 'position' },
       { kind: 'stat', stat: 'gp' },
       { kind: 'stat', stat: 'goals' },
       { kind: 'stat', stat: 'assists' },
