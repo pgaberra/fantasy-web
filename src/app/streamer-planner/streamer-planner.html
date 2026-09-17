@@ -135,4 +135,8 @@
       }
     }
   </div>
+
+  @if (week(); as week) {
+    <app-free-agents [start]="week.start" [end]="week.end" />
+  }
 </div>
