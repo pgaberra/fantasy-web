@@ -150,6 +150,11 @@ export const routes: Routes = [
     redirectTo: toPremium,
   },
   {
+    path: 'feedback',
+    loadComponent: () => import('./feedback/feedback').then((m) => m.FeedbackComponent),
+    canActivate: [authGuard],
+  },
+  {
     path: 'profile',
     loadComponent: () => import('./profile/profile').then((m) => m.ProfileComponent),
     canActivate: [authGuard],

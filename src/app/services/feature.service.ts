@@ -33,6 +33,11 @@ export class FeatureService {
     this.features.hasValue() ? this.features.value().aiProjection : false,
   );
 
+  /** Whether this environment takes bug reports and feature requests. False until the answer lands. */
+  readonly feedback = computed(() =>
+    this.features.hasValue() ? this.features.value().feedback : false,
+  );
+
   /**
    * The presets this environment offers: every one of them where the AI projection is served,
    * and everything but the model-seeded one where it is not. A starting point the server will not
