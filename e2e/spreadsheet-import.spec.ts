@@ -35,13 +35,14 @@ test.describe('spreadsheet import', () => {
     await expect(page).toHaveURL(/\/projections\/[0-9a-f-]+$/i, { timeout: 45_000 });
     const editorUrl = page.url();
 
+    // The editor has rendered once its search box is there; only then does a missing import
+    // button mean the build has the import switched off.
+    await expect(page.getByPlaceholder('Search player…')).toBeVisible({ timeout: 45_000 });
     const importButton = page.getByRole('button', { name: 'Import spreadsheet' });
-    test.skip(
-      !(await importButton.isVisible({ timeout: 20_000 }).catch(() => false)),
-      'The import is switched off in this build (SPREADSHEET_IMPORT_ENABLED)',
-    );
+    const importOn = (await importButton.count()) > 0;
 
     try {
+      test.skip(!importOn, 'The import is switched off in this build (SPREADSHEET_IMPORT_ENABLED)');
       await importButton.click();
       await page
         .locator('#spreadsheet-paste')
@@ -97,7 +98,11 @@ test.describe('spreadsheet import', () => {
       // The shared account keeps nothing from this run.
       await page.goto('/projections');
       const menu = page.getByRole('button', { name: `More actions for ${projectionName}` });
-      if (await menu.isVisible({ timeout: 20_000 }).catch(() => false)) {
+      const listed = await menu
+        .waitFor({ timeout: 30_000 })
+        .then(() => true)
+        .catch(() => false);
+      if (listed) {
         await menu.click();
         await page.getByRole('button', { name: /^delete$/i }).click();
         await page.getByRole('button', { name: /yes, delete/i }).click();
