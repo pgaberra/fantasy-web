@@ -87,6 +87,11 @@
             Stats
           </button>
 
+          <button type="button" class="btn btn-secondary btn-sm" [appPopover]="decimalsMenu">
+            <app-icon name="decimals" />
+            Decimals
+          </button>
+
           <!-- Last in the group, and deliberately: this slot is a call to action while no league
                has been imported and the league's name afterwards, so it is the one item here whose
                width changes. Ahead of the buttons it would shove them sideways the moment a league
@@ -241,5 +246,16 @@
     [activeUtilityColumns]="shownUtilityColumns()"
     (scoringToggled)="toggleScoringColumn($event)"
     (utilityToggled)="toggleUtilityColumn($event)"
+  />
+</ng-template>
+
+<ng-template #decimalsMenu>
+  <app-decimals-menu
+    [scoringColumns]="shownScoringColumns()"
+    [utilityColumns]="shownUtilityColumns()"
+    [decimalSettings]="readableDecimals()"
+    [usingDefaults]="useDefaultDecimals()"
+    (decimalSettingsChange)="onDecimalSettingsChange($event)"
+    (resetToDefaults)="resetDecimals()"
   />
 </ng-template>

@@ -1,0 +1,57 @@
+@if (showBulkRow()) {
+  <div class="decimals-row decimals-row--bulk">
+    <span class="decimals-name" id="decimals-bulk-label">{{ bulkLabel() }}</span>
+    <div class="decimals-choices" role="group" aria-labelledby="decimals-bulk-label">
+      @for (decimals of choices; track decimals) {
+        <button
+          type="button"
+          [attr.aria-pressed]="sharedCountingDecimals() === decimals"
+          (click)="setCountingDecimals(decimals)"
+        >
+          {{ decimals }}
+        </button>
+      }
+    </div>
+  </div>
+}
+
+<div class="decimals-list">
+  @for (statKey of columns(); track statKey) {
+    <div class="decimals-row">
+      <span class="decimals-name" [id]="'decimals-label-' + statKey">
+        <span class="decimals-key">{{ statKey | statLabel }}</span>
+        @if (descriptionOf(statKey); as description) {
+          <span class="decimals-desc">{{ description }}</span>
+        }
+      </span>
+      <div
+        class="decimals-choices"
+        role="group"
+        [attr.aria-labelledby]="'decimals-label-' + statKey"
+      >
+        @for (decimals of choices; track decimals) {
+          <button
+            type="button"
+            [attr.aria-pressed]="decimalSettings()[statKey] === decimals"
+            (click)="setDecimals(statKey, decimals)"
+          >
+            {{ decimals }}
+          </button>
+        }
+      </div>
+    </div>
+  } @empty {
+    <p class="decimals-empty">No stats with decimals in this projection.</p>
+  }
+</div>
+
+<div class="decimals-footer">
+  <button
+    type="button"
+    class="decimals-reset"
+    [disabled]="usingDefaults()"
+    (click)="resetToDefaults.emit()"
+  >
+    Reset to defaults
+  </button>
+</div>

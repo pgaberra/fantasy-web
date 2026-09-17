@@ -136,6 +136,20 @@ describe('ProjectionsTableHeaderComponent', () => {
     });
   });
 
+  describe('isDecimalColumn', () => {
+    it('offers decimals for a counting stat and for games played', () => {
+      const component = getComponent();
+      expect(component.isDecimalColumn('goals')).toEqual(true);
+      expect(component.isDecimalColumn('gp')).toEqual(true);
+    });
+
+    it('offers none for time on ice, which is written mm:ss whatever the setting', () => {
+      const component = getComponent();
+      expect(component.isDecimalColumn('toi')).toEqual(false);
+      expect(component.isDecimalColumn('toiPerGame')).toEqual(false);
+    });
+  });
+
   describe('onDecimalInput', () => {
     it('should update decimalSettings when a decimal input changes', () => {
       const component = getComponent({

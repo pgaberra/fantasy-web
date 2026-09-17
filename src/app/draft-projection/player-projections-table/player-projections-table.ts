@@ -66,6 +66,7 @@ import { PinnedTableHeaderDirective } from '../../shared/pinned-table-header/pin
 import { TableScrollDirective } from '../../shared/table-scroll/table-scroll.directive';
 import { LeagueSettingsMenuComponent } from './league-settings-menu/league-settings-menu';
 import { ColumnsMenuComponent } from './columns-menu/columns-menu';
+import { DecimalsMenuComponent } from './decimals-menu/decimals-menu';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import { IconComponent } from '../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
@@ -103,6 +104,7 @@ function toggledSet<T>(members: ReadonlySet<T>, member: T): Set<T> {
     TableScrollDirective,
     LeagueSettingsMenuComponent,
     ColumnsMenuComponent,
+    DecimalsMenuComponent,
     TooltipDirective,
     IconComponent,
     LoadingIndicatorComponent,
@@ -225,6 +227,16 @@ export class PlayerProjectionsTableComponent implements OnInit {
   onDecimalSettingsChange(settings: Record<DecimalStatKey, number>): void {
     this.decimalSettings.set(settings);
     this.useDefaultDecimals.set(false);
+  }
+
+  /**
+   * The way back from {@link onDecimalSettingsChange}. One column set by hand switches the
+   * defaults off for every column, fractional ones included, so without this a single edit
+   * could not be taken back.
+   */
+  resetDecimals(): void {
+    this.decimalSettings.set(DEFAULT_DECIMAL_SETTINGS);
+    this.useDefaultDecimals.set(true);
   }
 
   readonly sortColumn = signal<SortColumn>('summary');

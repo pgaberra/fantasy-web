@@ -15,6 +15,17 @@ const FRACTIONAL_DECIMALS = 1;
  */
 const NOT_DECIMAL_STATS: ReadonlySet<string> = new Set(['toi']);
 
+/** The most decimal places a column can be set to. */
+export const MAX_DECIMAL_SETTING = 3;
+
+/**
+ * Whether a decimal setting changes anything about how the stat is written. Asked by every
+ * control that offers one, so none of them offers a setting that does nothing.
+ */
+export function takesDecimals(statKey: DecimalStatKey): boolean {
+  return !NOT_DECIMAL_STATS.has(statKey);
+}
+
 /** Whether a value carries anything a decimal place would show. */
 function isFractional(value: number): boolean {
   return Number.isFinite(value) && Math.abs(value - Math.round(value)) > 1e-9;
