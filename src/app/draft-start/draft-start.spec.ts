@@ -212,6 +212,29 @@ describe('DraftStartComponent', () => {
     expect(navigate).toHaveBeenCalledWith(['/projections', 'preset1', 'draft']);
   });
 
+  // Start seeds the board before the draft page has asked for teams and order, so backing out of
+  // that setup leaves a board with no draft in it. It used to hide the preset for good, since it
+  // is no draft to list above and yet counted as one to drop from the rows below.
+  it('keeps a preset on offer when its board was seeded but the setup was abandoned', async () => {
+    listWithPresetDrafts.mockReturnValue(
+      of([summary('model1', 'preset_draft', 'none', '2026-06-01T00:00:00Z', MODEL)]),
+    );
+
+    const component = await render();
+
+    expect(component.drafts()).toEqual([]);
+    expect(component.availablePresets().map((preset) => preset.id)).toEqual([
+      'last_season',
+      'model',
+    ]);
+
+    component.selectPreset(MODEL);
+    component.start();
+
+    expect(createProjection).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['/projections', 'model1', 'draft']);
+  });
+
   it('surfaces a failed start and lets the user try again', async () => {
     createProjection.mockReturnValue(throwError(() => new Error('boom')));
 

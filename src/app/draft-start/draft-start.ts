@@ -178,9 +178,15 @@ export class DraftStartComponent {
    * above, and discarding that draft is what brings the row back — so leaving it here would put
    * a second entry point on the page for a draft that already exists, which is the duplication
    * this picker had everywhere.
+   *
+   * <p>"Drafted against" is the same test `drafts` lists by, not merely "has a board". The board
+   * is seeded the moment Start is pressed, but it holds no draft until the setup on the draft
+   * page is saved; someone who backs out of that setup leaves a board that is in neither list,
+   * and filtering on the board alone made the preset vanish from the page for good. Such a board
+   * keeps the preset on offer, and `startPreset` opens it rather than seeding another.
    */
   readonly availablePresets = computed(() =>
-    this.presets().filter((preset) => !this.presetDraft(preset)),
+    this.presets().filter((preset) => (this.presetDraft(preset)?.draftStatus ?? 'none') === 'none'),
   );
 
   /**
@@ -417,7 +423,8 @@ export class DraftStartComponent {
 
   startPreset(preset: Preset): void {
     // The row is only offered while the preset has no draft; this covers one started elsewhere
-    // since the list was read, which would otherwise seed a second board for the same preset.
+    // since the list was read, which would otherwise seed a second board for the same preset,
+    // and a board whose setup was abandoned, which is picked up where it was left.
     const existing = this.presetDraft(preset);
     if (existing) {
       this.openDraft(existing.id);
