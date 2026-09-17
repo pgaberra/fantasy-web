@@ -155,11 +155,11 @@ describe('ProjectionCardComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Edit');
   });
 
-  it('labels the draft action "Draft mode" and shows no status pill without a draft', () => {
+  it('labels the draft action "Draft Mode" and shows no status pill without a draft', () => {
     const fixture = renderWithStatus('none');
 
     expect(ngMocks.find<HTMLButtonElement>('.draft').nativeElement.textContent).toContain(
-      'Draft mode',
+      'Draft Mode',
     );
     expect(fixture.nativeElement.textContent).not.toContain('Draft in progress');
     expect(fixture.nativeElement.textContent).not.toContain('Draft complete');

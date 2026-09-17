@@ -64,7 +64,7 @@
           </a>
           @if (projectionCount() > 0) {
             <a class="btn btn-secondary" routerLink="/projections">
-              My projections ({{ projectionCount() }})
+              My Projections ({{ projectionCount() }})
             </a>
           }
         </div>
@@ -72,13 +72,13 @@
 
       <section class="panel feature" aria-labelledby="draft-heading">
         <span class="feature-icon"><app-icon name="clipboard-list" [size]="20" /></span>
-        <h2 id="draft-heading">Draft mode</h2>
+        <h2 id="draft-heading">Draft Mode</h2>
         <p>
-          Enter our Draft mode with a projection of your own or a preset. Track every pick in real
+          Enter our Draft Mode with a projection of your own or a preset. Track every pick in real
           time. See how the teams in your league stack up against each other after the draft.
         </p>
         <div class="feature-actions">
-          <a class="btn btn-secondary" routerLink="/draft">Open Draft mode</a>
+          <a class="btn btn-secondary" routerLink="/draft">Open Draft Mode</a>
         </div>
       </section>
 
@@ -108,7 +108,7 @@
                 Create projection
               </a>
               <a class="btn btn-on-dark" routerLink="/draft" [queryParams]="{ start: 'model' }">
-                Open Draft mode
+                Open Draft Mode
               </a>
             </div>
           }

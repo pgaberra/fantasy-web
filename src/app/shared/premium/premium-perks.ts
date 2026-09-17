@@ -36,7 +36,7 @@ export function premiumPerks(aiProjectionServed: boolean): readonly PremiumPerk[
 export function freeFeatures(): readonly string[] {
   const features = [
     "Projections tailored to your league's scoring",
-    'Draft mode and post-draft team rankings',
+    'Draft Mode and post-draft team rankings',
     environment.espnLeaguesEnabled
       ? 'Import league settings from Yahoo or ESPN'
       : 'Import league settings from Yahoo',

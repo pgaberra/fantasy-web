@@ -129,14 +129,14 @@ describe('DraftProjectionComponent', () => {
     expect(fixture.nativeElement.querySelector('app-offseason-data-notice')).not.toBeNull();
   });
 
-  it('shows a Draft mode link in the header', async () => {
+  it('shows a Draft Mode link in the header', async () => {
     const fixture = MockRender(DraftProjectionComponent);
     await fixture.whenStable();
     fixture.detectChanges();
 
     const link = fixture.nativeElement.querySelector('.draft-mode-link');
     expect(link).not.toBeNull();
-    expect(link.textContent).toContain('Draft mode');
+    expect(link.textContent).toContain('Draft Mode');
   });
 
   it('applies the loaded projection settings', () => {

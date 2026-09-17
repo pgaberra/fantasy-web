@@ -89,7 +89,7 @@ describe('App', () => {
 
     const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
 
-    expect(items).toEqual(['Home', 'Draft mode', 'My projections', "Who's Hot", 'Admin']);
+    expect(items).toEqual(['Home', 'Draft Mode', 'My Projections', "Who's Hot", 'Admin']);
   });
 
   it('leaves out the links the header itself leaves out', () => {
@@ -131,7 +131,7 @@ describe('App', () => {
 
     const items = openAccountMenu(fixture).map((item) => item.textContent?.trim());
 
-    expect(items).toEqual(['Profile', 'Sign out']);
+    expect(items).toEqual(['Profile', 'Sign Out']);
   });
 
   it('says who is signed in at the top of the account menu', () => {
@@ -155,7 +155,7 @@ describe('App', () => {
 
     const link = document.querySelector('a.account-menu-name');
 
-    expect(link?.textContent?.trim()).toEqual('Set a username');
+    expect(link?.textContent?.trim()).toEqual('Set a Username');
     expect(link?.getAttribute('routerLink')).toEqual('/profile');
     expect(link?.getAttribute('fragment')).toEqual('username');
   });
@@ -236,7 +236,7 @@ describe('App', () => {
         expect(items.map((item) => item.textContent?.trim())).toEqual([
           'Profile',
           'Premium',
-          'Sign out',
+          'Sign Out',
         ]);
         expect(
           items.find((item) => item.textContent?.trim() === 'Premium')?.getAttribute('routerLink'),
@@ -265,7 +265,7 @@ describe('App', () => {
   it('signs out from the account menu', () => {
     const fixture = render();
     const signOut = openAccountMenu(fixture).find(
-      (item) => item.textContent?.trim() === 'Sign out',
+      (item) => item.textContent?.trim() === 'Sign Out',
     );
 
     signOut?.click();
