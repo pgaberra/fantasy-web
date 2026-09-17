@@ -61,6 +61,20 @@ describe('FeatureService', () => {
     ]);
   });
 
+  it('offers feedback only where the BFF takes it', async () => {
+    invoke.mockResolvedValue({ aiProjection: false, feedback: true });
+
+    const service = await answered();
+
+    expect(service.feedback()).toEqual(true);
+  });
+
+  it('does not offer feedback until the BFF has answered', () => {
+    invoke.mockReturnValue(new Promise(() => undefined));
+
+    expect(TestBed.inject(FeatureService).feedback()).toEqual(false);
+  });
+
   // Offering a preset the server may not serve is the failure this service exists to prevent, so
   // not knowing counts as not served.
   it('does not offer the AI projection when the answer never arrives', async () => {
