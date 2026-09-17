@@ -51,6 +51,10 @@ const whosHotEnabledFlag: string = '__WHOS_HOT_ENABLED__';
 // default and has to be turned on deliberately each off-season.
 const offseasonEnabledFlag: string = '__OFFSEASON_ENABLED__';
 
+// Spreadsheet import toggle. Only the literal "true" (via the SPREADSHEET_IMPORT_ENABLED build arg)
+// shows Import spreadsheet in the projection editor; untouched or empty resolves to false.
+const spreadsheetImportEnabledFlag: string = '__SPREADSHEET_IMPORT_ENABLED__';
+
 // Premium's price in US dollars, as a plain number ("4.99"), which /premium quotes both prerendered
 // and in the browser. Must match the price the BFF's STRIPE_PRICE_ID charges.
 const premiumBasePriceUsdFlag: string = '__PREMIUM_BASE_PRICE_USD__';
@@ -75,4 +79,5 @@ export const environment = {
     ? ''
     : premiumBasePriceUsdFlag,
   offseasonEnabled: offseasonEnabledFlag === 'true',
+  spreadsheetImportEnabled: spreadsheetImportEnabledFlag === 'true',
 };

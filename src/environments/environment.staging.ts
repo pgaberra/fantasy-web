@@ -35,4 +35,6 @@ export const environment = {
   premiumBasePriceUsd: '',
   // Off for local staging runs, matching deployed staging, which sets OFFSEASON_ENABLED=false.
   offseasonEnabled: false,
+  // Off for local staging runs; the deployed builds set it via the SPREADSHEET_IMPORT_ENABLED build arg.
+  spreadsheetImportEnabled: false,
 };

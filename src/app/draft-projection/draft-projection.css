@@ -133,4 +133,11 @@
   .rename-input {
     font-size: 1.2rem;
   }
+
+  /* Three buttons do not fit a phone's width in one row, and a row that cannot shrink pushes the
+     last of them, Draft mode, off the screen. */
+  .page-header-actions {
+    flex-wrap: wrap;
+    flex-shrink: 1;
+  }
 }

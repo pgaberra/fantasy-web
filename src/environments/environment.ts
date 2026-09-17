@@ -42,6 +42,10 @@ export const environment = {
   // not on its own a reason to tell every visitor it is the off-season. Deployed builds turn it on
   // with the OFFSEASON_ENABLED=true build arg.
   offseasonEnabled: false,
+  // Feature toggle for importing a projection from a spreadsheet (the Import spreadsheet button in
+  // the projection editor). Off by default; deployed builds turn it on with the
+  // SPREADSHEET_IMPORT_ENABLED=true build arg.
+  spreadsheetImportEnabled: false,
   // Premium is shown but not yet sold: the Premium page keeps its plans and badges but its
   // Subscribe button is disabled with a note. Only means anything with paymentsEnabled. Deployed builds turn it on with PREMIUM_COMING_SOON=true.
   premiumComingSoon: false,

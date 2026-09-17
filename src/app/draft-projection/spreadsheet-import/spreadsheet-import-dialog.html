@@ -1,0 +1,180 @@
+<div class="dialog-backdrop" (click)="closed.emit()">
+  <div
+    class="dialog-card"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="spreadsheet-import-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="dialog-header">
+      <h2 id="spreadsheet-import-title" class="dialog-title">Import from a spreadsheet</h2>
+      <button type="button" class="dialog-close" aria-label="Close" (click)="closed.emit()">
+        <app-icon name="close" [size]="20" />
+      </button>
+    </div>
+
+    @if (step() === 'source') {
+      <p class="dialog-body">
+        Stats in your spreadsheet replace this projection's for the players it lists. Everything
+        else stays as it is.
+      </p>
+
+      <div class="source-option">
+        <input
+          #spreadsheetFile
+          type="file"
+          accept=".xlsx,.csv,.tsv,.txt"
+          hidden
+          (change)="onFilePicked($event)"
+        />
+        <button
+          type="button"
+          class="btn btn-secondary"
+          [disabled]="reading()"
+          (click)="spreadsheetFile.click()"
+        >
+          @if (reading()) {
+            <app-loading-indicator variant="inline" label="Reading file" />
+          } @else {
+            <app-icon name="spreadsheet" />
+            Choose file
+          }
+        </button>
+        <span class="source-hint">Excel (.xlsx) or CSV</span>
+      </div>
+
+      <div class="source-divider"><span>or</span></div>
+
+      <label class="field-label" for="spreadsheet-paste">Paste cells, headings included</label>
+      <textarea
+        id="spreadsheet-paste"
+        class="paste-field"
+        rows="5"
+        spellcheck="false"
+        placeholder="Player&#9;Team&#9;GP&#9;G&#9;A"
+        [value]="pasted()"
+        (input)="onPasteInput($event)"
+      ></textarea>
+      <p class="source-hint">In Google Sheets, copy the cells, or download it as .xlsx.</p>
+
+      @if (readError()) {
+        <p class="field-error" role="alert">{{ readError() }}</p>
+      }
+
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary btn-sm" (click)="closed.emit()">
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary btn-sm"
+          [disabled]="!pasted().trim()"
+          (click)="usePasted()"
+        >
+          Continue
+        </button>
+      </div>
+    } @else {
+      <div class="sheet-settings">
+        @if (sheets().length > 1) {
+          <div class="setting">
+            <label class="field-label" for="spreadsheet-sheet">Sheet</label>
+            <select id="spreadsheet-sheet" (change)="onSheetChange($event)">
+              @for (sheet of sheets(); track $index) {
+                <option [value]="$index" [selected]="$index === sheetIndex()">
+                  {{ sheet.name }}
+                </option>
+              }
+            </select>
+          </div>
+        }
+        <div class="setting">
+          <label class="field-label" for="spreadsheet-heading-row">Headings on row</label>
+          <input
+            id="spreadsheet-heading-row"
+            class="row-input"
+            type="number"
+            min="1"
+            [max]="rowCount()"
+            [value]="headingRow() + 1"
+            (change)="onHeadingRowChange($event)"
+          />
+        </div>
+      </div>
+
+      <ul class="column-list" aria-label="Columns">
+        @for (column of columns(); track column.index) {
+          <li class="column-row">
+            <div class="column-text">
+              <span class="column-heading">{{ column.heading || 'No heading' }}</span>
+              <span class="column-sample">{{ column.sample }}</span>
+            </div>
+            <select
+              [attr.aria-label]="'Column ' + (column.heading || column.index + 1)"
+              (change)="onColumnRoleChange(column.index, $event)"
+            >
+              @for (option of columnOptions; track option.value) {
+                <option [value]="option.value" [selected]="option.value === column.value">
+                  {{ option.label }}
+                </option>
+              }
+            </select>
+          </li>
+        }
+      </ul>
+
+      <div class="summary" aria-live="polite">
+        @if (!hasNameColumn()) {
+          <p class="field-error">Choose the column with player names.</p>
+        } @else if (!statCount()) {
+          <p class="field-error">Choose at least one stat to import.</p>
+        } @else if (plan(); as plan) {
+          <p class="summary-line">
+            <strong>{{ plan.stats.size }}</strong> of {{ plan.rowCount }} players found.
+          </p>
+          @if (unmatched().length) {
+            <button
+              type="button"
+              class="unmatched-toggle"
+              [attr.aria-expanded]="showUnmatched()"
+              (click)="showUnmatched.set(!showUnmatched())"
+            >
+              <app-icon [name]="showUnmatched() ? 'chevron-down' : 'chevron-right'" [size]="14" />
+              {{ unmatched().length }} not found
+            </button>
+            @if (showUnmatched()) {
+              <p class="source-hint">
+                These rows are skipped. Check how the names are spelled in your spreadsheet.
+              </p>
+              <ul class="unmatched-list">
+                @for (name of unmatched(); track $index) {
+                  <li>{{ name }}</li>
+                }
+              </ul>
+            }
+          }
+          @if (plan.duplicates.length) {
+            <p class="source-hint">
+              {{ plan.duplicates.length }}
+              {{ plan.duplicates.length === 1 ? 'row names' : 'rows name' }} a player twice. The
+              first row is used.
+            </p>
+          }
+        }
+      </div>
+
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary btn-sm" (click)="back()">Back</button>
+        <button
+          type="button"
+          class="btn btn-primary btn-sm"
+          [disabled]="!canImport()"
+          (click)="confirm()"
+        >
+          Import {{ plan()?.stats?.size ?? 0 }}
+          {{ plan()?.stats?.size === 1 ? 'player' : 'players' }}
+        </button>
+      </div>
+    }
+  </div>
+</div>
