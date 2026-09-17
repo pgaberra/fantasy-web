@@ -7,13 +7,7 @@ import {
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import {
-  NavigationEnd,
-  provideRouter,
-  Router,
-  withInMemoryScrolling,
-  withNavigationErrorHandler,
-} from '@angular/router';
+import { NavigationEnd, provideRouter, Router, withNavigationErrorHandler } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -94,12 +88,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     { provide: ErrorHandler, useClass: ReportingErrorHandler },
-    provideRouter(
-      routes,
-      withNavigationErrorHandler(handleNavigationError),
-      // So the footer's Refunds link lands on that section of the terms.
-      withInMemoryScrolling({ anchorScrolling: 'enabled' }),
-    ),
+    provideRouter(routes, withNavigationErrorHandler(handleNavigationError)),
     provideHttpClient(withInterceptors([retryInterceptor, timeoutInterceptor, authInterceptor])),
     provideApiConfiguration(environment.rootUrl),
     provideAppInitializer(initNavigationRecovery),
