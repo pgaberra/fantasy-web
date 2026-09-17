@@ -1,4 +1,4 @@
-import { MockBuilder, MockRender } from 'ng-mocks';
+import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
@@ -100,6 +100,10 @@ describe('HomeComponent', () => {
     locked.set(false);
     fixture.detectChanges();
     expect(text(fixture, '.feature-ai .btn')).toEqual('Create projection');
+    // Lands on the new-projection page with the AI preset already picked, not on the default.
+    expect(ngMocks.input(ngMocks.find(fixture, '.feature-ai .btn'), 'queryParams')).toEqual({
+      start: 'model',
+    });
     expect(text(fixture, '.feature-ai .feature-link')).toEqual('Open Draft mode');
   });
 

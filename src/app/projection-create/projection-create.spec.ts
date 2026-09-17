@@ -3,8 +3,8 @@ import { signal } from '@angular/core';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Observable, of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
-import { CREATE_PRESETS, ProjectionCreateComponent } from './projection-create';
+import { ActivatedRoute, Router } from '@angular/router';
+import { CREATE_PRESETS, ProjectionCreateComponent, requestedPreset } from './projection-create';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { StartingPointPreviewComponent } from '../shared/starting-point-preview/starting-point-preview';
 import { ProjectionBoardCache } from '../services/projection-board-cache';
@@ -180,6 +180,8 @@ describe('ProjectionCreateComponent', () => {
 
   const navigate = vi.fn();
   const notifyError = vi.fn();
+  /** The query string the page opened with; the same object is handed to every render. */
+  const queryParams: Record<string, string> = {};
   const premium = signal(false);
   const aiProjection = signal(true);
   const entitlementLoadState = signal<'idle' | 'loading' | 'loaded' | 'error'>('loaded');
@@ -195,6 +197,9 @@ describe('ProjectionCreateComponent', () => {
     notifyError.mockClear();
     createProjection.mockClear();
     seed.mockClear();
+    for (const key of Object.keys(queryParams)) {
+      delete queryParams[key];
+    }
     return (
       MockBuilder(ProjectionCreateComponent)
         // The preview is kept real: these tests read the page through the table it draws, which is
@@ -226,7 +231,57 @@ describe('ProjectionCreateComponent', () => {
               : presets.filter((preset) => preset.source !== MODEL_PRESET_SOURCE),
         })
         .provide({ provide: Router, useValue: { navigate } })
+        .provide({ provide: ActivatedRoute, useValue: { snapshot: { queryParams } } })
     );
+  });
+
+  describe('the preset a link asks for', () => {
+    it('opens on the AI projection when the link says so', async () => {
+      queryParams['start'] = 'model';
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+
+      expect(fixture.point.componentInstance.startingPoint()).toEqual({
+        kind: 'preset',
+        source: 'model',
+      });
+    });
+
+    /**
+     * The AI preset is offered only once the BFF has said it serves the model, and the page
+     * falls back to the first card whenever the picked one is not offered. The pick has to
+     * wait for the answer, or the answer would undo it.
+     */
+    it('waits for the environment to offer the preset before picking it', async () => {
+      queryParams['start'] = 'model';
+      aiProjection.set(false);
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+      expect(component.startingPoint()).toEqual({ kind: 'preset', source: 'default' });
+
+      aiProjection.set(true);
+      fixture.detectChanges();
+      expect(component.startingPoint()).toEqual({ kind: 'preset', source: 'model' });
+    });
+
+    it('ignores a value that names no preset', async () => {
+      queryParams['start'] = 'own1';
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+
+      expect(fixture.point.componentInstance.startingPoint()).toEqual({
+        kind: 'preset',
+        source: 'default',
+      });
+    });
+
+    it('only knows the presets the page has', () => {
+      expect(requestedPreset('model')).toEqual('model');
+      expect(requestedPreset('blank')).toEqual('blank');
+      expect(requestedPreset('copy')).toBeNull();
+      expect(requestedPreset(undefined)).toBeNull();
+    });
   });
 
   it('loads the existing projections', async () => {

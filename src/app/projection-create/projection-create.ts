@@ -2,13 +2,14 @@ import {
   Component,
   computed,
   DestroyRef,
+  effect,
   inject,
   linkedSignal,
   signal,
   viewChild,
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AnalyticsService } from '../services/analytics.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
@@ -77,6 +78,16 @@ export const CREATE_PRESETS: readonly CreatePreset[] = [
   { name: 'From scratch', source: 'blank' },
 ];
 
+/**
+ * The preset a link asked the page to open on, as `?start=<source>`, or null for anything that
+ * is not one. The home page's AI projection card links here with `start=model`, so its button
+ * lands on the card it named rather than on the default with the right one a click away.
+ */
+export function requestedPreset(value: unknown): CreatePreset['source'] | null {
+  const preset = CREATE_PRESETS.find((candidate) => candidate.source === value);
+  return preset?.source ?? null;
+}
+
 @Component({
   selector: 'app-projection-create',
   imports: [
@@ -100,6 +111,7 @@ export class ProjectionCreateComponent {
   private readonly projectionStorage = inject(ProjectionStorageService);
   private readonly statInfoService = inject(StatInfoService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly serializer = inject(ProjectionSerializerService);
   private readonly notification = inject(NotificationService);
@@ -296,6 +308,22 @@ export class ProjectionCreateComponent {
       // becomes the way to Premium instead, and this keeps the two from disagreeing.
       !this.aiProjectionLocked(),
   );
+
+  constructor() {
+    // A preset the link asked for is picked once its card is there to pick. Not at once: the AI
+    // preset is only offered after the BFF has said it serves the model, and `startingPoint`
+    // falls back to the first card whenever the picked one is not among the options, so a pick
+    // made before the answer landed would be quietly undone by it.
+    const wanted = requestedPreset(this.route.snapshot.queryParams['start']);
+    if (wanted) {
+      const pending = effect(() => {
+        if (this.presets().some((preset) => preset.source === wanted)) {
+          this.selectPreset(wanted);
+          pending.destroy();
+        }
+      });
+    }
+  }
 
   onNameInput(event: Event): void {
     this.name.set((event.target as HTMLInputElement).value);
