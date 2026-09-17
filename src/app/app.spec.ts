@@ -89,7 +89,7 @@ describe('App', () => {
 
     const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
 
-    expect(items).toEqual(['Draft mode', 'My projections', "Who's Hot", 'Admin']);
+    expect(items).toEqual(['Home', 'Draft mode', 'My projections', "Who's Hot", 'Admin']);
   });
 
   it('leaves out the links the header itself leaves out', () => {
