@@ -250,6 +250,20 @@
   margin-top: var(--space-3);
 }
 
+.league {
+  margin-bottom: var(--space-3);
+}
+
+.league .field-label {
+  margin-bottom: 0.1rem;
+}
+
+.field-hint {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+}
+
 .preview {
   margin-bottom: var(--space-5);
 }

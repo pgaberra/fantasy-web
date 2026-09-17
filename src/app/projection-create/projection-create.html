@@ -188,9 +188,30 @@
       </div>
     </fieldset>
 
+    <!--
+      The league the projection is created with, set against the preview it scores: the draft
+      picker's controls (draft-start.html), for the same reason. A preview scored by defaults reads
+      as "this isn't my league", which is a reason not to press Create at all.
+    -->
+    @if (leagueSettings(); as league) {
+      <div class="league">
+        <span class="field-label">League settings</span>
+        <p class="field-hint">You can change these later in the projection.</p>
+        <app-league-settings-controls
+          [settings]="league"
+          (settingsChange)="setLeagueSettings($event)"
+        />
+      </div>
+    }
+
     <div class="preview">
       <span class="field-label">Preview</span>
-      <app-starting-point-preview [source]="previewSource()" [fallbackNote]="fallbackNote()" />
+      <app-starting-point-preview
+        [source]="previewSource()"
+        [fallbackNote]="fallbackNote()"
+        [leagueSettings]="leagueSettings()"
+        (statWeightsChange)="setStatWeights($event)"
+      />
     </div>
 
     <!-- One button, and which one it is says what the picked starting point costs. A Create
