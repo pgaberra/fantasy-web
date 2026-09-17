@@ -104,7 +104,7 @@ describe('HomeComponent', () => {
     expect(ngMocks.input(ngMocks.find(fixture, '.feature-ai .btn'), 'queryParams')).toEqual({
       start: 'model',
     });
-    expect(text(fixture, '.feature-ai .btn-on-dark')).toEqual('Open Draft Mode');
+    expect(text(fixture, '.feature-ai .btn-on-dark')).toEqual('Draft with it');
     expect(ngMocks.input(ngMocks.find(fixture, '.feature-ai .btn-on-dark'), 'queryParams')).toEqual(
       { start: 'model' },
     );
