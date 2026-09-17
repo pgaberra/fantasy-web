@@ -29,10 +29,10 @@
 
       <!-- Above the table on purpose: what a visitor does with someone else's board is take a
            copy of it, and that offer used to sit under every row they had to scroll past. Both
-           buttons are offered to a visitor without an account too, who is asked to sign in when
-           they press one rather than being told in advance that the page is not for them yet.
-           The labels name the destination and the tooltip carries the "a copy, not theirs"
-           detail, so the row reads as two choices rather than two sentences. -->
+           buttons are offered to a visitor without an account too, who is taken to the account
+           form when they press one rather than being told in advance that the page is not for
+           them yet. The labels name the destination and the tooltip carries the "a copy, not
+           theirs" detail, so the row reads as two choices rather than two sentences. -->
       <div class="board-actions">
         <button
           type="button"
@@ -63,25 +63,6 @@
           }
         </button>
       </div>
-      @if (signInPromptFor()) {
-        <p class="board-actions-prompt" role="status" data-testid="sign-in-prompt">
-          Save a copy to your account to keep editing it or use it in Draft Mode.
-          <a
-            routerLink="/login"
-            [queryParams]="{ returnUrl: promptReturnUrl() }"
-            data-testid="prompt-login"
-            >Sign in</a
-          >
-          or
-          <a
-            routerLink="/register"
-            [queryParams]="{ returnUrl: promptReturnUrl() }"
-            data-testid="prompt-register"
-            >create a free account</a
-          >
-          to continue.
-        </p>
-      }
     </header>
 
     <section class="table-section">
