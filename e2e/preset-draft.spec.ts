@@ -76,7 +76,7 @@ test.describe('draft mode from a preset', () => {
     // 3) The board is past its setup either way: a first run just confirmed it, and a stored
     // board is only ever created with its draft in it.
     // `exact` matters: a loose match would also hit "Exit draft mode" and trip strict mode.
-    await expect(page.getByText('Draft mode', { exact: true })).toBeVisible();
+    await expect(page.getByText('Draft Mode', { exact: true })).toBeVisible();
 
     // 4) Leaving the board returns to the source picker, not to a projection that isn't theirs.
     await page.getByRole('link', { name: /exit draft mode/i }).click();
@@ -89,7 +89,7 @@ test.describe('draft mode from a preset', () => {
     await page.getByRole('button', { name: /^draft$/i }).click();
     await page.getByRole('menuitem', { name: /my projections/i }).click();
     await expect(page).toHaveURL(/\/projections\/?$/);
-    await expect(page.getByRole('heading', { name: 'My projections' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'My Projections' })).toBeVisible();
     await expect(page.locator('li').filter({ hasText: PRESET_NAME })).toHaveCount(0);
   });
 });

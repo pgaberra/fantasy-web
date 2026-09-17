@@ -20,7 +20,7 @@ describe('SiteFooterComponent', () => {
     ngMocks
       .findAll('.site-footer-links a')
       .find(
-        (anchor) => (anchor.nativeElement as HTMLElement).textContent?.trim() === 'Send feedback',
+        (anchor) => (anchor.nativeElement as HTMLElement).textContent?.trim() === 'Send Feedback',
       );
 
   // Only an account can be answered, so the form is for signed-in readers, and only where the BFF

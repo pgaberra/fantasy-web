@@ -909,7 +909,7 @@ describe('SharedProjectionComponent', () => {
       loadShared.mockReturnValue(of({ ...shared, totalPlayers: 1489 }));
       const fixture = await render();
 
-      expect(fixture.nativeElement.textContent).toContain('Draft mode');
+      expect(fixture.nativeElement.textContent).toContain('Draft Mode');
       expect(fixture.nativeElement.textContent).not.toMatch(/The top \d+ of/);
     });
 
