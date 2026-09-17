@@ -1,0 +1,178 @@
+<section class="free-agents">
+  <div class="section-header">
+    <h2>Best available</h2>
+    <app-help-tip
+      label="How these are ranked"
+      text="The model's projection for this week, scored with your league's settings. A player is only worth what your league pays for what he does."
+    />
+    @if (league() && !picking()) {
+      <span class="league-name">{{ leagueLabel() }}</span>
+      <button type="button" class="link-button" (click)="startPicking()">Change league</button>
+    }
+  </div>
+
+  @if (choosing()) {
+    <div class="league-picker">
+      <p class="picker-intro">Pick the league to read free agents from.</p>
+      <div class="segmented" role="group" aria-label="Platform">
+        <button
+          type="button"
+          [attr.aria-pressed]="platform() === 'YAHOO'"
+          (click)="platform.set('YAHOO')"
+        >
+          Yahoo
+        </button>
+        <button
+          type="button"
+          [attr.aria-pressed]="platform() === 'ESPN'"
+          (click)="platform.set('ESPN')"
+        >
+          ESPN
+        </button>
+      </div>
+
+      @if (platform() === 'YAHOO') {
+        @if (loadingLeagues()) {
+          <app-loading-indicator />
+        } @else if (yahooFailed()) {
+          <p class="picker-note">
+            Couldn't load your Yahoo leagues. Connect Yahoo on a projection first.
+          </p>
+        } @else if (noLeagues()) {
+          <p class="picker-note">No Yahoo leagues on this account.</p>
+        } @else {
+          <div class="picker-row">
+            <label class="visually-hidden" for="planner-yahoo-league">League</label>
+            <select
+              id="planner-yahoo-league"
+              class="picker-input"
+              [ngModel]="chosenYahooLeague()"
+              (ngModelChange)="chosenYahooLeague.set($event)"
+            >
+              <option value="">Choose a league</option>
+              @for (option of yahooLeagues(); track option.leagueKey) {
+                <option [value]="option.leagueKey">{{ option.name }}</option>
+              }
+            </select>
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="!chosenYahooLeague()"
+              (click)="confirmYahoo()"
+            >
+              Use this league
+            </button>
+          </div>
+        }
+      } @else {
+        <div class="picker-row">
+          <label class="visually-hidden" for="planner-espn-league">ESPN league ID</label>
+          <input
+            id="planner-espn-league"
+            class="picker-input"
+            type="text"
+            inputmode="numeric"
+            maxlength="20"
+            placeholder="ESPN league ID"
+            [ngModel]="espnLeagueId()"
+            (ngModelChange)="espnLeagueId.set($event)"
+          />
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="!espnLeagueId().trim()"
+            (click)="chooseEspn()"
+          >
+            Use this league
+          </button>
+        </div>
+        <p class="picker-note">
+          A private ESPN league needs the cookies you save on a projection's league setup.
+        </p>
+      }
+
+      @if (league()) {
+        <button type="button" class="link-button" (click)="cancelPicking()">Cancel</button>
+      }
+    </div>
+  } @else if (loadFailure()) {
+    <app-error-state title="Couldn't load free agents" [error]="loadFailure()" (retry)="retry()" />
+  } @else {
+    <div class="tabs" role="group" aria-label="Position">
+      @for (option of tabs; track option) {
+        <button type="button" [attr.aria-pressed]="tab() === option" (click)="tab.set(option)">
+          {{ option }}
+        </button>
+      }
+    </div>
+
+    @if (isLoading()) {
+      <app-loading-indicator />
+    } @else if (isEmpty()) {
+      <p class="empty">No available players in this league have a projection for this week.</p>
+    } @else {
+      <div class="table-scroll">
+        <table class="free-agents-table">
+          <thead>
+            <tr>
+              <th scope="col" class="num">#</th>
+              <th scope="col">Player</th>
+              <th scope="col">Team</th>
+              <th scope="col">Pos</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="num" title="Games his club plays this week">GP</th>
+              <th scope="col" class="num" title="Games he is expected to play">Exp</th>
+              @if (tab() === 'All') {
+                <th scope="col">Projected</th>
+              } @else if (tab() === 'G') {
+                <th scope="col" class="num">W</th>
+                <th scope="col" class="num">SV</th>
+                <th scope="col" class="num">SV%</th>
+              } @else {
+                <th scope="col" class="num">G</th>
+                <th scope="col" class="num">A</th>
+                <th scope="col" class="num">P</th>
+                <th scope="col" class="num">SOG</th>
+              }
+              <th scope="col" class="num">
+                {{ scoringType() === 'points' ? 'Proj. pts' : 'Z-Score' }}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.player.playerId) {
+              <tr>
+                <td class="num">{{ row.rank }}</td>
+                <th scope="row" class="player">{{ row.player.name }}</th>
+                <td>{{ row.player.teamAbbrev }}</td>
+                <td>{{ row.player.positions.join(', ') }}</td>
+                <td class="status">{{ availabilityLabel(row.player) }}</td>
+                <td class="num">{{ row.player.clubGames }}</td>
+                <td class="num">{{ row.player.expectedGames }}</td>
+                @if (tab() === 'All') {
+                  <td class="projected">{{ line(row) }}</td>
+                } @else if (tab() === 'G') {
+                  <td class="num">{{ stat(row, 'w') }}</td>
+                  <td class="num">{{ stat(row, 'sv') }}</td>
+                  <td class="num">{{ stat(row, 'svPct') }}</td>
+                } @else {
+                  <td class="num">{{ stat(row, 'goals') }}</td>
+                  <td class="num">{{ stat(row, 'assists') }}</td>
+                  <td class="num">{{ stat(row, 'points') }}</td>
+                  <td class="num">{{ stat(row, 'sog') }}</td>
+                }
+                <td class="num strong">{{ score(row) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (unprojected() > 0) {
+        <p class="footnote">
+          {{ unprojected() }} available players have no projection this season and are left out.
+        </p>
+      }
+    }
+  }
+</section>
