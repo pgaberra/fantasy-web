@@ -117,8 +117,9 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   caller chose it.
   Beside the paste field sits **Import a spreadsheet** (`shared/spreadsheet-import`, on the home
   page's import panel too): a sheet read in the browser becomes an imported board like a share
-  link's, created with `kind: imported` and its own rows (every pool player, empty unless the sheet
-  names him) and no origin, which is how the lists tell it apart ("From a spreadsheet", a green
+  link's, created with `kind: imported` and its own rows (every pool player: empty unless the sheet
+  names him, and a named player's own line under the sheet's stats, so a sheet without a SOG
+  column does not leave 50 goals on no shots) and no origin, which is how the lists tell it apart ("From a spreadsheet", a green
   sheet icon). It was a button inside the editor for a release; Alexander moved it here because a
   projection kept in a spreadsheet is something you start from, like a shared board, not an edit.
   It draws nothing unless `SPREADSHEET_IMPORT_ENABLED` is on. An

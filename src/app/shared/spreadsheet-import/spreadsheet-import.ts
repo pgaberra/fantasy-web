@@ -10,6 +10,7 @@ import {
 import { ColumnRole, convertColumn, guessColumnRoles } from './spreadsheet-columns';
 import { PlayerMatcher } from './spreadsheet-players';
 import { reconcileImportedLine } from './spreadsheet-reconcile';
+import { ownLine } from '../pool-line';
 import { Cell } from './spreadsheet-table';
 
 /** The stats read for one player, in the units the projection stores. */
@@ -218,37 +219,45 @@ export function applyImportedStats(
 }
 
 /**
- * Every pool player's line for a board made from a spreadsheet: the sheet's stats for the players
- * it names, and nothing for everyone else.
+ * Every pool player's line for a board made from a spreadsheet: the sheet's stats over his own
+ * line for the players it names, and nothing for everyone else.
  *
- * A board imported from a sheet is the sheet's numbers, so a player it leaves out starts empty
- * rather than on last season's line, which would rank him among projections nobody made. The
- * board still holds the whole pool, as every board does, so a draft against it can take anyone.
+ * A player the sheet leaves out starts empty rather than on last season's line, which would rank
+ * him among projections nobody made. A player it names starts from his own line, because a sheet
+ * gives some stats and not others: started from nothing, 50 goals sat beside no shots at all and
+ * the table flagged every such row as more goals than shots. His own line fills the stats the
+ * sheet has no column for, and `reconcileImportedLine` keeps the two agreeing. The board still
+ * holds the whole pool, as every board does, so a draft against it can take anyone.
  */
 export function linesFromSheet(
   players: readonly Player[],
   imported: ReadonlyMap<number, ImportedStats>,
 ): Projection[] {
-  const empty = players.map((player): Projection =>
-    player.type === 'skater'
-      ? ({
-          type: 'skater',
-          playerId: player.id,
-          stats: {
-            utility: zeros(SKATER_UTILITY_STAT_KEYS),
-            scoring: zeros(SKATER_SCORING_STAT_KEYS),
-          },
-        } as Projection)
-      : ({
-          type: 'goalie',
-          playerId: player.id,
-          stats: {
-            utility: zeros(GOALIE_UTILITY_STAT_KEYS),
-            scoring: zeros(GOALIE_SCORING_STAT_KEYS),
-          },
-        } as Projection),
+  const starting = players.map((player) =>
+    imported.has(player.id) ? ownLine(player) : emptyLine(player),
   );
-  return applyImportedStats(empty, imported);
+  return applyImportedStats(starting, imported);
+}
+
+function emptyLine(player: Player): Projection {
+  if (player.type === 'skater') {
+    return {
+      type: 'skater',
+      playerId: player.id,
+      stats: {
+        utility: zeros(SKATER_UTILITY_STAT_KEYS),
+        scoring: zeros(SKATER_SCORING_STAT_KEYS),
+      },
+    } as Projection;
+  }
+  return {
+    type: 'goalie',
+    playerId: player.id,
+    stats: {
+      utility: zeros(GOALIE_UTILITY_STAT_KEYS),
+      scoring: zeros(GOALIE_SCORING_STAT_KEYS),
+    },
+  } as Projection;
 }
 
 function zeros(keys: readonly string[]): Record<string, number> {
