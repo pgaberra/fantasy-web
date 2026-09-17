@@ -506,6 +506,20 @@ describe('ProjectionsTableHeaderComponent', () => {
       );
     });
 
+    it('closes the column menu when Enter is pressed in its decimals field', () => {
+      getFixture({ columnControls: true });
+
+      const goalsMenu = ngMocks
+        .findAll('.th-menu')
+        .find((trigger) => trigger.nativeElement.getAttribute('aria-label')?.includes('Goals'))!;
+      goalsMenu.nativeElement.dispatchEvent(new Event('click', { bubbles: true }));
+      document
+        .querySelector('.cdk-overlay-container #menu-decimals-goals')!
+        .dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(document.querySelector('.cdk-overlay-container .column-menu')).toBeNull();
+    });
+
     it('leaves the weight row as the one place a weight is set', () => {
       getFixture({ scoringType: 'points', columnControls: true });
 
