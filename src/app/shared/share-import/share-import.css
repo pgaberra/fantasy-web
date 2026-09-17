@@ -44,3 +44,16 @@
   font-size: var(--text-sm);
   color: var(--color-error);
 }
+
+@media (max-width: 640px) {
+  /* On a phone the link field, the name-clash field and Import do not fit one row: both fields
+     shrank to a few characters. Once the name field appears, each field takes a row of its own
+     and Import sits under them. The link field alone still fits beside Import. */
+  .import-controls--naming {
+    flex-wrap: wrap;
+  }
+
+  .import-controls--naming .import-input {
+    flex-basis: 100%;
+  }
+}

@@ -1,6 +1,6 @@
 <form class="import" (submit)="onSubmit($event)" novalidate>
   <label class="import-label" for="share-link">{{ label() }}</label>
-  <div class="import-controls">
+  <div class="import-controls" [class.import-controls--naming]="importName() !== null">
     <input
       id="share-link"
       type="text"
@@ -22,9 +22,12 @@
         (input)="importName.set($any($event.target).value)"
       />
     }
+    <!-- Secondary: the page's own button (Create projection, Start draft) is the one filled button
+         on it. Two filled buttons, both greyed out before anything is picked, gave no clue which
+         one was the next step. -->
     <button
       type="submit"
-      class="btn btn-primary btn-sm"
+      class="btn btn-secondary btn-sm"
       [disabled]="isImporting() || shareInput().trim().length === 0"
     >
       @if (isImporting()) {
