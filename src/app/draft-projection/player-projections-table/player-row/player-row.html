@@ -30,6 +30,9 @@
         <app-position-chips class="player-positions-static" [positions]="positionList()" />
       }
     </span>
+    @if (tierBadge(); as badge) {
+      <span class="tier-chip" [appTooltip]="badge.tooltip">{{ badge.label }}</span>
+    }
     @if (rookie()) {
       <span class="rookie-badge" appTooltip="Rookie this season">R</span>
     }
