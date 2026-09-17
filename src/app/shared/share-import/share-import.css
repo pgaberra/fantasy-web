@@ -2,12 +2,15 @@
   margin-top: var(--space-4);
 }
 
+/* A form field's label, the same as the name field's on the new-projection page and the preview's
+   on the draft picker. It used to be a step larger and darker, which made it read as a heading
+   from some other component rather than the label of the field under it. */
 .import-label {
   display: block;
-  margin-bottom: var(--space-1);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  color: var(--color-text-muted);
+  margin-bottom: 0.4rem;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
 }
 
 .import-controls {
@@ -15,8 +18,12 @@
   gap: var(--space-2);
 }
 
+/* The width of the name field above it (projection-create.css), not the whole column: stretched
+   across a 1100px page the field broke out of the form's left edge and pushed Import out to the
+   far side of the screen. A pasted link is not read back, so it gains nothing from the room. With
+   the name-clash field beside it, each takes the same share and they still fit the column. */
 .import-input {
-  flex: 1;
+  flex: 0 1 380px;
   min-width: 0;
   padding: 0.4rem 0.6rem;
   font: inherit;
