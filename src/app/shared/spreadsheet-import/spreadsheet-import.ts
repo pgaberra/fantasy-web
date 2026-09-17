@@ -216,3 +216,41 @@ export function applyImportedStats(
     return { ...projection, stats: { scoring, utility } } as Projection;
   });
 }
+
+/**
+ * Every pool player's line for a board made from a spreadsheet: the sheet's stats for the players
+ * it names, and nothing for everyone else.
+ *
+ * A board imported from a sheet is the sheet's numbers, so a player it leaves out starts empty
+ * rather than on last season's line, which would rank him among projections nobody made. The
+ * board still holds the whole pool, as every board does, so a draft against it can take anyone.
+ */
+export function linesFromSheet(
+  players: readonly Player[],
+  imported: ReadonlyMap<number, ImportedStats>,
+): Projection[] {
+  const empty = players.map((player): Projection =>
+    player.type === 'skater'
+      ? ({
+          type: 'skater',
+          playerId: player.id,
+          stats: {
+            utility: zeros(SKATER_UTILITY_STAT_KEYS),
+            scoring: zeros(SKATER_SCORING_STAT_KEYS),
+          },
+        } as Projection)
+      : ({
+          type: 'goalie',
+          playerId: player.id,
+          stats: {
+            utility: zeros(GOALIE_UTILITY_STAT_KEYS),
+            scoring: zeros(GOALIE_SCORING_STAT_KEYS),
+          },
+        } as Projection),
+  );
+  return applyImportedStats(empty, imported);
+}
+
+function zeros(keys: readonly string[]): Record<string, number> {
+  return Object.fromEntries(keys.map((key) => [key, 0]));
+}

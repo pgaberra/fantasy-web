@@ -42,6 +42,22 @@ const READ_ERRORS: Record<SpreadsheetReadError['reason'], string> = {
   empty: 'This file has no rows to import.',
 };
 
+/** A sheet the dialog has read and the user has confirmed, with the name to save it under. */
+export interface SpreadsheetImport {
+  readonly plan: ImportPlan;
+  readonly name: string;
+}
+
+const PASTED_NAME = 'Spreadsheet import';
+/** The longest name the server stores for a projection. */
+export const MAX_NAME_LENGTH = 100;
+
+/** "Apples & Ginos 2024-25.xlsx" as "Apples & Ginos 2024-25". */
+function nameFromFile(fileName: string): string {
+  const withoutExtension = fileName.replace(/\.[^.]+$/, '').trim();
+  return (withoutExtension || PASTED_NAME).slice(0, MAX_NAME_LENGTH);
+}
+
 /** Goalies' own stats, after the skaters' and the two that both have. */
 const GOALIE_ONLY = GOALIE_SCORING_STAT_KEYS.filter((key) => key !== 'toi');
 
@@ -66,8 +82,15 @@ const GOALIE_ONLY = GOALIE_SCORING_STAT_KEYS.filter((key) => key !== 'toi');
 })
 export class SpreadsheetImportDialogComponent {
   readonly players = input.required<readonly Player[]>();
+  /** Set by the host while it saves the import, so the dialog can show it is waiting. */
+  readonly saving = input(false);
+  /** Why the host could not save the import, shown beside the button that tried. */
+  readonly saveError = input<string | null>(null);
   readonly closed = output<void>();
-  readonly imported = output<ImportPlan>();
+  readonly imported = output<SpreadsheetImport>();
+
+  /** What the imported board is called: the file's name, or a plain one for pasted cells. */
+  readonly name = signal('');
 
   readonly step = signal<'source' | 'columns'>('source');
   readonly reading = signal(false);
@@ -141,7 +164,9 @@ export class SpreadsheetImportDialogComponent {
   readonly ambiguous = computed(() => this.plan()?.ambiguous ?? []);
   readonly respelled = computed(() => this.plan()?.respelled ?? []);
 
-  readonly canImport = computed(() => (this.plan()?.stats.size ?? 0) > 0);
+  readonly canImport = computed(
+    () => (this.plan()?.stats.size ?? 0) > 0 && this.name().trim().length > 0,
+  );
 
   async onFilePicked(event: Event): Promise<void> {
     const inputElement = event.target as HTMLInputElement;
@@ -155,6 +180,7 @@ export class SpreadsheetImportDialogComponent {
     this.readError.set(null);
     try {
       this.open(await readSpreadsheetFile(file));
+      this.name.set(nameFromFile(file.name));
     } catch (error) {
       this.readError.set(readErrorMessage(error));
     } finally {
@@ -170,6 +196,7 @@ export class SpreadsheetImportDialogComponent {
     this.readError.set(null);
     try {
       this.open(readPastedCells(this.pasted()));
+      this.name.set(PASTED_NAME);
     } catch (error) {
       this.readError.set(readErrorMessage(error));
     }
@@ -241,10 +268,15 @@ export class SpreadsheetImportDialogComponent {
     this.readError.set(null);
   }
 
+  onNameInput(event: Event): void {
+    this.name.set((event.target as HTMLInputElement).value);
+  }
+
   confirm(): void {
     const plan = this.plan();
-    if (plan && plan.stats.size) {
-      this.imported.emit(plan);
+    const name = this.name().trim();
+    if (plan && plan.stats.size && name && !this.saving()) {
+      this.imported.emit({ plan, name });
     }
   }
 }

@@ -75,6 +75,19 @@
         </button>
       </div>
     } @else {
+      <div class="setting name-setting">
+        <label class="field-label" for="spreadsheet-name">Name</label>
+        <input
+          id="spreadsheet-name"
+          class="name-input"
+          type="text"
+          autocomplete="off"
+          maxlength="100"
+          [value]="name()"
+          (input)="onNameInput($event)"
+        />
+      </div>
+
       <div class="sheet-settings">
         @if (sheets().length > 1) {
           <div class="setting">
@@ -223,16 +236,31 @@
         }
       </div>
 
+      @if (saveError()) {
+        <p class="field-error" role="alert">{{ saveError() }}</p>
+      }
+
       <div class="dialog-actions">
-        <button type="button" class="btn btn-secondary btn-sm" (click)="back()">Back</button>
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          [disabled]="saving()"
+          (click)="back()"
+        >
+          Back
+        </button>
         <button
           type="button"
           class="btn btn-primary btn-sm"
-          [disabled]="!canImport()"
+          [disabled]="!canImport() || saving()"
           (click)="confirm()"
         >
-          Import {{ plan()?.stats?.size ?? 0 }}
-          {{ plan()?.stats?.size === 1 ? 'player' : 'players' }}
+          @if (saving()) {
+            <app-loading-indicator variant="inline" label="Importing" />
+          } @else {
+            Import {{ plan()?.stats?.size ?? 0 }}
+            {{ plan()?.stats?.size === 1 ? 'player' : 'players' }}
+          }
         </button>
       </div>
     }

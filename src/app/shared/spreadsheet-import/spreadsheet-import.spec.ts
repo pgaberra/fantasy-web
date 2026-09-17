@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { GoalieProjection, SkaterProjection } from '../../models/projection.model';
-import { applyImportedStats, buildImportPlan, proposeColumnRoles } from './spreadsheet-import';
+import {
+  applyImportedStats,
+  buildImportPlan,
+  linesFromSheet,
+  proposeColumnRoles,
+} from './spreadsheet-import';
 import { PlayerMatcher } from './spreadsheet-players';
 import { POOL, lineOf } from './spreadsheet-test-players';
 import { Goalie, Skater } from '../../models/player.model';
@@ -70,6 +75,19 @@ describe('spreadsheet-import', () => {
 
     const leftOut = buildImportPlan(respelledRows, 0, roles, matcher, new Map([[0, null]]));
     expect(leftOut.stats.has(12)).toBe(false);
+  });
+
+  it('builds a whole-pool board where only the named players have numbers', () => {
+    const lines = linesFromSheet(POOL, new Map([[9, { gp: 60, w: 38 }]]));
+
+    expect(lines).toHaveLength(POOL.length);
+    const goalieLine = lines.find((line) => line.playerId === 9) as GoalieProjection;
+    expect(goalieLine.type).toBe('goalie');
+    expect(goalieLine.stats.utility.gp).toBe(60);
+    expect(goalieLine.stats.scoring.w).toBe(38);
+    const skaterLine = lines.find((line) => line.playerId === 1) as SkaterProjection;
+    expect(Object.values(skaterLine.stats.scoring).every((value) => value === 0)).toBe(true);
+    expect(skaterLine.stats.utility).toEqual({ gp: 0, toiPerGame: 0 });
   });
 
   it("gives a goalie only a goalie's stats", () => {

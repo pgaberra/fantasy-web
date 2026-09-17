@@ -70,7 +70,6 @@ import { DecimalsMenuComponent } from './decimals-menu/decimals-menu';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import { IconComponent } from '../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
-import { applyImportedStats, ImportedStats } from '../spreadsheet-import/spreadsheet-import';
 
 const PLAYERS_PER_PAGE = 250;
 
@@ -729,8 +728,6 @@ export class PlayerProjectionsTableComponent implements OnInit {
     );
   }
 
-  private importEditCounter = 0;
-
   applyFullSeasonGames(scaleStats: boolean, minGamesToScale: number, scaleGoalies = false): void {
     // A unique signature keeps each "Full season" bulk edit as its own undo step.
     this.fullSeasonEditCounter += 1;
@@ -742,14 +739,6 @@ export class PlayerProjectionsTableComponent implements OnInit {
         minGamesToScale,
         scaleGoalies,
       ),
-    );
-  }
-
-  /** Writes a spreadsheet's stats over the table as one edit, so a single Undo takes it all back. */
-  applyImportedStats(imported: ReadonlyMap<number, ImportedStats>): void {
-    this.importEditCounter += 1;
-    this.commitEdit(`import:${this.importEditCounter}`, (playerProjections) =>
-      applyImportedStats(playerProjections, imported),
     );
   }
 
