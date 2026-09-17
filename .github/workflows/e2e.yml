@@ -102,8 +102,12 @@ jobs:
       # only a comment on it, and a comment on a resolved issue is exactly the kind of signal
       # nobody receives — which is the failure this whole mechanism exists to avoid. Leaving that
       # to someone remembering would put us back where we started.
+      #
+      # Only a green run of master's specs stands it down. A run dispatched on a branch tests that
+      # branch's specs, and going green there says nothing about the suite master runs every
+      # morning: a branch run closed #714 before its fix had merged.
       - name: Stand down the alarm
-        if: success()
+        if: success() && github.ref == 'refs/heads/master'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
