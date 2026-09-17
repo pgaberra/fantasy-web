@@ -41,7 +41,10 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
     />
-    <link rel="icon" type="image/x-icon" href="favicon.ico" sizes="32x32" />
+    <!-- Google Search shows a site icon only at 48px or more in multiples of 48, and reads the size
+         from `sizes`: the 192px PNG is the one it can use (fantasy-web DECISIONS.md, 2026-09-17). -->
+    <link rel="icon" type="image/png" href="icon-192.png" sizes="192x192" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" sizes="16x16 32x32 48x48" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   </head>
   <body>
