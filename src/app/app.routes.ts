@@ -5,6 +5,7 @@ import { adminGuard } from './guards/admin.guard';
 import { authGuard } from './guards/auth.guard';
 import { paymentsEnabledGuard } from './guards/payments-enabled.guard';
 import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
+import { streamerPlannerEnabledGuard } from './guards/streamer-planner-enabled.guard';
 import { demoRedemptionGuard } from './guards/demo-redemption.guard';
 import { INDEXABLE } from './shared/crawl-tags';
 
@@ -99,6 +100,13 @@ export const routes: Routes = [
     path: 'whos-hot',
     loadComponent: () => import('./whos-hot/whos-hot').then((m) => m.WhosHotComponent),
     canActivate: [whosHotEnabledGuard, authGuard],
+  },
+  // Served only where the BFF's STREAMER_PLANNER_ENABLED says so, and signed in like Who's Hot.
+  {
+    path: 'streamer-planner',
+    loadComponent: () =>
+      import('./streamer-planner/streamer-planner').then((m) => m.StreamerPlannerComponent),
+    canActivate: [authGuard, streamerPlannerEnabledGuard],
   },
   {
     path: 'admin',
