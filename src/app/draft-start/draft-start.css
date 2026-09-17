@@ -500,13 +500,6 @@
   margin-top: var(--space-4);
 }
 
-/* Beside the button rather than under the card: it explains the button, which is the thing
-   that changed, and the card above it already says which starting point is meant. */
-.start-note {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
 @media (max-width: 640px) {
   /* Two cards across do not fit a phone. */
   .rows {
