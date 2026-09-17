@@ -818,15 +818,42 @@ describe('ProjectionCreateComponent', () => {
       expect(request.data.draft).toBeUndefined();
     });
 
-    // A league belongs to the starting point it was set for: switching away and back keeps it,
-    // and it never spills onto another.
-    it('keeps a league per starting point', async () => {
+    // The presets differ only in their numbers, so a league set with one picked stays with the
+    // others: an imported league falling back to the defaults on a preset switch read as lost.
+    it('keeps the league set for one preset when another is picked', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.setLeagueSettings({
+        ...component.leagueSettings()!,
+        leagueSize: 14,
+        yahooSync: {
+          leagueName: 'My league',
+          leagueKey: '465.l.1',
+          syncedAt: '2026-09-17T00:00:00Z',
+        },
+      });
+      component.selectPreset('blank');
+
+      expect(component.leagueSettings()?.leagueSize).toEqual(14);
+      expect(component.leagueSettings()?.yahooSync?.leagueName).toEqual('My league');
+      component.create();
+      expect(createProjection.mock.calls[0][0].data.settings.yahooSync?.leagueName).toEqual(
+        'My league',
+      );
+    });
+
+    // A board carries a league of its own: the presets' league is not laid over it, and is still
+    // there on the way back.
+    it('keeps a board on its own league and the presets on theirs', async () => {
       const fixture = MockRender(ProjectionCreateComponent);
       await fixture.whenStable();
       const component = fixture.point.componentInstance;
 
       component.setLeagueSettings({ ...component.leagueSettings()!, leagueSize: 14 });
-      component.selectPreset('blank');
+      component.selectCopyFrom('src');
+      await fixture.whenStable();
       expect(component.leagueSettings()?.leagueSize).not.toEqual(14);
 
       component.selectPreset('default');

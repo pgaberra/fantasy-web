@@ -229,9 +229,11 @@ export class ProjectionCreateComponent {
   });
 
   /**
-   * The leagues changed on this page, by the starting point they were changed for — as on the
-   * draft picker (draft-start.ts), and for its reason: a board carries a league of its own, and
-   * switching to it and back must neither lose the one set for a preset nor lay that one over it.
+   * The leagues changed on this page, by what they were changed for — as on the draft picker
+   * (draft-start.ts), and for its reason: a board carries a league of its own, and switching to it
+   * and back must neither lose the one set for the presets nor lay that one over it. The presets
+   * share one: they differ only in their numbers, all open on the same league, and a league
+   * imported under one must not fall back to the defaults when the user picks another.
    */
   private readonly changedLeagues = signal<ReadonlyMap<string, LeagueSettings>>(new Map());
 
@@ -514,9 +516,9 @@ export class ProjectionCreateComponent {
  */
 const NOTHING_TO_COPY: StartingPoint = { kind: 'copy', id: null };
 
-/** What a league changed on this page is filed under. */
+/** What a league changed on this page is filed under: the presets together, each board apart. */
 function startingPointKey(point: StartingPoint): string {
-  return point.kind === 'preset' ? `preset:${point.source}` : `copy:${point.id}`;
+  return point.kind === 'preset' ? 'preset' : `copy:${point.id}`;
 }
 
 function sameStartingPoint(first: StartingPoint, second: StartingPoint): boolean {

@@ -348,6 +348,17 @@ describe('DraftStartComponent', () => {
       expect(component.leagueSettings()?.scoringType).toEqual('category');
     });
 
+    // The presets differ only in their numbers, so a league imported with one picked stays with
+    // the other rather than falling back to the defaults.
+    it('keeps the league set for one preset when another is picked', async () => {
+      const component = await render();
+      component.setLeagueSettings({ ...component.leagueSettings()!, leagueSize: 14 });
+
+      component.selectPreset(MODEL);
+
+      expect(component.leagueSettings()?.leagueSize).toEqual(14);
+    });
+
     // A preset board left without a draft is reopened rather than created again; the league set
     // on the page goes to its draft the same way.
     it('takes the league to a preset board whose setup was abandoned', async () => {
