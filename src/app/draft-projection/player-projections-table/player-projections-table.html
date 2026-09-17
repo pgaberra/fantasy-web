@@ -87,11 +87,6 @@
             Stats
           </button>
 
-          <button type="button" class="btn btn-secondary btn-sm" [appPopover]="decimalsMenu">
-            <app-icon name="decimals" />
-            Decimals
-          </button>
-
           <!-- Last in the group, and deliberately: this slot is a call to action while no league
                has been imported and the league's name afterwards, so it is the one item here whose
                width changes. Ahead of the buttons it would shove them sideways the moment a league
@@ -144,6 +139,18 @@
               Rookies only
             </label>
           </div>
+        }
+        <!-- How the numbers are printed, not what the projection is scored on, so it sits with the
+             other view controls rather than between Stats and the league it was imported for. -->
+        @if (columnControls()) {
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm decimals-btn"
+            [appPopover]="decimalsMenu"
+          >
+            <app-icon name="decimals" />
+            Decimals
+          </button>
         }
       </div>
     </div>
