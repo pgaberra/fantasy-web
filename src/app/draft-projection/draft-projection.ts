@@ -5,6 +5,7 @@ import {
   effect,
   ElementRef,
   inject,
+  OnDestroy,
   OnInit,
   signal,
   viewChild,
@@ -12,7 +13,7 @@ import {
 import { HttpErrorResponse } from '@angular/common/http';
 import { rxResource, takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { debounceTime, Observable } from 'rxjs';
+import { debounceTime, Observable, tap } from 'rxjs';
 import { PlayerService } from '../services/player.service';
 import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { Player } from '../models/player.model';
@@ -96,7 +97,7 @@ export const AUTOSAVE_DEBOUNCE_MS = 1200;
   templateUrl: './draft-projection.html',
   styleUrl: './draft-projection.css',
 })
-export class DraftProjectionComponent implements OnInit {
+export class DraftProjectionComponent implements OnInit, OnDestroy {
   private readonly playerService = inject(PlayerService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly statInfoService = inject(StatInfoService);
@@ -126,6 +127,8 @@ export class DraftProjectionComponent implements OnInit {
   private readonly autosaveEnabled = signal<boolean>(false);
   private lastSavedJson = '';
   private lastSavedPlayersJson = '';
+  /** The state as of the last change, whether or not the debounce has run out on it yet. */
+  private pendingState: ProjectionState | null = null;
 
   private readonly playersResource = rxResource({
     stream: () => this.playerService.getPlayers(),
@@ -307,7 +310,13 @@ export class DraftProjectionComponent implements OnInit {
       }
     });
     toObservable(this.saveableState)
-      .pipe(debounceTime(AUTOSAVE_DEBOUNCE_MS), takeUntilDestroyed())
+      .pipe(
+        // Held on to before the debounce, so the save on the way out has the rows as they were
+        // while the table was still alive rather than having to ask a component being destroyed.
+        tap((state) => (this.pendingState = state ?? this.pendingState)),
+        debounceTime(AUTOSAVE_DEBOUNCE_MS),
+        takeUntilDestroyed(),
+      )
       .subscribe(() => this.autosave());
   }
 
@@ -561,13 +570,20 @@ export class DraftProjectionComponent implements OnInit {
   }
 
   /**
-   * The owner has seen the new players. Emptying the list is an edit like any other, so the
-   * autosave carries it to the server and the notice stays gone on the next load. The filter goes
-   * with it, since the notice was the only place to turn it off.
+   * The owner has seen the new players. The filter goes with the list, since the notice was the
+   * only place to turn it off.
+   *
+   * <p>Saved on the spot rather than left to the debounce. Every other edit here is one of a run
+   * — a keystroke, a column tick — and waiting for the run to end is the whole point; this one is
+   * a single click on a notice that then disappears, and what people do next is leave. That
+   * cancelled the pending save with `takeUntilDestroyed`, so the acknowledgement was lost and the
+   * notice came back on the next open, having been dismissed. The debounce still fires afterwards
+   * and finds nothing to do: `autosave` compares against the payload it last sent.
    */
   acknowledgeNewPlayers(): void {
     this.unacknowledgedNewPlayerIds.set([]);
     this.newPlayersOnly.set(false);
+    this.autosave();
   }
 
   /** Drops every correction at once, putting the whole pool back on the reported positions. */
@@ -575,7 +591,32 @@ export class DraftProjectionComponent implements OnInit {
     this.positionOverrides.set(new Map());
   }
 
+  /**
+   * Leaving the page is what the debounce cannot survive: the pending save is cancelled with the
+   * component, so an edit made inside the last {@link AUTOSAVE_DEBOUNCE_MS} was lost — and the
+   * last edit before leaving is the likeliest one there is. It goes out here instead, detached,
+   * because the request has to outlive the component that started it.
+   *
+   * <p>This covers leaving the page, not leaving the app: closing or reloading the tab never
+   * reaches a destroy hook, and a browser will not wait for a request on the way out either.
+   * Anything that must be kept is saved on its own action — see {@link acknowledgeNewPlayers}.
+   */
+  ngOnDestroy(): void {
+    if (this.pendingState) {
+      this.save(this.pendingState, { cancelOnDestroy: false });
+    }
+  }
+
   private autosave(): void {
+    this.save(this.buildState(), { cancelOnDestroy: true });
+  }
+
+  /**
+   * @param cancelOnDestroy whether the request goes with the page. Every save but the last one
+   *     does: there is another behind it, and a component that is gone has nothing to do with the
+   *     answer. The save on the way out is the exception, since cancelling it is the bug.
+   */
+  private save(state: ProjectionState, { cancelOnDestroy }: { cancelOnDestroy: boolean }): void {
     const id = this.projectionId();
     // The pool check is the load-bearing one, not belt-and-braces on serializedState: without a
     // player read model the table holds nothing worth saving, and writing that back is how a
@@ -583,23 +624,27 @@ export class DraftProjectionComponent implements OnInit {
     if (!this.autosaveEnabled() || !id || this.playersUnavailable()) {
       return;
     }
-    const data = this.serializer.toProjectionData(this.buildState());
+    const data = this.serializer.toProjectionData(state);
     const json = JSON.stringify(data);
     if (json === this.lastSavedJson) {
       return;
     }
+    // Moved on with the save, so the flush on the way out does not send an older state back over
+    // one that was saved on its own action since.
+    this.pendingState = state;
     this.lastSavedJson = json;
     this.saveStatus.set('saving');
-    this.projectionStorage
-      .updateProjection(id, { name: this.projectionName(), data: this.payload(data) })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.lastSavedPlayersJson = JSON.stringify(data.players);
-          this.saveStatus.set('saved');
-        },
-        error: () => this.saveStatus.set('error'),
-      });
+    const save = this.projectionStorage.updateProjection(id, {
+      name: this.projectionName(),
+      data: this.payload(data),
+    });
+    (cancelOnDestroy ? save.pipe(takeUntilDestroyed(this.destroyRef)) : save).subscribe({
+      next: () => {
+        this.lastSavedPlayersJson = JSON.stringify(data.players);
+        this.saveStatus.set('saved');
+      },
+      error: () => this.saveStatus.set('error'),
+    });
   }
 
   /**
