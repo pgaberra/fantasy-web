@@ -10,6 +10,7 @@
           <button type="button" class="nav-burger" aria-label="Menu" [cdkMenuTriggerFor]="navMenu">
             <app-icon name="menu" [size]="20" />
           </button>
+          <a routerLink="/home" routerLinkActive="active">Home</a>
           <button
             type="button"
             class="nav-trigger"
@@ -53,6 +54,15 @@
 }
 <ng-template #navMenu>
   <div class="nav-menu" cdkMenu>
+    <a
+      class="nav-menu-item nav-menu-item--collapsed"
+      cdkMenuItem
+      routerLink="/home"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+    >
+      Home
+    </a>
     <a
       class="nav-menu-item"
       cdkMenuItem
