@@ -491,10 +491,6 @@
   color: var(--color-gold);
 }
 
-.panel app-share-import {
-  display: block;
-}
-
 /* The one filled button on the page. It used to carry "Against …" beside it; with the checked
    card outlined directly above, that repeated what the eye already had. */
 .start-row {

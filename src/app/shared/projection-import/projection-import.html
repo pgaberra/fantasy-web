@@ -1,0 +1,5 @@
+<app-share-import [label]="label()" (imported)="imported.emit($event)" />
+@if (spreadsheetEnabled) {
+  <p class="or">or</p>
+  <app-spreadsheet-import-button (imported)="imported.emit($event)" />
+}

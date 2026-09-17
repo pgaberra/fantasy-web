@@ -1,0 +1,26 @@
+:host {
+  display: block;
+  margin-top: var(--space-4);
+}
+
+/* A rule either side of the word, so the two imports read as a choice. The rule stops at the
+   width of the link field and Import above it (share-import.css holds that 380px): run across
+   the whole panel it cut the page in half and separated more than the two buttons. */
+.or {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 29rem;
+  margin: var(--space-3) 0;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+}
+
+.or::before,
+.or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}

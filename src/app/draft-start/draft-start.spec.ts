@@ -566,7 +566,7 @@ describe('DraftStartComponent', () => {
     expect(pressed).toEqual(['true', 'false', 'false']);
     expect(component.sourceKind()).toEqual('preset');
     expect(texts(fixture, '.row-name')).toEqual([LAST_SEASON_PRESET_NAME, MODEL_PRESET_NAME]);
-    expect(fixture.nativeElement.querySelector('app-share-import')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-projection-import')).toBeNull();
   });
 
   // One card for every choice, whichever tile is open. The presets were cards and the boards a
@@ -737,7 +737,7 @@ describe('DraftStartComponent', () => {
 
     component.sourceKind.set('imported');
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('app-share-import')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('app-projection-import')).not.toBeNull();
     expect(component.selection()).toEqual({ kind: 'board', id: 'i1' });
 
     listWithPresetDrafts.mockReturnValue(

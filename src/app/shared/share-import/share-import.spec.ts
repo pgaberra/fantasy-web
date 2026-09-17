@@ -20,7 +20,7 @@ describe('ShareImportComponent', () => {
   });
 
   const renderFixture = async () => {
-    const fixture = MockRender(ShareImportComponent);
+    const fixture = MockRender(ShareImportComponent, { label: 'Paste a share link' });
     await fixture.whenStable();
     return fixture;
   };

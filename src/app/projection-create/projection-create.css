@@ -250,11 +250,6 @@
   color: var(--color-text-subtle);
 }
 
-.panel app-share-import {
-  display: block;
-  margin-top: var(--space-3);
-}
-
 .league {
   margin-bottom: var(--space-3);
 }
