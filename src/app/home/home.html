@@ -52,9 +52,9 @@
         <p>
           Rank every player to your league's scoring settings.
           @if (espnLeaguesEnabled) {
-            Import them from Yahoo or ESPN, then adjust any player's numbers.
+            Set the league settings manually, or import them directly from Yahoo or ESPN.
           } @else {
-            Import them from Yahoo, then adjust any player's numbers.
+            Set the league settings manually, or import them directly from Yahoo.
           }
         </p>
         <div class="feature-actions">
@@ -74,8 +74,8 @@
         <span class="feature-icon"><app-icon name="clipboard-list" [size]="20" /></span>
         <h2 id="draft-heading">Draft mode</h2>
         <p>
-          Track every pick on the draft board and see the team rankings when it's done. Draft from a
-          projection, a preset or a shared board.
+          Enter our Draft mode with a projection of your own or a preset. Track every pick in real
+          time. See how the teams in your league stack up against each other after the draft.
         </p>
         <div class="feature-actions">
           <a class="btn btn-secondary" routerLink="/draft">Open Draft mode</a>
@@ -88,15 +88,16 @@
           <h2 id="ai-heading">AI projection</h2>
           @if (aiProjectionLocked()) {
             <p>
-              Every player projected for the 2026-27 season. Start a projection or a draft from it.
+              Every player projected for the 2026-27 season. Check it out in our projection editor
+              or take them to draft day.
             </p>
             <div class="feature-actions">
               <a class="btn btn-gold" routerLink="/premium">See Premium</a>
             </div>
           } @else {
             <p>
-              Every player projected for the 2026-27 season. Pick it as the starting point of a new
-              projection or draft.
+              Every player projected for the 2026-27 season. Check it out in our projection editor
+              or take them to draft day.
             </p>
             <div class="feature-actions">
               <a
@@ -106,7 +107,12 @@
               >
                 Create projection
               </a>
-              <a class="feature-link feature-link-on-dark" routerLink="/draft">Open Draft mode</a>
+              <a
+                class="feature-link feature-link-on-dark"
+                routerLink="/draft"
+                [queryParams]="{ start: 'model' }"
+                >Open Draft mode</a
+              >
             </div>
           }
         </section>

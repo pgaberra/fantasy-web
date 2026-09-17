@@ -1,5 +1,13 @@
-import { Component, computed, DestroyRef, inject, linkedSignal, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import {
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  inject,
+  linkedSignal,
+  signal,
+} from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable } from 'rxjs';
 import { ProjectionStorageService } from '../services/projection-storage.service';
@@ -9,7 +17,7 @@ import { ProjectionResponse } from '../api/models/projection-response';
 import { createDefaultProjectionState } from '../draft-projection/projection-defaults';
 import { NotificationService } from '../services/notification.service';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
-import { Preset, PRESETS } from '../models/preset';
+import { Preset, presetById, PRESETS } from '../models/preset';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
@@ -87,6 +95,7 @@ export class DraftStartComponent {
   private readonly statInfoService = inject(StatInfoService);
   private readonly notification = inject(NotificationService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly aiAccess = inject(AiProjectionAccess);
   private readonly features = inject(FeatureService);
@@ -202,6 +211,33 @@ export class DraftStartComponent {
       return options[0] ?? null;
     },
   });
+
+  constructor() {
+    // A preset a link asked for (`?start=model`, from the home page's AI projection card) is
+    // picked once its row is there to pick. Not at once: the AI preset is offered only after the
+    // BFF has said it serves the model, and `selection` falls back to the first row whenever the
+    // picked one is not among the options, so an early pick would be undone by that answer.
+    // A preset already drafted against has no row; its draft card leads the page instead, so the
+    // wait ends there without picking anything, and discarding that draft later does not pick it.
+    const wanted = presetById(
+      (this.route.snapshot.queryParams['start'] as string | undefined) ?? null,
+    );
+    if (wanted) {
+      const pending = effect(() => {
+        if (this.sourcesResource.isLoading() || !this.sourcesResource.hasValue()) {
+          return;
+        }
+        const offered = this.availablePresets().find((preset) => preset.id === wanted.id);
+        if (offered) {
+          this.sourceKind.set('preset');
+          this.selectPreset(offered);
+          pending.destroy();
+        } else if (this.presetDraft(wanted)) {
+          pending.destroy();
+        }
+      });
+    }
+  }
 
   presetDraft(preset: Preset): ProjectionSummaryResponse | null {
     return this.presetDrafts().get(preset.id) ?? null;

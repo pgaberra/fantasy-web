@@ -105,6 +105,9 @@ describe('HomeComponent', () => {
       start: 'model',
     });
     expect(text(fixture, '.feature-ai .feature-link')).toEqual('Open Draft mode');
+    expect(
+      ngMocks.input(ngMocks.find(fixture, '.feature-ai .feature-link'), 'queryParams'),
+    ).toEqual({ start: 'model' });
   });
 
   it('drops the AI projection card where the environment does not serve the model', async () => {

@@ -2,7 +2,7 @@ import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ApplicationRef, signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { provideLocationMocks } from '@angular/common/testing';
 import { DraftStartComponent } from './draft-start';
 import { LAST_SEASON_PRESET_NAME, MODEL_PRESET_NAME, Preset, PRESETS } from '../models/preset';
@@ -51,6 +51,8 @@ describe('DraftStartComponent', () => {
   });
 
   const navigate = vi.fn();
+  /** The query string the page opened with; the same object is handed to every render. */
+  const queryParams: Record<string, string> = {};
   const listWithPresetDrafts = vi.fn();
   const createProjection = vi.fn();
   const deleteProjection = vi.fn();
@@ -75,6 +77,9 @@ describe('DraftStartComponent', () => {
     updateProjection.mockReset();
     updateProjection.mockImplementation((id: string) => of({ id }));
     notifyError.mockClear();
+    for (const key of Object.keys(queryParams)) {
+      delete queryParams[key];
+    }
     listWithPresetDrafts.mockReturnValue(of([summary('p1', 'projection')]));
     createProjection.mockReturnValue(of({ id: 'preset1' }));
     deleteProjection.mockReturnValue(of(undefined));
@@ -103,6 +108,7 @@ describe('DraftStartComponent', () => {
               : presets.filter((preset) => preset.source !== MODEL_PRESET_SOURCE),
         })
         .provide({ provide: Router, useValue: { navigate } })
+        .provide({ provide: ActivatedRoute, useValue: { snapshot: { queryParams } } })
         // The component pulls in RouterLink, which has ng-mocks mock the router's location
         // providers too — and the CDK overlay behind the row menu needs a real one to open.
         .provide(provideLocationMocks())
@@ -1012,6 +1018,68 @@ describe('DraftStartComponent', () => {
         expect(fixture.nativeElement.querySelector('.row--locked')).toBeNull();
         // The badge stays: it names the plan the starting point belongs to.
         expect(texts(fixture, '.row-badge')).toEqual(['Premium']);
+      });
+    });
+  });
+  describe('the preset a link asks for', () => {
+    it('opens on the AI projection when the link says so', async () => {
+      queryParams['start'] = 'model';
+      const fixture = MockRender(DraftStartComponent);
+      await fixture.whenStable();
+
+      expect(fixture.point.componentInstance.sourceKind()).toEqual('preset');
+      expect(fixture.point.componentInstance.selection()).toEqual({
+        kind: 'preset',
+        preset: MODEL,
+      });
+    });
+
+    /**
+     * The AI preset is offered only once the BFF has said it serves the model, and the page falls
+     * back to the first row whenever the picked one is not offered. The pick has to wait for the
+     * answer, or the answer would undo it.
+     */
+    it('waits for the environment to offer the preset before picking it', async () => {
+      queryParams['start'] = 'model';
+      aiProjection.set(false);
+      const fixture = MockRender(DraftStartComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+      expect(component.selection()).toEqual({ kind: 'preset', preset: LAST_SEASON });
+
+      aiProjection.set(true);
+      fixture.detectChanges();
+      expect(component.selection()).toEqual({ kind: 'preset', preset: MODEL });
+    });
+
+    /**
+     * A preset already drafted against has no row, only its draft card at the top. The page must
+     * not keep waiting for the row either: discarding that draft later would suddenly pick it.
+     */
+    it('picks nothing for a preset that already has a draft, now or after it is discarded', async () => {
+      queryParams['start'] = 'model';
+      const drafted = summary('m1', 'preset_draft', 'in_progress', '2026-06-01T00:00:00Z', MODEL);
+      listWithPresetDrafts.mockReturnValue(of([drafted]));
+      const fixture = MockRender(DraftStartComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+      expect(component.selection()).toEqual({ kind: 'preset', preset: LAST_SEASON });
+
+      listWithPresetDrafts.mockReturnValue(of([]));
+      component.sourcesResource.reload();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(component.selection()).toEqual({ kind: 'preset', preset: LAST_SEASON });
+    });
+
+    it('ignores a value that names no preset', async () => {
+      queryParams['start'] = 'blank';
+      const fixture = MockRender(DraftStartComponent);
+      await fixture.whenStable();
+
+      expect(fixture.point.componentInstance.selection()).toEqual({
+        kind: 'preset',
+        preset: LAST_SEASON,
       });
     });
   });
