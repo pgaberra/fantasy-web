@@ -10,7 +10,7 @@
         </button>
       </div>
     } @else {
-      <h1 class="auth-title">Send feedback</h1>
+      <h1 class="auth-title">Send Feedback</h1>
       <p class="auth-subtitle">Report a bug or suggest a feature. Replies go to {{ email() }}.</p>
 
       <form (submit)="onSubmit($event)" novalidate>
@@ -59,8 +59,8 @@
             [formField]="feedbackForm.description"
             [placeholder]="
               feedbackForm.type().value() === 'BUG'
-                ? 'What happened, and what did you expect?'
-                : 'What would you like to be able to do?'
+                ? 'Describe the bug you encountered.'
+                : 'Describe the feature you want us to implement.'
             "
             [class.invalid]="
               feedbackForm.description().invalid() && feedbackForm.description().touched()
