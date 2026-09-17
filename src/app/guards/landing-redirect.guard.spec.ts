@@ -7,6 +7,7 @@ import { landingRedirectGuard } from './landing-redirect.guard';
 import { AdminService } from '../services/admin.service';
 import { AuthService } from '../services/auth.service';
 import { YahooService } from '../services/yahoo.service';
+import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 
 function runGuard(
   queryParams: Record<string, string>,
@@ -14,8 +15,11 @@ function runGuard(
   admin = true,
   fragment: string | null = null,
   claimResult: Observable<unknown> = of({ connected: true }),
+  startedFrom: string | null = null,
 ) {
   const createUrlTree = vi.fn().mockImplementation((commands, extras) => ({ commands, extras }));
+  const parseUrl = vi.fn().mockImplementation((url: string) => ({ parsed: url }));
+  const take = vi.fn().mockReturnValue(startedFrom);
   const completeConnect = vi.fn().mockReturnValue(claimResult);
   const completeYahooConnect = vi.fn().mockReturnValue(claimResult);
   TestBed.configureTestingModule({
@@ -24,7 +28,8 @@ function runGuard(
         provide: AuthService,
         useValue: { isLoggedIn: () => loggedIn, isAdmin: () => admin },
       },
-      { provide: Router, useValue: { createUrlTree } },
+      { provide: Router, useValue: { createUrlTree, parseUrl } },
+      { provide: YahooConnectReturnService, useValue: { take } },
       { provide: YahooService, useValue: { completeConnect } },
       { provide: AdminService, useValue: { completeYahooConnect } },
     ],
@@ -35,7 +40,7 @@ function runGuard(
       {} as never,
     ),
   );
-  return { result, createUrlTree, completeConnect, completeYahooConnect };
+  return { result, createUrlTree, parseUrl, take, completeConnect, completeYahooConnect };
 }
 
 async function landing(result: unknown) {
@@ -163,6 +168,101 @@ describe('landingRedirectGuard', () => {
 
       expect(run.createUrlTree).toHaveBeenCalledWith(['/']);
       expect(run.completeConnect).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * The connect button sits on the draft, editor and Who's hot pages; ending every connect on
+   * projections dropped the user off the page they were working on.
+   */
+  describe('returning to the page a connect started from', () => {
+    it("brings a user's claimed connect back to that page, path and query as they were", async () => {
+      const run = runGuard(
+        { yahoo: 'confirm', account: 'user' },
+        true,
+        false,
+        'link=the-code',
+        of({ connected: true }),
+        '/draft/new/standard?source=model',
+      );
+
+      expect(await landing(run.result)).toEqual({ parsed: '/draft/new/standard?source=model' });
+      expect(run.completeConnect).toHaveBeenCalledWith('the-code');
+    });
+
+    it('brings a failed claim back to that page too, where the connect button waits', async () => {
+      const run = runGuard(
+        { yahoo: 'confirm', account: 'user' },
+        true,
+        false,
+        'link=the-code',
+        throwError(() => new HttpErrorResponse({ status: 404 })),
+        '/whos-hot',
+      );
+
+      expect(await landing(run.result)).toEqual({ parsed: '/whos-hot' });
+    });
+
+    it('does so for an admin connecting their own account', async () => {
+      const run = runGuard(
+        { yahoo: 'confirm', account: 'user' },
+        true,
+        true,
+        'link=the-code',
+        of({ connected: true }),
+        '/projections/42',
+      );
+
+      expect(await landing(run.result)).toEqual({ parsed: '/projections/42' });
+    });
+
+    it('keeps a service-account connect on the admin panel, and spends the remembered page', async () => {
+      const run = runGuard(
+        { yahoo: 'confirm', account: 'service' },
+        true,
+        true,
+        'link=the-code',
+        of({ connected: true }),
+        '/whos-hot',
+      );
+
+      expect(await landing(run.result)).toEqual({
+        commands: ['/admin'],
+        extras: { queryParams: { yahoo: 'connected' } },
+      });
+      expect(run.take).toHaveBeenCalled();
+    });
+
+    it('brings a consent Yahoo did not complete back to that page', () => {
+      const run = runGuard(
+        { yahoo: 'error', reason: 'declined' },
+        true,
+        true,
+        null,
+        of({ connected: true }),
+        '/draft',
+      );
+
+      expect(run.result).toEqual({ parsed: '/draft' });
+    });
+
+    it('falls back to projections when the router cannot read the page', async () => {
+      const run = runGuard(
+        { yahoo: 'confirm', account: 'user' },
+        true,
+        false,
+        'link=the-code',
+        of({ connected: true }),
+        '/draft',
+      );
+      run.parseUrl.mockImplementation(() => {
+        throw new Error('malformed');
+      });
+
+      expect(await landing(run.result)).toEqual({
+        commands: ['/projections'],
+        extras: { queryParams: { yahoo: 'connected' } },
+      });
     });
   });
 

@@ -1,9 +1,11 @@
 import { MockBuilder, MockRender } from 'ng-mocks';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { YahooLeagueSyncComponent, YahooSyncResult } from './yahoo-league-sync';
 import { YahooService } from '../../../services/yahoo.service';
+import { YahooConnectReturnService } from '../../../services/yahoo-connect-return.service';
 import { ConnectionResponse } from '../../../api/models/connection-response';
 import { LeaguesResponse } from '../../../api/models/leagues-response';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
@@ -144,6 +146,26 @@ describe('YahooLeagueSyncComponent', () => {
     await fixture.whenStable();
 
     expect(fixture.point.componentInstance.error()).toBe('Could not load your Yahoo leagues.');
+  });
+
+  /** The component sits on several pages; the connect must come back to whichever one it was. */
+  it('remembers the page a connect starts from', async () => {
+    const remember = vi.fn();
+    await MockBuilder(YahooLeagueSyncComponent)
+      .mock(YahooService, {
+        connectionStatus: () => of(disconnected),
+        // A failed start keeps the test from navigating the page to Yahoo.
+        startConnect: () => throwError(() => new HttpErrorResponse({ status: 502 })),
+      })
+      .mock(YahooConnectReturnService, { remember })
+      .mock(Router, { url: '/projections/42/draft?view=board' });
+    const fixture = MockRender(YahooLeagueSyncComponent);
+    await fixture.whenStable();
+
+    fixture.point.componentInstance.connect();
+
+    expect(remember).toHaveBeenCalledWith('/projections/42/draft?view=board');
+    expect(fixture.point.componentInstance.error()).toBe("Couldn't start the Yahoo connection.");
   });
 
   it('renders no sync controls when sync is disabled', async () => {

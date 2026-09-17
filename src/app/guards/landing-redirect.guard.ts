@@ -4,6 +4,7 @@ import { ActivatedRouteSnapshot, CanActivateFn, Router, UrlTree } from '@angular
 import { catchError, map, Observable, of } from 'rxjs';
 import { AdminService } from '../services/admin.service';
 import { AuthService } from '../services/auth.service';
+import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { YahooService } from '../services/yahoo.service';
 
 const MAX_LINK_CODE_LENGTH = 128;
@@ -26,13 +27,28 @@ export const landingRedirectGuard: CanActivateFn = (route: ActivatedRouteSnapsho
     const serviceAccount = params['account'] === 'service';
     const adminService = inject(AdminService);
     const yahooService = inject(YahooService);
+    const startedFrom = inject(YahooConnectReturnService).take();
     const claim = (code: string): Observable<unknown> =>
       serviceAccount ? adminService.completeYahooConnect(code) : yahooService.completeConnect(code);
-    return claimYahooLink(route.fragment, serviceAccount && authService.isAdmin(), claim, router);
+    if (serviceAccount && authService.isAdmin()) {
+      return claimYahooLink(route.fragment, claim, (queryParams) =>
+        router.createUrlTree(['/admin'], { queryParams }),
+      );
+    }
+    return claimYahooLink(route.fragment, claim, (queryParams) =>
+      userDestination(router, startedFrom, queryParams),
+    );
   }
 
   if (!authService.isLoggedIn()) {
     return true;
+  }
+  // A user's own connect that Yahoo did not complete (consent declined, a slow round trip) goes
+  // back to the page it started from, where the connect button is waiting, as a completed one
+  // does. The admin panel never remembers a page, so its failures still fall through to below.
+  const startedFrom = outcome === 'error' ? inject(YahooConnectReturnService).take() : null;
+  if (startedFrom) {
+    return userDestination(router, startedFrom, { ...params });
   }
   // After a failed Yahoo callback the browser lands back here with ?yahoo=error&reason=…; send
   // admins back to the admin panel (where they started the connect) instead of projections. A
@@ -45,6 +61,26 @@ export const landingRedirectGuard: CanActivateFn = (route: ActivatedRouteSnapsho
   }
   return router.createUrlTree(['/projections']);
 };
+
+/**
+ * Where a user's own connect ends: the page it started from, exactly as it was (path and query,
+ * none of the callback's params added, since no page but admin reads them), or projections when
+ * no page was remembered (another tab, storage blocked, a connect started before this existed).
+ */
+function userDestination(
+  router: Router,
+  startedFrom: string | null,
+  queryParams: Record<string, string | undefined>,
+): UrlTree {
+  if (startedFrom) {
+    try {
+      return router.parseUrl(startedFrom);
+    } catch {
+      // A path the router cannot parse: fall back to projections rather than fail the claim.
+    }
+  }
+  return router.createUrlTree(['/projections'], { queryParams });
+}
 
 /** The Yahoo callback's one-time link code, carried in the fragment as `link=<code>`. */
 function linkCode(fragment: string | null): string | null {
@@ -66,18 +102,14 @@ function claimFailure(err: unknown): string {
 
 /**
  * A service-account connect goes back to the admin panel, which explains the outcome; a user's
- * own connect goes to projections, as it always has. A non-admin cannot claim a service-account
+ * own connect goes back to the page it started from. A non-admin cannot claim a service-account
  * code: the BFF answers 403, which lands as a failed claim.
  */
 function claimYahooLink(
   fragment: string | null,
-  toAdmin: boolean,
   claim: (code: string) => Observable<unknown>,
-  router: Router,
+  result: (queryParams: Record<string, string>) => UrlTree,
 ): Observable<UrlTree> {
-  const destination = toAdmin ? ['/admin'] : ['/projections'];
-  const result = (queryParams: Record<string, string>): UrlTree =>
-    router.createUrlTree(destination, { queryParams });
   const code = linkCode(fragment);
   if (!code) {
     return of(result({ yahoo: 'error', reason: 'claim_failed' }));
