@@ -4,12 +4,14 @@ import { Api } from '../api/api';
 import { completeConnect } from '../api/fn/yahoo/complete-connect';
 import { connect } from '../api/fn/yahoo/connect';
 import { connection } from '../api/fn/yahoo/connection';
+import { draft } from '../api/fn/yahoo/draft';
 import { leagues } from '../api/fn/yahoo/leagues';
 import { projectionSettings } from '../api/fn/yahoo/projection-settings';
 import { teams } from '../api/fn/yahoo/teams';
 import {
   AuthorizeUrlResponse,
   ConnectionResponse,
+  LeagueDraftResponse,
   LeagueProjectionSettingsResponse,
   LeaguesResponse,
   LeagueTeamsResponse,
@@ -45,5 +47,9 @@ export class YahooService {
 
   leagueTeams(leagueKey: string): Observable<LeagueTeamsResponse> {
     return from(this.api.invoke(teams, { leagueKey }));
+  }
+
+  leagueDraft(leagueKey: string): Observable<LeagueDraftResponse> {
+    return from(this.api.invoke(draft, { leagueKey }));
   }
 }

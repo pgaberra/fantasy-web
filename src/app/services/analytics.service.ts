@@ -11,6 +11,7 @@ export type AnalyticsEvent =
   | 'user_registered'
   | 'projection_created'
   | 'draft_started'
+  | 'draft_follow_started'
   | 'projection_shared'
   | 'shared_projection_viewed'
   | 'shared_projection_imported'
