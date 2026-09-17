@@ -8,6 +8,7 @@ import { EntitlementService } from '../services/entitlement.service';
 import { FeatureService } from '../services/feature.service';
 import { NotificationService } from '../services/notification.service';
 import { freeFeatures, premiumPerks } from '../shared/premium/premium-perks';
+import { leaveFor } from '../shared/leave-for';
 import { environment } from '../../environments/environment';
 import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
@@ -183,7 +184,7 @@ export class PremiumComponent implements OnInit, OnDestroy {
     this.starting.set(true);
     this.billing.startCheckout().subscribe({
       next: (response) => {
-        window.location.href = response.checkoutUrl;
+        leaveFor(response.checkoutUrl, () => this.backFromStripe());
       },
       error: (error: unknown) => {
         this.starting.set(false);
@@ -206,7 +207,7 @@ export class PremiumComponent implements OnInit, OnDestroy {
     this.openingPortal.set(true);
     this.billing.openPortal().subscribe({
       next: (response) => {
-        window.location.href = response.portalUrl;
+        leaveFor(response.portalUrl, () => this.backFromStripe());
       },
       error: () => {
         this.openingPortal.set(false);
@@ -217,6 +218,17 @@ export class PremiumComponent implements OnInit, OnDestroy {
         );
       },
     });
+  }
+
+  /**
+   * Back from Stripe's checkout or portal with the browser's Back button, which restores this page
+   * as it was left: the button still busy, and the plan as it stood before whatever was changed
+   * there. Both are put right.
+   */
+  private backFromStripe(): void {
+    this.starting.set(false);
+    this.openingPortal.set(false);
+    this.entitlement.refresh();
   }
 
   private scheduleNextRead(): void {

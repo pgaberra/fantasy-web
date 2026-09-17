@@ -13,6 +13,13 @@ import { EntitlementService } from '../services/entitlement.service';
 import { NotificationService } from '../services/notification.service';
 import { FeatureService } from '../services/feature.service';
 
+/** What the browser fires when Back brings a page back out of its back/forward cache. */
+function restoreFromBackForwardCache(): void {
+  const event = new Event('pageshow');
+  Object.defineProperty(event, 'persisted', { value: true });
+  window.dispatchEvent(event);
+}
+
 describe('PremiumComponent', () => {
   const startCheckout = vi.fn();
   const openPortal = vi.fn();
@@ -89,6 +96,24 @@ describe('PremiumComponent', () => {
 
     expect(text).toContain('Premium was given to you, free, until');
     expect(text).not.toContain('Manage subscription');
+  });
+
+  it('gives Subscribe back when the visitor comes back from checkout without paying', () => {
+    startCheckout.mockReturnValue(of({ checkoutUrl: 'https://checkout.example/go' }));
+    const fixture = MockRender(PremiumComponent);
+    const button = () =>
+      ngMocks.find<HTMLButtonElement>('.plan-card--premium .plan-cta button').nativeElement;
+
+    button().click();
+    fixture.detectChanges();
+    expect(window.location.href).toEqual('https://checkout.example/go');
+    expect(button().disabled).toBe(true);
+
+    restoreFromBackForwardCache();
+    fixture.detectChanges();
+
+    expect(button().disabled).toBe(false);
+    expect(button().textContent).toContain('Subscribe');
   });
 
   it('shows a Subscribe button for a signed-in user without Premium', () => {
@@ -203,6 +228,29 @@ describe('PremiumComponent', () => {
 
       expect(openPortal).toHaveBeenCalled();
       expect(window.location.href).toEqual('https://portal.example/go');
+    });
+
+    /**
+     * Back from Stripe restores this page from the back/forward cache exactly as it was left, so
+     * the button stood disabled at "Opening" until the page was reloaded.
+     */
+    it('gives the portal button back, and re-reads the plan, when the visitor comes back', () => {
+      openPortal.mockReturnValue(of({ portalUrl: 'https://portal.example/go' }));
+      const fixture = MockRender(PremiumComponent);
+      const button = () =>
+        ngMocks.find<HTMLButtonElement>('.plan-card--premium .plan-cta button').nativeElement;
+
+      button().click();
+      fixture.detectChanges();
+      expect(button().disabled).toBe(true);
+      refresh.mockClear();
+
+      restoreFromBackForwardCache();
+      fixture.detectChanges();
+
+      expect(button().disabled).toBe(false);
+      expect(button().textContent).toContain('Manage subscription');
+      expect(refresh).toHaveBeenCalled();
     });
 
     it('says when the next charge falls', () => {
