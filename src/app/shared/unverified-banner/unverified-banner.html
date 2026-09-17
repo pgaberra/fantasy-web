@@ -1,11 +1,12 @@
 @if (isLoggedIn() && !isEmailVerified()) {
   <div class="unverified-banner" role="status">
+    <app-icon name="mail" class="unverified-banner__icon" />
     @if (sent()) {
       <span class="unverified-banner__text">
         Verification email sent. Check your inbox or spam folder.
       </span>
     } @else {
-      <span class="unverified-banner__text"> Please verify your email. </span>
+      <span class="unverified-banner__text">Please verify your email.</span>
       <button
         type="button"
         class="unverified-banner__button"
