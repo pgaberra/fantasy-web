@@ -6,6 +6,7 @@ import { AdminPremiumComponent } from './premium/admin-premium';
 import { LeagueSummary, SyncRunResponse, YahooProbeResponse } from '../api/models';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { yahooRefusalMessage } from '../shared/yahoo-refused';
+import { leaveFor } from '../shared/leave-for';
 
 /**
  * What the Yahoo callback said about the connect attempt it just finished, in words rather than
@@ -161,7 +162,7 @@ export class AdminComponent implements OnInit {
     this.error.set(null);
     this.adminService.connectYahoo().subscribe({
       next: (response) => {
-        window.location.href = response.authorizeUrl;
+        leaveFor(response.authorizeUrl, () => this.connecting.set(false));
       },
       error: () => {
         this.connecting.set(false);
