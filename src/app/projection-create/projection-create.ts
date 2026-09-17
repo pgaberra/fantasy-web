@@ -29,6 +29,7 @@ import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-i
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { ShareImportComponent } from '../shared/share-import/share-import';
+import { SpreadsheetImportButtonComponent } from '../shared/spreadsheet-import/spreadsheet-import-button';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { createDefaultProjectionState } from '../draft-projection/projection-defaults';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
@@ -104,6 +105,7 @@ export function requestedPreset(value: unknown): CreatePreset['source'] | null {
     RouterLink,
     StartingPointPreviewComponent,
     ShareImportComponent,
+    SpreadsheetImportButtonComponent,
     RelativeTimePipe,
     IconComponent,
     LeagueSettingsControlsComponent,
@@ -398,7 +400,11 @@ export class ProjectionCreateComponent {
 
   /** Whose numbers a row holds, said in the row rather than only by the heading above it. */
   sourceLabel(projection: ProjectionSummaryResponse): string {
-    return projection.origin ? `From ${projection.origin.authorUsername}` : 'Your projection';
+    if (projection.origin) {
+      return `From ${projection.origin.authorUsername}`;
+    }
+    // An imported board with nobody to credit came from a spreadsheet rather than a share link.
+    return projection.kind === 'imported' ? 'From a spreadsheet' : 'Your projection';
   }
 
   /**

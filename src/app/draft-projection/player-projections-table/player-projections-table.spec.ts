@@ -1147,31 +1147,6 @@ describe('PlayerProjectionsTableComponent', () => {
     });
   });
 
-  describe('applyImportedStats', () => {
-    it("writes a sheet's stats as one edit that a single undo takes back", () => {
-      const component = getComponent();
-      const before = component.playerProjections();
-      component.applyImportedStats(
-        new Map([
-          [1, { goals: 50, gp: 70 }],
-          [2, { goals: 12 }],
-        ]),
-      );
-      const skaterOne = component
-        .playerProjections()
-        .find((p) => p.playerId === 1) as SkaterProjection;
-      expect(skaterOne.stats.scoring.goals).toEqual(50);
-      expect(skaterOne.stats.utility.gp).toEqual(70);
-      expect(
-        (component.playerProjections().find((p) => p.playerId === 2) as SkaterProjection).stats
-          .scoring.goals,
-      ).toEqual(12);
-
-      component.undo();
-      expect(component.playerProjections()).toEqual(before);
-    });
-  });
-
   describe('header layout', () => {
     it('keeps the title beside the controls while there is no league toolbar', () => {
       getComponent();

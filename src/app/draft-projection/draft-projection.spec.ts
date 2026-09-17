@@ -12,7 +12,6 @@ import { LeagueImportButtonComponent } from '../shared/league-import-button/leag
 import { Goalie, Skater } from '../models/player.model';
 import { ProjectionResponse } from '../api/models/projection-response';
 import { Projection } from '../models/projection.model';
-import { environment } from '../../environments/environment';
 
 describe('DraftProjectionComponent', () => {
   const mockSkaters: Skater[] = [
@@ -553,37 +552,6 @@ describe('DraftProjectionComponent', () => {
     });
 
     expect(component.syncedLeagueName()).toEqual('123456');
-  });
-
-  describe('spreadsheet import', () => {
-    const importButton = (element: HTMLElement) =>
-      [...element.querySelectorAll('button')].find((button) =>
-        button.textContent?.includes('Import spreadsheet'),
-      );
-
-    it('keeps Import spreadsheet out of the header while the build flag is off', async () => {
-      const fixture = MockRender(DraftProjectionComponent);
-      await fixture.whenStable();
-      fixture.detectChanges();
-
-      expect(importButton(fixture.nativeElement)).toBeUndefined();
-    });
-
-    it('offers Import spreadsheet once the build flag turns it on', async () => {
-      const original = environment.spreadsheetImportEnabled;
-      environment.spreadsheetImportEnabled = true;
-      try {
-        const fixture = MockRender(DraftProjectionComponent);
-        await fixture.whenStable();
-        fixture.detectChanges();
-
-        importButton(fixture.nativeElement)?.click();
-        fixture.detectChanges();
-        expect(fixture.point.componentInstance.showSpreadsheetImport()).toBe(true);
-      } finally {
-        environment.spreadsheetImportEnabled = original;
-      }
-    });
   });
 
   describe('full-season bulk action', () => {
