@@ -99,7 +99,13 @@
               projection or draft.
             </p>
             <div class="feature-actions">
-              <a class="btn btn-gold" routerLink="/projections/new">Create projection</a>
+              <a
+                class="btn btn-gold"
+                routerLink="/projections/new"
+                [queryParams]="{ start: 'model' }"
+              >
+                Create projection
+              </a>
               <a class="feature-link feature-link-on-dark" routerLink="/draft">Open Draft mode</a>
             </div>
           }

@@ -164,7 +164,8 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   start with; a returning user also gets the projection they updated last across the top. It
   began as a two-step checklist, which Alexander took out for telling everyone there was one
   right order. The AI card is drawn wherever the BFF serves the model, and sells it or offers it
-  depending on the account's plan. `demoRedemptionGuard` sends anyone with landing-demo work
+  depending on the account's plan; its Create button opens `/projections/new?start=model`, which
+  picks the AI preset once the BFF has said it serves it. `demoRedemptionGuard` sends anyone with landing-demo work
   waiting on to `/projections`, which is what saves it.
 - `profile/` — the account's **profile picture** and **public name** (`/profile`, signed-in
   only), reached from the avatar at the right edge of the header, which opens the account menu
