@@ -1,4 +1,4 @@
-import { MockBuilder, MockRender } from 'ng-mocks';
+import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -7,18 +7,18 @@ import { BehaviorSubject, of, throwError } from 'rxjs';
 import { ProfileComponent } from './profile';
 import { AccountService } from '../services/account.service';
 import { AuthService } from '../services/auth.service';
-import {
-  AvatarImageService,
-  UnreadableImageError,
-  UnsupportedImageTypeError,
-} from '../services/avatar-image.service';
+import { AvatarImageService, UnreadableImageError } from '../services/avatar-image.service';
 import { PlayerHeadshotComponent } from '../shared/player-headshot/player-headshot';
+import { AvatarCropDialogComponent } from './avatar-crop-dialog/avatar-crop-dialog';
+import { AvatarCrop } from '../models/avatar-crop';
 import { AccountResponse } from '../api/models/account-response';
 
 describe('ProfileComponent', () => {
   const named: AccountResponse = { email: 'owner@example.com', username: 'alex' };
   const picked = new File([new Uint8Array([1, 2, 3])], 'me.png', { type: 'image/png' });
   const prepared = new Blob([new Uint8Array([4, 5, 6])], { type: 'image/jpeg' });
+  /** What the dialog hands back: the square the user placed on the picked file. */
+  const placed: AvatarCrop = { x: 120, y: 0, side: 533 };
 
   const load = vi.fn();
   const setUsername = vi.fn();
@@ -77,6 +77,23 @@ describe('ProfileComponent', () => {
   const text = (fixture: Awaited<ReturnType<typeof render>>) =>
     (fixture.nativeElement.textContent as string).replace(/\s+/g, ' ');
 
+  const cropDialog = (fixture: Awaited<ReturnType<typeof render>>) =>
+    fixture.nativeElement.querySelector('app-avatar-crop-dialog') as HTMLElement | null;
+
+  /** Places the square the dialog would have placed, and presses its Save. */
+  const place = async (fixture: Awaited<ReturnType<typeof render>>, crop: AvatarCrop = placed) => {
+    ngMocks.output(ngMocks.find(fixture, AvatarCropDialogComponent), 'confirmed').emit(crop);
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+
+  /**
+   * What a failed upload says. It is handed to the dialog rather than drawn on the page, so the
+   * user keeps the square they placed and can press Save again.
+   */
+  const dialogError = (fixture: Awaited<ReturnType<typeof render>>) =>
+    ngMocks.input(ngMocks.find(fixture, AvatarCropDialogComponent), 'saveError');
+
   /**
    * The account menu's "Set a username" link lands on #username, and the page is expected to put
    * the caret in the field: the account loads first, so the field is not there to jump to on
@@ -109,40 +126,85 @@ describe('ProfileComponent', () => {
     );
   });
 
-  it('scales the picked file down and uploads what comes out', async () => {
+  /**
+   * A picked file used to go straight up, cropped from its middle. The middle of a photo is not
+   * where the subject of one is, and the square is all that is ever stored, so the placing happens
+   * before the upload and nothing is sent until the user has seen it.
+   */
+  it('opens the crop dialog on the picked file and uploads nothing yet', async () => {
     const fixture = await render();
 
     await pick(fixture, picked);
 
-    expect(prepare).toHaveBeenCalledWith(picked);
+    expect(cropDialog(fixture)).not.toBeNull();
+    expect(ngMocks.input(ngMocks.find(fixture, AvatarCropDialogComponent), 'file')).toBe(picked);
+    expect(prepare).not.toHaveBeenCalled();
+    expect(setAvatar).not.toHaveBeenCalled();
+  });
+
+  it('uploads the square the user placed, and closes the dialog once it lands', async () => {
+    const fixture = await render();
+
+    await pick(fixture, picked);
+    await place(fixture);
+
+    expect(prepare).toHaveBeenCalledWith(picked, placed);
     expect(setAvatar).toHaveBeenCalledWith(prepared);
+    expect(cropDialog(fixture)).toBeNull();
     expect(fixture.point.componentInstance.avatarError()).toBeNull();
     expect(fixture.point.componentInstance.isUploading()).toEqual(false);
   });
 
-  it('says so when the file is not a picture the browser can read', async () => {
-    prepare.mockRejectedValue(new UnreadableImageError());
+  it('uploads nothing when the dialog is closed without saving', async () => {
     const fixture = await render();
 
     await pick(fixture, picked);
+    ngMocks.output(ngMocks.find(fixture, AvatarCropDialogComponent), 'closed').emit();
+    await fixture.whenStable();
+    fixture.detectChanges();
 
+    expect(cropDialog(fixture)).toBeNull();
+    expect(prepare).not.toHaveBeenCalled();
     expect(setAvatar).not.toHaveBeenCalled();
-    expect(text(fixture)).toContain('That file could not be read as an image');
   });
 
   /**
    * The formats are no longer listed under the button, so this message is the only place the
-   * page names them — it has to arrive the moment a file we cannot take is picked.
+   * page names them — and it has to arrive on the pick, not from a dialog opened on a picture
+   * that would never appear in it.
    */
-  it('names the formats it takes when the file is not one of them', async () => {
-    prepare.mockRejectedValue(new UnsupportedImageTypeError());
+  it('names the formats it takes when the picked file is not one of them', async () => {
+    const fixture = await render();
+
+    await pick(fixture, new File(['GIF89a'], 'me.gif', { type: 'image/gif' }));
+
+    expect(cropDialog(fixture)).toBeNull();
+    expect(prepare).not.toHaveBeenCalled();
+    expect(text(fixture)).toContain('Unsupported file format. Use a PNG, JPEG, or WebP image.');
+  });
+
+  it('says so when the dialog cannot draw the file at all', async () => {
     const fixture = await render();
 
     await pick(fixture, picked);
+    ngMocks.output(ngMocks.find(fixture, AvatarCropDialogComponent), 'unreadable').emit();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(cropDialog(fixture)).toBeNull();
+    expect(setAvatar).not.toHaveBeenCalled();
+    expect(text(fixture)).toContain('That file could not be read as an image');
+  });
+
+  it('says so when the file cannot be decoded at the moment it is saved', async () => {
+    prepare.mockRejectedValue(new UnreadableImageError());
+    const fixture = await render();
+
+    await pick(fixture, picked);
+    await place(fixture);
 
     expect(setAvatar).not.toHaveBeenCalled();
-    expect(text(fixture)).toContain('Unsupported file format. Use a PNG, JPEG, or WebP image.');
-    expect(fixture.point.componentInstance.isUploading()).toEqual(false);
+    expect(dialogError(fixture)).toContain('That file could not be read as an image');
   });
 
   it('no longer spends a line of help text on the formats it takes', async () => {
@@ -151,15 +213,17 @@ describe('ProfileComponent', () => {
     expect(text(fixture)).not.toContain('cropped to a square');
   });
 
-  it('reports an upload the server refused', async () => {
+  it('reports an upload the server refused without closing the dialog on it', async () => {
     setAvatar.mockReturnValue(
       throwError(() => new HttpErrorResponse({ status: 400, statusText: 'Bad Request' })),
     );
     const fixture = await render();
 
     await pick(fixture, picked);
+    await place(fixture);
 
-    expect(text(fixture)).toContain("Couldn't save your picture");
+    expect(cropDialog(fixture)).not.toBeNull();
+    expect(dialogError(fixture)).toContain("Couldn't save your picture");
     expect(fixture.point.componentInstance.isUploading()).toEqual(false);
   });
 
@@ -168,8 +232,9 @@ describe('ProfileComponent', () => {
     const fixture = await render();
 
     await pick(fixture, picked);
+    await place(fixture);
 
-    expect(text(fixture)).toContain("can't reach the server");
+    expect(dialogError(fixture)).toContain("can't reach the server");
   });
 
   it('does nothing when the picker is dismissed without a file', async () => {
@@ -177,6 +242,7 @@ describe('ProfileComponent', () => {
 
     await pick(fixture, null);
 
+    expect(cropDialog(fixture)).toBeNull();
     expect(prepare).not.toHaveBeenCalled();
     expect(setAvatar).not.toHaveBeenCalled();
   });

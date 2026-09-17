@@ -1,0 +1,97 @@
+<div class="dialog-backdrop" (click)="closed.emit()">
+  <div
+    class="dialog-card"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="avatar-crop-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="dialog-header">
+      <h2 id="avatar-crop-title" class="dialog-title">Position your picture</h2>
+      <button type="button" class="dialog-close" aria-label="Close" (click)="closed.emit()">
+        <app-icon name="close" [size]="20" />
+      </button>
+    </div>
+
+    <p class="dialog-body">Drag to set what the circle shows.</p>
+
+    <div
+      #viewport
+      class="viewport"
+      tabindex="0"
+      role="group"
+      aria-label="Your picture. Drag it, or use the arrow keys, to set what the circle shows."
+      (pointerdown)="onPointerDown($event)"
+      (pointermove)="onPointerMove($event)"
+      (pointerup)="onPointerEnd($event)"
+      (pointercancel)="onPointerEnd($event)"
+      (keydown)="onKeyDown($event)"
+      (wheel)="onWheel($event)"
+    >
+      @if (source(); as source) {
+        <img
+          class="picture"
+          [src]="source"
+          [style]="pictureStyle()"
+          alt=""
+          draggable="false"
+          (load)="onLoad($event)"
+          (error)="unreadable.emit()"
+        />
+      }
+      <div class="mask" aria-hidden="true"></div>
+    </div>
+
+    @if (canZoom()) {
+      <div class="zoom-row">
+        <label class="zoom-label" for="avatar-zoom">Zoom</label>
+        <input
+          id="avatar-zoom"
+          class="zoom-slider"
+          type="range"
+          min="1"
+          [max]="maxZoom()"
+          step="0.01"
+          [value]="zoom()"
+          [disabled]="saving()"
+          (input)="onZoomInput($event)"
+        />
+      </div>
+    }
+
+    @if (saveError()) {
+      <p class="field-error" role="alert">{{ saveError() }}</p>
+    }
+
+    <div class="dialog-actions">
+      <button
+        type="button"
+        class="btn btn-secondary btn-sm reset-button"
+        [disabled]="saving() || !crop()"
+        (click)="reset()"
+      >
+        Reset
+      </button>
+      <button
+        type="button"
+        class="btn btn-secondary btn-sm"
+        [disabled]="saving()"
+        (click)="closed.emit()"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary btn-sm"
+        [disabled]="saving() || !crop()"
+        (click)="confirm()"
+      >
+        @if (saving()) {
+          <app-loading-indicator variant="inline" label="Saving" />
+        } @else {
+          Save
+        }
+      </button>
+    </div>
+  </div>
+</div>
