@@ -10,6 +10,7 @@ import { YahooSync } from '../../../api/models/yahoo-sync';
 import { IconComponent } from '../../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../../shared/loading-indicator/loading-indicator';
 import { isYahooRefusal } from '../../../shared/yahoo-refused';
+import { leaveFor } from '../../../shared/leave-for';
 
 export interface YahooSyncResult {
   settings: LeagueProjectionSettingsResponse;
@@ -75,7 +76,7 @@ export class YahooLeagueSyncComponent implements OnInit {
     this.connectReturn.remember(this.router.url);
     this.yahoo.startConnect().subscribe({
       next: (response) => {
-        window.location.href = response.authorizeUrl;
+        leaveFor(response.authorizeUrl, () => this.connecting.set(false));
       },
       error: () => {
         this.connecting.set(false);
