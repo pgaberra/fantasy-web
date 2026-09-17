@@ -46,7 +46,7 @@
           @if (showsPremiumLink()) {
             <a routerLink="/premium" routerLinkActive="active" class="nav-premium">Premium</a>
           }
-          <a routerLink="/login" routerLinkActive="active">Sign in</a>
+          <a routerLink="/login" routerLinkActive="active">Sign In</a>
         }
       </nav>
     </div>
@@ -69,7 +69,7 @@
       routerLink="/draft"
       routerLinkActive="active"
       ariaCurrentWhenActive="page"
-      >Draft mode</a
+      >Draft Mode</a
     >
     <a
       class="nav-menu-item"
@@ -78,7 +78,7 @@
       routerLinkActive="active"
       ariaCurrentWhenActive="page"
     >
-      My projections
+      My Projections
     </a>
     @if (whosHotEnabled) {
       <a
@@ -129,7 +129,7 @@
           routerLink="/profile"
           fragment="username"
         >
-          Set a username
+          Set a Username
         </a>
       }
       <span class="account-menu-email">{{ account.email() }}</span>
@@ -172,7 +172,7 @@
       cdkMenuItem
       (click)="authService.logout()"
     >
-      Sign out
+      Sign Out
     </button>
   </div>
 </ng-template>

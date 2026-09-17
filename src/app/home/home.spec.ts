@@ -70,9 +70,9 @@ describe('HomeComponent', () => {
     const fixture = await renderFixture();
 
     expect(text(fixture, 'h1')).toEqual('Welcome to SlapStat');
-    expect(headings(fixture)).toEqual(['Projections', 'Draft mode', 'AI projection', "Who's Hot"]);
+    expect(headings(fixture)).toEqual(['Projections', 'Draft Mode', 'AI projection', "Who's Hot"]);
     expect(fixture.nativeElement.querySelector('.resume')).toBeNull();
-    expect(text(fixture, '.feature-actions')).not.toContain('My projections');
+    expect(text(fixture, '.feature-actions')).not.toContain('My Projections');
   });
 
   it('leads a returning user with the projection they updated last', async () => {
@@ -88,7 +88,7 @@ describe('HomeComponent', () => {
     expect(text(fixture, 'h1')).toEqual('Welcome back, alex');
     expect(text(fixture, '.resume-name')).toContain('Board new');
     expect(text(fixture, '.resume-actions .btn-primary')).toEqual('Resume draft');
-    expect(text(fixture, '.feature-actions .btn-secondary')).toEqual('My projections (2)');
+    expect(text(fixture, '.feature-actions .btn-secondary')).toEqual('My Projections (2)');
   });
 
   it('sells the AI projection to an account it is locked for, and offers it to one that has it', async () => {
@@ -104,7 +104,7 @@ describe('HomeComponent', () => {
     expect(ngMocks.input(ngMocks.find(fixture, '.feature-ai .btn'), 'queryParams')).toEqual({
       start: 'model',
     });
-    expect(text(fixture, '.feature-ai .btn-on-dark')).toEqual('Open Draft mode');
+    expect(text(fixture, '.feature-ai .btn-on-dark')).toEqual('Open Draft Mode');
     expect(ngMocks.input(ngMocks.find(fixture, '.feature-ai .btn-on-dark'), 'queryParams')).toEqual(
       { start: 'model' },
     );

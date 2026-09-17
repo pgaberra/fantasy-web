@@ -14,7 +14,7 @@ unless they refer to something genuinely different.
 | The ranked output of a projection | player rankings | the sheet |
 | The league's categories or point values | scoring settings | scoring system, scoring format |
 | Everything else configured about the league | league settings | league config |
-| The live drafting feature | Draft mode | draft board mode, live draft |
+| The live drafting feature | Draft Mode | draft board mode, live draft |
 | The paid membership | Premium | premium tier, premium plan, Pro plan |
 
 ## Spelling and casing
@@ -29,6 +29,13 @@ matched case-insensitively.
 | SLAPSTAT | SlapStat |
 | Yahoo! | Yahoo |
 | ESPN+ | ESPN |
+| Draft mode | Draft Mode |
+| draft mode | Draft Mode |
+| My projections | My Projections |
+
+Navigation and footer links are title case (*Send Feedback*, *Sign In*), and so are the
+names Draft Mode, My Projections and Who's Hot wherever they appear. Buttons, headings and
+labels elsewhere stay sentence case.
 
 ## Phrases to avoid
 
