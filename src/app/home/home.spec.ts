@@ -70,7 +70,7 @@ describe('HomeComponent', () => {
     const fixture = await renderFixture();
 
     expect(text(fixture, 'h1')).toEqual('Welcome to SlapStat');
-    expect(headings(fixture)).toEqual(['Projections', 'Draft Mode', 'AI projection', "Who's Hot"]);
+    expect(headings(fixture)).toEqual(['Projections', 'Draft Mode', 'AI Projection', "Who's Hot"]);
     expect(fixture.nativeElement.querySelector('.resume')).toBeNull();
     expect(text(fixture, '.feature-actions')).not.toContain('My Projections');
   });
@@ -116,7 +116,7 @@ describe('HomeComponent', () => {
     const fixture = await renderFixture();
 
     expect(fixture.nativeElement.querySelector('.feature-ai')).toBeNull();
-    expect(headings(fixture)).not.toContain('AI projection');
+    expect(headings(fixture)).not.toContain('AI Projection');
   });
 
   it('shows the failure instead of the features when the list does not load', async () => {
