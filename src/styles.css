@@ -83,6 +83,8 @@
   --color-text-muted: #4c586a;
   --color-text-subtle: #5f6c85;
   --color-text-on-dark: #ffffff;
+  /* Secondary text on --color-primary: 8.5:1 there. */
+  --color-text-on-dark-muted: #c9d6ea;
 
   --color-bg: #f0f2f8;
   --color-surface: #ffffff;
