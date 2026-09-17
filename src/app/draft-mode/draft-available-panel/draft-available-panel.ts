@@ -49,6 +49,7 @@ export class DraftAvailablePanelComponent {
   readonly hasMore = input.required<boolean>();
   readonly isMyPick = input.required<boolean>();
   readonly isComplete = input.required<boolean>();
+  readonly locked = input<boolean>(false);
   readonly draftLabel = input.required<string>();
   readonly scoringType = input.required<ScoringType>();
   readonly statColumns = input.required<ScoringStatKey[]>();

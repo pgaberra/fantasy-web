@@ -138,6 +138,14 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   is not one. An imported card says whose board it is and offers no Share, since a share
   credits the account that publishes it.
   Both sources then run the same board in `draft-mode/`.
+  A draft whose league came from Yahoo can **follow that league's live draft** ("Follow Yahoo
+  draft"), offered only where `FeatureService.leagueDraftSync` (the BFF's
+  `GET /api/v1/features`) says so. Following makes the league the source of the board: its
+  teams, keyed by Yahoo's team key, in draft order, and its picks, polled every 5 s while the
+  tab is visible (`league-draft-follow.ts` holds the pure mapping). Every pick edit is locked
+  meanwhile, a board with picks entered by hand asks before it is replaced, and following stops
+  on an auction draft, a league without the user's team, a finished draft, or a 404/424. A
+  dropped connection keeps polling.
 - `shared-projection/` — the page behind a share link (`/s/:token`), public and unguarded: a
   share link has to open for someone who has never signed in. A signed-in visitor is offered
   "Draft Mode", which copies the snapshot into their own projections and opens the board; a
