@@ -1,8 +1,11 @@
-import { MockBuilder, MockRender } from 'ng-mocks';
+import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { DraftLeagueSettingsComponent } from './draft-league-settings';
 import { LeagueSettings } from '../../shared/league-settings/league-settings';
 import { LeagueImportButtonComponent } from '../../shared/league-import-button/league-import-button';
+import { LeagueSyncComponent } from '../../draft-projection/projection-settings-section/league-sync/league-sync';
+import { YahooConnectReturnService } from '../../services/yahoo-connect-return.service';
+import { Router } from '@angular/router';
 import {
   DEFAULT_LEAGUE_SIZE,
   DEFAULT_ROSTER_SLOTS,
@@ -103,5 +106,24 @@ describe('DraftLeagueSettingsComponent', () => {
     });
 
     expect(component.showSyncDialog()).toBe(true);
+  });
+
+  it('opens the import dialog on Yahoo when a connect started in it comes back to this page', async () => {
+    await MockBuilder(DraftLeagueSettingsComponent)
+      .keep(LeagueImportButtonComponent)
+      .provide({ provide: Router, useValue: { url: '/draft' } })
+      .provide({
+        provide: YahooConnectReturnService,
+        useValue: { returnedTo: (url: string) => url === '/draft' },
+      });
+    const fixture = render();
+
+    expect(fixture.point.componentInstance.showSyncDialog()).toBe(true);
+    const sync = ngMocks.findInstance(LeagueSyncComponent);
+    expect(sync.openOnYahoo()).toBe(true);
+  });
+
+  it('leaves the import dialog closed on an ordinary visit', () => {
+    expect(render().point.componentInstance.showSyncDialog()).toBe(false);
   });
 });

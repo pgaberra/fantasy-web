@@ -62,6 +62,7 @@
   <app-league-sync-dialog (closed)="showSyncDialog.set(false)">
     <app-league-sync
       [lastSync]="settings().yahooSync"
+      [openOnYahoo]="backFromYahoo"
       [lastEspnLeagueId]="settings().lastEspnLeagueId"
       [lastEspnSyncedAt]="settings().espnSync?.syncedAt ?? null"
       [lastEspnLeagueName]="settings().espnSync?.leagueName ?? null"

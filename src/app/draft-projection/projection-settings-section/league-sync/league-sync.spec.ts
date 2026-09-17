@@ -131,4 +131,20 @@ describe('LeagueSyncComponent', () => {
 
     expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeTruthy();
   });
+
+  it('opens on Yahoo when it is back from a Yahoo connect, whatever it last synced from', async () => {
+    environment.yahooSyncDisabled = false;
+    environment.espnLeaguesEnabled = true;
+    await MockBuilder(LeagueSyncComponent)
+      .mock(YahooLeagueSyncComponent)
+      .mock(EspnLeagueSyncComponent);
+    const fixture = MockRender(LeagueSyncComponent, {
+      openOnYahoo: true,
+      lastEspnLeagueId: '12345',
+      lastEspnSyncedAt: 't',
+    });
+
+    expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeNull();
+  });
 });
