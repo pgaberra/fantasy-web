@@ -18,6 +18,7 @@ import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { PlayerHeadshotComponent } from '../shared/player-headshot/player-headshot';
 import { environment } from '../../environments/environment';
+import { PendingCopyService } from './pending-copy';
 
 describe('SharedProjectionComponent', () => {
   const shared: SharedProjectionResponse = {
@@ -71,10 +72,9 @@ describe('SharedProjectionComponent', () => {
   const importFromShare = vi.fn();
   const navigate = vi.fn();
   const notifyError = vi.fn();
-  const replaceState = vi.fn();
+  const remember = vi.fn();
+  const takePending = vi.fn();
   const isLoggedIn = signal(false);
-  /** The `action` a visitor carried back from the sign-in, as the URL would hold it. */
-  let requestedAction: string | null = null;
   /**
    * Whether the board renders real rows. True everywhere the row itself is the subject; the
    * paging tests turn it off, because a board long enough to page through is also long enough
@@ -89,9 +89,10 @@ describe('SharedProjectionComponent', () => {
     importFromShare.mockReturnValue(of({ id: 'copy1' }));
     navigate.mockClear();
     notifyError.mockClear();
-    replaceState.mockClear();
+    remember.mockClear();
+    takePending.mockClear();
+    takePending.mockReturnValue(null);
     isLoggedIn.set(false);
-    requestedAction = null;
     // Kept real: the point of this page is that it renders the editor's own row, so a mocked
     // stand-in would test nothing — except where the rows are only there to be counted.
     const builder = realRows
@@ -110,13 +111,16 @@ describe('SharedProjectionComponent', () => {
         .mock(NotificationService, { error: notifyError })
         .provide({ provide: AuthService, useValue: { isLoggedIn } })
         .provide({ provide: Router, useValue: { navigate } })
-        .provide({ provide: Location, useValue: { replaceState } })
+        .provide({ provide: PendingCopyService, useValue: { remember, take: takePending } })
+        // For the CDK overlay behind the buttons' tooltips, not for this page: the real Location
+        // cannot be built on a mocked LocationStrategy, and the overlay asks for one.
+        .provide({ provide: Location, useValue: { subscribe: () => ({ unsubscribe: () => {} }) } })
         .provide({
           provide: ActivatedRoute,
           useValue: {
             snapshot: {
               paramMap: { get: () => 'abc123' },
-              queryParamMap: { get: () => requestedAction },
+              queryParamMap: { get: () => null },
             },
           },
         })
@@ -744,20 +748,37 @@ describe('SharedProjectionComponent', () => {
       fixture.detectChanges();
 
       expect(importFromShare).not.toHaveBeenCalled();
+      expect(remember).toHaveBeenCalledWith('abc123', 'draft');
       expect(navigate).toHaveBeenCalledWith(['/register'], {
-        queryParams: { returnUrl: '/s/abc123?action=draft', reason: 'shared-board' },
+        queryParams: { returnUrl: '/s/abc123', reason: 'shared-board' },
       });
     });
 
-    it('carries the other button back the same way', async () => {
+    it('writes down the other button the same way', async () => {
       const fixture = await render();
 
       fixture.nativeElement.querySelector('[data-testid="copy-board"]').click();
       fixture.detectChanges();
 
-      expect(navigate).toHaveBeenCalledWith(['/register'], {
-        queryParams: { returnUrl: '/s/abc123?action=projection', reason: 'shared-board' },
-      });
+      expect(remember).toHaveBeenCalledWith('abc123', 'projection');
+    });
+
+    /**
+     * The whole point of writing the press down rather than hanging it on the return URL: a link
+     * cannot assert it. `/s/<token>?action=draft` sent to a signed-in reader used to take a copy
+     * into their account and drop them into a draft they never asked for.
+     */
+    it('leaves nothing on the return URL for a forwarded link to carry', async () => {
+      const fixture = await render();
+
+      fixture.nativeElement.querySelector('[data-testid="draft-board"]').click();
+      fixture.detectChanges();
+
+      const [, extras] = navigate.mock.calls[0] as [
+        unknown,
+        { queryParams: { returnUrl: string } },
+      ];
+      expect(extras.queryParams.returnUrl).not.toContain('action');
     });
 
     /** Both offers are what the page is for, so neither is under a board to be scrolled past. */
@@ -812,46 +833,36 @@ describe('SharedProjectionComponent', () => {
   });
 
   /**
-   * The press that was interrupted by the sign-in. It rides back on the return URL, so these are
-   * as much about the copy not happening on sight as about it happening at all.
+   * The press that was interrupted by the sign-in, picked back up on the way in. These are as
+   * much about the copy not happening on sight as about it happening at all.
    */
-  describe('coming back from the sign-in with the press still in hand', () => {
+  describe('coming back from the account form with the press still in hand', () => {
     it('drafts against the board without being asked twice', async () => {
       isLoggedIn.set(true);
-      requestedAction = 'draft';
+      takePending.mockReturnValue('draft');
 
       await render();
 
+      expect(takePending).toHaveBeenCalledWith('abc123');
       expect(importFromShare).toHaveBeenCalledWith('abc123');
       expect(navigate).toHaveBeenCalledWith(['/projections', 'copy1', 'draft']);
     });
 
     it('opens the copy for editing when that was the button', async () => {
       isLoggedIn.set(true);
-      requestedAction = 'projection';
+      takePending.mockReturnValue('projection');
 
       await render();
 
       expect(navigate).toHaveBeenCalledWith(['/projections', 'copy1']);
     });
 
-    /** A copy is something someone pressed a button for, not something a URL can ask for twice. */
-    it('takes the action off the address bar before acting on it', async () => {
-      isLoggedIn.set(true);
-      requestedAction = 'draft';
-
-      await render();
-
-      expect(replaceState).toHaveBeenCalledWith('/s/abc123');
-    });
-
     /**
-     * A link passed on with the action still on it opens the board for whoever follows it. Acting
-     * on it without a session would send every signed-out reader to a signup form instead of the
-     * projection the link points at, and the buttons are right there for the one who wants one.
+     * Nobody pressed anything, so nothing is copied. This is the board as a stranger following a
+     * link finds it, which is now the only thing a link can ask for.
      */
-    it('shows the board rather than the form when the sign-in did not take', async () => {
-      requestedAction = 'draft';
+    it('copies nothing for a reader who simply opened the link', async () => {
+      isLoggedIn.set(true);
 
       const fixture = await render();
 
@@ -860,15 +871,18 @@ describe('SharedProjectionComponent', () => {
       expect(fixture.nativeElement.querySelector('[data-testid="draft-board"]')).not.toBeNull();
     });
 
-    it('ignores an action it does not offer', async () => {
-      isLoggedIn.set(true);
-      requestedAction = 'delete-everything';
+    /**
+     * The trip to the account form did not end in one. The press is spent either way, and the
+     * buttons are right there for whoever wants to make it again.
+     */
+    it('shows the board rather than copying when the sign-in did not take', async () => {
+      takePending.mockReturnValue('draft');
 
-      await render();
+      const fixture = await render();
 
       expect(importFromShare).not.toHaveBeenCalled();
       expect(navigate).not.toHaveBeenCalled();
-      expect(replaceState).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.querySelector('[data-testid="draft-board"]')).not.toBeNull();
     });
   });
 
