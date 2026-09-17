@@ -1,17 +1,11 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { signal } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { provideLocationMocks } from '@angular/common/testing';
-import {
-  DraftStartComponent,
-  LAST_SEASON_PRESET_NAME,
-  MODEL_PRESET_NAME,
-  Preset,
-  PRESETS,
-} from './draft-start';
+import { DraftStartComponent } from './draft-start';
+import { LAST_SEASON_PRESET_NAME, MODEL_PRESET_NAME, Preset, PRESETS } from '../models/preset';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { EntitlementService } from '../services/entitlement.service';
 import { NotificationService } from '../services/notification.service';
@@ -177,18 +171,15 @@ describe('DraftStartComponent', () => {
     expect(navigate).toHaveBeenCalledWith(['/projections', 'p1', 'draft']);
   });
 
-  it('seeds the preset draft server-side the first time it is started', async () => {
+  // The board is created by the draft page once its setup is confirmed. Saving it here, before
+  // the teams and order were asked for, left an empty board behind whenever someone backed out.
+  it('opens the setup for a new preset draft without saving anything yet', async () => {
     const component = await render();
 
     component.startPreset(LAST_SEASON);
 
-    expect(createProjection).toHaveBeenCalledOnce();
-    const request = createProjection.mock.calls[0][0];
-    expect(request.name).toEqual(LAST_SEASON_PRESET_NAME);
-    expect(request.kind).toEqual('preset_draft');
-    expect(request.source).toEqual('default');
-    expect(request.data.players).toEqual([]);
-    expect(navigate).toHaveBeenCalledWith(['/projections', 'preset1', 'draft']);
+    expect(createProjection).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['/draft/new', 'last_season']);
   });
 
   it('stops offering a preset once it has a draft, since the draft is the way back to it', async () => {
@@ -212,9 +203,9 @@ describe('DraftStartComponent', () => {
     expect(navigate).toHaveBeenCalledWith(['/projections', 'preset1', 'draft']);
   });
 
-  // Start seeds the board before the draft page has asked for teams and order, so backing out of
-  // that setup leaves a board with no draft in it. It used to hide the preset for good, since it
-  // is no draft to list above and yet counted as one to drop from the rows below.
+  // Start used to seed the board before the draft page had asked for teams and order, so backing
+  // out of that setup left a board with no draft in it. It hid the preset for good, since it is no
+  // draft to list above and yet counted as one to drop from the rows below.
   it('keeps a preset on offer when its board was seeded but the setup was abandoned', async () => {
     listWithPresetDrafts.mockReturnValue(
       of([summary('model1', 'preset_draft', 'none', '2026-06-01T00:00:00Z', MODEL)]),
@@ -233,17 +224,6 @@ describe('DraftStartComponent', () => {
 
     expect(createProjection).not.toHaveBeenCalled();
     expect(navigate).toHaveBeenCalledWith(['/projections', 'model1', 'draft']);
-  });
-
-  it('surfaces a failed start and lets the user try again', async () => {
-    createProjection.mockReturnValue(throwError(() => new Error('boom')));
-
-    const component = await render();
-    component.startPreset(LAST_SEASON);
-
-    expect(notifyError).toHaveBeenCalledOnce();
-    expect(component.isStarting()).toEqual(false);
-    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('reloads the sources on retry after a failed load', async () => {
@@ -343,17 +323,12 @@ describe('DraftStartComponent', () => {
     expect(listWithPresetDrafts).toHaveBeenCalledTimes(2);
   });
 
-  it('starts the AI preset from the model source, not last season', async () => {
+  it('starts the AI preset, not last season', async () => {
     const component = await render();
 
     component.startPreset(MODEL);
 
-    expect(createProjection).toHaveBeenCalledOnce();
-    const request = createProjection.mock.calls[0][0];
-    expect(request.name).toEqual(MODEL_PRESET_NAME);
-    expect(request.kind).toEqual('preset_draft');
-    expect(request.source).toEqual('model');
-    expect(request.data.players).toEqual([]);
+    expect(navigate).toHaveBeenCalledWith(['/draft/new', 'model']);
   });
 
   // The row is the only way in here, so dropping it is what switching the feature off means.
@@ -510,7 +485,7 @@ describe('DraftStartComponent', () => {
 
   // One press to a draft: the first row of the open kind is checked from the start, and the
   // one Start button on the page drafts against it.
-  it('checks the first preset from the start, so one press seeds and opens it', async () => {
+  it('checks the first preset from the start, so one press opens its setup', async () => {
     const fixture = await renderFixture();
     const component = fixture.point.componentInstance;
 
@@ -519,9 +494,7 @@ describe('DraftStartComponent', () => {
 
     (fixture.nativeElement.querySelector('.start') as HTMLButtonElement).click();
 
-    expect(createProjection).toHaveBeenCalledOnce();
-    expect(createProjection.mock.calls[0][0].source).toEqual('default');
-    expect(navigate).toHaveBeenCalledWith(['/projections', 'preset1', 'draft']);
+    expect(navigate).toHaveBeenCalledWith(['/draft/new', 'last_season']);
   });
 
   it('switches the rows with the tile, and checks the first of the new kind', async () => {
@@ -907,20 +880,6 @@ describe('DraftStartComponent', () => {
         // The badge stays: it names the plan the starting point belongs to.
         expect(texts(fixture, '.row-badge')).toEqual(['Premium']);
       });
-    });
-
-    /**
-     * A lapsed subscription is the one way to reach the server's refusal from this page, and
-     * "please try again" over it would send someone at something that cannot work.
-     */
-    it('says what a refused draft actually needs, rather than telling anyone to retry', async () => {
-      createProjection.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
-      const component = await render();
-
-      component.startPreset(MODEL);
-
-      expect(notifyError).toHaveBeenCalledWith(expect.stringContaining('part of Premium'));
-      expect(notifyError).not.toHaveBeenCalledWith(expect.stringContaining('try again'));
     });
   });
 });

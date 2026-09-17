@@ -329,14 +329,10 @@
           <button
             type="button"
             class="btn btn-primary start"
-            [disabled]="!selection() || isStarting()"
+            [disabled]="!selection()"
             (click)="start()"
           >
-            @if (isStarting()) {
-              <app-loading-indicator variant="inline" label="Starting" />
-            } @else {
-              Start draft
-            }
+            Start draft
           </button>
         }
       </div>
