@@ -269,12 +269,15 @@
   color: var(--color-text-subtle);
 }
 
-/* Premium: the gold top edge is how the Premium page marks what is for sale. */
+/* Premium: the one dark card on the page, so it is noticed without a second filled button. The
+   button is outlined in gold (6.7:1 on --color-primary) so "Create projection" stays the first
+   thing a new account reaches for. */
 
 .premium {
   display: grid;
   gap: var(--space-2);
-  border-top: 3px solid var(--color-gold);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .premium h2 {
@@ -282,18 +285,32 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-2);
+  color: var(--color-text-on-dark);
 }
 
 .premium h2 app-icon {
-  color: var(--color-gold-strong);
+  color: var(--color-gold);
 }
 
 .premium p {
   margin: 0;
   font-size: var(--text-sm);
-  color: var(--color-text-muted);
+  color: var(--color-text-on-dark-muted);
 }
 
-.premium .btn {
+.premium-cta {
   justify-self: start;
+  background: transparent;
+  color: var(--color-gold);
+  border-color: var(--color-gold);
+}
+
+.premium-cta:hover {
+  background: var(--color-gold);
+  color: var(--color-primary);
+}
+
+.premium-cta:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
 }
