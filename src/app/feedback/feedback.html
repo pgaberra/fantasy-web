@@ -1,0 +1,90 @@
+<div class="auth-container">
+  <div class="auth-card feedback-card">
+    @if (submitted()) {
+      <h1 class="auth-title">Feedback sent</h1>
+      <p class="auth-subtitle">Thanks. Replies go to {{ email() }}.</p>
+      <div class="feedback-actions">
+        <a class="btn btn-primary" [routerLink]="page ?? '/'">Done</a>
+        <button type="button" class="btn btn-secondary" (click)="sendAnother()">
+          Send another
+        </button>
+      </div>
+    } @else {
+      <h1 class="auth-title">Send feedback</h1>
+      <p class="auth-subtitle">Report a bug or suggest a feature. Replies go to {{ email() }}.</p>
+
+      <form (submit)="onSubmit($event)" novalidate>
+        <fieldset class="form-group feedback-type">
+          <legend>Type</legend>
+          <label>
+            <input
+              type="radio"
+              name="type"
+              [checked]="feedbackForm.type().value() === 'BUG'"
+              (change)="setType('BUG')"
+            />
+            Bug
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="type"
+              [checked]="feedbackForm.type().value() === 'FEATURE'"
+              (change)="setType('FEATURE')"
+            />
+            Feature request
+          </label>
+        </fieldset>
+
+        <div class="form-group">
+          <label for="title">Summary</label>
+          <input
+            id="title"
+            type="text"
+            [formField]="feedbackForm.title"
+            [class.invalid]="feedbackForm.title().invalid() && feedbackForm.title().touched()"
+          />
+          @if (feedbackForm.title().touched()) {
+            @for (error of feedbackForm.title().errors(); track error.kind) {
+              <span class="field-error">{{ error.message }}</span>
+            }
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="description">Details</label>
+          <textarea
+            id="description"
+            rows="7"
+            [formField]="feedbackForm.description"
+            [placeholder]="
+              feedbackForm.type().value() === 'BUG'
+                ? 'What happened, and what did you expect?'
+                : 'What would you like to be able to do?'
+            "
+            [class.invalid]="
+              feedbackForm.description().invalid() && feedbackForm.description().touched()
+            "
+          ></textarea>
+          @if (feedbackForm.description().touched()) {
+            @for (error of feedbackForm.description().errors(); track error.kind) {
+              <span class="field-error">{{ error.message }}</span>
+            }
+          }
+        </div>
+
+        @if (errorMessage()) {
+          <div class="error-banner">{{ errorMessage() }}</div>
+        }
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" [disabled]="isLoading()">
+          @if (isLoading()) {
+            <app-loading-indicator variant="inline" label="Sending" />
+          } @else {
+            Send
+          }
+        </button>
+      </form>
+    }
+  </div>
+</div>

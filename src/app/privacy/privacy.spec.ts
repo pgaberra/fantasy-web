@@ -31,7 +31,7 @@ describe('PrivacyComponent', () => {
   // Every party named here is one the code really sends data to, or that the user really
   // connects. If one is added or dropped, this test should fail and force the page to change
   // with it — a privacy policy that has drifted from the code is worse than none.
-  it.each(['Stripe', 'PostHog', 'Yahoo', 'ESPN', 'Google', 'Facebook'])(
+  it.each(['Stripe', 'PostHog', 'Yahoo', 'ESPN', 'Google', 'Facebook', 'GitHub'])(
     'names %s as a party that receives data',
     async (name) => {
       await MockBuilder(PrivacyComponent);
@@ -86,7 +86,8 @@ describe('PrivacyComponent', () => {
     expect(text()).toContain(phrase);
   });
 
-  // Hosting, analytics and error monitoring sit in the EU; email delivery and payments do not.
+  // Hosting, analytics and error monitoring sit in the EU; email delivery, payments and the GitHub
+  // repository that holds feedback do not.
   // The transfer basis is a required disclosure, not decoration.
   it('discloses transfers outside the EEA and their basis', async () => {
     await MockBuilder(PrivacyComponent);
