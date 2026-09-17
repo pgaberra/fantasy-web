@@ -6,6 +6,9 @@ describe('spreadsheet-players', () => {
   const matcher = new PlayerMatcher(POOL);
   const idOf = (name: string, team?: string, position?: string) => {
     const result = matcher.match(name, team ?? null, position ?? null);
+    if (result.kind === 'matched' && result.respelled) {
+      return `respelled ${result.player.id}`;
+    }
     return result.kind === 'matched' ? result.player.id : result.kind;
   };
 
@@ -30,8 +33,8 @@ describe('spreadsheet-players', () => {
   });
 
   it('matches a shortened first name when the surname leaves one candidate', () => {
-    expect(idOf('Mitch Marner')).toBe(3);
-    expect(idOf('M. Marner')).toBe(3);
+    expect(idOf('Mitch Marner')).toBe('respelled 3');
+    expect(idOf('M. Marner')).toBe('respelled 3');
   });
 
   it('uses the club only to tell two players of one name apart', () => {
@@ -60,7 +63,14 @@ describe('spreadsheet-players', () => {
 
   it('does not take one brother for the other', () => {
     expect(idOf('Quinn Hughes', 'NJD')).toBe('not-found');
-    expect(idOf('J Hughes', 'NJD')).toBe(6);
+    expect(idOf('J Hughes', 'NJD')).toBe('respelled 6');
+  });
+
+  it('matches another spelling of a name and says it did', () => {
+    expect(idOf('Yegor Chinakhov')).toBe('respelled 12');
+    expect(idOf('Tommy Novak')).toBe('respelled 13');
+    expect(idOf('Egor Chinakov')).toBe('respelled 12');
+    expect(idOf('Egor Chinakhov')).toBe(12);
   });
 
   it('leaves a name that is nobody in the pool unmatched', () => {

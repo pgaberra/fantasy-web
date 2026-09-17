@@ -22,6 +22,19 @@ export interface AmbiguousRow {
   readonly candidates: readonly Player[];
 }
 
+/** A row matched to a player whose name the sheet spells differently. */
+export interface RespelledRow {
+  readonly row: number;
+  readonly name: string;
+  readonly player: Player;
+}
+
+/**
+ * What the user decided for a row the dialog asked about, keyed by the row's place: a player id,
+ * or null for "leave it out". A row with no entry takes the plan's own reading.
+ */
+export type RowChoices = ReadonlyMap<number, number | null>;
+
 export interface ImportPlan {
   /** Per pool player, the stats the sheet gives. Only players with at least one value appear. */
   readonly stats: ReadonlyMap<number, ImportedStats>;
@@ -32,6 +45,11 @@ export interface ImportPlan {
    * guessed; each is imported only once the user picks the player (`choices`).
    */
   readonly ambiguous: readonly AmbiguousRow[];
+  /**
+   * Rows matched through a different spelling (Tommy for Thomas, Yegor for Egor). They are imported
+   * unless the user leaves them out, and listed so the user can see what each name was taken for.
+   */
+  readonly respelled: readonly RespelledRow[];
   /** Rows naming a player an earlier row already gave; the first row wins. */
   readonly duplicates: readonly string[];
   /** Rows on the sheet that carry a name. */
@@ -75,7 +93,7 @@ export function buildImportPlan(
   headingRow: number,
   roles: readonly (ColumnRole | null)[],
   matcher: PlayerMatcher,
-  choices: ReadonlyMap<number, number> = new Map(),
+  choices: RowChoices = new Map(),
 ): ImportPlan {
   const nameColumn = roles.findIndex((role) => role?.kind === 'name');
   const teamColumn = roles.findIndex((role) => role?.kind === 'team');
@@ -97,6 +115,7 @@ export function buildImportPlan(
   const seen = new Set<number>();
   const notFound: string[] = [];
   const ambiguous: AmbiguousRow[] = [];
+  const respelled: RespelledRow[] = [];
   const duplicates: string[] = [];
 
   dataRows.forEach((row, index) => {
@@ -120,6 +139,12 @@ export function buildImportPlan(
       player = chosen;
     } else {
       player = result.player;
+      if (result.respelled) {
+        respelled.push({ row: index, name, player });
+        if (choices.get(index) === null) {
+          return;
+        }
+      }
     }
     if (seen.has(player.id)) {
       duplicates.push(name);
@@ -138,7 +163,7 @@ export function buildImportPlan(
     }
   });
 
-  return { stats, notFound, ambiguous, duplicates, rowCount: dataRows.length };
+  return { stats, notFound, ambiguous, respelled, duplicates, rowCount: dataRows.length };
 }
 
 const SKATER_STATS: ReadonlySet<string> = new Set([
