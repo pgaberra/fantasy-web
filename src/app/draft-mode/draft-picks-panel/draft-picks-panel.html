@@ -17,30 +17,32 @@
             <span class="feed-info">
               <span class="feed-player">{{ lookup.name(entry.playerId) }}</span>
               <span class="feed-sub">
-                <app-position-chips [playerId]="entry.playerId" />
+                <app-player-position-chips [playerId]="entry.playerId" />
                 <span class="feed-team">{{ entry.mine ? 'You' : entry.teamName }}</span>
               </span>
             </span>
-            <span class="feed-actions">
-              <button
-                type="button"
-                class="feed-change"
-                (click)="startEdit.emit(entry.overall)"
-                aria-label="Change pick"
-                appTooltip="Change this pick"
-              >
-                <app-icon name="pencil" [size]="14" />
-              </button>
-              <button
-                type="button"
-                class="feed-remove"
-                (click)="requestRemove.emit(entry.overall)"
-                aria-label="Remove pick"
-                appTooltip="Remove this pick"
-              >
-                <app-icon name="close" [size]="14" />
-              </button>
-            </span>
+            @if (!locked()) {
+              <span class="feed-actions">
+                <button
+                  type="button"
+                  class="feed-change"
+                  (click)="startEdit.emit(entry.overall)"
+                  aria-label="Change pick"
+                  appTooltip="Change this pick"
+                >
+                  <app-icon name="pencil" [size]="14" />
+                </button>
+                <button
+                  type="button"
+                  class="feed-remove"
+                  (click)="requestRemove.emit(entry.overall)"
+                  aria-label="Remove pick"
+                  appTooltip="Remove this pick"
+                >
+                  <app-icon name="close" [size]="14" />
+                </button>
+              </span>
+            }
           </div>
         }
       }

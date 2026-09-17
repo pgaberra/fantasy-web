@@ -34,6 +34,14 @@ export class FeatureService {
   );
 
   /**
+   * Whether Draft Mode may follow a linked league's live draft. False until the answer lands, like
+   * the AI projection, so the control never appears and then disappears.
+   */
+  readonly leagueDraftSync = computed(() =>
+    this.features.hasValue() ? this.features.value().leagueDraftSync : false,
+  );
+
+  /**
    * The presets this environment offers: every one of them where the AI projection is served,
    * and everything but the model-seeded one where it is not. A starting point the server will not
    * fill in must not be offered, on any page that lists presets.

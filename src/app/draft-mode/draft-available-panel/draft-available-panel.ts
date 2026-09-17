@@ -12,7 +12,7 @@ import { StatTooltipPipe } from '../../pipes/stat-tooltip.pipe';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import { DraftPlayerLookupService } from '../draft-player-lookup.service';
 import { PlayerAvatarComponent } from '../player-avatar/player-avatar';
-import { PositionChipsComponent } from '../position-chips/position-chips';
+import { PlayerPositionChipsComponent } from '../player-position-chips/player-position-chips';
 
 export interface EditingPickInfo {
   overall: number;
@@ -27,7 +27,7 @@ export interface EditingPickInfo {
     StatTooltipPipe,
     TooltipDirective,
     PlayerAvatarComponent,
-    PositionChipsComponent,
+    PlayerPositionChipsComponent,
   ],
   templateUrl: './draft-available-panel.html',
   styleUrl: './draft-available-panel.css',
@@ -49,6 +49,7 @@ export class DraftAvailablePanelComponent {
   readonly hasMore = input.required<boolean>();
   readonly isMyPick = input.required<boolean>();
   readonly isComplete = input.required<boolean>();
+  readonly locked = input<boolean>(false);
   readonly draftLabel = input.required<string>();
   readonly scoringType = input.required<ScoringType>();
   readonly statColumns = input.required<ScoringStatKey[]>();

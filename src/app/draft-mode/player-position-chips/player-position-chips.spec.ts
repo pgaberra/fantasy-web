@@ -1,6 +1,7 @@
 import { MockBuilder, MockRender } from 'ng-mocks';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { PositionChipsComponent } from './position-chips';
+import { PlayerPositionChipsComponent } from './player-position-chips';
+import { PositionChipsComponent } from '../../shared/position-chips/position-chips';
 import { DraftPlayerLookupService } from '../draft-player-lookup.service';
 import { Player } from '../../models/player.model';
 import { SkaterPosition } from '../../models/position.model';
@@ -43,11 +44,15 @@ function skater(id: number, positions: SkaterPosition[]): Player {
   };
 }
 
-describe('PositionChipsComponent', () => {
-  beforeEach(() => MockBuilder(PositionChipsComponent).keep(DraftPlayerLookupService));
+describe('PlayerPositionChipsComponent', () => {
+  beforeEach(() =>
+    MockBuilder(PlayerPositionChipsComponent)
+      .keep(DraftPlayerLookupService)
+      .keep(PositionChipsComponent),
+  );
 
   function chips(players: Player[], playerId: number): HTMLElement[] {
-    const fixture = MockRender(PositionChipsComponent, { playerId });
+    const fixture = MockRender(PlayerPositionChipsComponent, { playerId });
     fixture.point.injector.get(DraftPlayerLookupService).setPlayers(players);
     fixture.detectChanges();
     return Array.from(fixture.point.nativeElement.querySelectorAll('.pos-chip'));

@@ -2,7 +2,7 @@ import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { DraftResultsComponent, DraftResultRound, DraftResultTeam } from './draft-results';
 import { DraftPlayerLookupService } from '../draft-player-lookup.service';
-import { PositionChipsComponent } from '../position-chips/position-chips';
+import { PlayerPositionChipsComponent } from '../player-position-chips/player-position-chips';
 
 describe('DraftResultsComponent', () => {
   const rounds: DraftResultRound[] = [
@@ -57,7 +57,7 @@ describe('DraftResultsComponent', () => {
     const fixture = MockRender(DraftResultsComponent, { rounds, teams });
     const shownFor = () =>
       ngMocks
-        .findAll(fixture, PositionChipsComponent)
+        .findAll(fixture, PlayerPositionChipsComponent)
         .map((chip) => chip.componentInstance.playerId());
 
     expect(shownFor()).toEqual([1, 2, 3]);
