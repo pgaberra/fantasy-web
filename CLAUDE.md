@@ -166,11 +166,13 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   a **result, not an error**: showing "could not reach the probe" over Yahoo's own 403 would waste
   the whole feature, so only a failure of our own call surfaces as an error.
 - `home/` — where a signed-in user starts (`/home`): signing in and a signed-in visit to `/` land
-  here. A **Draft prep** checklist (create a projection, start a draft) is derived from the
-  projection list and never stored, so it cannot disagree with the rest of the app, and it goes
-  away once both are done; then the page leads with the board updated last. Syncing a league is
-  not a step because the list does not say whether a board is synced. `demoRedemptionGuard`
-  sends anyone with landing-demo work waiting on to `/projections`, which is what saves it.
+  here. It shows the features side by side, each with its own way in (Projections, Draft mode,
+  the AI projection, Who's Hot, and a share-link import under them), so nothing says which to
+  start with; a returning user also gets the projection they updated last across the top. It
+  began as a two-step checklist, which Alexander took out for telling everyone there was one
+  right order. The AI card is drawn wherever the BFF serves the model, and sells it or offers it
+  depending on the account's plan. `demoRedemptionGuard` sends anyone with landing-demo work
+  waiting on to `/projections`, which is what saves it.
 - `profile/` — the account's **profile picture** and **public name** (`/profile`, signed-in
   only), reached from the avatar at the right edge of the header, which opens the account menu
   (who is signed in, Profile, Sign out) at every width. Sharing forces the choice of a name, but
