@@ -105,6 +105,16 @@ RUN if [ "$APP_ENV" = "production" ]; then ROBOTS_TAG=""; else ROBOTS_TAG="noind
   /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/fantasy-web/browser /usr/share/nginx/html
 
+# Scripts and stylesheets are served from /usr/share/nginx/assets, which the deployed apps mount as
+# a volume shared by the old and new container, and publish-assets.sh adds this build's files to it
+# before nginx starts (see the script). The directory is created here, owned by nginx, because a new
+# named volume takes its contents and owner from the image path it is mounted over. The nginx image
+# runs every executable *.sh in /docker-entrypoint.d before it starts nginx, and stops if one fails.
+COPY publish-assets.sh /docker-entrypoint.d/40-publish-assets.sh
+RUN chmod 755 /docker-entrypoint.d/40-publish-assets.sh \
+  && mkdir -p /usr/share/nginx/assets \
+  && chown nginx:nginx /usr/share/nginx/assets
+
 # Run nginx as the image's own unprivileged `nginx` user, master process included. The stock image
 # already drops its workers to `nginx`, but its master stays root. It can still listen on 80 because
 # Docker (20.10 and later) sets net.ipv4.ip_unprivileged_port_start=0 inside a container's network

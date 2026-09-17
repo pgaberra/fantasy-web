@@ -96,6 +96,11 @@ cookieless (declining) visitor hashes to the same "person".
    (status 0), not as anything that says CORS.
 4. DNS: a Cloudflare **A record (DNS only / grey cloud)** for the domain → the server IP,
    so Coolify's Let's Encrypt (HTTP-01) can provision TLS.
+5. Add a **persistent volume** mounted at `/usr/share/nginx/assets` (Coolify: *Persistent
+   Storage*, a volume with no host path). The old and new container share it during a deploy, so
+   a page either one serves, or a tab opened before the deploy, still finds its scripts
+   (`publish-assets.sh`). Without it the app works as before, and a navigation mid-deploy can
+   fail to load its chunk and fall back to reloading the page.
 
 > Local dev against a deployed backend: `npm run start:staging` serves the app locally
 > pointed at the staging BFF (`environment.staging.ts`) — no need to boot the backend
