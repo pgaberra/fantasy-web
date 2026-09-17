@@ -111,7 +111,9 @@ COPY --from=build /app/dist/fantasy-web/browser /usr/share/nginx/html
 # named volume takes its contents and owner from the image path it is mounted over. The nginx image
 # runs every executable *.sh in /docker-entrypoint.d before it starts nginx, and stops if one fails.
 COPY publish-assets.sh /docker-entrypoint.d/40-publish-assets.sh
-RUN chmod 755 /docker-entrypoint.d/40-publish-assets.sh \n  && mkdir -p /usr/share/nginx/assets \n  && chown nginx:nginx /usr/share/nginx/assets
+RUN chmod 755 /docker-entrypoint.d/40-publish-assets.sh \
+  && mkdir -p /usr/share/nginx/assets \
+  && chown nginx:nginx /usr/share/nginx/assets
 
 # Run nginx as the image's own unprivileged `nginx` user, master process included. The stock image
 # already drops its workers to `nginx`, but its master stays root. It can still listen on 80 because
