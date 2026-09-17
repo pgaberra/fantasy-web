@@ -45,6 +45,41 @@ describe('YahooConnectReturnService', () => {
     expect(service.take()).toBeNull();
   });
 
+  describe('the page handed back', () => {
+    it('is told once that it is the one returned to', () => {
+      const returning = new YahooConnectReturnService();
+      returning.remember('/draft');
+      returning.take();
+
+      expect(returning.returnedTo('/draft')).toBe(true);
+      expect(returning.returnedTo('/draft')).toBe(false);
+    });
+
+    it('is not confused with another page, which leaves the hand-back for its own page', () => {
+      const returning = new YahooConnectReturnService();
+      returning.remember('/whos-hot');
+      returning.take();
+
+      expect(returning.returnedTo('/home')).toBe(false);
+      expect(returning.returnedTo('/whos-hot')).toBe(true);
+    });
+
+    it('is never a page nothing was handed back for', () => {
+      const returning = new YahooConnectReturnService();
+      returning.remember('/draft');
+
+      expect(returning.returnedTo('/draft')).toBe(false);
+    });
+
+    it('is not a refused path', () => {
+      const returning = new YahooConnectReturnService();
+      returning.remember('//evil.example');
+      returning.take();
+
+      expect(returning.returnedTo('//evil.example')).toBe(false);
+    });
+  });
+
   it('forgets a remembered page', () => {
     service.remember('/whos-hot');
     service.forget();

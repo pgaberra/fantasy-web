@@ -1,4 +1,5 @@
-import { Component, computed, model, signal } from '@angular/core';
+import { Component, computed, inject, model, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { ScoringType } from '../../models/projection.model';
 import { ScoringStatKey, UtilityStatKey } from '../../models/stat-key.model';
 import { RosterSlots } from '../../api/models/roster-slots';
@@ -11,6 +12,7 @@ import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.di
 import { IconComponent } from '../../shared/icon/icon';
 import { LeagueImportButtonComponent } from '../../shared/league-import-button/league-import-button';
 import { ColumnsMenuComponent } from '../../draft-projection/player-projections-table/columns-menu/columns-menu';
+import { YahooConnectReturnService } from '../../services/yahoo-connect-return.service';
 import { LeagueSettingsMenuComponent } from '../../draft-projection/player-projections-table/league-settings-menu/league-settings-menu';
 import { LeagueSyncDialogComponent } from '../../draft-projection/league-sync-dialog/league-sync-dialog';
 import { LeagueSyncComponent } from '../../draft-projection/projection-settings-section/league-sync/league-sync';
@@ -41,7 +43,14 @@ import { EspnSyncResult } from '../../draft-projection/projection-settings-secti
 export class DraftLeagueSettingsComponent {
   readonly settings = model.required<LeagueSettings>();
 
-  readonly showSyncDialog = signal(false);
+  /**
+   * The import dialog, open from the start when this page is where a Yahoo connect started in it
+   * comes back to: the consent reloads the page, and the dialog is where the user was left.
+   */
+  protected readonly backFromYahoo = inject(YahooConnectReturnService).returnedTo(
+    inject(Router).url,
+  );
+  readonly showSyncDialog = signal(this.backFromYahoo);
 
   readonly syncedLeagueName = computed(
     () => this.settings().yahooSync?.leagueName ?? this.settings().espnSync?.leagueName ?? null,
