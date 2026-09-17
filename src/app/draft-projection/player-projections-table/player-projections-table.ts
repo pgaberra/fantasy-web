@@ -217,6 +217,16 @@ export class PlayerProjectionsTableComponent implements OnInit {
     ),
   );
 
+  /**
+   * A column's decimals set by hand. The menu edits what is on screen, so the settings it hands
+   * back already hold every decimal place the defaults were showing; the flag goes off with them,
+   * or the defaults would put the fractional column's decimal place straight back.
+   */
+  onDecimalSettingsChange(settings: Record<DecimalStatKey, number>): void {
+    this.decimalSettings.set(settings);
+    this.useDefaultDecimals.set(false);
+  }
+
   readonly sortColumn = signal<SortColumn>('summary');
   readonly sortDirection = signal<SortDirection>('desc');
 
