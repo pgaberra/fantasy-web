@@ -54,8 +54,20 @@
         </div>
       </div>
 
-      @if (avatarError()) {
+      <!-- While the dialog is open it carries the message itself, beside the button that failed. -->
+      @if (avatarError() && !pendingPicture()) {
         <p class="field-error">{{ avatarError() }}</p>
+      }
+
+      @if (pendingPicture(); as picture) {
+        <app-avatar-crop-dialog
+          [file]="picture"
+          [saving]="isUploading()"
+          [saveError]="avatarError()"
+          (closed)="cancelPicture()"
+          (unreadable)="reportUnreadablePicture()"
+          (confirmed)="savePicture($event)"
+        />
       }
     </section>
 

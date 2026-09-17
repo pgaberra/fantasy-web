@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
+import { AVATAR_SIDE, AvatarCrop, centredCrop, clampCrop, ImageSize } from '../models/avatar-crop';
 
-/** The square the picture is scaled to. Drawn at 32px in the header, so this is plenty. */
-export const AVATAR_SIDE = 256;
 const JPEG_QUALITY = 0.85;
 
 /**
@@ -14,6 +13,15 @@ export const ACCEPTED_AVATAR_TYPES = ['image/png', 'image/jpeg', 'image/webp'] a
 
 /** The `accept` attribute for a file input offering the above, so the two cannot drift apart. */
 export const ACCEPTED_AVATAR_ACCEPT = ACCEPTED_AVATAR_TYPES.join(',');
+
+/**
+ * Whether a picked file is a format we take. Asked before the file is shown as well as before it
+ * is saved: a format we cannot decode has to be named as one, not open a dialog on a picture that
+ * never appears.
+ */
+export function isAcceptedAvatarType(file: File): boolean {
+  return ACCEPTED_AVATAR_TYPES.some((accepted) => accepted === file.type);
+}
 
 /** The file the user picked is not one of the formats we take. */
 export class UnsupportedImageTypeError extends Error {
@@ -32,16 +40,20 @@ export class UnreadableImageError extends Error {
 }
 
 /**
- * Turns whatever the user picked into the picture the server stores: a square crop from the
- * middle, scaled down and re-encoded as a JPEG. Done here rather than on the server because a
- * phone photo is several megabytes and the header draws it at 32px; scaling first turns the
- * upload into a few tens of kilobytes and takes the server out of the business of decoding
- * untrusted image files.
+ * Turns whatever the user picked into the picture the server stores: the square they placed on
+ * it, scaled down and re-encoded as a JPEG. Done here rather than on the server because a phone
+ * photo is several megabytes and the header draws it at 32px; scaling first turns the upload into
+ * a few tens of kilobytes and takes the server out of the business of decoding untrusted image
+ * files.
+ *
+ * That square is all that survives — the file itself is never uploaded, and nothing keeps it — so
+ * it is the user's to place. A caller that passes none gets the middle of the picture, which is
+ * what every upload used to get.
  */
 @Injectable({ providedIn: 'root' })
 export class AvatarImageService {
-  async prepare(file: File): Promise<Blob> {
-    if (!ACCEPTED_AVATAR_TYPES.some((accepted) => accepted === file.type)) {
+  async prepare(file: File, crop?: AvatarCrop): Promise<Blob> {
+    if (!isAcceptedAvatarType(file)) {
       throw new UnsupportedImageTypeError();
     }
     const bitmap = await this.decode(file);
@@ -56,13 +68,17 @@ export class AvatarImageService {
       // A JPEG has no transparency, so whatever the picture left uncovered would come out black.
       context.fillStyle = '#ffffff';
       context.fillRect(0, 0, AVATAR_SIDE, AVATAR_SIDE);
-      const side = Math.min(bitmap.width, bitmap.height);
+      // Clamped against the picture as decoded here, not as the dialog measured it: the two agree
+      // on the size of an oriented photo, and a crop that only nearly fits would otherwise draw
+      // the canvas's white edge into the saved square.
+      const size: ImageSize = { width: bitmap.width, height: bitmap.height };
+      const square = clampCrop(crop ?? centredCrop(size), size);
       context.drawImage(
         bitmap,
-        (bitmap.width - side) / 2,
-        (bitmap.height - side) / 2,
-        side,
-        side,
+        square.x,
+        square.y,
+        square.side,
+        square.side,
         0,
         0,
         AVATAR_SIDE,
