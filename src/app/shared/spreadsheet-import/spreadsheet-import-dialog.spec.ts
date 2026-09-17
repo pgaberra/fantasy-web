@@ -114,13 +114,36 @@ describe('SpreadsheetImportDialogComponent', () => {
     );
   });
 
-  it('emits the plan on confirm', () => {
+  it('emits the plan with the name on confirm', () => {
     const { component } = render();
+    const emit = vi.spyOn(component.imported, 'emit');
+    paste(component, 'Player\tG\nNathan MacKinnon\t44\n');
+    expect(component.name()).toBe('Spreadsheet import');
+
+    component.onNameInput(select('  My sheet  '));
+    component.confirm();
+
+    expect(emit).toHaveBeenCalledWith({ plan: component.plan(), name: 'My sheet' });
+  });
+
+  it('names the import after the file it was read from', async () => {
+    const { component } = render();
+    const file = new File(['Player,G\nNathan MacKinnon,44\n'], 'Apples & Ginos 2024-25.csv');
+    await component.onFilePicked({ target: { files: [file], value: '' } } as unknown as Event);
+
+    expect(component.name()).toBe('Apples & Ginos 2024-25');
+  });
+
+  it('will not import without a name, or a second time while saving', () => {
+    const fixture = MockRender(SpreadsheetImportDialogComponent, { players: POOL, saving: true });
+    const component = fixture.point.componentInstance;
     const emit = vi.spyOn(component.imported, 'emit');
     paste(component, 'Player\tG\nNathan MacKinnon\t44\n');
 
     component.confirm();
+    expect(emit).not.toHaveBeenCalled();
 
-    expect(emit).toHaveBeenCalledWith(component.plan());
+    component.onNameInput(select(' '));
+    expect(component.canImport()).toBe(false);
   });
 });

@@ -1,0 +1,25 @@
+@if (enabled) {
+  <button
+    type="button"
+    class="btn btn-secondary btn-sm"
+    [disabled]="loadingPlayers()"
+    (click)="open()"
+  >
+    @if (loadingPlayers()) {
+      <app-loading-indicator variant="inline" label="Loading players" />
+    } @else {
+      <span class="spreadsheet-icon"><app-icon name="spreadsheet" /></span>
+      Import a spreadsheet
+    }
+  </button>
+
+  @if (dialogOpen() && players(); as pool) {
+    <app-spreadsheet-import-dialog
+      [players]="pool"
+      [saving]="saving()"
+      [saveError]="saveError()"
+      (imported)="save($event)"
+      (closed)="close()"
+    />
+  }
+}

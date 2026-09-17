@@ -432,6 +432,11 @@
     color var(--transition);
 }
 
+/* A board from a spreadsheet wears the colour spreadsheets are known by, until it is the pick. */
+.row-icon--spreadsheet {
+  color: var(--color-success);
+}
+
 .row--selected .row-icon {
   background: var(--color-primary);
   color: var(--color-primary-contrast);

@@ -10,6 +10,7 @@ import { AiProjectionAccess } from '../shared/premium/ai-projection-access';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { ShareImportComponent } from '../shared/share-import/share-import';
+import { SpreadsheetImportButtonComponent } from '../shared/spreadsheet-import/spreadsheet-import-button';
 import { IconComponent } from '../shared/icon/icon';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { environment } from '../../environments/environment';
@@ -32,6 +33,7 @@ import { environment } from '../../environments/environment';
     LoadingIndicatorComponent,
     ErrorStateComponent,
     ShareImportComponent,
+    SpreadsheetImportButtonComponent,
     IconComponent,
     RelativeTimePipe,
   ],
