@@ -10,8 +10,6 @@ import { provideServerRendering, withRoutes } from '@angular/ssr';
 import { Observable, throwError } from 'rxjs';
 import { appConfig } from './app.config';
 import { serverRoutes } from './app.routes.server';
-import { PADDLE_INITIALIZER } from './shared/paddle/paddle.service';
-import { prerenderPaddleInitializer } from './shared/paddle/paddle-prerender';
 
 /**
  * The one request a prerendered page may make at build time: which features this environment
@@ -47,9 +45,6 @@ class PrerenderBackend implements HttpBackend {
 const serverConfig: ApplicationConfig = {
   providers: [
     provideServerRendering(withRoutes(serverRoutes)),
-    // Paddle.js is a browser script. At build time the Premium card states the base price the build
-    // was given instead, and the browser asks Paddle for the visitor's own price when it loads.
-    { provide: PADDLE_INITIALIZER, useValue: prerenderPaddleInitializer() },
     FetchBackend,
     { provide: HttpBackend, useClass: PrerenderBackend, deps: [FetchBackend] },
   ],

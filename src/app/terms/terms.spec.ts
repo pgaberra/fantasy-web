@@ -15,10 +15,10 @@ describe('TermsComponent', () => {
     expect(ngMocks.findAll('.terms__title').length).toEqual(1);
   });
 
-  // Paddle is the merchant of record, so the contract of sale is with them and their name is
-  // what shows on the customer's statement. Saying so is both a legal requirement and the
+  // Link, Stripe's service, is the merchant of record, so the contract of sale is with them and
+  // LINK.COM is what shows on the customer's statement. Saying so is both a legal requirement and the
   // answer to the support mail that otherwise arrives asking who charged them.
-  it.each(['Alexander Berglund', 'Paddle', 'merchant of record'])(
+  it.each(['Alexander Berglund', 'Stripe', 'LINK.COM', 'merchant of record'])(
     'names %s so the customer knows who they are dealing with',
     (phrase) => {
       MockRender(TermsComponent);
@@ -38,7 +38,7 @@ describe('TermsComponent', () => {
     },
   );
 
-  // Refunds have their own page, which Paddle's live checklist asks for. The terms point to it
+  // Refunds have their own page, which payment providers' reviews ask for. The terms point to it
   // rather than repeating it, so the refund wording cannot drift between two places.
   it('points to the refund policy for refunds', () => {
     MockRender(TermsComponent);

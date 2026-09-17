@@ -27,7 +27,7 @@ export const environment = {
   // builds inject it via the YAHOO_SYNC_DISABLED build arg.
   yahooSyncDisabled: false,
   // Subscription billing. Off by default; deployed builds drive it via the PAYMENTS_ENABLED
-  // build arg. When false the /premium and /pay routes redirect away and no entitlement is fetched.
+  // build arg. When false the /premium route redirects away and no entitlement is fetched.
   paymentsEnabled: false,
   // Feature toggle for ESPN league sync (the ESPN option in the projection's league-sync UI).
   // Off by default; deployed builds drive it via the ESPN_LEAGUES_ENABLED build arg. Mirrors the
@@ -43,17 +43,9 @@ export const environment = {
   // with the OFFSEASON_ENABLED=true build arg.
   offseasonEnabled: false,
   // Premium is shown but not yet sold: the Premium page keeps its plans and badges but its
-  // Subscribe button is disabled with a note, and /pay sends visitors back there. Only means
-  // anything with paymentsEnabled. Deployed builds turn it on with PREMIUM_COMING_SOON=true.
+  // Subscribe button is disabled with a note. Only means anything with paymentsEnabled. Deployed builds turn it on with PREMIUM_COMING_SOON=true.
   premiumComingSoon: false,
-  // Public Paddle client token (not a secret - it is shipped to the browser by design; it only
-  // permits opening a checkout). Empty means the /pay page cannot open one, which is the right
-  // local default: local dev runs the mock payment provider, which never sends anyone here.
-  // Which Paddle environment it opens is read off its prefix (test_ or live_), not set separately.
-  paddleClientToken: '',
-  // The recurring price the pricing page asks Paddle to quote. Empty locally, where the mock
-  // provider is in use and no Paddle catalog exists.
-  paddlePriceId: '',
-  // The price the prerendered Premium page states. Only the production build prerenders.
+  // Premium's price in US dollars, which the Premium page quotes. Empty locally, where the mock
+  // provider is in use and there is no price to quote.
   premiumBasePriceUsd: '',
 };

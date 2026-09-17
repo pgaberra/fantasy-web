@@ -36,10 +36,8 @@ disagree. A missing arg fails silently: the build succeeds and the feature is si
 | `SENTRY_DSN` | Sentry DSN for browser error reporting. Public by design (it only permits sending events), but per environment. Empty → the build reports **no errors at all** and `@sentry/browser` is never fetched | `https://…@….ingest.de.sentry.io/…` |
 | `YAHOO_SYNC_DISABLED` | Manual **off-season switch**. `true` makes the Yahoo league-sync UI show an "available when the new season begins" note instead of its connect/sync controls (between NHL seasons Yahoo has no leagues to sync). Empty/anything-else → sync enabled. Flip it together with the yahoo-service `SYNC_YAHOO_DISABLED` runtime flag | `true` |
 | `PAYMENTS_ENABLED` | Turns on the subscription billing UI (the Premium page, badges and checkout). `true` shows it; empty/anything-else keeps the whole payments feature dark (default) | `true` |
-| `PREMIUM_COMING_SOON` | Premium **shown but not yet sold**. `true` keeps the Premium page, its prices and the Premium badges, but disables Subscribe with a note and sends `/pay` back to the Premium page; the BFF still gates Premium features, so nobody gets them except through an admin grant. Empty/anything-else → Premium is sold as usual (default). Only meaningful with `PAYMENTS_ENABLED=true` | `true` |
-| `PADDLE_CLIENT_TOKEN` | Public Paddle client token (not a secret: it only permits opening a checkout). Its `test_` or `live_` prefix picks sandbox or live Paddle, so there is no separate environment arg. Empty → `/pay` cannot open a checkout | `test_…` / `live_…` |
-| `PADDLE_PRICE_ID` | The recurring Paddle price the Premium page quotes and the checkout sells. Public, like the token. Empty → there is no price to show or sell | `pri_…` |
-| `PREMIUM_BASE_PRICE_USD` | Premium's base price in US dollars, a plain number with two decimals. The prerendered `/premium` states it ("$4.99 per month") for readers that run no JavaScript, like Paddle's domain review; a browser replaces it with the visitor's local price from Paddle. **Required** in a build that sells Premium (`PAYMENTS_ENABLED=true` with `PADDLE_PRICE_ID`): the build fails without it. **Must match** the base price of `PADDLE_PRICE_ID` in Paddle's catalog, and changes with it | `4.99` |
+| `PREMIUM_COMING_SOON` | Premium **shown but not yet sold**. `true` keeps the Premium page, its prices and the Premium badges, but disables Subscribe with a note; the BFF still gates Premium features, so nobody gets them except through an admin grant. Empty/anything-else → Premium is sold as usual (default). Only meaningful with `PAYMENTS_ENABLED=true` | `true` |
+| `PREMIUM_BASE_PRICE_USD` | Premium's price in US dollars, a plain number with two decimals. `/premium` quotes it ("$4.99 per month"), prerendered and in the browser alike; Stripe's checkout may show the buyer the same price converted. **Required** in a build with `PAYMENTS_ENABLED=true`: the build fails without it. **Must match** the price of the BFF's `STRIPE_PRICE_ID`, and changes with it | `4.99` |
 | `ESPN_LEAGUES_ENABLED` | Shows the ESPN provider in the projection's league-sync UI. `true` shows it; empty/anything-else keeps it hidden (default) | `true` |
 | `WHOS_HOT_ENABLED` | The one flag with an **inverted default**. `false` hides the Who's hot page (both nav links and the route); empty/anything-else leaves it visible, since the page already ships. A deploy that forgets the arg keeps the page | `false` |
 | `OFFSEASON_ENABLED` | Shows the **off-season data notice** in the demo and signed-in projection editors (team affiliations out of date, rookies missing). `true` shows it; empty/anything-else → hidden (default). Its own switch on purpose: `YAHOO_SYNC_DISABLED` can be on for reasons unrelated to the calendar, and that must not announce an off-season | `true` |
@@ -50,7 +48,7 @@ disagree. A missing arg fails silently: the build succeeds and the feature is si
 > above, not from a per-environment source file.
 
 A Coolify variable that is not in this table is not an `ARG`, so the build ignores it. The
-`AI_PROJECTION_ENABLED` and `PADDLE_ENVIRONMENT` args were removed (see `DECISIONS.md`), so a
+`AI_PROJECTION_ENABLED`, `PADDLE_ENVIRONMENT`, `PADDLE_CLIENT_TOKEN` and `PADDLE_PRICE_ID` args were removed (see `DECISIONS.md`), so a
 leftover copy in Coolify does nothing.
 
 ### Analytics (PostHog)
@@ -77,7 +75,7 @@ cookieless (declining) visitor hashes to the same "person".
    set the **Domains** (e.g. `https://staging.slapstat.com`) and the build-time env vars
    from the table above that this environment needs: at least `API_URL`, `GOOGLE_CLIENT_ID`,
    `SENTRY_DSN` and `POSTHOG_KEY` (that environment's own DSN and PostHog project), plus
-   `PAYMENTS_ENABLED`, `PADDLE_CLIENT_TOKEN`, `PADDLE_PRICE_ID` and `PREMIUM_BASE_PRICE_USD` where it sells Premium. On
+   `PAYMENTS_ENABLED` and `PREMIUM_BASE_PRICE_USD` where it sells Premium. On
    the **staging** app also set `APP_ENV=staging` so the env banner renders and search engines
    stay out. Leave `APP_VERSION` alone: after the first deploy, deploys come from the release
    workflows below rather than from Coolify's own auto-deploy.

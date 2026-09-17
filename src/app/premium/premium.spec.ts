@@ -10,15 +10,8 @@ import { environment } from '../../environments/environment';
 import { BillingService } from '../services/billing.service';
 import { AuthService } from '../services/auth.service';
 import { EntitlementService } from '../services/entitlement.service';
-import { ErrorReportingService } from '../services/error-reporting.service';
 import { NotificationService } from '../services/notification.service';
 import { FeatureService } from '../services/feature.service';
-import { PaddleConfigurationError } from '../shared/paddle/paddle';
-import { PaddleService } from '../shared/paddle/paddle.service';
-
-const initializePaddle = vi.fn();
-const PricePreview = vi.fn();
-const report = vi.fn();
 
 describe('PremiumComponent', () => {
   const startCheckout = vi.fn();
@@ -52,30 +45,7 @@ describe('PremiumComponent', () => {
     premiumUntil.set(null);
     loadState.set('loaded');
     checkoutParam.set(null);
-    initializePaddle.mockReset();
-    PricePreview.mockReset();
-    report.mockReset();
-    PricePreview.mockResolvedValue({
-      data: {
-        currencyCode: 'USD',
-        details: {
-          lineItems: [
-            {
-              totals: { subtotal: '499', discount: '0', tax: '0', total: '499' },
-              formattedTotals: {
-                subtotal: '$4.99',
-                discount: '$0.00',
-                tax: '$0.00',
-                total: '$4.99',
-              },
-            },
-          ],
-        },
-      },
-    });
-    initializePaddle.mockResolvedValue({ PricePreview });
-    environment.paddleClientToken = 'test_token';
-    environment.paddlePriceId = 'pri_1';
+    environment.premiumBasePriceUsd = '4.99';
     Object.defineProperty(window, 'location', { configurable: true, value: { href: '' } });
     return (
       MockBuilder(PremiumComponent)
@@ -95,8 +65,6 @@ describe('PremiumComponent', () => {
           refresh,
         })
         .mock(NotificationService, { error })
-        .mock(ErrorReportingService, { report })
-        .mock(PaddleService, { initialize: initializePaddle })
         .mock(FeatureService, { aiProjection: signal(true) })
         .provide({ provide: ActivatedRoute, useValue: route })
     );
@@ -303,7 +271,7 @@ describe('PremiumComponent', () => {
     beforeEach(() => checkoutParam.set('success'));
 
     /**
-     * Paddle redirects the browser the moment the payment clears and tells our server separately.
+     * Stripe redirects the browser the moment the payment clears and tells our server separately.
      * The redirect wins, so the first read still says free plan. Offering Subscribe there put a
      * second checkout in front of someone who had just paid, under a banner thanking them for
      * subscribing.
@@ -374,158 +342,14 @@ describe('PremiumComponent', () => {
     expect(card.textContent).not.toContain('Confirming');
   });
 
-  // The price arrives through a chain of promises, so waiting a fixed number of microtask
-  // ticks is guesswork. A macrotask drains the whole queue behind it; then the view is
-  // checked, since the signal is set long after the first render.
-  async function settle(fixture: { detectChanges: () => void }): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    fixture.detectChanges();
-  }
-
   /**
-   * The catalog holds a base price in USD and a local price per country, so the figure on the
-   * page has to come from Paddle. A number written into the template would be right for one
-   * country and wrong everywhere else, and quoting one price while charging another is how a
-   * sale is lost.
+   * The price comes from the build, the same figure the prerendered page states, so a reader with
+   * JavaScript and one without are quoted one price. The free card writes its zero the same way.
    */
-  it('shows the price Paddle quotes for this visitor', async () => {
-    const fixture = MockRender(PremiumComponent);
+  it("quotes the build's price, and prices the free plan to match", () => {
+    MockRender(PremiumComponent);
 
-    await settle(fixture);
-
-    expect(PricePreview).toHaveBeenCalledWith({ items: [{ priceId: 'pri_1', quantity: 1 }] });
-    expect(ngMocks.formatText(ngMocks.find('.plan-card--premium .plan-price-amount'))).toContain(
-      '$4.99',
-    );
-  });
-
-  it('prices the free plan at zero in the currency Paddle quoted', async () => {
-    const fixture = MockRender(PremiumComponent);
-
-    await settle(fixture);
-
-    expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toEqual(
-      '$0.00',
-    );
-  });
-
-  /**
-   * Paddle writes the Premium price in its own format whatever the reader's browser language, so
-   * the free plan's zero is Paddle's too: the discount on a price nobody discounted. A zero
-   * formatted here followed the browser instead, and an English one read "SEK 0" beside
-   * "49.00 kr".
-   */
-  it('writes the free plan’s zero exactly as Paddle writes the Premium price', async () => {
-    vi.spyOn(navigator, 'language', 'get').mockReturnValue('en-US');
-    PricePreview.mockResolvedValue({
-      data: {
-        currencyCode: 'SEK',
-        details: {
-          lineItems: [
-            {
-              totals: { subtotal: '3920', discount: '0', tax: '980', total: '4900' },
-              formattedTotals: {
-                subtotal: '39.20 kr',
-                discount: '0.00 kr',
-                tax: '9.80 kr',
-                total: '49.00 kr',
-              },
-            },
-          ],
-        },
-      },
-    });
-
-    const fixture = MockRender(PremiumComponent);
-    await settle(fixture);
-
-    expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toEqual(
-      '0.00 kr',
-    );
     expect(ngMocks.formatText(ngMocks.find('.plan-card--premium .plan-price-amount'))).toEqual(
-      '49.00 kr',
-    );
-  });
-
-  // A discounted preview has no zero to borrow, and the discount figure on the free plan would be
-  // a price it does not have. The card says the word instead.
-  it('says the free plan is free when the preview carries a discount', async () => {
-    PricePreview.mockResolvedValue({
-      data: {
-        currencyCode: 'USD',
-        details: {
-          lineItems: [
-            {
-              totals: { subtotal: '499', discount: '100', tax: '0', total: '399' },
-              formattedTotals: {
-                subtotal: '$4.99',
-                discount: '$1.00',
-                tax: '$0.00',
-                total: '$3.99',
-              },
-            },
-          ],
-        },
-      },
-    });
-
-    const fixture = MockRender(PremiumComponent);
-    await settle(fixture);
-
-    expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toEqual('Free');
-  });
-
-  // Without the preview there is no zero in Paddle's format to borrow, and writing one here would
-  // put the two columns back in different styles. The card says the word instead: the paid price
-  // depends on Paddle, the free one must not.
-  it('says the free plan is free when Paddle cannot be reached', async () => {
-    initializePaddle.mockRejectedValue(new Error('offline'));
-
-    const fixture = MockRender(PremiumComponent);
-    await settle(fixture);
-
-    expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toEqual('Free');
-  });
-
-  /**
-   * The price arrives after the page draws. What stood in for it was a small line the price then
-   * replaced, and the taller row pushed the whole card down the moment it landed. Now the wait is
-   * said in the price's own row, and the free card holds its figure back so both land together.
-   */
-  it('says the price is loading, and holds the free figure back, until Paddle answers', async () => {
-    let answer!: (value: unknown) => void;
-    PricePreview.mockReturnValue(new Promise((resolve) => (answer = resolve)));
-
-    const fixture = MockRender(PremiumComponent);
-    await settle(fixture);
-
-    const pending = ngMocks.find('.plan-card--premium .plan-price app-loading-indicator');
-    expect(ngMocks.input(pending, 'label')).toEqual('Loading price');
-    expect(ngMocks.findAll('.plan-card--free .plan-price-amount').length).toEqual(0);
-    expect(fixture.nativeElement.textContent).not.toContain('confirmed at checkout');
-
-    answer({
-      data: {
-        currencyCode: 'USD',
-        details: {
-          lineItems: [
-            {
-              totals: { subtotal: '499', discount: '0', tax: '0', total: '499' },
-              formattedTotals: {
-                subtotal: '$4.99',
-                discount: '$0.00',
-                tax: '$0.00',
-                total: '$4.99',
-              },
-            },
-          ],
-        },
-      },
-    });
-    await settle(fixture);
-
-    expect(ngMocks.findAll('.plan-price app-loading-indicator').length).toEqual(0);
-    expect(ngMocks.formatText(ngMocks.find('.plan-card--premium .plan-price-amount'))).toContain(
       '$4.99',
     );
     expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toEqual(
@@ -533,56 +357,17 @@ describe('PremiumComponent', () => {
     );
   });
 
-  it('says where the price is confirmed, not that it is loading, once Paddle has failed', async () => {
-    initializePaddle.mockRejectedValue(new Error('offline'));
+  // A build with no price has no figure to match, so the free card says the word, and the Premium
+  // card says where the price will be confirmed rather than inventing one.
+  it('says where the price is confirmed when the build has none', () => {
+    environment.premiumBasePriceUsd = '';
 
-    const fixture = MockRender(PremiumComponent);
-    await settle(fixture);
+    MockRender(PremiumComponent);
 
-    expect(ngMocks.findAll('.plan-price app-loading-indicator').length).toEqual(0);
     expect(ngMocks.formatText(ngMocks.find('.plan-card--premium .plan-price'))).toEqual(
       'Your exact price is confirmed at checkout.',
     );
-  });
-
-  // A build that sells nothing has no price id, and must not call Paddle at all - that call is
-  // what puts Paddle's script on a public page. Nor is there anything to wait for.
-  it('asks Paddle nothing when the build has no price id', async () => {
-    environment.paddlePriceId = '';
-
-    const fixture = MockRender(PremiumComponent);
-    await settle(fixture);
-
-    expect(initializePaddle).not.toHaveBeenCalled();
-    expect(ngMocks.findAll('.plan-card--premium .plan-price-amount').length).toEqual(0);
-    expect(ngMocks.findAll('.plan-price app-loading-indicator').length).toEqual(0);
-  });
-
-  // Losing the price is not worth an error toast on a marketing page. The card still reads.
-  it('renders the card without a price when Paddle cannot be reached', async () => {
-    initializePaddle.mockRejectedValue(new Error('offline'));
-
-    const fixture = MockRender(PremiumComponent);
-    await settle(fixture);
-
-    expect(ngMocks.findAll('.plan-card--premium .plan-price-amount').length).toEqual(0);
-    expect(error).not.toHaveBeenCalled();
-    expect(report).not.toHaveBeenCalled();
-    expect(ngMocks.findAll('.plan-card--premium .plan-name').length).toEqual(1);
-  });
-
-  // A token that names no Paddle environment is a broken build, not a network blip. The card still
-  // reads, and still says nothing to the visitor, but the fault is reported rather than hidden.
-  it('reports a client token that names no Paddle environment', async () => {
-    initializePaddle.mockRejectedValue(new PaddleConfigurationError('no environment'));
-
-    const fixture = MockRender(PremiumComponent);
-    await settle(fixture);
-
-    expect(PricePreview).not.toHaveBeenCalled();
-    expect(report).toHaveBeenCalledWith(expect.any(PaddleConfigurationError));
-    expect(error).not.toHaveBeenCalled();
-    expect(ngMocks.findAll('.plan-card--premium .plan-name').length).toEqual(1);
+    expect(ngMocks.formatText(ngMocks.find('.plan-card--free .plan-price-amount'))).toEqual('Free');
   });
 
   /**

@@ -15,9 +15,9 @@ describe('RefundsComponent', () => {
     expect(ngMocks.formatText(ngMocks.find('.refunds__title'))).toEqual('Refund policy');
   });
 
-  // Paddle is the merchant of record and issues every refund, which is why the money comes back
-  // from a name the customer may not recognise.
-  it.each(['Paddle', 'merchant of record'])('names %s', (phrase) => {
+  // Link, Stripe's service, is the merchant of record, which is why the charge and the refund carry
+  // a name the customer may not recognise.
+  it.each(['Link, a Stripe service', 'merchant of record'])('names %s', (phrase) => {
     MockRender(RefundsComponent);
 
     expect(text()).toContain(phrase);
@@ -47,14 +47,11 @@ describe('RefundsComponent', () => {
   });
 
   // The page cannot take away rights consumer law gives, and has to say so.
-  it.each(['buyer terms and refund policy', 'statutory consumer rights'])(
-    'keeps the legal rights: %s',
-    (phrase) => {
-      MockRender(RefundsComponent);
+  it.each(["Link's terms", 'statutory consumer rights'])('keeps the legal rights: %s', (phrase) => {
+    MockRender(RefundsComponent);
 
-      expect(text()).toContain(phrase);
-    },
-  );
+    expect(text()).toContain(phrase);
+  });
 
   it('tells the customer where to ask', () => {
     MockRender(RefundsComponent);
@@ -63,7 +60,7 @@ describe('RefundsComponent', () => {
       .findAll('.refunds a')
       .map((anchor) => (anchor.nativeElement as HTMLAnchorElement).getAttribute('href'));
     expect(hrefs).toContain('mailto:info@slapstat.com');
-    expect(hrefs).toContain('https://paddle.net');
+    expect(hrefs).toContain('https://support.link.com/topics/sold-through-link');
   });
 
   // The policy is part of the terms, and says so with a link a customer can follow.

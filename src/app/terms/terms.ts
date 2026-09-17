@@ -4,10 +4,10 @@ import { RouterLink } from '@angular/router';
 /**
  * Terms and conditions.
  *
- * Static, public and unguarded, like the privacy policy: Paddle's website review requires
+ * Static, public and unguarded, like the privacy policy: a payment provider's website review requires
  * terms, a refund policy and visible pricing to be reachable without an account, and a
  * customer deciding whether to pay has to be able to read them before they do. Refunds live on
- * their own page, which Paddle's live account checklist asks for, and these terms point to it
+ * their own page, which such reviews ask for, and these terms point to it
  * rather than repeating it, so the refund wording has one home.
  *
  * The content describes what actually happens, not what a template says might. If the
@@ -20,5 +20,5 @@ import { RouterLink } from '@angular/router';
   styleUrl: './terms.css',
 })
 export class TermsComponent {
-  protected readonly lastUpdated = '11 September 2026';
+  protected readonly lastUpdated = '17 September 2026';
 }

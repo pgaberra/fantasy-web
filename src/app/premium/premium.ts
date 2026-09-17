@@ -5,11 +5,8 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { BillingService } from '../services/billing.service';
 import { EntitlementService } from '../services/entitlement.service';
-import { ErrorReportingService } from '../services/error-reporting.service';
 import { FeatureService } from '../services/feature.service';
 import { NotificationService } from '../services/notification.service';
-import { PaddleConfigurationError } from '../shared/paddle/paddle';
-import { PaddleService } from '../shared/paddle/paddle.service';
 import { freeFeatures, premiumPerks } from '../shared/premium/premium-perks';
 import { environment } from '../../environments/environment';
 import { IconComponent } from '../shared/icon/icon';
@@ -20,6 +17,16 @@ const CONFIRMATION_TIMEOUT_MS = 30_000;
 
 /** How long to wait between reads while confirming, in milliseconds. */
 const CONFIRMATION_POLL_MS = 2_000;
+
+/** Premium's price is set in US dollars, and both cards write their figure this one way. */
+const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+
+/** The build's base price (`PREMIUM_BASE_PRICE_USD`), or null when the build gives none. */
+function basePriceUsd(): number | null {
+  const raw = environment.premiumBasePriceUsd;
+  const amount = Number(raw);
+  return raw && Number.isFinite(amount) ? amount : null;
+}
 
 /**
  * Premium: the free plan and Premium side by side, what each includes, and the one thing to do
@@ -46,8 +53,6 @@ const CONFIRMATION_POLL_MS = 2_000;
 export class PremiumComponent implements OnInit, OnDestroy {
   private readonly billing = inject(BillingService);
   private readonly notifications = inject(NotificationService);
-  private readonly errorReporting = inject(ErrorReportingService);
-  private readonly paddle = inject(PaddleService);
   private readonly route = inject(ActivatedRoute);
   protected readonly authService = inject(AuthService);
   protected readonly entitlement = inject(EntitlementService);
@@ -62,7 +67,7 @@ export class PremiumComponent implements OnInit, OnDestroy {
   /**
    * True while we are back from a completed checkout but the subscription has not reached us yet.
    *
-   * Paddle redirects the browser the moment the payment clears and tells our server separately,
+   * Stripe redirects the browser the moment the payment clears and tells our server separately,
    * over a webhook. The redirect usually wins that race, so the first read of the entitlement
    * says the account is on the free plan. Rendering that verdict put a Subscribe button in front
    * of someone who had just paid, directly beneath a banner thanking them for subscribing;
@@ -122,42 +127,20 @@ export class PremiumComponent implements OnInit, OnDestroy {
   });
 
   /**
-   * What this visitor would actually be charged, already formatted by Paddle in their own
-   * currency. Null while it loads, and if it cannot be fetched.
-   *
-   * Asked of Paddle rather than written into the template because the catalog carries a base
-   * price in USD and a local price per country. A number typed in here would be right for one
-   * country and wrong for the rest, and a page quoting one figure while checkout charges
-   * another is how a sale gets abandoned. The cost is that this page, and not only the
-   * checkout, loads Paddle's script, so Paddle sees the IP of anyone who opens it. The privacy
-   * policy says so.
+   * Premium's monthly price, from the build. The same figure the prerendered page states, so a
+   * reader with JavaScript and one without read one price. Checkout may show it converted into the
+   * buyer's own currency.
    */
-  protected readonly formattedPrice = signal<string | null>(null);
+  protected readonly formattedPrice: string | null = (() => {
+    const amount = basePriceUsd();
+    return amount === null ? null : usd.format(amount);
+  })();
 
   /**
-   * The free plan's price: zero, written the way Paddle writes the Premium price. Null until the
-   * preview arrives, and if it never does.
-   *
-   * Zero is the same number everywhere, but "0 kr", "SEK 0" and "0.00 kr" are not the same
-   * sentence, and a free column written differently from the paid one beside it reads as two
-   * different shops. Formatted here, the zero followed the reader's browser language while Paddle
-   * formats the paid price its own way, so an English browser read "SEK 0" beside "49.00 kr".
-   * The preview already carries a zero in Paddle's own format: the discount on a price nobody
-   * discounted.
-   *
-   * That ties this figure to a third party the free plan has nothing to do with, so the card
-   * falls back to the word "Free" when the preview does not arrive, or carries a discount and so
-   * has no zero to borrow. Paddle being unreachable costs the paid card its price; it must not
-   * also leave the free one unpriced.
+   * The free plan's price, written the way the Premium one is ("$0.00" beside "$4.99"), and the
+   * word "Free" when there is no Premium price to match.
    */
-  protected readonly freePrice = signal<string | null>(null);
-
-  /**
-   * True until Paddle has answered or failed to. Not the same as the price being null, which is
-   * also what a failure leaves: while waiting the card says it is loading, after a failure it says
-   * where the price will be confirmed instead.
-   */
-  protected readonly pricePending = signal(true);
+  protected readonly freePrice: string | null = this.formattedPrice === null ? null : usd.format(0);
 
   private pollTimer?: ReturnType<typeof setTimeout>;
   private giveUpTimer?: ReturnType<typeof setTimeout>;
@@ -185,37 +168,6 @@ export class PremiumComponent implements OnInit, OnDestroy {
       this.scheduleNextRead();
     }
     this.entitlement.refresh();
-
-    const priceId = environment.paddlePriceId;
-    if (!environment.paddleClientToken || !priceId) {
-      this.pricePending.set(false);
-      return;
-    }
-
-    this.paddle
-      .initialize({ token: environment.paddleClientToken })
-      .then((paddle) => paddle?.PricePreview({ items: [{ priceId, quantity: 1 }] }))
-      .then((preview) => {
-        const lineItem = preview?.data.details.lineItems[0];
-        if (lineItem) {
-          this.formattedPrice.set(lineItem.formattedTotals.total);
-          if (lineItem.totals.discount === '0') {
-            this.freePrice.set(lineItem.formattedTotals.discount);
-          }
-        }
-      })
-      // Deliberately quiet about Paddle being unreachable. A price we could not fetch is a smaller
-      // problem than an error toast on a marketing page, and the card still reads correctly
-      // without it. A token that names no Paddle environment is a broken build instead, and is
-      // reported, since a card that reads fine would otherwise hide it.
-      .catch((error: unknown) => {
-        if (error instanceof PaddleConfigurationError) {
-          this.errorReporting.report(error);
-        }
-        this.formattedPrice.set(null);
-        this.freePrice.set(null);
-      })
-      .finally(() => this.pricePending.set(false));
   }
 
   ngOnDestroy(): void {

@@ -33,7 +33,7 @@ const yahooSyncDisabledFlag: string = '__YAHOO_SYNC_DISABLED__';
 const paymentsEnabledFlag: string = '__PAYMENTS_ENABLED__';
 
 // Premium shown but not yet sold. Only the literal "true" (via the PREMIUM_COMING_SOON build arg)
-// disables Subscribe and closes /pay; untouched or empty resolves to false, so a build that sells
+// disables Subscribe; untouched or empty resolves to false, so a build that sells
 // Premium keeps selling it.
 const premiumComingSoonFlag: string = '__PREMIUM_COMING_SOON__';
 
@@ -51,17 +51,8 @@ const whosHotEnabledFlag: string = '__WHOS_HOT_ENABLED__';
 // default and has to be turned on deliberately each off-season.
 const offseasonEnabledFlag: string = '__OFFSEASON_ENABLED__';
 
-// Public Paddle client token, injected at build time. Not a secret: it ships to the browser by
-// design and only permits opening a checkout. Untouched it resolves to empty, which leaves the
-// /pay page unable to open one. Which Paddle the token opens is read off its test_ or live_
-// prefix (shared/paddle), so there is no separate environment flag to disagree with it.
-const paddleClientTokenFlag: string = '__PADDLE_CLIENT_TOKEN__';
-const paddlePriceIdFlag: string = '__PADDLE_PRICE_ID__';
-
-// Premium's base price in US dollars, as a plain number ("4.99"). Only the prerendered /premium reads
-// it: Paddle.js cannot run at build time, and Paddle's REST API refuses the client token, so the
-// figure a reader without JavaScript sees has to come from the build. A browser still shows the
-// visitor's own price from Paddle. Must match the base price of PADDLE_PRICE_ID in Paddle's catalog.
+// Premium's price in US dollars, as a plain number ("4.99"), which /premium quotes both prerendered
+// and in the browser. Must match the price the BFF's STRIPE_PRICE_ID charges.
 const premiumBasePriceUsdFlag: string = '__PREMIUM_BASE_PRICE_USD__';
 
 export const environment = {
@@ -80,10 +71,6 @@ export const environment = {
   premiumComingSoon: premiumComingSoonFlag === 'true',
   espnLeaguesEnabled: espnLeaguesEnabledFlag === 'true',
   whosHotEnabled: whosHotEnabledFlag !== 'false',
-  paddleClientToken: paddleClientTokenFlag.startsWith('__PADDLE_CLIENT_TOKEN')
-    ? ''
-    : paddleClientTokenFlag,
-  paddlePriceId: paddlePriceIdFlag.startsWith('__PADDLE_PRICE_ID') ? '' : paddlePriceIdFlag,
   premiumBasePriceUsd: premiumBasePriceUsdFlag.startsWith('__PREMIUM_BASE_PRICE_USD')
     ? ''
     : premiumBasePriceUsdFlag,

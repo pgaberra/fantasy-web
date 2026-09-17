@@ -4,8 +4,8 @@ import { Component } from '@angular/core';
  * Static privacy policy.
  *
  * Public and unguarded, like the terms: consent has to be informed, so the policy must be
- * readable from the cookie banner before anyone has agreed to anything, and Paddle's website
- * review expects it reachable without an account.
+ * readable from the cookie banner before anyone has agreed to anything, and a payment
+ * provider's website review expects it reachable without an account.
  *
  * The content describes what the code actually does — the tables in db-service, the categories
  * of processor we really send data to, and the storage we really set. If any of those change,
@@ -19,5 +19,5 @@ import { Component } from '@angular/core';
   styleUrl: './privacy.css',
 })
 export class PrivacyComponent {
-  protected readonly lastUpdated = '8 September 2026';
+  protected readonly lastUpdated = '17 September 2026';
 }

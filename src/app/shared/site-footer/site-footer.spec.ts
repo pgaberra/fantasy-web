@@ -25,7 +25,7 @@ describe('SiteFooterComponent', () => {
     expect(contact.textContent?.trim()).toEqual('info@slapstat.com');
   });
 
-  // Paddle wants the refund policy reachable from the navigation, and it has a page of its own.
+  // A payment provider's review wants the refund policy reachable from the navigation, and it has a page of its own.
   it.each([true, false])('links the refund policy while signed in is %s', async (loggedIn) => {
     await render(loggedIn);
 

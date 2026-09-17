@@ -2,7 +2,7 @@
 #
 # The public pages must reach a client that runs no JavaScript with their content in the HTML.
 #
-# Paddle's automated domain review read slapstat.com that way and found only the page title, three
+# A payment provider's automated domain review (Paddle's) read slapstat.com that way and found only the page title, three
 # times, and called the site "under construction". The pages are prerendered at build time for
 # exactly that reader (src/app/app.routes.server.ts). A prerender that quietly produces an empty
 # page, or a route that falls back to client rendering, breaks nothing a browser would notice, so

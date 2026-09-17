@@ -19,16 +19,16 @@ describe('routes', () => {
     // anyone has agreed to anything — neither may bounce a visitor to the login page.
     expect(routeFor('s/:token').canActivate).toBeUndefined();
     expect(routeFor('privacy').canActivate).toBeUndefined();
-    // Paddle reviews the terms and the refund policy from a signed-out browser, and a customer
+    // A payment provider reviews the terms and the refund policy from a signed-out browser, and a customer
     // has to be able to read both before paying.
     expect(routeFor('terms').canActivate).toBeUndefined();
     expect(routeFor('refunds').canActivate).toBeUndefined();
   });
 
   /**
-   * The plans and the subscription on them are one page now, and Paddle sends a finished
-   * checkout back to whatever URL it was given when the transaction was created, which for
-   * anything already in flight is the old one. So /pricing and /account still have to arrive
+   * The plans and the subscription on them are one page now, and a finished checkout returns to
+   * whatever URL it was given when it was created, which for anything already in flight is the
+   * old one. So /pricing and /account still have to arrive
    * here, and arrive carrying ?checkout=success: without it the page greets a new subscriber
    * as a visitor and offers them a second checkout.
    */
