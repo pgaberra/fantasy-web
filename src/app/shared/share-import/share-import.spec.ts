@@ -97,6 +97,31 @@ describe('ShareImportComponent', () => {
     expect(component.importName()).toBeNull();
   });
 
+  /** The name field is what makes a phone's row too narrow, so it alone switches the stacking on. */
+  it('marks the row for stacking only while a name is being asked for', async () => {
+    importFromShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
+
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
+    const controls = (): HTMLElement =>
+      fixture.nativeElement.querySelector('.import-controls') as HTMLElement;
+    expect(controls().classList).not.toContain('import-controls--naming');
+
+    component.shareInput.set('https://slapstat.com/s/aBc123_-xyz');
+    component.submit();
+    fixture.detectChanges();
+
+    expect(controls().classList).toContain('import-controls--naming');
+  });
+
+  it("keeps the page's own button the only filled one", async () => {
+    const fixture = await renderFixture();
+    const button = fixture.nativeElement.querySelector('button[type="submit"]') as HTMLElement;
+
+    expect(button.classList).toContain('btn-secondary');
+    expect(button.classList).not.toContain('btn-primary');
+  });
+
   it('says so when the link has gone', async () => {
     importFromShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
 
