@@ -27,6 +27,11 @@ export class LeagueSyncComponent {
   readonly lastEspnLeagueId = input<string | null>(null);
   readonly lastEspnSyncedAt = input<string | null>(null);
   readonly lastEspnLeagueName = input<string | null>(null);
+  /**
+   * Open on Yahoo whatever else would decide: the dialog is back from a Yahoo connect it started,
+   * and the leagues that connect was for are what the user came back to pick from.
+   */
+  readonly openOnYahoo = input(false);
   readonly yahooSynced = output<YahooSyncResult>();
   readonly espnSynced = output<EspnSyncResult>();
 
@@ -43,7 +48,7 @@ export class LeagueSyncComponent {
   readonly provider = linkedSignal<Provider>(() => this.initialProvider());
 
   private initialProvider(): Provider {
-    if (this.lastSync() && this.yahooAvailable) {
+    if ((this.openOnYahoo() || this.lastSync()) && this.yahooAvailable) {
       return 'yahoo';
     }
     // The stamp of the last ESPN sync, not the remembered league id: the id outlives an unsync
