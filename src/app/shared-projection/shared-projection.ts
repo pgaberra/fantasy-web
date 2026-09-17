@@ -1,6 +1,5 @@
 import { Component, computed, effect, inject, linkedSignal, Signal, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Location } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime } from 'rxjs';
@@ -44,6 +43,7 @@ import { TableScrollDirective } from '../shared/table-scroll/table-scroll.direct
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { hasHeadshots } from '../shared/player-headshot/player-headshot';
 import { SHARED_BOARD } from '../auth/auth-reason';
+import { ImportDestination, PendingCopyService } from './pending-copy';
 
 /**
  * A published board is the owner's whole pool — some 1600 rows — and someone arriving from a link
@@ -59,9 +59,6 @@ const ROWS_PER_PAGE = 100;
  * one answer arriving for every letter typed.
  */
 const SEARCH_DEBOUNCE_MS = 250;
-
-/** Where a copy of the board lands: open for editing, or straight into a draft against it. */
-type ImportDestination = 'projection' | 'draft';
 
 /** One published row, in the shapes the editor's table components expect. */
 interface SharedRow {
@@ -116,7 +113,7 @@ export class SharedProjectionComponent {
   private readonly analytics = inject(AnalyticsService);
   private readonly activeColumnsService = inject(ActiveColumnsService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly location = inject(Location);
+  private readonly pendingCopy = inject(PendingCopyService);
 
   readonly isLoggedIn = inject(AuthService).isLoggedIn;
 
@@ -125,30 +122,19 @@ export class SharedProjectionComponent {
   readonly isImporting = computed(() => this.importingInto() !== null);
 
   /**
-   * Picks that press back up, once. Anything other than the two actions is ignored rather than
-   * reported: the parameter is part of a URL a visitor may edit or a mail client may mangle, and
-   * the page behind it reads fine without it.
+   * Picks a press back up on the way in, for the visitor who made it and came back with an
+   * account. Taken rather than read, so a copy answers one press: a reload, a second visit and a
+   * second board each find nothing waiting.
    *
-   * <p>The parameter comes off the address bar before the copy is attempted. An action left in
-   * the URL is one a refresh would run again, and one that would follow the link if the visitor
-   * passed it on: a board should be copied because someone pressed a button, not because a URL
-   * said so.
-   *
-   * <p>Arriving with an action but no session drops it and renders the board. Pressing a button
-   * now sends a visitor to the account form, so resuming here would send them straight back —
-   * a link somebody passed on with the action still on it would bounce every signed-out reader
-   * to a signup form without ever showing them the board it points at.
+   * <p>Still signed out means the trip to the account form did not end in one, so the press is
+   * spent and the board renders with both buttons on it — which is where they were.
    */
-  private resumeRequestedAction(): void {
-    const requested = this.route.snapshot.queryParamMap.get('action');
-    if (requested !== 'draft' && requested !== 'projection') {
+  private resumePendingCopy(): void {
+    const pending = this.pendingCopy.take(this.token);
+    if (!pending || !this.isLoggedIn()) {
       return;
     }
-    this.location.replaceState(this.returnUrl);
-    if (!this.isLoggedIn()) {
-      return;
-    }
-    this.importThen(requested);
+    this.importThen(pending);
   }
 
   /** Takes a copy of the published board and opens it for editing. */
@@ -177,12 +163,13 @@ export class SharedProjectionComponent {
   private importThen(destination: ImportDestination): void {
     // A copy has to live in an account, so someone without one is taken straight to the form that
     // makes one. It used to be a note beside the buttons holding two links, which asked a visitor
-    // who had already decided to read a sentence and decide again. The button they pressed rides
-    // along on the return URL, so the copy happens when they land back here; the form's own
-    // footer is the way out for someone who turns out to have an account already.
+    // who had already decided to read a sentence and decide again. The press is written down
+    // first, so the copy happens when they land back here; the form's own footer is the way out
+    // for someone who turns out to have an account already.
     if (!this.isLoggedIn()) {
+      this.pendingCopy.remember(this.token, destination);
       void this.router.navigate(['/register'], {
-        queryParams: { returnUrl: `${this.returnUrl}?action=${destination}`, reason: SHARED_BOARD },
+        queryParams: { returnUrl: this.returnUrl, reason: SHARED_BOARD },
       });
       return;
     }
@@ -311,7 +298,7 @@ export class SharedProjectionComponent {
   private viewCounted = false;
 
   constructor() {
-    this.resumeRequestedAction();
+    this.resumePendingCopy();
 
     // The other half of the sharing loop: projection_shared is captured when a link is made,
     // this when someone actually opens one.
