@@ -58,6 +58,8 @@ import {
   UtilityStatKey,
 } from '../../models/stat-key.model';
 import { StatInfoService } from '../../services/stat-info.service';
+import { PositionTiers, TierBadge, TierPosition, TierService } from '../../services/tier.service';
+import { environment } from '../../../environments/environment';
 import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
 import { parseDecimalInput } from '../../shared/decimal-input';
 import { ownLine, squaredWithPool } from '../../shared/pool-line';
@@ -351,6 +353,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
   private readonly positionFilterService = inject(PositionFilterService);
   private readonly activeColumnsService = inject(ActiveColumnsService);
   private readonly statInfoService = inject(StatInfoService);
+  private readonly tierService = inject(TierService);
   private readonly destroyRef = inject(DestroyRef);
 
   /**
@@ -633,6 +636,93 @@ export class PlayerProjectionsTableComponent implements OnInit {
   });
 
   private readonly playerMap = computed(() => new Map(this.players().map((p) => [p.id, p])));
+
+  /**
+   * The pool in value order, whatever the table is sorted by. Tiers are a property of the
+   * projection, not of the current view, so sorting the table by hits must not re-cut them.
+   * Matches ProjectionRankingService.rankOverall's order (qualified first, then value).
+   */
+  private readonly rankedByValue = computed<ScoredProjection[]>(() => {
+    const valueOf = this.summaryValueResolver();
+    return [...this.scoredProjections()].sort((first, second) => {
+      if (first.qualified !== second.qualified) {
+        return first.qualified ? -1 : 1;
+      }
+      return valueOf(second) - valueOf(first);
+    });
+  });
+
+  /**
+   * Tier lists per position, from the table's own scoring so an edit moves a player between tiers
+   * as soon as it lands. Empty while the feature is off, which leaves every chip and divider out.
+   */
+  private readonly tiers = computed<Map<TierPosition, PositionTiers>>(() => {
+    if (!environment.tiersEnabled) {
+      return new Map();
+    }
+    return this.tierService.tiersByPosition({
+      ranked: this.rankedByValue(),
+      players: this.playerMap(),
+      scoringType: this.scoringType(),
+      leagueSize: this.leagueSize(),
+      rosterSlots: this.rosterSlots(),
+    });
+  });
+
+  /** A tier chip per visible player, for the filtered position or else his strongest one. */
+  readonly tierBadges = computed<Map<number, TierBadge>>(() => {
+    const tiers = this.tiers();
+    if (tiers.size === 0) {
+      return new Map();
+    }
+    const position = this.tierService.tierPositionForFilter(this.positionFilter());
+    const badges = new Map<number, TierBadge>();
+    for (const scoredProjection of this.visibleProjections()) {
+      const playerId = scoredProjection.projection.playerId;
+      const badge = this.tierService.badgeFor(playerId, tiers, position);
+      if (badge) {
+        badges.set(playerId, badge);
+      }
+    }
+    return badges;
+  });
+
+  /**
+   * Which visible rows open a new tier, keyed by player. A divider only means anything when the
+   * rows below it are that position's ranked list and nothing else: any other sort, a team filter
+   * or a search leaves gaps in the order, and a line drawn across those would claim a cliff that
+   * is not on screen.
+   */
+  readonly tierDividers = computed<Map<number, number>>(() => {
+    const tiers = this.tiers();
+    const position = this.tierService.tierPositionForFilter(this.positionFilter());
+    const orderedByValue = this.sortColumn() === 'summary' && this.sortDirection() === 'desc';
+    if (
+      tiers.size === 0 ||
+      position === null ||
+      !orderedByValue ||
+      this.teamFilter() !== 'ALL' ||
+      this.searchTerm().trim() !== ''
+    ) {
+      return new Map();
+    }
+    const tierByPlayerId = tiers.get(position)!.tierByPlayerId;
+    const dividers = new Map<number, number>();
+    let previous: number | null = null;
+    for (const scoredProjection of this.visibleProjections()) {
+      const tier = tierByPlayerId.get(scoredProjection.projection.playerId);
+      if (tier !== undefined && tier !== previous) {
+        dividers.set(scoredProjection.projection.playerId, tier);
+      }
+      previous = tier ?? null;
+    }
+    return dividers;
+  });
+
+  /** Rank, name, the active stat columns and the summary — what a divider row has to span. */
+  readonly columnCount = computed(
+    () => 3 + this.filteredActiveColumns().utility.size + this.filteredActiveColumns().scoring.size,
+  );
 
   /** Whether the rows draw headshots at all: not while no player in the pool has a picture. */
   readonly showHeadshots = computed(() => hasHeadshots(this.players()));

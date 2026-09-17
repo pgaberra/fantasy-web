@@ -20,6 +20,8 @@ import { ProjectionResponse } from '../api/models/projection-response';
 import { UpdateProjectionRequest } from '../api/models/update-projection-request';
 import { DraftState } from '../api/models/draft-state';
 import { DraftPlayerLookupService } from './draft-player-lookup.service';
+import { TierService } from '../services/tier.service';
+import { environment } from '../../environments/environment';
 
 describe('DraftModeComponent', () => {
   const players: Player[] = [
@@ -109,6 +111,7 @@ describe('DraftModeComponent', () => {
       .keep(ProjectionCalculationService)
       .keep(PositionFilterService)
       .keep(DraftPlayerLookupService)
+      .keep(TierService)
       .mock(PlayerService, { getPlayers: () => of(players) })
       .mock(ProjectionStorageService, {
         loadProjection: () => of(loadedProjection),
@@ -120,6 +123,69 @@ describe('DraftModeComponent', () => {
           snapshot: { paramMap: { get: (key: string) => (key === 'id' ? 'p1' : null) } },
         },
       });
+  });
+
+  /**
+   * The tier strip answers the question a manager is actually asking mid-draft: how much of the
+   * best tier left at each position is still on the board. What matters is that it counts only
+   * undrafted players and that it goes quiet when the feature is off.
+   */
+  describe('tiers', () => {
+    const originalFlag = environment.tiersEnabled;
+
+    beforeEach(() => {
+      environment.tiersEnabled = true;
+    });
+
+    afterEach(() => {
+      environment.tiersEnabled = originalFlag;
+    });
+
+    it('reports nothing while the feature is off', async () => {
+      environment.tiersEnabled = false;
+      const fixture = MockRender(DraftModeComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+      component.applySetup(draft);
+
+      expect(component.tierStrip()).toEqual([]);
+      expect(component.tierBadges().size).toBe(0);
+    });
+
+    it('counts the best tier left at each position', async () => {
+      const fixture = MockRender(DraftModeComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+      component.applySetup(draft);
+
+      const byPosition = new Map(component.tierStrip().map((entry) => [entry.position, entry]));
+      expect(byPosition.get('C')?.remaining).toBe(1);
+      expect(byPosition.get('D')?.remaining).toBe(1);
+    });
+
+    it('drops a drafted player out of the count', async () => {
+      const fixture = MockRender(DraftModeComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+      component.applySetup(draft);
+
+      component.draftCurrent(2);
+
+      expect(component.tierStrip().some((entry) => entry.position === 'D')).toBe(false);
+    });
+
+    it('marks a position the roster has no room for', async () => {
+      const fixture = MockRender(DraftModeComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+      component.onSetupConfirmed({
+        draft,
+        rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+      });
+
+      const defense = component.tierStrip().find((entry) => entry.position === 'D');
+      expect(defense?.needed).toBe(false);
+    });
   });
 
   it('starts in setup when the projection has no draft', async () => {
