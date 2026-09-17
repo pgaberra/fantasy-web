@@ -15,15 +15,14 @@
 
     @if (step() === 'source') {
       <p class="dialog-body">
-        Stats in your spreadsheet replace this projection's for the players it lists. Everything
-        else stays as it is.
+        Your spreadsheet becomes an import you can start a projection or a draft from.
       </p>
 
       <div class="source-option">
         <input
           #spreadsheetFile
           type="file"
-          accept=".xlsx,.csv,.tsv,.txt"
+          accept=".xlsx,.csv"
           hidden
           (change)="onFilePicked($event)"
         />
@@ -36,26 +35,12 @@
           @if (reading()) {
             <app-loading-indicator variant="inline" label="Reading file" />
           } @else {
-            <app-icon name="spreadsheet" />
+            <span class="spreadsheet-icon"><app-icon name="spreadsheet" /></span>
             Choose file
           }
         </button>
-        <span class="source-hint">Excel (.xlsx) or CSV</span>
+        <span class="source-hint">.xlsx or .csv</span>
       </div>
-
-      <div class="source-divider"><span>or</span></div>
-
-      <label class="field-label" for="spreadsheet-paste">Paste cells, headings included</label>
-      <textarea
-        id="spreadsheet-paste"
-        class="paste-field"
-        rows="5"
-        spellcheck="false"
-        placeholder="Player&#9;Team&#9;GP&#9;G&#9;A"
-        [value]="pasted()"
-        (input)="onPasteInput($event)"
-      ></textarea>
-      <p class="source-hint">In Google Sheets, copy the cells, or download it as .xlsx.</p>
 
       @if (readError()) {
         <p class="field-error" role="alert">{{ readError() }}</p>
@@ -64,14 +49,6 @@
       <div class="dialog-actions">
         <button type="button" class="btn btn-secondary btn-sm" (click)="closed.emit()">
           Cancel
-        </button>
-        <button
-          type="button"
-          class="btn btn-primary btn-sm"
-          [disabled]="!pasted().trim()"
-          (click)="usePasted()"
-        >
-          Continue
         </button>
       </div>
     } @else {

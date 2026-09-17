@@ -44,15 +44,10 @@ export async function readSpreadsheetFile(file: File): Promise<SpreadsheetSheet[
   if (extension === 'xlsx') {
     return nonEmpty(await readXlsx(file));
   }
-  if (['csv', 'tsv', 'txt'].includes(extension)) {
+  if (extension === 'csv') {
     return nonEmpty([{ name: file.name, rows: parseDelimitedText(await file.text()) }]);
   }
   throw new SpreadsheetReadError('unsupported');
-}
-
-/** Cells copied out of Excel or Google Sheets and pasted, which both put on the clipboard as TSV. */
-export function readPastedCells(text: string): SpreadsheetSheet[] {
-  return nonEmpty([{ name: 'Pasted cells', rows: parseDelimitedText(text) }]);
 }
 
 async function readXlsx(file: File): Promise<SpreadsheetSheet[]> {

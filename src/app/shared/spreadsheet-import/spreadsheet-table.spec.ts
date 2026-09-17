@@ -1,13 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import {
-  parseDelimitedText,
-  readPastedCells,
-  readSpreadsheetFile,
-  SpreadsheetReadError,
-} from './spreadsheet-table';
+import { parseDelimitedText, readSpreadsheetFile, SpreadsheetReadError } from './spreadsheet-table';
 
 describe('spreadsheet-table', () => {
-  it('splits cells pasted from a spreadsheet, which arrive as tabs', () => {
+  it('splits tab-separated text', () => {
     expect(parseDelimitedText('Player\tG\tA\r\nNathan MacKinnon\t44.7\t84.4\r\n')).toEqual([
       ['Player', 'G', 'A'],
       ['Nathan MacKinnon', '44.7', '84.4'],
@@ -38,8 +33,9 @@ describe('spreadsheet-table', () => {
     ]);
   });
 
-  it('refuses a paste with nothing in it', () => {
-    expect(() => readPastedCells('  \n\t\n')).toThrow(SpreadsheetReadError);
+  it('refuses a file with nothing in it', async () => {
+    const empty = new File([' ,\n\n'], 'empty.csv');
+    await expect(readSpreadsheetFile(empty)).rejects.toBeInstanceOf(SpreadsheetReadError);
   });
 
   it('reads a CSV file and refuses the old .xls format and other files', async () => {
@@ -56,7 +52,7 @@ describe('spreadsheet-table', () => {
     await expect(readSpreadsheetFile(new File(['x'], 'old.xls'))).rejects.toMatchObject({
       reason: 'legacy-xls',
     });
-    await expect(readSpreadsheetFile(new File(['x'], 'notes.pdf'))).rejects.toMatchObject({
+    await expect(readSpreadsheetFile(new File(['x'], 'notes.tsv'))).rejects.toMatchObject({
       reason: 'unsupported',
     });
     await expect(readSpreadsheetFile(new File(['x'], 'broken.xlsx'))).rejects.toMatchObject({
