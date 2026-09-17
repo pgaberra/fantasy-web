@@ -67,6 +67,18 @@ describe('handleNavigationError', () => {
     expect(error).toHaveBeenCalledTimes(1);
   });
 
+  /** Without the cause, a deploy caught mid-swap and a broken build look the same in Sentry. */
+  it('reports which chunk failed when reloading did not help', () => {
+    const message =
+      'Failed to fetch dynamically imported module: https://slapstat.com/chunk-ABC.js';
+    handle(new Error(message));
+    handle(new Error(message));
+
+    expect(error).toHaveBeenCalledWith("Couldn't load that page. Please refresh and try again.", {
+      cause: message,
+    });
+  });
+
   it('allows another reload once a navigation has succeeded since', () => {
     handle(new Error('ChunkLoadError'));
     clearStaleBuildReload();
@@ -107,6 +119,8 @@ describe('handleNavigationError', () => {
     handle(new Error('Cannot read properties of undefined'));
 
     expect(reload).not.toHaveBeenCalled();
-    expect(error).toHaveBeenCalledWith("Couldn't open that page. Please try again.");
+    expect(error).toHaveBeenCalledWith("Couldn't open that page. Please try again.", {
+      cause: 'Cannot read properties of undefined',
+    });
   });
 });

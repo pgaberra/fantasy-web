@@ -21,9 +21,12 @@ export class NotificationService {
    * Every discrete user action that failed comes through here, which makes it the one place that
    * knows about them. Telling the user and telling ourselves are the same event, so it reports as
    * well as renders — an unreported failure is one we learn about from an email, if at all.
+   *
+   * `context` goes to the report only, never on screen: the user reads the sentence, we need
+   * whatever the sentence was written about.
    */
-  error(message: string): void {
-    this.reporting.reportMessage(message);
+  error(message: string, context?: Record<string, unknown>): void {
+    this.reporting.reportMessage(message, context);
     const id = this.nextId++;
     this.active.update((list) => [...list, { id, message, type: 'error' }]);
     setTimeout(() => this.dismiss(id), AUTO_DISMISS_MS);

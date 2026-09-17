@@ -56,6 +56,10 @@ jobs:
       - name: Verify nginx.conf loads
         run: docker run --rm -v "$PWD/nginx.conf:/etc/nginx/conf.d/default.conf:ro" nginx:alpine nginx -t
 
+      # The image runs it before nginx starts; one that fails keeps the new container from starting.
+      - name: Verify publish-assets.sh keeps the recent builds' files
+        run: docker run --rm -v "$PWD:/src:ro" -w /src nginx:alpine sh .github/scripts/check-publish-assets.sh
+
       - name: Verify DEPLOYMENT.md documents every build arg
         run: bash .github/scripts/check-deployment-args.sh
 
