@@ -24,9 +24,21 @@
 }
 
 .shared-byline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   margin: 0;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
+}
+
+/* The circle the header draws for the signed-in account, at the size of a line of the byline, so
+   the author of a board and the reader of one are shown as the same kind of thing. */
+.author-avatar {
+  --headshot-size: 28px;
+  --headshot-bg: var(--color-primary);
+  --headshot-color: var(--color-primary-contrast);
+  --headshot-initials-size: 0.7rem;
 }
 
 /* The two things a visitor can do with someone else's board, kept in the header so they are on

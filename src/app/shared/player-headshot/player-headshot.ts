@@ -23,7 +23,7 @@ export function hasHeadshots(players: readonly { headshot?: string | null }[]): 
   selector: 'app-player-headshot',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `@if (showImage()) {
-      <img [src]="src()" [alt]="name()" loading="lazy" (error)="failed.set(true)" />
+      <img [src]="src()" [alt]="alt() ?? name()" loading="lazy" (error)="failed.set(true)" />
     } @else {
       <span aria-hidden="true">{{ initials() }}</span>
     }`,
@@ -32,6 +32,11 @@ export function hasHeadshots(players: readonly { headshot?: string | null }[]): 
 export class PlayerHeadshotComponent {
   readonly src = input<string | undefined>(undefined);
   readonly name = input<string>('');
+  /**
+   * What the picture is called out as, where that is not the name it stands for: an empty string
+   * for a picture drawn beside the name itself, which a screen reader would otherwise read twice.
+   */
+  readonly alt = input<string | undefined>(undefined);
 
   // Resets when the picture does: these components are recycled down a long table, and a row
   // that once failed must not keep showing initials for the next player it draws.
