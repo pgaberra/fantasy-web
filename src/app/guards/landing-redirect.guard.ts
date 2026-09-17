@@ -51,7 +51,7 @@ export const landingRedirectGuard: CanActivateFn = (route: ActivatedRouteSnapsho
     return userDestination(router, startedFrom, { ...params });
   }
   // After a failed Yahoo callback the browser lands back here with ?yahoo=error&reason=…; send
-  // admins back to the admin panel (where they started the connect) instead of projections. A
+  // admins back to the admin panel (where they started the connect) instead of home. A
   // failed connect used to fall through to projections and say nothing at all, which is how a
   // dead connection sat unnoticed for two months.
   if ((outcome === 'connected' || outcome === 'error') && authService.isAdmin()) {
@@ -59,12 +59,12 @@ export const landingRedirectGuard: CanActivateFn = (route: ActivatedRouteSnapsho
     // us Yahoo's own error code, which was the one thing worth carrying.
     return router.createUrlTree(['/admin'], { queryParams: { ...params } });
   }
-  return router.createUrlTree(['/projections']);
+  return router.createUrlTree(['/home']);
 };
 
 /**
  * Where a user's own connect ends: the page it started from, exactly as it was (path and query,
- * none of the callback's params added, since no page but admin reads them), or projections when
+ * none of the callback's params added, since no page but admin reads them), or home when
  * no page was remembered (another tab, storage blocked, a connect started before this existed).
  */
 function userDestination(
@@ -76,10 +76,10 @@ function userDestination(
     try {
       return router.parseUrl(startedFrom);
     } catch {
-      // A path the router cannot parse: fall back to projections rather than fail the claim.
+      // A path the router cannot parse: fall back to home rather than fail the claim.
     }
   }
-  return router.createUrlTree(['/projections'], { queryParams });
+  return router.createUrlTree(['/home'], { queryParams });
 }
 
 /** The Yahoo callback's one-time link code, carried in the fragment as `link=<code>`. */

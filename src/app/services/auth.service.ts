@@ -132,7 +132,7 @@ export class AuthService {
       return this.api.invoke(refresh, { body });
     }).pipe(
       // Stored but not followed by a navigation: a refresh happens silently behind whatever the
-      // user is reading, and sending them to /projections for it would yank the page away.
+      // user is reading, and sending them to /home for it would yank the page away.
       tap((response) => this.storeTokens(response, { thenNavigate: false })),
       finalize(() => (this.refreshInFlight = null)),
       shareReplay({ bufferSize: 1, refCount: false }),
@@ -297,7 +297,7 @@ export class AuthService {
       this.analytics.identify(userId);
     }
     if (options.thenNavigate) {
-      void this.router.navigateByUrl(this.takeReturnUrl() ?? '/projections');
+      void this.router.navigateByUrl(this.takeReturnUrl() ?? '/home');
     }
   }
 }
