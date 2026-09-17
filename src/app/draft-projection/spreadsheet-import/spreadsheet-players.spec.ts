@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { nameKey, PlayerMatcher, teamKey } from './spreadsheet-players';
+import { nameKey, PlayerMatcher, positionsFrom, teamKey } from './spreadsheet-players';
 import { POOL } from './spreadsheet-test-players';
 
 describe('spreadsheet-players', () => {
   const matcher = new PlayerMatcher(POOL);
-  const idOf = (name: string, team?: string) => {
-    const result = matcher.match(name, team ?? null);
+  const idOf = (name: string, team?: string, position?: string) => {
+    const result = matcher.match(name, team ?? null, position ?? null);
+    if (result.kind === 'matched' && result.respelled) {
+      return `respelled ${result.player.id}`;
+    }
     return result.kind === 'matched' ? result.player.id : result.kind;
   };
 
@@ -30,8 +33,8 @@ describe('spreadsheet-players', () => {
   });
 
   it('matches a shortened first name when the surname leaves one candidate', () => {
-    expect(idOf('Mitch Marner')).toBe(3);
-    expect(idOf('M. Marner')).toBe(3);
+    expect(idOf('Mitch Marner')).toBe('respelled 3');
+    expect(idOf('M. Marner')).toBe('respelled 3');
   });
 
   it('uses the club only to tell two players of one name apart', () => {
@@ -42,9 +45,32 @@ describe('spreadsheet-players', () => {
     expect(idOf('Tim Stützle', 'CHI')).toBe(2);
   });
 
+  it('reads the positions a sheet writes, depth-chart spellings included', () => {
+    expect([...positionsFrom('C1')]).toEqual(['C']);
+    expect([...positionsFrom('LD2')]).toEqual(['D']);
+    expect([...positionsFrom('LW/RW')]).toEqual(['LW', 'RW']);
+    expect([...positionsFrom('F')]).toEqual(['C', 'LW', 'RW']);
+    expect(positionsFrom(null).size).toBe(0);
+  });
+
+  it('tells two players of one name on one club apart by position', () => {
+    expect(idOf('Elias Pettersson', 'VAN', 'C2')).toBe(10);
+    expect(idOf('Elias Pettersson', 'VAN', 'LD1')).toBe(11);
+    expect(idOf('Elias Pettersson', 'VAN')).toBe('ambiguous');
+    // A position neither plays narrows nothing, rather than ruling both out.
+    expect(idOf('Elias Pettersson', 'VAN', 'G')).toBe('ambiguous');
+  });
+
   it('does not take one brother for the other', () => {
     expect(idOf('Quinn Hughes', 'NJD')).toBe('not-found');
-    expect(idOf('J Hughes', 'NJD')).toBe(6);
+    expect(idOf('J Hughes', 'NJD')).toBe('respelled 6');
+  });
+
+  it('matches another spelling of a name and says it did', () => {
+    expect(idOf('Yegor Chinakhov')).toBe('respelled 12');
+    expect(idOf('Tommy Novak')).toBe('respelled 13');
+    expect(idOf('Egor Chinakov')).toBe('respelled 12');
+    expect(idOf('Egor Chinakhov')).toBe(12);
   });
 
   it('leaves a name that is nobody in the pool unmatched', () => {

@@ -7,7 +7,8 @@ import {
 import { Cell } from './spreadsheet-table';
 
 /** What a column is taken to hold. */
-export type ColumnRole = { kind: 'name' } | { kind: 'team' } | { kind: 'stat'; stat: StatKey };
+export type ColumnRole =
+  { kind: 'name' } | { kind: 'team' } | { kind: 'position' } | { kind: 'stat'; stat: StatKey };
 
 /** Every stat a sheet can fill, skaters' first, each once. */
 export const IMPORTABLE_STATS: readonly StatKey[] = [
@@ -62,6 +63,7 @@ const STAT_HEADINGS: Record<StatKey, readonly string[]> = {
 
 const NAME_HEADINGS = ['player', 'name', 'playername', 'skater', 'goalie', 'fullname'];
 const TEAM_HEADINGS = ['team', 'tm', 'nhlteam', 'club'];
+const POSITION_HEADINGS = ['pos', 'position', 'positions', 'projpos', 'eligibility', 'elig'];
 
 const HEADING_TO_STAT = new Map<string, StatKey>();
 for (const stat of IMPORTABLE_STATS) {
@@ -96,7 +98,12 @@ export function findHeadingRow(rows: Cell[][]): number {
 
 function isKnownHeading(cell: string): boolean {
   const key = headingKey(cell);
-  return HEADING_TO_STAT.has(key) || NAME_HEADINGS.includes(key) || TEAM_HEADINGS.includes(key);
+  return (
+    HEADING_TO_STAT.has(key) ||
+    NAME_HEADINGS.includes(key) ||
+    TEAM_HEADINGS.includes(key) ||
+    POSITION_HEADINGS.includes(key)
+  );
 }
 
 /**
@@ -114,6 +121,8 @@ export function guessColumnRoles(headings: Cell[], columnCount: number): (Column
       role = { kind: 'name' };
     } else if (TEAM_HEADINGS.includes(key) && !claimed.has('team')) {
       role = { kind: 'team' };
+    } else if (POSITION_HEADINGS.includes(key) && !claimed.has('position')) {
+      role = { kind: 'position' };
     } else {
       const stat = HEADING_TO_STAT.get(key);
       if (stat && !claimed.has(stat)) {

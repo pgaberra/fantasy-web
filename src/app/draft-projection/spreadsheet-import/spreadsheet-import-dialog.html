@@ -132,7 +132,67 @@
           <p class="summary-line">
             <strong>{{ plan.stats.size }}</strong> of {{ plan.rowCount }} players found.
           </p>
-          @if (unmatched().length) {
+          @if (ambiguous().length) {
+            <div class="ambiguous">
+              <p class="source-hint">
+                {{ ambiguous().length === 1 ? 'This name fits' : 'These names fit' }} more than one
+                player. Pick who you mean, or leave the row out.
+              </p>
+              <ul class="ambiguous-list">
+                @for (row of ambiguous(); track row.row) {
+                  <li class="ambiguous-row">
+                    <span class="ambiguous-name">{{ row.name }}</span>
+                    <select
+                      [attr.aria-label]="'Which ' + row.name"
+                      (change)="onChoice(row.row, $event)"
+                    >
+                      <option value="" [selected]="!choices().get(row.row)">Leave out</option>
+                      @for (candidate of row.candidates; track candidate.id) {
+                        <option
+                          [value]="candidate.id"
+                          [selected]="choices().get(row.row) === candidate.id"
+                        >
+                          {{ candidateLabel(candidate) }}
+                        </option>
+                      }
+                    </select>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+          @if (respelled().length) {
+            <button
+              type="button"
+              class="unmatched-toggle"
+              [attr.aria-expanded]="showRespelled()"
+              (click)="showRespelled.set(!showRespelled())"
+            >
+              <app-icon [name]="showRespelled() ? 'chevron-down' : 'chevron-right'" [size]="14" />
+              {{ respelled().length }} matched by a different spelling
+            </button>
+            @if (showRespelled()) {
+              <ul class="ambiguous-list">
+                @for (row of respelled(); track row.row) {
+                  <li class="ambiguous-row">
+                    <span class="ambiguous-name">{{ row.name }}</span>
+                    <select
+                      [attr.aria-label]="'Match for ' + row.name"
+                      (change)="onChoice(row.row, $event)"
+                    >
+                      <option [value]="row.player.id" [selected]="choices().get(row.row) !== null">
+                        {{ candidateLabel(row.player) }}
+                      </option>
+                      <option value="" [selected]="choices().get(row.row) === null">
+                        Leave out
+                      </option>
+                    </select>
+                  </li>
+                }
+              </ul>
+            }
+          }
+          @if (notFound().length) {
             <button
               type="button"
               class="unmatched-toggle"
@@ -140,14 +200,14 @@
               (click)="showUnmatched.set(!showUnmatched())"
             >
               <app-icon [name]="showUnmatched() ? 'chevron-down' : 'chevron-right'" [size]="14" />
-              {{ unmatched().length }} not found
+              {{ notFound().length }} not found
             </button>
             @if (showUnmatched()) {
               <p class="source-hint">
-                These rows are skipped. Check how the names are spelled in your spreadsheet.
+                No current player has these names, so their rows are skipped.
               </p>
               <ul class="unmatched-list">
-                @for (name of unmatched(); track $index) {
+                @for (name of notFound(); track $index) {
                   <li>{{ name }}</li>
                 }
               </ul>

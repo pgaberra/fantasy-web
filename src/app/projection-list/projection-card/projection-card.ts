@@ -40,7 +40,7 @@ export class ProjectionCardComponent {
       case 'in_progress':
         return 'Resume draft';
       default:
-        return 'Draft mode';
+        return 'Draft Mode';
     }
   });
 

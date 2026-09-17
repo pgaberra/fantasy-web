@@ -1,4 +1,4 @@
-import { MockBuilder, MockRender } from 'ng-mocks';
+import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
@@ -29,20 +29,20 @@ function summary(
 }
 
 describe('HomeComponent', () => {
-  const listWithPresetDrafts = vi.fn();
+  const listEditable = vi.fn();
   const navigate = vi.fn();
   const username = signal<string | null>(null);
   const locked = signal(false);
   const aiProjection = signal(true);
 
   beforeEach(() => {
-    listWithPresetDrafts.mockReset();
+    listEditable.mockReset();
     navigate.mockClear();
     username.set(null);
     locked.set(false);
     aiProjection.set(true);
     return MockBuilder(HomeComponent)
-      .mock(ProjectionStorageService, { listWithPresetDrafts })
+      .mock(ProjectionStorageService, { listEditable })
       .mock(AccountService, { username })
       .mock(FeatureService, { aiProjection })
       .mock(AiProjectionAccess, { locked })
@@ -60,88 +60,75 @@ describe('HomeComponent', () => {
   const text = (fixture: { nativeElement: HTMLElement }, selector: string) =>
     fixture.nativeElement.querySelector<HTMLElement>(selector)?.textContent?.trim() ?? null;
 
-  it('welcomes a new account and leads with creating a projection', async () => {
-    listWithPresetDrafts.mockReturnValue(of([]));
+  const headings = (fixture: { nativeElement: HTMLElement }) =>
+    Array.from(fixture.nativeElement.querySelectorAll<HTMLElement>('.feature h2')).map((h) =>
+      h.textContent?.trim(),
+    );
+
+  it('welcomes a new account with every feature and no way in singled out', async () => {
+    listEditable.mockReturnValue(of([]));
     const fixture = await renderFixture();
 
     expect(text(fixture, 'h1')).toEqual('Welcome to SlapStat');
-    expect(text(fixture, '.progress')).toContain('0 of 2 done');
-    expect(text(fixture, '.step-projection .step-action')).toContain('Create projection');
-    expect(fixture.nativeElement.querySelector('.latest')).toBeNull();
-  });
-
-  it('counts a started draft as done even when it was drafted from a preset', async () => {
-    // A preset draft is not a projection to list, but starting one is using Draft mode.
-    listWithPresetDrafts.mockReturnValue(of([summary('preset1', 'preset_draft', 'in_progress')]));
-    const fixture = await renderFixture();
-
-    expect(text(fixture, '.progress')).toContain('1 of 2 done');
-    expect(fixture.nativeElement.querySelector('.step-draft.done')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('.step-projection.done')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.latest')).toBeNull();
-  });
-
-  it('hides the checklist once both steps are done', async () => {
-    listWithPresetDrafts.mockReturnValue(of([summary('p1', 'projection', 'finished')]));
-    const fixture = await renderFixture();
-
-    expect(fixture.nativeElement.querySelector('.draft-prep')).toBeNull();
+    expect(headings(fixture)).toEqual(['Projections', 'Draft Mode', 'AI Projection', "Who's Hot"]);
+    expect(fixture.nativeElement.querySelector('.resume')).toBeNull();
+    expect(text(fixture, '.feature-actions')).not.toContain('My Projections');
   });
 
   it('leads a returning user with the projection they updated last', async () => {
     username.set('alex');
-    listWithPresetDrafts.mockReturnValue(
+    listEditable.mockReturnValue(
       of([
         summary('old', 'projection', 'none', '2026-06-01T00:00:00Z'),
         summary('new', 'imported', 'in_progress', '2026-06-10T00:00:00Z'),
-        summary('preset1', 'preset_draft', 'in_progress', '2026-06-20T00:00:00Z'),
       ]),
     );
     const fixture = await renderFixture();
-    const component = fixture.point.componentInstance;
 
     expect(text(fixture, 'h1')).toEqual('Welcome back, alex');
-    expect(text(fixture, '.latest-name')).toEqual('Board new');
-    expect(text(fixture, '.latest-actions .btn-secondary')).toEqual('Resume draft');
-    expect(component.others().map((projection) => projection.id)).toEqual(['old']);
-    expect(component.hasMoreProjections()).toBe(false);
+    expect(text(fixture, '.resume-name')).toContain('Board new');
+    expect(text(fixture, '.resume-actions .btn-primary')).toEqual('Resume draft');
+    expect(text(fixture, '.feature-actions .btn-secondary')).toEqual('My Projections (2)');
   });
 
-  it('points at the full list only when there is more than it shows', async () => {
-    listWithPresetDrafts.mockReturnValue(
-      of(['a', 'b', 'c', 'd', 'e'].map((id) => summary(id, 'projection'))),
-    );
-    const fixture = await renderFixture();
-
-    expect(fixture.point.componentInstance.others()).toHaveLength(3);
-    expect(text(fixture, '.panel-link')).toEqual('See all');
-  });
-
-  it('pitches the AI projection only to an account it is locked for', async () => {
-    listWithPresetDrafts.mockReturnValue(of([]));
-    const fixture = await renderFixture();
-    expect(fixture.nativeElement.querySelector('.premium')).toBeNull();
-
+  it('sells the AI projection to an account it is locked for, and offers it to one that has it', async () => {
+    listEditable.mockReturnValue(of([]));
     locked.set(true);
-    fixture.detectChanges();
-    expect(text(fixture, '.premium h2')).toContain('AI projection');
+    const fixture = await renderFixture();
+    expect(text(fixture, '.feature-ai .btn')).toEqual('See Premium');
 
-    // An environment that does not serve the model has nothing to sell.
-    aiProjection.set(false);
+    locked.set(false);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.premium')).toBeNull();
+    expect(text(fixture, '.feature-ai .btn')).toEqual('Create projection');
+    // Lands on the new-projection page with the AI preset already picked, not on the default.
+    expect(ngMocks.input(ngMocks.find(fixture, '.feature-ai .btn'), 'queryParams')).toEqual({
+      start: 'model',
+    });
+    expect(text(fixture, '.feature-ai .btn-on-dark')).toEqual('Open Draft Mode');
+    expect(ngMocks.input(ngMocks.find(fixture, '.feature-ai .btn-on-dark'), 'queryParams')).toEqual(
+      { start: 'model' },
+    );
   });
 
-  it('shows the failure instead of an empty checklist when the list does not load', async () => {
-    listWithPresetDrafts.mockReturnValue(throwError(() => new Error('down')));
+  it('drops the AI projection card where the environment does not serve the model', async () => {
+    listEditable.mockReturnValue(of([]));
+    aiProjection.set(false);
+    const fixture = await renderFixture();
+
+    expect(fixture.nativeElement.querySelector('.feature-ai')).toBeNull();
+    expect(headings(fixture)).not.toContain('AI Projection');
+  });
+
+  it('shows the failure instead of the features when the list does not load', async () => {
+    listEditable.mockReturnValue(throwError(() => new Error('down')));
     const fixture = await renderFixture();
 
     expect(fixture.nativeElement.querySelector('app-error-state')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('.draft-prep')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.features')).toBeNull();
   });
 
   it('opens a board imported from a share link in the editor', async () => {
-    listWithPresetDrafts.mockReturnValue(of([]));
+    listEditable.mockReturnValue(of([]));
     const fixture = await renderFixture();
 
     fixture.point.componentInstance.onImported({ id: 'imp1' } as never);

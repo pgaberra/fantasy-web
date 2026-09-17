@@ -2,13 +2,14 @@ import {
   Component,
   computed,
   DestroyRef,
+  effect,
   inject,
   linkedSignal,
   signal,
   viewChild,
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AnalyticsService } from '../services/analytics.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
@@ -39,6 +40,16 @@ import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/pre
 import { SOURCE_KINDS, SourceKind } from '../models/source-kind';
 import { environment } from '../../environments/environment';
 import { IconComponent } from '../shared/icon/icon';
+import { LeagueSettingsControlsComponent } from '../shared/league-settings-controls/league-settings-controls';
+import {
+  LeagueSettings,
+  leagueSettingsOf,
+  NO_PAGE_LEAGUES,
+  PageLeagues,
+  pageLeagueFor,
+  withPageLeague,
+} from '../shared/league-settings/league-settings';
+import { ScoringStatKey } from '../models/stat-key.model';
 
 /**
  * What the projection opens with: a preset everybody has, or a copy of a board the user can
@@ -74,6 +85,16 @@ export const CREATE_PRESETS: readonly CreatePreset[] = [
   { name: 'From scratch', source: 'blank' },
 ];
 
+/**
+ * The preset a link asked the page to open on, as `?start=<source>`, or null for anything that
+ * is not one. The home page's AI projection card links here with `start=model`, so its button
+ * lands on the card it named rather than on the default with the right one a click away.
+ */
+export function requestedPreset(value: unknown): CreatePreset['source'] | null {
+  const preset = CREATE_PRESETS.find((candidate) => candidate.source === value);
+  return preset?.source ?? null;
+}
+
 @Component({
   selector: 'app-projection-create',
   imports: [
@@ -85,6 +106,7 @@ export const CREATE_PRESETS: readonly CreatePreset[] = [
     ShareImportComponent,
     RelativeTimePipe,
     IconComponent,
+    LeagueSettingsControlsComponent,
   ],
   templateUrl: './projection-create.html',
   styleUrl: './projection-create.css',
@@ -96,6 +118,7 @@ export class ProjectionCreateComponent {
   private readonly projectionStorage = inject(ProjectionStorageService);
   private readonly statInfoService = inject(StatInfoService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly serializer = inject(ProjectionSerializerService);
   private readonly notification = inject(NotificationService);
@@ -194,6 +217,73 @@ export class ProjectionCreateComponent {
     return this.isCopy() ? 'Nothing to copy yet.' : null;
   });
 
+  /** The league a preset opens with until someone changes it: a new projection's. */
+  private readonly defaultLeague = leagueSettingsOf(
+    createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
+  );
+
+  /**
+   * The board a copy would be made of, for the league it opens with. Through the page's cache,
+   * which the preview reads the same board from, so picking one is still one download.
+   */
+  private readonly pickedBoard = rxResource({
+    params: () => {
+      const point = this.startingPoint();
+      return point.kind === 'copy' && point.id !== null ? point.id : undefined;
+    },
+    stream: ({ params: id }) => this.boardCache.load(id),
+    defaultValue: undefined as ProjectionResponse | undefined,
+  });
+
+  /**
+   * The leagues set on this page — as on the draft picker (draft-start.ts), and for its reason. A
+   * hand edit belongs to what it was made for: a board carries a league of its own, and switching
+   * to it and back must neither lose the one set for the presets nor lay that one over it. The
+   * presets share one, since they differ only in their numbers. An import belongs to the page: it
+   * says which league the user plays in, and that is as true of a copy as of a preset.
+   */
+  private readonly changedLeagues = signal<PageLeagues>(NO_PAGE_LEAGUES);
+
+  /** What the picked starting point opens with, or null while a copied board is on its way. */
+  private readonly openingLeague = computed<LeagueSettings | null>(() => {
+    const point = this.startingPoint();
+    if (point.kind === 'preset') {
+      return this.defaultLeague;
+    }
+    const board = this.pickedBoard.hasValue() ? this.pickedBoard.value() : undefined;
+    return point.id !== null && board?.id === point.id
+      ? leagueSettingsOf(this.serializer.fromProjectionData(board.data))
+      : null;
+  });
+
+  /**
+   * The league the projection will be created with: what was set here, or else what the starting
+   * point opens with. Set before Create, so the preview is scored the way the user's own league
+   * scores rather than by defaults they would have to fix afterwards. Null while a copied board is
+   * still on its way, which holds the controls back rather than showing defaults that would jump.
+   */
+  readonly leagueSettings = computed<LeagueSettings | null>(
+    () =>
+      pageLeagueFor(
+        this.changedLeagues(),
+        startingPointKey(this.startingPoint()),
+        this.openingLeague(),
+      ) ?? this.openingLeague(),
+  );
+
+  setLeagueSettings(settings: LeagueSettings): void {
+    const key = startingPointKey(this.startingPoint());
+    const previous = this.leagueSettings();
+    this.changedLeagues.update((leagues) => withPageLeague(leagues, key, previous, settings));
+  }
+
+  setStatWeights(statWeights: Record<ScoringStatKey, number>): void {
+    const league = this.leagueSettings();
+    if (league) {
+      this.setLeagueSettings({ ...league, statWeights });
+    }
+  }
+
   readonly isLoading = this.dataResource.isLoading;
   readonly loadFailure = computed(() => this.dataResource.error());
   readonly loadError = computed(() => !!this.loadFailure());
@@ -234,6 +324,22 @@ export class ProjectionCreateComponent {
       // becomes the way to Premium instead, and this keeps the two from disagreeing.
       !this.aiProjectionLocked(),
   );
+
+  constructor() {
+    // A preset the link asked for is picked once its card is there to pick. Not at once: the AI
+    // preset is only offered after the BFF has said it serves the model, and `startingPoint`
+    // falls back to the first card whenever the picked one is not among the options, so a pick
+    // made before the answer landed would be quietly undone by it.
+    const wanted = requestedPreset(this.route.snapshot.queryParams['start']);
+    if (wanted) {
+      const pending = effect(() => {
+        if (this.presets().some((preset) => preset.source === wanted)) {
+          this.selectPreset(wanted);
+          pending.destroy();
+        }
+      });
+    }
+  }
 
   onNameInput(event: Event): void {
     this.name.set((event.target as HTMLInputElement).value);
@@ -343,6 +449,7 @@ export class ProjectionCreateComponent {
     this.isCreating.set(true);
 
     const point = this.startingPoint();
+    const key = startingPointKey(point);
     if (point.kind === 'copy') {
       if (point.id === null) {
         // Unreachable through the button, which `canCreate` holds back; said for the type.
@@ -353,7 +460,20 @@ export class ProjectionCreateComponent {
         .load(point.id)
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: (projection) => this.persist({ ...projection.data, draft: undefined }),
+          next: (projection) => {
+            const changedLeague = pageLeagueFor(
+              this.changedLeagues(),
+              key,
+              leagueSettingsOf(this.serializer.fromProjectionData(projection.data)),
+            );
+            // An untouched league leaves the copy exact: its saved settings go back as they are.
+            this.persist({
+              ...(changedLeague
+                ? this.withLeague(projection.data, changedLeague)
+                : projection.data),
+              draft: undefined,
+            });
+          },
           error: () => {
             this.isCreating.set(false);
             this.notification.error("Couldn't load the projection to copy. Please try again.");
@@ -366,11 +486,20 @@ export class ProjectionCreateComponent {
     // page would otherwise have downloaded and sent straight back (~0.5 MB, and the upload
     // that was failing in production).
     this.persist(
-      this.serializer.toProjectionData(
-        createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
-      ),
+      this.serializer.toProjectionData({
+        ...createDefaultProjectionState((stat) => this.statInfoService.isRateStat(stat)),
+        ...pageLeagueFor(this.changedLeagues(), key, this.defaultLeague),
+      }),
       point.source,
     );
+  }
+
+  /** A board's data with a league laid over its settings, read and written the editor's way. */
+  private withLeague(data: ProjectionData, league: LeagueSettings): ProjectionData {
+    return this.serializer.toProjectionData({
+      ...this.serializer.fromProjectionData(data),
+      ...league,
+    });
   }
 
   private persist(data: ProjectionData, source?: CreateProjectionRequest['source']): void {
@@ -406,6 +535,11 @@ export class ProjectionCreateComponent {
  * `hasStartingPoint`.
  */
 const NOTHING_TO_COPY: StartingPoint = { kind: 'copy', id: null };
+
+/** What a league changed on this page is filed under: the presets together, each board apart. */
+function startingPointKey(point: StartingPoint): string {
+  return point.kind === 'preset' ? 'preset' : `copy:${point.id}`;
+}
 
 function sameStartingPoint(first: StartingPoint, second: StartingPoint): boolean {
   if (first.kind === 'preset' && second.kind === 'preset') {

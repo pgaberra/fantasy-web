@@ -7,10 +7,10 @@ import {
   LeagueSettings,
   withEspnImport,
   withYahooImport,
-} from '../../shared/league-settings/league-settings';
-import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
-import { IconComponent } from '../../shared/icon/icon';
-import { LeagueImportButtonComponent } from '../../shared/league-import-button/league-import-button';
+} from '../league-settings/league-settings';
+import { PopoverTriggerDirective } from '../popover/popover-trigger.directive';
+import { IconComponent } from '../icon/icon';
+import { LeagueImportButtonComponent } from '../league-import-button/league-import-button';
 import { ColumnsMenuComponent } from '../../draft-projection/player-projections-table/columns-menu/columns-menu';
 import { YahooConnectReturnService } from '../../services/yahoo-connect-return.service';
 import { LeagueSettingsMenuComponent } from '../../draft-projection/player-projections-table/league-settings-menu/league-settings-menu';
@@ -20,14 +20,15 @@ import { YahooSyncResult } from '../../draft-projection/projection-settings-sect
 import { EspnSyncResult } from '../../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
 
 /**
- * The league a draft is ranked by, set before it starts: the editor's league toolbar, over the
- * draft picker's preview. Same controls in the same order — how the league scores, its size and
+ * The league a board is ranked by, set before it exists: the editor's league toolbar, over the
+ * preview on the draft picker and on the new-projection page. Same controls in the same order —
+ * how the league scores, its size and
  * roster, which stats count, and the import that fills all of it in from Yahoo or ESPN. The
  * points weights are not here, for the same reason they are not in the editor's toolbar: they are
  * the preview's weight row, under the columns they weight.
  */
 @Component({
-  selector: 'app-draft-league-settings',
+  selector: 'app-league-settings-controls',
   imports: [
     PopoverTriggerDirective,
     IconComponent,
@@ -37,10 +38,10 @@ import { EspnSyncResult } from '../../draft-projection/projection-settings-secti
     LeagueSyncDialogComponent,
     LeagueSyncComponent,
   ],
-  templateUrl: './draft-league-settings.html',
-  styleUrl: './draft-league-settings.css',
+  templateUrl: './league-settings-controls.html',
+  styleUrl: './league-settings-controls.css',
 })
-export class DraftLeagueSettingsComponent {
+export class LeagueSettingsControlsComponent {
   readonly settings = model.required<LeagueSettings>();
 
   /**

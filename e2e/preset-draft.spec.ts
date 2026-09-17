@@ -50,33 +50,33 @@ test.describe('draft mode from a preset', () => {
 
     // 2) Open the preset draft. A later run resumes the one already stored: the draft card is
     //    itself the button. A first run picks the preset's radio row (the page opens on the
-    //    presets, so no tile to press) and starts from the page's one Start button; seeding the
-    //    player rows server-side takes a moment.
+    //    presets, so no tile to press) and presses the page's one Start button, which opens the
+    //    setup at /draft/new/<preset> with nothing saved yet. The board is created only when the
+    //    setup is confirmed, which moves the page to the board's own URL; seeding its player rows
+    //    server-side takes a moment.
+    //
+    //    The staging reset empties this account every night, so the first-run branch is the one
+    //    the scheduled run takes. It went unexercised for as long as a board was left over, and
+    //    kept expecting Start to create the board after that stopped being true.
     if (startedAlready) {
       await presetDraft.getByRole('button', { name: /resume draft|view summary/i }).click();
     } else {
       await expect(presetRow).toBeVisible();
       await presetRow.getByRole('radio').check();
       await startDraft.click();
+      await expect(page).toHaveURL(/\/draft\/new\/[a-z_]+$/i);
+      await expect(page.locator('app-draft-setup')).toBeVisible({ timeout: 30_000 });
+      await page.getByRole('button', { name: /^start draft$/i }).click();
     }
     await expect(page).toHaveURL(/\/projections\/[0-9a-f-]+\/draft$/i, { timeout: 30_000 });
     await expect(page.getByRole('heading', { name: PRESET_NAME })).toBeVisible({
       timeout: 30_000,
     });
 
-    // 3) Confirm the team setup if this run started a fresh draft, so it has a state to resume.
-    // Wait for the board to settle into one phase or the other first: the check below is a
-    // non-waiting isVisible(), so asking before either has rendered would silently skip the
-    // setup and leave the draft without a state to resume.
-    const confirmSetup = page.getByRole('button', { name: /^start draft$/i });
-    await expect(page.locator('app-draft-setup, .draft-toolbar').first()).toBeVisible({
-      timeout: 30_000,
-    });
-    if (await confirmSetup.isVisible().catch(() => false)) {
-      await confirmSetup.click();
-    }
+    // 3) The board is past its setup either way: a first run just confirmed it, and a stored
+    // board is only ever created with its draft in it.
     // `exact` matters: a loose match would also hit "Exit draft mode" and trip strict mode.
-    await expect(page.getByText('Draft mode', { exact: true })).toBeVisible();
+    await expect(page.getByText('Draft Mode', { exact: true })).toBeVisible();
 
     // 4) Leaving the board returns to the source picker, not to a projection that isn't theirs.
     await page.getByRole('link', { name: /exit draft mode/i }).click();
@@ -89,7 +89,7 @@ test.describe('draft mode from a preset', () => {
     await page.getByRole('button', { name: /^draft$/i }).click();
     await page.getByRole('menuitem', { name: /my projections/i }).click();
     await expect(page).toHaveURL(/\/projections\/?$/);
-    await expect(page.getByRole('heading', { name: 'My projections' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'My Projections' })).toBeVisible();
     await expect(page.locator('li').filter({ hasText: PRESET_NAME })).toHaveCount(0);
   });
 });

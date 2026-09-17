@@ -3,8 +3,8 @@ import { signal } from '@angular/core';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Observable, of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
-import { CREATE_PRESETS, ProjectionCreateComponent } from './projection-create';
+import { ActivatedRoute, Router } from '@angular/router';
+import { CREATE_PRESETS, ProjectionCreateComponent, requestedPreset } from './projection-create';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { StartingPointPreviewComponent } from '../shared/starting-point-preview/starting-point-preview';
 import { ProjectionBoardCache } from '../services/projection-board-cache';
@@ -180,6 +180,8 @@ describe('ProjectionCreateComponent', () => {
 
   const navigate = vi.fn();
   const notifyError = vi.fn();
+  /** The query string the page opened with; the same object is handed to every render. */
+  const queryParams: Record<string, string> = {};
   const premium = signal(false);
   const aiProjection = signal(true);
   const entitlementLoadState = signal<'idle' | 'loading' | 'loaded' | 'error'>('loaded');
@@ -195,6 +197,9 @@ describe('ProjectionCreateComponent', () => {
     notifyError.mockClear();
     createProjection.mockClear();
     seed.mockClear();
+    for (const key of Object.keys(queryParams)) {
+      delete queryParams[key];
+    }
     return (
       MockBuilder(ProjectionCreateComponent)
         // The preview is kept real: these tests read the page through the table it draws, which is
@@ -226,7 +231,57 @@ describe('ProjectionCreateComponent', () => {
               : presets.filter((preset) => preset.source !== MODEL_PRESET_SOURCE),
         })
         .provide({ provide: Router, useValue: { navigate } })
+        .provide({ provide: ActivatedRoute, useValue: { snapshot: { queryParams } } })
     );
+  });
+
+  describe('the preset a link asks for', () => {
+    it('opens on the AI projection when the link says so', async () => {
+      queryParams['start'] = 'model';
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+
+      expect(fixture.point.componentInstance.startingPoint()).toEqual({
+        kind: 'preset',
+        source: 'model',
+      });
+    });
+
+    /**
+     * The AI preset is offered only once the BFF has said it serves the model, and the page
+     * falls back to the first card whenever the picked one is not offered. The pick has to
+     * wait for the answer, or the answer would undo it.
+     */
+    it('waits for the environment to offer the preset before picking it', async () => {
+      queryParams['start'] = 'model';
+      aiProjection.set(false);
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+      expect(component.startingPoint()).toEqual({ kind: 'preset', source: 'default' });
+
+      aiProjection.set(true);
+      fixture.detectChanges();
+      expect(component.startingPoint()).toEqual({ kind: 'preset', source: 'model' });
+    });
+
+    it('ignores a value that names no preset', async () => {
+      queryParams['start'] = 'own1';
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+
+      expect(fixture.point.componentInstance.startingPoint()).toEqual({
+        kind: 'preset',
+        source: 'default',
+      });
+    });
+
+    it('only knows the presets the page has', () => {
+      expect(requestedPreset('model')).toEqual('model');
+      expect(requestedPreset('blank')).toEqual('blank');
+      expect(requestedPreset('copy')).toBeNull();
+      expect(requestedPreset(undefined)).toBeNull();
+    });
   });
 
   it('loads the existing projections', async () => {
@@ -543,7 +598,6 @@ describe('ProjectionCreateComponent', () => {
       expect(previewOf(fixture).previewScoringType()).toEqual('category');
       expect([...previewOf(fixture).previewActiveColumns().scoring]).toEqual(['goals']);
       expect([...previewOf(fixture).previewActiveColumns().utility]).toEqual(['gp']);
-      expect(previewOf(fixture).previewUseDefaultDecimals()).toEqual(false);
       expect(previewOf(fixture).previewDecimalSettings().goals).toEqual(0);
     });
 
@@ -704,6 +758,146 @@ describe('ProjectionCreateComponent', () => {
     component.create();
 
     expect(createProjection).toHaveBeenCalledWith(expect.objectContaining({ data: source.data }));
+  });
+
+  describe('league settings', () => {
+    it('opens a preset on the league a new projection has, and a copy on its own', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      expect(component.leagueSettings()?.scoringType).toEqual('points');
+
+      component.selectCopyFrom('src');
+      await fixture.whenStable();
+
+      expect(component.leagueSettings()?.scoringType).toEqual('category');
+      expect(component.leagueSettings()?.minGoalieGames).toEqual(25);
+    });
+
+    it('scores the preview by the league set here', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.setLeagueSettings({ ...component.leagueSettings()!, scoringType: 'category' });
+      fixture.detectChanges();
+
+      expect(previewOf(fixture).leagueSettings()?.scoringType).toEqual('category');
+    });
+
+    it('creates a preset with the league set here', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.setLeagueSettings({ ...component.leagueSettings()!, scoringType: 'category' });
+      component.setStatWeights({ ...component.leagueSettings()!.statWeights, goals: 9 });
+      component.create();
+
+      const request = createProjection.mock.calls[0][0];
+      expect(request.source).toEqual('default');
+      expect(request.data.settings.scoringType).toEqual('category');
+      expect(request.data.settings.statWeights['goals']).toEqual(9);
+    });
+
+    it('lays the league set here over a copy, and keeps its rows', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.selectCopyFrom('src');
+      await fixture.whenStable();
+      component.setLeagueSettings({ ...component.leagueSettings()!, scoringType: 'points' });
+      component.create();
+
+      const request = createProjection.mock.calls[0][0];
+      expect(request.data.settings.scoringType).toEqual('points');
+      expect(request.data.settings.decimalSettings['goals']).toEqual(0);
+      expect(request.data.players).toHaveLength(1);
+      expect(request.data.draft).toBeUndefined();
+    });
+
+    // The presets differ only in their numbers, so a league set with one picked stays with the
+    // others: an imported league falling back to the defaults on a preset switch read as lost.
+    it('keeps the league set for one preset when another is picked', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.setLeagueSettings({
+        ...component.leagueSettings()!,
+        leagueSize: 14,
+        yahooSync: {
+          leagueName: 'My league',
+          leagueKey: '465.l.1',
+          syncedAt: '2026-09-17T00:00:00Z',
+        },
+      });
+      component.selectPreset('blank');
+
+      expect(component.leagueSettings()?.leagueSize).toEqual(14);
+      expect(component.leagueSettings()?.yahooSync?.leagueName).toEqual('My league');
+      component.create();
+      expect(createProjection.mock.calls[0][0].data.settings.yahooSync?.leagueName).toEqual(
+        'My league',
+      );
+    });
+
+    // A board carries a league of its own: the presets' league is not laid over it, and is still
+    // there on the way back.
+    it('keeps a board on its own league and the presets on theirs', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.setLeagueSettings({ ...component.leagueSettings()!, leagueSize: 14 });
+      component.selectCopyFrom('src');
+      await fixture.whenStable();
+      expect(component.leagueSettings()?.leagueSize).not.toEqual(14);
+
+      component.selectPreset('default');
+      expect(component.leagueSettings()?.leagueSize).toEqual(14);
+    });
+
+    // An import says which league the user plays in, which is as true of a copy as of a preset.
+    it('creates a copy with the league imported while a preset was picked', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.setLeagueSettings({
+        ...component.leagueSettings()!,
+        scoringType: 'points',
+        yahooSync: {
+          leagueName: 'My league',
+          leagueKey: '465.l.1',
+          syncedAt: '2026-09-17T00:00:00Z',
+        },
+      });
+      component.selectCopyFrom('src');
+      await fixture.whenStable();
+
+      expect(component.leagueSettings()?.yahooSync?.leagueName).toEqual('My league');
+      expect(component.leagueSettings()?.scoringType).toEqual('points');
+      // Not something an import sets, so the board's own stays.
+      expect(component.leagueSettings()?.minGoalieGames).toEqual(25);
+      component.create();
+      const request = createProjection.mock.calls[0][0];
+      expect(request.data.settings.yahooSync?.leagueName).toEqual('My league');
+      expect(request.data.settings.scoringType).toEqual('points');
+      expect(request.data.players).toHaveLength(1);
+    });
+
+    it('says the settings can be changed later', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('.league .field-hint').textContent).toContain(
+        'change these later',
+      );
+    });
   });
 
   // The board's own top five, whoever they turn out to be. Under these stats that is all

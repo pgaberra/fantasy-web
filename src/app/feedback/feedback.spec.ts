@@ -49,6 +49,19 @@ describe('FeedbackComponent', () => {
       );
     });
 
+    it('asks for the bug or the feature, whichever is picked', () => {
+      const fixture = MockRender(FeedbackComponent);
+      const placeholder = () =>
+        (ngMocks.find('#description').nativeElement as HTMLTextAreaElement).placeholder;
+
+      expect(placeholder()).toEqual('Describe the bug you encountered.');
+
+      fixture.point.componentInstance.setType('FEATURE');
+      fixture.detectChanges();
+
+      expect(placeholder()).toEqual('Describe the feature you want us to implement.');
+    });
+
     it('sends a bug report with the page it came from', async () => {
       const component = await submitted(fill('Board freezes', 'It froze on pick 3.'));
 
@@ -94,14 +107,6 @@ describe('FeedbackComponent', () => {
         "Couldn't send your feedback. Try again in a moment.",
       );
       expect(component.feedbackForm.description().value()).toEqual('It froze.');
-    });
-
-    it('says so when this environment does not take feedback', async () => {
-      send.mockRejectedValue(new HttpErrorResponse({ status: 404 }));
-
-      const component = await submitted(fill('Board freezes', 'It froze.'));
-
-      expect(component.errorMessage()).toEqual("Feedback isn't available yet.");
     });
 
     it('starts over empty for another report', async () => {

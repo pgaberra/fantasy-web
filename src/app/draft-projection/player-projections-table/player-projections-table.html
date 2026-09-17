@@ -140,6 +140,18 @@
             </label>
           </div>
         }
+        <!-- How the numbers are printed, not what the projection is scored on, so it sits with the
+             other view controls rather than between Stats and the league it was imported for. -->
+        @if (columnControls()) {
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm decimals-btn"
+            [appPopover]="decimalsMenu"
+          >
+            <app-icon name="decimals" />
+            Decimals
+          </button>
+        }
       </div>
     </div>
   </div>
@@ -155,9 +167,8 @@
           [activeColumns]="filteredActiveColumns()"
           [scoringType]="scoringType()"
           [(statWeights)]="statWeights"
-          [useDefaultDecimals]="useDefaultDecimals()"
           [decimalSettings]="readableDecimals()"
-          (decimalSettingsChange)="decimalSettings.set($event)"
+          (decimalSettingsChange)="onDecimalSettingsChange($event)"
           [sortColumn]="sortColumn()"
           [sortDirection]="sortDirection()"
           [showFullSeasonButton]="showFullSeasonButton()"
@@ -242,5 +253,16 @@
     [activeUtilityColumns]="shownUtilityColumns()"
     (scoringToggled)="toggleScoringColumn($event)"
     (utilityToggled)="toggleUtilityColumn($event)"
+  />
+</ng-template>
+
+<ng-template #decimalsMenu>
+  <app-decimals-menu
+    [scoringColumns]="shownScoringColumns()"
+    [utilityColumns]="shownUtilityColumns()"
+    [decimalSettings]="readableDecimals()"
+    [usingDefaults]="useDefaultDecimals()"
+    (decimalSettingsChange)="onDecimalSettingsChange($event)"
+    (resetToDefaults)="resetDecimals()"
   />
 </ng-template>

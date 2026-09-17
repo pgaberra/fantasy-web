@@ -9,203 +9,130 @@
     />
   } @else {
     <div class="page-header">
-      @if (hasProjection()) {
+      @if (latest()) {
         <h1>{{ welcomeBack() }}</h1>
       } @else {
         <h1>Welcome to SlapStat</h1>
-        <p class="subtitle">Get your rankings ready before your draft.</p>
+        <p class="subtitle">Everything you need for draft day. Start wherever you like.</p>
       }
     </div>
 
-    <div class="columns">
-      <div class="column">
-        @if (showsDraftPrep()) {
-          <section class="panel draft-prep" aria-labelledby="draft-prep-heading">
-            <div class="panel-header">
-              <h2 id="draft-prep-heading">Draft prep</h2>
-              <span class="progress">
-                {{ stepsDone() }} of {{ stepsTotal }} done
-                <span class="progress-bar" aria-hidden="true">
-                  <span [style.width.%]="(stepsDone() / stepsTotal) * 100"></span>
-                </span>
-              </span>
-            </div>
-            <ol class="steps">
-              <li class="step step-projection" [class.done]="hasProjection()">
-                <span class="step-mark">
-                  @if (hasProjection()) {
-                    <app-icon name="check" [size]="14" />
-                  } @else {
-                    1
-                  }
-                </span>
-                <span class="step-title">Create a projection</span>
-                <span class="step-text">
-                  @if (espnLeaguesEnabled) {
-                    Pick a starting point, then import your scoring settings from Yahoo or ESPN.
-                  } @else {
-                    Pick a starting point, then import your scoring settings from Yahoo.
-                  }
-                </span>
-                @if (!hasProjection()) {
-                  <a class="btn btn-primary step-action" routerLink="/projections/new">
-                    <app-icon name="plus" />
-                    Create projection
-                  </a>
-                }
-              </li>
-              <li class="step step-draft" [class.done]="hasDrafted()">
-                <span class="step-mark">
-                  @if (hasDrafted()) {
-                    <app-icon name="check" [size]="14" />
-                  } @else {
-                    2
-                  }
-                </span>
-                <span class="step-title">Try Draft mode</span>
-                <span class="step-text">
-                  Track every pick on the draft board and see the team rankings when it's done.
-                </span>
-                @if (!hasDrafted()) {
-                  <a
-                    class="btn step-action"
-                    [class.btn-primary]="hasProjection()"
-                    [class.btn-secondary]="!hasProjection()"
-                    routerLink="/draft"
-                  >
-                    Open Draft mode
-                  </a>
-                }
-              </li>
-            </ol>
-          </section>
-        }
-
-        @if (latest(); as projection) {
-          <section class="panel latest" aria-labelledby="latest-heading">
-            <div class="panel-header">
-              <h2 id="latest-heading">Pick up where you left off</h2>
-            </div>
-            <div class="latest-body">
-              <div class="latest-main">
-                <span class="latest-name">{{ projection.name }}</span>
-                <span class="meta">
-                  @if (projection.origin; as from) {
-                    From {{ from.authorUsername }} ·
-                  }
-                  Updated {{ projection.updatedAt | relativeTime }}
-                </span>
-                @if (projection.draftStatus === 'finished') {
-                  <span class="status status-done">Draft complete</span>
-                } @else if (projection.draftStatus === 'in_progress') {
-                  <span class="status">Draft in progress</span>
-                }
-              </div>
-              <div class="latest-actions">
-                <a class="btn btn-primary" [routerLink]="['/projections', projection.id]">Edit</a>
-                <a
-                  class="btn btn-secondary"
-                  [routerLink]="['/projections', projection.id, 'draft']"
-                >
-                  {{ draftLabel(projection) }}
-                </a>
-              </div>
-            </div>
-          </section>
-        }
-
-        @if (others().length > 0) {
-          <section class="panel" aria-labelledby="others-heading">
-            <div class="panel-header">
-              <h2 id="others-heading">Your projections</h2>
-              @if (hasMoreProjections()) {
-                <a class="panel-link" routerLink="/projections">See all</a>
-              }
-            </div>
-            <ul class="links">
-              @for (projection of others(); track projection.id) {
-                <li>
-                  <a [routerLink]="['/projections', projection.id]">
-                    <app-icon name="table" />
-                    <span class="link-text">
-                      <span class="link-title">{{ projection.name }}</span>
-                      <span class="link-detail">
-                        Updated {{ projection.updatedAt | relativeTime }}
-                      </span>
-                    </span>
-                    <app-icon name="chevron-right" class="chevron" />
-                  </a>
-                </li>
-              }
-            </ul>
-          </section>
-        }
-      </div>
-
-      <div class="column">
-        <section class="panel panel-padded" aria-labelledby="share-heading">
-          <h2 id="share-heading">Got a share link?</h2>
-          <app-share-import
-            label="Start from a projection someone shared"
-            (imported)="onImported($event)"
-          />
-        </section>
-
-        <nav class="panel" aria-label="Shortcuts">
-          <ul class="links">
-            @if (hasProjection()) {
-              <li>
-                <a routerLink="/projections/new">
-                  <app-icon name="plus" />
-                  <span class="link-text">
-                    <span class="link-title">New projection</span>
-                    <span class="link-detail"
-                      >Rank every player to your league's scoring settings.</span
-                    >
-                  </span>
-                  <app-icon name="chevron-right" class="chevron" />
-                </a>
-              </li>
+    @if (latest(); as projection) {
+      <section class="panel resume" aria-labelledby="resume-heading">
+        <div class="resume-main">
+          <span id="resume-heading" class="eyebrow">Last updated</span>
+          <span class="resume-name">
+            {{ projection.name }}
+            @if (projection.draftStatus === 'finished') {
+              <span class="status status-done">Draft complete</span>
+            } @else if (projection.draftStatus === 'in_progress') {
+              <span class="status">Draft in progress</span>
             }
-            <li>
-              <a routerLink="/draft">
-                <app-icon name="clipboard-list" />
-                <span class="link-text">
-                  <span class="link-title">Draft mode</span>
-                  <span class="link-detail">Resume a draft or start a new one.</span>
-                </span>
-                <app-icon name="chevron-right" class="chevron" />
+          </span>
+          <span class="meta">
+            @if (projection.origin; as from) {
+              From {{ from.authorUsername }} ·
+            }
+            Updated {{ projection.updatedAt | relativeTime }}
+          </span>
+        </div>
+        <div class="resume-actions">
+          <a class="btn btn-secondary" [routerLink]="['/projections', projection.id]">Edit</a>
+          <a class="btn btn-primary" [routerLink]="['/projections', projection.id, 'draft']">
+            {{ draftLabel(projection) }}
+          </a>
+        </div>
+      </section>
+    }
+
+    <div class="features">
+      <section class="panel feature" aria-labelledby="projections-heading">
+        <span class="feature-icon"><app-icon name="table" [size]="20" /></span>
+        <h2 id="projections-heading">Projections</h2>
+        <p>
+          Rank every player to your league's scoring settings.
+          @if (espnLeaguesEnabled) {
+            Set the league settings manually, or import them directly from Yahoo or ESPN.
+          } @else {
+            Set the league settings manually, or import them directly from Yahoo.
+          }
+        </p>
+        <div class="feature-actions">
+          <a class="btn btn-primary" routerLink="/projections/new">
+            <app-icon name="plus" />
+            Create projection
+          </a>
+          @if (projectionCount() > 0) {
+            <a class="btn btn-secondary" routerLink="/projections">
+              My Projections ({{ projectionCount() }})
+            </a>
+          }
+        </div>
+      </section>
+
+      <section class="panel feature" aria-labelledby="draft-heading">
+        <span class="feature-icon"><app-icon name="clipboard-list" [size]="20" /></span>
+        <h2 id="draft-heading">Draft Mode</h2>
+        <p>
+          Enter our Draft Mode with a projection of your own or a preset. Track every pick in real
+          time. See how the teams in your league stack up against each other after the draft.
+        </p>
+        <div class="feature-actions">
+          <a class="btn btn-secondary" routerLink="/draft">Open Draft Mode</a>
+        </div>
+      </section>
+
+      @if (aiProjectionServed()) {
+        <section class="panel feature feature-ai" aria-labelledby="ai-heading">
+          <span class="feature-icon"><app-icon name="sparkles" [size]="20" /></span>
+          <h2 id="ai-heading">AI Projection</h2>
+          @if (aiProjectionLocked()) {
+            <p>
+              Every player projected for the 2026-27 season. Check it out in our projection editor
+              or take them to draft day.
+            </p>
+            <div class="feature-actions">
+              <a class="btn btn-gold" routerLink="/premium">See Premium</a>
+            </div>
+          } @else {
+            <p>
+              Every player projected for the 2026-27 season. Check it out in our projection editor
+              or take them to draft day.
+            </p>
+            <div class="feature-actions">
+              <a
+                class="btn btn-gold"
+                routerLink="/projections/new"
+                [queryParams]="{ start: 'model' }"
+              >
+                Create projection
               </a>
-            </li>
-            @if (whosHotEnabled) {
-              <li>
-                <a routerLink="/whos-hot">
-                  <app-icon name="chart-bar" />
-                  <span class="link-text">
-                    <span class="link-title">Who's Hot</span>
-                    <span class="link-detail"
-                      >See which players have performed the best over a selected time period.</span
-                    >
-                  </span>
-                  <app-icon name="chevron-right" class="chevron" />
-                </a>
-              </li>
-            }
-          </ul>
-        </nav>
+              <a class="btn btn-on-dark" routerLink="/draft" [queryParams]="{ start: 'model' }">
+                Open Draft Mode
+              </a>
+            </div>
+          }
+        </section>
+      }
 
-        @if (aiProjectionPerk(); as perk) {
-          <section class="panel panel-padded premium" aria-labelledby="premium-heading">
-            <h2 id="premium-heading">
-              <app-icon name="sparkles" />
-              {{ perk.title }}
-              <span class="premium-badge">Premium</span>
-            </h2>
-            <p>{{ perk.description }}</p>
-            <a class="btn btn-secondary" routerLink="/premium">See Premium</a>
-          </section>
-        }
-      </div>
+      @if (whosHotEnabled) {
+        <section class="panel feature" aria-labelledby="hot-heading">
+          <span class="feature-icon"><app-icon name="chart-bar" [size]="20" /></span>
+          <h2 id="hot-heading">Who's Hot</h2>
+          <p>See which players have performed the best over a selected time period.</p>
+          <div class="feature-actions">
+            <a class="btn btn-secondary" routerLink="/whos-hot">Open Who's Hot</a>
+          </div>
+        </section>
+      }
     </div>
+
+    <section class="panel share" aria-labelledby="share-heading">
+      <h2 id="share-heading">Got a share link?</h2>
+      <app-share-import
+        label="Copy a projection someone shared, then edit it or draft with it."
+        (imported)="onImported($event)"
+      />
+    </section>
   }
 </div>

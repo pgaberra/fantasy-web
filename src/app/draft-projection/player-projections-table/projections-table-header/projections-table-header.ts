@@ -23,6 +23,10 @@ import {
   ScaleConfig,
   scalableScoringStatsFor,
 } from '../../projection-settings-section/model';
+import {
+  MAX_DECIMAL_SETTING,
+  takesDecimals,
+} from '../../projection-settings-section/model-decimals';
 import { StatInfoService } from '../../../services/stat-info.service';
 import { parseDecimalInput, steppedDecimalInput } from '../../../shared/decimal-input';
 import { IconComponent, type IconName } from '../../../shared/icon/icon';
@@ -49,14 +53,13 @@ const WEIGHT_STEP = 0.01;
   host: { '[class.has-column-menus]': 'showColumnControls()' },
 })
 export class ProjectionsTableHeaderComponent {
-  protected readonly MAX_DECIMAL_SETTING = 3;
+  protected readonly MAX_DECIMAL_SETTING = MAX_DECIMAL_SETTING;
   private readonly statInfoService = inject(StatInfoService);
 
   /** The columns actually rendered — already filtered by the table's position filter. */
   activeColumns = input.required<ActiveColumns>();
   scoringType = input.required<ScoringType>();
   statWeights = model.required<Record<ScoringStatKey, number>>();
-  useDefaultDecimals = input<boolean>(false);
   decimalSettings = model.required<Record<DecimalStatKey, number>>();
   sortColumn = input.required<SortColumn>();
   sortDirection = input.required<SortDirection>();
@@ -160,8 +163,6 @@ export class ProjectionsTableHeaderComponent {
     return this.sortDirection() === 'asc' ? 'arrow-up' : 'arrow-down';
   }
 
-  gpDecimalSetting = computed(() => this.decimalSettings().gp);
-
   onDecimalInput(statKey: DecimalStatKey, event: Event): void {
     const raw = Number((event.target as HTMLInputElement).value);
     const decimals = Math.max(0, Math.min(this.MAX_DECIMAL_SETTING, raw));
@@ -204,7 +205,9 @@ export class ProjectionsTableHeaderComponent {
   isDecimalColumn(statKey: StatKey): statKey is DecimalStatKey {
     // Checked against the key list rather than `in decimalSettings`, so this stays a decision
     // about which stats have decimals rather than about the shape of a runtime object.
-    return statKey === 'gp' || (SCORING_STAT_KEYS as readonly string[]).includes(statKey);
+    const hasSetting =
+      statKey === 'gp' || (SCORING_STAT_KEYS as readonly string[]).includes(statKey);
+    return hasSetting && takesDecimals(statKey as DecimalStatKey);
   }
 
   /** The column menu's own heading — always the full name, even where it matches the label. */

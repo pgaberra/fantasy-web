@@ -59,13 +59,13 @@
           @if (importingInto() === 'draft') {
             <app-loading-indicator variant="inline" label="Copying" />
           } @else {
-            Draft mode
+            Draft Mode
           }
         </button>
       </div>
       @if (signInPromptFor()) {
         <p class="board-actions-prompt" role="status" data-testid="sign-in-prompt">
-          Save a copy to your account to keep editing it or use it in Draft mode.
+          Save a copy to your account to keep editing it or use it in Draft Mode.
           <a
             routerLink="/login"
             [queryParams]="{ returnUrl: promptReturnUrl() }"
@@ -142,7 +142,6 @@
               [activeColumns]="filteredActiveColumns()"
               [scoringType]="scoringType()"
               [statWeights]="statWeights()"
-              [useDefaultDecimals]="true"
               [decimalSettings]="decimalSettings()"
               [sortColumn]="sortColumn()"
               [sortDirection]="sortDirection()"

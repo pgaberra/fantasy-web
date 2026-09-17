@@ -287,7 +287,7 @@ export class DraftProjectionComponent implements OnInit {
   readonly draftLinkLabel = computed(() => {
     const draft = this.draft();
     if (!draft) {
-      return 'Draft mode';
+      return 'Draft Mode';
     }
     return draft.finishedAt ? 'View draft summary' : 'Resume draft';
   });

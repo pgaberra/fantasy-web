@@ -113,7 +113,6 @@ export class HotPlayersTableComponent {
   readonly activeColumns = input.required<ActiveColumns>();
   readonly statWeights = model.required<Record<ScoringStatKey, number>>();
   readonly decimalSettings = model<Record<DecimalStatKey, number>>(DEFAULT_DECIMAL_SETTINGS);
-  readonly useDefaultDecimals = input<boolean>(true);
   readonly perGame = input<boolean>(false);
   readonly minGames = input<number>(1);
   /** Named rather than derived, so an empty leaderboard can say which season came back empty. */

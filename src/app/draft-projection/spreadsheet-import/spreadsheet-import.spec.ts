@@ -42,8 +42,34 @@ describe('spreadsheet-import', () => {
     });
     expect(plan.stats.get(2)?.toiPerGame).toBe(1170);
     expect(plan.notFound).toEqual(['Wayne Gretzky']);
-    expect(plan.ambiguous).toEqual(['Sebastian Aho']);
+    expect(plan.ambiguous.map((row) => row.name)).toEqual(['Sebastian Aho']);
+    expect(plan.ambiguous[0].candidates.map((player) => player.id)).toEqual([4, 5]);
     expect(plan.duplicates).toEqual(['MacKinnon, Nathan']);
+  });
+
+  it('imports an ambiguous row once the user picks the player', () => {
+    const roles = proposeColumnRoles(rows, 1, matcher);
+    const plan = buildImportPlan(rows, 1, roles, matcher, new Map([[2, 5]]));
+
+    expect(plan.stats.get(5)?.goals).toBe(30);
+    expect(plan.stats.has(4)).toBe(false);
+  });
+
+  it('imports a respelled row unless the user leaves it out', () => {
+    const respelledRows = [
+      [null, 'Team', 'G'],
+      ['Yegor Chinakhov', 'PIT', 25],
+    ];
+    const roles = proposeColumnRoles(respelledRows, 0, matcher);
+
+    const plan = buildImportPlan(respelledRows, 0, roles, matcher);
+    expect(plan.respelled.map((row) => [row.name, row.player.id])).toEqual([
+      ['Yegor Chinakhov', 12],
+    ]);
+    expect(plan.stats.get(12)).toEqual({ goals: 25 });
+
+    const leftOut = buildImportPlan(respelledRows, 0, roles, matcher, new Map([[0, null]]));
+    expect(leftOut.stats.has(12)).toBe(false);
   });
 
   it("gives a goalie only a goalie's stats", () => {

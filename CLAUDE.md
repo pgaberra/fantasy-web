@@ -77,6 +77,13 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   calling one group two things; everything else is repeated per page, since component
   styles are scoped. That page went via four cards with the boards folded into a `<select>`
   (#508, #514), which was its own invention and made the reader learn the question twice.
+  Both pages also set the **league** above the preview, with the one
+  `shared/league-settings-controls` component (the editor's toolbar: points/category, League
+  setup, Stats, Import league) and the preview's editable weight row. Each page keeps the
+  changed league per starting point. The draft picker hands it to the draft in history state;
+  the new-projection page lays it over the settings it creates with (a copy stays byte-exact
+  when the league was left alone). A preview scored by defaults read as "not my league" and
+  put people off creating at all.
   The first row of the open kind is
   checked from the start (`selection`, a
   `linkedSignal` that keeps a pick whose row survives a reload), so a preset draft is
@@ -159,11 +166,14 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   a **result, not an error**: showing "could not reach the probe" over Yahoo's own 403 would waste
   the whole feature, so only a failure of our own call surfaces as an error.
 - `home/` — where a signed-in user starts (`/home`): signing in and a signed-in visit to `/` land
-  here. A **Draft prep** checklist (create a projection, start a draft) is derived from the
-  projection list and never stored, so it cannot disagree with the rest of the app, and it goes
-  away once both are done; then the page leads with the board updated last. Syncing a league is
-  not a step because the list does not say whether a board is synced. `demoRedemptionGuard`
-  sends anyone with landing-demo work waiting on to `/projections`, which is what saves it.
+  here. It shows the features side by side, each with its own way in (Projections, Draft mode,
+  the AI projection, Who's Hot, and a share-link import under them), so nothing says which to
+  start with; a returning user also gets the projection they updated last across the top. It
+  began as a two-step checklist, which Alexander took out for telling everyone there was one
+  right order. The AI card is drawn wherever the BFF serves the model, and sells it or offers it
+  depending on the account's plan; its Create button opens `/projections/new?start=model` and its Draft link
+  `/draft?start=model`, and both pages pick the AI preset once the BFF has said it serves it. `demoRedemptionGuard` sends anyone with landing-demo work
+  waiting on to `/projections`, which is what saves it.
 - `profile/` — the account's **profile picture** and **public name** (`/profile`, signed-in
   only), reached from the avatar at the right edge of the header, which opens the account menu
   (who is signed in, Profile, Sign out) at every width. Sharing forces the choice of a name, but

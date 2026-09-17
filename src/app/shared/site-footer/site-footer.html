@@ -8,12 +8,12 @@
       <a href="mailto:info@slapstat.com">info&#64;slapstat.com</a>
       <a routerLink="/privacy">Privacy</a>
       <a routerLink="/terms">Terms</a>
-      @if (authService.isLoggedIn() && featureService.feedback()) {
-        <a routerLink="/feedback" [queryParams]="{ from: feedbackFrom() }">Send feedback</a>
+      @if (authService.isLoggedIn()) {
+        <a routerLink="/feedback" [queryParams]="{ from: feedbackFrom() }">Send Feedback</a>
       }
       @if (!authService.isLoggedIn()) {
-        <a routerLink="/login">Sign in</a>
-        <a routerLink="/register">Get started</a>
+        <a routerLink="/login">Sign In</a>
+        <a routerLink="/register">Get Started</a>
       }
     </span>
   </div>

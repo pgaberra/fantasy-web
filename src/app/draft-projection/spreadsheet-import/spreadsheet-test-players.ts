@@ -1,18 +1,24 @@
 import { Goalie, Skater } from '../../models/player.model';
 import { GoalieProjection, SkaterProjection } from '../../models/projection.model';
+import { SkaterPosition } from '../../models/position.model';
 import { GOALIE_SCORING_STAT_KEYS, SKATER_SCORING_STAT_KEYS } from '../../models/stat-key.model';
 
 /** A small pool for the import specs, with the spellings a sheet gets wrong. */
 
 const zeros = (keys: readonly string[]) => Object.fromEntries(keys.map((key) => [key, 0]));
 
-export function skater(id: number, name: string, teamAbbrev?: string): Skater {
+export function skater(
+  id: number,
+  name: string,
+  teamAbbrev?: string,
+  positions: SkaterPosition[] = ['C'],
+): Skater {
   return {
     type: 'skater',
     id,
     name,
     teamAbbrev,
-    positions: new Set(['C']),
+    positions: new Set(positions),
     stats: {
       utility: { gp: 70, toiPerGame: 1000 },
       scoring: { ...zeros(SKATER_SCORING_STAT_KEYS), goals: 10 } as Skater['stats']['scoring'],
@@ -51,4 +57,8 @@ export const POOL = [
   skater(7, 'Luke Hughes', 'NJD'),
   skater(8, 'Pierre-Luc Dubois', 'WSH'),
   goalie(9, 'Igor Shesterkin', 'NYR'),
+  skater(10, 'Elias Pettersson', 'VAN', ['C']),
+  skater(12, 'Egor Chinakhov', 'PIT', ['LW', 'RW']),
+  skater(13, 'Thomas Novak', 'PIT'),
+  skater(11, 'Elias Pettersson', 'VAN', ['D']),
 ];

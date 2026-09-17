@@ -1,0 +1,126 @@
+:host {
+  display: block;
+  width: 340px;
+  max-width: 92vw;
+}
+
+.decimals-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  min-height: 2.5rem;
+  padding: 0.2rem 0.75rem;
+}
+
+/* The list below scrolls, and its scrollbar takes width from the right of its rows. Reserving
+   the same gutter here keeps this row's buttons over theirs; on overlay scrollbars both are 0. */
+.decimals-row--bulk {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--color-border);
+  font-weight: var(--weight-semibold);
+}
+
+.decimals-list {
+  max-height: 19rem;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  padding: 0.3rem 0;
+}
+
+.decimals-name {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.decimals-key {
+  flex: none;
+  font-weight: var(--weight-semibold);
+}
+
+.decimals-choices {
+  display: inline-flex;
+  flex: none;
+  padding: 2px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.decimals-choices button {
+  width: 2rem;
+  height: 1.85rem;
+  padding: 0;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.decimals-choices button:hover {
+  color: var(--color-primary);
+}
+
+.decimals-choices button[aria-pressed='true'] {
+  background: var(--color-surface);
+  border-color: var(--color-border-control);
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+  box-shadow: var(--shadow-sm);
+}
+
+.decimals-empty {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+}
+
+.decimals-footer {
+  padding: 0.4rem 0.5rem 0.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.decimals-reset {
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.5rem;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.decimals-reset:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.decimals-reset:disabled {
+  color: var(--color-text-subtle);
+  cursor: default;
+}
+
+/* A thumb needs more than a 32px button, and a phone has less height to give the list. */
+@media (max-width: 640px) {
+  .decimals-choices button {
+    width: 2.4rem;
+    height: 2.4rem;
+  }
+
+  .decimals-list {
+    max-height: 15rem;
+  }
+}

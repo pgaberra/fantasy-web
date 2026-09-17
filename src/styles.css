@@ -83,6 +83,8 @@
   --color-text-muted: #4c586a;
   --color-text-subtle: #5f6c85;
   --color-text-on-dark: #ffffff;
+  /* Secondary text on --color-primary: 8.5:1 there. */
+  --color-text-on-dark-muted: #c9d6ea;
 
   --color-bg: #f0f2f8;
   --color-surface: #ffffff;
@@ -109,6 +111,11 @@
      well clear of 4.5:1 (6.3:1). Only ever a background: nothing is drawn in it. */
   --color-danger-surface: #fdf0ef;
   --color-warning: #e6b84a;
+  /* The quiet notice: a pale wash, a slightly deeper edge, and brown ink on it. The ink reads
+     8.0:1 on the wash, and --color-gold-strong, drawn on it for a link, 4.8:1. */
+  --color-warning-surface: #fff7e0;
+  --color-warning-border: #f0dfa8;
+  --color-warning-text: #5c4a12;
   /* Darkened from #16a34a (2.9:1 on --color-bg) for the confirmations drawn in it. Its other
      job is the sync dots, which carry no text and only read better for it. */
   --color-success: #117e39;

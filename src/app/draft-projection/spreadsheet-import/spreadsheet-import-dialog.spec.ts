@@ -30,7 +30,7 @@ describe('SpreadsheetImportDialogComponent', () => {
       'assists',
     ]);
     expect(component.plan()?.stats.get(1)).toEqual({ goals: 44, assists: 84 });
-    expect(component.unmatched()).toEqual(['Nobody Here']);
+    expect(component.notFound()).toEqual(['Nobody Here']);
     expect(ngMocks.formatText(ngMocks.find('.summary-line'))).toBe('1 of 2 players found.');
   });
 
@@ -76,6 +76,42 @@ describe('SpreadsheetImportDialogComponent', () => {
 
     expect(component.step()).toBe('source');
     expect(component.readError()).toContain('.xls');
+  });
+
+  it('imports a name that fits two players once the user picks one', () => {
+    const { fixture, component } = render();
+    paste(component, 'Player\tTeam\tG\nElias Pettersson\tVAN\t20\n');
+    fixture.detectChanges();
+
+    expect(component.ambiguous().map((row) => row.name)).toEqual(['Elias Pettersson']);
+    expect(component.canImport()).toBe(false);
+
+    component.onChoice(0, select('11'));
+    expect(component.plan()?.stats.get(11)).toEqual({ goals: 20 });
+    expect(component.canImport()).toBe(true);
+
+    component.onChoice(0, select(''));
+    expect(component.canImport()).toBe(false);
+  });
+
+  it('lists a name matched through another spelling, and can leave it out', () => {
+    const { fixture, component } = render();
+    paste(component, 'Player\tG\nTommy Novak\t18\nNathan MacKinnon\t44\n');
+    fixture.detectChanges();
+
+    expect(component.respelled().map((row) => row.player.name)).toEqual(['Thomas Novak']);
+    expect(component.plan()?.stats.get(13)).toEqual({ goals: 18 });
+
+    component.onChoice(0, select(''));
+    expect(component.plan()?.stats.has(13)).toBe(false);
+    expect(component.plan()?.stats.size).toBe(1);
+  });
+
+  it('labels a candidate with its club and position', () => {
+    const { component } = render();
+    expect(component.candidateLabel(POOL.find((player) => player.id === 11)!)).toBe(
+      'Elias Pettersson · VAN · D',
+    );
   });
 
   it('emits the plan on confirm', () => {

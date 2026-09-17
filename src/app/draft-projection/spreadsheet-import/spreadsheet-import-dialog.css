@@ -218,6 +218,30 @@ select,
   cursor: pointer;
 }
 
+.ambiguous {
+  margin-top: var(--space-2);
+}
+
+.ambiguous-list {
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ambiguous-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+}
+
+.ambiguous-name {
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
 .unmatched-list {
   margin: var(--space-2) 0 0;
   padding-left: var(--space-5);

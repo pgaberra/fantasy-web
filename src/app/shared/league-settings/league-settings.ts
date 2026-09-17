@@ -139,3 +139,59 @@ export function withEspnImport(
     yahooSync: null,
   };
 }
+
+/**
+ * The leagues set on a page before a board exists: by what each was set for, and the last league
+ * imported there. An import is the user saying which league they play in, so every starting point
+ * takes it — a board as much as a preset — while a hand edit stays with what it was made for.
+ */
+export interface PageLeagues {
+  readonly byKey: ReadonlyMap<string, LeagueSettings>;
+  readonly imported: LeagueSettings | null;
+}
+
+export const NO_PAGE_LEAGUES: PageLeagues = { byKey: new Map(), imported: null };
+
+/**
+ * The page's leagues with `next` set for `key`, where `previous` is what `key` showed before. A
+ * new import replaces every edit made so far, everywhere: they were made against a league the user
+ * has since said is not theirs.
+ */
+export function withPageLeague(
+  leagues: PageLeagues,
+  key: string,
+  previous: LeagueSettings | null,
+  next: LeagueSettings,
+): PageLeagues {
+  const stamp = syncStamp(next);
+  if (stamp !== null && stamp !== syncStamp(previous)) {
+    return { byKey: new Map([[key, next]]), imported: next };
+  }
+  return { ...leagues, byKey: new Map(leagues.byKey).set(key, next) };
+}
+
+/**
+ * The league set on the page for `key`: its own edit, else the page's import laid over what the
+ * starting point opens with, else undefined when nothing was set — which leaves a copy exact.
+ * `opensWith` is null while that is still unknown, and then only an edit of its own can answer.
+ */
+export function pageLeagueFor(
+  leagues: PageLeagues,
+  key: string,
+  opensWith: LeagueSettings | null,
+): LeagueSettings | undefined {
+  const own = leagues.byKey.get(key);
+  if (own) {
+    return own;
+  }
+  if (!leagues.imported || !opensWith) {
+    return undefined;
+  }
+  // The goalie minimum is not something an import sets, so the starting point keeps its own.
+  return { ...leagues.imported, minGoalieGames: opensWith.minGoalieGames };
+}
+
+/** Which import a league carries, as the moment it was made. */
+function syncStamp(league: LeagueSettings | null): string | null {
+  return league?.yahooSync?.syncedAt ?? league?.espnSync?.syncedAt ?? null;
+}

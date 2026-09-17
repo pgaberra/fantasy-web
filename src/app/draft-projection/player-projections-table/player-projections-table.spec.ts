@@ -16,7 +16,7 @@ import { DecimalPipe } from '@angular/common';
 import { ProjectionsTableHeaderComponent } from './projections-table-header/projections-table-header';
 import { PlayerRowComponent } from './player-row/player-row';
 import { StatInputComponent } from './player-row/stat-input/stat-input';
-import { ScaleConfig } from '../projection-settings-section/model';
+import { DEFAULT_DECIMAL_SETTINGS, ScaleConfig } from '../projection-settings-section/model';
 import { PlayerService } from '../../services/player.service';
 import { TestBed } from '@angular/core/testing';
 import { ApplicationRef } from '@angular/core';
@@ -505,6 +505,57 @@ describe('PlayerProjectionsTableComponent', () => {
         .scoredProjections()
         .find((sp) => sp.projection.playerId === updatedId)?.score.fantasyPoints;
       expect(updatedPoints).not.toEqual(initialPoints);
+    });
+  });
+
+  /**
+   * The defaults give a column holding fractions a decimal place. Setting that column to none in
+   * its menu has to stick, instead of being handed the decimal place straight back.
+   */
+  describe('setting decimals in a column menu', () => {
+    const fractional: Projection[] = mockPlayerProjections.map((projection) =>
+      projection.type === 'skater'
+        ? {
+            ...projection,
+            stats: {
+              ...projection.stats,
+              scoring: { ...projection.stats.scoring, goals: 49.4 },
+            },
+          }
+        : projection,
+    );
+
+    it('keeps a fractional column at zero decimals once it is set there', () => {
+      const component = getComponent();
+      component.playerProjections.set(fractional);
+      expect(component.readableDecimals().goals).toBe(1);
+
+      component.onDecimalSettingsChange({ ...component.readableDecimals(), goals: 0 });
+
+      expect(component.useDefaultDecimals()).toBe(false);
+      expect(component.readableDecimals().goals).toBe(0);
+    });
+
+    it('keeps the decimal place the defaults gave the other fractional columns', () => {
+      const component = getComponent();
+      component.playerProjections.set(fractional);
+
+      component.onDecimalSettingsChange({ ...component.readableDecimals(), assists: 2 });
+
+      expect(component.readableDecimals().goals).toBe(1);
+      expect(component.readableDecimals().assists).toBe(2);
+    });
+
+    it('goes back to the defaults, fractional decimal place included, on a reset', () => {
+      const component = getComponent();
+      component.playerProjections.set(fractional);
+      component.onDecimalSettingsChange({ ...component.readableDecimals(), goals: 0, assists: 3 });
+
+      component.resetDecimals();
+
+      expect(component.useDefaultDecimals()).toEqual(true);
+      expect(component.decimalSettings()).toEqual(DEFAULT_DECIMAL_SETTINGS);
+      expect(component.readableDecimals().goals).toEqual(1);
     });
   });
 
