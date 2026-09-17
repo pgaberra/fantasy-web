@@ -703,4 +703,53 @@ describe('DraftProjectionComponent', () => {
 
     expect(updateSpy.mock.calls.length).toEqual(savesBefore + 1);
   }, 10000);
+
+  /**
+   * The debounce cannot survive the page being left, and the last edit before leaving is the
+   * likeliest one there is: a stat typed, a column ticked, a setting changed, and then away.
+   */
+  it('sends the last edit when the page is left inside the debounce', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    const updateSpy = vi.spyOn(ngMocks.findInstance(ProjectionStorageService), 'updateProjection');
+
+    component.leagueSize.set(14);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.destroy();
+
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect(updateSpy.mock.calls[0][1].data.settings.leagueSize).toEqual(14);
+  }, 10000);
+
+  /** The state on the way out is the one the debounce was armed with, not one saved over since. */
+  it('does not put an older state back over an acknowledgement saved on its own', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.unacknowledgedNewPlayerIds.set([1]);
+    fixture.detectChanges();
+    await new Promise((resolve) => setTimeout(resolve, AUTOSAVE_DEBOUNCE_MS + 300));
+    const updateSpy = vi.spyOn(ngMocks.findInstance(ProjectionStorageService), 'updateProjection');
+
+    component.acknowledgeNewPlayers();
+    fixture.destroy();
+
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect(
+      updateSpy.mock.calls.at(-1)![1].data.settings.unacknowledgedNewPlayerIds,
+    ).toBeUndefined();
+  }, 10000);
+
+  /** Nothing to save is nothing to send: leaving a page that was only read must not write. */
+  it('writes nothing on the way out when nothing changed', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const updateSpy = vi.spyOn(ngMocks.findInstance(ProjectionStorageService), 'updateProjection');
+
+    fixture.destroy();
+
+    expect(updateSpy).not.toHaveBeenCalled();
+  }, 10000);
 });
