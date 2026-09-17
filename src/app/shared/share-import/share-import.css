@@ -18,6 +18,15 @@
   gap: var(--space-2);
 }
 
+/* One height for the fields and Import. On a shared row the flex row stretched Import to the
+   fields' height, but on a phone with the name field showing, Import sits on a row of its own
+   and fell back to btn-sm's 30px under 36px fields. */
+.import-input,
+.import-controls .btn {
+  box-sizing: border-box;
+  height: 2.25rem;
+}
+
 /* The width of the name field above it (projection-create.css), not the whole column: stretched
    across a 1100px page the field broke out of the form's left edge and pushed Import out to the
    far side of the screen. A pasted link is not read back, so it gains nothing from the room. With
