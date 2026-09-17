@@ -16,6 +16,9 @@ import { INDEXABLE } from './shared/crawl-tags';
 const toPremium: RedirectFunction = (route) =>
   inject(Router).createUrlTree(['/premium'], { queryParams: route.queryParams });
 
+const toRefundTerms: RedirectFunction = () =>
+  inject(Router).createUrlTree(['/terms'], { fragment: 'refunds' });
+
 /**
  * Every route is loaded on demand. Statically importing the components put each feature —
  * the projections table, the draft board, Who's hot, the shared page — into the initial
@@ -110,12 +113,12 @@ export const routes: Routes = [
     loadComponent: () => import('./terms/terms').then((m) => m.TermsComponent),
     data: { [INDEXABLE]: true },
   },
-  // Public and unguarded like /terms, for the same reason: a payment provider's review asks for a
-  // publicly accessible refund policy page, and the terms link here for refunds.
+  // The refund policy was a page of its own and is now a section of the terms. The address stays,
+  // for links already out there; nginx answers it with a 301 too, for readers that run no scripts.
   {
     path: 'refunds',
-    loadComponent: () => import('./refunds/refunds').then((m) => m.RefundsComponent),
-    data: { [INDEXABLE]: true },
+    pathMatch: 'full',
+    redirectTo: toRefundTerms,
   },
   // Payments UI stays dark until the PAYMENTS_ENABLED build flag is on — the guard redirects
   // these routes home otherwise.

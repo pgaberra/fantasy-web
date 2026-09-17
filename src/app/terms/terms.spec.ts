@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { TermsComponent } from './terms';
 
 function text(): string {
-  return (ngMocks.find('.terms').nativeElement as HTMLElement).textContent ?? '';
+  // Whitespace collapsed, so a phrase checked here survives Prettier rewrapping the template.
+  return ((ngMocks.find('.terms').nativeElement as HTMLElement).textContent ?? '').replace(
+    /\s+/g,
+    ' ',
+  );
 }
 
 describe('TermsComponent', () => {
@@ -29,7 +33,7 @@ describe('TermsComponent', () => {
 
   // The subscription mechanics people actually get caught out by. If any of these change in
   // the code, this page has to change with them.
-  it.each(['renews automatically', 'cancel at any time', 'end of the current billing period'])(
+  it.each(['renews automatically', 'cancel at any time', "end of the period you've paid for"])(
     'states the subscription term %s',
     (phrase) => {
       MockRender(TermsComponent);
@@ -38,28 +42,60 @@ describe('TermsComponent', () => {
     },
   );
 
-  // Refunds have their own page, which payment providers' reviews ask for. The terms point to it
-  // rather than repeating it, so the refund wording cannot drift between two places.
-  it('points to the refund policy for refunds', () => {
+  // The refund policy is a section of these terms, reached as /terms#refunds from the footer and
+  // from the old /refunds address. The id is what both land on.
+  it('carries the refund policy under its own anchor', () => {
     MockRender(TermsComponent);
 
-    const link = ngMocks
-      .findAll('.terms a')
-      .find(
-        (anchor) => (anchor.nativeElement as HTMLElement).textContent?.trim() === 'Refund Policy',
-      );
-    if (!link) {
-      throw new Error('The terms have no link to the refund policy');
-    }
-    expect(ngMocks.input(link, 'routerLink')).toEqual('/refunds');
-    expect(text()).not.toContain('refund for any unused portion');
+    expect(ngMocks.find('.terms #refunds').nativeElement.textContent).toContain(
+      'Cancelling and refunds',
+    );
   });
 
-  // The model is sold on its numbers, so the page has to be plain that they are estimates
-  // before anyone pays for them, not after.
-  it('says the projections are estimates', () => {
+  // These are the commitments the policy makes. Each one is a promise to a paying customer, so a
+  // change to any of them should be a deliberate edit that also changes this test.
+  it.each([
+    'within 14 days of your first payment',
+    "Monthly renewals aren't refunded once the new period has started",
+    'A payment taken after you cancelled.',
+    'A second payment for the same period.',
+    "A payment you didn't authorise.",
+    'refund for any unused portion',
+  ])('states the refund term: %s', (phrase) => {
     MockRender(TermsComponent);
 
-    expect(text()).toContain('estimates');
+    expect(text()).toContain(phrase);
+  });
+
+  it('tells the customer where to ask for a refund', () => {
+    MockRender(TermsComponent);
+
+    const hrefs = ngMocks
+      .findAll('.terms a')
+      .map((anchor) => (anchor.nativeElement as HTMLAnchorElement).getAttribute('href'));
+    expect(hrefs).toContain('mailto:info@slapstat.com');
+    expect(hrefs).toContain('https://support.link.com/topics/sold-through-link');
+    expect(hrefs).toContain('https://link.com/terms');
+  });
+
+  it.each([
+    // Cancelling and refunding are different things, and confusing them is what makes someone
+    // cancel expecting money back.
+    {
+      promise: 'separates cancelling from refunding',
+      phrase: "It doesn't refund a payment you've already made.",
+    },
+    // The terms cannot take away rights consumer law gives, and have to say so.
+    {
+      promise: 'keeps the consumer rights the law gives',
+      phrase: 'consumer rights that cannot legally be excluded',
+    },
+    // The model is sold on its numbers, so the page has to be plain that they are estimates
+    // before anyone pays for them, not after.
+    { promise: 'says the projections are estimates', phrase: 'estimates' },
+  ])('$promise', ({ phrase }) => {
+    MockRender(TermsComponent);
+
+    expect(text()).toContain(phrase);
   });
 });
