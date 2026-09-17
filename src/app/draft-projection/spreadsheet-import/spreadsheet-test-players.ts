@@ -58,5 +58,7 @@ export const POOL = [
   skater(8, 'Pierre-Luc Dubois', 'WSH'),
   goalie(9, 'Igor Shesterkin', 'NYR'),
   skater(10, 'Elias Pettersson', 'VAN', ['C']),
+  skater(12, 'Egor Chinakhov', 'PIT', ['LW', 'RW']),
+  skater(13, 'Thomas Novak', 'PIT'),
   skater(11, 'Elias Pettersson', 'VAN', ['D']),
 ];

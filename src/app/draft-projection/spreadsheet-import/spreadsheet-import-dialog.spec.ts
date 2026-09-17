@@ -94,9 +94,24 @@ describe('SpreadsheetImportDialogComponent', () => {
     expect(component.canImport()).toBe(false);
   });
 
+  it('lists a name matched through another spelling, and can leave it out', () => {
+    const { fixture, component } = render();
+    paste(component, 'Player\tG\nTommy Novak\t18\nNathan MacKinnon\t44\n');
+    fixture.detectChanges();
+
+    expect(component.respelled().map((row) => row.player.name)).toEqual(['Thomas Novak']);
+    expect(component.plan()?.stats.get(13)).toEqual({ goals: 18 });
+
+    component.onChoice(0, select(''));
+    expect(component.plan()?.stats.has(13)).toBe(false);
+    expect(component.plan()?.stats.size).toBe(1);
+  });
+
   it('labels a candidate with its club and position', () => {
     const { component } = render();
-    expect(component.candidateLabel(POOL[10])).toBe('Elias Pettersson · VAN · D');
+    expect(component.candidateLabel(POOL.find((player) => player.id === 11)!)).toBe(
+      'Elias Pettersson · VAN · D',
+    );
   });
 
   it('emits the plan on confirm', () => {
