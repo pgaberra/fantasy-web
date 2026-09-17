@@ -13,9 +13,16 @@ const MAX_PATH_LENGTH = 2048;
  * scheme, a protocol-relative `//host`, a `/\host` that browsers read as one) is dropped, so the
  * stored value can never turn into a redirect off the site. Storage-only, like
  * `PendingProjectionService`, so a guard can depend on it freely.
+ *
+ * The page alone is not where the connect started: it started in the import dialog, which is
+ * page state the round trip reloads away. So the page handed back is also held in memory until
+ * that page asks, once, whether it is the one being returned to, and opens the dialog again.
  */
 @Injectable({ providedIn: 'root' })
 export class YahooConnectReturnService {
+  /** The page `take` last handed back, until that page claims it with `returnedTo`. */
+  private handedBack: string | null = null;
+
   remember(path: string): void {
     try {
       if (isAppPath(path)) {
@@ -30,13 +37,28 @@ export class YahooConnectReturnService {
 
   /** The remembered path, if it is still a safe app path; read once and cleared. */
   take(): string | null {
+    let path: string | null = null;
     try {
-      const path = sessionStorage.getItem(STORAGE_KEY);
+      const stored = sessionStorage.getItem(STORAGE_KEY);
       sessionStorage.removeItem(STORAGE_KEY);
-      return path !== null && isAppPath(path) ? path : null;
+      path = stored !== null && isAppPath(stored) ? stored : null;
     } catch {
-      return null;
+      // Storage blocked: nothing was remembered, so nothing is handed back.
     }
+    this.handedBack = path;
+    return path;
+  }
+
+  /**
+   * Whether `url` is the page a connect has just come back to, answered true once. Only this app
+   * instance's own hand-back counts, never storage, so a reload later on does not reopen anything.
+   */
+  returnedTo(url: string): boolean {
+    if (this.handedBack !== url) {
+      return false;
+    }
+    this.handedBack = null;
+    return true;
   }
 
   forget(): void {

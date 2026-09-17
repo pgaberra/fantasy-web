@@ -14,6 +14,7 @@ import { rxResource, takeUntilDestroyed, toObservable } from '@angular/core/rxjs
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { debounceTime, Observable } from 'rxjs';
 import { PlayerService } from '../services/player.service';
+import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { Player } from '../models/player.model';
 import { applyPositionOverrides, PositionOverrides } from '../models/position-override';
 import { SkaterPosition } from '../models/position.model';
@@ -73,6 +74,7 @@ import { LeagueImportButtonComponent } from '../shared/league-import-button/leag
 import { SpreadsheetImportDialogComponent } from './spreadsheet-import/spreadsheet-import-dialog';
 import { ImportPlan } from './spreadsheet-import/spreadsheet-import';
 import { AnalyticsService } from '../services/analytics.service';
+import { environment } from '../../environments/environment';
 
 /** Exported so the tests can wait out exactly this and not a round number they guessed at. */
 export const AUTOSAVE_DEBOUNCE_MS = 1200;
@@ -212,7 +214,14 @@ export class DraftProjectionComponent implements OnInit {
   readonly reSyncError = signal<string | null>(null);
   readonly showFullSeasonDialog = signal<boolean>(false);
   readonly showShareDialog = signal<boolean>(false);
-  readonly showSyncDialog = signal<boolean>(false);
+  /**
+   * The import dialog, open from the start when this page is where a Yahoo connect started in it
+   * comes back to: the consent reloads the page, and the dialog is where the user was left.
+   */
+  protected readonly backFromYahoo = inject(YahooConnectReturnService).returnedTo(this.router.url);
+  readonly showSyncDialog = signal<boolean>(this.backFromYahoo);
+  /** Import spreadsheet is built but dark until the SPREADSHEET_IMPORT_ENABLED build arg turns it on. */
+  protected readonly spreadsheetImportEnabled = environment.spreadsheetImportEnabled;
   readonly showSpreadsheetImport = signal<boolean>(false);
   /**
    * The league these settings were imported from, whichever platform it was. A projection carries

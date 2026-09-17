@@ -1,9 +1,11 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, filter, merge, skip, skipWhile, take } from 'rxjs';
+import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
 import { EntitlementService } from '../services/entitlement.service';
 import { PlayerService } from '../services/player.service';
+import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { Player } from '../models/player.model';
 import { GameSpan, WhosHotService } from '../services/whos-hot.service';
 import { WhosHotSettingsService } from '../services/whos-hot-settings.service';
@@ -177,7 +179,14 @@ export class WhosHotComponent {
   readonly espnSync = signal<EspnSync | null>(this.stored?.espnSync ?? null);
   /** Kept past an import from elsewhere, so returning to ESPN doesn't ask for the id again. */
   readonly lastEspnLeagueId = signal<string | null>(this.stored?.lastEspnLeagueId ?? null);
-  readonly showSyncDialog = signal<boolean>(false);
+  /**
+   * The import dialog, open from the start when this page is where a Yahoo connect started in it
+   * comes back to: the consent reloads the page, and the dialog is where the user was left.
+   */
+  protected readonly backFromYahoo = inject(YahooConnectReturnService).returnedTo(
+    inject(Router).url,
+  );
+  readonly showSyncDialog = signal<boolean>(this.backFromYahoo);
 
   /**
    * The league these settings came from, whichever platform it was. The leaderboard is scored by

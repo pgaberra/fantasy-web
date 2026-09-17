@@ -62,14 +62,16 @@
             </button>
           </h1>
           <div class="page-header-actions">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              (click)="showSpreadsheetImport.set(true)"
-            >
-              <app-icon name="spreadsheet" />
-              Import spreadsheet
-            </button>
+            @if (spreadsheetImportEnabled) {
+              <button
+                type="button"
+                class="btn btn-secondary"
+                (click)="showSpreadsheetImport.set(true)"
+              >
+                <app-icon name="spreadsheet" />
+                Import spreadsheet
+              </button>
+            }
             <button type="button" class="btn btn-secondary" (click)="showShareDialog.set(true)">
               <app-icon name="share" />
               Share
@@ -138,6 +140,7 @@
       <app-league-sync-dialog (closed)="showSyncDialog.set(false)">
         <app-league-sync
           [lastSync]="yahooSync()"
+          [openOnYahoo]="backFromYahoo"
           [lastEspnLeagueId]="lastEspnLeagueId()"
           [lastEspnSyncedAt]="espnSync()?.syncedAt ?? null"
           [lastEspnLeagueName]="espnSync()?.leagueName ?? null"

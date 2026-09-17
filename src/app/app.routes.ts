@@ -5,6 +5,7 @@ import { adminGuard } from './guards/admin.guard';
 import { authGuard } from './guards/auth.guard';
 import { paymentsEnabledGuard } from './guards/payments-enabled.guard';
 import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
+import { demoRedemptionGuard } from './guards/demo-redemption.guard';
 import { INDEXABLE } from './shared/crawl-tags';
 
 /**
@@ -35,6 +36,12 @@ export const routes: Routes = [
     loadComponent: () => import('./landing/landing').then((m) => m.LandingComponent),
     canActivate: [landingRedirectGuard],
     data: { [INDEXABLE]: true },
+  },
+  // Where a signed-in user starts. Signing in and a signed-in visit to / both land here.
+  {
+    path: 'home',
+    loadComponent: () => import('./home/home').then((m) => m.HomeComponent),
+    canActivate: [authGuard, demoRedemptionGuard],
   },
   // Picking a draft source needs the user's own projections, so there is nothing to render
   // for a signed-out visitor — send them to sign in rather than to a failed load.
@@ -141,6 +148,11 @@ export const routes: Routes = [
     path: 'account',
     pathMatch: 'full',
     redirectTo: toPremium,
+  },
+  {
+    path: 'feedback',
+    loadComponent: () => import('./feedback/feedback').then((m) => m.FeedbackComponent),
+    canActivate: [authGuard],
   },
   {
     path: 'profile',

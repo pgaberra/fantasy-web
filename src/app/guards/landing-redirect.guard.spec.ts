@@ -52,8 +52,8 @@ describe('landingRedirectGuard', () => {
     expect(runGuard({}, false).result).toEqual(true);
   });
 
-  it('sends a signed-in user to projections', () => {
-    expect(runGuard({}).createUrlTree).toHaveBeenCalledWith(['/projections']);
+  it('sends a signed-in user home', () => {
+    expect(runGuard({}).createUrlTree).toHaveBeenCalledWith(['/home']);
   });
 
   it('sends an admin back to admin after a successful connect', () => {
@@ -97,11 +97,11 @@ describe('landingRedirectGuard', () => {
    * code, and only a signed-in claim attaches them, to the account that started the connect.
    */
   describe('claiming a Yahoo connection', () => {
-    it("claims the user's own connect and goes to projections", async () => {
+    it("claims the user's own connect and goes to home", async () => {
       const run = runGuard({ yahoo: 'confirm', account: 'user' }, true, false, 'link=the-code');
 
       expect(await landing(run.result)).toEqual({
-        commands: ['/projections'],
+        commands: ['/home'],
         extras: { queryParams: { yahoo: 'connected' } },
       });
       expect(run.completeConnect).toHaveBeenCalledWith('the-code');
@@ -157,7 +157,7 @@ describe('landingRedirectGuard', () => {
       const run = runGuard({ yahoo: 'confirm', account: 'user' }, true, false, null);
 
       expect(await landing(run.result)).toEqual({
-        commands: ['/projections'],
+        commands: ['/home'],
         extras: { queryParams: { yahoo: 'error', reason: 'claim_failed' } },
       });
       expect(run.completeConnect).not.toHaveBeenCalled();
@@ -246,7 +246,7 @@ describe('landingRedirectGuard', () => {
       expect(run.result).toEqual({ parsed: '/draft' });
     });
 
-    it('falls back to projections when the router cannot read the page', async () => {
+    it('falls back to home when the router cannot read the page', async () => {
       const run = runGuard(
         { yahoo: 'confirm', account: 'user' },
         true,
@@ -260,15 +260,15 @@ describe('landingRedirectGuard', () => {
       });
 
       expect(await landing(run.result)).toEqual({
-        commands: ['/projections'],
+        commands: ['/home'],
         extras: { queryParams: { yahoo: 'connected' } },
       });
     });
   });
 
-  it('sends a non-admin to projections even after a connect', () => {
+  it('sends a non-admin home even after a connect', () => {
     expect(runGuard({ yahoo: 'connected' }, true, false).createUrlTree).toHaveBeenCalledWith([
-      '/projections',
+      '/home',
     ]);
   });
 });

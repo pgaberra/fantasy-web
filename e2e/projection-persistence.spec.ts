@@ -30,9 +30,9 @@ test.describe('a projection survives a settings-only save', () => {
     await page.locator('#password').fill(password);
     await page.locator('#confirmPassword').fill(password);
     await page.locator('button[type="submit"]').click();
-    await expect(page).toHaveURL(/\/projections\/?$/, { timeout: 15_000 });
+    await expect(page).toHaveURL(/\/home\/?$/, { timeout: 15_000 });
 
-    await page.getByRole('button', { name: /create new projection/i }).click();
+    await page.getByRole('link', { name: /^create projection$/i }).click();
     await page.locator('#projection-name').fill('E2E Persistence');
     await page.getByRole('button', { name: /^create projection$/i }).click();
     // Creating a projection seeds ~1589 rows server-side. 20s was enough on an idle staging and
