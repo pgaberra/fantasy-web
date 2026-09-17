@@ -155,7 +155,8 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   on an auction draft, a league without the user's team, a finished draft, or a 404/424. A
   dropped connection keeps polling.
 - `shared-projection/` — the page behind a share link (`/s/:token`), public and unguarded: a
-  share link has to open for someone who has never signed in. A signed-in visitor is offered
+  share link has to open for someone who has never signed in. Its byline carries the author's
+  profile picture, or the initial of their username where they have none. A signed-in visitor is offered
   "Draft Mode", which copies the snapshot into their own projections and opens the board; a
   signed-out one still gets the sign-up. Pressing either button again makes **another**
   copy: the name the board was shared under is taken by then, and db-service numbers the new
@@ -209,7 +210,10 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   send. `AvatarImageService` crops and scales the picked file to a 256px square JPEG **in the
   browser** before upload, so a phone photo becomes a few tens of KB and the server never decodes
   an untrusted image; the header and the profile page both draw it with the table's
-  `app-player-headshot`, whose initials fallback covers an account without a picture.
+  `app-player-headshot`, whose initials fallback covers an account without a picture. The byline
+  of a shared board draws the **author's** picture with the same component, from the public
+  address the BFF sends as `authorAvatar` — nothing there is behind a bearer token, so no object
+  URL — which is why the Profile page says the picture is shown when you share a projection.
 - `premium/` and `shared/premium/` — the **Premium** subscription, sold through Stripe Checkout
   (see `BillingService`, `EntitlementService`). Checkout is Stripe's own page: Subscribe sends the
   browser to the URL the BFF returns, and nothing of Stripe's loads on our pages, so the price on
