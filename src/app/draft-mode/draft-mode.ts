@@ -148,6 +148,7 @@ export class DraftModeComponent implements OnInit {
   readonly rosterSlots = computed(() => this.data()?.settings.rosterSlots ?? DEFAULT_ROSTER_SLOTS);
   readonly leagueSize = computed(() => this.data()?.settings.leagueSize ?? DEFAULT_LEAGUE_SIZE);
   readonly yahooSync = computed(() => this.data()?.settings.yahooSync ?? null);
+  readonly espnSync = computed(() => this.data()?.settings.espnSync ?? null);
 
   readonly teams = computed(() => this.draft()?.teams ?? []);
   readonly order = computed(() => this.draft()?.order ?? []);
@@ -630,8 +631,14 @@ export class DraftModeComponent implements OnInit {
           rosterSlots: mapped.rosterSlots,
           ...(mapped.leagueSize != null ? { leagueSize: mapped.leagueSize } : {}),
           ...(mapped.statWeights ? { statWeights: mapped.statWeights } : {}),
-          // ESPN provenance isn't persisted yet (the sync stamp is Yahoo-shaped), so clear any
-          // stale Yahoo stamp rather than mislabel these settings as Yahoo's.
+          espnSync: {
+            // ESPN names the league in its settings response; the user only ever typed the id.
+            leagueName: result.leagueName ?? result.leagueId,
+            leagueId: result.leagueId,
+            syncedAt: new Date().toISOString(),
+          },
+          lastEspnLeagueId: result.leagueId,
+          // These settings are ESPN's now, so a Yahoo stamp would mislabel them.
           yahooSync: undefined,
         },
       };
@@ -660,6 +667,7 @@ export class DraftModeComponent implements OnInit {
             leagueKey: result.leagueKey,
             syncedAt: new Date().toISOString(),
           },
+          espnSync: undefined,
         },
       };
     });

@@ -1,7 +1,7 @@
 import { Component, computed, DestroyRef, inject, linkedSignal, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Observable } from 'rxjs';
+import { Observable, switchMap } from 'rxjs';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import { NotificationService } from '../services/notification.service';
@@ -26,6 +26,9 @@ import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/pre
 import { SOURCE_KINDS, SourceKind } from '../models/source-kind';
 import { environment } from '../../environments/environment';
 import { IconComponent } from '../shared/icon/icon';
+import { LeagueSettings, leagueSettingsOf } from '../shared/league-settings/league-settings';
+import { ScoringStatKey } from '../models/stat-key.model';
+import { DraftLeagueSettingsComponent } from './draft-league-settings/draft-league-settings';
 
 /**
  * The name the preset draft is stored under. It doubles as the label on the board, so the
@@ -98,6 +101,7 @@ export type DraftSource =
     ShareImportComponent,
     IconComponent,
     StartingPointPreviewComponent,
+    DraftLeagueSettingsComponent,
   ],
   templateUrl: './draft-start.html',
   styleUrl: './draft-start.css',
@@ -114,6 +118,7 @@ export class DraftStartComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly aiAccess = inject(AiProjectionAccess);
   private readonly features = inject(FeatureService);
+  private readonly boardCache = inject(ProjectionBoardCache);
 
   readonly sourceKinds = SOURCE_KINDS;
 
@@ -267,6 +272,70 @@ export class DraftStartComponent {
     return !!preset.premium && this.aiAccess.locked();
   }
 
+  /** The league a new preset draft is ranked by until someone changes it: a new projection's. */
+  private readonly defaultLeague = leagueSettingsOf(
+    createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
+  );
+
+  /**
+   * The picked board, for the league it is ranked by. Through the page's cache, which the preview
+   * reads the same board from, so picking one is still one download.
+   */
+  private readonly pickedBoard = rxResource({
+    params: () => {
+      const chosen = this.selection();
+      return chosen?.kind === 'board' ? chosen.id : undefined;
+    },
+    stream: ({ params: id }) => this.boardCache.load(id),
+    defaultValue: undefined as ProjectionResponse | undefined,
+  });
+
+  /**
+   * The leagues changed on this page, by the source they were changed for. Kept per source rather
+   * than as one league for the page: a board already carries a league of its own, and switching to
+   * it and back must neither lose the one set for a preset nor lay that one over the board.
+   */
+  private readonly changedLeagues = signal<ReadonlyMap<string, LeagueSettings>>(new Map());
+
+  /**
+   * The league the picked source will be drafted with: what was set here, or else what it opens
+   * with — a new projection's defaults for a preset, a board's own settings for a board. Null
+   * while that board is still on its way, which holds the controls back rather than showing
+   * defaults that would jump the moment it lands.
+   */
+  readonly leagueSettings = computed<LeagueSettings | null>(() => {
+    const chosen = this.selection();
+    if (!chosen) {
+      return null;
+    }
+    const changed = this.changedLeagues().get(sourceKey(chosen));
+    if (changed) {
+      return changed;
+    }
+    if (chosen.kind === 'preset') {
+      return this.defaultLeague;
+    }
+    const board = this.pickedBoard.hasValue() ? this.pickedBoard.value() : undefined;
+    return board?.id === chosen.id
+      ? leagueSettingsOf(this.serializer.fromProjectionData(board.data))
+      : null;
+  });
+
+  setLeagueSettings(settings: LeagueSettings): void {
+    const chosen = this.selection();
+    if (!chosen) {
+      return;
+    }
+    this.changedLeagues.update((leagues) => new Map(leagues).set(sourceKey(chosen), settings));
+  }
+
+  setStatWeights(statWeights: Record<ScoringStatKey, number>): void {
+    const league = this.leagueSettings();
+    if (league) {
+      this.setLeagueSettings({ ...league, statWeights });
+    }
+  }
+
   /**
    * What the preview draws: whatever is picked. Null when the open kind holds nothing, where the
    * panel's own empty state is the whole answer and a preview would only say so again.
@@ -338,7 +407,7 @@ export class DraftStartComponent {
     if (chosen.kind === 'preset') {
       this.startPreset(chosen.preset);
     } else {
-      this.openDraft(chosen.id);
+      this.openWithLeague(chosen.id, this.changedLeagues().get(sourceKey(chosen)));
     }
   }
 
@@ -426,11 +495,12 @@ export class DraftStartComponent {
     // since the list was read, which would otherwise seed a second board for the same preset,
     // and a board whose setup was abandoned, which is picked up where it was left.
     const existing = this.presetDraft(preset);
+    const changed = this.changedLeagues().get(sourceKey({ kind: 'preset', preset }));
     if (existing) {
-      this.openDraft(existing.id);
+      this.openWithLeague(existing.id, changed);
       return;
     }
-    this.seedAndOpen(this.createPresetDraft(preset));
+    this.seedAndOpen(this.createPresetDraft(preset, changed ?? this.defaultLeague));
   }
 
   private optionsOf(kind: SourceKind): readonly DraftSource[] {
@@ -451,7 +521,39 @@ export class DraftStartComponent {
       .sort((first, second) => second.updatedAt.localeCompare(first.updatedAt));
   }
 
-  private createPresetDraft(preset: Preset): Observable<ProjectionResponse> {
+  /**
+   * Opens a board that already exists, with the league set here saved into it first. A board's
+   * draft is ranked by the board's own settings — there is no second copy for the draft to hold —
+   * so a league changed on this page is a change to that board, the same one its editor would
+   * make. Nothing changed, nothing is written.
+   */
+  private openWithLeague(id: string, league: LeagueSettings | undefined): void {
+    if (!league) {
+      this.openDraft(id);
+      return;
+    }
+    this.seedAndOpen(
+      this.boardCache.load(id).pipe(
+        switchMap((board) => {
+          const state = { ...this.serializer.fromProjectionData(board.data), ...league };
+          // Settings and draft only: the rows are kept when absent, which spares the upload.
+          const { settings } = this.serializer.toProjectionData({
+            ...state,
+            playerProjections: [],
+          });
+          return this.storage.updateProjection(id, {
+            name: board.name,
+            data: { settings, draft: board.data.draft },
+          });
+        }),
+      ),
+    );
+  }
+
+  private createPresetDraft(
+    preset: Preset,
+    league: LeagueSettings,
+  ): Observable<ProjectionResponse> {
     // No player rows: `source` has the server fill them in, exactly as a new projection created
     // from the same starting point does. The name is sent for completeness — the server names a
     // preset draft itself, so that a board cannot claim a preset it was not drafted against.
@@ -459,9 +561,10 @@ export class DraftStartComponent {
       name: preset.name,
       kind: 'preset_draft',
       source: preset.source,
-      data: this.serializer.toProjectionData(
-        createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
-      ),
+      data: this.serializer.toProjectionData({
+        ...createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
+        ...league,
+      }),
     });
   }
 
@@ -483,6 +586,11 @@ export class DraftStartComponent {
       },
     });
   }
+}
+
+/** What a league changed on this page is filed under. */
+function sourceKey(source: DraftSource): string {
+  return source.kind === 'preset' ? `preset:${source.preset.id}` : `board:${source.id}`;
 }
 
 function sameSource(first: DraftSource, second: DraftSource): boolean {

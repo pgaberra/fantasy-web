@@ -8,6 +8,7 @@ import { PlayerProjectionsTableComponent } from './player-projections-table/play
 import { PlayerService } from '../services/player.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { ProjectionSyncService } from '../services/projection-sync.service';
+import { LeagueImportButtonComponent } from '../shared/league-import-button/league-import-button';
 import { Goalie, Skater } from '../models/player.model';
 import { ProjectionResponse } from '../api/models/projection-response';
 import { Projection } from '../models/projection.model';
@@ -102,6 +103,8 @@ describe('DraftProjectionComponent', () => {
         updateProjection: () => of(mockProjection),
       })
       .keep(ProjectionSyncService)
+      // Real, so the toolbar says which league the projection is synced with.
+      .keep(LeagueImportButtonComponent)
       .provide({
         provide: ActivatedRoute,
         useValue: { snapshot: { paramMap: { get: () => 'p1' } } },

@@ -36,6 +36,7 @@
         [rosterSlots]="rosterSlots()"
         [leagueSize]="leagueSize()"
         [lastSync]="yahooSync()"
+        [lastEspnSync]="espnSync()"
         (confirmed)="onSetupConfirmed($event)"
         (cancelled)="cancelSetup()"
         (yahooSynced)="applyYahooSync($event)"

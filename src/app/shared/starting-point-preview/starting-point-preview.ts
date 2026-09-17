@@ -1,4 +1,4 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Observable, of, tap } from 'rxjs';
 import { PlayerService } from '../../services/player.service';
@@ -37,6 +37,8 @@ import { readableDecimalSettings } from '../../draft-projection/projection-setti
 import { LoadingIndicatorComponent } from '../loading-indicator/loading-indicator';
 import { ownLine, squaredWithPool } from '../pool-line';
 import { hasHeadshots } from '../player-headshot/player-headshot';
+import { LeagueSettings } from '../league-settings/league-settings';
+import { ScoringStatKey } from '../../models/stat-key.model';
 
 /** A starting point the server derives on its own, from nothing the user has to supply. */
 export type PresetSource = NonNullable<CreateProjectionRequest['source']>;
@@ -181,6 +183,16 @@ export class StartingPointPreviewComponent {
    */
   readonly fallbackNote = input<string | null>(null);
 
+  /**
+   * The league to score the preview by, when the page hosting it lets that be chosen. It stands
+   * in for whatever the picked starting point would open with, and makes the weight row editable:
+   * the preview is where someone sees what a weight does to the order.
+   */
+  readonly leagueSettings = input<LeagueSettings | null>(null);
+
+  /** A weight typed into the preview's weight row. Only ever emitted under `leagueSettings`. */
+  readonly statWeightsChange = output<Record<ScoringStatKey, number>>();
+
   /** Whether a board is what is picked, which is what the preview downloads a whole pool for. */
   private readonly isBoard = computed(() => this.source()?.kind === 'board');
 
@@ -252,10 +264,15 @@ export class StartingPointPreviewComponent {
     return board ? this.serializer.fromProjectionData(board.data) : null;
   });
 
-  /** What the preview scores and draws with: the picked board's settings, or the defaults. */
-  private readonly previewSettings = computed<PreviewSettings>(
-    () => this.boardState() ?? DEFAULT_PREVIEW_SETTINGS,
-  );
+  /**
+   * What the preview scores and draws with: the picked board's settings, or the defaults — with
+   * the league the page chose laid over them, if it chose one.
+   */
+  private readonly previewSettings = computed<PreviewSettings>(() => {
+    const opened = this.boardState() ?? DEFAULT_PREVIEW_SETTINGS;
+    const league = this.leagueSettings();
+    return league ? { ...opened, ...league } : opened;
+  });
 
   readonly previewActiveColumns = computed<ActiveColumns>(() => ({
     scoring: this.previewSettings().activeScoringColumns,

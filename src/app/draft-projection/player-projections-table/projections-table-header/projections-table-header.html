@@ -118,7 +118,7 @@
     {{ summaryLabel() }}
   </th>
 </tr>
-@if (scoringType() === 'points' && (!readonly() || showWeights())) {
+@if (scoringType() === 'points' && (!readonly() || showWeights() || editableWeights())) {
   <tr class="weight-row">
     <th class="col-rank"></th>
     <th class="col-name"><span class="weight-label">Stat weights (pts)</span></th>
@@ -127,7 +127,7 @@
     }
     @for (col of activeColumns().scoring; track col) {
       <th [class.group-start]="$first && hasUtilityColumns()">
-        @if (readonly()) {
+        @if (readonly() && !editableWeights()) {
           <!-- The same number in the same place, without the box that says it can be changed. -->
           <span class="weight-value" [attr.aria-label]="'Points per ' + (col | statLabel)">{{
             statWeights()[col]

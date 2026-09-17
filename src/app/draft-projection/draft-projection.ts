@@ -69,6 +69,7 @@ import { SharedPlayer } from '../api/models/shared-player';
 import { YahooService } from '../services/yahoo.service';
 import { EspnService } from '../services/espn.service';
 import { IconComponent } from '../shared/icon/icon';
+import { LeagueImportButtonComponent } from '../shared/league-import-button/league-import-button';
 
 /** Exported so the tests can wait out exactly this and not a round number they guessed at. */
 export const AUTOSAVE_DEBOUNCE_MS = 1200;
@@ -89,6 +90,7 @@ export const AUTOSAVE_DEBOUNCE_MS = 1200;
     RouterLink,
     TooltipDirective,
     IconComponent,
+    LeagueImportButtonComponent,
   ],
   templateUrl: './draft-projection.html',
   styleUrl: './draft-projection.css',

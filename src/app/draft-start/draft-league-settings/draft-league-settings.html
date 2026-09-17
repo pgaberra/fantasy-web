@@ -1,0 +1,72 @@
+<div class="league-controls">
+  <div class="segmented" role="group" aria-label="League type">
+    <button
+      type="button"
+      [attr.aria-pressed]="settings().scoringType === 'points'"
+      (click)="selectScoringType('points')"
+    >
+      Points
+    </button>
+    <button
+      type="button"
+      [attr.aria-pressed]="settings().scoringType === 'category'"
+      (click)="selectScoringType('category')"
+    >
+      Category
+    </button>
+  </div>
+
+  @if (hasLeagueSetup()) {
+    <button type="button" class="btn btn-secondary btn-sm league-setup" [appPopover]="leagueMenu">
+      <app-icon name="sliders" />
+      League setup
+    </button>
+  }
+
+  <button type="button" class="btn btn-secondary btn-sm stats" [appPopover]="columnsMenu">
+    <app-icon name="columns" />
+    Stats
+  </button>
+
+  <app-league-import-button
+    [yahooSync]="settings().yahooSync"
+    [espnSync]="settings().espnSync"
+    (pressed)="showSyncDialog.set(true)"
+  />
+</div>
+
+<ng-template #leagueMenu>
+  <app-league-settings-menu
+    [scoringType]="settings().scoringType"
+    [syncedLeagueName]="syncedLeagueName()"
+    (manageSync)="showSyncDialog.set(true)"
+    [leagueSize]="settings().leagueSize"
+    (leagueSizeChange)="setLeagueSize($event)"
+    [rosterSlots]="settings().rosterSlots"
+    (rosterSlotsChange)="setRosterSlots($event)"
+    [minGoalieGames]="settings().minGoalieGames"
+    (minGoalieGamesChange)="setMinGoalieGames($event)"
+  />
+</ng-template>
+
+<ng-template #columnsMenu>
+  <app-columns-menu
+    [activeScoringColumns]="settings().activeScoringColumns"
+    [activeUtilityColumns]="settings().activeUtilityColumns"
+    (scoringToggled)="toggleScoringColumn($event)"
+    (utilityToggled)="toggleUtilityColumn($event)"
+  />
+</ng-template>
+
+@if (showSyncDialog()) {
+  <app-league-sync-dialog (closed)="showSyncDialog.set(false)">
+    <app-league-sync
+      [lastSync]="settings().yahooSync"
+      [lastEspnLeagueId]="settings().lastEspnLeagueId"
+      [lastEspnSyncedAt]="settings().espnSync?.syncedAt ?? null"
+      [lastEspnLeagueName]="settings().espnSync?.leagueName ?? null"
+      (yahooSynced)="applyYahoo($event)"
+      (espnSynced)="applyEspn($event)"
+    />
+  </app-league-sync-dialog>
+}

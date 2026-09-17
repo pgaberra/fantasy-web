@@ -16,6 +16,7 @@ import { DraftTeam } from '../../api/models/draft-team';
 import { LeagueTeam } from '../../api/models/league-team';
 import { RosterSlots } from '../../api/models/roster-slots';
 import { YahooSync } from '../../api/models/yahoo-sync';
+import { EspnSync } from '../../api/models/espn-sync';
 import { YahooService } from '../../services/yahoo.service';
 import {
   DEFAULT_LEAGUE_SIZE,
@@ -75,6 +76,7 @@ export class DraftSetupComponent implements OnInit {
   readonly rosterSlots = input<RosterSlots>(DEFAULT_ROSTER_SLOTS);
   readonly leagueSize = input<number>(DEFAULT_LEAGUE_SIZE);
   readonly lastSync = input<YahooSync | null>(null);
+  readonly lastEspnSync = input<EspnSync | null>(null);
 
   readonly confirmed = output<DraftSetupResult>();
   readonly cancelled = output<void>();
@@ -110,11 +112,15 @@ export class DraftSetupComponent implements OnInit {
     }
     this.rows.set(rows);
 
-    // A projection synced earlier (in the editor) carries its Yahoo league; pull that
-    // league's teams into a fresh setup so the user needn't re-sync just to load them.
-    const sync = this.lastSync();
-    if (sync) {
-      this.loadTeams(this.yahoo.leagueTeams(sync.leagueKey));
+    // A projection synced earlier (in the editor, or on the page the draft was started from)
+    // carries its league; pull that league's teams into a fresh setup so the user needn't re-sync
+    // just to load them.
+    const yahooSync = this.lastSync();
+    const espnSync = this.lastEspnSync();
+    if (yahooSync) {
+      this.loadTeams(this.yahoo.leagueTeams(yahooSync.leagueKey));
+    } else if (espnSync) {
+      this.loadTeams(this.espn.leagueTeams(espnSync.leagueId));
     }
   }
 

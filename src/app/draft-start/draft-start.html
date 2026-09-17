@@ -312,10 +312,31 @@
         page draws, out of the same starting points. Only when something is picked — an empty
         kind has its own line in the panel above, and a preview would only say so again.
       -->
+      <!--
+        The league the draft is ranked by, set against the preview it ranks: the editor's own
+        toolbar above, and the weights in the preview's weight row. A preset draft has no editor
+        to set these in later, so this is where they are set; a board's are the board's own, and
+        changing them here changes the board.
+      -->
+      @if (leagueSettings(); as league) {
+        <div class="league">
+          <span class="preview-label">League settings</span>
+          <app-draft-league-settings
+            [settings]="league"
+            (settingsChange)="setLeagueSettings($event)"
+          />
+        </div>
+      }
+
       @if (previewSource(); as previewed) {
         <div class="preview">
           <span class="preview-label">Preview</span>
-          <app-starting-point-preview [source]="previewed" [fallbackNote]="previewFallbackNote()" />
+          <app-starting-point-preview
+            [source]="previewed"
+            [fallbackNote]="previewFallbackNote()"
+            [leagueSettings]="leagueSettings()"
+            (statWeightsChange)="setStatWeights($event)"
+          />
         </div>
       }
 

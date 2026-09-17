@@ -77,6 +77,12 @@ export class ProjectionsTableHeaderComponent {
    * to know 4.5 a goal from 6. Shown as text there; a table that can be edited is unaffected.
    */
   readonly showWeights = input<boolean>(false);
+  /**
+   * Whether a read-only table still lets the weights be changed. The draft picker previews a
+   * board nobody can edit the numbers of, but it is where the league a draft is ranked by gets
+   * set, and the weights belong under the columns they weight there as much as in the editor.
+   */
+  readonly editableWeights = input<boolean>(false);
   readonly fullSeason = output<void>();
 
   /**

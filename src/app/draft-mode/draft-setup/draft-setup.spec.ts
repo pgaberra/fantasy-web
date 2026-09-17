@@ -5,15 +5,22 @@ import { LeagueTeamsResponse } from '../../api/models/league-teams-response';
 import { DraftSetupComponent, DraftSetupResult } from './draft-setup';
 import { YahooSyncResult } from '../../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
 import { YahooService } from '../../services/yahoo.service';
+import { EspnService } from '../../services/espn.service';
 import { RosterSlots } from '../../api/models/roster-slots';
 import { DEFAULT_ROSTER_SLOTS } from '../../draft-projection/projection-defaults';
 
 describe('DraftSetupComponent', () => {
   const leagueTeams = vi.fn();
+  const espnLeagueTeams = vi.fn();
 
   beforeEach(() => {
+    leagueTeams.mockReset();
+    espnLeagueTeams.mockReset();
     leagueTeams.mockReturnValue(of({ teams: [] }));
-    return MockBuilder(DraftSetupComponent).mock(YahooService, { leagueTeams });
+    espnLeagueTeams.mockReturnValue(of({ teams: [] }));
+    return MockBuilder(DraftSetupComponent)
+      .mock(YahooService, { leagueTeams })
+      .mock(EspnService, { leagueTeams: espnLeagueTeams });
   });
 
   function renderSetup(rosterSlots: RosterSlots = DEFAULT_ROSTER_SLOTS): DraftSetupComponent {
@@ -55,6 +62,32 @@ describe('DraftSetupComponent', () => {
 
     expect(component.numTeams()).toEqual(8);
     expect(component.rows().filter((row) => row.mine).length).toEqual(1);
+  });
+
+  // A league imported on the page the draft was started from is ESPN's as often as Yahoo's.
+  it('names the teams after the ESPN league the projection was imported from', () => {
+    espnLeagueTeams.mockReturnValue(
+      of({
+        teams: [
+          { name: 'Ice Holes', mine: false },
+          { name: 'Puck Luck', mine: true },
+        ],
+      }),
+    );
+
+    const component = MockRender(DraftSetupComponent, {
+      initial: null,
+      seedName: 'My Team',
+      rosterSlots: DEFAULT_ROSTER_SLOTS,
+      lastEspnSync: { leagueName: 'ESPN league', leagueId: '42', syncedAt: '2026-09-17T08:00:00Z' },
+    }).point.componentInstance;
+
+    expect(espnLeagueTeams).toHaveBeenCalledWith('42');
+    expect(leagueTeams).not.toHaveBeenCalled();
+    expect(component.rows().map((row) => [row.name, row.mine])).toEqual([
+      ['Ice Holes', false],
+      ['Puck Luck', true],
+    ]);
   });
 
   it('adds and removes teams', () => {
