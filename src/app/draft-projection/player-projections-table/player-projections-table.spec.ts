@@ -508,6 +508,45 @@ describe('PlayerProjectionsTableComponent', () => {
     });
   });
 
+  /**
+   * The defaults give a column holding fractions a decimal place. Setting that column to none in
+   * its menu has to stick, instead of being handed the decimal place straight back.
+   */
+  describe('setting decimals in a column menu', () => {
+    const fractional: Projection[] = mockPlayerProjections.map((projection) =>
+      projection.type === 'skater'
+        ? {
+            ...projection,
+            stats: {
+              ...projection.stats,
+              scoring: { ...projection.stats.scoring, goals: 49.4 },
+            },
+          }
+        : projection,
+    );
+
+    it('keeps a fractional column at zero decimals once it is set there', () => {
+      const component = getComponent();
+      component.playerProjections.set(fractional);
+      expect(component.readableDecimals().goals).toBe(1);
+
+      component.onDecimalSettingsChange({ ...component.readableDecimals(), goals: 0 });
+
+      expect(component.useDefaultDecimals()).toBe(false);
+      expect(component.readableDecimals().goals).toBe(0);
+    });
+
+    it('keeps the decimal place the defaults gave the other fractional columns', () => {
+      const component = getComponent();
+      component.playerProjections.set(fractional);
+
+      component.onDecimalSettingsChange({ ...component.readableDecimals(), assists: 2 });
+
+      expect(component.readableDecimals().goals).toBe(1);
+      expect(component.readableDecimals().assists).toBe(2);
+    });
+  });
+
   describe('loading a saved projection', () => {
     it('drops saved entries whose player is no longer in the roster', () => {
       const missing: Projection = { ...mockPlayerProjections[0], playerId: 999 };

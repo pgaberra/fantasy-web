@@ -292,7 +292,6 @@ export class StartingPointPreviewComponent {
       this.previewSettings().useDefaultDecimals,
     ),
   );
-  readonly previewUseDefaultDecimals = computed(() => this.previewSettings().useDefaultDecimals);
 
   /** Whatever the picked starting point has to download before the preview can be drawn. */
   readonly isLoading = computed(

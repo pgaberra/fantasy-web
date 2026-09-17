@@ -543,7 +543,6 @@ describe('ProjectionCreateComponent', () => {
       expect(previewOf(fixture).previewScoringType()).toEqual('category');
       expect([...previewOf(fixture).previewActiveColumns().scoring]).toEqual(['goals']);
       expect([...previewOf(fixture).previewActiveColumns().utility]).toEqual(['gp']);
-      expect(previewOf(fixture).previewUseDefaultDecimals()).toEqual(false);
       expect(previewOf(fixture).previewDecimalSettings().goals).toEqual(0);
     });
 
