@@ -15,6 +15,12 @@ describe('TierService', () => {
     service = TestBed.inject(TierService);
   });
 
+  /** Tier sizes implied by a set of cut points over a list of the given length. */
+  const sizesOf = (breaks: readonly number[], length: number): number[] => {
+    const bounds = [0, ...breaks, length];
+    return bounds.slice(1).map((bound, index) => bound - bounds[index]);
+  };
+
   describe('breaksFor', () => {
     it('breaks where the value falls away', () => {
       // Seven defencemen clustered, then a cliff, then another flat run: the break belongs
@@ -32,7 +38,7 @@ describe('TierService', () => {
       expect(service.breaksFor(values)).toEqual([10]);
     });
 
-    it('returns nothing for a list with no spread at all', () => {
+    it('returns nothing for a short flat list, which needs no division', () => {
       expect(service.breaksFor([50, 50, 50, 50])).toEqual([]);
     });
 
@@ -54,22 +60,52 @@ describe('TierService', () => {
         index < 15 ? 100 - index : 84.5 - index,
       );
 
-      const breaks = service.breaksFor(values);
+      const sizes = sizesOf(service.breaksFor(values), values.length);
 
-      const sizes = [0, ...breaks, values.length]
-        .slice(1)
-        .map((bound, index) => bound - [0, ...breaks][index]);
       expect(Math.max(...sizes)).toBeLessThanOrEqual(12);
     });
 
-    it('caps the number of tiers', () => {
-      // A staircase: every third gap is a cliff, which would otherwise make ~16 tiers.
+    it('rations the gap rule so a hacky list cannot spend the whole budget on it', () => {
+      // A staircase: every third gap is a cliff, which would otherwise break on all ~16.
       const values = Array.from(
         { length: 50 },
         (_, index) => 500 - index * 2 - Math.floor(index / 3) * 40,
       );
 
-      expect(service.breaksFor(values).length).toBeLessThanOrEqual(11);
+      // Every break past the ninth is a size division, so each tier is within the cap.
+      expect(sizesOf(service.breaksFor(values), values.length).every((size) => size <= 12)).toBe(
+        true,
+      );
+    });
+
+    /**
+     * The shape that made the size cap worth guaranteeing. Staging's defensemen ran one clear
+     * leader, then a long band flat enough that no gap inside it stood out, then a hackier
+     * stretch further down. Rationing the division against the gap rule's budget let the hacky
+     * bottom spend it and left the band standing as one 24-man tier.
+     */
+    it('divides a long flat band even when the hacky bottom used up the gap rule', () => {
+      const band = [
+        352.05, 343.4, 341.24, 340.73, 323.11, 312.61, 304.14, 301.57, 301.31, 289.43, 289.2,
+        285.92, 280.04, 276.96, 272.1, 269.58, 267.57, 265.89, 264.88, 263.39, 263.06, 260.21,
+        254.92,
+      ];
+      const hackyTail = [242.19, 240.9, 237.6, 235.61, 229.42, 220.18, 219.57, 217.45, 216.47];
+      const values = [393.07, ...band, ...hackyTail];
+
+      const sizes = sizesOf(service.breaksFor(values), values.length);
+
+      expect(Math.max(...sizes)).toBeLessThanOrEqual(12);
+    });
+
+    it('divides a dead-flat list evenly by size', () => {
+      const values = Array.from({ length: 30 }, () => 100);
+
+      const sizes = sizesOf(service.breaksFor(values), values.length);
+
+      expect(Math.max(...sizes)).toBeLessThanOrEqual(12);
+      // Nothing distinguishes any rank from any other, so the divisions fall evenly.
+      expect(Math.max(...sizes) - Math.min(...sizes)).toBeLessThanOrEqual(1);
     });
 
     it('returns strictly increasing cut points inside the list', () => {
