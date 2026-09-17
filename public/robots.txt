@@ -10,7 +10,6 @@ Disallow: /projections
 Disallow: /draft
 Disallow: /whos-hot
 Disallow: /profile
-Disallow: /pay
 Disallow: /admin
 Disallow: /auth/
 Disallow: /reset-password

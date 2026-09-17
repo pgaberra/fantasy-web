@@ -35,15 +35,8 @@ ARG YAHOO_SYNC_DISABLED=
 # PAYMENTS_ENABLED=true turns on the subscription billing UI; empty/anything else keeps the
 # whole payments feature dark (default).
 ARG PAYMENTS_ENABLED=
-# Public Paddle client token. Not a secret: it ships to the browser and only permits opening a
-# checkout. Its test_ or live_ prefix is what picks sandbox or live Paddle, so there is no
-# separate environment arg. Empty leaves /pay unable to open one, which is the right default
-# for a build that does not sell anything.
-ARG PADDLE_CLIENT_TOKEN=
-# The recurring price the pricing page asks Paddle to quote. Public, like the token.
-ARG PADDLE_PRICE_ID=
-# Premium's base price in US dollars ("4.99"), stated on the prerendered /premium. Must match the
-# base price of PADDLE_PRICE_ID in Paddle's catalog; a browser shows the visitor's local price.
+# Premium's price in US dollars ("4.99"), which /premium quotes. Must match the price the BFF's
+# STRIPE_PRICE_ID charges.
 ARG PREMIUM_BASE_PRICE_USD=
 # ESPN_LEAGUES_ENABLED=true shows the ESPN provider in the projection's league-sync UI;
 # empty/anything else keeps it hidden (default), so ESPN stays dark until enabled per env.
@@ -54,8 +47,8 @@ ARG WHOS_HOT_ENABLED=
 # OFFSEASON_ENABLED=true shows the off-season data notice (stale team affiliations, missing
 # rookies) in the projection editors; empty/anything else keeps it hidden (default).
 ARG OFFSEASON_ENABLED=
-# PREMIUM_COMING_SOON=true keeps the Premium page and badges but disables Subscribe with a note
-# and closes /pay; empty/anything else sells Premium as usual (default). Needs PAYMENTS_ENABLED.
+# PREMIUM_COMING_SOON=true keeps the Premium page and badges but disables Subscribe with a note;
+# empty/anything else sells Premium as usual (default). Needs PAYMENTS_ENABLED.
 ARG PREMIUM_COMING_SOON=
 
 # Inject the values into environment.prod.ts (replaces the committed placeholders).
@@ -71,8 +64,6 @@ RUN sed -i \
   -e "s|__YAHOO_SYNC_DISABLED__|${YAHOO_SYNC_DISABLED}|g" \
   -e "s|__PAYMENTS_ENABLED__|${PAYMENTS_ENABLED}|g" \
   -e "s|__PREMIUM_COMING_SOON__|${PREMIUM_COMING_SOON}|g" \
-  -e "s|__PADDLE_CLIENT_TOKEN__|${PADDLE_CLIENT_TOKEN}|g" \
-  -e "s|__PADDLE_PRICE_ID__|${PADDLE_PRICE_ID}|g" \
   -e "s|__PREMIUM_BASE_PRICE_USD__|${PREMIUM_BASE_PRICE_USD}|g" \
   -e "s|__ESPN_LEAGUES_ENABLED__|${ESPN_LEAGUES_ENABLED}|g" \
   -e "s|__WHOS_HOT_ENABLED__|${WHOS_HOT_ENABLED}|g" \
@@ -81,13 +72,12 @@ RUN sed -i \
 
 RUN npm run build
 
-# A build that sells Premium must prerender /premium with its price, because Paddle's domain review
-# refuses a paid plan with no price, and nothing a browser shows would give a missing one away. The
-# figure is PREMIUM_BASE_PRICE_USD: Paddle.js cannot run here, and Paddle's REST API answers the
-# client token with 403 authentication_malformed (#674). CI's prerender check builds without payments.
-RUN if [ "$PAYMENTS_ENABLED" = "true" ] && [ -n "$PADDLE_PRICE_ID" ]; then \
+# A build with payments on must prerender /premium with its price: a payment provider's review
+# refuses a paid plan with no price, and the page would otherwise quote none in the browser either.
+# CI's prerender check builds without payments.
+RUN if [ "$PAYMENTS_ENABLED" = "true" ]; then \
   if ! printf '%s' "$PREMIUM_BASE_PRICE_USD" | grep -qE '^[0-9]+\.[0-9]{2}$'; then \
-    echo "PREMIUM_BASE_PRICE_USD must be the Premium price in US dollars, like 4.99, in a build that sells Premium." >&2; \
+    echo "PREMIUM_BASE_PRICE_USD must be the Premium price in US dollars, like 4.99, in a build with payments on." >&2; \
     exit 1; \
   fi; \
   if ! sed -e 's/<[^>]*>/ /g' dist/fantasy-web/browser/premium/index.html | tr -s ' \n' ' ' \

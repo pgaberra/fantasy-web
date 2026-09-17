@@ -3,7 +3,6 @@ import { inject } from '@angular/core';
 import { landingRedirectGuard } from './guards/landing-redirect.guard';
 import { adminGuard } from './guards/admin.guard';
 import { authGuard } from './guards/auth.guard';
-import { checkoutOpenGuard } from './guards/checkout-open.guard';
 import { paymentsEnabledGuard } from './guards/payments-enabled.guard';
 import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
 import { INDEXABLE } from './shared/crawl-tags';
@@ -96,16 +95,16 @@ export const routes: Routes = [
     loadComponent: () => import('./privacy/privacy').then((m) => m.PrivacyComponent),
     data: { [INDEXABLE]: true },
   },
-  // Public and unguarded like /privacy, and deliberately not behind the payments flag: Paddle's
-  // website review reads the terms from a signed-out browser before the feature is ever switched
+  // Public and unguarded like /privacy, and deliberately not behind the payments flag: a payment
+  // provider's review reads the terms from a signed-out browser before the feature is ever switched
   // on, and a customer deciding whether to pay has to be able to read them before they do.
   {
     path: 'terms',
     loadComponent: () => import('./terms/terms').then((m) => m.TermsComponent),
     data: { [INDEXABLE]: true },
   },
-  // Public and unguarded like /terms, for the same reason: Paddle's live account checklist asks for
-  // a publicly accessible refund policy page, and the terms link here for refunds.
+  // Public and unguarded like /terms, for the same reason: a payment provider's review asks for a
+  // publicly accessible refund policy page, and the terms link here for refunds.
   {
     path: 'refunds',
     loadComponent: () => import('./refunds/refunds').then((m) => m.RefundsComponent),
@@ -115,7 +114,7 @@ export const routes: Routes = [
   // these routes home otherwise.
   //
   // One page for the plans and for the subscription on them, so /pricing and /account are kept
-  // only as the way here: a checkout Paddle has already redirected, a bookmark, a link posted
+  // only as the way here: a checkout that already redirected there, a bookmark, a link posted
   // somewhere we cannot edit. The redirect carries the query string, since ?checkout=success is
   // what tells the page it is the welcome.
   {
@@ -132,15 +131,6 @@ export const routes: Routes = [
     path: 'account',
     pathMatch: 'full',
     redirectTo: toPremium,
-  },
-  // Where Paddle's checkout opens. Behind the payments flag like the rest, but deliberately
-  // not behind authGuard: a session that lapsed between starting checkout and landing here
-  // would be redirected to /login, which drops the transaction id in the URL and strands a
-  // checkout Paddle has already prepared.
-  {
-    path: 'pay',
-    loadComponent: () => import('./pay/pay').then((m) => m.PayComponent),
-    canActivate: [paymentsEnabledGuard, checkoutOpenGuard],
   },
   {
     path: 'profile',

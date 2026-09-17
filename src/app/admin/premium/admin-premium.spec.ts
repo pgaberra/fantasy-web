@@ -10,7 +10,7 @@ const PAYING: AdminPremiumCustomerResponse = {
   email: 'payer@example.com',
   source: 'subscription',
   cancelAtPeriodEnd: false,
-  provider: 'paddle',
+  provider: 'stripe',
   subscriptionStatus: 'active',
   currentPeriodEnd: '2026-10-01T00:00:00Z',
   premiumUntil: '2026-10-01T00:00:00Z',

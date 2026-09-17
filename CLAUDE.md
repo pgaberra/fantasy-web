@@ -171,8 +171,10 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   browser** before upload, so a phone photo becomes a few tens of KB and the server never decodes
   an untrusted image; the header and the profile page both draw it with the table's
   `app-player-headshot`, whose initials fallback covers an account without a picture.
-- `premium/`, `pay/` and `shared/premium/` — the **Premium** subscription, sold through Paddle
-  (see `BillingService`, `EntitlementService`). The surfaces agree on what Premium _is_ through
+- `premium/` and `shared/premium/` — the **Premium** subscription, sold through Stripe Checkout
+  (see `BillingService`, `EntitlementService`). Checkout is Stripe's own page: Subscribe sends the
+  browser to the URL the BFF returns, and nothing of Stripe's loads on our pages, so the price on
+  `/premium` is the build's `PREMIUM_BASE_PRICE_USD`. The surfaces agree on what Premium _is_ through
   one list, `shared/premium/premium-perks.ts`, which follows the build flags so a build with the
   AI projection or Who's hot switched off cannot sell them; and on what it _looks like_ through
   one global class, `.premium-badge` in `styles.css` (a class rather than a component so it can
@@ -184,15 +186,14 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   said what the cards already said, and a free account that reached it was told it had no
   subscription and sent to the pricing page anyway. `/pricing` and `/account` survive only as
   redirects here, built as a `RedirectFunction` so the query string comes with them: a checkout
-  Paddle already redirected still returns to `/account?checkout=success`, and dropping that
-  parameter would greet a new subscriber as a visitor. `/pay` is only where Paddle's checkout
-  opens (its comment says why it is not behind `authGuard`). `EntitlementService` **follows the session** like `AccountService` (an
+  created before the move still returns to `/account?checkout=success`, and dropping that
+  parameter would greet a new subscriber as a visitor. `EntitlementService` **follows the session** like `AccountService` (an
   `effect` on `isLoggedIn`), because sign-in is a router navigation and a load done once at
   bootstrap missed everyone who signed in during the session. The header sells Premium only to
   an account that has not bought it (`plan()` in `app.ts`, null until the entitlement has
   landed, so nothing is said of a subscriber a request too early). The account menu carries one
   Premium item for everyone, to that same page, and the landing nav links the price wherever
-  payments are on, since it has to be reachable from the navigation for Paddle's review.
+  payments are on, since a payment provider's review wants it reachable from the navigation.
 - The **new-projection page's preview** is the other half of that: while the AI projection is
   locked, `projection-create` never asks for the model's lines (the BFF would refuse them, and
   the request would only draw the page's failure state) and fills the preview's slot with a

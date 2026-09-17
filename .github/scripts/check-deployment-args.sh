@@ -5,7 +5,7 @@
 #
 # The table is the checklist for configuring or rebuilding a Coolify app, and a build arg that is
 # missing there fails silently: the build succeeds with the value empty, so a build without
-# SENTRY_DSN reports no errors and one without PADDLE_PRICE_ID has nothing to sell. The table had
+# SENTRY_DSN reports no errors and one without PREMIUM_BASE_PRICE_USD quotes no price. The table had
 # drifted to 9 of 15 args before anything compared the two. A row for an arg that is gone is the
 # other half: it sends someone to set a variable the build ignores.
 set -euo pipefail

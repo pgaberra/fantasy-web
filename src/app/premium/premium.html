@@ -21,14 +21,8 @@
     <article class="plan-card plan-card--free">
       <div class="plan-head">
         <h2 class="plan-name">Free</h2>
-        <!-- Empty while the Premium price loads, so the two figures land together rather than
-             "Free" turning into "0 kr" a moment after the page draws. -->
         <p class="plan-price">
-          @if (freePrice(); as price) {
-            <span class="plan-price-amount">{{ price }}</span>
-          } @else if (!pricePending()) {
-            <span class="plan-price-amount">Free</span>
-          }
+          <span class="plan-price-amount">{{ freePrice ?? 'Free' }}</span>
         </p>
       </div>
       <ul class="plan-perks">
@@ -53,16 +47,10 @@
     <article class="plan-card plan-card--premium">
       <div class="plan-head">
         <h2 class="plan-name plan-name--premium">Premium</h2>
-        <!-- One row, as tall as the price, whatever it holds: swapping a small line for the price
-             when it arrived pushed the whole card down a moment after the page drew. -->
         <p class="plan-price">
-          @if (formattedPrice(); as price) {
+          @if (formattedPrice; as price) {
             <span class="plan-price-amount">{{ price }}</span>
             <span class="plan-price-period">per month</span>
-          } @else if (pricePending()) {
-            <span class="plan-tagline">
-              <app-loading-indicator variant="inline" label="Loading price" />
-            </span>
           } @else {
             <span class="plan-tagline">Your exact price is confirmed at checkout.</span>
           }
@@ -131,8 +119,8 @@
               }
             </button>
             <p class="plan-note">
-              Change your card, download receipts, or cancel in the billing portal. Paddle handles
-              billing for SlapStat.
+              Change your card, download receipts, or cancel in the billing portal. Payments show as
+              LINK.COM on your statement.
             </p>
           }
           @case ('granted') {
@@ -210,7 +198,7 @@
                 Subscribe
               }
             </button>
-            <p class="plan-note">Secure checkout through Paddle. Cancel anytime.</p>
+            <p class="plan-note">Secure checkout through Stripe. Cancel anytime.</p>
           }
         }
       </div>

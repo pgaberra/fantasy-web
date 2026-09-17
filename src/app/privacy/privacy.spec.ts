@@ -27,7 +27,7 @@ describe('PrivacyComponent', () => {
   // Every party named here is one the code really sends data to, or that the user really
   // connects. If one is added or dropped, this test should fail and force the page to change
   // with it — a privacy policy that has drifted from the code is worse than none.
-  it.each(['Paddle', 'PostHog', 'Yahoo', 'Google', 'Facebook'])(
+  it.each(['Stripe', 'PostHog', 'Yahoo', 'Google', 'Facebook'])(
     'names %s as a party that receives data',
     async (name) => {
       await MockBuilder(PrivacyComponent);
