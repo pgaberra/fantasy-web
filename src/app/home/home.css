@@ -269,9 +269,9 @@
   color: var(--color-text-subtle);
 }
 
-/* Premium: the one dark card on the page, so it is noticed without a second filled button. The
-   button is outlined in gold (6.7:1 on --color-primary) so "Create projection" stays the first
-   thing a new account reaches for. */
+/* Premium: the one dark card on the page, with a filled gold button (navy text on it reads
+   6.7:1). An outlined button was tried first, to leave "Create projection" as the only filled one,
+   and on navy it all but disappeared. */
 
 .premium {
   display: grid;
@@ -300,14 +300,13 @@
 
 .premium-cta {
   justify-self: start;
-  background: transparent;
-  color: var(--color-gold);
+  background: var(--color-gold);
+  color: var(--color-primary);
   border-color: var(--color-gold);
 }
 
 .premium-cta:hover {
-  background: var(--color-gold);
-  color: var(--color-primary);
+  filter: brightness(1.08);
 }
 
 .premium-cta:focus-visible {
