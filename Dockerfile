@@ -47,6 +47,9 @@ ARG WHOS_HOT_ENABLED=
 # OFFSEASON_ENABLED=true shows the off-season data notice (stale team affiliations, missing
 # rookies) in the projection editors; empty/anything else keeps it hidden (default).
 ARG OFFSEASON_ENABLED=
+# SPREADSHEET_IMPORT_ENABLED=true shows Import spreadsheet in the projection editor; empty/anything
+# else keeps it hidden (default), so the import stays dark until enabled per env.
+ARG SPREADSHEET_IMPORT_ENABLED=
 # PREMIUM_COMING_SOON=true keeps the Premium page and badges but disables Subscribe with a note;
 # empty/anything else sells Premium as usual (default). Needs PAYMENTS_ENABLED.
 ARG PREMIUM_COMING_SOON=
@@ -68,6 +71,7 @@ RUN sed -i \
   -e "s|__ESPN_LEAGUES_ENABLED__|${ESPN_LEAGUES_ENABLED}|g" \
   -e "s|__WHOS_HOT_ENABLED__|${WHOS_HOT_ENABLED}|g" \
   -e "s|__OFFSEASON_ENABLED__|${OFFSEASON_ENABLED}|g" \
+  -e "s|__SPREADSHEET_IMPORT_ENABLED__|${SPREADSHEET_IMPORT_ENABLED}|g" \
   src/environments/environment.prod.ts
 
 RUN npm run build
