@@ -1,0 +1,35 @@
+<p class="menu-title">Ranking</p>
+
+@for (row of rows; track row.type) {
+  <div class="menu-field">
+    <span class="field-label">{{ row.label }}</span>
+    <div class="segmented" role="group" [attr.aria-label]="row.label + ' ranking'">
+      <button
+        type="button"
+        [attr.aria-pressed]="modeOf(row.type) === 'projected'"
+        (click)="select(row.type, 'projected')"
+      >
+        Projected
+      </button>
+      <button
+        type="button"
+        [attr.aria-pressed]="modeOf(row.type) === 'manual'"
+        (click)="select(row.type, 'manual')"
+      >
+        My order
+      </button>
+    </div>
+  </div>
+  @if (needsItsOwnView(row.type)) {
+    <button type="button" class="menu-item" (click)="rankRequested.emit(row.type)">
+      Show {{ row.label.toLowerCase() }} to rank them
+    </button>
+  }
+}
+
+@if (anyHandRanked()) {
+  <p class="menu-note">
+    Type a place in the # column to move a player there. Players you don't rank stay in projected
+    order.
+  </p>
+}

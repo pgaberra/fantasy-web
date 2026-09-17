@@ -1,5 +1,5 @@
 import { MockBuilder, MockInstance, MockRender, ngMocks } from 'ng-mocks';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PlayerProjectionsTableComponent } from './player-projections-table';
 import { Goalie, Player, Skater } from '../../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../../models/stat-key.model';
@@ -20,10 +20,11 @@ import { DEFAULT_DECIMAL_SETTINGS, ScaleConfig } from '../projection-settings-se
 import { PlayerService } from '../../services/player.service';
 import { PositionFilterService } from '../../services/position-filter.service';
 import { TierService } from '../../services/tier.service';
-import { environment } from '../../../environments/environment';
 import { TestBed } from '@angular/core/testing';
 import { ApplicationRef } from '@angular/core';
 import { Observable, of } from 'rxjs';
+import { ManualRanking, PROJECTED_RANKING, withMode, withOrder } from '../../models/manual-ranking';
+import { environment } from '../../../environments/environment';
 
 describe('PlayerProjectionsTableComponent', () => {
   const mockPlayers: Player[] = [
@@ -226,6 +227,8 @@ describe('PlayerProjectionsTableComponent', () => {
       syncedLeagueName: string | null;
       maxVisiblePlayers: number | null;
       newPlayerIds: ReadonlySet<number> | null;
+      rankingControls: boolean;
+      manualRanking: ManualRanking;
     }> = {},
   ) =>
     MockRender(PlayerProjectionsTableComponent, {
@@ -239,6 +242,103 @@ describe('PlayerProjectionsTableComponent', () => {
       useDefaultDecimals: true,
       ...overrides,
     }).point.componentInstance;
+
+  describe('hand ranking', () => {
+    const handRankedSkaters = (order: number[] = []): ManualRanking =>
+      withOrder(withMode(PROJECTED_RANKING, 'skater', 'manual'), 'skater', order);
+
+    const originalEnabled = environment.manualRankingEnabled;
+
+    beforeEach(() => {
+      environment.manualRankingEnabled = true;
+    });
+
+    afterEach(() => {
+      environment.manualRankingEnabled = originalEnabled;
+    });
+
+    it('does not offer the column as an input while the rows are the whole pool', () => {
+      const component = getComponent({
+        rankingControls: true,
+        manualRanking: handRankedSkaters(),
+      });
+
+      // The number beside a skater there counts him among the goalies too, so it is not the
+      // number anyone would type to move him.
+      expect(component.rankableType()).toBeNull();
+    });
+
+    it('offers it once the table is narrowed to the type being ranked', () => {
+      const component = getComponent({
+        rankingControls: true,
+        manualRanking: handRankedSkaters(),
+      });
+
+      component.showForRanking('skater');
+
+      expect(component.rankableType()).toBe('skater');
+    });
+
+    it('leaves the column alone while the type is ranked by its projections', () => {
+      const component = getComponent({ rankingControls: true });
+
+      component.showForRanking('skater');
+
+      expect(component.rankableType()).toBeNull();
+    });
+
+    it('stays off entirely while the build switch is off', () => {
+      environment.manualRankingEnabled = false;
+      const component = getComponent({
+        rankingControls: true,
+        manualRanking: handRankedSkaters(),
+      });
+
+      component.showForRanking('skater');
+
+      expect(component.rankableType()).toBeNull();
+    });
+
+    it('moves a player to the place typed beside him, and stores everyone above him', () => {
+      const component = getComponent({
+        rankingControls: true,
+        manualRanking: handRankedSkaters(),
+      });
+      component.showForRanking('skater');
+
+      component.setRank(2, 1);
+
+      expect(component.manualRanking().skater.order).toEqual([2]);
+      expect(component.filteredAndSortedProjections().map((sp) => sp.projection.playerId)).toEqual([
+        2, 1,
+      ]);
+    });
+
+    /** The point of the seats: the board still weighs the moved player against the goalies. */
+    it('gives the moved player the value of the place he was put in', () => {
+      const component = getComponent({
+        rankingControls: true,
+        manualRanking: handRankedSkaters(),
+      });
+      component.showForRanking('skater');
+      const topValue = component.filteredAndSortedProjections()[0].score.zScore;
+
+      component.setRank(2, 1);
+
+      expect(component.filteredAndSortedProjections()[0].score.zScore).toBe(topValue);
+    });
+
+    it('ignores a place typed while the table is not showing that type alone', () => {
+      const component = getComponent({
+        rankingControls: true,
+        manualRanking: handRankedSkaters(),
+      });
+
+      component.setRank(2, 1);
+
+      expect(component.manualRanking().skater.order).toEqual([]);
+    });
+  });
 
   /**
    * Tiers group a position's players by where the projected value falls away. The chips and the

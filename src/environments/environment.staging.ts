@@ -37,6 +37,8 @@ export const environment = {
   offseasonEnabled: false,
   // Off for local staging runs; the deployed builds set it via the SPREADSHEET_IMPORT_ENABLED build arg.
   spreadsheetImportEnabled: false,
+  // Off for local staging runs; the deployed builds set it via the MANUAL_RANKING_ENABLED build arg.
+  manualRankingEnabled: false,
   // Off for local staging runs; the deployed builds set it via the TIERS_ENABLED build arg.
   tiersEnabled: false,
 };
