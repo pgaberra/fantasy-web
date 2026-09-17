@@ -74,10 +74,10 @@ describe('AuthService', () => {
       return TestBed.inject(Router);
     };
 
-    it('goes to the projections list when nothing asked for somewhere else', async () => {
+    it('goes home when nothing asked for somewhere else', async () => {
       const router = await signIn();
 
-      expect(router.navigateByUrl).toHaveBeenCalledWith('/projections');
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/home');
     });
 
     it('goes back to the page that sent them, once', async () => {
@@ -89,7 +89,7 @@ describe('AuthService', () => {
       // Spent on arrival: the next sign-in this session is not still headed for that share.
       invoke.mockReturnValue(Promise.resolve(authResponse(jwtWith({ sub: 'account-uuid' }))));
       await firstValueFrom(service.login({ email: 'a@example.test', password: 'secret' }));
-      expect(router.navigateByUrl).toHaveBeenLastCalledWith('/projections');
+      expect(router.navigateByUrl).toHaveBeenLastCalledWith('/home');
     });
 
     /**
@@ -102,7 +102,7 @@ describe('AuthService', () => {
       service.rememberReturnUrl(null);
       const router = await signIn();
 
-      expect(router.navigateByUrl).toHaveBeenCalledWith('/projections');
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/home');
     });
 
     it('forgets it for a destination it would refuse anyway', async () => {
@@ -110,7 +110,7 @@ describe('AuthService', () => {
       service.rememberReturnUrl('https://evil.example/steal');
       const router = await signIn();
 
-      expect(router.navigateByUrl).toHaveBeenCalledWith('/projections');
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/home');
     });
 
     /** The value arrives in a query parameter, so a link could otherwise aim it off-site. */
@@ -120,7 +120,7 @@ describe('AuthService', () => {
         service.rememberReturnUrl(elsewhere);
         const router = await signIn();
 
-        expect(router.navigateByUrl).toHaveBeenCalledWith('/projections');
+        expect(router.navigateByUrl).toHaveBeenCalledWith('/home');
       },
     );
 

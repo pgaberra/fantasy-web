@@ -158,6 +158,12 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   failed sync only says that _something_ was refused; this is how you find out what. A refusal is
   a **result, not an error**: showing "could not reach the probe" over Yahoo's own 403 would waste
   the whole feature, so only a failure of our own call surfaces as an error.
+- `home/` — where a signed-in user starts (`/home`): signing in and a signed-in visit to `/` land
+  here. A **Draft prep** checklist (create a projection, start a draft) is derived from the
+  projection list and never stored, so it cannot disagree with the rest of the app, and it goes
+  away once both are done; then the page leads with the board updated last. Syncing a league is
+  not a step because the list does not say whether a board is synced. `demoRedemptionGuard`
+  sends anyone with landing-demo work waiting on to `/projections`, which is what saves it.
 - `profile/` — the account's **profile picture** and **public name** (`/profile`, signed-in
   only), reached from the avatar at the right edge of the header, which opens the account menu
   (who is signed in, Profile, Sign out) at every width. Sharing forces the choice of a name, but
