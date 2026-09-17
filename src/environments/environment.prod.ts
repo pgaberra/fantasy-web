@@ -55,6 +55,10 @@ const offseasonEnabledFlag: string = '__OFFSEASON_ENABLED__';
 // shows Import spreadsheet in the projection editor; untouched or empty resolves to false.
 const spreadsheetImportEnabledFlag: string = '__SPREADSHEET_IMPORT_ENABLED__';
 
+// Positional tiers toggle. Only the literal "true" (via the TIERS_ENABLED build arg) shows the
+// tier column, breaks and draft-mode tier strip; untouched or empty resolves to false.
+const tiersEnabledFlag: string = '__TIERS_ENABLED__';
+
 // Premium's price in US dollars, as a plain number ("4.99"), which /premium quotes both prerendered
 // and in the browser. Must match the price the BFF's STRIPE_PRICE_ID charges.
 const premiumBasePriceUsdFlag: string = '__PREMIUM_BASE_PRICE_USD__';
@@ -86,4 +90,5 @@ export const environment = {
   offseasonEnabled: offseasonEnabledFlag === 'true',
   spreadsheetImportEnabled: spreadsheetImportEnabledFlag === 'true',
   manualRankingEnabled: manualRankingEnabledFlag === 'true',
+  tiersEnabled: tiersEnabledFlag === 'true',
 };

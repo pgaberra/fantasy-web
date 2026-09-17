@@ -193,8 +193,16 @@
         ></thead>
         <tbody>
           @for (sp of visibleProjections(); track sp.projection.playerId) {
+            @if (tierDividers().get(sp.projection.playerId); as tier) {
+              <tr class="tier-divider-row">
+                <td class="tier-divider-cell" [attr.colspan]="columnCount()">
+                  <span class="tier-divider-label">Tier {{ tier }}</span>
+                </td>
+              </tr>
+            }
             <tr
               app-player-row
+              [tierBadge]="tierBadges().get(sp.projection.playerId) ?? null"
               [positionRank]="positionRanks().get(sp.projection.playerId)!"
               [rankEditable]="rankableType() !== null"
               [totalRank]="

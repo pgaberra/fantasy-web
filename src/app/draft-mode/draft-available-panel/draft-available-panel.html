@@ -52,6 +52,23 @@
       </label>
     </div>
   </div>
+  @if (tierStrip().length) {
+    <div class="tier-strip">
+      <span class="tier-strip-label">Best tier left</span>
+      @for (entry of tierStrip(); track entry.position) {
+        <span
+          class="tier-strip-entry"
+          [class.tier-strip-entry--filled]="!entry.needed"
+          [class.tier-strip-entry--thin]="entry.needed && entry.remaining <= 2"
+          [appTooltip]="tierStripTooltip(entry)"
+        >
+          <span class="tier-strip-pos">{{ entry.position }}</span>
+          <span class="tier-strip-tier">T{{ entry.tier }}</span>
+          <span class="tier-strip-count">{{ entry.remaining }} left</span>
+        </span>
+      }
+    </div>
+  }
   @if (availableCount()) {
     <div class="available-list" [class.available-list--no-avatars]="!lookup.showAvatars()">
       <div class="available-list-head">
@@ -65,6 +82,9 @@
             <span class="row-name">{{ lookup.name(sp.projection.playerId) }}</span>
             <span class="row-sub">
               <app-player-position-chips [playerId]="sp.projection.playerId" />
+              @if (tierBadges().get(sp.projection.playerId); as badge) {
+                <span class="tier-chip" [appTooltip]="badge.tooltip">{{ badge.label }}</span>
+              }
               <span class="row-team">{{ lookup.team(sp.projection.playerId) }}</span>
             </span>
           </span>

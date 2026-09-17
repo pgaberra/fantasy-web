@@ -15,6 +15,15 @@ import { catchError, exhaustMap, filter, forkJoin, map, of, Subscription, timer 
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { NotificationService } from '../services/notification.service';
 import { FeatureService } from '../services/feature.service';
+import {
+  PositionTiers,
+  TierBadge,
+  TierPosition,
+  TierService,
+  TIER_POSITIONS,
+} from '../services/tier.service';
+import { RosterSlots } from '../api/models/roster-slots';
+import { environment } from '../../environments/environment';
 import { YahooService } from '../services/yahoo.service';
 import { LeagueDraftResponse } from '../api/models/league-draft-response';
 import { AnalyticsService } from '../services/analytics.service';
@@ -81,6 +90,15 @@ import {
 const DEFAULT_PAGE_SIZE = 50;
 const FOLLOW_POLL_MS = 5000;
 
+/** One position's line in the tier strip: the best tier left there, and how much of it. */
+export interface TierStripEntry {
+  readonly position: TierPosition;
+  readonly tier: number;
+  readonly remaining: number;
+  /** Whether the roster still has a slot this position could fill. */
+  readonly needed: boolean;
+}
+
 const UNFOLLOWABLE_NOTICE: Record<UnfollowableReason, string> = {
   auction: "Draft Mode can't follow an auction draft.",
   'no-team': "Couldn't find your team in this Yahoo league.",
@@ -116,6 +134,7 @@ export class DraftModeComponent implements OnInit {
   private readonly serializer = inject(ProjectionSerializerService);
   private readonly snake = inject(DraftSnakeService);
   private readonly rosterService = inject(DraftRosterService);
+  private readonly tierService = inject(TierService);
   private readonly statInfoService = inject(StatInfoService);
   readonly lookup = inject(DraftPlayerLookupService);
   private readonly features = inject(FeatureService);
@@ -301,6 +320,121 @@ export class DraftModeComponent implements OnInit {
   });
   readonly visibleAvailable = computed(() => this.available().slice(0, this.visibleCount()));
   readonly hasMoreAvailable = computed(() => this.visibleCount() < this.available().length);
+
+  /**
+   * Tier lists per position, derived from the same ranking the board is ordered by. Empty while
+   * the feature is off, which is what leaves every tier chip and the strip unrendered.
+   */
+  readonly tiers = computed<Map<TierPosition, PositionTiers>>(() => {
+    if (!environment.tiersEnabled) {
+      return new Map();
+    }
+    return this.tierService.tiersByPosition({
+      ranked: this.ranked(),
+      players: this.playerMap(),
+      scoringType: this.scoringType(),
+      leagueSize: this.leagueSize(),
+      rosterSlots: this.rosterSlots(),
+    });
+  });
+
+  /**
+   * The one position a tier chip should speak for: whichever single position the filter narrows
+   * to. With several picked, or none, a player's chip names his own strongest position instead.
+   */
+  private readonly filteredTierPosition = computed<TierPosition | null>(() => {
+    const selected = this.selectedPositions();
+    return selected.length === 1 ? this.tierService.tierPositionForFilter(selected[0]) : null;
+  });
+
+  readonly tierBadges = computed<Map<number, TierBadge>>(() => {
+    const tiers = this.tiers();
+    if (tiers.size === 0) {
+      return new Map();
+    }
+    const position = this.filteredTierPosition();
+    const badges = new Map<number, TierBadge>();
+    for (const scoredProjection of this.visibleAvailable()) {
+      const playerId = scoredProjection.projection.playerId;
+      const badge = this.tierService.badgeFor(playerId, tiers, position);
+      if (badge) {
+        badges.set(playerId, badge);
+      }
+    }
+    return badges;
+  });
+
+  /** Roster slot keys on the viewed team that are still open. */
+  private readonly openSlotKeys = computed<Set<keyof RosterSlots>>(
+    () =>
+      new Set(
+        this.roster()
+          .slots.filter((slot) => slot.playerId === null)
+          .map((slot) => slot.slotKey),
+      ),
+  );
+
+  /**
+   * Per position, the best tier still on the board and how many of it are left — the count a
+   * manager is actually deciding on ("one defenseman left in this tier, six left wings in
+   * theirs"). Positions the roster has no room for are marked so they can recede.
+   */
+  readonly tierStrip = computed<TierStripEntry[]>(() => {
+    const tiers = this.tiers();
+    if (tiers.size === 0) {
+      return [];
+    }
+    const drafted = this.draftedIds();
+    const players = this.playerMap();
+    const openSlots = this.openSlotKeys();
+    const ranked = this.ranked();
+    const entries: TierStripEntry[] = [];
+
+    for (const position of TIER_POSITIONS) {
+      const tierByPlayerId = tiers.get(position)?.tierByPlayerId;
+      if (!tierByPlayerId) {
+        continue;
+      }
+      const stillAvailable = ranked.filter(
+        (scoredProjection) =>
+          !drafted.has(scoredProjection.projection.playerId) &&
+          tierByPlayerId.has(scoredProjection.projection.playerId) &&
+          this.positionFilterService.matches(scoredProjection.projection, players, position),
+      );
+      if (stillAvailable.length === 0) {
+        continue;
+      }
+      // The list is ranked, so the first one left is in the best tier still available.
+      const tier = tierByPlayerId.get(stillAvailable[0].projection.playerId)!;
+      const remaining = stillAvailable.filter(
+        (scoredProjection) => tierByPlayerId.get(scoredProjection.projection.playerId) === tier,
+      ).length;
+      entries.push({
+        position,
+        tier,
+        remaining,
+        needed: this.positionStillNeeded(position, openSlots),
+      });
+    }
+    return entries;
+  });
+
+  /**
+   * Whether a position can still go anywhere on the roster — its own slot, or a flex or bench slot
+   * it is eligible for. A position with nowhere to go is not a decision, however thin its tier.
+   */
+  private positionStillNeeded(
+    position: TierPosition,
+    openSlots: ReadonlySet<keyof RosterSlots>,
+  ): boolean {
+    if (openSlots.has('bn')) {
+      return true;
+    }
+    if (position === 'G') {
+      return openSlots.has('g');
+    }
+    return openSlots.has(position.toLowerCase() as keyof RosterSlots) || openSlots.has('util');
+  }
 
   private readonly scoreByPlayerId = computed(() => {
     const isPoints = this.scoringType() === 'points';

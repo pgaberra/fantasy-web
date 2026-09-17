@@ -18,6 +18,8 @@ import { PlayerRowComponent } from './player-row/player-row';
 import { StatInputComponent } from './player-row/stat-input/stat-input';
 import { DEFAULT_DECIMAL_SETTINGS, ScaleConfig } from '../projection-settings-section/model';
 import { PlayerService } from '../../services/player.service';
+import { PositionFilterService } from '../../services/position-filter.service';
+import { TierService } from '../../services/tier.service';
 import { TestBed } from '@angular/core/testing';
 import { ApplicationRef } from '@angular/core';
 import { Observable, of } from 'rxjs';
@@ -205,6 +207,8 @@ describe('PlayerProjectionsTableComponent', () => {
       .keep(FormatToiPipe)
       .keep(DecimalPipe)
       .keep(StatInfoService)
+      .keep(TierService)
+      .keep(PositionFilterService)
       .mock(PlayerService),
   );
 
@@ -333,6 +337,88 @@ describe('PlayerProjectionsTableComponent', () => {
       component.setRank(2, 1);
 
       expect(component.manualRanking().skater.order).toEqual([]);
+    });
+  });
+
+  /**
+   * Tiers group a position's players by where the projected value falls away. The chips and the
+   * divider rows are both derived, so what is worth pinning down is when they are allowed to show
+   * at all: a divider drawn across a list that is not that position's ranked order would claim a
+   * cliff that is not on the screen.
+   */
+  describe('tiers', () => {
+    const originalFlag = environment.tiersEnabled;
+
+    beforeEach(() => {
+      environment.tiersEnabled = true;
+    });
+
+    afterEach(() => {
+      environment.tiersEnabled = originalFlag;
+    });
+
+    it('shows nothing while the feature is off', () => {
+      environment.tiersEnabled = false;
+      const component = getComponent();
+      component.setPositionFilter('C');
+
+      expect(component.tierBadges().size).toBe(0);
+      expect(component.tierDividers().size).toBe(0);
+    });
+
+    it('labels a chip with the position it belongs to when nothing is filtered', () => {
+      const component = getComponent();
+
+      const badge = component.tierBadges().get(1);
+      expect(badge?.label).toBe('C T1');
+      expect(badge?.tooltip).toContain('centers');
+    });
+
+    it('drops the position from the chip once the list is one position', () => {
+      const component = getComponent();
+      component.setPositionFilter('C');
+
+      expect(component.tierBadges().get(1)?.label).toBe('T1');
+    });
+
+    it('opens the list with a divider for the first tier', () => {
+      const component = getComponent();
+      component.setPositionFilter('C');
+
+      expect(component.tierDividers().get(1)).toBe(1);
+    });
+
+    it('draws no divider while every position is in the list', () => {
+      const component = getComponent();
+
+      expect(component.tierDividers().size).toBe(0);
+    });
+
+    it('draws no divider once the order is not the ranked one', () => {
+      const component = getComponent();
+      component.setPositionFilter('C');
+      component.onSort('goals');
+
+      expect(component.tierDividers().size).toBe(0);
+    });
+
+    it('draws no divider while a search hides part of the order', () => {
+      const component = getComponent();
+      component.setPositionFilter('C');
+      component.searchTerm.set('McDavid');
+
+      expect(component.tierDividers().size).toBe(0);
+    });
+
+    it('spans a divider across every column the table shows', () => {
+      const component = getComponent({
+        activeScoringColumns: new Set<ScoringStatKey>(['goals', 'assists']),
+        activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
+      });
+      component.setPositionFilter('C');
+
+      // Rank, name and the summary, plus the one utility and two scoring columns.
+      expect(component.columnCount()).toBe(6);
     });
   });
 

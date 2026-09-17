@@ -17,14 +17,21 @@ import { AuthService } from '../services/auth.service';
 import {
   ACCEPTED_AVATAR_ACCEPT,
   AvatarImageService,
+  isAcceptedAvatarType,
   UnreadableImageError,
   UnsupportedImageTypeError,
 } from '../services/avatar-image.service';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { PlayerHeadshotComponent } from '../shared/player-headshot/player-headshot';
+import { AvatarCropDialogComponent } from './avatar-crop-dialog/avatar-crop-dialog';
+import { AvatarCrop } from '../models/avatar-crop';
 import { USERNAME_MAX_LENGTH, USERNAME_PATTERN, USERNAME_RULE } from '../models/username';
 import { messageForError } from '../shared/http-error';
+
+/** Both of these are shown for a file the browser is not going to make a picture out of. */
+const UNSUPPORTED_FORMAT = 'Unsupported file format. Use a PNG, JPEG, or WebP image.';
+const UNREADABLE_FILE = 'That file could not be read as an image. Use a PNG or JPEG.';
 
 /**
  * The account as the app shows it: the picture in the header and the public name. Sharing forces
@@ -33,7 +40,12 @@ import { messageForError } from '../shared/http-error';
  */
 @Component({
   selector: 'app-profile',
-  imports: [LoadingIndicatorComponent, ErrorStateComponent, PlayerHeadshotComponent],
+  imports: [
+    LoadingIndicatorComponent,
+    ErrorStateComponent,
+    PlayerHeadshotComponent,
+    AvatarCropDialogComponent,
+  ],
   templateUrl: './profile.html',
   styleUrl: './profile.css',
 })
@@ -60,6 +72,8 @@ export class ProfileComponent implements OnInit {
   readonly avatarUrl = this.account.avatarUrl;
   readonly isUploading = signal<boolean>(false);
   readonly avatarError = signal<string | null>(null);
+  /** The picked file, while the user is placing the square that becomes the picture on it. */
+  readonly pendingPicture = signal<File | null>(null);
   readonly isSigningOutEverywhere = signal<boolean>(false);
   readonly signOutEverywhereError = signal<string | null>(null);
   readonly displayName = computed(() => this.username() ?? this.email());
@@ -154,6 +168,11 @@ export class ProfileComponent implements OnInit {
     });
   }
 
+  /**
+   * A picked file is not uploaded on the spot: it opens the crop dialog, and what that saves is
+   * the square the user placed. The format is judged here rather than there, so a file no browser
+   * will draw is named as such instead of opening a dialog on a picture that never appears.
+   */
   onAvatarPicked(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -162,12 +181,42 @@ export class ProfileComponent implements OnInit {
     if (!file) {
       return;
     }
+    this.avatarError.set(null);
+    if (!isAcceptedAvatarType(file)) {
+      this.avatarError.set(UNSUPPORTED_FORMAT);
+      return;
+    }
+    this.pendingPicture.set(file);
+  }
+
+  cancelPicture(): void {
+    this.pendingPicture.set(null);
+  }
+
+  /** The dialog could not show the file, so it is not a picture whatever its type claimed. */
+  reportUnreadablePicture(): void {
+    this.pendingPicture.set(null);
+    this.avatarError.set(UNREADABLE_FILE);
+  }
+
+  /**
+   * Uploads the square the user placed. The dialog stays open while this runs and closes when it
+   * lands: a failure that closed it would throw away the placing along with the error.
+   */
+  savePicture(crop: AvatarCrop): void {
+    const file = this.pendingPicture();
+    if (!file) {
+      return;
+    }
     this.isUploading.set(true);
     this.avatarError.set(null);
-    from(this.avatarImages.prepare(file))
+    from(this.avatarImages.prepare(file, crop))
       .pipe(switchMap((image) => this.account.setAvatar(image)))
       .subscribe({
-        next: () => this.isUploading.set(false),
+        next: () => {
+          this.isUploading.set(false);
+          this.pendingPicture.set(null);
+        },
         error: (error: unknown) => {
           this.isUploading.set(false);
           this.avatarError.set(this.messageForAvatarError(error));
@@ -181,10 +230,10 @@ export class ProfileComponent implements OnInit {
    */
   private messageForAvatarError(error: unknown): string {
     if (error instanceof UnsupportedImageTypeError) {
-      return 'Unsupported file format. Use a PNG, JPEG, or WebP image.';
+      return UNSUPPORTED_FORMAT;
     }
     if (error instanceof UnreadableImageError) {
-      return 'That file could not be read as an image. Use a PNG or JPEG.';
+      return UNREADABLE_FILE;
     }
     return messageForError(error, "Couldn't save your picture.");
   }

@@ -293,3 +293,22 @@ tbody tr:hover {
 .filter-control--check input {
   margin: 0;
 }
+
+/* A tier break, drawn as its own row so the cliff in projected value is visible in the
+   order rather than only implied by the numbers. */
+.tier-divider-row {
+  background: var(--color-surface-hover);
+}
+
+.tier-divider-cell {
+  padding: 0.15rem var(--space-2);
+  border-top: 2px solid var(--color-accent);
+}
+
+.tier-divider-label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}

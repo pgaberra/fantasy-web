@@ -39,4 +39,6 @@ export const environment = {
   spreadsheetImportEnabled: false,
   // Off for local staging runs; the deployed builds set it via the MANUAL_RANKING_ENABLED build arg.
   manualRankingEnabled: false,
+  // Off for local staging runs; the deployed builds set it via the TIERS_ENABLED build arg.
+  tiersEnabled: false,
 };

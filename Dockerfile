@@ -53,6 +53,9 @@ ARG SPREADSHEET_IMPORT_ENABLED=
 # MANUAL_RANKING_ENABLED=true offers the Ranking control in the projection editor, which orders a
 # player type by hand instead of by its projected stats; empty/anything else keeps it hidden.
 ARG MANUAL_RANKING_ENABLED=
+# TIERS_ENABLED=true shows positional tiers (the editor's tier column and breaks, and draft
+# mode's tier badges and strip); empty/anything else keeps them hidden (default).
+ARG TIERS_ENABLED=
 # PREMIUM_COMING_SOON=true keeps the Premium page and badges but disables Subscribe with a note;
 # empty/anything else sells Premium as usual (default). Needs PAYMENTS_ENABLED.
 ARG PREMIUM_COMING_SOON=
@@ -76,6 +79,7 @@ RUN sed -i \
   -e "s|__OFFSEASON_ENABLED__|${OFFSEASON_ENABLED}|g" \
   -e "s|__SPREADSHEET_IMPORT_ENABLED__|${SPREADSHEET_IMPORT_ENABLED}|g" \
   -e "s|__MANUAL_RANKING_ENABLED__|${MANUAL_RANKING_ENABLED}|g" \
+  -e "s|__TIERS_ENABLED__|${TIERS_ENABLED}|g" \
   src/environments/environment.prod.ts
 
 RUN npm run build
