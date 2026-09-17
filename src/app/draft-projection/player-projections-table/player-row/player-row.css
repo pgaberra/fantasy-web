@@ -196,6 +196,36 @@ td.col-name {
   line-height: 1.35;
 }
 
+/* The place is typed straight into the column it is read from, so the box takes the cell's own
+   width and its number stays on the baseline the computed ranks sit on. */
+.rank-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0.15rem 0.2rem;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-sm);
+  appearance: textfield;
+}
+
+.rank-input::-webkit-outer-spin-button,
+.rank-input::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.rank-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
+}
+
 .tier-chip {
   flex: none;
   margin-left: var(--space-1);

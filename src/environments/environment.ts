@@ -53,6 +53,10 @@ export const environment = {
   // Premium is shown but not yet sold: the Premium page keeps its plans and badges but its
   // Subscribe button is disabled with a note. Only means anything with paymentsEnabled. Deployed builds turn it on with PREMIUM_COMING_SOON=true.
   premiumComingSoon: false,
+  // Feature toggle for ranking a player type by hand instead of by its projected stats (the
+  // Ranking control in the projection editor). Off by default; deployed builds turn it on with
+  // the MANUAL_RANKING_ENABLED=true build arg.
+  manualRankingEnabled: false,
   // Premium's price in US dollars, which the Premium page quotes. Empty locally, where the mock
   // provider is in use and there is no price to quote.
   premiumBasePriceUsd: '',

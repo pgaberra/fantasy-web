@@ -63,6 +63,11 @@ const tiersEnabledFlag: string = '__TIERS_ENABLED__';
 // and in the browser. Must match the price the BFF's STRIPE_PRICE_ID charges.
 const premiumBasePriceUsdFlag: string = '__PREMIUM_BASE_PRICE_USD__';
 
+// Hand ranking toggle. Only the literal "true" (via the MANUAL_RANKING_ENABLED build arg) offers
+// the Ranking control in the projection editor; untouched or empty resolves to false, so a
+// projection stays ranked by its projected stats.
+const manualRankingEnabledFlag: string = '__MANUAL_RANKING_ENABLED__';
+
 export const environment = {
   production: true,
   environmentName: appEnvFlag.startsWith('__APP_ENV') ? 'production' : appEnvFlag,
@@ -84,5 +89,6 @@ export const environment = {
     : premiumBasePriceUsdFlag,
   offseasonEnabled: offseasonEnabledFlag === 'true',
   spreadsheetImportEnabled: spreadsheetImportEnabledFlag === 'true',
+  manualRankingEnabled: manualRankingEnabledFlag === 'true',
   tiersEnabled: tiersEnabledFlag === 'true',
 };

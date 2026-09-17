@@ -9,6 +9,7 @@ import {
   SKATER_SCORING_STAT_KEYS,
 } from '../models/stat-key.model';
 import { DecimalStatKey } from '../draft-projection/projection-settings-section/model';
+import { PROJECTED_RANKING } from '../models/manual-ranking';
 
 function fullRecord<T extends string>(keys: readonly T[], value: number): Record<T, number> {
   return Object.fromEntries(keys.map((key) => [key, value])) as Record<T, number>;
@@ -38,6 +39,7 @@ const sampleState: ProjectionState = {
   playerBasis: 'last_season',
   playerPoolSyncedAt: '2026-08-16T04:12:00.000Z',
   unacknowledgedNewPlayerIds: [7, 8],
+  manualRanking: PROJECTED_RANKING,
   draft: {
     teams: [
       { id: 'team-me', name: 'My Team', mine: true },
@@ -82,6 +84,48 @@ describe('ProjectionSerializerService', () => {
 
     expect(data.settings.unacknowledgedNewPlayerIds).toBeUndefined();
     expect(service.fromProjectionData(data).unacknowledgedNewPlayerIds).toEqual([]);
+  });
+
+  describe('hand ranking', () => {
+    const handRanked: ProjectionState = {
+      ...sampleState,
+      manualRanking: {
+        skater: { mode: 'projected', order: [] },
+        goalie: { mode: 'manual', order: [7, 3] },
+      },
+    };
+
+    it('round-trips the order and the mode', () => {
+      const roundTripped = service.fromProjectionData(service.toProjectionData(handRanked));
+
+      expect(roundTripped.manualRanking).toEqual(handRanked.manualRanking);
+    });
+
+    // A projection nobody has ranked by hand saves exactly the payload it saved before.
+    it('sends nothing at all while both types rank by their projections', () => {
+      expect(service.toProjectionData(sampleState).settings.manualRanking).toBeUndefined();
+    });
+
+    it('reads a projection saved before rankings could be typed as ranked by projection', () => {
+      const data = service.toProjectionData(sampleState);
+
+      expect(service.fromProjectionData(data).manualRanking).toEqual(PROJECTED_RANKING);
+    });
+
+    /** Going back to the projected board is a look, not a decision to throw the order away. */
+    it('keeps an order belonging to a type that has been switched back to projected', () => {
+      const switchedBack: ProjectionState = {
+        ...sampleState,
+        manualRanking: {
+          skater: { mode: 'projected', order: [] },
+          goalie: { mode: 'projected', order: [7, 3] },
+        },
+      };
+
+      const roundTripped = service.fromProjectionData(service.toProjectionData(switchedBack));
+
+      expect(roundTripped.manualRanking.goalie.order).toEqual([7, 3]);
+    });
   });
 
   it('carries the draft finishedAt marker through a save/load round-trip', () => {

@@ -25,6 +25,33 @@ import { PositionOverride } from '../api/models/position-override';
 import { PositionOverrides } from '../models/position-override';
 import { SKATER_POSITIONS, SkaterPosition } from '../models/position.model';
 import { ProjectionState } from './projection-serializer';
+import {
+  hasAnyRanking,
+  ManualRanking,
+  PlayerTypeRanking,
+  PROJECTED_RANKING,
+} from '../models/manual-ranking';
+import { ManualRanking as ApiManualRanking } from '../api/models/manual-ranking';
+import { PlayerTypeRanking as ApiPlayerTypeRanking } from '../api/models/player-type-ranking';
+
+function toApiRanking(ranking: PlayerTypeRanking): ApiPlayerTypeRanking {
+  return {
+    mode: ranking.mode,
+    // Kept even while the type ranks by its projections: the order is work the owner did, and
+    // turning it off to see the projected board should not be the way to lose it.
+    order: ranking.order.length ? [...ranking.order] : undefined,
+  };
+}
+
+function fromApiRanking(ranking: ApiManualRanking | undefined): ManualRanking {
+  if (!ranking) {
+    return PROJECTED_RANKING;
+  }
+  return {
+    skater: { mode: ranking.skater.mode, order: ranking.skater.order ?? [] },
+    goalie: { mode: ranking.goalie.mode, order: ranking.goalie.order ?? [] },
+  };
+}
 
 /**
  * A stat line holding every key the app knows about today, zero-filling the ones a stored
@@ -76,6 +103,14 @@ export class ProjectionSerializerService {
         unacknowledgedNewPlayerIds: state.unacknowledgedNewPlayerIds.length
           ? [...state.unacknowledgedNewPlayerIds]
           : undefined,
+        // Absent until the owner has said something about the order, so a projection nobody has
+        // ranked by hand saves the payload it always did.
+        manualRanking: hasAnyRanking(state.manualRanking)
+          ? {
+              skater: toApiRanking(state.manualRanking.skater),
+              goalie: toApiRanking(state.manualRanking.goalie),
+            }
+          : undefined,
       },
       players: state.playerProjections.map((projection) => ({
         playerId: projection.playerId,
@@ -93,6 +128,14 @@ export class ProjectionSerializerService {
         .sort(([a], [b]) => a - b)
         .map(([playerId, positions]) => ({ playerId, positions: [...positions] })),
     };
+  }
+
+  /**
+   * The stored ranking as the app holds it. Public because Draft Mode ranks a board from the
+   * projection's data without rebuilding the whole editor state around it.
+   */
+  manualRankingFrom(ranking: ApiManualRanking | undefined): ManualRanking {
+    return fromApiRanking(ranking);
   }
 
   fromProjectionData(data: ProjectionData): ProjectionState {
@@ -121,6 +164,7 @@ export class ProjectionSerializerService {
       playerBasis: data.settings.playerBasis ?? null,
       playerPoolSyncedAt: data.settings.playerPoolSyncedAt ?? null,
       unacknowledgedNewPlayerIds: data.settings.unacknowledgedNewPlayerIds ?? [],
+      manualRanking: fromApiRanking(data.settings.manualRanking),
       draft: this.sanitizeDraft(data.draft),
       positionOverrides: this.toPositionOverrides(data.positionOverrides),
       playerProjections: data.players.map((player) => this.toProjection(player)),

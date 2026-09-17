@@ -5,6 +5,7 @@ import { RosterSlots } from '../api/models/roster-slots';
 import { YahooSync } from '../api/models/yahoo-sync';
 import { EspnSync } from '../api/models/espn-sync';
 import { DraftState } from '../api/models/draft-state';
+import { ManualRanking } from '../models/manual-ranking';
 import { PositionOverrides } from '../models/position-override';
 import { ProjectionSettings } from '../api/models/projection-settings';
 
@@ -43,6 +44,7 @@ export interface ProjectionState {
    * back. Empty is the normal case.
    */
   unacknowledgedNewPlayerIds: number[];
+  manualRanking: ManualRanking;
   draft: DraftState | null;
   /**
    * The positions the owner corrected by hand, keyed by player. Empty is the normal case: it
