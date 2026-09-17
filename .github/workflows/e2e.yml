@@ -122,8 +122,11 @@ jobs:
       # suite reproduced a data-loss bug nightly. An issue is something that sits in the way.
       # One issue per outage, not one per run: a failure while an issue is already open just
       # adds a comment.
+      #
+      # Master only, like the stand-down above: the issue says staging's suite is failing, and a
+      # branch run is testing that branch's specs. Its red cross is for whoever dispatched it.
       - name: Raise the alarm
-        if: failure()
+        if: failure() && github.ref == 'refs/heads/master'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
