@@ -64,6 +64,26 @@
           }
         </span>
         <span class="toolbar-actions">
+          @if (canFollow()) {
+            @if (following()) {
+              <button type="button" class="btn btn-secondary btn-sm" (click)="stopFollowing()">
+                Stop following
+              </button>
+            } @else {
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                [disabled]="followLoading()"
+                (click)="requestFollow()"
+              >
+                @if (followLoading()) {
+                  <app-loading-indicator variant="inline" label="Loading the Yahoo draft" />
+                } @else {
+                  Follow Yahoo draft
+                }
+              </button>
+            }
+          }
           <button
             type="button"
             class="btn btn-secondary btn-sm"
@@ -72,7 +92,12 @@
           >
             Undo last pick
           </button>
-          <button type="button" class="btn btn-secondary btn-sm" (click)="editTeams()">
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            [disabled]="following()"
+            (click)="editTeams()"
+          >
             Edit teams
           </button>
           @if (finished()) {
@@ -92,6 +117,20 @@
           }
         </span>
       </div>
+
+      @if (following() || followNotice()) {
+        <p class="follow-status" role="status">
+          @if (following()) {
+            <span
+              ><span class="follow-live" aria-hidden="true"></span>Following
+              {{ yahooSync()?.leagueName }} on Yahoo. Picks made there appear here.</span
+            >
+          }
+          @if (followNotice(); as notice) {
+            <span class="follow-notice">{{ notice }}</span>
+          }
+        </p>
+      }
 
       <div class="draft-layout">
         <app-draft-roster-panel
@@ -117,6 +156,7 @@
           [hasMore]="hasMoreAvailable()"
           [isMyPick]="isMyPick()"
           [isComplete]="isComplete()"
+          [locked]="following()"
           [draftLabel]="draftLabel()"
           [scoringType]="scoringType()"
           [statColumns]="statColumns()"
@@ -134,6 +174,7 @@
           [pickRounds]="pickRounds()"
           [editingPick]="editingPick()"
           [picksCount]="picks().length"
+          [locked]="following()"
           (startEdit)="startEditPick($event)"
           (requestRemove)="requestRemovePick($event)"
         />
@@ -158,6 +199,26 @@
               </button>
               <button type="button" class="btn btn-primary" (click)="finishDraft()">
                 Finish draft
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (pendingFollow(); as league) {
+        <div class="modal-overlay" (click)="cancelFollow()">
+          <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+            <h2 class="modal-title">Replace your picks with the Yahoo draft?</h2>
+            <p class="modal-text">
+              Your {{ picks().length }} picks and teams here are replaced by the league's
+              {{ league.teams.length }} teams and the {{ league.picks.length }} picks made on Yahoo.
+            </p>
+            <div class="modal-actions">
+              <button type="button" class="btn btn-secondary" (click)="cancelFollow()">
+                Cancel
+              </button>
+              <button type="button" class="btn btn-primary" (click)="confirmFollow()">
+                Follow Yahoo draft
               </button>
             </div>
           </div>

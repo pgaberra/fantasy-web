@@ -10,9 +10,13 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { forkJoin } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { catchError, exhaustMap, filter, forkJoin, map, of, Subscription, timer } from 'rxjs';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { NotificationService } from '../services/notification.service';
+import { FeatureService } from '../services/feature.service';
+import { YahooService } from '../services/yahoo.service';
+import { LeagueDraftResponse } from '../api/models/league-draft-response';
 import { AnalyticsService } from '../services/analytics.service';
 import { PlayerService } from '../services/player.service';
 import { ProjectionRankingService, RankingInput } from '../services/projection-ranking.service';
@@ -66,8 +70,22 @@ import {
   LeagueProjectionPlayer,
   LeagueProjectionTeamInput,
 } from './league-projection';
+import {
+  boardFromLeagueDraft,
+  isLeagueBoard,
+  sameBoard,
+  UnfollowableReason,
+  unfollowableReason,
+} from './league-draft-follow';
 
 const DEFAULT_PAGE_SIZE = 50;
+const FOLLOW_POLL_MS = 5000;
+
+const UNFOLLOWABLE_NOTICE: Record<UnfollowableReason, string> = {
+  auction: "Draft Mode can't follow an auction draft.",
+  'no-team': "Couldn't find your team in this Yahoo league.",
+  'too-few-teams': "Couldn't find the teams in this Yahoo league.",
+};
 
 @Component({
   selector: 'app-draft-mode',
@@ -100,6 +118,8 @@ export class DraftModeComponent implements OnInit {
   private readonly rosterService = inject(DraftRosterService);
   private readonly statInfoService = inject(StatInfoService);
   readonly lookup = inject(DraftPlayerLookupService);
+  private readonly features = inject(FeatureService);
+  private readonly yahoo = inject(YahooService);
 
   readonly projectionId = signal<string | null>(null);
   readonly projectionName = signal<string>('');
@@ -139,6 +159,15 @@ export class DraftModeComponent implements OnInit {
   readonly viewedTeamId = signal<string | null>(null);
   readonly showSummary = signal<boolean>(false);
   readonly confirmingFinish = signal<boolean>(false);
+
+  /** Whether the board is following the linked Yahoo league's draft, which locks every pick edit. */
+  readonly following = signal<boolean>(false);
+  readonly followLoading = signal<boolean>(false);
+  /** What stopped or is holding up following, shown beside the control. */
+  readonly followNotice = signal<string | null>(null);
+  /** A league draft waiting for the user to agree to replace the picks entered by hand. */
+  readonly pendingFollow = signal<LeagueDraftResponse | null>(null);
+  private followSubscription: Subscription | null = null;
 
   private readonly data = signal<ProjectionData | null>(null);
   /**
@@ -342,7 +371,10 @@ export class DraftModeComponent implements OnInit {
     return slot ? (this.teamById().get(slot.teamId) ?? null) : null;
   });
   readonly isMyPick = computed(() => !!this.upNextTeam()?.mine);
-  readonly canUndo = computed(() => this.picks().length > 0);
+  readonly canUndo = computed(() => this.picks().length > 0 && !this.following());
+  readonly canFollow = computed(
+    () => this.features.leagueDraftSync() && this.yahooSync() !== null && !this.finished(),
+  );
   readonly finished = computed(() => !!this.draft()?.finishedAt);
 
   // A preset draft has no projection to go back to — it exists only to hold these picks — so
@@ -594,7 +626,7 @@ export class DraftModeComponent implements OnInit {
 
   draftCurrent(playerId: number): void {
     const slot = this.currentSlot();
-    if (!slot || this.draftedIds().has(playerId)) {
+    if (this.following() || !slot || this.draftedIds().has(playerId)) {
       return;
     }
     this.mutate((draft) => ({
@@ -604,13 +636,16 @@ export class DraftModeComponent implements OnInit {
   }
 
   undoLast(): void {
-    if (!this.picks().length) {
+    if (this.following() || !this.picks().length) {
       return;
     }
     this.mutate((draft) => ({ ...draft, picks: draft.picks.slice(0, -1) }));
   }
 
   startEditPick(overall: number): void {
+    if (this.following()) {
+      return;
+    }
     this.editingPick.set(overall);
   }
 
@@ -633,7 +668,7 @@ export class DraftModeComponent implements OnInit {
   }
 
   removePick(overall: number): void {
-    if (overall < 1 || overall > this.picks().length) {
+    if (this.following() || overall < 1 || overall > this.picks().length) {
       return;
     }
     this.editingPick.set(null);
@@ -808,8 +843,140 @@ export class DraftModeComponent implements OnInit {
   }
 
   editTeams(): void {
+    if (this.following()) {
+      return;
+    }
     this.editingPick.set(null);
     this.setupOpen.set(true);
+  }
+
+  /**
+   * Starts following the linked Yahoo league's draft. The league becomes the source of the board:
+   * its teams, its order and its picks. Asks first when that would replace picks entered by hand.
+   */
+  requestFollow(): void {
+    const leagueKey = this.yahooSync()?.leagueKey;
+    if (!leagueKey || this.following() || this.followLoading()) {
+      return;
+    }
+    this.followNotice.set(null);
+    this.followLoading.set(true);
+    this.yahoo
+      .leagueDraft(leagueKey)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (league) => {
+          this.followLoading.set(false);
+          const reason = unfollowableReason(league);
+          if (reason) {
+            this.followNotice.set(UNFOLLOWABLE_NOTICE[reason]);
+            return;
+          }
+          if (isLeagueBoard(this.draft(), league)) {
+            this.startFollowing(leagueKey, league);
+          } else {
+            this.pendingFollow.set(league);
+          }
+        },
+        error: (error: unknown) => {
+          this.followLoading.set(false);
+          this.followNotice.set(this.followErrorNotice(error));
+        },
+      });
+  }
+
+  confirmFollow(): void {
+    const league = this.pendingFollow();
+    const leagueKey = this.yahooSync()?.leagueKey;
+    this.pendingFollow.set(null);
+    if (league && leagueKey) {
+      this.startFollowing(leagueKey, league);
+    }
+  }
+
+  cancelFollow(): void {
+    this.pendingFollow.set(null);
+  }
+
+  stopFollowing(): void {
+    this.followSubscription?.unsubscribe();
+    this.followSubscription = null;
+    this.following.set(false);
+  }
+
+  private startFollowing(leagueKey: string, league: LeagueDraftResponse): void {
+    this.following.set(true);
+    this.editingPick.set(null);
+    this.pendingRemoval.set(null);
+    this.setupOpen.set(false);
+    this.analytics.capture('draft_follow_started');
+    if (!this.applyLeagueDraft(league)) {
+      return;
+    }
+    // A hidden tab skips its turn rather than queueing one, and a slow answer is never overtaken
+    // by the next request.
+    this.followSubscription = timer(FOLLOW_POLL_MS, FOLLOW_POLL_MS)
+      .pipe(
+        filter(() => typeof document === 'undefined' || !document.hidden),
+        exhaustMap(() =>
+          this.yahoo.leagueDraft(leagueKey).pipe(
+            map((league) => ({ league, error: null })),
+            catchError((error: unknown) => of({ league: null, error })),
+          ),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(({ league: next, error }) => {
+        if (next) {
+          this.applyLeagueDraft(next);
+        } else {
+          this.onFollowError(error);
+        }
+      });
+  }
+
+  /** Puts the league's board in place. False when following has stopped because of it. */
+  private applyLeagueDraft(league: LeagueDraftResponse): boolean {
+    const reason = unfollowableReason(league);
+    if (reason) {
+      this.followNotice.set(UNFOLLOWABLE_NOTICE[reason]);
+      this.stopFollowing();
+      return false;
+    }
+    const next = boardFromLeagueDraft(this.draft(), league);
+    if (!sameBoard(this.draft(), next)) {
+      this.draft.set(next);
+      this.save();
+    }
+    if (league.status === 'FINISHED') {
+      this.followNotice.set('The Yahoo draft is finished.');
+      this.stopFollowing();
+      return false;
+    }
+    this.followNotice.set(null);
+    return true;
+  }
+
+  /**
+   * A dropped connection is worth another try, so polling carries on. A refusal, or a draft that is
+   * no longer served, answers the same way next time, so following stops.
+   */
+  private onFollowError(error: unknown): void {
+    const status = error instanceof HttpErrorResponse ? error.status : 0;
+    if (status === 404 || status === 424) {
+      this.followNotice.set(this.followErrorNotice(error));
+      this.stopFollowing();
+      return;
+    }
+    this.followNotice.set("Couldn't reach Yahoo. Trying again.");
+  }
+
+  private followErrorNotice(error: unknown): string {
+    const status = error instanceof HttpErrorResponse ? error.status : 0;
+    if (status === 424) {
+      return "Yahoo refused access to this league's draft.";
+    }
+    return "Couldn't load the Yahoo draft.";
   }
 
   requestFinishDraft(): void {

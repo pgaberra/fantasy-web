@@ -29,6 +29,7 @@ export class DraftPicksPanelComponent {
   readonly pickRounds = input.required<DraftPickRound[]>();
   readonly editingPick = input.required<number | null>();
   readonly picksCount = input.required<number>();
+  readonly locked = input<boolean>(false);
   readonly startEdit = output<number>();
   readonly requestRemove = output<number>();
 }
