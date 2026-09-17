@@ -3,7 +3,6 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
-import { FeatureService } from '../../services/feature.service';
 import { feedbackPage } from '../../services/feedback.service';
 
 @Component({
@@ -14,7 +13,6 @@ import { feedbackPage } from '../../services/feedback.service';
 })
 export class SiteFooterComponent {
   readonly authService = inject(AuthService);
-  readonly featureService = inject(FeatureService);
   private readonly router = inject(Router);
 
   /** The page the reader is on, so a bug report can say where it happened. */
