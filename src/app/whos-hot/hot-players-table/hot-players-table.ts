@@ -46,6 +46,7 @@ import {
   hasHeadshots,
   PlayerHeadshotComponent,
 } from '../../shared/player-headshot/player-headshot';
+import { PositionChipsComponent } from '../../shared/position-chips/position-chips';
 import { ProjectionsTableHeaderComponent } from '../../draft-projection/player-projections-table/projections-table-header/projections-table-header';
 import { PositionFilterComponent } from '../../draft-projection/player-projections-table/position-filter/position-filter';
 import { TeamFilterComponent } from '../../draft-projection/player-projections-table/team-filter/team-filter';
@@ -86,6 +87,7 @@ interface RankedPlayer extends ScoredProjection {
   selector: 'app-hot-players-table',
   imports: [
     PlayerHeadshotComponent,
+    PositionChipsComponent,
     ProjectionsTableHeaderComponent,
     PositionFilterComponent,
     TeamFilterComponent,
@@ -379,12 +381,13 @@ export class HotPlayersTableComponent {
     return this.playerMap().get(playerId)?.headshot;
   }
 
-  positionLabel(ranked: RankedPlayer): string {
+  /** The positions drawn as chips; none for a skater the pool does not hold. */
+  positions(ranked: RankedPlayer): readonly string[] {
     if (ranked.projection.type === 'goalie') {
-      return 'G';
+      return ['G'];
     }
     const player = this.playerMap().get(ranked.projection.playerId);
-    return player?.type === 'skater' ? [...player.positions].join('/') : '—';
+    return player?.type === 'skater' ? [...player.positions] : [];
   }
 
   /** Display only — `isApplicable` is what decides whether a dash is shown instead of this. */

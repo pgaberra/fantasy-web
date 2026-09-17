@@ -1,6 +1,7 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { HotPlayersTableComponent } from './hot-players-table';
+import { PositionChipsComponent } from '../../shared/position-chips/position-chips';
 import { HotPlayer } from '../../services/whos-hot.service';
 import { Player } from '../../models/player.model';
 import { SkaterPosition } from '../../models/position.model';
@@ -144,6 +145,25 @@ describe('HotPlayersTableComponent', () => {
         renderWithPlayers([{ ...player(1), headshot: 'https://cdn.test/1.png' }, player(2)]),
       ).toEqual(2);
     });
+  });
+
+  // The same coloured chips the editor and the draft board draw, rather than "(C/LW)" in words.
+  it("draws each row's positions as chips, and none for a skater the pool does not hold", () => {
+    const fixture = MockRender(HotPlayersTableComponent, {
+      hotPlayers: [skater(1, 20, 12), skater(2, 20, 10), skater(3, 20, 8)],
+      players: [player(1, ['C', 'LW']), player(2, ['D'])],
+      activeColumns,
+      scoringType: 'points',
+      statWeights: DEFAULT_STAT_WEIGHTS,
+      seasonLabel: '2025-26',
+    });
+    fixture.detectChanges();
+
+    expect(
+      ngMocks
+        .findAll(fixture, PositionChipsComponent)
+        .map((chips) => chips.componentInstance.positions()),
+    ).toEqual([['C', 'LW'], ['D'], []]);
   });
 
   it('offers no League setup in a points league that has imported nothing — the menu would be empty', () => {

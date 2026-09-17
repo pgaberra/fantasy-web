@@ -2,7 +2,7 @@ import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DraftPicksPanelComponent, DraftPickRound } from './draft-picks-panel';
 import { DraftPlayerLookupService } from '../draft-player-lookup.service';
-import { PositionChipsComponent } from '../position-chips/position-chips';
+import { PlayerPositionChipsComponent } from '../player-position-chips/player-position-chips';
 
 describe('DraftPicksPanelComponent', () => {
   const pickRounds: DraftPickRound[] = [
@@ -30,7 +30,7 @@ describe('DraftPicksPanelComponent', () => {
       picksCount: 2,
     });
 
-    const chips = ngMocks.findAll(fixture, PositionChipsComponent);
+    const chips = ngMocks.findAll(fixture, PlayerPositionChipsComponent);
 
     expect(chips.map((chip) => chip.componentInstance.playerId())).toEqual([7, 9]);
     expect(

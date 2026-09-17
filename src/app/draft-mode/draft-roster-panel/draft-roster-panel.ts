@@ -3,11 +3,11 @@ import { DraftState } from '../../api/models/draft-state';
 import { DerivedRoster } from '../draft-roster.service';
 import { DraftPlayerLookupService } from '../draft-player-lookup.service';
 import { PlayerAvatarComponent } from '../player-avatar/player-avatar';
-import { PositionChipsComponent } from '../position-chips/position-chips';
+import { PlayerPositionChipsComponent } from '../player-position-chips/player-position-chips';
 
 @Component({
   selector: 'app-draft-roster-panel',
-  imports: [PlayerAvatarComponent, PositionChipsComponent],
+  imports: [PlayerAvatarComponent, PlayerPositionChipsComponent],
   templateUrl: './draft-roster-panel.html',
   styleUrl: './draft-roster-panel.css',
 })

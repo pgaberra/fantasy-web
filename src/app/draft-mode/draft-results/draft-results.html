@@ -36,7 +36,7 @@
                   <app-player-avatar [playerId]="pick.playerId" [small]="true" />
                   <span class="result-player">
                     <span class="result-player-name">{{ lookup.name(pick.playerId) }}</span>
-                    <app-position-chips [playerId]="pick.playerId" />
+                    <app-player-position-chips [playerId]="pick.playerId" />
                   </span>
                   <span class="result-team">{{ pick.teamName }}</span>
                 </li>
@@ -67,7 +67,7 @@
                   <app-player-avatar [playerId]="pick.playerId" [small]="true" />
                   <span class="result-player">
                     <span class="result-player-name">{{ lookup.name(pick.playerId) }}</span>
-                    <app-position-chips [playerId]="pick.playerId" />
+                    <app-player-position-chips [playerId]="pick.playerId" />
                   </span>
                 </li>
               }
