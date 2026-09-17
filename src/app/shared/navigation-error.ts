@@ -17,17 +17,24 @@ export {
  * longer invisible to us either.
  */
 export function handleNavigationError(error: unknown): void {
+  // The toast's sentence is all a report would otherwise carry, so the event could not say which
+  // chunk failed or why: a deploy caught mid-swap and a genuinely broken build read the same.
+  const cause = { cause: error instanceof Error ? error.message : String(error) };
   if (isStaleBuildError(error)) {
     if (!sessionStorage.getItem(RELOADED_KEY)) {
       sessionStorage.setItem(RELOADED_KEY, '1');
       location.reload();
       return;
     }
-    // Reloading did not help, so the build is broken rather than merely stale. Say so instead of
-    // reloading again.
-    inject(NotificationService).error("Couldn't load that page. Please refresh and try again.");
+    // Reloading did not help. Either the build is broken, or the reload landed mid-deploy, while
+    // the old and new containers both still answer, and fetched an old page whose chunks the new
+    // container does not have. Say so instead of reloading again.
+    inject(NotificationService).error(
+      "Couldn't load that page. Please refresh and try again.",
+      cause,
+    );
     return;
   }
 
-  inject(NotificationService).error("Couldn't open that page. Please try again.");
+  inject(NotificationService).error("Couldn't open that page. Please try again.", cause);
 }
