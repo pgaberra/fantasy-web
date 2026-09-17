@@ -25,18 +25,15 @@ describe('SiteFooterComponent', () => {
     expect(contact.textContent?.trim()).toEqual('info@slapstat.com');
   });
 
-  // A payment provider's review wants the refund policy reachable from the navigation. It is a
-  // section of the terms, so the link names that section.
-  it.each([true, false])('links the refund policy while signed in is %s', async (loggedIn) => {
+  // The refund policy is part of the terms, and the footer's Terms link is the way to it. A
+  // separate Refunds link was taken out at Alexander's request.
+  it.each([true, false])('has no separate Refunds link while signed in is %s', async (loggedIn) => {
     await render(loggedIn);
 
-    const link = ngMocks
+    const labels = ngMocks
       .findAll('.site-footer-links a')
-      .find((anchor) => (anchor.nativeElement as HTMLElement).textContent?.trim() === 'Refunds');
-    if (!link) {
-      throw new Error('The footer has no Refunds link');
-    }
-    expect(ngMocks.input(link, 'routerLink')).toEqual('/terms');
-    expect(ngMocks.input(link, 'fragment')).toEqual('refunds');
+      .map((anchor) => (anchor.nativeElement as HTMLElement).textContent?.trim());
+    expect(labels).toContain('Terms');
+    expect(labels).not.toContain('Refunds');
   });
 });
