@@ -3,6 +3,7 @@ import { SCORING_STAT_KEYS, ScoringStatKey, UtilityStatKey } from '../../../mode
 import { STAT_LABELS, StatLabelPipe } from '../../../pipes/stat-label.pipe';
 import { STAT_FULL_NAMES } from '../../../pipes/stat-tooltip.pipe';
 import { StatInfoService } from '../../../services/stat-info.service';
+import { HelpTipComponent } from '../../../shared/help-tip/help-tip';
 import { DecimalStatKey } from '../../projection-settings-section/model';
 import {
   MAX_DECIMAL_SETTING,
@@ -21,7 +22,7 @@ import {
   selector: 'app-decimals-menu',
   templateUrl: './decimals-menu.html',
   styleUrl: './decimals-menu.css',
-  imports: [StatLabelPipe],
+  imports: [StatLabelPipe, HelpTipComponent],
 })
 export class DecimalsMenuComponent {
   private readonly statInfoService = inject(StatInfoService);
@@ -62,7 +63,7 @@ export class DecimalsMenuComponent {
     return inUse.size === 1 ? [...inUse][0] : null;
   });
 
-  /** The full name beside the abbreviation, unless the column is already headed by it. */
+  /** The full name behind the abbreviation's info icon, unless the column is already headed by it. */
   descriptionOf(statKey: DecimalStatKey): string | null {
     const fullName = STAT_FULL_NAMES[statKey];
     return fullName === STAT_LABELS[statKey] ? null : fullName;
