@@ -11,6 +11,8 @@ import { StatLabelPipe } from '../../pipes/stat-label.pipe';
 import { StatTooltipPipe } from '../../pipes/stat-tooltip.pipe';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import { DraftPlayerLookupService } from '../draft-player-lookup.service';
+import { TierBadge, TierService } from '../../services/tier.service';
+import { TierStripEntry } from '../draft-mode';
 import { PlayerAvatarComponent } from '../player-avatar/player-avatar';
 import { PlayerPositionChipsComponent } from '../player-position-chips/player-position-chips';
 
@@ -35,6 +37,7 @@ export interface EditingPickInfo {
 export class DraftAvailablePanelComponent {
   readonly lookup = inject(DraftPlayerLookupService);
   private readonly statInfoService = inject(StatInfoService);
+  private readonly tierService = inject(TierService);
 
   readonly editingInfo = input.required<EditingPickInfo | null>();
   readonly searchTerm = input.required<string>();
@@ -53,6 +56,10 @@ export class DraftAvailablePanelComponent {
   readonly draftLabel = input.required<string>();
   readonly scoringType = input.required<ScoringType>();
   readonly statColumns = input.required<ScoringStatKey[]>();
+  /** Tier chip per player, empty while the tier feature is off. */
+  readonly tierBadges = input<ReadonlyMap<number, TierBadge>>(new Map());
+  /** The best tier still available per position. Empty while the tier feature is off. */
+  readonly tierStrip = input<readonly TierStripEntry[]>([]);
 
   readonly searchChange = output<string>();
   readonly positionFilterToggle = output<PositionFilter>();
@@ -83,6 +90,12 @@ export class DraftAvailablePanelComponent {
     return this.scoringType() === 'points'
       ? scoredProjection.score.fantasyPoints.toFixed(1)
       : scoredProjection.score.zScore.toFixed(2);
+  }
+
+  tierStripTooltip(entry: TierStripEntry): string {
+    const group = this.tierService.peerGroup(entry.position, entry.remaining);
+    const left = `${entry.remaining} ${group} left in tier ${entry.tier}.`;
+    return entry.needed ? left : `${left} Your roster has no open slot for one.`;
   }
 
   statStrip(projection: Projection): { key: ScoringStatKey; value: string }[] {

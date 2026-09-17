@@ -244,3 +244,68 @@
     flex: 1;
   }
 }
+
+/* Tiers ------------------------------------------------------------------ */
+
+.tier-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+}
+
+.tier-strip-label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.tier-strip-entry {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+/* A position with nowhere left to go on the roster is not a decision, so it recedes
+   rather than disappearing — it is still information, just not one to act on. */
+.tier-strip-entry--filled {
+  opacity: 0.5;
+}
+
+/* The case the strip exists for: the tier is about to run out. */
+.tier-strip-entry--thin {
+  border-color: var(--color-accent);
+}
+
+.tier-strip-pos {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.tier-strip-tier {
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+}
+
+.tier-strip-count {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.tier-chip {
+  padding: 0 0.3rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
