@@ -26,11 +26,20 @@ const NEIGHBOURHOOD = 5;
  */
 const MIN_SPREAD_SHARE = 0.005;
 
-/** A tier longer than this is split at its own largest gap: a 30-man tier helps nobody. */
+/**
+ * No tier is longer than this, whatever the values do. It is a hard guarantee rather than a
+ * best effort: a tier a manager has to read through one by one is not a tier, and a flat
+ * stretch is exactly where that happens, because no gap in it stands out to break on.
+ */
 const MAX_TIER_SIZE = 12;
 
-/** Hard cap, so a position's list stays something a manager can hold in his head. */
-const MAX_TIERS = 12;
+/**
+ * How many breaks the gap rule itself may contribute. Only the gap rule is capped — the
+ * size guarantee above is applied afterwards and is not rationed, so a list whose ranked order
+ * is hackiest at the bottom cannot spend the budget there and leave a 24-man tier at the top.
+ * That is what happened to defensemen on staging before this was split in two.
+ */
+const MAX_GAP_BREAKS = 9;
 
 /** Tier down to this multiple of the position's draftable pool; below it nobody is choosing. */
 const DEPTH_SLACK = 1.5;
@@ -172,20 +181,19 @@ export class TierService {
       gaps.push(Math.max(0, values[i] - values[i + 1]));
     }
     const spread = Math.max(0, values[0] - values[values.length - 1]);
-    if (spread === 0) {
-      return [];
-    }
     const minGap = spread * MIN_SPREAD_SHARE;
 
-    const chosen = gaps
+    // Where the value falls away. A dead-flat list contributes nothing here — every gap scores
+    // zero — and is left entirely to the size guarantee below.
+    const fromGaps = gaps
       .map((gap, index) => ({ rank: index + 1, score: gap / this.neighbourGap(gaps, index), gap }))
       .filter((candidate) => candidate.gap >= minGap && candidate.score >= GAP_FACTOR)
       .sort((first, second) => second.score - first.score)
-      .slice(0, MAX_TIERS - 1)
+      .slice(0, MAX_GAP_BREAKS)
       .map((candidate) => candidate.rank)
       .sort((first, second) => first - second);
 
-    return this.splitOversized(chosen, gaps, values.length);
+    return this.splitOversized(fromGaps, gaps, values.length);
   }
 
   private tiersForPosition(input: TierInput, position: TierPosition): PositionTiers {
@@ -256,10 +264,21 @@ export class TierService {
     return median > 0 ? median : Number.MIN_VALUE;
   }
 
-  /** Divides any tier longer than MAX_TIER_SIZE at its own largest gap, while there is room. */
+  /**
+   * Divides every tier longer than MAX_TIER_SIZE, repeatedly, until none is left. Unrationed on
+   * purpose: this is the size guarantee, and rationing it against the gap rule's budget is what
+   * left a 24-man tier of defensemen standing.
+   *
+   * Each division goes at the widest gap inside the tier, so even a stretch flat enough that no
+   * gap in it was worth a break of its own is cut at its most defensible point. Ties go to the
+   * middle, which is what divides a genuinely flat tier evenly by size.
+   *
+   * Terminates because every pass divides a segment of more than MAX_TIER_SIZE into two
+   * non-empty parts, so the widest oversized segment strictly shrinks.
+   */
   private splitOversized(breaks: number[], gaps: readonly number[], depth: number): number[] {
     const result = [...breaks];
-    while (result.length + 1 < MAX_TIERS) {
+    for (;;) {
       const bounds = [0, ...result, depth];
       let widest = -1;
       let widestSize = MAX_TIER_SIZE;
@@ -294,6 +313,5 @@ export class TierService {
       result.push(bestRank);
       result.sort((first, second) => first - second);
     }
-    return result;
   }
 }

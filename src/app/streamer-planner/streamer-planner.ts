@@ -8,6 +8,7 @@ import { PlannerWeek } from '../api/models/planner-week';
 import { ScheduledGame } from '../api/models/scheduled-game';
 import { TeamSchedule } from '../api/models/team-schedule';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
+import { FreeAgentsComponent } from './free-agents/free-agents';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 
@@ -33,7 +34,7 @@ export interface PlannerDay {
  */
 @Component({
   selector: 'app-streamer-planner',
-  imports: [ErrorStateComponent, HelpTipComponent, LoadingIndicatorComponent],
+  imports: [ErrorStateComponent, FreeAgentsComponent, HelpTipComponent, LoadingIndicatorComponent],
   templateUrl: './streamer-planner.html',
   styleUrl: './streamer-planner.css',
 })

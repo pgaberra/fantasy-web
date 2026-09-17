@@ -43,6 +43,7 @@ import { PinnedTableHeaderDirective } from '../shared/pinned-table-header/pinned
 import { TableScrollDirective } from '../shared/table-scroll/table-scroll.directive';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { hasHeadshots } from '../shared/player-headshot/player-headshot';
+import { SHARED_BOARD } from '../auth/auth-reason';
 
 /**
  * A published board is the owner's whole pool — some 1600 rows — and someone arriving from a link
@@ -124,23 +125,6 @@ export class SharedProjectionComponent {
   readonly isImporting = computed(() => this.importingInto() !== null);
 
   /**
-   * Which button a visitor without an account pressed, and therefore what the sign-in prompt is
-   * about. Both buttons are offered to them on purpose: a copy is what the page is for, and
-   * finding that out by pressing the thing you came to press beats reading it in a card first.
-   */
-  readonly signInPromptFor = signal<ImportDestination | null>(null);
-
-  /**
-   * Where the sign-in prompt sends them, and how the press survives the trip: the button they
-   * chose rides back on the return URL, so the copy happens on arrival rather than asking them
-   * to find the board and press the same thing twice.
-   */
-  readonly promptReturnUrl = computed(() => {
-    const intent = this.signInPromptFor();
-    return intent ? `${this.returnUrl}?action=${intent}` : this.returnUrl;
-  });
-
-  /**
    * Picks that press back up, once. Anything other than the two actions is ignored rather than
    * reported: the parameter is part of a URL a visitor may edit or a mail client may mangle, and
    * the page behind it reads fine without it.
@@ -148,8 +132,12 @@ export class SharedProjectionComponent {
    * <p>The parameter comes off the address bar before the copy is attempted. An action left in
    * the URL is one a refresh would run again, and one that would follow the link if the visitor
    * passed it on: a board should be copied because someone pressed a button, not because a URL
-   * said so. Arriving with an action but no session lands on the same prompt as pressing the
-   * button would, which is what a sign-in that did not complete deserves.
+   * said so.
+   *
+   * <p>Arriving with an action but no session drops it and renders the board. Pressing a button
+   * now sends a visitor to the account form, so resuming here would send them straight back —
+   * a link somebody passed on with the action still on it would bounce every signed-out reader
+   * to a signup form without ever showing them the board it points at.
    */
   private resumeRequestedAction(): void {
     const requested = this.route.snapshot.queryParamMap.get('action');
@@ -157,6 +145,9 @@ export class SharedProjectionComponent {
       return;
     }
     this.location.replaceState(this.returnUrl);
+    if (!this.isLoggedIn()) {
+      return;
+    }
     this.importThen(requested);
   }
 
@@ -184,10 +175,15 @@ export class SharedProjectionComponent {
    * meaning something went wrong.
    */
   private importThen(destination: ImportDestination): void {
-    // A copy has to live in an account, so someone without one is asked for it here rather than
-    // being sent away and made to find their way back. The board stays on screen behind the ask.
+    // A copy has to live in an account, so someone without one is taken straight to the form that
+    // makes one. It used to be a note beside the buttons holding two links, which asked a visitor
+    // who had already decided to read a sentence and decide again. The button they pressed rides
+    // along on the return URL, so the copy happens when they land back here; the form's own
+    // footer is the way out for someone who turns out to have an account already.
     if (!this.isLoggedIn()) {
-      this.signInPromptFor.set(destination);
+      void this.router.navigate(['/register'], {
+        queryParams: { returnUrl: `${this.returnUrl}?action=${destination}`, reason: SHARED_BOARD },
+      });
       return;
     }
     this.importingInto.set(destination);
