@@ -1,6 +1,8 @@
 import { Component, inject, input, linkedSignal, OnInit, output, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { Router } from '@angular/router';
 import { YahooService } from '../../../services/yahoo.service';
+import { YahooConnectReturnService } from '../../../services/yahoo-connect-return.service';
 import { environment } from '../../../../environments/environment';
 import { LeagueSummary } from '../../../api/models/league-summary';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
@@ -28,6 +30,8 @@ export interface YahooSyncResult {
 })
 export class YahooLeagueSyncComponent implements OnInit {
   private readonly yahoo = inject(YahooService);
+  private readonly router = inject(Router);
+  private readonly connectReturn = inject(YahooConnectReturnService);
 
   /**
    * Manual off-season switch (build-time `YAHOO_SYNC_DISABLED`). Between NHL seasons Yahoo has
@@ -66,6 +70,9 @@ export class YahooLeagueSyncComponent implements OnInit {
   connect(): void {
     this.connecting.set(true);
     this.error.set(null);
+    // Yahoo's consent leaves the app; remember this page so the claim on the way back ends here
+    // rather than on projections. This component sits on several pages, so the page decides.
+    this.connectReturn.remember(this.router.url);
     this.yahoo.startConnect().subscribe({
       next: (response) => {
         window.location.href = response.authorizeUrl;
