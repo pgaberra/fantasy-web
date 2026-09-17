@@ -16,6 +16,8 @@ import { ProjectionStorageService } from '../services/projection-storage.service
 import { SharedProjectionResponse } from '../api/models/shared-projection-response';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
+import { PlayerHeadshotComponent } from '../shared/player-headshot/player-headshot';
+import { environment } from '../../environments/environment';
 import { PendingCopyService } from './pending-copy';
 
 describe('SharedProjectionComponent', () => {
@@ -101,6 +103,9 @@ describe('SharedProjectionComponent', () => {
         // Kept real so the buttons' tooltips are the ones a reader would get, not a stand-in:
         // the labels alone no longer say a copy is taken.
         .keep(TooltipDirective)
+        // Kept real for the same reason as the row: the picture in the byline and the ones in
+        // the table are the same component, and a stand-in would draw neither.
+        .keep(PlayerHeadshotComponent)
         .mock(ProjectionShareService, { loadShared })
         .mock(ProjectionStorageService, { importFromShare })
         .mock(NotificationService, { error: notifyError })
@@ -139,7 +144,7 @@ describe('SharedProjectionComponent', () => {
       'Connor McDavid',
       'Igor Shesterkin',
     ]);
-    expect(fixture.nativeElement.querySelector('app-player-headshot img')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('tr app-player-headshot img')).not.toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Connor McDavid');
   });
 
@@ -165,7 +170,7 @@ describe('SharedProjectionComponent', () => {
     );
     const fixture = await render();
 
-    expect(fixture.nativeElement.querySelector('app-player-headshot')).toBeNull();
+    expect(fixture.nativeElement.querySelector('tr app-player-headshot')).toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Connor McDavid');
   });
 
@@ -361,6 +366,31 @@ describe('SharedProjectionComponent', () => {
     await fixture.whenStable();
 
     expect(fixture.point.componentInstance.authorLabel()).toEqual('alex');
+  });
+
+  it("shows the owner's picture beside their name", async () => {
+    loadShared.mockReturnValue(
+      of({ ...shared, authorAvatar: '/shared/abc123/avatar?v=1788256800' }),
+    );
+
+    const fixture = await render();
+
+    expect(fixture.point.componentInstance.authorAvatar()).toEqual(
+      `${environment.apiUrl}/shared/abc123/avatar?v=1788256800`,
+    );
+    const picture: HTMLImageElement | null =
+      fixture.nativeElement.querySelector('.author-avatar img');
+    expect(picture?.src).toContain('/shared/abc123/avatar?v=1788256800');
+    // Beside the name it belongs to, so a screen reader is not told it twice.
+    expect(picture?.getAttribute('alt')).toEqual('');
+  });
+
+  it("falls back to the initial of the owner's name when they have no picture", async () => {
+    const fixture = await render();
+
+    expect(fixture.point.componentInstance.authorAvatar()).toBeUndefined();
+    expect(fixture.nativeElement.querySelector('.author-avatar img')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.author-avatar')?.textContent?.trim()).toEqual('A');
   });
 
   it('treats a withdrawn link as gone rather than as a failure to retry', async () => {
