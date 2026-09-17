@@ -62,6 +62,14 @@
             </button>
           </h1>
           <div class="page-header-actions">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="showSpreadsheetImport.set(true)"
+            >
+              <app-icon name="spreadsheet" />
+              Import spreadsheet
+            </button>
             <button type="button" class="btn btn-secondary" (click)="showShareDialog.set(true)">
               <app-icon name="share" />
               Share
@@ -155,6 +163,14 @@
       <app-full-season-dialog
         (confirm)="applyFullSeason($event)"
         (cancelled)="cancelFullSeason()"
+      />
+    }
+
+    @if (showSpreadsheetImport()) {
+      <app-spreadsheet-import-dialog
+        [players]="players()"
+        (imported)="applySpreadsheetImport($event)"
+        (closed)="showSpreadsheetImport.set(false)"
       />
     }
 

@@ -70,6 +70,9 @@ import { YahooService } from '../services/yahoo.service';
 import { EspnService } from '../services/espn.service';
 import { IconComponent } from '../shared/icon/icon';
 import { LeagueImportButtonComponent } from '../shared/league-import-button/league-import-button';
+import { SpreadsheetImportDialogComponent } from './spreadsheet-import/spreadsheet-import-dialog';
+import { ImportPlan } from './spreadsheet-import/spreadsheet-import';
+import { AnalyticsService } from '../services/analytics.service';
 
 /** Exported so the tests can wait out exactly this and not a round number they guessed at. */
 export const AUTOSAVE_DEBOUNCE_MS = 1200;
@@ -91,6 +94,7 @@ export const AUTOSAVE_DEBOUNCE_MS = 1200;
     TooltipDirective,
     IconComponent,
     LeagueImportButtonComponent,
+    SpreadsheetImportDialogComponent,
   ],
   templateUrl: './draft-projection.html',
   styleUrl: './draft-projection.css',
@@ -109,6 +113,7 @@ export class DraftProjectionComponent implements OnInit {
   private readonly projectionShare = inject(ProjectionShareService);
   private readonly serializer = inject(ProjectionSerializerService);
   private readonly notification = inject(NotificationService);
+  private readonly analytics = inject(AnalyticsService);
 
   private readonly table = viewChild(PlayerProjectionsTableComponent);
   private readonly renameInput = viewChild<ElementRef<HTMLInputElement>>('renameInput');
@@ -208,6 +213,7 @@ export class DraftProjectionComponent implements OnInit {
   readonly showFullSeasonDialog = signal<boolean>(false);
   readonly showShareDialog = signal<boolean>(false);
   readonly showSyncDialog = signal<boolean>(false);
+  readonly showSpreadsheetImport = signal<boolean>(false);
   /**
    * The league these settings were imported from, whichever platform it was. A projection carries
    * at most one sync, so the two stamps are alternatives rather than a precedence.
@@ -460,6 +466,19 @@ export class DraftProjectionComponent implements OnInit {
       config.scaleGoalies,
     );
     this.showFullSeasonDialog.set(false);
+  }
+
+  /**
+   * The sheet's stats go through the table, which owns the rows and the undo history, and reach the
+   * server by the autosave like any other edit.
+   */
+  applySpreadsheetImport(plan: ImportPlan): void {
+    this.table()?.applyImportedStats(plan.stats);
+    this.showSpreadsheetImport.set(false);
+    this.analytics.capture('projection_spreadsheet_imported', {
+      players: plan.stats.size,
+      not_found: plan.notFound.length + plan.ambiguous.length,
+    });
   }
 
   private openExisting(id: string): void {
