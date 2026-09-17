@@ -16,7 +16,7 @@ import { DecimalPipe } from '@angular/common';
 import { ProjectionsTableHeaderComponent } from './projections-table-header/projections-table-header';
 import { PlayerRowComponent } from './player-row/player-row';
 import { StatInputComponent } from './player-row/stat-input/stat-input';
-import { ScaleConfig } from '../projection-settings-section/model';
+import { DEFAULT_DECIMAL_SETTINGS, ScaleConfig } from '../projection-settings-section/model';
 import { PlayerService } from '../../services/player.service';
 import { TestBed } from '@angular/core/testing';
 import { ApplicationRef } from '@angular/core';
@@ -544,6 +544,18 @@ describe('PlayerProjectionsTableComponent', () => {
 
       expect(component.readableDecimals().goals).toBe(1);
       expect(component.readableDecimals().assists).toBe(2);
+    });
+
+    it('goes back to the defaults, fractional decimal place included, on a reset', () => {
+      const component = getComponent();
+      component.playerProjections.set(fractional);
+      component.onDecimalSettingsChange({ ...component.readableDecimals(), goals: 0, assists: 3 });
+
+      component.resetDecimals();
+
+      expect(component.useDefaultDecimals()).toEqual(true);
+      expect(component.decimalSettings()).toEqual(DEFAULT_DECIMAL_SETTINGS);
+      expect(component.readableDecimals().goals).toEqual(1);
     });
   });
 
