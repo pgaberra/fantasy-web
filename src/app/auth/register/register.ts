@@ -5,6 +5,7 @@ import { AuthService } from '../../services/auth.service';
 import { AuthFormComponent } from '../auth-form/auth-form';
 import { AuthCredentials } from '../auth-form/model';
 import { messageForError } from '../../shared/http-error';
+import { subtitleForReason } from '../auth-reason';
 
 @Component({
   selector: 'app-register',
@@ -18,6 +19,12 @@ export class RegisterComponent implements OnInit {
 
   readonly errorMessage = signal<string | null>(null);
   readonly isLoading = signal(false);
+
+  /**
+   * Why they are here, for a visitor who arrived by pressing something else. Read once from the
+   * URL they landed on: the form does not navigate, so there is nothing for it to react to.
+   */
+  readonly subtitle = subtitleForReason(this.route.snapshot.queryParamMap.get('reason'));
 
   /**
    * Handed to AuthService rather than kept here: the visitor may still switch between Sign
