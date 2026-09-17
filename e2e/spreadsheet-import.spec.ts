@@ -80,9 +80,9 @@ test.describe('spreadsheet import', () => {
       const values = await mcdavid
         .locator('input.stat-input')
         .evaluateAll((inputs) => inputs.map((input) => (input as HTMLInputElement).value));
-      // Goals and assists as the sheet gave them (whole numbers at the table's default decimals),
-      // and points their sum, not the sheet's own rounded total.
-      expect(values).toEqual(expect.arrayContaining(['82', '50', '90', '141']));
+      // GP, goals, assists and power-play points as the sheet gave them. The PPP cell carries no
+      // warning although the sheet gave no PPG or PPA: the import split the total between them.
+      expect(values).toEqual(expect.arrayContaining(['82', '50.4', '90.3', '50.2']));
       await expect(mcdavid.locator('.has-warning')).toHaveCount(0);
 
       await search.fill('Chinakhov');
@@ -92,7 +92,7 @@ test.describe('spreadsheet import', () => {
         await chinakhov
           .locator('input.stat-input')
           .evaluateAll((inputs) => inputs.map((input) => (input as HTMLInputElement).value)),
-      ).toEqual(expect.arrayContaining(['80', '25', '20', '45']));
+      ).toEqual(expect.arrayContaining(['80', '25', '20', '10']));
       await expect(chinakhov.locator('.has-warning')).toHaveCount(0);
     } finally {
       // The shared account keeps nothing from this run.
