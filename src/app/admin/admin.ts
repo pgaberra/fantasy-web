@@ -2,6 +2,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { AdminService } from '../services/admin.service';
+import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { AdminPremiumComponent } from './premium/admin-premium';
 import { LeagueSummary, SyncRunResponse, YahooProbeResponse } from '../api/models';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
@@ -57,6 +58,7 @@ const YAHOO_ERRORS: Record<string, string> = {
 export class AdminComponent implements OnInit {
   private readonly adminService = inject(AdminService);
   private readonly route = inject(ActivatedRoute);
+  private readonly connectReturn = inject(YahooConnectReturnService);
 
   /** Set when we have just come back from Yahoo, so the round trip does not end in silence. */
   readonly connectOutcome = signal<'connected' | 'error' | null>(null);
@@ -160,6 +162,9 @@ export class AdminComponent implements OnInit {
   connectYahoo(): void {
     this.connecting.set(true);
     this.error.set(null);
+    // The service account's connect comes back here; a page left over from an abandoned user
+    // connect must not take it elsewhere.
+    this.connectReturn.forget();
     this.adminService.connectYahoo().subscribe({
       next: (response) => {
         leaveFor(response.authorizeUrl, () => this.connecting.set(false));
