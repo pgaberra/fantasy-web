@@ -23,6 +23,7 @@ import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { PopoverTriggerDirective } from '../shared/popover/popover-trigger.directive';
 import { ShareImportComponent } from '../shared/share-import/share-import';
+import { SpreadsheetImportButtonComponent } from '../shared/spreadsheet-import/spreadsheet-import-button';
 import { FeatureService } from '../services/feature.service';
 import {
   PreviewSource,
@@ -83,6 +84,7 @@ export type DraftSource =
     RelativeTimePipe,
     PopoverTriggerDirective,
     ShareImportComponent,
+    SpreadsheetImportButtonComponent,
     IconComponent,
     StartingPointPreviewComponent,
     LeagueSettingsControlsComponent,
@@ -256,7 +258,11 @@ export class DraftStartComponent {
     if (projection.kind === 'preset_draft') {
       return 'Preset';
     }
-    return projection.origin ? `From ${projection.origin.authorUsername}` : 'Your projection';
+    if (projection.origin) {
+      return `From ${projection.origin.authorUsername}`;
+    }
+    // An imported board with nobody to credit came from a spreadsheet rather than a share link.
+    return projection.kind === 'imported' ? 'From a spreadsheet' : 'Your projection';
   }
 
   /** What the timestamp beside it means, which differs for a draft still being made. */

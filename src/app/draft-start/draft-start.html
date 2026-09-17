@@ -229,8 +229,14 @@
                         [checked]="isBoardSelected(board.id)"
                         (change)="selectBoard(board.id)"
                       />
-                      <span class="row-icon" aria-hidden="true">
-                        <app-icon name="link" [size]="20" />
+                      <!-- A board from a share link or from a spreadsheet, told apart by whether it
+                           has someone to credit. -->
+                      <span
+                        class="row-icon"
+                        [class.row-icon--spreadsheet]="!board.origin"
+                        aria-hidden="true"
+                      >
+                        <app-icon [name]="board.origin ? 'link' : 'spreadsheet'" [size]="20" />
                       </span>
                       <span class="row-main">
                         <span class="row-heading">
@@ -246,6 +252,7 @@
               </ul>
             }
             <app-share-import (imported)="onImported($event.id)" />
+            <app-spreadsheet-import-button (imported)="onImported($event.id)" />
           }
           @default {
             @if (availablePresets().length === 0) {

@@ -3,6 +3,8 @@
   <span class="card-meta">
     @if (origin(); as from) {
       From {{ from.authorUsername }} ·
+    } @else if (projection().kind === 'imported') {
+      From a spreadsheet ·
     }
     Updated {{ projection().updatedAt | relativeTime }}
   </span>
