@@ -300,7 +300,9 @@ export class DraftStartComponent {
   /**
    * The leagues changed on this page, by the source they were changed for. Kept per source rather
    * than as one league for the page: a board already carries a league of its own, and switching to
-   * it and back must neither lose the one set for a preset nor lay that one over the board.
+   * it and back must neither lose the one set for the presets nor lay that one over the board. The
+   * presets share one, since they differ only in their numbers: a league imported with one picked
+   * must still be there when another is.
    */
   private readonly changedLeagues = signal<ReadonlyMap<string, LeagueSettings>>(new Map());
 
@@ -545,9 +547,9 @@ export class DraftStartComponent {
   }
 }
 
-/** What a league changed on this page is filed under. */
+/** What a league changed on this page is filed under: the presets together, each board apart. */
 function sourceKey(source: DraftSource): string {
-  return source.kind === 'preset' ? `preset:${source.preset.id}` : `board:${source.id}`;
+  return source.kind === 'preset' ? 'preset' : `board:${source.id}`;
 }
 
 function sameSource(first: DraftSource, second: DraftSource): boolean {
