@@ -46,6 +46,10 @@ export const environment = {
   // the projection editor). Off by default; deployed builds turn it on with the
   // SPREADSHEET_IMPORT_ENABLED=true build arg.
   spreadsheetImportEnabled: false,
+  // Feature toggle for positional tiers (the tier column and breaks in the projection editor, and
+  // the tier badges and tier strip in draft mode). Off by default; deployed builds turn it on with
+  // the TIERS_ENABLED=true build arg.
+  tiersEnabled: false,
   // Premium is shown but not yet sold: the Premium page keeps its plans and badges but its
   // Subscribe button is disabled with a note. Only means anything with paymentsEnabled. Deployed builds turn it on with PREMIUM_COMING_SOON=true.
   premiumComingSoon: false,
