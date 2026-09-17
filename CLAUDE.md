@@ -52,6 +52,13 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   call). `shared/player-pool-notice` still reports the additions from `poolReconciliation`, once
   per pool change. The editor also carries `playerBasis` / `playerPoolSyncedAt`
   through `ProjectionState` untouched, so a save doesn't drop them.
+  Behind `MANUAL_RANKING_ENABLED`, the toolbar's **Ranking** menu switches a player type from its
+  projected stats to the owner's own order. `models/manual-ranking.ts` holds the whole of it: the
+  hand-ranked type keeps the value curve its projections produced and the order only decides who
+  sits in which seat, so the board can still weigh a hand-ranked goalie against a centre. It is
+  applied in `scoredProjections`, which is upstream of every rank, share and draft board, rather
+  than in a sort. A place is typed into the # column, and that column is an input only while
+  `rankableType()` says the rows on screen are that whole type in ranking order.
   The table also marks **rookies** (a badge by the name, plus a "Rookies only" filter) from
   `GET /api/v1/players/rookies`. That endpoint answers `known: false` wherever the projection
   service is not running — production, today — and a failed request leaves the resource without

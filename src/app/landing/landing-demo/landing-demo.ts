@@ -36,6 +36,7 @@ import {
 } from '../../draft-projection/projection-defaults';
 import { environment } from '../../../environments/environment';
 import { IconComponent } from '../../shared/icon/icon';
+import { PROJECTED_RANKING } from '../../models/manual-ranking';
 
 /**
  * How much of the player list the demo shows. The BFF still sends every player — the editor
@@ -166,6 +167,7 @@ export class LandingDemoComponent {
       playerBasis: 'last_season',
       playerPoolSyncedAt: null,
       unacknowledgedNewPlayerIds: [],
+      manualRanking: PROJECTED_RANKING,
       draft: null,
       // The demo has no way to correct a position, so a board redeemed from it starts on
       // whatever the read model reports — which is where a new projection starts anyway.

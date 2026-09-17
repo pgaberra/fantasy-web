@@ -41,6 +41,9 @@ import { PositionChipsComponent } from '../../../shared/position-chips/position-
 export class PlayerRowComponent {
   positionRank = input.required<number>();
   totalRank = input.required<number | null>();
+  /** Whether the place in this column is one the owner sets, rather than one that was computed. */
+  readonly rankEditable = input<boolean>(false);
+  readonly rankChanged = output<{ playerId: number; rank: number }>();
   rank: Signal<string> = computed(() => {
     if (this.totalRank() === null) {
       return this.positionRank().toString();
@@ -48,6 +51,20 @@ export class PlayerRowComponent {
 
     return `${this.positionRank()} (${this.totalRank()})`;
   });
+
+  /**
+   * A place typed into the # column. Anything that is not a whole place above zero is put back to
+   * the one the row has, rather than moving the player somewhere nobody asked for.
+   */
+  onRankChange(event: Event): void {
+    const field = event.target as HTMLInputElement;
+    const rank = Math.trunc(Number(field.value));
+    if (!Number.isFinite(rank) || rank < 1) {
+      field.value = this.positionRank().toString();
+      return;
+    }
+    this.rankChanged.emit({ playerId: this.projection().playerId, rank });
+  }
 
   /**
    * The badge text: short enough to sit beside a name without pushing the numbers along. The

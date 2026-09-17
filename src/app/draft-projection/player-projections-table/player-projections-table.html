@@ -87,6 +87,15 @@
             Stats
           </button>
 
+          <!-- Beside Stats, because the two answer the same question: Stats is what the ranking is
+               computed from, and this is whether it is computed at all. -->
+          @if (rankingEnabled && rankingControls()) {
+            <button type="button" class="btn btn-secondary btn-sm" [appPopover]="rankingMenu">
+              <app-icon name="list-ordered" />
+              Ranking
+            </button>
+          }
+
           <!-- Last in the group, and deliberately: this slot is a call to action while no league
                has been imported and the league's name afterwards, so it is the one item here whose
                width changes. Ahead of the buttons it would shove them sideways the moment a league
@@ -187,6 +196,7 @@
             <tr
               app-player-row
               [positionRank]="positionRanks().get(sp.projection.playerId)!"
+              [rankEditable]="rankableType() !== null"
               [totalRank]="
                 isNarrowed() ? (overallRanks().get(sp.projection.playerId) ?? null) : null
               "
@@ -210,6 +220,7 @@
               (positionsChanged)="positionsChanged.emit($event)"
               (positionsReset)="positionsReset.emit()"
               (toiKeydown)="onToiKeydown($event.playerId, $event.event)"
+              (rankChanged)="setRank($event.playerId, $event.rank)"
             ></tr>
           }
         </tbody>
@@ -264,5 +275,13 @@
     [usingDefaults]="useDefaultDecimals()"
     (decimalSettingsChange)="onDecimalSettingsChange($event)"
     (resetToDefaults)="resetDecimals()"
+  />
+</ng-template>
+
+<ng-template #rankingMenu>
+  <app-ranking-menu
+    [(ranking)]="manualRanking"
+    [rankableType]="rankableType()"
+    (rankRequested)="showForRanking($event)"
   />
 </ng-template>

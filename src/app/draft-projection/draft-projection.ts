@@ -20,6 +20,7 @@ import { applyPositionOverrides, PositionOverrides } from '../models/position-ov
 import { SkaterPosition } from '../models/position.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
 import { Projection, ScoringType } from '../models/projection.model';
+import { ManualRanking, PROJECTED_RANKING } from '../models/manual-ranking';
 import { LeagueSyncComponent } from './projection-settings-section/league-sync/league-sync';
 import { LeagueSyncDialogComponent } from './league-sync-dialog/league-sync-dialog';
 import { YahooSyncResult } from './projection-settings-section/yahoo-league-sync/yahoo-league-sync';
@@ -168,6 +169,9 @@ export class DraftProjectionComponent implements OnInit {
    */
   readonly unacknowledgedNewPlayerIds = signal<number[]>([]);
 
+  /** Whether each half of the pool is ordered by its projections or by the owner, and that order. */
+  readonly manualRanking = signal<ManualRanking>(PROJECTED_RANKING);
+
   /** Those players, as the table wants them; null when there are none. */
   readonly newPlayerIds = computed<ReadonlySet<number> | null>(() => {
     const ids = this.unacknowledgedNewPlayerIds();
@@ -248,6 +252,8 @@ export class DraftProjectionComponent implements OnInit {
       leagueSize: this.leagueSize(),
       rosterSlots: this.rosterSlots(),
       minGoalieGames: this.minGoalieGames(),
+      // A share publishes the board as it stands, which includes the order the owner put it in.
+      manualRanking: this.manualRanking(),
       // The decimals the table is read with, not the ones stored: a board scored one way and
       // shown another would publish totals nobody could reproduce on the page.
       decimalSettings: readableDecimalSettings(
@@ -515,6 +521,7 @@ export class DraftProjectionComponent implements OnInit {
       playerBasis: this.playerBasis(),
       playerPoolSyncedAt: this.playerPoolSyncedAt(),
       unacknowledgedNewPlayerIds: this.unacknowledgedNewPlayerIds(),
+      manualRanking: this.manualRanking(),
       draft: this.draft(),
       positionOverrides: this.positionOverrides(),
       playerProjections: this.table()?.playerProjections?.() ?? this.loadedProjections() ?? [],
@@ -538,6 +545,7 @@ export class DraftProjectionComponent implements OnInit {
     this.playerBasis.set(state.playerBasis);
     this.playerPoolSyncedAt.set(state.playerPoolSyncedAt);
     this.unacknowledgedNewPlayerIds.set(state.unacknowledgedNewPlayerIds);
+    this.manualRanking.set(state.manualRanking);
     this.draft.set(state.draft);
     this.positionOverrides.set(state.positionOverrides);
     this.loadedProjections.set(state.playerProjections);

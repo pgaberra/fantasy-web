@@ -242,6 +242,10 @@ export class DraftModeComponent implements OnInit {
       leagueSize: league.leagueSize ?? DEFAULT_LEAGUE_SIZE,
       rosterSlots: league.rosterSlots,
       minGoalieGames: league.minGoalieGames ?? DEFAULT_MIN_GOALIE_GAMES,
+      // The order is the projection's, not the draft's league: a board drafted against a
+      // projection has to be the board the owner arranged, or the best available is a different
+      // player here than on the page it was started from.
+      manualRanking: this.serializer.manualRankingFrom(settings.manualRanking),
       // As the editor reads them: a board of the model's fractional lines is ranked here the way
       // it was ranked there, rather than on numbers rounded to whole ones on the way in.
       decimalSettings: readableDecimalSettings(

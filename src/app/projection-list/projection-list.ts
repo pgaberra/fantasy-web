@@ -138,6 +138,7 @@ export class ProjectionListComponent {
             leagueSize: state.leagueSize,
             rosterSlots: state.rosterSlots,
             minGoalieGames: state.minGoalieGames,
+            manualRanking: state.manualRanking,
             decimalSettings: state.decimalSettings,
           });
           const playersById = new Map(players.map((player) => [player.id, player]));

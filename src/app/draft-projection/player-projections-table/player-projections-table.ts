@@ -29,6 +29,15 @@ import {
   SortDirection,
 } from '../../models/projection.model';
 import { compareStatValues, defaultSortDirection, statValueOf } from '../../models/sorting';
+import {
+  applyManualRanking,
+  isHandRanked,
+  ManualRanking,
+  orderWithPlayerAt,
+  PROJECTED_RANKING,
+  RankedPlayerType,
+  withOrder,
+} from '../../models/manual-ranking';
 import { ProjectionCalculationService } from '../../services/projection-calculation.service';
 import { ProjectionUpdateService } from '../../services/projection-update.service';
 import { ToiService } from '../../services/toi.service';
@@ -67,6 +76,8 @@ import { TableScrollDirective } from '../../shared/table-scroll/table-scroll.dir
 import { LeagueSettingsMenuComponent } from './league-settings-menu/league-settings-menu';
 import { ColumnsMenuComponent } from './columns-menu/columns-menu';
 import { DecimalsMenuComponent } from './decimals-menu/decimals-menu';
+import { RankingMenuComponent } from './ranking-menu/ranking-menu';
+import { environment } from '../../../environments/environment';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import { IconComponent } from '../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
@@ -104,6 +115,7 @@ function toggledSet<T>(members: ReadonlySet<T>, member: T): Set<T> {
     LeagueSettingsMenuComponent,
     ColumnsMenuComponent,
     DecimalsMenuComponent,
+    RankingMenuComponent,
     TooltipDirective,
     IconComponent,
     LoadingIndicatorComponent,
@@ -172,6 +184,16 @@ export class PlayerProjectionsTableComponent implements OnInit {
     () => this.scoringType() === 'category' || !!this.syncedLeagueName(),
   );
   readonly manageSyncRequested = output<void>();
+
+  /**
+   * Whether each half of the pool is ordered by its projections or by the owner. Two-way, since
+   * the order is edited in the rows and the choice in the menu, and the page above autosaves both.
+   */
+  readonly rankingControls = input<boolean>(false);
+  readonly manualRanking = model<ManualRanking>(PROJECTED_RANKING);
+
+  /** The build switch, so the whole control is absent until the feature is turned on. */
+  protected readonly rankingEnabled = environment.manualRankingEnabled;
 
   /**
    * Which stats the projection scores, and which utility columns sit beside them. These two are
@@ -412,11 +434,17 @@ export class PlayerProjectionsTableComponent implements OnInit {
     const isCategory = this.scoringType() === 'category';
     const minGames = this.minGoalieGames();
 
-    return projections.map((projection, i) => ({
-      projection,
-      score: { fantasyPoints: fantasyPoints[i], zScore: zScores[i] },
-      qualified: this.isQualified(projection, isCategory, minGames),
-    }));
+    // The hand ranking lands here rather than in the sort, so everything read off the scores
+    // follows it: the rank column, the overall rank in brackets, a share, the draft board.
+    return applyManualRanking(
+      projections.map((projection, i) => ({
+        projection,
+        score: { fantasyPoints: fantasyPoints[i], zScore: zScores[i] },
+        qualified: this.isQualified(projection, isCategory, minGames),
+      })),
+      this.manualRanking(),
+      this.scoringType(),
+    );
   });
 
   private isQualified(projection: Projection, isCategory: boolean, minGames: number): boolean {
@@ -631,6 +659,64 @@ export class PlayerProjectionsTableComponent implements OnInit {
       this.filteredAndSortedProjections().map((sp, i) => [sp.projection.playerId, i + 1]),
     );
   });
+
+  /**
+   * The player type whose own places the # column is currently showing, if any: the rows are that
+   * whole type, it is hand ranked, and they are in ranking order. Only then is the number beside a
+   * player the number someone would type to move him, so only then is the column an input.
+   *
+   * Measured off the rows rather than by asking each filter, so a filter added later is covered by
+   * having narrowed the table, the same way {@link isNarrowed} is.
+   */
+  readonly rankableType = computed<RankedPlayerType | null>(() => {
+    if (!this.rankingEnabled || !this.rankingControls()) {
+      return null;
+    }
+    if (this.sortColumn() !== 'summary' || this.sortDirection() !== 'desc') {
+      return null;
+    }
+    const shown = this.filteredAndSortedProjections();
+    const type = shown[0]?.projection.type;
+    if (!type || !isHandRanked(this.manualRanking(), type)) {
+      return null;
+    }
+    let total = 0;
+    for (const entry of this.scoredProjections()) {
+      if (entry.projection.type === type) {
+        total += 1;
+      }
+    }
+    return shown.length === total && shown.every((sp) => sp.projection.type === type) ? type : null;
+  });
+
+  /** Puts a player at a place among his own type, from the # column. */
+  setRank(playerId: number, rank: number): void {
+    const type = this.rankableType();
+    if (!type) {
+      return;
+    }
+    const order = orderWithPlayerAt(
+      this.filteredAndSortedProjections().map((sp) => sp.projection.playerId),
+      playerId,
+      rank,
+    );
+    this.manualRanking.update((ranking) => withOrder(ranking, type, order));
+  }
+
+  /**
+   * The view a type is ranked in: that type alone, in ranking order, with nothing else narrowing
+   * it. Taking the owner there beats explaining where it is, and switching a type to their own
+   * order is a statement that they mean to start ordering it.
+   */
+  showForRanking(type: RankedPlayerType): void {
+    this.searchTerm.set('');
+    this.teamFilter.set('ALL');
+    this.rookiesOnly.set(false);
+    this.newPlayersOnly.set(false);
+    this.setPositionFilter(type === 'goalie' ? 'G' : 'SKATER');
+    this.sortColumn.set('summary');
+    this.sortDirection.set(defaultSortDirection('summary'));
+  }
 
   private readonly playerMap = computed(() => new Map(this.players().map((p) => [p.id, p])));
 

@@ -1234,6 +1234,67 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ScheduleStrengthResponse"
+  /api/v1/streamer-planner/free-agents:
+    get:
+      tags:
+      - Streamer planner
+      summary: "The players a league has available, with the model's line for the\
+        \ stretch"
+      description: "Joined on identity, so the answer does not depend on which platform\
+        \ the player pool is served from. The stats are the projection's own vocabulary:\
+        \ score them with the league's scoring settings."
+      operationId: streamerPlannerFreeAgents
+      parameters:
+      - name: platform
+        in: query
+        description: Which platform's league to read
+        required: true
+        schema:
+          type: string
+          enum:
+          - YAHOO
+          - ESPN
+      - name: leagueId
+        in: query
+        description: The Yahoo league key or the ESPN league id
+        required: true
+        schema:
+          type: string
+          maxLength: 64
+          minLength: 0
+      - name: start
+        in: query
+        description: "First date, e.g. 2026-10-12"
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: end
+        in: query
+        description: "Last date, inclusive"
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        "200":
+          description: "Available players, best projected first"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FreeAgentListResponse"
+        "400":
+          description: "`end` is before `start`, or the stretch is too long"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FreeAgentListResponse"
+        "404":
+          description: The streamer planner is off in this environment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FreeAgentListResponse"
   /api/v1/shared/{token}:
     get:
       tags:
@@ -1318,6 +1379,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SharedProjectionResponse"
+  /api/v1/shared/{token}/avatar:
+    get:
+      tags:
+      - Shared projections
+      summary: Fetch the profile picture of whoever shared a projection
+      description: "Public, like the page it is drawn on. `authorAvatar` on the shared\
+        \ projection is the address to ask at, and is absent where the author has\
+        \ no picture."
+      operationId: getSharedProjectionAuthorAvatar
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Picture returned
+          content:
+            image/*:
+              schema:
+                type: string
+                format: byte
+        "404":
+          description: "No share with that token, or its author has no picture"
+          content:
+            image/*:
+              schema:
+                type: string
+                format: byte
   /api/v1/projection-model/splits/skaters:
     get:
       tags:
@@ -2112,6 +2203,16 @@ components:
       - leagueId
       - leagueName
       - syncedAt
+    ManualRanking:
+      type: object
+      properties:
+        skater:
+          $ref: "#/components/schemas/PlayerTypeRanking"
+        goalie:
+          $ref: "#/components/schemas/PlayerTypeRanking"
+      required:
+      - goalie
+      - skater
     PlayerProjection:
       type: object
       properties:
@@ -2145,6 +2246,30 @@ components:
       required:
       - scoring
       - utility
+    PlayerTypeRanking:
+      type: object
+      properties:
+        mode:
+          type: string
+          description: Whether this player type is ordered by its projected stats
+            or by the order the owner put it in.
+          enum:
+          - projected
+          - manual
+        order:
+          type: array
+          description: "The player ids the owner placed by hand, best first. Players\
+            \ of this type that are absent keep their projected order below the placed\
+            \ ones, so an owner who ranked only a top twenty does not have to place\
+            \ the rest. Ignored while mode is `projected`. The cap matches the player\
+            \ list."
+          items:
+            type: integer
+            format: int32
+          maxItems: 2000
+          minItems: 0
+      required:
+      - mode
     PositionOverride:
       type: object
       properties:
@@ -2237,6 +2362,11 @@ components:
             format: int32
           maxItems: 2000
           minItems: 0
+        manualRanking:
+          $ref: "#/components/schemas/ManualRanking"
+          description: "Per player type, whether the rankings follow the projected\
+            \ stats or the order the owner put the players in, and that order. Absent\
+            \ means both types are ranked by their projected stats."
       required:
       - activeScoringColumns
       - activeUtilityColumns
@@ -3404,6 +3534,94 @@ components:
       - skaterRank
       - skaterScore
       - team
+    FreeAgentListResponse:
+      type: object
+      description: "The players a league has available over a stretch, best projected\
+        \ first"
+      properties:
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        season:
+          type: integer
+          format: int32
+          description: Season the projections are for
+        modelVersion:
+          type: string
+          description: Model version behind them
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/FreeAgentResponse"
+        unprojected:
+          type: integer
+          format: int32
+          description: Available players the model has no projection for. Mostly fringe
+            players and call-ups; they are left out rather than shown with zeroes.
+      required:
+      - end
+      - players
+      - start
+      - unprojected
+    FreeAgentResponse:
+      type: object
+      description: An available player and the model's line for him over the chosen
+        stretch
+      properties:
+        playerId:
+          type: string
+          description: The platform's player id
+        name:
+          type: string
+        teamAbbrev:
+          type: string
+          description: "The club he is on, in the platform's own spelling"
+        type:
+          type: string
+          description: skater or goalie
+        positions:
+          type: array
+          description: Every position the league may start him at
+          items:
+            type: string
+        availability:
+          type: string
+          description: "FREE_AGENT to add now, WAIVERS to claim first, UNKNOWN when\
+            \ the platform does not say"
+          enum:
+          - FREE_AGENT
+          - WAIVERS
+          - UNKNOWN
+        clubGames:
+          type: integer
+          format: int32
+          description: Games his club plays in the stretch
+        expectedGames:
+          type: number
+          format: double
+          description: "Games he is expected to dress for, or starts for a goalie.\
+            \ Below clubGames for a part-time player, and nought before an injury\
+            \ return."
+        stats:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+          description: "The model's projected totals over those games, in the projection's\
+            \ own stat vocabulary. Rates (toiPerGame, shPct, svPct, gaa) are the season's\
+            \ own and do not scale with the stretch."
+      required:
+      - availability
+      - clubGames
+      - expectedGames
+      - name
+      - playerId
+      - positions
+      - stats
+      - type
     SharedProjectionData:
       type: object
       properties:
@@ -3427,6 +3645,11 @@ components:
           type: string
           description: "The owner's public name. Read live rather than snapshotted:\
             \ a rename should follow onto links already shared."
+        authorAvatar:
+          type: string
+          description: "The author's profile picture, as a path relative to this API,\
+            \ or absent where they have none. The address carries the stamp on the\
+            \ picture, so replacing it is a new address rather than a cached old one."
         season:
           type: string
           description: "The season this projection is for, as its 8-digit code."

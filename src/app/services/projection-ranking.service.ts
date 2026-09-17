@@ -7,6 +7,7 @@ import {
   SKATER_SCORING_STAT_KEYS,
 } from '../models/stat-key.model';
 import { RosterSlots } from '../api/models/roster-slots';
+import { applyManualRanking, ManualRanking, PROJECTED_RANKING } from '../models/manual-ranking';
 
 const SKATER_SCORING_STAT_KEY_SET: ReadonlySet<string> = new Set(SKATER_SCORING_STAT_KEYS);
 const GOALIE_SCORING_STAT_KEY_SET: ReadonlySet<string> = new Set(GOALIE_SCORING_STAT_KEYS);
@@ -20,6 +21,11 @@ export interface RankingInput {
   rosterSlots: RosterSlots;
   minGoalieGames: number;
   decimalSettings: Record<string, number>;
+  /**
+   * The owner's own order, where they have one. Left out, the board is ranked by its projections,
+   * which is what every caller wanted before a projection could carry a hand ranking.
+   */
+  manualRanking?: ManualRanking;
 }
 
 /**
@@ -32,7 +38,11 @@ export class ProjectionRankingService {
   private readonly calculation = inject(ProjectionCalculationService);
 
   rankOverall(input: RankingInput): ScoredProjection[] {
-    const scored = this.score(input);
+    const scored = applyManualRanking(
+      this.score(input),
+      input.manualRanking ?? PROJECTED_RANKING,
+      input.scoringType,
+    );
     const valueOf =
       input.scoringType === 'points'
         ? (scoredProjection: ScoredProjection) => scoredProjection.score.fantasyPoints

@@ -2,6 +2,7 @@ import { ScoringStatKey, SkaterUtilityStatKey, SCORING_STAT_KEYS } from '../mode
 import { DEFAULT_DECIMAL_SETTINGS, ScaleConfig } from './projection-settings-section/model';
 import { RosterSlots } from '../api/models/roster-slots';
 import { ProjectionState } from '../services/projection-serializer';
+import { PROJECTED_RANKING } from '../models/manual-ranking';
 
 /**
  * The weights a projection starts from. Only the stats in `DEFAULT_SCORING_COLUMNS` are scored
@@ -140,6 +141,7 @@ export function createDefaultProjectionState(
     playerBasis: null,
     playerPoolSyncedAt: null,
     unacknowledgedNewPlayerIds: [],
+    manualRanking: PROJECTED_RANKING,
     draft: null,
     positionOverrides: new Map(),
     playerProjections: [],
