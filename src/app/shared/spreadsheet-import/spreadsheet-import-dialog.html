@@ -79,7 +79,10 @@
           </div>
         }
         <div class="setting">
-          <label class="field-label" for="spreadsheet-heading-row">Headings on row</label>
+          <div class="setting-label">
+            <label class="field-label" for="spreadsheet-heading-row">Headings on row</label>
+            <app-help-tip label="What the headings row is" [text]="headingRowTip" />
+          </div>
           <input
             id="spreadsheet-heading-row"
             class="row-input"
