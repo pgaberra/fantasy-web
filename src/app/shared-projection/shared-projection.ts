@@ -42,8 +42,9 @@ import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { PinnedTableHeaderDirective } from '../shared/pinned-table-header/pinned-table-header.directive';
 import { TableScrollDirective } from '../shared/table-scroll/table-scroll.directive';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
-import { hasHeadshots } from '../shared/player-headshot/player-headshot';
+import { hasHeadshots, PlayerHeadshotComponent } from '../shared/player-headshot/player-headshot';
 import { SHARED_BOARD } from '../auth/auth-reason';
+import { environment } from '../../environments/environment';
 
 /**
  * A published board is the owner's whole pool — some 1600 rows — and someone arriving from a link
@@ -96,6 +97,7 @@ interface SharedRow {
     RouterLink,
     LoadingIndicatorComponent,
     ErrorStateComponent,
+    PlayerHeadshotComponent,
     PlayerRowComponent,
     PositionFilterComponent,
     TeamFilterComponent,
@@ -330,6 +332,17 @@ export class SharedProjectionComponent {
   });
 
   readonly authorLabel = computed(() => this.shared()?.authorUsername ?? '');
+
+  /**
+   * Where the author's picture is served, or undefined where they have none — the byline then
+   * shows the initial of their name, as the header does for an account that never uploaded one.
+   * The address comes from the BFF as a path relative to the API, carrying a stamp that changes
+   * when the picture does, so the browser may cache it and still not miss a new one.
+   */
+  readonly authorAvatar = computed(() => {
+    const path = this.shared()?.authorAvatar;
+    return path ? `${environment.apiUrl}${path}` : undefined;
+  });
 
   /** True when rows were withheld because the reader is not signed in. */
   readonly isTruncated = computed(() => this.shared()?.truncated ?? false);

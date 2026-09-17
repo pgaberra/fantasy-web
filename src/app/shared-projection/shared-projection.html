@@ -25,7 +25,17 @@
     <header class="shared-header">
       <p class="shared-eyebrow">Shared projection</p>
       <h1 class="shared-title">{{ projection.name }}</h1>
-      <p class="shared-byline">By {{ authorLabel() }} · {{ leagueSummary() }}</p>
+      <!-- The author's picture, or their initials where they have none: a board is one person's
+           opinion, and the byline is where the page says whose. -->
+      <p class="shared-byline">
+        <app-player-headshot
+          class="author-avatar"
+          [src]="authorAvatar()"
+          [name]="authorLabel()"
+          alt=""
+        />
+        By {{ authorLabel() }} · {{ leagueSummary() }}
+      </p>
 
       <!-- Above the table on purpose: what a visitor does with someone else's board is take a
            copy of it, and that offer used to sit under every row they had to scroll past. Both
