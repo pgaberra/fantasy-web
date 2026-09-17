@@ -79,10 +79,11 @@ test.describe('spreadsheet import', () => {
       await expect(mcdavid).toHaveCount(1);
       const values = await mcdavid
         .locator('input.stat-input')
-        .evaluateAll((inputs) => inputs.map((input) => (input as HTMLInputElement).value));
-      // GP, goals, assists and power-play points as the sheet gave them. The PPP cell carries no
+        .evaluateAll((inputs) => inputs.map((input) => Number((input as HTMLInputElement).value)));
+      // GP, goals, assists and power-play points as the sheet gave them, as numbers: the table
+      // pads a column to the decimals it shows (25.0). The PPP cell carries no
       // warning although the sheet gave no PPG or PPA: the import split the total between them.
-      expect(values).toEqual(expect.arrayContaining(['82', '50.4', '90.3', '50.2']));
+      expect(values).toEqual(expect.arrayContaining([82, 50.4, 90.3, 50.2]));
       await expect(mcdavid.locator('.has-warning')).toHaveCount(0);
 
       await search.fill('Chinakhov');
@@ -91,8 +92,10 @@ test.describe('spreadsheet import', () => {
       expect(
         await chinakhov
           .locator('input.stat-input')
-          .evaluateAll((inputs) => inputs.map((input) => (input as HTMLInputElement).value)),
-      ).toEqual(expect.arrayContaining(['80', '25', '20', '10']));
+          .evaluateAll((inputs) =>
+            inputs.map((input) => Number((input as HTMLInputElement).value)),
+          ),
+      ).toEqual(expect.arrayContaining([80, 25, 20, 10]));
       await expect(chinakhov.locator('.has-warning')).toHaveCount(0);
     } finally {
       // The shared account keeps nothing from this run.
