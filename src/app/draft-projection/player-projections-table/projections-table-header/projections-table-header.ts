@@ -56,7 +56,6 @@ export class ProjectionsTableHeaderComponent {
   activeColumns = input.required<ActiveColumns>();
   scoringType = input.required<ScoringType>();
   statWeights = model.required<Record<ScoringStatKey, number>>();
-  useDefaultDecimals = input<boolean>(false);
   decimalSettings = model.required<Record<DecimalStatKey, number>>();
   sortColumn = input.required<SortColumn>();
   sortDirection = input.required<SortDirection>();
@@ -159,8 +158,6 @@ export class ProjectionsTableHeaderComponent {
     }
     return this.sortDirection() === 'asc' ? 'arrow-up' : 'arrow-down';
   }
-
-  gpDecimalSetting = computed(() => this.decimalSettings().gp);
 
   onDecimalInput(statKey: DecimalStatKey, event: Event): void {
     const raw = Number((event.target as HTMLInputElement).value);

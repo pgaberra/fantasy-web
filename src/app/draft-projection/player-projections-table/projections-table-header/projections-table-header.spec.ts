@@ -54,7 +54,6 @@ describe('ProjectionsTableHeaderComponent', () => {
         [activeColumns]="activeColumns"
         [scoringType]="scoringType"
         [(statWeights)]="statWeights"
-        [useDefaultDecimals]="useDefaultDecimals"
         [(decimalSettings)]="decimalSettings"
         [sortColumn]="sortColumn"
         [sortDirection]="sortDirection"
@@ -89,7 +88,6 @@ describe('ProjectionsTableHeaderComponent', () => {
       },
       scoringType: 'category',
       statWeights: mockStatWeights,
-      useDefaultDecimals: true,
       decimalSettings: DEFAULT_DECIMAL_SETTINGS,
       maxDecimalSetting: 3,
       sortColumn: 'summary',
@@ -135,12 +133,6 @@ describe('ProjectionsTableHeaderComponent', () => {
       expect(
         getComponent({ sortColumn: 'goals', sortDirection: 'desc' }).sortIndicator('assists'),
       ).toBeNull();
-    });
-  });
-
-  describe('gpDecimalSetting', () => {
-    it('should return the gp value from decimalSettings', () => {
-      expect(getComponent().gpDecimalSetting()).toEqual(DEFAULT_DECIMAL_SETTINGS.gp);
     });
   });
 
@@ -291,74 +283,6 @@ describe('ProjectionsTableHeaderComponent', () => {
       input.dispatchEvent(new Event('input'));
       expect(component.statWeights().goals).toEqual(5.5);
     });
-
-    it('should not render the decimal-row by default', () => {
-      getFixture();
-      expect(ngMocks.findAll('.decimal-row')).toHaveLength(0);
-    });
-
-    it('should render the decimal-row when useDefaultDecimals is false', () => {
-      getFixture({ useDefaultDecimals: false });
-      expect(ngMocks.findAll('.decimal-row')).toHaveLength(1);
-    });
-
-    it('should render one decimal input per active scoring column in the decimal-row', () => {
-      getFixture({
-        useDefaultDecimals: false,
-        activeColumns: {
-          scoring: new Set<ScoringStatKey>(['goals', 'assists']),
-          utility: new Set<SkaterUtilityStatKey>(),
-        },
-      });
-      expect(ngMocks.findAll('.decimal-row input')).toHaveLength(2);
-    });
-
-    it('should update decimalSettings when a scoring decimal input changes', () => {
-      const fixture = getFixture({
-        useDefaultDecimals: false,
-        activeColumns: {
-          scoring: new Set<ScoringStatKey>(['goals']),
-          utility: new Set<SkaterUtilityStatKey>(),
-        },
-      });
-      const component = ngMocks.find(
-        fixture.debugElement,
-        ProjectionsTableHeaderComponent,
-      ).componentInstance;
-      const input = ngMocks.find('.decimal-row input').nativeElement as HTMLInputElement;
-      input.value = '2';
-      input.dispatchEvent(new Event('input'));
-      expect(component.decimalSettings().goals).toEqual(2);
-    });
-
-    it('should render a decimal input for the gp utility column in the decimal-row', () => {
-      getFixture({
-        useDefaultDecimals: false,
-        activeColumns: {
-          scoring: new Set<ScoringStatKey>(),
-          utility: new Set<SkaterUtilityStatKey>(['gp']),
-        },
-      });
-      expect(ngMocks.findAll('.decimal-row input')).toHaveLength(1);
-    });
-
-    it('should update decimalSettings when the gp decimal input changes', () => {
-      const fixture = getFixture({
-        useDefaultDecimals: false,
-        activeColumns: {
-          scoring: new Set<ScoringStatKey>(),
-          utility: new Set<SkaterUtilityStatKey>(['gp']),
-        },
-      });
-      const component = ngMocks.find(
-        fixture.debugElement,
-        ProjectionsTableHeaderComponent,
-      ).componentInstance;
-      const input = ngMocks.find('.decimal-row input').nativeElement as HTMLInputElement;
-      input.value = '1';
-      input.dispatchEvent(new Event('input'));
-      expect(component.decimalSettings().gp).toEqual(1);
-    });
   });
 
   describe('utility / scoring split', () => {
@@ -407,14 +331,13 @@ describe('ProjectionsTableHeaderComponent', () => {
     it('opens the scoring block at the first scoring column of every header row', () => {
       getFixture({
         scoringType: 'points',
-        useDefaultDecimals: false,
         activeColumns: {
           scoring: new Set<ScoringStatKey>(['goals', 'assists']),
           utility: new Set<SkaterUtilityStatKey>(['gp', 'toiPerGame']),
         },
       });
-      // The label row, the weight row and the decimal row — the rule runs the full thead height.
-      expect(ngMocks.findAll('.group-start')).toHaveLength(3);
+      // The label row and the weight row — the rule runs the full thead height.
+      expect(ngMocks.findAll('.group-start')).toHaveLength(2);
     });
 
     it('marks only the first scoring column, not every one', () => {
@@ -507,16 +430,6 @@ describe('ProjectionsTableHeaderComponent', () => {
       expect(ngMocks.findAll('.col-add')).toHaveLength(0);
     });
 
-    it('keeps the standalone decimal row for surfaces without column menus', () => {
-      getFixture({ useDefaultDecimals: false });
-      expect(ngMocks.findAll('.decimal-row')).toHaveLength(1);
-    });
-
-    it('drops the decimal row once decimals live in the column menus', () => {
-      getFixture({ useDefaultDecimals: false, columnControls: true });
-      expect(ngMocks.findAll('.decimal-row')).toHaveLength(0);
-    });
-
     it('routes a removal to the output matching the column kind', () => {
       const component = getComponent({ columnControls: true });
       const scoringEmit = vi.spyOn(component.scoringColumnToggled, 'emit');
@@ -581,8 +494,6 @@ describe('ProjectionsTableHeaderComponent', () => {
     });
 
     it('offers a column its decimals without a mode being turned on first', () => {
-      // useDefaultDecimals defaults to true — the setting used to be hidden behind turning that
-      // off, which only ever hid the control: the table always formats from decimalSettings.
       getFixture({ columnControls: true });
 
       const goalsMenu = ngMocks

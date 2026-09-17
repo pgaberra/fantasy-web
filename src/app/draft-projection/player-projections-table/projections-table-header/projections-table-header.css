@@ -229,8 +229,8 @@ th.summary-pts-col .sort-arrow {
    paint from the cell edge — so the highlight spills past the rule onto the utility group. An
    inset shadow in the header's own blue repaints that strip above the cell background, and the
    sort button starts at the rule instead. A margin rather than an overlay: nothing can cover the
-   label's first letter in a narrow column. The weight and decimal rows carry no highlight and
-   need neither. */
+   label's first letter in a narrow column. The weight row carries no highlight and needs
+   neither. */
 :host(.has-column-menus) th.col-stat.group-start {
   box-shadow: inset calc(var(--stat-value-inset) / 2) 0 0 0 var(--color-primary);
 }
@@ -268,27 +268,24 @@ th.summary-pts-col {
   min-width: 72px;
 }
 
-/* The weight/decimal rows paint their whole strip blue, and their `tr … th` selector
+/* The weight row paints its whole strip blue, and its `tr … th` selector
    outranks the column's own rule — which punches a blue gap into the gold column. The
-   total has no weight or decimal input, so those cells are empty: keep them gold and let
+   total has no weight input, so that cell is empty: keep it gold and let
    the column read as one unbroken band. */
-tr.weight-row th.summary-pts-col,
-tr.decimal-row th.summary-pts-col {
+tr.weight-row th.summary-pts-col {
   background: var(--color-gold-strong);
 }
 
-/* The weight and decimal boxes line their right edge up with the value box in the column below,
+/* The weight boxes line their right edge up with the value box in the column below,
    so a right-aligned stat column reads as one stack rather than three differently-placed things. */
-tr.weight-row th,
-tr.decimal-row th {
+tr.weight-row th {
   text-align: right;
   padding-right: var(--stat-cell-pad-x);
 }
 
 /* This selector outranks th.col-name's own `text-align: left`, so the row's label has to be
    put back — it is prose, not a value in a stat column. */
-tr.weight-row th.col-name,
-tr.decimal-row th.col-name {
+tr.weight-row th.col-name {
   text-align: left;
 }
 
@@ -339,50 +336,6 @@ tr.weight-row th {
   border-color: var(--color-gold);
   background: rgba(255, 255, 255, 0.25);
   box-shadow: 0 0 0 2px rgba(230, 184, 74, 0.35);
-}
-
-tr.decimal-row th {
-  background: #22395e;
-  padding: 0.3rem var(--stat-cell-pad-x) 0.3rem 0.25rem;
-}
-
-.decimal-label {
-  font-size: var(--text-xs);
-  color: rgba(255, 255, 255, 0.75);
-  font-weight: 400;
-  white-space: nowrap;
-}
-
-.decimal-input {
-  width: 40px;
-  padding: 0.2rem 0.25rem;
-  text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.12);
-  font-size: 0.8rem;
-  color: var(--color-text-on-dark);
-  transition:
-    border-color var(--transition-fast),
-    background var(--transition-fast);
-  -moz-appearance: textfield;
-}
-
-.decimal-input:hover {
-  border-color: rgba(255, 255, 255, 0.6);
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.decimal-input:focus {
-  outline: none;
-  border-color: var(--color-gold);
-  background: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 0 0 2px rgba(230, 184, 74, 0.35);
-}
-
-.decimal-input::-webkit-outer-spin-button,
-.decimal-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
 }
 
 .full-season-pill {
