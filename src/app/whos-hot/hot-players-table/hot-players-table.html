@@ -96,9 +96,8 @@
                         [name]="ranked.hot.name"
                       />
                     }
-                    <span class="player-name-text"
-                      >{{ ranked.hot.name }} ({{ positionLabel(ranked) }})</span
-                    >
+                    <span class="player-name-text">{{ ranked.hot.name }}</span>
+                    <app-position-chips [positions]="positions(ranked)" />
                     @if (ranked.hot.teamAbbrev) {
                       <span class="player-team">{{ ranked.hot.teamAbbrev }}</span>
                     }
