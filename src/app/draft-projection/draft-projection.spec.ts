@@ -660,4 +660,47 @@ describe('DraftProjectionComponent', () => {
       expect(component.saveStatus()).toEqual('idle');
     }, 10000);
   });
+
+  /**
+   * The acknowledgement is the one edit whose next move is almost always to leave the page, and
+   * the debounce it used to wait for is cancelled when the page goes. Dismissing the notice and
+   * navigating away brought it straight back on the next open.
+   */
+  it('saves the acknowledgement before the page can be left', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    const updateSpy = vi.spyOn(ngMocks.findInstance(ProjectionStorageService), 'updateProjection');
+
+    component.unacknowledgedNewPlayerIds.set([1]);
+    fixture.detectChanges();
+    await new Promise((resolve) => setTimeout(resolve, AUTOSAVE_DEBOUNCE_MS + 300));
+    expect(updateSpy.mock.calls.at(-1)![1].data.settings.unacknowledgedNewPlayerIds).toEqual([1]);
+
+    component.acknowledgeNewPlayers();
+    fixture.destroy();
+
+    expect(
+      updateSpy.mock.calls.at(-1)![1].data.settings.unacknowledgedNewPlayerIds,
+    ).toBeUndefined();
+  }, 10000);
+
+  /** The save it makes is one save: the debounce that follows must not send the same board again. */
+  it('leaves the debounced save nothing to do once the new players are acknowledged', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    const updateSpy = vi.spyOn(ngMocks.findInstance(ProjectionStorageService), 'updateProjection');
+
+    component.unacknowledgedNewPlayerIds.set([1]);
+    fixture.detectChanges();
+    await new Promise((resolve) => setTimeout(resolve, AUTOSAVE_DEBOUNCE_MS + 300));
+    const savesBefore = updateSpy.mock.calls.length;
+
+    component.acknowledgeNewPlayers();
+    fixture.detectChanges();
+    await new Promise((resolve) => setTimeout(resolve, AUTOSAVE_DEBOUNCE_MS + 300));
+
+    expect(updateSpy.mock.calls.length).toEqual(savesBefore + 1);
+  }, 10000);
 });

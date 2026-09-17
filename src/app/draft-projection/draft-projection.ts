@@ -561,13 +561,20 @@ export class DraftProjectionComponent implements OnInit {
   }
 
   /**
-   * The owner has seen the new players. Emptying the list is an edit like any other, so the
-   * autosave carries it to the server and the notice stays gone on the next load. The filter goes
-   * with it, since the notice was the only place to turn it off.
+   * The owner has seen the new players. The filter goes with the list, since the notice was the
+   * only place to turn it off.
+   *
+   * <p>Saved on the spot rather than left to the debounce. Every other edit here is one of a run
+   * — a keystroke, a column tick — and waiting for the run to end is the whole point; this one is
+   * a single click on a notice that then disappears, and what people do next is leave. That
+   * cancelled the pending save with `takeUntilDestroyed`, so the acknowledgement was lost and the
+   * notice came back on the next open, having been dismissed. The debounce still fires afterwards
+   * and finds nothing to do: `autosave` compares against the payload it last sent.
    */
   acknowledgeNewPlayers(): void {
     this.unacknowledgedNewPlayerIds.set([]);
     this.newPlayersOnly.set(false);
+    this.autosave();
   }
 
   /** Drops every correction at once, putting the whole pool back on the reported positions. */
