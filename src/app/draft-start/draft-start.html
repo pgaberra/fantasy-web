@@ -251,8 +251,10 @@
                 }
               </ul>
             }
-            <app-share-import (imported)="onImported($event.id)" />
-            <app-spreadsheet-import-button (imported)="onImported($event.id)" />
+            <app-projection-import
+              label="Add a shared projection"
+              (imported)="onImported($event.id)"
+            />
           }
           @default {
             @if (availablePresets().length === 0) {

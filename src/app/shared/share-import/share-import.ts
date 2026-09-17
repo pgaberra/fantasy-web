@@ -38,8 +38,8 @@ export class ShareImportComponent {
   private readonly notification = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
 
-  /** Names what the copy is for, which differs between the pages that take one. */
-  readonly label = input('Add a shared projection');
+  /** Named by the page that placed it, since the pages word it differently. */
+  readonly label = input.required<string>();
 
   readonly imported = output<ProjectionResponse>();
 

@@ -22,8 +22,7 @@ import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-i
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { PopoverTriggerDirective } from '../shared/popover/popover-trigger.directive';
-import { ShareImportComponent } from '../shared/share-import/share-import';
-import { SpreadsheetImportButtonComponent } from '../shared/spreadsheet-import/spreadsheet-import-button';
+import { ProjectionImportComponent } from '../shared/projection-import/projection-import';
 import { FeatureService } from '../services/feature.service';
 import {
   PreviewSource,
@@ -83,8 +82,7 @@ export type DraftSource =
     ErrorStateComponent,
     RelativeTimePipe,
     PopoverTriggerDirective,
-    ShareImportComponent,
-    SpreadsheetImportButtonComponent,
+    ProjectionImportComponent,
     IconComponent,
     StartingPointPreviewComponent,
     LeagueSettingsControlsComponent,

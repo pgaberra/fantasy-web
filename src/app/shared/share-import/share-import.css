@@ -1,7 +1,3 @@
-.import {
-  margin-top: var(--space-4);
-}
-
 /* A form field's label, the same as the name field's on the new-projection page and the preview's
    on the draft picker. It used to be a step larger and darker, which made it read as a heading
    from some other component rather than the label of the field under it. */

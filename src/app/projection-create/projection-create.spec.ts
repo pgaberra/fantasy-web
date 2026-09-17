@@ -491,7 +491,7 @@ describe('ProjectionCreateComponent', () => {
       expect(root.querySelectorAll('.row-icon app-icon')).toHaveLength(CREATE_PRESETS.length);
       expect(root.querySelector('.row')?.classList.contains('row--selected')).toBe(true);
       // Folded, not gone: the segments say how many boards there are, one press away.
-      expect(root.querySelector('app-share-import')).toBeNull();
+      expect(root.querySelector('app-projection-import')).toBeNull();
     });
 
     // Switching to a kind checks its first card, so Create is never a press away from nothing.
@@ -522,7 +522,7 @@ describe('ProjectionCreateComponent', () => {
       expect(component.startingPoint()).toEqual({ kind: 'copy', id: 'shared1' });
       expect(root.querySelector('.row-meta')?.textContent?.trim()).toContain('From alex');
       // The paste field belongs to the shared kind, where a board comes from.
-      expect(root.querySelector('app-share-import')).not.toBeNull();
+      expect(root.querySelector('app-projection-import')).not.toBeNull();
 
       // A pick the user made is kept when the kind is left and come back to.
       component.sourceKind.set('preset');

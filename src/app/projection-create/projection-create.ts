@@ -28,8 +28,7 @@ import { ProjectionData } from '../api/models/projection-data';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
-import { ShareImportComponent } from '../shared/share-import/share-import';
-import { SpreadsheetImportButtonComponent } from '../shared/spreadsheet-import/spreadsheet-import-button';
+import { ProjectionImportComponent } from '../shared/projection-import/projection-import';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { createDefaultProjectionState } from '../draft-projection/projection-defaults';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
@@ -104,8 +103,7 @@ export function requestedPreset(value: unknown): CreatePreset['source'] | null {
     HelpTipComponent,
     RouterLink,
     StartingPointPreviewComponent,
-    ShareImportComponent,
-    SpreadsheetImportButtonComponent,
+    ProjectionImportComponent,
     RelativeTimePipe,
     IconComponent,
     LeagueSettingsControlsComponent,

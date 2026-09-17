@@ -198,7 +198,3 @@
 .share {
   padding: var(--space-4) var(--space-5);
 }
-
-.share app-share-import {
-  display: block;
-}
