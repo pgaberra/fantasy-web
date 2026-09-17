@@ -9,18 +9,29 @@ import {
 } from '../../models/stat-key.model';
 import { ColumnRole, convertColumn, guessColumnRoles } from './spreadsheet-columns';
 import { PlayerMatcher } from './spreadsheet-players';
+import { reconcileImportedLine } from './spreadsheet-reconcile';
 import { Cell } from './spreadsheet-table';
 
 /** The stats read for one player, in the units the projection stores. */
 export type ImportedStats = Partial<Record<StatKey, number>>;
+
+export interface AmbiguousRow {
+  /** The row's place among the sheet's named rows, which is what a choice is keyed by. */
+  readonly row: number;
+  readonly name: string;
+  readonly candidates: readonly Player[];
+}
 
 export interface ImportPlan {
   /** Per pool player, the stats the sheet gives. Only players with at least one value appear. */
   readonly stats: ReadonlyMap<number, ImportedStats>;
   /** Names on the sheet with no player in the pool, in sheet order. */
   readonly notFound: readonly string[];
-  /** Names that fit more than one player, left alone rather than guessed. */
-  readonly ambiguous: readonly string[];
+  /**
+   * Rows whose name fits more than one player even after the club and position. None of them is
+   * guessed; each is imported only once the user picks the player (`choices`).
+   */
+  readonly ambiguous: readonly AmbiguousRow[];
   /** Rows naming a player an earlier row already gave; the first row wins. */
   readonly duplicates: readonly string[];
   /** Rows on the sheet that carry a name. */
@@ -64,9 +75,11 @@ export function buildImportPlan(
   headingRow: number,
   roles: readonly (ColumnRole | null)[],
   matcher: PlayerMatcher,
+  choices: ReadonlyMap<number, number> = new Map(),
 ): ImportPlan {
   const nameColumn = roles.findIndex((role) => role?.kind === 'name');
   const teamColumn = roles.findIndex((role) => role?.kind === 'team');
+  const positionColumn = roles.findIndex((role) => role?.kind === 'position');
   const dataRows = rows.slice(headingRow + 1).filter((row) => {
     const name = nameColumn >= 0 ? row[nameColumn] : null;
     return typeof name === 'string' && name.trim() !== '';
@@ -83,21 +96,31 @@ export function buildImportPlan(
   const stats = new Map<number, ImportedStats>();
   const seen = new Set<number>();
   const notFound: string[] = [];
-  const ambiguous: string[] = [];
+  const ambiguous: AmbiguousRow[] = [];
   const duplicates: string[] = [];
 
   dataRows.forEach((row, index) => {
     const name = String(row[nameColumn]).trim();
-    const result = matcher.match(name, teamColumn >= 0 ? row[teamColumn] : null);
+    const result = matcher.match(
+      name,
+      teamColumn >= 0 ? row[teamColumn] : null,
+      positionColumn >= 0 ? row[positionColumn] : null,
+    );
     if (result.kind === 'not-found') {
       notFound.push(name);
       return;
     }
+    let player: Player;
     if (result.kind === 'ambiguous') {
-      ambiguous.push(name);
-      return;
+      ambiguous.push({ row: index, name, candidates: result.candidates });
+      const chosen = result.candidates.find((candidate) => candidate.id === choices.get(index));
+      if (!chosen) {
+        return;
+      }
+      player = chosen;
+    } else {
+      player = result.player;
     }
-    const player = result.player;
     if (seen.has(player.id)) {
       duplicates.push(name);
       return;
@@ -133,10 +156,10 @@ export function holdsStat(type: Player['type'], stat: StatKey): boolean {
 }
 
 /**
- * The projection with the sheet's values written over it. Only the stats the sheet gives change;
- * every other stat, and every player it does not name, keeps what it had. Games played and time on
- * ice are written as they are and never rescale the rest, as a hand edit of them would: the sheet's
- * goals were projected over the sheet's games already.
+ * The projection with the sheet's values written over it. The stats the sheet gives change, and so
+ * do the ones defined by them (see `reconcileImportedLine`); every other stat, and every player the
+ * sheet does not name, keeps what it had. Games played and time on ice never rescale the counting
+ * stats, as a hand edit of them would: the sheet's goals were projected over the sheet's games.
  */
 export function applyImportedStats(
   projections: readonly Projection[],
@@ -149,16 +172,22 @@ export function applyImportedStats(
     }
     const scoring: Record<string, number> = { ...projection.stats.scoring };
     const utility: Record<string, number> = { ...projection.stats.utility };
+    const written = new Set<StatKey>();
     for (const [stat, value] of Object.entries(line) as [StatKey, number][]) {
       if (!holdsStat(projection.type, stat)) {
         continue;
       }
+      written.add(stat);
       if ((SKATER_UTILITY_STAT_KEYS as readonly string[]).includes(stat)) {
         utility[stat] = value;
       } else {
         scoring[stat] = value;
       }
     }
+    reconcileImportedLine(projection.type, scoring, utility, written, {
+      scoring: projection.stats.scoring,
+      gp: projection.stats.utility.gp,
+    });
     return { ...projection, stats: { scoring, utility } } as Projection;
   });
 }

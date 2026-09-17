@@ -20,8 +20,8 @@ import {
   SpreadsheetSheet,
 } from './spreadsheet-table';
 
-/** What a column select's value can be: a stat key, `name`, `team`, or empty for skip. */
-type RoleValue = StatKey | 'name' | 'team' | '';
+/** What a column select's value can be: a stat key, `name`, `team`, `position`, or empty for skip. */
+type RoleValue = StatKey | 'name' | 'team' | 'position' | '';
 
 export interface ColumnOption {
   readonly value: RoleValue;
@@ -79,6 +79,8 @@ export class SpreadsheetImportDialogComponent {
   readonly headingRow = signal(0);
   readonly roles = signal<(ColumnRole | null)[]>([]);
   readonly showUnmatched = signal(false);
+  /** The player picked for each row whose name fits several, keyed by the row's place. */
+  readonly choices = signal<ReadonlyMap<number, number>>(new Map());
 
   private readonly matcher = computed(() => new PlayerMatcher(this.players()));
 
@@ -92,6 +94,7 @@ export class SpreadsheetImportDialogComponent {
     { value: '', label: "Don't import" },
     { value: 'name', label: 'Player name' },
     { value: 'team', label: 'Team' },
+    { value: 'position', label: 'Position' },
     ...[...SKATER_UTILITY_STAT_KEYS, ...SKATER_SCORING_STAT_KEYS, ...GOALIE_ONLY].map((key) => ({
       value: key,
       label: STAT_FULL_NAMES[key],
@@ -123,14 +126,18 @@ export class SpreadsheetImportDialogComponent {
 
   readonly plan = computed<ImportPlan | null>(() =>
     this.hasNameColumn()
-      ? buildImportPlan(this.rows(), this.headingRow(), this.roles(), this.matcher())
+      ? buildImportPlan(
+          this.rows(),
+          this.headingRow(),
+          this.roles(),
+          this.matcher(),
+          this.choices(),
+        )
       : null,
   );
 
-  readonly unmatched = computed(() => {
-    const plan = this.plan();
-    return plan ? [...plan.notFound, ...plan.ambiguous] : [];
-  });
+  readonly notFound = computed(() => this.plan()?.notFound ?? []);
+  readonly ambiguous = computed(() => this.plan()?.ambiguous ?? []);
 
   readonly canImport = computed(() => (this.plan()?.stats.size ?? 0) > 0);
 
@@ -183,6 +190,7 @@ export class SpreadsheetImportDialogComponent {
     this.headingRow.set(headingRow);
     this.roles.set(proposeColumnRoles(rows, headingRow, this.matcher()));
     this.showUnmatched.set(false);
+    this.choices.set(new Map());
   }
 
   onSheetChange(event: Event): void {
@@ -196,6 +204,27 @@ export class SpreadsheetImportDialogComponent {
     }
     this.headingRow.set(row - 1);
     this.roles.set(proposeColumnRoles(this.rows(), row - 1, this.matcher()));
+    this.choices.set(new Map());
+  }
+
+  /** Picks the player a row means, or none, which leaves the row out of the import. */
+  onChoice(row: number, event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.choices.update((choices) => {
+      const next = new Map(choices);
+      if (value) {
+        next.set(row, Number(value));
+      } else {
+        next.delete(row);
+      }
+      return next;
+    });
+  }
+
+  /** How a candidate reads in the picker: enough to tell two players of one name apart. */
+  candidateLabel(player: Player): string {
+    const position = player.type === 'goalie' ? 'G' : [...player.positions].join(', ');
+    return [player.name, player.teamAbbrev, position].filter(Boolean).join(' · ');
   }
 
   onColumnRoleChange(column: number, event: Event): void {
@@ -241,7 +270,7 @@ function roleFrom(value: RoleValue): ColumnRole | null {
   if (value === '') {
     return null;
   }
-  if (value === 'name' || value === 'team') {
+  if (value === 'name' || value === 'team' || value === 'position') {
     return { kind: value };
   }
   return { kind: 'stat', stat: value };

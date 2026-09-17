@@ -1,4 +1,5 @@
 import { Player } from '../../models/player.model';
+import { SkaterPosition } from '../../models/position.model';
 import { Cell } from './spreadsheet-table';
 
 /**
@@ -10,6 +11,38 @@ import { Cell } from './spreadsheet-table';
  * requirement, because the pool's club is stale for a good share of skaters and a sheet's may be
  * a season old; a wrong club must not cost a match that the name alone makes.
  */
+
+/** A position as the pool has it, or G for a goalie. */
+export type PlayerPosition = SkaterPosition | 'G';
+
+/**
+ * The positions a sheet's position cell names: "C", "LW/RW", "C, LW", and the depth-chart spellings
+ * "C1", "LD2", "RD1" (a left or right defenceman is a D). "F" is any forward and "W" either wing.
+ */
+export function positionsFrom(cell: Cell | undefined): ReadonlySet<PlayerPosition> {
+  const positions = new Set<PlayerPosition>();
+  for (const token of String(cell ?? '')
+    .toUpperCase()
+    .split(/[^A-Z]+/)) {
+    if (token === 'C' || token === 'LW' || token === 'RW' || token === 'D' || token === 'G') {
+      positions.add(token);
+    } else if (token === 'LD' || token === 'RD') {
+      positions.add('D');
+    } else if (token === 'W') {
+      positions.add('LW').add('RW');
+    } else if (token === 'F') {
+      positions.add('C').add('LW').add('RW');
+    }
+  }
+  return positions;
+}
+
+function playsAny(player: Player, positions: ReadonlySet<PlayerPosition>): boolean {
+  if (player.type === 'goalie') {
+    return positions.has('G');
+  }
+  return [...player.positions].some((position) => positions.has(position));
+}
 
 export type MatchResult =
   | { kind: 'matched'; player: Player }
@@ -93,16 +126,17 @@ export class PlayerMatcher {
     }
   }
 
-  match(name: Cell, team: Cell | undefined): MatchResult {
+  match(name: Cell, team?: Cell, position?: Cell): MatchResult {
     const key = nameKey(name);
     if (!key) {
       return { kind: 'not-found' };
     }
     const sheetTeam = teamKey(team);
+    const sheetPositions = positionsFrom(position);
 
     const exact = this.byName.get(key);
     if (exact) {
-      return pick(exact, sheetTeam);
+      return pick(exact, sheetTeam, sheetPositions);
     }
     // A first name written short or as an initial ("Mitch Marner", "C. McDavid"). The surname has
     // to agree and the first names have to share their start; among those, one player on the
@@ -115,19 +149,7 @@ export class PlayerMatcher {
       const poolFirst = nameKey(player.name).split(' ')[0];
       return poolFirst.startsWith(first) || first.startsWith(poolFirst);
     });
-    const onClub = sheetTeam
-      ? shortened.filter((player) => teamKey(player.teamAbbrev) === sheetTeam)
-      : [];
-    if (onClub.length === 1) {
-      return { kind: 'matched', player: onClub[0] };
-    }
-    if (shortened.length === 1) {
-      return { kind: 'matched', player: shortened[0] };
-    }
-    if (shortened.length > 1) {
-      return { kind: 'ambiguous', candidates: shortened };
-    }
-    return { kind: 'not-found' };
+    return shortened.length ? pick(shortened, sheetTeam, sheetPositions) : { kind: 'not-found' };
   }
 
   /**
@@ -140,14 +162,28 @@ export class PlayerMatcher {
   }
 }
 
-function pick(candidates: Player[], team: string | null): MatchResult {
-  if (candidates.length === 1) {
-    return { kind: 'matched', player: candidates[0] };
+/**
+ * One player out of several who fit the name, narrowed by the sheet's club and then its position,
+ * each applied only where it leaves someone: two Elias Petterssons on one club are told apart by one
+ * being a centre and the other a defenceman.
+ */
+function pick(
+  candidates: Player[],
+  team: string | null,
+  positions: ReadonlySet<PlayerPosition>,
+): MatchResult {
+  let narrowed = candidates;
+  if (narrowed.length > 1 && team) {
+    const sameClub = narrowed.filter((player) => teamKey(player.teamAbbrev) === team);
+    narrowed = sameClub.length ? sameClub : narrowed;
   }
-  const sameClub = team ? candidates.filter((p) => teamKey(p.teamAbbrev) === team) : [];
-  return sameClub.length === 1
-    ? { kind: 'matched', player: sameClub[0] }
-    : { kind: 'ambiguous', candidates };
+  if (narrowed.length > 1 && positions.size) {
+    const samePosition = narrowed.filter((player) => playsAny(player, positions));
+    narrowed = samePosition.length ? samePosition : narrowed;
+  }
+  return narrowed.length === 1
+    ? { kind: 'matched', player: narrowed[0] }
+    : { kind: 'ambiguous', candidates: narrowed };
 }
 
 function push(map: Map<string, Player[]>, key: string, player: Player): void {

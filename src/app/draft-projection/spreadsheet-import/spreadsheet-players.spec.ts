@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { nameKey, PlayerMatcher, teamKey } from './spreadsheet-players';
+import { nameKey, PlayerMatcher, positionsFrom, teamKey } from './spreadsheet-players';
 import { POOL } from './spreadsheet-test-players';
 
 describe('spreadsheet-players', () => {
   const matcher = new PlayerMatcher(POOL);
-  const idOf = (name: string, team?: string) => {
-    const result = matcher.match(name, team ?? null);
+  const idOf = (name: string, team?: string, position?: string) => {
+    const result = matcher.match(name, team ?? null, position ?? null);
     return result.kind === 'matched' ? result.player.id : result.kind;
   };
 
@@ -40,6 +40,22 @@ describe('spreadsheet-players', () => {
     expect(idOf('Sebastian Aho')).toBe('ambiguous');
     // A club the pool no longer agrees with does not cost a match the name makes alone.
     expect(idOf('Tim Stützle', 'CHI')).toBe(2);
+  });
+
+  it('reads the positions a sheet writes, depth-chart spellings included', () => {
+    expect([...positionsFrom('C1')]).toEqual(['C']);
+    expect([...positionsFrom('LD2')]).toEqual(['D']);
+    expect([...positionsFrom('LW/RW')]).toEqual(['LW', 'RW']);
+    expect([...positionsFrom('F')]).toEqual(['C', 'LW', 'RW']);
+    expect(positionsFrom(null).size).toBe(0);
+  });
+
+  it('tells two players of one name on one club apart by position', () => {
+    expect(idOf('Elias Pettersson', 'VAN', 'C2')).toBe(10);
+    expect(idOf('Elias Pettersson', 'VAN', 'LD1')).toBe(11);
+    expect(idOf('Elias Pettersson', 'VAN')).toBe('ambiguous');
+    // A position neither plays narrows nothing, rather than ruling both out.
+    expect(idOf('Elias Pettersson', 'VAN', 'G')).toBe('ambiguous');
   });
 
   it('does not take one brother for the other', () => {
