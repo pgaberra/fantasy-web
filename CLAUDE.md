@@ -471,7 +471,7 @@ in committed config.
 
 - Deployed via **Coolify** (Hetzner) using the multi-stage `Dockerfile`: a Node build
   stage produces `dist/fantasy-web/browser`, served by nginx (see `nginx.conf`). The public pages
-  (`/`, `/premium`, `/terms`, `/privacy`, `/refunds`) are prerendered at build time into their own
+  (`/`, `/premium`, `/terms`, `/privacy`) are prerendered at build time into their own
   `index.html` (`src/app/app.routes.server.ts`, `app.config.server.ts`), so a client that runs no
   JavaScript reads their content; every other route falls back to the unrendered shell
   `index.csr.html`. Code that runs while those pages render must not touch browser globals

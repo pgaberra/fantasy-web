@@ -17,9 +17,8 @@ out=dist/fantasy-web/browser
 # path|text that only that page's own content contains
 checks=(
   "index.html|Prepare for the upcoming"
-  "terms/index.html|merchant of record"
+  "terms/index.html|Charges we always refund"
   "privacy/index.html|Privacy policy"
-  "refunds/index.html|Refund policy"
 )
 
 failed=0

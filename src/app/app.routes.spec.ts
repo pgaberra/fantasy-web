@@ -19,10 +19,20 @@ describe('routes', () => {
     // anyone has agreed to anything — neither may bounce a visitor to the login page.
     expect(routeFor('s/:token').canActivate).toBeUndefined();
     expect(routeFor('privacy').canActivate).toBeUndefined();
-    // A payment provider reviews the terms and the refund policy from a signed-out browser, and a customer
-    // has to be able to read both before paying.
+    // A payment provider reviews the terms, refund policy included, from a signed-out browser, and
+    // a customer has to be able to read them before paying.
     expect(routeFor('terms').canActivate).toBeUndefined();
-    expect(routeFor('refunds').canActivate).toBeUndefined();
+  });
+
+  it('sends the old refund policy address to that section of the terms', () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const redirect = routeFor('refunds').redirectTo as RedirectFunction;
+
+    const target = TestBed.runInInjectionContext(() =>
+      redirect({ queryParams: {} } as unknown as Parameters<RedirectFunction>[0]),
+    );
+
+    expect((target as UrlTree).toString()).toEqual('/terms#refunds');
   });
 
   /**

@@ -31,6 +31,12 @@
   border-top: 1px solid var(--color-border);
 }
 
+.terms h3 {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  margin: var(--space-5) 0 var(--space-2);
+}
+
 .terms p,
 .terms li {
   line-height: 1.65;
