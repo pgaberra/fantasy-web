@@ -10,7 +10,7 @@ import {
 } from '../../models/stat-key.model';
 import { STAT_FULL_NAMES } from '../../pipes/stat-tooltip.pipe';
 import { ColumnRole, findHeadingRow } from './spreadsheet-columns';
-import { buildImportPlan, ImportPlan, proposeColumnRoles } from './spreadsheet-import';
+import { buildImportPlan, ImportPlan, proposeColumnRoles, RowChoices } from './spreadsheet-import';
 import { PlayerMatcher } from './spreadsheet-players';
 import {
   Cell,
@@ -79,8 +79,9 @@ export class SpreadsheetImportDialogComponent {
   readonly headingRow = signal(0);
   readonly roles = signal<(ColumnRole | null)[]>([]);
   readonly showUnmatched = signal(false);
-  /** The player picked for each row whose name fits several, keyed by the row's place. */
-  readonly choices = signal<ReadonlyMap<number, number>>(new Map());
+  /** What the user picked for the rows the dialog asks about, keyed by the row's place. */
+  readonly choices = signal<RowChoices>(new Map());
+  readonly showRespelled = signal(false);
 
   private readonly matcher = computed(() => new PlayerMatcher(this.players()));
 
@@ -138,6 +139,7 @@ export class SpreadsheetImportDialogComponent {
 
   readonly notFound = computed(() => this.plan()?.notFound ?? []);
   readonly ambiguous = computed(() => this.plan()?.ambiguous ?? []);
+  readonly respelled = computed(() => this.plan()?.respelled ?? []);
 
   readonly canImport = computed(() => (this.plan()?.stats.size ?? 0) > 0);
 
@@ -210,15 +212,7 @@ export class SpreadsheetImportDialogComponent {
   /** Picks the player a row means, or none, which leaves the row out of the import. */
   onChoice(row: number, event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
-    this.choices.update((choices) => {
-      const next = new Map(choices);
-      if (value) {
-        next.set(row, Number(value));
-      } else {
-        next.delete(row);
-      }
-      return next;
-    });
+    this.choices.update((choices) => new Map(choices).set(row, value ? Number(value) : null));
   }
 
   /** How a candidate reads in the picker: enough to tell two players of one name apart. */
