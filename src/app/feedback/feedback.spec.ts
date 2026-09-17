@@ -49,6 +49,19 @@ describe('FeedbackComponent', () => {
       );
     });
 
+    it('asks for the bug or the feature, whichever is picked', () => {
+      const fixture = MockRender(FeedbackComponent);
+      const placeholder = () =>
+        (ngMocks.find('#description').nativeElement as HTMLTextAreaElement).placeholder;
+
+      expect(placeholder()).toEqual('Describe the bug you encountered.');
+
+      fixture.point.componentInstance.setType('FEATURE');
+      fixture.detectChanges();
+
+      expect(placeholder()).toEqual('Describe the feature you want us to implement.');
+    });
+
     it('sends a bug report with the page it came from', async () => {
       const component = await submitted(fill('Board freezes', 'It froze on pick 3.'));
 
