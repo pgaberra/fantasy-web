@@ -88,7 +88,7 @@ describe('HomeComponent', () => {
     expect(text(fixture, 'h1')).toEqual('Welcome back, alex');
     expect(text(fixture, '.resume-name')).toContain('Board new');
     expect(text(fixture, '.resume-actions .btn-primary')).toEqual('Resume draft');
-    expect(text(fixture, '.feature-actions .feature-link')).toEqual('My Projections (2)');
+    expect(text(fixture, '.feature-actions .btn-secondary')).toEqual('My Projections (2)');
   });
 
   it('sells the AI projection to an account it is locked for, and offers it to one that has it', async () => {
@@ -104,10 +104,10 @@ describe('HomeComponent', () => {
     expect(ngMocks.input(ngMocks.find(fixture, '.feature-ai .btn'), 'queryParams')).toEqual({
       start: 'model',
     });
-    expect(text(fixture, '.feature-ai .feature-link')).toEqual('Open Draft Mode');
-    expect(
-      ngMocks.input(ngMocks.find(fixture, '.feature-ai .feature-link'), 'queryParams'),
-    ).toEqual({ start: 'model' });
+    expect(text(fixture, '.feature-ai .btn-on-dark')).toEqual('Open Draft Mode');
+    expect(ngMocks.input(ngMocks.find(fixture, '.feature-ai .btn-on-dark'), 'queryParams')).toEqual(
+      { start: 'model' },
+    );
   });
 
   it('drops the AI projection card where the environment does not serve the model', async () => {
