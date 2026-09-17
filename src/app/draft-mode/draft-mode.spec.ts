@@ -1,7 +1,12 @@
-import { MockBuilder, MockRender } from 'ng-mocks';
+import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
+import { ProjectionSerializerService } from '../services/projection-serializer.service';
+import { createDefaultProjectionState } from '../draft-projection/projection-defaults';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Observable, of } from 'rxjs';
-import { ActivatedRoute } from '@angular/router';
+import { Observable, of, throwError } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
+import { NotificationService } from '../services/notification.service';
+import { StatInfoService } from '../services/stat-info.service';
 import { DraftModeComponent } from './draft-mode';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { PlayerService } from '../services/player.service';
@@ -107,7 +112,9 @@ describe('DraftModeComponent', () => {
       })
       .provide({
         provide: ActivatedRoute,
-        useValue: { snapshot: { paramMap: { get: () => 'p1' } } },
+        useValue: {
+          snapshot: { paramMap: { get: (key: string) => (key === 'id' ? 'p1' : null) } },
+        },
       });
   });
 
@@ -641,7 +648,9 @@ describe('DraftModeComponent — available pagination', () => {
       })
       .provide({
         provide: ActivatedRoute,
-        useValue: { snapshot: { paramMap: { get: () => 'p2' } } },
+        useValue: {
+          snapshot: { paramMap: { get: (key: string) => (key === 'id' ? 'p2' : null) } },
+        },
       }),
   );
 
@@ -784,7 +793,9 @@ describe('DraftModeComponent — finished draft', () => {
       })
       .provide({
         provide: ActivatedRoute,
-        useValue: { snapshot: { paramMap: { get: () => 'p1' } } },
+        useValue: {
+          snapshot: { paramMap: { get: (key: string) => (key === 'id' ? 'p1' : null) } },
+        },
       }),
   );
 
@@ -819,5 +830,188 @@ describe('DraftModeComponent — finished draft', () => {
 
     expect(component.finished()).toBe(false);
     expect(component.draft()?.finishedAt).toBeFalsy();
+  });
+});
+
+/**
+ * A preset draft is not saved until its setup is confirmed. Start used to create the board first,
+ * and backing out of the setup left an empty board behind for every press.
+ */
+describe('DraftModeComponent — a preset draft not saved yet', () => {
+  const players: Player[] = [
+    { id: 1, type: 'skater', name: 'McDavid', positions: new Set(['C']), stats: {} as SkaterStats },
+  ];
+
+  const draft: DraftState = {
+    teams: [
+      { id: 'team-me', name: 'My Team', mine: true },
+      { id: 'team-1', name: 'Team 1', mine: false },
+    ],
+    order: ['team-me', 'team-1'],
+    picks: [],
+  };
+
+  const navigate = vi.fn(() => Promise.resolve(true));
+  const createProjection = vi.fn();
+  const loadProjection = vi.fn();
+  const updateProjection = vi.fn();
+  const notifyError = vi.fn();
+  let presetParam: string | null = 'model';
+
+  beforeEach(() => {
+    presetParam = 'model';
+    history.replaceState(null, '');
+    navigate.mockClear();
+    createProjection.mockReset();
+    createProjection.mockReturnValue(of({ id: 'model1' }));
+    loadProjection.mockClear();
+    updateProjection.mockClear();
+    notifyError.mockClear();
+    return MockBuilder(DraftModeComponent)
+      .keep(ProjectionRankingService)
+      .keep(ProjectionCalculationService)
+      .keep(PositionFilterService)
+      .keep(DraftPlayerLookupService)
+      .keep(StatInfoService)
+      .mock(PlayerService, { getPlayers: () => of(players) })
+      .mock(ProjectionStorageService, { loadProjection, updateProjection, createProjection })
+      .mock(NotificationService, { error: notifyError })
+      .provide({ provide: Router, useValue: { navigate } })
+      .provide({
+        provide: ActivatedRoute,
+        useValue: {
+          snapshot: { paramMap: { get: (key: string) => (key === 'preset' ? presetParam : null) } },
+        },
+      });
+  });
+
+  const render = async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    return fixture.point.componentInstance;
+  };
+
+  it('opens on the setup with nothing loaded or saved', async () => {
+    const component = await render();
+
+    expect(component.loaded()).toBe(true);
+    expect(component.phase()).toEqual('setup');
+    expect(component.projectionName()).toEqual('AI Projection');
+    expect(component.exitLink()).toEqual(['/draft']);
+    expect(loadProjection).not.toHaveBeenCalled();
+    expect(createProjection).not.toHaveBeenCalled();
+    expect(updateProjection).not.toHaveBeenCalled();
+  });
+
+  it('keeps a league sync made during the setup in memory until the draft is saved', async () => {
+    const component = await render();
+
+    component.applyYahooSync({
+      leagueName: 'My Yahoo League',
+      leagueKey: 'nhl.l.123',
+      settings: {
+        scoringType: 'category',
+        activeScoringColumns: ['goals'],
+        activeUtilityColumns: ['gp'],
+        rosterSlots: { c: 3, lw: 3, rw: 3, d: 5, util: 1, bn: 2, g: 2 },
+        leagueSize: 10,
+        unsupportedRosterCodes: [],
+        unsupportedStats: [],
+      },
+    });
+
+    expect(updateProjection).not.toHaveBeenCalled();
+    expect(createProjection).not.toHaveBeenCalled();
+
+    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+
+    expect(createProjection.mock.calls[0][0].data.settings.yahooSync.leagueKey).toEqual(
+      'nhl.l.123',
+    );
+  });
+
+  // Set on the draft picker, which saves nothing, so it arrives in the navigation's state.
+  it('creates the board with the league set on the draft picker', async () => {
+    const serializer = ngMocks.findInstance(ProjectionSerializerService);
+    const { settings } = serializer.toProjectionData({
+      ...createDefaultProjectionState(() => false),
+      scoringType: 'category',
+      leagueSize: 8,
+    });
+    history.replaceState({ draftLeagueSettings: settings }, '');
+    const component = await render();
+
+    expect(component.scoringType()).toEqual('category');
+    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+
+    const request = createProjection.mock.calls[0][0];
+    expect(request.data.settings.scoringType).toEqual('category');
+    expect(request.data.settings.leagueSize).toEqual(8);
+  });
+
+  it('creates the board with its setup once confirmed, then opens the board', async () => {
+    const component = await render();
+
+    component.onSetupConfirmed({
+      draft,
+      rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+    });
+
+    expect(createProjection).toHaveBeenCalledOnce();
+    const request = createProjection.mock.calls[0][0];
+    expect(request.kind).toEqual('preset_draft');
+    expect(request.source).toEqual('model');
+    expect(request.data.players).toEqual([]);
+    expect(request.data.draft).toEqual(draft);
+    expect(request.data.settings.rosterSlots).toEqual({
+      c: 1,
+      lw: 0,
+      rw: 0,
+      d: 0,
+      util: 0,
+      bn: 0,
+      g: 0,
+    });
+    expect(navigate).toHaveBeenCalledWith(['/projections', 'model1', 'draft'], {
+      replaceUrl: true,
+    });
+  });
+
+  it('creates one board however often the setup is confirmed while it saves', async () => {
+    createProjection.mockReturnValue(new Observable());
+    const component = await render();
+
+    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+
+    expect(createProjection).toHaveBeenCalledOnce();
+  });
+
+  it('stays on the setup and says so when the board cannot be created', async () => {
+    createProjection.mockReturnValue(throwError(() => new Error('boom')));
+    const component = await render();
+
+    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+
+    expect(notifyError).toHaveBeenCalledWith("Couldn't start the draft. Please try again.");
+    expect(component.phase()).toEqual('setup');
+    expect(component.saveStatus()).toEqual('idle');
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('says what a refused draft actually needs, rather than telling anyone to retry', async () => {
+    createProjection.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
+    const component = await render();
+
+    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+
+    expect(notifyError).toHaveBeenCalledWith(expect.stringContaining('part of Premium'));
+  });
+
+  it('goes back to the start page for a preset it does not know', async () => {
+    presetParam = 'nonsense';
+    await render();
+
+    expect(navigate).toHaveBeenCalledWith(['/draft']);
   });
 });

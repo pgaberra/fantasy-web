@@ -23,6 +23,14 @@ export type LeagueSettings = Pick<
   | 'lastEspnLeagueId'
 >;
 
+/**
+ * Where the draft picker puts the league set for a preset in the navigation's history state, as
+ * the `ProjectionSettings` a board stores. The preset's board is only created once the draft
+ * page's setup is confirmed, so the league has to travel there; history state rather than a
+ * service, so a reload of that setup still has it.
+ */
+export const DRAFT_LEAGUE_STATE_KEY = 'draftLeagueSettings';
+
 export function leagueSettingsOf(state: ProjectionState): LeagueSettings {
   return {
     scoringType: state.scoringType,

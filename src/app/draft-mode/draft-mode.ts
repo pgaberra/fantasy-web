@@ -31,7 +31,13 @@ import { ProjectionData } from '../api/models/projection-data';
 import { ProjectionResponse } from '../api/models/projection-response';
 import { UpdateProjectionData } from '../api/models/update-projection-data';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
+import { StatInfoService } from '../services/stat-info.service';
+import { ProjectionSettings } from '../api/models/projection-settings';
+import { DRAFT_LEAGUE_STATE_KEY } from '../shared/league-settings/league-settings';
+import { Preset, presetById } from '../models/preset';
+import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/premium-refused';
 import {
+  createDefaultProjectionState,
   DEFAULT_LEAGUE_SIZE,
   DEFAULT_MIN_GOALIE_GAMES,
   DEFAULT_ROSTER_SLOTS,
@@ -88,11 +94,18 @@ export class DraftModeComponent implements OnInit {
   private readonly serializer = inject(ProjectionSerializerService);
   private readonly snake = inject(DraftSnakeService);
   private readonly rosterService = inject(DraftRosterService);
+  private readonly statInfoService = inject(StatInfoService);
   readonly lookup = inject(DraftPlayerLookupService);
 
   readonly projectionId = signal<string | null>(null);
   readonly projectionName = signal<string>('');
   readonly projectionKind = signal<ProjectionResponse['kind']>('projection');
+  /**
+   * The preset a draft is being set up against before anything is saved for it. Set only on
+   * `/draft/new/:preset`, where there is no board yet: it is created once the setup is confirmed,
+   * so someone who backs out of the setup leaves nothing behind.
+   */
+  private readonly unsavedPreset = signal<Preset | null>(null);
   readonly loaded = signal<boolean>(false);
   readonly saveStatus = signal<'idle' | 'saving' | 'saved' | 'error'>('idle');
   readonly searchTerm = signal<string>('');
@@ -478,6 +491,11 @@ export class DraftModeComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    const presetId = this.route.snapshot.paramMap.get('preset');
+    if (presetId !== null) {
+      this.openUnsavedPresetDraft(presetId);
+      return;
+    }
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
       void this.router.navigate(['/projections']);
@@ -514,6 +532,44 @@ export class DraftModeComponent implements OnInit {
         error: () => {
           this.notification.error("Couldn't load the draft. Please try again.");
           void this.router.navigate(['/projections']);
+        },
+      });
+  }
+
+  /**
+   * The setup for a preset draft, with nothing stored. The setup reads only the settings and the
+   * player pool, and both are to hand without a board: the settings are the defaults a new board
+   * would be created with, and the pool is everyone's. The rows a draft ranks by are the server's
+   * to seed, and they arrive with the board once the setup is confirmed.
+   */
+  private openUnsavedPresetDraft(presetId: string): void {
+    const preset = presetById(presetId);
+    if (!preset) {
+      void this.router.navigate(['/draft']);
+      return;
+    }
+    this.unsavedPreset.set(preset);
+    this.projectionName.set(preset.name);
+    this.projectionKind.set('preset_draft');
+    const defaults = this.serializer.toProjectionData(
+      createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
+    );
+    // The league set on the draft picker, if one was: the board is created with it.
+    const state = history.state as Record<string, unknown> | null;
+    const league = state?.[DRAFT_LEAGUE_STATE_KEY] as ProjectionSettings | undefined;
+    this.data.set(league ? { ...defaults, settings: league } : defaults);
+    this.playerService
+      .getPlayers()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (players) => {
+          this.allPlayers.set(players);
+          this.lookup.setPlayers(players);
+          this.loaded.set(true);
+        },
+        error: () => {
+          this.notification.error("Couldn't load the draft. Please try again.");
+          void this.router.navigate(['/draft']);
         },
       });
   }
@@ -612,7 +668,52 @@ export class DraftModeComponent implements OnInit {
       data ? { ...data, settings: { ...data.settings, rosterSlots: result.rosterSlots } } : data,
     );
     this.analytics.capture('draft_started');
+    const preset = this.unsavedPreset();
+    if (preset) {
+      this.createPresetDraft(preset, result.draft);
+      return;
+    }
     this.applySetup(result.draft);
+  }
+
+  /**
+   * Saves the preset draft for the first time, with its setup already in it, and moves to the
+   * board's own address. That address loads the board afresh, which is what brings in the rows
+   * the server seeded; replacing the history entry keeps Back from reopening an unsaved setup
+   * for a preset that now has a draft.
+   */
+  private createPresetDraft(preset: Preset, draft: DraftState): void {
+    const data = this.data();
+    if (!data || this.saveStatus() === 'saving') {
+      return;
+    }
+    this.saveStatus.set('saving');
+    // No player rows: `source` has the server fill them in. The name is sent for completeness —
+    // the server names a preset draft itself.
+    this.projectionStorage
+      .createProjection({
+        name: preset.name,
+        kind: 'preset_draft',
+        source: preset.source,
+        data: { ...data, players: [], draft },
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (projection) =>
+          void this.router.navigate(['/projections', projection.id, 'draft'], {
+            replaceUrl: true,
+          }),
+        error: (error: unknown) => {
+          this.saveStatus.set('idle');
+          // The start page holds a locked preset back itself, so a refusal here most likely
+          // means a subscription lapsed while the setup was open, and retrying cannot work.
+          this.notification.error(
+            isPremiumRefusal(error)
+              ? PREMIUM_REFUSED_MESSAGE
+              : "Couldn't start the draft. Please try again.",
+          );
+        },
+      });
   }
 
   applyEspnSync(result: EspnSyncResult): void {

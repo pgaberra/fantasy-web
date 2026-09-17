@@ -4,12 +4,14 @@ import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, switchMap } from 'rxjs';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
-import { NotificationService } from '../services/notification.service';
 import { StatInfoService } from '../services/stat-info.service';
 import { ProjectionResponse } from '../api/models/projection-response';
-import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
-import { CreateProjectionRequest } from '../api/models/create-projection-request';
+import { ProjectionSettings } from '../api/models/projection-settings';
 import { createDefaultProjectionState } from '../draft-projection/projection-defaults';
+import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/premium-refused';
+import { NotificationService } from '../services/notification.service';
+import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
+import { Preset, PRESETS } from '../models/preset';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
@@ -22,46 +24,16 @@ import {
 } from '../shared/starting-point-preview/starting-point-preview';
 import { ProjectionBoardCache } from '../services/projection-board-cache';
 import { AiProjectionAccess } from '../shared/premium/ai-projection-access';
-import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/premium-refused';
 import { SOURCE_KINDS, SourceKind } from '../models/source-kind';
 import { environment } from '../../environments/environment';
 import { IconComponent } from '../shared/icon/icon';
-import { LeagueSettings, leagueSettingsOf } from '../shared/league-settings/league-settings';
+import {
+  DRAFT_LEAGUE_STATE_KEY,
+  LeagueSettings,
+  leagueSettingsOf,
+} from '../shared/league-settings/league-settings';
 import { ScoringStatKey } from '../models/stat-key.model';
 import { DraftLeagueSettingsComponent } from './draft-league-settings/draft-league-settings';
-
-/**
- * The name the preset draft is stored under. It doubles as the label on the board, so the
- * heading there reads the same as the row the draft was started from.
- */
-export const LAST_SEASON_PRESET_NAME = "Last Season's Stats";
-
-/** The model's own estimate for the coming season. Named by the server, like the other preset. */
-export const MODEL_PRESET_NAME = 'AI Projection';
-
-/**
- * A starting point everyone shares, as opposed to a projection someone owns.
- *
- * <p>`id` is what a stored draft is matched on. It used to be the name, because `kind:
- * 'preset_draft'` says a draft came from a preset but not which one — the server now records
- * which, so the name is free to change without orphaning the drafts started from it.
- */
-export interface Preset {
-  readonly id: NonNullable<ProjectionSummaryResponse['preset']>;
-  readonly name: string;
-  readonly source: CreateProjectionRequest['source'];
-  /**
-   * Sold as part of Premium. It marks the card and nothing else — see `showsPremiumBadge` for
-   * why the mark is not shown in a build that has no way to charge for it.
-   */
-  readonly premium?: boolean;
-}
-
-/** Every preset the picker knows of. What it offers is `availablePresets` — see below. */
-export const PRESETS: readonly Preset[] = [
-  { id: 'last_season', name: LAST_SEASON_PRESET_NAME, source: 'default' },
-  { id: 'model', name: MODEL_PRESET_NAME, source: 'model', premium: true },
-];
 
 /**
  * The one thing the Start button will draft against. A preset is seeded on the server the
@@ -86,9 +58,10 @@ export type DraftSource =
  * <p>A source holds at most one draft, so lifting the drafts out leaves the rows below meaning
  * exactly one thing, "not started yet", and nothing on the page is rendered twice.
  *
- * <p>A preset draft has no projection behind it, so starting one creates a projection of its own
- * kind — seeded server-side from the same read model a new projection starts from — purely to
- * hold the picks. It never shows up under "Your projection".
+ * <p>A preset draft has no projection behind it, so it is saved as a projection of its own kind —
+ * seeded server-side from the same read model a new projection starts from — purely to hold the
+ * picks. It never shows up under "Your projection". That board is created by the draft page once
+ * its setup is confirmed, not by Start here, so a setup someone backs out of saves nothing.
  */
 @Component({
   selector: 'app-draft-start',
@@ -134,6 +107,7 @@ export class DraftStartComponent {
     defaultValue: [] as ProjectionSummaryResponse[],
   });
 
+  /** A league set here being saved into a board before its draft opens. */
   readonly isStarting = signal(false);
   /** Which draft is being asked about, so two rows cannot share one confirmation. */
   readonly confirmingDiscard = signal<string | null>(null);
@@ -184,11 +158,11 @@ export class DraftStartComponent {
    * a second entry point on the page for a draft that already exists, which is the duplication
    * this picker had everywhere.
    *
-   * <p>"Drafted against" is the same test `drafts` lists by, not merely "has a board". The board
-   * is seeded the moment Start is pressed, but it holds no draft until the setup on the draft
-   * page is saved; someone who backs out of that setup leaves a board that is in neither list,
-   * and filtering on the board alone made the preset vanish from the page for good. Such a board
-   * keeps the preset on offer, and `startPreset` opens it rather than seeding another.
+   * <p>"Drafted against" is the same test `drafts` lists by, not merely "has a board". Start used
+   * to seed the board before the draft page's setup had been saved, and someone who backed out of
+   * that setup left a board in neither list; filtering on the board alone made the preset vanish
+   * from the page for good. Boards are now created only once the setup is confirmed, but one left
+   * from before still keeps the preset on offer, and `startPreset` opens it.
    */
   readonly availablePresets = computed(() =>
     this.presets().filter((preset) => (this.presetDraft(preset)?.draftStatus ?? 'none') === 'none'),
@@ -492,15 +466,24 @@ export class DraftStartComponent {
 
   startPreset(preset: Preset): void {
     // The row is only offered while the preset has no draft; this covers one started elsewhere
-    // since the list was read, which would otherwise seed a second board for the same preset,
-    // and a board whose setup was abandoned, which is picked up where it was left.
+    // since the list was read, which would otherwise try to save a second board for the same
+    // preset, and a board left without a draft from before boards waited for the setup.
     const existing = this.presetDraft(preset);
     const changed = this.changedLeagues().get(sourceKey({ kind: 'preset', preset }));
     if (existing) {
       this.openWithLeague(existing.id, changed);
       return;
     }
-    this.seedAndOpen(this.createPresetDraft(preset, changed ?? this.defaultLeague));
+    // Nothing is saved yet: the draft page asks for the teams and order first and only then
+    // creates the board, so backing out of that setup leaves nothing behind. A league set here
+    // travels with the navigation, and the board is created with it.
+    if (changed) {
+      void this.router.navigate(['/draft/new', preset.id], {
+        state: { [DRAFT_LEAGUE_STATE_KEY]: this.settingsFor(changed) },
+      });
+    } else {
+      void this.router.navigate(['/draft/new', preset.id]);
+    }
   }
 
   private optionsOf(kind: SourceKind): readonly DraftSource[] {
@@ -532,7 +515,7 @@ export class DraftStartComponent {
       this.openDraft(id);
       return;
     }
-    this.seedAndOpen(
+    this.saveAndOpen(
       this.boardCache.load(id).pipe(
         switchMap((board) => {
           const state = { ...this.serializer.fromProjectionData(board.data), ...league };
@@ -550,34 +533,23 @@ export class DraftStartComponent {
     );
   }
 
-  private createPresetDraft(
-    preset: Preset,
-    league: LeagueSettings,
-  ): Observable<ProjectionResponse> {
-    // No player rows: `source` has the server fill them in, exactly as a new projection created
-    // from the same starting point does. The name is sent for completeness — the server names a
-    // preset draft itself, so that a board cannot claim a preset it was not drafted against.
-    return this.storage.createProjection({
-      name: preset.name,
-      kind: 'preset_draft',
-      source: preset.source,
-      data: this.serializer.toProjectionData({
-        ...createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
-        ...league,
-      }),
-    });
+  /** A league set here, as the settings a projection stores: laid over a new projection's. */
+  private settingsFor(league: LeagueSettings): ProjectionSettings {
+    return this.serializer.toProjectionData({
+      ...createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
+      ...league,
+    }).settings;
   }
 
-  private seedAndOpen(started: Observable<ProjectionResponse>): void {
+  private saveAndOpen(started: Observable<ProjectionResponse>): void {
     this.isStarting.set(true);
     started.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (projection) => this.openDraft(projection.id),
       error: (error: unknown) => {
         this.isStarting.set(false);
         this.sourcesResource.reload();
-        // The page holds a locked preset back itself, so a refusal here means the two
-        // disagreed — most likely a subscription that lapsed while this tab was open. Telling
-        // them to try again would send them at something that cannot work.
+        // A preset board left from before boards waited for the setup is still under Premium, so
+        // a lapsed subscription can refuse the save; retrying that cannot work.
         this.notification.error(
           isPremiumRefusal(error)
             ? PREMIUM_REFUSED_MESSAGE

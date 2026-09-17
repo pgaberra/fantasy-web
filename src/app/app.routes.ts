@@ -40,6 +40,13 @@ export const routes: Routes = [
     loadComponent: () => import('./draft-start/draft-start').then((m) => m.DraftStartComponent),
     canActivate: [authGuard],
   },
+  // A preset draft being set up, before it is saved: the board is created when the setup is
+  // confirmed and the page then moves to `projections/:id/draft`.
+  {
+    path: 'draft/new/:preset',
+    loadComponent: () => import('./draft-mode/draft-mode').then((m) => m.DraftModeComponent),
+    canActivate: [authGuard],
+  },
   {
     path: 'projections',
     loadComponent: () =>
