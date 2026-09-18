@@ -154,7 +154,7 @@ export class DraftModeComponent implements OnInit {
   readonly searchTerm = signal<string>('');
   readonly selectedPositions = signal<readonly PositionFilter[]>(['ALL']);
   readonly pageSize = signal<number>(DEFAULT_PAGE_SIZE);
-  readonly showStats = signal<boolean>(false);
+  readonly showStats = signal<boolean>(true);
   readonly pageSizeOptions: { label: string; value: number }[] = [
     { label: '50', value: 50 },
     { label: '100', value: 100 },
