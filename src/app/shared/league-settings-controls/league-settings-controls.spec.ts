@@ -69,6 +69,11 @@ describe('LeagueSettingsControlsComponent', () => {
   it('invites an import, then names the league it came from', () => {
     const fixture = render();
     expect(fixture.nativeElement.textContent).toContain('Import league');
+    // The one filled button in the group: importing is what the toolbar asks for until a league
+    // is connected, after which the slot reports instead and steps back to secondary.
+    expect(fixture.nativeElement.querySelector('.import-league').classList).toContain(
+      'btn-primary',
+    );
 
     fixture.point.componentInstance.applyEspn({
       leagueId: '42',
@@ -85,6 +90,9 @@ describe('LeagueSettingsControlsComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Synced with Puck Luck');
+    expect(fixture.nativeElement.querySelector('.synced-league').classList).toContain(
+      'btn-secondary',
+    );
     expect(fixture.point.componentInstance.settings().scoringType).toEqual('category');
   });
 
