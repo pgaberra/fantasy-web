@@ -6,6 +6,7 @@ import {
   ScoringType,
 } from '../../models/projection.model';
 import { GOALIE_STAT_KEYS, ScoringStatKey, SKATER_STAT_KEYS } from '../../models/stat-key.model';
+import { DEFAULT_DECIMAL_SETTINGS } from '../../draft-projection/projection-settings-section/model';
 import { StatInfoService } from '../../services/stat-info.service';
 import { StatLabelPipe } from '../../pipes/stat-label.pipe';
 import { StatTooltipPipe } from '../../pipes/stat-tooltip.pipe';
@@ -110,7 +111,9 @@ export class DraftAvailablePanelComponent {
     return this.statColumns()
       .filter((key) => (applicable as readonly string[]).includes(key))
       .map((key) => {
-        const decimals = this.statInfoService.isRateStat(key) ? 2 : 0;
+        // A rate is written as the editor writes it (SV% .915, GAA 2.45, SH% 12.5); a count
+        // stays whole, since the strip has no room for the model's fractions.
+        const decimals = this.statInfoService.isRateStat(key) ? DEFAULT_DECIMAL_SETTINGS[key] : 0;
         return { key, value: (stats[key] ?? 0).toFixed(decimals) };
       });
   }
