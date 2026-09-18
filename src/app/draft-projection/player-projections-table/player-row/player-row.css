@@ -49,8 +49,9 @@ td.col-name {
    compete with the row's own controls; hover and focus ring the group instead. */
 .player-positions,
 .player-positions-static {
-  vertical-align: middle;
-  margin-left: 0.2rem;
+  /* The chips never give way: on a phone the name is the part cut short, so every row keeps its
+     positions however long the name. They used to sit inside the name's span and went with it. */
+  flex-shrink: 0;
 }
 
 .player-positions {
