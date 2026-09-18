@@ -55,11 +55,19 @@
 }
 
 .feed-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
   align-items: center;
-  gap: var(--space-2);
+  gap: 0 var(--space-2);
   padding: 0.3rem 0.4rem;
   border-radius: var(--radius-sm);
+}
+
+.feed-pick,
+.feed-row app-player-avatar,
+.feed-player,
+.feed-actions {
+  grid-row: 1;
 }
 
 .feed-row.is-mine {
@@ -67,7 +75,6 @@
 }
 
 .feed-pick {
-  flex-shrink: 0;
   width: 2.6rem;
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
@@ -75,14 +82,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-.feed-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
 .feed-player {
+  min-width: 0;
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
   color: var(--color-text);
@@ -91,7 +92,11 @@
   white-space: nowrap;
 }
 
+/* The positions and the team name share the second line, which spans the full row so a
+   long team name has the width to read instead of being clipped after a few letters. */
 .feed-sub {
+  grid-row: 2;
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -138,7 +143,6 @@
 }
 
 .feed-actions {
-  flex-shrink: 0;
   display: inline-flex;
   gap: 0.1rem;
 }
