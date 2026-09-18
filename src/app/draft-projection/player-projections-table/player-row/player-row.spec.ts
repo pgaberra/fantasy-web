@@ -216,6 +216,20 @@ describe('PlayerRowComponent', () => {
     expect(positionChips()).toEqual(['C pos--c']);
   });
 
+  /**
+   * On a phone the name's span is cut with an ellipsis, and the chips once sat inside it: every
+   * name longer than the column lost its positions with its last letters. Beside the span, they
+   * stay whole however long the name.
+   */
+  it('keeps the positions out of the span that a long name is cut short in', () => {
+    setInputs();
+    const nameText = fixture.nativeElement.querySelector('.player-name-text') as HTMLElement;
+
+    expect(nameText.textContent?.trim()).toEqual('Connor McDavid');
+    expect(nameText.querySelector('.pos-chip')).toBeNull();
+    expect(positionChips()).toEqual(['C pos--c']);
+  });
+
   // The same coloured chips the draft board draws, one per position the skater is eligible for.
   it('draws a coloured chip for every position a skater holds', () => {
     setInputs({ player: { ...mockSkater, positions: new Set<SkaterPosition>(['C', 'RW']) } });
