@@ -76,7 +76,7 @@
       </div>
       @for (sp of visibleAvailable(); track sp.projection.playerId; let i = $index) {
         <div class="available-row">
-          <span class="row-rank">{{ availableRanks().get(sp.projection.playerId) ?? i + 1 }}</span>
+          <span class="row-rank">{{ boardRanks().get(sp.projection.playerId) ?? i + 1 }}</span>
           <app-player-avatar [playerId]="sp.projection.playerId" />
           <span class="row-info">
             <span class="row-name">{{ lookup.name(sp.projection.playerId) }}</span>
