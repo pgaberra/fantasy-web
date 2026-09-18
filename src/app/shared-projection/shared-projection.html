@@ -83,6 +83,12 @@
           }
         </button>
       </div>
+      @if (boardChanged()) {
+        <p class="board-changed" role="status">
+          {{ authorLabel() }} updated this board while you were viewing it. Nothing was copied. This
+          is the latest version.
+        </p>
+      }
     </header>
 
     <section class="table-section">

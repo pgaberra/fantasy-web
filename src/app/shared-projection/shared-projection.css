@@ -63,6 +63,18 @@
   }
 }
 
+/* The warning tokens, as for anything that says an action did not happen: nothing was copied. */
+.board-changed {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-warning-text);
+  background: var(--color-warning-surface);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-md);
+}
+
 .cta {
   margin-top: var(--space-5);
   padding: var(--space-5);

@@ -56,9 +56,17 @@ export class ProjectionStorageService {
    * Copies a board someone published under a share link. The name is only worth sending to
    * settle a clash with a board already imported under the same one — the server otherwise
    * keeps the name it was shared as.
+   *
+   * @param seenUpdatedAt the board's `updatedAt` as the page showed it. Sent, a board its author
+   *     has changed since is refused with 412 rather than copied: a link follows its projection,
+   *     and the reader must not be handed numbers they never saw.
    */
-  importFromShare(token: string, name?: string): Observable<ProjectionResponse> {
-    return from(this.api.invoke(importFromShare, { body: { token, name } }));
+  importFromShare(
+    token: string,
+    name?: string,
+    seenUpdatedAt?: string,
+  ): Observable<ProjectionResponse> {
+    return from(this.api.invoke(importFromShare, { body: { token, name, seenUpdatedAt } }));
   }
 
   updateProjection(id: string, request: UpdateProjectionRequest): Observable<ProjectionResponse> {
