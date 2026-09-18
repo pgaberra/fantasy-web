@@ -13,7 +13,7 @@ import {
 import { HttpErrorResponse } from '@angular/common/http';
 import { rxResource, takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { debounceTime, Observable, tap } from 'rxjs';
+import { catchError, debounceTime, map, Observable, of, switchMap, tap, throwError } from 'rxjs';
 import { PlayerService } from '../services/player.service';
 import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { Player } from '../models/player.model';
@@ -49,7 +49,6 @@ import {
   DEFAULT_DECIMAL_SETTINGS,
   ScaleConfig,
 } from './projection-settings-section/model';
-import { readableDecimalSettings } from './projection-settings-section/model-decimals';
 import {
   createDefaultScaleSettings,
   DEFAULT_LEAGUE_SIZE,
@@ -66,7 +65,6 @@ import { NotificationService } from '../services/notification.service';
 import { PlayerBasis, ProjectionState } from '../services/projection-serializer';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import { ProjectionSyncService, SyncedSettings } from '../services/projection-sync.service';
-import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { ProjectionShareService } from '../services/projection-share.service';
 import { SharedPlayer } from '../api/models/shared-player';
 import { YahooService } from '../services/yahoo.service';
@@ -108,7 +106,6 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
   private readonly yahoo = inject(YahooService);
   private readonly espn = inject(EspnService);
   private readonly projectionSync = inject(ProjectionSyncService);
-  private readonly ranking = inject(ProjectionRankingService);
   private readonly projectionShare = inject(ProjectionShareService);
   private readonly serializer = inject(ProjectionSerializerService);
   private readonly notification = inject(NotificationService);
@@ -238,36 +235,22 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
   });
 
   /**
-   * The rows a share would publish: the same ranking the table shows by default, frozen with the
-   * player identity a public page has no way to look up. Computed lazily by the dialog's input
-   * binding, so the cost lands only when someone actually opens it.
+   * The rows a share would publish, from the board as it stands. The edited rows live in the
+   * table, which is why this goes through {@link buildState} rather than `loadedProjections`:
+   * reading those published the stats the projection was opened with, whatever had been edited
+   * since. Computed lazily by the dialog's input binding, so the cost lands only when someone
+   * actually opens it.
    */
-  readonly sharedPlayers = computed<SharedPlayer[]>(() => {
-    const projections = this.loadedProjections();
-    if (!projections) {
-      return [];
-    }
-    const ranked = this.ranking.rankOverall({
-      projections,
-      scoringType: this.scoringType(),
-      statWeights: this.statWeights(),
-      activeScoringColumns: this.activeScoringColumns(),
-      leagueSize: this.leagueSize(),
-      rosterSlots: this.rosterSlots(),
-      minGoalieGames: this.minGoalieGames(),
-      // A share publishes the board as it stands, which includes the order the owner put it in.
-      manualRanking: this.manualRanking(),
-      // The decimals the table is read with, not the ones stored: a board scored one way and
-      // shown another would publish totals nobody could reproduce on the page.
-      decimalSettings: readableDecimalSettings(
-        projections,
-        this.decimalSettings(),
-        this.useDefaultDecimals(),
-      ),
-    });
-    const playersById = new Map(this.players().map((player) => [player.id, player]));
-    return this.projectionShare.toSharedPlayers(ranked, playersById, this.scoringType());
-  });
+  readonly sharedPlayers = computed<SharedPlayer[]>(() =>
+    this.projectionShare.rowsToPublish(this.buildState(), this.playersResource.value()),
+  );
+
+  /**
+   * Whether this projection has a public link. A shared projection is published again after
+   * every save, so the link follows it. Null until the first save has asked, and again after an
+   * answer that failed, so the next save asks again rather than guessing.
+   */
+  private readonly isShared = signal<boolean | null>(null);
 
   readonly isLoading = computed(() => this.playersResource.isLoading() || !this.projectionLoaded());
 
@@ -642,17 +625,54 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
     this.pendingState = state;
     this.lastSavedJson = json;
     this.saveStatus.set('saving');
-    const save = this.projectionStorage.updateProjection(id, {
-      name: this.projectionName(),
-      data: this.payload(data),
-    });
+    // Taken now: the save on the way out answers after the component, and its resource, are gone.
+    const pool = this.playersResource.value();
+    const save = this.projectionStorage
+      .updateProjection(id, { name: this.projectionName(), data: this.payload(data) })
+      .pipe(
+        tap(() => (this.lastSavedPlayersJson = JSON.stringify(data.players))),
+        // Not "saved" until the link shows it too, or the status would say done over a page
+        // still showing the board from before.
+        switchMap(() => this.publishIfShared(id, state, pool)),
+      );
     (cancelOnDestroy ? save.pipe(takeUntilDestroyed(this.destroyRef)) : save).subscribe({
-      next: () => {
-        this.lastSavedPlayersJson = JSON.stringify(data.players);
-        this.saveStatus.set('saved');
-      },
+      next: () => this.saveStatus.set('saved'),
       error: () => this.saveStatus.set('error'),
     });
+  }
+
+  /**
+   * Publishes the board again when the projection has a link, so the link shows what was just
+   * saved. It runs after the save rather than beside it because the server copies the settings,
+   * name and position corrections from the stored projection, and only the rows from here.
+   */
+  private publishIfShared(id: string, state: ProjectionState, pool: Player[]): Observable<unknown> {
+    const known = this.isShared();
+    return (known === null ? this.checkShared(id) : of(known)).pipe(
+      switchMap((shared) =>
+        shared
+          ? this.projectionShare.share(id, this.projectionShare.rowsToPublish(state, pool))
+          : of(null),
+      ),
+    );
+  }
+
+  private checkShared(id: string): Observable<boolean> {
+    return this.projectionShare.getShare(id).pipe(
+      map(() => true),
+      // Not shared is a 404, the normal answer for most projections, not a failure.
+      catchError((error: unknown) =>
+        error instanceof HttpErrorResponse && error.status === 404
+          ? of(false)
+          : throwError(() => error),
+      ),
+      tap((shared) => this.isShared.set(shared)),
+    );
+  }
+
+  /** Published from the dialog: from here on, every save publishes again. */
+  onShared(): void {
+    this.isShared.set(true);
   }
 
   /**
@@ -705,7 +725,9 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const data = this.serializer.toProjectionData(this.buildState());
+    const state = this.buildState();
+    const pool = this.playersResource.value();
+    const data = this.serializer.toProjectionData(state);
     this.renameSaving.set(true);
     this.renameError.set(null);
     this.projectionStorage
@@ -718,6 +740,10 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
           this.lastSavedJson = JSON.stringify(data);
           this.renameSaving.set(false);
           this.isRenaming.set(false);
+          // The name is on the public page too. A failure here is not the rename's: that landed.
+          this.publishIfShared(id, state, pool)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({ error: () => this.saveStatus.set('error') });
         },
         error: (error: unknown) => {
           this.renameSaving.set(false);

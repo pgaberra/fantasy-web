@@ -1,10 +1,12 @@
 import { TestBed } from '@angular/core/testing';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ProjectionShareService } from './projection-share.service';
 import { Player } from '../models/player.model';
 import { GoalieStats, ScoredProjection, SkaterStats } from '../models/projection.model';
+import { ProjectionRankingService } from './projection-ranking.service';
+import { ProjectionState } from './projection-serializer';
 
 describe('ProjectionShareService', () => {
   let service: ProjectionShareService;
@@ -39,11 +41,50 @@ describe('ProjectionShareService', () => {
 
   const playersById = new Map<number, Player>(players.map((player) => [player.id, player]));
 
+  const rankOverall = vi.fn(() => ranked);
+
   beforeEach(() => {
+    rankOverall.mockClear();
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ProjectionRankingService, useValue: { rankOverall } },
+      ],
     });
     service = TestBed.inject(ProjectionShareService);
+  });
+
+  describe('rowsToPublish', () => {
+    const state = {
+      scoringType: 'points',
+      statWeights: { goals: 3 },
+      activeScoringColumns: new Set(['goals']),
+      leagueSize: 14,
+      rosterSlots: {},
+      minGoalieGames: 20,
+      manualRanking: { skater: { mode: 'projected' }, goalie: { mode: 'projected' } },
+      decimalSettings: {},
+      useDefaultDecimals: false,
+      positionOverrides: new Map([[1, ['LW']]]),
+      playerProjections: ranked.map((scored) => scored.projection),
+    } as unknown as ProjectionState;
+
+    it('ranks the rows the state holds under the league it holds', () => {
+      service.rowsToPublish(state, players);
+
+      const [options] = rankOverall.mock.calls[0] as unknown as [
+        { projections: unknown; leagueSize: number },
+      ];
+      expect(options.projections).toBe(state.playerProjections);
+      expect(options.leagueSize).toEqual(14);
+    });
+
+    it("puts the owner's position corrections on the published identity", () => {
+      const shared = service.rowsToPublish(state, players);
+
+      expect(shared[0].positions).toEqual(['LW']);
+    });
   });
 
   it('freezes identity and rank onto each shared row', () => {

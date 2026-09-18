@@ -9,7 +9,6 @@ import { PendingProjectionService } from '../services/pending-projection.service
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { ProjectionData } from '../api/models/projection-data';
 import { PlayerService } from '../services/player.service';
-import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { ProjectionShareService } from '../services/projection-share.service';
 import { SkaterStats } from '../models/projection.model';
 
@@ -84,8 +83,7 @@ describe('ProjectionListComponent', () => {
   const peek = vi.fn();
   const loadProjection = vi.fn();
   const getPlayers = vi.fn();
-  const rankOverall = vi.fn();
-  const toSharedPlayers = vi.fn();
+  const rowsToPublish = vi.fn();
   const clearPending = vi.fn();
 
   beforeEach(() => {
@@ -113,8 +111,7 @@ describe('ProjectionListComponent', () => {
         },
       ]),
     );
-    rankOverall.mockReturnValue([]);
-    toSharedPlayers.mockReturnValue([]);
+    rowsToPublish.mockReturnValue([]);
     return MockBuilder(ProjectionListComponent)
       .mock(ProjectionStorageService, {
         listEditable,
@@ -124,8 +121,7 @@ describe('ProjectionListComponent', () => {
         loadProjection,
       })
       .mock(PlayerService, { getPlayers })
-      .mock(ProjectionRankingService, { rankOverall })
-      .mock(ProjectionShareService, { toSharedPlayers })
+      .mock(ProjectionShareService, { rowsToPublish })
       .mock(NotificationService, { error: notifyError })
       .mock(PendingProjectionService, { peek, clear: clearPending })
       .provide({ provide: Router, useValue: { navigate } });
@@ -303,8 +299,7 @@ describe('ProjectionListComponent', () => {
     fixture.point.componentInstance.share('p1');
     await fixture.whenStable();
 
-    expect(rankOverall).toHaveBeenCalled();
-    expect(toSharedPlayers).toHaveBeenCalled();
+    expect(rowsToPublish).toHaveBeenCalled();
   });
 
   it('surfaces a failure to prepare the share instead of opening an empty dialog', async () => {
