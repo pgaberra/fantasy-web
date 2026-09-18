@@ -6,6 +6,7 @@ import { Location } from '@angular/common';
 import { ApplicationRef, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
+import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { SharedProjectionComponent } from './shared-projection';
 import { PlayerRowComponent } from '../draft-projection/player-projections-table/player-row/player-row';
 import { ProjectionsTableHeaderComponent } from '../draft-projection/player-projections-table/projections-table-header/projections-table-header';
@@ -100,6 +101,8 @@ describe('SharedProjectionComponent', () => {
       : MockBuilder(SharedProjectionComponent).mock(PlayerRowComponent);
     return (
       builder
+        // Real, so the byline carries the stamp a reader would see rather than an empty mock.
+        .keep(RelativeTimePipe)
         // Kept real so the buttons' tooltips are the ones a reader would get, not a stand-in:
         // the labels alone no longer say a copy is taken.
         .keep(TooltipDirective)
@@ -366,6 +369,17 @@ describe('SharedProjectionComponent', () => {
     await fixture.whenStable();
 
     expect(fixture.point.componentInstance.authorLabel()).toEqual('alex');
+  });
+
+  /** The board follows the author's edits, so a reader needs to know how fresh it is. */
+  it('says when the author last changed the board', async () => {
+    const fixture = await render();
+
+    const stamp: HTMLTimeElement = fixture.nativeElement.querySelector('.shared-byline time');
+    expect(stamp.getAttribute('datetime')).toEqual('2026-08-02T10:00:00Z');
+    expect(fixture.nativeElement.querySelector('.shared-byline').textContent).toContain(
+      'Updated Aug 2, 2026',
+    );
   });
 
   it("shows the owner's picture beside their name", async () => {

@@ -32,6 +32,11 @@
   color: var(--color-text-muted);
 }
 
+.byline-text {
+  display: flex;
+  flex-direction: column;
+}
+
 /* The circle the header draws for the signed-in account, at the size of a line of the byline, so
    the author of a board and the reader of one are shown as the same kind of thing. */
 .author-avatar {
