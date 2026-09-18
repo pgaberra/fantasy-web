@@ -23,28 +23,28 @@
         [name]="player().name"
       />
     }
-    <span class="player-name-text">
-      {{ player().name }}
-      @if (canEditPositions()) {
-        <button
-          type="button"
-          class="player-positions"
-          [class.player-positions--overridden]="positionsOverridden()"
-          [appPopover]="positionMenu"
-          popoverAlign="start"
-          [attr.aria-label]="'Positions for ' + player().name + ', ' + playerPosition()"
-          [appTooltip]="
-            positionsOverridden()
-              ? 'You set these positions. Click to change them.'
-              : 'Click to set the positions your league uses'
-          "
-        >
-          <app-position-chips [positions]="positionList()" />
-        </button>
-      } @else {
-        <app-position-chips class="player-positions-static" [positions]="positionList()" />
-      }
-    </span>
+    <!-- The name alone: on a phone this span is what the ellipsis cuts, so the chips sit beside it,
+         where they survive however long the name is. -->
+    <span class="player-name-text">{{ player().name }}</span>
+    @if (canEditPositions()) {
+      <button
+        type="button"
+        class="player-positions"
+        [class.player-positions--overridden]="positionsOverridden()"
+        [appPopover]="positionMenu"
+        popoverAlign="start"
+        [attr.aria-label]="'Positions for ' + player().name + ', ' + playerPosition()"
+        [appTooltip]="
+          positionsOverridden()
+            ? 'You set these positions. Click to change them.'
+            : 'Click to set the positions your league uses'
+        "
+      >
+        <app-position-chips [positions]="positionList()" />
+      </button>
+    } @else {
+      <app-position-chips class="player-positions-static" [positions]="positionList()" />
+    }
     @if (tierBadge(); as badge) {
       <span class="tier-chip" [appTooltip]="badge.tooltip">{{ badge.label }}</span>
     }
