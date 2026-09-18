@@ -6,6 +6,7 @@ import { PositionFilter } from '../../models/projection.model';
 import { DraftPlayerLookupService } from '../draft-player-lookup.service';
 import { ScoredProjection } from '../../models/projection.model';
 import { StatLabelPipe } from '../../pipes/stat-label.pipe';
+import { StatInfoService } from '../../services/stat-info.service';
 
 describe('DraftAvailablePanelComponent', () => {
   const showAvatars = signal(true);
@@ -14,6 +15,7 @@ describe('DraftAvailablePanelComponent', () => {
     showAvatars.set(true);
     return MockBuilder(DraftAvailablePanelComponent)
       .keep(StatLabelPipe)
+      .keep(StatInfoService)
       .mock(DraftPlayerLookupService, {
         showAvatars,
         name: () => 'Connor McDavid',
@@ -219,6 +221,47 @@ describe('DraftAvailablePanelComponent', () => {
       ['Goals', '48'],
       ['Assists', '98'],
     ]);
+  });
+
+  /**
+   * The strip once wrote every rate to two places, so a .915 goalie and a .906 one both read
+   * 0.91. A rate takes the decimals the editor gives it; a count stays whole.
+   */
+  it('writes each rate stat to the decimals the editor uses for it', () => {
+    const fixture = MockRender(DraftAvailablePanelComponent, {
+      editingInfo: null,
+      searchTerm: '',
+      positionFilters: [{ value: 'ALL', label: 'All' }],
+      selectedPositions: ['ALL'],
+      showStats: true,
+      pageSizeOptions: [{ label: '50', value: 50 }],
+      pageSize: 50,
+      scoreHeading: 'Value',
+      visibleAvailable: [
+        {
+          projection: {
+            playerId: 31,
+            type: 'goalie',
+            stats: { utility: {}, scoring: { w: 33.4, gaa: 2.456, svPct: 0.9149 } },
+          },
+          score: { fantasyPoints: 100, zScore: 1 },
+          qualified: true,
+        } as unknown as ScoredProjection,
+      ],
+      availableCount: 1,
+      hasMore: false,
+      isMyPick: true,
+      isComplete: false,
+      draftLabel: 'Draft',
+      scoringType: 'category',
+      statColumns: ['w', 'gaa', 'svPct'],
+    });
+
+    const values = Array.from<HTMLElement>(
+      fixture.nativeElement.querySelectorAll('.stat-value'),
+    ).map((cell) => cell.textContent?.trim());
+
+    expect(values).toEqual(['33', '2.46', '0.915']);
   });
 
   it('marks every chosen position as active', () => {

@@ -1,11 +1,10 @@
 import { Projection, ScoringType, StatWeights } from '../models/projection.model';
-import { ScoringStatKey, SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
+import { RATE_STAT_KEYS, ScoringStatKey, SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
+import { DEFAULT_DECIMAL_SETTINGS } from '../draft-projection/projection-settings-section/model';
 import { STAT_LABELS } from '../pipes/stat-label.pipe';
 import { STAT_FULL_NAMES } from '../pipes/stat-tooltip.pipe';
 import { RosterSlots } from '../api/models/roster-slots';
 
-const RATE_STAT_KEYS: ReadonlySet<ScoringStatKey> = new Set(['shPct', 'svPct', 'gaa']);
-const RATE_DECIMALS: Record<string, number> = { svPct: 3, gaa: 2, shPct: 1 };
 const SKATER_STAT_KEY_SET: ReadonlySet<string> = new Set(SKATER_SCORING_STAT_KEYS);
 
 export interface LeagueProjectionColumn {
@@ -234,7 +233,9 @@ function categoryColumnsFor(
     label: STAT_LABELS[key],
     tooltip: STAT_FULL_NAMES[key] === STAT_LABELS[key] ? null : STAT_FULL_NAMES[key],
     decimals: aggregateDecimals,
-    rawDecimals: RATE_STAT_KEYS.has(key) ? (RATE_DECIMALS[key] ?? 2) : 0,
+    rawDecimals: (RATE_STAT_KEYS as readonly string[]).includes(key)
+      ? DEFAULT_DECIMAL_SETTINGS[key]
+      : 0,
     weight: isPoints ? (statWeights?.[key] ?? null) : null,
   }));
 }
