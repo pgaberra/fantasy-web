@@ -16,10 +16,6 @@
             <app-player-avatar [playerId]="entry.playerId" [small]="true" />
             <span class="feed-info">
               <span class="feed-player">{{ lookup.name(entry.playerId) }}</span>
-              <span class="feed-sub">
-                <app-player-position-chips [playerId]="entry.playerId" />
-                <span class="feed-team">{{ entry.mine ? 'You' : entry.teamName }}</span>
-              </span>
             </span>
             @if (!locked()) {
               <span class="feed-actions">
@@ -43,6 +39,10 @@
                 </button>
               </span>
             }
+            <span class="feed-sub">
+              <app-player-position-chips [playerId]="entry.playerId" />
+              <span class="feed-team">{{ entry.mine ? 'You' : entry.teamName }}</span>
+            </span>
           </div>
         }
       }
