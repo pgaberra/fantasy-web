@@ -89,6 +89,16 @@
             </span>
           </span>
           <span class="row-score">{{ scoreLabel(sp) }}</span>
+          @if (showStats()) {
+            <div class="row-stats">
+              @for (stat of statStrip(sp.projection); track stat.key) {
+                <span class="stat-chip" [appTooltip]="stat.key | statTooltip">
+                  <span class="stat-key">{{ stat.key | statLabel }}</span>
+                  <span class="stat-value">{{ stat.value }}</span>
+                </span>
+              }
+            </div>
+          }
           <span class="row-actions">
             @if (editingInfo()) {
               <button
@@ -99,9 +109,10 @@
                 Pick
               </button>
             } @else if (!locked()) {
-              <!-- A team name has no length limit, and uncapped it took the width from the
-                   player's own name on every row. So the label is cut with an ellipsis (see
-                   .draft-label) and the tooltip and the accessible name carry it whole. -->
+              <!-- A team name has no length limit, and beside the player it took the width from
+                   his name. So the button has a row of its own, under the stats, and only a name
+                   longer than that row is cut (see .draft-label). The tooltip and the accessible
+                   name carry it whole. -->
               <button
                 type="button"
                 class="btn btn-sm"
@@ -116,16 +127,6 @@
               </button>
             }
           </span>
-          @if (showStats()) {
-            <div class="row-stats">
-              @for (stat of statStrip(sp.projection); track stat.key) {
-                <span class="stat-chip" [appTooltip]="stat.key | statTooltip">
-                  <span class="stat-key">{{ stat.key | statLabel }}</span>
-                  <span class="stat-value">{{ stat.value }}</span>
-                </span>
-              }
-            </div>
-          }
         </div>
       }
     </div>
