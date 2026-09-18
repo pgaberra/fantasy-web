@@ -34,7 +34,17 @@
           [name]="authorLabel()"
           alt=""
         />
-        By {{ authorLabel() }} · {{ leagueSummary() }}
+        <!-- The stamp on a line of its own: the board follows the author's edits, so how fresh it
+             is is its own fact, and run on after the league it broke mid-phrase on a phone. -->
+        <span class="byline-text">
+          <span>By {{ authorLabel() }} · {{ leagueSummary() }}</span>
+          <span
+            >Updated
+            <time [attr.datetime]="projection.updatedAt">{{
+              projection.updatedAt | relativeTime
+            }}</time></span
+          >
+        </span>
       </p>
 
       <!-- Above the table on purpose: what a visitor does with someone else's board is take a

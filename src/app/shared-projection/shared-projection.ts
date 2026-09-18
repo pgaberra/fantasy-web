@@ -40,6 +40,7 @@ import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-i
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { PinnedTableHeaderDirective } from '../shared/pinned-table-header/pinned-table-header.directive';
 import { TableScrollDirective } from '../shared/table-scroll/table-scroll.directive';
+import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { hasHeadshots, PlayerHeadshotComponent } from '../shared/player-headshot/player-headshot';
 import { SHARED_BOARD } from '../auth/auth-reason';
@@ -102,6 +103,7 @@ interface SharedRow {
     PinnedTableHeaderDirective,
     TableScrollDirective,
     TooltipDirective,
+    RelativeTimePipe,
   ],
   templateUrl: './shared-projection.html',
   styleUrl: './shared-projection.css',
