@@ -99,15 +99,20 @@
                 Pick
               </button>
             } @else if (!locked()) {
+              <!-- The team drafting is named in the tooltip and to a screen reader, not on the
+                   button: a team name has no length limit, and on every row it took the width
+                   from the player's own name. "Up next" above the list names it already. -->
               <button
                 type="button"
                 class="btn btn-sm"
                 [class.btn-primary]="isMyPick()"
                 [class.btn-secondary]="!isMyPick()"
                 [disabled]="isComplete()"
+                [appTooltip]="draftLabel() === 'Draft' ? null : draftLabel()"
+                [attr.aria-label]="draftLabel() + ': ' + lookup.name(sp.projection.playerId)"
                 (click)="draft.emit(sp.projection.playerId)"
               >
-                {{ draftLabel() }}
+                Draft
               </button>
             }
           </span>
