@@ -98,7 +98,9 @@
                 </div>
               } @else if (isConfirmingDiscard(draft)) {
                 <div class="draft-actions">
-                  <span class="confirm-text" tabindex="-1">{{ discardPrompt(draft) }}</span>
+                  <span class="confirm-text" tabindex="-1" #confirmPrompt>{{
+                    discardPrompt(draft)
+                  }}</span>
                   <button
                     type="button"
                     class="btn btn-danger btn-sm discard"

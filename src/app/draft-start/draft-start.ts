@@ -3,9 +3,11 @@ import {
   computed,
   DestroyRef,
   effect,
+  ElementRef,
   inject,
   linkedSignal,
   signal,
+  viewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -22,6 +24,7 @@ import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-i
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { PopoverTriggerDirective } from '../shared/popover/popover-trigger.directive';
+import { OpenPopovers } from '../shared/popover/open-popovers';
 import { ProjectionImportComponent } from '../shared/projection-import/projection-import';
 import { FeatureService } from '../services/feature.service';
 import {
@@ -104,6 +107,9 @@ export class DraftStartComponent {
   private readonly aiAccess = inject(AiProjectionAccess);
   private readonly features = inject(FeatureService);
   private readonly boardCache = inject(ProjectionBoardCache);
+  private readonly openPopovers = inject(OpenPopovers);
+
+  private readonly confirmPrompt = viewChild<ElementRef<HTMLElement>>('confirmPrompt');
 
   readonly sourceKinds = SOURCE_KINDS;
 
@@ -217,6 +223,15 @@ export class DraftStartComponent {
   });
 
   constructor() {
+    // The menu that asked is closed by then, so focus would otherwise be left on the body. The
+    // prompt takes it rather than the "Yes" beside it: the keypress that picked the menu item
+    // must not be able to carry through and confirm.
+    effect(() => {
+      if (this.confirmingDiscard()) {
+        this.confirmPrompt()?.nativeElement.focus();
+      }
+    });
+
     // A preset a link asked for (`?start=model`, from the home page's AI projection card) is
     // picked once its row is there to pick. Not at once: the AI preset is offered only after the
     // BFF has said it serves the model, and `selection` falls back to the first row whenever the
@@ -457,7 +472,13 @@ export class DraftStartComponent {
     this.navigateWithLeague(['/projections', id, 'draft'], league);
   }
 
+  /**
+   * The kebab stays on the card while the question is asked, unlike the projection list's, which
+   * is replaced by it. Nothing else would close the menu: the click was inside it, and it would
+   * be left hanging over the "Yes, discard" it just raised.
+   */
   requestDiscard(draft: ProjectionSummaryResponse): void {
+    this.openPopovers.closeAll();
     this.confirmingDiscard.set(draft.id);
   }
 
