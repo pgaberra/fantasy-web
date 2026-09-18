@@ -188,6 +188,13 @@ describe('DraftModeComponent', () => {
     });
   });
 
+  it('shows the projected stats in the available list until they are switched off', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+
+    expect(fixture.point.componentInstance.showStats()).toBe(true);
+  });
+
   it('starts in setup when the projection has no draft', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
