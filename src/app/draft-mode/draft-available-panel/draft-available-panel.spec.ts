@@ -89,7 +89,7 @@ describe('DraftAvailablePanelComponent', () => {
     /**
      * A league's team can be called anything: an uncapped "Krillans Puckvilsna Trotjänare" made
      * every row's button wide enough to cut the player's own name to its first letter. The label
-     * sits in .draft-label, which the stylesheet caps and cuts with an ellipsis.
+     * sits in .draft-label, which the stylesheet cuts with an ellipsis at the row's width.
      */
     it('names the team it drafts for, inside the capped label', () => {
       const fixture = render('Draft for Krillans Puckvilsna Trotjänare', false);
@@ -97,6 +97,17 @@ describe('DraftAvailablePanelComponent', () => {
       const label = button(fixture).querySelector('.draft-label');
       expect(label?.textContent?.trim()).toEqual('Draft for Krillans Puckvilsna Trotjänare');
       expect(button(fixture).textContent?.trim()).toEqual(label?.textContent?.trim());
+    });
+
+    /**
+     * Beside the player the button was a grid column, which cut the label to a few letters and
+     * pushed the score heading off the scores. It closes the row instead, under the stats.
+     */
+    it('puts the button last in the row, after the score', () => {
+      const fixture = render('Draft for Krillans Puckvilsna Trotjänare', false);
+
+      const rowEl: HTMLElement = fixture.nativeElement.querySelector('.available-row');
+      expect(rowEl.lastElementChild?.classList.contains('row-actions')).toBe(true);
     });
 
     it('gives the whole label in the tooltip, since the button may cut it', () => {

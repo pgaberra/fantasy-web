@@ -113,7 +113,7 @@
 
 .available-list-head {
   display: grid;
-  grid-template-columns: 1.6rem 2rem 1fr 3.2rem auto;
+  grid-template-columns: 1.6rem 2rem 1fr 3.2rem;
   gap: var(--space-2);
   padding: 0 0.25rem 0.3rem;
 }
@@ -129,9 +129,11 @@
   color: var(--color-text-subtle);
 }
 
+/* The score is the last column, in the head and in every row, so the heading sits over the
+   numbers. The button is not a column: it has the row under the stats (see .row-actions). */
 .available-row {
   display: grid;
-  grid-template-columns: 1.6rem 2rem 1fr 3.2rem auto;
+  grid-template-columns: 1.6rem 2rem 1fr 3.2rem;
   align-items: center;
   gap: var(--space-2);
   padding: 0.4rem 0.25rem;
@@ -141,7 +143,7 @@
 /* No player has a picture, so the avatar hides itself and its column goes with it. */
 .available-list--no-avatars .available-list-head,
 .available-list--no-avatars .available-row {
-  grid-template-columns: 1.6rem 1fr 3.2rem auto;
+  grid-template-columns: 1.6rem 1fr 3.2rem;
 }
 
 .available-list--no-avatars .score-heading {
@@ -188,15 +190,29 @@
 }
 
 .row-actions {
-  display: inline-flex;
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
   gap: 0.35rem;
+  min-width: 0;
+  margin-top: 0.2rem;
 }
 
-/* "Draft for <team>": the team's name is the league's, at any length, so the label is capped and
-   cut rather than left to size the button. The tooltip gives the whole name. */
+/* A locked board has no button, and its row should not keep the gap. */
+.row-actions:empty {
+  display: none;
+}
+
+.row-actions .btn {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* "Draft for <team>": the team's name is the league's, at any length, so the label is cut at the
+   row's width rather than left to size the button. The tooltip gives the whole name. */
 .draft-label {
   display: block;
-  max-width: 9rem;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -246,17 +262,9 @@
   .available-row {
     row-gap: 0.4rem;
   }
-  .available-row .row-actions {
-    grid-column: 1 / -1;
-    display: flex;
-  }
+  /* A thumb wants the whole row to aim at. */
   .available-row .row-actions .btn {
     flex: 1;
-    min-width: 0;
-  }
-  /* The button has the row to itself here, so the label gets all of it. */
-  .available-row .draft-label {
-    max-width: 100%;
   }
 }
 
