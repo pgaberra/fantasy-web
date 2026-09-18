@@ -98,7 +98,15 @@
                     }
                     <!-- Laid out as the projection editor's name cell is: see player-row.html. -->
                     <div class="player-identity">
-                      <span class="player-name-text">{{ ranked.hot.name }}</span>
+                      <span
+                        class="player-name-text"
+                        [class.player-name-text--short]="shortNameFor(ranked.hot.name)"
+                      >
+                        <span class="player-name-full">{{ ranked.hot.name }}</span>
+                        @if (shortNameFor(ranked.hot.name); as short) {
+                          <span class="player-name-short" aria-hidden="true">{{ short }}</span>
+                        }
+                      </span>
                       <div class="player-meta">
                         <app-position-chips [positions]="positions(ranked)" />
                         @if (ranked.hot.teamAbbrev) {

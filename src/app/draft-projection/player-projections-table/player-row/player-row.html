@@ -27,7 +27,14 @@
          the group drops under the name (styles.css), so the name keeps the column's full
          width and the positions never compete with it. -->
     <div class="player-identity">
-      <span class="player-name-text">{{ player().name }}</span>
+      <!-- On a phone a short form ("C. McDavid") stands in for the name, from styles.css; the full
+           name stays in the markup for a screen reader and for the desktop layout. -->
+      <span class="player-name-text" [class.player-name-text--short]="shortName()">
+        <span class="player-name-full">{{ player().name }}</span>
+        @if (shortName(); as short) {
+          <span class="player-name-short" aria-hidden="true">{{ short }}</span>
+        }
+      </span>
       <div class="player-meta">
         @if (canEditPositions()) {
           <button
