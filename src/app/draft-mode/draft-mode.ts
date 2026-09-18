@@ -287,9 +287,9 @@ export class DraftModeComponent implements OnInit {
       : new Map<number, Record<string, number>>();
   });
 
-  readonly available = computed<ScoredProjection[]>(() => {
+  /** The undrafted players under the chosen position chips, best first, before any search. */
+  private readonly availableAtPositions = computed<ScoredProjection[]>(() => {
     const drafted = this.draftedIds();
-    const term = this.searchTerm().trim().toLowerCase();
     const filters = this.selectedPositions();
     const players = this.playerMap();
     return this.ranked().filter((scoredProjection) => {
@@ -297,17 +297,32 @@ export class DraftModeComponent implements OnInit {
         return false;
       }
       // Several positions can be picked at once, so a player shows if any of them fits.
-      const fitsAPosition = filters.some((filter) =>
+      return filters.some((filter) =>
         this.positionFilterService.matches(scoredProjection.projection, players, filter),
       );
-      if (!fitsAPosition) {
-        return false;
-      }
-      if (!term) {
-        return true;
-      }
-      return players.get(scoredProjection.projection.playerId)?.name.toLowerCase().includes(term);
     });
+  });
+
+  /**
+   * The number beside each available player: his place among the players the position chips
+   * leave, counted before the search. A search finds a player, it does not rank him, so Porter
+   * Martone is 157 whether he is scrolled to or typed in. It used to be his place among the hits,
+   * which put him 4th for "mar". The projection editor counts the same way.
+   */
+  readonly availableRanks = computed<ReadonlyMap<number, number>>(
+    () =>
+      new Map(this.availableAtPositions().map((sp, index) => [sp.projection.playerId, index + 1])),
+  );
+
+  readonly available = computed<ScoredProjection[]>(() => {
+    const term = this.searchTerm().trim().toLowerCase();
+    if (!term) {
+      return this.availableAtPositions();
+    }
+    const players = this.playerMap();
+    return this.availableAtPositions().filter((scoredProjection) =>
+      players.get(scoredProjection.projection.playerId)?.name.toLowerCase().includes(term),
+    );
   });
 
   readonly visibleCount = linkedSignal({
