@@ -304,14 +304,14 @@ export class DraftModeComponent implements OnInit {
   });
 
   /**
-   * The number beside each available player: his place among the players the position chips
-   * leave, counted before the search. A search finds a player, it does not rank him, so Porter
-   * Martone is 157 whether he is scrolled to or typed in. It used to be his place among the hits,
-   * which put him 4th for "mar". The projection editor counts the same way.
+   * The number beside each available player: his place on the whole board, whoever has been
+   * drafted and whatever the position chips or the search show. Porter Martone is 157 from the
+   * first pick to the last, so the gaps in the list are the players already gone. It used to be
+   * his place in the list on screen, which put him 1st when searched for and moved him up a place
+   * with every pick made above him.
    */
-  readonly availableRanks = computed<ReadonlyMap<number, number>>(
-    () =>
-      new Map(this.availableAtPositions().map((sp, index) => [sp.projection.playerId, index + 1])),
+  readonly boardRanks = computed<ReadonlyMap<number, number>>(
+    () => new Map(this.ranked().map((sp, index) => [sp.projection.playerId, index + 1])),
   );
 
   readonly available = computed<ScoredProjection[]>(() => {
