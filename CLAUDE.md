@@ -44,6 +44,13 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
 - `draft-projection/` — main feature: `projection-settings-section`,
   `scoring-type-section`, `scoring-stats-section`, `player-projections-table`,
   `share-dialog` (publishing the projection as a public link).
+  The table's toolbar is two groups: the **league settings** (Points/Category, League setup, Stats,
+  Ranking, Import league), which change the numbers, and the **filters** (search, position, team,
+  rookies), which change which rows show. On a phone the first group folds behind one
+  "League settings" button, since it is set once per projection and open it took four rows. The
+  bulk **Decimals** setting sits folded under the Stats menu rather than on the toolbar, as the one
+  other question asked of every column at once. The filter selects carry no visible label: their
+  first option already says what they narrow.
   The player pool moves under a saved projection — a new season brings a new roster, trades
   and call-ups follow — and the **BFF** adds the newcomers on the read that notices, seeding
   them from what the projection started as. It never removes: a row whose player has left the

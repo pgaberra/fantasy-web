@@ -150,6 +150,10 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   /** Turns on the column menus, the add-column cell and the league toolbar. */
   readonly columnControls = input<boolean>(false);
+  /** Whether the league settings are unfolded on a phone; the toggle exists at no other width. */
+  readonly settingsOpen = signal(false);
+  /** Whether the Stats menu is showing the decimals under the stat picker. */
+  readonly decimalsOpen = signal(false);
 
   /**
    * Turns on correcting a player's positions. Separate from `columnControls` because it needs

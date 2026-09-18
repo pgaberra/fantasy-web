@@ -115,10 +115,11 @@
         (positionsChanged)="onPositionsChanged($event)"
         (positionsReset)="onPositionsReset()"
       >
-        <!-- The same slot says two different things. With no league yet, importing one is the
-             fastest route to a useful projection, so it earns the toolbar's only primary button.
-             Once there is one, the button stops asking and starts reporting — same place, same
-             dialog behind it, so re-syncing or switching league is still one click. -->
+        <!-- The same slot says two different things. With no league yet it asks for one; once
+             there is one, the button stops asking and starts reporting — same place, same dialog
+             behind it, so re-syncing or switching league is still one click. It is drawn like the
+             settings beside it: filled, it read as the page's main action, which it is not once a
+             league is in. -->
         <app-league-import-button
           table-toolbar-actions
           [yahooSync]="yahooSync()"
