@@ -146,7 +146,7 @@ describe('DraftAvailablePanelComponent', () => {
           qualified: true,
         } as unknown as ScoredProjection,
       ],
-      availableRanks: new Map([[97, 157]]),
+      boardRanks: new Map([[97, 157]]),
       availableCount: 1,
       hasMore: false,
       isMyPick: true,
