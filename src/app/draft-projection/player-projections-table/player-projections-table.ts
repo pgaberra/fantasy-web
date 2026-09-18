@@ -72,6 +72,7 @@ import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.di
 import { parseDecimalInput } from '../../shared/decimal-input';
 import { ownLine, squaredWithPool } from '../../shared/pool-line';
 import { hasHeadshots } from '../../shared/player-headshot/player-headshot';
+import { shortNames } from '../../shared/short-name';
 import { PinnedTableHeaderDirective } from '../../shared/pinned-table-header/pinned-table-header.directive';
 import { TableScrollDirective } from '../../shared/table-scroll/table-scroll.directive';
 import { LeagueSettingsMenuComponent } from './league-settings-menu/league-settings-menu';
@@ -811,6 +812,13 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   /** Whether the rows draw headshots at all: not while no player in the pool has a picture. */
   readonly showHeadshots = computed(() => hasHeadshots(this.players()));
+
+  /** The phone's short form of each name in the pool, left out wherever two would collide. */
+  private readonly shortNames = computed(() => shortNames(this.players().map((p) => p.name)));
+
+  shortNameFor(playerId: number): string | null {
+    return this.shortNames().get(this.getPlayer(playerId).name) ?? null;
+  }
 
   getPlayer(playerId: number): Player {
     return this.playerMap().get(playerId)!;

@@ -58,6 +58,7 @@ import { PinnedTableHeaderDirective } from '../../shared/pinned-table-header/pin
 import { TableScrollDirective } from '../../shared/table-scroll/table-scroll.directive';
 import { FormatToiPipe } from '../../pipes/format-toi.pipe';
 import { DecimalPipe } from '@angular/common';
+import { shortNames } from '../../shared/short-name';
 import { IconComponent } from '../../shared/icon/icon';
 
 const PLAYERS_PER_PAGE = 100;
@@ -183,6 +184,13 @@ export class HotPlayersTableComponent {
 
   /** Whether the name column draws headshots at all: not while no player has a picture. */
   readonly showHeadshots = computed(() => hasHeadshots(this.players()));
+
+  /** The phone's short form of each name on the board, as the projection editor has it. */
+  private readonly shortNames = computed(() => shortNames(this.hotPlayers().map((p) => p.name)));
+
+  shortNameFor(name: string): string | null {
+    return this.shortNames().get(name) ?? null;
+  }
 
   readonly availableTeams = computed<string[]>(() => {
     const teams = new Set<string>();

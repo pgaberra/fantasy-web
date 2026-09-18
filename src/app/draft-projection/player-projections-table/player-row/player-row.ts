@@ -107,6 +107,11 @@ export class PlayerRowComponent {
   activeColumns = input.required<ActiveColumns>();
   player = input.required<Player>();
   /**
+   * The name as a phone shows it ("C. McDavid"), or null to show it whole. Worked out by the
+   * table, since whether a short form is safe depends on every other name in it.
+   */
+  shortName = input<string | null>(null);
+  /**
    * Whether the table draws a headshot beside each name — decided over the whole table
    * (`hasHeadshots`), not per row, so a player without a picture still lines up with those who
    * have one. Required so no table can forget to decide.

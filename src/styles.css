@@ -514,6 +514,11 @@ a.premium-badge:focus-visible {
   gap: 0.4rem;
   flex-shrink: 0;
 }
+/* The short form of the name ("C. McDavid") is for a phone only; a wide screen shows the name
+   whole and never draws it. */
+.col-name .player-name-short {
+  display: none;
+}
 
 /* On narrow screens the sticky rank + player columns must stay compact so the
    scrollable stat columns remain visible — cap the player column and truncate
@@ -521,7 +526,9 @@ a.premium-badge:focus-visible {
 @media (max-width: 640px) {
   .table-wrapper td.col-name,
   .table-wrapper th.col-name {
-    max-width: 9rem;
+    /* 7rem, down from 9rem once the name shortens to "C. McDavid" and the positions moved under
+       it: the two rem go to the stats. */
+    max-width: 7rem;
     overflow: hidden;
   }
   .table-wrapper .col-name .player-name-content {
@@ -543,6 +550,20 @@ a.premium-badge:focus-visible {
     text-overflow: ellipsis;
     white-space: nowrap;
     min-width: 0;
+  }
+  /* The short form stands in for the name. The full one leaves the layout but not the page, so a
+     screen reader still reads it; the short one is aria-hidden so it is not read twice. A name
+     with no safe short form (see shared/short-name.ts) has no --short class and shows whole. */
+  .table-wrapper .col-name .player-name-text--short .player-name-full {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .table-wrapper .col-name .player-name-short {
+    display: inline;
   }
   .table-wrapper .col-name .player-meta {
     max-width: 100%;

@@ -212,6 +212,7 @@
               [playerScore]="sp.score"
               [belowMinGames]="!sp.qualified"
               [player]="getPlayer(sp.projection.playerId)"
+              [shortName]="shortNameFor(sp.projection.playerId)"
               [showHeadshot]="showHeadshots()"
               [rookie]="isRookie(sp.projection.playerId)"
               [injury]="injuryFor(sp.projection.playerId)"

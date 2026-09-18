@@ -133,6 +133,7 @@ describe('PlayerRowComponent', () => {
     decimalSettings: Record<DecimalStatKey, number>;
     isEditing: boolean;
     injury?: PlayerInjury | null;
+    shortName?: string | null;
   }
 
   const setInputs = (overrides: Partial<PlayerRowComponentInputs> = {}) => {
@@ -230,6 +231,31 @@ describe('PlayerRowComponent', () => {
     expect(nameText.querySelector('.pos-chip')).toBeNull();
     expect(meta?.querySelector('.pos-chip')).not.toBeNull();
     expect(positionChips()).toEqual(['C pos--c']);
+  });
+
+  describe('the short name a phone shows', () => {
+    const nameText = () => fixture.nativeElement.querySelector('.player-name-text') as HTMLElement;
+
+    /** The stylesheet swaps the two below 640px; the markup carries both at every width. */
+    it('carries the short form beside the full name, hidden from a screen reader', () => {
+      setInputs({ shortName: 'C. McDavid' });
+      const short = nameText().querySelector('.player-name-short') as HTMLElement;
+
+      expect(nameText().classList).toContain('player-name-text--short');
+      expect(nameText().querySelector('.player-name-full')?.textContent?.trim()).toEqual(
+        'Connor McDavid',
+      );
+      expect(short.textContent?.trim()).toEqual('C. McDavid');
+      expect(short.getAttribute('aria-hidden')).toEqual('true');
+    });
+
+    /** No short form (it would collide, or there is none): the full name shows at every width. */
+    it('draws the full name alone when there is no short form', () => {
+      setInputs({ shortName: null });
+
+      expect(nameText().classList).not.toContain('player-name-text--short');
+      expect(nameText().querySelector('.player-name-short')).toBeNull();
+    });
   });
 
   // The same coloured chips the draft board draws, one per position the skater is eligible for.
