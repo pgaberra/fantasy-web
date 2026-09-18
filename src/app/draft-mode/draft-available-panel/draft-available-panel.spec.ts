@@ -1,4 +1,4 @@
-import { MockBuilder, MockRender } from 'ng-mocks';
+import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { signal } from '@angular/core';
 import { DraftAvailablePanelComponent } from './draft-available-panel';
@@ -83,16 +83,34 @@ describe('DraftAvailablePanelComponent', () => {
 
     const button = (fixture: ReturnType<typeof render>): HTMLButtonElement =>
       fixture.nativeElement.querySelector('.row-actions button');
+    const buttonDebug = (fixture: ReturnType<typeof render>) =>
+      ngMocks.find(fixture, '.row-actions button');
 
     /**
-     * The label once carried the team's name, and a league's team can be called anything: a
-     * "Krillans Puckvilsna Trotjänare" made every row's button wide enough to cut the player's
-     * own name to its first letter.
+     * A league's team can be called anything: an uncapped "Krillans Puckvilsna Trotjänare" made
+     * every row's button wide enough to cut the player's own name to its first letter. The label
+     * sits in .draft-label, which the stylesheet caps and cuts with an ellipsis.
      */
-    it('reads Draft however long the name of the team it drafts for', () => {
+    it('names the team it drafts for, inside the capped label', () => {
       const fixture = render('Draft for Krillans Puckvilsna Trotjänare', false);
 
-      expect(button(fixture).textContent?.trim()).toEqual('Draft');
+      const label = button(fixture).querySelector('.draft-label');
+      expect(label?.textContent?.trim()).toEqual('Draft for Krillans Puckvilsna Trotjänare');
+      expect(button(fixture).textContent?.trim()).toEqual(label?.textContent?.trim());
+    });
+
+    it('gives the whole label in the tooltip, since the button may cut it', () => {
+      const fixture = render('Draft for Krillans Puckvilsna Trotjänare', false);
+
+      expect(ngMocks.input(buttonDebug(fixture), 'appTooltip')).toEqual(
+        'Draft for Krillans Puckvilsna Trotjänare',
+      );
+    });
+
+    it("has no tooltip on the user's own pick, where Draft is the whole label", () => {
+      const fixture = render('Draft', true);
+
+      expect(ngMocks.input(buttonDebug(fixture), 'appTooltip')).toBeNull();
     });
 
     it('still names that team to a screen reader, with the player', () => {

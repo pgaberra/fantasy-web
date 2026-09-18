@@ -99,9 +99,9 @@
                 Pick
               </button>
             } @else if (!locked()) {
-              <!-- The team drafting is named in the tooltip and to a screen reader, not on the
-                   button: a team name has no length limit, and on every row it took the width
-                   from the player's own name. "Up next" above the list names it already. -->
+              <!-- A team name has no length limit, and uncapped it took the width from the
+                   player's own name on every row. So the label is cut with an ellipsis (see
+                   .draft-label) and the tooltip and the accessible name carry it whole. -->
               <button
                 type="button"
                 class="btn btn-sm"
@@ -112,7 +112,7 @@
                 [attr.aria-label]="draftLabel() + ': ' + lookup.name(sp.projection.playerId)"
                 (click)="draft.emit(sp.projection.playerId)"
               >
-                Draft
+                <span class="draft-label">{{ draftLabel() }}</span>
               </button>
             }
           </span>

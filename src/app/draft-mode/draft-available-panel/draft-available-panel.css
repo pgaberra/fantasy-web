@@ -192,6 +192,16 @@
   gap: 0.35rem;
 }
 
+/* "Draft for <team>": the team's name is the league's, at any length, so the label is capped and
+   cut rather than left to size the button. The tooltip gives the whole name. */
+.draft-label {
+  display: block;
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .row-stats {
   grid-column: 1 / -1;
   display: flex;
@@ -242,6 +252,11 @@
   }
   .available-row .row-actions .btn {
     flex: 1;
+    min-width: 0;
+  }
+  /* The button has the row to itself here, so the label gets all of it. */
+  .available-row .draft-label {
+    max-width: 100%;
   }
 }
 
