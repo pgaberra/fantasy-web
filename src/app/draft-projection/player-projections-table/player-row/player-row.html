@@ -23,45 +23,52 @@
         [name]="player().name"
       />
     }
-    <!-- The name alone: on a phone this span is what the ellipsis cuts, so the chips sit beside it,
-         where they survive however long the name is. -->
-    <span class="player-name-text">{{ player().name }}</span>
-    @if (canEditPositions()) {
-      <button
-        type="button"
-        class="player-positions"
-        [class.player-positions--overridden]="positionsOverridden()"
-        [appPopover]="positionMenu"
-        popoverAlign="start"
-        [attr.aria-label]="'Positions for ' + player().name + ', ' + playerPosition()"
-        [appTooltip]="
-          positionsOverridden()
-            ? 'You set these positions. Click to change them.'
-            : 'Click to set the positions your league uses'
-        "
-      >
-        <app-position-chips [positions]="positionList()" />
-      </button>
-    } @else {
-      <app-position-chips class="player-positions-static" [positions]="positionList()" />
-    }
-    @if (tierBadge(); as badge) {
-      <span class="tier-chip" [appTooltip]="badge.tooltip">{{ badge.label }}</span>
-    }
-    @if (rookie()) {
-      <span class="rookie-badge" appTooltip="Rookie this season">R</span>
-    }
-    @if (injury()) {
-      <span class="injury-badge" [appTooltip]="injuryTooltip()">{{ injuryLabel() }}</span>
-    }
-    @if (player().teamAbbrev) {
-      <span class="player-team">{{ player().teamAbbrev }}</span>
-    }
-    @if (belowMinGames()) {
-      <span class="below-min-games" appTooltip="Projected below the league minimum in games played."
-        >Below league minimum</span
-      >
-    }
+    <!-- The name and what is said about the player. Side by side on a wide screen; on a phone
+         the group drops under the name (styles.css), so the name keeps the column's full
+         width and the positions never compete with it. -->
+    <div class="player-identity">
+      <span class="player-name-text">{{ player().name }}</span>
+      <div class="player-meta">
+        @if (canEditPositions()) {
+          <button
+            type="button"
+            class="player-positions"
+            [class.player-positions--overridden]="positionsOverridden()"
+            [appPopover]="positionMenu"
+            popoverAlign="start"
+            [attr.aria-label]="'Positions for ' + player().name + ', ' + playerPosition()"
+            [appTooltip]="
+              positionsOverridden()
+                ? 'You set these positions. Click to change them.'
+                : 'Click to set the positions your league uses'
+            "
+          >
+            <app-position-chips [positions]="positionList()" />
+          </button>
+        } @else {
+          <app-position-chips class="player-positions-static" [positions]="positionList()" />
+        }
+        @if (tierBadge(); as badge) {
+          <span class="tier-chip" [appTooltip]="badge.tooltip">{{ badge.label }}</span>
+        }
+        @if (rookie()) {
+          <span class="rookie-badge" appTooltip="Rookie this season">R</span>
+        }
+        @if (injury()) {
+          <span class="injury-badge" [appTooltip]="injuryTooltip()">{{ injuryLabel() }}</span>
+        }
+        @if (player().teamAbbrev) {
+          <span class="player-team">{{ player().teamAbbrev }}</span>
+        }
+        @if (belowMinGames()) {
+          <span
+            class="below-min-games"
+            appTooltip="Projected below the league minimum in games played."
+            >Below league minimum</span
+          >
+        }
+      </div>
+    </div>
   </div>
 </td>
 @for (col of activeColumns().utility; track col) {

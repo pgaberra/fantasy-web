@@ -218,15 +218,17 @@ describe('PlayerRowComponent', () => {
 
   /**
    * On a phone the name's span is cut with an ellipsis, and the chips once sat inside it: every
-   * name longer than the column lost its positions with its last letters. Beside the span, they
-   * stay whole however long the name.
+   * name longer than the column lost its positions with its last letters. They live in the
+   * group the phone layout puts under the name, so they stay whole however long the name.
    */
   it('keeps the positions out of the span that a long name is cut short in', () => {
     setInputs();
     const nameText = fixture.nativeElement.querySelector('.player-name-text') as HTMLElement;
+    const meta = fixture.nativeElement.querySelector('.player-identity > .player-meta');
 
     expect(nameText.textContent?.trim()).toEqual('Connor McDavid');
     expect(nameText.querySelector('.pos-chip')).toBeNull();
+    expect(meta?.querySelector('.pos-chip')).not.toBeNull();
     expect(positionChips()).toEqual(['C pos--c']);
   });
 
