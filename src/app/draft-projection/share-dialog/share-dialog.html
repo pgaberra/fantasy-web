@@ -22,6 +22,7 @@
           {{ copied() ? 'Copied!' : 'Copy' }}
         </button>
       </div>
+      <p class="dialog-body">The link updates as your changes are saved.</p>
     } @else {
       @if (needsUsername()) {
         <p class="dialog-body">Choose a username before sharing a projection.</p>
@@ -43,6 +44,8 @@
           >. Change your username in your profile.
         </p>
       }
+
+      <p class="dialog-body">The link updates as your changes are saved.</p>
 
       <div class="dialog-actions">
         <button type="button" class="btn btn-secondary btn-sm" (click)="closed.emit()">

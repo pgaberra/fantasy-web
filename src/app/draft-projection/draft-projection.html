@@ -165,6 +165,7 @@
       <app-share-dialog
         [projectionId]="projectionId()!"
         [players]="sharedPlayers()"
+        (published)="onShared()"
         (closed)="showShareDialog.set(false)"
       />
     }

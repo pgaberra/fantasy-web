@@ -1,5 +1,6 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
@@ -8,6 +9,8 @@ import { PlayerProjectionsTableComponent } from './player-projections-table/play
 import { PlayerService } from '../services/player.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { ProjectionSyncService } from '../services/projection-sync.service';
+import { ProjectionShareService } from '../services/projection-share.service';
+import { ShareLinkResponse } from '../api/models/share-link-response';
 import { LeagueImportButtonComponent } from '../shared/league-import-button/league-import-button';
 import { Goalie, Skater } from '../models/player.model';
 import { ProjectionResponse } from '../api/models/projection-response';
@@ -93,6 +96,13 @@ describe('DraftProjectionComponent', () => {
     },
   };
 
+  // Most projections have no link, which the share check answers with a 404.
+  const notSharedYet = {
+    getShare: () => throwError(() => new HttpErrorResponse({ status: 404 })),
+    share: () => of({ shareUrl: 'https://slapstat.test/s/abc' } as ShareLinkResponse),
+    rowsToPublish: () => [],
+  };
+
   beforeEach(() =>
     MockBuilder(DraftProjectionComponent)
       .mock(PlayerService, {
@@ -102,6 +112,7 @@ describe('DraftProjectionComponent', () => {
         loadProjection: () => of(mockProjection),
         updateProjection: () => of(mockProjection),
       })
+      .mock(ProjectionShareService, notSharedYet)
       .keep(ProjectionSyncService)
       // Real, so the toolbar says which league the projection is synced with.
       .keep(LeagueImportButtonComponent)
@@ -233,6 +244,108 @@ describe('DraftProjectionComponent', () => {
     expect(updateSpy).toHaveBeenCalled();
     expect(component.saveStatus()).toEqual('saved');
   }, 10000);
+
+  describe('sharing', () => {
+    /**
+     * The edited rows live in the table. The share read the rows the projection was opened
+     * with instead, so every stat edited after opening was missing from the link.
+     */
+    it('publishes the rows the table holds, not the ones the projection was opened with', async () => {
+      const fixture = MockRender(DraftProjectionComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+      const component = fixture.point.componentInstance;
+      const edited = [
+        {
+          type: 'skater',
+          playerId: 1,
+          stats: { utility: { gp: 82, toiPerGame: 1320 }, scoring: { goals: 70 } },
+        } as Projection,
+      ];
+      Object.defineProperty(
+        ngMocks.findInstance(PlayerProjectionsTableComponent),
+        'playerProjections',
+        {
+          value: signal(edited),
+        },
+      );
+      const rowsSpy = vi.spyOn(ngMocks.findInstance(ProjectionShareService), 'rowsToPublish');
+
+      component.sharedPlayers();
+
+      expect(rowsSpy.mock.calls[0][0].playerProjections).toBe(edited);
+    });
+
+    it('publishes the board again after a save when the projection has a link', async () => {
+      const fixture = MockRender(DraftProjectionComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+      const shares = ngMocks.findInstance(ProjectionShareService);
+      vi.spyOn(shares, 'getShare').mockReturnValue(
+        of({ shareUrl: 'https://slapstat.test/s/abc' } as ShareLinkResponse),
+      );
+      const shareSpy = vi.spyOn(shares, 'share');
+      const rowsSpy = vi.spyOn(shares, 'rowsToPublish');
+
+      component.leagueSize.set(14);
+      fixture.detectChanges();
+      await new Promise((resolve) => setTimeout(resolve, AUTOSAVE_DEBOUNCE_MS + 200));
+
+      expect(shareSpy).toHaveBeenCalledWith('p1', []);
+      // Ranked under the league as saved, not the one the projection was opened with.
+      expect(rowsSpy.mock.calls.at(-1)?.[0].leagueSize).toEqual(14);
+      expect(component.saveStatus()).toEqual('saved');
+    }, 10000);
+
+    it('publishes nothing for a projection that has no link', async () => {
+      const fixture = MockRender(DraftProjectionComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+      const shareSpy = vi.spyOn(ngMocks.findInstance(ProjectionShareService), 'share');
+
+      component.startRename();
+      component.renameValue.set('Renamed league');
+      component.saveRename();
+      await fixture.whenStable();
+
+      expect(shareSpy).not.toHaveBeenCalled();
+      expect(component.saveStatus()).not.toEqual('error');
+    });
+
+    it('keeps the link in step from the first share on, without asking the server again', async () => {
+      const fixture = MockRender(DraftProjectionComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+      const shares = ngMocks.findInstance(ProjectionShareService);
+      const getShareSpy = vi.spyOn(shares, 'getShare');
+      const shareSpy = vi.spyOn(shares, 'share');
+
+      component.onShared();
+      component.startRename();
+      component.renameValue.set('Renamed league');
+      component.saveRename();
+      await fixture.whenStable();
+
+      expect(getShareSpy).not.toHaveBeenCalled();
+      expect(shareSpy).toHaveBeenCalledWith('p1', []);
+    });
+
+    it('says the save failed when the link could not be brought up to date', async () => {
+      const fixture = MockRender(DraftProjectionComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+      vi.spyOn(ngMocks.findInstance(ProjectionShareService), 'share').mockReturnValue(
+        throwError(() => new HttpErrorResponse({ status: 502 })),
+      );
+
+      component.onShared();
+      component.leagueSize.set(14);
+      fixture.detectChanges();
+      await new Promise((resolve) => setTimeout(resolve, AUTOSAVE_DEBOUNCE_MS + 200));
+
+      expect(component.saveStatus()).toEqual('error');
+    }, 10000);
+  });
 
   /**
    * The corrections are small and the server replaces what it is sent, so a save that skips the

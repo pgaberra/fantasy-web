@@ -11,7 +11,6 @@ import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { ProjectionCardComponent } from './projection-card/projection-card';
 import { ShareDialogComponent } from '../draft-projection/share-dialog/share-dialog';
 import { PlayerService } from '../services/player.service';
-import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import { ProjectionShareService } from '../services/projection-share.service';
 import { freeProjectionName } from '../services/projection-name';
@@ -38,7 +37,6 @@ export class ProjectionListComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly playerService = inject(PlayerService);
   private readonly serializer = inject(ProjectionSerializerService);
-  private readonly ranking = inject(ProjectionRankingService);
   private readonly projectionShare = inject(ProjectionShareService);
 
   readonly projectionsResource = rxResource({
@@ -130,21 +128,7 @@ export class ProjectionListComponent {
       .subscribe({
         next: ({ projection, players }) => {
           const state = this.serializer.fromProjectionData(projection.data);
-          const ranked = this.ranking.rankOverall({
-            projections: state.playerProjections,
-            scoringType: state.scoringType,
-            statWeights: state.statWeights,
-            activeScoringColumns: state.activeScoringColumns,
-            leagueSize: state.leagueSize,
-            rosterSlots: state.rosterSlots,
-            minGoalieGames: state.minGoalieGames,
-            manualRanking: state.manualRanking,
-            decimalSettings: state.decimalSettings,
-          });
-          const playersById = new Map(players.map((player) => [player.id, player]));
-          this.sharedPlayers.set(
-            this.projectionShare.toSharedPlayers(ranked, playersById, state.scoringType),
-          );
+          this.sharedPlayers.set(this.projectionShare.rowsToPublish(state, players));
           this.preparingShareFor.set(null);
           this.sharingProjectionId.set(id);
         },

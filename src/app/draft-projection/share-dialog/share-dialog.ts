@@ -15,8 +15,9 @@ import { IconComponent } from '../../shared/icon/icon';
 
 /**
  * Publishing a projection as a public link. Opening the dialog only reads the current state —
- * nothing becomes public until the owner presses the button, and publishing is one-way: there
- * is no way back from a published snapshot short of deleting the projection.
+ * nothing becomes public until the owner presses the button. After that the link follows the
+ * projection: the editor publishes it again on every save, so an already-shared projection only
+ * needs its link shown here. There is no way to take a link down short of deleting the projection.
  *
  * A shared page credits the account's username, so an account without one has to pick a name
  * here first. That is deliberately the only place the choice is forced: signing up does not ask.
@@ -31,6 +32,8 @@ export class ShareDialogComponent implements OnInit {
   readonly projectionId = input.required<string>();
   readonly players = input.required<SharedPlayer[]>();
   readonly closed = output<void>();
+  /** The first publish, which is what tells the editor to keep the link in step from here on. */
+  readonly published = output<void>();
 
   private readonly shareService = inject(ProjectionShareService);
   private readonly account = inject(AccountService);
@@ -110,6 +113,7 @@ export class ShareDialogComponent implements OnInit {
           this.username.set(this.account.username());
           this.share.set(share);
           this.isSaving.set(false);
+          this.published.emit();
         },
         error: (error: unknown) => {
           this.isSaving.set(false);
