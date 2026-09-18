@@ -120,7 +120,8 @@
             <div class="row-stats">
               @for (stat of statStrip(sp.projection); track stat.key) {
                 <span class="stat-chip" [appTooltip]="stat.key | statTooltip">
-                  <span class="stat-key">{{ stat.key | statLabel }}</span> {{ stat.value }}
+                  <span class="stat-key">{{ stat.key | statLabel }}</span>
+                  <span class="stat-value">{{ stat.value }}</span>
                 </span>
               }
             </div>

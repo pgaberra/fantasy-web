@@ -202,25 +202,40 @@
   white-space: nowrap;
 }
 
+/* Each stat is its label with the value under it. Side by side ("Goals 48 Assists 98 …") a
+   league's categories ran past the row and the last one dropped to a line of its own; stacked,
+   a cell is only as wide as its label, and the values line up from one player to the next.
+   The cells are inline so that, where a narrow screen or a long category list still needs a
+   second line, text-wrap: balance splits them evenly rather than leaving one behind. */
 .row-stats {
   grid-column: 1 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.15rem 0.6rem;
-  padding: 0.15rem 0 0.1rem;
+  text-wrap: balance;
+  padding: 0.15rem 0 0;
 }
 
 .stat-chip {
+  display: inline-flex;
+  flex-direction: column;
+  vertical-align: top;
+  min-width: 2rem;
+  margin: 0 0.75rem 0.2rem 0;
   font-size: var(--text-xs);
-  color: var(--color-text);
-  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
   white-space: nowrap;
+}
+
+.stat-chip:last-child {
+  margin-right: 0;
 }
 
 .stat-key {
   color: var(--color-text-subtle);
   font-weight: var(--weight-semibold);
-  margin-right: 0.1rem;
+}
+
+.stat-value {
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .show-more {

@@ -5,17 +5,20 @@ import { DraftAvailablePanelComponent } from './draft-available-panel';
 import { PositionFilter } from '../../models/projection.model';
 import { DraftPlayerLookupService } from '../draft-player-lookup.service';
 import { ScoredProjection } from '../../models/projection.model';
+import { StatLabelPipe } from '../../pipes/stat-label.pipe';
 
 describe('DraftAvailablePanelComponent', () => {
   const showAvatars = signal(true);
 
   beforeEach(() => {
     showAvatars.set(true);
-    return MockBuilder(DraftAvailablePanelComponent).mock(DraftPlayerLookupService, {
-      showAvatars,
-      name: () => 'Connor McDavid',
-      team: () => 'EDM',
-    });
+    return MockBuilder(DraftAvailablePanelComponent)
+      .keep(StatLabelPipe)
+      .mock(DraftPlayerLookupService, {
+        showAvatars,
+        name: () => 'Connor McDavid',
+        team: () => 'EDM',
+      });
   });
 
   function renderPanel(
@@ -157,6 +160,54 @@ describe('DraftAvailablePanelComponent', () => {
     });
 
     expect(fixture.nativeElement.querySelector('.row-rank').textContent.trim()).toEqual('157');
+  });
+
+  /**
+   * Label and value side by side ran a league's categories past the row, and the last ones fell
+   * to a line of their own. Each stat is a cell with the label over the value, which the
+   * stylesheet stacks, so the two have to stay separate elements.
+   */
+  it('shows each stat as its label with the value under it', () => {
+    const fixture = MockRender(DraftAvailablePanelComponent, {
+      editingInfo: null,
+      searchTerm: '',
+      positionFilters: [{ value: 'ALL', label: 'All' }],
+      selectedPositions: ['ALL'],
+      showStats: true,
+      pageSizeOptions: [{ label: '50', value: 50 }],
+      pageSize: 50,
+      scoreHeading: 'Value',
+      visibleAvailable: [
+        {
+          projection: {
+            playerId: 97,
+            type: 'skater',
+            stats: { utility: {}, scoring: { goals: 48, assists: 98 } },
+          },
+          score: { fantasyPoints: 100, zScore: 1 },
+          qualified: true,
+        } as unknown as ScoredProjection,
+      ],
+      availableCount: 1,
+      hasMore: false,
+      isMyPick: true,
+      isComplete: false,
+      draftLabel: 'Draft',
+      scoringType: 'category',
+      statColumns: ['goals', 'assists'],
+    });
+
+    const cells = Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('.stat-chip'));
+
+    expect(
+      cells.map((cell) => [
+        cell.querySelector('.stat-key')?.textContent?.trim(),
+        cell.querySelector('.stat-value')?.textContent?.trim(),
+      ]),
+    ).toEqual([
+      ['Goals', '48'],
+      ['Assists', '98'],
+    ]);
   });
 
   it('marks every chosen position as active', () => {
