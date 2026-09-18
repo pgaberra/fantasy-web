@@ -111,6 +111,36 @@ describe('DraftAvailablePanelComponent', () => {
     });
   });
 
+  it("prints the player's place in the available list, not his place among the hits", () => {
+    const fixture = MockRender(DraftAvailablePanelComponent, {
+      editingInfo: null,
+      searchTerm: 'mar',
+      positionFilters: [{ value: 'ALL', label: 'All' }],
+      selectedPositions: ['ALL'],
+      showStats: false,
+      pageSizeOptions: [{ label: '50', value: 50 }],
+      pageSize: 50,
+      scoreHeading: 'Value',
+      visibleAvailable: [
+        {
+          projection: { playerId: 97 },
+          score: { fantasyPoints: 100, zScore: 1 },
+          qualified: true,
+        } as unknown as ScoredProjection,
+      ],
+      availableRanks: new Map([[97, 157]]),
+      availableCount: 1,
+      hasMore: false,
+      isMyPick: true,
+      isComplete: false,
+      draftLabel: 'Draft',
+      scoringType: 'category',
+      statColumns: [],
+    });
+
+    expect(fixture.nativeElement.querySelector('.row-rank').textContent.trim()).toEqual('157');
+  });
+
   it('marks every chosen position as active', () => {
     const fixture = renderPanel(['C', 'LW']);
 

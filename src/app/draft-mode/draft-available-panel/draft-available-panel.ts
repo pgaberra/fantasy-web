@@ -48,6 +48,8 @@ export class DraftAvailablePanelComponent {
   readonly pageSize = input.required<number>();
   readonly scoreHeading = input.required<string>();
   readonly visibleAvailable = input.required<ScoredProjection[]>();
+  /** Each player's place among the available players before the search; see DraftModeComponent. */
+  readonly availableRanks = input<ReadonlyMap<number, number>>(new Map());
   readonly availableCount = input.required<number>();
   readonly hasMore = input.required<boolean>();
   readonly isMyPick = input.required<boolean>();

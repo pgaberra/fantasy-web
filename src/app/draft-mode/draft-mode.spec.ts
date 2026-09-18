@@ -494,6 +494,38 @@ describe('DraftModeComponent', () => {
     ).toEqual([1, 2]);
   });
 
+  /**
+   * A search finds a player; it does not rank him. The number beside each row used to be his
+   * place among the hits, so Porter Martone read 4 for "mar" and 157 when scrolled to.
+   */
+  it('keeps a searched player at his place in the available list', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+    const makarsPlace = component.availableRanks().get(2);
+    const searchedFor = component.available().length;
+
+    component.searchTerm.set('makar');
+
+    expect(searchedFor).toEqual(2);
+    expect(component.available().map((sp) => sp.projection.playerId)).toEqual([2]);
+    expect(component.availableRanks().get(2)).toEqual(makarsPlace);
+    expect(makarsPlace).toBeGreaterThan(0);
+  });
+
+  /** The position chips do narrow the ranking: the number is his place at that position. */
+  it("counts a player's place among the positions the chips leave", async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+
+    component.togglePositionFilter('D');
+
+    expect(component.availableRanks()).toEqual(new Map([[2, 1]]));
+  });
+
   it('drops the other positions when All is picked', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
