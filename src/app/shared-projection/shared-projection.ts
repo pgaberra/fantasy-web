@@ -126,6 +126,13 @@ export class SharedProjectionComponent {
   readonly isImporting = computed(() => this.importingInto() !== null);
 
   /**
+   * The last press was refused because the author changed the board after this page read it.
+   * The board has been read again by then, so the note says why nothing was copied and that what
+   * is on screen is now the latest. Cleared by the next press.
+   */
+  readonly boardChanged = signal(false);
+
+  /**
    * Picks a press back up on the way in, for the visitor who made it and came back with an
    * account. Taken rather than read, so a copy answers one press: a reload, a second visit and a
    * second board each find nothing waiting.
@@ -138,7 +145,7 @@ export class SharedProjectionComponent {
     if (!pending || !this.isLoggedIn()) {
       return;
     }
-    this.importThen(pending);
+    this.importThen(pending.destination, pending.seenUpdatedAt);
   }
 
   /** Takes a copy of the published board and opens it for editing. */
@@ -152,9 +159,11 @@ export class SharedProjectionComponent {
   }
 
   /**
-   * The copy behind both buttons. What the visitor is looking at is a snapshot, and so is the
-   * copy: the author's later edits are theirs, and their picks do not come along. Only where it
-   * lands differs, which is the whole difference between the two buttons.
+   * The copy behind both buttons. A link follows its projection, so the author can change the
+   * board while the visitor reads it; the press carries the stamp of the board on screen, and a
+   * board changed since is refused (412) rather than copied, then read again. The author's picks
+   * never come along. Only where the copy lands differs, which is the whole difference between
+   * the two buttons.
    *
    * <p>Pressing either a second time makes a second copy, and that is the point. The name it
    * was shared under is taken by then, which db-service used to answer with a 409 — this page
@@ -164,22 +173,26 @@ export class SharedProjectionComponent {
    * buttons simply do what they say however often they are pressed, and a 409 goes back to
    * meaning something went wrong.
    */
-  private importThen(destination: ImportDestination): void {
+  private importThen(
+    destination: ImportDestination,
+    seenUpdatedAt: string | undefined = this.shared()?.updatedAt,
+  ): void {
     // A copy has to live in an account, so someone without one is taken straight to the form that
     // makes one. It used to be a note beside the buttons holding two links, which asked a visitor
     // who had already decided to read a sentence and decide again. The press is written down
     // first, so the copy happens when they land back here; the form's own footer is the way out
     // for someone who turns out to have an account already.
     if (!this.isLoggedIn()) {
-      this.pendingCopy.remember(this.token, destination);
+      this.pendingCopy.remember(this.token, destination, seenUpdatedAt);
       void this.router.navigate(['/register'], {
         queryParams: { returnUrl: this.returnUrl, reason: SHARED_BOARD },
       });
       return;
     }
     this.importingInto.set(destination);
+    this.boardChanged.set(false);
     this.storage
-      .importFromShare(this.token)
+      .importFromShare(this.token, undefined, seenUpdatedAt)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (projection) => {
@@ -190,8 +203,13 @@ export class SharedProjectionComponent {
               : ['/projections', projection.id],
           );
         },
-        error: () => {
+        error: (error: unknown) => {
           this.importingInto.set(null);
+          if (error instanceof HttpErrorResponse && error.status === 412) {
+            this.boardChanged.set(true);
+            this.sharedResource.reload();
+            return;
+          }
           this.notification.error("Couldn't copy this board. Please try again.");
         },
       });

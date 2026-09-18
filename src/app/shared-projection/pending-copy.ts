@@ -4,10 +4,18 @@ import { isPlatformBrowser } from '@angular/common';
 /** Where a copy of a published board lands: open for editing, or straight into a draft. */
 export type ImportDestination = 'projection' | 'draft';
 
-/** The press, as it is written down: which board, and which of the two buttons. */
-interface PendingCopy {
+/** The press, as it is written down: which board, which of the two buttons, and which version. */
+interface StoredCopy {
   readonly token: string;
   readonly destination: ImportDestination;
+  /** The board's stamp as the visitor saw it before leaving to sign up; absent from older entries. */
+  readonly seenUpdatedAt?: string;
+}
+
+/** What a press picked back up asks for. */
+export interface PendingCopy {
+  readonly destination: ImportDestination;
+  readonly seenUpdatedAt?: string;
 }
 
 /**
@@ -35,8 +43,15 @@ export class PendingCopyService {
 
   private readonly key = 'shared_copy_intent';
 
-  remember(token: string, destination: ImportDestination): void {
-    this.session?.setItem(this.key, JSON.stringify({ token, destination } satisfies PendingCopy));
+  /**
+   * @param seenUpdatedAt the board's stamp when the button was pressed. The trip to the account
+   *     form can take minutes, and the copy made on return has to be of the board they pressed on.
+   */
+  remember(token: string, destination: ImportDestination, seenUpdatedAt?: string): void {
+    this.session?.setItem(
+      this.key,
+      JSON.stringify({ token, destination, seenUpdatedAt } satisfies StoredCopy),
+    );
   }
 
   /**
@@ -47,27 +62,36 @@ export class PendingCopyService {
    * in the visitor's own browser, so nothing here is a trust boundary, but a shape this code does
    * not recognise should leave the board on screen rather than throw on the way to rendering it.
    */
-  take(token: string): ImportDestination | null {
+  take(token: string): PendingCopy | null {
     const stored = this.session?.getItem(this.key);
     if (!stored) {
       return null;
     }
     this.session?.removeItem(this.key);
     const pending = this.parse(stored);
-    return pending?.token === token ? pending.destination : null;
+    if (pending?.token !== token) {
+      return null;
+    }
+    return { destination: pending.destination, seenUpdatedAt: pending.seenUpdatedAt };
   }
 
-  private parse(stored: string): PendingCopy | null {
+  private parse(stored: string): StoredCopy | null {
     let value: unknown;
     try {
       value = JSON.parse(stored);
     } catch {
       return null;
     }
-    const { token, destination } = (value ?? {}) as Partial<PendingCopy>;
+    const { token, destination, seenUpdatedAt } = (value ?? {}) as Partial<StoredCopy>;
     if (typeof token !== 'string' || (destination !== 'draft' && destination !== 'projection')) {
       return null;
     }
-    return { token, destination };
+    // A stamp that is not a string is dropped rather than the press: the copy then takes the
+    // board as it is, which is what every press did before stamps were written down.
+    return {
+      token,
+      destination,
+      seenUpdatedAt: typeof seenUpdatedAt === 'string' ? seenUpdatedAt : undefined,
+    };
   }
 }

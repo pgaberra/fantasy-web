@@ -14,14 +14,31 @@ describe('PendingCopyService', () => {
   it('hands back the press that was made on this board', () => {
     service.remember('abc123', 'draft');
 
-    expect(service.take('abc123')).toBe('draft');
+    expect(service.take('abc123')?.destination).toBe('draft');
+  });
+
+  /** Signing up can take minutes, and the copy on return has to be of the board they pressed on. */
+  it('keeps the stamp of the board the press was made on', () => {
+    service.remember('abc123', 'draft', '2026-09-18T08:00:00.123456Z');
+
+    expect(service.take('abc123')).toEqual({
+      destination: 'draft',
+      seenUpdatedAt: '2026-09-18T08:00:00.123456Z',
+    });
+  });
+
+  /** A press written down before stamps were still copies, as it would have then. */
+  it('still hands back a press written down without a stamp', () => {
+    sessionStorage.setItem('shared_copy_intent', '{"token":"abc123","destination":"draft"}');
+
+    expect(service.take('abc123')).toEqual({ destination: 'draft', seenUpdatedAt: undefined });
   });
 
   /** A copy is the answer to one press. A reload is not a second one. */
   it('spends the press on the first board that asks for it', () => {
     service.remember('abc123', 'projection');
 
-    expect(service.take('abc123')).toBe('projection');
+    expect(service.take('abc123')?.destination).toBe('projection');
     expect(service.take('abc123')).toBeNull();
   });
 

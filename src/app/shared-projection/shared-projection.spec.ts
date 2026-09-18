@@ -762,7 +762,7 @@ describe('SharedProjectionComponent', () => {
       fixture.detectChanges();
 
       expect(importFromShare).not.toHaveBeenCalled();
-      expect(remember).toHaveBeenCalledWith('abc123', 'draft');
+      expect(remember).toHaveBeenCalledWith('abc123', 'draft', '2026-08-02T10:00:00Z');
       expect(navigate).toHaveBeenCalledWith(['/register'], {
         queryParams: { returnUrl: '/s/abc123', reason: 'shared-board' },
       });
@@ -774,7 +774,7 @@ describe('SharedProjectionComponent', () => {
       fixture.nativeElement.querySelector('[data-testid="copy-board"]').click();
       fixture.detectChanges();
 
-      expect(remember).toHaveBeenCalledWith('abc123', 'projection');
+      expect(remember).toHaveBeenCalledWith('abc123', 'projection', '2026-08-02T10:00:00Z');
     });
 
     /**
@@ -823,8 +823,47 @@ describe('SharedProjectionComponent', () => {
 
       fixture.nativeElement.querySelector('[data-testid="copy-board"]').click();
 
-      expect(importFromShare).toHaveBeenCalledWith('abc123');
+      expect(importFromShare).toHaveBeenCalledWith('abc123', undefined, '2026-08-02T10:00:00Z');
       expect(navigate).toHaveBeenCalledWith(['/projections', 'copy1']);
+    });
+
+    /**
+     * A link follows its projection, so the board can change while it is being read. The press
+     * carries the stamp of the board on screen, and the server refuses a board changed since.
+     */
+    it('asks for the board it showed, not whatever the link holds by now', async () => {
+      isLoggedIn.set(true);
+      const fixture = await render();
+
+      fixture.nativeElement.querySelector('[data-testid="draft-board"]').click();
+
+      expect(importFromShare).toHaveBeenCalledWith('abc123', undefined, '2026-08-02T10:00:00Z');
+    });
+
+    it('reads the board again and says so when the author changed it meanwhile', async () => {
+      isLoggedIn.set(true);
+      importFromShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 412 })));
+      const fixture = await render();
+      loadShared.mockClear();
+      loadShared.mockReturnValue(of({ ...shared, updatedAt: '2026-08-03T10:00:00Z' }));
+
+      fixture.nativeElement.querySelector('[data-testid="copy-board"]').click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(loadShared).toHaveBeenCalled();
+      expect(navigate).not.toHaveBeenCalled();
+      expect(notifyError).not.toHaveBeenCalled();
+      const note = fixture.nativeElement.querySelector('.board-changed');
+      expect(note.textContent).toContain('alex updated this board while you were viewing it');
+      expect(note.textContent).toContain('Nothing was copied');
+
+      // The next press is of the board now on screen.
+      importFromShare.mockReturnValue(of({ id: 'copy2' }));
+      fixture.nativeElement.querySelector('[data-testid="copy-board"]').click();
+      fixture.detectChanges();
+      expect(importFromShare).toHaveBeenLastCalledWith('abc123', undefined, '2026-08-03T10:00:00Z');
+      expect(fixture.nativeElement.querySelector('.board-changed')).toBeNull();
     });
 
     it('says which of the two is copying, and holds the other', async () => {
@@ -853,18 +892,28 @@ describe('SharedProjectionComponent', () => {
   describe('coming back from the account form with the press still in hand', () => {
     it('drafts against the board without being asked twice', async () => {
       isLoggedIn.set(true);
-      takePending.mockReturnValue('draft');
+      takePending.mockReturnValue({ destination: 'draft' });
 
       await render();
 
       expect(takePending).toHaveBeenCalledWith('abc123');
-      expect(importFromShare).toHaveBeenCalledWith('abc123');
+      expect(importFromShare).toHaveBeenCalledWith('abc123', undefined, undefined);
       expect(navigate).toHaveBeenCalledWith(['/projections', 'copy1', 'draft']);
+    });
+
+    /** Signing up can take minutes; the copy is still of the board they pressed on. */
+    it('sends the stamp of the board they pressed on before signing up', async () => {
+      isLoggedIn.set(true);
+      takePending.mockReturnValue({ destination: 'draft', seenUpdatedAt: '2026-08-01T09:00:00Z' });
+
+      await render();
+
+      expect(importFromShare).toHaveBeenCalledWith('abc123', undefined, '2026-08-01T09:00:00Z');
     });
 
     it('opens the copy for editing when that was the button', async () => {
       isLoggedIn.set(true);
-      takePending.mockReturnValue('projection');
+      takePending.mockReturnValue({ destination: 'projection' });
 
       await render();
 
@@ -890,7 +939,7 @@ describe('SharedProjectionComponent', () => {
      * buttons are right there for whoever wants to make it again.
      */
     it('shows the board rather than copying when the sign-in did not take', async () => {
-      takePending.mockReturnValue('draft');
+      takePending.mockReturnValue({ destination: 'draft' });
 
       const fixture = await render();
 
@@ -975,7 +1024,7 @@ describe('SharedProjectionComponent', () => {
 
       fixture.point.componentInstance.draftAgainstThis();
 
-      expect(importFromShare).toHaveBeenCalledWith('abc123');
+      expect(importFromShare).toHaveBeenCalledWith('abc123', undefined, '2026-08-02T10:00:00Z');
       expect(navigate).toHaveBeenCalledWith(['/projections', 'copy1', 'draft']);
     });
 
