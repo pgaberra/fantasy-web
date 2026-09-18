@@ -101,6 +101,10 @@
 .feed-team {
   font-size: var(--text-xs);
   color: var(--color-text-subtle);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .feed-row.is-mine .feed-team {
