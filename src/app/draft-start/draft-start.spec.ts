@@ -817,6 +817,23 @@ describe('DraftStartComponent', () => {
     );
   });
 
+  // The kebab is still on the card while the question is asked, so nothing but the menu item
+  // itself can close the menu, and left open it sat over "Yes, discard".
+  it('closes the menu when Discard draft is chosen, and puts focus on the question', async () => {
+    listWithPresetDrafts.mockReturnValue(of([summary('p1', 'projection', 'in_progress')]));
+
+    const fixture = await renderFixture();
+    (fixture.nativeElement.querySelector('.draft-menu') as HTMLElement).click();
+    (menuPanel()?.querySelector('.discard') as HTMLElement).click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(menuPanel()).toBeNull();
+    const prompt = fixture.nativeElement.querySelector('.confirm-text') as HTMLElement;
+    expect(prompt.textContent?.trim()).toEqual('Discard the picks? The projection will stay.');
+    expect(document.activeElement).toBe(prompt);
+  });
+
   // The board is the picks and nothing else, and it is not in "Your projection" to open.
   it('offers no way into the board behind a preset draft', async () => {
     const component = await render();
