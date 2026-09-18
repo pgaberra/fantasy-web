@@ -96,18 +96,23 @@
                         [name]="ranked.hot.name"
                       />
                     }
-                    <span class="player-name-text">{{ ranked.hot.name }}</span>
-                    <app-position-chips [positions]="positions(ranked)" />
-                    @if (ranked.hot.teamAbbrev) {
-                      <span class="player-team">{{ ranked.hot.teamAbbrev }}</span>
-                    }
-                    @if (!ranked.qualified) {
-                      <span
-                        class="below-min-games"
-                        appTooltip="Fewer games than the league's goalie minimum, so this goalie is ranked last."
-                        >Below league minimum</span
-                      >
-                    }
+                    <!-- Laid out as the projection editor's name cell is: see player-row.html. -->
+                    <div class="player-identity">
+                      <span class="player-name-text">{{ ranked.hot.name }}</span>
+                      <div class="player-meta">
+                        <app-position-chips [positions]="positions(ranked)" />
+                        @if (ranked.hot.teamAbbrev) {
+                          <span class="player-team">{{ ranked.hot.teamAbbrev }}</span>
+                        }
+                        @if (!ranked.qualified) {
+                          <span
+                            class="below-min-games"
+                            appTooltip="Fewer games than the league's goalie minimum, so this goalie is ranked last."
+                            >Below league minimum</span
+                          >
+                        }
+                      </div>
+                    </div>
                   </div>
                 </td>
                 @for (col of filteredActiveColumns().utility; track col) {

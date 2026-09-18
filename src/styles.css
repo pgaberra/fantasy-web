@@ -499,6 +499,22 @@ a.premium-badge:focus-visible {
   height: 1px;
 }
 
+/* The player tables' name cell (the projection editor's and Who's Hot's): the name, then a group
+   holding the positions and the badges. One definition for both tables, since the phone layout
+   below reshapes the same two elements in each. */
+.col-name .player-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.col-name .player-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
 /* On narrow screens the sticky rank + player columns must stay compact so the
    scrollable stat columns remain visible — cap the player column and truncate
    long names instead of letting them push the stats off-screen. */
@@ -512,11 +528,26 @@ a.premium-badge:focus-visible {
     min-width: 0;
     gap: 0.3rem;
   }
+  /* The positions and badges go under the name rather than beside it: beside it, a skater with
+     two positions and a status left about six letters of his name in a 9rem column. Every row
+     gets the second line, so the table keeps one row height. */
+  .table-wrapper .col-name .player-identity {
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+  }
   .table-wrapper .col-name .player-name-text {
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     min-width: 0;
+  }
+  .table-wrapper .col-name .player-meta {
+    max-width: 100%;
+    gap: 0.3rem;
+    overflow: hidden;
   }
   /* Dropping the team is the one part of this a table has to ask for. It suits a board whose
      rows you put there yourself and can name on sight; it does not suit a leaderboard, where
