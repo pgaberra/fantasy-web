@@ -32,8 +32,8 @@ const GROUP_LABELS: Record<StatGroup, string> = {
  * several are ticked, since adding one stat per dropdown round-trip was the slowest part of the
  * old panel.
  *
- * How a column's numbers are formatted is not here: decimals belong to the column they format, and
- * live in that column's own menu.
+ * How a column's numbers are formatted is a different question, and lives in that column's own
+ * menu; the bulk version of it sits folded under this menu in the table's Stats popover.
  */
 @Component({
   selector: 'app-columns-menu',

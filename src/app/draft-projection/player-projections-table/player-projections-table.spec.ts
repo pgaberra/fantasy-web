@@ -1399,6 +1399,56 @@ describe('PlayerProjectionsTableComponent', () => {
       expect(ngMocks.findAll('.table-header--stacked')).toHaveLength(1);
       expect(ngMocks.findAll('.league-controls')).toHaveLength(1);
     });
+
+    it('folds the league settings behind one toggle that a phone can open', () => {
+      // Desktop hides the toggle in CSS; the markup is the same at every width, so what the test
+      // can hold is that the toggle and the group it opens are wired to each other.
+      const fixture = MockRender(PlayerProjectionsTableComponent, {
+        players: mockPlayers,
+        scoringType: 'category',
+        playerProjections: mockPlayerProjections,
+        statWeights: mockStatWeights,
+        activeScoringColumns: new Set<ScoringStatKey>(['goals', 'assists']),
+        activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
+        scaleSettings: mockScaleSettings,
+        useDefaultDecimals: true,
+        columnControls: true,
+      });
+      const component = fixture.point.componentInstance;
+
+      const toggle = ngMocks.find('.settings-toggle');
+      expect(toggle.nativeElement.getAttribute('aria-expanded')).toEqual('false');
+      expect(ngMocks.findAll('.league-controls--open')).toHaveLength(0);
+
+      ngMocks.click(toggle);
+      fixture.detectChanges();
+      expect(component.settingsOpen()).toEqual(true);
+      expect(toggle.nativeElement.getAttribute('aria-expanded')).toEqual('true');
+      expect(ngMocks.findAll('.league-controls--open')).toHaveLength(1);
+    });
+
+    it('does not draw the settings toggle where there are no settings to fold', () => {
+      getComponent({ columnControls: false });
+      expect(ngMocks.findAll('.settings-toggle')).toHaveLength(0);
+    });
+
+    it('keeps Decimals out of the toolbar: it lives under the stat picker', () => {
+      // Every column already has its decimals in its own menu; the bulk setting was the only
+      // control left on a row of its own on a phone.
+      getComponent({ columnControls: true });
+      const toolbarText = ngMocks.find('.table-controls').nativeElement.textContent;
+      expect(toolbarText).not.toContain('Decimals');
+    });
+
+    it('leaves the filter selects without a visible label', () => {
+      // "All players" and "All teams" already say what each select narrows; the label is kept
+      // for screen readers only.
+      getComponent({ columnControls: true });
+      expect(ngMocks.findAll('.search-control label')).toHaveLength(0);
+      expect(ngMocks.find('#player-search').nativeElement.getAttribute('aria-label')).toEqual(
+        'Search player',
+      );
+    });
   });
 
   describe('picking columns', () => {

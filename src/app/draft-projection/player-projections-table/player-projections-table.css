@@ -132,6 +132,58 @@
   align-items: center;
 }
 
+/* Drawn only on a phone, where it stands in for the whole settings group. */
+.settings-toggle {
+  display: none;
+}
+
+/* The Stats menu with the decimals folded under it. The picker is a fixed-width panel of its own,
+   so this box takes that width and the two share it edge to edge. */
+.stats-menu {
+  width: 340px;
+  max-width: 92vw;
+}
+
+.stats-menu app-columns-menu,
+.stats-menu app-decimals-menu {
+  width: 100%;
+}
+
+.decimals-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  background: var(--color-surface-alt);
+  border: none;
+  border-top: 1px solid var(--color-border);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.decimals-toggle:hover {
+  background: var(--color-surface-hover);
+}
+
+.decimals-toggle-chevron,
+.settings-toggle-chevron {
+  margin-left: auto;
+  transition: transform var(--transition-fast);
+}
+
+.decimals-toggle[aria-expanded='true'] .decimals-toggle-chevron,
+.settings-toggle[aria-expanded='true'] .settings-toggle-chevron {
+  transform: rotate(180deg);
+}
+
+.stats-menu app-decimals-menu {
+  border-top: 1px solid var(--color-border);
+}
+
 .segmented {
   display: inline-flex;
   padding: 2px;
@@ -170,12 +222,6 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-}
-
-.search-control label {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  color: var(--color-primary);
 }
 
 .search-control input {
@@ -245,21 +291,64 @@ tbody tr:hover {
     gap: var(--space-3);
   }
 
+  /* One column: the settings toggle across the top, the settings under it while open, then the
+     filters. Two groups side by side had nowhere to go here but into a pile. */
   .table-controls {
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
   }
 
-  /* No width to hold the group on one line here, and overflowing sideways is worse than wrapping. */
+  .settings-toggle {
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+
+  /* Folded behind the toggle until asked for; open, it is boxed so its buttons read as the
+     toggle's contents rather than as more of the toolbar. No width to hold the group on one line
+     here, and overflowing sideways is worse than wrapping. */
   .league-controls {
+    display: none;
     flex-wrap: wrap;
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-alt);
   }
 
+  .league-controls--open {
+    display: flex;
+  }
+
+  /* Two rows: the search with the rookies box beside it, then the two selects sharing the row
+     under it. Three controls on one row left the selects too narrow for their own first option. */
   .filter-controls {
-    gap: var(--space-2);
+    gap: var(--space-2) var(--space-3);
   }
 
+  /* The bases are what decide the rows: search plus the rookies box fill the first, and a select
+     no longer fits beside them, so the two selects take the second between them. */
   .search-control {
-    flex: 1 1 auto;
+    flex: 1 1 55%;
+    min-width: 0;
+  }
+
+  .filter-control--check {
+    flex: none;
+    order: 1;
+  }
+
+  .filter-controls app-position-filter,
+  .filter-controls app-team-filter {
+    display: flex;
+    flex: 1 1 45%;
+    min-width: 0;
+    order: 2;
+  }
+
+  .position-overrides {
+    order: 3;
   }
 
   .search-control input {
@@ -286,6 +375,7 @@ tbody tr:hover {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  font-size: var(--text-sm);
   white-space: nowrap;
   cursor: pointer;
 }

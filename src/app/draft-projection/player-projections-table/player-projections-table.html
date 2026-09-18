@@ -48,7 +48,25 @@
     </div>
     <div class="table-controls">
       @if (columnControls()) {
-        <div class="league-controls">
+        <!-- On a phone the settings fold behind this one button. They are touched once per
+             projection, not while scrolling the table, and open they took four rows of a screen
+             that has five to give. Desktop never draws it: there the group fits on one line. -->
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm settings-toggle"
+          aria-controls="league-settings"
+          [attr.aria-expanded]="settingsOpen()"
+          (click)="settingsOpen.set(!settingsOpen())"
+        >
+          <app-icon name="sliders" />
+          League settings
+          <app-icon name="chevron-down" [size]="14" class="settings-toggle-chevron" />
+        </button>
+        <div
+          class="league-controls"
+          id="league-settings"
+          [class.league-controls--open]="settingsOpen()"
+        >
           <div class="segmented" role="group" aria-label="League type">
             <button
               type="button"
@@ -106,10 +124,10 @@
 
       <div class="filter-controls">
         <div class="search-control">
-          <label for="player-search">Search</label>
           <input
             id="player-search"
             type="search"
+            aria-label="Search player"
             placeholder="Search player…"
             [value]="searchTerm()"
             (input)="onSearchInput($event)"
@@ -148,18 +166,6 @@
               Rookies only
             </label>
           </div>
-        }
-        <!-- How the numbers are printed, not what the projection is scored on, so it sits with the
-             other view controls rather than between Stats and the league it was imported for. -->
-        @if (columnControls()) {
-          <button
-            type="button"
-            class="btn btn-secondary btn-sm decimals-btn"
-            [appPopover]="decimalsMenu"
-          >
-            <app-icon name="decimals" />
-            Decimals
-          </button>
         }
       </div>
     </div>
@@ -267,24 +273,40 @@
   />
 </ng-template>
 
+<!-- Decimals ride along under the stat picker: how a stat's numbers are printed is the one other
+     question asked of every column at once, and on its own it was a toolbar button on a row by
+     itself for a setting most people never open. Folded, so the picker keeps its height. -->
 <ng-template #columnsMenu>
-  <app-columns-menu
-    [activeScoringColumns]="shownScoringColumns()"
-    [activeUtilityColumns]="shownUtilityColumns()"
-    (scoringToggled)="toggleScoringColumn($event)"
-    (utilityToggled)="toggleUtilityColumn($event)"
-  />
-</ng-template>
-
-<ng-template #decimalsMenu>
-  <app-decimals-menu
-    [scoringColumns]="shownScoringColumns()"
-    [utilityColumns]="shownUtilityColumns()"
-    [decimalSettings]="readableDecimals()"
-    [usingDefaults]="useDefaultDecimals()"
-    (decimalSettingsChange)="onDecimalSettingsChange($event)"
-    (resetToDefaults)="resetDecimals()"
-  />
+  <div class="stats-menu">
+    <app-columns-menu
+      [activeScoringColumns]="shownScoringColumns()"
+      [activeUtilityColumns]="shownUtilityColumns()"
+      (scoringToggled)="toggleScoringColumn($event)"
+      (utilityToggled)="toggleUtilityColumn($event)"
+    />
+    <button
+      type="button"
+      class="decimals-toggle"
+      aria-controls="stats-menu-decimals"
+      [attr.aria-expanded]="decimalsOpen()"
+      (click)="decimalsOpen.set(!decimalsOpen())"
+    >
+      <app-icon name="decimals" />
+      Decimals
+      <app-icon name="chevron-down" [size]="14" class="decimals-toggle-chevron" />
+    </button>
+    @if (decimalsOpen()) {
+      <app-decimals-menu
+        id="stats-menu-decimals"
+        [scoringColumns]="shownScoringColumns()"
+        [utilityColumns]="shownUtilityColumns()"
+        [decimalSettings]="readableDecimals()"
+        [usingDefaults]="useDefaultDecimals()"
+        (decimalSettingsChange)="onDecimalSettingsChange($event)"
+        (resetToDefaults)="resetDecimals()"
+      />
+    }
+  </div>
 </ng-template>
 
 <ng-template #rankingMenu>
