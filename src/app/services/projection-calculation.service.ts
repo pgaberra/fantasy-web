@@ -15,6 +15,7 @@ import {
   SkaterScoringStats,
   StatWeights,
 } from '../models/projection.model';
+import { ratioVolume } from '../models/ratio-volume';
 
 const DEFAULT_SKATER_POOL_SIZE = 180;
 const DEFAULT_GOALIE_POOL_SIZE = 32;
@@ -37,6 +38,21 @@ interface PoolEntry<P extends Projection> {
 interface PoolZScores {
   totals: Float64Array;
   byCategory: (Float64Array | null)[];
+}
+
+/**
+ * One active category's numbers, read off the projections once per ranking. A counting stat is
+ * scored as it stands. A ratio (GAA, save, win and shooting percentage) is scored by what it does
+ * to a team's own ratio, which needs the pool's rate as well, so its value is only settled per
+ * pool (see `ratioValues`).
+ */
+interface CategoryValues {
+  /** The stat as it stands; for a ratio, the rate. */
+  values: Float64Array;
+  /** For a ratio, the volume behind each rate (hours in net, shots, decisions); null for a count. */
+  volumes: Float64Array | null;
+  /** -1 where the lower number is the better one. */
+  direction: 1 | -1;
 }
 
 @Injectable({
@@ -98,6 +114,14 @@ export class ProjectionCalculationService {
     return total;
   }
 
+  /**
+   * Category-league value: per active category, how far a player sits from the pool in standard
+   * deviations, summed. A counting stat is standardized as it stands. A ratio is standardized by
+   * its volume-weighted contribution against the pool's own rate — goals prevented for GAA, saves
+   * above average for save percentage, wins above average for win percentage, goals above average
+   * for shooting percentage — because that, and not the bare rate, is what a player does to his
+   * team's ratio: a 60-game starter moves it twice as far as a 30-game backup with the same numbers.
+   */
   computeZScores(
     projections: Projection[],
     activeScoringColumns: Set<ScoringStatKey>,
@@ -199,16 +223,23 @@ export class ProjectionCalculationService {
     const activeKeys = categoryKeys.filter((key) => activeScoringColumns.has(key));
     // Each category's values are read out once. The pool is re-derived up to MAX_POOL_ITERATIONS
     // times and every pass would otherwise walk the same projections again for the same numbers.
-    const valuesByCategory = activeKeys.map((key) => {
+    const categories = activeKeys.map((key): CategoryValues => {
       const values = new Float64Array(entries.length);
+      // A pool holds one kind of player, so its first entry says whether `key` is a ratio for all.
+      const isRatio = ratioVolume(entries[0].projection, key) !== null;
+      const volumes = isRatio ? new Float64Array(entries.length) : null;
       entries.forEach((entry, position) => {
         values[position] = valueOf(entry.projection, key);
+        if (volumes) {
+          volumes[position] = ratioVolume(entry.projection, key) ?? 0;
+        }
       });
-      return values;
+      const direction = LOWER_IS_BETTER_SCORING_STAT_KEYS.has(key) ? -1 : 1;
+      return { values, volumes, direction };
     });
 
     let poolPositions = entries.map((_entry, position) => position);
-    let zScores = this.zScoresForPool(valuesByCategory, activeKeys, poolPositions, entries.length);
+    let zScores = this.zScoresForPool(categories, poolPositions, entries.length);
 
     for (let iteration = 0; iteration < MAX_POOL_ITERATIONS; iteration++) {
       const { totals } = zScores;
@@ -220,7 +251,7 @@ export class ProjectionCalculationService {
         break;
       }
       poolPositions = nextPositions;
-      zScores = this.zScoresForPool(valuesByCategory, activeKeys, poolPositions, entries.length);
+      zScores = this.zScoresForPool(categories, poolPositions, entries.length);
     }
 
     entries.forEach((entry, position) => {
@@ -245,20 +276,26 @@ export class ProjectionCalculationService {
    * Mean and standard deviation come from the pool; the z-scores are then handed out to every
    * entry, pool member or not, so a player outside the drafted pool still gets a comparable value.
    */
-  private zScoresForPool<K extends ScoringStatKey>(
-    valuesByCategory: Float64Array[],
-    activeKeys: readonly K[],
+  private zScoresForPool(
+    categories: CategoryValues[],
     poolPositions: number[],
     size: number,
   ): PoolZScores {
     const totals = new Float64Array(size);
-    const byCategory: (Float64Array | null)[] = activeKeys.map(() => null);
+    const byCategory: (Float64Array | null)[] = categories.map(() => null);
     if (poolPositions.length === 0) {
       return { totals, byCategory };
     }
 
-    activeKeys.forEach((key, category) => {
-      const values = valuesByCategory[category];
+    categories.forEach((category, index) => {
+      // A ratio's contribution already carries its direction: goals prevented are good.
+      const values = category.volumes
+        ? this.ratioValues(category, poolPositions, size)
+        : category.values;
+      if (!values) {
+        return;
+      }
+      const direction = category.volumes ? 1 : category.direction;
       let sum = 0;
       for (const position of poolPositions) {
         sum += values[position];
@@ -272,17 +309,80 @@ export class ProjectionCalculationService {
       if (stdDev === 0) {
         return;
       }
-      const direction = LOWER_IS_BETTER_SCORING_STAT_KEYS.has(key) ? -1 : 1;
       const categoryZScores = new Float64Array(size);
       for (let position = 0; position < size; position++) {
         const zScore = (direction * (values[position] - mean)) / stdDev;
         categoryZScores[position] = zScore;
         totals[position] += zScore;
       }
-      byCategory[category] = categoryZScores;
+      byCategory[index] = categoryZScores;
     });
 
     return { totals, byCategory };
+  }
+
+  /**
+   * A ratio's value for every entry: `(rate − pool rate) × volume`, turned round where lower is
+   * better, so GAA becomes goals prevented and save percentage saves above average. The pool rate is
+   * the pool's own, volume-weighted — its summed goals against over its summed hours, not the mean
+   * of its GAAs — and moves with the pool from one iteration to the next.
+   *
+   * A line with a rate but nothing to derive a volume from (see `ratioVolume`) is weighed at the
+   * pool's average volume, which ranks it on its bare rate, as every line was ranked before; a line
+   * with neither has nothing to add to a team's ratio and scores exactly average. `null` when the
+   * pool has no spread in the rate, or no volume at all.
+   */
+  private ratioValues(
+    category: CategoryValues,
+    poolPositions: number[],
+    size: number,
+  ): Float64Array | null {
+    const rates = category.values;
+    const volumes = category.volumes as Float64Array;
+
+    let knownVolume = 0;
+    let knownCount = 0;
+    for (const position of poolPositions) {
+      if (volumes[position] > 0) {
+        knownVolume += volumes[position];
+        knownCount++;
+      }
+    }
+    const standInVolume = knownCount > 0 ? knownVolume / knownCount : 1;
+    const weights = new Float64Array(size);
+    for (let position = 0; position < size; position++) {
+      if (volumes[position] > 0) {
+        weights[position] = volumes[position];
+      } else if (rates[position] !== 0) {
+        weights[position] = standInVolume;
+      }
+    }
+
+    let weightedRate = 0;
+    let totalWeight = 0;
+    let lowest = Infinity;
+    let highest = -Infinity;
+    for (const position of poolPositions) {
+      const weight = weights[position];
+      if (weight > 0) {
+        weightedRate += rates[position] * weight;
+        totalWeight += weight;
+        lowest = Math.min(lowest, rates[position]);
+        highest = Math.max(highest, rates[position]);
+      }
+    }
+    // Checked on the rates themselves: a pool sharing one rate would otherwise leave rounding
+    // noise in `rate − pool rate` for the standard deviation to blow up into whole z-scores.
+    if (totalWeight === 0 || lowest === highest) {
+      return null;
+    }
+    const poolRate = weightedRate / totalWeight;
+
+    const values = new Float64Array(size);
+    for (let position = 0; position < size; position++) {
+      values[position] = category.direction * (rates[position] - poolRate) * weights[position];
+    }
+    return values;
   }
 
   private samePositions(first: number[], second: number[]): boolean {
