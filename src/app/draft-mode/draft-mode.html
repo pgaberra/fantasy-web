@@ -1,7 +1,7 @@
 @if (!loaded()) {
   <app-loading-indicator />
 } @else {
-  <div class="draft-mode">
+  <div class="draft-mode" [class.draft-mode--wide]="showSummary()">
     <div class="draft-header">
       <a [routerLink]="exitLink()" class="back-link"
         ><app-icon name="arrow-left" [size]="14" />Exit Draft Mode</a

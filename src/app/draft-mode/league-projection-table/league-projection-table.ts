@@ -1,12 +1,4 @@
-import {
-  afterRenderEffect,
-  Component,
-  computed,
-  ElementRef,
-  input,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { Component, computed, effect, ElementRef, input, signal, viewChild } from '@angular/core';
 import { ScoringType } from '../../models/projection.model';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import { IconComponent, type IconName } from '../../shared/icon/icon';
@@ -40,7 +32,6 @@ const HEAT_LAGGARD_MAX_ALPHA = 0.2;
   imports: [TooltipDirective, IconComponent],
   templateUrl: './league-projection-table.html',
   styleUrl: './league-projection-table.css',
-  host: { '(window:resize)': 'onScroll()' },
 })
 export class LeagueProjectionTableComponent {
   readonly data = input.required<LeagueProjectionData>();
@@ -59,24 +50,29 @@ export class LeagueProjectionTableComponent {
 
   private readonly scrollWrap = viewChild<ElementRef<HTMLElement>>('scrollWrap');
 
-  /** True while more columns lie off the right edge — drives the "scroll for more" fade so a
-      clipped column (common in the wide position breakdown) reads as scrollable, not broken. */
+  /** True while more columns lie off the right edge — casts the pinned score column's shadow, so
+      the columns scrolled under it read as hidden rather than missing. */
   readonly canScrollRight = signal<boolean>(false);
 
   constructor() {
-    // Recompute the fade after each render that changes the table's width — expanding a team
-    // widens the position cells and pushes columns off-screen. Reading these signals makes the
-    // after-render effect re-run when they change; the idempotent set() avoids a render loop.
-    afterRenderEffect(() => {
-      this.mode();
-      this.expandedTeamIds();
-      this.showAllTeamIds();
-      this.data();
-      this.updateScrollEdge();
+    // Recompute the edge whenever the box or the table inside it changes size: a window resize,
+    // expanding a team (which widens the position cells), switching breakdown, new data, and the
+    // web font arriving after first paint, which a render hook alone would miss.
+    effect((onCleanup) => {
+      const wrap = this.scrollWrap()?.nativeElement;
+      if (!wrap || typeof ResizeObserver === 'undefined') {
+        return;
+      }
+      const observer = new ResizeObserver(() => this.updateScrollEdge());
+      observer.observe(wrap);
+      if (wrap.firstElementChild) {
+        observer.observe(wrap.firstElementChild);
+      }
+      onCleanup(() => observer.disconnect());
     });
   }
 
-  /** Bound to the scroll container's scroll event and to window resize. */
+  /** Bound to the scroll container's scroll event. */
   onScroll(): void {
     this.updateScrollEdge();
   }
@@ -246,6 +242,16 @@ export class LeagueProjectionTableComponent {
     }
     const alpha = (0.5 - intensity) * 2 * HEAT_LAGGARD_MAX_ALPHA;
     return `rgba(${HEAT_LAGGARD_RGB}, ${alpha.toFixed(3)})`;
+  }
+
+  /**
+   * The score column's heat as a background image: it is pinned to the right edge while the table
+   * scrolls, so its own background has to stay opaque (the stylesheet's white) with the
+   * translucent tint laid over it — the stat columns would otherwise show through.
+   */
+  totalShade(value: number): string {
+    const tint = this.shade('total', value);
+    return tint === 'transparent' ? 'none' : `linear-gradient(${tint}, ${tint})`;
   }
 
   /** The points-per-unit multiplier under a points-league column header (3, 0.5, -1, …). */
