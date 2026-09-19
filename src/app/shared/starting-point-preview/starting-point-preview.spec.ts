@@ -221,6 +221,16 @@ describe('StartingPointPreviewComponent', () => {
     );
   });
 
+  it("says the model's rows are expected seasons, which league leaders usually beat", async () => {
+    const fixture = render({ source: { kind: 'preset', preset: 'model' } });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const note = fixture.nativeElement.querySelector('.preview-note').textContent;
+    expect(note).toContain("Each line is the player's expected season.");
+    expect(note).toContain('League leaders usually finish above their projection.');
+  });
+
   it('empties every row under From scratch, and asks the model for nothing', async () => {
     const fixture = render({ source: { kind: 'preset', preset: 'blank' } });
     await fixture.whenStable();
