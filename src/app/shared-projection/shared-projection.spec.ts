@@ -920,6 +920,29 @@ describe('SharedProjectionComponent', () => {
       expect(navigate).toHaveBeenCalledWith(['/projections', 'copy1']);
     });
 
+    /** The board used to flash up for the second the copy took, before the editor replaced it. */
+    it('waits on a spinner rather than the board while the copy is made', async () => {
+      isLoggedIn.set(true);
+      takePending.mockReturnValue({ destination: 'projection' });
+      importFromShare.mockReturnValue(new Subject());
+
+      const fixture = await render();
+
+      expect(ngMocks.findAll(LoadingIndicatorComponent).length).toEqual(1);
+      expect(fixture.nativeElement.querySelector('[data-testid="copy-board"]')).toBeNull();
+    });
+
+    it('falls back to the board when the copy fails', async () => {
+      isLoggedIn.set(true);
+      takePending.mockReturnValue({ destination: 'projection' });
+      importFromShare.mockReturnValue(throwError(() => new Error('down')));
+
+      const fixture = await render();
+
+      expect(notifyError).toHaveBeenCalled();
+      expect(fixture.nativeElement.querySelector('[data-testid="copy-board"]')).not.toBeNull();
+    });
+
     /**
      * Nobody pressed anything, so nothing is copied. This is the board as a stranger following a
      * link finds it, which is now the only thing a link can ask for.

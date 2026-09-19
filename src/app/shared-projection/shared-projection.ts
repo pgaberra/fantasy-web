@@ -133,6 +133,14 @@ export class SharedProjectionComponent {
   readonly boardChanged = signal(false);
 
   /**
+   * A press picked back up on the way in is being copied, so the page is about to leave for the
+   * editor. The board is not shown meanwhile: it would flash up for the second or two the copy
+   * takes and then be replaced, which read as the sign-up having landed on the wrong page. Cleared
+   * only when the copy fails, where the board is the right thing to fall back to.
+   */
+  readonly resumingCopy = signal(false);
+
+  /**
    * Picks a press back up on the way in, for the visitor who made it and came back with an
    * account. Taken rather than read, so a copy answers one press: a reload, a second visit and a
    * second board each find nothing waiting.
@@ -145,6 +153,7 @@ export class SharedProjectionComponent {
     if (!pending || !this.isLoggedIn()) {
       return;
     }
+    this.resumingCopy.set(true);
     this.importThen(pending.destination, pending.seenUpdatedAt);
   }
 
@@ -205,6 +214,7 @@ export class SharedProjectionComponent {
         },
         error: (error: unknown) => {
           this.importingInto.set(null);
+          this.resumingCopy.set(false);
           if (error instanceof HttpErrorResponse && error.status === 412) {
             this.boardChanged.set(true);
             this.sharedResource.reload();
