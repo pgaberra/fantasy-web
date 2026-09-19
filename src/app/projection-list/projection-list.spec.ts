@@ -11,6 +11,8 @@ import { ProjectionData } from '../api/models/projection-data';
 import { PlayerService } from '../services/player.service';
 import { ProjectionShareService } from '../services/projection-share.service';
 import { SkaterStats } from '../models/projection.model';
+import { HttpErrorResponse } from '@angular/common/http';
+import { renameOnOpenExtras } from '../draft-projection/rename-intent';
 
 describe('ProjectionListComponent', () => {
   const summaries: ProjectionSummaryResponse[] = [
@@ -84,6 +86,7 @@ describe('ProjectionListComponent', () => {
   const loadProjection = vi.fn();
   const getPlayers = vi.fn();
   const rowsToPublish = vi.fn();
+  const copyFromShare = vi.fn();
   const clearPending = vi.fn();
 
   beforeEach(() => {
@@ -112,6 +115,8 @@ describe('ProjectionListComponent', () => {
       ]),
     );
     rowsToPublish.mockReturnValue([]);
+    copyFromShare.mockClear();
+    copyFromShare.mockReturnValue(of({ id: 'copy9', name: 'Copy of Alex league' }));
     return MockBuilder(ProjectionListComponent)
       .mock(ProjectionStorageService, {
         listEditable,
@@ -119,12 +124,94 @@ describe('ProjectionListComponent', () => {
         clearDraft,
         createProjection,
         loadProjection,
+        copyFromShare,
       })
       .mock(PlayerService, { getPlayers })
       .mock(ProjectionShareService, { rowsToPublish })
       .mock(NotificationService, { error: notifyError })
       .mock(PendingProjectionService, { peek, clear: clearPending })
       .provide({ provide: Router, useValue: { navigate } });
+  });
+
+  /**
+   * A follow and a spreadsheet import are both `kind: 'imported'`; a copy of a shared
+   * projection is the user's own and comes back as `kind: 'projection'`. The page groups on
+   * that, so a copy sits with their own work and the follow with the imports.
+   */
+  describe('the two groups', () => {
+    const follow: ProjectionSummaryResponse = {
+      id: 'f1',
+      kind: 'imported',
+      name: "Alex's league",
+      draftStatus: 'none',
+      season: '20262027',
+      createdAt: '2026-06-04T00:00:00Z',
+      updatedAt: '2026-06-08T00:00:00Z',
+      origin: { authorUsername: 'alex', shareToken: 'tok123' },
+    };
+    const fromSheet: ProjectionSummaryResponse = {
+      ...follow,
+      id: 's1',
+      name: 'My spreadsheet',
+      updatedAt: '2026-06-09T00:00:00Z',
+      origin: undefined,
+    };
+
+    const renderWithImports = async () => {
+      listEditable.mockReturnValue(of([...summaries, follow, fromSheet]));
+      const fixture = MockRender(ProjectionListComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+      return fixture;
+    };
+
+    it('keeps their own work apart from what they imported, newest first in each', async () => {
+      const component = (await renderWithImports()).point.componentInstance;
+
+      expect(component.ownProjections().map((row) => row.id)).toEqual(['p2', 'p3', 'p1']);
+      expect(component.importedProjections().map((row) => row.id)).toEqual(['s1', 'f1']);
+    });
+
+    it('heads each group', async () => {
+      const fixture = await renderWithImports();
+
+      const headings = Array.from(
+        fixture.nativeElement.querySelectorAll('.group-heading') as NodeListOf<HTMLElement>,
+      ).map((heading) => heading.textContent?.trim());
+      expect(headings).toEqual(['Your projections', 'Imports']);
+    });
+
+    /** A heading with nothing under it says less than no heading. */
+    it('leaves out a group that holds nothing', async () => {
+      const fixture = MockRender(ProjectionListComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const headings = Array.from(
+        fixture.nativeElement.querySelectorAll('.group-heading') as NodeListOf<HTMLElement>,
+      ).map((heading) => heading.textContent?.trim());
+      expect(headings).toEqual(['Your projections']);
+    });
+
+    it('copies a followed projection from its share token and opens it ready to be renamed', async () => {
+      const component = (await renderWithImports()).point.componentInstance;
+
+      component.createCopy(follow);
+      await Promise.resolve();
+
+      expect(copyFromShare).toHaveBeenCalledWith('tok123');
+      expect(navigate).toHaveBeenCalledWith(['/projections', 'copy9'], renameOnOpenExtras);
+    });
+
+    it('says so when the link behind a follow has gone, and copies nothing', async () => {
+      copyFromShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+      const component = (await renderWithImports()).point.componentInstance;
+
+      component.createCopy(follow);
+
+      expect(notifyError).toHaveBeenCalledOnce();
+      expect(component.copyingFollow()).toBeNull();
+    });
   });
 
   it('loads the saved projections', async () => {

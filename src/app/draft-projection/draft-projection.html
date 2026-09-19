@@ -50,22 +50,48 @@
       } @else {
         <div class="page-header-row">
           <h1 class="projection-title">
-            <button
-              type="button"
-              class="rename-trigger"
-              appTooltip="Rename projection"
-              aria-label="Rename projection"
-              (click)="startRename()"
-            >
+            <!-- A follow is the author's projection, name and all: it is rewritten every time
+                 they share it again, so a rename here would last until they next pressed Share.
+                 The name is printed instead of offered. -->
+            @if (isFollow()) {
               {{ projectionName() }}
-              <span class="rename-icon" aria-hidden="true"><app-icon name="pencil" /></span>
-            </button>
+            } @else {
+              <button
+                type="button"
+                class="rename-trigger"
+                appTooltip="Rename projection"
+                aria-label="Rename projection"
+                (click)="startRename()"
+              >
+                {{ projectionName() }}
+                <span class="rename-icon" aria-hidden="true"><app-icon name="pencil" /></span>
+              </button>
+            }
           </h1>
           <div class="page-header-actions">
-            <button type="button" class="btn btn-secondary" (click)="showShareDialog.set(true)">
-              <app-icon name="share" />
-              Share
-            </button>
+            <!-- Sharing a follow would put the follower's name on the author's work. Copying it
+                 is the way to a projection that is theirs to change and to share. -->
+            @if (isFollow()) {
+              <button
+                type="button"
+                class="btn btn-secondary"
+                [disabled]="copyingFollow()"
+                (click)="createCopy()"
+                data-testid="copy-follow"
+              >
+                @if (copyingFollow()) {
+                  <app-loading-indicator variant="inline" label="Copying" />
+                } @else {
+                  <app-icon name="copy" />
+                  Create a copy
+                }
+              </button>
+            } @else {
+              <button type="button" class="btn btn-secondary" (click)="showShareDialog.set(true)">
+                <app-icon name="share" />
+                Share
+              </button>
+            }
             <a
               [routerLink]="['/projections', projectionId(), 'draft']"
               class="btn btn-primary draft-mode-link"
@@ -74,6 +100,12 @@
             </a>
           </div>
         </div>
+        @if (origin(); as from) {
+          <p class="follow-note" data-testid="follow-note">
+            You're following {{ from.authorUsername }}'s projection, so it can't be edited here. It
+            updates when they share a new version.
+          </p>
+        }
       }
     </div>
 
@@ -93,7 +125,8 @@
         [(statWeights)]="statWeights"
         [players]="players()"
         [initialProjections]="loadedProjections()"
-        [columnControls]="true"
+        [readOnly]="isFollow()"
+        [columnControls]="!isFollow()"
         [(activeScoringColumns)]="activeScoringColumns"
         [(activeUtilityColumns)]="activeUtilityColumns"
         [(leagueSize)]="leagueSize"
@@ -102,11 +135,11 @@
         [(scaleSettings)]="scaleSettings"
         [(decimalSettings)]="decimalSettings"
         [(useDefaultDecimals)]="useDefaultDecimals"
-        [rankingControls]="true"
+        [rankingControls]="!isFollow()"
         [(manualRanking)]="manualRanking"
-        [showFullSeasonButton]="true"
+        [showFullSeasonButton]="!isFollow()"
         [syncedLeagueName]="syncedLeagueName()"
-        [positionControls]="true"
+        [positionControls]="!isFollow()"
         [positionOverrides]="positionOverrides()"
         [newPlayerIds]="newPlayerIds()"
         [(newPlayersOnly)]="newPlayersOnly"

@@ -430,7 +430,7 @@ describe('DraftStartComponent', () => {
   it('says whose numbers a row holds', async () => {
     const component = await render();
 
-    expect(component.sourceLabel(imported('i1', 'alex'))).toEqual('From alex');
+    expect(component.sourceLabel(imported('i1', 'alex'))).toEqual('Following alex');
     expect(component.sourceLabel(summary('p1', 'projection'))).toEqual('Your projection');
     // A preset draft is nobody's work, so neither answer above fits it.
     expect(component.sourceLabel(summary('preset1', 'preset_draft'))).toEqual('Preset');

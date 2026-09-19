@@ -1,6 +1,6 @@
 <form class="import" (submit)="onSubmit($event)" novalidate>
   <label class="import-label" for="share-link">{{ label() }}</label>
-  <div class="import-controls" [class.import-controls--naming]="importName() !== null">
+  <div class="import-controls">
     <input
       id="share-link"
       type="text"
@@ -11,17 +11,6 @@
       [value]="shareInput()"
       (input)="shareInput.set($any($event.target).value)"
     />
-    @if (importName() !== null) {
-      <input
-        type="text"
-        class="import-input"
-        placeholder="Name this copy"
-        autocomplete="off"
-        maxlength="100"
-        [value]="importName()"
-        (input)="importName.set($any($event.target).value)"
-      />
-    }
     <!-- Secondary: the page's own button (Create projection, Start draft) is the one filled button
          on it. Two filled buttons, both greyed out before anything is picked, gave no clue which
          one was the next step. -->
@@ -38,6 +27,8 @@
     </button>
   </div>
   @if (importHint()) {
-    <p class="import-hint">{{ importHint() }}</p>
+    <p class="import-hint" [class.import-hint--note]="hintIsNote()" role="status">
+      {{ importHint() }}
+    </p>
   }
 </form>

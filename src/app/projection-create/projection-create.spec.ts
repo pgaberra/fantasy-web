@@ -419,7 +419,7 @@ describe('ProjectionCreateComponent', () => {
 
       expect(component.ownProjections().map((row) => row.id)).toEqual(['own1']);
       expect(component.importedBoards().map((row) => row.id)).toEqual(['shared1']);
-      expect(component.sourceLabel(listed[1])).toEqual('From alex');
+      expect(component.sourceLabel(listed[1])).toEqual('Following alex');
     });
 
     it('opens with last season picked, so there is always an answer', async () => {
@@ -520,7 +520,7 @@ describe('ProjectionCreateComponent', () => {
       component.sourceKind.set('imported');
       fixture.detectChanges();
       expect(component.startingPoint()).toEqual({ kind: 'copy', id: 'shared1' });
-      expect(root.querySelector('.row-meta')?.textContent?.trim()).toContain('From alex');
+      expect(root.querySelector('.row-meta')?.textContent?.trim()).toContain('Following alex');
       // The paste field belongs to the shared kind, where a board comes from.
       expect(root.querySelector('app-projection-import')).not.toBeNull();
 

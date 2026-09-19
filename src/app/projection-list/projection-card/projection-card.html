@@ -2,7 +2,7 @@
   <span class="card-name">{{ projection().name }}</span>
   <span class="card-meta">
     @if (origin(); as from) {
-      From {{ from.authorUsername }} ·
+      Following {{ from.authorUsername }} ·
     } @else if (projection().kind === 'imported') {
       From a spreadsheet ·
     }
@@ -34,7 +34,9 @@
       Cancel
     </button>
   } @else {
-    <button type="button" class="btn btn-primary btn-sm edit" (click)="edit.emit()">Edit</button>
+    <button type="button" class="btn btn-primary btn-sm edit" (click)="edit.emit()">
+      {{ openLabel() }}
+    </button>
     <button type="button" class="btn btn-secondary btn-sm draft" (click)="draft.emit()">
       {{ draftLabel() }}
     </button>
@@ -51,6 +53,15 @@
 
 <ng-template #cardMenu>
   <div class="card-menu-panel">
+    <!-- A menu item rather than a third button in the row: on a phone the row already carries
+         two buttons and the menu, and a third would wrap under the name or squeeze the two that
+         every projection has. -->
+    @if (isFollow()) {
+      <button type="button" class="menu-item copy" (click)="copyRequested.emit()">
+        <app-icon name="copy" />
+        Create a copy
+      </button>
+    }
     @if (canShare()) {
       <button
         type="button"

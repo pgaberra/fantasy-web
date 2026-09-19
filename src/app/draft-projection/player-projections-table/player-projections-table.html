@@ -4,46 +4,48 @@
       <h2>Player projections</h2>
       <!-- History and save status are both about the projection as a document rather than about
            the table below, so they read as one cluster instead of two unrelated ends of the row. -->
-      <div class="doc-state">
-        <div class="history-controls">
-          <!-- Drawn rather than typed: ↶/↷ have no glyph in several of the UI fonts Windows and
+      @if (!readOnly()) {
+        <div class="doc-state">
+          <div class="history-controls">
+            <!-- Drawn rather than typed: ↶/↷ have no glyph in several of the UI fonts Windows and
                Android fall back to, so they arrive as a box or as a differently-weighted arrow than
                the rest of the toolbar's icons. -->
-          <button
-            type="button"
-            class="btn btn-secondary btn-sm history-btn"
-            [disabled]="!canUndo()"
-            appTooltip="Undo (Ctrl+Z)"
-            aria-label="Undo last change"
-            (click)="undo()"
-          >
-            <app-icon name="undo" />
-          </button>
-          <button
-            type="button"
-            class="btn btn-secondary btn-sm history-btn"
-            [disabled]="!canRedo()"
-            appTooltip="Redo (Ctrl+Shift+Z)"
-            aria-label="Redo change"
-            (click)="redo()"
-          >
-            <app-icon name="redo" />
-          </button>
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm history-btn"
+              [disabled]="!canUndo()"
+              appTooltip="Undo (Ctrl+Z)"
+              aria-label="Undo last change"
+              (click)="undo()"
+            >
+              <app-icon name="undo" />
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm history-btn"
+              [disabled]="!canRedo()"
+              appTooltip="Redo (Ctrl+Shift+Z)"
+              aria-label="Redo change"
+              (click)="redo()"
+            >
+              <app-icon name="redo" />
+            </button>
+          </div>
+          <span class="save-status" [class.save-status--error]="saveStatus() === 'error'">
+            @switch (saveStatus()) {
+              @case ('saving') {
+                <app-loading-indicator variant="inline" label="Saving" />
+              }
+              @case ('saved') {
+                Saved
+              }
+              @case ('error') {
+                Couldn't save. Your changes are still unsaved.
+              }
+            }
+          </span>
         </div>
-        <span class="save-status" [class.save-status--error]="saveStatus() === 'error'">
-          @switch (saveStatus()) {
-            @case ('saving') {
-              <app-loading-indicator variant="inline" label="Saving" />
-            }
-            @case ('saved') {
-              Saved
-            }
-            @case ('error') {
-              Couldn't save. Your changes are still unsaved.
-            }
-          }
-        </span>
-      </div>
+      }
       <ng-content select="[table-actions]" />
     </div>
     <div class="table-controls">
@@ -188,6 +190,8 @@
           [sortDirection]="sortDirection()"
           [showFullSeasonButton]="showFullSeasonButton()"
           [columnControls]="columnControls()"
+          [readonly]="readOnly()"
+          [showWeights]="readOnly()"
           [allActiveScoringColumns]="activeScoringColumns()"
           [scaleSettings]="scaleSettings()"
           (sort)="onSort($event)"
@@ -210,7 +214,8 @@
               app-player-row
               [tierBadge]="tierBadges().get(sp.projection.playerId) ?? null"
               [positionRank]="positionRanks().get(sp.projection.playerId)!"
-              [rankEditable]="rankableType() !== null"
+              [readonly]="readOnly()"
+              [rankEditable]="!readOnly() && rankableType() !== null"
               [totalRank]="
                 isNarrowed() ? (overallRanks().get(sp.projection.playerId) ?? null) : null
               "

@@ -14,9 +14,8 @@
   gap: var(--space-2);
 }
 
-/* One height for the fields and Import. On a shared row the flex row stretched Import to the
-   fields' height, but on a phone with the name field showing, Import sits on a row of its own
-   and fell back to btn-sm's 30px under 36px fields. */
+/* One height for the field and Import. The flex row stretches Import to the field's height on a
+   shared row; this keeps them equal when they wrap onto rows of their own. */
 .import-input,
 .import-controls .btn {
   box-sizing: border-box;
@@ -25,8 +24,7 @@
 
 /* The width of the name field above it (projection-create.css), not the whole column: stretched
    across a 1100px page the field broke out of the form's left edge and pushed Import out to the
-   far side of the screen. A pasted link is not read back, so it gains nothing from the room. With
-   the name-clash field beside it, each takes the same share and they still fit the column. */
+   far side of the screen. A pasted link is not read back, so it gains nothing from the room. */
 .import-input {
   flex: 0 1 380px;
   min-width: 0;
@@ -50,15 +48,8 @@
   color: var(--color-error);
 }
 
-@media (max-width: 640px) {
-  /* On a phone the link field, the name-clash field and Import do not fit one row: both fields
-     shrank to a few characters. Once the name field appears, each field takes a row of its own
-     and Import sits under them. The link field alone still fits beside Import. */
-  .import-controls--naming {
-    flex-wrap: wrap;
-  }
-
-  .import-controls--naming .import-input {
-    flex-basis: 100%;
-  }
+/* Following a link already followed is not a failure, so the line under the field does not wear
+   the error colour: the user is about to land on the projection they asked for. */
+.import-hint--note {
+  color: var(--color-text-subtle);
 }

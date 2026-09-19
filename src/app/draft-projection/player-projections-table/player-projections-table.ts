@@ -150,6 +150,17 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   /** Turns on the column menus, the add-column cell and the league toolbar. */
   readonly columnControls = input<boolean>(false);
+
+  /**
+   * Renders the table as something to read rather than to edit: the stat cells print their
+   * numbers, the weight row shows what the totals were scored with without offering to change it,
+   * the ranks are not typed into, and the document controls (undo, redo, save status) go with
+   * them, since nothing here can change any more. The editor sets it for a followed projection,
+   * which is a mirror of somebody else's and is rewritten whenever they share it again.
+   *
+   * <p>It does not imply `columnControls`: which columns are shown is the surface's own call.
+   */
+  readonly readOnly = input<boolean>(false);
   /** Whether the league settings are unfolded on a phone; the toggle exists at no other width. */
   readonly settingsOpen = signal(false);
   /** Whether the Stats menu is showing the decimals under the stat picker. */

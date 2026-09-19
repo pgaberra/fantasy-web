@@ -26,6 +26,7 @@ export class ProjectionCardComponent {
   // need saying so on the button.
   readonly isPreparingShare = input<boolean>(false);
   readonly edit = output<void>();
+  readonly copyRequested = output<void>();
   readonly draft = output<void>();
   readonly share = output<void>();
   readonly remove = output<void>();
@@ -46,16 +47,28 @@ export class ProjectionCardComponent {
 
   readonly origin = computed(() => this.projection().origin ?? null);
 
+  /**
+   * A projection that follows somebody's share link. `kind` cannot say so: a spreadsheet import
+   * carries the same `imported` kind and is the user's own rows, and a copy taken from a link is
+   * stored as their own projection. Only `origin` marks a follow.
+   */
+  readonly isFollow = computed(() => this.origin() !== null);
+
+  /**
+   * A follow opens read-only, so the button that opens it says so. "Edit" over a projection the
+   * editor will not let them edit is a promise the next screen breaks.
+   */
+  readonly openLabel = computed(() => (this.isFollow() ? 'View' : 'Edit'));
+
   /** Nothing to throw away until a draft has been played against this board. */
   readonly hasDraft = computed(() => this.projection().draftStatus !== 'none');
 
   /**
-   * A copy of someone else's board is not the user's to publish: a share credits the account
-   * that published it, so re-sharing an imported board would put their name on work that is
-   * not theirs. Editing it is fine — that is the point of the copy — this is only about
-   * republishing it as their own.
+   * A followed projection is not the user's to publish: a share credits the account that
+   * published it, so re-sharing one would put their name on work that is not theirs. A copy of
+   * it is theirs, and shares like any other projection.
    */
-  readonly canShare = computed(() => !this.origin());
+  readonly canShare = computed(() => !this.isFollow());
 
   readonly confirmingDelete = signal(false);
   readonly confirmingDiscard = signal(false);

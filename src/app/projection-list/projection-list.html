@@ -28,20 +28,49 @@
       <p class="state-message">Create a projection to start ranking players for your league.</p>
     </div>
   } @else {
-    <ul class="cards">
-      @for (projection of sortedProjections(); track projection.id) {
-        <li
-          app-projection-card
-          [projection]="projection"
-          (edit)="edit(projection.id)"
-          (draft)="draft(projection.id)"
-          [isPreparingShare]="preparingShareFor() === projection.id"
-          (share)="share(projection.id)"
-          (remove)="remove(projection.id)"
-          (discardDraft)="discardDraft(projection.id)"
-        ></li>
-      }
-    </ul>
+    <!-- Two groups rather than one list: a projection the user built and one they follow are
+         different things to have, and the row's own line about who it came from was the only
+         thing saying so. A heading with nothing under it says less than no heading, so each
+         group appears only when it holds something. -->
+    @if (ownProjections().length > 0) {
+      <section class="group">
+        <h2 class="group-heading">Your projections</h2>
+        <ul class="cards">
+          @for (projection of ownProjections(); track projection.id) {
+            <li
+              app-projection-card
+              [projection]="projection"
+              (edit)="edit(projection.id)"
+              (draft)="draft(projection.id)"
+              [isPreparingShare]="preparingShareFor() === projection.id"
+              (share)="share(projection.id)"
+              (remove)="remove(projection.id)"
+              (discardDraft)="discardDraft(projection.id)"
+            ></li>
+          }
+        </ul>
+      </section>
+    }
+    @if (importedProjections().length > 0) {
+      <section class="group">
+        <h2 class="group-heading">Imports</h2>
+        <ul class="cards">
+          @for (projection of importedProjections(); track projection.id) {
+            <li
+              app-projection-card
+              [projection]="projection"
+              (edit)="edit(projection.id)"
+              (draft)="draft(projection.id)"
+              [isPreparingShare]="preparingShareFor() === projection.id"
+              (share)="share(projection.id)"
+              (copyRequested)="createCopy(projection)"
+              (remove)="remove(projection.id)"
+              (discardDraft)="discardDraft(projection.id)"
+            ></li>
+          }
+        </ul>
+      </section>
+    }
   }
 
   @if (sharingProjectionId(); as projectionId) {
