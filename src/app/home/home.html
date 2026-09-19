@@ -24,7 +24,7 @@
           <span class="resume-name">{{ projection.name }}</span>
           <span class="meta">
             @if (projection.origin; as from) {
-              From {{ from.authorUsername }} ·
+              Following {{ from.authorUsername }} ·
             }
             Updated {{ projection.updatedAt | relativeTime }}
           </span>

@@ -238,10 +238,11 @@ export class DraftStartComponent {
     if (projection.kind === 'draft') {
       return this.draftSourceLabel(projection);
     }
+    // An origin is what a follow has and nothing else does: a copy taken from a link is the
+    // user's own projection and carries none, and neither does a spreadsheet import.
     if (projection.origin) {
-      return `From ${projection.origin.authorUsername}`;
+      return `Following ${projection.origin.authorUsername}`;
     }
-    // An imported board with nobody to credit came from a spreadsheet rather than a share link.
     return projection.kind === 'imported' ? 'From a spreadsheet' : 'Your projection';
   }
 

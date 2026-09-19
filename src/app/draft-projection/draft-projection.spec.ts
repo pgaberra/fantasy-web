@@ -1,9 +1,10 @@
-import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { MockBuilder, MockedComponentFixture, MockRender, ngMocks } from 'ng-mocks';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Location } from '@angular/common';
 import { AUTOSAVE_DEBOUNCE_MS, DraftProjectionComponent } from './draft-projection';
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
 import { PlayerService } from '../services/player.service';
@@ -15,6 +16,7 @@ import { LeagueImportButtonComponent } from '../shared/league-import-button/leag
 import { Goalie, Skater } from '../models/player.model';
 import { ProjectionResponse } from '../api/models/projection-response';
 import { Projection } from '../models/projection.model';
+import { renameOnOpenExtras } from './rename-intent';
 
 describe('DraftProjectionComponent', () => {
   const mockSkaters: Skater[] = [
@@ -97,12 +99,28 @@ describe('DraftProjectionComponent', () => {
     },
   };
 
+  /**
+   * The page reads the navigation's state for the "open ready to be renamed" intent, and spends
+   * it through Location so a reload cannot pick it up again. Both are stubbed rather than real:
+   * the real Location cannot be built on ng-mocks' LocationStrategy.
+   */
+  const replaceState = vi.fn();
+  const currentNavigation = vi.fn(() => null as { extras: { state?: unknown } } | null);
+  const locationStub = { path: () => '/projections/p1', replaceState };
+  const routerStub = { navigate: vi.fn(), url: '/projections/p1', currentNavigation };
+
   // Most projections have no link, which the share check answers with a 404.
   const notSharedYet = {
     getShare: () => throwError(() => new HttpErrorResponse({ status: 404 })),
     share: () => of({ shareUrl: 'https://slapstat.test/s/abc' } as ShareLinkResponse),
     rowsToPublish: () => [],
   };
+
+  beforeEach(() => {
+    replaceState.mockClear();
+    routerStub.navigate.mockClear();
+    currentNavigation.mockReturnValue(null);
+  });
 
   beforeEach(() =>
     MockBuilder(DraftProjectionComponent)
@@ -117,6 +135,8 @@ describe('DraftProjectionComponent', () => {
       .keep(ProjectionSyncService)
       // Real, so the toolbar says which league the projection is synced with.
       .keep(LeagueImportButtonComponent)
+      .provide({ provide: Location, useValue: locationStub })
+      .provide({ provide: Router, useValue: routerStub })
       .provide({
         provide: ActivatedRoute,
         useValue: { snapshot: { paramMap: { get: () => 'p1' } } },
@@ -736,6 +756,8 @@ describe('DraftProjectionComponent', () => {
           updateProjection: () => of(mockProjection),
         })
         .keep(ProjectionSyncService)
+        .provide({ provide: Location, useValue: locationStub })
+        .provide({ provide: Router, useValue: routerStub })
         .provide({
           provide: ActivatedRoute,
           useValue: { snapshot: { paramMap: { get: () => 'p1' } } },
@@ -866,4 +888,168 @@ describe('DraftProjectionComponent', () => {
 
     expect(updateSpy).not.toHaveBeenCalled();
   }, 10000);
+
+  /**
+   * A copy is named by the server after the share it came from ("Copy of Alex's league"), which
+   * names the projection it was taken from rather than the one the user is about to build. The
+   * two places that take a copy therefore ask for the editor to open with the rename waiting.
+   */
+  describe('opening ready to be renamed', () => {
+    it('starts the rename on the server-given name, selected, when the navigation asked for it', async () => {
+      currentNavigation.mockReturnValue({ extras: { state: { renameOnOpen: true } } });
+      const fixture = MockRender(DraftProjectionComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+      const component = fixture.point.componentInstance;
+
+      expect(component.isRenaming()).toEqual(true);
+      expect(component.renameValue()).toEqual('My league');
+      const input: HTMLInputElement = fixture.nativeElement.querySelector('.rename-input');
+      expect(input.selectionStart).toEqual(0);
+      expect(input.selectionEnd).toEqual('My league'.length);
+    });
+
+    /** Escape leaves the name the server chose in place rather than an empty or half-typed one. */
+    it('keeps the server-given name when the rename is cancelled', async () => {
+      currentNavigation.mockReturnValue({ extras: { state: { renameOnOpen: true } } });
+      const fixture = MockRender(DraftProjectionComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.renameValue.set('');
+      component.cancelRename();
+
+      expect(component.isRenaming()).toEqual(false);
+      expect(component.projectionName()).toEqual('My league');
+    });
+
+    /**
+     * Navigation state is restored with the history entry, so without spending it the rename
+     * would reopen on every reload of the copy's URL.
+     */
+    it('spends the intent so a reload does not reopen the rename', async () => {
+      currentNavigation.mockReturnValue({ extras: { state: { renameOnOpen: true } } });
+      const fixture = MockRender(DraftProjectionComponent);
+      await fixture.whenStable();
+
+      expect(replaceState).toHaveBeenCalledWith('/projections/p1', '', {});
+    });
+
+    it('leaves the rename closed when nothing asked for it', async () => {
+      const fixture = MockRender(DraftProjectionComponent);
+      await fixture.whenStable();
+
+      expect(fixture.point.componentInstance.isRenaming()).toEqual(false);
+      expect(replaceState).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * A followed projection is a mirror of somebody else's: the server rewrites it whenever they
+   * share it again and keeps nothing this page could send but the draft. So the page offers no
+   * control that would change it, and offers a copy instead.
+   */
+  describe('a followed projection', () => {
+    const followed: ProjectionResponse = {
+      ...mockProjection,
+      kind: 'imported',
+      name: "Alex's league",
+      origin: { authorUsername: 'alex', shareToken: 'tok123' },
+    };
+
+    const copyFromShare = vi.fn();
+
+    beforeEach(() => {
+      copyFromShare.mockClear();
+      copyFromShare.mockReturnValue(
+        of({ ...mockProjection, id: 'copy9', name: "Copy of Alex's league" }),
+      );
+      return MockBuilder(DraftProjectionComponent)
+        .mock(PlayerService, { getPlayers: () => of([...mockSkaters, ...mockGoalies]) })
+        .mock(ProjectionStorageService, {
+          loadProjection: () => of(followed),
+          updateProjection: () => of(followed),
+          copyFromShare,
+        })
+        .mock(ProjectionShareService, notSharedYet)
+        .keep(ProjectionSyncService)
+        .provide({ provide: Location, useValue: locationStub })
+        .provide({ provide: Router, useValue: routerStub })
+        .provide({
+          provide: ActivatedRoute,
+          useValue: { snapshot: { paramMap: { get: () => 'p1' } } },
+        });
+    });
+
+    const renderFollowed = async () => {
+      const fixture = MockRender(DraftProjectionComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      followFixtures.push(fixture);
+      return fixture;
+    };
+    const followFixtures: MockedComponentFixture<DraftProjectionComponent>[] = [];
+    afterEach(() => {
+      // Destroyed here rather than left to the TestBed reset: the editor's autosave pipeline is
+      // held by the component, and a fixture still alive when the injector goes reaches for it
+      // afterwards. Vitest counts that as an unhandled error and fails the run.
+      followFixtures.splice(0).forEach((fixture) => fixture.destroy());
+    });
+
+    it('offers no rename and no Share, and says whose projection it is', async () => {
+      const fixture = await renderFollowed();
+
+      expect(fixture.point.componentInstance.isFollow()).toEqual(true);
+      expect(fixture.nativeElement.querySelector('.rename-trigger')).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('Share');
+      expect(
+        fixture.nativeElement.querySelector('[data-testid="follow-note"]').textContent,
+      ).toContain('alex');
+    });
+
+    /** Drafting against a follow is the point of having one, so that link stays. */
+    it('still offers Draft Mode', async () => {
+      const fixture = await renderFollowed();
+
+      expect(fixture.nativeElement.querySelector('.draft-mode-link')).not.toBeNull();
+    });
+
+    it('renders the table as something to read, with no settings or column controls', async () => {
+      await renderFollowed();
+      const table = ngMocks.findInstance(PlayerProjectionsTableComponent);
+
+      expect(table.readOnly()).toEqual(true);
+      expect(table.columnControls()).toEqual(false);
+      expect(table.positionControls()).toEqual(false);
+      expect(table.rankingControls()).toEqual(false);
+    });
+
+    /** Nothing here can change it, and the server would keep only the draft out of a save anyway. */
+    it('never writes it back', async () => {
+      const fixture = await renderFollowed();
+      const updateSpy = vi.spyOn(
+        ngMocks.findInstance(ProjectionStorageService),
+        'updateProjection',
+      );
+
+      fixture.point.componentInstance.unacknowledgedNewPlayerIds.set([]);
+      fixture.destroy();
+
+      expect(updateSpy).not.toHaveBeenCalled();
+    });
+
+    it('copies from the share token and opens the copy ready to be renamed', async () => {
+      const fixture = await renderFollowed();
+
+      fixture.nativeElement.querySelector('[data-testid="copy-follow"]').click();
+      await fixture.whenStable();
+
+      expect(copyFromShare).toHaveBeenCalledWith('tok123');
+      expect(routerStub.navigate).toHaveBeenCalledWith(
+        ['/projections', 'copy9'],
+        renameOnOpenExtras,
+      );
+    });
+  });
 });

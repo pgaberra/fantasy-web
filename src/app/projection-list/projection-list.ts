@@ -1,4 +1,5 @@
 import { Component, computed, DestroyRef, effect, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { firstValueFrom, forkJoin } from 'rxjs';
@@ -16,6 +17,8 @@ import { ProjectionShareService } from '../services/projection-share.service';
 import { freeProjectionName } from '../services/projection-name';
 import { SharedPlayer } from '../api/models/shared-player';
 import { IconComponent } from '../shared/icon/icon';
+import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
+import { renameOnOpenExtras } from '../draft-projection/rename-intent';
 
 @Component({
   selector: 'app-projection-list',
@@ -61,6 +64,25 @@ export class ProjectionListComponent {
       second.updatedAt.localeCompare(first.updatedAt),
     ),
   );
+
+  /**
+   * The user's own work: what they made, and the copies they took of projections shared with
+   * them. A copy is stored as `kind: 'projection'` with no origin, so it belongs here.
+   */
+  readonly ownProjections = computed(() =>
+    this.sortedProjections().filter((projection) => projection.kind === 'projection'),
+  );
+
+  /**
+   * What came from somewhere else: the share links they follow and the spreadsheets they
+   * uploaded. Both are `kind: 'imported'`; only a follow carries an origin, and the card says
+   * which is which.
+   */
+  readonly importedProjections = computed(() =>
+    this.sortedProjections().filter((projection) => projection.kind !== 'projection'),
+  );
+
+  readonly copyingFollow = signal<string | null>(null);
 
   constructor() {
     // A visitor who edited the landing-page demo and signed up lands here; turn that stashed
@@ -112,6 +134,39 @@ export class ProjectionListComponent {
 
   edit(id: string): void {
     void this.router.navigate(['/projections', id]);
+  }
+
+  /**
+   * Takes a copy of a followed projection and opens it ready to be renamed, exactly as the
+   * button in the editor does. It goes through the share token rather than the projection's id,
+   * because a copy is of what is published now and a follow may be a moment behind it.
+   */
+  createCopy(projection: ProjectionSummaryResponse): void {
+    const origin = projection.origin;
+    if (!origin || this.copyingFollow()) {
+      return;
+    }
+    this.copyingFollow.set(projection.id);
+    this.storage
+      .copyFromShare(origin.shareToken)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (copy) => {
+          this.copyingFollow.set(null);
+          void this.router.navigate(['/projections', copy.id], renameOnOpenExtras);
+        },
+        error: (error: unknown) => {
+          this.copyingFollow.set(null);
+          // The follow goes when the share does, so a 404 means the author has just taken the
+          // link down and this row is about to disappear with it.
+          const gone = error instanceof HttpErrorResponse && error.status === 404;
+          this.notification.error(
+            gone
+              ? 'That share link is no longer active.'
+              : "Couldn't copy this projection. Please try again.",
+          );
+        },
+      });
   }
 
   /**

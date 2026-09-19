@@ -46,6 +46,7 @@ import { hasHeadshots, PlayerHeadshotComponent } from '../shared/player-headshot
 import { SHARED_BOARD } from '../auth/auth-reason';
 import { environment } from '../../environments/environment';
 import { ImportDestination, PendingCopyService } from './pending-copy';
+import { renameOnOpenExtras } from '../draft-projection/rename-intent';
 
 /**
  * A published board is the owner's whole pool — some 1600 rows — and someone arriving from a link
@@ -154,35 +155,35 @@ export class SharedProjectionComponent {
       return;
     }
     this.resumingCopy.set(true);
-    this.importThen(pending.destination, pending.seenUpdatedAt);
+    this.copyThen(pending.destination, pending.seenUpdatedAt);
   }
 
-  /** Takes a copy of the published board and opens it for editing. */
+  /** Takes a copy of the published projection and opens it for editing. */
   copyToMyProjections(): void {
-    this.importThen('projection');
+    this.copyThen('projection');
   }
 
   /** Takes a copy and goes straight to drafting against it. */
   draftAgainstThis(): void {
-    this.importThen('draft');
+    this.copyThen('draft');
   }
 
   /**
-   * The copy behind both buttons. A link follows its projection, so the author can change the
-   * board while the visitor reads it; the press carries the stamp of the board on screen, and a
-   * board changed since is refused (412) rather than copied, then read again. The author's picks
-   * never come along. Only where the copy lands differs, which is the whole difference between
-   * the two buttons.
+   * The copy behind both buttons. A copy is the reader's own projection from that moment on: the
+   * numbers as they are published now, with nothing the author does afterwards reaching it, and
+   * none of their picks. The press carries the stamp of the projection on screen, and one its
+   * author has changed since is refused (412) rather than copied, then read again. Only where the
+   * copy lands differs, which is the whole difference between the two buttons.
    *
-   * <p>Pressing either a second time makes a second copy, and that is the point. The name it
-   * was shared under is taken by then, which db-service used to answer with a 409 — this page
-   * turned that into "you already have a copy of this board", with links to go and find it.
-   * Someone who pressed a button on a board wanted a board, and being handed directions
-   * instead was the annoyance. The server now numbers the copy (`My league (2)`), so both
-   * buttons simply do what they say however often they are pressed, and a 409 goes back to
-   * meaning something went wrong.
+   * <p>Pressing either a second time makes a second copy, and that is the point: the server
+   * numbers the name ("Copy of My league (2)") rather than refusing, so both buttons do what they
+   * say however often they are pressed. Following the link is the other thing a reader can do
+   * with it, and that is what pasting it into the import panel does.
+   *
+   * <p>The editor is opened with its rename waiting, because the name the server chose names the
+   * projection it came from and not the one the reader is about to build.
    */
-  private importThen(
+  private copyThen(
     destination: ImportDestination,
     seenUpdatedAt: string | undefined = this.shared()?.updatedAt,
   ): void {
@@ -201,16 +202,14 @@ export class SharedProjectionComponent {
     this.importingInto.set(destination);
     this.boardChanged.set(false);
     this.storage
-      .importFromShare(this.token, undefined, seenUpdatedAt)
+      .copyFromShare(this.token, seenUpdatedAt)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (projection) => {
           this.analytics.capture('shared_projection_imported', { destination });
-          void this.router.navigate(
-            destination === 'draft'
-              ? ['/draft/new/board', projection.id]
-              : ['/projections', projection.id],
-          );
+          void (destination === 'draft'
+            ? this.router.navigate(['/draft/new/board', projection.id])
+            : this.router.navigate(['/projections', projection.id], renameOnOpenExtras));
         },
         error: (error: unknown) => {
           this.importingInto.set(null);
@@ -222,7 +221,7 @@ export class SharedProjectionComponent {
             this.sharedResource.reload();
             return;
           }
-          this.notification.error("Couldn't copy this board. Please try again.");
+          this.notification.error("Couldn't copy this projection. Please try again.");
         },
       });
   }

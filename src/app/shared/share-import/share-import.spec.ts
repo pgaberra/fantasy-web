@@ -7,15 +7,15 @@ import { ProjectionStorageService } from '../../services/projection-storage.serv
 import { NotificationService } from '../../services/notification.service';
 
 describe('ShareImportComponent', () => {
-  const importFromShare = vi.fn();
+  const followShare = vi.fn();
   const notifyError = vi.fn();
 
   beforeEach(() => {
-    importFromShare.mockClear();
+    followShare.mockClear();
     notifyError.mockClear();
-    importFromShare.mockReturnValue(of({ id: 'i1' }));
+    followShare.mockReturnValue(of({ projection: { id: 'i1' }, alreadyFollowed: false }));
     return MockBuilder(ShareImportComponent)
-      .mock(ProjectionStorageService, { importFromShare })
+      .mock(ProjectionStorageService, { followShare })
       .mock(NotificationService, { error: notifyError });
   });
 
@@ -35,7 +35,7 @@ describe('ShareImportComponent', () => {
     expect(shareTokenFrom('short')).toBeNull();
   });
 
-  it('imports the pasted link and hands back the board it copied', async () => {
+  it('follows the pasted link and hands back the projection it followed', async () => {
     const component = await render();
     const imported = vi.fn();
     component.imported.subscribe(imported);
@@ -43,10 +43,44 @@ describe('ShareImportComponent', () => {
 
     component.submit();
 
-    expect(importFromShare).toHaveBeenCalledWith('aBc123_-xyz', undefined);
+    expect(followShare).toHaveBeenCalledWith('aBc123_-xyz');
     expect(imported).toHaveBeenCalledWith({ id: 'i1' });
     expect(component.shareInput()).toEqual('');
     expect(component.isImporting()).toEqual(false);
+    expect(component.importHint()).toBeNull();
+  });
+
+  /**
+   * One follow per link, so a link pasted twice is answered with the follow already held (200
+   * rather than 201). The page takes the user to it either way; this only says why there is no
+   * second one, and says it as a remark rather than as a refusal.
+   */
+  it('takes the user to the projection they already follow, with a note', async () => {
+    followShare.mockReturnValue(of({ projection: { id: 'i1' }, alreadyFollowed: true }));
+
+    const component = await render();
+    const imported = vi.fn();
+    component.imported.subscribe(imported);
+    component.shareInput.set('https://slapstat.com/s/aBc123_-xyz');
+
+    component.submit();
+
+    expect(imported).toHaveBeenCalledWith({ id: 'i1' });
+    expect(component.importHint()).toBeTruthy();
+    expect(component.hintIsNote()).toEqual(true);
+    expect(notifyError).not.toHaveBeenCalled();
+  });
+
+  it("refuses a link to the user's own projection beside the field", async () => {
+    followShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 400 })));
+
+    const component = await render();
+    component.shareInput.set('https://slapstat.com/s/aBc123_-xyz');
+    component.submit();
+
+    expect(component.importHint()).toBeTruthy();
+    expect(component.hintIsNote()).toEqual(false);
+    expect(notifyError).not.toHaveBeenCalled();
   });
 
   /**
@@ -64,7 +98,7 @@ describe('ShareImportComponent', () => {
     const submitted = new Event('submit', { bubbles: true, cancelable: true });
     form.dispatchEvent(submitted);
 
-    expect(importFromShare).toHaveBeenCalledWith('aBc123_-xyz', undefined);
+    expect(followShare).toHaveBeenCalledWith('aBc123_-xyz');
     expect(submitted.defaultPrevented).toEqual(true);
   });
 
@@ -74,44 +108,8 @@ describe('ShareImportComponent', () => {
 
     component.submit();
 
-    expect(importFromShare).not.toHaveBeenCalled();
+    expect(followShare).not.toHaveBeenCalled();
     expect(component.importHint()).toBeTruthy();
-  });
-
-  /** Two people can name a projection the same thing; only the importer can settle it. */
-  it('asks for a name when one is already taken, then imports under it', async () => {
-    importFromShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
-
-    const component = await render();
-    component.shareInput.set('https://slapstat.com/s/aBc123_-xyz');
-    component.submit();
-
-    expect(component.importName()).toEqual('');
-    expect(component.importHint()).toBeTruthy();
-
-    importFromShare.mockReturnValue(of({ id: 'i2' }));
-    component.importName.set("Alex's board");
-    component.submit();
-
-    expect(importFromShare).toHaveBeenLastCalledWith('aBc123_-xyz', "Alex's board");
-    expect(component.importName()).toBeNull();
-  });
-
-  /** The name field is what makes a phone's row too narrow, so it alone switches the stacking on. */
-  it('marks the row for stacking only while a name is being asked for', async () => {
-    importFromShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
-
-    const fixture = await renderFixture();
-    const component = fixture.point.componentInstance;
-    const controls = (): HTMLElement =>
-      fixture.nativeElement.querySelector('.import-controls') as HTMLElement;
-    expect(controls().classList).not.toContain('import-controls--naming');
-
-    component.shareInput.set('https://slapstat.com/s/aBc123_-xyz');
-    component.submit();
-    fixture.detectChanges();
-
-    expect(controls().classList).toContain('import-controls--naming');
   });
 
   it("keeps the page's own button the only filled one", async () => {
@@ -123,7 +121,7 @@ describe('ShareImportComponent', () => {
   });
 
   it('says so when the link has gone', async () => {
-    importFromShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+    followShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
 
     const component = await render();
     component.shareInput.set('https://slapstat.com/s/aBc123_-xyz');
@@ -134,7 +132,7 @@ describe('ShareImportComponent', () => {
   });
 
   it('surfaces any other failure as a toast', async () => {
-    importFromShare.mockReturnValue(throwError(() => new Error('boom')));
+    followShare.mockReturnValue(throwError(() => new Error('boom')));
 
     const component = await render();
     component.shareInput.set('https://slapstat.com/s/aBc123_-xyz');

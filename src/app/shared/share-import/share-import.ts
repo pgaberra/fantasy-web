@@ -20,12 +20,15 @@ export function shareTokenFrom(pasted: string): string | null {
 }
 
 /**
- * Copies a board someone published under a share link, and says what went wrong when it can't.
+ * Follows a projection somebody published under a share link, and says what went wrong when it
+ * can't. A follow is a live mirror of theirs: read-only apart from the follower's own draft, and
+ * rewritten whenever the author shares it again. Taking a copy instead is offered on the shared
+ * page itself and in the editor, which is where someone is looking at the numbers and can tell
+ * whether they want their own.
  *
- * <p>It lives here rather than on the page because two pages take share links now — the draft
- * picker, where an imported board is something to draft against, and the new-projection page,
- * where it is a starting point — and the awkward parts (what counts as a link, a name already
- * taken, a link that has gone) are worth having in one place rather than two.
+ * <p>It lives here rather than on the page because three pages take share links now, and the
+ * awkward parts (what counts as a link, a link already followed, a link that has gone) are worth
+ * having in one place rather than three.
  */
 @Component({
   selector: 'app-share-import',
@@ -46,8 +49,12 @@ export class ShareImportComponent {
   readonly shareInput = signal('');
   readonly isImporting = signal(false);
   readonly importHint = signal<string | null>(null);
-  /** Non-null only after a name clash, which is the one thing the importer has to settle. */
-  readonly importName = signal<string | null>(null);
+  /**
+   * Whether the hint is a refusal or merely a remark. Following a link twice is not a failure:
+   * the follow already held comes back, the page takes the user to it, and this says why there
+   * is no second one.
+   */
+  readonly hintIsNote = signal(false);
 
   /**
    * The form's own submit, stopped before the browser acts on it. Without this the press
@@ -66,22 +73,21 @@ export class ShareImportComponent {
       this.importHint.set("That doesn't look like a SlapStat share link.");
       return;
     }
-    const chosenName = this.importName()?.trim();
-    if (this.importName() !== null && !chosenName) {
-      this.importHint.set('Enter a name for this copy.');
-      return;
-    }
     this.importHint.set(null);
+    this.hintIsNote.set(false);
     this.isImporting.set(true);
     this.storage
-      .importFromShare(token, chosenName || undefined)
+      .followShare(token)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (projection) => {
+        next: (result) => {
           this.isImporting.set(false);
           this.shareInput.set('');
-          this.importName.set(null);
-          this.imported.emit(projection);
+          if (result.alreadyFollowed) {
+            this.hintIsNote.set(true);
+            this.importHint.set('You already follow this projection. Here it is.');
+          }
+          this.imported.emit(result.projection);
         },
         error: (error: unknown) => {
           this.isImporting.set(false);
@@ -91,20 +97,19 @@ export class ShareImportComponent {
   }
 
   /**
-   * A name clash is the importer's to settle — two people can call a projection the same thing,
-   * and only the one copying can say what the second should be called — so it asks for a name
-   * rather than reporting a failure they could do nothing about.
+   * The two refusals a pasted link can earn that the user can do something about: a link that
+   * has gone, and their own. Both are stated beside the field rather than in a toast, since the
+   * field is what they would change.
    */
   private onFailed(error: unknown): void {
-    if (error instanceof HttpErrorResponse && error.status === 409) {
-      this.importName.set(this.importName() ?? '');
-      this.importHint.set('A board with that name already exists. Choose another name.');
-      return;
-    }
     if (error instanceof HttpErrorResponse && error.status === 404) {
       this.importHint.set('That share link is no longer active.');
       return;
     }
-    this.notification.error("Couldn't import that board. Please try again.");
+    if (error instanceof HttpErrorResponse && error.status === 400) {
+      this.importHint.set("That's a link to your own projection.");
+      return;
+    }
+    this.notification.error("Couldn't import that projection. Please try again.");
   }
 }

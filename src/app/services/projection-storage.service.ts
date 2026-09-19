@@ -5,6 +5,7 @@ import { list } from '../api/fn/projections/list';
 import { get } from '../api/fn/projections/get';
 import { create } from '../api/fn/projections/create';
 import { importFromShare } from '../api/fn/projections/import-from-share';
+import { copyFromShare } from '../api/fn/projections/copy-from-share';
 import { update } from '../api/fn/projections/update';
 import { delete$ } from '../api/fn/projections/delete';
 import { startDraft } from '../api/fn/projections/start-draft';
@@ -14,6 +15,16 @@ import { ProjectionResponse } from '../api/models/projection-response';
 import { CreateProjectionRequest } from '../api/models/create-projection-request';
 import { UpdateProjectionRequest } from '../api/models/update-projection-request';
 import { ProjectionData } from '../api/models/projection-data';
+
+/** What following a share link came to, which is not the same thing as what it created. */
+export interface FollowResult {
+  readonly projection: ProjectionResponse;
+  /**
+   * The link was already followed, so nothing was created and this is the follow already held.
+   * The server says so with 200 rather than 201, which is the only place the difference shows.
+   */
+  readonly alreadyFollowed: boolean;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -33,8 +44,13 @@ export class ProjectionStorageService {
   }
 
   /**
-   * Everything the user can open in the editor: what they made, plus the boards they copied
-   * from a share link. A draft is left out — it holds picks, not a board anyone edits.
+   * Everything the user can open in the editor: what they made (their own projections and the
+   * copies they took of shared ones), plus what they imported — the links they follow and the
+   * spreadsheets they uploaded. A draft is left out: it holds picks, not a board anyone edits.
+   *
+   * <p>`kind` is what splits those two groups, and it already does: a copy is stored as the
+   * user's own `projection`, while a follow and a spreadsheet import are both `imported`. What
+   * tells those two apart is `origin`, which only a follow carries.
    */
   listEditable(): Observable<ProjectionSummaryResponse[]> {
     return this.listAll().pipe(
@@ -56,20 +72,33 @@ export class ProjectionStorageService {
   }
 
   /**
-   * Copies a board someone published under a share link. The name is only worth sending to
-   * settle a clash with a board already imported under the same one — the server otherwise
-   * keeps the name it was shared as.
+   * Follows a projection someone published under a share link: a live mirror of theirs, rewritten
+   * whenever they share it again, read-only apart from the follower's own draft. One per link, so
+   * following the same link twice hands back the follow already held rather than making a second.
    *
-   * @param seenUpdatedAt the board's `updatedAt` as the page showed it. Sent, a board its author
-   *     has changed since is refused with 412 rather than copied: a link follows its projection,
-   *     and the reader must not be handed numbers they never saw.
+   * @param seenUpdatedAt the projection's `updatedAt` as the page showed it. Sent, one whose
+   *     author has changed it since is refused with 412 rather than followed: a link follows its
+   *     projection, and the reader must not be handed numbers they never saw.
    */
-  importFromShare(
-    token: string,
-    name?: string,
-    seenUpdatedAt?: string,
-  ): Observable<ProjectionResponse> {
-    return from(this.api.invoke(importFromShare, { body: { token, name, seenUpdatedAt } }));
+  followShare(token: string, seenUpdatedAt?: string): Observable<FollowResult> {
+    return from(
+      this.api
+        .invoke$Response(importFromShare, { body: { token, seenUpdatedAt } })
+        .then((response) => ({
+          projection: response.body,
+          alreadyFollowed: response.status === 200,
+        })),
+    );
+  }
+
+  /**
+   * Takes a copy of a shared projection: the user's own from that moment on, named by the server
+   * after the share ("Copy of <name>"), with nothing its author does afterwards reaching it.
+   *
+   * @param seenUpdatedAt as {@link followShare}, and refused the same way.
+   */
+  copyFromShare(token: string, seenUpdatedAt?: string): Observable<ProjectionResponse> {
+    return from(this.api.invoke(copyFromShare, { body: { token, seenUpdatedAt } }));
   }
 
   updateProjection(id: string, request: UpdateProjectionRequest): Observable<ProjectionResponse> {

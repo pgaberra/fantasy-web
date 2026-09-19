@@ -451,7 +451,7 @@ describe('DraftStartComponent', () => {
   it('says whose numbers a row holds', async () => {
     const component = await render();
 
-    expect(component.sourceLabel(imported('i1', 'alex'))).toEqual('From alex');
+    expect(component.sourceLabel(imported('i1', 'alex'))).toEqual('Following alex');
     expect(component.sourceLabel(summary('p1', 'projection'))).toEqual('Your projection');
     // A draft says what it was played against — unless that is what it is still called, as a
     // draft the server just named is.

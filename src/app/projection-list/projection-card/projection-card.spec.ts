@@ -21,7 +21,7 @@ describe('ProjectionCardComponent', () => {
 
   const template = `<li app-projection-card [projection]="projection"
     [isPreparingShare]="isPreparingShare"
-    (edit)="onEdit()" (share)="onShare()" (remove)="onRemove()"
+    (edit)="onEdit()" (share)="onShare()" (remove)="onRemove()" (copyRequested)="onCopy()"
     (discardDraft)="onDiscardDraft()"></li>`;
 
   const renderWithStatus = (draftStatus: ProjectionSummaryResponse['draftStatus']) =>
@@ -31,6 +31,7 @@ describe('ProjectionCardComponent', () => {
       onEdit,
       onShare,
       onRemove,
+      onCopy,
       onDiscardDraft,
     });
 
@@ -38,8 +39,10 @@ describe('ProjectionCardComponent', () => {
   const onShare = vi.fn();
   const onRemove = vi.fn();
   const onDiscardDraft = vi.fn();
+  const onCopy = vi.fn();
 
   beforeEach(() => {
+    onCopy.mockClear();
     onEdit.mockClear();
     onShare.mockClear();
     onRemove.mockClear();
@@ -54,6 +57,7 @@ describe('ProjectionCardComponent', () => {
       onEdit,
       onShare,
       onRemove,
+      onCopy,
       onDiscardDraft,
     });
 
@@ -186,12 +190,14 @@ describe('ProjectionCardComponent', () => {
         onEdit,
         onShare,
         onRemove,
+        onCopy,
+        onDiscardDraft,
       });
 
     it('says whose numbers it holds', () => {
       const fixture = renderImported();
 
-      expect(fixture.nativeElement.textContent).toContain('From alex');
+      expect(fixture.nativeElement.textContent).toContain('Following alex');
     });
 
     /** A share credits the account that publishes it; this board is not theirs to publish. */
@@ -203,13 +209,60 @@ describe('ProjectionCardComponent', () => {
       expect(document.querySelector('.menu-item.share')).toBeNull();
     });
 
-    it('still offers to edit and to delete it', () => {
+    /** The editor opens a follow read-only, so a button promising an edit would be a lie. */
+    it('offers to view it rather than to edit it', () => {
       const fixture = renderImported();
 
-      expect(fixture.nativeElement.querySelector('.edit')).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('.edit').textContent.trim()).toEqual('View');
+    });
+
+    it('still offers to delete it', () => {
+      const fixture = renderImported();
+
       fixture.nativeElement.querySelector('.card-menu')?.click();
       fixture.detectChanges();
       expect(document.querySelector('.menu-item.delete')).not.toBeNull();
+    });
+
+    /** The way to a projection of one's own, which a follow is not. */
+    it('offers a copy from the menu', () => {
+      const fixture = renderImported();
+      fixture.nativeElement.querySelector('.card-menu')?.click();
+      fixture.detectChanges();
+
+      (document.querySelector('.menu-item.copy') as HTMLButtonElement).click();
+
+      expect(onCopy).toHaveBeenCalledOnce();
+    });
+  });
+
+  /**
+   * A spreadsheet import carries the same `imported` kind as a follow but no origin: it is the
+   * user's own rows, and nothing about it is read-only.
+   */
+  describe('a projection imported from a spreadsheet', () => {
+    const fromSheet: ProjectionSummaryResponse = {
+      ...projection,
+      kind: 'imported',
+      name: 'My spreadsheet',
+    };
+
+    it('is edited, shared and never offered a copy, like the rest of their own work', () => {
+      const fixture = MockRender(template, {
+        projection: fromSheet,
+        isPreparingShare: false,
+        onEdit,
+        onShare,
+        onRemove,
+        onCopy,
+        onDiscardDraft,
+      });
+
+      expect(fixture.nativeElement.querySelector('.edit').textContent.trim()).toEqual('Edit');
+      fixture.nativeElement.querySelector('.card-menu')?.click();
+      fixture.detectChanges();
+      expect(document.querySelector('.menu-item.share')).not.toBeNull();
+      expect(document.querySelector('.menu-item.copy')).toBeNull();
     });
   });
 });

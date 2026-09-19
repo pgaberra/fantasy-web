@@ -11,6 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Location } from '@angular/common';
 import { rxResource, takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, debounceTime, map, Observable, of, switchMap, tap, throwError } from 'rxjs';
@@ -71,6 +72,8 @@ import { YahooService } from '../services/yahoo.service';
 import { EspnService } from '../services/espn.service';
 import { IconComponent } from '../shared/icon/icon';
 import { LeagueImportButtonComponent } from '../shared/league-import-button/league-import-button';
+import { ProjectionOrigin } from '../api/models/projection-origin';
+import { renameOnOpenExtras, wantsRenameOnOpen } from './rename-intent';
 
 /** Exported so the tests can wait out exactly this and not a round number they guessed at. */
 export const AUTOSAVE_DEBOUNCE_MS = 1200;
@@ -109,6 +112,16 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
   private readonly projectionShare = inject(ProjectionShareService);
   private readonly serializer = inject(ProjectionSerializerService);
   private readonly notification = inject(NotificationService);
+  private readonly location = inject(Location);
+
+  /**
+   * Whether the navigation that opened this page asked for the rename to be waiting — which the
+   * two places that take a copy of a shared projection do, since the server names a copy after
+   * the share it came from. Read here rather than in `ngOnInit` because the navigation is only
+   * "current" while the component is being created, and spent immediately (see
+   * {@link consumeRenameIntent}) so a reload does not open the rename a second time.
+   */
+  private readonly renameOnOpen = wantsRenameOnOpen(this.router.currentNavigation()?.extras.state);
 
   private readonly table = viewChild(PlayerProjectionsTableComponent);
   private readonly renameInput = viewChild<ElementRef<HTMLInputElement>>('renameInput');
@@ -121,6 +134,20 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
   readonly saveStatus = signal<'idle' | 'saving' | 'saved' | 'error'>('idle');
   readonly loadedProjections = signal<Projection[] | null>(null);
   readonly projectionId = signal<string | null>(null);
+  /**
+   * The share link this projection follows, on a follow, and null on everything else. It is the
+   * one thing that says a projection is a follow: `kind: 'imported'` does not, since a
+   * spreadsheet import carries that kind and is the user's own rows.
+   */
+  readonly origin = signal<ProjectionOrigin | null>(null);
+  /**
+   * A follow is a mirror of somebody else's projection, rewritten whenever they share it again,
+   * and the server keeps nothing this page could send but the draft. So the page does not offer
+   * the controls: no rename, no settings, no columns, no editable stats, no Share. What it offers
+   * instead is a copy, which is the user's own and editable.
+   */
+  readonly isFollow = computed(() => this.origin() !== null);
+  readonly copyingFollow = signal(false);
   private readonly projectionLoaded = signal<boolean>(false);
   private readonly autosaveEnabled = signal<boolean>(false);
   private lastSavedJson = '';
@@ -295,7 +322,12 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
     });
     effect(() => {
       if (this.isRenaming()) {
-        this.renameInput()?.nativeElement.focus();
+        const input = this.renameInput()?.nativeElement;
+        input?.focus();
+        // Selected, not merely focused: a rename always starts from the name that is already
+        // there, and on a fresh copy ("Copy of My league") that name is the one thing the user
+        // is here to replace. Typing then replaces it instead of appending to it.
+        input?.select();
       }
     });
     toObservable(this.saveableState)
@@ -315,7 +347,19 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
       void this.router.navigate(['/projections']);
       return;
     }
+    this.consumeRenameIntent();
     this.openExisting(id);
+  }
+
+  /**
+   * Strips the rename intent out of the history entry this page is sitting on. Navigation state
+   * is restored with the entry on a reload, so without this a copy opened ready to be renamed
+   * would reopen the rename on every refresh of that URL and on every press of Back onto it.
+   */
+  private consumeRenameIntent(): void {
+    if (this.renameOnOpen) {
+      this.location.replaceState(this.location.path(true), '', {});
+    }
   }
 
   private applyLeagueSettings(mapped: LeagueProjectionSettingsResponse): void {
@@ -480,13 +524,19 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
           }
           this.projectionId.set(projection.id);
           this.projectionName.set(projection.name);
+          this.origin.set(projection.origin ?? null);
           const state = this.serializer.fromProjectionData(projection.data);
           this.applyState(state);
           const loaded = this.serializer.toProjectionData(state);
           this.lastSavedJson = JSON.stringify(loaded);
           this.lastSavedPlayersJson = JSON.stringify(loaded.players);
           this.projectionLoaded.set(true);
-          this.autosaveEnabled.set(true);
+          // A follow has nothing to autosave: the page offers no control that changes it, and the
+          // server would keep only the draft out of anything sent anyway.
+          this.autosaveEnabled.set(!this.isFollow());
+          if (this.renameOnOpen && !this.isFollow()) {
+            this.startRename();
+          }
         },
         error: () => {
           this.notification.error("Couldn't open the projection. Please try again.");
@@ -693,6 +743,40 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
       };
     }
     return data;
+  }
+
+  /**
+   * Takes a copy of the projection this one follows, and opens it. The copy is the user's own:
+   * editable, shareable, and untouched by anything the author publishes afterwards. It goes
+   * through the share token rather than this projection's id, because a copy is of what is
+   * published now, and a follow may be a moment behind it.
+   */
+  createCopy(): void {
+    const origin = this.origin();
+    if (!origin || this.copyingFollow()) {
+      return;
+    }
+    this.copyingFollow.set(true);
+    this.projectionStorage
+      .copyFromShare(origin.shareToken)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (copy) => {
+          this.copyingFollow.set(false);
+          void this.router.navigate(['/projections', copy.id], renameOnOpenExtras);
+        },
+        error: (error: unknown) => {
+          this.copyingFollow.set(false);
+          // The follow goes when the share does, so a 404 here means the author has just taken
+          // the link down and this page is about to be a projection that no longer exists.
+          const gone = error instanceof HttpErrorResponse && error.status === 404;
+          this.notification.error(
+            gone
+              ? 'That share link is no longer active.'
+              : "Couldn't copy this projection. Please try again.",
+          );
+        },
+      });
   }
 
   startRename(): void {

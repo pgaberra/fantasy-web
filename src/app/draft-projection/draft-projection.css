@@ -36,6 +36,15 @@
   flex-shrink: 0;
 }
 
+/* Under the title rather than beside it: it explains the two things missing from that row (the
+   rename and Share), and on a phone a second line there would push the buttons off the fold. */
+.follow-note {
+  margin: var(--space-2) 0 0;
+  max-width: 60ch;
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
+}
+
 .draft-mode-link {
   flex-shrink: 0;
   text-decoration: none;

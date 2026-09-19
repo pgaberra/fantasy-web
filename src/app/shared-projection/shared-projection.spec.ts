@@ -20,6 +20,7 @@ import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-i
 import { PlayerHeadshotComponent } from '../shared/player-headshot/player-headshot';
 import { environment } from '../../environments/environment';
 import { PendingCopyService } from './pending-copy';
+import { renameOnOpenExtras } from '../draft-projection/rename-intent';
 
 describe('SharedProjectionComponent', () => {
   const shared: SharedProjectionResponse = {
@@ -70,7 +71,7 @@ describe('SharedProjectionComponent', () => {
   };
 
   const loadShared = vi.fn(() => of(shared));
-  const importFromShare = vi.fn();
+  const copyFromShare = vi.fn();
   const navigate = vi.fn();
   const notifyError = vi.fn();
   const remember = vi.fn();
@@ -86,8 +87,8 @@ describe('SharedProjectionComponent', () => {
   beforeEach(() => {
     loadShared.mockClear();
     loadShared.mockReturnValue(of(shared));
-    importFromShare.mockClear();
-    importFromShare.mockReturnValue(of({ id: 'copy1' }));
+    copyFromShare.mockClear();
+    copyFromShare.mockReturnValue(of({ id: 'copy1' }));
     navigate.mockClear();
     notifyError.mockClear();
     remember.mockClear();
@@ -110,7 +111,7 @@ describe('SharedProjectionComponent', () => {
         // the table are the same component, and a stand-in would draw neither.
         .keep(PlayerHeadshotComponent)
         .mock(ProjectionShareService, { loadShared })
-        .mock(ProjectionStorageService, { importFromShare })
+        .mock(ProjectionStorageService, { copyFromShare })
         .mock(NotificationService, { error: notifyError })
         .provide({ provide: AuthService, useValue: { isLoggedIn } })
         .provide({ provide: Router, useValue: { navigate } })
@@ -761,7 +762,7 @@ describe('SharedProjectionComponent', () => {
       fixture.nativeElement.querySelector('[data-testid="draft-board"]').click();
       fixture.detectChanges();
 
-      expect(importFromShare).not.toHaveBeenCalled();
+      expect(copyFromShare).not.toHaveBeenCalled();
       expect(remember).toHaveBeenCalledWith('abc123', 'draft', '2026-08-02T10:00:00Z');
       expect(navigate).toHaveBeenCalledWith(['/register'], {
         queryParams: { returnUrl: '/s/abc123', reason: 'shared-board' },
@@ -817,14 +818,14 @@ describe('SharedProjectionComponent', () => {
       expect(fixture.nativeElement.querySelector('.cta')).toBeNull();
     });
 
-    it('copies the board and opens it for editing', async () => {
+    it('copies the projection and opens it ready to be renamed', async () => {
       isLoggedIn.set(true);
       const fixture = await render();
 
       fixture.nativeElement.querySelector('[data-testid="copy-board"]').click();
 
-      expect(importFromShare).toHaveBeenCalledWith('abc123', undefined, '2026-08-02T10:00:00Z');
-      expect(navigate).toHaveBeenCalledWith(['/projections', 'copy1']);
+      expect(copyFromShare).toHaveBeenCalledWith('abc123', '2026-08-02T10:00:00Z');
+      expect(navigate).toHaveBeenCalledWith(['/projections', 'copy1'], renameOnOpenExtras);
     });
 
     /**
@@ -837,12 +838,12 @@ describe('SharedProjectionComponent', () => {
 
       fixture.nativeElement.querySelector('[data-testid="draft-board"]').click();
 
-      expect(importFromShare).toHaveBeenCalledWith('abc123', undefined, '2026-08-02T10:00:00Z');
+      expect(copyFromShare).toHaveBeenCalledWith('abc123', '2026-08-02T10:00:00Z');
     });
 
     it('reads the board again and says so when the author changed it meanwhile', async () => {
       isLoggedIn.set(true);
-      importFromShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 412 })));
+      copyFromShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 412 })));
       const fixture = await render();
       loadShared.mockClear();
       loadShared.mockReturnValue(of({ ...shared, updatedAt: '2026-08-03T10:00:00Z' }));
@@ -859,16 +860,16 @@ describe('SharedProjectionComponent', () => {
       expect(note.textContent).toContain('Nothing was copied');
 
       // The next press is of the board now on screen.
-      importFromShare.mockReturnValue(of({ id: 'copy2' }));
+      copyFromShare.mockReturnValue(of({ id: 'copy2' }));
       fixture.nativeElement.querySelector('[data-testid="copy-board"]').click();
       fixture.detectChanges();
-      expect(importFromShare).toHaveBeenLastCalledWith('abc123', undefined, '2026-08-03T10:00:00Z');
+      expect(copyFromShare).toHaveBeenLastCalledWith('abc123', '2026-08-03T10:00:00Z');
       expect(fixture.nativeElement.querySelector('.board-changed')).toBeNull();
     });
 
     it('says which of the two is copying, and holds the other', async () => {
       isLoggedIn.set(true);
-      importFromShare.mockReturnValue(new Subject());
+      copyFromShare.mockReturnValue(new Subject());
       const fixture = await render();
 
       fixture.nativeElement.querySelector('[data-testid="draft-board"]').click();
@@ -897,7 +898,7 @@ describe('SharedProjectionComponent', () => {
       await render();
 
       expect(takePending).toHaveBeenCalledWith('abc123');
-      expect(importFromShare).toHaveBeenCalledWith('abc123', undefined, undefined);
+      expect(copyFromShare).toHaveBeenCalledWith('abc123', undefined);
       expect(navigate).toHaveBeenCalledWith(['/draft/new/board', 'copy1']);
     });
 
@@ -908,7 +909,7 @@ describe('SharedProjectionComponent', () => {
 
       await render();
 
-      expect(importFromShare).toHaveBeenCalledWith('abc123', undefined, '2026-08-01T09:00:00Z');
+      expect(copyFromShare).toHaveBeenCalledWith('abc123', '2026-08-01T09:00:00Z');
     });
 
     it('opens the copy for editing when that was the button', async () => {
@@ -917,14 +918,14 @@ describe('SharedProjectionComponent', () => {
 
       await render();
 
-      expect(navigate).toHaveBeenCalledWith(['/projections', 'copy1']);
+      expect(navigate).toHaveBeenCalledWith(['/projections', 'copy1'], renameOnOpenExtras);
     });
 
     /** The board used to flash up for the second the copy took, before the editor replaced it. */
     it('waits on a spinner rather than the board while the copy is made', async () => {
       isLoggedIn.set(true);
       takePending.mockReturnValue({ destination: 'projection' });
-      importFromShare.mockReturnValue(new Subject());
+      copyFromShare.mockReturnValue(new Subject());
 
       const fixture = await render();
 
@@ -935,7 +936,7 @@ describe('SharedProjectionComponent', () => {
     it('falls back to the board when the copy fails', async () => {
       isLoggedIn.set(true);
       takePending.mockReturnValue({ destination: 'projection' });
-      importFromShare.mockReturnValue(throwError(() => new Error('down')));
+      copyFromShare.mockReturnValue(throwError(() => new Error('down')));
 
       const fixture = await render();
 
@@ -947,7 +948,7 @@ describe('SharedProjectionComponent', () => {
     it('does not fetch the board while the copy is made', async () => {
       isLoggedIn.set(true);
       takePending.mockReturnValue({ destination: 'projection' });
-      importFromShare.mockReturnValue(new Subject());
+      copyFromShare.mockReturnValue(new Subject());
 
       await render();
 
@@ -958,7 +959,7 @@ describe('SharedProjectionComponent', () => {
       isLoggedIn.set(true);
       takePending.mockReturnValue({ destination: 'projection' });
       const copy = new Subject<{ id: string }>();
-      importFromShare.mockReturnValue(copy);
+      copyFromShare.mockReturnValue(copy);
       const fixture = await render();
 
       copy.error(new Error('down'));
@@ -979,7 +980,7 @@ describe('SharedProjectionComponent', () => {
       isLoggedIn.set(true);
       takePending.mockReturnValue({ destination: 'draft', seenUpdatedAt: '2026-08-01T09:00:00Z' });
       const copy = new Subject<{ id: string }>();
-      importFromShare.mockReturnValue(copy);
+      copyFromShare.mockReturnValue(copy);
       const fixture = await render();
 
       copy.error(new HttpErrorResponse({ status: 412 }));
@@ -1001,7 +1002,7 @@ describe('SharedProjectionComponent', () => {
 
       const fixture = await render();
 
-      expect(importFromShare).not.toHaveBeenCalled();
+      expect(copyFromShare).not.toHaveBeenCalled();
       expect(navigate).not.toHaveBeenCalled();
       expect(fixture.nativeElement.querySelector('[data-testid="draft-board"]')).not.toBeNull();
     });
@@ -1015,7 +1016,7 @@ describe('SharedProjectionComponent', () => {
 
       const fixture = await render();
 
-      expect(importFromShare).not.toHaveBeenCalled();
+      expect(copyFromShare).not.toHaveBeenCalled();
       expect(navigate).not.toHaveBeenCalled();
       expect(fixture.nativeElement.querySelector('[data-testid="draft-board"]')).not.toBeNull();
     });
@@ -1096,7 +1097,7 @@ describe('SharedProjectionComponent', () => {
 
       fixture.point.componentInstance.draftAgainstThis();
 
-      expect(importFromShare).toHaveBeenCalledWith('abc123', undefined, '2026-08-02T10:00:00Z');
+      expect(copyFromShare).toHaveBeenCalledWith('abc123', '2026-08-02T10:00:00Z');
       expect(navigate).toHaveBeenCalledWith(['/draft/new/board', 'copy1']);
     });
 
@@ -1108,7 +1109,7 @@ describe('SharedProjectionComponent', () => {
      */
     it('makes another copy when pressed again, rather than sending them off to find the first', async () => {
       isLoggedIn.set(true);
-      importFromShare.mockReturnValue(of({ id: 'copy2', name: 'Shared board (2)' }));
+      copyFromShare.mockReturnValue(of({ id: 'copy2', name: 'Shared board (2)' }));
       const fixture = await render();
 
       fixture.point.componentInstance.draftAgainstThis();
@@ -1125,7 +1126,7 @@ describe('SharedProjectionComponent', () => {
      */
     it('treats a name clash as an ordinary failure now, not as a dead end', async () => {
       isLoggedIn.set(true);
-      importFromShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
+      copyFromShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
       const fixture = await render();
 
       fixture.point.componentInstance.draftAgainstThis();
@@ -1138,7 +1139,7 @@ describe('SharedProjectionComponent', () => {
 
     it('surfaces any other failure and lets them try again', async () => {
       isLoggedIn.set(true);
-      importFromShare.mockReturnValue(throwError(() => new Error('boom')));
+      copyFromShare.mockReturnValue(throwError(() => new Error('boom')));
       const fixture = await render();
 
       fixture.point.componentInstance.draftAgainstThis();
