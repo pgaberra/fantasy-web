@@ -75,7 +75,8 @@ export const LOWER_IS_BETTER_SCORING_STAT_KEYS: ReadonlySet<ScoringStatKey> = ne
 
 // Rate stats describe a per-unit share, so scaling them by games played would be wrong — and,
 // unlike a running total, a low one is low on its own merits rather than because the player
-// barely played.
+// barely played. A category ranking still weighs each by the volume behind it (`ratio-volume.ts`),
+// since that is how far it moves a team's own rate.
 export const RATE_STAT_KEYS = ['shPct', 'svPct', 'winPct', 'gaa'] as const;
 export type RateStatKey = (typeof RATE_STAT_KEYS)[number];
 
