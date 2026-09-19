@@ -217,6 +217,8 @@ export class SharedProjectionComponent {
           this.resumingCopy.set(false);
           if (error instanceof HttpErrorResponse && error.status === 412) {
             this.boardChanged.set(true);
+            // After a resumed copy the board was never read, and letting go of it above has
+            // already started its first fetch; reload() does nothing while one is in flight.
             this.sharedResource.reload();
             return;
           }
@@ -294,19 +296,29 @@ export class SharedProjectionComponent {
    * of the board and the rest is not in the browser to be sorted, so the order goes to the BFF,
    * which applies it to the whole board and returns the top of *that*. Sorting by goals then
    * answers with the board's best scorers rather than the best among the rows already sent.
+   *
+   * <p>Nothing is fetched while a resumed copy is under way: the page is about to leave for the
+   * editor, and the whole board read in the background meanwhile would be read for nobody. The
+   * params are undefined then, which leaves the resource idle, and distinct from the null that
+   * asks for the whole board; the board is fetched only if the copy fails and the page stays.
    */
   readonly sharedResource = rxResource({
-    params: () =>
-      this.isLoggedIn()
-        ? null
-        : {
-            position: this.positionFilter(),
-            search: this.settledSearch(),
-            team: this.teamFilter(),
-            rookies: this.rookiesOnly(),
-            sort: this.sortColumn(),
-            direction: this.sortDirection(),
-          },
+    params: () => {
+      if (this.resumingCopy()) {
+        return undefined;
+      }
+      if (this.isLoggedIn()) {
+        return null;
+      }
+      return {
+        position: this.positionFilter(),
+        search: this.settledSearch(),
+        team: this.teamFilter(),
+        rookies: this.rookiesOnly(),
+        sort: this.sortColumn(),
+        direction: this.sortDirection(),
+      };
+    },
     stream: ({ params }) => this.shareService.loadShared(this.token, params ?? undefined),
   });
 
