@@ -1,5 +1,9 @@
+/* As wide as its table needs, so a league's every column shows without scrolling wherever the
+   screen has the room; past that it stops at the page width and the table scrolls inside. */
 .summary {
-  max-width: 900px;
+  width: fit-content;
+  min-width: min(900px, 100%);
+  max-width: 100%;
   margin: 0 auto;
 }
 

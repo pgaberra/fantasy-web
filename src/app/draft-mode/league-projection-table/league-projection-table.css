@@ -37,37 +37,12 @@
   box-shadow: var(--shadow-sm);
 }
 
-.lp-scroll {
-  position: relative;
-}
-
 .lp-wrap {
   overflow-x: auto;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   background: var(--color-surface);
-}
-
-/* A right-edge fade shown only while more columns lie off-screen (the wide position breakdown
-   overflows once rows are expanded), so the clipped edge reads as "scroll for more" rather than a
-   broken cut. Sits inside the wrap's 1px border and rounded corner. The transparent stop is white
-   (not the `transparent` keyword) so the gradient doesn't wash through grey; the surface is white. */
-.lp-fade-right {
-  position: absolute;
-  top: 1px;
-  right: 1px;
-  bottom: 1px;
-  width: 2.25rem;
-  pointer-events: none;
-  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
-  background: linear-gradient(to right, rgba(255, 255, 255, 0), var(--color-surface));
-  opacity: 0;
-  transition: opacity var(--transition);
-}
-
-.lp-fade-right.is-visible {
-  opacity: 1;
 }
 
 .lp-table {
@@ -278,12 +253,37 @@
 }
 
 /* Total sits last, detached from the stat columns by a divider, and carries the same diverging
-   heat as the rest so the leader/laggard read is consistent across every column. */
-.col-total {
+   heat as the rest so the leader/laggard read is consistent across every column. It is pinned to
+   the right edge like the frozen team column on the left, so a league with more categories than
+   the screen fits still shows each team's score beside its name. The divider is the cell's own
+   border (the table is border-collapse: separate), so it rides along with the pinned cell. */
+.lp-table .col-total {
+  position: sticky;
+  right: 0;
+  z-index: 1;
   font-weight: var(--weight-bold);
   color: var(--color-primary);
   font-variant-numeric: tabular-nums;
   border-left: 1px solid var(--color-border);
+}
+
+/* Opaque under the heat tint (bound as a background image), so the stat columns scrolling
+   beneath don't show through. Player rows and the header bring their own opaque fills. */
+.lp-table tbody tr.lp-row td.col-total {
+  background-color: var(--color-surface);
+}
+
+/* The depth shadow shows only while columns actually sit under the pinned score; with every
+   column on screen the table reads as a plain table. The sorted variant keeps its accent rails. */
+.lp-wrap.has-more .lp-table .col-total {
+  box-shadow: -6px 0 6px -5px rgba(15, 52, 96, 0.18);
+}
+
+.lp-wrap.has-more .lp-table .col-total.sorted {
+  box-shadow:
+    inset 1px 0 0 var(--color-primary),
+    inset -1px 0 0 var(--color-primary),
+    -6px 0 6px -5px rgba(15, 52, 96, 0.18);
 }
 
 .lp-num {

@@ -311,4 +311,25 @@ describe('LeagueProjectionTableComponent', () => {
     // Missing values stay clear.
     expect(component.shade('goals', null)).toEqual('transparent');
   });
+
+  it("lays the pinned total column's heat over an opaque fill, as a background image", () => {
+    const component = render().point.componentInstance;
+
+    // The score column is pinned while the stats scroll beneath it, so its tint rides on a
+    // background image and leaves the stylesheet's opaque background colour in place.
+    expect(component.totalShade(30)).toMatch(/^linear-gradient\(rgba\(22, 163, 74/);
+    expect(component.totalShade(20)).toMatch(/^linear-gradient\(rgba\(233, 69, 96/);
+  });
+
+  it('pins the total column and casts its edge shadow only while columns sit beneath it', () => {
+    const fixture = render();
+    const wrap = () => fixture.nativeElement.querySelector('.lp-wrap') as HTMLElement;
+
+    // jsdom lays nothing out, so the table never overflows here and the shadow stays off.
+    expect(wrap().classList.contains('has-more')).toBe(false);
+
+    fixture.point.componentInstance.canScrollRight.set(true);
+    fixture.detectChanges();
+    expect(wrap().classList.contains('has-more')).toBe(true);
+  });
 });
