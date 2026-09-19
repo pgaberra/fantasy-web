@@ -943,6 +943,55 @@ describe('SharedProjectionComponent', () => {
       expect(fixture.nativeElement.querySelector('[data-testid="copy-board"]')).not.toBeNull();
     });
 
+    /** The page is about to leave for the editor, so the whole board would be read for nobody. */
+    it('does not fetch the board while the copy is made', async () => {
+      isLoggedIn.set(true);
+      takePending.mockReturnValue({ destination: 'projection' });
+      importFromShare.mockReturnValue(new Subject());
+
+      await render();
+
+      expect(loadShared).not.toHaveBeenCalled();
+    });
+
+    it('fetches the board once when the copy fails after the page has settled', async () => {
+      isLoggedIn.set(true);
+      takePending.mockReturnValue({ destination: 'projection' });
+      const copy = new Subject<{ id: string }>();
+      importFromShare.mockReturnValue(copy);
+      const fixture = await render();
+
+      copy.error(new Error('down'));
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(notifyError).toHaveBeenCalled();
+      expect(loadShared).toHaveBeenCalledOnce();
+      expect(loadShared).toHaveBeenCalledWith('abc123', undefined);
+      expect(fixture.nativeElement.querySelector('[data-testid="copy-board"]')).not.toBeNull();
+    });
+
+    /**
+     * A changed board is read again after a press on the page, but here it was never read: the
+     * one fetch that letting go of it makes is already the latest, and a reload would be a second.
+     */
+    it('fetches the board once when the board changed before the copy was made', async () => {
+      isLoggedIn.set(true);
+      takePending.mockReturnValue({ destination: 'draft', seenUpdatedAt: '2026-08-01T09:00:00Z' });
+      const copy = new Subject<{ id: string }>();
+      importFromShare.mockReturnValue(copy);
+      const fixture = await render();
+
+      copy.error(new HttpErrorResponse({ status: 412 }));
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(loadShared).toHaveBeenCalledOnce();
+      expect(notifyError).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.querySelector('.board-changed')).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('[data-testid="draft-board"]')).not.toBeNull();
+    });
+
     /**
      * Nobody pressed anything, so nothing is copied. This is the board as a stranger following a
      * link finds it, which is now the only thing a link can ask for.
