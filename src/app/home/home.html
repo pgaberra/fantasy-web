@@ -21,14 +21,7 @@
       <section class="panel resume" aria-labelledby="resume-heading">
         <div class="resume-main">
           <span id="resume-heading" class="eyebrow">Last updated</span>
-          <span class="resume-name">
-            {{ projection.name }}
-            @if (projection.draftStatus === 'finished') {
-              <span class="status status-done">Draft complete</span>
-            } @else if (projection.draftStatus === 'in_progress') {
-              <span class="status">Draft in progress</span>
-            }
-          </span>
+          <span class="resume-name">{{ projection.name }}</span>
           <span class="meta">
             @if (projection.origin; as from) {
               Following {{ from.authorUsername }} ·
@@ -38,8 +31,8 @@
         </div>
         <div class="resume-actions">
           <a class="btn btn-secondary" [routerLink]="['/projections', projection.id]">Edit</a>
-          <a class="btn btn-primary" [routerLink]="['/projections', projection.id, 'draft']">
-            {{ draftLabel(projection) }}
+          <a class="btn btn-primary" [routerLink]="['/draft/new/board', projection.id]">
+            Draft Mode
           </a>
         </div>
       </section>

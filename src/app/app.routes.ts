@@ -51,10 +51,23 @@ export const routes: Routes = [
     loadComponent: () => import('./draft-start/draft-start').then((m) => m.DraftStartComponent),
     canActivate: [authGuard],
   },
-  // A preset draft being set up, before it is saved: the board is created when the setup is
-  // confirmed and the page then moves to `projections/:id/draft`.
+  // A draft being set up, before anything is saved for it: the row is created when the setup is
+  // confirmed and the page then moves to `drafts/:id`. Two ways in, because a draft against a
+  // preset is seeded by the server and one against a board is copied from that board.
   {
-    path: 'draft/new/:preset',
+    path: 'draft/new/preset/:preset',
+    loadComponent: () => import('./draft-mode/draft-mode').then((m) => m.DraftModeComponent),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'draft/new/board/:board',
+    loadComponent: () => import('./draft-mode/draft-mode').then((m) => m.DraftModeComponent),
+    canActivate: [authGuard],
+  },
+  // A draft, which is a board of its own rather than something hanging off the projection it is
+  // played against — so it has an address of its own.
+  {
+    path: 'drafts/:id',
     loadComponent: () => import('./draft-mode/draft-mode').then((m) => m.DraftModeComponent),
     canActivate: [authGuard],
   },
@@ -70,10 +83,12 @@ export const routes: Routes = [
       import('./projection-create/projection-create').then((m) => m.ProjectionCreateComponent),
     canActivate: [authGuard],
   },
+  // Where a board's one draft used to live. A board holds no draft any more, so an old link
+  // opens the setup for a new draft against it — which saves nothing until it is confirmed.
   {
-    path: 'projections/:id/draft',
-    loadComponent: () => import('./draft-mode/draft-mode').then((m) => m.DraftModeComponent),
-    canActivate: [authGuard],
+    path: 'projections/:board/draft',
+    redirectTo: 'draft/new/board/:board',
+    pathMatch: 'full',
   },
   {
     path: 'projections/:id',

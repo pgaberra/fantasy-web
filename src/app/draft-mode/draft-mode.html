@@ -3,11 +3,60 @@
 } @else {
   <div class="draft-mode" [class.draft-mode--wide]="showSummary()">
     <div class="draft-header">
-      <a [routerLink]="exitLink()" class="back-link"
+      <a [routerLink]="exitLink" class="back-link"
         ><app-icon name="arrow-left" [size]="14" />Exit Draft Mode</a
       >
       <div class="draft-title">
-        <h1>{{ projectionName() }}</h1>
+        @if (isRenaming()) {
+          <div class="rename-row">
+            <input
+              #renameInput
+              class="rename-input"
+              type="text"
+              maxlength="100"
+              [value]="renameValue()"
+              [disabled]="renameSaving()"
+              (input)="onRenameInput($event)"
+              (keydown.enter)="saveRename()"
+              (keydown.escape)="cancelRename()"
+              aria-label="Draft name"
+            />
+            <button
+              type="button"
+              class="btn btn-primary btn-sm"
+              [disabled]="renameSaving()"
+              (click)="saveRename()"
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              [disabled]="renameSaving()"
+              (click)="cancelRename()"
+            >
+              Cancel
+            </button>
+          </div>
+          @if (renameError()) {
+            <p class="rename-error">{{ renameError() }}</p>
+          }
+        } @else if (draftId()) {
+          <h1>
+            <button
+              type="button"
+              class="rename-trigger"
+              appTooltip="Rename draft"
+              aria-label="Rename draft"
+              (click)="startRename()"
+            >
+              {{ draftName() }}
+              <span class="rename-icon" aria-hidden="true"><app-icon name="pencil" /></span>
+            </button>
+          </h1>
+        } @else {
+          <h1>{{ draftName() }}</h1>
+        }
         <span class="draft-tag">Draft Mode</span>
         @if (finished()) {
           <span class="draft-tag draft-tag--done">Finished</span>

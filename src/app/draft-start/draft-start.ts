@@ -12,6 +12,7 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import { StatInfoService } from '../services/stat-info.service';
@@ -64,18 +65,15 @@ export type DraftSource =
  * <p>The page asks two questions in that order, and every row belongs to exactly one of them.
  * "Your drafts" is every draft that exists, whatever it was started against, each a card that
  * opens it. "Start a new draft" is a choice made in steps: the kind of source first, then the
- * specific one, then a single Start button. It used to be every source at once, each with a
- * button of its own, and a page of eight identical buttons gave no sense of what to do first.
- * The kind is chosen with a tile, and only that kind's rows are on the page; the tiles say what
- * each holds, so nothing is hidden, only folded.
+ * specific one, then a single Start button.
  *
- * <p>A source holds at most one draft, so lifting the drafts out leaves the rows below meaning
- * exactly one thing, "not started yet", and nothing on the page is rendered twice.
+ * <p>A source may hold any number of drafts — a draft is a row of its own, holding a copy of what
+ * it was started against — so the two lists are about different things rather than two views of
+ * one: above, the drafts that exist; below, what a new one would be drafted against. Starting a
+ * second draft off a projection is pressing Start again.
  *
- * <p>A preset draft has no projection behind it, so it is saved as a projection of its own kind —
- * seeded server-side from the same read model a new projection starts from — purely to hold the
- * picks. It never shows up under "Your projection". That board is created by the draft page once
- * its setup is confirmed, not by Start here, so a setup someone backs out of saves nothing.
+ * <p>Nothing is saved from here. The draft page asks for the teams and the order first and only
+ * then creates the draft, so a setup someone backs out of leaves nothing behind.
  */
 @Component({
   selector: 'app-draft-start',
@@ -114,14 +112,14 @@ export class DraftStartComponent {
   readonly sourceKinds = SOURCE_KINDS;
 
   /**
-   * The presets this environment offers. What the page offers is `availablePresets`, the ones
-   * with no draft yet. Filtered rather than constant: the BFF decides whether it serves the AI
-   * projection, and a row that starts a draft the server will not seed is worse than no row.
+   * The presets this environment offers. Filtered rather than constant: the BFF decides whether
+   * it serves the AI projection, and a row that starts a draft the server will not seed is worse
+   * than no row.
    */
   readonly presets = computed(() => this.features.offeredPresets(PRESETS));
 
   readonly sourcesResource = rxResource({
-    stream: () => this.storage.listWithPresetDrafts(),
+    stream: () => this.storage.listAll(),
     defaultValue: [] as ProjectionSummaryResponse[],
   });
 
@@ -130,17 +128,22 @@ export class DraftStartComponent {
   /** The draft being thrown away, so its row says so and cannot be pressed a second time. */
   readonly discarding = signal<string | null>(null);
 
+  /** Which draft is being named, so two rows cannot be open for renaming at once. */
+  readonly renamingDraft = signal<string | null>(null);
+  readonly renameValue = signal<string>('');
+  readonly renameSaving = signal<boolean>(false);
+  readonly renameError = signal<string | null>(null);
+
   /**
    * Every draft the user has, unfinished first and newest first within that. Resuming one is
-   * what most visits here are for, so it leads the page — and it is the only place a draft is
-   * rendered, which is why the lists below drop the sources these were started from.
+   * what most visits here are for, so it leads the page.
    */
   readonly drafts = computed(() => {
     const unfinishedFirst = (draft: ProjectionSummaryResponse) =>
       draft.draftStatus === 'in_progress' ? 0 : 1;
     return this.sourcesResource
       .value()
-      .filter((projection) => projection.draftStatus !== 'none')
+      .filter((projection) => projection.kind === 'draft')
       .sort(
         (first, second) =>
           unfinishedFirst(first) - unfinishedFirst(second) ||
@@ -148,41 +151,16 @@ export class DraftStartComponent {
       );
   });
 
-  readonly projections = computed(() => this.undrafted('projection'));
-  readonly imported = computed(() => this.undrafted('imported'));
+  /** The boards, whether or not they have been drafted against: every one can be, again. */
+  readonly projections = computed(() => this.boardsOf('projection'));
+  readonly imported = computed(() => this.boardsOf('imported'));
 
   /**
-   * The stored draft for each preset. Absent until one has been started.
-   *
-   * <p>A draft saved before the server recorded the preset has none; every one of those came
-   * from last season's stats, which is what the migration that added the field gave them, and
-   * what this falls back to for anything still in flight.
+   * Every preset this environment offers. A preset that has been drafted against is still on
+   * offer: drafting last season's numbers a second time is a reasonable thing to want, and the
+   * draft it produced is its own row above rather than something occupying the preset.
    */
-  private readonly presetDrafts = computed(() => {
-    const byPreset = new Map<Preset['id'], ProjectionSummaryResponse>();
-    for (const projection of this.sourcesResource.value()) {
-      if (projection.kind === 'preset_draft') {
-        byPreset.set(projection.preset ?? 'last_season', projection);
-      }
-    }
-    return byPreset;
-  });
-
-  /**
-   * The presets still on offer. One that has been drafted against is represented by its draft
-   * above, and discarding that draft is what brings the row back — so leaving it here would put
-   * a second entry point on the page for a draft that already exists, which is the duplication
-   * this picker had everywhere.
-   *
-   * <p>"Drafted against" is the same test `drafts` lists by, not merely "has a board". Start used
-   * to seed the board before the draft page's setup had been saved, and someone who backed out of
-   * that setup left a board in neither list; filtering on the board alone made the preset vanish
-   * from the page for good. Boards are now created only once the setup is confirmed, but one left
-   * from before still keeps the preset on offer, and `startPreset` opens it.
-   */
-  readonly availablePresets = computed(() =>
-    this.presets().filter((preset) => (this.presetDraft(preset)?.draftStatus ?? 'none') === 'none'),
-  );
+  readonly availablePresets = this.presets;
 
   /**
    * The kind the page opens on: the first with something in it, presets ahead of the rest since
@@ -236,30 +214,19 @@ export class DraftStartComponent {
     // picked once its row is there to pick. Not at once: the AI preset is offered only after the
     // BFF has said it serves the model, and `selection` falls back to the first row whenever the
     // picked one is not among the options, so an early pick would be undone by that answer.
-    // A preset already drafted against has no row; its draft card leads the page instead, so the
-    // wait ends there without picking anything, and discarding that draft later does not pick it.
     const wanted = presetById(
       (this.route.snapshot.queryParams['start'] as string | undefined) ?? null,
     );
     if (wanted) {
       const pending = effect(() => {
-        if (this.sourcesResource.isLoading() || !this.sourcesResource.hasValue()) {
-          return;
-        }
         const offered = this.availablePresets().find((preset) => preset.id === wanted.id);
         if (offered) {
           this.sourceKind.set('preset');
           this.selectPreset(offered);
           pending.destroy();
-        } else if (this.presetDraft(wanted)) {
-          pending.destroy();
         }
       });
     }
-  }
-
-  presetDraft(preset: Preset): ProjectionSummaryResponse | null {
-    return this.presetDrafts().get(preset.id) ?? null;
   }
 
   draftLabel(status: ProjectionSummaryResponse['draftStatus']): string {
@@ -268,8 +235,8 @@ export class DraftStartComponent {
 
   /** Whose numbers a row holds, said in the row rather than only by the heading above it. */
   sourceLabel(projection: ProjectionSummaryResponse): string {
-    if (projection.kind === 'preset_draft') {
-      return 'Preset';
+    if (projection.kind === 'draft') {
+      return this.draftSourceLabel(projection);
     }
     // An origin is what a follow has and nothing else does: a copy taken from a link is the
     // user's own projection and carries none, and neither does a spreadsheet import.
@@ -277,6 +244,29 @@ export class DraftStartComponent {
       return `Following ${projection.origin.authorUsername}`;
     }
     return projection.kind === 'imported' ? 'From a spreadsheet' : 'Your projection';
+  }
+
+  /**
+   * What a draft was started against. Named rather than merely referred to, since a draft can be
+   * renamed — after a league sync it is — and the name then no longer says it.
+   *
+   * <p>Empty where it would only repeat the draft's own name, which is every draft still called
+   * after what it was started from. A board that has since been deleted leaves the draft
+   * standing, holding its own copy of the numbers; there is simply nothing left to name.
+   */
+  private draftSourceLabel(draft: ProjectionSummaryResponse): string {
+    const source = draft.preset
+      ? (presetById(draft.preset)?.name ?? null)
+      : (this.sourceBoard(draft)?.name ?? null);
+    if (source === null) {
+      return draft.preset ? '' : 'Projection deleted';
+    }
+    return draft.name === source ? '' : `From ${source}`;
+  }
+
+  private sourceBoard(draft: ProjectionSummaryResponse): ProjectionSummaryResponse | null {
+    const id = draft.sourceProjectionId;
+    return id ? (this.sourcesResource.value().find((board) => board.id === id) ?? null) : null;
   }
 
   /** What the timestamp beside it means, which differs for a draft still being made. */
@@ -439,38 +429,43 @@ export class DraftStartComponent {
     this.selection.set({ kind: 'board', id });
   }
 
-  /** The one Start on the page: seeds a preset, or opens the board that is already there. */
+  /**
+   * The one Start on the page, and it always starts a new draft — against a preset or against a
+   * board. Nothing is saved yet: the draft page asks for the teams and the order first and only
+   * then creates the draft, so backing out of that setup leaves nothing behind.
+   */
   start(): void {
     const chosen = this.selection();
     if (!chosen) {
       return;
     }
+    const league = this.changedLeague(chosen);
     if (chosen.kind === 'preset') {
-      this.startPreset(chosen.preset);
+      this.navigateWithLeague(['/draft/new/preset', chosen.preset.id], league);
     } else {
-      this.openDraft(chosen.id, this.changedLeague(chosen));
+      this.navigateWithLeague(['/draft/new/board', chosen.id], league);
     }
   }
 
-  /** Only a board that exists on its own: a preset draft holds nothing but its picks. */
+  /** Only where the board it was started from is still there to open. */
   canOpenBoard(draft: ProjectionSummaryResponse): boolean {
-    return draft.kind !== 'preset_draft';
+    return this.sourceBoard(draft) !== null;
   }
 
-  openBoard(id: string): void {
-    void this.router.navigate(['/projections', id]);
+  openBoard(draft: ProjectionSummaryResponse): void {
+    const board = this.sourceBoard(draft);
+    if (board) {
+      void this.router.navigate(['/projections', board.id]);
+    }
   }
 
   retry(): void {
     this.sourcesResource.reload();
   }
 
-  /**
-   * Opens a board's draft page. A league set here goes with it in the navigation's state, for the
-   * draft to be created with: it is the draft's own, and the board is never written to.
-   */
-  openDraft(id: string, league?: LeagueSettings): void {
-    this.navigateWithLeague(['/projections', id, 'draft'], league);
+  /** Opens a draft that exists: its own address, which is not the board's. */
+  openDraft(id: string): void {
+    void this.router.navigate(['/drafts', id]);
   }
 
   /**
@@ -487,6 +482,65 @@ export class DraftStartComponent {
     this.confirmingDiscard.set(null);
   }
 
+  isRenaming(draft: ProjectionSummaryResponse): boolean {
+    return this.renamingDraft() === draft.id;
+  }
+
+  requestRename(draft: ProjectionSummaryResponse): void {
+    this.openPopovers.closeAll();
+    this.renameValue.set(draft.name);
+    this.renameError.set(null);
+    this.renamingDraft.set(draft.id);
+  }
+
+  cancelRename(): void {
+    this.renamingDraft.set(null);
+    this.renameError.set(null);
+  }
+
+  onRenameInput(event: Event): void {
+    this.renameValue.set((event.target as HTMLInputElement).value);
+  }
+
+  /**
+   * Names a draft from the list, which is where ten drafts off one projection are told apart. A
+   * name another draft holds is refused rather than numbered: it is the whole of what was asked
+   * for here, unlike the name a sync or a create settles on its own.
+   */
+  saveRename(draft: ProjectionSummaryResponse): void {
+    const name = this.renameValue().trim();
+    if (this.renameSaving()) {
+      return;
+    }
+    if (!name) {
+      this.renameError.set('Name cannot be empty.');
+      return;
+    }
+    if (name === draft.name) {
+      this.cancelRename();
+      return;
+    }
+    this.renameSaving.set(true);
+    this.renameError.set(null);
+    this.storage
+      .renameProjection(draft.id, name)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.renameSaving.set(false);
+          this.renamingDraft.set(null);
+          this.sourcesResource.reload();
+        },
+        error: (error: unknown) => {
+          this.renameSaving.set(false);
+          const conflict = error instanceof HttpErrorResponse && error.status === 409;
+          this.renameError.set(
+            conflict ? 'You already have a draft with that name.' : "Couldn't rename the draft.",
+          );
+        },
+      });
+  }
+
   isConfirmingDiscard(draft: ProjectionSummaryResponse): boolean {
     return this.confirmingDiscard() === draft.id;
   }
@@ -495,29 +549,23 @@ export class DraftStartComponent {
     return this.discarding() === draft.id;
   }
 
-  /** What is actually lost, which is not the same thing for a preset draft as for a board. */
+  /** What is actually lost. Never the board: the draft holds a copy of its own. */
   discardPrompt(draft: ProjectionSummaryResponse): string {
-    return draft.kind === 'preset_draft'
-      ? 'Discard this draft? Your picks will be lost.'
-      : 'Discard the picks? The projection will stay.';
+    return this.sourceBoard(draft)
+      ? 'Discard this draft? The picks go, the projection stays.'
+      : 'Discard this draft? Your picks will be lost.';
   }
 
   /**
-   * Throws a draft away. A preset draft holds nothing but its picks and its rows are the same
-   * for everyone, so the whole thing goes and the preset returns to the list below ready to be
-   * started fresh, which is what the "Start over" button beside it used to mean. A draft against
-   * a projection or an imported board is cleared out of it instead: the board is the user's own
-   * work and has to survive losing the picks made against it.
+   * Throws a draft away. The whole row goes: a draft holds nothing but its picks, its league and
+   * a copy of the numbers it was played against, and the board those were copied from is a row of
+   * its own that this never touches. Nothing is freed up by it either — the source it came from
+   * was always available to be drafted again.
    */
   confirmDiscard(draft: ProjectionSummaryResponse): void {
     this.confirmingDiscard.set(null);
     this.discarding.set(draft.id);
-    // Typed here because the two branches return different things and neither matters: one
-    // deletes, the other saves the projection back without its draft.
-    const discarded: Observable<unknown> =
-      draft.kind === 'preset_draft'
-        ? this.storage.deleteProjection(draft.id)
-        : this.storage.clearDraft(draft.id);
+    const discarded: Observable<unknown> = this.storage.deleteProjection(draft.id);
     discarded.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.discarding.set(null);
@@ -541,21 +589,6 @@ export class DraftStartComponent {
     this.sourcesResource.reload();
   }
 
-  startPreset(preset: Preset): void {
-    // The row is only offered while the preset has no draft; this covers one started elsewhere
-    // since the list was read, which would otherwise try to save a second board for the same
-    // preset, and a board left without a draft from before boards waited for the setup.
-    const existing = this.presetDraft(preset);
-    const changed = this.changedLeague({ kind: 'preset', preset });
-    if (existing) {
-      this.openDraft(existing.id, changed);
-      return;
-    }
-    // Nothing is saved yet: the draft page asks for the teams and order first and only then
-    // creates the board, so backing out of that setup leaves nothing behind.
-    this.navigateWithLeague(['/draft/new', preset.id], changed);
-  }
-
   private navigateWithLeague(path: string[], league: LeagueSettings | undefined): void {
     if (league) {
       void this.router.navigate(path, {
@@ -569,7 +602,7 @@ export class DraftStartComponent {
   private optionsOf(kind: SourceKind): readonly DraftSource[] {
     switch (kind) {
       case 'preset':
-        return this.availablePresets().map((preset) => ({ kind: 'preset', preset }));
+        return this.presets().map((preset) => ({ kind: 'preset', preset }));
       case 'projection':
         return this.projections().map((projection) => ({ kind: 'board', id: projection.id }));
       case 'imported':
@@ -577,10 +610,10 @@ export class DraftStartComponent {
     }
   }
 
-  private undrafted(kind: ProjectionSummaryResponse['kind']): ProjectionSummaryResponse[] {
+  private boardsOf(kind: ProjectionSummaryResponse['kind']): ProjectionSummaryResponse[] {
     return this.sourcesResource
       .value()
-      .filter((projection) => projection.kind === kind && projection.draftStatus === 'none')
+      .filter((projection) => projection.kind === kind)
       .sort((first, second) => second.updatedAt.localeCompare(first.updatedAt));
   }
 }

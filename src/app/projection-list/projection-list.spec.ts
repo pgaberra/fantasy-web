@@ -22,6 +22,7 @@ describe('ProjectionListComponent', () => {
       name: 'My league',
       draftStatus: 'none',
       season: '20262027',
+      autoNamed: false,
       createdAt: '2026-06-01T00:00:00Z',
       updatedAt: '2026-06-01T00:00:00Z',
     },
@@ -31,6 +32,7 @@ describe('ProjectionListComponent', () => {
       name: 'Newest league',
       draftStatus: 'none',
       season: '20262027',
+      autoNamed: false,
       createdAt: '2026-06-02T00:00:00Z',
       updatedAt: '2026-06-10T00:00:00Z',
     },
@@ -40,6 +42,7 @@ describe('ProjectionListComponent', () => {
       name: 'Middle league',
       draftStatus: 'none',
       season: '20262027',
+      autoNamed: false,
       createdAt: '2026-06-03T00:00:00Z',
       updatedAt: '2026-06-05T00:00:00Z',
     },
@@ -79,7 +82,6 @@ describe('ProjectionListComponent', () => {
   const navigate = vi.fn();
   const listEditable = vi.fn(() => of(summaries));
   const deleteProjection = vi.fn(() => of(undefined));
-  const clearDraft = vi.fn();
   const createProjection = vi.fn();
   const notifyError = vi.fn();
   const peek = vi.fn();
@@ -93,14 +95,12 @@ describe('ProjectionListComponent', () => {
     navigate.mockClear();
     listEditable.mockClear();
     deleteProjection.mockClear();
-    clearDraft.mockClear();
     createProjection.mockClear();
     notifyError.mockClear();
     peek.mockClear();
     clearPending.mockClear();
     listEditable.mockReturnValue(of(summaries));
     deleteProjection.mockReturnValue(of(undefined));
-    clearDraft.mockReturnValue(of({ id: 'p1' }));
     peek.mockReturnValue(null);
     loadProjection.mockReturnValue(of({ id: 'p1', name: 'My league', data: demoData }));
     getPlayers.mockReturnValue(
@@ -121,7 +121,6 @@ describe('ProjectionListComponent', () => {
       .mock(ProjectionStorageService, {
         listEditable,
         deleteProjection,
-        clearDraft,
         createProjection,
         loadProjection,
         copyFromShare,
@@ -147,6 +146,7 @@ describe('ProjectionListComponent', () => {
       season: '20262027',
       createdAt: '2026-06-04T00:00:00Z',
       updatedAt: '2026-06-08T00:00:00Z',
+      autoNamed: false,
       origin: { authorUsername: 'alex', shareToken: 'tok123' },
     };
     const fromSheet: ProjectionSummaryResponse = {
@@ -404,29 +404,16 @@ describe('ProjectionListComponent', () => {
     expect(notifyError).toHaveBeenCalled();
   });
 
-  it('reloads the list after a draft is discarded, so the card drops its pill', async () => {
-    const fixture = MockRender(ProjectionListComponent);
-    await fixture.whenStable();
-    expect(listEditable).toHaveBeenCalledTimes(1);
-
-    await fixture.point.componentInstance.discardDraft('p1');
-    await fixture.whenStable();
-
-    // The picks go; the projection is not deleted with them.
-    expect(clearDraft).toHaveBeenCalledWith('p1');
-    expect(deleteProjection).not.toHaveBeenCalled();
-    expect(listEditable).toHaveBeenCalledTimes(2);
-  });
-
-  it('notifies the user and keeps the list when a discard fails', async () => {
-    clearDraft.mockReturnValueOnce(throwError(() => new Error('network down')));
+  /**
+   * A board is not limited to one draft any more, so the card starts a new one every time and
+   * the drafts themselves are listed, resumed and thrown away on the draft page.
+   */
+  it('starts a new draft against the board rather than resuming one', async () => {
     const fixture = MockRender(ProjectionListComponent);
     await fixture.whenStable();
 
-    await fixture.point.componentInstance.discardDraft('p1');
-    await fixture.whenStable();
+    fixture.point.componentInstance.draft('p1');
 
-    expect(notifyError).toHaveBeenCalledOnce();
-    expect(listEditable).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledWith(['/draft/new/board', 'p1']);
   });
 });

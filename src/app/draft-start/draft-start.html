@@ -24,10 +24,9 @@
     />
   } @else {
     <!--
-      The drafts, then the sources with none. Every draft is here and nowhere else: it used to be
-      copied to the top of the page while its source stayed in the list below, so the same draft
-      answered to two rows with two labels. A source holds at most one draft, so lifting them all
-      out leaves the rows below meaning exactly one thing, "not started yet".
+      The drafts, then what a new one would be drafted against. The two lists are about different
+      things rather than two views of one: a board can hold any number of drafts, so a board in
+      the list below is not "not started yet", it is simply somewhere to start another.
     -->
     @if (drafts().length > 0) {
       <section class="section" aria-labelledby="drafts-title">
@@ -66,9 +65,13 @@
                       <span class="draft-status">In progress</span>
                     }
                   </span>
+                  <!-- The source is dropped where it would only repeat the name above it,
+                       which is every draft still called after what it was started from. -->
                   <span class="draft-meta">
-                    {{ sourceLabel(draft) }} · {{ timingLabel(draft) }}
-                    {{ draft.updatedAt | relativeTime }}
+                    @if (sourceLabel(draft); as source) {
+                      {{ source }} ·
+                    }
+                    {{ timingLabel(draft) }} {{ draft.updatedAt | relativeTime }}
                   </span>
                 </span>
                 <span class="draft-cta" aria-hidden="true">
@@ -90,7 +93,41 @@
               >
                 <app-icon name="more-vertical" />
               </button>
-              @if (isDiscarding(draft)) {
+              @if (isRenaming(draft)) {
+                <div class="draft-actions">
+                  <input
+                    #renameInput
+                    class="rename-input"
+                    type="text"
+                    maxlength="100"
+                    [value]="renameValue()"
+                    [disabled]="renameSaving()"
+                    (input)="onRenameInput($event)"
+                    (keydown.enter)="saveRename(draft)"
+                    (keydown.escape)="cancelRename()"
+                    aria-label="Draft name"
+                  />
+                  <button
+                    type="button"
+                    class="btn btn-primary btn-sm save-name"
+                    [disabled]="renameSaving()"
+                    (click)="saveRename(draft)"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm cancel"
+                    [disabled]="renameSaving()"
+                    (click)="cancelRename()"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                @if (renameError()) {
+                  <p class="rename-error">{{ renameError() }}</p>
+                }
+              } @else if (isDiscarding(draft)) {
                 <div class="draft-actions">
                   <span class="row-busy"
                     ><app-loading-indicator variant="inline" label="Discarding"
@@ -169,15 +206,8 @@
           @case ('projection') {
             @if (projections().length === 0) {
               <p class="group-empty">
-                @if (drafts().length > 0) {
-                  You already have a draft for every projection.
-                  <a routerLink="/projections/new">Create another projection</a> to draft against
-                  fresh numbers.
-                } @else {
-                  No projections yet.
-                  <a routerLink="/projections/new">Create one</a> to draft against your own
-                  rankings.
-                }
+                No projections yet.
+                <a routerLink="/projections/new">Create one</a> to draft against your own rankings.
               </p>
             } @else {
               <ul class="rows">
@@ -260,9 +290,7 @@
           }
           @default {
             @if (availablePresets().length === 0) {
-              <p class="group-empty">
-                Each preset already has a draft. Discard it to start a fresh one.
-              </p>
+              <p class="group-empty">No presets available right now.</p>
             } @else {
               <!--
                 Side by side the two presets are peers: in a vertical list the AI projection read
@@ -374,8 +402,12 @@
 
 <ng-template #draftMenu let-draft>
   <div class="draft-menu-panel">
+    <button type="button" class="menu-item rename" (click)="requestRename(draft)">
+      <app-icon name="pencil" />
+      Rename
+    </button>
     @if (canOpenBoard(draft)) {
-      <button type="button" class="menu-item open-board" (click)="openBoard(draft.id)">
+      <button type="button" class="menu-item open-board" (click)="openBoard(draft)">
         <app-icon name="table" />
         Open the projection
       </button>

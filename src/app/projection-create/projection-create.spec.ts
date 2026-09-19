@@ -40,6 +40,7 @@ describe('ProjectionCreateComponent', () => {
     kind: 'projection',
     name: 'Dynasty',
     season: '20262027',
+    autoNamed: false,
     createdAt: '2026-06-01T00:00:00Z',
     updatedAt: '2026-06-01T00:00:00Z',
     data: { settings: {} as never, players: [] },
@@ -50,6 +51,7 @@ describe('ProjectionCreateComponent', () => {
     kind: 'projection',
     name: 'Source',
     season: '20262027',
+    autoNamed: false,
     createdAt: '2026-06-01T00:00:00Z',
     updatedAt: '2026-06-01T00:00:00Z',
     data: {
@@ -93,6 +95,7 @@ describe('ProjectionCreateComponent', () => {
     name: 'My Projection',
     draftStatus: 'none',
     season: '20262027',
+    autoNamed: false,
     createdAt: '2026-06-01T00:00:00Z',
     updatedAt: '2026-06-01T00:00:00Z',
   };

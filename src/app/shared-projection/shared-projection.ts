@@ -208,7 +208,7 @@ export class SharedProjectionComponent {
         next: (projection) => {
           this.analytics.capture('shared_projection_imported', { destination });
           void (destination === 'draft'
-            ? this.router.navigate(['/projections', projection.id, 'draft'])
+            ? this.router.navigate(['/draft/new/board', projection.id])
             : this.router.navigate(['/projections', projection.id], renameOnOpenExtras));
         },
         error: (error: unknown) => {

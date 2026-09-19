@@ -169,8 +169,14 @@ export class ProjectionListComponent {
       });
   }
 
+  /**
+   * Starts a draft against this board. Every press starts a new one — a draft is a row of its
+   * own now, so the board is not limited to holding a single draft — and nothing is saved until
+   * the setup on the draft page is confirmed. The drafts themselves are listed on /draft, which
+   * is the one place any of them is resumed from.
+   */
   draft(id: string): void {
-    void this.router.navigate(['/projections', id, 'draft']);
+    void this.router.navigate(['/draft/new/board', id]);
   }
 
   share(id: string): void {
@@ -196,19 +202,6 @@ export class ProjectionListComponent {
 
   closeShare(): void {
     this.sharingProjectionId.set(null);
-  }
-
-  /**
-   * Throws away the picks played against a projection while the projection itself stays. The
-   * card offers it wherever a draft has been started, finished or not, so a board can be
-   * drafted afresh without deleting it and building it again.
-   */
-  discardDraft(id: string): Promise<void> {
-    return firstValueFrom(this.storage.clearDraft(id))
-      .then(() => {
-        this.projectionsResource.reload();
-      })
-      .catch(() => this.notification.error("Couldn't discard the draft. Please try again."));
   }
 
   remove(id: string): Promise<void> {

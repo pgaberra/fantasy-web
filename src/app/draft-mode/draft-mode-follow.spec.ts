@@ -61,9 +61,10 @@ describe('DraftModeComponent following a Yahoo draft', () => {
 
   const projectionWith = (draft: DraftState): ProjectionResponse => ({
     id: 'p1',
-    kind: 'projection',
+    kind: 'draft',
     name: 'My Projection',
     season: '20262027',
+    autoNamed: false,
     createdAt: '2026-06-01T00:00:00Z',
     updatedAt: '2026-06-01T00:00:00Z',
     data: {

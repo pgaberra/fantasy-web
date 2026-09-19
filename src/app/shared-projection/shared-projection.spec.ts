@@ -899,7 +899,7 @@ describe('SharedProjectionComponent', () => {
 
       expect(takePending).toHaveBeenCalledWith('abc123');
       expect(copyFromShare).toHaveBeenCalledWith('abc123', undefined);
-      expect(navigate).toHaveBeenCalledWith(['/projections', 'copy1', 'draft']);
+      expect(navigate).toHaveBeenCalledWith(['/draft/new/board', 'copy1']);
     });
 
     /** Signing up can take minutes; the copy is still of the board they pressed on. */
@@ -1098,7 +1098,7 @@ describe('SharedProjectionComponent', () => {
       fixture.point.componentInstance.draftAgainstThis();
 
       expect(copyFromShare).toHaveBeenCalledWith('abc123', '2026-08-02T10:00:00Z');
-      expect(navigate).toHaveBeenCalledWith(['/projections', 'copy1', 'draft']);
+      expect(navigate).toHaveBeenCalledWith(['/draft/new/board', 'copy1']);
     });
 
     /**
@@ -1115,7 +1115,7 @@ describe('SharedProjectionComponent', () => {
       fixture.point.componentInstance.draftAgainstThis();
       fixture.detectChanges();
 
-      expect(navigate).toHaveBeenCalledWith(['/projections', 'copy2', 'draft']);
+      expect(navigate).toHaveBeenCalledWith(['/draft/new/board', 'copy2']);
       expect(fixture.nativeElement.textContent).not.toContain('You already have a copy');
       expect(notifyError).not.toHaveBeenCalled();
     });

@@ -82,7 +82,8 @@ test.describe('happy path', () => {
     await expect(sourceRow).toBeVisible();
     await sourceRow.getByRole('radio').check();
     await page.getByRole('button', { name: /^start draft$/i }).click();
-    await expect(page).toHaveURL(/\/projections\/[0-9a-f-]+\/draft$/i, { timeout: 30_000 });
+    // Start opens the setup with nothing saved; the draft is created when it is confirmed.
+    await expect(page).toHaveURL(/\/draft\/new\/board\/[0-9a-f-]+$/i, { timeout: 30_000 });
 
     // 6) Shrink to the smallest league so a full draft stays quick. Wait for the setup phase to
     //    render first — the board seeds its rows on arrival, and reading the stepper before it
@@ -96,6 +97,9 @@ test.describe('happy path', () => {
       await removeTeam.click();
     }
     await page.getByRole('button', { name: /^start draft$/i }).click();
+    // Confirming the setup creates the draft — a row of its own, with its own address — and the
+    // board reloads there against the copy of the numbers the server took.
+    await expect(page).toHaveURL(/\/drafts\/[0-9a-f-]+$/i, { timeout: 30_000 });
 
     // 7) Draft the top available player over and over until the draft is complete.
     // The loop's own guards do not wait, so the first row has to be awaited here: confirming

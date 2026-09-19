@@ -142,13 +142,29 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   three lists at once with a button per row (#459, #503), then a hierarchy of filled and
   outlined buttons (#505). Eight buttons on one page was still too much; folding two of
   the three kinds behind tiles that name their contents is the compromise.
-  A preset draft has no projection behind it, so starting one creates a projection of
-  kind `preset_draft` (seeded server-side via `source: default`) purely to hold the picks;
-  `ProjectionStorageService.listProjections()` filters that row out so it never shows up
-  as the user's own work, and `listWithPresetDrafts()` is the one place it is wanted.
-  A third reading, `listEditable()`, is everything that can be opened in the editor —
-  the user's own plus imported boards, preset drafts excluded — and is what
-  `projection-list` lists. `projection-create` deliberately keeps `listProjections()`:
+  **A draft is a row of its own** (`kind: draft`), holding its picks, its league and a copy of
+  the numbers it was played against — so a board can be drafted against **as many times as its
+  owner likes**, and editing or deleting that board leaves a draft under way exactly as it was.
+  Start never saves anything: it opens `/draft/new/preset/:preset` or `/draft/new/board/:id`,
+  and the draft page creates the draft once its setup is confirmed (`POST
+  /api/v1/projections/{id}/drafts` for a board, which copies the rows server-side; a plain
+  create with `kind: draft` and `source` for a preset, whose rows the server seeds). The draft
+  then lives at `/drafts/:id`. Before this a draft was a field on the board, so "one draft per
+  projection" was a property of the storage rather than anyone's decision, and a preset could be
+  "used up" by the draft against it.
+  `ProjectionStorageService.listProjections()` filters the drafts out so they never show up as
+  the user's own work, and `listAll()` is the one place they are wanted — the draft page, which
+  lists them above the boards a new draft would be started against. A third reading,
+  `listEditable()`, is everything that can be opened in the editor — the user's own plus
+  imported boards, drafts excluded — and is what `projection-list` lists.
+  **A draft is named**, defaulting to what it was started from and numbered by the server on a
+  clash ("AI Projection (2)"). It can be renamed from its row on the draft page or from the
+  heading on the board (`PUT /api/v1/projections/{id}/name`); a name the user typed is refused
+  when taken, and from then on it is theirs. A **league sync** names the draft after the league
+  (`derived: true`), which the server numbers on a clash and declines once the user has named
+  the draft themselves — Alexander's call: a name somebody chose is the more deliberate of the
+  two. A sync during a setup that has not been saved yet is held and applied the moment the
+  draft exists. `projection-create` deliberately keeps `listProjections()`:
   it asks whether the user already has a projection of their own, and an imported copy
   is not one. An imported card says whose board it is and offers no Share, since a share
   credits the account that publishes it.

@@ -45,7 +45,6 @@
               [isPreparingShare]="preparingShareFor() === projection.id"
               (share)="share(projection.id)"
               (remove)="remove(projection.id)"
-              (discardDraft)="discardDraft(projection.id)"
             ></li>
           }
         </ul>
@@ -65,7 +64,6 @@
               (share)="share(projection.id)"
               (copyRequested)="createCopy(projection)"
               (remove)="remove(projection.id)"
-              (discardDraft)="discardDraft(projection.id)"
             ></li>
           }
         </ul>
