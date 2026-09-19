@@ -13,9 +13,9 @@ export const MODEL_PRESET_NAME = 'AI Projection';
 /**
  * A starting point everyone shares, as opposed to a projection someone owns.
  *
- * <p>`id` is what a stored draft is matched on. It used to be the name, because `kind:
- * 'preset_draft'` says a draft came from a preset but not which one — the server now records
- * which, so the name is free to change without orphaning the drafts started from it.
+ * <p>`id` is what a draft started from a preset carries, so the page can name what it was
+ * played against without reading it back out of the draft's own name — which the user, or a
+ * league sync, may since have changed.
  */
 export interface Preset {
   readonly id: NonNullable<ProjectionSummaryResponse['preset']>;

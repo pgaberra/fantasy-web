@@ -250,3 +250,61 @@
 .follow-notice {
   color: var(--color-text);
 }
+
+/* Naming a draft. The same shape as the editor's rename, sized for the draft header's own
+   heading, so the two read alike without the board page's styles having to be shared. */
+.rename-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.rename-icon {
+  display: inline-flex;
+  vertical-align: middle;
+  color: #b8c2d6;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.rename-trigger:hover .rename-icon,
+.rename-trigger:focus-visible .rename-icon {
+  opacity: 1;
+}
+
+.rename-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rename-input {
+  flex: 1;
+  max-width: 22rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f3460;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid #b8cbe8;
+  border-radius: 8px;
+  outline: none;
+}
+
+.rename-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
+}
+
+.rename-error {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-error);
+}

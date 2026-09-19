@@ -19,15 +19,12 @@ describe('ProjectionStorageService', () => {
     kind,
     season: '20262027',
     draftStatus: 'none',
+    autoNamed: true,
     createdAt: '2026-06-01T00:00:00Z',
     updatedAt: '2026-06-01T00:00:00Z',
   });
 
-  const stored = [
-    summary('p1', 'projection'),
-    summary('i1', 'imported'),
-    summary('d1', 'preset_draft'),
-  ];
+  const stored = [summary('p1', 'projection'), summary('i1', 'imported'), summary('d1', 'draft')];
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -49,7 +46,7 @@ describe('ProjectionStorageService', () => {
     expect((await listed).map((projection) => projection.id)).toEqual(['p1']);
   });
 
-  /** An imported board is a projection the user owns and can edit; a preset draft is not. */
+  /** An imported board is a projection the user owns and can edit; a draft is not. */
   it('lists what can be opened in the editor, imported boards included', async () => {
     const listed = firstValueFrom(service.listEditable());
     respond();
@@ -57,44 +54,60 @@ describe('ProjectionStorageService', () => {
     expect((await listed).map((projection) => projection.id)).toEqual(['p1', 'i1']);
   });
 
-  it('keeps the preset draft where that row is the point', async () => {
-    const listed = firstValueFrom(service.listWithPresetDrafts());
+  it('keeps the drafts where those rows are the point', async () => {
+    const listed = firstValueFrom(service.listAll());
     respond();
 
     expect((await listed).map((projection) => projection.id)).toEqual(['p1', 'i1', 'd1']);
   });
 
-  it('clears a draft by saving the projection back without one, and without its players', async () => {
-    const cleared = firstValueFrom(service.clearDraft('p1'));
+  /**
+   * The rows the draft ranks by are copied on the server, so the ~0.5 MB of them is exactly what
+   * does not travel — the request carries the draft's own league and its setup, nothing else.
+   */
+  it('starts a draft against a board without sending the board back', async () => {
+    const started = firstValueFrom(
+      service.startDraft('p1', {
+        settings: { leagueSize: 12 } as never,
+        players: [],
+        draft: { teams: [], order: [], picks: [] },
+      }),
+    );
 
-    const read = http.expectOne((candidate) => candidate.url.endsWith('/projections/p1'));
-    expect(read.request.method).toEqual('GET');
-    read.flush({
-      id: 'p1',
-      name: 'Projection p1',
-      kind: 'projection',
-      season: '20262027',
-      createdAt: '2026-06-01T00:00:00Z',
-      updatedAt: '2026-06-01T00:00:00Z',
+    const request = http.expectOne((candidate) => candidate.url.endsWith('/projections/p1/drafts'));
+    expect(request.request.method).toEqual('POST');
+    expect(request.request.body).toEqual({
       data: {
         settings: { leagueSize: 12 },
-        players: [{ playerId: '1' }],
+        players: [],
         draft: { teams: [], order: [], picks: [] },
       },
     });
+    request.flush({ id: 'd2', name: 'Projection p1 (2)' });
 
-    // The read resolves through a promise before the write is sent, so let the queue drain.
-    await new Promise((resolve) => setTimeout(resolve));
+    expect((await started).id).toEqual('d2');
+  });
 
-    const write = http.expectOne((candidate) => candidate.url.endsWith('/projections/p1'));
-    expect(write.request.method).toEqual('PUT');
-    // No draft is what clears it; no players is what keeps the stored ~0.5 MB of them.
-    expect(write.request.body).toEqual({
-      name: 'Projection p1',
-      data: { settings: { leagueSize: 12 } },
-    });
-    write.flush({ id: 'p1' });
+  /** A rename sends the name and nothing else: the board stays where it is. */
+  it('renames without sending the board with it', async () => {
+    const renamed = firstValueFrom(service.renameProjection('d1', 'Mock #3'));
 
-    await cleared;
+    const request = http.expectOne((candidate) => candidate.url.endsWith('/projections/d1/name'));
+    expect(request.request.method).toEqual('PUT');
+    expect(request.request.body).toEqual({ name: 'Mock #3', derived: false });
+    request.flush(summary('d1', 'draft'));
+
+    await renamed;
+  });
+
+  /** A league sync's rename is marked, so the server can decline it or number it. */
+  it('marks a name the app derived rather than the user typing it', async () => {
+    const renamed = firstValueFrom(service.renameProjection('d1', 'Beer League', true));
+
+    const request = http.expectOne((candidate) => candidate.url.endsWith('/projections/d1/name'));
+    expect(request.request.body).toEqual({ name: 'Beer League', derived: true });
+    request.flush(summary('d1', 'draft'));
+
+    await renamed;
   });
 });

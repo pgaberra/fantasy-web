@@ -593,3 +593,26 @@
   font-weight: var(--weight-semibold);
   color: var(--color-text-subtle);
 }
+
+/* Naming a draft from its row. The input takes the place of the confirmation prompt, in the same
+   strip under the card, so the row grows the same way whichever the kebab was used for. */
+.rename-input {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-sm);
+  padding: 0.3rem 0.5rem;
+  border: 1px solid #b8cbe8;
+  border-radius: 8px;
+  outline: none;
+}
+
+.rename-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
+}
+
+.rename-error {
+  margin: 0.35rem 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-error);
+}
