@@ -208,7 +208,7 @@ export class SharedProjectionComponent {
           this.analytics.capture('shared_projection_imported', { destination });
           void this.router.navigate(
             destination === 'draft'
-              ? ['/projections', projection.id, 'draft']
+              ? ['/draft/new/board', projection.id]
               : ['/projections', projection.id],
           );
         },

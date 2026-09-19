@@ -472,10 +472,10 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (projection) => {
-          // A preset draft is not a projection anyone edits — it only holds the picks of a
-          // draft started from a preset. Reaching this URL for one means the board is wanted.
-          if (projection.kind === 'preset_draft') {
-            void this.router.navigate(['/projections', projection.id, 'draft']);
+          // A draft is not a projection anyone edits — it holds picks, and a copy of the
+          // board they were made against. Reaching this URL for one means the draft is wanted.
+          if (projection.kind === 'draft') {
+            void this.router.navigate(['/drafts', projection.id]);
             return;
           }
           this.projectionId.set(projection.id);

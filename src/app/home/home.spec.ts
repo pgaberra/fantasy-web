@@ -22,6 +22,7 @@ function summary(
     kind,
     name: `Board ${id}`,
     draftStatus,
+    autoNamed: true,
     season: '20262027',
     createdAt: '2026-06-01T00:00:00Z',
     updatedAt,
@@ -87,7 +88,9 @@ describe('HomeComponent', () => {
 
     expect(text(fixture, 'h1')).toEqual('Welcome back, alex');
     expect(text(fixture, '.resume-name')).toContain('Board new');
-    expect(text(fixture, '.resume-actions .btn-primary')).toEqual('Resume draft');
+    // The card is about the board. A draft is a row of its own and lives on the draft page,
+    // so this button starts a new one rather than promising to resume anything.
+    expect(text(fixture, '.resume-actions .btn-primary')).toEqual('Draft Mode');
     expect(text(fixture, '.feature-actions .btn-secondary')).toEqual('My Projections (2)');
   });
 

@@ -1,12 +1,15 @@
 import {
   Component,
   computed,
+  effect,
+  ElementRef,
   DestroyRef,
   HostListener,
   inject,
   linkedSignal,
   OnInit,
   signal,
+  viewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -73,6 +76,7 @@ import { DraftAvailablePanelComponent } from './draft-available-panel/draft-avai
 import { DraftPicksPanelComponent } from './draft-picks-panel/draft-picks-panel';
 import { DraftSummaryComponent } from './draft-summary/draft-summary';
 import { IconComponent } from '../shared/icon/icon';
+import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import {
   buildLeagueProjection,
   LeagueProjectionData,
@@ -116,6 +120,7 @@ const UNFOLLOWABLE_NOTICE: Record<UnfollowableReason, string> = {
     DraftPicksPanelComponent,
     DraftSummaryComponent,
     IconComponent,
+    TooltipDirective,
   ],
   providers: [DraftPlayerLookupService],
   templateUrl: './draft-mode.html',
@@ -140,15 +145,34 @@ export class DraftModeComponent implements OnInit {
   private readonly features = inject(FeatureService);
   private readonly yahoo = inject(YahooService);
 
-  readonly projectionId = signal<string | null>(null);
-  readonly projectionName = signal<string>('');
-  readonly projectionKind = signal<ProjectionResponse['kind']>('projection');
+  /** The saved draft this page is on, or null while one is still being set up. */
+  readonly draftId = signal<string | null>(null);
+  readonly draftName = signal<string>('');
   /**
    * The preset a draft is being set up against before anything is saved for it. Set only on
-   * `/draft/new/:preset`, where there is no board yet: it is created once the setup is confirmed,
-   * so someone who backs out of the setup leaves nothing behind.
+   * `/draft/new/preset/:preset`, where there is no row yet: it is created once the setup is
+   * confirmed, so someone who backs out of the setup leaves nothing behind.
    */
   private readonly unsavedPreset = signal<Preset | null>(null);
+  /**
+   * The board a draft is being set up against, on `/draft/new/board/:board`. The same story as
+   * the preset: nothing is saved until the setup is confirmed, and then the server copies that
+   * board into a draft of its own — so the board is untouched however many drafts are started
+   * against it.
+   */
+  private readonly unsavedBoard = signal<string | null>(null);
+  /**
+   * A league name a sync produced while there was still no row to rename. The draft takes it
+   * once it is created, through the same derived rename an established draft gets.
+   */
+  private readonly pendingLeagueName = signal<string | null>(null);
+
+  private readonly renameInput = viewChild<ElementRef<HTMLInputElement>>('renameInput');
+
+  readonly isRenaming = signal<boolean>(false);
+  readonly renameValue = signal<string>('');
+  readonly renameSaving = signal<boolean>(false);
+  readonly renameError = signal<string | null>(null);
   readonly loaded = signal<boolean>(false);
   readonly saveStatus = signal<'idle' | 'saving' | 'saved' | 'error'>('idle');
   readonly searchTerm = signal<string>('');
@@ -530,14 +554,10 @@ export class DraftModeComponent implements OnInit {
   );
   readonly finished = computed(() => !!this.draft()?.finishedAt);
 
-  // A preset draft has no projection to go back to — it exists only to hold these picks — so
-  // leaving it returns to where the draft was started from.
-  // A preset draft has no projection behind it, so there is no editor to go back to and it
-  // returns to where the draft was started from. An imported board does have one — it is a
-  // projection the user owns and can edit — and is listed with their own.
-  readonly exitLink = computed(() =>
-    this.projectionKind() === 'preset_draft' ? ['/draft'] : ['/projections', this.projectionId()],
-  );
+  // A draft is a board of its own, holding a copy of whatever it was started against, so there
+  // is no projection behind it to go back to — and the board it was copied from may since have
+  // been edited or deleted. Leaving returns to the drafts.
+  readonly exitLink = ['/draft'];
 
   readonly draftLabel = computed(() => {
     if (this.isMyPick() || this.isComplete()) {
@@ -687,10 +707,24 @@ export class DraftModeComponent implements OnInit {
     };
   });
 
+  constructor() {
+    // The heading is replaced by the input, so focus would otherwise be dropped on the body.
+    effect(() => {
+      if (this.isRenaming()) {
+        this.renameInput()?.nativeElement.focus();
+      }
+    });
+  }
+
   ngOnInit(): void {
     const presetId = this.route.snapshot.paramMap.get('preset');
     if (presetId !== null) {
       this.openUnsavedPresetDraft(presetId);
+      return;
+    }
+    const boardId = this.route.snapshot.paramMap.get('board');
+    if (boardId !== null) {
+      this.openUnsavedBoardDraft(boardId);
       return;
     }
     const id = this.route.snapshot.paramMap.get('id');
@@ -705,9 +739,14 @@ export class DraftModeComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: ({ projection, players }) => {
-          this.projectionId.set(projection.id);
-          this.projectionName.set(projection.name);
-          this.projectionKind.set(projection.kind);
+          // Only a draft is opened here. A board's own address is the editor's, and a board
+          // holds no draft of its own any more — an old link to one redirects to a fresh setup.
+          if (projection.kind !== 'draft') {
+            void this.router.navigate(['/draft/new/board', projection.id], { replaceUrl: true });
+            return;
+          }
+          this.draftId.set(projection.id);
+          this.draftName.set(projection.name);
           this.data.set(projection.data);
           // Corrected before anything sees the pool, so a pick lands in the slot this owner's
           // league says the player is eligible for rather than the one the read model reports.
@@ -753,8 +792,7 @@ export class DraftModeComponent implements OnInit {
       return;
     }
     this.unsavedPreset.set(preset);
-    this.projectionName.set(preset.name);
-    this.projectionKind.set('preset_draft');
+    this.draftName.set(preset.name);
     const defaults = this.serializer.toProjectionData(
       createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
     );
@@ -772,6 +810,46 @@ export class DraftModeComponent implements OnInit {
         },
         error: () => {
           this.notification.error("Couldn't load the draft. Please try again.");
+          void this.router.navigate(['/draft']);
+        },
+      });
+  }
+
+  /**
+   * The setup for a draft against one of the user's boards, with nothing stored for it yet. The
+   * board is read for its numbers and its settings; it is never written to, and the copy the
+   * draft ranks by is made by the server once the setup is confirmed.
+   */
+  private openUnsavedBoardDraft(boardId: string): void {
+    this.unsavedBoard.set(boardId);
+    forkJoin({
+      board: this.projectionStorage.loadProjection(boardId),
+      players: this.playerService.getPlayers(),
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ board, players }) => {
+          if (board.kind === 'draft') {
+            // A draft is not something to draft against; its own address is where it opens.
+            void this.router.navigate(['/drafts', board.id], { replaceUrl: true });
+            return;
+          }
+          this.draftName.set(board.name);
+          this.data.set(board.data);
+          const pool = applyPositionOverrides(
+            players,
+            this.serializer.fromProjectionData(board.data).positionOverrides,
+          );
+          this.allPlayers.set(pool);
+          this.lookup.setPlayers(pool);
+          // The league set on the draft picker, if one was; otherwise the board's own.
+          this.league.set(
+            draftLeagueFromHistory() ?? draftSettingsFromProjection(board.data.settings),
+          );
+          this.loaded.set(true);
+        },
+        error: () => {
+          this.notification.error("Couldn't open that board. Please try again.");
           void this.router.navigate(['/draft']);
         },
       });
@@ -879,6 +957,11 @@ export class DraftModeComponent implements OnInit {
       this.createPresetDraft(preset, result.draft);
       return;
     }
+    const board = this.unsavedBoard();
+    if (board) {
+      this.createBoardDraft(board, result.draft);
+      return;
+    }
     this.applySetup(result.draft);
   }
 
@@ -899,16 +982,13 @@ export class DraftModeComponent implements OnInit {
     this.projectionStorage
       .createProjection({
         name: preset.name,
-        kind: 'preset_draft',
+        kind: 'draft',
         source: preset.source,
         data: { ...data, players: [], draft: this.withLeague(draft) },
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (projection) =>
-          void this.router.navigate(['/projections', projection.id, 'draft'], {
-            replaceUrl: true,
-          }),
+        next: (projection) => this.openCreatedDraft(projection),
         error: (error: unknown) => {
           this.saveStatus.set('idle');
           // The start page holds a locked preset back itself, so a refusal here most likely
@@ -922,7 +1002,55 @@ export class DraftModeComponent implements OnInit {
       });
   }
 
+  /**
+   * Saves a draft against one of the user's boards for the first time, with its setup already in
+   * it, and moves to its own address. The player rows are not sent: the server copies the board's
+   * — half a megabyte that never leaves it — which is also what makes the copy the draft ranks by
+   * independent of the board from that moment on.
+   *
+   * <p>The name is the server's to settle: it takes the board's, numbered where another draft of
+   * this user's already holds it, so the tenth draft off one projection names itself.
+   */
+  private createBoardDraft(boardId: string, draft: DraftState): void {
+    const data = this.data();
+    if (!data || this.saveStatus() === 'saving') {
+      return;
+    }
+    this.saveStatus.set('saving');
+    this.projectionStorage
+      .startDraft(boardId, { settings: data.settings, players: [], draft: this.withLeague(draft) })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (created) => this.openCreatedDraft(created),
+        error: () => {
+          this.saveStatus.set('idle');
+          this.notification.error("Couldn't start the draft. Please try again.");
+        },
+      });
+  }
+
+  /**
+   * Moves to the draft's own address once it exists. That address loads it afresh, which is what
+   * brings in the rows the server copied or seeded; replacing the history entry keeps Back from
+   * reopening a setup for a draft that has already been created. A league synced during that
+   * setup names the draft here, where there is at last a row to rename.
+   */
+  private openCreatedDraft(created: ProjectionResponse): void {
+    const league = this.pendingLeagueName();
+    this.pendingLeagueName.set(null);
+    if (league) {
+      this.projectionStorage
+        .renameProjection(created.id, league, true)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          error: () => this.notification.error("Couldn't name the draft after the league."),
+        });
+    }
+    void this.router.navigate(['/drafts', created.id], { replaceUrl: true });
+  }
+
   applyEspnSync(result: EspnSyncResult): void {
+    this.nameAfterLeague(result.leagueName);
     this.applyImportedLeague(result.settings, {
       espnSync: {
         // ESPN names the league in its settings response; the user only ever typed the id.
@@ -937,6 +1065,7 @@ export class DraftModeComponent implements OnInit {
   }
 
   applyYahooSync(result: YahooSyncResult): void {
+    this.nameAfterLeague(result.leagueName);
     this.applyImportedLeague(result.settings, {
       yahooSync: {
         leagueName: result.leagueName,
@@ -972,6 +1101,90 @@ export class DraftModeComponent implements OnInit {
     if (this.draft()) {
       this.save();
     }
+  }
+
+  /**
+   * A synced league names the draft after itself. Only a draft still carrying the name the
+   * server gave it: the rename is sent as derived, and the server declines it once the owner has
+   * named the draft themselves — a name somebody chose is more deliberate than the default it
+   * would replace. A clash with another draft is numbered rather than refused, for the same
+   * reason: nobody typed this name either.
+   *
+   * <p>During the setup of a draft that does not exist yet there is nothing to rename, so the
+   * name is held until the row is created.
+   */
+  private nameAfterLeague(leagueName: string | null | undefined): void {
+    const name = leagueName?.trim();
+    if (!name) {
+      return;
+    }
+    const id = this.draftId();
+    if (!id) {
+      this.pendingLeagueName.set(name);
+      return;
+    }
+    this.projectionStorage
+      .renameProjection(id, name, true)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (renamed) => this.draftName.set(renamed.name),
+        error: () => this.notification.error("Couldn't name the draft after the league."),
+      });
+  }
+
+  startRename(): void {
+    this.renameValue.set(this.draftName());
+    this.renameError.set(null);
+    this.isRenaming.set(true);
+  }
+
+  cancelRename(): void {
+    this.isRenaming.set(false);
+    this.renameError.set(null);
+  }
+
+  onRenameInput(event: Event): void {
+    this.renameValue.set((event.target as HTMLInputElement).value);
+  }
+
+  /**
+   * Names the draft. Unlike the name a sync derives, this one is refused where another draft
+   * holds it: it is the whole of what was asked for, so it is said rather than worked around.
+   * From here on a league sync leaves the name alone.
+   */
+  saveRename(): void {
+    const name = this.renameValue().trim();
+    const id = this.draftId();
+    if (!id || this.renameSaving()) {
+      return;
+    }
+    if (!name) {
+      this.renameError.set('Name cannot be empty.');
+      return;
+    }
+    if (name === this.draftName()) {
+      this.cancelRename();
+      return;
+    }
+    this.renameSaving.set(true);
+    this.renameError.set(null);
+    this.projectionStorage
+      .renameProjection(id, name)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (renamed) => {
+          this.draftName.set(renamed.name);
+          this.renameSaving.set(false);
+          this.isRenaming.set(false);
+        },
+        error: (error: unknown) => {
+          this.renameSaving.set(false);
+          const conflict = error instanceof HttpErrorResponse && error.status === 409;
+          this.renameError.set(
+            conflict ? 'You already have a draft with that name.' : "Couldn't rename the draft.",
+          );
+        },
+      });
   }
 
   /** A draft as it is saved: with the league it is ranked by. */
@@ -1189,7 +1402,7 @@ export class DraftModeComponent implements OnInit {
   }
 
   private save(): void {
-    const id = this.projectionId();
+    const id = this.draftId();
     const data = this.data();
     if (!id || !data) {
       return;
@@ -1206,7 +1419,7 @@ export class DraftModeComponent implements OnInit {
     };
     this.saveStatus.set('saving');
     this.projectionStorage
-      .updateProjection(id, { name: this.projectionName(), data: updated })
+      .updateProjection(id, { name: this.draftName(), data: updated })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => this.saveStatus.set('saved'),

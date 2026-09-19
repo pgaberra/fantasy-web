@@ -16,6 +16,7 @@ describe('ProjectionCardComponent', () => {
     createdAt: '2026-06-01T00:00:00Z',
     updatedAt: '2026-06-01T00:00:00Z',
     draftStatus: 'none',
+    autoNamed: true,
   };
 
   const template = `<li app-projection-card [projection]="projection"
@@ -155,32 +156,19 @@ describe('ProjectionCardComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Edit');
   });
 
-  it('labels the draft action "Draft Mode" and shows no status pill without a draft', () => {
-    const fixture = renderWithStatus('none');
+  /**
+   * A board holds no draft any more — a draft is a row of its own, and a board can have any
+   * number of them — so the card neither labels itself after one nor carries a pill about one.
+   * The drafts are listed, resumed and discarded on the draft page.
+   */
+  it('offers to start a draft, and says nothing about drafts already played', () => {
+    const fixture = renderWithStatus('in_progress');
 
     expect(ngMocks.find<HTMLButtonElement>('.draft').nativeElement.textContent).toContain(
       'Draft Mode',
     );
     expect(fixture.nativeElement.textContent).not.toContain('Draft in progress');
     expect(fixture.nativeElement.textContent).not.toContain('Draft complete');
-  });
-
-  it('labels the draft action "Resume draft" and shows an in-progress pill', () => {
-    const fixture = renderWithStatus('in_progress');
-
-    expect(ngMocks.find<HTMLButtonElement>('.draft').nativeElement.textContent).toContain(
-      'Resume draft',
-    );
-    expect(fixture.nativeElement.textContent).toContain('Draft in progress');
-  });
-
-  it('labels the draft action "View summary" and shows a complete pill when finished', () => {
-    const fixture = renderWithStatus('finished');
-
-    expect(ngMocks.find<HTMLButtonElement>('.draft').nativeElement.textContent).toContain(
-      'View summary',
-    );
-    expect(fixture.nativeElement.textContent).toContain('Draft complete');
   });
 
   describe('a board imported from a share link', () => {
@@ -223,56 +211,5 @@ describe('ProjectionCardComponent', () => {
       fixture.detectChanges();
       expect(document.querySelector('.menu-item.delete')).not.toBeNull();
     });
-  });
-
-  it('offers to discard the draft, but only once one has been played', () => {
-    renderWithStatus('none');
-    expect(openMenu().map((item) => item.textContent?.trim())).toEqual(['Share', 'Delete']);
-
-    renderWithStatus('in_progress');
-    expect(openMenu().map((item) => item.textContent?.trim())).toEqual([
-      'Share',
-      'Discard draft',
-      'Delete',
-    ]);
-
-    // A finished draft is worth throwing away too: it is what stands between the board and
-    // being drafted afresh.
-    renderWithStatus('finished');
-    expect(openMenu().map((item) => item.textContent?.trim())).toEqual([
-      'Share',
-      'Discard draft',
-      'Delete',
-    ]);
-  });
-
-  it('asks before discarding, naming the board so it is not read as a delete', () => {
-    const fixture = renderWithStatus('finished');
-    openMenu();
-
-    menuItem('Discard draft').dispatchEvent(new Event('click', { bubbles: true }));
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.textContent).toContain('Discard the draft for “My league”?');
-    expect(onDiscardDraft).not.toHaveBeenCalled();
-    expect(document.activeElement).toEqual(ngMocks.find('.confirm-text').nativeElement);
-
-    ngMocks.find<HTMLButtonElement>('.discard').nativeElement.click();
-
-    expect(onDiscardDraft).toHaveBeenCalledOnce();
-    expect(onRemove).not.toHaveBeenCalled();
-  });
-
-  it('does not discard when the confirmation is cancelled', () => {
-    const fixture = renderWithStatus('finished');
-    openMenu();
-
-    menuItem('Discard draft').dispatchEvent(new Event('click', { bubbles: true }));
-    fixture.detectChanges();
-    ngMocks.find<HTMLButtonElement>('.cancel').nativeElement.click();
-    fixture.detectChanges();
-
-    expect(onDiscardDraft).not.toHaveBeenCalled();
-    expect(fixture.nativeElement.textContent).toContain('Edit');
   });
 });

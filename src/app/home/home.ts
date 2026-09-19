@@ -76,17 +76,6 @@ export class HomeComponent {
   readonly aiProjectionServed = this.features.aiProjection;
   readonly aiProjectionLocked = this.aiProjectionAccess.locked;
 
-  draftLabel(projection: ProjectionSummaryResponse): string {
-    switch (projection.draftStatus) {
-      case 'finished':
-        return 'View summary';
-      case 'in_progress':
-        return 'Resume draft';
-      default:
-        return 'Draft Mode';
-    }
-  }
-
   retry(): void {
     this.projectionsResource.reload();
   }

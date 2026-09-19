@@ -23,6 +23,13 @@ import { DraftPlayerLookupService } from './draft-player-lookup.service';
 import { TierService } from '../services/tier.service';
 import { environment } from '../../environments/environment';
 
+/** Renders the page and hands back its component, which is all any of these tests wants. */
+const renderDraftMode = async () => {
+  const fixture = MockRender(DraftModeComponent);
+  await fixture.whenStable();
+  return fixture.point.componentInstance;
+};
+
 describe('DraftModeComponent', () => {
   const players: Player[] = [
     { id: 1, type: 'skater', name: 'McDavid', positions: new Set(['C']), stats: {} as SkaterStats },
@@ -31,9 +38,10 @@ describe('DraftModeComponent', () => {
 
   const projection: ProjectionResponse = {
     id: 'p1',
-    kind: 'projection',
+    kind: 'draft',
     name: 'My Projection',
     season: '20262027',
+    autoNamed: true,
     createdAt: '2026-06-01T00:00:00Z',
     updatedAt: '2026-06-01T00:00:00Z',
     data: {
@@ -100,11 +108,17 @@ describe('DraftModeComponent', () => {
   const updateProjection = vi.fn<
     (id: string, request: UpdateProjectionRequest) => Observable<ProjectionResponse>
   >(() => of(projection));
+  const renameProjection = vi.fn();
+  const startDraft = vi.fn();
 
   let loadedProjection: ProjectionResponse = projection;
 
   beforeEach(() => {
     updateProjection.mockClear();
+    renameProjection.mockReset();
+    renameProjection.mockImplementation((id: string, name: string) => of({ id, name }));
+    startDraft.mockReset();
+    startDraft.mockImplementation(() => of({ id: 'd1', name: 'Projection p1' }));
     loadedProjection = projection;
     return MockBuilder(DraftModeComponent)
       .keep(ProjectionRankingService)
@@ -116,6 +130,8 @@ describe('DraftModeComponent', () => {
       .mock(ProjectionStorageService, {
         loadProjection: () => of(loadedProjection),
         updateProjection,
+        renameProjection,
+        startDraft,
       })
       .provide({
         provide: ActivatedRoute,
@@ -130,6 +146,55 @@ describe('DraftModeComponent', () => {
    * best tier left at each position is still on the board. What matters is that it counts only
    * undrafted players and that it goes quiet when the feature is off.
    */
+  /**
+   * The name is the draft's own. A league sync derives one and the server declines it once the
+   * owner has named the draft themselves, so the page sends the rename and shows what comes back
+   * rather than deciding for itself.
+   */
+  it('names a synced draft after its league, as a derived rename', async () => {
+    const component = await renderDraftMode();
+
+    component.applyYahooSync({
+      leagueName: 'Beer League',
+      leagueKey: 'nhl.l.1',
+      settings: {
+        scoringType: 'points',
+        activeScoringColumns: ['goals'],
+        activeUtilityColumns: ['gp'],
+        rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+        leagueSize: 12,
+      },
+    } as never);
+
+    expect(renameProjection).toHaveBeenCalledWith('p1', 'Beer League', true);
+    expect(component.draftName()).toEqual('Beer League');
+  });
+
+  it('renames the draft to what its owner typed, which no sync may then overwrite', async () => {
+    const component = await renderDraftMode();
+
+    component.startRename();
+    component.renameValue.set('  Mock #3  ');
+    component.saveRename();
+
+    // Not derived: a name the user typed is theirs, and a clash is reported rather than numbered.
+    expect(renameProjection).toHaveBeenCalledWith('p1', 'Mock #3');
+    expect(component.draftName()).toEqual('Mock #3');
+    expect(component.isRenaming()).toBe(false);
+  });
+
+  it('says when another draft holds that name, and keeps the input open', async () => {
+    renameProjection.mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 409 })));
+    const component = await renderDraftMode();
+
+    component.startRename();
+    component.renameValue.set('Taken');
+    component.saveRename();
+
+    expect(component.renameError()).toEqual('You already have a draft with that name.');
+    expect(component.isRenaming()).toBe(true);
+  });
+
   describe('tiers', () => {
     const originalFlag = environment.tiersEnabled;
 
@@ -766,9 +831,10 @@ describe('DraftModeComponent — available pagination', () => {
 
   const bigProjection: ProjectionResponse = {
     id: 'p2',
-    kind: 'projection',
+    kind: 'draft',
     name: 'Big Board',
     season: '20262027',
+    autoNamed: true,
     createdAt: '2026-06-01T00:00:00Z',
     updatedAt: '2026-06-01T00:00:00Z',
     data: {
@@ -892,9 +958,10 @@ describe('DraftModeComponent — finished draft', () => {
 
   const finishedProjection: ProjectionResponse = {
     id: 'p1',
-    kind: 'projection',
+    kind: 'draft',
     name: 'My Projection',
     season: '20262027',
+    autoNamed: true,
     createdAt: '2026-06-01T00:00:00Z',
     updatedAt: '2026-06-01T00:00:00Z',
     data: {
@@ -1033,6 +1100,8 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
   const createProjection = vi.fn();
   const loadProjection = vi.fn();
   const updateProjection = vi.fn();
+  const renameProjection = vi.fn();
+  const startDraft = vi.fn();
   const notifyError = vi.fn();
   let presetParam: string | null = 'model';
 
@@ -1044,6 +1113,10 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
     createProjection.mockReturnValue(of({ id: 'model1' }));
     loadProjection.mockClear();
     updateProjection.mockClear();
+    renameProjection.mockReset();
+    renameProjection.mockImplementation((id: string, name: string) => of({ id, name }));
+    startDraft.mockReset();
+    startDraft.mockImplementation(() => of({ id: 'd1', name: 'Projection p1' }));
     notifyError.mockClear();
     return MockBuilder(DraftModeComponent)
       .keep(ProjectionRankingService)
@@ -1052,7 +1125,13 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
       .keep(DraftPlayerLookupService)
       .keep(StatInfoService)
       .mock(PlayerService, { getPlayers: () => of(players) })
-      .mock(ProjectionStorageService, { loadProjection, updateProjection, createProjection })
+      .mock(ProjectionStorageService, {
+        loadProjection,
+        updateProjection,
+        createProjection,
+        renameProjection,
+        startDraft,
+      })
       .mock(NotificationService, { error: notifyError })
       .provide({ provide: Router, useValue: { navigate } })
       .provide({
@@ -1063,26 +1142,20 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
       });
   });
 
-  const render = async () => {
-    const fixture = MockRender(DraftModeComponent);
-    await fixture.whenStable();
-    return fixture.point.componentInstance;
-  };
-
   it('opens on the setup with nothing loaded or saved', async () => {
-    const component = await render();
+    const component = await renderDraftMode();
 
     expect(component.loaded()).toBe(true);
     expect(component.phase()).toEqual('setup');
-    expect(component.projectionName()).toEqual('AI Projection');
-    expect(component.exitLink()).toEqual(['/draft']);
+    expect(component.draftName()).toEqual('AI Projection');
+    expect(component.exitLink).toEqual(['/draft']);
     expect(loadProjection).not.toHaveBeenCalled();
     expect(createProjection).not.toHaveBeenCalled();
     expect(updateProjection).not.toHaveBeenCalled();
   });
 
   it('keeps a league sync made during the setup in memory until the draft is saved', async () => {
-    const component = await render();
+    const component = await renderDraftMode();
 
     component.applyYahooSync({
       leagueName: 'My Yahoo League',
@@ -1117,7 +1190,7 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
       leagueSize: 8,
     });
     history.replaceState({ draftLeagueSettings: draftSettingsFromProjection(settings) }, '');
-    const component = await render();
+    const component = await renderDraftMode();
 
     expect(component.scoringType()).toEqual('category');
     component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
@@ -1130,7 +1203,7 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
   });
 
   it('creates the board with its setup once confirmed, then opens the board', async () => {
-    const component = await render();
+    const component = await renderDraftMode();
 
     component.onSetupConfirmed({
       draft,
@@ -1139,7 +1212,7 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
 
     expect(createProjection).toHaveBeenCalledOnce();
     const request = createProjection.mock.calls[0][0];
-    expect(request.kind).toEqual('preset_draft');
+    expect(request.kind).toEqual('draft');
     expect(request.source).toEqual('model');
     expect(request.data.players).toEqual([]);
     expect(request.data.draft).toEqual({ ...draft, settings: expect.any(Object) });
@@ -1152,14 +1225,12 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
       bn: 0,
       g: 0,
     });
-    expect(navigate).toHaveBeenCalledWith(['/projections', 'model1', 'draft'], {
-      replaceUrl: true,
-    });
+    expect(navigate).toHaveBeenCalledWith(['/drafts', 'model1'], { replaceUrl: true });
   });
 
   it('creates one board however often the setup is confirmed while it saves', async () => {
     createProjection.mockReturnValue(new Observable());
-    const component = await render();
+    const component = await renderDraftMode();
 
     component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
     component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
@@ -1169,7 +1240,7 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
 
   it('stays on the setup and says so when the board cannot be created', async () => {
     createProjection.mockReturnValue(throwError(() => new Error('boom')));
-    const component = await render();
+    const component = await renderDraftMode();
 
     component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
 
@@ -1181,7 +1252,7 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
 
   it('says what a refused draft actually needs, rather than telling anyone to retry', async () => {
     createProjection.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
-    const component = await render();
+    const component = await renderDraftMode();
 
     component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
 
@@ -1190,8 +1261,166 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
 
   it('goes back to the start page for a preset it does not know', async () => {
     presetParam = 'nonsense';
-    await render();
+    await renderDraftMode();
 
     expect(navigate).toHaveBeenCalledWith(['/draft']);
+  });
+});
+
+/**
+ * A draft against one of the user's own boards, before anything is saved for it. The board is
+ * read for its numbers and its settings and is never written to; the draft is created — as a
+ * copy, on the server — once the setup is confirmed, so a board can be drafted against as often
+ * as its owner likes and a setup someone backs out of leaves nothing behind.
+ */
+describe('DraftModeComponent — a draft against a board, not saved yet', () => {
+  const players: Player[] = [
+    { id: 1, type: 'skater', name: 'McDavid', positions: new Set(['C']), stats: {} as SkaterStats },
+  ];
+
+  const board: ProjectionResponse = {
+    id: 'p1',
+    kind: 'projection',
+    name: 'My league',
+    season: '20262027',
+    autoNamed: false,
+    createdAt: '2026-06-01T00:00:00Z',
+    updatedAt: '2026-06-01T00:00:00Z',
+    data: {
+      settings: {
+        scoringType: 'points',
+        statWeights: { goals: 4 },
+        activeScoringColumns: ['goals'],
+        activeUtilityColumns: ['gp'],
+        scaleSettings: {},
+        decimalSettings: { goals: 0 },
+        useDefaultDecimals: true,
+        leagueSize: 12,
+      },
+      players: [
+        { playerId: 1, type: 'skater', stats: { utility: { gp: 82 }, scoring: { goals: 60 } } },
+      ],
+    },
+  };
+
+  const draft: DraftState = {
+    teams: [
+      { id: 'team-me', name: 'My Team', mine: true },
+      { id: 'team-1', name: 'Team 1', mine: false },
+    ],
+    order: ['team-me', 'team-1'],
+    picks: [],
+  };
+
+  const navigate = vi.fn(() => Promise.resolve(true));
+  const loadProjection = vi.fn();
+  const updateProjection = vi.fn();
+  const createProjection = vi.fn();
+  const startDraft = vi.fn();
+  const renameProjection = vi.fn();
+  const notifyError = vi.fn();
+
+  beforeEach(() => {
+    history.replaceState(null, '');
+    navigate.mockClear();
+    loadProjection.mockReset();
+    loadProjection.mockReturnValue(of(board));
+    updateProjection.mockReset();
+    updateProjection.mockImplementation((id: string) => of({ ...board, id }));
+    createProjection.mockReset();
+    startDraft.mockReset();
+    startDraft.mockReturnValue(of({ ...board, id: 'd1', kind: 'draft', name: 'My league (2)' }));
+    renameProjection.mockReset();
+    renameProjection.mockImplementation((id: string, name: string) => of({ id, name }));
+    notifyError.mockClear();
+    return MockBuilder(DraftModeComponent)
+      .keep(ProjectionRankingService)
+      .keep(ProjectionCalculationService)
+      .keep(PositionFilterService)
+      .keep(DraftPlayerLookupService)
+      .keep(StatInfoService)
+      .mock(PlayerService, { getPlayers: () => of(players) })
+      .mock(ProjectionStorageService, {
+        loadProjection,
+        updateProjection,
+        createProjection,
+        startDraft,
+        renameProjection,
+      })
+      .mock(NotificationService, { error: notifyError })
+      .provide({ provide: Router, useValue: { navigate } })
+      .provide({
+        provide: ActivatedRoute,
+        useValue: {
+          snapshot: { paramMap: { get: (key: string) => (key === 'board' ? 'p1' : null) } },
+        },
+      });
+  });
+
+  it('opens the setup on the board without writing anything', async () => {
+    const component = await renderDraftMode();
+
+    expect(component.loaded()).toBe(true);
+    expect(component.phase()).toEqual('setup');
+    expect(component.draftName()).toEqual('My league');
+    expect(component.draftId()).toBeNull();
+    expect(updateProjection).not.toHaveBeenCalled();
+    expect(startDraft).not.toHaveBeenCalled();
+  });
+
+  it('starts the draft once the setup is confirmed, leaving the board alone', async () => {
+    const component = await renderDraftMode();
+
+    component.onSetupConfirmed({
+      draft,
+      rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+    });
+
+    expect(startDraft).toHaveBeenCalledOnce();
+    const [boardId, data] = startDraft.mock.calls[0];
+    expect(boardId).toEqual('p1');
+    // The rows are the server's to copy; sending them back is the half megabyte this avoids.
+    expect(data.players).toEqual([]);
+    expect(data.draft).toEqual({ ...draft, settings: expect.any(Object) });
+    expect(updateProjection).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['/drafts', 'd1'], { replaceUrl: true });
+  });
+
+  it('stays on the setup and says so when the draft cannot be created', async () => {
+    startDraft.mockReturnValue(throwError(() => new Error('boom')));
+    const component = await renderDraftMode();
+
+    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+
+    expect(notifyError).toHaveBeenCalledWith("Couldn't start the draft. Please try again.");
+    expect(component.phase()).toEqual('setup');
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  /**
+   * A league synced during the setup has no draft to name yet, so the name is held and applied
+   * to the draft the moment it exists — as a derived rename, which the server declines once the
+   * owner has named the draft themselves.
+   */
+  it('names the draft after a league synced before it existed', async () => {
+    const component = await renderDraftMode();
+
+    component.applyYahooSync({
+      leagueName: 'Beer League',
+      leagueKey: 'nhl.l.1',
+      settings: {
+        scoringType: 'points',
+        activeScoringColumns: ['goals'],
+        activeUtilityColumns: ['gp'],
+        rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+        leagueSize: 12,
+      },
+    } as never);
+
+    expect(renameProjection).not.toHaveBeenCalled();
+
+    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+
+    expect(renameProjection).toHaveBeenCalledWith('d1', 'Beer League', true);
   });
 });

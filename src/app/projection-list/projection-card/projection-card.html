@@ -8,24 +8,9 @@
     }
     Updated {{ projection().updatedAt | relativeTime }}
   </span>
-  @if (projection().draftStatus === 'finished') {
-    <span class="card-status card-status--done">Draft complete</span>
-  } @else if (projection().draftStatus === 'in_progress') {
-    <span class="card-status">Draft in progress</span>
-  }
 </div>
 <div class="card-actions">
-  @if (confirmingDiscard()) {
-    <span class="confirm-text" tabindex="-1" #confirmPrompt>
-      Discard the draft for “{{ projection().name }}”?
-    </span>
-    <button type="button" class="btn btn-danger btn-sm discard" (click)="confirmDiscard()">
-      Yes, discard
-    </button>
-    <button type="button" class="btn btn-secondary btn-sm cancel" (click)="cancelDiscard()">
-      Cancel
-    </button>
-  } @else if (confirmingDelete()) {
+  @if (confirmingDelete()) {
     <span class="confirm-text" tabindex="-1" #confirmPrompt>Delete “{{ projection().name }}”?</span>
     <button type="button" class="btn btn-danger btn-sm delete" (click)="confirmDelete()">
       Yes, delete
@@ -36,7 +21,7 @@
   } @else {
     <button type="button" class="btn btn-primary btn-sm edit" (click)="edit.emit()">Edit</button>
     <button type="button" class="btn btn-secondary btn-sm draft" (click)="draft.emit()">
-      {{ draftLabel() }}
+      Draft Mode
     </button>
     <button
       type="button"
@@ -64,12 +49,6 @@
         } @else {
           Share
         }
-      </button>
-    }
-    @if (hasDraft()) {
-      <button type="button" class="menu-item menu-item--danger discard" (click)="startDiscard()">
-        <app-icon name="rotate-ccw" />
-        Discard draft
       </button>
     }
     <button type="button" class="menu-item menu-item--danger delete" (click)="startDelete()">
