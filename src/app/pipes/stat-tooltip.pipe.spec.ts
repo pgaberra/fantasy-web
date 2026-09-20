@@ -6,6 +6,7 @@ describe('StatTooltipPipe', () => {
 
   it('expands an abbreviation to its full stat name', () => {
     expect(pipe.transform('gp')).toEqual('Games Played');
+    expect(pipe.transform('gs')).toEqual('Games Started');
     expect(pipe.transform('ppp')).toEqual('Power Play Points');
     expect(pipe.transform('sv')).toEqual('Saves');
     expect(pipe.transform('ga')).toEqual('Goals Against');
