@@ -83,17 +83,20 @@
   text-align: left;
 }
 
+/* Always drawn, quietly. It used to appear on hover, which told a mouse the name could be
+   changed and told a phone nothing at all — there is no hover to reveal it with, so on a touch
+   screen the affordance did not exist. Muted enough not to compete with the heading it sits
+   beside, and it darkens on hover and focus. */
 .rename-icon {
   display: inline-flex;
   vertical-align: middle;
   color: #b8c2d6;
-  opacity: 0;
-  transition: opacity 0.2s;
+  transition: color 0.2s;
 }
 
 .rename-trigger:hover .rename-icon,
 .rename-trigger:focus-visible .rename-icon {
-  opacity: 1;
+  color: var(--color-accent);
 }
 
 .rename-row {
