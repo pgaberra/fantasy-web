@@ -19,6 +19,7 @@ import { SharedPlayer } from '../api/models/shared-player';
 import { IconComponent } from '../shared/icon/icon';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { renameOnOpenExtras } from '../draft-projection/rename-intent';
+import { isFollowedBoard, isOwnBoard } from '../models/source-kind';
 
 @Component({
   selector: 'app-projection-list',
@@ -66,21 +67,13 @@ export class ProjectionListComponent {
   );
 
   /**
-   * The user's own work: what they made, and the copies they took of projections shared with
-   * them. A copy is stored as `kind: 'projection'` with no origin, so it belongs here.
+   * The user's own work: what they made, the copies they took of projections shared with them,
+   * and the spreadsheets they uploaded. All of it is theirs to edit, rename and share.
    */
-  readonly ownProjections = computed(() =>
-    this.sortedProjections().filter((projection) => projection.kind === 'projection'),
-  );
+  readonly ownProjections = computed(() => this.sortedProjections().filter(isOwnBoard));
 
-  /**
-   * What came from somewhere else: the share links they follow and the spreadsheets they
-   * uploaded. Both are `kind: 'imported'`; only a follow carries an origin, and the card says
-   * which is which.
-   */
-  readonly importedProjections = computed(() =>
-    this.sortedProjections().filter((projection) => projection.kind !== 'projection'),
-  );
+  /** Somebody else's board, mirrored under their name until the user stops following it. */
+  readonly followedProjections = computed(() => this.sortedProjections().filter(isFollowedBoard));
 
   readonly copyingFollow = signal<string | null>(null);
 

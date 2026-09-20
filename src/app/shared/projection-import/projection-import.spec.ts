@@ -20,13 +20,12 @@ describe('ProjectionImportComponent', () => {
     environment.spreadsheetImportEnabled = originalFlag;
   });
 
-  const render = () =>
-    MockRender(ProjectionImportComponent, { label: 'Paste a share link' }).nativeElement;
+  const render = () => MockRender(ProjectionImportComponent).nativeElement;
 
-  it('offers the two imports as alternatives, and names the field for the page', () => {
+  it('offers following a link and uploading a spreadsheet as alternatives', () => {
     const root = render();
 
-    expect(ngMocks.findInstance(ShareImportComponent).label()).toEqual('Paste a share link');
+    expect(root.querySelector('app-share-import')).not.toBeNull();
     expect(root.querySelector('.or')?.textContent?.trim()).toEqual('or');
     expect(root.querySelector('app-spreadsheet-import-button')).not.toBeNull();
   });
@@ -43,12 +42,12 @@ describe('ProjectionImportComponent', () => {
   });
 
   it('hands the page whichever board came in', () => {
-    const fixture = MockRender(ProjectionImportComponent, { label: 'Paste a share link' });
+    const fixture = MockRender(ProjectionImportComponent);
     const imported = vi.fn();
     fixture.point.componentInstance.imported.subscribe(imported);
     const board = { id: 'b1' } as ProjectionResponse;
 
-    ngMocks.findInstance(ShareImportComponent).imported.emit(board);
+    ngMocks.findInstance(ShareImportComponent).followed.emit(board);
     ngMocks.findInstance(SpreadsheetImportButtonComponent).imported.emit(board);
 
     expect(imported).toHaveBeenCalledTimes(2);

@@ -72,6 +72,7 @@ describe('SharedProjectionComponent', () => {
 
   const loadShared = vi.fn(() => of(shared));
   const copyFromShare = vi.fn();
+  const followShare = vi.fn();
   const navigate = vi.fn();
   const notifyError = vi.fn();
   const remember = vi.fn();
@@ -89,6 +90,8 @@ describe('SharedProjectionComponent', () => {
     loadShared.mockReturnValue(of(shared));
     copyFromShare.mockClear();
     copyFromShare.mockReturnValue(of({ id: 'copy1' }));
+    followShare.mockClear();
+    followShare.mockReturnValue(of({ projection: { id: 'f1' }, alreadyFollowed: false }));
     navigate.mockClear();
     notifyError.mockClear();
     remember.mockClear();
@@ -111,7 +114,7 @@ describe('SharedProjectionComponent', () => {
         // the table are the same component, and a stand-in would draw neither.
         .keep(PlayerHeadshotComponent)
         .mock(ProjectionShareService, { loadShared })
-        .mock(ProjectionStorageService, { copyFromShare })
+        .mock(ProjectionStorageService, { copyFromShare, followShare })
         .mock(NotificationService, { error: notifyError })
         .provide({ provide: AuthService, useValue: { isLoggedIn } })
         .provide({ provide: Router, useValue: { navigate } })
@@ -856,7 +859,7 @@ describe('SharedProjectionComponent', () => {
       expect(navigate).not.toHaveBeenCalled();
       expect(notifyError).not.toHaveBeenCalled();
       const note = fixture.nativeElement.querySelector('.board-changed');
-      expect(note.textContent).toContain('alex updated this board while you were viewing it');
+      expect(note.textContent).toContain('alex updated this projection while you were viewing it');
       expect(note.textContent).toContain('Nothing was copied');
 
       // The next press is of the board now on screen.
@@ -887,13 +890,104 @@ describe('SharedProjectionComponent', () => {
   });
 
   /**
+   * The third press: following the board rather than taking a copy of it. One press does one
+   * thing, so a copy no longer leaves the reader following the author as well.
+   */
+  describe('following a shared board', () => {
+    it('offers the follow apart from the two copy buttons, and says how they differ', async () => {
+      isLoggedIn.set(true);
+      const fixture = await render();
+
+      const follow = fixture.nativeElement.querySelector('[data-testid="follow-board"]');
+      expect(follow).not.toBeNull();
+      expect(follow.textContent).toContain('Follow');
+      expect(fixture.nativeElement.querySelector('.board-actions').contains(follow)).toBe(false);
+      const explainer = fixture.nativeElement.querySelector('.follow-explainer');
+      expect(explainer.textContent).toContain('A copy is yours to edit');
+      expect(explainer.textContent).toContain('alex');
+    });
+
+    /** Following tracks the author from here on, so no copy is taken and no stamp is sent. */
+    it('follows the link and takes no copy', async () => {
+      isLoggedIn.set(true);
+      const fixture = await render();
+
+      fixture.nativeElement.querySelector('[data-testid="follow-board"]').click();
+      fixture.detectChanges();
+
+      expect(followShare).toHaveBeenCalledWith('abc123');
+      expect(copyFromShare).not.toHaveBeenCalled();
+      expect(navigate).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.querySelector('.follow-note').textContent).toContain(
+        'Added to My Projections',
+      );
+      expect(
+        fixture.nativeElement.querySelector('[data-testid="follow-board"]').textContent,
+      ).toContain('Following');
+    });
+
+    /** 200 rather than 201: the follow was already there, which is a remark and not a failure. */
+    it('says so quietly when the board is already followed', async () => {
+      isLoggedIn.set(true);
+      followShare.mockReturnValue(of({ projection: { id: 'f1' }, alreadyFollowed: true }));
+      const fixture = await render();
+
+      fixture.nativeElement.querySelector('[data-testid="follow-board"]').click();
+      fixture.detectChanges();
+
+      expect(notifyError).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.querySelector('.follow-note').textContent).toContain(
+        'You already follow this projection',
+      );
+    });
+
+    it("says beside the button when the link is the reader's own board", async () => {
+      isLoggedIn.set(true);
+      followShare.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 400 })));
+      const fixture = await render();
+
+      fixture.nativeElement.querySelector('[data-testid="follow-board"]').click();
+      fixture.detectChanges();
+
+      expect(notifyError).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.querySelector('.follow-note').textContent).toContain(
+        'your own projection',
+      );
+    });
+
+    it('surfaces any other failure as a toast', async () => {
+      isLoggedIn.set(true);
+      followShare.mockReturnValue(throwError(() => new Error('boom')));
+      const fixture = await render();
+
+      fixture.nativeElement.querySelector('[data-testid="follow-board"]').click();
+      fixture.detectChanges();
+
+      expect(notifyError).toHaveBeenCalledOnce();
+      expect(fixture.point.componentInstance.isBusy()).toEqual(false);
+    });
+
+    /** The same trip a copy makes, and the stored press says which button it was. */
+    it('writes the press down and sends a signed-out reader to the account form', async () => {
+      const fixture = await render();
+
+      fixture.nativeElement.querySelector('[data-testid="follow-board"]').click();
+      fixture.detectChanges();
+
+      expect(remember).toHaveBeenCalledWith('abc123', 'follow');
+      expect(followShare).not.toHaveBeenCalled();
+      expect(navigate).toHaveBeenCalledWith(['/register'], expect.anything());
+    });
+  });
+
+  /**
    * The press that was interrupted by the sign-in, picked back up on the way in. These are as
    * much about the copy not happening on sight as about it happening at all.
    */
   describe('coming back from the account form with the press still in hand', () => {
     it('drafts against the board without being asked twice', async () => {
       isLoggedIn.set(true);
-      takePending.mockReturnValue({ destination: 'draft' });
+      takePending.mockReturnValue({ action: 'draft' });
 
       await render();
 
@@ -905,7 +999,7 @@ describe('SharedProjectionComponent', () => {
     /** Signing up can take minutes; the copy is still of the board they pressed on. */
     it('sends the stamp of the board they pressed on before signing up', async () => {
       isLoggedIn.set(true);
-      takePending.mockReturnValue({ destination: 'draft', seenUpdatedAt: '2026-08-01T09:00:00Z' });
+      takePending.mockReturnValue({ action: 'draft', seenUpdatedAt: '2026-08-01T09:00:00Z' });
 
       await render();
 
@@ -914,7 +1008,7 @@ describe('SharedProjectionComponent', () => {
 
     it('opens the copy for editing when that was the button', async () => {
       isLoggedIn.set(true);
-      takePending.mockReturnValue({ destination: 'projection' });
+      takePending.mockReturnValue({ action: 'projection' });
 
       await render();
 
@@ -924,7 +1018,7 @@ describe('SharedProjectionComponent', () => {
     /** The board used to flash up for the second the copy took, before the editor replaced it. */
     it('waits on a spinner rather than the board while the copy is made', async () => {
       isLoggedIn.set(true);
-      takePending.mockReturnValue({ destination: 'projection' });
+      takePending.mockReturnValue({ action: 'projection' });
       copyFromShare.mockReturnValue(new Subject());
 
       const fixture = await render();
@@ -935,7 +1029,7 @@ describe('SharedProjectionComponent', () => {
 
     it('falls back to the board when the copy fails', async () => {
       isLoggedIn.set(true);
-      takePending.mockReturnValue({ destination: 'projection' });
+      takePending.mockReturnValue({ action: 'projection' });
       copyFromShare.mockReturnValue(throwError(() => new Error('down')));
 
       const fixture = await render();
@@ -947,7 +1041,7 @@ describe('SharedProjectionComponent', () => {
     /** The page is about to leave for the editor, so the whole board would be read for nobody. */
     it('does not fetch the board while the copy is made', async () => {
       isLoggedIn.set(true);
-      takePending.mockReturnValue({ destination: 'projection' });
+      takePending.mockReturnValue({ action: 'projection' });
       copyFromShare.mockReturnValue(new Subject());
 
       await render();
@@ -957,7 +1051,7 @@ describe('SharedProjectionComponent', () => {
 
     it('fetches the board once when the copy fails after the page has settled', async () => {
       isLoggedIn.set(true);
-      takePending.mockReturnValue({ destination: 'projection' });
+      takePending.mockReturnValue({ action: 'projection' });
       const copy = new Subject<{ id: string }>();
       copyFromShare.mockReturnValue(copy);
       const fixture = await render();
@@ -978,7 +1072,7 @@ describe('SharedProjectionComponent', () => {
      */
     it('fetches the board once when the board changed before the copy was made', async () => {
       isLoggedIn.set(true);
-      takePending.mockReturnValue({ destination: 'draft', seenUpdatedAt: '2026-08-01T09:00:00Z' });
+      takePending.mockReturnValue({ action: 'draft', seenUpdatedAt: '2026-08-01T09:00:00Z' });
       const copy = new Subject<{ id: string }>();
       copyFromShare.mockReturnValue(copy);
       const fixture = await render();
@@ -991,6 +1085,23 @@ describe('SharedProjectionComponent', () => {
       expect(notifyError).not.toHaveBeenCalled();
       expect(fixture.nativeElement.querySelector('.board-changed')).not.toBeNull();
       expect(fixture.nativeElement.querySelector('[data-testid="draft-board"]')).not.toBeNull();
+    });
+
+    /**
+     * A follow leaves the reader on the board they came to read, so unlike a copy it does not
+     * hold the page on a spinner on the way in.
+     */
+    it('follows the board on the way back in, and leaves the board on screen', async () => {
+      isLoggedIn.set(true);
+      takePending.mockReturnValue({ action: 'follow' });
+
+      const fixture = await render();
+
+      expect(followShare).toHaveBeenCalledWith('abc123');
+      expect(copyFromShare).not.toHaveBeenCalled();
+      expect(navigate).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.querySelector('table')).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('.follow-note')).not.toBeNull();
     });
 
     /**
@@ -1012,7 +1123,7 @@ describe('SharedProjectionComponent', () => {
      * buttons are right there for whoever wants to make it again.
      */
     it('shows the board rather than copying when the sign-in did not take', async () => {
-      takePending.mockReturnValue({ destination: 'draft' });
+      takePending.mockReturnValue({ action: 'draft' });
 
       const fixture = await render();
 
@@ -1134,7 +1245,7 @@ describe('SharedProjectionComponent', () => {
 
       expect(notifyError).toHaveBeenCalledOnce();
       expect(fixture.nativeElement.textContent).not.toContain('You already have a copy');
-      expect(fixture.point.componentInstance.isImporting()).toEqual(false);
+      expect(fixture.point.componentInstance.isBusy()).toEqual(false);
     });
 
     it('surfaces any other failure and lets them try again', async () => {
@@ -1145,7 +1256,7 @@ describe('SharedProjectionComponent', () => {
       fixture.point.componentInstance.draftAgainstThis();
 
       expect(notifyError).toHaveBeenCalledOnce();
-      expect(fixture.point.componentInstance.isImporting()).toEqual(false);
+      expect(fixture.point.componentInstance.isBusy()).toEqual(false);
     });
   });
 });

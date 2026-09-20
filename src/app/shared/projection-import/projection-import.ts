@@ -1,14 +1,14 @@
-import { Component, input, output } from '@angular/core';
+import { Component, output } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { ProjectionResponse } from '../../api/models/projection-response';
 import { ShareImportComponent } from '../share-import/share-import';
 import { SpreadsheetImportButtonComponent } from '../spreadsheet-import/spreadsheet-import-button';
 
 /**
- * The two ways a board somebody else made gets in: a share link, or a spreadsheet. Three pages
- * offer both (the home page, the new-projection page, the draft picker), and each wrote the pair
- * out itself, which left nothing saying they are alternatives rather than a field and then a
- * button. The "or" between them belongs with the pair, so the pair lives here.
+ * The two ways a projection the user did not build here gets in: following somebody's share link,
+ * or uploading a spreadsheet. They land in different places now, and the pickers place each door
+ * in the group its result appears in, so this pair is the home page's shape alone: one panel with
+ * no groups to split them between, where the "or" is what says they are alternatives.
  */
 @Component({
   selector: 'app-projection-import',
@@ -17,9 +17,6 @@ import { SpreadsheetImportButtonComponent } from '../spreadsheet-import/spreadsh
   styleUrl: './projection-import.css',
 })
 export class ProjectionImportComponent {
-  /** Names what the copy is for, which differs between the pages that take one. */
-  readonly label = input.required<string>();
-
   readonly imported = output<ProjectionResponse>();
 
   /**

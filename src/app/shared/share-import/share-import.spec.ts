@@ -20,7 +20,7 @@ describe('ShareImportComponent', () => {
   });
 
   const renderFixture = async () => {
-    const fixture = MockRender(ShareImportComponent, { label: 'Paste a share link' });
+    const fixture = MockRender(ShareImportComponent);
     await fixture.whenStable();
     return fixture;
   };
@@ -37,17 +37,17 @@ describe('ShareImportComponent', () => {
 
   it('follows the pasted link and hands back the projection it followed', async () => {
     const component = await render();
-    const imported = vi.fn();
-    component.imported.subscribe(imported);
+    const followed = vi.fn();
+    component.followed.subscribe(followed);
     component.shareInput.set('https://slapstat.com/s/aBc123_-xyz');
 
     component.submit();
 
     expect(followShare).toHaveBeenCalledWith('aBc123_-xyz');
-    expect(imported).toHaveBeenCalledWith({ id: 'i1' });
+    expect(followed).toHaveBeenCalledWith({ id: 'i1' });
     expect(component.shareInput()).toEqual('');
-    expect(component.isImporting()).toEqual(false);
-    expect(component.importHint()).toBeNull();
+    expect(component.isFollowing()).toEqual(false);
+    expect(component.followHint()).toBeNull();
   });
 
   /**
@@ -59,14 +59,14 @@ describe('ShareImportComponent', () => {
     followShare.mockReturnValue(of({ projection: { id: 'i1' }, alreadyFollowed: true }));
 
     const component = await render();
-    const imported = vi.fn();
-    component.imported.subscribe(imported);
+    const followed = vi.fn();
+    component.followed.subscribe(followed);
     component.shareInput.set('https://slapstat.com/s/aBc123_-xyz');
 
     component.submit();
 
-    expect(imported).toHaveBeenCalledWith({ id: 'i1' });
-    expect(component.importHint()).toBeTruthy();
+    expect(followed).toHaveBeenCalledWith({ id: 'i1' });
+    expect(component.followHint()).toBeTruthy();
     expect(component.hintIsNote()).toEqual(true);
     expect(notifyError).not.toHaveBeenCalled();
   });
@@ -78,17 +78,17 @@ describe('ShareImportComponent', () => {
     component.shareInput.set('https://slapstat.com/s/aBc123_-xyz');
     component.submit();
 
-    expect(component.importHint()).toBeTruthy();
+    expect(component.followHint()).toBeTruthy();
     expect(component.hintIsNote()).toEqual(false);
     expect(notifyError).not.toHaveBeenCalled();
   });
 
   /**
-   * Pressing Import used to submit the form to the browser instead of the component, which
-   * navigated away and brought the page back on its first tab with nothing imported. The press
+   * Pressing Follow used to submit the form to the browser instead of the component, which
+   * navigated away and brought the page back on its first tab with nothing followed. The press
    * has to go through the DOM here: calling submit() directly is exactly what missed it.
    */
-  it('imports on the button press, and lets the browser do nothing with it', async () => {
+  it('follows on the button press, and lets the browser do nothing with it', async () => {
     const fixture = await renderFixture();
     const component = fixture.point.componentInstance;
     component.shareInput.set('https://slapstat.com/s/aBc123_-xyz');
@@ -109,7 +109,7 @@ describe('ShareImportComponent', () => {
     component.submit();
 
     expect(followShare).not.toHaveBeenCalled();
-    expect(component.importHint()).toBeTruthy();
+    expect(component.followHint()).toBeTruthy();
   });
 
   it("keeps the page's own button the only filled one", async () => {
@@ -127,7 +127,7 @@ describe('ShareImportComponent', () => {
     component.shareInput.set('https://slapstat.com/s/aBc123_-xyz');
     component.submit();
 
-    expect(component.importHint()).toBeTruthy();
+    expect(component.followHint()).toBeTruthy();
     expect(notifyError).not.toHaveBeenCalled();
   });
 
@@ -139,6 +139,6 @@ describe('ShareImportComponent', () => {
     component.submit();
 
     expect(notifyError).toHaveBeenCalledOnce();
-    expect(component.isImporting()).toEqual(false);
+    expect(component.isFollowing()).toEqual(false);
   });
 });

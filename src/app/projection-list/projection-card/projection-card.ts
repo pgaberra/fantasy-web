@@ -13,6 +13,7 @@ import { RelativeTimePipe } from '../../pipes/relative-time.pipe';
 import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
 import { IconComponent } from '../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
+import { isFollowedBoard } from '../../models/source-kind';
 
 @Component({
   selector: 'li[app-projection-card]',
@@ -35,12 +36,8 @@ export class ProjectionCardComponent {
 
   readonly origin = computed(() => this.projection().origin ?? null);
 
-  /**
-   * A projection that follows somebody's share link. `kind` cannot say so: a spreadsheet import
-   * carries the same `imported` kind and is the user's own rows, and a copy taken from a link is
-   * stored as their own projection. Only `origin` marks a follow.
-   */
-  readonly isFollow = computed(() => this.origin() !== null);
+  /** A projection that follows somebody's share link, which is the one kind not the user's own. */
+  readonly isFollow = computed(() => isFollowedBoard(this.projection()));
 
   /**
    * A follow opens read-only, so the button that opens it says so. "Edit" over a projection the
