@@ -16,6 +16,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { catchError, exhaustMap, filter, forkJoin, map, of, Subscription, timer } from 'rxjs';
 import { ProjectionStorageService } from '../services/projection-storage.service';
+import { freeNameFrom } from '../services/projection-name';
 import { NotificationService } from '../services/notification.service';
 import { FeatureService } from '../services/feature.service';
 import {
@@ -154,6 +155,12 @@ export class DraftModeComponent implements OnInit {
    * confirmed, so someone who backs out of the setup leaves nothing behind.
    */
   private readonly unsavedPreset = signal<Preset | null>(null);
+  /**
+   * Whether the name on screen is one the user typed rather than the one this page proposed.
+   * A name they chose is sent as it stands; the proposal is only a proposal, and the server has
+   * the last word on it.
+   */
+  private readonly nameIsTheirs = signal<boolean>(false);
   /**
    * The board a draft is being set up against, on `/draft/new/board/:board`. The same story as
    * the preset: nothing is saved until the setup is confirmed, and then the server copies that
@@ -792,7 +799,7 @@ export class DraftModeComponent implements OnInit {
       return;
     }
     this.unsavedPreset.set(preset);
-    this.draftName.set(preset.name);
+    this.proposeName(preset.name);
     const defaults = this.serializer.toProjectionData(
       createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
     );
@@ -834,7 +841,7 @@ export class DraftModeComponent implements OnInit {
             void this.router.navigate(['/drafts', board.id], { replaceUrl: true });
             return;
           }
-          this.draftName.set(board.name);
+          this.proposeName(board.name);
           this.data.set(board.data);
           const pool = applyPositionOverrides(
             players,
@@ -851,6 +858,31 @@ export class DraftModeComponent implements OnInit {
         error: () => {
           this.notification.error("Couldn't open that board. Please try again.");
           void this.router.navigate(['/draft']);
+        },
+      });
+  }
+
+  /**
+   * Names a draft that does not exist yet after whatever it is being played against, numbered
+   * where the user already holds that name ("AI Projection (2)"). The server settles the real
+   * name on create — it is the only place that can, under a race — but the heading has to say
+   * now what the draft will be called, or it promises a name that is not the one that gets saved.
+   *
+   * <p>The drafts are read for this and nothing else, so a failure leaves the plain name rather
+   * than holding up a setup nobody has saved anything for.
+   */
+  private proposeName(preferred: string): void {
+    this.draftName.set(preferred);
+    this.projectionStorage
+      .listAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (rows) => {
+          if (this.nameIsTheirs() || this.draftId()) {
+            return;
+          }
+          const drafts = rows.filter((row) => row.kind === 'draft').map((row) => row.name);
+          this.draftName.set(freeNameFrom(preferred, drafts));
         },
       });
   }
@@ -977,11 +1009,12 @@ export class DraftModeComponent implements OnInit {
       return;
     }
     this.saveStatus.set('saving');
-    // No player rows: `source` has the server fill them in. The name is sent for completeness —
-    // the server names a preset draft itself.
+    // No player rows: `source` has the server fill them in. The name is the one on screen,
+    // which is this page's proposal unless its owner typed over it; a clash is numbered by the
+    // server, so what comes back is what it is called.
     this.projectionStorage
       .createProjection({
-        name: preset.name,
+        name: this.draftName(),
         kind: 'draft',
         source: preset.source,
         data: { ...data, players: [], draft: this.withLeague(draft) },
@@ -1018,7 +1051,11 @@ export class DraftModeComponent implements OnInit {
     }
     this.saveStatus.set('saving');
     this.projectionStorage
-      .startDraft(boardId, { settings: data.settings, players: [], draft: this.withLeague(draft) })
+      .startDraft(
+        boardId,
+        { settings: data.settings, players: [], draft: this.withLeague(draft) },
+        this.draftName(),
+      )
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (created) => this.openCreatedDraft(created),
@@ -1155,7 +1192,7 @@ export class DraftModeComponent implements OnInit {
   saveRename(): void {
     const name = this.renameValue().trim();
     const id = this.draftId();
-    if (!id || this.renameSaving()) {
+    if (this.renameSaving()) {
       return;
     }
     if (!name) {
@@ -1166,6 +1203,14 @@ export class DraftModeComponent implements OnInit {
       this.cancelRename();
       return;
     }
+    // A draft still being set up has nothing to rename: the name is held here and goes with the
+    // draft when its setup is confirmed. Nothing can clash yet, and nothing needs saving.
+    if (!id) {
+      this.draftName.set(name);
+      this.nameIsTheirs.set(true);
+      this.isRenaming.set(false);
+      return;
+    }
     this.renameSaving.set(true);
     this.renameError.set(null);
     this.projectionStorage
@@ -1174,6 +1219,7 @@ export class DraftModeComponent implements OnInit {
       .subscribe({
         next: (renamed) => {
           this.draftName.set(renamed.name);
+          this.nameIsTheirs.set(true);
           this.renameSaving.set(false);
           this.isRenaming.set(false);
         },

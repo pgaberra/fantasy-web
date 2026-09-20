@@ -3,7 +3,7 @@ import { ProjectionSerializerService } from '../services/projection-serializer.s
 import { createDefaultProjectionState } from '../draft-projection/projection-defaults';
 import { draftSettingsFromProjection } from '../shared/league-settings/league-settings';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, of, Subject, throwError } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { NotificationService } from '../services/notification.service';
@@ -1102,6 +1102,7 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
   const updateProjection = vi.fn();
   const renameProjection = vi.fn();
   const startDraft = vi.fn();
+  const listAll = vi.fn();
   const notifyError = vi.fn();
   let presetParam: string | null = 'model';
 
@@ -1117,6 +1118,8 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
     renameProjection.mockImplementation((id: string, name: string) => of({ id, name }));
     startDraft.mockReset();
     startDraft.mockImplementation(() => of({ id: 'd1', name: 'Projection p1' }));
+    listAll.mockReset();
+    listAll.mockReturnValue(of([]));
     notifyError.mockClear();
     return MockBuilder(DraftModeComponent)
       .keep(ProjectionRankingService)
@@ -1131,6 +1134,7 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
         createProjection,
         renameProjection,
         startDraft,
+        listAll,
       })
       .mock(NotificationService, { error: notifyError })
       .provide({ provide: Router, useValue: { navigate } })
@@ -1318,6 +1322,7 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
   const createProjection = vi.fn();
   const startDraft = vi.fn();
   const renameProjection = vi.fn();
+  const listAll = vi.fn();
   const notifyError = vi.fn();
 
   beforeEach(() => {
@@ -1332,6 +1337,8 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
     startDraft.mockReturnValue(of({ ...board, id: 'd1', kind: 'draft', name: 'My league (2)' }));
     renameProjection.mockReset();
     renameProjection.mockImplementation((id: string, name: string) => of({ id, name }));
+    listAll.mockReset();
+    listAll.mockReturnValue(of([]));
     notifyError.mockClear();
     return MockBuilder(DraftModeComponent)
       .keep(ProjectionRankingService)
@@ -1346,6 +1353,7 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
         createProjection,
         startDraft,
         renameProjection,
+        listAll,
       })
       .mock(NotificationService, { error: notifyError })
       .provide({ provide: Router, useValue: { navigate } })
@@ -1366,6 +1374,68 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
     expect(component.draftId()).toBeNull();
     expect(updateProjection).not.toHaveBeenCalled();
     expect(startDraft).not.toHaveBeenCalled();
+  });
+
+  /**
+   * The heading has to say what the draft will be called before it exists, numbering included —
+   * otherwise the setup reads "AI Projection" and the draft that comes out of it is called
+   * "AI Projection (2)". The server still settles the real name; this only stops the page
+   * promising one it will not get.
+   */
+  it('proposes the name the draft will actually be saved under', async () => {
+    listAll.mockReturnValue(
+      of([
+        { id: 'd9', kind: 'draft', name: 'My league', draftStatus: 'in_progress' },
+        { id: 'p1', kind: 'projection', name: 'My league', draftStatus: 'none' },
+      ]),
+    );
+
+    const component = await renderDraftMode();
+
+    // The board of the same name is in the other namespace, so it takes nothing from the draft.
+    expect(component.draftName()).toEqual('My league (2)');
+  });
+
+  it('sends the name on screen when the setup is confirmed', async () => {
+    listAll.mockReturnValue(
+      of([{ id: 'd9', kind: 'draft', name: 'My league', draftStatus: 'in_progress' }]),
+    );
+    const component = await renderDraftMode();
+
+    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+
+    expect(startDraft).toHaveBeenCalledWith('p1', expect.anything(), 'My league (2)');
+  });
+
+  /** Naming a mock before starting it: nothing is saved, the name travels with the setup. */
+  it('takes a name typed during the setup, and sends that instead', async () => {
+    const component = await renderDraftMode();
+
+    component.startRename();
+    component.renameValue.set('  Mock #3  ');
+    component.saveRename();
+
+    expect(component.draftName()).toEqual('Mock #3');
+    // Nothing exists to rename yet, so nothing is sent until the setup is confirmed.
+    expect(renameProjection).not.toHaveBeenCalled();
+
+    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+
+    expect(startDraft).toHaveBeenCalledWith('p1', expect.anything(), 'Mock #3');
+  });
+
+  /** A name its owner typed is not overwritten by a proposal that lands after they typed it. */
+  it('leaves a typed name alone when the drafts list arrives late', async () => {
+    const late = new Subject<unknown[]>();
+    listAll.mockReturnValue(late);
+    const component = await renderDraftMode();
+
+    component.startRename();
+    component.renameValue.set('Mock #3');
+    component.saveRename();
+    late.next([{ id: 'd9', kind: 'draft', name: 'My league', draftStatus: 'in_progress' }]);
+
+    expect(component.draftName()).toEqual('Mock #3');
   });
 
   it('starts the draft once the setup is confirmed, leaving the board alone', async () => {
