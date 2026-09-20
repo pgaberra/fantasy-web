@@ -409,6 +409,74 @@ describe('ProjectionCreateComponent', () => {
       },
     ];
 
+    /** A spreadsheet upload: the same `imported` kind, and none of somebody else's ownership. */
+    const fromSheet = {
+      ...summary,
+      id: 'sheet1',
+      kind: 'imported' as const,
+      name: 'My sheet',
+    };
+
+    /**
+     * The split is who owns the board, not how it arrived. A spreadsheet the user uploaded is
+     * theirs, so it is a starting point among their own rather than among what they follow.
+     */
+    it("counts a spreadsheet upload among the user's own starting points", async () => {
+      MockInstance(
+        ProjectionStorageService,
+        'listEditable',
+        vi.fn(() => of([...listed, fromSheet])),
+      );
+
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      expect(component.ownProjections().map((row) => row.id)).toEqual(['own1', 'sheet1']);
+      expect(component.followedBoards().map((row) => row.id)).toEqual(['shared1']);
+      expect(component.sourceLabel(fromSheet)).toEqual('From a spreadsheet');
+    });
+
+    /** The door to a spreadsheet stands in the group the upload lands in, not beside the link. */
+    it("puts the upload with the user's own boards and the follow field with the followed", async () => {
+      MockInstance(
+        ProjectionStorageService,
+        'listEditable',
+        vi.fn(() => of([...listed, fromSheet])),
+      );
+
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+      const root: HTMLElement = fixture.nativeElement;
+
+      component.sourceKind.set('projection');
+      fixture.detectChanges();
+      expect(root.querySelector('app-spreadsheet-import-button')).not.toBeNull();
+      expect(root.querySelector('app-share-import')).toBeNull();
+
+      component.sourceKind.set('following');
+      fixture.detectChanges();
+      expect(root.querySelector('app-share-import')).not.toBeNull();
+      expect(root.querySelector('app-spreadsheet-import-button')).toBeNull();
+    });
+
+    it("picks a spreadsheet upload among the user's own boards", async () => {
+      const listEditable = vi.fn(() => of(listed));
+      MockInstance(ProjectionStorageService, 'listEditable', listEditable);
+
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      component.onUploaded({ id: 'sheet9' } as ProjectionResponse);
+      await fixture.whenStable();
+
+      expect(component.sourceKind()).toEqual('projection');
+      expect(component.isCopyOf('sheet9')).toBe(true);
+      expect(listEditable).toHaveBeenCalledTimes(2);
+    });
+
     it('splits what the user has into their own and what was shared with them', async () => {
       MockInstance(
         ProjectionStorageService,
@@ -421,7 +489,7 @@ describe('ProjectionCreateComponent', () => {
       const component = fixture.point.componentInstance;
 
       expect(component.ownProjections().map((row) => row.id)).toEqual(['own1']);
-      expect(component.importedBoards().map((row) => row.id)).toEqual(['shared1']);
+      expect(component.followedBoards().map((row) => row.id)).toEqual(['shared1']);
       expect(component.sourceLabel(listed[1])).toEqual('Following alex');
     });
 
@@ -481,7 +549,7 @@ describe('ProjectionCreateComponent', () => {
           element.textContent?.trim(),
         );
 
-      expect(texts('.kind-name')).toEqual(['Preset', 'Your projection', 'Imports']);
+      expect(texts('.kind-name')).toEqual(['Preset', 'Your projection', 'Following']);
       expect(texts('.kind-count')).toEqual([`${CREATE_PRESETS.length}`, '1', '1']);
       expect(
         Array.from(root.querySelectorAll<HTMLElement>('.segmented .kind')).map((segment) =>
@@ -520,16 +588,16 @@ describe('ProjectionCreateComponent', () => {
         ),
       ).toEqual(['Dynasty']);
 
-      component.sourceKind.set('imported');
+      component.sourceKind.set('following');
       fixture.detectChanges();
       expect(component.startingPoint()).toEqual({ kind: 'copy', id: 'shared1' });
       expect(root.querySelector('.row-meta')?.textContent?.trim()).toContain('Following alex');
-      // The paste field belongs to the shared kind, where a board comes from.
-      expect(root.querySelector('app-projection-import')).not.toBeNull();
+      // The paste field belongs to the followed kind, where such a board comes from.
+      expect(root.querySelector('app-share-import')).not.toBeNull();
 
       // A pick the user made is kept when the kind is left and come back to.
       component.sourceKind.set('preset');
-      component.sourceKind.set('imported');
+      component.sourceKind.set('following');
       expect(component.startingPoint()).toEqual({ kind: 'copy', id: 'shared1' });
     });
 
@@ -683,7 +751,7 @@ describe('ProjectionCreateComponent', () => {
       );
     });
 
-    it('picks a board the moment it is imported, and re-reads the list it belongs in', async () => {
+    it('picks a board the moment it is followed, and re-reads the list it belongs in', async () => {
       const listEditable = vi.fn(() => of(listed));
       MockInstance(ProjectionStorageService, 'listEditable', listEditable);
 
@@ -691,11 +759,11 @@ describe('ProjectionCreateComponent', () => {
       await fixture.whenStable();
       const component = fixture.point.componentInstance;
 
-      component.onImported({ id: 'fresh1' } as ProjectionResponse);
+      component.onFollowed({ id: 'fresh1' } as ProjectionResponse);
       await fixture.whenStable();
 
-      // The copy is the shared kind's, so the page opens that kind and checks the new card.
-      expect(component.sourceKind()).toEqual('imported');
+      // A followed board is the Following kind's, so the page opens it and checks the new card.
+      expect(component.sourceKind()).toEqual('following');
       expect(component.isCopyOf('fresh1')).toBe(true);
       expect(listEditable).toHaveBeenCalledTimes(2);
     });

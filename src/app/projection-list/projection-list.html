@@ -28,10 +28,11 @@
       <p class="state-message">Create a projection to start ranking players for your league.</p>
     </div>
   } @else {
-    <!-- Two groups rather than one list: a projection the user built and one they follow are
-         different things to have, and the row's own line about who it came from was the only
-         thing saying so. A heading with nothing under it says less than no heading, so each
-         group appears only when it holds something. -->
+    <!-- Two groups rather than one list, split on who owns the rows rather than how they got
+         here: everything the user can edit is theirs, whether they built it, copied it or
+         uploaded a spreadsheet, and only a board they follow belongs to someone else. A heading
+         with nothing under it says less than no heading, so each group appears only when it
+         holds something. -->
     @if (ownProjections().length > 0) {
       <section class="group">
         <h2 class="group-heading">Your projections</h2>
@@ -50,11 +51,11 @@
         </ul>
       </section>
     }
-    @if (importedProjections().length > 0) {
+    @if (followedProjections().length > 0) {
       <section class="group">
-        <h2 class="group-heading">Imports</h2>
+        <h2 class="group-heading">Following</h2>
         <ul class="cards">
-          @for (projection of importedProjections(); track projection.id) {
+          @for (projection of followedProjections(); track projection.id) {
             <li
               app-projection-card
               [projection]="projection"

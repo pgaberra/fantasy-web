@@ -28,7 +28,8 @@ import { ProjectionData } from '../api/models/projection-data';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
-import { ProjectionImportComponent } from '../shared/projection-import/projection-import';
+import { ShareImportComponent } from '../shared/share-import/share-import';
+import { SpreadsheetImportButtonComponent } from '../shared/spreadsheet-import/spreadsheet-import-button';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { createDefaultProjectionState } from '../draft-projection/projection-defaults';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
@@ -37,7 +38,7 @@ import { freeProjectionName } from '../services/projection-name';
 import { FeatureService } from '../services/feature.service';
 import { AiProjectionAccess } from '../shared/premium/ai-projection-access';
 import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/premium-refused';
-import { SOURCE_KINDS, SourceKind } from '../models/source-kind';
+import { isFollowedBoard, isOwnBoard, SOURCE_KINDS, SourceKind } from '../models/source-kind';
 import { environment } from '../../environments/environment';
 import { IconComponent } from '../shared/icon/icon';
 import { LeagueSettingsControlsComponent } from '../shared/league-settings-controls/league-settings-controls';
@@ -103,7 +104,8 @@ export function requestedPreset(value: unknown): CreatePreset['source'] | null {
     HelpTipComponent,
     RouterLink,
     StartingPointPreviewComponent,
-    ProjectionImportComponent,
+    ShareImportComponent,
+    SpreadsheetImportButtonComponent,
     RelativeTimePipe,
     IconComponent,
     LeagueSettingsControlsComponent,
@@ -174,8 +176,10 @@ export class ProjectionCreateComponent {
     },
   });
 
-  readonly ownProjections = computed(() => this.byKind('projection'));
-  readonly importedBoards = computed(() => this.byKind('imported'));
+  /** Everything the user owns and could copy: what they built, copied before, or uploaded. */
+  readonly ownProjections = computed(() => this.boardsMatching(isOwnBoard));
+  /** The boards they follow. A copy of one is a starting point like any other. */
+  readonly followedBoards = computed(() => this.boardsMatching(isFollowedBoard));
   /** Whether a copy is what is picked, board or not — the preview draws only once one is. */
   readonly isCopy = computed(() => this.startingPoint().kind === 'copy');
   /** Whether the AI preset is what the page is showing, which is what its extra fetch follows. */
@@ -398,21 +402,27 @@ export class ProjectionCreateComponent {
 
   /** Whose numbers a row holds, said in the row rather than only by the heading above it. */
   sourceLabel(projection: ProjectionSummaryResponse): string {
-    // An origin is what a follow has and nothing else does: a copy taken from a link is the
-    // user's own projection and carries none, and neither does a spreadsheet import.
     if (projection.origin) {
       return `Following ${projection.origin.authorUsername}`;
     }
     return projection.kind === 'imported' ? 'From a spreadsheet' : 'Your projection';
   }
 
+  /** A spreadsheet upload is the user's own board, so it is picked in their own group. */
+  onUploaded(projection: ProjectionResponse): void {
+    this.sourceKind.set('projection');
+    this.selectCopyFrom(projection.id);
+    this.dataResource.reload();
+  }
+
   /**
-   * A board just copied from a share link is a starting point, so it arrives already picked —
-   * checked before the list that will hold it has been re-read, since `startingPoint` keeps a
-   * pick whose card turns up in the reload.
+   * A board just followed is a starting point, so it arrives already picked: checked before the
+   * list that will hold it has been re-read, since `startingPoint` keeps a pick whose card turns
+   * up in the reload. A spreadsheet upload lands in the user's own group and is picked the same
+   * way, which is what `onUploaded` below is for.
    */
-  onImported(projection: ProjectionResponse): void {
-    this.sourceKind.set('imported');
+  onFollowed(projection: ProjectionResponse): void {
+    this.sourceKind.set('following');
     this.selectCopyFrom(projection.id);
     this.dataResource.reload();
   }
@@ -430,15 +440,17 @@ export class ProjectionCreateComponent {
               id: projection.id,
             }) as const,
         );
-      case 'imported':
-        return this.importedBoards().map((board) => ({ kind: 'copy', id: board.id }) as const);
+      case 'following':
+        return this.followedBoards().map((board) => ({ kind: 'copy', id: board.id }) as const);
     }
   }
 
-  private byKind(kind: ProjectionSummaryResponse['kind']): ProjectionSummaryResponse[] {
+  private boardsMatching(
+    belongsHere: (projection: ProjectionSummaryResponse) => boolean,
+  ): ProjectionSummaryResponse[] {
     return this.dataResource
       .value()
-      .filter((projection) => projection.kind === kind)
+      .filter(belongsHere)
       .sort((first, second) => second.updatedAt.localeCompare(first.updatedAt));
   }
 

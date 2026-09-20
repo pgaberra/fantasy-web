@@ -1,5 +1,5 @@
 <form class="import" (submit)="onSubmit($event)" novalidate>
-  <label class="import-label" for="share-link">{{ label() }}</label>
+  <label class="import-label" for="share-link">Follow a shared projection</label>
   <div class="import-controls">
     <input
       id="share-link"
@@ -17,18 +17,18 @@
     <button
       type="submit"
       class="btn btn-secondary btn-sm"
-      [disabled]="isImporting() || shareInput().trim().length === 0"
+      [disabled]="isFollowing() || shareInput().trim().length === 0"
     >
-      @if (isImporting()) {
-        <app-loading-indicator variant="inline" label="Importing" />
+      @if (isFollowing()) {
+        <app-loading-indicator variant="inline" label="Following" />
       } @else {
-        Import
+        Follow
       }
     </button>
   </div>
-  @if (importHint()) {
+  @if (followHint()) {
     <p class="import-hint" [class.import-hint--note]="hintIsNote()" role="status">
-      {{ importHint() }}
+      {{ followHint() }}
     </p>
   }
 </form>

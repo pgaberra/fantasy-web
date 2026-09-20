@@ -17,10 +17,10 @@ import { linesFromSheet } from './spreadsheet-import';
 import { SpreadsheetImport, SpreadsheetImportDialogComponent } from './spreadsheet-import-dialog';
 
 /**
- * Imports a projection kept in a spreadsheet as an imported board, the same kind of thing a share
- * link gives: it sits with the share-link field wherever one is (the home page, the new-projection
- * page, the draft picker), lands in the Imports list, and is picked from there as a starting point
- * or something to draft against.
+ * Imports a projection kept in a spreadsheet. The board it makes is the user's own: it is listed
+ * with the projections they built, editable and shareable like any of them, and the row says "From
+ * a spreadsheet" so its numbers are still accounted for. The button therefore sits in that group
+ * on the pickers, and beside the share-link field on the home page, which has no groups.
  *
  * <p>It draws nothing unless the build turns the import on (`SPREADSHEET_IMPORT_ENABLED`), so each
  * page can place it without asking.

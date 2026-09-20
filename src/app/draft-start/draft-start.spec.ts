@@ -65,6 +65,12 @@ describe('DraftStartComponent', () => {
     origin: { shareToken: `token-${id}`, authorUsername: author },
   });
 
+  /** A spreadsheet upload: the same `imported` kind, and none of somebody else's ownership. */
+  const spreadsheet = (id: string, name = `Sheet ${id}`): ProjectionSummaryResponse => ({
+    ...summary(id, 'imported'),
+    name,
+  });
+
   const navigate = vi.fn();
   /** The query string the page opened with; the same object is handed to every render. */
   const queryParams: Record<string, string> = {};
@@ -195,7 +201,7 @@ describe('DraftStartComponent', () => {
     listAll.mockReturnValue(of([]));
 
     const component = await render();
-    component.sourceKind.set('imported');
+    component.sourceKind.set('following');
 
     expect(component.selection()).toBeNull();
     expect(component.previewSource()).toBeNull();
@@ -437,15 +443,24 @@ describe('DraftStartComponent', () => {
     expect(component.projections().map((projection) => projection.id)).toEqual(['p1']);
   });
 
-  it('keeps imported boards apart from the projections the user made', async () => {
+  /**
+   * The split is who owns the board, not how it arrived: a spreadsheet the user uploaded is
+   * theirs to draft against like anything else they made, and only a followed board is not.
+   */
+  it('keeps the boards the user follows apart from the ones that are theirs', async () => {
     listAll.mockReturnValue(
-      of([summary('p1', 'projection'), imported('i1', 'alex'), summary('preset1', 'draft')]),
+      of([
+        summary('p1', 'projection'),
+        spreadsheet('s1'),
+        imported('i1', 'alex'),
+        summary('preset1', 'draft'),
+      ]),
     );
 
     const component = await render();
 
-    expect(component.projections().map((projection) => projection.id)).toEqual(['p1']);
-    expect(component.imported().map((board) => board.id)).toEqual(['i1']);
+    expect(component.projections().map((projection) => projection.id)).toEqual(['p1', 's1']);
+    expect(component.followed().map((board) => board.id)).toEqual(['i1']);
   });
 
   it('says whose numbers a row holds', async () => {
@@ -506,7 +521,7 @@ describe('DraftStartComponent', () => {
     );
 
     const component = await render();
-    const ids = [...component.drafts(), ...component.projections(), ...component.imported()].map(
+    const ids = [...component.drafts(), ...component.projections(), ...component.followed()].map(
       (row) => row.id,
     );
 
@@ -514,11 +529,43 @@ describe('DraftStartComponent', () => {
     expect(new Set(ids).size).toEqual(ids.length);
   });
 
-  it('re-reads the sources when a board is imported, so the copy joins the list', async () => {
+  /** The door to a spreadsheet stands in the group the upload lands in, not beside the link. */
+  it('puts the upload with the boards the user owns and the follow field with the followed', async () => {
+    listAll.mockReturnValue(of([summary('p1', 'projection'), imported('i1', 'alex')]));
+
+    const fixture = MockRender(DraftStartComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    const root: HTMLElement = fixture.nativeElement;
+
+    component.sourceKind.set('projection');
+    fixture.detectChanges();
+    expect(root.querySelector('app-spreadsheet-import-button')).not.toBeNull();
+    expect(root.querySelector('app-share-import')).toBeNull();
+
+    component.sourceKind.set('following');
+    fixture.detectChanges();
+    expect(root.querySelector('app-share-import')).not.toBeNull();
+    expect(root.querySelector('app-spreadsheet-import-button')).toBeNull();
+  });
+
+  it('picks a spreadsheet upload among the boards the user owns', async () => {
     const fixture = MockRender(DraftStartComponent);
     await fixture.whenStable();
 
-    fixture.point.componentInstance.onImported('i9');
+    fixture.point.componentInstance.onUploaded('s9');
+    await fixture.whenStable();
+
+    expect(fixture.point.componentInstance.sourceKind()).toEqual('projection');
+    expect(fixture.point.componentInstance.selection()).toEqual({ kind: 'board', id: 's9' });
+    expect(listAll).toHaveBeenCalledTimes(2);
+  });
+
+  it('re-reads the sources when a board is followed, so it joins the list', async () => {
+    const fixture = MockRender(DraftStartComponent);
+    await fixture.whenStable();
+
+    fixture.point.componentInstance.onFollowed('i9');
     await fixture.whenStable();
 
     // The list is what the group reads from, and the copy is not in the one already fetched.
@@ -582,7 +629,7 @@ describe('DraftStartComponent', () => {
 
     // Nothing is drafted yet, so the page is one question rather than two.
     expect(texts(fixture, '.section-title')).toEqual(['Start a new draft']);
-    expect(texts(fixture, '.kind-name')).toEqual(['Preset', 'Your projection', 'Imports']);
+    expect(texts(fixture, '.kind-name')).toEqual(['Preset', 'Your projection', 'Following']);
     expect(texts(fixture, '.kind-count')).toEqual(['2', '1', '1']);
     // A segmented control, not radios: the pressed one is said on the button itself.
     const pressed = Array.from(
@@ -614,7 +661,7 @@ describe('DraftStartComponent', () => {
     expect(selected()).toEqual([false, true]);
 
     // The same card for a projection and for a shared board: radio, icon, outline and meta.
-    for (const kind of ['projection', 'imported'] as const) {
+    for (const kind of ['projection', 'following'] as const) {
       component.sourceKind.set(kind);
       fixture.detectChanges();
       expect(cards()).toHaveLength(1);
@@ -676,9 +723,9 @@ describe('DraftStartComponent', () => {
     // The presets are always there to draft against; the user has no board of either kind.
     expect(texts(fixture, '.kind-count')).toEqual(['2', '0', '0']);
 
-    fixture.point.componentInstance.sourceKind.set('imported');
+    fixture.point.componentInstance.sourceKind.set('following');
     fixture.detectChanges();
-    expect(texts(fixture, '.group-empty')[0]).toContain('No imports yet');
+    expect(texts(fixture, '.group-empty')[0]).toContain('not following any projections');
   });
 
   // One press to a draft: the first row of the open kind is checked from the start, and the
@@ -754,16 +801,16 @@ describe('DraftStartComponent', () => {
     expect(texts(fixture, '.group-empty')[0]).toContain('No projections yet.');
   });
 
-  // The paste field lives with the shared boards; the tile says the kind is there to be used.
-  it('keeps the import box with the shared boards, and picks the copy once one is imported', async () => {
+  // The paste field lives with the followed boards; the tile says the kind is there to be used.
+  it('keeps the follow box with the followed boards, and picks the board once one is followed', async () => {
     listAll.mockReturnValue(of([imported('i1', 'alex')]));
 
     const fixture = await renderFixture();
     const component = fixture.point.componentInstance;
 
-    component.sourceKind.set('imported');
+    component.sourceKind.set('following');
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('app-projection-import')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('app-share-import')).not.toBeNull();
     expect(component.selection()).toEqual({ kind: 'board', id: 'i1' });
 
     listAll.mockReturnValue(
@@ -773,10 +820,10 @@ describe('DraftStartComponent', () => {
       ]),
     );
     component.sourceKind.set('preset');
-    component.onImported('i9');
+    component.onFollowed('i9');
     await fixture.whenStable();
 
-    expect(component.sourceKind()).toEqual('imported');
+    expect(component.sourceKind()).toEqual('following');
     expect(component.selection()).toEqual({ kind: 'board', id: 'i9' });
   });
 

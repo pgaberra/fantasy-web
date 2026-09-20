@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, input, output, signal } from '@angular/core';
+import { Component, DestroyRef, inject, output, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ProjectionStorageService } from '../../services/projection-storage.service';
@@ -28,7 +28,9 @@ export function shareTokenFrom(pasted: string): string | null {
  *
  * <p>It lives here rather than on the page because three pages take share links now, and the
  * awkward parts (what counts as a link, a link already followed, a link that has gone) are worth
- * having in one place rather than three.
+ * having in one place rather than three. The three word it identically, so the label is written
+ * here too: a field that followed a board on one page and "imported" it on another was the same
+ * action under two names.
  */
 @Component({
   selector: 'app-share-import',
@@ -41,14 +43,11 @@ export class ShareImportComponent {
   private readonly notification = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
 
-  /** Named by the page that placed it, since the pages word it differently. */
-  readonly label = input.required<string>();
-
-  readonly imported = output<ProjectionResponse>();
+  readonly followed = output<ProjectionResponse>();
 
   readonly shareInput = signal('');
-  readonly isImporting = signal(false);
-  readonly importHint = signal<string | null>(null);
+  readonly isFollowing = signal(false);
+  readonly followHint = signal<string | null>(null);
   /**
    * Whether the hint is a refusal or merely a remark. Following a link twice is not a failure:
    * the follow already held comes back, the page takes the user to it, and this says why there
@@ -58,7 +57,7 @@ export class ShareImportComponent {
 
   /**
    * The form's own submit, stopped before the browser acts on it. Without this the press
-   * navigates the page instead of importing, and the new-projection page comes back reloaded
+   * navigates the page instead of following, and the new-projection page comes back reloaded
    * on its first tab. `(ngSubmit)` would not do: it belongs to `FormsModule`, which nothing
    * here imports, so it binds to an event that never fires and lets the native submit through.
    */
@@ -70,27 +69,27 @@ export class ShareImportComponent {
   submit(): void {
     const token = shareTokenFrom(this.shareInput());
     if (!token) {
-      this.importHint.set("That doesn't look like a SlapStat share link.");
+      this.followHint.set("That doesn't look like a SlapStat share link.");
       return;
     }
-    this.importHint.set(null);
+    this.followHint.set(null);
     this.hintIsNote.set(false);
-    this.isImporting.set(true);
+    this.isFollowing.set(true);
     this.storage
       .followShare(token)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (result) => {
-          this.isImporting.set(false);
+          this.isFollowing.set(false);
           this.shareInput.set('');
           if (result.alreadyFollowed) {
             this.hintIsNote.set(true);
-            this.importHint.set('You already follow this projection. Here it is.');
+            this.followHint.set('You already follow this projection. Here it is.');
           }
-          this.imported.emit(result.projection);
+          this.followed.emit(result.projection);
         },
         error: (error: unknown) => {
-          this.isImporting.set(false);
+          this.isFollowing.set(false);
           this.onFailed(error);
         },
       });
@@ -103,13 +102,13 @@ export class ShareImportComponent {
    */
   private onFailed(error: unknown): void {
     if (error instanceof HttpErrorResponse && error.status === 404) {
-      this.importHint.set('That share link is no longer active.');
+      this.followHint.set('That share link is no longer active.');
       return;
     }
     if (error instanceof HttpErrorResponse && error.status === 400) {
-      this.importHint.set("That's a link to your own projection.");
+      this.followHint.set("That's a link to your own projection.");
       return;
     }
-    this.notification.error("Couldn't import that projection. Please try again.");
+    this.notification.error("Couldn't follow that projection. Please try again.");
   }
 }

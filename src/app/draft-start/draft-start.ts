@@ -26,7 +26,8 @@ import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { PopoverTriggerDirective } from '../shared/popover/popover-trigger.directive';
 import { OpenPopovers } from '../shared/popover/open-popovers';
-import { ProjectionImportComponent } from '../shared/projection-import/projection-import';
+import { ShareImportComponent } from '../shared/share-import/share-import';
+import { SpreadsheetImportButtonComponent } from '../shared/spreadsheet-import/spreadsheet-import-button';
 import { FeatureService } from '../services/feature.service';
 import {
   PreviewSource,
@@ -34,7 +35,7 @@ import {
 } from '../shared/starting-point-preview/starting-point-preview';
 import { ProjectionBoardCache } from '../services/projection-board-cache';
 import { AiProjectionAccess } from '../shared/premium/ai-projection-access';
-import { SOURCE_KINDS, SourceKind } from '../models/source-kind';
+import { isFollowedBoard, isOwnBoard, SOURCE_KINDS, SourceKind } from '../models/source-kind';
 import { environment } from '../../environments/environment';
 import { IconComponent } from '../shared/icon/icon';
 import {
@@ -83,7 +84,8 @@ export type DraftSource =
     ErrorStateComponent,
     RelativeTimePipe,
     PopoverTriggerDirective,
-    ProjectionImportComponent,
+    ShareImportComponent,
+    SpreadsheetImportButtonComponent,
     IconComponent,
     StartingPointPreviewComponent,
     LeagueSettingsControlsComponent,
@@ -151,9 +153,13 @@ export class DraftStartComponent {
       );
   });
 
-  /** The boards, whether or not they have been drafted against: every one can be, again. */
-  readonly projections = computed(() => this.boardsOf('projection'));
-  readonly imported = computed(() => this.boardsOf('imported'));
+  /**
+   * The boards, whether or not they have been drafted against: every one can be, again. Split on
+   * who owns them: the user's own (built, copied, or uploaded from a spreadsheet) and the ones
+   * they follow.
+   */
+  readonly projections = computed(() => this.boardsMatching(isOwnBoard));
+  readonly followed = computed(() => this.boardsMatching(isFollowedBoard));
 
   /**
    * Every preset this environment offers. A preset that has been drafted against is still on
@@ -172,7 +178,7 @@ export class DraftStartComponent {
     if (this.availablePresets().length > 0) {
       return 'preset';
     }
-    return this.projections().length > 0 ? 'projection' : 'imported';
+    return this.projections().length > 0 ? 'projection' : 'following';
   });
 
   /** The tile that is down: which of the three kinds the rows below are showing. */
@@ -579,12 +585,21 @@ export class DraftStartComponent {
   }
 
   /**
-   * The copy is the user's board now. It is checked before the list that will hold it has been
-   * re-read: `selection` keeps a pick whose row turns up in the reload, so the copy is what
-   * Start drafts against the moment it appears, rather than whichever board was first before.
+   * A board just followed is something to draft against. It is checked before the list that will
+   * hold it has been re-read: `selection` keeps a pick whose row turns up in the reload, so it is
+   * what Start drafts against the moment it appears, rather than whichever board was first.
    */
-  onImported(id: string): void {
-    this.sourceKind.set('imported');
+  onFollowed(id: string): void {
+    this.pickBoard('following', id);
+  }
+
+  /** A spreadsheet upload is the user's own board, so it is picked in their own group. */
+  onUploaded(id: string): void {
+    this.pickBoard('projection', id);
+  }
+
+  private pickBoard(kind: SourceKind, id: string): void {
+    this.sourceKind.set(kind);
     this.selection.set({ kind: 'board', id });
     this.sourcesResource.reload();
   }
@@ -605,15 +620,17 @@ export class DraftStartComponent {
         return this.presets().map((preset) => ({ kind: 'preset', preset }));
       case 'projection':
         return this.projections().map((projection) => ({ kind: 'board', id: projection.id }));
-      case 'imported':
-        return this.imported().map((board) => ({ kind: 'board', id: board.id }));
+      case 'following':
+        return this.followed().map((board) => ({ kind: 'board', id: board.id }));
     }
   }
 
-  private boardsOf(kind: ProjectionSummaryResponse['kind']): ProjectionSummaryResponse[] {
+  private boardsMatching(
+    belongsHere: (projection: ProjectionSummaryResponse) => boolean,
+  ): ProjectionSummaryResponse[] {
     return this.sourcesResource
       .value()
-      .filter((projection) => projection.kind === kind)
+      .filter((projection) => projection.kind !== 'draft' && belongsHere(projection))
       .sort((first, second) => second.updatedAt.localeCompare(first.updatedAt));
   }
 }

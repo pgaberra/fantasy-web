@@ -87,14 +87,27 @@
                         [checked]="isCopyOf(projection.id)"
                         (change)="selectCopyFrom(projection.id)"
                       />
-                      <span class="row-icon" aria-hidden="true">
-                        <app-icon name="table" [size]="20" />
+                      <!-- A spreadsheet the user uploaded is their own board, so it is listed
+                           here; the icon and the meta line keep saying where its numbers came
+                           from, which is the one thing its name may not. -->
+                      <span
+                        class="row-icon"
+                        [class.row-icon--spreadsheet]="projection.kind === 'imported'"
+                        aria-hidden="true"
+                      >
+                        <app-icon
+                          [name]="projection.kind === 'imported' ? 'spreadsheet' : 'table'"
+                          [size]="20"
+                        />
                       </span>
                       <span class="row-main">
                         <span class="row-heading">
                           <span class="row-name">{{ projection.name }}</span>
                         </span>
                         <span class="row-meta">
+                          @if (projection.kind === 'imported') {
+                            From a spreadsheet ·
+                          }
                           Updated {{ projection.updatedAt | relativeTime }}
                         </span>
                       </span>
@@ -103,13 +116,17 @@
                 }
               </ul>
             }
+            <!-- A spreadsheet becomes the user's own board, so its door belongs in their own
+                 group rather than beside the share-link field it used to sit next to. The button
+                 draws nothing unless the build turns the upload on. -->
+            <app-spreadsheet-import-button (imported)="onUploaded($event)" />
           }
-          @case ('imported') {
-            @if (importedBoards().length === 0) {
-              <p class="group-empty">No imports yet.</p>
+          @case ('following') {
+            @if (followedBoards().length === 0) {
+              <p class="group-empty">You're not following any projections yet.</p>
             } @else {
               <ul class="rows">
-                @for (board of importedBoards(); track board.id) {
+                @for (board of followedBoards(); track board.id) {
                   <li class="row" [class.row--selected]="isCopyOf(board.id)">
                     <label class="row-choice">
                       <input
@@ -118,21 +135,15 @@
                         [checked]="isCopyOf(board.id)"
                         (change)="selectCopyFrom(board.id)"
                       />
-                      <!-- A board from a share link or from a spreadsheet, told apart by whether it
-                           has someone to credit. -->
-                      <span
-                        class="row-icon"
-                        [class.row-icon--spreadsheet]="!board.origin"
-                        aria-hidden="true"
-                      >
-                        <app-icon [name]="board.origin ? 'link' : 'spreadsheet'" [size]="20" />
+                      <span class="row-icon" aria-hidden="true">
+                        <app-icon name="link" [size]="20" />
                       </span>
                       <span class="row-main">
                         <span class="row-heading">
                           <span class="row-name">{{ board.name }}</span>
                         </span>
                         <span class="row-meta">
-                          {{ sourceLabel(board) }} · imported {{ board.createdAt | relativeTime }}
+                          {{ sourceLabel(board) }} · added {{ board.createdAt | relativeTime }}
                         </span>
                       </span>
                     </label>
@@ -140,7 +151,7 @@
                 }
               </ul>
             }
-            <app-projection-import label="Paste a share link" (imported)="onImported($event)" />
+            <app-share-import (followed)="onFollowed($event)" />
           }
           @default {
             <ul class="rows">
