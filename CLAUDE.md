@@ -160,7 +160,13 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   **A draft is named**, defaulting to what it was started from and numbered by the server on a
   clash ("AI Projection (2)"). It can be renamed from its row on the draft page or from the
   heading on the board (`PUT /api/v1/projections/{id}/name`); a name the user typed is refused
-  when taken, and from then on it is theirs. A **league sync** names the draft after the league
+  when taken, and from then on it is theirs. **The heading is editable during the setup too**,
+  before anything is saved: there is nothing to rename yet, so the name is held and travels with
+  the setup when it is confirmed. What the heading shows there is `freeNameFrom` (in
+  `services/projection-name.ts`, the same shape db-service uses) applied to the drafts the user
+  already has — otherwise the setup reads "AI Projection" and the draft that comes out of it is
+  called "AI Projection (2)". The server still settles the real name; this only stops the page
+  promising one it will not get. A **league sync** names the draft after the league
   (`derived: true`), which the server numbers on a clash and declines once the user has named
   the draft themselves — Alexander's call: a name somebody chose is the more deliberate of the
   two. A sync during a setup that has not been saved yet is held and applied the moment the

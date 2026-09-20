@@ -41,7 +41,7 @@
           @if (renameError()) {
             <p class="rename-error">{{ renameError() }}</p>
           }
-        } @else if (draftId()) {
+        } @else {
           <h1>
             <button
               type="button"
@@ -54,8 +54,6 @@
               <span class="rename-icon" aria-hidden="true"><app-icon name="pencil" /></span>
             </button>
           </h1>
-        } @else {
-          <h1>{{ draftName() }}</h1>
         }
         <span class="draft-tag">Draft Mode</span>
         @if (finished()) {

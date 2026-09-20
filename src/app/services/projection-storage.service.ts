@@ -110,12 +110,12 @@ export class ProjectionStorageService {
    * server, so `data` carries only the draft's own league and its setup — the ~0.5 MB of rows
    * never leaves the server, and the board is not written to at all.
    *
-   * <p>The name is left to the server: it takes the board's, numbering it where another draft
-   * already holds it ("My league (2)"). So the saved name is the one in the response, and a
-   * board can be drafted against as many times as its owner likes.
+   * <p>Without a `name` the server takes the board's. Either way it numbers one another draft
+   * already holds ("My league (2)"), so the saved name is the one in the response and a board
+   * can be drafted against as many times as its owner likes.
    */
-  startDraft(boardId: string, data: ProjectionData): Observable<ProjectionResponse> {
-    return from(this.api.invoke(startDraft, { id: boardId, body: { data } }));
+  startDraft(boardId: string, data: ProjectionData, name?: string): Observable<ProjectionResponse> {
+    return from(this.api.invoke(startDraft, { id: boardId, body: { data, name } }));
   }
 
   /**

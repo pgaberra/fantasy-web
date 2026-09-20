@@ -20,3 +20,39 @@ export function freeProjectionName(takenNames: Iterable<string>): string {
   }
   return `My Projection ${suffix}`;
 }
+
+/**
+ * The name something would actually be saved under: the preferred one where nothing holds it,
+ * and `"<preferred> (2)"`, `" (3)"` and so on where something does.
+ *
+ * <p>The server settles this for real — it is the only place that can, under a race — and this
+ * is what lets a page say up front what the name will be. A draft is created under the name of
+ * whatever it was started from, so without this the setup heading reads "AI Projection" while
+ * the draft that comes out of it is called "AI Projection (2)".
+ *
+ * <p>Same shape as `UserProjectionService.freeNameFrom` in db-service, including the truncation:
+ * a name is capped at 100 characters, and the suffix has to fit inside that.
+ */
+export function freeNameFrom(preferred: string, takenNames: Iterable<string>): string {
+  const taken = new Set(takenNames);
+  const capped =
+    preferred.length > NAME_MAX_LENGTH ? preferred.slice(0, NAME_MAX_LENGTH) : preferred;
+  if (!taken.has(capped)) {
+    return capped;
+  }
+  for (let suffix = 2; suffix <= MAX_NAME_ATTEMPTS; suffix++) {
+    const tail = ` (${suffix})`;
+    const room = NAME_MAX_LENGTH - tail.length;
+    const candidate = (capped.length > room ? capped.slice(0, room) : capped) + tail;
+    if (!taken.has(candidate)) {
+      return candidate;
+    }
+  }
+  return capped;
+}
+
+/** What the name column and every request DTO cap a name at. */
+const NAME_MAX_LENGTH = 100;
+
+/** How many numbered names to try before giving up and letting the server have the last word. */
+const MAX_NAME_ATTEMPTS = 100;
