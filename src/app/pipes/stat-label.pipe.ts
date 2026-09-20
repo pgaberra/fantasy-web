@@ -29,7 +29,7 @@ export const STAT_LABELS: Record<StatKey, string> = {
   toi: 'TOI',
   gp: 'GP',
   toiPerGame: 'TOI/G',
-  gs: 'Games Started',
+  gs: 'GS',
   w: 'Wins',
   l: 'Losses',
   otl: 'OTL',
