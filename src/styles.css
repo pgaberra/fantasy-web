@@ -514,6 +514,15 @@ a.premium-badge:focus-visible {
   gap: 0.4rem;
   flex-shrink: 0;
 }
+/* The chips wrap wherever else they are drawn, which made the narrowest the name cell could ever
+   be one chip wide. A table wide enough to scroll sideways is laid out at those minimums, so the
+   column came out narrower than the row it holds: the team abbreviation ended up against the
+   first stat column, and a longer name printed over it. Held on one line, the column's minimum is
+   what the cell actually draws. The phone layout keeps the wrapping — there the cell is capped at
+   7rem and clips, so the minimum decides nothing. */
+.col-name app-position-chips {
+  flex-wrap: nowrap;
+}
 /* The short form of the name ("C. McDavid") is for a phone only; a wide screen shows the name
    whole and never draws it. */
 .col-name .player-name-short {
@@ -569,6 +578,9 @@ a.premium-badge:focus-visible {
     max-width: 100%;
     gap: 0.3rem;
     overflow: hidden;
+  }
+  .table-wrapper .col-name app-position-chips {
+    flex-wrap: wrap;
   }
   /* Dropping the team is the one part of this a table has to ask for. It suits a board whose
      rows you put there yourself and can name on sight; it does not suit a leaderboard, where
