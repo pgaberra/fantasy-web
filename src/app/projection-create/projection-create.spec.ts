@@ -969,6 +969,19 @@ describe('ProjectionCreateComponent', () => {
         'change these later',
       );
     });
+
+    // The import's label under the cards is deliberately not among them: it is a way into the
+    // starting-point section, and as a fourth heading it made the page read as five steps.
+    it('heads its three sections, and only those, with a heading', async () => {
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const titles = Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('h2')).map(
+        (title) => title.textContent?.trim(),
+      );
+      expect(titles).toEqual(['Starting point', 'League settings', 'Preview']);
+    });
   });
 
   // The board's own top five, whoever they turn out to be. Under these stats that is all

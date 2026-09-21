@@ -176,7 +176,7 @@
         still carries its count, so the two kinds not open are accounted for, not hidden.
       -->
       <div class="kinds">
-        <span class="kinds-label" id="kinds-label">What do you want to draft against?</span>
+        <h3 class="step-title" id="kinds-label">What do you want to draft against?</h3>
         <div class="segmented" role="group" aria-labelledby="kinds-label">
           @for (option of sourceKinds; track option.kind) {
             <button
@@ -369,7 +369,7 @@
       -->
       @if (leagueSettings(); as league) {
         <div class="league">
-          <span class="preview-label">League settings</span>
+          <h3 class="step-title">League settings</h3>
           <app-league-settings-controls
             [settings]="league"
             (settingsChange)="setLeagueSettings($event)"
@@ -379,7 +379,7 @@
 
       @if (previewSource(); as previewed) {
         <div class="preview">
-          <span class="preview-label">Preview</span>
+          <h3 class="step-title">Preview</h3>
           <app-starting-point-preview
             [source]="previewed"
             [fallbackNote]="previewFallbackNote()"
