@@ -382,8 +382,10 @@
 }
 
 /* The follow field sits straight under the followed boards' cards. Without a gap its label read
-   as the last card's caption rather than a field of its own. */
-.rows + app-share-import {
+   as the last card's caption rather than a field of its own. The spreadsheet import is the same
+   case: it makes a board rather than being one, so it stands as far off the cards. */
+.rows + app-share-import,
+.rows + app-spreadsheet-import-button {
   display: block;
   margin-top: var(--space-5);
 }

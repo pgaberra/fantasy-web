@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, output, signal } from '@angular/core';
+import { Component, DestroyRef, inject, input, output, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { environment } from '../../../environments/environment';
@@ -41,6 +41,12 @@ export class SpreadsheetImportButtonComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly enabled = environment.spreadsheetImportEnabled;
+
+  /**
+   * A line over the button, for the pickers: under a grid of cards a bare button reads as the
+   * last card's footnote. The home page sets it beside the share-link field and needs none.
+   */
+  readonly label = input<string>();
 
   readonly imported = output<ProjectionResponse>();
 
