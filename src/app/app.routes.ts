@@ -7,7 +7,7 @@ import { paymentsEnabledGuard } from './guards/payments-enabled.guard';
 import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
 import { streamerPlannerEnabledGuard } from './guards/streamer-planner-enabled.guard';
 import { demoRedemptionGuard } from './guards/demo-redemption.guard';
-import { INDEXABLE } from './shared/crawl-tags';
+import { DESCRIPTION, INDEXABLE } from './shared/crawl-tags';
 
 /**
  * The old payment addresses, /pricing and /account, both land on /premium with whatever they were
@@ -29,7 +29,9 @@ const toRefundTerms: RedirectFunction = () =>
  *
  * `data: { [INDEXABLE]: true }` is what lets search engines list a page; every route without it
  * is marked noindex (see shared/crawl-tags.ts), and public/sitemap.xml has to list exactly the
- * ones with it.
+ * ones with it. An indexable page other than the home page also needs a `title` and a
+ * `data: { [DESCRIPTION]: … }` of its own and a prerender in app.routes.server.ts: Google folds a
+ * page that answers with the home page's title into the home page (crawl-rules.spec.ts checks).
  */
 export const routes: Routes = [
   {
@@ -133,7 +135,12 @@ export const routes: Routes = [
   {
     path: 'privacy',
     loadComponent: () => import('./privacy/privacy').then((m) => m.PrivacyComponent),
-    data: { [INDEXABLE]: true },
+    title: 'Privacy policy - SlapStat',
+    data: {
+      [INDEXABLE]: true,
+      [DESCRIPTION]:
+        'What SlapStat collects, why, who it is shared with, how long it is kept, and the rights you have over it.',
+    },
   },
   // Public and unguarded like /privacy, and deliberately not behind the payments flag: a payment
   // provider's review reads the terms from a signed-out browser before the feature is ever switched
@@ -141,7 +148,12 @@ export const routes: Routes = [
   {
     path: 'terms',
     loadComponent: () => import('./terms/terms').then((m) => m.TermsComponent),
-    data: { [INDEXABLE]: true },
+    title: 'Terms and conditions - SlapStat',
+    data: {
+      [INDEXABLE]: true,
+      [DESCRIPTION]:
+        'The terms for using SlapStat and paying for Premium, including when a charge is refunded.',
+    },
   },
   // The refund policy was a page of its own and is now a section of the terms. The address stays,
   // for links already out there; nginx answers it with a 301 too, for readers that run no scripts.
@@ -182,15 +194,21 @@ export const routes: Routes = [
     loadComponent: () => import('./profile/profile').then((m) => m.ProfileComponent),
     canActivate: [authGuard],
   },
+  // Not indexable: a sign-in form has nothing to find in search, and while it was indexed Google
+  // folded it into the home page as a duplicate.
   {
     path: 'login',
     loadComponent: () => import('./auth/login/login').then((m) => m.LoginComponent),
-    data: { [INDEXABLE]: true },
   },
   {
     path: 'register',
     loadComponent: () => import('./auth/register/register').then((m) => m.RegisterComponent),
-    data: { [INDEXABLE]: true },
+    title: 'Create account - SlapStat',
+    data: {
+      [INDEXABLE]: true,
+      [DESCRIPTION]:
+        "Create a free SlapStat account to build fantasy hockey player rankings from your league's scoring settings and take them into your draft.",
+    },
   },
   {
     path: 'auth/google/callback',
