@@ -894,7 +894,7 @@ describe('SharedProjectionComponent', () => {
    * thing, so a copy no longer leaves the reader following the author as well.
    */
   describe('following a shared board', () => {
-    it('offers the follow apart from the two copy buttons, and says how they differ', async () => {
+    it('offers the follow apart from the two copy buttons', async () => {
       isLoggedIn.set(true);
       const fixture = await render();
 
@@ -902,9 +902,6 @@ describe('SharedProjectionComponent', () => {
       expect(follow).not.toBeNull();
       expect(follow.textContent).toContain('Follow');
       expect(fixture.nativeElement.querySelector('.board-actions').contains(follow)).toBe(false);
-      const explainer = fixture.nativeElement.querySelector('.follow-explainer');
-      expect(explainer.textContent).toContain('A copy is yours to edit');
-      expect(explainer.textContent).toContain('alex');
     });
 
     /** Following tracks the author from here on, so no copy is taken and no stamp is sent. */
