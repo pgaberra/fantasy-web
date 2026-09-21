@@ -45,7 +45,7 @@ import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { hasHeadshots, PlayerHeadshotComponent } from '../shared/player-headshot/player-headshot';
 import { SHARED_BOARD } from '../auth/auth-reason';
 import { environment } from '../../environments/environment';
-import { ImportDestination, PendingCopyService } from './pending-copy';
+import { PendingCopyService, SharedAction } from './pending-copy';
 import { renameOnOpenExtras } from '../draft-projection/rename-intent';
 
 /**
@@ -122,9 +122,19 @@ export class SharedProjectionComponent {
 
   readonly isLoggedIn = inject(AuthService).isLoggedIn;
 
-  /** Which of the two buttons is waiting on the copy, so only that one says so. */
-  readonly importingInto = signal<ImportDestination | null>(null);
-  readonly isImporting = computed(() => this.importingInto() !== null);
+  /** Which of the three buttons is waiting on the server, so only that one says so. */
+  readonly pressed = signal<SharedAction | null>(null);
+  readonly isBusy = computed(() => this.pressed() !== null);
+
+  /**
+   * The board is now followed, whether this press made the follow or found one already there.
+   * The button says so from then on: a second follow is not a thing to offer, and the server
+   * would hand back the same row anyway.
+   */
+  readonly isFollowing = signal(false);
+
+  /** Said beside the Follow button rather than in a toast, since the button is what changed. */
+  readonly followNote = signal<string | null>(null);
 
   /**
    * The last press was refused because the author changed the board after this page read it.
@@ -134,12 +144,12 @@ export class SharedProjectionComponent {
   readonly boardChanged = signal(false);
 
   /**
-   * A press picked back up on the way in is being copied, so the page is about to leave for the
+   * A press picked back up on the way in is being acted on, so the page is about to leave for the
    * editor. The board is not shown meanwhile: it would flash up for the second or two the copy
    * takes and then be replaced, which read as the sign-up having landed on the wrong page. Cleared
-   * only when the copy fails, where the board is the right thing to fall back to.
+   * once the press is answered, where the board is the right thing to fall back to.
    */
-  readonly resumingCopy = signal(false);
+  readonly resumingPress = signal(false);
 
   /**
    * Picks a press back up on the way in, for the visitor who made it and came back with an
@@ -154,8 +164,13 @@ export class SharedProjectionComponent {
     if (!pending || !this.isLoggedIn()) {
       return;
     }
-    this.resumingCopy.set(true);
-    this.copyThen(pending.destination, pending.seenUpdatedAt);
+    if (pending.action === 'follow') {
+      // A follow stays on this page, so the board is wanted: only a copy leaves for the editor.
+      this.follow();
+      return;
+    }
+    this.resumingPress.set(true);
+    this.copyThen(pending.action, pending.seenUpdatedAt);
   }
 
   /** Takes a copy of the published projection and opens it for editing. */
@@ -169,6 +184,59 @@ export class SharedProjectionComponent {
   }
 
   /**
+   * Follows the board instead of copying it: it joins the reader's projections under the author's
+   * name, read-only apart from their own draft, and is rewritten whenever the author shares it
+   * again. The page stays where it is, because the reader came here to read the board and a press
+   * that files it away is no reason to take it off their screen.
+   *
+   * <p>No stamp is sent with it. A copy is refused when the author has moved the board since this
+   * page read it, since the reader would otherwise be handed numbers they never saw; a follow has
+   * no such moment, as it shows whatever the author last published from here on.
+   */
+  follow(): void {
+    if (!this.isLoggedIn()) {
+      this.pendingCopy.remember(this.token, 'follow');
+      void this.router.navigate(['/register'], {
+        queryParams: { returnUrl: this.returnUrl, reason: SHARED_BOARD },
+      });
+      return;
+    }
+    this.pressed.set('follow');
+    this.boardChanged.set(false);
+    this.followNote.set(null);
+    this.storage
+      .followShare(this.token)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (result) => {
+          this.pressed.set(null);
+          this.isFollowing.set(true);
+          this.followNote.set(
+            result.alreadyFollowed
+              ? 'You already follow this projection.'
+              : 'Added to My Projections.',
+          );
+          if (!result.alreadyFollowed) {
+            this.analytics.capture('shared_projection_followed');
+          }
+        },
+        error: (error: unknown) => {
+          this.pressed.set(null);
+          // Their own board: the author opened their own link, and there is nothing to follow.
+          if (error instanceof HttpErrorResponse && error.status === 400) {
+            this.followNote.set('This is your own projection.');
+            return;
+          }
+          if (error instanceof HttpErrorResponse && error.status === 404) {
+            this.followNote.set('This share link is no longer active.');
+            return;
+          }
+          this.notification.error("Couldn't follow this projection. Please try again.");
+        },
+      });
+  }
+
+  /**
    * The copy behind both buttons. A copy is the reader's own projection from that moment on: the
    * numbers as they are published now, with nothing the author does afterwards reaching it, and
    * none of their picks. The press carries the stamp of the projection on screen, and one its
@@ -177,14 +245,14 @@ export class SharedProjectionComponent {
    *
    * <p>Pressing either a second time makes a second copy, and that is the point: the server
    * numbers the name ("Copy of My league (2)") rather than refusing, so both buttons do what they
-   * say however often they are pressed. Following the link is the other thing a reader can do
-   * with it, and that is what pasting it into the import panel does.
+   * say however often they are pressed. Copying does not follow the board: Follow beside them is
+   * the press for that, and one press does one thing.
    *
    * <p>The editor is opened with its rename waiting, because the name the server chose names the
    * projection it came from and not the one the reader is about to build.
    */
   private copyThen(
-    destination: ImportDestination,
+    destination: Exclude<SharedAction, 'follow'>,
     seenUpdatedAt: string | undefined = this.shared()?.updatedAt,
   ): void {
     // A copy has to live in an account, so someone without one is taken straight to the form that
@@ -199,8 +267,9 @@ export class SharedProjectionComponent {
       });
       return;
     }
-    this.importingInto.set(destination);
+    this.pressed.set(destination);
     this.boardChanged.set(false);
+    this.followNote.set(null);
     this.storage
       .copyFromShare(this.token, seenUpdatedAt)
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -212,8 +281,8 @@ export class SharedProjectionComponent {
             : this.router.navigate(['/projections', projection.id], renameOnOpenExtras));
         },
         error: (error: unknown) => {
-          this.importingInto.set(null);
-          this.resumingCopy.set(false);
+          this.pressed.set(null);
+          this.resumingPress.set(false);
           if (error instanceof HttpErrorResponse && error.status === 412) {
             this.boardChanged.set(true);
             // After a resumed copy the board was never read, and letting go of it above has
@@ -303,7 +372,7 @@ export class SharedProjectionComponent {
    */
   readonly sharedResource = rxResource({
     params: () => {
-      if (this.resumingCopy()) {
+      if (this.resumingPress()) {
         return undefined;
       }
       if (this.isLoggedIn()) {

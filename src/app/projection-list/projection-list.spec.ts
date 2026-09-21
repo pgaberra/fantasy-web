@@ -165,11 +165,15 @@ describe('ProjectionListComponent', () => {
       return fixture;
     };
 
-    it('keeps their own work apart from what they imported, newest first in each', async () => {
+    /**
+     * The split is ownership, not how a row arrived: a spreadsheet the user uploaded is theirs
+     * to edit and share, so it belongs with what they made rather than with what they follow.
+     */
+    it('keeps what they follow apart from their own work, newest first in each', async () => {
       const component = (await renderWithImports()).point.componentInstance;
 
-      expect(component.ownProjections().map((row) => row.id)).toEqual(['p2', 'p3', 'p1']);
-      expect(component.importedProjections().map((row) => row.id)).toEqual(['s1', 'f1']);
+      expect(component.ownProjections().map((row) => row.id)).toEqual(['p2', 's1', 'p3', 'p1']);
+      expect(component.followedProjections().map((row) => row.id)).toEqual(['f1']);
     });
 
     it('heads each group', async () => {
@@ -178,7 +182,7 @@ describe('ProjectionListComponent', () => {
       const headings = Array.from(
         fixture.nativeElement.querySelectorAll('.group-heading') as NodeListOf<HTMLElement>,
       ).map((heading) => heading.textContent?.trim());
-      expect(headings).toEqual(['Your projections', 'Imports']);
+      expect(headings).toEqual(['Your projections', 'Following']);
     });
 
     /** A heading with nothing under it says less than no heading. */

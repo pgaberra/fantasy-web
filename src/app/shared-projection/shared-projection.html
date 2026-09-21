@@ -2,7 +2,7 @@
      swapping the table for a spinner on every click of a column heading loses the reader's place
      for the sake of 25 rows arriving. The table dims instead. A copy picked back up after
      signing up waits here too, since the editor is where it lands. -->
-@if (resumingCopy() || (sharedResource.isLoading() && !shared())) {
+@if (resumingPress() || (sharedResource.isLoading() && !shared())) {
   <app-loading-indicator />
 } @else if (isGone()) {
   <div class="shared-projection">
@@ -48,22 +48,25 @@
         </span>
       </p>
 
-      <!-- Above the table on purpose: what a visitor does with someone else's board is take a
-           copy of it, and that offer used to sit under every row they had to scroll past. Both
-           buttons are offered to a visitor without an account too, who is taken to the account
-           form when they press one rather than being told in advance that the page is not for
-           them yet. The labels name the destination and the tooltip carries the "a copy, not
-           theirs" detail, so the row reads as two choices rather than two sentences. -->
+      <!-- Above the table on purpose: what a visitor does with someone else's projection is take
+           a copy of it or follow it, and that offer used to sit under every row they had to
+           scroll past. Every button is offered to a visitor without an account too, who is taken
+           to the account form when they press one rather than being told in advance that the page
+           is not for them yet.
+
+           Follow is set apart from the two copy buttons, on its own line and with the sentence
+           that tells them apart: a copy and a follow are different things to end up with, and
+           three buttons in a row would have read as three ways to the same place. -->
       <div class="board-actions">
         <button
           type="button"
           class="btn btn-secondary"
           appTooltip="Create a copy of this projection"
-          [disabled]="isImporting()"
+          [disabled]="isBusy()"
           (click)="copyToMyProjections()"
           data-testid="copy-board"
         >
-          @if (importingInto() === 'projection') {
+          @if (pressed() === 'projection') {
             <app-loading-indicator variant="inline" label="Copying" />
           } @else {
             Create projection
@@ -73,21 +76,45 @@
           type="button"
           class="btn btn-primary"
           appTooltip="Draft against a copy of this projection"
-          [disabled]="isImporting()"
+          [disabled]="isBusy()"
           (click)="draftAgainstThis()"
           data-testid="draft-board"
         >
-          @if (importingInto() === 'draft') {
+          @if (pressed() === 'draft') {
             <app-loading-indicator variant="inline" label="Copying" />
           } @else {
             Draft Mode
           }
         </button>
       </div>
+      <div class="board-follow">
+        <button
+          type="button"
+          class="btn btn-secondary follow"
+          [disabled]="isBusy() || isFollowing()"
+          (click)="follow()"
+          data-testid="follow-board"
+        >
+          @if (pressed() === 'follow') {
+            <app-loading-indicator variant="inline" label="Following" />
+          } @else if (isFollowing()) {
+            Following
+          } @else {
+            Follow
+          }
+        </button>
+        <p class="follow-explainer">
+          A copy is yours to edit and stays as it is now. A follow updates whenever
+          {{ authorLabel() }} shares this projection again.
+        </p>
+      </div>
+      @if (followNote()) {
+        <p class="follow-note" role="status">{{ followNote() }}</p>
+      }
       @if (boardChanged()) {
         <p class="board-changed" role="status">
-          {{ authorLabel() }} updated this board while you were viewing it. Nothing was copied. This
-          is the latest version.
+          {{ authorLabel() }} updated this projection while you were viewing it. Nothing was copied.
+          This is the latest version.
         </p>
       }
     </header>

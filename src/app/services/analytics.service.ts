@@ -15,6 +15,7 @@ export type AnalyticsEvent =
   | 'projection_shared'
   | 'shared_projection_viewed'
   | 'shared_projection_imported'
+  | 'shared_projection_followed'
   | 'projection_spreadsheet_imported';
 
 /** Mirrors posthog's `get_explicit_consent_status()`. */
