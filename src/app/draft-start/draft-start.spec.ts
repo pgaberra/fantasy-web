@@ -629,6 +629,13 @@ describe('DraftStartComponent', () => {
 
     // Nothing is drafted yet, so the page is one question rather than two.
     expect(texts(fixture, '.section-title')).toEqual(['Start a new draft']);
+    // Its steps are headings under it. The import's label under the cards is deliberately not
+    // one: it is a way into the first step, not a step.
+    expect(texts(fixture, 'h3')).toEqual([
+      'What do you want to draft against?',
+      'League settings',
+      'Preview',
+    ]);
     expect(texts(fixture, '.kind-name')).toEqual(['Preset', 'Your projection', 'Following']);
     expect(texts(fixture, '.kind-count')).toEqual(['2', '1', '1']);
     // A segmented control, not radios: the pressed one is said on the button itself.
