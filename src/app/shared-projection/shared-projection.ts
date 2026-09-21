@@ -38,6 +38,7 @@ import { DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
+import { IconComponent } from '../shared/icon/icon';
 import { PinnedTableHeaderDirective } from '../shared/pinned-table-header/pinned-table-header.directive';
 import { TableScrollDirective } from '../shared/table-scroll/table-scroll.directive';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
@@ -96,6 +97,7 @@ interface SharedRow {
     RouterLink,
     LoadingIndicatorComponent,
     ErrorStateComponent,
+    IconComponent,
     PlayerHeadshotComponent,
     PlayerRowComponent,
     PositionFilterComponent,

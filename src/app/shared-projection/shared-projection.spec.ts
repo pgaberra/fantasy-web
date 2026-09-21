@@ -904,6 +904,22 @@ describe('SharedProjectionComponent', () => {
       expect(fixture.nativeElement.querySelector('.board-actions').contains(follow)).toBe(false);
     });
 
+    /** A bell beside the word, never in place of it: the word is what tells a follow from a copy. */
+    it('marks the follow with a bell that rings once followed', async () => {
+      isLoggedIn.set(true);
+      const fixture = await render();
+      const follow = () => fixture.nativeElement.querySelector('[data-testid="follow-board"]');
+
+      expect(follow().querySelector('app-icon[name="follow"]')).not.toBeNull();
+      expect(follow().textContent.trim()).toBe('Follow');
+
+      follow().click();
+      fixture.detectChanges();
+
+      expect(follow().querySelector('app-icon[name="following"]')).not.toBeNull();
+      expect(follow().textContent.trim()).toBe('Following');
+    });
+
     /** Following tracks the author from here on, so no copy is taken and no stamp is sent. */
     it('follows the link and takes no copy', async () => {
       isLoggedIn.set(true);

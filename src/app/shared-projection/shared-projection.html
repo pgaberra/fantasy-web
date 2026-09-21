@@ -98,9 +98,11 @@
           @if (pressed() === 'follow') {
             <app-loading-indicator variant="inline" label="Following" />
           } @else if (isFollowing()) {
-            Following
+            <app-icon name="following" />Following
           } @else {
-            Follow
+            <!-- A bell, not a heart: a heart reads as a like, which does nothing, and a follow
+                 puts the board in the reader's list and brings them the author's updates. -->
+            <app-icon name="follow" />Follow
           }
         </button>
       </div>
