@@ -2,7 +2,7 @@ import { Component, computed, effect, inject, linkedSignal, Signal, signal } fro
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { debounceTime } from 'rxjs';
+import { debounceTime, map } from 'rxjs';
 import { SharedPlayer } from '../api/models/shared-player';
 import { SharedProjectionResponse } from '../api/models/shared-projection-response';
 import { Player } from '../models/player.model';
@@ -122,16 +122,50 @@ export class SharedProjectionComponent {
 
   readonly isLoggedIn = inject(AuthService).isLoggedIn;
 
-  /** Which of the three buttons is waiting on the server, so only that one says so. */
-  readonly pressed = signal<SharedAction | null>(null);
+  /** Which button is waiting on the server, so only that one says so. */
+  readonly pressed = signal<SharedAction | 'unfollow' | null>(null);
   readonly isBusy = computed(() => this.pressed() !== null);
 
   /**
-   * The board is now followed, whether this press made the follow or found one already there.
-   * The button says so from then on: a second follow is not a thing to offer, and the server
-   * would hand back the same row anyway.
+   * The reader's follow of this link, if they hold one, read from their projections when the page
+   * opens. Without it the button only knew about a press made on this page, so a reload offered
+   * Follow again to someone already following, and the press that followed was answered with a
+   * remark rather than a button that said so from the start.
+   *
+   * <p>Only asked for a reader who is signed in: nobody else can hold a follow, and their press
+   * goes to the account form first anyway. A follow is the one row that carries the link it came
+   * from (`origin`), and the server keeps one per reader and link, so the first match is the one.
    */
-  readonly isFollowing = signal(false);
+  private readonly followLookup = rxResource({
+    params: () => (this.isLoggedIn() ? this.token : undefined),
+    stream: ({ params: token }) =>
+      this.storage
+        .listAll()
+        .pipe(
+          map(
+            (projections) =>
+              projections.find((projection) => projection.origin?.shareToken === token)?.id ?? null,
+          ),
+        ),
+  });
+
+  /**
+   * The id of the follow, which is what Unfollow deletes. Seeded from the lookup and then kept by
+   * the presses on this page. A lookup that lands after a press has already followed never undoes
+   * it: the press is the newer word. A lookup that fails leaves the button on Follow, which is
+   * still right to press — the server hands back the follow already held, and the button turns
+   * to Unfollow from there — so it is not surfaced on top of a board the reader came to read.
+   */
+  readonly followId = linkedSignal<string | null | undefined, string | null>({
+    source: () => (this.followLookup.hasValue() ? this.followLookup.value() : undefined),
+    computation: (found, previous) => found ?? previous?.value ?? null,
+  });
+
+  /** The board is followed, whether found so on the way in or followed from here. */
+  readonly isFollowing = computed(() => this.followId() !== null);
+
+  /** The follow state is still being read, so the button cannot yet say which it is. */
+  readonly isCheckingFollow = computed(() => this.followLookup.isLoading());
 
   /** Said beside the Follow button rather than in a toast, since the button is what changed. */
   readonly followNote = signal<string | null>(null);
@@ -210,7 +244,7 @@ export class SharedProjectionComponent {
       .subscribe({
         next: (result) => {
           this.pressed.set(null);
-          this.isFollowing.set(true);
+          this.followId.set(result.projection.id);
           this.followNote.set(
             result.alreadyFollowed
               ? 'You already follow this projection.'
@@ -234,6 +268,45 @@ export class SharedProjectionComponent {
           this.notification.error("Couldn't follow this projection. Please try again.");
         },
       });
+  }
+
+  /**
+   * Takes the follow back off the reader's projections, for the press that was a mis-click or a
+   * change of mind. Nothing the reader made goes with it: the board is the author's, rewritten on
+   * every publish, and a draft played against it is a row of its own that outlives it. So there
+   * is no confirmation, and Follow is right there to undo it.
+   */
+  unfollow(): void {
+    const id = this.followId();
+    if (id === null) {
+      return;
+    }
+    this.pressed.set('unfollow');
+    this.boardChanged.set(false);
+    this.followNote.set(null);
+    this.storage
+      .deleteProjection(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => this.unfollowed(),
+        error: (error: unknown) => {
+          // Already gone — removed from My Projections in another tab, or the author took the
+          // link down, which takes its follows with it. Either way it is no longer followed.
+          if (error instanceof HttpErrorResponse && error.status === 404) {
+            this.unfollowed();
+            return;
+          }
+          this.pressed.set(null);
+          this.notification.error("Couldn't unfollow this projection. Please try again.");
+        },
+      });
+  }
+
+  private unfollowed(): void {
+    this.pressed.set(null);
+    this.followId.set(null);
+    this.followNote.set('Removed from My Projections.');
+    this.analytics.capture('shared_projection_unfollowed');
   }
 
   /**

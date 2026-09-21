@@ -88,21 +88,35 @@
         </button>
       </div>
       <div class="board-follow">
-        <button
-          type="button"
-          class="btn btn-secondary follow"
-          [disabled]="isBusy() || isFollowing()"
-          (click)="follow()"
-          data-testid="follow-board"
-        >
-          @if (pressed() === 'follow') {
-            <app-loading-indicator variant="inline" label="Following" />
-          } @else if (isFollowing()) {
-            Following
-          } @else {
-            Follow
-          }
-        </button>
+        @if (isFollowing()) {
+          <button
+            type="button"
+            class="btn btn-secondary follow"
+            [disabled]="isBusy()"
+            (click)="unfollow()"
+            data-testid="follow-board"
+          >
+            @if (pressed() === 'unfollow') {
+              <app-loading-indicator variant="inline" label="Unfollowing" />
+            } @else {
+              Unfollow
+            }
+          </button>
+        } @else {
+          <button
+            type="button"
+            class="btn btn-secondary follow"
+            [disabled]="isBusy() || isCheckingFollow()"
+            (click)="follow()"
+            data-testid="follow-board"
+          >
+            @if (pressed() === 'follow') {
+              <app-loading-indicator variant="inline" label="Following" />
+            } @else {
+              Follow
+            }
+          </button>
+        }
       </div>
       @if (followNote()) {
         <p class="follow-note" role="status">{{ followNote() }}</p>
