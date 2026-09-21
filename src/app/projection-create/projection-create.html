@@ -48,7 +48,7 @@
     -->
     <fieldset class="field starting">
       <legend class="field-label-row">
-        <span class="field-label" id="starting-point-label">Starting point</span>
+        <h2 class="section-title" id="starting-point-label">Starting point</h2>
         <app-help-tip
           label="What this starting point includes"
           text="The stats players start with."
@@ -215,7 +215,7 @@
     -->
     @if (leagueSettings(); as league) {
       <div class="league">
-        <span class="field-label">League settings</span>
+        <h2 class="section-title">League settings</h2>
         <p class="field-hint">You can change these later.</p>
         <app-league-settings-controls
           [settings]="league"
@@ -225,7 +225,7 @@
     }
 
     <div class="preview">
-      <span class="field-label">Preview</span>
+      <h2 class="section-title">Preview</h2>
       <app-starting-point-preview
         [source]="previewSource()"
         [fallbackNote]="fallbackNote()"
