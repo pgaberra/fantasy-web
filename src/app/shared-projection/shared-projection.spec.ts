@@ -912,6 +912,18 @@ describe('SharedProjectionComponent', () => {
       expect(fixture.nativeElement.querySelector('.board-actions').contains(follow)).toBe(false);
     });
 
+    /** Apart, but not adrift: on a line of its own the follow read as a button that had wrapped. */
+    it('keeps the follow in the same row of offers as the two copy buttons', async () => {
+      isLoggedIn.set(true);
+      const fixture = await render();
+
+      const offers = fixture.nativeElement.querySelector('.board-offers');
+      expect(offers).not.toBeNull();
+      for (const id of ['copy-board', 'draft-board', 'follow-board']) {
+        expect(offers.querySelector(`[data-testid="${id}"]`)).not.toBeNull();
+      }
+    });
+
     /** A bell beside the word, never in place of it: the word is what tells a follow from a copy. */
     it('marks the follow with a bell, and the unfollow with the bell struck out', async () => {
       isLoggedIn.set(true);
