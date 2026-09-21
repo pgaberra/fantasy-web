@@ -19,7 +19,10 @@ checks=(
   "index.html|Prepare for the upcoming"
   "terms/index.html|Charges we always refund"
   "privacy/index.html|Privacy policy"
+  "register/index.html|Already have an account?"
 )
+
+home_title=$(sed -n 's:.*<title>\([^<]*\)</title>.*:\1:p' src/index.html | head -n 1)
 
 failed=0
 for check in "${checks[@]}"; do
@@ -34,6 +37,19 @@ for check in "${checks[@]}"; do
   visible=$(sed -e 's/<script[^>]*>[^<]*<\/script>//g' -e 's/<[^>]*>/ /g' "$file" | tr -s ' \n' ' ')
   if ! grep -qF -- "$text" <<< "$visible"; then
     echo "::error::${file} does not contain \"${text}\" outside its markup; the prerender rendered no content."
+    failed=1
+  fi
+  # Each page credits itself, not the home page: Google folded /login into the home page when its
+  # HTML carried only the home page's head. crawl-tags.ts writes these while prerendering.
+  page="/${check%%|*}"
+  page="${page%index.html}"
+  page="${page%/}"
+  if ! grep -qF -- "<link rel=\"canonical\" href=\"https://slapstat.com${page:-/}\">" "$file"; then
+    echo "::error::${file} has no canonical link to https://slapstat.com${page:-/}."
+    failed=1
+  fi
+  if [ -n "$page" ] && grep -qF -- "<title>${home_title}</title>" "$file"; then
+    echo "::error::${file} carries the home page's title; give its route a title of its own."
     failed=1
   fi
 done
