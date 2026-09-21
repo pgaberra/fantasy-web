@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import indexHtml from '../index.html' with { loader: 'text' };
 import robots from '../../public/robots.txt' with { loader: 'text' };
 import sitemap from '../../public/sitemap.xml' with { loader: 'text' };
+import { RenderMode } from '@angular/ssr';
 import { routes } from './app.routes';
-import { INDEXABLE } from './shared/crawl-tags';
+import { serverRoutes } from './app.routes.server';
+import { DESCRIPTION, INDEXABLE } from './shared/crawl-tags';
 
 /**
  * Which pages belong in search results is decided once, by `data: { [INDEXABLE]: true }` on the
@@ -22,9 +24,11 @@ const urlOf = (path: string): string => '/' + path.split(':')[0];
 const isDisallowed = (url: string): boolean => disallowed.some((rule) => url.startsWith(rule));
 
 const paths = routes.map((route) => route.path!);
-const indexable = routes
-  .filter((route) => route.data?.[INDEXABLE] === true)
-  .map((route) => urlOf(route.path!));
+const indexableRoutes = routes.filter((route) => route.data?.[INDEXABLE] === true);
+const indexable = indexableRoutes.map((route) => urlOf(route.path!));
+
+const homeTitle = /<title>([^<]*)<\/title>/.exec(indexHtml)![1];
+const homeDescription = /<meta\s+name="description"\s+content="([^"]*)"/.exec(indexHtml)![1];
 
 describe('crawl rules', () => {
   it('lists exactly the indexable pages in the sitemap', () => {
@@ -50,6 +54,41 @@ describe('crawl rules', () => {
     const stale = disallowed.filter((rule) => !paths.some((path) => urlOf(path).startsWith(rule)));
 
     expect(stale).toEqual([]);
+  });
+
+  // Google folded /login into the home page while it was client-rendered: the HTML it fetched was
+  // the bare shell, under the home page's title and description, and the canonical came later.
+  it('prerenders every indexable page', () => {
+    const prerendered = serverRoutes
+      .filter((route) => route.renderMode === RenderMode.Prerender)
+      .map((route) => route.path);
+
+    expect(
+      indexableRoutes.map((route) => route.path).filter((path) => !prerendered.includes(path!)),
+    ).toEqual([]);
+  });
+
+  it('gives every indexable page but the home page a title and description of its own', () => {
+    const notOwn = indexableRoutes
+      .filter((route) => route.path !== '')
+      .filter(
+        (route) =>
+          typeof route.title !== 'string' ||
+          route.title === homeTitle ||
+          typeof route.data?.[DESCRIPTION] !== 'string' ||
+          route.data[DESCRIPTION] === homeDescription,
+      )
+      .map((route) => route.path);
+
+    expect(homeTitle).toContain('SlapStat');
+    expect(homeDescription).not.toEqual('');
+    expect(notOwn).toEqual([]);
+  });
+
+  it('gives no two indexable pages the same title', () => {
+    const titles = indexableRoutes.map((route) => route.title ?? homeTitle);
+
+    expect(new Set(titles).size).toEqual(titles.length);
   });
 
   it('declares no canonical or og:url in index.html, which is served for every page', () => {
