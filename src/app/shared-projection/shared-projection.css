@@ -63,22 +63,13 @@
   }
 }
 
-/* Its own line under the two copy buttons, with the sentence that tells a copy and a follow
-   apart beside it rather than above the pair. */
+/* Its own line under the two copy buttons. */
 .board-follow {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
   margin-top: var(--space-3);
-}
-
-.follow-explainer {
-  flex: 1 1 16rem;
-  margin: 0;
-  font-size: var(--text-sm);
-  line-height: 1.5;
-  color: var(--color-text-muted);
 }
 
 .follow-note {
@@ -88,7 +79,7 @@
 }
 
 @media (max-width: 640px) {
-  /* Full width like the two above it, with the sentence wrapping underneath. */
+  /* Full width like the two above it. */
   .board-follow .btn {
     flex: 1 1 100%;
   }

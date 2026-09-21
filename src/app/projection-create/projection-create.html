@@ -213,7 +213,7 @@
     @if (leagueSettings(); as league) {
       <div class="league">
         <span class="field-label">League settings</span>
-        <p class="field-hint">You can change these later in the projection.</p>
+        <p class="field-hint">You can change these later.</p>
         <app-league-settings-controls
           [settings]="league"
           (settingsChange)="setLeagueSettings($event)"
