@@ -82,6 +82,54 @@ describe('ProjectionCardComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Updated');
   });
 
+  describe('where the numbers came from', () => {
+    const renderCard = (overrides: Partial<ProjectionSummaryResponse>) => {
+      const fixture = MockRender(template, {
+        projection: { ...projection, ...overrides },
+        isPreparingShare: false,
+        onEdit,
+        onShare,
+        onRemove,
+        onCopy,
+        onDiscardDraft,
+      });
+      return {
+        card: ngMocks.findInstance(ProjectionCardComponent),
+        text: (fixture.nativeElement as HTMLElement).textContent ?? '',
+        tile: ngMocks.find<HTMLElement>('.card-icon').nativeElement,
+      };
+    };
+
+    it('gives a projection the user built the table tile and no source line', () => {
+      const { card, text, tile } = renderCard({});
+
+      expect(card.iconName()).toBe('table');
+      expect(tile.classList).not.toContain('card-icon--spreadsheet');
+      expect(text).not.toContain('From a spreadsheet');
+    });
+
+    it('says an uploaded spreadsheet is one, as the create page does', () => {
+      const { card, text, tile } = renderCard({ kind: 'imported' });
+
+      expect(card.iconName()).toBe('spreadsheet');
+      expect(tile.classList).toContain('card-icon--spreadsheet');
+      expect(text).toContain('From a spreadsheet');
+    });
+
+    /** A follow is stored as `imported` too, and is nobody's spreadsheet. */
+    it('does not call a followed board a spreadsheet', () => {
+      const { card, text, tile } = renderCard({
+        kind: 'imported',
+        origin: { authorUsername: 'alex', shareToken: 'tok123' },
+      });
+
+      expect(card.iconName()).toBe('link');
+      expect(tile.classList).not.toContain('card-icon--spreadsheet');
+      expect(text).toContain('Following alex');
+      expect(text).not.toContain('From a spreadsheet');
+    });
+  });
+
   it('emits edit when Edit is clicked', () => {
     render();
 
@@ -263,22 +311,6 @@ describe('ProjectionCardComponent', () => {
       fixture.detectChanges();
       expect(document.querySelector('.menu-item.share')).not.toBeNull();
       expect(document.querySelector('.menu-item.copy')).toBeNull();
-    });
-
-    it('says when it was updated, not where it came from', () => {
-      const fixture = MockRender(template, {
-        projection: fromSheet,
-        isPreparingShare: false,
-        onEdit,
-        onShare,
-        onRemove,
-        onCopy,
-        onDiscardDraft,
-      });
-
-      const meta = fixture.nativeElement.querySelector('.card-meta').textContent.trim();
-      expect(meta).toContain('Updated');
-      expect(meta).not.toContain('spreadsheet');
     });
   });
 });

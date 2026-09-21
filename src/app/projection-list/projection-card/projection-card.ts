@@ -11,7 +11,7 @@ import {
 import { ProjectionSummaryResponse } from '../../api/models/projection-summary-response';
 import { RelativeTimePipe } from '../../pipes/relative-time.pipe';
 import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
-import { IconComponent } from '../../shared/icon/icon';
+import { IconComponent, IconName } from '../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 import { isFollowedBoard } from '../../models/source-kind';
 
@@ -38,6 +38,22 @@ export class ProjectionCardComponent {
 
   /** A projection that follows somebody's share link, which is the one kind not the user's own. */
   readonly isFollow = computed(() => isFollowedBoard(this.projection()));
+
+  /**
+   * A spreadsheet the user uploaded. A follow is stored as `imported` too, so `kind` alone would
+   * call somebody else's board a spreadsheet; the follow is ruled out first.
+   */
+  readonly isFromSpreadsheet = computed(
+    () => !this.isFollow() && this.projection().kind === 'imported',
+  );
+
+  /** The tile the create page and the draft picker give the same row. */
+  readonly iconName = computed<IconName>(() => {
+    if (this.isFollow()) {
+      return 'link';
+    }
+    return this.isFromSpreadsheet() ? 'spreadsheet' : 'table';
+  });
 
   /**
    * A follow opens read-only, so the button that opens it says so. "Edit" over a projection the

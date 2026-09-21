@@ -21,6 +21,9 @@ import { ProjectionSummaryResponse } from '../api/models/projection-summary-resp
 import { renameOnOpenExtras } from '../draft-projection/rename-intent';
 import { isFollowedBoard, isOwnBoard } from '../models/source-kind';
 
+/** The two halves of the list: what the user can edit, and what they only follow. */
+type ProjectionGroup = 'own' | 'following';
+
 @Component({
   selector: 'app-projection-list',
   imports: [
@@ -75,6 +78,30 @@ export class ProjectionListComponent {
   /** Somebody else's board, mirrored under their name until the user stops following it. */
   readonly followedProjections = computed(() => this.sortedProjections().filter(isFollowedBoard));
 
+  readonly groups: readonly { readonly group: ProjectionGroup; readonly name: string }[] = [
+    { group: 'own', name: 'Your projections' },
+    { group: 'following', name: 'Following' },
+  ];
+
+  /** What the user pressed, if anything; `group` is what that comes to. */
+  readonly selectedGroup = signal<ProjectionGroup | null>(null);
+
+  /**
+   * The group on screen. Their own work unless they asked for the other, with two exceptions:
+   * an account that only follows opens on what it has, and unfollowing the last board takes the
+   * control away, so the page cannot be left on a group there is no longer a way out of.
+   */
+  readonly group = computed<ProjectionGroup>(() => {
+    if (this.followedProjections().length === 0) {
+      return 'own';
+    }
+    return this.selectedGroup() ?? (this.ownProjections().length > 0 ? 'own' : 'following');
+  });
+
+  readonly shownProjections = computed(() =>
+    this.group() === 'own' ? this.ownProjections() : this.followedProjections(),
+  );
+
   readonly copyingFollow = signal<string | null>(null);
 
   constructor() {
@@ -115,6 +142,11 @@ export class ProjectionListComponent {
           this.notification.error("Couldn't save the demo projection. Please try again.");
         },
       });
+  }
+
+  /** Said on the control, so the group not open is honest about what is behind it. */
+  groupCount(group: ProjectionGroup): number {
+    return group === 'own' ? this.ownProjections().length : this.followedProjections().length;
   }
 
   retry(): void {

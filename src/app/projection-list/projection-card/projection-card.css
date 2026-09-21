@@ -1,12 +1,16 @@
+/* A card rather than a row across the page: a name, a line of meta and two buttons do not fill
+   1100px, and stretched that far the buttons sat a screen's width from the name they act on. The
+   shape is the create page's starting-point card (projection-create.css), with the actions as a
+   row of their own under it. */
 :host {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: var(--space-3);
+  min-width: 0;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 0.85rem 1.1rem;
+  padding: 0.75rem 0.8rem;
   transition:
     border-color var(--transition),
     box-shadow var(--transition);
@@ -17,74 +21,73 @@
   box-shadow: var(--shadow-sm);
 }
 
-.card-main {
+.card-head {
   display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+  align-items: flex-start;
+  gap: var(--space-2);
   min-width: 0;
 }
 
-.card-name {
-  font-weight: var(--weight-semibold);
-  color: var(--color-primary);
+.card-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
 }
 
-.card-meta {
-  font-size: var(--text-sm);
-  color: var(--color-text-subtle);
-}
-
-.card-status {
-  align-self: flex-start;
-  margin-top: 0.15rem;
-  padding: 0.05rem 0.45rem;
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  border-radius: var(--radius-pill);
-  background: var(--color-surface-hover);
-  color: var(--color-text-subtle);
-}
-
-.card-status--done {
+/* A board from a spreadsheet wears the colour spreadsheets are known by. */
+.card-icon--spreadsheet {
   color: var(--color-success);
 }
 
-@media (max-width: 640px) {
-  :host {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-2);
-  }
-
-  .card-actions {
-    flex-wrap: wrap;
-  }
-
-  /* The card stacks here, so the actions become a row of their own and the kebab would sit
-     against the last button — reading as a third action rather than the card's own menu.
-     Against the far edge it lines up with the card, which is what it belongs to. */
-  .card-menu {
-    margin-left: auto;
-  }
+.card-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 0.1rem;
+  min-width: 0;
 }
 
+/* An uploaded file lends the board its file name, which can be one unbroken word longer than
+   the card. */
+.card-name {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  overflow-wrap: anywhere;
+}
+
+.card-meta {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+}
+
+/* Pushed to the foot, so the buttons line up along a row of cards whose names wrap to different
+   heights. */
 .card-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+  margin-top: auto;
 }
 
-/* The label on this button changes with the draft's state, and the three labels are not the
-   same length. Without a floor wide enough for the longest of them, every card sets the
-   button's width from its own label and the Edit button beside it lands at a different x on
-   each row, so the primary action has no column to sit in as the eye runs down the list. */
-.card-actions .draft {
-  min-width: 8.5rem;
+/* Equal halves: every card's primary action then sits in the same column as the eye runs down
+   the grid, whether it reads Edit or View. */
+.card-actions .btn {
+  flex: 1;
 }
 
+/* The question takes a line of its own: beside two buttons in a card this wide, a long name would
+   break after every word. */
 .card-actions .confirm-text {
+  flex-basis: 100%;
   font-size: var(--text-sm);
   color: var(--color-primary);
+  overflow-wrap: anywhere;
 }
 
 /* Share and Delete live behind this rather than as buttons of their own: the card had four
@@ -96,6 +99,8 @@
   flex: none;
   width: 2rem;
   height: 2rem;
+  /* Tucked into the card's corner rather than indented by its padding. */
+  margin: -0.25rem -0.3rem 0 0;
   padding: 0;
   background: none;
   border: 1px solid transparent;

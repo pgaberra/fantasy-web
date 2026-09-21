@@ -28,47 +28,43 @@
       <p class="state-message">Create a projection to start ranking players for your league.</p>
     </div>
   } @else {
-    <!-- Two groups rather than one list, split on who owns the rows rather than how they got
-         here: everything the user can edit is theirs, whether they built it, copied it or
-         uploaded a spreadsheet, and only a board they follow belongs to someone else. A heading
-         with nothing under it says less than no heading, so each group appears only when it
-         holds something. -->
-    @if (ownProjections().length > 0) {
-      <section class="group">
-        <h2 class="group-heading">Your projections</h2>
-        <ul class="cards">
-          @for (projection of ownProjections(); track projection.id) {
-            <li
-              app-projection-card
-              [projection]="projection"
-              (edit)="edit(projection.id)"
-              (draft)="draft(projection.id)"
-              [isPreparingShare]="preparingShareFor() === projection.id"
-              (share)="share(projection.id)"
-              (remove)="remove(projection.id)"
-            ></li>
-          }
-        </ul>
-      </section>
-    }
+    <!-- The same control the create page and the draft picker put over the same two groups, so
+         the split is learned once. It is made on who owns the rows rather than how they got here:
+         everything the user can edit is theirs, whether they built it, copied it or uploaded a
+         spreadsheet, and only a board they follow belongs to someone else. A choice of one is no
+         choice, so the control appears only once something is followed. -->
     @if (followedProjections().length > 0) {
-      <section class="group">
-        <h2 class="group-heading">Following</h2>
-        <ul class="cards">
-          @for (projection of followedProjections(); track projection.id) {
-            <li
-              app-projection-card
-              [projection]="projection"
-              (edit)="edit(projection.id)"
-              (draft)="draft(projection.id)"
-              [isPreparingShare]="preparingShareFor() === projection.id"
-              (share)="share(projection.id)"
-              (copyRequested)="createCopy(projection)"
-              (remove)="remove(projection.id)"
-            ></li>
-          }
-        </ul>
-      </section>
+      <div class="segmented" role="group" aria-label="Which projections to show">
+        @for (option of groups; track option.group) {
+          <button
+            type="button"
+            class="kind"
+            [attr.aria-pressed]="group() === option.group"
+            (click)="selectedGroup.set(option.group)"
+          >
+            <span class="kind-name">{{ option.name }}</span>
+            <span class="kind-count">{{ groupCount(option.group) }}</span>
+          </button>
+        }
+      </div>
+    }
+    @if (shownProjections().length === 0) {
+      <p class="group-empty">You have no projections of your own yet.</p>
+    } @else {
+      <ul class="cards">
+        @for (projection of shownProjections(); track projection.id) {
+          <li
+            app-projection-card
+            [projection]="projection"
+            (edit)="edit(projection.id)"
+            (draft)="draft(projection.id)"
+            [isPreparingShare]="preparingShareFor() === projection.id"
+            (share)="share(projection.id)"
+            (copyRequested)="createCopy(projection)"
+            (remove)="remove(projection.id)"
+          ></li>
+        }
+      </ul>
     }
   }
 
