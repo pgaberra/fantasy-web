@@ -176,25 +176,69 @@ describe('ProjectionListComponent', () => {
       expect(component.followedProjections().map((row) => row.id)).toEqual(['f1']);
     });
 
-    it('heads each group', async () => {
+    const segments = (fixture: { nativeElement: HTMLElement }) =>
+      Array.from(fixture.nativeElement.querySelectorAll<HTMLButtonElement>('.segmented .kind'));
+
+    const shownIds = (component: ProjectionListComponent) =>
+      component.shownProjections().map((row) => row.id);
+
+    it('offers the two groups with how many each holds, and opens on their own work', async () => {
       const fixture = await renderWithImports();
 
-      const headings = Array.from(
-        fixture.nativeElement.querySelectorAll('.group-heading') as NodeListOf<HTMLElement>,
-      ).map((heading) => heading.textContent?.trim());
-      expect(headings).toEqual(['Your projections', 'Following']);
+      const texts = (selector: string) =>
+        segments(fixture).map((segment) => segment.querySelector(selector)?.textContent?.trim());
+      expect(texts('.kind-name')).toEqual(['Your projections', 'Following']);
+      expect(texts('.kind-count')).toEqual(['4', '1']);
+      expect(segments(fixture).map((segment) => segment.getAttribute('aria-pressed'))).toEqual([
+        'true',
+        'false',
+      ]);
+      expect(shownIds(fixture.point.componentInstance)).toEqual(['p2', 's1', 'p3', 'p1']);
     });
 
-    /** A heading with nothing under it says less than no heading. */
-    it('leaves out a group that holds nothing', async () => {
+    it('shows what they follow once Following is pressed', async () => {
+      const fixture = await renderWithImports();
+
+      segments(fixture)[1].click();
+      fixture.detectChanges();
+
+      expect(shownIds(fixture.point.componentInstance)).toEqual(['f1']);
+      expect(segments(fixture)[1].getAttribute('aria-pressed')).toBe('true');
+    });
+
+    /** A choice of one is no choice. */
+    it('leaves the control out when nothing is followed', async () => {
       const fixture = MockRender(ProjectionListComponent);
       await fixture.whenStable();
       fixture.detectChanges();
 
-      const headings = Array.from(
-        fixture.nativeElement.querySelectorAll('.group-heading') as NodeListOf<HTMLElement>,
-      ).map((heading) => heading.textContent?.trim());
-      expect(headings).toEqual(['Your projections']);
+      expect(segments(fixture)).toEqual([]);
+      expect(shownIds(fixture.point.componentInstance)).toEqual(['p2', 'p3', 'p1']);
+    });
+
+    it('opens on Following for an account that has nothing of its own', async () => {
+      listEditable.mockReturnValue(of([follow]));
+      const fixture = MockRender(ProjectionListComponent);
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(fixture.point.componentInstance.group()).toBe('following');
+      expect(shownIds(fixture.point.componentInstance)).toEqual(['f1']);
+    });
+
+    /** The control goes with the last follow, so the page must not stay on a group with no way out. */
+    it('falls back to their own work when the last follow is removed', async () => {
+      const fixture = await renderWithImports();
+      const component = fixture.point.componentInstance;
+      component.selectedGroup.set('following');
+
+      listEditable.mockReturnValue(of(summaries));
+      await component.remove('f1');
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(component.group()).toBe('own');
+      expect(segments(fixture)).toEqual([]);
     });
 
     it('copies a followed projection from its share token and opens it ready to be renamed', async () => {

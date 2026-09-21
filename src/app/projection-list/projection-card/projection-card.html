@@ -1,11 +1,30 @@
-<div class="card-main">
-  <span class="card-name">{{ projection().name }}</span>
-  <span class="card-meta">
-    @if (origin(); as from) {
-      Following {{ from.authorUsername }} ·
-    }
-    Updated {{ projection().updatedAt | relativeTime }}
+<div class="card-head">
+  <!-- The same three tiles the create page and the draft picker give these rows, so a board is
+       recognised by its tile wherever it is listed. -->
+  <span class="card-icon" [class.card-icon--spreadsheet]="isFromSpreadsheet()" aria-hidden="true">
+    <app-icon [name]="iconName()" [size]="20" />
   </span>
+  <div class="card-main">
+    <span class="card-name">{{ projection().name }}</span>
+    <span class="card-meta">
+      @if (origin(); as from) {
+        Following {{ from.authorUsername }} ·
+      } @else if (isFromSpreadsheet()) {
+        From a spreadsheet ·
+      }
+      Updated {{ projection().updatedAt | relativeTime }}
+    </span>
+  </div>
+  @if (!confirmingDelete()) {
+    <button
+      type="button"
+      class="card-menu"
+      [attr.aria-label]="'More actions for ' + projection().name"
+      [appPopover]="cardMenu"
+    >
+      <app-icon name="more-vertical" />
+    </button>
+  }
 </div>
 <div class="card-actions">
   @if (confirmingDelete()) {
@@ -23,22 +42,13 @@
     <button type="button" class="btn btn-secondary btn-sm draft" (click)="draft.emit()">
       Draft Mode
     </button>
-    <button
-      type="button"
-      class="card-menu"
-      [attr.aria-label]="'More actions for ' + projection().name"
-      [appPopover]="cardMenu"
-    >
-      <app-icon name="more-vertical" />
-    </button>
   }
 </div>
 
 <ng-template #cardMenu>
   <div class="card-menu-panel">
-    <!-- A menu item rather than a third button in the row: on a phone the row already carries
-         two buttons and the menu, and a third would wrap under the name or squeeze the two that
-         every projection has. -->
+    <!-- A menu item rather than a third button in the row: the card is a third of the page wide,
+         and a third button would squeeze the two that every projection has. -->
     @if (isFollow()) {
       <button type="button" class="menu-item copy" (click)="copyRequested.emit()">
         <app-icon name="copy" />
