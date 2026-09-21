@@ -264,5 +264,21 @@ describe('ProjectionCardComponent', () => {
       expect(document.querySelector('.menu-item.share')).not.toBeNull();
       expect(document.querySelector('.menu-item.copy')).toBeNull();
     });
+
+    it('says when it was updated, not where it came from', () => {
+      const fixture = MockRender(template, {
+        projection: fromSheet,
+        isPreparingShare: false,
+        onEdit,
+        onShare,
+        onRemove,
+        onCopy,
+        onDiscardDraft,
+      });
+
+      const meta = fixture.nativeElement.querySelector('.card-meta').textContent.trim();
+      expect(meta).toContain('Updated');
+      expect(meta).not.toContain('spreadsheet');
+    });
   });
 });
