@@ -119,7 +119,10 @@
             <!-- A spreadsheet becomes the user's own board, so its door belongs in their own
                  group rather than beside the share-link field it used to sit next to. The button
                  draws nothing unless the build turns the upload on. -->
-            <app-spreadsheet-import-button (imported)="onUploaded($event)" />
+            <app-spreadsheet-import-button
+              label="Add a projection from a file"
+              (imported)="onUploaded($event)"
+            />
           }
           @case ('following') {
             @if (followedBoards().length === 0) {

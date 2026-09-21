@@ -55,6 +55,24 @@ describe('SpreadsheetImportButtonComponent', () => {
     expect(ngMocks.findAll(fixture, 'button')).toHaveLength(0);
   });
 
+  it('heads the button with the label a picker gives it, and with nothing otherwise', () => {
+    const bare = MockRender(SpreadsheetImportButtonComponent);
+    expect(ngMocks.findAll(bare, '.import-label')).toHaveLength(0);
+
+    const labelled = MockRender(SpreadsheetImportButtonComponent, {
+      label: 'Add a projection from a file',
+    });
+    expect(ngMocks.find(labelled, '.import-label').nativeElement.textContent).toBe(
+      'Add a projection from a file',
+    );
+  });
+
+  it('keeps the label back too while the import is switched off', () => {
+    environment.spreadsheetImportEnabled = false;
+    const fixture = MockRender(SpreadsheetImportButtonComponent, { label: 'Add a projection' });
+    expect(ngMocks.findAll(fixture, '.import-label')).toHaveLength(0);
+  });
+
   it('loads the player pool once, then opens the dialog', () => {
     const component = MockRender(SpreadsheetImportButtonComponent).point.componentInstance;
 
