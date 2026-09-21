@@ -7,7 +7,7 @@ import {
   lucideArrowUp,
   lucideArrowUpToLine,
   lucideBell,
-  lucideBellRing,
+  lucideBellOff,
   lucideChartColumn,
   lucideChartNoAxesColumn,
   lucideCheck,
@@ -74,7 +74,6 @@ const ICONS = {
   copy: lucideCopy,
   decimals: lucideDecimalsArrowRight,
   follow: lucideBell,
-  following: lucideBellRing,
   'grip-vertical': lucideGripVertical,
   import: lucideImport,
   info: lucideInfo,
@@ -98,6 +97,7 @@ const ICONS = {
   table: lucideTable,
   trash: lucideTrash,
   undo: lucideUndo2,
+  unfollow: lucideBellOff,
 } satisfies Record<string, string>;
 
 export type IconName = keyof typeof ICONS;

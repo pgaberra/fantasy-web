@@ -73,6 +73,8 @@ describe('SharedProjectionComponent', () => {
   const loadShared = vi.fn(() => of(shared));
   const copyFromShare = vi.fn();
   const followShare = vi.fn();
+  const listAll = vi.fn();
+  const deleteProjection = vi.fn();
   const navigate = vi.fn();
   const notifyError = vi.fn();
   const remember = vi.fn();
@@ -92,6 +94,10 @@ describe('SharedProjectionComponent', () => {
     copyFromShare.mockReturnValue(of({ id: 'copy1' }));
     followShare.mockClear();
     followShare.mockReturnValue(of({ projection: { id: 'f1' }, alreadyFollowed: false }));
+    listAll.mockClear();
+    listAll.mockReturnValue(of([]));
+    deleteProjection.mockClear();
+    deleteProjection.mockReturnValue(of(undefined));
     navigate.mockClear();
     notifyError.mockClear();
     remember.mockClear();
@@ -114,7 +120,7 @@ describe('SharedProjectionComponent', () => {
         // the table are the same component, and a stand-in would draw neither.
         .keep(PlayerHeadshotComponent)
         .mock(ProjectionShareService, { loadShared })
-        .mock(ProjectionStorageService, { copyFromShare, followShare })
+        .mock(ProjectionStorageService, { copyFromShare, followShare, listAll, deleteProjection })
         .mock(NotificationService, { error: notifyError })
         .provide({ provide: AuthService, useValue: { isLoggedIn } })
         .provide({ provide: Router, useValue: { navigate } })
@@ -905,7 +911,7 @@ describe('SharedProjectionComponent', () => {
     });
 
     /** A bell beside the word, never in place of it: the word is what tells a follow from a copy. */
-    it('marks the follow with a bell that rings once followed', async () => {
+    it('marks the follow with a bell, and the unfollow with the bell struck out', async () => {
       isLoggedIn.set(true);
       const fixture = await render();
       const follow = () => fixture.nativeElement.querySelector('[data-testid="follow-board"]');
@@ -916,8 +922,8 @@ describe('SharedProjectionComponent', () => {
       follow().click();
       fixture.detectChanges();
 
-      expect(follow().querySelector('app-icon[name="following"]')).not.toBeNull();
-      expect(follow().textContent.trim()).toBe('Following');
+      expect(follow().querySelector('app-icon[name="unfollow"]')).not.toBeNull();
+      expect(follow().textContent.trim()).toBe('Unfollow');
     });
 
     /** Following tracks the author from here on, so no copy is taken and no stamp is sent. */
@@ -936,7 +942,7 @@ describe('SharedProjectionComponent', () => {
       );
       expect(
         fixture.nativeElement.querySelector('[data-testid="follow-board"]').textContent,
-      ).toContain('Following');
+      ).toContain('Unfollow');
     });
 
     /** 200 rather than 201: the follow was already there, which is a remark and not a failure. */
@@ -978,6 +984,160 @@ describe('SharedProjectionComponent', () => {
 
       expect(notifyError).toHaveBeenCalledOnce();
       expect(fixture.point.componentInstance.isBusy()).toEqual(false);
+    });
+
+    /** A follow of this link, as the reader's projection list carries it. */
+    const followOfThisLink = {
+      id: 'f1',
+      kind: 'imported',
+      name: 'My league',
+      origin: { shareToken: 'abc123', authorUsername: 'alex' },
+    };
+
+    const followButton = (fixture: { nativeElement: HTMLElement }) =>
+      fixture.nativeElement.querySelector('[data-testid="follow-board"]') as HTMLButtonElement;
+
+    /** The reload that used to offer Follow again to someone already following. */
+    it('reads on the way in that the board is already followed, and offers Unfollow', async () => {
+      isLoggedIn.set(true);
+      listAll.mockReturnValue(
+        of([
+          { id: 'own', kind: 'projection', name: 'Mine' },
+          {
+            id: 'other',
+            kind: 'imported',
+            name: 'X',
+            origin: { shareToken: 'zzz', authorUsername: 'b' },
+          },
+          followOfThisLink,
+        ]),
+      );
+      const fixture = await render();
+
+      expect(listAll).toHaveBeenCalledOnce();
+      expect(followButton(fixture).textContent).toContain('Unfollow');
+      expect(followButton(fixture).disabled).toBe(false);
+      expect(fixture.point.componentInstance.followId()).toEqual('f1');
+    });
+
+    it("offers Follow when none of the reader's projections follows this link", async () => {
+      isLoggedIn.set(true);
+      listAll.mockReturnValue(
+        of([
+          {
+            id: 'other',
+            kind: 'imported',
+            name: 'X',
+            origin: { shareToken: 'zzz', authorUsername: 'b' },
+          },
+        ]),
+      );
+      const fixture = await render();
+
+      expect(followButton(fixture).textContent).toContain('Follow');
+      expect(followButton(fixture).textContent).not.toContain('Unfollow');
+      expect(followButton(fixture).disabled).toBe(false);
+    });
+
+    it('holds the button while the follow state is still being read', async () => {
+      isLoggedIn.set(true);
+      const pending = new Subject<unknown[]>();
+      listAll.mockReturnValue(pending);
+      // Not whenStable(): the lookup in flight is a pending task, and waiting on it would wait out
+      // the very state under test. detectChanges() flushes the resources' effects instead.
+      const fixture = MockRender(SharedProjectionComponent);
+      fixture.detectChanges();
+      fixture.detectChanges();
+
+      expect(followButton(fixture).disabled).toBe(true);
+
+      pending.next([]);
+      pending.complete();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(followButton(fixture).disabled).toBe(false);
+    });
+
+    /** Nobody signed out can hold a follow, and their press goes to the account form anyway. */
+    it('does not look the follow up for a visitor without an account', async () => {
+      const fixture = await render();
+
+      expect(listAll).not.toHaveBeenCalled();
+      expect(followButton(fixture).disabled).toBe(false);
+    });
+
+    /** A failed lookup leaves Follow, which still works: the server answers with the follow held. */
+    it('falls back to Follow when the follow state cannot be read', async () => {
+      isLoggedIn.set(true);
+      listAll.mockReturnValue(throwError(() => new Error('boom')));
+      followShare.mockReturnValue(of({ projection: { id: 'f1' }, alreadyFollowed: true }));
+      const fixture = await render();
+
+      expect(followButton(fixture).disabled).toBe(false);
+      followButton(fixture).click();
+      fixture.detectChanges();
+
+      expect(followButton(fixture).textContent).toContain('Unfollow');
+    });
+
+    it('unfollows, deleting the follow, and offers Follow again', async () => {
+      isLoggedIn.set(true);
+      listAll.mockReturnValue(of([followOfThisLink]));
+      const fixture = await render();
+
+      followButton(fixture).click();
+      fixture.detectChanges();
+
+      expect(deleteProjection).toHaveBeenCalledWith('f1');
+      expect(followShare).not.toHaveBeenCalled();
+      expect(followButton(fixture).textContent).toContain('Follow');
+      expect(followButton(fixture).textContent).not.toContain('Unfollow');
+      expect(fixture.nativeElement.querySelector('.follow-note').textContent).toContain(
+        'Removed from My Projections',
+      );
+    });
+
+    /** The mis-click, undone on the spot: the follow this press made is the one deleted. */
+    it('unfollows the follow a press on this page just made', async () => {
+      isLoggedIn.set(true);
+      followShare.mockReturnValue(of({ projection: { id: 'new1' }, alreadyFollowed: false }));
+      const fixture = await render();
+
+      followButton(fixture).click();
+      fixture.detectChanges();
+      followButton(fixture).click();
+      fixture.detectChanges();
+
+      expect(deleteProjection).toHaveBeenCalledWith('new1');
+      expect(followButton(fixture).textContent).not.toContain('Unfollow');
+    });
+
+    it('treats a follow that is already gone as unfollowed', async () => {
+      isLoggedIn.set(true);
+      listAll.mockReturnValue(of([followOfThisLink]));
+      deleteProjection.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+      const fixture = await render();
+
+      followButton(fixture).click();
+      fixture.detectChanges();
+
+      expect(notifyError).not.toHaveBeenCalled();
+      expect(followButton(fixture).textContent).not.toContain('Unfollow');
+    });
+
+    it('keeps Unfollow and says so when the unfollow fails', async () => {
+      isLoggedIn.set(true);
+      listAll.mockReturnValue(of([followOfThisLink]));
+      deleteProjection.mockReturnValue(throwError(() => new Error('boom')));
+      const fixture = await render();
+
+      followButton(fixture).click();
+      fixture.detectChanges();
+
+      expect(notifyError).toHaveBeenCalledOnce();
+      expect(followButton(fixture).textContent).toContain('Unfollow');
+      expect(followButton(fixture).disabled).toBe(false);
     });
 
     /** The same trip a copy makes, and the stored press says which button it was. */

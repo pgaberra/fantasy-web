@@ -88,23 +88,37 @@
         </button>
       </div>
       <div class="board-follow">
-        <button
-          type="button"
-          class="btn btn-secondary follow"
-          [disabled]="isBusy() || isFollowing()"
-          (click)="follow()"
-          data-testid="follow-board"
-        >
-          @if (pressed() === 'follow') {
-            <app-loading-indicator variant="inline" label="Following" />
-          } @else if (isFollowing()) {
-            <app-icon name="following" />Following
-          } @else {
-            <!-- A bell, not a heart: a heart reads as a like, which does nothing, and a follow
-                 puts the board in the reader's list and brings them the author's updates. -->
-            <app-icon name="follow" />Follow
-          }
-        </button>
+        @if (isFollowing()) {
+          <button
+            type="button"
+            class="btn btn-secondary follow"
+            [disabled]="isBusy()"
+            (click)="unfollow()"
+            data-testid="follow-board"
+          >
+            @if (pressed() === 'unfollow') {
+              <app-loading-indicator variant="inline" label="Unfollowing" />
+            } @else {
+              <app-icon name="unfollow" />Unfollow
+            }
+          </button>
+        } @else {
+          <button
+            type="button"
+            class="btn btn-secondary follow"
+            [disabled]="isBusy() || isCheckingFollow()"
+            (click)="follow()"
+            data-testid="follow-board"
+          >
+            @if (pressed() === 'follow') {
+              <app-loading-indicator variant="inline" label="Following" />
+            } @else {
+              <!-- A bell, not a heart: a heart reads as a like, which does nothing, and a follow
+                   puts the board in the reader's list and brings them the author's updates. -->
+              <app-icon name="follow" />Follow
+            }
+          </button>
+        }
       </div>
       @if (followNote()) {
         <p class="follow-note" role="status">{{ followNote() }}</p>

@@ -54,17 +54,16 @@
       </div>
     </div>
   </div>
-  <!-- What the rows above are, rather than how many of them there are: a count of the board is
-       not something anyone reads a preview to learn, and the credit MoneyPuck's terms require has
-       to sit somewhere the numbers are. It names the source and nothing about the method: the
-       model's window, weights and adjustments change from version to version, and a line here
-       that described one of them was true only until the next one shipped. What it does say is
-       what kind of number a row is: each player's expected season, which a scoring leader
-       usually beats, so a top row well short of last year's leader is not read as a fault. -->
+  <!-- The credit MoneyPuck's terms require, which has to sit somewhere the numbers are. It
+       names the source and nothing about the method: the model's window, weights and adjustments
+       change from version to version, and a line here that described one of them was true only
+       until the next one shipped. That is also why it no longer says what kind of number a row is:
+       it called each row the player's expected season, which leaders finish above, and from
+       projection-service marcel-v88 the rows are lifted toward what each rank of a season takes,
+       so the leader's row is meant to read like a leader. -->
   @if (isModelPreset()) {
     <p class="preview-note">
-      Each line is the player's expected season. League leaders usually finish above their
-      projection. The AI projection uses advanced stats from MoneyPuck. Data © MoneyPuck.com.
+      The AI projection uses advanced stats from MoneyPuck. Data © MoneyPuck.com.
     </p>
   }
 }
