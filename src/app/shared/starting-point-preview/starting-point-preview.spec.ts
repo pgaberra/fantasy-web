@@ -222,14 +222,18 @@ describe('StartingPointPreviewComponent', () => {
     );
   });
 
-  it("says the model's rows are expected seasons, which league leaders usually beat", async () => {
+  it('credits MoneyPuck and makes no claim about what kind of number a row is', async () => {
+    // The rows stopped being expected seasons at projection-service marcel-v88: they are lifted
+    // toward what each rank of a season takes, so "leaders finish above their projection" would
+    // now be wrong about the very rows it sits under.
     const fixture = render({ source: { kind: 'preset', preset: 'model' } });
     await fixture.whenStable();
     fixture.detectChanges();
 
     const note = fixture.nativeElement.querySelector('.preview-note').textContent;
-    expect(note).toContain("Each line is the player's expected season.");
-    expect(note).toContain('League leaders usually finish above their projection.');
+    expect(note.replace(/\s+/g, ' ').trim()).toBe(
+      'The AI projection uses advanced stats from MoneyPuck. Data © MoneyPuck.com.',
+    );
   });
 
   it('empties every row under From scratch, and asks the model for nothing', async () => {
