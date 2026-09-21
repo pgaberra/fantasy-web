@@ -4,10 +4,12 @@ import { ErrorReportingService } from './error-reporting.service';
 export interface AppNotification {
   readonly id: number;
   readonly message: string;
-  readonly type: 'error';
+  readonly type: 'error' | 'success';
 }
 
 const AUTO_DISMISS_MS = 7000;
+/** Shorter than a failure's: a confirmation is read at a glance, and nothing needs doing about it. */
+const SUCCESS_DISMISS_MS = 4000;
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
@@ -27,9 +29,22 @@ export class NotificationService {
    */
   error(message: string, context?: Record<string, unknown>): void {
     this.reporting.reportMessage(message, context);
+    this.show(message, 'error', AUTO_DISMISS_MS);
+  }
+
+  /**
+   * Confirms an action that worked, for the moment after the press only: what stays true
+   * afterwards belongs on the page itself (the button that now says Unfollow), not in a line of
+   * text that outlives the moment. Not reported, since nothing went wrong.
+   */
+  success(message: string): void {
+    this.show(message, 'success', SUCCESS_DISMISS_MS);
+  }
+
+  private show(message: string, type: AppNotification['type'], dismissAfterMs: number): void {
     const id = this.nextId++;
-    this.active.update((list) => [...list, { id, message, type: 'error' }]);
-    setTimeout(() => this.dismiss(id), AUTO_DISMISS_MS);
+    this.active.update((list) => [...list, { id, message, type }]);
+    setTimeout(() => this.dismiss(id), dismissAfterMs);
   }
 
   dismiss(id: number): void {

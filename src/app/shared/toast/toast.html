@@ -1,7 +1,15 @@
 @if (notifications().length) {
   <div class="toast-stack">
     @for (notification of notifications(); track notification.id) {
-      <div class="toast toast--{{ notification.type }}" role="alert" aria-live="assertive">
+      <!-- A failure interrupts the screen reader; a confirmation waits its turn. -->
+      <div
+        class="toast toast--{{ notification.type }}"
+        [attr.role]="notification.type === 'error' ? 'alert' : 'status'"
+        [attr.aria-live]="notification.type === 'error' ? 'assertive' : 'polite'"
+      >
+        @if (notification.type === 'success') {
+          <app-icon class="toast-icon" name="check-circle" />
+        }
         <span class="toast-message">{{ notification.message }}</span>
         <button
           type="button"
