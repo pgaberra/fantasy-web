@@ -745,7 +745,7 @@ describe('SharedProjectionComponent', () => {
       const fixture = await render();
 
       for (const [testId, text] of [
-        ['copy-board', 'Create a copy of this projection'],
+        ['copy-board', 'Adds an editable copy to My Projections'],
         ['draft-board', 'Draft against a copy of this projection'],
       ]) {
         const button = fixture.nativeElement.querySelector(`[data-testid="${testId}"]`);
@@ -890,7 +890,7 @@ describe('SharedProjectionComponent', () => {
       const pending = ngMocks.find(LoadingIndicatorComponent);
       expect(ngMocks.input(pending, 'label')).toEqual('Copying');
       expect(draft.contains(pending.nativeElement)).toBe(true);
-      expect(copy.textContent).toContain('Create projection');
+      expect(copy.textContent).toContain('Create copy');
       expect(copy.disabled).toEqual(true);
     });
   });
