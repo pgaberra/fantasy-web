@@ -25,6 +25,15 @@
   color: var(--color-text);
 }
 
+.toast--success {
+  border-left-color: var(--color-success);
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  color: var(--color-success);
+}
+
 .toast-message {
   flex: 1;
 }

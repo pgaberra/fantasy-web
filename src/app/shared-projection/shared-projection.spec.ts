@@ -77,6 +77,7 @@ describe('SharedProjectionComponent', () => {
   const deleteProjection = vi.fn();
   const navigate = vi.fn();
   const notifyError = vi.fn();
+  const notifySuccess = vi.fn();
   const remember = vi.fn();
   const takePending = vi.fn();
   const isLoggedIn = signal(false);
@@ -100,6 +101,7 @@ describe('SharedProjectionComponent', () => {
     deleteProjection.mockReturnValue(of(undefined));
     navigate.mockClear();
     notifyError.mockClear();
+    notifySuccess.mockClear();
     remember.mockClear();
     takePending.mockClear();
     takePending.mockReturnValue(null);
@@ -121,7 +123,7 @@ describe('SharedProjectionComponent', () => {
         .keep(PlayerHeadshotComponent)
         .mock(ProjectionShareService, { loadShared })
         .mock(ProjectionStorageService, { copyFromShare, followShare, listAll, deleteProjection })
-        .mock(NotificationService, { error: notifyError })
+        .mock(NotificationService, { error: notifyError, success: notifySuccess })
         .provide({ provide: AuthService, useValue: { isLoggedIn } })
         .provide({ provide: Router, useValue: { navigate } })
         .provide({ provide: PendingCopyService, useValue: { remember, take: takePending } })
@@ -937,9 +939,9 @@ describe('SharedProjectionComponent', () => {
       expect(followShare).toHaveBeenCalledWith('abc123');
       expect(copyFromShare).not.toHaveBeenCalled();
       expect(navigate).not.toHaveBeenCalled();
-      expect(fixture.nativeElement.querySelector('.follow-note').textContent).toContain(
-        'Added to My Projections',
-      );
+      // Confirmed in a toast that goes away, not in a line left under the button.
+      expect(notifySuccess).toHaveBeenCalledWith('Added to My Projections.');
+      expect(fixture.nativeElement.querySelector('.follow-note')).toBeNull();
       expect(
         fixture.nativeElement.querySelector('[data-testid="follow-board"]').textContent,
       ).toContain('Unfollow');
@@ -955,9 +957,7 @@ describe('SharedProjectionComponent', () => {
       fixture.detectChanges();
 
       expect(notifyError).not.toHaveBeenCalled();
-      expect(fixture.nativeElement.querySelector('.follow-note').textContent).toContain(
-        'You already follow this projection',
-      );
+      expect(notifySuccess).toHaveBeenCalledWith('You already follow this projection.');
     });
 
     it("says beside the button when the link is the reader's own board", async () => {
@@ -1093,9 +1093,8 @@ describe('SharedProjectionComponent', () => {
       expect(followShare).not.toHaveBeenCalled();
       expect(followButton(fixture).textContent).toContain('Follow');
       expect(followButton(fixture).textContent).not.toContain('Unfollow');
-      expect(fixture.nativeElement.querySelector('.follow-note').textContent).toContain(
-        'Removed from My Projections',
-      );
+      expect(notifySuccess).toHaveBeenCalledWith('Removed from My Projections.');
+      expect(fixture.nativeElement.querySelector('.follow-note')).toBeNull();
     });
 
     /** The mis-click, undone on the spot: the follow this press made is the one deleted. */
@@ -1274,7 +1273,7 @@ describe('SharedProjectionComponent', () => {
       expect(copyFromShare).not.toHaveBeenCalled();
       expect(navigate).not.toHaveBeenCalled();
       expect(fixture.nativeElement.querySelector('table')).not.toBeNull();
-      expect(fixture.nativeElement.querySelector('.follow-note')).not.toBeNull();
+      expect(notifySuccess).toHaveBeenCalledWith('Added to My Projections.');
     });
 
     /**

@@ -77,4 +77,22 @@ describe('NotificationService', () => {
     });
     expect(service.notifications()[0].message).toEqual("Couldn't open that page");
   });
+
+  it('adds a success notification, and reports nothing', () => {
+    service.success('Added to My Projections.');
+
+    expect(service.notifications()).toEqual([
+      { id: expect.any(Number), message: 'Added to My Projections.', type: 'success' },
+    ]);
+    expect(reportMessage).not.toHaveBeenCalled();
+  });
+
+  it('dismisses a success sooner than a failure', () => {
+    service.success('Done');
+    service.error('Broke');
+
+    vi.advanceTimersByTime(4000);
+
+    expect(service.notifications().map((notification) => notification.type)).toEqual(['error']);
+  });
 });

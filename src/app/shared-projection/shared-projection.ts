@@ -169,7 +169,10 @@ export class SharedProjectionComponent {
   /** The follow state is still being read, so the button cannot yet say which it is. */
   readonly isCheckingFollow = computed(() => this.followLookup.isLoading());
 
-  /** Said beside the Follow button rather than in a toast, since the button is what changed. */
+  /**
+   * Why a press on Follow did nothing — the reader's own board, a link taken down — kept beside the
+   * button because it stays true. A follow or unfollow that worked is confirmed in a toast instead.
+   */
   readonly followNote = signal<string | null>(null);
 
   /**
@@ -247,7 +250,9 @@ export class SharedProjectionComponent {
         next: (result) => {
           this.pressed.set(null);
           this.followId.set(result.projection.id);
-          this.followNote.set(
+          // A toast, not a line under the button: the button now saying Unfollow is what stays
+          // true, and a confirmation left on the page reads as news long after it was.
+          this.notification.success(
             result.alreadyFollowed
               ? 'You already follow this projection.'
               : 'Added to My Projections.',
@@ -307,7 +312,7 @@ export class SharedProjectionComponent {
   private unfollowed(): void {
     this.pressed.set(null);
     this.followId.set(null);
-    this.followNote.set('Removed from My Projections.');
+    this.notification.success('Removed from My Projections.');
     this.analytics.capture('shared_projection_unfollowed');
   }
 
