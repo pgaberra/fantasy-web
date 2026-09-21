@@ -61,7 +61,7 @@
         <button
           type="button"
           class="btn btn-secondary"
-          appTooltip="Create a copy of this projection"
+          appTooltip="Adds an editable copy to My Projections"
           [disabled]="isBusy()"
           (click)="copyToMyProjections()"
           data-testid="copy-board"
@@ -69,7 +69,7 @@
           @if (pressed() === 'projection') {
             <app-loading-indicator variant="inline" label="Copying" />
           } @else {
-            Create projection
+            Create copy
           }
         </button>
         <button
