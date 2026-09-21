@@ -54,71 +54,74 @@
            to the account form when they press one rather than being told in advance that the page
            is not for them yet.
 
-           Follow is set apart from the two copy buttons, on its own line: a copy and a follow are
-           different things to end up with, and three buttons in a row would have read as three
-           ways to the same place. -->
-      <div class="board-actions">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          appTooltip="Adds an editable copy to My Projections"
-          [disabled]="isBusy()"
-          (click)="copyToMyProjections()"
-          data-testid="copy-board"
-        >
-          @if (pressed() === 'projection') {
-            <app-loading-indicator variant="inline" label="Copying" />
-          } @else {
-            Create copy
-          }
-        </button>
-        <button
-          type="button"
-          class="btn btn-primary"
-          appTooltip="Draft against a copy of this projection"
-          [disabled]="isBusy()"
-          (click)="draftAgainstThis()"
-          data-testid="draft-board"
-        >
-          @if (pressed() === 'draft') {
-            <app-loading-indicator variant="inline" label="Copying" />
-          } @else {
-            Draft Mode
-          }
-        </button>
-      </div>
-      <div class="board-follow">
-        @if (isFollowing()) {
+           Follow is set apart from the two copy buttons, behind a rule on the same line: a copy
+           and a follow are different things to end up with, and three buttons in an unbroken row
+           would have read as three ways to the same place. On a line of its own it read as a
+           button that had wrapped, not as a different offer. -->
+      <div class="board-offers">
+        <div class="board-actions">
           <button
             type="button"
-            class="btn btn-secondary follow"
+            class="btn btn-secondary"
+            appTooltip="Adds an editable copy to My Projections"
             [disabled]="isBusy()"
-            (click)="unfollow()"
-            data-testid="follow-board"
+            (click)="copyToMyProjections()"
+            data-testid="copy-board"
           >
-            @if (pressed() === 'unfollow') {
-              <app-loading-indicator variant="inline" label="Unfollowing" />
+            @if (pressed() === 'projection') {
+              <app-loading-indicator variant="inline" label="Copying" />
             } @else {
-              <app-icon name="unfollow" />Unfollow
+              Create copy
             }
           </button>
-        } @else {
           <button
             type="button"
-            class="btn btn-secondary follow"
-            [disabled]="isBusy() || isCheckingFollow()"
-            (click)="follow()"
-            data-testid="follow-board"
+            class="btn btn-primary"
+            appTooltip="Draft against a copy of this projection"
+            [disabled]="isBusy()"
+            (click)="draftAgainstThis()"
+            data-testid="draft-board"
           >
-            @if (pressed() === 'follow') {
-              <app-loading-indicator variant="inline" label="Following" />
+            @if (pressed() === 'draft') {
+              <app-loading-indicator variant="inline" label="Copying" />
             } @else {
-              <!-- A bell, not a heart: a heart reads as a like, which does nothing, and a follow
-                   puts the board in the reader's list and brings them the author's updates. -->
-              <app-icon name="follow" />Follow
+              Draft Mode
             }
           </button>
-        }
+        </div>
+        <div class="board-follow">
+          @if (isFollowing()) {
+            <button
+              type="button"
+              class="btn btn-secondary follow"
+              [disabled]="isBusy()"
+              (click)="unfollow()"
+              data-testid="follow-board"
+            >
+              @if (pressed() === 'unfollow') {
+                <app-loading-indicator variant="inline" label="Unfollowing" />
+              } @else {
+                <app-icon name="unfollow" />Unfollow
+              }
+            </button>
+          } @else {
+            <button
+              type="button"
+              class="btn btn-secondary follow"
+              [disabled]="isBusy() || isCheckingFollow()"
+              (click)="follow()"
+              data-testid="follow-board"
+            >
+              @if (pressed() === 'follow') {
+                <app-loading-indicator variant="inline" label="Following" />
+              } @else {
+                <!-- A bell, not a heart: a heart reads as a like, which does nothing, and a follow
+                   puts the board in the reader's list and brings them the author's updates. -->
+                <app-icon name="follow" />Follow
+              }
+            </button>
+          }
+        </div>
       </div>
       @if (followNote()) {
         <p class="follow-note" role="status">{{ followNote() }}</p>

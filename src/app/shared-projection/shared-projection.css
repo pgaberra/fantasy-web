@@ -46,43 +46,57 @@
   --headshot-initials-size: 0.7rem;
 }
 
-/* The two things a visitor can do with someone else's board, kept in the header so they are on
-   screen with the first rows rather than under all of them. */
-.board-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  margin-top: var(--space-4);
-}
-
-@media (max-width: 640px) {
-  /* The short labels fit side by side now, but at two different widths — which reads as one
-     button being the lesser offer. Full width apiece is the same two choices, stacked. */
-  .board-actions .btn {
-    flex: 1 1 100%;
-  }
-}
-
-/* Its own line under the two copy buttons. */
-.board-follow {
+/* Everything a visitor can do with someone else's board, kept in the header so it is on screen
+   with the first rows rather than under all of them. */
+.board-offers {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
-  margin-top: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+/* The two copy buttons. */
+.board-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+/* On the same line as the two copy buttons, behind a rule: near enough to be found with them, and
+   visibly not a third of the same thing. */
+.board-follow {
+  display: flex;
+  align-items: center;
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--color-border-strong);
+}
+
+@media (max-width: 640px) {
+  /* The short labels fit side by side, but at three different widths — which reads as one button
+     being the lesser offer. Full width apiece is the same choices, stacked, and the gap between
+     the groups does the rule's work. */
+  .board-offers {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-4);
+  }
+
+  .board-actions .btn,
+  .board-follow .btn {
+    flex: 1 1 100%;
+  }
+
+  .board-follow {
+    padding-left: 0;
+    border-left: 0;
+  }
 }
 
 .follow-note {
   margin: var(--space-3) 0 0;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
-}
-
-@media (max-width: 640px) {
-  /* Full width like the two above it. */
-  .board-follow .btn {
-    flex: 1 1 100%;
-  }
 }
 
 /* The warning tokens, as for anything that says an action did not happen: nothing was copied. */
