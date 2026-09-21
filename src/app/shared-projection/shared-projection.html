@@ -54,9 +54,9 @@
            to the account form when they press one rather than being told in advance that the page
            is not for them yet.
 
-           Follow is set apart from the two copy buttons, on its own line and with the sentence
-           that tells them apart: a copy and a follow are different things to end up with, and
-           three buttons in a row would have read as three ways to the same place. -->
+           Follow is set apart from the two copy buttons, on its own line: a copy and a follow are
+           different things to end up with, and three buttons in a row would have read as three
+           ways to the same place. -->
       <div class="board-actions">
         <button
           type="button"
@@ -103,10 +103,6 @@
             Follow
           }
         </button>
-        <p class="follow-explainer">
-          A copy is yours to edit and stays as it is now. A follow updates whenever
-          {{ authorLabel() }} shares this projection again.
-        </p>
       </div>
       @if (followNote()) {
         <p class="follow-note" role="status">{{ followNote() }}</p>
