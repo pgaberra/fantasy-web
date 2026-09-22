@@ -46,6 +46,7 @@ import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { hasHeadshots, PlayerHeadshotComponent } from '../shared/player-headshot/player-headshot';
 import { SHARED_BOARD } from '../auth/auth-reason';
 import { environment } from '../../environments/environment';
+import { NoticeComponent } from '../shared/notice/notice';
 import { PendingCopyService, SharedAction } from './pending-copy';
 import { renameOnOpenExtras } from '../draft-projection/rename-intent';
 
@@ -107,11 +108,13 @@ interface SharedRow {
     TableScrollDirective,
     TooltipDirective,
     RelativeTimePipe,
+    NoticeComponent,
   ],
   templateUrl: './shared-projection.html',
   styleUrl: './shared-projection.css',
 })
 export class SharedProjectionComponent {
+  protected readonly sharedNotice = environment.sharedNoticeEnabled;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly shareService = inject(ProjectionShareService);

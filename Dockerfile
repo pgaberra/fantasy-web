@@ -56,6 +56,9 @@ ARG MANUAL_RANKING_ENABLED=
 # TIERS_ENABLED=true shows positional tiers (the editor's tier column and breaks, and draft
 # mode's tier badges and strip); empty/anything else keeps them hidden (default).
 ARG TIERS_ENABLED=
+# SHARED_NOTICE_ENABLED=true draws the adopting pages' notices through the shared app-notice
+# component; empty/anything else leaves each of them exactly as it shipped (default).
+ARG SHARED_NOTICE_ENABLED=
 # PREMIUM_COMING_SOON=true keeps the Premium page and badges but disables Subscribe with a note;
 # empty/anything else sells Premium as usual (default). Needs PAYMENTS_ENABLED.
 ARG PREMIUM_COMING_SOON=
@@ -80,6 +83,7 @@ RUN sed -i \
   -e "s|__SPREADSHEET_IMPORT_ENABLED__|${SPREADSHEET_IMPORT_ENABLED}|g" \
   -e "s|__MANUAL_RANKING_ENABLED__|${MANUAL_RANKING_ENABLED}|g" \
   -e "s|__TIERS_ENABLED__|${TIERS_ENABLED}|g" \
+  -e "s|__SHARED_NOTICE_ENABLED__|${SHARED_NOTICE_ENABLED}|g" \
   src/environments/environment.prod.ts
 
 RUN npm run build

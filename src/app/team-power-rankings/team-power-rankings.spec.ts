@@ -41,6 +41,7 @@ describe('TeamPowerRankingsComponent', () => {
   );
   const leagueDraftSync = vi.fn(() => true);
   const originalPayments = environment.paymentsEnabled;
+  const originalSharedNotice = environment.sharedNoticeEnabled;
 
   const render = async () => {
     const fixture = MockRender(TeamPowerRankingsComponent);
@@ -85,6 +86,7 @@ describe('TeamPowerRankingsComponent', () => {
 
   afterEach(() => {
     environment.paymentsEnabled = originalPayments;
+    environment.sharedNoticeEnabled = originalSharedNotice;
   });
 
   /**
@@ -176,6 +178,20 @@ describe('TeamPowerRankingsComponent', () => {
     expect(component.notDrafted()).toBe(true);
     const notice = fixture.nativeElement.querySelector('.rankings-error');
     expect(notice?.textContent).toContain("hasn't drafted yet");
+  });
+
+  // Same sentence, same role, whichever side of the switch the build is on.
+  it('says a league has not drafted yet through the shared notice when that is switched on', async () => {
+    environment.sharedNoticeEnabled = true;
+    yahooLeague.mockReturnValue(of({ ...summary, picks: 0, status: 'PRE_DRAFT' as const }));
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    await choose(fixture, component, '465.l.1');
+
+    const notice = fixture.nativeElement.querySelector('app-notice');
+    expect(notice?.textContent).toContain("hasn't drafted yet");
+    expect(notice?.getAttribute('role')).toEqual('alert');
+    expect(fixture.nativeElement.querySelector('.rankings-error')).toBeNull();
   });
 
   it('tells a reader what to do about a refusal from Yahoo', async () => {
