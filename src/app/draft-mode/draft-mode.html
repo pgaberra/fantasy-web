@@ -103,6 +103,11 @@
         <span class="draft-progress">
           @if (finished() || isComplete()) {
             Draft complete
+          } @else if (awaitingLeagueDraft()) {
+            Waiting for the Yahoo draft to start
+            @if (myDraftPosition() > 0) {
+              <span class="you-tag">· your first pick is #{{ myDraftPosition() }}</span>
+            }
           } @else {
             Up next: <strong>{{ upNextTeam()?.name }}</strong>
             @if (isMyPick()) {
