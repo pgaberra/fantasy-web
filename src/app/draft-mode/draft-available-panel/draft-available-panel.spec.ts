@@ -250,22 +250,23 @@ describe('DraftAvailablePanelComponent', () => {
     );
   });
 
-  // The stats switch is a pressed button, not a checkbox: it carries its state as aria-pressed
-  // and asks the parent for the opposite of what it shows.
-  it('shows the stats toggle as pressed only while stats are on, and emits the flip', () => {
+  // The stats switch is a checkbox: it carries its state as checked, and emits whatever the
+  // box ends up as rather than the opposite of what it shows.
+  it('checks the stats box only while stats are on, and emits the new state', () => {
     const fixture = renderPanel(['ALL']);
     const toggled: boolean[] = [];
     fixture.point.componentInstance.statsToggle.subscribe((on: boolean) => toggled.push(on));
-    const toggle: HTMLButtonElement = fixture.nativeElement.querySelector('.toggle-pill');
+    const box: HTMLInputElement = fixture.nativeElement.querySelector('.stats-checkbox');
 
-    expect(toggle.getAttribute('aria-pressed')).toEqual('false');
-    toggle.click();
+    expect(box.type).toEqual('checkbox');
+    expect(box.checked).toEqual(false);
+    box.click();
     expect(toggled).toEqual([true]);
 
     fixture.componentInstance.showStats = true;
     fixture.detectChanges();
-    expect(toggle.getAttribute('aria-pressed')).toEqual('true');
-    toggle.click();
+    expect(box.checked).toEqual(true);
+    box.click();
     expect(toggled).toEqual([true, false]);
   });
 
