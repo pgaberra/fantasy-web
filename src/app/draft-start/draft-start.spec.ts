@@ -210,9 +210,17 @@ describe('DraftStartComponent', () => {
   it('opens a draft at its own address, which is not the board it was played against', async () => {
     const component = await render();
 
-    component.openDraft('d1');
+    component.openDraft({ id: 'd1', draftStatus: 'in_progress' } as never);
 
     expect(navigate).toHaveBeenCalledWith(['/drafts', 'd1']);
+  });
+
+  it('opens a finished draft on its summary, which is what there is to see of it', async () => {
+    const component = await render();
+
+    component.openDraft({ id: 'd1', draftStatus: 'finished' } as never);
+
+    expect(navigate).toHaveBeenCalledWith(['/drafts', 'd1', 'summary']);
   });
 
   // The draft is created by the draft page once its setup is confirmed. Saving it here, before
@@ -878,7 +886,8 @@ describe('DraftStartComponent', () => {
 
     cards[1].click();
 
-    expect(navigate).toHaveBeenCalledWith(['/drafts', 'd2']);
+    // The card says "View summary", and that is where it goes.
+    expect(navigate).toHaveBeenCalledWith(['/drafts', 'd2', 'summary']);
   });
 
   it('keeps the discard behind the card menu rather than on the card', async () => {

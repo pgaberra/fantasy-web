@@ -1,0 +1,52 @@
+/* The summary is one wide table — a column per category plus the score — so the page gets the
+   same room as the projections page rather than the draft board's three-panel width. */
+.summary-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+.summary-page-header {
+  margin-bottom: var(--space-4);
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: var(--color-primary);
+}
+
+.summary-page-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.summary-page-title h1 {
+  margin: 0;
+  color: var(--color-primary);
+}
+
+.draft-tag {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-primary);
+  background: var(--color-surface-hover);
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-pill);
+}
+
+.draft-tag--done {
+  color: var(--color-success);
+}

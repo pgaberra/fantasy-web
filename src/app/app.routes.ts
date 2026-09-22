@@ -73,6 +73,16 @@ export const routes: Routes = [
     loadComponent: () => import('./draft-mode/draft-mode').then((m) => m.DraftModeComponent),
     canActivate: [authGuard],
   },
+  // What the draft came to: a page of its own, so the summary survives a reload and can be
+  // linked to. The board is where picks are made; reading the totals needs none of it.
+  {
+    path: 'drafts/:id/summary',
+    loadComponent: () =>
+      import('./draft-mode/draft-summary/draft-summary-page').then(
+        (m) => m.DraftSummaryPageComponent,
+      ),
+    canActivate: [authGuard],
+  },
   {
     path: 'projections',
     loadComponent: () =>
