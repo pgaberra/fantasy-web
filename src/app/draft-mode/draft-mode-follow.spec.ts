@@ -292,7 +292,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     expect(updateProjection).not.toHaveBeenCalled();
   });
 
-  it('stops when the league draft is finished', async () => {
+  it('stops when the league draft is finished, and says the picks arrived', async () => {
     leagueDraftCall.mockReturnValue(of(leagueDraft()));
     const component = await render();
     component.requestFollow();
@@ -307,7 +307,52 @@ describe('DraftModeComponent following a Yahoo draft', () => {
 
     expect(component.picks()).toHaveLength(1);
     expect(component.following()).toBe(false);
-    expect(component.followNotice()).toBe('The Yahoo draft is finished.');
+    expect(component.followComplete()).toBe(true);
+    expect(component.followNotice()).toBeNull();
+  });
+
+  // Switching sync on for a draft Yahoo has already finished takes the whole board over in one
+  // go and then has nothing left to follow, so the switch is off again a moment later. Said as a
+  // receipt beside the switch, that reads as what it is rather than as a switch that refused.
+  it('brings a finished draft over whole and shows a receipt beside the switch', async () => {
+    leagueDraftCall.mockReturnValue(
+      of({
+        ...leagueDraft([{ overall: 1, round: 1, teamId: '465.l.9.t.2', playerId: 6743 }]),
+        status: 'FINISHED',
+      }),
+    );
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
+
+    component.requestFollow();
+    component.confirmFollow();
+    fixture.detectChanges();
+
+    expect(component.picks()).toHaveLength(1);
+    expect(component.following()).toBe(false);
+    expect(component.followComplete()).toBe(true);
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('.sync-group .sync-message--done')?.textContent).toContain(
+      'The Yahoo draft is finished',
+    );
+    expect(element.querySelector('.sync-message--warn')).toBeNull();
+    // Nothing is live, so the wide status line under the toolbar stays away entirely.
+    expect(statusText(fixture)).toEqual('');
+  });
+
+  it('puts a notice beside the switch rather than on the line under the toolbar', async () => {
+    leagueDraftCall.mockReturnValue(of({ ...leagueDraft(), auction: true }));
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
+
+    component.requestFollow();
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('.sync-group .sync-message--warn')?.textContent).toContain(
+      "Draft Mode can't follow an auction draft.",
+    );
+    expect(statusText(fixture)).toEqual('');
   });
 
   describe('a draft set up without a league', () => {

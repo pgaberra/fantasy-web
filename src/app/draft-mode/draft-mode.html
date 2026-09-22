@@ -109,17 +109,29 @@
         </span>
         <span class="toolbar-actions">
           @if (canSyncPicks()) {
-            <span class="sync-control" [class.sync-control--on]="following()">
-              <app-toggle-switch
-                [on]="following()"
-                ariaLabel="Sync picks from the Yahoo draft"
-                (toggled)="toggleFollow()"
-              />
-              <span class="sync-label" aria-hidden="true">Sync picks</span>
-              @if (followLoading()) {
-                <app-loading-indicator variant="inline" />
+            <span class="sync-group">
+              <span class="sync-control" [class.sync-control--on]="following()">
+                <app-toggle-switch
+                  [on]="following()"
+                  ariaLabel="Sync picks from the Yahoo draft"
+                  (toggled)="toggleFollow()"
+                />
+                <span class="sync-label" aria-hidden="true">Sync picks</span>
+                @if (followLoading()) {
+                  <app-loading-indicator variant="inline" />
+                }
+                <app-help-tip label="What syncing picks does" [text]="syncTip()" />
+              </span>
+              @if (followComplete()) {
+                <span class="sync-message sync-message--done" role="status"
+                  ><app-icon name="check-circle" [size]="14" />The Yahoo draft is finished. All its
+                  picks are here.</span
+                >
+              } @else if (followNotice(); as notice) {
+                <span class="sync-message sync-message--warn" role="status"
+                  ><app-icon name="alert-triangle" [size]="14" />{{ notice }}</span
+                >
               }
-              <app-help-tip label="What syncing picks does" [text]="syncTip()" />
             </span>
             <span class="toolbar-divider" aria-hidden="true"></span>
           }
@@ -157,20 +169,13 @@
         </span>
       </div>
 
-      @if (following() || followNotice()) {
+      @if (following()) {
         <p class="follow-status" role="status">
-          @if (following()) {
-            <span class="follow-live-line"
-              ><span class="follow-live" aria-hidden="true"></span>Live from
-              <strong>{{ yahooSync()?.leagueName }}</strong> on Yahoo · {{ picks().length }} of
-              {{ totalPicks() }} picks</span
-            >
-          }
-          @if (followNotice(); as notice) {
-            <span class="follow-notice"
-              ><app-icon name="alert-triangle" [size]="14" />{{ notice }}</span
-            >
-          }
+          <span class="follow-live-line"
+            ><span class="follow-live" aria-hidden="true"></span>Live from
+            <strong>{{ yahooSync()?.leagueName }}</strong> on Yahoo · {{ picks().length }} of
+            {{ totalPicks() }} picks</span
+          >
         </p>
       }
 

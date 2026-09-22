@@ -214,6 +214,12 @@ export class DraftModeComponent implements OnInit {
   readonly followLoading = signal<boolean>(false);
   /** What stopped or is holding up following, shown beside the control. */
   readonly followNotice = signal<string | null>(null);
+  /**
+   * Whether syncing ended by bringing a finished draft over whole. Nothing is left to follow, so
+   * the switch is off again — which on its own reads as a switch that refused to turn on. This
+   * says the picks arrived, beside the switch and in the tone of a receipt rather than a warning.
+   */
+  readonly followComplete = signal<boolean>(false);
   /** What the sync switch does, for the tip beside it: one way, and it takes the board over. */
   private readonly FOLLOW_TIP =
     "Mirrors the picks made in your Yahoo draft here, automatically. The board takes Yahoo's " +
@@ -1175,6 +1181,7 @@ export class DraftModeComponent implements OnInit {
       return;
     }
     this.followNotice.set(null);
+    this.followComplete.set(false);
     this.followLoading.set(true);
     this.yahoo
       .leagueDraft(leagueKey)
@@ -1316,8 +1323,11 @@ export class DraftModeComponent implements OnInit {
       this.draft.set(next);
       this.save();
     }
+    // A finished draft has just been brought over whole, so this is where syncing ends — not a
+    // failure to start it.
     if (league.status === 'FINISHED') {
-      this.followNotice.set('The Yahoo draft is finished.');
+      this.followNotice.set(null);
+      this.followComplete.set(true);
       this.stopFollowing();
       return false;
     }
