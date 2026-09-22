@@ -9,6 +9,7 @@ import { App } from './app';
 import { environment } from '../environments/environment';
 import { AccountService } from './services/account.service';
 import { AuthService } from './services/auth.service';
+import { FeatureService } from './services/feature.service';
 import { EntitlementService } from './services/entitlement.service';
 import { ConsentBannerComponent } from './shared/consent-banner/consent-banner';
 import { EnvironmentBannerComponent } from './shared/environment-banner/environment-banner';
@@ -25,6 +26,9 @@ describe('App', () => {
   const avatarUrl = signal<string | null>(null);
   const premium = signal(false);
   const loadState = signal<'idle' | 'loading' | 'loaded' | 'error'>('loaded');
+  /** Reading a league drafted on Yahoo. Off by default here, as it is in a fresh environment. */
+  const leagueDraftSync = signal(false);
+  const streamerPlanner = signal(false);
 
   beforeEach(() => {
     isLoggedIn.set(true);
@@ -34,6 +38,8 @@ describe('App', () => {
     avatarUrl.set(null);
     premium.set(false);
     loadState.set('loaded');
+    leagueDraftSync.set(false);
+    streamerPlanner.set(false);
     logout.mockClear();
     return (
       MockBuilder(App)
@@ -50,6 +56,7 @@ describe('App', () => {
         .mock(AuthService, { isLoggedIn, isAdmin, logout })
         .mock(AccountService, { username, email, avatarUrl })
         .mock(EntitlementService, { premium, loadState })
+        .mock(FeatureService, { leagueDraftSync, streamerPlanner } as never)
         .provide({
           provide: Router,
           useValue: {
@@ -90,6 +97,28 @@ describe('App', () => {
     const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
 
     expect(items).toEqual(['Home', 'Draft Mode', 'My Projections', "Who's Hot", 'Admin']);
+  });
+
+  /**
+   * The page it opens is the one way into a league drafted somewhere else, and a line on the
+   * draft picker was the whole of how anyone reached it — which nobody looking for it in the
+   * menu would ever find.
+   */
+  it('offers the league summary where the environment reads a league draft', () => {
+    leagueDraftSync.set(true);
+    const fixture = render();
+
+    const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
+
+    expect(items).toContain('League Summary');
+  });
+
+  it('drops the league summary where no league draft can be read', () => {
+    const fixture = render();
+
+    const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
+
+    expect(items).not.toContain('League Summary');
   });
 
   it('leaves out the links the header itself leaves out', () => {

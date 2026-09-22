@@ -191,6 +191,16 @@
   background: var(--color-surface-hover);
 }
 
+/* A table whose rows do not open says so by not inviting the press: no pointer, no hover. */
+.lp-table tbody tr.lp-row.static {
+  cursor: default;
+}
+
+.lp-table tbody tr.lp-row.static:hover td.col-rank,
+.lp-table tbody tr.lp-row.static:hover td.col-team {
+  background: revert;
+}
+
 .lp-table tbody tr.expanded td.col-rank,
 .lp-table tbody tr.expanded td.col-team {
   background: var(--color-surface-alt);
