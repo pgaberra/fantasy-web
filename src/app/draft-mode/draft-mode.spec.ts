@@ -277,7 +277,6 @@ describe('DraftModeComponent', () => {
 
     expect(component.phase()).toEqual('draft');
     expect(component.isMyPick()).toBe(true);
-    expect(component.draftLabel()).toEqual('Draft');
     expect(updateProjection).toHaveBeenCalled();
   });
 
@@ -526,7 +525,6 @@ describe('DraftModeComponent', () => {
     expect(component.pickNumber()).toEqual(2);
     expect(component.upNextTeam()?.id).toEqual('team-1');
     expect(component.isMyPick()).toBe(false);
-    expect(component.draftLabel()).toEqual('Draft for Team 1');
   });
 
   it('filters on several positions at once and falls back to all when none are left', async () => {

@@ -210,14 +210,6 @@
 
 /* "Draft for <team>": the team's name is the league's, at any length, so the label is cut at the
    row's width rather than left to size the button. The tooltip gives the whole name. */
-.draft-label {
-  display: block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 /* Each stat is its label with the value under it. Side by side ("Goals 48 Assists 98 …") a
    league's categories ran past the row and the last one dropped to a line of its own; stacked,
    a cell is only as wide as its label, and the values line up from one player to the next.

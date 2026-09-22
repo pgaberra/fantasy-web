@@ -109,21 +109,16 @@
                 Pick
               </button>
             } @else if (!locked()) {
-              <!-- A team name has no length limit, and beside the player it took the width from
-                   his name. So the button has a row of its own, under the stats, and only a name
-                   longer than that row is cut (see .draft-label). The tooltip and the accessible
-                   name carry it whole. -->
               <button
                 type="button"
                 class="btn btn-sm"
                 [class.btn-primary]="isMyPick()"
                 [class.btn-secondary]="!isMyPick()"
                 [disabled]="isComplete()"
-                [appTooltip]="draftLabel() === 'Draft' ? null : draftLabel()"
-                [attr.aria-label]="draftLabel() + ': ' + lookup.name(sp.projection.playerId)"
+                [attr.aria-label]="'Draft: ' + lookup.name(sp.projection.playerId)"
                 (click)="draft.emit(sp.projection.playerId)"
               >
-                <span class="draft-label">{{ draftLabel() }}</span>
+                Draft
               </button>
             }
           </span>

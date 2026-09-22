@@ -49,7 +49,6 @@ describe('DraftAvailablePanelComponent', () => {
       hasMore: false,
       isMyPick: true,
       isComplete: false,
-      draftLabel: 'Draft',
       scoringType: 'category',
       statColumns: [],
     });
@@ -66,7 +65,7 @@ describe('DraftAvailablePanelComponent', () => {
       qualified: true,
     } as unknown as ScoredProjection;
 
-    const render = (draftLabel: string, isMyPick: boolean) =>
+    const render = (isMyPick: boolean) =>
       MockRender(DraftAvailablePanelComponent, {
         editingInfo: null,
         searchTerm: '',
@@ -81,7 +80,6 @@ describe('DraftAvailablePanelComponent', () => {
         hasMore: false,
         isMyPick,
         isComplete: false,
-        draftLabel,
         scoringType: 'category',
         statColumns: [],
       });
@@ -92,53 +90,26 @@ describe('DraftAvailablePanelComponent', () => {
       ngMocks.find(fixture, '.row-actions button');
 
     /**
-     * A league's team can be called anything: an uncapped "Krillans Puckvilsna Trotjänare" made
-     * every row's button wide enough to cut the player's own name to its first letter. The label
-     * sits in .draft-label, which the stylesheet cuts with an ellipsis at the row's width.
-     */
-    it('names the team it drafts for, inside the capped label', () => {
-      const fixture = render('Draft for Krillans Puckvilsna Trotjänare', false);
-
-      const label = button(fixture).querySelector('.draft-label');
-      expect(label?.textContent?.trim()).toEqual('Draft for Krillans Puckvilsna Trotjänare');
-      expect(button(fixture).textContent?.trim()).toEqual(label?.textContent?.trim());
-    });
-
-    /**
      * Beside the player the button was a grid column, which cut the label to a few letters and
      * pushed the score heading off the scores. It closes the row instead, under the stats.
      */
     it('puts the button last in the row, after the score', () => {
-      const fixture = render('Draft for Krillans Puckvilsna Trotjänare', false);
+      const fixture = render(false);
 
       const rowEl: HTMLElement = fixture.nativeElement.querySelector('.available-row');
       expect(rowEl.lastElementChild?.classList.contains('row-actions')).toBe(true);
     });
 
-    it('gives the whole label in the tooltip, since the button may cut it', () => {
-      const fixture = render('Draft for Krillans Puckvilsna Trotjänare', false);
+    it("reads Draft on another team's pick, with no tooltip", () => {
+      const fixture = render(false);
 
-      expect(ngMocks.input(buttonDebug(fixture), 'appTooltip')).toEqual(
-        'Draft for Krillans Puckvilsna Trotjänare',
-      );
-    });
-
-    it("has no tooltip on the user's own pick, where Draft is the whole label", () => {
-      const fixture = render('Draft', true);
-
-      expect(ngMocks.input(buttonDebug(fixture), 'appTooltip')).toBeNull();
-    });
-
-    it('still names that team to a screen reader, with the player', () => {
-      const fixture = render('Draft for Krillans Puckvilsna Trotjänare', false);
-
-      expect(button(fixture).getAttribute('aria-label')).toEqual(
-        'Draft for Krillans Puckvilsna Trotjänare: Connor McDavid',
-      );
+      expect(button(fixture).textContent?.trim()).toEqual('Draft');
+      expect(() => ngMocks.input(buttonDebug(fixture), 'appTooltip')).toThrow();
+      expect(button(fixture).getAttribute('aria-label')).toEqual('Draft: Connor McDavid');
     });
 
     it("reads Draft on the user's own pick too", () => {
-      const fixture = render('Draft', true);
+      const fixture = render(true);
 
       expect(button(fixture).textContent?.trim()).toEqual('Draft');
       expect(button(fixture).getAttribute('aria-label')).toEqual('Draft: Connor McDavid');
@@ -167,7 +138,6 @@ describe('DraftAvailablePanelComponent', () => {
       hasMore: false,
       isMyPick: true,
       isComplete: false,
-      draftLabel: 'Draft',
       scoringType: 'category',
       statColumns: [],
     });
@@ -205,7 +175,6 @@ describe('DraftAvailablePanelComponent', () => {
       hasMore: false,
       isMyPick: true,
       isComplete: false,
-      draftLabel: 'Draft',
       scoringType: 'category',
       statColumns: ['goals', 'assists'],
     });
@@ -252,7 +221,6 @@ describe('DraftAvailablePanelComponent', () => {
       hasMore: false,
       isMyPick: true,
       isComplete: false,
-      draftLabel: 'Draft',
       scoringType: 'category',
       statColumns: ['w', 'gaa', 'svPct'],
     });
