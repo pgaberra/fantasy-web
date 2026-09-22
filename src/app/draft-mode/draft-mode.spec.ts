@@ -110,11 +110,13 @@ describe('DraftModeComponent', () => {
   >(() => of(projection));
   const renameProjection = vi.fn();
   const startDraft = vi.fn();
+  const navigate = vi.fn(() => Promise.resolve(true));
 
   let loadedProjection: ProjectionResponse = projection;
 
   beforeEach(() => {
     updateProjection.mockClear();
+    navigate.mockClear();
     renameProjection.mockReset();
     renameProjection.mockImplementation((id: string, name: string) => of({ id, name }));
     startDraft.mockReset();
@@ -133,6 +135,7 @@ describe('DraftModeComponent', () => {
         renameProjection,
         startDraft,
       })
+      .provide({ provide: Router, useValue: { navigate } })
       .provide({
         provide: ActivatedRoute,
         useValue: {
@@ -399,35 +402,7 @@ describe('DraftModeComponent', () => {
     expect(component.scoreHeading()).toEqual('Z-Score');
   });
 
-  it('ranks teams by projected total in the league projection', async () => {
-    const fixture = MockRender(DraftModeComponent);
-    await fixture.whenStable();
-    const component = fixture.point.componentInstance;
-    component.applySetup(draft);
-
-    component.draftCurrent(1);
-    component.draftCurrent(2);
-
-    const projection = component.leagueProjection();
-    expect(projection.teams.map((team) => team.teamId)).toEqual(['team-me', 'team-1']);
-    expect(projection.teams[0].total).toBeGreaterThan(projection.teams[1].total);
-    // Category cells hold the z-score contribution (not the raw stat): McDavid's 60 goals is +1σ
-    // over the two-skater pool, and a team's category cells sum to its total.
-    expect(projection.teams[0].values['goals']).toBeCloseTo(1, 5);
-    expect(projection.teams[0].total).toBeCloseTo(projection.teams[0].values['goals'], 5);
-    expect(projection.categoryColumns.map((column) => column.key)).toEqual(['goals']);
-    expect(projection.positionColumns.map((column) => column.key)).toEqual([
-      'LW',
-      'C',
-      'RW',
-      'D',
-      'UTIL',
-      'G',
-      'BN',
-    ]);
-  });
-
-  it('confirms before finishing, then toggles the summary view', async () => {
+  it('confirms before finishing, then opens the summary page', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
@@ -435,19 +410,50 @@ describe('DraftModeComponent', () => {
 
     component.requestFinishDraft();
     expect(component.confirmingFinish()).toBe(true);
-    expect(component.showSummary()).toBe(false);
+    expect(navigate).not.toHaveBeenCalled();
 
     component.cancelFinish();
     expect(component.confirmingFinish()).toBe(false);
-    expect(component.showSummary()).toBe(false);
+    expect(navigate).not.toHaveBeenCalled();
 
     component.requestFinishDraft();
     component.finishDraft();
     expect(component.confirmingFinish()).toBe(false);
-    expect(component.showSummary()).toBe(true);
+    expect(navigate).toHaveBeenCalledWith(['/drafts', 'p1', 'summary']);
+  });
 
-    component.backToDraft();
-    expect(component.showSummary()).toBe(false);
+  /**
+   * The summary reads the draft back from the server, so it may only be opened once the finished
+   * draft is saved - opening it on the click would show the draft as it was a moment ago.
+   */
+  it('opens the summary only after the finished draft is saved', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+    const saved = new Subject<ProjectionResponse>();
+    updateProjection.mockReturnValueOnce(saved);
+
+    component.requestFinishDraft();
+    component.finishDraft();
+    expect(navigate).not.toHaveBeenCalled();
+
+    saved.next(projection);
+    expect(navigate).toHaveBeenCalledWith(['/drafts', 'p1', 'summary']);
+  });
+
+  it('stays on the board when saving the finished draft fails', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+    updateProjection.mockReturnValueOnce(throwError(() => new Error('offline')));
+
+    component.requestFinishDraft();
+    component.finishDraft();
+
+    expect(navigate).not.toHaveBeenCalled();
+    expect(component.saveStatus()).toEqual('error');
   });
 
   it('stamps finishedAt and marks the draft finished on finish', async () => {
@@ -463,7 +469,6 @@ describe('DraftModeComponent', () => {
 
     expect(component.draft()?.finishedAt).toEqual(expect.any(String));
     expect(component.finished()).toBe(true);
-    expect(component.showSummary()).toBe(true);
   });
 
   it('confirms before finishing even when the board is complete', async () => {
@@ -481,12 +486,10 @@ describe('DraftModeComponent', () => {
 
     component.requestFinishDraft();
     expect(component.confirmingFinish()).toBe(true);
-    expect(component.showSummary()).toBe(false);
     expect(component.finished()).toBe(false);
 
     component.finishDraft();
     expect(component.confirmingFinish()).toBe(false);
-    expect(component.showSummary()).toBe(true);
     expect(component.finished()).toBe(true);
   });
 
@@ -675,47 +678,6 @@ describe('DraftModeComponent', () => {
     expect(rounds[1].picks.map((entry) => entry.overall)).toEqual([2, 1]);
     expect(rounds[1].picks[0].mine).toBe(false);
     expect(rounds[1].picks[1].mine).toBe(true);
-  });
-
-  it('builds ascending draft-result rounds with round-relative pick numbers', async () => {
-    const fixture = MockRender(DraftModeComponent);
-    await fixture.whenStable();
-    const component = fixture.point.componentInstance;
-    component.applySetup(draft);
-
-    component.draftCurrent(1);
-    component.draftCurrent(2);
-    component.draftCurrent(3);
-
-    const rounds = component.resultRounds();
-    expect(rounds.map((round) => round.round)).toEqual([1, 2]);
-    expect(rounds[0].picks.map((pick) => pick.pickInRound)).toEqual([1, 2]);
-    expect(rounds[0].picks.map((pick) => pick.overall)).toEqual([1, 2]);
-    expect(rounds[0].picks.map((pick) => pick.playerId)).toEqual([1, 2]);
-    expect(rounds[0].picks[0].mine).toBe(true);
-    expect(rounds[0].picks[1].teamName).toEqual('Team 1');
-    expect(rounds[1].picks[0].pickInRound).toEqual(1);
-    expect(rounds[1].picks[0].overall).toEqual(3);
-    expect(rounds[1].picks[0].playerId).toEqual(3);
-  });
-
-  it('groups draft results by team in draft order with overall pick numbers', async () => {
-    const fixture = MockRender(DraftModeComponent);
-    await fixture.whenStable();
-    const component = fixture.point.componentInstance;
-    component.applySetup(draft);
-
-    component.draftCurrent(1);
-    component.draftCurrent(2);
-    component.draftCurrent(3);
-
-    const teams = component.resultTeams();
-    expect(teams.map((entry) => entry.team.id)).toEqual(['team-me', 'team-1']);
-    expect(teams[0].picks).toEqual([{ overall: 1, playerId: 1 }]);
-    expect(teams[1].picks).toEqual([
-      { overall: 2, playerId: 2 },
-      { overall: 3, playerId: 3 },
-    ]);
   });
 
   it('replaces a player at a specific pick and frees the old one', async () => {
@@ -1050,33 +1012,27 @@ describe('DraftModeComponent — finished draft', () => {
       }),
   );
 
-  it('opens directly on the summary when the draft is already finished', async () => {
+  /**
+   * The board is the board, whatever state the draft is in. A finished draft opens on it with the
+   * picks it was left with, and "View summary" goes to the summary's own page; it used to open on
+   * the summary inside this page, which an address of its own cannot do without bouncing the way
+   * back to the board straight off again.
+   */
+  it('opens a finished draft on the board, with the picks it was left with', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
 
     expect(component.finished()).toBe(true);
-    expect(component.showSummary()).toBe(true);
     expect(component.phase()).toEqual('draft');
+    expect(component.picks()).toHaveLength(1);
   });
 
-  it('edits the draft back on the board without un-finishing it', async () => {
+  it('reopens the draft when a pick is removed', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
 
-    component.backToDraft();
-
-    expect(component.showSummary()).toBe(false);
-    expect(component.finished()).toBe(true);
-  });
-
-  it('reopens the draft when a pick is removed after Edit draft', async () => {
-    const fixture = MockRender(DraftModeComponent);
-    await fixture.whenStable();
-    const component = fixture.point.componentInstance;
-
-    component.backToDraft();
     component.undoLast();
 
     expect(component.finished()).toBe(false);

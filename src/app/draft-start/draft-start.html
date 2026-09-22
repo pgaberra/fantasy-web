@@ -47,7 +47,7 @@
                 type="button"
                 class="draft-open"
                 [attr.aria-label]="draftLabel(draft.draftStatus) + ': ' + draft.name"
-                (click)="openDraft(draft.id)"
+                (click)="openDraft(draft)"
               >
                 <span class="draft-icon" aria-hidden="true">
                   @if (draft.draftStatus === 'finished') {

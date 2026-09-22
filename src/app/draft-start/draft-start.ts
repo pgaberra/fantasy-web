@@ -469,9 +469,15 @@ export class DraftStartComponent {
     this.sourcesResource.reload();
   }
 
-  /** Opens a draft that exists: its own address, which is not the board's. */
-  openDraft(id: string): void {
-    void this.router.navigate(['/drafts', id]);
+  /**
+   * Opens a draft that exists: its own address, which is not the board's. A finished draft opens
+   * on its summary — what it came to is what there is to see — and the board is a click away from
+   * there. One still being drafted opens on the board.
+   */
+  openDraft(draft: ProjectionSummaryResponse): void {
+    const path =
+      draft.draftStatus === 'finished' ? ['/drafts', draft.id, 'summary'] : ['/drafts', draft.id];
+    void this.router.navigate(path);
   }
 
   /**
