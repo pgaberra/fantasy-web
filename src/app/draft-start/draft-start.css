@@ -629,11 +629,3 @@
   font-size: var(--text-xs);
   color: var(--color-error);
 }
-
-/* Sits above both lists and belongs to neither: reading a league that drafted elsewhere is not a
-   draft you start here. */
-.league-summary-link {
-  margin: 0 0 var(--space-4);
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
