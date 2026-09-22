@@ -120,6 +120,12 @@ export class DraftStartComponent {
    */
   readonly presets = computed(() => this.features.offeredPresets(PRESETS));
 
+  /**
+   * Whether to offer reading a league drafted on Yahoo. The same switch the draft room follows a
+   * league by: where a league's draft cannot be read, there is nothing to summarise either.
+   */
+  readonly offersLeagueSummary = computed(() => this.features.leagueDraftSync());
+
   readonly sourcesResource = rxResource({
     stream: () => this.storage.listAll(),
     defaultValue: [] as ProjectionSummaryResponse[],

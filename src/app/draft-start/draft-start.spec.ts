@@ -84,6 +84,8 @@ describe('DraftStartComponent', () => {
   const notifyError = vi.fn();
   const premium = signal(false);
   const aiProjection = signal(true);
+  /** Reading a league drafted on Yahoo: on here, so the page's offer of it renders. */
+  const leagueDraftSync = signal(true);
   const loadState = signal<'idle' | 'loading' | 'loaded' | 'error'>('loaded');
 
   beforeEach(() => {
@@ -127,6 +129,7 @@ describe('DraftStartComponent', () => {
         .mock(EntitlementService, { premium, loadState })
         .mock(FeatureService, {
           aiProjection,
+          leagueDraftSync,
           offeredPresets: <T extends { readonly source?: string | null }>(presets: readonly T[]) =>
             aiProjection()
               ? presets
