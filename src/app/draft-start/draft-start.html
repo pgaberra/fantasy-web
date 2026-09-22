@@ -235,7 +235,9 @@
                       </span>
                       <span class="row-main">
                         <span class="row-heading">
-                          <span class="row-name">{{ projection.name }}</span>
+                          <span class="row-name" [title]="projection.name">{{
+                            projection.name
+                          }}</span>
                         </span>
                         <span class="row-meta">
                           @if (projection.kind === 'imported') {
@@ -285,7 +287,7 @@
                       </span>
                       <span class="row-main">
                         <span class="row-heading">
-                          <span class="row-name">{{ board.name }}</span>
+                          <span class="row-name" [title]="board.name">{{ board.name }}</span>
                         </span>
                         <span class="row-meta">
                           {{ sourceLabel(board) }} · added {{ board.createdAt | relativeTime }}
@@ -333,7 +335,7 @@
                       </span>
                       <span class="row-main">
                         <span class="row-heading">
-                          <span class="row-name">{{ preset.name }}</span>
+                          <span class="row-name" [title]="preset.name">{{ preset.name }}</span>
                           @if (showsPremiumBadge(preset)) {
                             <span class="row-badge premium-badge">
                               <!-- The padlock only once it is actually shut: with a subscription
