@@ -784,6 +784,20 @@ describe('DraftStartComponent', () => {
     expect(navigate).toHaveBeenCalledWith(['/draft/new/board', 'p1']);
   });
 
+  // A card's name is one line, cut with an ellipsis; the full name must still be reachable.
+  it('carries the whole name in the title, so a cut name can be read on hover', async () => {
+    const name = 'Kopia av Apples & Ginos 2024-25 NHL Skater Projections_';
+    listAll.mockReturnValue(of([{ ...summary('p1', 'projection'), name }]));
+
+    const fixture = await renderFixture();
+    fixture.point.componentInstance.sourceKind.set('projection');
+    fixture.detectChanges();
+
+    const rowName: HTMLElement | null = fixture.nativeElement.querySelector('.row-name');
+    expect(rowName?.textContent?.trim()).toBe(name);
+    expect(rowName?.title).toBe(name);
+  });
+
   // A preset is never used up by a draft, so it is always what the page opens on.
   it('opens on the presets even where both have been drafted against already', async () => {
     listAll.mockReturnValue(
