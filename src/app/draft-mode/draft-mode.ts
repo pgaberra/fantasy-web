@@ -63,6 +63,8 @@ import {
   DEFAULT_ROSTER_SLOTS,
 } from '../draft-projection/projection-defaults';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
+import { HelpTipComponent } from '../shared/help-tip/help-tip';
+import { ToggleSwitchComponent } from '../draft-projection/projection-settings-section/toggle-switch/toggle-switch';
 import { DraftRosterService } from './draft-roster.service';
 import { DraftSnakeService } from './draft-snake.service';
 import { draftRankingInput } from './draft-ranking';
@@ -112,6 +114,8 @@ const UNFOLLOWABLE_NOTICE: Record<UnfollowableReason, string> = {
     DraftPicksPanelComponent,
     IconComponent,
     TooltipDirective,
+    ToggleSwitchComponent,
+    HelpTipComponent,
   ],
   providers: [DraftPlayerLookupService],
   templateUrl: './draft-mode.html',
@@ -203,6 +207,10 @@ export class DraftModeComponent implements OnInit {
   readonly followLoading = signal<boolean>(false);
   /** What stopped or is holding up following, shown beside the control. */
   readonly followNotice = signal<string | null>(null);
+  /** What the sync switch does, for the tip beside it: one way, and it takes the board over. */
+  readonly syncTip =
+    "Mirrors the picks made in your Yahoo draft here, automatically. The board takes Yahoo's " +
+    "teams and order, and picks can't be edited by hand while it's on.";
   /** A league draft waiting for the user to agree to replace the picks entered by hand. */
   readonly pendingFollow = signal<LeagueDraftResponse | null>(null);
   private followSubscription: Subscription | null = null;
@@ -1145,6 +1153,15 @@ export class DraftModeComponent implements OnInit {
           this.followNotice.set(this.followErrorNotice(error));
         },
       });
+  }
+
+  /** The sync switch: on asks Yahoo for the draft, off simply stops. */
+  toggleFollow(): void {
+    if (this.following()) {
+      this.stopFollowing();
+    } else {
+      this.requestFollow();
+    }
   }
 
   confirmFollow(): void {

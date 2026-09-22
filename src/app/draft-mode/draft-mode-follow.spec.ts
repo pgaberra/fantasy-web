@@ -127,10 +127,19 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     vi.useRealTimers();
   });
 
-  const render = async () => {
+  const renderFixture = async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
-    return fixture.point.componentInstance;
+    return fixture;
+  };
+
+  const render = async () => (await renderFixture()).point.componentInstance;
+
+  const statusText = (fixture: Awaited<ReturnType<typeof renderFixture>>) => {
+    fixture.detectChanges();
+    return (
+      (fixture.nativeElement as HTMLElement).querySelector('.follow-status')?.textContent ?? ''
+    );
   };
 
   it('is offered only where the feature is on and the draft has a Yahoo league', async () => {
@@ -209,6 +218,35 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     await vi.advanceTimersByTimeAsync(5000);
     expect(leagueDraftCall).toHaveBeenCalledTimes(3);
     expect(component.following()).toBe(false);
+  });
+
+  it('is one switch: on asks Yahoo for the draft, off stops', async () => {
+    leagueDraftCall.mockReturnValue(of(leagueDraft()));
+    const component = await render();
+
+    component.toggleFollow();
+    expect(leagueDraftCall).toHaveBeenCalledTimes(1);
+    expect(component.following()).toBe(true);
+
+    component.toggleFollow();
+    expect(component.following()).toBe(false);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(leagueDraftCall).toHaveBeenCalledTimes(1);
+  });
+
+  it('says where the picks come from and how far the draft has got', async () => {
+    leagueDraftCall.mockReturnValue(
+      of(leagueDraft([{ overall: 1, round: 1, teamId: '465.l.9.t.2', playerId: 6743 }])),
+    );
+    const fixture = await renderFixture();
+    expect(statusText(fixture)).toEqual('');
+
+    fixture.point.componentInstance.requestFollow();
+
+    // Two teams with seven slots each: the count is the board's, the name is the league's.
+    expect(statusText(fixture).replace(/\s+/g, ' ')).toContain(
+      'Live from Beer League on Yahoo · 1 of 14 picks',
+    );
   });
 
   it('asks before replacing picks entered by hand', async () => {
