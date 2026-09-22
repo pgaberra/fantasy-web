@@ -57,7 +57,6 @@ export class DraftAvailablePanelComponent {
   readonly isComplete = input.required<boolean>();
   readonly locked = input<boolean>(false);
   /** "Draft", or "Draft for <team>" when the pick is another team's. Cut on the button, whole in its tooltip. */
-  readonly draftLabel = input.required<string>();
   readonly scoringType = input.required<ScoringType>();
   readonly statColumns = input.required<ScoringStatKey[]>();
   /** Tier chip per player, empty while the tier feature is off. */

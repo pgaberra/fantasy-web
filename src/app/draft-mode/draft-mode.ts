@@ -558,14 +558,6 @@ export class DraftModeComponent implements OnInit {
   // been edited or deleted. Leaving returns to the drafts.
   readonly exitLink = ['/draft'];
 
-  readonly draftLabel = computed(() => {
-    if (this.isMyPick() || this.isComplete()) {
-      return 'Draft';
-    }
-    const team = this.upNextTeam()?.name;
-    return team ? `Draft for ${team}` : 'Draft';
-  });
-
   readonly pickRounds = computed(() => {
     const teams = this.teamById();
     const teamCount = this.teams().length;
