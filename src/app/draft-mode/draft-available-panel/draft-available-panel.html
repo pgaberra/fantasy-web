@@ -41,18 +41,17 @@
         }
       </div>
       <div class="view-options">
-        <button
-          type="button"
-          class="toggle-pill"
-          [class.active]="showStats()"
-          [attr.aria-pressed]="showStats()"
-          (click)="toggleStats()"
-        >
-          <app-icon name="chart-bar" [size]="14" />
-          Stats
-        </button>
+        <label class="stats-toggle">
+          <input
+            type="checkbox"
+            class="stats-checkbox"
+            [checked]="showStats()"
+            (change)="onStatsToggle($event)"
+          />
+          Show stats
+        </label>
         <label class="page-size">
-          <span>Rows</span>
+          <span class="page-size-label">Rows</span>
           <select class="page-size-select" (change)="onPageSizeChange($event)">
             @for (option of pageSizeOptions(); track option.value) {
               <option [value]="option.value" [selected]="option.value === pageSize()">
