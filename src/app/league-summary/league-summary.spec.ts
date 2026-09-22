@@ -156,14 +156,32 @@ describe('LeagueSummaryComponent', () => {
     expect(fixture.point.componentInstance.offered()).toBe(false);
   });
 
-  it('goes back to the list to read another league', async () => {
+  /**
+   * One way back rather than two: from a league the back link steps to the list, and only from
+   * the list does it leave the page. A second "another league" button beside the title said the
+   * same thing in a different place.
+   */
+  it('steps back to the list from a league, and out of the page from the list', async () => {
     const fixture = await render();
     const component = fixture.point.componentInstance;
+    const host = fixture.point.nativeElement as HTMLElement;
+    const back = () => host.querySelector('.back-link') as HTMLElement;
+
+    expect(back().textContent).toContain('Back to drafts');
+
     component.choose('465.l.1');
     await fixture.whenStable();
+    fixture.detectChanges();
 
-    component.chooseAnother();
+    expect(back().textContent).toContain('Back to leagues');
+    expect([...host.querySelectorAll('button')].map((b) => b.textContent?.trim())).not.toContain(
+      'Another league',
+    );
+
+    back().click();
+    fixture.detectChanges();
 
     expect(component.leagueKey()).toBeNull();
+    expect(back().textContent).toContain('Back to drafts');
   });
 });

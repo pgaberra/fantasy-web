@@ -1,8 +1,14 @@
 <div class="league-summary">
   <div class="summary-head">
-    <a routerLink="/draft" class="back-link"
-      ><app-icon name="arrow-left" [size]="14" />Back to drafts</a
-    >
+    @if (leagueKey()) {
+      <button type="button" class="back-link" (click)="chooseAnother()">
+        <app-icon name="arrow-left" [size]="14" />Back to leagues
+      </button>
+    } @else {
+      <a routerLink="/draft" class="back-link"
+        ><app-icon name="arrow-left" [size]="14" />Back to drafts</a
+      >
+    }
     <h1>League summary</h1>
     <p class="summary-lede">
       Drafted in Yahoo? Pick the league and see how every team's roster stacks up, scored against
@@ -58,14 +64,9 @@
       (retry)="retrySummary()"
     />
   } @else if (summary(); as loaded) {
-    <div class="summary-header">
-      <div class="summary-title">
-        <h2>{{ leagueName() }}</h2>
-        <span class="summary-source">Scored against {{ scoredAgainst() }}</span>
-      </div>
-      <button type="button" class="btn btn-secondary btn-sm" (click)="chooseAnother()">
-        Another league
-      </button>
+    <div class="summary-title">
+      <h2>{{ leagueName() }}</h2>
+      <span class="summary-source">Scored against {{ scoredAgainst() }}</span>
     </div>
 
     @if (notDrafted()) {

@@ -9,14 +9,21 @@
   margin-bottom: var(--space-4);
 }
 
+/* Link or button by turn: from a league it steps back to the list, from the list out of the
+   page. The same control either way, so it looks the same either way. */
 .back-link {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
   margin-bottom: var(--space-2);
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: inherit;
   font-size: var(--text-sm);
   color: var(--color-text-subtle);
   text-decoration: none;
+  cursor: pointer;
 }
 
 .back-link:hover {
@@ -95,20 +102,12 @@
   color: var(--color-text-subtle);
 }
 
-.summary-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-  margin-bottom: var(--space-3);
-}
-
 .summary-title {
   display: flex;
   align-items: baseline;
   gap: var(--space-3);
   flex-wrap: wrap;
+  margin-bottom: var(--space-3);
 }
 
 .summary-title h2 {
