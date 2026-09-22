@@ -54,6 +54,7 @@
       title="Couldn't read that league"
       [message]="summaryMessage() ?? ''"
       [error]="summaryError()"
+      [retryable]="summaryRetryable()"
       (retry)="retrySummary()"
     />
   } @else if (summary(); as loaded) {

@@ -131,6 +131,22 @@ describe('LeagueSummaryComponent', () => {
     await fixture.whenStable();
 
     expect(component.summaryMessage()).toContain('Yahoo refused');
+    expect(component.summaryRetryable()).toBe(true);
+  });
+
+  /**
+   * A refusal from our own configuration used to read as "check your connection", which is the
+   * one place the fault could not be. It is ours, and trying again says the same thing.
+   */
+  it('owns a refusal the reader cannot act on, and drops the button', async () => {
+    yahooLeague.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    component.choose('465.l.1');
+    await fixture.whenStable();
+
+    expect(component.summaryMessage()).toContain('technical problems');
+    expect(component.summaryRetryable()).toBe(false);
   });
 
   it('is not offered where the environment does not read a league draft', async () => {
