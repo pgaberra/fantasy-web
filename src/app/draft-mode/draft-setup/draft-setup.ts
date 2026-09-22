@@ -35,6 +35,12 @@ interface SetupRow {
   mine: boolean;
 }
 
+/** What both league services answer: the teams, and the user's seat when the provider named one. */
+interface LeagueTeams {
+  teams: LeagueTeam[];
+  draftPosition?: number | null;
+}
+
 export interface DraftSetupResult {
   draft: DraftState;
   rosterSlots: RosterSlots;
@@ -71,6 +77,10 @@ export class DraftSetupComponent implements OnInit {
 
   readonly rows = signal<SetupRow[]>([]);
   readonly loadingTeams = signal(false);
+  // Whether the seat below was actually named — by the league, or by the user picking one. A league
+  // that names none leaves this false, because where a team sits in a league's team list is not
+  // where it drafts, and a draft built on the wrong seat is wrong all the way down.
+  readonly draftPositionKnown = signal(false);
   // Tracks the roster-slots input so a Yahoo sync (which updates it upstream) flows in,
   // while still letting the user edit the slots locally before starting the draft.
   readonly editableRosterSlots = linkedSignal<RosterSlots>(() => this.rosterSlots());
@@ -82,6 +92,7 @@ export class DraftSetupComponent implements OnInit {
   /** The user's own seat in the draft order, from 1. The other teams fill the seats around it. */
   readonly myPosition = computed(() => this.rows().findIndex((row) => row.mine) + 1);
   readonly positions = computed(() => Array.from({ length: this.numTeams() }, (_, i) => i + 1));
+  readonly canStart = computed(() => this.draftPositionKnown());
 
   ngOnInit(): void {
     const existing = this.initial();
@@ -92,6 +103,7 @@ export class DraftSetupComponent implements OnInit {
           return { id: team.id, name: team.name, mine: team.mine };
         }),
       );
+      this.draftPositionKnown.set(true);
       return;
     }
     const teamCount = Math.max(MIN_TEAMS, Math.min(MAX_TEAMS, this.leagueSize()));
@@ -114,11 +126,16 @@ export class DraftSetupComponent implements OnInit {
   }
 
   onPositionChange(event: Event): void {
-    this.setMyPosition(Number((event.target as HTMLSelectElement).value));
+    const chosen = (event.target as HTMLSelectElement).value;
+    if (!chosen) {
+      return;
+    }
+    this.setMyPosition(Number(chosen));
   }
 
   /** Moves the user's own team to the given seat; the other teams keep their order around it. */
   setMyPosition(position: number): void {
+    this.draftPositionKnown.set(true);
     this.rows.update((rows) => {
       const mine = rows.find((row) => row.mine);
       if (!mine) {
@@ -161,11 +178,11 @@ export class DraftSetupComponent implements OnInit {
     this.loadTeams(this.espn.leagueTeams(result.leagueId));
   }
 
-  private loadTeams(teams$: Observable<{ teams: LeagueTeam[] }>): void {
+  private loadTeams(teams$: Observable<LeagueTeams>): void {
     this.loadingTeams.set(true);
     teams$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (response) => {
-        this.applyTeams(response.teams);
+        this.applyTeams(response);
         this.loadingTeams.set(false);
       },
       // A synced projection already carries the scoring/roster; pre-filling team names is
@@ -176,28 +193,35 @@ export class DraftSetupComponent implements OnInit {
 
   /**
    * A league's size and the user's own seat, which is all a league can be relied on to tell before
-   * its draft starts: Yahoo names only the signed-in manager's seat until it lists the draft's slots.
+   * its draft starts. The seat is taken only from `draftPosition`, which the league services leave
+   * null unless the provider named it; a league that names none leaves the user to pick, since the
+   * row a team occupies in a team list says nothing about when it drafts.
    * The other teams stay unnamed; following the league's draft brings in its real teams.
    */
-  private applyTeams(teams: LeagueTeam[]): void {
+  private applyTeams(response: LeagueTeams): void {
+    const teams = response.teams;
     if (teams.length < MIN_TEAMS || (this.initial()?.picks ?? []).length > 0) {
       return;
     }
     const leagueTeams = teams.slice(0, MAX_TEAMS);
-    const mineIndex = Math.max(
-      0,
-      leagueTeams.findIndex((team) => team.mine),
-    );
-    const mineName = leagueTeams[mineIndex].mine ? leagueTeams[mineIndex].name : this.seedName();
+    const flagged = leagueTeams.findIndex((team) => team.mine);
+    const seat = response.draftPosition ?? null;
+    const known = seat !== null && seat >= 1 && seat <= leagueTeams.length;
+    const mineIndex = known ? seat - 1 : Math.max(0, flagged);
+    const mineName = flagged >= 0 ? leagueTeams[flagged].name : this.seedName();
     const rows: SetupRow[] = leagueTeams.map((_, index) =>
       index === mineIndex
         ? { id: MINE_ID, name: mineName, mine: true }
         : { id: crypto.randomUUID(), name: '', mine: false },
     );
     this.rows.set(rows);
+    this.draftPositionKnown.set(known);
   }
 
   submit(): void {
+    if (!this.canStart()) {
+      return;
+    }
     const rows = this.rows();
     let unnamed = 0;
     const teams: DraftTeam[] = rows.map((row) => ({
