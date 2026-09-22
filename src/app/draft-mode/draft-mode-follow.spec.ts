@@ -13,6 +13,7 @@ import { ProjectionCalculationService } from '../services/projection-calculation
 import { PositionFilterService } from '../services/position-filter.service';
 import { FeatureService } from '../services/feature.service';
 import { YahooService } from '../services/yahoo.service';
+import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { Player } from '../models/player.model';
 import { SkaterStats } from '../models/projection.model';
 import { ProjectionResponse } from '../api/models/projection-response';
@@ -97,12 +98,18 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     vi.fn<(id: string, request: UpdateProjectionRequest) => Observable<ProjectionResponse>>();
   const leagueDraftCall = vi.fn<(leagueKey: string) => Observable<LeagueDraftResponse>>();
   const leagueDraftSync = signal(true);
+  const returnedTo = vi.fn<(url: string) => boolean>();
+  const renameProjection = vi.fn();
   let loaded: ProjectionResponse;
 
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     updateProjection.mockReset();
     leagueDraftCall.mockReset();
+    returnedTo.mockReset();
+    returnedTo.mockReturnValue(false);
+    renameProjection.mockReset();
+    renameProjection.mockImplementation((id: string, name: string) => of({ id, name }));
     leagueDraftSync.set(true);
     loaded = projectionWith(handEnteredDraft);
     updateProjection.mockImplementation(() => of(loaded));
@@ -112,9 +119,14 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       .keep(PositionFilterService)
       .keep(DraftPlayerLookupService)
       .mock(PlayerService, { getPlayers: () => of(players) })
-      .mock(ProjectionStorageService, { loadProjection: () => of(loaded), updateProjection })
+      .mock(ProjectionStorageService, {
+        loadProjection: () => of(loaded),
+        updateProjection,
+        renameProjection,
+      })
       .mock(FeatureService, { leagueDraftSync })
       .mock(YahooService, { leagueDraft: leagueDraftCall })
+      .mock(YahooConnectReturnService, { returnedTo })
       .provide({
         provide: ActivatedRoute,
         useValue: {
@@ -296,6 +308,87 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     expect(component.picks()).toHaveLength(1);
     expect(component.following()).toBe(false);
     expect(component.followNotice()).toBe('The Yahoo draft is finished.');
+  });
+
+  describe('a draft set up without a league', () => {
+    const withoutLeague = () =>
+      projectionWith({
+        ...handEnteredDraft,
+        settings: { ...handEnteredDraft.settings!, yahooSync: undefined },
+      });
+
+    const leagueSettings = {
+      scoringType: 'points' as const,
+      statWeights: { goals: 2 },
+      activeScoringColumns: ['goals', 'assists'],
+      activeUtilityColumns: ['gp'],
+      rosterSlots: { c: 1, lw: 1, rw: 1, d: 1, util: 1, bn: 1, g: 1 },
+      unsupportedRosterCodes: [],
+      unsupportedStats: [],
+    };
+
+    beforeEach(() => {
+      loaded = withoutLeague();
+    });
+
+    it('still offers the switch, which asks which league before it follows anything', async () => {
+      const component = await render();
+
+      expect(component.canFollow()).toBe(false);
+      expect(component.canSyncPicks()).toBe(true);
+
+      component.toggleFollow();
+
+      expect(component.linkOpen()).toBe(true);
+      expect(leagueDraftCall).not.toHaveBeenCalled();
+    });
+
+    it("follows the league it is given, keeping the draft's own settings", async () => {
+      leagueDraftCall.mockReturnValue(of(leagueDraft()));
+      const component = await render();
+      component.toggleFollow();
+
+      component.linkLeague({ leagueKey: '465.l.9', leagueName: 'Beer League', settings: null });
+
+      expect(component.linkOpen()).toBe(false);
+      expect(component.following()).toBe(true);
+      expect(leagueDraftCall).toHaveBeenCalledWith('465.l.9');
+      const saved = updateProjection.mock.calls[0][1].data.draft?.settings;
+      expect(saved?.yahooSync?.leagueKey).toBe('465.l.9');
+      expect(saved?.activeScoringColumns).toEqual(['goals']);
+    });
+
+    it("takes the league's settings when that is what was chosen", async () => {
+      leagueDraftCall.mockReturnValue(of(leagueDraft()));
+      const component = await render();
+
+      component.linkLeague({
+        leagueKey: '465.l.9',
+        leagueName: 'Beer League',
+        settings: leagueSettings,
+      });
+
+      expect(component.following()).toBe(true);
+      const saved = updateProjection.mock.calls[0][1].data.draft?.settings;
+      expect(saved?.activeScoringColumns).toEqual(['goals', 'assists']);
+      expect(saved?.yahooSync?.leagueName).toBe('Beer League');
+    });
+
+    it("reopens the dialog on the way back from Yahoo's consent", async () => {
+      returnedTo.mockReturnValue(true);
+
+      expect((await render()).linkOpen()).toBe(true);
+    });
+
+    it('offers nothing where the feature is off', async () => {
+      leagueDraftSync.set(false);
+
+      const component = await render();
+
+      expect(component.canSyncPicks()).toBe(false);
+      component.toggleFollow();
+      expect(component.linkOpen()).toBe(false);
+    });
   });
 
   it('keeps trying through a dropped connection but stops when Yahoo refuses', async () => {
