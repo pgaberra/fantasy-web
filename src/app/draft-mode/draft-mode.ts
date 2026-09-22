@@ -206,7 +206,6 @@ export class DraftModeComponent implements OnInit {
   readonly setupOpen = signal<boolean>(false);
   readonly editingPick = signal<number | null>(null);
   readonly pendingRemoval = signal<number | null>(null);
-  readonly viewedTeamId = signal<string | null>(null);
   readonly showSummary = signal<boolean>(false);
   readonly confirmingFinish = signal<boolean>(false);
 
@@ -264,15 +263,8 @@ export class DraftModeComponent implements OnInit {
   private readonly myTeamId = computed(() => this.teams().find((team) => team.mine)?.id ?? null);
 
   private readonly draftedIds = computed(() => new Set(this.picks().map((pick) => pick.playerId)));
-  readonly effectiveTeamId = computed(() => {
-    const selected = this.viewedTeamId();
-    if (selected !== null && this.teams().some((team) => team.id === selected)) {
-      return selected;
-    }
-    return this.myTeamId();
-  });
-  private readonly viewedPicks = computed(() => {
-    const teamId = this.effectiveTeamId();
+  private readonly myPicks = computed(() => {
+    const teamId = this.myTeamId();
     return teamId === null ? [] : this.snake.picksForTeam(this.picks(), teamId);
   });
 
@@ -535,7 +527,7 @@ export class DraftModeComponent implements OnInit {
   });
 
   readonly roster = computed(() =>
-    this.rosterService.deriveRoster(this.viewedPicks(), this.playerMap(), this.rosterSlots()),
+    this.rosterService.deriveRoster(this.myPicks(), this.playerMap(), this.rosterSlots()),
   );
   readonly filledCount = computed(
     () => this.roster().slots.filter((slot) => slot.playerId !== null).length,
@@ -1243,7 +1235,6 @@ export class DraftModeComponent implements OnInit {
     this.draft.set(next);
     this.setupOpen.set(false);
     this.editingPick.set(null);
-    this.viewedTeamId.set(null);
     this.showSummary.set(false);
     this.save();
   }

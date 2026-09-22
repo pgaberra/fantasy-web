@@ -182,11 +182,8 @@
       <div class="draft-layout">
         <app-draft-roster-panel
           [roster]="roster()"
-          [teams]="teams()"
-          [effectiveTeamId]="effectiveTeamId()"
           [filledCount]="filledCount()"
           [totalSlots]="totalSlots()"
-          (teamSelected)="viewedTeamId.set($event)"
         />
 
         <app-draft-available-panel

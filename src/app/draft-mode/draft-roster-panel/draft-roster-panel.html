@@ -1,12 +1,6 @@
 <section class="roster-panel">
   <div class="roster-header">
-    <select class="roster-select" (change)="onSelect($event)" aria-label="View a team's roster">
-      @for (team of teams(); track team.id) {
-        <option [value]="team.id" [selected]="team.id === effectiveTeamId()">
-          {{ team.name }}{{ team.mine ? ' (You)' : '' }}
-        </option>
-      }
-    </select>
+    <h2>Your roster</h2>
     <span class="roster-count">{{ filledCount() }} / {{ totalSlots() }}</span>
   </div>
   <div class="roster-grid">
