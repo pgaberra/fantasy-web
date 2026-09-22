@@ -24,7 +24,9 @@
         By position
       </button>
     </div>
-    <span class="lp-hint">Tap a team to expand its players</span>
+    @if (expandable()) {
+      <span class="lp-hint">Tap a team to expand its players</span>
+    }
   </div>
 
   <div class="lp-wrap" #scrollWrap [class.has-more]="canScrollRight()" (scroll)="onScroll()">
@@ -70,14 +72,20 @@
           <tr
             class="lp-row"
             [class.mine]="team.mine"
+            [class.static]="!expandable()"
             [class.expanded]="isExpanded(team.teamId)"
-            [attr.aria-expanded]="isExpanded(team.teamId)"
+            [attr.aria-expanded]="expandable() ? isExpanded(team.teamId) : null"
             (click)="toggleExpand(team.teamId)"
           >
             <td class="col-rank">
-              <span class="lp-chevron" [class.expanded]="isExpanded(team.teamId)" aria-hidden="true"
-                ><app-icon name="chevron-right" [size]="14"
-              /></span>
+              @if (expandable()) {
+                <span
+                  class="lp-chevron"
+                  [class.expanded]="isExpanded(team.teamId)"
+                  aria-hidden="true"
+                  ><app-icon name="chevron-right" [size]="14"
+                /></span>
+              }
               {{ i + 1 }}
             </td>
             <td class="col-team">

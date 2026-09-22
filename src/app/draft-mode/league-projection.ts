@@ -221,23 +221,53 @@ function assignRosterSlots(
   return { byCol, bench };
 }
 
+/**
+ * One category column, by its stat key. Exported because a league totalled by the BFF comes back
+ * as bare keys — how a column is written is the web's business, and there must be one answer to
+ * it however the numbers were reached.
+ */
+export function categoryColumnFor(
+  key: ScoringStatKey,
+  scoringType: ScoringType,
+  weight: number | null,
+): LeagueProjectionColumn {
+  const isPoints = scoringType === 'points';
+  return {
+    key,
+    label: STAT_LABELS[key],
+    tooltip: STAT_FULL_NAMES[key] === STAT_LABELS[key] ? null : STAT_FULL_NAMES[key],
+    decimals: isPoints ? 1 : 2,
+    rawDecimals: (RATE_STAT_KEYS as readonly string[]).includes(key)
+      ? DEFAULT_DECIMAL_SETTINGS[key]
+      : 0,
+    weight: isPoints ? weight : null,
+  };
+}
+
 function categoryColumnsFor(
   activeScoringColumns: readonly ScoringStatKey[],
   scoringType: ScoringType,
   statWeights: Partial<StatWeights> | null,
 ): LeagueProjectionColumn[] {
-  const isPoints = scoringType === 'points';
-  const aggregateDecimals = isPoints ? 1 : 2;
-  return activeScoringColumns.map((key) => ({
+  return activeScoringColumns.map((key) =>
+    categoryColumnFor(key, scoringType, statWeights?.[key] ?? null),
+  );
+}
+
+/**
+ * One lineup column, by its slot key (`LW`, `C`, `RW`, `D`, `UTIL`, `G`, `BN`). Exported for the
+ * same reason as {@link categoryColumnFor}: the BFF names the slots, the web names the columns.
+ */
+export function positionColumnFor(key: string): LeagueProjectionColumn {
+  const def = STARTING_SLOT_DEFS.find((slot) => slot.col === key);
+  return {
     key,
-    label: STAT_LABELS[key],
-    tooltip: STAT_FULL_NAMES[key] === STAT_LABELS[key] ? null : STAT_FULL_NAMES[key],
-    decimals: aggregateDecimals,
-    rawDecimals: (RATE_STAT_KEYS as readonly string[]).includes(key)
-      ? DEFAULT_DECIMAL_SETTINGS[key]
-      : 0,
-    weight: isPoints ? (statWeights?.[key] ?? null) : null,
-  }));
+    label: def?.label ?? 'BN',
+    tooltip: def?.full ?? 'Bench',
+    decimals: 1,
+    rawDecimals: 1,
+    weight: null,
+  };
 }
 
 function positionColumnsFor(
@@ -246,23 +276,9 @@ function positionColumnsFor(
 ): LeagueProjectionColumn[] {
   const columns: LeagueProjectionColumn[] = STARTING_SLOT_DEFS.filter(
     (def) => rosterSlots[def.key] > 0,
-  ).map((def) => ({
-    key: def.col,
-    label: def.label,
-    tooltip: def.full,
-    decimals: 1,
-    rawDecimals: 1,
-    weight: null,
-  }));
+  ).map((def) => positionColumnFor(def.col));
   if (includeBench) {
-    columns.push({
-      key: BENCH_COL,
-      label: 'BN',
-      tooltip: 'Bench',
-      decimals: 1,
-      rawDecimals: 1,
-      weight: null,
-    });
+    columns.push(positionColumnFor(BENCH_COL));
   }
   return columns;
 }

@@ -83,6 +83,14 @@ export const routes: Routes = [
       ),
     canActivate: [authGuard],
   },
+  // A league drafted somewhere else, read rather than played: nothing is saved for it, so it has
+  // no id of its own and a reload reads the league again.
+  {
+    path: 'league-summary',
+    loadComponent: () =>
+      import('./league-summary/league-summary').then((m) => m.LeagueSummaryComponent),
+    canActivate: [authGuard],
+  },
   {
     path: 'projections',
     loadComponent: () =>
