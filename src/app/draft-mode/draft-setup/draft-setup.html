@@ -8,6 +8,7 @@
     [lastEspnLeagueId]="lastEspnSync()?.leagueId ?? null"
     [lastEspnSyncedAt]="lastEspnSync()?.syncedAt ?? null"
     [lastEspnLeagueName]="lastEspnSync()?.leagueName ?? null"
+    [openOnYahoo]="openOnYahoo()"
     (yahooSynced)="onYahooSynced($event)"
     (espnSynced)="onEspnSynced($event)"
   />

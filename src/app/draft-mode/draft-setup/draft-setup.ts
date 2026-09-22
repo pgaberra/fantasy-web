@@ -60,6 +60,8 @@ export class DraftSetupComponent implements OnInit {
   readonly rosterSlots = input<RosterSlots>(DEFAULT_ROSTER_SLOTS);
   readonly leagueSize = input<number>(DEFAULT_LEAGUE_SIZE);
   readonly lastSync = input<YahooSync | null>(null);
+  /** Opens the import on Yahoo, for a setup reached back from Yahoo's own consent screen. */
+  readonly openOnYahoo = input<boolean>(false);
   readonly lastEspnSync = input<EspnSync | null>(null);
 
   readonly confirmed = output<DraftSetupResult>();

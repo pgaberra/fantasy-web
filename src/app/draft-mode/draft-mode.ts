@@ -29,6 +29,7 @@ import {
 import { RosterSlots } from '../api/models/roster-slots';
 import { environment } from '../../environments/environment';
 import { YahooService } from '../services/yahoo.service';
+import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { LeagueDraftResponse } from '../api/models/league-draft-response';
 import { AnalyticsService } from '../services/analytics.service';
 import { PlayerService } from '../services/player.service';
@@ -78,6 +79,10 @@ import { DraftPicksPanelComponent } from './draft-picks-panel/draft-picks-panel'
 import { IconComponent } from '../shared/icon/icon';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import {
+  DraftFollowConnectComponent,
+  FollowLeagueLink,
+} from './draft-follow-connect/draft-follow-connect';
+import {
   boardFromLeagueDraft,
   isLeagueBoard,
   sameBoard,
@@ -109,6 +114,7 @@ const UNFOLLOWABLE_NOTICE: Record<UnfollowableReason, string> = {
     RouterLink,
     LoadingIndicatorComponent,
     DraftSetupComponent,
+    DraftFollowConnectComponent,
     DraftRosterPanelComponent,
     DraftAvailablePanelComponent,
     DraftPicksPanelComponent,
@@ -139,6 +145,7 @@ export class DraftModeComponent implements OnInit {
   readonly lookup = inject(DraftPlayerLookupService);
   private readonly features = inject(FeatureService);
   private readonly yahoo = inject(YahooService);
+  private readonly connectReturn = inject(YahooConnectReturnService);
 
   /** The saved draft this page is on, or null while one is still being set up. */
   readonly draftId = signal<string | null>(null);
@@ -214,11 +221,19 @@ export class DraftModeComponent implements OnInit {
    */
   readonly followComplete = signal<boolean>(false);
   /** What the sync switch does, for the tip beside it: one way, and it takes the board over. */
-  readonly syncTip =
+  private readonly FOLLOW_TIP =
     "Mirrors the picks made in your Yahoo draft here, automatically. The board takes Yahoo's " +
     "teams and order, and picks can't be edited by hand while it's on.";
+  private readonly LINK_TIP =
+    'Asks which Yahoo league this draft is being played in, then mirrors its picks here as they ' +
+    "are made. The board takes Yahoo's teams and order, and picks can't be edited by hand while " +
+    "it's on.";
   /** A league draft waiting for the user to agree to replace the picks entered by hand. */
   readonly pendingFollow = signal<LeagueDraftResponse | null>(null);
+  /** Whether the user asked, from the board, to link a league to follow. */
+  private readonly linkRequested = signal<boolean>(false);
+  /** Whether this page is the one a Yahoo connect left from, so it reopens what started it. */
+  private readonly backFromYahoo = signal<boolean>(false);
   private followSubscription: Subscription | null = null;
 
   private readonly data = signal<ProjectionData | null>(null);
@@ -490,6 +505,33 @@ export class DraftModeComponent implements OnInit {
   readonly canFollow = computed(
     () => this.features.leagueDraftSync() && this.yahooSync() !== null && !this.finished(),
   );
+  /**
+   * Whether the board may link a Yahoo league of its own. A draft set up without one is the whole
+   * reason this exists: following was offered only where a league had already been imported in
+   * the setup, which left a draft started without one with no way back to it.
+   */
+  readonly canLinkLeague = computed(
+    () =>
+      this.features.leagueDraftSync() &&
+      !environment.yahooSyncDisabled &&
+      this.yahooSync() === null &&
+      !this.finished(),
+  );
+  /** Whether the sync control is on screen at all: either league linked, or linkable. */
+  readonly canSyncPicks = computed(() => this.canFollow() || this.canLinkLeague());
+  /** The dialog that links a league: asked for here, or reopened after Yahoo's consent. */
+  readonly linkOpen = computed(
+    () => this.canLinkLeague() && (this.linkRequested() || this.backFromYahoo()),
+  );
+  /**
+   * Whether a setup reopened here should open on Yahoo: the connect came back to this page, and
+   * it was not the board's own link dialog that started it.
+   */
+  readonly setupBackFromYahoo = computed(() => this.backFromYahoo() && !this.canLinkLeague());
+  /** The draft's own league settings, for the link dialog to compare a league's against. */
+  readonly leagueSettings = computed(() => this.league());
+  /** The tip beside the switch, which says first what turning it on will ask for. */
+  readonly syncTip = computed(() => (this.canFollow() ? this.FOLLOW_TIP : this.LINK_TIP));
   readonly finished = computed(() => !!this.draft()?.finishedAt);
 
   // A draft is a board of its own, holding a copy of whatever it was started against, so there
@@ -595,6 +637,9 @@ export class DraftModeComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Yahoo's consent is a full-page round trip, so whatever was open when it left is gone. Asked
+    // once, here, so the dialog it left from opens again instead of the user starting over.
+    this.backFromYahoo.set(this.connectReturn.returnedTo(this.router.url));
     const presetId = this.route.snapshot.paramMap.get('preset');
     if (presetId !== null) {
       this.openUnsavedPresetDraft(presetId);
@@ -1162,13 +1207,57 @@ export class DraftModeComponent implements OnInit {
       });
   }
 
-  /** The sync switch: on asks Yahoo for the draft, off simply stops. */
+  /**
+   * The sync switch: on asks Yahoo for the draft, off simply stops. With no league linked yet it
+   * asks which league first — the switch means the same thing either way.
+   */
   toggleFollow(): void {
     if (this.following()) {
       this.stopFollowing();
-    } else {
+    } else if (this.yahooSync()) {
       this.requestFollow();
+    } else {
+      this.linkRequested.set(true);
     }
+  }
+
+  closeLink(): void {
+    this.linkRequested.set(false);
+    this.backFromYahoo.set(false);
+  }
+
+  /**
+   * Takes the league the dialog came back with and starts following it. Its settings come along
+   * only where the user said so; the link itself is what following needs, and it is saved with
+   * the draft so a reload can pick the draft back up.
+   */
+  linkLeague(link: FollowLeagueLink): void {
+    this.closeLink();
+    if (link.settings) {
+      this.applyYahooSync({
+        settings: link.settings,
+        leagueName: link.leagueName,
+        leagueKey: link.leagueKey,
+      });
+    } else {
+      this.nameAfterLeague(link.leagueName);
+      this.league.update((league) =>
+        league
+          ? {
+              ...league,
+              yahooSync: {
+                leagueName: link.leagueName,
+                leagueKey: link.leagueKey,
+                syncedAt: new Date().toISOString(),
+              },
+            }
+          : league,
+      );
+      if (this.draft()) {
+        this.save();
+      }
+    }
+    this.requestFollow();
   }
 
   confirmFollow(): void {
