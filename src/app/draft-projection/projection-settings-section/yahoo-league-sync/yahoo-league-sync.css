@@ -29,13 +29,6 @@
   color: var(--color-primary);
 }
 
-.yahoo-logo {
-  width: 1.15rem;
-  height: 1.15rem;
-  flex-shrink: 0;
-  color: #6001d2;
-}
-
 .yahoo-sync-action,
 .yahoo-sync-controls {
   display: inline-flex;

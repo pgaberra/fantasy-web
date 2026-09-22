@@ -130,8 +130,9 @@ export const ICON_NAMES = Object.keys(ICONS) as IconName[];
  * Icons are `aria-hidden`: the accessible name belongs on the button or link around them.
  *
  * Brand marks (Yahoo, Google, Facebook) are not icons and are not here. They are multi-colour
- * logos at their owners' own scales. `.github/scripts/check-inline-icons.sh` allows those files an
- * inline `<svg>`, and fails the build on any other, and on a character typed where an icon belongs.
+ * logos at their owners' own scales: Yahoo's is `<app-yahoo-mark>`, and the sign-in buttons draw
+ * their own. `.github/scripts/check-inline-icons.sh` allows those three templates an inline
+ * `<svg>`, and fails the build on any other, and on a character typed where an icon belongs.
  */
 @Component({
   selector: 'app-icon',

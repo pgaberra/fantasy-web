@@ -537,7 +537,7 @@ describe('DraftProjectionComponent', () => {
     expect(fixture.nativeElement.querySelector('.synced-league .synced-dot')).toBeTruthy();
     // The platform's mark says where the league lives, without spending width on its name.
     expect(fixture.nativeElement.querySelector('.synced-mark--espn')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.synced-mark--yahoo')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-yahoo-mark')).toBeNull();
   });
 
   it('wears the Yahoo mark for a league synced from Yahoo', async () => {
@@ -560,7 +560,7 @@ describe('DraftProjectionComponent', () => {
     fixture.detectChanges();
 
     expect(component.syncedProvider()).toEqual('yahoo');
-    expect(fixture.nativeElement.querySelector('.synced-mark--yahoo')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('app-yahoo-mark')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.synced-mark--espn')).toBeNull();
   });
 

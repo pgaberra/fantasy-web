@@ -3,6 +3,7 @@ import { YahooSync } from '../../api/models/yahoo-sync';
 import { EspnSync } from '../../api/models/espn-sync';
 import { IconComponent } from '../icon/icon';
 import { TooltipDirective } from '../tooltip/tooltip.directive';
+import { YahooMarkComponent } from '../yahoo-mark/yahoo-mark';
 
 /**
  * The one button that says where a set of league settings came from. With no league yet it is
@@ -14,7 +15,7 @@ import { TooltipDirective } from '../tooltip/tooltip.directive';
  */
 @Component({
   selector: 'app-league-import-button',
-  imports: [IconComponent, TooltipDirective],
+  imports: [IconComponent, TooltipDirective, YahooMarkComponent],
   templateUrl: './league-import-button.html',
   styleUrl: './league-import-button.css',
 })

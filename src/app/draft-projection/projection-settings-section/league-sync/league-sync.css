@@ -37,12 +37,6 @@
   flex-shrink: 0;
 }
 
-.provider-mark--yahoo {
-  width: 0.85rem;
-  height: 0.85rem;
-  color: #6001d2;
-}
-
 .provider-mark--espn {
   width: 0.85rem;
   height: 0.85rem;
