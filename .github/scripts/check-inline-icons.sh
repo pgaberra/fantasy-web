@@ -32,14 +32,13 @@ in_list() {
 }
 
 # Templates allowed an inline <svg>: brand marks only. They are multi-colour logos at their
-# owners' own scales, and normalising one would misdraw somebody's trademark.
+# owners' own scales, and normalising one would misdraw somebody's trademark. One template each:
+# a mark shown in more than one place is a component (<app-yahoo-mark>), because the drawing
+# copied per template is the drift this check exists to stop, brand or not.
 svg_allowed=(
   "src/app/auth/facebook-sign-in-button/facebook-sign-in-button.html"
   "src/app/auth/google-sign-in-button/google-sign-in-button.html"
-  "src/app/draft-projection/projection-settings-section/league-sync/league-sync.html"
-  "src/app/draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync.html"
-  "src/app/shared/league-import-button/league-import-button.html"
-  "src/app/team-power-rankings/team-power-rankings.html"
+  "src/app/shared/yahoo-mark/yahoo-mark.html"
 )
 
 # Files allowed an icon-like character, because there it is text.
