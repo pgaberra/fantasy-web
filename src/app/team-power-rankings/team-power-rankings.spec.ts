@@ -3,12 +3,14 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Observable, of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { environment } from '../../environments/environment';
-import { LeagueSummaryComponent } from './league-summary';
+import { TeamPowerRankingsComponent } from './team-power-rankings';
 import { LeagueSummaryResponse } from '../api/models/league-summary-response';
 import { LeaguesResponse } from '../api/models/leagues-response';
 import { FeatureService } from '../services/feature.service';
 import { LeagueSummaryService } from '../services/league-summary.service';
 import { YahooService } from '../services/yahoo.service';
+import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
+import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
 
 const leagues: LeaguesResponse = {
   leagues: [
@@ -31,16 +33,33 @@ const summary: LeagueSummaryResponse = {
   ],
 };
 
-describe('LeagueSummaryComponent', () => {
+describe('TeamPowerRankingsComponent', () => {
   const yahooLeague = vi.fn<(key: string) => Observable<LeagueSummaryResponse>>(() => of(summary));
   const myLeagues = vi.fn<() => Observable<LeaguesResponse>>(() => of(leagues));
+  const connectionStatus = vi.fn<() => Observable<{ connected: boolean }>>(() =>
+    of({ connected: true }),
+  );
   const leagueDraftSync = vi.fn(() => true);
   const originalPayments = environment.paymentsEnabled;
 
   const render = async () => {
-    const fixture = MockRender(LeagueSummaryComponent);
+    const fixture = MockRender(TeamPowerRankingsComponent);
     await fixture.whenStable();
     return fixture;
+  };
+
+  /** Picking a league in the dropdown and pressing the button, as a reader would. */
+  const choose = async (
+    fixture: Awaited<ReturnType<typeof render>>,
+    component: TeamPowerRankingsComponent,
+    leagueKey: string,
+  ) => {
+    const select = fixture.nativeElement.querySelector('.picker-select') as HTMLSelectElement;
+    select.value = leagueKey;
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    component.show();
+    await fixture.whenStable();
   };
 
   beforeEach(() => {
@@ -49,9 +68,17 @@ describe('LeagueSummaryComponent', () => {
     yahooLeague.mockReturnValue(of(summary));
     myLeagues.mockReset();
     myLeagues.mockReturnValue(of(leagues));
+    connectionStatus.mockReset();
+    connectionStatus.mockReturnValue(of({ connected: true }));
     leagueDraftSync.mockReturnValue(true);
-    return MockBuilder(LeagueSummaryComponent)
-      .mock(YahooService, { myLeagues })
+    return MockBuilder(TeamPowerRankingsComponent)
+      .keep(YahooLeaguePicker)
+      .mock(YahooService, {
+        myLeagues,
+        connectionStatus,
+        startConnect: () => of({ authorizeUrl: 'https://example.test/auth' }),
+      } as never)
+      .mock(YahooConnectReturnService)
       .mock(LeagueSummaryService, { yahooLeague })
       .mock(FeatureService, { leagueDraftSync } as never);
   });
@@ -60,20 +87,50 @@ describe('LeagueSummaryComponent', () => {
     environment.paymentsEnabled = originalPayments;
   });
 
-  it('lists the leagues on the account and reads the one that is picked', async () => {
+  /**
+   * The league is chosen the way draft setup chooses one: a dropdown of the account's leagues and
+   * a button. Nothing is read until the button is pressed — the leagues load on their own, the
+   * league does not.
+   */
+  it('offers the leagues on the account in a dropdown and reads the one picked', async () => {
     const fixture = await render();
     const component = fixture.point.componentInstance;
 
-    expect(component.leagues()).toHaveLength(2);
+    expect(component.picker.leagues()).toHaveLength(2);
+    expect(component.picker.selectedKey()).toBeNull();
     expect(yahooLeague).not.toHaveBeenCalled();
 
-    component.choose('465.l.1');
-    await fixture.whenStable();
+    await choose(fixture, component, '465.l.1');
 
     expect(yahooLeague).toHaveBeenCalledWith('465.l.1');
     expect(component.leagueName()).toEqual('Beer League');
     expect(component.leagueProjection()?.teams).toHaveLength(2);
     expect(component.scoreHeading()).toEqual('Total Points');
+  });
+
+  /** The dropdown stays: a second league is picked from it, not from a trip back to a list. */
+  it('reads another league without leaving the one on screen', async () => {
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    await choose(fixture, component, '465.l.1');
+
+    expect(component.canShow()).toBe(false);
+
+    await choose(fixture, component, '465.l.2');
+
+    expect(yahooLeague).toHaveBeenLastCalledWith('465.l.2');
+    expect(component.leagueName()).toEqual('Work League');
+  });
+
+  /** An account with no Yahoo behind it gets the connect button, not a dead dropdown. */
+  it('offers to connect Yahoo where the account is not connected', async () => {
+    connectionStatus.mockReturnValue(of({ connected: false }));
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+
+    expect(component.picker.connected()).toBe(false);
+    expect(myLeagues).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('.picker-select')).toBeNull();
   });
 
   /**
@@ -83,8 +140,7 @@ describe('LeagueSummaryComponent', () => {
   it('shows the totals without the players, and sells the rest', async () => {
     const fixture = await render();
     const component = fixture.point.componentInstance;
-    component.choose('465.l.1');
-    await fixture.whenStable();
+    await choose(fixture, component, '465.l.1');
 
     expect(component.hasPlayers()).toBe(false);
     expect(component.sellsPremium()).toBe(true);
@@ -95,8 +151,7 @@ describe('LeagueSummaryComponent', () => {
     yahooLeague.mockReturnValue(of({ ...summary, premium: true }));
     const fixture = await render();
     const component = fixture.point.componentInstance;
-    component.choose('465.l.1');
-    await fixture.whenStable();
+    await choose(fixture, component, '465.l.1');
 
     expect(component.hasPlayers()).toBe(true);
     expect(component.sellsPremium()).toBe(false);
@@ -107,8 +162,7 @@ describe('LeagueSummaryComponent', () => {
     environment.paymentsEnabled = false;
     const fixture = await render();
     const component = fixture.point.componentInstance;
-    component.choose('465.l.1');
-    await fixture.whenStable();
+    await choose(fixture, component, '465.l.1');
 
     expect(component.sellsPremium()).toBe(false);
   });
@@ -117,8 +171,7 @@ describe('LeagueSummaryComponent', () => {
     yahooLeague.mockReturnValue(of({ ...summary, picks: 0, status: 'PRE_DRAFT' as const }));
     const fixture = await render();
     const component = fixture.point.componentInstance;
-    component.choose('465.l.1');
-    await fixture.whenStable();
+    await choose(fixture, component, '465.l.1');
 
     expect(component.notDrafted()).toBe(true);
   });
@@ -127,11 +180,10 @@ describe('LeagueSummaryComponent', () => {
     yahooLeague.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 424 })));
     const fixture = await render();
     const component = fixture.point.componentInstance;
-    component.choose('465.l.1');
-    await fixture.whenStable();
+    await choose(fixture, component, '465.l.1');
 
-    expect(component.summaryMessage()).toContain('Yahoo refused');
-    expect(component.summaryRetryable()).toBe(true);
+    expect(component.rankingsMessage()).toContain('Yahoo refused');
+    expect(component.rankingsRetryable()).toBe(true);
   });
 
   /**
@@ -142,11 +194,10 @@ describe('LeagueSummaryComponent', () => {
     yahooLeague.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
     const fixture = await render();
     const component = fixture.point.componentInstance;
-    component.choose('465.l.1');
-    await fixture.whenStable();
+    await choose(fixture, component, '465.l.1');
 
-    expect(component.summaryMessage()).toContain('technical problems');
-    expect(component.summaryRetryable()).toBe(false);
+    expect(component.rankingsMessage()).toContain('technical problems');
+    expect(component.rankingsRetryable()).toBe(false);
   });
 
   it('is not offered where the environment does not read a league draft', async () => {
@@ -154,16 +205,6 @@ describe('LeagueSummaryComponent', () => {
     const fixture = await render();
 
     expect(fixture.point.componentInstance.offered()).toBe(false);
-  });
-
-  it('goes back to the list to read another league', async () => {
-    const fixture = await render();
-    const component = fixture.point.componentInstance;
-    component.choose('465.l.1');
-    await fixture.whenStable();
-
-    component.chooseAnother();
-
-    expect(component.leagueKey()).toBeNull();
+    expect(connectionStatus).not.toHaveBeenCalled();
   });
 });

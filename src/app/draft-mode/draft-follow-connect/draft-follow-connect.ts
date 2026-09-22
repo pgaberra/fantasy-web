@@ -1,16 +1,12 @@
-import { Component, inject, input, OnInit, output, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, DestroyRef, inject, input, OnInit, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DestroyRef } from '@angular/core';
 import { DraftSettings } from '../../api/models/draft-settings';
 import { LeagueProjectionSettingsResponse } from '../../api/models/league-projection-settings-response';
-import { LeagueSummary } from '../../api/models/league-summary';
 import { YahooService } from '../../services/yahoo.service';
-import { YahooConnectReturnService } from '../../services/yahoo-connect-return.service';
 import { IconComponent } from '../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 import { isYahooRefusal } from '../../shared/yahoo-refused';
-import { leaveFor } from '../../shared/leave-for';
+import { YahooLeaguePicker } from '../../shared/yahoo-league-picker';
 import { leagueSettingsDifferences } from '../league-settings-difference';
 
 /** The league to follow, and the settings to import with it — none when the user keeps their own. */
@@ -32,14 +28,15 @@ export interface FollowLeagueLink {
 @Component({
   selector: 'app-draft-follow-connect',
   imports: [IconComponent, LoadingIndicatorComponent],
+  providers: [YahooLeaguePicker],
   templateUrl: './draft-follow-connect.html',
   styleUrl: './draft-follow-connect.css',
 })
 export class DraftFollowConnectComponent implements OnInit {
   private readonly yahoo = inject(YahooService);
-  private readonly router = inject(Router);
-  private readonly connectReturn = inject(YahooConnectReturnService);
   private readonly destroyRef = inject(DestroyRef);
+  /** Connecting the account and choosing a league: the same picker the other screens use. */
+  private readonly picker = inject(YahooLeaguePicker);
 
   /** The draft's own league settings, to tell whether the Yahoo league's differ from them. */
   readonly current = input<DraftSettings | null>(null);
@@ -47,13 +44,14 @@ export class DraftFollowConnectComponent implements OnInit {
   readonly linked = output<FollowLeagueLink>();
   readonly cancelled = output<void>();
 
-  readonly connected = signal<boolean | null>(null);
-  readonly connecting = signal(false);
-  readonly leagues = signal<LeagueSummary[]>([]);
-  readonly loadingLeagues = signal(false);
-  readonly selectedKey = signal<string | null>(null);
+  readonly connected = this.picker.connected;
+  readonly connecting = this.picker.connecting;
+  readonly leagues = this.picker.leagues;
+  readonly loadingLeagues = this.picker.loadingLeagues;
+  readonly selectedKey = this.picker.selectedKey;
   readonly loadingSettings = signal(false);
-  readonly error = signal<string | null>(null);
+  /** What went wrong: the picker's failures and this dialog's own, in one line on screen. */
+  readonly error = this.picker.error;
   /**
    * What the chosen league's settings would change, once they are known. Empty while the league is
    * still being chosen; a non-empty list is the question put to the user.
@@ -64,41 +62,15 @@ export class DraftFollowConnectComponent implements OnInit {
   private readonly leagueSettings = signal<LeagueProjectionSettingsResponse | null>(null);
 
   ngOnInit(): void {
-    this.yahoo
-      .connectionStatus()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (status) => {
-          this.connected.set(status.connected);
-          if (status.connected) {
-            this.loadLeagues();
-          }
-        },
-        error: () => this.connected.set(false),
-      });
+    this.picker.start();
   }
 
   connect(): void {
-    this.connecting.set(true);
-    this.error.set(null);
-    // Yahoo's consent leaves the app; the board is where the user should land on the way back,
-    // with this dialog open again on it.
-    this.connectReturn.remember(this.router.url);
-    this.yahoo
-      .startConnect()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => leaveFor(response.authorizeUrl, () => this.connecting.set(false)),
-        error: () => {
-          this.connecting.set(false);
-          this.error.set("Couldn't start the Yahoo connection.");
-        },
-      });
+    this.picker.connect();
   }
 
   onLeagueChange(event: Event): void {
-    this.selectedKey.set((event.target as HTMLSelectElement).value || null);
-    this.error.set(null);
+    this.picker.select(event);
     this.settingsFailed.set(false);
   }
 
@@ -165,29 +137,5 @@ export class DraftFollowConnectComponent implements OnInit {
       leagueName: league?.name ?? 'your league',
       settings,
     });
-  }
-
-  private loadLeagues(): void {
-    this.loadingLeagues.set(true);
-    this.yahoo
-      .myLeagues()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => {
-          this.leagues.set(response.leagues);
-          if (response.leagues.length === 1) {
-            this.selectedKey.set(response.leagues[0].leagueKey);
-          }
-          this.loadingLeagues.set(false);
-        },
-        error: (err: unknown) => {
-          this.loadingLeagues.set(false);
-          this.error.set(
-            isYahooRefusal(err)
-              ? 'Yahoo refused access to your leagues.'
-              : 'Could not load your Yahoo leagues.',
-          );
-        },
-      });
   }
 }

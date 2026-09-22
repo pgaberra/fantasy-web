@@ -6,6 +6,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { DraftFollowConnectComponent, FollowLeagueLink } from './draft-follow-connect';
 import { YahooService } from '../../services/yahoo.service';
 import { YahooConnectReturnService } from '../../services/yahoo-connect-return.service';
+import { YahooLeaguePicker } from '../../shared/yahoo-league-picker';
 import { DraftSettings } from '../../api/models/draft-settings';
 import { LeagueProjectionSettingsResponse } from '../../api/models/league-projection-settings-response';
 
@@ -36,6 +37,7 @@ describe('DraftFollowConnectComponent', () => {
 
   const build = (yahoo: Partial<YahooService>) =>
     MockBuilder(DraftFollowConnectComponent)
+      .keep(YahooLeaguePicker)
       .mock(YahooService, {
         connectionStatus: () => of({ connected: true }),
         myLeagues: () => of(leagues),
@@ -143,6 +145,7 @@ describe('DraftFollowConnectComponent', () => {
   it('remembers the board before leaving for Yahoo', async () => {
     const remember = vi.fn<(path: string) => void>();
     await MockBuilder(DraftFollowConnectComponent)
+      .keep(YahooLeaguePicker)
       .mock(YahooService, {
         connectionStatus: () => of({ connected: false }),
         // A failed start keeps the test from navigating the page to Yahoo.

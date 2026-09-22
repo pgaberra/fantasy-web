@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { LeagueSummaryResponse } from '../api/models/league-summary-response';
-import { leagueProjectionFrom, scoreHeadingFor } from './league-summary-data';
+import { leagueProjectionFrom, scoreHeadingFor } from './power-rankings-data';
 
 const base: LeagueSummaryResponse = {
   source: 'model',
@@ -31,7 +31,7 @@ const base: LeagueSummaryResponse = {
   ],
 };
 
-describe('league summary data', () => {
+describe('power rankings data', () => {
   it('labels the columns the league names, in the league order', () => {
     const projection = leagueProjectionFrom(base);
 
