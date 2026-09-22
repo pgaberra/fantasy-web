@@ -37,10 +37,6 @@
   border-radius: 0.15rem;
 }
 
-.synced-mark--yahoo {
-  color: #6001d2;
-}
-
 /* A league name is the user's own words and can run long — it may shorten, but it must never
    push the buttons beside it off the toolbar. */
 .synced-label {

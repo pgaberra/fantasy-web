@@ -3,6 +3,7 @@ import { environment } from '../../../../environments/environment';
 import { YahooSync } from '../../../api/models/yahoo-sync';
 import { YahooLeagueSyncComponent, YahooSyncResult } from '../yahoo-league-sync/yahoo-league-sync';
 import { EspnLeagueSyncComponent, EspnSyncResult } from '../espn-league-sync/espn-league-sync';
+import { YahooMarkComponent } from '../../../shared/yahoo-mark/yahoo-mark';
 
 type Provider = 'none' | 'yahoo' | 'espn';
 
@@ -17,7 +18,7 @@ type Provider = 'none' | 'yahoo' | 'espn';
  */
 @Component({
   selector: 'app-league-sync',
-  imports: [YahooLeagueSyncComponent, EspnLeagueSyncComponent],
+  imports: [YahooLeagueSyncComponent, EspnLeagueSyncComponent, YahooMarkComponent],
   templateUrl: './league-sync.html',
   styleUrl: './league-sync.css',
 })

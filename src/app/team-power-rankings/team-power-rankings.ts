@@ -10,6 +10,7 @@ import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
+import { YahooMarkComponent } from '../shared/yahoo-mark/yahoo-mark';
 import { leagueProjectionFrom, scoreHeadingFor } from './power-rankings-data';
 import { powerRankingsMessage, powerRankingsRetryable } from './power-rankings-error';
 
@@ -37,6 +38,7 @@ import { powerRankingsMessage, powerRankingsRetryable } from './power-rankings-e
     ErrorStateComponent,
     IconComponent,
     LoadingIndicatorComponent,
+    YahooMarkComponent,
   ],
   providers: [YahooLeaguePicker],
   templateUrl: './team-power-rankings.html',

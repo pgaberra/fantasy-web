@@ -1,0 +1,9 @@
+:host {
+  display: inline-flex;
+  flex: none;
+}
+
+/* Yahoo's own purple, not a theme colour: a trademark is drawn as its owner draws it. */
+.mark {
+  color: #6001d2;
+}

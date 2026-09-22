@@ -64,13 +64,6 @@
   color: var(--color-primary);
 }
 
-.yahoo-logo {
-  width: 1.15rem;
-  height: 1.15rem;
-  flex-shrink: 0;
-  color: #6001d2;
-}
-
 .picker-action,
 .picker-controls {
   display: inline-flex;

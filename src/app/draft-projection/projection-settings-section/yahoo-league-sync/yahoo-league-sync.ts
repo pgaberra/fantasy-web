@@ -11,6 +11,7 @@ import { IconComponent } from '../../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../../shared/loading-indicator/loading-indicator';
 import { isYahooRefusal } from '../../../shared/yahoo-refused';
 import { leaveFor } from '../../../shared/leave-for';
+import { YahooMarkComponent } from '../../../shared/yahoo-mark/yahoo-mark';
 
 export interface YahooSyncResult {
   settings: LeagueProjectionSettingsResponse;
@@ -25,7 +26,7 @@ export interface YahooSyncResult {
  */
 @Component({
   selector: 'app-yahoo-league-sync',
-  imports: [DatePipe, IconComponent, LoadingIndicatorComponent],
+  imports: [DatePipe, IconComponent, LoadingIndicatorComponent, YahooMarkComponent],
   templateUrl: './yahoo-league-sync.html',
   styleUrl: './yahoo-league-sync.css',
 })
