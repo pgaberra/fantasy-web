@@ -175,6 +175,10 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   is not one. An imported card says whose board it is and offers no Share, since a share
   credits the account that publishes it.
   Both sources then run the same board in `draft-mode/`.
+  The draft **setup asks only the league size and the user's own draft position** (plus roster
+  slots); a Yahoo or ESPN sync fills both, and the user's team takes its league name. The other
+  teams are "Team 1", "Team 2"…, because Yahoo tells only the signed-in manager's seat before
+  its draft starts; following the league's draft brings in the real teams and order.
   A draft whose league came from Yahoo can **follow that league's live draft** ("Follow Yahoo
   draft"), offered only where `FeatureService.leagueDraftSync` (the BFF's
   `GET /api/v1/features`) says so. Following makes the league the source of the board: its
