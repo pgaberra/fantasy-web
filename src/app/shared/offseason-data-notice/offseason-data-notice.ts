@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { IconComponent } from '../icon/icon';
+import { NoticeComponent } from '../notice/notice';
 
 /**
  * Off-season heads-up about the cached Yahoo player data: while the daily player sync is paused
@@ -14,10 +15,11 @@ import { IconComponent } from '../icon/icon';
  */
 @Component({
   selector: 'app-offseason-data-notice',
-  imports: [IconComponent],
+  imports: [IconComponent, NoticeComponent],
   templateUrl: './offseason-data-notice.html',
   styleUrl: './offseason-data-notice.css',
 })
 export class OffseasonDataNoticeComponent {
   protected readonly show = environment.offseasonEnabled;
+  protected readonly sharedNotice = environment.sharedNoticeEnabled;
 }

@@ -9,6 +9,7 @@ import { LeagueProjectionTableComponent } from '../draft-mode/league-projection-
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
+import { NoticeComponent } from '../shared/notice/notice';
 import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
 import { YahooMarkComponent } from '../shared/yahoo-mark/yahoo-mark';
 import { leagueProjectionFrom, scoreHeadingFor } from './power-rankings-data';
@@ -39,6 +40,7 @@ import { powerRankingsMessage, powerRankingsRetryable } from './power-rankings-e
     IconComponent,
     LoadingIndicatorComponent,
     YahooMarkComponent,
+    NoticeComponent,
   ],
   providers: [YahooLeaguePicker],
   templateUrl: './team-power-rankings.html',
@@ -50,6 +52,8 @@ export class TeamPowerRankingsComponent implements OnInit {
 
   /** The league picker every screen shares, so choosing a league means the same thing here. */
   readonly picker = inject(YahooLeaguePicker);
+
+  protected readonly sharedNotice = environment.sharedNoticeEnabled;
 
   /** The league being read: the chosen one, once it has been asked for. */
   readonly leagueKey = signal<string | null>(null);

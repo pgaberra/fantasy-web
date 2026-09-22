@@ -87,9 +87,13 @@
       </div>
 
       @if (picker.error(); as message) {
-        <p class="picker-error" role="alert">
-          <app-icon name="alert-triangle" [size]="14" />{{ message }}
-        </p>
+        @if (sharedNotice) {
+          <app-notice tone="error" variant="inline" role="alert">{{ message }}</app-notice>
+        } @else {
+          <p class="picker-error" role="alert">
+            <app-icon name="alert-triangle" [size]="14" />{{ message }}
+          </p>
+        }
       }
     </div>
 
@@ -107,10 +111,16 @@
       <h2 class="rankings-league">{{ leagueName() }}</h2>
 
       @if (notDrafted()) {
-        <p class="rankings-error" role="alert">
-          <app-icon name="alert-triangle" [size]="14" />This league hasn't drafted yet. Come back
-          once the picks are in.
-        </p>
+        @if (sharedNotice) {
+          <app-notice tone="error" variant="inline" role="alert">
+            This league hasn't drafted yet. Come back once the picks are in.
+          </app-notice>
+        } @else {
+          <p class="rankings-error" role="alert">
+            <app-icon name="alert-triangle" [size]="14" />This league hasn't drafted yet. Come back
+            once the picks are in.
+          </p>
+        }
       } @else if (leagueProjection(); as projection) {
         <app-league-projection-table
           [data]="projection"

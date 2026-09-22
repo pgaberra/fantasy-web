@@ -1,0 +1,4 @@
+@if (showIcon()) {
+  <app-icon [name]="shownIcon()" [size]="iconSize()" class="notice__icon" />
+}
+<div class="notice__body"><ng-content /></div>

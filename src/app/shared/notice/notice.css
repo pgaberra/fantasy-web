@@ -1,0 +1,90 @@
+:host {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.notice__icon {
+  flex-shrink: 0;
+}
+
+/* min-width lets a long line wrap instead of pushing the box wider than its column; the column
+   layout is for a notice whose body is several elements, and collapses to nothing for one text
+   node. */
+.notice__body {
+  min-width: 0;
+}
+
+:host(.notice--boxed) .notice__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* ---- Variants: the shape ---------------------------------------------------------------- */
+
+:host(.notice--boxed) {
+  align-items: flex-start;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid;
+  border-radius: var(--radius-md);
+}
+
+/* Sized to the first line's box so the glyph centres on the opening line, not on the middle of
+   a notice several lines tall. */
+:host(.notice--boxed) .notice__icon {
+  margin-top: 0.2rem;
+}
+
+:host(.notice--inline) {
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* ---- Tones: the ink and the glyph, which both shapes take ------------------------------- */
+
+:host(.notice--info) {
+  color: var(--color-text);
+}
+
+:host(.notice--info) .notice__icon {
+  color: var(--color-accent);
+}
+
+:host(.notice--warning) {
+  color: var(--color-warning-text);
+}
+
+:host(.notice--warning) .notice__icon {
+  color: var(--color-gold-strong);
+}
+
+:host(.notice--error) {
+  color: var(--color-danger);
+}
+
+:host(.notice--error) .notice__icon {
+  color: var(--color-danger);
+}
+
+/* ---- Tones: the wash and the edge, which only the box takes ----------------------------- */
+
+:host(.notice--boxed.notice--info) {
+  background: var(--color-surface-alt);
+  border-color: var(--color-border);
+}
+
+/* 8.0:1, per the token's own note in styles.css. */
+:host(.notice--boxed.notice--warning) {
+  background: var(--color-warning-surface);
+  border-color: var(--color-warning-border);
+}
+
+/* --color-error rather than --color-danger for the edge: it is the palette's border red, kept
+   at 3:1 for exactly this job, where --color-danger is a fill. The ink reads 5.9:1 on the wash. */
+:host(.notice--boxed.notice--error) {
+  background: var(--color-danger-surface);
+  border-color: var(--color-error);
+}

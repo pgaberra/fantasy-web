@@ -68,6 +68,11 @@ const premiumBasePriceUsdFlag: string = '__PREMIUM_BASE_PRICE_USD__';
 // projection stays ranked by its projected stats.
 const manualRankingEnabledFlag: string = '__MANUAL_RANKING_ENABLED__';
 
+// Shared notice toggle. Only the literal "true" (via the SHARED_NOTICE_ENABLED build arg) draws
+// the adopting pages' notices through app-notice; untouched or empty resolves to false, which
+// leaves every one of them exactly as it shipped.
+const sharedNoticeEnabledFlag: string = '__SHARED_NOTICE_ENABLED__';
+
 export const environment = {
   production: true,
   environmentName: appEnvFlag.startsWith('__APP_ENV') ? 'production' : appEnvFlag,
@@ -91,4 +96,5 @@ export const environment = {
   spreadsheetImportEnabled: spreadsheetImportEnabledFlag === 'true',
   manualRankingEnabled: manualRankingEnabledFlag === 'true',
   tiersEnabled: tiersEnabledFlag === 'true',
+  sharedNoticeEnabled: sharedNoticeEnabledFlag === 'true',
 };

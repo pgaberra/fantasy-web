@@ -127,10 +127,17 @@
         <p class="follow-note" role="status">{{ followNote() }}</p>
       }
       @if (boardChanged()) {
-        <p class="board-changed" role="status">
-          {{ authorLabel() }} updated this projection while you were viewing it. Nothing was copied.
-          This is the latest version.
-        </p>
+        @if (sharedNotice) {
+          <app-notice tone="warning" [showIcon]="false" role="status">
+            {{ authorLabel() }} updated this projection while you were viewing it. Nothing was
+            copied. This is the latest version.
+          </app-notice>
+        } @else {
+          <p class="board-changed" role="status">
+            {{ authorLabel() }} updated this projection while you were viewing it. Nothing was
+            copied. This is the latest version.
+          </p>
+        }
       }
     </header>
 

@@ -57,6 +57,11 @@ export const environment = {
   // Ranking control in the projection editor). Off by default; deployed builds turn it on with
   // the MANUAL_RANKING_ENABLED=true build arg.
   manualRankingEnabled: false,
+  // Feature toggle for the shared notice component (app-notice). Off by default; deployed builds
+  // turn it on with the SHARED_NOTICE_ENABLED=true build arg. Until it is on, each notice on the
+  // pages that adopted it keeps the markup and the look it shipped with, so the flag is the one
+  // place the unified treatment is switched on or taken back.
+  sharedNoticeEnabled: false,
   // Premium's price in US dollars, which the Premium page quotes. Empty locally, where the mock
   // provider is in use and there is no price to quote.
   premiumBasePriceUsd: '',
