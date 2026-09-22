@@ -28,6 +28,15 @@
       things rather than two views of one: a board can hold any number of drafts, so a board in
       the list below is not "not started yet", it is simply somewhere to start another.
     -->
+    <!-- The other way in: a draft that happened somewhere else. It reads a league rather than
+         starting anything, so it sits apart from both lists. -->
+    @if (offersLeagueSummary()) {
+      <p class="league-summary-link">
+        Already drafted in Yahoo?
+        <a routerLink="/league-summary">See how your league turned out</a>
+      </p>
+    }
+
     @if (drafts().length > 0) {
       <section class="section" aria-labelledby="drafts-title">
         <h2 class="section-title" id="drafts-title">Your drafts</h2>
