@@ -1,0 +1,27 @@
+@if (!loaded()) {
+  <app-loading-indicator />
+} @else {
+  <div class="summary-page">
+    <div class="summary-page-header">
+      <a [routerLink]="exitLink" class="back-link"
+        ><app-icon name="arrow-left" [size]="14" />Exit Draft Mode</a
+      >
+      <div class="summary-page-title">
+        <h1>{{ draftName() }}</h1>
+        <span class="draft-tag">Draft Mode</span>
+        @if (finished()) {
+          <span class="draft-tag draft-tag--done">Finished</span>
+        }
+      </div>
+    </div>
+
+    <app-draft-summary
+      [leagueProjection]="leagueProjection()"
+      [scoringType]="scoringType()"
+      [scoreHeading]="scoreHeading()"
+      [resultRounds]="resultRounds()"
+      [resultTeams]="resultTeams()"
+      (back)="editDraft()"
+    />
+  </div>
+}

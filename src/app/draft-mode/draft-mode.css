@@ -4,12 +4,6 @@
   padding: 1.5rem 1rem;
 }
 
-/* The finished draft's summary is one wide table — a column per category plus the score — so it
-   gets the same room as the projections page instead of the draft board's three-panel width. */
-.draft-mode--wide {
-  max-width: 1400px;
-}
-
 .draft-header {
   margin-bottom: var(--space-4);
 }

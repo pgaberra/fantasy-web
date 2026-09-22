@@ -60,16 +60,14 @@ import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/pre
 import {
   createDefaultProjectionState,
   DEFAULT_LEAGUE_SIZE,
-  DEFAULT_MIN_GOALIE_GAMES,
   DEFAULT_ROSTER_SLOTS,
 } from '../draft-projection/projection-defaults';
-import { DecimalStatKey } from '../draft-projection/projection-settings-section/model';
-import { readableDecimalSettings } from '../draft-projection/projection-settings-section/model-decimals';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { ToggleSwitchComponent } from '../draft-projection/projection-settings-section/toggle-switch/toggle-switch';
 import { DraftRosterService } from './draft-roster.service';
 import { DraftSnakeService } from './draft-snake.service';
+import { draftRankingInput } from './draft-ranking';
 import { DraftSetupComponent, DraftSetupResult } from './draft-setup/draft-setup';
 import { YahooSyncResult } from '../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
 import { EspnSyncResult } from '../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
@@ -77,15 +75,8 @@ import { DraftPlayerLookupService } from './draft-player-lookup.service';
 import { DraftRosterPanelComponent } from './draft-roster-panel/draft-roster-panel';
 import { DraftAvailablePanelComponent } from './draft-available-panel/draft-available-panel';
 import { DraftPicksPanelComponent } from './draft-picks-panel/draft-picks-panel';
-import { DraftSummaryComponent } from './draft-summary/draft-summary';
 import { IconComponent } from '../shared/icon/icon';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
-import {
-  buildLeagueProjection,
-  LeagueProjectionData,
-  LeagueProjectionPlayer,
-  LeagueProjectionTeamInput,
-} from './league-projection';
 import {
   boardFromLeagueDraft,
   isLeagueBoard,
@@ -121,7 +112,6 @@ const UNFOLLOWABLE_NOTICE: Record<UnfollowableReason, string> = {
     DraftRosterPanelComponent,
     DraftAvailablePanelComponent,
     DraftPicksPanelComponent,
-    DraftSummaryComponent,
     IconComponent,
     TooltipDirective,
     ToggleSwitchComponent,
@@ -210,7 +200,6 @@ export class DraftModeComponent implements OnInit {
   readonly setupOpen = signal<boolean>(false);
   readonly editingPick = signal<number | null>(null);
   readonly pendingRemoval = signal<number | null>(null);
-  readonly showSummary = signal<boolean>(false);
   readonly confirmingFinish = signal<boolean>(false);
 
   /** Whether the board is following the linked Yahoo league's draft, which locks every pick edit. */
@@ -279,31 +268,7 @@ export class DraftModeComponent implements OnInit {
   private readonly rankingInput = computed<RankingInput | null>(() => {
     const data = this.data();
     const league = this.league();
-    if (!data || !league) {
-      return null;
-    }
-    // How the numbers are rounded is the projection's; how they are scored is the draft's.
-    const settings = data.settings;
-    return {
-      projections: this.projections(),
-      scoringType: league.scoringType,
-      statWeights: league.statWeights as StatWeights,
-      activeScoringColumns: new Set(league.activeScoringColumns as ScoringStatKey[]),
-      leagueSize: league.leagueSize ?? DEFAULT_LEAGUE_SIZE,
-      rosterSlots: league.rosterSlots,
-      minGoalieGames: league.minGoalieGames ?? DEFAULT_MIN_GOALIE_GAMES,
-      // The order is the projection's, not the draft's league: a board drafted against a
-      // projection has to be the board the owner arranged, or the best available is a different
-      // player here than on the page it was started from.
-      manualRanking: this.serializer.manualRankingFrom(settings.manualRanking),
-      // As the editor reads them: a board of the model's fractional lines is ranked here the way
-      // it was ranked there, rather than on numbers rounded to whole ones on the way in.
-      decimalSettings: readableDecimalSettings(
-        this.projections(),
-        settings.decimalSettings as Record<DecimalStatKey, number>,
-        settings.useDefaultDecimals ?? true,
-      ),
-    };
+    return data && league ? draftRankingInput(data, league, this.serializer) : null;
   });
 
   private readonly ranked = computed<ScoredProjection[]>(() => {
@@ -482,58 +447,6 @@ export class DraftModeComponent implements OnInit {
     return openSlots.has(position.toLowerCase() as keyof RosterSlots) || openSlots.has('util');
   }
 
-  private readonly scoreByPlayerId = computed(() => {
-    const isPoints = this.scoringType() === 'points';
-    return new Map(
-      this.ranked().map((scoredProjection) => [
-        scoredProjection.projection.playerId,
-        isPoints ? scoredProjection.score.fantasyPoints : scoredProjection.score.zScore,
-      ]),
-    );
-  });
-
-  readonly leagueProjection = computed<LeagueProjectionData>(() => {
-    const scores = this.scoreByPlayerId();
-    const contributions = this.contributionsByPlayerId();
-    const projectionById = new Map(
-      this.ranked().map((scoredProjection) => [
-        scoredProjection.projection.playerId,
-        scoredProjection.projection,
-      ]),
-    );
-    const players = new Map<number, LeagueProjectionPlayer>();
-    const picksByTeam = new Map<string, number[]>();
-    this.picks().forEach((pick) => {
-      const list = picksByTeam.get(pick.teamId) ?? [];
-      list.push(pick.playerId);
-      picksByTeam.set(pick.teamId, list);
-      const projection = projectionById.get(pick.playerId);
-      if (projection && !players.has(pick.playerId)) {
-        players.set(pick.playerId, {
-          name: this.lookup.name(pick.playerId),
-          score: scores.get(pick.playerId) ?? 0,
-          projection,
-          positions: this.lookup.positions(pick.playerId),
-          contributions: contributions.get(pick.playerId) ?? {},
-        });
-      }
-    });
-    const teams: LeagueProjectionTeamInput[] = this.teams().map((team) => ({
-      id: team.id,
-      name: team.name,
-      mine: team.mine,
-      playerIds: picksByTeam.get(team.id) ?? [],
-    }));
-    return buildLeagueProjection(
-      teams,
-      players,
-      this.statColumns(),
-      this.rosterSlots(),
-      this.scoringType(),
-      this.statWeights(),
-    );
-  });
-
   readonly roster = computed(() =>
     this.rosterService.deriveRoster(this.myPicks(), this.playerMap(), this.rosterSlots()),
   );
@@ -610,58 +523,6 @@ export class DraftModeComponent implements OnInit {
       group.picks.reverse();
     });
     return rounds;
-  });
-
-  readonly resultRounds = computed(() => {
-    const teams = this.teamById();
-    const teamCount = this.teams().length;
-    if (teamCount === 0) {
-      return [];
-    }
-    const rounds: {
-      round: number;
-      picks: {
-        pickInRound: number;
-        overall: number;
-        playerId: number;
-        teamName: string;
-        mine: boolean;
-      }[];
-    }[] = [];
-    this.picks().forEach((pick, index) => {
-      const overall = index + 1;
-      const round = Math.ceil(overall / teamCount);
-      const pickInRound = overall - (round - 1) * teamCount;
-      const team = teams.get(pick.teamId);
-      const entry = {
-        pickInRound,
-        overall,
-        playerId: pick.playerId,
-        teamName: team?.name ?? '',
-        mine: team?.mine ?? false,
-      };
-      const current = rounds[rounds.length - 1];
-      if (current && current.round === round) {
-        current.picks.push(entry);
-      } else {
-        rounds.push({ round, picks: [entry] });
-      }
-    });
-    return rounds;
-  });
-
-  readonly resultTeams = computed(() => {
-    const picksByTeam = new Map<string, { overall: number; playerId: number }[]>();
-    this.picks().forEach((pick, index) => {
-      const list = picksByTeam.get(pick.teamId) ?? [];
-      list.push({ overall: index + 1, playerId: pick.playerId });
-      picksByTeam.set(pick.teamId, list);
-    });
-    const teams = this.teamById();
-    return this.order()
-      .map((teamId) => teams.get(teamId))
-      .filter((team) => team !== undefined)
-      .map((team) => ({ team, picks: picksByTeam.get(team.id) ?? [] }));
   });
 
   readonly editingInfo = computed(() => {
@@ -776,11 +637,6 @@ export class DraftModeComponent implements OnInit {
               draftLeagueFromHistory() ??
               draftSettingsFromProjection(projection.data.settings),
           );
-          // A finished draft opens straight to its summary — the board stays a click away
-          // via "Edit draft", and editing picks doesn't un-finish it.
-          if (loadedDraft?.finishedAt) {
-            this.showSummary.set(true);
-          }
           this.loaded.set(true);
         },
         error: () => {
@@ -1247,7 +1103,6 @@ export class DraftModeComponent implements OnInit {
     this.draft.set(next);
     this.setupOpen.set(false);
     this.editingPick.set(null);
-    this.showSummary.set(false);
     this.save();
   }
 
@@ -1415,16 +1270,20 @@ export class DraftModeComponent implements OnInit {
 
   finishDraft(): void {
     this.confirmingFinish.set(false);
-    this.persistDraft((draft) => ({ ...draft, finishedAt: new Date().toISOString() }));
-    this.showSummary.set(true);
+    // The summary is a page of its own and reads the draft back from the server, so it opens
+    // once the finished draft is saved — opening it first would show the draft as it was.
+    this.persistDraft(
+      (draft) => ({ ...draft, finishedAt: new Date().toISOString() }),
+      () => this.viewSummary(),
+    );
   }
 
+  /** Opens what the draft came to. Nothing to summarise until the draft has been saved once. */
   viewSummary(): void {
-    this.showSummary.set(true);
-  }
-
-  backToDraft(): void {
-    this.showSummary.set(false);
+    const id = this.draftId();
+    if (id) {
+      void this.router.navigate(['/drafts', id, 'summary']);
+    }
   }
 
   togglePositionFilter(filter: PositionFilter): void {
@@ -1454,12 +1313,12 @@ export class DraftModeComponent implements OnInit {
     });
   }
 
-  private persistDraft(fn: (draft: DraftState) => DraftState): void {
+  private persistDraft(fn: (draft: DraftState) => DraftState, onSaved?: () => void): void {
     this.draft.update((draft) => (draft ? fn(draft) : draft));
-    this.save();
+    this.save(onSaved);
   }
 
-  private save(): void {
+  private save(onSaved?: () => void): void {
     const id = this.draftId();
     const data = this.data();
     if (!id || !data) {
@@ -1480,7 +1339,10 @@ export class DraftModeComponent implements OnInit {
       .updateProjection(id, { name: this.draftName(), data: updated })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => this.saveStatus.set('saved'),
+        next: () => {
+          this.saveStatus.set('saved');
+          onSaved?.();
+        },
         error: () => this.saveStatus.set('error'),
       });
   }
