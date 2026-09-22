@@ -42,6 +42,7 @@
    read as one family instead of three kinds of control. The two toggles fill with the primary
    colour when on, so on/off is the same signal whichever control it is. */
 .available-toolbar {
+  container: available-toolbar / inline-size;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -323,7 +324,10 @@
   color: var(--color-text-muted);
 }
 
-@media (max-width: 560px) {
+/* Stacked on the toolbar's own width, not the screen's: in the three-column board the panel is
+   about 400px wide on a laptop, where a screen-width rule never fires, and the pair then wrapped
+   to a second line still hugging the right edge, with a hole under the chips. */
+@container available-toolbar (max-width: 540px) {
   .view-options {
     width: 100%;
     margin-left: 0;
@@ -333,6 +337,9 @@
     flex: 1;
     justify-content: center;
   }
+}
+
+@media (max-width: 560px) {
   .available-row,
   .available-list-head {
     grid-template-columns: 1.6rem 2rem 1fr auto;
