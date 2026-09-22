@@ -74,6 +74,17 @@
       ariaCurrentWhenActive="page"
       >Draft Mode</a
     >
+    @if (features.leagueDraftSync()) {
+      <a
+        class="nav-menu-item"
+        cdkMenuItem
+        routerLink="/league-summary"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+      >
+        League Summary
+      </a>
+    }
     <a
       class="nav-menu-item"
       cdkMenuItem
