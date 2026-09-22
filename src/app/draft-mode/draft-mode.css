@@ -81,9 +81,12 @@
   font-weight: var(--weight-semibold);
 }
 
+/* Top-aligned, so the message hanging under the sync switch lengthens the row without stretching
+   the buttons beside it. */
 .toolbar-actions {
   display: inline-flex;
   flex-wrap: wrap;
+  align-items: flex-start;
   gap: var(--space-2);
   margin-left: auto;
 }
@@ -226,6 +229,9 @@
 .sync-control {
   display: inline-flex;
   align-items: center;
+  /* Sized to a small button, which the row no longer stretches it to now that it sits in a column
+     with whatever syncing has to say. */
+  min-height: 30px;
   gap: var(--space-2);
   padding: 2px var(--space-2) 2px 3px;
   border: 1px solid var(--color-border-strong);
@@ -254,6 +260,41 @@
 .sync-label {
   font-weight: var(--weight-medium);
   white-space: nowrap;
+}
+
+/* Whatever syncing has to say belongs against the switch it is about: stacked directly under the
+   pill, never on a line of its own across the page, where it reads as a note about something
+   else. The column is capped so a long message wraps instead of stretching the toolbar. */
+.sync-group {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  max-width: 260px;
+}
+
+.sync-message {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  padding-left: 3px;
+  font-size: var(--text-xs);
+  line-height: 1.35;
+}
+
+.sync-message app-icon {
+  flex: none;
+  margin-top: 1px;
+}
+
+/* A warning says so by its icon as much as its colour; a receipt is the same shape in the other
+   tone, so a finished sync doesn't read as a fault. */
+.sync-message--warn {
+  color: var(--color-warning-text);
+}
+
+.sync-message--done {
+  color: var(--color-success);
 }
 
 .toolbar-divider {
@@ -303,14 +344,6 @@
   50% {
     box-shadow: 0 0 0 4px rgba(15, 52, 96, 0);
   }
-}
-
-/* A notice is a warning, not a caption: the icon says so even where the colour cannot. */
-.follow-notice {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  color: var(--color-warning-text);
 }
 
 /* Naming a draft. The same shape as the editor's rename, sized for the draft header's own
