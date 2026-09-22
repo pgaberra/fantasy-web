@@ -108,24 +108,20 @@
         </span>
         <span class="toolbar-actions">
           @if (canFollow()) {
-            @if (following()) {
-              <button type="button" class="btn btn-secondary btn-sm" (click)="stopFollowing()">
-                Stop following
-              </button>
-            } @else {
-              <button
-                type="button"
-                class="btn btn-secondary btn-sm"
-                [disabled]="followLoading()"
-                (click)="requestFollow()"
-              >
-                @if (followLoading()) {
-                  <app-loading-indicator variant="inline" label="Loading the Yahoo draft" />
-                } @else {
-                  Follow Yahoo draft
-                }
-              </button>
-            }
+            <span class="sync-control" [class.sync-control--on]="following()">
+              <app-toggle-switch
+                [on]="following()"
+                ariaLabel="Sync picks from the Yahoo draft"
+                (toggled)="toggleFollow()"
+              />
+              @if (followLoading()) {
+                <app-loading-indicator variant="inline" label="Loading the Yahoo draft" />
+              } @else {
+                <span class="sync-label" aria-hidden="true">Sync picks</span>
+              }
+              <app-help-tip label="What syncing picks does" [text]="syncTip" />
+            </span>
+            <span class="toolbar-divider" aria-hidden="true"></span>
           }
           <button
             type="button"
@@ -164,13 +160,16 @@
       @if (following() || followNotice()) {
         <p class="follow-status" role="status">
           @if (following()) {
-            <span
-              ><span class="follow-live" aria-hidden="true"></span>Following
-              {{ yahooSync()?.leagueName }} on Yahoo. Picks made there appear here.</span
+            <span class="follow-live-line"
+              ><span class="follow-live" aria-hidden="true"></span>Live from
+              <strong>{{ yahooSync()?.leagueName }}</strong> on Yahoo · {{ picks().length }} of
+              {{ totalPicks() }} picks</span
             >
           }
           @if (followNotice(); as notice) {
-            <span class="follow-notice">{{ notice }}</span>
+            <span class="follow-notice"
+              ><app-icon name="alert-triangle" [size]="14" />{{ notice }}</span
+            >
           }
         </p>
       }
@@ -260,7 +259,7 @@
                 Cancel
               </button>
               <button type="button" class="btn btn-primary" (click)="confirmFollow()">
-                Follow Yahoo draft
+                Sync picks
               </button>
             </div>
           </div>
