@@ -338,16 +338,15 @@
 
 /* Stacked on the toolbar's own width, not the screen's: in the three-column board the panel is
    about 400px wide on a laptop, where a screen-width rule never fires, and the pair then wrapped
-   to a second line still hugging the right edge, with a hole under the chips. */
+   to a second line still hugging the right edge, with a hole under the chips. On that second
+   line the two keep their own width and sit together under the chips — stretching them to half
+   the row each pushed a checkbox and a select to opposite edges with nothing in between. */
 @container available-toolbar (max-width: 540px) {
   .view-options {
     width: 100%;
     margin-left: 0;
-  }
-  .stats-toggle,
-  .page-size {
-    flex: 1;
-    justify-content: center;
+    justify-content: flex-start;
+    gap: var(--space-4);
   }
 }
 
