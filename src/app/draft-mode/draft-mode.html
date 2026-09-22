@@ -84,6 +84,7 @@
         [leagueSize]="leagueSize()"
         [lastSync]="yahooSync()"
         [lastEspnSync]="espnSync()"
+        [openOnYahoo]="setupBackFromYahoo()"
         (confirmed)="onSetupConfirmed($event)"
         (cancelled)="cancelSetup()"
         (yahooSynced)="applyYahooSync($event)"
@@ -107,7 +108,7 @@
           }
         </span>
         <span class="toolbar-actions">
-          @if (canFollow()) {
+          @if (canSyncPicks()) {
             <span class="sync-control" [class.sync-control--on]="following()">
               <app-toggle-switch
                 [on]="following()"
@@ -118,7 +119,7 @@
               @if (followLoading()) {
                 <app-loading-indicator variant="inline" />
               }
-              <app-help-tip label="What syncing picks does" [text]="syncTip" />
+              <app-help-tip label="What syncing picks does" [text]="syncTip()" />
             </span>
             <span class="toolbar-divider" aria-hidden="true"></span>
           }
@@ -243,6 +244,14 @@
             </div>
           </div>
         </div>
+      }
+
+      @if (linkOpen()) {
+        <app-draft-follow-connect
+          [current]="leagueSettings()"
+          (linked)="linkLeague($event)"
+          (cancelled)="closeLink()"
+        />
       }
 
       @if (pendingFollow(); as league) {
