@@ -28,14 +28,6 @@ import { YahooSyncResult } from '../../draft-projection/projection-settings-sect
 import { EspnSyncResult } from '../../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
 import { LeagueSyncComponent } from '../../draft-projection/projection-settings-section/league-sync/league-sync';
 import { EspnService } from '../../services/espn.service';
-import { IconComponent } from '../../shared/icon/icon';
-import {
-  CdkDrag,
-  CdkDragDrop,
-  CdkDragHandle,
-  CdkDropList,
-  moveItemInArray,
-} from '@angular/cdk/drag-drop';
 
 interface SetupRow {
   id: string;
@@ -54,15 +46,7 @@ const MINE_ID = 'team-me';
 
 @Component({
   selector: 'app-draft-setup',
-  imports: [
-    CdkDropList,
-    CdkDrag,
-    CdkDragHandle,
-    RosterSlotsEditorComponent,
-    LeagueSyncComponent,
-    LoadingIndicatorComponent,
-    IconComponent,
-  ],
+  imports: [RosterSlotsEditorComponent, LeagueSyncComponent, LoadingIndicatorComponent],
   templateUrl: './draft-setup.html',
   styleUrl: './draft-setup.css',
 })
@@ -93,6 +77,9 @@ export class DraftSetupComponent implements OnInit {
   readonly canAdd = computed(() => this.rows().length < MAX_TEAMS);
   readonly canRemove = computed(() => this.rows().length > MIN_TEAMS);
   readonly canCancel = computed(() => this.initial() !== null);
+  /** The user's own seat in the draft order, from 1. The other teams fill the seats around it. */
+  readonly myPosition = computed(() => this.rows().findIndex((row) => row.mine) + 1);
+  readonly positions = computed(() => Array.from({ length: this.numTeams() }, (_, i) => i + 1));
 
   ngOnInit(): void {
     const existing = this.initial();
@@ -108,7 +95,7 @@ export class DraftSetupComponent implements OnInit {
     const teamCount = Math.max(MIN_TEAMS, Math.min(MAX_TEAMS, this.leagueSize()));
     const rows: SetupRow[] = [{ id: MINE_ID, name: this.seedName(), mine: true }];
     for (let index = 1; index < teamCount; index++) {
-      rows.push({ id: crypto.randomUUID(), name: `Team ${index}`, mine: false });
+      rows.push({ id: crypto.randomUUID(), name: '', mine: false });
     }
     this.rows.set(rows);
 
@@ -124,20 +111,20 @@ export class DraftSetupComponent implements OnInit {
     }
   }
 
-  updateName(index: number, event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.rows.update((rows) => rows.map((row, i) => (i === index ? { ...row, name: value } : row)));
+  onPositionChange(event: Event): void {
+    this.setMyPosition(Number((event.target as HTMLSelectElement).value));
   }
 
-  drop(event: CdkDragDrop<SetupRow[]>): void {
-    this.reorder(event.previousIndex, event.currentIndex);
-  }
-
-  reorder(previousIndex: number, currentIndex: number): void {
+  /** Moves the user's own team to the given seat; the other teams keep their order around it. */
+  setMyPosition(position: number): void {
     this.rows.update((rows) => {
-      const next = [...rows];
-      moveItemInArray(next, previousIndex, currentIndex);
-      return next;
+      const mine = rows.find((row) => row.mine);
+      if (!mine) {
+        return rows;
+      }
+      const others = rows.filter((row) => !row.mine);
+      const seat = Math.max(1, Math.min(position, rows.length));
+      return [...others.slice(0, seat - 1), mine, ...others.slice(seat - 1)];
     });
   }
 
@@ -145,10 +132,7 @@ export class DraftSetupComponent implements OnInit {
     if (!this.canAdd()) {
       return;
     }
-    this.rows.update((rows) => [
-      ...rows,
-      { id: crypto.randomUUID(), name: `Team ${rows.length}`, mine: false },
-    ]);
+    this.rows.update((rows) => [...rows, { id: crypto.randomUUID(), name: '', mine: false }]);
   }
 
   removeTeam(): void {
@@ -163,10 +147,6 @@ export class DraftSetupComponent implements OnInit {
         return;
       }
     }
-  }
-
-  teamHasPicks(id: string): boolean {
-    return (this.initial()?.picks ?? []).some((pick) => pick.teamId === id);
   }
 
   onYahooSynced(result: YahooSyncResult): void {
@@ -192,27 +172,35 @@ export class DraftSetupComponent implements OnInit {
     });
   }
 
+  /**
+   * A league's size and the user's own seat, which is all a league can be relied on to tell before
+   * its draft starts: Yahoo names only the signed-in manager's seat until it lists the draft's slots.
+   * The other teams stay unnamed; following the league's draft brings in its real teams.
+   */
   private applyTeams(teams: LeagueTeam[]): void {
     if (teams.length < MIN_TEAMS || (this.initial()?.picks ?? []).length > 0) {
       return;
     }
-    let mineAssigned = false;
-    const rows: SetupRow[] = teams.slice(0, MAX_TEAMS).map((team) => {
-      const mine = team.mine && !mineAssigned;
-      mineAssigned = mineAssigned || mine;
-      return { id: mine ? MINE_ID : crypto.randomUUID(), name: team.name, mine };
-    });
-    if (!mineAssigned) {
-      rows[0] = { ...rows[0], id: MINE_ID, mine: true };
-    }
+    const leagueTeams = teams.slice(0, MAX_TEAMS);
+    const mineIndex = Math.max(
+      0,
+      leagueTeams.findIndex((team) => team.mine),
+    );
+    const mineName = leagueTeams[mineIndex].mine ? leagueTeams[mineIndex].name : this.seedName();
+    const rows: SetupRow[] = leagueTeams.map((_, index) =>
+      index === mineIndex
+        ? { id: MINE_ID, name: mineName, mine: true }
+        : { id: crypto.randomUUID(), name: '', mine: false },
+    );
     this.rows.set(rows);
   }
 
   submit(): void {
     const rows = this.rows();
-    const teams: DraftTeam[] = rows.map((row, index) => ({
+    let unnamed = 0;
+    const teams: DraftTeam[] = rows.map((row) => ({
       id: row.id,
-      name: row.name.trim() || (row.mine ? 'My Team' : `Team ${index}`),
+      name: row.name.trim() || (row.mine ? 'My Team' : `Team ${++unnamed}`),
       mine: row.mine,
     }));
     const order = rows.map((row) => row.id);

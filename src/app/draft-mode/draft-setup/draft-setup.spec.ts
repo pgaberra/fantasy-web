@@ -65,7 +65,7 @@ describe('DraftSetupComponent', () => {
   });
 
   // A league imported on the page the draft was started from is ESPN's as often as Yahoo's.
-  it('names the teams after the ESPN league the projection was imported from', () => {
+  it('takes the size and your seat from the ESPN league the projection was imported from', () => {
     espnLeagueTeams.mockReturnValue(
       of({
         teams: [
@@ -84,10 +84,9 @@ describe('DraftSetupComponent', () => {
 
     expect(espnLeagueTeams).toHaveBeenCalledWith('42');
     expect(leagueTeams).not.toHaveBeenCalled();
-    expect(component.rows().map((row) => [row.name, row.mine])).toEqual([
-      ['Ice Holes', false],
-      ['Puck Luck', true],
-    ]);
+    expect(component.numTeams()).toEqual(2);
+    expect(component.myPosition()).toEqual(2);
+    expect(component.rows().map((row) => row.name)).toEqual(['', 'Puck Luck']);
   });
 
   it('adds and removes teams', () => {
@@ -100,15 +99,51 @@ describe('DraftSetupComponent', () => {
     expect(component.numTeams()).toEqual(12);
   });
 
-  it('reorders teams', () => {
+  it('moves your team to the chosen draft position, keeping the others in order', () => {
     const component = renderSetup();
-    const firstId = component.rows()[0].id;
-    const secondId = component.rows()[1].id;
+    const others = component
+      .rows()
+      .filter((row) => !row.mine)
+      .map((row) => row.id);
 
-    component.reorder(0, 1);
+    component.setMyPosition(5);
 
-    expect(component.rows()[0].id).toEqual(secondId);
-    expect(component.rows()[1].id).toEqual(firstId);
+    expect(component.myPosition()).toEqual(5);
+    expect(
+      component
+        .rows()
+        .filter((row) => !row.mine)
+        .map((row) => row.id),
+    ).toEqual(others);
+
+    component.setMyPosition(99);
+    expect(component.myPosition()).toEqual(12);
+  });
+
+  it('names the other teams by number, and your team by its own name', () => {
+    const component = renderSetup();
+    component.setMyPosition(2);
+    let emitted: DraftSetupResult | undefined;
+    component.confirmed.subscribe((value) => {
+      emitted = value;
+    });
+
+    component.submit();
+
+    const names = emitted?.draft.order.map(
+      (id) => emitted?.draft.teams.find((team) => team.id === id)?.name,
+    );
+    expect(names?.slice(0, 4)).toEqual(['Team 1', 'My Team', 'Team 2', 'Team 3']);
+  });
+
+  it('keeps your seat when a team is removed from behind it', () => {
+    const component = renderSetup();
+    component.setMyPosition(12);
+
+    component.removeTeam();
+
+    expect(component.numTeams()).toEqual(11);
+    expect(component.myPosition()).toEqual(11);
   });
 
   it('emits the draft and roster slots on submit', () => {
@@ -140,7 +175,7 @@ describe('DraftSetupComponent', () => {
     expect(emitted?.rosterSlots).toEqual(custom);
   });
 
-  it('fills the team rows from a Yahoo sync, marking the owned team as mine', () => {
+  it("takes the size and your seat from a Yahoo sync, and your team's name", () => {
     leagueTeams.mockReturnValue(
       of({
         teams: [
@@ -154,7 +189,8 @@ describe('DraftSetupComponent', () => {
 
     component.onYahooSynced(syncResult('nhl.l.1'));
 
-    expect(component.rows().map((row) => row.name)).toEqual(['Alpha', 'Bravo', 'Charlie']);
+    expect(component.numTeams()).toEqual(3);
+    expect(component.myPosition()).toEqual(2);
     const mine = component.rows().filter((row) => row.mine);
     expect(mine.length).toEqual(1);
     expect(mine[0].name).toEqual('Bravo');
@@ -175,7 +211,8 @@ describe('DraftSetupComponent', () => {
 
     const mine = component.rows().filter((row) => row.mine);
     expect(mine.length).toEqual(1);
-    expect(mine[0].name).toEqual('Alpha');
+    expect(component.myPosition()).toEqual(1);
+    expect(mine[0].name).toEqual('My Team');
   });
 
   it('loads the teams on init when the projection was already synced', () => {
@@ -195,7 +232,8 @@ describe('DraftSetupComponent', () => {
     }).point.componentInstance;
 
     expect(leagueTeams).toHaveBeenCalledWith('nhl.l.1');
-    expect(component.rows().map((row) => row.name)).toEqual(['Alpha', 'Bravo']);
+    expect(component.numTeams()).toEqual(2);
+    expect(component.myPosition()).toEqual(1);
     expect(component.loadingTeams()).toBe(false);
   });
 
