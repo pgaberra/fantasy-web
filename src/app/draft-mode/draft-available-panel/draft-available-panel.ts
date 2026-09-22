@@ -83,8 +83,8 @@ export class DraftAvailablePanelComponent {
     this.searchChange.emit((event.target as HTMLInputElement).value);
   }
 
-  toggleStats(): void {
-    this.statsToggle.emit(!this.showStats());
+  onStatsToggle(event: Event): void {
+    this.statsToggle.emit((event.target as HTMLInputElement).checked);
   }
 
   onPageSizeChange(event: Event): void {
