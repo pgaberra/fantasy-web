@@ -1,7 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { HttpErrorResponse } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { LeagueSummaryResponse } from '../api/models/league-summary-response';
 import { FeatureService } from '../services/feature.service';
@@ -12,6 +11,7 @@ import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { leagueProjectionFrom, scoreHeadingFor } from './league-summary-data';
+import { leagueSummaryMessage, leagueSummaryRetryable } from './league-summary-error';
 
 /**
  * How a league's draft turned out, for a manager who drafted on Yahoo rather than here.
@@ -103,23 +103,15 @@ export class LeagueSummaryComponent {
   );
 
   /**
-   * What went wrong, in the reader's terms. A refusal from Yahoo and a league this environment
-   * will not read are different problems with different answers, and neither is "try again".
+   * What went wrong, in the reader's terms, and whether trying again could answer differently.
+   * A refusal the server will repeat word for word gets no button.
    */
   readonly summaryMessage = computed(() => {
     const error = this.summaryError();
-    if (!error) {
-      return null;
-    }
-    const status = error instanceof HttpErrorResponse ? error.status : 0;
-    if (status === 404) {
-      return "This league can't be read here. Check that your Yahoo account is still connected.";
-    }
-    if (status === 424) {
-      return 'Yahoo refused access to this league. Reconnect your Yahoo account and try again.';
-    }
-    return 'Check your connection and try again.';
+    return error ? leagueSummaryMessage(error) : null;
   });
+
+  readonly summaryRetryable = computed(() => leagueSummaryRetryable(this.summaryError()));
 
   choose(leagueKey: string): void {
     this.leagueKey.set(leagueKey);
