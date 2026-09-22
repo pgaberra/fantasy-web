@@ -114,12 +114,7 @@
         (retry)="retryRankings()"
       />
     } @else if (rankingsData()) {
-      <div class="rankings-header">
-        <div class="rankings-title">
-          <h2>{{ leagueName() }}</h2>
-          <span class="rankings-source">Scored against {{ scoredAgainst() }}</span>
-        </div>
-      </div>
+      <h2 class="rankings-league">{{ leagueName() }}</h2>
 
       @if (notDrafted()) {
         <p class="rankings-note">
