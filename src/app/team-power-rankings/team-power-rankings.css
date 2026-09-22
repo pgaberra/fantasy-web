@@ -94,7 +94,10 @@
   color: var(--color-text-muted);
 }
 
-.picker-error {
+/* The page's error voice, shared by the league picker and by a league that has no draft to rank:
+   both say the table the reader came for is not coming, which is more than a muted aside. */
+.picker-error,
+.rankings-error {
   display: flex;
   align-items: center;
   gap: 0.35rem;
