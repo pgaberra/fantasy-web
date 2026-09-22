@@ -547,6 +547,18 @@ export class DraftModeComponent implements OnInit {
     return slot ? (this.teamById().get(slot.teamId) ?? null) : null;
   });
   readonly isMyPick = computed(() => !!this.upNextTeam()?.mine);
+  /**
+   * Whether the board knows whose turn it is. Following a league whose draft has not started, it
+   * does not: Yahoo names only the signed-in manager's own seat until it lists the draft's slots,
+   * so the seats around it are this board's own order rather than the league's. The first pick
+   * made is Yahoo's, and from there the order is the league's.
+   */
+  readonly awaitingLeagueDraft = computed(() => this.following() && this.picks().length === 0);
+  /** The user's own seat, which a league does tell before its draft starts. */
+  readonly myDraftPosition = computed(() => {
+    const teamId = this.myTeamId();
+    return teamId === null ? 0 : this.order().indexOf(teamId) + 1;
+  });
   readonly canUndo = computed(() => this.picks().length > 0 && !this.following());
   readonly canFollow = computed(
     () => this.features.leagueDraftSync() && this.yahooSync() !== null && !this.finished(),

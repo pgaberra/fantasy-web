@@ -147,6 +147,25 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     expect((await render()).canFollow()).toBe(false);
   });
 
+  it('says it is waiting, with your own seat, until the league draft has a pick', async () => {
+    leagueDraftCall.mockReturnValue(of(leagueDraft()));
+    const component = await render();
+
+    component.requestFollow();
+
+    expect(component.awaitingLeagueDraft()).toBe(true);
+    // The league gives the user's own seat; the seats around it are this board's own order.
+    expect(component.myDraftPosition()).toEqual(2);
+
+    leagueDraftCall.mockReturnValue(
+      of(leagueDraft([{ overall: 1, round: 1, teamId: '465.l.9.t.2', playerId: 6743 }])),
+    );
+    await vi.advanceTimersByTimeAsync(5000);
+
+    expect(component.awaitingLeagueDraft()).toBe(false);
+    expect(component.upNextTeam()?.name).toEqual('Alpha');
+  });
+
   it("takes the league's teams and picks, saves them, and locks pick edits", async () => {
     leagueDraftCall.mockReturnValue(
       of(leagueDraft([{ overall: 1, round: 1, teamId: '465.l.9.t.2', playerId: 6743 }])),

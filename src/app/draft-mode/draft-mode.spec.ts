@@ -636,6 +636,16 @@ describe('DraftModeComponent', () => {
     expect(component.pickNumber()).toEqual(2);
   });
 
+  it('names the team up next when the board is not following a league', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+
+    expect(component.awaitingLeagueDraft()).toBe(false);
+    expect(component.upNextTeam()?.name).toEqual('My Team');
+  });
+
   it('shows only my own roster', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
