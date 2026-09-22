@@ -64,109 +64,115 @@
     </div>
   </div>
 
-  @if (!seasonNotPlayed()) {
-    <div class="table-scroll">
-      <div class="table-wrapper" appPinnedTableHeader appTableScroll="Leaderboard">
-        <table>
-          <thead
-            app-projections-table-header
-            [activeColumns]="filteredActiveColumns()"
-            [scoringType]="scoringType()"
-            [(statWeights)]="statWeights"
-            [(decimalSettings)]="decimalSettings"
-            [sortColumn]="sortColumn()"
-            [sortDirection]="sortDirection()"
-            gamesPlayedScope="the selected game range"
-            (sort)="onSort($event)"
-          ></thead>
-          <tbody>
-            @for (
-              ranked of visiblePlayers();
-              track ranked.projection.playerId;
-              let index = $index
-            ) {
-              <tr class="hot-row" [class.hot-row--unqualified]="!ranked.qualified">
-                <td class="col-rank">{{ index + 1 }}</td>
-                <td class="col-name player-name">
-                  <div class="player-name-content">
-                    @if (showHeadshots()) {
-                      <app-player-headshot
-                        class="player-headshot"
-                        [src]="headshot(ranked.projection.playerId)"
-                        [name]="ranked.hot.name"
-                      />
-                    }
-                    <!-- Laid out as the projection editor's name cell is: see player-row.html. -->
-                    <div class="player-identity">
-                      <span
-                        class="player-name-text"
-                        [class.player-name-text--short]="shortNameFor(ranked.hot.name)"
-                      >
-                        <span class="player-name-full">{{ ranked.hot.name }}</span>
-                        @if (shortNameFor(ranked.hot.name); as short) {
-                          <span class="player-name-short" aria-hidden="true">{{ short }}</span>
-                        }
-                      </span>
-                      <div class="player-meta">
-                        <app-position-chips [positions]="positions(ranked)" />
-                        @if (ranked.hot.teamAbbrev) {
-                          <span class="player-team">{{ ranked.hot.teamAbbrev }}</span>
-                        }
-                        @if (!ranked.qualified) {
-                          <span
-                            class="below-min-games"
-                            appTooltip="Fewer games than the league's goalie minimum, so this goalie is ranked last."
-                            >Below league minimum</span
-                          >
-                        }
+  <!-- While the rows are loading, or failed to, the page's status stands in for them. The
+       toolbar above stays, and so does this component, because it holds the filters. -->
+  @if (rowsPending()) {
+    <ng-content select="[table-status]" />
+  } @else {
+    @if (!seasonNotPlayed()) {
+      <div class="table-scroll">
+        <div class="table-wrapper" appPinnedTableHeader appTableScroll="Leaderboard">
+          <table>
+            <thead
+              app-projections-table-header
+              [activeColumns]="filteredActiveColumns()"
+              [scoringType]="scoringType()"
+              [(statWeights)]="statWeights"
+              [(decimalSettings)]="decimalSettings"
+              [sortColumn]="sortColumn()"
+              [sortDirection]="sortDirection()"
+              gamesPlayedScope="the selected game range"
+              (sort)="onSort($event)"
+            ></thead>
+            <tbody>
+              @for (
+                ranked of visiblePlayers();
+                track ranked.projection.playerId;
+                let index = $index
+              ) {
+                <tr class="hot-row" [class.hot-row--unqualified]="!ranked.qualified">
+                  <td class="col-rank">{{ index + 1 }}</td>
+                  <td class="col-name player-name">
+                    <div class="player-name-content">
+                      @if (showHeadshots()) {
+                        <app-player-headshot
+                          class="player-headshot"
+                          [src]="headshot(ranked.projection.playerId)"
+                          [name]="ranked.hot.name"
+                        />
+                      }
+                      <!-- Laid out as the projection editor's name cell is: see player-row.html. -->
+                      <div class="player-identity">
+                        <span
+                          class="player-name-text"
+                          [class.player-name-text--short]="shortNameFor(ranked.hot.name)"
+                        >
+                          <span class="player-name-full">{{ ranked.hot.name }}</span>
+                          @if (shortNameFor(ranked.hot.name); as short) {
+                            <span class="player-name-short" aria-hidden="true">{{ short }}</span>
+                          }
+                        </span>
+                        <div class="player-meta">
+                          <app-position-chips [positions]="positions(ranked)" />
+                          @if (ranked.hot.teamAbbrev) {
+                            <span class="player-team">{{ ranked.hot.teamAbbrev }}</span>
+                          }
+                          @if (!ranked.qualified) {
+                            <span
+                              class="below-min-games"
+                              appTooltip="Fewer games than the league's goalie minimum, so this goalie is ranked last."
+                              >Below league minimum</span
+                            >
+                          }
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </td>
-                @for (col of filteredActiveColumns().utility; track col) {
-                  <td class="col-{{ col }}">
-                    @if (!isApplicable(ranked, col)) {
-                      <span class="stat-placeholder">-</span>
-                    } @else if (isToi(col)) {
-                      {{ statValue(ranked, col) | formatToi }}
-                    } @else {
-                      {{ statValue(ranked, col) | number: decimalsFor(col) }}
-                    }
                   </td>
-                }
-                @for (col of filteredActiveColumns().scoring; track col) {
-                  <td>
-                    @if (isApplicable(ranked, col)) {
-                      {{ statValue(ranked, col) | number: decimalsFor(col) }}
-                    } @else {
-                      <span class="stat-placeholder">-</span>
-                    }
-                  </td>
-                }
-                <td class="fan-pts-col">{{ summaryValue(ranked) | number: '1.0-2' }}</td>
-              </tr>
-            }
-          </tbody>
-        </table>
+                  @for (col of filteredActiveColumns().utility; track col) {
+                    <td class="col-{{ col }}">
+                      @if (!isApplicable(ranked, col)) {
+                        <span class="stat-placeholder">-</span>
+                      } @else if (isToi(col)) {
+                        {{ statValue(ranked, col) | formatToi }}
+                      } @else {
+                        {{ statValue(ranked, col) | number: decimalsFor(col) }}
+                      }
+                    </td>
+                  }
+                  @for (col of filteredActiveColumns().scoring; track col) {
+                    <td>
+                      @if (isApplicable(ranked, col)) {
+                        {{ statValue(ranked, col) | number: decimalsFor(col) }}
+                      } @else {
+                        <span class="stat-placeholder">-</span>
+                      }
+                    </td>
+                  }
+                  <td class="fan-pts-col">{{ summaryValue(ranked) | number: '1.0-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-  }
+    }
 
-  @if (seasonNotPlayed()) {
-    <p class="table-empty">No games have been played in the {{ seasonLabel() }} season yet.</p>
-  } @else if (matchingCount() === 0) {
-    <p class="table-empty">
-      No players match. Try a wider range, a lower minimum, or another filter.
-    </p>
-  } @else {
-    <div class="table-footer">
-      <span class="result-count"
-        >Showing {{ visiblePlayers().length }} of {{ matchingCount() }}</span
-      >
-      @if (hasMore()) {
-        <button type="button" class="btn btn-primary" (click)="showMore()">Show more</button>
-      }
-    </div>
+    @if (seasonNotPlayed()) {
+      <p class="table-empty">No games have been played in the {{ seasonLabel() }} season yet.</p>
+    } @else if (matchingCount() === 0) {
+      <p class="table-empty">
+        No players match. Try a wider range, a lower minimum, or another filter.
+      </p>
+    } @else {
+      <div class="table-footer">
+        <span class="result-count"
+          >Showing {{ visiblePlayers().length }} of {{ matchingCount() }}</span
+        >
+        @if (hasMore()) {
+          <button type="button" class="btn btn-primary" (click)="showMore()">Show more</button>
+        }
+      </div>
+    }
   }
 </section>
 
