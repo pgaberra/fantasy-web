@@ -107,10 +107,6 @@ export class TeamPowerRankingsComponent implements OnInit {
     return !!rankings && rankings.picks === 0;
   });
 
-  readonly scoredAgainst = computed(() =>
-    this.rankingsData()?.source === 'last_season' ? "last season's stats" : 'the AI projection',
-  );
-
   /**
    * What went wrong, in the reader's terms, and whether trying again could answer differently.
    * A refusal the server will repeat word for word gets no button.
