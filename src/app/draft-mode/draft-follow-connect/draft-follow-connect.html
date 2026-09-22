@@ -1,0 +1,107 @@
+<div class="modal-overlay" (click)="cancel()">
+  <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+    @if (differences().length) {
+      <h2 class="modal-title">Use the league's settings too?</h2>
+      <p class="modal-text">
+        This league scores differently from your draft. Its picks are followed either way. These are
+        what would change if you take its settings as well:
+      </p>
+      <ul class="link-differences">
+        @for (difference of differences(); track difference) {
+          <li>{{ difference }}</li>
+        }
+      </ul>
+      <p class="modal-note">Taking them re-ranks the players you have left.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" (click)="keepMySettings()">
+          Keep my settings
+        </button>
+        <button type="button" class="btn btn-primary" (click)="useLeagueSettings()">
+          Use the league's
+        </button>
+      </div>
+    } @else {
+      <h2 class="modal-title">Follow a Yahoo draft</h2>
+      <p class="modal-text">
+        Pick the league this draft is being played in. Its picks then appear here as they are made.
+      </p>
+
+      @switch (connected()) {
+        @case (null) {
+          <p class="link-status"><app-loading-indicator variant="inline" label="Checking" /></p>
+        }
+        @case (false) {
+          <p class="modal-note">
+            Connect your Yahoo account to let SlapStat read the draft as it happens.
+          </p>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="connecting()"
+              (click)="connect()"
+            >
+              @if (connecting()) {
+                <app-loading-indicator variant="inline" label="Connecting" />
+              } @else {
+                Connect Yahoo account
+              }
+            </button>
+          </div>
+        }
+        @default {
+          @if (loadingLeagues()) {
+            <p class="link-status">
+              <app-loading-indicator variant="inline" label="Loading your leagues" />
+            </p>
+          } @else if (leagues().length === 0) {
+            <p class="link-status">No NHL leagues found on your Yahoo account.</p>
+          } @else {
+            <label class="link-field">
+              <span class="link-label">Yahoo league</span>
+              <select class="link-select" (change)="onLeagueChange($event)">
+                <option value="">Select a league…</option>
+                @for (league of leagues(); track league.leagueKey) {
+                  <option
+                    [value]="league.leagueKey"
+                    [selected]="league.leagueKey === selectedKey()"
+                  >
+                    {{ league.name }}
+                  </option>
+                }
+              </select>
+            </label>
+          }
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
+            @if (settingsFailed()) {
+              <button type="button" class="btn btn-primary" (click)="keepMySettings()">
+                Follow picks anyway
+              </button>
+            } @else {
+              <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="!selectedKey() || loadingSettings()"
+                (click)="choose()"
+              >
+                @if (loadingSettings()) {
+                  <app-loading-indicator variant="inline" label="Checking the league" />
+                } @else {
+                  Sync picks
+                }
+              </button>
+            }
+          </div>
+        }
+      }
+
+      @if (error(); as message) {
+        <p class="link-error" role="alert">
+          <app-icon name="alert-triangle" [size]="14" />{{ message }}
+        </p>
+      }
+    }
+  </div>
+</div>
