@@ -122,6 +122,58 @@ describe('HotPlayersTableComponent', () => {
     expect(filteredOut.matchingCount()).toEqual(0);
   });
 
+  describe('while its rows are pending', () => {
+    const template = `
+      <app-hot-players-table
+        [hotPlayers]="hotPlayers"
+        [players]="players"
+        [activeColumns]="activeColumns"
+        scoringType="points"
+        [statWeights]="statWeights"
+        seasonLabel="2025-26"
+        [rowsPending]="rowsPending"
+      >
+        <p table-status class="status">Loading</p>
+      </app-hot-players-table>
+    `;
+    const renderPending = (rowsPending: boolean) =>
+      MockRender(template, {
+        hotPlayers: [skater(1, 20)],
+        players: [player(1)],
+        activeColumns,
+        statWeights: DEFAULT_STAT_WEIGHTS,
+        rowsPending,
+      });
+
+    it('shows the page status in place of the rows, and keeps the toolbar', () => {
+      const fixture = renderPending(true);
+      const element: HTMLElement = fixture.nativeElement;
+
+      expect(element.querySelector('.status')?.textContent).toContain('Loading');
+      expect(element.querySelector('table')).toBeNull();
+      expect(element.querySelector('app-position-filter')).not.toBeNull();
+    });
+
+    it('keeps the filters it was given once the rows come back', () => {
+      const fixture = renderPending(false);
+      const table = ngMocks.findInstance(HotPlayersTableComponent);
+      table.setPositionFilter('D');
+      table.teamFilter.set('EDM');
+      table.searchTerm.set('Skater');
+
+      fixture.componentInstance.rowsPending = true;
+      fixture.detectChanges();
+      fixture.componentInstance.rowsPending = false;
+      fixture.detectChanges();
+
+      expect(ngMocks.findInstance(HotPlayersTableComponent)).toBe(table);
+      expect(table.positionFilter()).toEqual('D');
+      expect(table.teamFilter()).toEqual('EDM');
+      expect(table.searchTerm()).toEqual('Skater');
+      expect(fixture.nativeElement.querySelector('.status')).toBeNull();
+    });
+  });
+
   describe('headshots', () => {
     const renderWithPlayers = (players: Player[]) => {
       const fixture = MockRender(HotPlayersTableComponent, {

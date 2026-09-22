@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { WhosHotComponent } from './whos-hot';
 import { environment } from '../../environments/environment';
 import { EntitlementService } from '../services/entitlement.service';
@@ -9,6 +9,8 @@ import { PlayerService } from '../services/player.service';
 import { GameSpan, WhosHotService } from '../services/whos-hot.service';
 import { WhosHotSettings, WhosHotSettingsService } from '../services/whos-hot-settings.service';
 import { SplitSeasonListResponse } from '../api/models/split-season-list-response';
+import { HotPlayersTableComponent } from './hot-players-table/hot-players-table';
+import { HotPlayer } from '../services/whos-hot.service';
 
 /** Longer than the component's settle delay, so a settled range has had its chance to fetch. */
 const AFTER_THE_DRAG_MS = 400;
@@ -397,5 +399,28 @@ describe('WhosHotComponent', () => {
     await settle(fixture);
 
     expect(splits).not.toHaveBeenCalled();
+  });
+  it('keeps the table, and the filters it holds, while a new range loads', async () => {
+    environment.paymentsEnabled = false;
+    const fixture = await renderOnFakeTimers();
+    const component = fixture.point.componentInstance;
+    const before = ngMocks.findInstance(HotPlayersTableComponent);
+    expect(ngMocks.input(ngMocks.find('app-hot-players-table'), 'rowsPending')).toBe(false);
+
+    const answer = new Subject<HotPlayer[]>();
+    splits.mockReturnValueOnce(answer);
+    component.lastGames.set(10);
+    await settle(fixture);
+
+    // Mid-fetch: the rows wait, the table does not go anywhere.
+    expect(ngMocks.findInstance(HotPlayersTableComponent)).toBe(before);
+    expect(ngMocks.input(ngMocks.find('app-hot-players-table'), 'rowsPending')).toBe(true);
+
+    answer.next([]);
+    answer.complete();
+    await settle(fixture);
+
+    expect(ngMocks.findInstance(HotPlayersTableComponent)).toBe(before);
+    expect(ngMocks.input(ngMocks.find('app-hot-players-table'), 'rowsPending')).toBe(false);
   });
 });

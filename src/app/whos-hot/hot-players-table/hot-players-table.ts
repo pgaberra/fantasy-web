@@ -120,6 +120,12 @@ export class HotPlayersTableComponent {
   readonly minGames = input<number>(1);
   /** Named rather than derived, so an empty leaderboard can say which season came back empty. */
   readonly seasonLabel = input.required<string>();
+  /**
+   * The rows are not ready: still loading, or the load failed. The page's status is shown in their
+   * place rather than the page dropping this component, which holds the filters and the sort — a
+   * new game range is a new fetch, and rebuilding the table for it reset every one of them.
+   */
+  readonly rowsPending = input(false);
 
   /**
    * Nothing came back for the whole season, as opposed to nothing surviving the filters. A season

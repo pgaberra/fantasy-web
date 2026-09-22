@@ -43,44 +43,49 @@
       />
     }
 
-    @if (hasError()) {
-      <app-error-state
-        title="Couldn't load the leaderboard"
-        [error]="loadFailure()"
-        (retry)="retry()"
+    <app-hot-players-table
+      [rowsPending]="isLoading() || hasError()"
+      [hotPlayers]="hotPlayers()"
+      [players]="players()"
+      [seasonLabel]="seasonLabel()"
+      [activeColumns]="activeColumns()"
+      [(scoringType)]="scoringType"
+      [(statWeights)]="statWeights"
+      [(activeScoringColumns)]="activeScoringColumns"
+      [(activeUtilityColumns)]="activeUtilityColumns"
+      [(leagueSize)]="leagueSize"
+      [(rosterSlots)]="rosterSlots"
+      [(minGoalieGames)]="minGoalieGames"
+      [syncedLeagueName]="syncedLeagueName()"
+      [perGame]="perGame()"
+      [minGames]="appliedMinGames()"
+      (manageSyncRequested)="showSyncDialog.set(true)"
+    >
+      <!-- The same slot says two different things. With no league yet, importing one is the
+           fastest way to have the leaderboard scored the way it will actually count for you, so
+           it earns the toolbar's only primary button. Once there is one, the button stops asking
+           and starts reporting — same place, same dialog behind it. -->
+      <app-league-import-button
+        table-toolbar-actions
+        [yahooSync]="yahooSync()"
+        [espnSync]="espnSync()"
+        (pressed)="showSyncDialog.set(true)"
       />
-    } @else if (isLoading()) {
-      <app-loading-indicator />
-    } @else {
-      <app-hot-players-table
-        [hotPlayers]="hotPlayers()"
-        [players]="players()"
-        [seasonLabel]="seasonLabel()"
-        [activeColumns]="activeColumns()"
-        [(scoringType)]="scoringType"
-        [(statWeights)]="statWeights"
-        [(activeScoringColumns)]="activeScoringColumns"
-        [(activeUtilityColumns)]="activeUtilityColumns"
-        [(leagueSize)]="leagueSize"
-        [(rosterSlots)]="rosterSlots"
-        [(minGoalieGames)]="minGoalieGames"
-        [syncedLeagueName]="syncedLeagueName()"
-        [perGame]="perGame()"
-        [minGames]="appliedMinGames()"
-        (manageSyncRequested)="showSyncDialog.set(true)"
-      >
-        <!-- The same slot says two different things. With no league yet, importing one is the
-             fastest way to have the leaderboard scored the way it will actually count for you, so
-             it earns the toolbar's only primary button. Once there is one, the button stops asking
-             and starts reporting — same place, same dialog behind it. -->
-        <app-league-import-button
-          table-toolbar-actions
-          [yahooSync]="yahooSync()"
-          [espnSync]="espnSync()"
-          (pressed)="showSyncDialog.set(true)"
-        />
-      </app-hot-players-table>
-    }
+      <!-- In place of the rows, not the table: a new range is a new fetch, and the table holds
+           the position, team and search filters and the sort. Swapping the whole table for a
+           spinner rebuilt it on every range change and put all of them back to their defaults. -->
+      <div table-status>
+        @if (hasError()) {
+          <app-error-state
+            title="Couldn't load the leaderboard"
+            [error]="loadFailure()"
+            (retry)="retry()"
+          />
+        } @else {
+          <app-loading-indicator />
+        }
+      </div>
+    </app-hot-players-table>
   </div>
 
   @if (showSyncDialog()) {
