@@ -61,14 +61,14 @@ export class App {
 
   protected readonly isLandingRoute = computed(() => this.path() === '/');
 
-  // The Draft menu covers the draft-source picker, the projections behind it and the summary of
+  // The Draft menu covers the draft-source picker, the projections behind it and the power rankings of
   // a league drafted elsewhere, so it stays highlighted anywhere under any of them — a trigger
   // button gets no routerLinkActive.
   protected readonly isDraftSection = computed(
     () =>
       this.path().startsWith('/draft') ||
       this.path().startsWith('/projections') ||
-      this.path().startsWith('/league-summary'),
+      this.path().startsWith('/team-power-rankings'),
   );
 
   // Everything behind the avatar: the profile. Premium is in the menu too, but it is also a

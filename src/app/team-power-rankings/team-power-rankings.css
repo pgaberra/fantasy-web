@@ -1,0 +1,128 @@
+/* As wide as the league table wants, like the draft summary it is a sibling of. */
+.power-rankings {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+.rankings-head {
+  margin-bottom: var(--space-4);
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: var(--color-primary);
+}
+
+.rankings-head h1 {
+  margin: 0;
+  color: var(--color-primary);
+}
+
+.rankings-lede {
+  margin: var(--space-2) 0 0;
+  max-width: 60ch;
+  color: var(--color-text-muted);
+}
+
+/* The same card the draft setup's Yahoo sync sits in, so the two read as one control in two
+   places rather than two controls. */
+.league-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+}
+
+.picker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+}
+
+.picker-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+
+.yahoo-logo {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+  color: #6001d2;
+}
+
+.picker-action,
+.picker-controls {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.picker-select {
+  font-size: var(--text-sm);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  max-width: 14rem;
+}
+
+.picker-status {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.picker-error {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+}
+
+.rankings-league {
+  margin: 0 0 var(--space-3);
+  font-size: 1.3rem;
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+
+.rankings-note {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+/* Under the table rather than over it: the totals are the page, and the offer is what the reader
+   meets once they have read them. */
+.rankings-locked {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}

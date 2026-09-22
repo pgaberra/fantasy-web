@@ -9,7 +9,7 @@ import { FAILURE_ON_OUR_SIDE_MESSAGE, SERVER_UNREACHABLE_MESSAGE } from '../shar
  * reader to check their connection. A refusal we caused is ours to own, and an answer the reader
  * can do something about has to say what.
  */
-export function leagueSummaryMessage(error: unknown): string {
+export function powerRankingsMessage(error: unknown): string {
   if (!(error instanceof HttpErrorResponse)) {
     // A request that got no answer at all: the timeout interceptor's, and ours.
     return FAILURE_ON_OUR_SIDE_MESSAGE;
@@ -38,7 +38,7 @@ export function leagueSummaryMessage(error: unknown): string {
  * Whether pressing the button again could plausibly answer differently. A refusal that will be
  * repeated word for word gets no button — the reader's next move is elsewhere.
  */
-export function leagueSummaryRetryable(error: unknown): boolean {
+export function powerRankingsRetryable(error: unknown): boolean {
   if (!(error instanceof HttpErrorResponse)) {
     return true;
   }

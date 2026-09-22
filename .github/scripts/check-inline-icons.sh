@@ -39,6 +39,7 @@ svg_allowed=(
   "src/app/draft-projection/projection-settings-section/league-sync/league-sync.html"
   "src/app/draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync.html"
   "src/app/shared/league-import-button/league-import-button.html"
+  "src/app/team-power-rankings/team-power-rankings.html"
 )
 
 # Files allowed an icon-like character, because there it is text.

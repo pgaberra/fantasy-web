@@ -39,7 +39,7 @@ export class LeagueProjectionTableComponent {
   readonly scoreHeading = input.required<string>();
   /**
    * Whether a team opens to show its players. False where the numbers came back without them —
-   * a league summary totalled for an account that has not paid for the lines behind the totals —
+   * a league power-ranked for an account that has not paid for the lines behind the totals —
    * so the table offers nothing it cannot deliver. Whoever passes false says why on their own page.
    */
   readonly expandable = input<boolean>(true);

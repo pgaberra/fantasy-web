@@ -104,21 +104,21 @@ describe('App', () => {
    * draft picker was the whole of how anyone reached it — which nobody looking for it in the
    * menu would ever find.
    */
-  it('offers the league summary where the environment reads a league draft', () => {
+  it('offers the power rankings where the environment reads a league draft', () => {
     leagueDraftSync.set(true);
     const fixture = render();
 
     const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
 
-    expect(items).toContain('League Summary');
+    expect(items).toContain('Team Power Rankings');
   });
 
-  it('drops the league summary where no league draft can be read', () => {
+  it('drops the power rankings where no league draft can be read', () => {
     const fixture = render();
 
     const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
 
-    expect(items).not.toContain('League Summary');
+    expect(items).not.toContain('Team Power Rankings');
   });
 
   it('leaves out the links the header itself leaves out', () => {

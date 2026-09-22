@@ -1,0 +1,141 @@
+<div class="power-rankings">
+  <div class="rankings-head">
+    <a routerLink="/draft" class="back-link"
+      ><app-icon name="arrow-left" [size]="14" />Back to drafts</a
+    >
+    <h1>Team Power Rankings</h1>
+    <p class="rankings-lede">
+      Drafted in Yahoo? Pick the league and see how every team's roster stacks up, scored against
+      {{ scoredAgainst() }}.
+    </p>
+  </div>
+
+  @if (!offered()) {
+    <p class="rankings-note">Reading a Yahoo league's draft isn't available here yet.</p>
+  } @else {
+    <!-- The same league picker as draft setup: connect, choose from the dropdown, go. It stays on
+         screen with the rankings under it, so a second league is one choice away. -->
+    <div class="league-picker">
+      <div class="picker-row">
+        <span class="picker-brand">
+          <svg
+            class="yahoo-logo"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path
+              d="M18.86 1.56L14.27 11.87H19.4L24 1.56H18.86M0 6.71L5.15 18.27L3.3 22.44H7.83L14.69 6.71H10.19L7.39 13.44L4.62 6.71H0M15.62 12.87C13.95 12.87 12.71 14.12 12.71 15.58C12.71 17 13.91 18.19 15.5 18.19C17.18 18.19 18.43 16.96 18.43 15.5C18.43 14.03 17.23 12.87 15.62 12.87Z"
+            />
+          </svg>
+          Rank a Yahoo league
+        </span>
+
+        <span class="picker-action">
+          @switch (picker.connected()) {
+            @case (null) {
+              <span class="picker-status"
+                ><app-loading-indicator variant="inline" label="Checking"
+              /></span>
+            }
+            @case (false) {
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                [disabled]="picker.connecting()"
+                (click)="picker.connect()"
+              >
+                @if (picker.connecting()) {
+                  <app-loading-indicator variant="inline" label="Connecting" />
+                } @else {
+                  Connect Yahoo account
+                }
+              </button>
+            }
+            @default {
+              @if (picker.loadingLeagues()) {
+                <span class="picker-status"
+                  ><app-loading-indicator variant="inline" label="Loading your leagues"
+                /></span>
+              } @else if (picker.leagues().length === 0) {
+                <span class="picker-status">No NHL leagues found.</span>
+              } @else {
+                <span class="picker-controls">
+                  <select
+                    class="picker-select"
+                    aria-label="Yahoo league"
+                    (change)="picker.select($event)"
+                  >
+                    <option value="">Select a league…</option>
+                    @for (league of picker.leagues(); track league.leagueKey) {
+                      <option
+                        [value]="league.leagueKey"
+                        [selected]="league.leagueKey === picker.selectedKey()"
+                      >
+                        {{ league.name }}
+                      </option>
+                    }
+                  </select>
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm"
+                    [disabled]="!canShow() || loadingRankings()"
+                    (click)="show()"
+                  >
+                    @if (loadingRankings()) {
+                      <app-loading-indicator variant="inline" label="Reading the league" />
+                    } @else {
+                      Show rankings
+                    }
+                  </button>
+                </span>
+              }
+            }
+          }
+        </span>
+      </div>
+
+      @if (picker.error(); as message) {
+        <p class="picker-error" role="alert">
+          <app-icon name="alert-triangle" [size]="14" />{{ message }}
+        </p>
+      }
+    </div>
+
+    @if (loadingRankings()) {
+      <app-loading-indicator />
+    } @else if (rankingsError()) {
+      <app-error-state
+        title="Couldn't read that league"
+        [message]="rankingsMessage() ?? ''"
+        [error]="rankingsError()"
+        [retryable]="rankingsRetryable()"
+        (retry)="retryRankings()"
+      />
+    } @else if (rankingsData()) {
+      <h2 class="rankings-league">{{ leagueName() }}</h2>
+
+      @if (notDrafted()) {
+        <p class="rankings-note">
+          This league hasn't drafted yet. Come back once the picks are in.
+        </p>
+      } @else if (leagueProjection(); as projection) {
+        <app-league-projection-table
+          [data]="projection"
+          [scoringType]="scoringType()"
+          [scoreHeading]="scoreHeading()"
+          [expandable]="hasPlayers()"
+        />
+
+        @if (sellsPremium()) {
+          <p class="rankings-locked">
+            <app-icon name="lock" [size]="14" />
+            Premium shows the players behind every total.
+            <a routerLink="/premium">See what's included</a>
+          </p>
+        }
+      }
+    }
+  }
+</div>
