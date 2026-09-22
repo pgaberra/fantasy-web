@@ -55,7 +55,7 @@ describe('DraftAvailablePanelComponent', () => {
   }
 
   function chips(fixture: ReturnType<typeof renderPanel>): HTMLButtonElement[] {
-    return Array.from(fixture.nativeElement.querySelectorAll('.pos-filter-chip'));
+    return Array.from(fixture.nativeElement.querySelectorAll('.filter-chip'));
   }
 
   describe('the draft button', () => {
@@ -240,6 +240,33 @@ describe('DraftAvailablePanelComponent', () => {
       .map((chip) => chip.textContent?.trim());
 
     expect(active).toEqual(['C', 'LW']);
+  });
+
+  it('prints how many players are still available next to the title', () => {
+    const fixture = renderPanel(['ALL'], 50, 412);
+
+    expect(fixture.nativeElement.querySelector('.available-count').textContent.trim()).toEqual(
+      '412',
+    );
+  });
+
+  // The stats switch is a pressed button, not a checkbox: it carries its state as aria-pressed
+  // and asks the parent for the opposite of what it shows.
+  it('shows the stats toggle as pressed only while stats are on, and emits the flip', () => {
+    const fixture = renderPanel(['ALL']);
+    const toggled: boolean[] = [];
+    fixture.point.componentInstance.statsToggle.subscribe((on: boolean) => toggled.push(on));
+    const toggle: HTMLButtonElement = fixture.nativeElement.querySelector('.toggle-pill');
+
+    expect(toggle.getAttribute('aria-pressed')).toEqual('false');
+    toggle.click();
+    expect(toggled).toEqual([true]);
+
+    fixture.componentInstance.showStats = true;
+    fixture.detectChanges();
+    expect(toggle.getAttribute('aria-pressed')).toEqual('true');
+    toggle.click();
+    expect(toggled).toEqual([true, false]);
   });
 
   it('emits the chip that was clicked so the parent can toggle it', () => {

@@ -15,6 +15,7 @@ import { DraftPlayerLookupService } from '../draft-player-lookup.service';
 import { TierBadge, TierService } from '../../services/tier.service';
 import { TierStripEntry } from '../draft-mode';
 import { PlayerAvatarComponent } from '../player-avatar/player-avatar';
+import { IconComponent } from '../../shared/icon/icon';
 import { PlayerPositionChipsComponent } from '../player-position-chips/player-position-chips';
 
 export interface EditingPickInfo {
@@ -31,6 +32,7 @@ export interface EditingPickInfo {
     TooltipDirective,
     PlayerAvatarComponent,
     PlayerPositionChipsComponent,
+    IconComponent,
   ],
   templateUrl: './draft-available-panel.html',
   styleUrl: './draft-available-panel.css',
@@ -81,8 +83,8 @@ export class DraftAvailablePanelComponent {
     this.searchChange.emit((event.target as HTMLInputElement).value);
   }
 
-  onStatsToggle(event: Event): void {
-    this.statsToggle.emit((event.target as HTMLInputElement).checked);
+  toggleStats(): void {
+    this.statsToggle.emit(!this.showStats());
   }
 
   onPageSizeChange(event: Event): void {
