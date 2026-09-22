@@ -227,28 +227,96 @@
   border: 0;
 }
 
+/* Syncing picks is a mode, not an action, so it sits apart from the action buttons: a pill
+   holding the switch, its label and the explaining tip, with a hairline between it and them. */
+.sync-control {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 2px var(--space-2) 2px 3px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+
+.sync-control--on {
+  border-color: var(--color-primary);
+  background: var(--color-surface-alt);
+}
+
+.sync-control app-toggle-switch {
+  --toggle-width: 34px;
+  --toggle-height: 20px;
+  --toggle-border-radius: 10px;
+  --toggle-thumb-size: 14px;
+  --toggle-thumb-translate: 14px;
+  display: inline-flex;
+}
+
+.sync-label {
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+}
+
+.toolbar-divider {
+  align-self: center;
+  width: 1px;
+  height: 22px;
+  background: var(--color-border);
+}
+
 .follow-status {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-2) var(--space-4);
   margin: 0 0 var(--space-3);
   font-size: var(--text-sm);
   color: var(--color-text-muted);
+}
+
+.follow-status strong {
+  color: var(--color-text);
+  font-weight: var(--weight-semibold);
+}
+
+.follow-live-line {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 0.3em;
 }
 
 .follow-live {
   display: inline-block;
   width: 8px;
   height: 8px;
-  margin-right: var(--space-2);
+  margin-right: var(--space-1);
   border-radius: 50%;
   background: var(--color-primary);
-  vertical-align: middle;
+  animation: follow-pulse 2s ease-in-out infinite;
 }
 
+@keyframes follow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(15, 52, 96, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(15, 52, 96, 0);
+  }
+}
+
+/* A notice is a warning, not a caption: the icon says so even where the colour cannot. */
 .follow-notice {
-  color: var(--color-text);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-warning-text);
 }
 
 /* Naming a draft. The same shape as the editor's rename, sized for the draft header's own
