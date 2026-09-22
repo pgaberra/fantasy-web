@@ -72,6 +72,7 @@ describe('DraftSetupComponent', () => {
           { name: 'Ice Holes', mine: false },
           { name: 'Puck Luck', mine: true },
         ],
+        draftPosition: 2,
       }),
     );
 
@@ -148,6 +149,7 @@ describe('DraftSetupComponent', () => {
 
   it('emits the draft and roster slots on submit', () => {
     const component = renderSetup();
+    component.setMyPosition(1);
     let emitted: DraftSetupResult | undefined;
     component.confirmed.subscribe((value) => {
       emitted = value;
@@ -165,6 +167,7 @@ describe('DraftSetupComponent', () => {
   it('emits the roster slots it was given', () => {
     const custom: RosterSlots = { c: 3, lw: 3, rw: 3, d: 5, util: 1, bn: 2, g: 2 };
     const component = renderSetup(custom);
+    component.setMyPosition(1);
     let emitted: DraftSetupResult | undefined;
     component.confirmed.subscribe((value) => {
       emitted = value;
@@ -183,6 +186,7 @@ describe('DraftSetupComponent', () => {
           { name: 'Bravo', mine: true },
           { name: 'Charlie', mine: false },
         ],
+        draftPosition: 2,
       }),
     );
     const component = renderSetup();
@@ -191,9 +195,81 @@ describe('DraftSetupComponent', () => {
 
     expect(component.numTeams()).toEqual(3);
     expect(component.myPosition()).toEqual(2);
+    expect(component.draftPositionKnown()).toBe(true);
     const mine = component.rows().filter((row) => row.mine);
     expect(mine.length).toEqual(1);
     expect(mine[0].name).toEqual('Bravo');
+  });
+
+  // The seat the league names is the only one worth taking: where a team sits in a team list is
+  // not where it drafts, and a league that lists Alexander tenth can still have him picking twelfth.
+  it('seats you where the league says, not where your team sits in its list', () => {
+    leagueTeams.mockReturnValue(
+      of({
+        teams: [
+          { name: 'Flata Kickers', mine: true },
+          { name: 'Alpha', mine: false },
+          { name: 'Bravo', mine: false },
+          { name: 'Charlie', mine: false },
+        ],
+        draftPosition: 4,
+      }),
+    );
+    const component = renderSetup();
+
+    component.onYahooSynced(syncResult('nhl.l.1'));
+
+    expect(component.myPosition()).toEqual(4);
+    expect(component.rows()[3].name).toEqual('Flata Kickers');
+  });
+
+  it('asks for your seat, and will not start, when the league names none', () => {
+    leagueTeams.mockReturnValue(
+      of({
+        teams: [
+          { name: 'Alpha', mine: false },
+          { name: 'Bravo', mine: true },
+          { name: 'Charlie', mine: false },
+        ],
+      }),
+    );
+    const component = renderSetup();
+    let emitted: DraftSetupResult | undefined;
+    component.confirmed.subscribe((value) => {
+      emitted = value;
+    });
+
+    component.onYahooSynced(syncResult('nhl.l.1'));
+
+    expect(component.draftPositionKnown()).toBe(false);
+    expect(component.canStart()).toBe(false);
+
+    component.submit();
+    expect(emitted).toBeUndefined();
+
+    component.setMyPosition(3);
+
+    expect(component.canStart()).toBe(true);
+    component.submit();
+    expect(emitted?.draft.order.length).toEqual(3);
+  });
+
+  it('keeps the seat a saved setup already carries', () => {
+    const component = MockRender(DraftSetupComponent, {
+      initial: {
+        teams: [
+          { id: 'team-1', name: 'Team 1', mine: false },
+          { id: 'team-me', name: 'My Team', mine: true },
+        ],
+        order: ['team-1', 'team-me'],
+        picks: [],
+      },
+      seedName: 'My Team',
+      rosterSlots: DEFAULT_ROSTER_SLOTS,
+    }).point.componentInstance;
+
+    expect(component.draftPositionKnown()).toBe(true);
+    expect(component.myPosition()).toEqual(2);
   });
 
   it('marks the first team as mine when Yahoo flags none', () => {
@@ -212,6 +288,7 @@ describe('DraftSetupComponent', () => {
     const mine = component.rows().filter((row) => row.mine);
     expect(mine.length).toEqual(1);
     expect(component.myPosition()).toEqual(1);
+    expect(component.draftPositionKnown()).toBe(false);
     expect(mine[0].name).toEqual('My Team');
   });
 
