@@ -117,8 +117,9 @@
       <h2 class="rankings-league">{{ leagueName() }}</h2>
 
       @if (notDrafted()) {
-        <p class="rankings-note">
-          This league hasn't drafted yet. Come back once the picks are in.
+        <p class="rankings-error" role="alert">
+          <app-icon name="alert-triangle" [size]="14" />This league hasn't drafted yet. Come back
+          once the picks are in.
         </p>
       } @else if (leagueProjection(); as projection) {
         <app-league-projection-table
