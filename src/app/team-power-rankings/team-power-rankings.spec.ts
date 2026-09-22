@@ -174,6 +174,8 @@ describe('TeamPowerRankingsComponent', () => {
     await choose(fixture, component, '465.l.1');
 
     expect(component.notDrafted()).toBe(true);
+    const notice = fixture.nativeElement.querySelector('.rankings-error');
+    expect(notice?.textContent).toContain("hasn't drafted yet");
   });
 
   it('tells a reader what to do about a refusal from Yahoo', async () => {
