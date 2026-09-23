@@ -287,14 +287,9 @@
   margin-top: 1px;
 }
 
-/* A warning says so by its icon as much as its colour; a receipt is the same shape in the other
-   tone, so a finished sync doesn't read as a fault. */
+/* A warning says so by its icon as much as its colour. */
 .sync-message--warn {
   color: var(--color-warning-text);
-}
-
-.sync-message--done {
-  color: var(--color-success);
 }
 
 .toolbar-divider {

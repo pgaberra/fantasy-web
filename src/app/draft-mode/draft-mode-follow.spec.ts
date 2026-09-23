@@ -292,10 +292,11 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     expect(updateProjection).not.toHaveBeenCalled();
   });
 
-  it('stops when the league draft is finished, and says the picks arrived', async () => {
+  it('stops when the league draft finishes, and finishes the board with it', async () => {
     leagueDraftCall.mockReturnValue(of(leagueDraft()));
     const component = await render();
     component.requestFollow();
+    expect(component.finished()).toBe(false);
 
     leagueDraftCall.mockReturnValue(
       of({
@@ -307,14 +308,19 @@ describe('DraftModeComponent following a Yahoo draft', () => {
 
     expect(component.picks()).toHaveLength(1);
     expect(component.following()).toBe(false);
-    expect(component.followComplete()).toBe(true);
+    expect(component.finished()).toBe(true);
     expect(component.followNotice()).toBeNull();
+    expect(updateProjection.mock.lastCall?.[1].data.draft?.finishedAt).toBeTruthy();
+    // Nothing is left to follow, so the poll is over.
+    leagueDraftCall.mockClear();
+    await vi.advanceTimersByTimeAsync(15000);
+    expect(leagueDraftCall).not.toHaveBeenCalled();
   });
 
   // Switching sync on for a draft Yahoo has already finished takes the whole board over in one
-  // go and then has nothing left to follow, so the switch is off again a moment later. Said as a
-  // receipt beside the switch, that reads as what it is rather than as a switch that refused.
-  it('brings a finished draft over whole and shows a receipt beside the switch', async () => {
+  // go and then has nothing left to follow. The board is finished with it, so the switch goes
+  // away rather than sitting there off again, which read as a switch that refused to turn on.
+  it('brings a finished draft over whole as a finished board, with no switch left', async () => {
     leagueDraftCall.mockReturnValue(
       of({
         ...leagueDraft([{ overall: 1, round: 1, teamId: '465.l.9.t.2', playerId: 6743 }]),
@@ -330,13 +336,13 @@ describe('DraftModeComponent following a Yahoo draft', () => {
 
     expect(component.picks()).toHaveLength(1);
     expect(component.following()).toBe(false);
-    expect(component.followComplete()).toBe(true);
+    expect(component.finished()).toBe(true);
+    expect(updateProjection).toHaveBeenCalledTimes(1);
+    expect(updateProjection.mock.calls[0][1].data.draft?.finishedAt).toBeTruthy();
     const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelector('.sync-group .sync-message--done')?.textContent).toContain(
-      'The Yahoo draft is finished',
-    );
-    expect(element.querySelector('.sync-message--warn')).toBeNull();
-    // Nothing is live, so the wide status line under the toolbar stays away entirely.
+    expect(element.querySelector('.sync-group')).toBeNull();
+    expect(element.querySelector('.draft-tag--done')?.textContent).toContain('Finished');
+    expect(element.textContent).toContain('View summary');
     expect(statusText(fixture)).toEqual('');
   });
 
