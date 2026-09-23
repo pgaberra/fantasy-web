@@ -31,7 +31,7 @@ test.describe('spreadsheet import', () => {
 
     // The home page has rendered its import panel once the share-link field is there; only then
     // does a missing spreadsheet button mean the build has the import switched off.
-    await expect(page.getByLabel('Paste a share link')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByLabel('Follow a shared projection')).toBeVisible({ timeout: 30_000 });
     const importButton = page.getByRole('button', { name: 'Import a spreadsheet' });
     test.skip(
       (await importButton.count()) === 0,
