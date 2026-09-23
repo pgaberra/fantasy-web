@@ -96,7 +96,13 @@ test.describe('happy path', () => {
     for (let i = 0; i < initialTeams - 2; i++) {
       await removeTeam.click();
     }
-    await page.getByRole('button', { name: /^start draft$/i }).click();
+    // Then choose a seat. Nothing fetched a draft position here — this account has no league
+    // synced — so the setup opens on a disabled "Select" and Start stays disabled until the user
+    // picks. Seat 1 is offered at every league size, including the two teams left above.
+    await page.locator('#draft-position').selectOption('1');
+    const confirmSetup = page.getByRole('button', { name: /^start draft$/i });
+    await expect(confirmSetup).toBeEnabled();
+    await confirmSetup.click();
     // Confirming the setup creates the draft — a row of its own, with its own address — and the
     // board reloads there against the copy of the numbers the server took.
     await expect(page).toHaveURL(/\/drafts\/[0-9a-f-]+$/i, { timeout: 30_000 });

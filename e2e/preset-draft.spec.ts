@@ -49,7 +49,11 @@ test.describe('draft mode from a preset', () => {
     await startDraft.click();
     await expect(page).toHaveURL(/\/draft\/new\/preset\/[a-z_]+$/i);
     await expect(page.locator('app-draft-setup')).toBeVisible({ timeout: 30_000 });
-    await page.getByRole('button', { name: /^start draft$/i }).click();
+    // A preset carries no league, so nothing names a draft position: the setup opens on a
+    // disabled "Select" and Start is disabled until a seat is chosen. Seat 1 is always offered.
+    await page.locator('#draft-position').selectOption('1');
+    await expect(startDraft).toBeEnabled();
+    await startDraft.click();
 
     await expect(page).toHaveURL(/\/drafts\/[0-9a-f-]+$/i, { timeout: 30_000 });
     // The draft is named after what it was started from, numbered where this account already
