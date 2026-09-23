@@ -122,12 +122,7 @@
                 }
                 <app-help-tip label="What syncing picks does" [text]="syncTip()" />
               </span>
-              @if (followComplete()) {
-                <span class="sync-message sync-message--done" role="status"
-                  ><app-icon name="check-circle" [size]="14" />The Yahoo draft is finished. All its
-                  picks are here.</span
-                >
-              } @else if (followNotice(); as notice) {
+              @if (followNotice(); as notice) {
                 <span class="sync-message sync-message--warn" role="status"
                   ><app-icon name="alert-triangle" [size]="14" />{{ notice }}</span
                 >
