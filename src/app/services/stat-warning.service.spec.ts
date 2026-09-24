@@ -249,6 +249,37 @@ describe('StatWarningService', () => {
     );
   });
 
+  it('does not warn when the decisions equal the games but sum a rounding over them', () => {
+    // A goalie who starts every game he plays, as the model serves him: the three are exactly
+    // his 59.8 games, and in floating point they add up to 59.800000000000004.
+    const line = goalie({ gs: 59.8, w: 26.91, l: 24.667499999999997, otl: 8.222500000000002 });
+    line.stats.utility.gp = 59.8;
+    expect(line.stats.scoring.w + line.stats.scoring.l + line.stats.scoring.otl).toBeGreaterThan(
+      59.8,
+    );
+    expect(service.warningsFor(line).has('w')).toEqual(false);
+    expect(service.warningsFor(goalie({ w: 30, l: 25, otl: 5.01 }, { gp: 60 })).has('w')).toEqual(
+      true,
+    );
+  });
+
+  it('does not warn when special-teams points sum a rounding over the points', () => {
+    const line = skater({
+      goals: 0.1,
+      assists: 0.2,
+      points: 0.3,
+      ppg: 0.1,
+      ppa: 0.2,
+      ppp: 0.1 + 0.2,
+      stpg: 0.1,
+      stpa: 0.2,
+      stp: 0.1 + 0.2,
+      shPct: 0.05,
+    });
+    expect(line.stats.scoring.ppp).toBeGreaterThan(line.stats.scoring.points);
+    expect(service.warningsFor(line).size).toEqual(0);
+  });
+
   it('warns when shutouts exceed wins', () => {
     expect(service.warningsFor(goalie({ w: 5, sho: 5 })).has('sho')).toEqual(false);
     expect(service.warningsFor(goalie({ w: 5, sho: 6 })).has('sho')).toEqual(true);
