@@ -202,12 +202,12 @@ describe('DraftSetupComponent', () => {
   });
 
   // The seat the league names is the only one worth taking: where a team sits in a team list is
-  // not where it drafts, and a league that lists Alexander tenth can still have him picking twelfth.
+  // not where it drafts, and a league that lists you tenth can still have you picking twelfth.
   it('seats you where the league says, not where your team sits in its list', () => {
     leagueTeams.mockReturnValue(
       of({
         teams: [
-          { name: 'Flata Kickers', mine: true },
+          { name: 'Delta', mine: true },
           { name: 'Alpha', mine: false },
           { name: 'Bravo', mine: false },
           { name: 'Charlie', mine: false },
@@ -220,7 +220,7 @@ describe('DraftSetupComponent', () => {
     component.onYahooSynced(syncResult('nhl.l.1'));
 
     expect(component.myPosition()).toEqual(4);
-    expect(component.rows()[3].name).toEqual('Flata Kickers');
+    expect(component.rows()[3].name).toEqual('Delta');
   });
 
   it('asks for your seat, and will not start, when the league names none', () => {
