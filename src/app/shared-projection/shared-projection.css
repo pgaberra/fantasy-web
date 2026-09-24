@@ -304,6 +304,17 @@ tbody tr:hover {
     padding: var(--space-4);
   }
 
+  /* Show less and Show top 200 side by side need the whole width of a phone: the count goes
+     above them rather than squeezing both labels onto two lines. */
+  .table-footer {
+    flex-wrap: wrap;
+  }
+
+  .table-footer .result-count {
+    flex-basis: 100%;
+    text-align: center;
+  }
+
   .table-header {
     flex-direction: column;
     align-items: stretch;
