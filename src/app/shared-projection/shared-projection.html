@@ -1,7 +1,5 @@
-<!-- Only before there is a board to show: a reorder behind the gate is a fresh request, and
-     swapping the table for a spinner on every click of a column heading loses the reader's place
-     for the sake of 25 rows arriving. The table dims instead. A copy picked back up after
-     signing up waits here too, since the editor is where it lands. -->
+<!-- Only before there is a board to show. A copy picked back up after signing up waits here
+     too, since the editor is where it lands. -->
 @if (resumingPress() || (sharedResource.isLoading() && !shared())) {
   <app-loading-indicator />
 } @else if (isGone()) {
@@ -187,8 +185,6 @@
       <div class="table-scroll">
         <div
           class="table-wrapper table-wrapper--compact-identity"
-          [class.table-wrapper--reordering]="isReordering()"
-          [attr.aria-busy]="isReordering()"
           appPinnedTableHeader
           appTableScroll="Player projections"
         >
@@ -245,38 +241,12 @@
          above the table, where they do not have to scroll a board to find them. -->
     @if (!isLoggedIn()) {
       <section class="cta">
-        @if (isTruncated()) {
-          <h2 class="cta-title">
-            The top {{ projection.data.players.length }} of {{ totalPlayers() }} players
-          </h2>
-          <p class="cta-body">
-            Sign in to see the rest of {{ authorLabel() }}'s rankings and copy the projection into
-            your account.
-          </p>
-          <div class="cta-actions">
-            <a
-              routerLink="/login"
-              [queryParams]="{ returnUrl }"
-              class="btn btn-primary"
-              data-testid="gate-login"
-              >Sign in</a
-            >
-            <a
-              routerLink="/register"
-              [queryParams]="{ returnUrl }"
-              class="btn btn-secondary"
-              data-testid="gate-register"
-              >Create a free account</a
-            >
-          </div>
-        } @else {
-          <h2 class="cta-title">This is one manager's projection</h2>
-          <p class="cta-body">
-            Build your own rankings around your league's scoring settings, or draft directly against
-            this projection.
-          </p>
-          <a routerLink="/register" class="btn btn-primary">Make your own projection</a>
-        }
+        <h2 class="cta-title">This is one manager's projection</h2>
+        <p class="cta-body">
+          Build your own rankings around your league's scoring settings, or draft directly against
+          this projection.
+        </p>
+        <a routerLink="/register" class="btn btn-primary">Make your own projection</a>
       </section>
     }
 

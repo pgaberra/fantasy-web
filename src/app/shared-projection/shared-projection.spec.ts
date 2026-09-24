@@ -1,7 +1,7 @@
 import { MockBuilder, MockedComponentFixture, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from 'vitest';
 import { of, Subject, throwError } from 'rxjs';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
 import { ApplicationRef, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -30,8 +30,6 @@ describe('SharedProjectionComponent', () => {
     season: '20262027',
     createdAt: '2026-08-01T10:00:00Z',
     updatedAt: '2026-08-02T10:00:00Z',
-    totalPlayers: 2,
-    truncated: false,
     teams: ['EDM', 'NYR'],
     rookieIds: [],
     data: {
@@ -236,7 +234,6 @@ describe('SharedProjectionComponent', () => {
      */
     const wingers: SharedProjectionResponse = {
       ...shared,
-      totalPlayers: 4,
       data: {
         ...shared.data,
         settings: {
@@ -436,7 +433,6 @@ describe('SharedProjectionComponent', () => {
     /** A real board is the owner's whole pool; 2 rows say nothing about what 1600 do. */
     const long: SharedProjectionResponse = {
       ...shared,
-      totalPlayers: 400,
       data: {
         ...shared.data,
         players: Array.from({ length: 400 }, (_, index) => ({
@@ -514,105 +510,34 @@ describe('SharedProjectionComponent', () => {
     });
   });
 
-  /**
-   * The gate cuts the board before the browser sees it, so a column heading behind it is a
-   * question only the server can answer. These check that it is asked — and asked again when the
-   * question changes — rather than the 25 rows on hand being re-sorted into a different answer.
-   */
-  describe('ordering a board that arrived cut', () => {
-    it('asks for the board in the order it is showing', async () => {
+  /** Every reader holds the whole board, so a column heading is answered here, not by the server. */
+  describe('ordering a shared board', () => {
+    it('reads the whole board once, with no order or filter to ask for', async () => {
       await render();
 
-      expect(loadShared).toHaveBeenCalledWith('abc123', {
-        position: 'ALL',
-        search: '',
-        team: 'ALL',
-        rookies: false,
-        sort: 'summary',
-        direction: 'desc',
-      });
+      expect(loadShared).toHaveBeenCalledWith('abc123');
     });
 
-    it('asks again when a column is sorted', async () => {
-      const fixture = await render();
-
-      fixture.point.componentInstance.onSort('goals');
-      await fixture.whenStable();
-
-      expect(loadShared).toHaveBeenLastCalledWith('abc123', {
-        position: 'ALL',
-        search: '',
-        team: 'ALL',
-        rookies: false,
-        sort: 'goals',
-        direction: 'desc',
-      });
-    });
-
-    it('asks again when the position filter changes', async () => {
-      const fixture = await render();
-
-      fixture.point.componentInstance.setPositionFilter('D');
-      await fixture.whenStable();
-
-      expect(loadShared).toHaveBeenLastCalledWith('abc123', {
-        position: 'D',
-        search: '',
-        team: 'ALL',
-        rookies: false,
-        sort: 'summary',
-        direction: 'desc',
-      });
-    });
-
-    it('keeps the rows on screen while the new order is on its way', async () => {
+    it('sorts in the browser without asking the server again', async () => {
       const fixture = await render();
       const component = fixture.point.componentInstance;
-      const pending = new Subject<SharedProjectionResponse>();
-      loadShared.mockReturnValue(pending);
 
-      // Not whenStable(): a request in flight is a pending task, and waiting on it would wait
-      // out the very state under test. detectChanges() flushes the resource's effect instead.
       component.onSort('goals');
-      fixture.detectChanges();
-
-      expect(component.shared()).toBeDefined();
-      expect(component.isReordering()).toEqual(true);
-      expect(fixture.nativeElement.textContent).toContain('Connor McDavid');
-      expect(fixture.nativeElement.querySelector('app-loading-indicator')).toBeNull();
-
-      pending.next({ ...shared, data: { ...shared.data, players: [shared.data.players[1]] } });
-      pending.complete();
-      await fixture.whenStable();
-      fixture.detectChanges();
-
-      expect(component.isReordering()).toEqual(false);
-      expect(component.visibleRows().map((row) => row.player.name)).toEqual(['Igor Shesterkin']);
-    });
-
-    it('leaves a reader who holds the whole board to sort it in the browser', async () => {
-      isLoggedIn.set(true);
-      const fixture = await render();
-
-      expect(loadShared).toHaveBeenCalledWith('abc123', undefined);
-
-      fixture.point.componentInstance.onSort('goals');
       await fixture.whenStable();
 
       expect(loadShared).toHaveBeenCalledOnce();
+      expect(component.visibleRows().map((row) => row.player.name)).toEqual([
+        'Connor McDavid',
+        'Igor Shesterkin',
+      ]);
     });
   });
 
-  /**
-   * The board carries the same four controls the editor's table has. Behind the sign-in gate each
-   * of them is a question for the server, for the same reason a column heading is: the rows on
-   * screen are the top of the board, and the player being searched for may not be among them.
-   */
+  /** The board carries the same four controls the editor's table has, all answered here. */
   describe('narrowing a shared board', () => {
     const rookieBoard: SharedProjectionResponse = { ...shared, rookieIds: [101] };
 
     it('searches the rows by name', async () => {
-      isLoggedIn.set(true);
       const fixture = await render();
       const component = fixture.point.componentInstance;
 
@@ -632,7 +557,7 @@ describe('SharedProjectionComponent', () => {
       expect(component.visibleRows().map((row) => row.player.name)).toEqual(['Igor Shesterkin']);
     });
 
-    it('offers the teams of the whole board, not of the rows it was sent', async () => {
+    it('offers the teams the server names for the board', async () => {
       const fixture = await render();
 
       expect(fixture.point.componentInstance.availableTeams()).toEqual(['EDM', 'NYR']);
@@ -661,69 +586,14 @@ describe('SharedProjectionComponent', () => {
       expect(fixture.nativeElement.querySelector('#shared-rookies-only')).toBeNull();
     });
 
-    it('asks the server again when the team filter changes', async () => {
-      const fixture = await render();
-
-      fixture.point.componentInstance.teamFilter.set('NYR');
-      await fixture.whenStable();
-
-      expect(loadShared).toHaveBeenLastCalledWith('abc123', {
-        position: 'ALL',
-        search: '',
-        team: 'NYR',
-        rookies: false,
-        sort: 'summary',
-        direction: 'desc',
-      });
-    });
-
-    it('asks the server again when the rookie filter goes on', async () => {
+    it('narrows the board without asking the server again', async () => {
       loadShared.mockReturnValue(of(rookieBoard));
-      const fixture = await render();
-
-      fixture.point.componentInstance.rookiesOnly.set(true);
-      await fixture.whenStable();
-
-      expect(loadShared).toHaveBeenLastCalledWith('abc123', {
-        position: 'ALL',
-        search: '',
-        team: 'ALL',
-        rookies: true,
-        sort: 'summary',
-        direction: 'desc',
-      });
-    });
-
-    /** A request per keystroke would be an answer arriving for every letter typed. */
-    it('waits for the search box to settle before asking the server', async () => {
       const fixture = await render();
       const component = fixture.point.componentInstance;
 
+      component.teamFilter.set('NYR');
+      component.rookiesOnly.set(true);
       component.searchTerm.set('shester');
-      fixture.detectChanges();
-      expect(loadShared).toHaveBeenCalledOnce();
-
-      // Waited out rather than faked: the box settles on a timer the component owns, and a fake
-      // clock here would also stop the one the framework schedules its own work on.
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      await fixture.whenStable();
-      fixture.detectChanges();
-
-      expect(loadShared).toHaveBeenLastCalledWith('abc123', {
-        position: 'ALL',
-        search: 'shester',
-        team: 'ALL',
-        rookies: false,
-        sort: 'summary',
-        direction: 'desc',
-      });
-    });
-
-    it('leaves a reader who holds the whole board to narrow it in the browser', async () => {
-      isLoggedIn.set(true);
-      const fixture = await render();
-
-      fixture.point.componentInstance.teamFilter.set('NYR');
       await fixture.whenStable();
 
       expect(loadShared).toHaveBeenCalledOnce();
@@ -1259,7 +1129,7 @@ describe('SharedProjectionComponent', () => {
 
       expect(notifyError).toHaveBeenCalled();
       expect(loadShared).toHaveBeenCalledOnce();
-      expect(loadShared).toHaveBeenCalledWith('abc123', undefined);
+      expect(loadShared).toHaveBeenCalledWith('abc123');
       expect(fixture.nativeElement.querySelector('[data-testid="copy-board"]')).not.toBeNull();
     });
 
@@ -1330,73 +1200,14 @@ describe('SharedProjectionComponent', () => {
     });
   });
 
-  describe('the sign-in gate', () => {
-    /** What the BFF sent is all there is — the withheld rows never reach the browser. */
-    const truncated = { ...shared, totalPlayers: 1489, truncated: true };
-
-    it('asks a signed-out visitor to sign in, and says what they are missing', async () => {
-      loadShared.mockReturnValue(of(truncated));
+  describe('the board and what it offers', () => {
+    /** The whole board, for a visitor who has no account as much as for one who does. */
+    it('shows a signed-out visitor every row, and the pitch for a projection of their own', async () => {
       const fixture = await render();
 
-      expect(fixture.nativeElement.textContent).toContain('The top 2 of 1489');
-      expect(fixture.nativeElement.textContent).not.toContain('Make your own projection');
-    });
-
-    /** The footer counts rows on screen, the gate counts the board — they sat side by side saying
-        different things about "the top N", which read as one of them being wrong. */
-    it('names the board while the footer names the page, without the two clashing', async () => {
-      loadShared.mockReturnValue(
-        of({
-          ...shared,
-          totalPlayers: 1489,
-          truncated: true,
-          data: {
-            ...shared.data,
-            players: Array.from({ length: 100 }, (_, index) => ({
-              playerId: 2000 + index,
-              name: `Skater ${index}`,
-              teamAbbrev: 'EDM',
-              positions: ['C'],
-              type: 'skater' as const,
-              rank: index + 1,
-              value: 100 - index,
-              stats: { utility: { gp: 82 }, scoring: { goals: 100 - index, assists: index } },
-            })),
-          },
-        }),
-      );
-      const fixture = await render();
-
-      expect(fixture.nativeElement.textContent).toContain('Showing 50 of 100');
-      expect(fixture.nativeElement.textContent).toContain('The top 100 of 1489');
-    });
-
-    it('sends them back to this board once they have signed in', async () => {
-      loadShared.mockReturnValue(of(truncated));
-      await render();
-
-      const login = ngMocks.get(ngMocks.find('[data-testid="gate-login"]'), RouterLink);
-      const register = ngMocks.get(ngMocks.find('[data-testid="gate-register"]'), RouterLink);
-      expect(login.routerLink).toEqual('/login');
-      expect(login.queryParams).toEqual({ returnUrl: '/s/abc123' });
-      expect(register.routerLink).toEqual('/register');
-      expect(register.queryParams).toEqual({ returnUrl: '/s/abc123' });
-    });
-
-    it('does not claim rows are missing when the whole board came back', async () => {
-      const fixture = await render();
-
-      expect(fixture.nativeElement.textContent).not.toMatch(/The top \d+ of/);
+      expect(fixture.point.componentInstance.matchingCount()).toEqual(2);
       expect(fixture.nativeElement.textContent).toContain('Make your own projection');
-    });
-
-    it('offers a signed-in reader the copy, not the gate', async () => {
-      isLoggedIn.set(true);
-      loadShared.mockReturnValue(of({ ...shared, totalPlayers: 1489 }));
-      const fixture = await render();
-
-      expect(fixture.nativeElement.textContent).toContain('Draft Mode');
-      expect(fixture.nativeElement.textContent).not.toMatch(/The top \d+ of/);
+      expect(fixture.nativeElement.textContent).not.toContain('Sign in to see the rest');
     });
 
     it('copies the board and opens a draft against it', async () => {

@@ -272,14 +272,6 @@
   overflow-x: auto;
 }
 
-/* Behind the sign-in gate a column heading is answered by the server, so the rows on screen are
-   the previous answer until the new one lands. Dimmed rather than replaced: the reader keeps
-   their place, and the table is visibly not the answer to what they just clicked. */
-.table-wrapper--reordering {
-  opacity: 0.55;
-  transition: opacity 120ms ease-out;
-}
-
 .table-footer {
   display: flex;
   align-items: center;
