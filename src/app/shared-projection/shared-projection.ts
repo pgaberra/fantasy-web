@@ -61,6 +61,7 @@ import { environment } from '../../environments/environment';
 import { NoticeComponent } from '../shared/notice/notice';
 import { PendingCopyService, SharedAction } from './pending-copy';
 import { renameOnOpenExtras } from '../draft-projection/rename-intent';
+import { rowWindow } from '../shared/row-window/row-window';
 
 /**
  * A published board is the owner's whole pool — some 1600 rows — and someone arriving from a link
@@ -605,6 +606,11 @@ export class SharedProjectionComponent {
   );
 
   readonly hasMore = computed(() => this.visibleCount() < this.matchingCount());
+
+  private readonly drawnBody = viewChild<ElementRef<HTMLElement>>('drawnRows');
+
+  /** The part of {@link visibleRows} near the screen — all that is drawn, whatever the step. */
+  readonly drawn = rowWindow(this.visibleRows, this.drawnBody);
 
   readonly hasLess = computed(() => this.rowStep() > 0);
 

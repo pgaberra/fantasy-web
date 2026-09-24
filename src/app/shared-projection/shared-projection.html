@@ -188,7 +188,7 @@
           appPinnedTableHeader
           appTableScroll="Player projections"
         >
-          <table>
+          <table [attr.aria-rowcount]="visibleRows().length + 1">
             <!-- `showWeights`: a visitor cannot open the settings this board was scored with, so
                  the weights behind its totals are said on the board itself or nowhere. -->
             <thead
@@ -203,10 +203,20 @@
               [showWeights]="true"
               (sort)="onSort($event)"
             ></thead>
-            <tbody>
-              @for (row of visibleRows(); track row.shared.playerId) {
+            <!-- Only the rows near the screen are drawn (see rowWindow); the spacers stand in for
+                 the rest, so the table keeps its full height. -->
+            @if (drawn.before() > 0) {
+              <tbody class="row-spacer" aria-hidden="true">
+                <tr>
+                  <td [style.height.px]="drawn.before()"></td>
+                </tr>
+              </tbody>
+            }
+            <tbody #drawnRows>
+              @for (row of drawn.rows(); track row.shared.playerId; let i = $index) {
                 <tr
                   app-player-row
+                  [attr.aria-rowindex]="drawn.start() + i + 2"
                   [positionRank]="rankOf(row)"
                   [totalRank]="overallRankOf(row)"
                   [projection]="row.projection"
@@ -221,6 +231,13 @@
                 ></tr>
               }
             </tbody>
+            @if (drawn.after() > 0) {
+              <tbody class="row-spacer" aria-hidden="true">
+                <tr>
+                  <td [style.height.px]="drawn.after()"></td>
+                </tr>
+              </tbody>
+            }
           </table>
         </div>
       </div>

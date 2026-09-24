@@ -291,6 +291,17 @@ tbody tr:nth-child(even) {
   background: var(--color-surface-alt);
 }
 
+/* A spacer stands in for rows that are not drawn: no border, padding or stripe of its own. */
+.row-spacer td {
+  padding: 0;
+  border: 0;
+}
+
+.row-spacer tr,
+.row-spacer tr:hover {
+  background: none;
+}
+
 tbody tr:hover {
   background: var(--color-surface-hover);
 }
