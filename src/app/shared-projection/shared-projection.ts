@@ -1,8 +1,8 @@
 import { Component, computed, effect, inject, linkedSignal, Signal, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { debounceTime, map } from 'rxjs';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs';
 import { SharedPlayer } from '../api/models/shared-player';
 import { SharedProjectionResponse } from '../api/models/shared-projection-response';
 import { Player } from '../models/player.model';
@@ -57,14 +57,6 @@ import { renameOnOpenExtras } from '../draft-projection/rename-intent';
 const INITIAL_ROWS = 50;
 const ROWS_PER_PAGE = 100;
 
-/**
- * How long the search box settles before it becomes a request. Only a visitor behind the sign-in
- * gate makes one — the board is searched on the server there, since the rows they hold are its top
- * and the player they are looking for may be further down — and a request per keystroke would be
- * one answer arriving for every letter typed.
- */
-const SEARCH_DEBOUNCE_MS = 250;
-
 /** One published row, in the shapes the editor's table components expect. */
 interface SharedRow {
   readonly shared: SharedPlayer;
@@ -77,14 +69,7 @@ interface SharedRow {
  * The page behind a share link. Public and unguarded: it renders the snapshot the owner
  * published and nothing else — no live data, no account, no player read model.
  *
- * <p>How much of that snapshot arrives depends on who asked. A signed-in reader gets the whole
- * board; anyone else gets the top of it and a prompt to sign in for the rest. The BFF decides
- * that and sends only what the reader may see, so the rows behind the prompt are not here to be
- * found — this page reports the cut rather than making it.
- *
- * <p>Which is why sorting and filtering behind that prompt are asked of the BFF rather than done
- * here: the answer to "who scores the most goals" is in the rows this page was not given, so it
- * sends the question up and renders the answer that comes back.
+ * <p>Every reader gets the whole board, signed in or not, and sorts, filters and searches it here.
  *
  * <p>It reuses the editor's table row and header so a shared projection looks like the table it
  * came from, in a read-only mode. What it deliberately does not reuse is the scoring: the values
@@ -392,26 +377,7 @@ export class SharedProjectionComponent {
     this.searchTerm.set((event.target as HTMLInputElement).value);
   }
 
-  private readonly settledSearch = toSignal(
-    toObservable(this.searchTerm).pipe(debounceTime(SEARCH_DEBOUNCE_MS)),
-    { initialValue: '' },
-  );
-
-  /**
-   * The term the rows on screen were chosen by. For a reader holding the whole board that is
-   * whatever is in the box, filtered as they type; behind the gate the rows are the server's
-   * answer to the settled term, and narrowing them by a half-typed name would empty the table
-   * between the keystroke and the answer.
-   */
-  private readonly appliedSearch = computed(() =>
-    this.isLoggedIn() ? this.searchTerm() : this.settledSearch(),
-  );
-
-  /**
-   * The teams and the rookies the controls offer, both read off the whole published board rather
-   * than the rows in hand: behind the gate those are its top 25, and a team list built from them
-   * would offer a handful of clubs and quietly hide the rest.
-   */
+  /** The teams and the rookies the controls offer, as the BFF reads them off the board. */
   readonly availableTeams = computed<string[]>(() => this.shared()?.teams ?? []);
 
   private readonly rookieIds = computed(() => new Set(this.shared()?.rookieIds ?? []));
@@ -440,44 +406,22 @@ export class SharedProjectionComponent {
   }
 
   /**
-   * Who decides what a column means here depends on how much of the board the reader holds.
-   *
-   * <p>Someone signed in holds all of it, so their request never changes and the board is fetched
-   * once — the sorting below is the whole answer. Behind the gate the rows on screen are the top
-   * of the board and the rest is not in the browser to be sorted, so the order goes to the BFF,
-   * which applies it to the whole board and returns the top of *that*. Sorting by goals then
-   * answers with the board's best scorers rather than the best among the rows already sent.
-   *
-   * <p>Nothing is fetched while a resumed copy is under way: the page is about to leave for the
-   * editor, and the whole board read in the background meanwhile would be read for nobody. The
-   * params are undefined then, which leaves the resource idle, and distinct from the null that
-   * asks for the whole board; the board is fetched only if the copy fails and the page stays.
+   * The whole board, fetched once; every control below works on it in the browser. Nothing is
+   * fetched while a resumed copy is under way: the page is about to leave for the editor, and the
+   * board read in the background meanwhile would be read for nobody. The params are undefined
+   * then, which leaves the resource idle; the board is fetched only if the copy fails and the page
+   * stays.
    */
   readonly sharedResource = rxResource({
-    params: () => {
-      if (this.resumingPress()) {
-        return undefined;
-      }
-      if (this.isLoggedIn()) {
-        return null;
-      }
-      return {
-        position: this.positionFilter(),
-        search: this.settledSearch(),
-        team: this.teamFilter(),
-        rookies: this.rookiesOnly(),
-        sort: this.sortColumn(),
-        direction: this.sortDirection(),
-      };
-    },
-    stream: ({ params }) => this.shareService.loadShared(this.token, params ?? undefined),
+    params: () => (this.resumingPress() ? undefined : this.token),
+    stream: ({ params: token }) => this.shareService.loadShared(token),
   });
 
   /**
-   * The board on screen. Held across a reload rather than read straight off the resource: a new
-   * order is a new request, which empties the resource's value while it is in flight, and a page
-   * that blanked to a spinner on every click of a column heading would be a worse answer than the
-   * one it replaces. The rows are also read here on the error path, where value() throws.
+   * The board on screen. Held across a reload rather than read straight off the resource: the
+   * board read again after a refused copy empties the resource's value while it is in flight, and
+   * the table should not blank to a spinner meanwhile. The rows are also read here on the error
+   * path, where value() throws.
    */
   readonly shared = linkedSignal<
     SharedProjectionResponse | undefined,
@@ -486,9 +430,6 @@ export class SharedProjectionComponent {
     source: () => (this.sharedResource.hasValue() ? this.sharedResource.value() : undefined),
     computation: (loaded, previous) => loaded ?? previous?.value,
   });
-
-  /** A reorder in flight, as opposed to the first load: the table is on screen and going stale. */
-  readonly isReordering = computed(() => this.sharedResource.isLoading() && !!this.shared());
 
   private viewCounted = false;
 
@@ -523,12 +464,6 @@ export class SharedProjectionComponent {
     const path = this.shared()?.authorAvatar;
     return path ? `${environment.apiUrl}${path}` : undefined;
   });
-
-  /** True when rows were withheld because the reader is not signed in. */
-  readonly isTruncated = computed(() => this.shared()?.truncated ?? false);
-
-  /** How many rows the published board holds, whether or not this reader received them all. */
-  readonly totalPlayers = computed(() => this.shared()?.totalPlayers ?? 0);
 
   /** Back to this page once they have signed in — the board is what they came for. */
   readonly returnUrl = `/s/${this.token}`;
@@ -621,11 +556,6 @@ export class SharedProjectionComponent {
     return this.positionRanks().has(row.shared.playerId) ? row.shared.rank : null;
   }
 
-  /**
-   * Sorted here as well as on the server, and not only for the reader who holds the whole board:
-   * the BFF chooses *which* rows a gated visitor gets, and this puts the rows it sent in the same
-   * order the editor's table would. Two orderings that agree, rather than one trusted blindly.
-   */
   private readonly sortedRows = computed<SharedRow[]>(() => {
     const filtered = this.rows().filter((row) => this.matches(row));
     const column = this.sortColumn();
@@ -638,7 +568,7 @@ export class SharedProjectionComponent {
   readonly visibleCount = linkedSignal({
     source: () => ({
       position: this.positionFilter(),
-      search: this.appliedSearch(),
+      search: this.searchTerm(),
       team: this.teamFilter(),
       rookiesOnly: this.rookiesOnly(),
       sortColumn: this.sortColumn(),
@@ -647,10 +577,7 @@ export class SharedProjectionComponent {
     computation: () => INITIAL_ROWS,
   });
 
-  /** Rows the reader received that match the filter — what the footer counts against. The board's
-   * total is a different number, and the gate below the table is where it is named: the two read
-   * as one sentence only because the gate speaks of what the link opens, not of what is on
-   * screen. */
+  /** Rows that match the filter — what the footer counts against. */
   readonly matchingCount = computed(() => this.sortedRows().length);
 
   readonly visibleRows = computed<SharedRow[]>(() =>
@@ -722,7 +649,7 @@ export class SharedProjectionComponent {
   }
 
   private matchesSearch(row: SharedRow): boolean {
-    const term = this.appliedSearch().trim().toLowerCase();
+    const term = this.searchTerm().trim().toLowerCase();
     return !term || row.shared.name.toLowerCase().includes(term);
   }
 
