@@ -119,54 +119,10 @@
   color: var(--color-text);
 }
 
-/* Rendered inside the overlay panel, which supplies the surface, border and shadow. */
+/* Rendered inside the overlay panel, which supplies the surface, border and shadow; the items
+   are the shared .kebab-menu (styles.css). */
 .card-menu-panel {
   min-width: 11rem;
-  padding: 0.3rem;
-}
-
-.card-menu-panel .menu-item {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  width: 100%;
-  /* 44px tall so the whole row is a comfortable target on touch. */
-  min-height: 2.75rem;
-  padding: 0.4rem 0.7rem;
-  background: none;
-  border: none;
-  border-radius: var(--radius-sm);
-  font: inherit;
-  font-size: var(--text-sm);
-  text-align: left;
-  color: var(--color-text);
-  cursor: pointer;
-}
-
-.card-menu-panel .menu-item:hover:not(:disabled) {
-  background: var(--color-surface-hover);
-}
-
-.card-menu-panel .menu-item:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.card-menu-panel .menu-item app-icon {
-  flex: none;
-  color: var(--color-text-subtle);
-}
-
-.card-menu-panel .menu-item--danger {
-  color: var(--color-danger);
-}
-
-.card-menu-panel .menu-item--danger app-icon {
-  color: currentColor;
-}
-
-.card-menu-panel .menu-item--danger:hover:not(:disabled) {
-  background: var(--color-danger-surface);
 }
 
 /* Focused programmatically when the confirmation replaces the actions, so it needs no ring. */
