@@ -762,6 +762,19 @@ describe('SharedProjectionComponent', () => {
       }
     });
 
+    it('explains on the follow button that it adds the projection to the library', async () => {
+      const fixture = await render();
+      const button = fixture.nativeElement.querySelector('[data-testid="follow-board"]');
+
+      button.dispatchEvent(new MouseEvent('mouseenter'));
+      TestBed.inject(ApplicationRef).tick();
+
+      expect(button.getAttribute('aria-describedby')).toBeTruthy();
+      expect(document.querySelector('.cdk-overlay-container')?.textContent).toContain(
+        'Add this projection to your library',
+      );
+    });
+
     /**
      * The press is the decision; the account is the paperwork. Sending them straight to the form
      * rather than to a note holding two links is the whole point of this pair of tests, and the
