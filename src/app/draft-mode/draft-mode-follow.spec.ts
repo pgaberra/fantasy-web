@@ -85,13 +85,17 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     },
   });
 
-  const leagueDraft = (picks: LeagueDraftResponse['picks'] = []): LeagueDraftResponse => ({
+  const leagueDraft = (
+    picks: LeagueDraftResponse['picks'] = [],
+    orderKnown = true,
+  ): LeagueDraftResponse => ({
     status: 'IN_PROGRESS',
     auction: false,
     teams: [
       { id: '465.l.9.t.2', name: 'Bravo', mine: false },
       { id: '465.l.9.t.1', name: 'Alpha', mine: true },
     ],
+    orderKnown,
     picks,
   });
 
@@ -148,6 +152,8 @@ describe('DraftModeComponent following a Yahoo draft', () => {
 
   const render = async () => (await renderFixture()).point.componentInstance;
 
+  const savedDraft = () => updateProjection.mock.lastCall?.[1].data?.draft;
+
   const statusText = (fixture: Awaited<ReturnType<typeof renderFixture>>) => {
     fixture.detectChanges();
     return (
@@ -169,15 +175,28 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     expect((await render()).canFollow()).toBe(false);
   });
 
-  it('says it is waiting, with your own seat, until the league draft has a pick', async () => {
+  const progressText = (fixture: Awaited<ReturnType<typeof renderFixture>>) => {
+    fixture.detectChanges();
+    return (
+      (fixture.nativeElement as HTMLElement)
+        .querySelector('.draft-progress')
+        ?.textContent?.replace(/\s+/g, ' ')
+        .trim() ?? ''
+    );
+  };
+
+  it('says your first pick while it waits, where the league has set its order', async () => {
     leagueDraftCall.mockReturnValue(of(leagueDraft()));
-    const component = await render();
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
 
     component.requestFollow();
 
     expect(component.awaitingLeagueDraft()).toBe(true);
-    // The league gives the user's own seat; the seats around it are this board's own order.
-    expect(component.myDraftPosition()).toEqual(2);
+    expect(component.order()).toEqual(['465.l.9.t.2', '465.l.9.t.1']);
+    expect(progressText(fixture)).toEqual(
+      'Waiting for the Yahoo draft to start · your first pick is #2',
+    );
 
     leagueDraftCall.mockReturnValue(
       of(leagueDraft([{ overall: 1, round: 1, teamId: '465.l.9.t.2', playerId: 6743 }])),
@@ -186,6 +205,54 @@ describe('DraftModeComponent following a Yahoo draft', () => {
 
     expect(component.awaitingLeagueDraft()).toBe(false);
     expect(component.upNextTeam()?.name).toEqual('Alpha');
+    component.stopFollowing();
+  });
+
+  // Before a live draft runs, Yahoo lists the league's teams in an order of its own. A seat read
+  // off that list is a guess nobody can tell from the real one: it said #6 to a manager whose
+  // league had him picking twelfth.
+  it("names no seat while the league's order is not known, and takes it with the first pick", async () => {
+    leagueDraftCall.mockReturnValue(of(leagueDraft([], false)));
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
+
+    component.requestFollow();
+
+    expect(component.following()).toBe(true);
+    expect(component.awaitingLeagueDraft()).toBe(true);
+    expect(component.leagueFirstPick()).toBeNull();
+    expect(progressText(fixture)).toEqual('Waiting for the Yahoo draft to start');
+    // The board keeps its own teams and order rather than saving Yahoo's list as the draft's.
+    expect(component.order()).toEqual(['team-me', 'team-1']);
+    expect(savedDraft()?.order).toEqual(['team-me', 'team-1']);
+
+    leagueDraftCall.mockReturnValue(
+      of(leagueDraft([{ overall: 1, round: 1, teamId: '465.l.9.t.2', playerId: 6743 }])),
+    );
+    await vi.advanceTimersByTimeAsync(5000);
+
+    expect(component.order()).toEqual(['465.l.9.t.2', '465.l.9.t.1']);
+    expect(component.picks()).toEqual([{ playerId: 6743, teamId: '465.l.9.t.2' }]);
+    expect(savedDraft()?.order).toEqual(['465.l.9.t.2', '465.l.9.t.1']);
+    expect(progressText(fixture)).toContain('Up next: Alpha');
+    component.stopFollowing();
+  });
+
+  it('takes the order once the league sets it, before any pick is made', async () => {
+    leagueDraftCall.mockReturnValue(of(leagueDraft([], false)));
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
+    component.requestFollow();
+    expect(progressText(fixture)).toEqual('Waiting for the Yahoo draft to start');
+
+    leagueDraftCall.mockReturnValue(of(leagueDraft([], true)));
+    await vi.advanceTimersByTimeAsync(5000);
+
+    expect(component.order()).toEqual(['465.l.9.t.2', '465.l.9.t.1']);
+    expect(progressText(fixture)).toEqual(
+      'Waiting for the Yahoo draft to start · your first pick is #2',
+    );
+    component.stopFollowing();
   });
 
   it("takes the league's teams and picks, saves them, and locks pick edits", async () => {
@@ -346,8 +413,6 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       delete (document as unknown as { hidden?: boolean }).hidden;
     }
   });
-
-  const savedDraft = () => updateProjection.mock.lastCall?.[1].data?.draft;
 
   it('saves the switch with the board, on when it starts and cleared when it is switched off', async () => {
     leagueDraftCall.mockReturnValue(of(leagueDraft()));

@@ -508,16 +508,27 @@ export class DraftModeComponent implements OnInit {
   });
   readonly isMyPick = computed(() => !!this.upNextTeam()?.mine);
   /**
-   * Whether the board knows whose turn it is. Following a league whose draft has not started, it
-   * does not: Yahoo names only the signed-in manager's own seat until it lists the draft's slots,
-   * so the seats around it are this board's own order rather than the league's. The first pick
-   * made is Yahoo's, and from there the order is the league's.
+   * Whether the board is waiting for the followed league's draft to make its first pick, when it
+   * names no team up next: a league that has set its order says only the user's own seat in it,
+   * and one that has not says nothing about who picks when. The first pick made is Yahoo's, and
+   * from there the order is the league's.
    */
   readonly awaitingLeagueDraft = computed(() => this.following() && this.picks().length === 0);
-  /** The user's own seat, which a league does tell before its draft starts. */
+  /** The user's own seat in this board's order. */
   readonly myDraftPosition = computed(() => {
     const teamId = this.myTeamId();
     return teamId === null ? 0 : this.order().indexOf(teamId) + 1;
+  });
+  /** Whether the followed league's last answer said its team order is its draft order. */
+  private readonly leagueOrderKnown = signal<boolean>(false);
+  /**
+   * The user's first pick in the followed league's draft, or null where the league has not set
+   * its order: before a live draft runs Yahoo lists its teams in an order of its own, and a seat
+   * read off that list is a guess.
+   */
+  readonly leagueFirstPick = computed(() => {
+    const seat = this.myDraftPosition();
+    return this.leagueOrderKnown() && seat > 0 ? seat : null;
   });
   readonly canUndo = computed(() => this.picks().length > 0 && !this.following());
   readonly canFollow = computed(
@@ -1306,6 +1317,7 @@ export class DraftModeComponent implements OnInit {
     this.followSubscription?.unsubscribe();
     this.followSubscription = null;
     this.following.set(false);
+    this.leagueOrderKnown.set(false);
     this.rememberFollowing(false);
   }
 
@@ -1370,6 +1382,7 @@ export class DraftModeComponent implements OnInit {
       this.stopFollowing();
       return false;
     }
+    this.leagueOrderKnown.set(league.orderKnown);
     // A draft Yahoo has finished is brought over whole and finishes the board with it: nothing is
     // left to follow, and a board still open beside a switch that turned itself off read as a
     // sync that refused to start.
