@@ -18,11 +18,17 @@
           [value]="activeShare.shareUrl"
           aria-label="Share link"
         />
-        <button type="button" class="btn btn-primary btn-sm" (click)="copyLink()">
-          {{ copied() ? 'Copied!' : 'Copy' }}
+        <button
+          type="button"
+          class="copy-button"
+          [class.copied]="copied()"
+          [attr.aria-label]="copied() ? 'Link copied' : 'Copy link'"
+          [attr.title]="copied() ? 'Copied' : 'Copy link'"
+          (click)="copyLink()"
+        >
+          <app-icon [name]="copied() ? 'check' : 'copy'" [size]="16" />
         </button>
       </div>
-      <p class="dialog-body">The link updates as your changes are saved.</p>
     } @else {
       @if (needsUsername()) {
         <p class="dialog-body">Choose a username before sharing a projection.</p>
@@ -44,8 +50,6 @@
           >. Change your username in your profile.
         </p>
       }
-
-      <p class="dialog-body">The link updates as your changes are saved.</p>
 
       <div class="dialog-actions">
         <button type="button" class="btn btn-secondary btn-sm" (click)="closed.emit()">
