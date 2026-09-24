@@ -472,7 +472,7 @@ describe('SharedProjectionComponent', () => {
       expect(fixture.nativeElement.textContent).toContain('Showing 50 of 400');
     });
 
-    it('steps from the top 50 to 100, 200 and then the whole board', async () => {
+    it('steps from the top 50 to 100, 200, 300 and then the whole board', async () => {
       const fixture = await render();
       const component = fixture.point.componentInstance;
       const text = () => fixture.nativeElement.textContent;
@@ -485,6 +485,11 @@ describe('SharedProjectionComponent', () => {
       expect(text()).toContain('Show top 200');
       component.showMore();
       expect(component.visibleRows().length).toEqual(200);
+
+      fixture.detectChanges();
+      expect(text()).toContain('Show top 300');
+      component.showMore();
+      expect(component.visibleRows().length).toEqual(300);
 
       fixture.detectChanges();
       expect(text()).toContain('Show all 400');
@@ -509,6 +514,7 @@ describe('SharedProjectionComponent', () => {
       const fixture = await render();
       const component = fixture.point.componentInstance;
 
+      component.showMore();
       component.showMore();
       component.showMore();
       component.showMore();
@@ -544,10 +550,11 @@ describe('SharedProjectionComponent', () => {
       component.showMore();
       component.showMore();
       component.showMore();
+      component.showMore();
 
       component.showLess();
       TestBed.tick();
-      expect(component.visibleRows().length).toEqual(200);
+      expect(component.visibleRows().length).toEqual(300);
       expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' });
 
       component.showLess();
