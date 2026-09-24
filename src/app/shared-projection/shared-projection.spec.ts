@@ -748,7 +748,7 @@ describe('SharedProjectionComponent', () => {
 
       for (const [testId, text] of [
         ['copy-board', 'Adds an editable copy to My Projections'],
-        ['draft-board', 'Draft against a copy of this projection'],
+        ['draft-board', 'Draft using this projection'],
       ]) {
         const button = fixture.nativeElement.querySelector(`[data-testid="${testId}"]`);
         button.dispatchEvent(new MouseEvent('mouseenter'));
