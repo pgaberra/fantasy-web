@@ -528,6 +528,26 @@ describe('SharedProjectionComponent', () => {
       expect(fixture.nativeElement.textContent).toContain('Showing 400 of 400');
     });
 
+    it('draws only the rows near the screen once the whole board is shown', async () => {
+      const fixture = await render();
+      const component = fixture.point.componentInstance;
+
+      for (let step = 0; step < 4; step++) {
+        component.showMore();
+      }
+      fixture.detectChanges();
+
+      const drawn = fixture.nativeElement.querySelectorAll('tr[app-player-row]');
+      expect(component.visibleRows().length).toEqual(400);
+      expect(drawn.length).toBeLessThan(100);
+      expect(drawn[0].getAttribute('aria-rowindex')).toEqual('2');
+      expect(fixture.nativeElement.querySelector('table').getAttribute('aria-rowcount')).toEqual(
+        '401',
+      );
+      expect(fixture.nativeElement.querySelector('tbody.row-spacer')).not.toBeNull();
+      expect(fixture.nativeElement.textContent).toContain('Showing 400 of 400');
+    });
+
     it('offers Show less only once the board has grown', async () => {
       const fixture = await render();
       const component = fixture.point.componentInstance;
