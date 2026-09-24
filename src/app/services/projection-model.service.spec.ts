@@ -84,4 +84,24 @@ describe('ProjectionModelService', () => {
 
     expect(await retried).toEqual(SEEDED);
   });
+
+  /** A preview of what Create writes must be as fresh as Create, which asks the server each time. */
+  it('asks for the board Create would write afresh every time', async () => {
+    const board = {
+      players: [
+        { playerId: 7, type: 'goalie' as const, stats: { utility: {}, scoring: { w: 38 } } },
+      ],
+    };
+    const first = firstValueFrom(service.board());
+    httpTesting
+      .expectOne((request) => request.url.endsWith('/projection-model/board'))
+      .flush(board);
+    expect(await first).toEqual(board);
+
+    const second = firstValueFrom(service.board());
+    httpTesting
+      .expectOne((request) => request.url.endsWith('/projection-model/board'))
+      .flush(board);
+    expect(await second).toEqual(board);
+  });
 });

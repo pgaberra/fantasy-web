@@ -32,4 +32,17 @@ export class AiProjectionAccess {
   readonly locked = computed(
     () => environment.paymentsEnabled && !this.entitlement.premium() && this.settled(),
   );
+
+  /**
+   * Whether the BFF serves this account the model's whole board, and not only the free teaser.
+   * Null until the entitlement has landed, since it says non-premium until then and acting on
+   * that would draw a subscriber the teaser first. A read that failed is settled as false: the
+   * teaser is what the BFF would serve on the same doubt.
+   */
+  readonly readsWholeBoard = computed<boolean | null>(() => {
+    if (!environment.paymentsEnabled || this.entitlement.premium()) {
+      return true;
+    }
+    return this.settled() ? false : null;
+  });
 }

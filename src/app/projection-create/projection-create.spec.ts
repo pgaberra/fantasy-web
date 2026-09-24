@@ -19,6 +19,7 @@ import { ProjectionModelService } from '../services/projection-model.service';
 import { EntitlementService } from '../services/entitlement.service';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import { SeededProjectionResponse } from '../api/models/seeded-projection-response';
+import { ModelBoardResponse } from '../api/models/model-board-response';
 import { ProjectionCalculationService } from '../services/projection-calculation.service';
 import { Goalie, Skater } from '../models/player.model';
 import { SkaterPosition } from '../models/position.model';
@@ -181,6 +182,25 @@ describe('ProjectionCreateComponent', () => {
 
   const seed = vi.fn<() => Observable<SeededProjectionResponse>>(() => of(seeded));
 
+  /**
+   * What Create writes from the AI preset: the model's lines, and last season's for everyone the
+   * model does not reach — the BFF's reconciliation, done by hand.
+   */
+  const reached = new Set(seeded.players.map((row) => row.playerId));
+  const createdBoard: ModelBoardResponse = {
+    players: [
+      ...seeded.players,
+      ...players
+        .filter((player) => !reached.has(player.id))
+        .map((player) => ({
+          playerId: player.id,
+          type: player.type,
+          stats: player.stats,
+        })),
+    ],
+  };
+  const board = vi.fn<() => Observable<ModelBoardResponse>>(() => of(createdBoard));
+
   const navigate = vi.fn();
   const notifyError = vi.fn();
   /** The query string the page opened with; the same object is handed to every render. */
@@ -200,6 +220,7 @@ describe('ProjectionCreateComponent', () => {
     notifyError.mockClear();
     createProjection.mockClear();
     seed.mockClear();
+    board.mockClear();
     for (const key of Object.keys(queryParams)) {
       delete queryParams[key];
     }
@@ -214,7 +235,7 @@ describe('ProjectionCreateComponent', () => {
         .keep(ProjectionRankingService)
         .keep(ProjectionCalculationService)
         .keep(ProjectionSerializerService)
-        .mock(ProjectionModelService, { seed })
+        .mock(ProjectionModelService, { seed, board })
         .mock(PlayerService, {
           getPlayers: () => of(players),
           getRookieIds: () => of(new Set([3])),
@@ -1175,9 +1196,8 @@ describe('ProjectionCreateComponent', () => {
    * of the AI projection would be indistinguishable from the preview of last season.
    */
   it("shows the model's fractions rather than rounding them to whole numbers", async () => {
-    seed.mockReturnValueOnce(
+    board.mockReturnValueOnce(
       of({
-        ...seeded,
         players: seeded.players.map((player) => ({
           ...player,
           stats: {
@@ -1202,33 +1222,35 @@ describe('ProjectionCreateComponent', () => {
     expect(decimals.assists).toEqual(0);
   });
 
-  // Five rows do not need the model's whole board either, the same reason the pool is asked
-  // for a slice. It is also the width the BFF serves without a subscription.
-  it('asks the model for the same slice of the board the pool is asked for', async () => {
+  // Where nothing is sold every account reads the whole board, so the preview is the board
+  // Create writes rather than the free teaser's slice of the model.
+  it('asks for the board Create would write, not a slice of the model', async () => {
     const fixture = MockRender(ProjectionCreateComponent);
     await fixture.whenStable();
 
     fixture.point.componentInstance.selectPreset('model');
     await fixture.whenStable();
 
-    expect(seed).toHaveBeenCalledWith({ skaterLimit: 25, goalieLimit: 10 });
+    expect(board).toHaveBeenCalledOnce();
+    expect(seed).not.toHaveBeenCalled();
   });
 
   it('does not download the model until the AI preset is picked', async () => {
     const fixture = MockRender(ProjectionCreateComponent);
     await fixture.whenStable();
 
-    expect(seed).not.toHaveBeenCalled();
+    expect(board).not.toHaveBeenCalled();
 
     fixture.point.componentInstance.selectPreset('model');
     await fixture.whenStable();
 
-    expect(seed).toHaveBeenCalledOnce();
+    expect(board).toHaveBeenCalledOnce();
   });
 
-  // The server seeds a model projection with the players the model reached and no others, so a
-  // preview showing the rest — filled in, or dashed — would promise rows the editor will not have.
-  it("previews only the players the model reached, in the model's own order", async () => {
+  // The server fills everyone the model does not reach with last season's line, so the preview
+  // ranks them too: leaving them out is what put a goalie third on a board that opens with him
+  // seventh.
+  it('previews the board Create writes, last-season rows for the players the model misses included', async () => {
     const fixture = MockRender(ProjectionCreateComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
@@ -1239,13 +1261,12 @@ describe('ProjectionCreateComponent', () => {
 
     const rows = previewOf(fixture).previewRows();
     expect(rows.map((row) => row.player.name)).toEqual([
+      'Best Player',
       'Sixth Player',
+      'Second Player',
       'Fifth Player',
-      'Fourth Player',
+      'Third Player',
     ]);
-    // Last season had these three last, and the goalie is absent because the model has no line
-    // for it.
-    expect(rows.every((row) => row.player.type === 'skater')).toBe(true);
   });
 
   it("scores the preview on the model's numbers, not last season's", async () => {
@@ -1320,7 +1341,7 @@ describe('ProjectionCreateComponent', () => {
 
     /**
      * The teaser. A request this narrow is the preview the BFF serves to everyone, so a free
-     * account sees the model's own top five rather than a description of them.
+     * account sees the model's own top skaters rather than a description of them.
      */
     it('previews the top of the model even while it is locked', async () => {
       await withPayments(async (fixture) => {
@@ -1329,7 +1350,8 @@ describe('ProjectionCreateComponent', () => {
         await fixture.whenStable();
         fixture.detectChanges();
 
-        expect(seed).toHaveBeenCalled();
+        expect(seed).toHaveBeenCalledWith({ skaterLimit: 25, goalieLimit: 1 });
+        expect(board).not.toHaveBeenCalled();
         expect(previewOf(fixture).previewRows().length).toBeGreaterThan(0);
         expect(fixture.nativeElement.querySelector('.preview-card')).not.toBeNull();
       });
@@ -1369,14 +1391,15 @@ describe('ProjectionCreateComponent', () => {
       });
     });
 
-    it('previews the model as before for a subscriber', async () => {
+    it('previews the board Create would write for a subscriber', async () => {
       premium.set(true);
       await withPayments(async (fixture) => {
         fixture.point.componentInstance.selectPreset('model');
         await fixture.whenStable();
         fixture.detectChanges();
 
-        expect(seed).toHaveBeenCalled();
+        expect(board).toHaveBeenCalled();
+        expect(seed).not.toHaveBeenCalled();
         expect(fixture.nativeElement.querySelector('a.create-button')).toBeNull();
         expect(fixture.point.componentInstance.canCreate()).toBe(true);
       });

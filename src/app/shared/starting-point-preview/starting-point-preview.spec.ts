@@ -1,5 +1,7 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { Observable, of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { PreviewSource, StartingPointPreviewComponent } from './starting-point-preview';
@@ -12,12 +14,29 @@ import { ProjectionRankingService } from '../../services/projection-ranking.serv
 import { ProjectionCalculationService } from '../../services/projection-calculation.service';
 import { ProjectionSerializerService } from '../../services/projection-serializer.service';
 import { StatInfoService } from '../../services/stat-info.service';
-import { Skater } from '../../models/player.model';
+import { Goalie, Player, Skater } from '../../models/player.model';
 import { SkaterPosition } from '../../models/position.model';
-import { SkaterScoringStats } from '../../models/projection.model';
-import { SKATER_SCORING_STAT_KEYS } from '../../models/stat-key.model';
+import { GoalieScoringStats, SkaterScoringStats } from '../../models/projection.model';
+import {
+  GOALIE_SCORING_STAT_KEYS,
+  ScoringStatKey,
+  SKATER_SCORING_STAT_KEYS,
+} from '../../models/stat-key.model';
 import { ProjectionResponse } from '../../api/models/projection-response';
 import { SeededProjectionResponse } from '../../api/models/seeded-projection-response';
+import { ModelBoardResponse } from '../../api/models/model-board-response';
+import { PlayerProjection } from '../../api/models/player-projection';
+import { AiProjectionAccess } from '../premium/ai-projection-access';
+import { squaredWithPool } from '../pool-line';
+import {
+  DEFAULT_LEAGUE_SIZE,
+  DEFAULT_MIN_GOALIE_GAMES,
+  DEFAULT_ROSTER_SLOTS,
+  DEFAULT_SCORING_COLUMNS,
+  DEFAULT_STAT_WEIGHTS,
+} from '../../draft-projection/projection-defaults';
+import { DEFAULT_DECIMAL_SETTINGS } from '../../draft-projection/projection-settings-section/model';
+import { readableDecimalSettings } from '../../draft-projection/projection-settings-section/model-decimals';
 
 describe('StartingPointPreviewComponent', () => {
   const skater = (id: number, name: string, goals: number): Skater => ({
@@ -104,8 +123,13 @@ describe('StartingPointPreviewComponent', () => {
   };
 
   const seed = vi.fn<() => Observable<SeededProjectionResponse>>(() => of(seeded));
+  const modelBoard = vi.fn<() => Observable<ModelBoardResponse>>();
   const loadProjection = vi.fn<() => Observable<ProjectionResponse>>(() => of(board));
-  const getPlayers = vi.fn(() => of(players));
+  const getPlayers = vi.fn<(limits?: { skaters: number; goalies: number }) => Observable<Player[]>>(
+    () => of(players),
+  );
+  /** Free unless a test says otherwise: most of what is tested here is the teaser. */
+  const readsWholeBoard = signal<boolean | null>(false);
 
   interface PreviewParams {
     source: PreviewSource | null;
@@ -126,15 +150,19 @@ describe('StartingPointPreviewComponent', () => {
 
   beforeEach(() => {
     seed.mockClear();
+    modelBoard.mockReset();
     loadProjection.mockClear();
-    getPlayers.mockClear();
+    getPlayers.mockReset();
+    getPlayers.mockImplementation(() => of(players));
+    readsWholeBoard.set(false);
     return MockBuilder(StartingPointPreviewComponent)
       .keep(ProjectionBoardCache)
       .keep(ProjectionRankingService)
       .keep(ProjectionCalculationService)
       .keep(ProjectionSerializerService)
       .keep(StatInfoService)
-      .mock(ProjectionModelService, { seed })
+      .mock(ProjectionModelService, { seed, board: modelBoard })
+      .mock(AiProjectionAccess, { readsWholeBoard })
       .mock(PlayerService, { getPlayers, getRookieIds: () => of(new Set<number>()) })
       .mock(ProjectionStorageService, { loadProjection });
   });
@@ -170,7 +198,7 @@ describe('StartingPointPreviewComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(seed).toHaveBeenCalledWith({ skaterLimit: 25, goalieLimit: 10 });
+    expect(seed).toHaveBeenCalledWith({ skaterLimit: 25, goalieLimit: 1 });
     // The model's order, which is the reverse of last season's.
     expect(
       previewOf(fixture)
@@ -294,5 +322,232 @@ describe('StartingPointPreviewComponent', () => {
     expect(ngMocks.input(header, 'showWeights')).toBe(true);
     expect(ngMocks.input(header, 'readonly')).toBe(true);
     expect(ngMocks.input(header, 'sortable')).toBe(false);
+  });
+
+  describe('the AI preset', () => {
+    const goalie = (id: number, name: string, wins: number): Goalie => ({
+      type: 'goalie',
+      id,
+      name,
+      teamAbbrev: 'TBL',
+      stats: {
+        utility: { gp: 60 },
+        scoring: {
+          ...(Object.fromEntries(
+            GOALIE_SCORING_STAT_KEYS.map((key) => [key, 0]),
+          ) as GoalieScoringStats),
+          w: wins,
+        },
+      },
+    });
+
+    const skaterLine = (id: number, goals: number): PlayerProjection => ({
+      playerId: id,
+      type: 'skater',
+      stats: {
+        utility: { gp: 82, toiPerGame: 1200 },
+        scoring: {
+          ...(Object.fromEntries(SKATER_SCORING_STAT_KEYS.map((key) => [key, 0])) as Record<
+            string,
+            number
+          >),
+          goals,
+          assists: 40,
+        },
+      },
+    });
+
+    const goalieLine = (id: number, wins: number): PlayerProjection => ({
+      playerId: id,
+      type: 'goalie',
+      stats: {
+        utility: { gp: 60 },
+        scoring: {
+          ...(Object.fromEntries(GOALIE_SCORING_STAT_KEYS.map((key) => [key, 0])) as Record<
+            string,
+            number
+          >),
+          w: wins,
+        },
+      },
+    });
+
+    /**
+     * The case the teaser got wrong. Deep Skater is outside the top of last season's pool, so the
+     * old preview, which ranked only what the pool's top and the model's top had in common, left
+     * him out and put Vasilevskiy third. On the board Create writes he is there — the reconciler
+     * backfills everyone the model does not reach — and outscores the goalie.
+     */
+    const vasilevskiy = goalie(7, 'Andrei Vasilevskiy', 80);
+    const deepSkater = skater(8, 'Deep Skater', 5);
+    const wholePool: Player[] = [...players, deepSkater, vasilevskiy];
+    const topOfPool: Player[] = [...players, vasilevskiy];
+    const createdBoard: ModelBoardResponse = {
+      players: [
+        ...[1, 2, 3, 4, 5, 6].map((id) => skaterLine(id, id * 10)),
+        goalieLine(7, 80),
+        // Last season's line in the pool says 5 goals; the board's row is what counts.
+        skaterLine(8, 55),
+        // A row the pool no longer holds: the editor does not open it, so neither may the preview.
+        skaterLine(99, 500),
+      ],
+    };
+
+    const givenThePools = () =>
+      getPlayers.mockImplementation((limits) => of(limits ? topOfPool : wholePool));
+
+    /** What the editor ranks when it opens the board: its rows the pool holds, squared with it. */
+    const editorOrder = (scoringType: 'points' | 'category') => {
+      const byId = new Map(wholePool.map((player) => [player.id, player]));
+      const serializer = TestBed.inject(ProjectionSerializerService);
+      const projections = createdBoard.players
+        .filter((row) => byId.has(row.playerId))
+        .map((row) => squaredWithPool(serializer.toProjection(row), byId.get(row.playerId)));
+      return TestBed.inject(ProjectionRankingService)
+        .rankOverall({
+          projections,
+          scoringType,
+          statWeights: DEFAULT_STAT_WEIGHTS,
+          activeScoringColumns: new Set<ScoringStatKey>(DEFAULT_SCORING_COLUMNS),
+          leagueSize: DEFAULT_LEAGUE_SIZE,
+          rosterSlots: DEFAULT_ROSTER_SLOTS,
+          minGoalieGames: DEFAULT_MIN_GOALIE_GAMES,
+          decimalSettings: readableDecimalSettings(projections, DEFAULT_DECIMAL_SETTINGS, true),
+        })
+        .slice(0, 5)
+        .map((scored) => byId.get(scored.projection.playerId)?.name);
+    };
+
+    describe('for an account that reads the whole board', () => {
+      beforeEach(() => {
+        readsWholeBoard.set(true);
+        givenThePools();
+        modelBoard.mockImplementation(() => of(createdBoard));
+      });
+
+      it("ranks the board Create writes, so its top five are the editor's", async () => {
+        const fixture = render({ source: { kind: 'preset', preset: 'model' } });
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        const rows = previewOf(fixture).previewRows();
+        expect(rows.map((row) => row.player.name)).toEqual([
+          'Sixth Player',
+          'Deep Skater',
+          'Fifth Player',
+          'Andrei Vasilevskiy',
+          'Fourth Player',
+        ]);
+        expect(rows.map((row) => row.player.name)).toEqual(editorOrder('points'));
+        expect(rows.map((row) => row.rank)).toEqual([1, 2, 3, 4, 5]);
+        // The board's own number for the backfilled skater, not last season's.
+        const deep = rows.find((row) => row.player.id === 8);
+        expect((deep?.projection.stats.scoring as SkaterScoringStats).goals).toEqual(55);
+        expect(seed).not.toHaveBeenCalled();
+      });
+
+      /** In category scoring every z-score depends on who else is on the board. */
+      it("matches the editor's order in a category league too", async () => {
+        const fixture = MockRender<unknown, PreviewParams & { league: unknown }>(
+          `<app-starting-point-preview [source]="source" [fallbackNote]="fallbackNote" [leagueSettings]="league" />`,
+          {
+            source: { kind: 'preset', preset: 'model' },
+            fallbackNote: null,
+            league: { scoringType: 'category' },
+          },
+        );
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(
+          previewOf(fixture)
+            .previewRows()
+            .map((row) => row.player.name),
+        ).toEqual(editorOrder('category'));
+      });
+
+      it('asks for the board afresh each time the preset is picked, never from a copy', async () => {
+        const fixture = render({ source: { kind: 'preset', preset: 'model' } });
+        await fixture.whenStable();
+        fixture.componentInstance.source = { kind: 'preset', preset: 'default' };
+        fixture.detectChanges();
+        await fixture.whenStable();
+        fixture.componentInstance.source = { kind: 'preset', preset: 'model' };
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        expect(modelBoard).toHaveBeenCalledTimes(2);
+      });
+
+      it('falls back to the note when the board will not download', async () => {
+        modelBoard.mockImplementation(() =>
+          throwError(() => new HttpErrorResponse({ status: 502 })),
+        );
+        const fixture = render({ source: { kind: 'preset', preset: 'model' } });
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(previewOf(fixture).hasFailed()).toBe(true);
+        expect(fixture.nativeElement.querySelector('.preview-card')).toBeNull();
+      });
+    });
+
+    describe('for a free account', () => {
+      beforeEach(() => {
+        givenThePools();
+        seed.mockImplementation(() =>
+          of({ ...seeded, players: [...createdBoard.players.slice(0, 7)] }),
+        );
+      });
+
+      /** Alexander's call, 2026-09-24: the teaser ranks skaters only, numbered among themselves. */
+      it('previews skaters only, numbered one to five among them', async () => {
+        const fixture = render({ source: { kind: 'preset', preset: 'model' } });
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        const rows = previewOf(fixture).previewRows();
+        expect(rows.map((row) => row.player.type)).toEqual(Array(5).fill('skater'));
+        expect(rows.map((row) => row.rank)).toEqual([1, 2, 3, 4, 5]);
+        expect(rows.map((row) => row.player.name)).toEqual([
+          'Sixth Player',
+          'Fifth Player',
+          'Fourth Player',
+          'Third Player',
+          'Second Player',
+        ]);
+        expect(modelBoard).not.toHaveBeenCalled();
+      });
+
+      it('previews skaters only in a category league as well', async () => {
+        const fixture = MockRender<unknown, PreviewParams & { league: unknown }>(
+          `<app-starting-point-preview [source]="source" [fallbackNote]="fallbackNote" [leagueSettings]="league" />`,
+          {
+            source: { kind: 'preset', preset: 'model' },
+            fallbackNote: null,
+            league: { scoringType: 'category' },
+          },
+        );
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        const rows = previewOf(fixture).previewRows();
+        expect(rows).toHaveLength(5);
+        expect(rows.every((row) => row.player.type === 'skater')).toBe(true);
+        expect(rows.map((row) => row.rank)).toEqual([1, 2, 3, 4, 5]);
+      });
+    });
+
+    /** The entitlement says non-premium until it lands; a subscriber must not get the teaser first. */
+    it('fetches nothing of the model until the entitlement has landed', async () => {
+      readsWholeBoard.set(null);
+      const fixture = render({ source: { kind: 'preset', preset: 'model' } });
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(previewOf(fixture).isLoading()).toBe(true);
+      expect(seed).not.toHaveBeenCalled();
+      expect(modelBoard).not.toHaveBeenCalled();
+    });
   });
 });

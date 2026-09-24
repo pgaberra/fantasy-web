@@ -69,4 +69,33 @@ describe('AiProjectionAccess', () => {
 
     expect(access.locked()).toBe(true);
   });
+
+  describe('readsWholeBoard', () => {
+    it('is true for a subscriber', () => {
+      premium.set(true);
+
+      expect(access.readsWholeBoard()).toBe(true);
+    });
+
+    it('is true where nothing is sold, as the BFF serves the board to everyone there', () => {
+      environment.paymentsEnabled = false;
+
+      expect(access.readsWholeBoard()).toBe(true);
+    });
+
+    it('is false for an account without a subscription', () => {
+      expect(access.readsWholeBoard()).toBe(false);
+    });
+
+    /** Answering false early would show a subscriber the free teaser before their own board. */
+    it('is unknown until the entitlement has landed, and false after a failed read', () => {
+      loadState.set('loading');
+
+      expect(access.readsWholeBoard()).toBeNull();
+
+      loadState.set('error');
+
+      expect(access.readsWholeBoard()).toBe(false);
+    });
+  });
 });
