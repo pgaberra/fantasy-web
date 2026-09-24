@@ -14,6 +14,7 @@ export class DraftRosterPanelComponent {
   readonly lookup = inject(DraftPlayerLookupService);
 
   readonly roster = input.required<DerivedRoster>();
-  readonly filledCount = input.required<number>();
+  /** The players the user has drafted, including those with no slot left, listed as Extra. */
+  readonly draftedCount = input.required<number>();
   readonly totalSlots = input.required<number>();
 }

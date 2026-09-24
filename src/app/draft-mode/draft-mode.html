@@ -150,7 +150,7 @@
             <button type="button" class="btn btn-primary btn-sm" (click)="viewSummary()">
               View summary
             </button>
-          } @else {
+          } @else if (!following()) {
             <button
               type="button"
               class="btn btn-sm"
@@ -177,7 +177,7 @@
       <div class="draft-layout">
         <app-draft-roster-panel
           [roster]="roster()"
-          [filledCount]="filledCount()"
+          [draftedCount]="draftedCount()"
           [totalSlots]="totalSlots()"
         />
 

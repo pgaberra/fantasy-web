@@ -189,7 +189,8 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   draft, a league without the user's team, a finished draft, or a 404/424. A dropped connection
   keeps polling. The switch is saved with the board as `draft.following` (only while on), so
   opening the board again, on any device, picks the league's draft back up once the BFF's
-  features say following is offered; leaving the page is not switching it off.
+  features say following is offered; leaving the page is not switching it off. "Finish draft"
+  is not offered while following: the board finishes when the league's draft does.
 - `shared-projection/` — the page behind a share link (`/s/:token`), public and unguarded: a
   share link has to open for someone who has never signed in. Its byline carries the author's
   profile picture, or the initial of their username where they have none. A signed-in visitor is offered

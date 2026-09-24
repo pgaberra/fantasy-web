@@ -1,4 +1,4 @@
-import { MockBuilder, MockRender } from 'ng-mocks';
+import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -336,9 +336,10 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       await vi.advanceTimersByTimeAsync(0);
       expect(leagueDraftCall).toHaveBeenCalledTimes(2);
 
-      await vi.advanceTimersByTimeAsync(4999);
+      // The clock also runs in real time here, so the count is read well clear of the 5 s mark.
+      await vi.advanceTimersByTimeAsync(4000);
       expect(leagueDraftCall).toHaveBeenCalledTimes(2);
-      await vi.advanceTimersByTimeAsync(1);
+      await vi.advanceTimersByTimeAsync(1000);
       expect(leagueDraftCall).toHaveBeenCalledTimes(3);
       component.stopFollowing();
     } finally {
@@ -423,6 +424,48 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     expect(component.following()).toBe(false);
     expect(savedDraft()?.following).toBeUndefined();
     expect(savedDraft()?.picks).toEqual([{ playerId: 7109, teamId: '465.l.9.t.2' }]);
+  });
+
+  it('offers no Finish draft while following, and offers it again once sync is off', async () => {
+    leagueDraftCall.mockReturnValue(of(leagueDraft()));
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
+    const finishButton = () => {
+      fixture.detectChanges();
+      return [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].find(
+        (button) => button.textContent?.trim() === 'Finish draft',
+      );
+    };
+    expect(finishButton()).toBeDefined();
+
+    component.requestFollow();
+    expect(finishButton()).toBeUndefined();
+    component.requestFinishDraft();
+    expect(component.confirmingFinish()).toBe(false);
+
+    component.toggleFollow();
+    expect(finishButton()).toBeDefined();
+  });
+
+  it('counts every player the user drafted, including one the roster has no slot for', async () => {
+    leagueDraftCall.mockReturnValue(
+      of(
+        leagueDraft([
+          { overall: 1, round: 1, teamId: '465.l.9.t.2', playerId: 7109 },
+          { overall: 2, round: 1, teamId: '465.l.9.t.1', playerId: 6743 },
+          { overall: 3, round: 2, teamId: '465.l.9.t.1', playerId: 99999 },
+        ]),
+      ),
+    );
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
+    component.requestFollow();
+
+    expect(component.roster().unplaced).toEqual([99999]);
+    expect(component.draftedCount()).toBe(2);
+    fixture.detectChanges();
+    expect(ngMocks.input('app-draft-roster-panel', 'draftedCount')).toBe(2);
+    component.stopFollowing();
   });
 
   it('does not follow an auction draft', async () => {

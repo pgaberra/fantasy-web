@@ -1,7 +1,7 @@
 <section class="roster-panel">
   <div class="roster-header">
     <h2>Your roster</h2>
-    <span class="roster-count">{{ filledCount() }} / {{ totalSlots() }}</span>
+    <span class="roster-count">{{ draftedCount() }} / {{ totalSlots() }}</span>
   </div>
   <div class="roster-grid">
     @for (slot of roster().slots; track slot.id) {
