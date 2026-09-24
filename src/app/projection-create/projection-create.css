@@ -1,10 +1,9 @@
 .projection-create {
-  /* Wide enough for the preview to be the table it previews. The editor runs to 1400px and the
-     760px this page used cut the stat columns off behind a scrollbar; the form does not want the
-     room (the name field is capped at 380px and the cards are a grid), so 1100px is where the
-     table gains columns without the fields being stranded. Draft mode and the shared board are
-     the same width. */
-  max-width: 1100px;
+  /* Wide enough for the preview to be the table it previews. The editor runs to the wide page
+     width and the 760px this page used cut the stat columns off behind a scrollbar; the form does
+     not want the room (the name field is capped at 380px and the cards are a grid), so the narrow
+     width (1100px) is where the table gains columns without the fields being stranded. */
+  max-width: var(--page-width-narrow);
   margin: 0 auto;
   padding: 1.5rem 1rem;
 }

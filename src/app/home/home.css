@@ -1,7 +1,7 @@
 .home {
   /* The width of the projections list and the new-projection page, so moving between them does
      not shift the layout. */
-  max-width: 1100px;
+  max-width: var(--page-width-narrow);
   margin: 0 auto;
   padding: 1.5rem 1rem;
   display: grid;

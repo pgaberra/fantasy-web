@@ -1,5 +1,5 @@
 .draft-projection {
-  max-width: 1400px;
+  max-width: var(--page-width-wide);
   margin: 0 auto;
   padding: 2rem;
   font-family: var(--font-sans);

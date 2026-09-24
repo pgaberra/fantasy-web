@@ -127,6 +127,12 @@
   --space-5: 1.5rem;
   --space-6: 2rem;
 
+  /* Page widths. Wide is for the pages whose job is a table (the editor, the shared board, Who's
+     hot) and for the header that frames them; narrow is for forms and lists, where more room
+     only strands the fields. Set here once so a page cannot drift off its tier by hand. */
+  --page-width-wide: 1400px;
+  --page-width-narrow: 1100px;
+
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;

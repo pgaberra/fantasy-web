@@ -97,10 +97,10 @@
 /* Live demo */
 .lp-demo-wrap {
   /* Wider than the rest of the landing page (which is capped at a comfortable reading
-     width): this is the real editor, so give it the same 1400px the signed-in page uses
-     (see draft-projection.css). At the 1080px container the default columns overflowed by
-     ~114px, forcing a sideways scroll before the visitor had touched anything. */
-  max-width: 1400px;
+     width): this is the real editor, so give it the same wide page width the signed-in page
+     uses. At the 1080px container the default columns overflowed by ~114px, forcing a
+     sideways scroll before the visitor had touched anything. */
+  max-width: var(--page-width-wide);
   margin-top: clamp(2rem, 5vw, 3.25rem);
 }
 
