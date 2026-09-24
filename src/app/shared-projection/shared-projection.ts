@@ -66,9 +66,10 @@ import { renameOnOpenExtras } from '../draft-projection/rename-intent';
  * A published board is the owner's whole pool — some 1600 rows — and someone arriving from a link
  * came to read the top of it, not to scroll past everyone. Each step down roughly doubles what is
  * on screen: the first four rounds of a twelve-team draft, the next four, about every rostered
- * player in a normal league, then the whole pool. Show less walks back up the same steps.
+ * player in a normal league, the waiver wire behind them, then the whole pool. Show less walks
+ * back up the same steps.
  */
-const ROW_STEPS = [50, 100, 200, Infinity] as const;
+const ROW_STEPS = [50, 100, 200, 300, Infinity] as const;
 
 /** One published row, in the shapes the editor's table components expect. */
 interface SharedRow {
