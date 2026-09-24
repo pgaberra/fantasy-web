@@ -299,6 +299,13 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   never answers raises no error: staging's BFF deadlocked on 2026-09-11 and pages sat on their
   spinner for minutes. A timeout fails as `RequestTimeoutError` and is not retried.
 - `models/`, `pipes/`, `shared/` (e.g. `loading-indicator`)
+  - `shared/row-window` — `rowWindow(list, body)` draws only the rows of a long, page-scrolled
+    table that are near the screen, with a spacer `<tbody>` above and below standing in for the
+    rest. Used by the shared page, whose "Show all" is ~1600 rows: a table is laid out whole, so
+    drawing them all held the page 1.5 s on a laptop and ~9 s on a phone-speed CPU, and adding them
+    in batches was worse (every batch re-lays out the whole table). Header cells keep the widest
+    they have been as a `min-width`, so columns don't jump as names of other lengths scroll by.
+    Browser find (Ctrl+F) only sees drawn rows; the page's own search covers the rest.
   - `shared/pinned-table-header` — holds a wide table's `<thead>` against the top of the window
     while the page scrolls past it. The projections table runs down the page rather than inside a
     viewport-tall scrollbox, but its wrapper stays a horizontal scroll container for the stat
