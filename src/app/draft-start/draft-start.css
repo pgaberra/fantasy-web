@@ -1,7 +1,7 @@
 .draft-start {
   /* The same width as the projection pages, and for the same reason: this page now draws the
      same preview table, and at 720px its stat columns were cut off behind a scrollbar. */
-  max-width: 1100px;
+  max-width: var(--page-width-narrow);
   margin: 0 auto;
   padding: 1.5rem 1rem;
 }

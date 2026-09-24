@@ -1,5 +1,5 @@
 .streamer-planner {
-  max-width: 1400px;
+  max-width: var(--page-width-wide);
   margin: 0 auto;
   padding: var(--space-5) var(--space-4);
 }

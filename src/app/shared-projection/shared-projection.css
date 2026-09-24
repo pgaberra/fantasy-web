@@ -1,8 +1,7 @@
 .shared-projection {
-  /* The same 1400px as the editor (see draft-projection.css): this page renders the same
-     table, and at 1100px its default columns overflowed, hiding stats behind a sideways
-     scroll on a wide screen. */
-  max-width: 1400px;
+  /* The editor's width, not the narrow one: this page renders the same table, and at 1100px
+     its default columns overflowed, hiding stats behind a sideways scroll on a wide screen. */
+  max-width: var(--page-width-wide);
   margin: 0 auto;
   padding: var(--space-5) var(--space-4);
 }

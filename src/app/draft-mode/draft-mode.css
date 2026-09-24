@@ -1,5 +1,5 @@
 .draft-mode {
-  max-width: 1100px;
+  max-width: var(--page-width-narrow);
   margin: 0 auto;
   padding: 1.5rem 1rem;
 }

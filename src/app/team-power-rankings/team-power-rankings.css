@@ -1,6 +1,6 @@
 /* As wide as the league table wants, like the draft summary it is a sibling of. */
 .power-rankings {
-  max-width: 1400px;
+  max-width: var(--page-width-wide);
   margin: 0 auto;
   padding: 1.5rem 1rem;
 }

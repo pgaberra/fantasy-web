@@ -1,7 +1,7 @@
 /* The summary is one wide table — a column per category plus the score — so the page gets the
    same room as the projections page rather than the draft board's three-panel width. */
 .summary-page {
-  max-width: 1400px;
+  max-width: var(--page-width-wide);
   margin: 0 auto;
   padding: 1.5rem 1rem;
 }
