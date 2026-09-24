@@ -246,12 +246,24 @@
          above the table, where they do not have to scroll a board to find them. -->
     @if (!isLoggedIn()) {
       <section class="cta">
-        <h2 class="cta-title">This is one manager's projection</h2>
-        <p class="cta-body">
-          Build your own rankings around your league's scoring settings, or draft directly against
-          this projection.
-        </p>
-        <a routerLink="/register" class="btn btn-primary">Make your own projection</a>
+        <h2 class="cta-title">Sign in or create a free account to make your own projections.</h2>
+        <p class="cta-body">Build your own rankings based on your league settings.</p>
+        <div class="cta-actions">
+          <a
+            routerLink="/login"
+            [queryParams]="{ returnUrl }"
+            class="btn btn-primary"
+            data-testid="cta-login"
+            >Sign in</a
+          >
+          <a
+            routerLink="/register"
+            [queryParams]="{ returnUrl }"
+            class="btn btn-secondary"
+            data-testid="cta-register"
+            >Create account</a
+          >
+        </div>
       </section>
     }
 

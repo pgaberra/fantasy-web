@@ -1,7 +1,7 @@
 import { MockBuilder, MockedComponentFixture, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeAll, beforeEach, afterAll, onTestFinished, vi } from 'vitest';
 import { of, Subject, throwError } from 'rxjs';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Location } from '@angular/common';
 import { ApplicationRef, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -1266,12 +1266,27 @@ describe('SharedProjectionComponent', () => {
 
   describe('the board and what it offers', () => {
     /** The whole board, for a visitor who has no account as much as for one who does. */
-    it('shows a signed-out visitor every row, and the pitch for a projection of their own', async () => {
+    it('shows a signed-out visitor every row, and the way to an account of their own', async () => {
       const fixture = await render();
 
       expect(fixture.point.componentInstance.matchingCount()).toEqual(2);
-      expect(fixture.nativeElement.textContent).toContain('Make your own projection');
-      expect(fixture.nativeElement.textContent).not.toContain('Sign in to see the rest');
+      expect(fixture.nativeElement.querySelector('.cta-title').textContent).toContain(
+        'Sign in or create a free account to make your own projections.',
+      );
+      expect(fixture.nativeElement.querySelector('.cta-body').textContent).toContain(
+        'Build your own rankings based on your league settings.',
+      );
+    });
+
+    it('sends them back to this board once they have signed in or signed up', async () => {
+      await render();
+
+      const login = ngMocks.get(ngMocks.find('[data-testid="cta-login"]'), RouterLink);
+      const register = ngMocks.get(ngMocks.find('[data-testid="cta-register"]'), RouterLink);
+      expect(login.routerLink).toEqual('/login');
+      expect(login.queryParams).toEqual({ returnUrl: '/s/abc123' });
+      expect(register.routerLink).toEqual('/register');
+      expect(register.queryParams).toEqual({ returnUrl: '/s/abc123' });
     });
 
     it('copies the board and opens a draft against it', async () => {
