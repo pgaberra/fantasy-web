@@ -12,33 +12,11 @@ import { applyPositionOverrides } from '../models/position-override';
 import { readableDecimalSettings } from '../draft-projection/projection-settings-section/model-decimals';
 import { ProjectionRankingService } from './projection-ranking.service';
 import { ProjectionState } from './projection-serializer';
-import {
-  PositionFilter,
-  ScoredProjection,
-  ScoringType,
-  SortColumn,
-  SortDirection,
-} from '../models/projection.model';
-
-/**
- * How a visitor has narrowed and ordered a shared board, as the public read takes it. The four
- * filters travel with the order because the server applies them together: they decide which rows
- * a visitor behind the sign-in gate is sent, not just how the ones they hold are arranged.
- */
-export interface SharedBoardQuery {
-  readonly position: PositionFilter;
-  readonly search: string;
-  readonly team: string;
-  readonly rookies: boolean;
-  readonly sort: SortColumn;
-  readonly direction: SortDirection;
-}
+import { ScoredProjection, ScoringType } from '../models/projection.model';
 
 /**
  * The most ranked rows a share may publish. Not the product rule — a share publishes the whole
- * board, and this only matches the cap the API enforces, sized above the largest player pool. How
- * much of that board a visitor actually reads is decided by the BFF, which hands the full rows to
- * someone signed in and the top of them to everyone else.
+ * board, and this only matches the cap the API enforces, sized above the largest player pool.
  */
 export const SHARED_PLAYER_LIMIT = 2000;
 
@@ -57,14 +35,9 @@ export class ProjectionShareService {
     return from(this.api.invoke(shareProjection, { id: projectionId, body: { players } }));
   }
 
-  /**
-   * Reads a published board. The filters and the order are asked for rather than applied on
-   * arrival because they decide *which* rows come back: a visitor who is not signed in receives
-   * the top of the board under them, not the top of the published one narrowed and re-sorted in
-   * the browser. Someone holding the whole board is unaffected, and passes nothing.
-   */
-  loadShared(token: string, query?: SharedBoardQuery): Observable<SharedProjectionResponse> {
-    return from(this.api.invoke(getSharedProjection, { token, ...query }));
+  /** Reads a published board: all of it, for any reader. */
+  loadShared(token: string): Observable<SharedProjectionResponse> {
+    return from(this.api.invoke(getSharedProjection, { token }));
   }
 
   /**
@@ -100,8 +73,8 @@ export class ProjectionShareService {
   }
 
   /**
-   * Freezes a ranking into the rows a share publishes — all of it, since a signed-in visitor is
-   * meant to read the whole board. Identity is denormalised here because the public page has no
+   * Freezes a ranking into the rows a share publishes — all of it, since a visitor is meant to
+   * read the whole board. Identity is denormalised here because the public page has no
    * player read model to join against: what gets stored is exactly what a visitor will see.
    */
   toSharedPlayers(
