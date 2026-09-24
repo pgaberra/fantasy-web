@@ -419,6 +419,18 @@ describe('DraftProjectionComponent', () => {
     expect(corrected?.type === 'skater' && [...corrected.positions]).toEqual(['D']);
   });
 
+  it('drops the correction when a position is ticked and then unticked again', async () => {
+    const fixture = MockRender(DraftProjectionComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.onPositionsChanged({ playerId: 1, positions: ['C', 'LW'] });
+    expect(component.positionOverrides().size).toEqual(1);
+
+    component.onPositionsChanged({ playerId: 1, positions: ['C'] });
+    expect(component.positionOverrides().size).toEqual(0);
+  });
+
   it('reports a conflict and keeps the old name when the name is taken', async () => {
     const fixture = MockRender(DraftProjectionComponent);
     await fixture.whenStable();
