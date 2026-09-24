@@ -106,6 +106,7 @@
             <button
               type="button"
               class="btn btn-secondary follow"
+              appTooltip="Add this projection to your library"
               [disabled]="isBusy() || isCheckingFollow()"
               (click)="follow()"
               data-testid="follow-board"
