@@ -200,6 +200,8 @@ describe('SharedProjectionComponent', () => {
 
     expect(ngMocks.input(header, 'showWeights')).toBe(true);
     expect(ngMocks.input(header, 'readonly')).toBe(true);
+    // The row switched on with nothing in it was the bug: the weights must be the board's own.
+    expect(ngMocks.input(header, 'statWeights')).toEqual({ goals: 4.5 });
   });
 
   it('renders the published value rather than recomputing it', async () => {
