@@ -14,7 +14,20 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
-import { catchError, exhaustMap, filter, forkJoin, map, of, Subscription, timer } from 'rxjs';
+import {
+  catchError,
+  EMPTY,
+  exhaustMap,
+  filter,
+  forkJoin,
+  fromEvent,
+  map,
+  of,
+  startWith,
+  Subscription,
+  switchMap,
+  timer,
+} from 'rxjs';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { freeNameFrom } from '../services/projection-name';
 import { NotificationService } from '../services/notification.service';
@@ -84,6 +97,7 @@ import {
 } from './draft-follow-connect/draft-follow-connect';
 import {
   boardFromLeagueDraft,
+  hasLeagueTeams,
   isLeagueBoard,
   sameBoard,
   UnfollowableReason,
@@ -224,6 +238,11 @@ export class DraftModeComponent implements OnInit {
     "it's on.";
   /** A league draft waiting for the user to agree to replace the picks entered by hand. */
   readonly pendingFollow = signal<LeagueDraftResponse | null>(null);
+  /** Whether the board waiting to be replaced already has the league's teams, so only picks go. */
+  readonly pendingFollowKeepsTeams = computed(() => {
+    const league = this.pendingFollow();
+    return !!league && hasLeagueTeams(this.draft(), league);
+  });
   /** Whether the user asked, from the board, to link a league to follow. */
   private readonly linkRequested = signal<boolean>(false);
   /** Whether this page is the one a Yahoo connect left from, so it reopens what started it. */
@@ -1282,9 +1301,17 @@ export class DraftModeComponent implements OnInit {
       return;
     }
     // A hidden tab skips its turn rather than queueing one, and a slow answer is never overtaken
-    // by the next request.
-    this.followSubscription = timer(FOLLOW_POLL_MS, FOLLOW_POLL_MS)
+    // by the next request. Coming back into view asks at once and starts the count again: the
+    // user was most likely on Yahoo's own tab, making picks this board has not seen.
+    const shown =
+      typeof document === 'undefined'
+        ? EMPTY
+        : fromEvent(document, 'visibilitychange').pipe(filter(() => !document.hidden));
+    this.followSubscription = shown
       .pipe(
+        map(() => 0),
+        startWith(FOLLOW_POLL_MS),
+        switchMap((firstIn) => timer(firstIn, FOLLOW_POLL_MS)),
         filter(() => typeof document === 'undefined' || !document.hidden),
         exhaustMap(() =>
           this.yahoo.leagueDraft(leagueKey).pipe(
@@ -1344,7 +1371,7 @@ export class DraftModeComponent implements OnInit {
       this.stopFollowing();
       return;
     }
-    this.followNotice.set("Couldn't reach Yahoo. Trying again.");
+    this.followNotice.set('Sync unavailable at the moment.');
   }
 
   private followErrorNotice(error: unknown): string {

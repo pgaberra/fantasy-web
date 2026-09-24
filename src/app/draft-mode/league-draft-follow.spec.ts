@@ -3,6 +3,7 @@ import { DraftState } from '../api/models/draft-state';
 import { LeagueDraftResponse } from '../api/models/league-draft-response';
 import {
   boardFromLeagueDraft,
+  hasLeagueTeams,
   isLeagueBoard,
   sameBoard,
   unfollowableReason,
@@ -81,5 +82,25 @@ describe('league draft follow', () => {
     expect(isLeagueBoard({ ...handEntered, picks: [] }, league)).toBe(true);
     expect(isLeagueBoard(boardFromLeagueDraft(null, league), league)).toBe(true);
     expect(isLeagueBoard(null, league)).toBe(true);
+  });
+
+  it("asks on a board with the league's teams once a pick there is not the league's", () => {
+    const followed = boardFromLeagueDraft(null, league);
+    expect(isLeagueBoard({ ...followed, picks: followed.picks.slice(0, 1) }, league)).toBe(true);
+    expect(
+      isLeagueBoard(
+        { ...followed, picks: [followed.picks[0], { playerId: 1, teamId: 'l.9.t.1' }] },
+        league,
+      ),
+    ).toBe(false);
+    expect(
+      isLeagueBoard(
+        { ...followed, picks: [...followed.picks, { playerId: 1, teamId: 'l.9.t.2' }] },
+        league,
+      ),
+    ).toBe(false);
+    expect(isLeagueBoard(followed, { ...league, picks: [] })).toBe(false);
+    expect(hasLeagueTeams(followed, league)).toBe(true);
+    expect(hasLeagueTeams(handEntered, league)).toBe(false);
   });
 });

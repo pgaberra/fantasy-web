@@ -20,6 +20,7 @@ import { ProjectionResponse } from '../api/models/projection-response';
 import { UpdateProjectionRequest } from '../api/models/update-projection-request';
 import { DraftState } from '../api/models/draft-state';
 import { LeagueDraftResponse } from '../api/models/league-draft-response';
+import { boardFromLeagueDraft } from './league-draft-follow';
 
 describe('DraftModeComponent following a Yahoo draft', () => {
   const players: Player[] = [
@@ -281,6 +282,70 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     expect(component.picks()).toEqual([]);
   });
 
+  it("asks before replacing a pick entered by hand on a board that has the league's teams", async () => {
+    const leagueBoard = boardFromLeagueDraft(handEnteredDraft, leagueDraft());
+    loaded = projectionWith({ ...leagueBoard, picks: [{ playerId: 7109, teamId: '465.l.9.t.2' }] });
+    leagueDraftCall.mockReturnValue(of(leagueDraft()));
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
+
+    component.requestFollow();
+    expect(component.following()).toBe(false);
+    expect(component.pendingFollowKeepsTeams()).toBe(true);
+    fixture.detectChanges();
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.modal-text')?.textContent,
+    ).toContain('Your 1 picks here are replaced by the 0 picks made on Yahoo.');
+    component.cancelFollow();
+    expect(component.picks()).toEqual([{ playerId: 7109, teamId: '465.l.9.t.2' }]);
+  });
+
+  it("follows without asking when every pick on the board is the league's", async () => {
+    const madePicks = [
+      { overall: 1, round: 1, teamId: '465.l.9.t.2', playerId: 6743 },
+      { overall: 2, round: 1, teamId: '465.l.9.t.1', playerId: 7109 },
+    ];
+    loaded = projectionWith(
+      boardFromLeagueDraft(handEnteredDraft, leagueDraft(madePicks.slice(0, 1))),
+    );
+    leagueDraftCall.mockReturnValue(of(leagueDraft(madePicks)));
+    const component = await render();
+
+    component.requestFollow();
+    expect(component.pendingFollow()).toBeNull();
+    expect(component.following()).toBe(true);
+    expect(component.picks()).toHaveLength(2);
+    component.stopFollowing();
+  });
+
+  it('asks Yahoo at once when the tab comes back into view, and not while it is hidden', async () => {
+    let hidden = false;
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden });
+    try {
+      leagueDraftCall.mockReturnValue(of(leagueDraft()));
+      const component = await render();
+      component.requestFollow();
+      expect(leagueDraftCall).toHaveBeenCalledTimes(1);
+
+      hidden = true;
+      await vi.advanceTimersByTimeAsync(15000);
+      expect(leagueDraftCall).toHaveBeenCalledTimes(1);
+
+      hidden = false;
+      document.dispatchEvent(new Event('visibilitychange'));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(leagueDraftCall).toHaveBeenCalledTimes(2);
+
+      await vi.advanceTimersByTimeAsync(4999);
+      expect(leagueDraftCall).toHaveBeenCalledTimes(2);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(leagueDraftCall).toHaveBeenCalledTimes(3);
+      component.stopFollowing();
+    } finally {
+      delete (document as unknown as { hidden?: boolean }).hidden;
+    }
+  });
+
   it('does not follow an auction draft', async () => {
     leagueDraftCall.mockReturnValue(of({ ...leagueDraft(), auction: true }));
     const component = await render();
@@ -450,7 +515,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     leagueDraftCall.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
     await vi.advanceTimersByTimeAsync(5000);
     expect(component.following()).toBe(true);
-    expect(component.followNotice()).toBe("Couldn't reach Yahoo. Trying again.");
+    expect(component.followNotice()).toBe('Sync unavailable at the moment.');
 
     leagueDraftCall.mockReturnValue(of(leagueDraft()));
     await vi.advanceTimersByTimeAsync(5000);
