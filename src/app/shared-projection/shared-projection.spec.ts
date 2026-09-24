@@ -747,7 +747,7 @@ describe('SharedProjectionComponent', () => {
       const fixture = await render();
 
       for (const [testId, text] of [
-        ['copy-board', 'Adds an editable copy to My Projections'],
+        ['copy-board', 'Create an editable copy of this projection'],
         ['draft-board', 'Draft using this projection'],
       ]) {
         const button = fixture.nativeElement.querySelector(`[data-testid="${testId}"]`);
