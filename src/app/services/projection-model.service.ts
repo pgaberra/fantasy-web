@@ -2,7 +2,9 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { catchError, map, Observable, shareReplay, throwError } from 'rxjs';
 import { ApiConfiguration } from '../api/api-configuration';
+import { modelBoard } from '../api/fn/projection-model/model-board';
 import { seed } from '../api/fn/projection-model/seed';
+import { ModelBoardResponse } from '../api/models/model-board-response';
 import { SeededProjectionResponse } from '../api/models/seeded-projection-response';
 
 /** What to ask the model for. Everything it has, unless narrowed. */
@@ -61,6 +63,19 @@ export class ProjectionModelService {
     );
     this.asked.set(key, answer);
     return answer;
+  }
+
+  /**
+   * The rows a projection created from the model would start with — the model's lines plus last
+   * season's for every player it does not reach — as the server would write them now. Premium
+   * only.
+   *
+   * <p>Deliberately not held like {@link seed}: this is what a preview promises Create will write,
+   * and Create reads the model and the pool fresh, so an answer kept across the nightly sync
+   * would preview a board that Create no longer makes.
+   */
+  board(): Observable<ModelBoardResponse> {
+    return modelBoard(this.http, this.config.rootUrl).pipe(map((response) => response.body));
   }
 }
 

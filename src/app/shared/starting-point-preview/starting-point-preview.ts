@@ -24,6 +24,8 @@ import { TableScrollDirective } from '../table-scroll/table-scroll.directive';
 import { ProjectionResponse } from '../../api/models/projection-response';
 import { CreateProjectionRequest } from '../../api/models/create-projection-request';
 import { SeededProjectionResponse } from '../../api/models/seeded-projection-response';
+import { ModelBoardResponse } from '../../api/models/model-board-response';
+import { AiProjectionAccess } from '../premium/ai-projection-access';
 import {
   DEFAULT_LEAGUE_SIZE,
   DEFAULT_MIN_GOALIE_GAMES,
@@ -58,16 +60,22 @@ export type PreviewSource =
 const PREVIEW_ROWS = 5;
 
 /**
- * How much of the board a preset's preview downloads to fill those rows. The BFF serves skaters by
- * points and goalies by wins; the default weights score hits and blocks too, so the order the
- * preview wants is not exactly the order it receives — these are wide enough that the players it
- * would pick out of the whole pool are certainly inside, and narrow enough to be a few kilobytes
- * rather than the half-megabyte the editor needs.
+ * How much of last season's pool the 'Last season' and 'From scratch' previews download to fill
+ * those rows: a few kilobytes rather than the half-megabyte the editor needs. Their five rows are
+ * ranked within this slice, so they are the board's top five only as far as the slice holds
+ * everyone who would outscore them — the BFF serves skaters by points and goalies by wins, while
+ * the default weights score hits and blocks too.
  *
- * <p>They are also the width the BFF serves without a subscription, so the AI preset previews
- * for everyone. Widen either one and a free account gets a 403 instead of a preview.
+ * <p>The AI preset's free teaser names its rows out of the same slice.
  */
 const PREVIEW_FETCH_LIMITS = { skaters: 25, goalies: 10 };
+
+/**
+ * The model lines a free account's AI preview asks for: the top skaters, as many as the BFF
+ * serves without a subscription, and as few goalies as it accepts (it refuses a limit of 0).
+ * The free teaser ranks skaters only, so no goalie line is drawn.
+ */
+const FREE_MODEL_SEED_LIMITS = { skaterLimit: PREVIEW_FETCH_LIMITS.skaters, goalieLimit: 1 };
 
 /**
  * What the preview scores and draws with. A preset's is the same for everyone, since a new
@@ -172,6 +180,7 @@ export class StartingPointPreviewComponent {
   private readonly serializer = inject(ProjectionSerializerService);
   private readonly ranking = inject(ProjectionRankingService);
   private readonly boardCache = inject(ProjectionBoardCache);
+  private readonly aiAccess = inject(AiProjectionAccess);
 
   /** What to draw. Null while the page has nothing picked, which draws the note and no table. */
   readonly source = input.required<PreviewSource | null>();
@@ -200,6 +209,27 @@ export class StartingPointPreviewComponent {
   readonly isModelPreset = computed(() => this.isPreset('model'));
 
   /**
+   * How the AI preset is previewed for this account: from the whole board Create would write
+   * ('board'), from the free teaser ('teaser'), or not yet, while the entitlement is on its way.
+   * Undefined when the AI preset is not picked.
+   */
+  private readonly modelPreview = computed<'board' | 'teaser' | 'pending' | undefined>(() => {
+    if (!this.isModelPreset()) {
+      return undefined;
+    }
+    const wholeBoard = this.aiAccess.readsWholeBoard();
+    if (wholeBoard === null) {
+      return 'pending';
+    }
+    return wholeBoard ? 'board' : 'teaser';
+  });
+
+  /** Whether the preview ranks the whole pool: a board's, or the AI preset's for a subscriber. */
+  private readonly ranksWholePool = computed(
+    () => this.isBoard() || this.modelPreview() === 'board',
+  );
+
+  /**
    * The top of the pool, for a preset's preview. Only the top, since only five rows are drawn —
    * and the goalies come with the skaters because one of those rows can be a goalie.
    */
@@ -222,12 +252,13 @@ export class StartingPointPreviewComponent {
   });
 
   /**
-   * The whole pool, fetched only once a board is picked. The preset previews get by on the top of
-   * the board, but a board's five rows are its own top five and can be anyone on it — a player
-   * outside that slice would have no name to put beside their numbers.
+   * The whole pool, fetched only once a board is picked, or the AI preset by an account that
+   * reads the whole of it. The other presets get by on the top of the pool, but these rows are
+   * the top of a whole board and can be anyone on it — a player outside that slice would have no
+   * name to put beside their numbers.
    */
   private readonly boardPoolResource = rxResource({
-    params: () => (this.isBoard() ? {} : undefined),
+    params: () => (this.ranksWholePool() ? {} : undefined),
     stream: () => this.wholePool(),
     defaultValue: [] as Player[],
   });
@@ -241,21 +272,26 @@ export class StartingPointPreviewComponent {
   });
 
   /**
-   * The model's lines, fetched only once the AI preset is picked — and only the top of them, the
-   * same slice of the board the pool itself is asked for.
-   *
-   * <p>{@link PREVIEW_FETCH_LIMITS} is also what makes this free: the BFF serves a request this
-   * narrow to an account without premium, so widening it here would take the preview away from
-   * everyone who has not paid.
+   * The free teaser's model lines, fetched only once the AI preset is picked by an account
+   * without the whole board, and only the top of them. {@link FREE_MODEL_SEED_LIMITS} is what
+   * makes this free: the BFF serves a request this narrow to an account without premium, so
+   * widening it here would take the preview away from everyone who has not paid.
    */
   private readonly modelSeedResource = rxResource({
-    params: () => (this.isModelPreset() ? {} : undefined),
-    stream: () =>
-      this.projectionModel.seed({
-        skaterLimit: PREVIEW_FETCH_LIMITS.skaters,
-        goalieLimit: PREVIEW_FETCH_LIMITS.goalies,
-      }),
+    params: () => (this.modelPreview() === 'teaser' ? {} : undefined),
+    stream: () => this.projectionModel.seed(FREE_MODEL_SEED_LIMITS),
     defaultValue: undefined as SeededProjectionResponse | undefined,
+  });
+
+  /**
+   * Every row a projection created from the AI preset would be written with, for an account
+   * that reads the whole board. Fetched afresh each time the preset is picked, never kept, since
+   * Create reads the model and the pool afresh too.
+   */
+  private readonly modelBoardResource = rxResource({
+    params: () => (this.modelPreview() === 'board' ? {} : undefined),
+    stream: () => this.projectionModel.board(),
+    defaultValue: undefined as ModelBoardResponse | undefined,
   });
 
   /** The picked board as the editor would open it. Null while a preset is picked, or on its way. */
@@ -294,36 +330,45 @@ export class StartingPointPreviewComponent {
   );
 
   /** Whatever the picked starting point has to download before the preview can be drawn. */
-  readonly isLoading = computed(
-    () =>
-      (this.isBoard()
-        ? this.boardResource.isLoading() || this.boardPoolResource.isLoading()
-        : this.topOfPoolResource.isLoading()) ||
-      (this.isModelPreset() && this.modelSeedResource.isLoading()),
-  );
+  readonly isLoading = computed(() => {
+    switch (this.modelPreview()) {
+      case 'pending':
+        return true;
+      case 'board':
+        return this.modelBoardResource.isLoading() || this.boardPoolResource.isLoading();
+      case 'teaser':
+        return this.topOfPoolResource.isLoading() || this.modelSeedResource.isLoading();
+    }
+    return this.isBoard()
+      ? this.boardResource.isLoading() || this.boardPoolResource.isLoading()
+      : this.topOfPoolResource.isLoading();
+  });
 
-  readonly hasFailed = computed(() =>
-    this.isBoard()
-      ? !!this.boardResource.error() || !!this.boardPoolResource.error()
-      : !!this.topOfPoolResource.error(),
-  );
+  readonly hasFailed = computed(() => {
+    if (this.isBoard()) {
+      return !!this.boardResource.error() || !!this.boardPoolResource.error();
+    }
+    if (this.modelPreview() === 'board') {
+      return !!this.modelBoardResource.error() || !!this.boardPoolResource.error();
+    }
+    return !!this.topOfPoolResource.error();
+  });
 
-  /** Who the preview can name: the whole pool for a board, the top of it for a preset. */
+  /**
+   * Who the preview can name: the whole pool where it ranks a whole board, the top of it for the
+   * other presets and the free teaser.
+   */
   private readonly previewPool = computed<Player[]>(() => {
     // Via hasValue(): reading a resource that failed throws, and neither fetch is worth taking
     // the page down for.
-    const players = this.isBoard() ? this.boardPoolResource : this.topOfPoolResource;
+    const players = this.ranksWholePool() ? this.boardPoolResource : this.topOfPoolResource;
     return players.hasValue() ? players.value() : [];
   });
 
   /**
    * The lines the preview ranks. Every player's own stats, except under the AI preset, where
-   * they are the model's estimates instead, and under a board, where they are the board's own.
-   *
-   * <p>The model reaches fewer players than the pool does, and a projection seeded from it holds
-   * only the ones it reached — so the rows missing here are exactly the rows the editor will not
-   * open with. Ranking the model's own lines rather than filtering last season's also gives the
-   * preview the model's order and the model's totals, which is what the finished board shows.
+   * they are the board Create would write (or the free teaser's model lines), and under a board,
+   * where they are the board's own.
    */
   private readonly previewProjections = computed<Projection[]>(() => {
     if (!this.source()) {
@@ -342,23 +387,55 @@ export class StartingPointPreviewComponent {
         squaredWithPool(projection, byId.get(projection.playerId)),
       );
     }
-    if (!this.isModelPreset()) {
-      return players.map((player) => ownLine(player));
+    switch (this.modelPreview()) {
+      case 'board':
+        return this.modelBoardProjections(byId);
+      case 'teaser':
+        return this.teaserProjections(byId);
+      case 'pending':
+        return [];
     }
-    const seeded = this.modelSeedResource.value();
-    if (!seeded) {
+    return players.map((player) => ownLine(player));
+  });
+
+  /**
+   * The AI preset for an account that reads the whole board: every row Create would write, opened
+   * exactly as the editor opens them — the rows whose player the pool holds, squared with it —
+   * so the ranking below is the editor's ranking, in category scoring too, where every z-score
+   * depends on who else is on the board.
+   */
+  private modelBoardProjections(byId: Map<number, Player>): Projection[] {
+    const board = this.modelBoardResource.hasValue() ? this.modelBoardResource.value() : undefined;
+    if (!board) {
       // Still loading, or the fetch failed. The template says so rather than showing the board
       // this preset would not produce.
       return [];
     }
-    // Only the players whose identity this page holds: it fetches the top of the board, not the
+    return board.players
+      .filter((row) => byId.has(row.playerId))
+      .map((row) => squaredWithPool(this.serializer.toProjection(row), byId.get(row.playerId)));
+  }
+
+  /**
+   * The AI preset's free teaser: the model's top skaters, ranked among themselves. Skaters only
+   * (Alexander's call, 2026-09-24), and ranked out of a slice of the board, so the numbers beside
+   * these rows are their rank among the previewed skaters, not a promise of where the board will
+   * put them.
+   */
+  private teaserProjections(byId: Map<number, Player>): Projection[] {
+    const seeded = this.modelSeedResource.value();
+    if (!seeded) {
+      return [];
+    }
+    // Only the players whose identity this page holds: it fetches the top of the pool, not the
     // pool, so a model line for anyone further down has no name to put beside it.
     return seeded.players
       .filter((player) => byId.has(player.playerId))
       .map((player) =>
         squaredWithPool(this.serializer.toProjection(player), byId.get(player.playerId)),
-      );
-  });
+      )
+      .filter((projection) => projection.type === 'skater');
+  }
 
   /** Every player, scored and ordered exactly as the editor scores and orders them. */
   private readonly rankedPlayers = computed<ScoredPlayer[]>(() => {
@@ -436,6 +513,7 @@ export class StartingPointPreviewComponent {
   reload(): void {
     this.topOfPoolResource.reload();
     this.boardPoolResource.reload();
+    this.modelBoardResource.reload();
   }
 
   /** The pool, downloaded once, however often the picked kind leaves the boards and comes back. */
