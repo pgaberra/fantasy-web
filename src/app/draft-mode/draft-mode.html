@@ -259,8 +259,14 @@
           <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
             <h2 class="modal-title">Replace your picks with the Yahoo draft?</h2>
             <p class="modal-text">
-              Your {{ picks().length }} picks and teams here are replaced by the league's
-              {{ league.teams.length }} teams and the {{ league.picks.length }} picks made on Yahoo.
+              @if (pendingFollowKeepsTeams()) {
+                Your {{ picks().length }} picks here are replaced by the
+                {{ league.picks.length }} picks made on Yahoo.
+              } @else {
+                Your {{ picks().length }} picks and teams here are replaced by the league's
+                {{ league.teams.length }} teams and the {{ league.picks.length }} picks made on
+                Yahoo.
+              }
             </p>
             <div class="modal-actions">
               <button type="button" class="btn btn-secondary" (click)="cancelFollow()">

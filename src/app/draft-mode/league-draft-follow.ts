@@ -56,11 +56,29 @@ export function sameBoard(a: DraftState | null, b: DraftState): boolean {
   );
 }
 
-/** Whether the board already is this league's, so following it replaces nothing the user entered. */
+/** Whether the board's teams are this league's, as a board that has followed it has. */
+export function hasLeagueTeams(current: DraftState | null, league: LeagueDraftResponse): boolean {
+  const leagueTeamIds = new Set(league.teams.map((team) => team.id));
+  return !!current && current.teams.every((team) => leagueTeamIds.has(team.id));
+}
+
+/**
+ * Whether the board already is this league's, so following it replaces nothing the user entered:
+ * its teams are the league's and every pick on it is the league's pick in that place. Teams alone
+ * do not say it — a board that followed once keeps the league's teams while sync is off, and a
+ * pick entered or removed by hand then would be lost without a word.
+ */
 export function isLeagueBoard(current: DraftState | null, league: LeagueDraftResponse): boolean {
   if (!current || current.picks.length === 0) {
     return true;
   }
-  const leagueTeamIds = new Set(league.teams.map((team) => team.id));
-  return current.teams.every((team) => leagueTeamIds.has(team.id));
+  return (
+    hasLeagueTeams(current, league) &&
+    current.picks.length <= league.picks.length &&
+    current.picks.every(
+      (pick, index) =>
+        pick.playerId === league.picks[index].playerId &&
+        pick.teamId === league.picks[index].teamId,
+    )
+  );
 }
