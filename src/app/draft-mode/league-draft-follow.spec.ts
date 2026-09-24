@@ -16,6 +16,7 @@ const league: LeagueDraftResponse = {
     { id: 'l.9.t.2', name: 'Bravo', mine: false },
     { id: 'l.9.t.1', name: 'Alpha', mine: true },
   ],
+  orderKnown: true,
   picks: [
     { overall: 1, round: 1, teamId: 'l.9.t.2', playerId: 6743 },
     { overall: 2, round: 1, teamId: 'l.9.t.1', playerId: 7109 },
@@ -43,6 +44,25 @@ describe('league draft follow', () => {
       { playerId: 7109, teamId: 'l.9.t.1' },
     ]);
     expect(board.finishedAt).toBe('2026-09-01T00:00:00Z');
+  });
+
+  it("keeps the board's own teams and order while the league's order is not known", () => {
+    const waiting: LeagueDraftResponse = { ...league, orderKnown: false, picks: [] };
+
+    const board = boardFromLeagueDraft(handEntered, waiting);
+
+    expect(board.teams).toEqual(handEntered.teams);
+    expect(board.order).toEqual(['team-me', 'team-1']);
+    expect(board.picks).toEqual([]);
+    expect(board.finishedAt).toBe('2026-09-01T00:00:00Z');
+    expect(sameBoard(board, boardFromLeagueDraft(board, waiting))).toBe(true);
+  });
+
+  it("takes the league's teams with its picks, which name them, even where the order is not known", () => {
+    const board = boardFromLeagueDraft(handEntered, { ...league, orderKnown: false });
+
+    expect(board.order).toEqual(['l.9.t.2', 'l.9.t.1']);
+    expect(board.picks).toHaveLength(2);
   });
 
   it('builds a board where there was none', () => {

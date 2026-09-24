@@ -20,11 +20,18 @@ export function unfollowableReason(league: LeagueDraftResponse): UnfollowableRea
 /**
  * The draft board as the league has it: the league's teams, in its draft order, and the picks made
  * there. Whatever else the draft holds (its league settings, whether it was finished) is kept.
+ *
+ * A league whose order is not known yet (`orderKnown`: Yahoo lists a live draft's slots only once
+ * it runs) lists its teams in an order that says nothing about who picks when, so until its first
+ * pick the board keeps its own teams and order rather than saving that order as the draft's.
  */
 export function boardFromLeagueDraft(
   current: DraftState | null,
   league: LeagueDraftResponse,
 ): DraftState {
+  if (current && !league.orderKnown && league.picks.length === 0) {
+    return { ...current, picks: [] };
+  }
   return {
     ...current,
     teams: league.teams.map((team) => ({ id: team.id, name: team.name, mine: team.mine })),
