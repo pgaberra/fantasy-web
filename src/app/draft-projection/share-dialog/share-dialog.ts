@@ -1,4 +1,13 @@
-import { Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  OnInit,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, of, switchMap } from 'rxjs';
 import { SharedPlayer } from '../../api/models/shared-player';
@@ -12,6 +21,8 @@ import { messageForError } from '../../shared/http-error';
 import { OpenPopovers } from '../../shared/popover/open-popovers';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 import { IconComponent } from '../../shared/icon/icon';
+
+const COPIED_FEEDBACK_MS = 2000;
 
 /**
  * Publishing a projection as a public link. Opening the dialog only reads the current state —
@@ -51,6 +62,7 @@ export class ShareDialogComponent implements OnInit {
   readonly usernameInput = signal<string>('');
   readonly errorMessage = signal<string | null>(null);
   readonly copied = signal<boolean>(false);
+  private copiedTimer: ReturnType<typeof setTimeout> | undefined;
 
   readonly needsUsername = computed(() => !this.username());
   readonly canPublish = computed(
@@ -60,6 +72,7 @@ export class ShareDialogComponent implements OnInit {
   /** Opened from a projection card's overflow menu, which would otherwise stay open behind this. */
   constructor() {
     inject(OpenPopovers).closeAll();
+    inject(DestroyRef).onDestroy(() => clearTimeout(this.copiedTimer));
   }
 
   ngOnInit(): void {
@@ -137,7 +150,10 @@ export class ShareDialogComponent implements OnInit {
     }
     try {
       await navigator.clipboard.writeText(url);
+      // The check stands in for the copy icon briefly, then gives it back for another copy.
       this.copied.set(true);
+      clearTimeout(this.copiedTimer);
+      this.copiedTimer = setTimeout(() => this.copied.set(false), COPIED_FEEDBACK_MS);
     } catch {
       // Clipboard access can be denied outright (permissions, an insecure context); the link is
       // on screen and selectable, so say so rather than failing silently.

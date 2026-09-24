@@ -145,4 +145,31 @@ describe('ShareDialogComponent', () => {
       'https://slapstat.com/s/abc123',
     );
   });
+
+  it('copies the link and shows a check in place of the copy icon for a moment', async () => {
+    getShare.mockReturnValue(of(link));
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+
+    const fixture = render();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const button = () => fixture.nativeElement.querySelector('.copy-button') as HTMLButtonElement;
+    expect(button().getAttribute('aria-label')).toEqual('Copy link');
+
+    vi.useFakeTimers();
+    try {
+      await fixture.point.componentInstance.copyLink();
+      fixture.detectChanges();
+
+      expect(writeText).toHaveBeenCalledWith('https://slapstat.com/s/abc123');
+      expect(button().getAttribute('aria-label')).toEqual('Link copied');
+
+      vi.advanceTimersByTime(2000);
+      fixture.detectChanges();
+      expect(button().getAttribute('aria-label')).toEqual('Copy link');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
