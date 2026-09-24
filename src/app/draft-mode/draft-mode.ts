@@ -487,9 +487,11 @@ export class DraftModeComponent implements OnInit {
   readonly roster = computed(() =>
     this.rosterService.deriveRoster(this.myPicks(), this.playerMap(), this.rosterSlots()),
   );
-  readonly filledCount = computed(
-    () => this.roster().slots.filter((slot) => slot.playerId !== null).length,
-  );
+  /**
+   * Every player the user has drafted, placed or not — the count Yahoo shows. Counting filled slots
+   * read 12/16 on a finished draft whose last four picks had no slot left to fill.
+   */
+  readonly draftedCount = computed(() => this.myPicks().length);
   readonly totalSlots = computed(() => this.roster().slots.length);
 
   readonly pickNumber = computed(() => this.picks().length + 1);
@@ -1421,6 +1423,11 @@ export class DraftModeComponent implements OnInit {
   }
 
   requestFinishDraft(): void {
+    // A followed board finishes when the league's draft does. Finishing it by hand mid-draft
+    // took the sync switch away while Yahoo's draft went on, so it is not offered then.
+    if (this.following()) {
+      return;
+    }
     // Always confirm — finishing marks the draft done and changes where it opens next time,
     // so it's worth an explicit "yes". The dialog's copy adapts to a full vs. early finish.
     this.confirmingFinish.set(true);

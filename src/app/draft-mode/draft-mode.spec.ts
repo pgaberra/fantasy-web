@@ -524,7 +524,7 @@ describe('DraftModeComponent', () => {
 
     expect(component.roster().slots.find((slot) => slot.playerId === 1)?.slotKey).toEqual('c');
     expect(component.available().map((sp) => sp.projection.playerId)).toEqual([2]);
-    expect(component.filledCount()).toEqual(1);
+    expect(component.draftedCount()).toEqual(1);
     expect(component.pickNumber()).toEqual(2);
     expect(component.upNextTeam()?.id).toEqual('team-1');
     expect(component.isMyPick()).toBe(false);
@@ -630,7 +630,7 @@ describe('DraftModeComponent', () => {
     component.draftCurrent(2);
 
     expect(component.available().length).toEqual(0);
-    expect(component.filledCount()).toEqual(1);
+    expect(component.draftedCount()).toEqual(1);
     expect(component.roster().slots.find((slot) => slot.playerId === 2)).toBeUndefined();
 
     component.undoLast();
