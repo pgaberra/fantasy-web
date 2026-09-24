@@ -597,17 +597,30 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
   /**
    * Corrects one skater's positions, or puts them back on the read model's when given null.
    * Autosaves like any other edit: the state this builds is what the save watches.
+   *
+   * <p>Ticking a position and unticking it again lands back on the read model's answer, and that
+   * is no correction: it counted as a change in the header, and once saved it would pin the
+   * player there if the pool later gave him a position. So the default comes out of the map.
    */
   onPositionsChanged(change: { playerId: number; positions: SkaterPosition[] | null }): void {
     this.positionOverrides.update((current) => {
       const next = new Map(current);
-      if (change.positions === null) {
+      if (change.positions === null || this.isDefaultPositions(change.playerId, change.positions)) {
         next.delete(change.playerId);
       } else {
         next.set(change.playerId, change.positions);
       }
       return next;
     });
+  }
+
+  private isDefaultPositions(playerId: number, positions: readonly SkaterPosition[]): boolean {
+    const reported = this.playersResource.value().find((player) => player.id === playerId);
+    return (
+      reported?.type === 'skater' &&
+      reported.positions.size === positions.length &&
+      positions.every((position) => reported.positions.has(position))
+    );
   }
 
   /**
