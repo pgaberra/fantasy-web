@@ -34,6 +34,16 @@ const GAA_MIN_TOLERANCE = 0.05;
 const PERCENTAGE_TOLERANCE = 0.1;
 const FRACTION_TOLERANCE = 0.005;
 
+/**
+ * How far a stat may sit over its bound before it counts as over it. Parts that add up to
+ * exactly their whole can still sum a hair past it in floating point: the AI projection serves
+ * a goalie who starts every game he plays with W + L + OTL equal to his GP, and in about one
+ * such line in seven the three come to 1e-14 more. A strict `>` flagged every one of them
+ * (Edmonton's crease, 2026-09-24). A millionth is far below the one decimal a stat is shown to
+ * and far above any rounding a season total carries.
+ */
+const BOUND_TOLERANCE = 1e-6;
+
 @Injectable({
   providedIn: 'root',
 })
@@ -41,7 +51,7 @@ export class StatWarningService {
   warningsFor(projection: Projection): Map<StatKey, string> {
     const warnings = new Map<StatKey, string>();
 
-    if (projection.stats.utility.gp > FULL_SEASON_GAMES) {
+    if (this.exceeds(projection.stats.utility.gp, FULL_SEASON_GAMES)) {
       this.warn(warnings, 'gp', `Projected beyond the ${FULL_SEASON_GAMES}-game season`);
     }
 
@@ -57,45 +67,45 @@ export class StatWarningService {
   private addSkaterWarnings(projection: SkaterProjection, warnings: Map<StatKey, string>): void {
     const { scoring, utility } = projection.stats;
 
-    if (utility.toiPerGame > MAX_TOI_SECONDS) {
+    if (this.exceeds(utility.toiPerGame, MAX_TOI_SECONDS)) {
       this.warn(warnings, 'toiPerGame', 'Over 60 minutes per game');
     }
-    if (scoring.ppg > scoring.goals) {
+    if (this.exceeds(scoring.ppg, scoring.goals)) {
       this.warn(warnings, 'ppg', 'More than total goals');
     }
-    if (scoring.shg > scoring.goals) {
+    if (this.exceeds(scoring.shg, scoring.goals)) {
       this.warn(warnings, 'shg', 'More than total goals');
     }
-    if (scoring.gwg > scoring.goals) {
+    if (this.exceeds(scoring.gwg, scoring.goals)) {
       this.warn(warnings, 'gwg', 'More than total goals');
     }
-    if (scoring.ppa > scoring.assists) {
+    if (this.exceeds(scoring.ppa, scoring.assists)) {
       this.warn(warnings, 'ppa', 'More than total assists');
     }
-    if (scoring.sha > scoring.assists) {
+    if (this.exceeds(scoring.sha, scoring.assists)) {
       this.warn(warnings, 'sha', 'More than total assists');
     }
-    if (scoring.defPoints > scoring.points) {
+    if (this.exceeds(scoring.defPoints, scoring.points)) {
       this.warn(warnings, 'defPoints', 'More than total points');
     }
-    if (scoring.goals > scoring.sog) {
+    if (this.exceeds(scoring.goals, scoring.sog)) {
       this.warn(warnings, 'goals', 'More goals than shots on goal');
     }
-    if (scoring.hatTricks * GOALS_PER_HAT_TRICK > scoring.goals) {
+    if (this.exceeds(scoring.hatTricks * GOALS_PER_HAT_TRICK, scoring.goals)) {
       this.warn(warnings, 'hatTricks', 'Needs three goals each');
     }
 
     // Every goal, assist and point is scored at even strength, on the power play or
     // shorthanded, so the special teams share can never be more than the whole.
-    if (scoring.ppg + scoring.shg > scoring.goals) {
+    if (this.exceeds(scoring.ppg + scoring.shg, scoring.goals)) {
       this.warn(warnings, 'ppg', 'PPG + SHG exceed total goals');
       this.warn(warnings, 'shg', 'PPG + SHG exceed total goals');
     }
-    if (scoring.ppa + scoring.sha > scoring.assists) {
+    if (this.exceeds(scoring.ppa + scoring.sha, scoring.assists)) {
       this.warn(warnings, 'ppa', 'PPA + SHA exceed total assists');
       this.warn(warnings, 'sha', 'PPA + SHA exceed total assists');
     }
-    if (scoring.ppp + scoring.shp > scoring.points) {
+    if (this.exceeds(scoring.ppp + scoring.shp, scoring.points)) {
       this.warn(warnings, 'ppp', 'PPP + SHP exceed total points');
       this.warn(warnings, 'shp', 'PPP + SHP exceed total points');
     }
@@ -121,7 +131,7 @@ export class StatWarningService {
       this.warn(warnings, 'stp', "Doesn't equal STPG + STPA");
     }
 
-    if (scoring.shPct > MAX_PERCENTAGE) {
+    if (this.exceeds(scoring.shPct, MAX_PERCENTAGE)) {
       this.warn(warnings, 'shPct', 'Over 100%');
     }
     if (
@@ -145,29 +155,29 @@ export class StatWarningService {
     const { scoring, utility } = projection.stats;
     const decisions = scoring.w + scoring.l + scoring.otl;
 
-    if (scoring.gs > utility.gp) {
+    if (this.exceeds(scoring.gs, utility.gp)) {
       this.warn(warnings, 'gs', 'More than games played');
     }
-    if (decisions > utility.gp) {
+    if (this.exceeds(decisions, utility.gp)) {
       const message = 'Wins + losses + OT losses exceed games played';
       this.warn(warnings, 'w', message);
       this.warn(warnings, 'l', message);
       this.warn(warnings, 'otl', message);
     }
-    if (scoring.sho > scoring.w) {
+    if (this.exceeds(scoring.sho, scoring.w)) {
       this.warn(warnings, 'sho', 'More than wins');
     }
-    if (scoring.sv > scoring.sa) {
+    if (this.exceeds(scoring.sv, scoring.sa)) {
       this.warn(warnings, 'sv', 'More than shots against');
     }
-    if (scoring.ga > scoring.sa) {
+    if (this.exceeds(scoring.ga, scoring.sa)) {
       this.warn(warnings, 'ga', 'More than shots against');
     }
     if (this.differs(scoring.sv + scoring.ga, scoring.sa, POINTS_TOLERANCE)) {
       this.warn(warnings, 'sa', "Doesn't equal Saves + Goals against");
     }
 
-    if (scoring.svPct > MAX_PERCENTAGE) {
+    if (this.exceeds(scoring.svPct, MAX_PERCENTAGE)) {
       this.warn(warnings, 'svPct', 'Over 100%');
     }
     // Save and win percentage are both carried as a fraction of one, the way they are shown.
@@ -181,7 +191,7 @@ export class StatWarningService {
       this.warn(warnings, 'winPct', "Doesn't match Wins / Decisions");
     }
 
-    if (scoring.toi > utility.gp * MAX_GOALIE_TOI_PER_GAME_SECONDS) {
+    if (this.exceeds(scoring.toi, utility.gp * MAX_GOALIE_TOI_PER_GAME_SECONDS)) {
       this.warn(warnings, 'toi', 'More ice time than games played allows');
     }
     if (scoring.toi > 0) {
@@ -197,6 +207,11 @@ export class StatWarningService {
     if (!warnings.has(key)) {
       warnings.set(key, message);
     }
+  }
+
+  /** Over its bound by more than a floating-point rounding. See `BOUND_TOLERANCE`. */
+  private exceeds(value: number, bound: number): boolean {
+    return value - bound > BOUND_TOLERANCE;
   }
 
   private differs(expected: number, actual: number, tolerance: number): boolean {
