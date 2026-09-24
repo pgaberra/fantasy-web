@@ -139,6 +139,20 @@ describe('ProjectionSerializerService', () => {
     expect(roundTripped.draft?.finishedAt).toEqual('2026-07-15T10:00:00.000Z');
   });
 
+  it('carries a board left following its league through a save/load round-trip', () => {
+    const following: ProjectionState = {
+      ...sampleState,
+      draft: { ...sampleState.draft!, following: true },
+    };
+
+    expect(service.fromProjectionData(service.toProjectionData(following)).draft?.following).toBe(
+      true,
+    );
+    expect(
+      service.fromProjectionData(service.toProjectionData(sampleState)).draft,
+    ).not.toHaveProperty('following');
+  });
+
   // The editor autosaves the draft back with the projection, so a round-trip that dropped the
   // draft's own league would hand it back to the projection's the next time anything was edited.
   it("carries the draft's own league through a save/load round-trip", () => {

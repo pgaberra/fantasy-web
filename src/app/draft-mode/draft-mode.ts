@@ -9,6 +9,7 @@ import {
   linkedSignal,
   OnInit,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -245,6 +246,8 @@ export class DraftModeComponent implements OnInit {
   });
   /** Whether the user asked, from the board, to link a league to follow. */
   private readonly linkRequested = signal<boolean>(false);
+  /** Whether the board was saved following its league, so opening it picks the draft back up. */
+  private readonly resumeFollowing = signal<boolean>(false);
   /** Whether this page is the one a Yahoo connect left from, so it reopens what started it. */
   private readonly backFromYahoo = signal<boolean>(false);
   private followSubscription: Subscription | null = null;
@@ -647,6 +650,16 @@ export class DraftModeComponent implements OnInit {
         this.renameInput()?.nativeElement.focus();
       }
     });
+    // A board left following picks the league's draft back up once following is offered here,
+    // which waits on the features the BFF reports as well as on the board itself.
+    effect(() => {
+      if (this.resumeFollowing() && this.canFollow()) {
+        untracked(() => {
+          this.resumeFollowing.set(false);
+          this.requestFollow();
+        });
+      }
+    });
   }
 
   ngOnInit(): void {
@@ -694,6 +707,7 @@ export class DraftModeComponent implements OnInit {
           this.lookup.setPlayers(pool);
           const loadedDraft = this.serializer.fromProjectionData(projection.data).draft;
           this.draft.set(loadedDraft);
+          this.resumeFollowing.set(!!loadedDraft?.following && !loadedDraft.finishedAt);
           // A draft saved before drafts held a league is ranked by the projection's, and takes a
           // copy of it with its next save.
           this.league.set(
@@ -1283,12 +1297,28 @@ export class DraftModeComponent implements OnInit {
 
   cancelFollow(): void {
     this.pendingFollow.set(null);
+    this.rememberFollowing(false);
   }
 
   stopFollowing(): void {
     this.followSubscription?.unsubscribe();
     this.followSubscription = null;
     this.following.set(false);
+    this.rememberFollowing(false);
+  }
+
+  /**
+   * Keeps the switch with the board (`draft.following`), so a reload, or the board opened on
+   * another device, picks the league's draft back up. Saved only when it changes; leaving the page
+   * is not switching it off, so nothing here runs on the way out.
+   */
+  private rememberFollowing(on: boolean): void {
+    const draft = this.draft();
+    if (!draft || !!draft.following === on) {
+      return;
+    }
+    this.draft.set({ ...draft, following: on || undefined });
+    this.save();
   }
 
   private startFollowing(leagueKey: string, league: LeagueDraftResponse): void {
@@ -1343,12 +1373,20 @@ export class DraftModeComponent implements OnInit {
     // sync that refused to start.
     const current = this.draft();
     const leagueFinished = league.status === 'FINISHED';
-    const board = boardFromLeagueDraft(current, league);
+    // The switch is saved with the board it put in place, in the same save.
+    const board = {
+      ...boardFromLeagueDraft(current, league),
+      following: !leagueFinished || undefined,
+    };
     const next =
       leagueFinished && !current?.finishedAt
         ? { ...board, finishedAt: new Date().toISOString() }
         : board;
-    if (!sameBoard(current, next) || next.finishedAt !== current?.finishedAt) {
+    if (
+      !sameBoard(current, next) ||
+      next.finishedAt !== current?.finishedAt ||
+      !!next.following !== !!current?.following
+    ) {
       this.draft.set(next);
       this.save();
     }
