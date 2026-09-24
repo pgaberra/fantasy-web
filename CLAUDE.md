@@ -183,10 +183,13 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   draft"), offered only where `FeatureService.leagueDraftSync` (the BFF's
   `GET /api/v1/features`) says so. Following makes the league the source of the board: its
   teams, keyed by Yahoo's team key, in draft order, and its picks, polled every 5 s while the
-  tab is visible (`league-draft-follow.ts` holds the pure mapping). Every pick edit is locked
-  meanwhile, a board with picks entered by hand asks before it is replaced, and following stops
-  on an auction draft, a league without the user's team, a finished draft, or a 404/424. A
-  dropped connection keeps polling.
+  tab is visible and at once when it comes back into view (`league-draft-follow.ts` holds the
+  pure mapping). Every pick edit is locked meanwhile, a board with a pick that is not the
+  league's pick in that place asks before it is replaced, and following stops on an auction
+  draft, a league without the user's team, a finished draft, or a 404/424. A dropped connection
+  keeps polling. The switch is saved with the board as `draft.following` (only while on), so
+  opening the board again, on any device, picks the league's draft back up once the BFF's
+  features say following is offered; leaving the page is not switching it off.
 - `shared-projection/` — the page behind a share link (`/s/:token`), public and unguarded: a
   share link has to open for someone who has never signed in. Its byline carries the author's
   profile picture, or the initial of their username where they have none. A signed-in visitor is offered

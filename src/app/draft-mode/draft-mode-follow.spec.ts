@@ -346,6 +346,85 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     }
   });
 
+  const savedDraft = () => updateProjection.mock.lastCall?.[1].data?.draft;
+
+  it('saves the switch with the board, on when it starts and cleared when it is switched off', async () => {
+    leagueDraftCall.mockReturnValue(of(leagueDraft()));
+    const component = await render();
+
+    component.toggleFollow();
+    expect(savedDraft()?.following).toBe(true);
+
+    component.toggleFollow();
+    expect(component.following()).toBe(false);
+    expect(savedDraft()?.following).toBeUndefined();
+  });
+
+  it("picks the league's draft back up when a board left following is opened again", async () => {
+    loaded = projectionWith({
+      ...boardFromLeagueDraft(handEnteredDraft, leagueDraft()),
+      following: true,
+    });
+    leagueDraftCall.mockReturnValue(of(leagueDraft()));
+    const fixture = await renderFixture();
+    fixture.detectChanges();
+    const component = fixture.point.componentInstance;
+
+    expect(leagueDraftCall).toHaveBeenCalledWith('465.l.9');
+    expect(component.following()).toBe(true);
+    expect(component.pendingFollow()).toBeNull();
+    component.stopFollowing();
+  });
+
+  it('waits for the feature before picking the draft back up, and leaves a finished board alone', async () => {
+    leagueDraftSync.set(false);
+    loaded = projectionWith({
+      ...boardFromLeagueDraft(handEnteredDraft, leagueDraft()),
+      following: true,
+    });
+    leagueDraftCall.mockReturnValue(of(leagueDraft()));
+    const fixture = await renderFixture();
+    fixture.detectChanges();
+    const component = fixture.point.componentInstance;
+    expect(leagueDraftCall).not.toHaveBeenCalled();
+
+    leagueDraftSync.set(true);
+    fixture.detectChanges();
+    expect(component.following()).toBe(true);
+    component.stopFollowing();
+  });
+
+  it('does not pick a finished board back up', async () => {
+    loaded = projectionWith({
+      ...boardFromLeagueDraft(handEnteredDraft, leagueDraft()),
+      following: true,
+      finishedAt: '2026-09-24T09:15:06Z',
+    });
+    const fixture = await renderFixture();
+    fixture.detectChanges();
+
+    expect(leagueDraftCall).not.toHaveBeenCalled();
+    expect(fixture.point.componentInstance.following()).toBe(false);
+  });
+
+  it('forgets the switch when the user declines to replace picks entered by hand', async () => {
+    loaded = projectionWith({
+      ...boardFromLeagueDraft(handEnteredDraft, leagueDraft()),
+      picks: [{ playerId: 7109, teamId: '465.l.9.t.2' }],
+      following: true,
+    });
+    leagueDraftCall.mockReturnValue(of(leagueDraft()));
+    const fixture = await renderFixture();
+    fixture.detectChanges();
+    const component = fixture.point.componentInstance;
+    expect(component.pendingFollow()).not.toBeNull();
+
+    component.cancelFollow();
+    expect(component.following()).toBe(false);
+    expect(savedDraft()?.following).toBeUndefined();
+    expect(savedDraft()?.picks).toEqual([{ playerId: 7109, teamId: '465.l.9.t.2' }]);
+  });
+
   it('does not follow an auction draft', async () => {
     leagueDraftCall.mockReturnValue(of({ ...leagueDraft(), auction: true }));
     const component = await render();

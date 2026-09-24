@@ -225,6 +225,8 @@ export class ProjectionSerializerService {
       // The league the draft is ranked by. The editor saves the draft back with every autosave,
       // so a copy that left this out would quietly hand the draft back to the projection's league.
       ...(draft.settings ? { settings: structuredClone(draft.settings) } : {}),
+      // Whether the board was left following its league's draft; kept only while it is on.
+      ...(draft.following ? { following: true } : {}),
     };
   }
 
