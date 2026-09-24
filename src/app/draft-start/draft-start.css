@@ -232,49 +232,10 @@
   outline: none;
 }
 
-/* Rendered inside the overlay panel, which supplies the surface, border and shadow. */
+/* Rendered inside the overlay panel, which supplies the surface, border and shadow; the items
+   are the shared .kebab-menu (styles.css). */
 .draft-menu-panel {
   min-width: 12rem;
-  padding: 0.3rem;
-}
-
-.draft-menu-panel .menu-item {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  width: 100%;
-  /* 44px tall so the whole row is a comfortable target on touch. */
-  min-height: 2.75rem;
-  padding: 0.4rem 0.7rem;
-  background: none;
-  border: none;
-  border-radius: var(--radius-sm);
-  font: inherit;
-  font-size: var(--text-sm);
-  text-align: left;
-  color: var(--color-text);
-  cursor: pointer;
-}
-
-.draft-menu-panel .menu-item:hover {
-  background: var(--color-surface-hover);
-}
-
-.draft-menu-panel .menu-item app-icon {
-  flex: none;
-  color: var(--color-text-subtle);
-}
-
-.draft-menu-panel .menu-item--danger {
-  color: var(--color-danger);
-}
-
-.draft-menu-panel .menu-item--danger app-icon {
-  color: currentColor;
-}
-
-.draft-menu-panel .menu-item--danger:hover {
-  background: var(--color-danger-surface);
 }
 
 /* ---- Start a new draft ---------------------------------------------------------------- */

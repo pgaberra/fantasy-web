@@ -601,3 +601,54 @@ a.premium-badge:focus-visible {
   box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
+
+/* The row-actions menu behind a kebab: My Projections' cards and Draft Mode's drafts open the
+   same one. It lives here rather than copied into each component, where the second copy had
+   put draft-start.css over its style budget. Each panel sets only its own min-width. */
+.kebab-menu {
+  padding: 0.3rem;
+}
+
+.kebab-menu .menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  /* 44px tall so the whole row is a comfortable target on touch. */
+  min-height: 2.75rem;
+  padding: 0.4rem 0.7rem;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.kebab-menu .menu-item:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.kebab-menu .menu-item:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.kebab-menu .menu-item app-icon {
+  flex: none;
+  color: var(--color-text-subtle);
+}
+
+.kebab-menu .menu-item--danger {
+  color: var(--color-danger);
+}
+
+.kebab-menu .menu-item--danger app-icon {
+  color: currentColor;
+}
+
+.kebab-menu .menu-item--danger:hover:not(:disabled) {
+  background: var(--color-danger-surface);
+}
