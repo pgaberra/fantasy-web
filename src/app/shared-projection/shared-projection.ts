@@ -516,8 +516,9 @@ export class SharedProjectionComponent {
     ),
   );
 
-  readonly statWeights = signal<Record<ScoringStatKey, number>>(
-    {} as Record<ScoringStatKey, number>,
+  /** The weights the published totals were scored with — the weight row says them to a visitor. */
+  readonly statWeights = computed<Record<ScoringStatKey, number>>(
+    () => (this.shared()?.data.settings.statWeights ?? {}) as Record<ScoringStatKey, number>,
   );
   /**
    * The published board's own decimals, and a place after the point for any column whose numbers
