@@ -226,12 +226,17 @@
       </div>
 
       @if (matchingCount() > 0) {
-        <div class="table-footer">
+        <div class="table-footer" #tableFooter>
           <span class="result-count"
             >Showing {{ visibleRows().length }} of {{ matchingCount() }}</span
           >
+          @if (hasLess()) {
+            <button type="button" class="btn btn-secondary" (click)="showLess()">Show less</button>
+          }
           @if (hasMore()) {
-            <button type="button" class="btn btn-primary" (click)="showMore()">Show more</button>
+            <button type="button" class="btn btn-primary" (click)="showMore()">
+              {{ showMoreLabel() }}
+            </button>
           }
         </div>
       }

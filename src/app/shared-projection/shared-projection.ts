@@ -1,4 +1,16 @@
-import { Component, computed, effect, inject, linkedSignal, Signal, signal } from '@angular/core';
+import {
+  afterNextRender,
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  Injector,
+  linkedSignal,
+  Signal,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
@@ -52,10 +64,11 @@ import { renameOnOpenExtras } from '../draft-projection/rename-intent';
 
 /**
  * A published board is the owner's whole pool — some 1600 rows — and someone arriving from a link
- * came to read the top of it, not to scroll past everyone. The rest is a click away.
+ * came to read the top of it, not to scroll past everyone. Each step down roughly doubles what is
+ * on screen: the first four rounds of a twelve-team draft, the next four, about every rostered
+ * player in a normal league, then the whole pool. Show less walks back up the same steps.
  */
-const INITIAL_ROWS = 50;
-const ROWS_PER_PAGE = 100;
+const ROW_STEPS = [50, 100, 200, Infinity] as const;
 
 /** One published row, in the shapes the editor's table components expect. */
 interface SharedRow {
@@ -109,6 +122,8 @@ export class SharedProjectionComponent {
   private readonly activeColumnsService = inject(ActiveColumnsService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly pendingCopy = inject(PendingCopyService);
+  private readonly injector = inject(Injector);
+  private readonly tableFooter = viewChild<ElementRef<HTMLElement>>('tableFooter');
 
   readonly isLoggedIn = inject(AuthService).isLoggedIn;
 
@@ -563,9 +578,10 @@ export class SharedProjectionComponent {
     return [...filtered].sort((first, second) => this.compare(first, second, column, sign));
   });
 
-  /** How many rows are on screen. Back to the first page whenever the pool or its order changes:
-   * a page grown deep under one sort is nothing to hold on to once the rows underneath it move. */
-  readonly visibleCount = linkedSignal({
+  /** Which of {@link ROW_STEPS} is on screen. Back to the first whenever the pool or its order
+   * changes: a page grown deep under one sort is nothing to hold on to once the rows underneath it
+   * move. */
+  readonly rowStep = linkedSignal({
     source: () => ({
       position: this.positionFilter(),
       search: this.searchTerm(),
@@ -574,8 +590,10 @@ export class SharedProjectionComponent {
       sortColumn: this.sortColumn(),
       sortDirection: this.sortDirection(),
     }),
-    computation: () => INITIAL_ROWS,
+    computation: () => 0,
   });
+
+  readonly visibleCount = computed(() => ROW_STEPS[this.rowStep()]);
 
   /** Rows that match the filter — what the footer counts against. */
   readonly matchingCount = computed(() => this.sortedRows().length);
@@ -586,8 +604,25 @@ export class SharedProjectionComponent {
 
   readonly hasMore = computed(() => this.visibleCount() < this.matchingCount());
 
+  readonly hasLess = computed(() => this.rowStep() > 0);
+
+  /** What the next step shows — "Show top 200", or "Show all 1612" once it reaches the end. */
+  readonly showMoreLabel = computed(() => {
+    const next = ROW_STEPS[Math.min(this.rowStep() + 1, ROW_STEPS.length - 1)];
+    return next < this.matchingCount() ? `Show top ${next}` : `Show all ${this.matchingCount()}`;
+  });
+
   showMore(): void {
-    this.visibleCount.update((count) => count + ROWS_PER_PAGE);
+    this.rowStep.update((step) => Math.min(step + 1, ROW_STEPS.length - 1));
+  }
+
+  /** One step back. The rows it drops sit above the footer, so the page is brought back to the
+   * footer — otherwise the reader is left looking at whatever came after a now-shorter table. */
+  showLess(): void {
+    this.rowStep.update((step) => Math.max(step - 1, 0));
+    afterNextRender(() => this.tableFooter()?.nativeElement.scrollIntoView({ block: 'nearest' }), {
+      injector: this.injector,
+    });
   }
 
   onSort(column: SortColumn): void {

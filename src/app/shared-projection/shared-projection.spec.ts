@@ -1,5 +1,5 @@
 import { MockBuilder, MockedComponentFixture, MockRender, ngMocks } from 'ng-mocks';
-import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll, onTestFinished, vi } from 'vitest';
 import { of, Subject, throwError } from 'rxjs';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Location } from '@angular/common';
@@ -472,27 +472,91 @@ describe('SharedProjectionComponent', () => {
       expect(fixture.nativeElement.textContent).toContain('Showing 50 of 400');
     });
 
-    it('reveals another 100 on each click of Show more', async () => {
+    it('steps from the top 50 to 100, 200 and then the whole board', async () => {
+      const fixture = await render();
+      const component = fixture.point.componentInstance;
+      const text = () => fixture.nativeElement.textContent;
+
+      expect(text()).toContain('Show top 100');
+      component.showMore();
+      expect(component.visibleRows().length).toEqual(100);
+
+      fixture.detectChanges();
+      expect(text()).toContain('Show top 200');
+      component.showMore();
+      expect(component.visibleRows().length).toEqual(200);
+
+      fixture.detectChanges();
+      expect(text()).toContain('Show all 400');
+      component.showMore();
+      expect(component.visibleRows().length).toEqual(400);
+    });
+
+    it('offers Show all as soon as the next step would reach the end', async () => {
       const fixture = await render();
       const component = fixture.point.componentInstance;
 
+      component.setPositionFilter('D');
+      fixture.detectChanges();
       component.showMore();
-      expect(component.visibleRows().length).toEqual(150);
+      fixture.detectChanges();
 
-      component.showMore();
-      expect(component.visibleRows().length).toEqual(250);
+      expect(component.matchingCount()).toEqual(200);
+      expect(fixture.nativeElement.textContent).toContain('Show all 200');
     });
 
     it('stops offering Show more once the last row is on screen', async () => {
       const fixture = await render();
       const component = fixture.point.componentInstance;
 
-      component.visibleCount.set(400);
+      component.showMore();
+      component.showMore();
+      component.showMore();
       fixture.detectChanges();
 
       expect(component.hasMore()).toEqual(false);
-      expect(fixture.nativeElement.textContent).not.toContain('Show more');
+      expect(fixture.nativeElement.textContent).not.toContain('Show top');
+      expect(fixture.nativeElement.textContent).not.toContain('Show all');
       expect(fixture.nativeElement.textContent).toContain('Showing 400 of 400');
+    });
+
+    it('offers Show less only once the board has grown', async () => {
+      const fixture = await render();
+      const component = fixture.point.componentInstance;
+
+      expect(fixture.nativeElement.textContent).not.toContain('Show less');
+
+      component.showMore();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('Show less');
+    });
+
+    it('walks Show less back one step at a time and returns to the footer', async () => {
+      // jsdom lays nothing out, so it has no scrollIntoView to call.
+      const scrollIntoView = vi.fn();
+      Element.prototype.scrollIntoView = scrollIntoView;
+      onTestFinished(() => {
+        delete (Element.prototype as Partial<Element>).scrollIntoView;
+      });
+      const fixture = await render();
+      const component = fixture.point.componentInstance;
+
+      component.showMore();
+      component.showMore();
+      component.showMore();
+
+      component.showLess();
+      TestBed.tick();
+      expect(component.visibleRows().length).toEqual(200);
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' });
+
+      component.showLess();
+      component.showLess();
+      component.showLess();
+      fixture.detectChanges();
+      expect(component.visibleRows().length).toEqual(50);
+      expect(component.hasLess()).toEqual(false);
+      expect(fixture.nativeElement.textContent).not.toContain('Show less');
     });
 
     it('goes back to the top 50 when the filter or the sort changes', async () => {
