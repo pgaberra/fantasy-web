@@ -422,7 +422,7 @@ describe('PlayerProjectionsTableComponent', () => {
     });
   });
 
-  /** The # column as it is rendered: "3" on its own, or "1 (3)" once the table is narrowed. */
+  /** The # column as it is rendered: "3" on its own, or "1 (3)" once the table is narrowed or sorted. */
   const rankCells = (): string[] =>
     ngMocks.findAll('tbody .col-rank').map((cell) => cell.nativeElement.textContent.trim());
 
@@ -1179,6 +1179,22 @@ describe('PlayerProjectionsTableComponent', () => {
       render();
 
       expect(rankCells()).toEqual(['1', '2', '3']);
+    });
+
+    it('counts the sorted order over the whole pool, with the ranking in brackets', () => {
+      const component = render();
+
+      component.onSort('hits');
+      TestBed.inject(ApplicationRef).tick();
+
+      // Sorted by hits the "1" is the hardest hitter, whoever tops the ranking.
+      const ranking = component.overallRanks();
+      expect(rankCells()).toEqual(
+        component
+          .visibleProjections()
+          .map((sp, index) => `${index + 1} (${ranking.get(sp.projection.playerId)})`),
+      );
+      expect(rankCells()[0]).not.toEqual('1 (1)');
     });
 
     // Any filter narrows the pool the same way, so any of them leaves the same question:
