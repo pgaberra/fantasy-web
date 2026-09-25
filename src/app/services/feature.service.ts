@@ -41,6 +41,11 @@ export class FeatureService {
     this.features.hasValue() ? this.features.value().leagueDraftSync : false,
   );
 
+  /** The same for a linked ESPN league, which has a switch of its own. */
+  readonly espnLeagueDraftSync = computed(() =>
+    this.features.hasValue() ? this.features.value().espnLeagueDraftSync : false,
+  );
+
   /** Whether the streamer planner is served here. False until the answer lands, like the others. */
   readonly streamerPlanner = computed(() =>
     this.features.hasValue() ? this.features.value().streamerPlanner : false,

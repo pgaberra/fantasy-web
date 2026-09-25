@@ -23,6 +23,7 @@ import {
   forkJoin,
   fromEvent,
   map,
+  Observable,
   of,
   startWith,
   Subscription,
@@ -42,6 +43,7 @@ import {
 } from '../services/tier.service';
 import { RosterSlots } from '../api/models/roster-slots';
 import { environment } from '../../environments/environment';
+import { EspnService } from '../services/espn.service';
 import { YahooService } from '../services/yahoo.service';
 import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { LeagueDraftResponse } from '../api/models/league-draft-response';
@@ -117,11 +119,27 @@ export interface TierStripEntry {
   readonly needed: boolean;
 }
 
-const UNFOLLOWABLE_NOTICE: Record<UnfollowableReason, string> = {
-  auction: "Draft Mode can't follow an auction draft.",
-  'no-team': "Couldn't find your team in this Yahoo league.",
-  'too-few-teams': "Couldn't find the teams in this Yahoo league.",
-};
+/** The league a board can follow: the one linked to it, on a platform this environment follows. */
+interface FollowedLeague {
+  readonly platform: 'Yahoo' | 'ESPN';
+  /** Yahoo's league key, or ESPN's league id. */
+  readonly id: string;
+  readonly name: string;
+}
+
+function unfollowableNotice(
+  reason: UnfollowableReason,
+  platform: FollowedLeague['platform'],
+): string {
+  switch (reason) {
+    case 'auction':
+      return "Draft Mode can't follow an auction draft.";
+    case 'no-team':
+      return `Couldn't find your team in this ${platform} league.`;
+    case 'too-few-teams':
+      return `Couldn't find the teams in this ${platform} league.`;
+  }
+}
 
 @Component({
   selector: 'app-draft-mode',
@@ -160,6 +178,7 @@ export class DraftModeComponent implements OnInit {
   readonly lookup = inject(DraftPlayerLookupService);
   private readonly features = inject(FeatureService);
   private readonly yahoo = inject(YahooService);
+  private readonly espn = inject(EspnService);
   private readonly connectReturn = inject(YahooConnectReturnService);
 
   /** The saved draft this page is on, or null while one is still being set up. */
@@ -224,15 +243,18 @@ export class DraftModeComponent implements OnInit {
   readonly pendingRemoval = signal<number | null>(null);
   readonly confirmingFinish = signal<boolean>(false);
 
-  /** Whether the board is following the linked Yahoo league's draft, which locks every pick edit. */
+  /** Whether the board is following the linked league's draft, which locks every pick edit. */
   readonly following = signal<boolean>(false);
   readonly followLoading = signal<boolean>(false);
   /** What stopped or is holding up following, shown beside the control. */
   readonly followNotice = signal<string | null>(null);
   /** What the sync switch does, for the tip beside it: one way, and it takes the board over. */
-  private readonly FOLLOW_TIP =
-    "Mirrors the picks made in your Yahoo draft here, automatically. The board takes Yahoo's " +
-    "teams and order, and picks can't be edited by hand while it's on.";
+  private followTip(platform: FollowedLeague['platform']): string {
+    return (
+      `Mirrors the picks made in your ${platform} draft here, automatically. The board takes ` +
+      `${platform}'s teams and order, and picks can't be edited by hand while it's on.`
+    );
+  }
   private readonly LINK_TIP =
     'Asks which Yahoo league this draft is being played in, then mirrors its picks here as they ' +
     "are made. The board takes Yahoo's teams and order, and picks can't be edited by hand while " +
@@ -531,9 +553,26 @@ export class DraftModeComponent implements OnInit {
     return this.leagueOrderKnown() && seat > 0 ? seat : null;
   });
   readonly canUndo = computed(() => this.picks().length > 0 && !this.following());
-  readonly canFollow = computed(
-    () => this.features.leagueDraftSync() && this.yahooSync() !== null && !this.finished(),
-  );
+  /**
+   * The league the sync switch follows: the linked Yahoo league, or the linked ESPN one, where
+   * this environment follows that platform's drafts. A board links one league at a time.
+   */
+  readonly followedLeague = computed<FollowedLeague | null>(() => {
+    const yahoo = this.yahooSync();
+    if (yahoo) {
+      return this.features.leagueDraftSync()
+        ? { platform: 'Yahoo', id: yahoo.leagueKey, name: yahoo.leagueName }
+        : null;
+    }
+    const espn = this.espnSync();
+    if (espn?.leagueId && this.features.espnLeagueDraftSync()) {
+      return { platform: 'ESPN', id: espn.leagueId, name: espn.leagueName ?? espn.leagueId };
+    }
+    return null;
+  });
+  /** The platform named beside the switch and in its messages. */
+  readonly followPlatform = computed(() => this.followedLeague()?.platform ?? 'Yahoo');
+  readonly canFollow = computed(() => this.followedLeague() !== null && !this.finished());
   /**
    * Whether the board may link a Yahoo league of its own. A draft set up without one is the whole
    * reason this exists: following was offered only where a league had already been imported in
@@ -544,6 +583,7 @@ export class DraftModeComponent implements OnInit {
       this.features.leagueDraftSync() &&
       !environment.yahooSyncDisabled &&
       this.yahooSync() === null &&
+      this.followedLeague() === null &&
       !this.finished(),
   );
   /** Whether the sync control is on screen at all: either league linked, or linkable. */
@@ -560,7 +600,9 @@ export class DraftModeComponent implements OnInit {
   /** The draft's own league settings, for the link dialog to compare a league's against. */
   readonly leagueSettings = computed(() => this.league());
   /** The tip beside the switch, which says first what turning it on will ask for. */
-  readonly syncTip = computed(() => (this.canFollow() ? this.FOLLOW_TIP : this.LINK_TIP));
+  readonly syncTip = computed(() =>
+    this.canFollow() ? this.followTip(this.followPlatform()) : this.LINK_TIP,
+  );
   readonly finished = computed(() => !!this.draft()?.finishedAt);
 
   // A draft is a board of its own, holding a copy of whatever it was started against, so there
@@ -1212,48 +1254,53 @@ export class DraftModeComponent implements OnInit {
   }
 
   /**
-   * Starts following the linked Yahoo league's draft. The league becomes the source of the board:
-   * its teams, its order and its picks. Asks first when that would replace picks entered by hand.
+   * Starts following the linked league's draft. The league becomes the source of the board: its
+   * teams, its order and its picks. Asks first when that would replace picks entered by hand.
    */
   requestFollow(): void {
-    const leagueKey = this.yahooSync()?.leagueKey;
-    if (!leagueKey || this.following() || this.followLoading()) {
+    const followed = this.followedLeague();
+    if (!followed || this.following() || this.followLoading()) {
       return;
     }
     this.followNotice.set(null);
     this.followLoading.set(true);
-    this.yahoo
-      .leagueDraft(leagueKey)
+    this.leagueDraft(followed)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (league) => {
           this.followLoading.set(false);
           const reason = unfollowableReason(league);
           if (reason) {
-            this.followNotice.set(UNFOLLOWABLE_NOTICE[reason]);
+            this.followNotice.set(unfollowableNotice(reason, followed.platform));
             return;
           }
           if (isLeagueBoard(this.draft(), league)) {
-            this.startFollowing(leagueKey, league);
+            this.startFollowing(followed, league);
           } else {
             this.pendingFollow.set(league);
           }
         },
         error: (error: unknown) => {
           this.followLoading.set(false);
-          this.followNotice.set(this.followErrorNotice(error));
+          this.followNotice.set(this.followErrorNotice(error, followed.platform));
         },
       });
   }
 
+  private leagueDraft(followed: FollowedLeague): Observable<LeagueDraftResponse> {
+    return followed.platform === 'ESPN'
+      ? this.espn.leagueDraft(followed.id)
+      : this.yahoo.leagueDraft(followed.id);
+  }
+
   /**
-   * The sync switch: on asks Yahoo for the draft, off simply stops. With no league linked yet it
-   * asks which league first — the switch means the same thing either way.
+   * The sync switch: on asks the league for its draft, off simply stops. With no league linked yet
+   * it asks which Yahoo league first — the switch means the same thing either way.
    */
   toggleFollow(): void {
     if (this.following()) {
       this.stopFollowing();
-    } else if (this.yahooSync()) {
+    } else if (this.followedLeague()) {
       this.requestFollow();
     } else {
       this.linkRequested.set(true);
@@ -1301,10 +1348,10 @@ export class DraftModeComponent implements OnInit {
 
   confirmFollow(): void {
     const league = this.pendingFollow();
-    const leagueKey = this.yahooSync()?.leagueKey;
+    const followed = this.followedLeague();
     this.pendingFollow.set(null);
-    if (league && leagueKey) {
-      this.startFollowing(leagueKey, league);
+    if (league && followed) {
+      this.startFollowing(followed, league);
     }
   }
 
@@ -1335,18 +1382,18 @@ export class DraftModeComponent implements OnInit {
     this.save();
   }
 
-  private startFollowing(leagueKey: string, league: LeagueDraftResponse): void {
+  private startFollowing(followed: FollowedLeague, league: LeagueDraftResponse): void {
     this.following.set(true);
     this.editingPick.set(null);
     this.pendingRemoval.set(null);
     this.setupOpen.set(false);
     this.analytics.capture('draft_follow_started');
-    if (!this.applyLeagueDraft(league)) {
+    if (!this.applyLeagueDraft(league, followed.platform)) {
       return;
     }
     // A hidden tab skips its turn rather than queueing one, and a slow answer is never overtaken
     // by the next request. Coming back into view asks at once and starts the count again: the
-    // user was most likely on Yahoo's own tab, making picks this board has not seen.
+    // user was most likely on the league's own tab, making picks this board has not seen.
     const shown =
       typeof document === 'undefined'
         ? EMPTY
@@ -1358,7 +1405,7 @@ export class DraftModeComponent implements OnInit {
         switchMap((firstIn) => timer(firstIn, FOLLOW_POLL_MS)),
         filter(() => typeof document === 'undefined' || !document.hidden),
         exhaustMap(() =>
-          this.yahoo.leagueDraft(leagueKey).pipe(
+          this.leagueDraft(followed).pipe(
             map((league) => ({ league, error: null })),
             catchError((error: unknown) => of({ league: null, error })),
           ),
@@ -1367,23 +1414,26 @@ export class DraftModeComponent implements OnInit {
       )
       .subscribe(({ league: next, error }) => {
         if (next) {
-          this.applyLeagueDraft(next);
+          this.applyLeagueDraft(next, followed.platform);
         } else {
-          this.onFollowError(error);
+          this.onFollowError(error, followed.platform);
         }
       });
   }
 
   /** Puts the league's board in place. False when following has stopped because of it. */
-  private applyLeagueDraft(league: LeagueDraftResponse): boolean {
+  private applyLeagueDraft(
+    league: LeagueDraftResponse,
+    platform: FollowedLeague['platform'],
+  ): boolean {
     const reason = unfollowableReason(league);
     if (reason) {
-      this.followNotice.set(UNFOLLOWABLE_NOTICE[reason]);
+      this.followNotice.set(unfollowableNotice(reason, platform));
       this.stopFollowing();
       return false;
     }
     this.leagueOrderKnown.set(league.orderKnown);
-    // A draft Yahoo has finished is brought over whole and finishes the board with it: nothing is
+    // A draft the league has finished is brought over whole and finishes the board with it: nothing is
     // left to follow, and a board still open beside a switch that turned itself off read as a
     // sync that refused to start.
     const current = this.draft();
@@ -1415,24 +1465,25 @@ export class DraftModeComponent implements OnInit {
 
   /**
    * A dropped connection is worth another try, so polling carries on. A refusal, or a draft that is
-   * no longer served, answers the same way next time, so following stops.
+   * no longer served, answers the same way next time, so following stops. ESPN's refusal is a 400:
+   * its private league read without the user's cookies, or with cookies ESPN no longer takes.
    */
-  private onFollowError(error: unknown): void {
+  private onFollowError(error: unknown, platform: FollowedLeague['platform']): void {
     const status = error instanceof HttpErrorResponse ? error.status : 0;
-    if (status === 404 || status === 424) {
-      this.followNotice.set(this.followErrorNotice(error));
+    if (status === 400 || status === 404 || status === 424) {
+      this.followNotice.set(this.followErrorNotice(error, platform));
       this.stopFollowing();
       return;
     }
     this.followNotice.set('Sync unavailable at the moment.');
   }
 
-  private followErrorNotice(error: unknown): string {
+  private followErrorNotice(error: unknown, platform: FollowedLeague['platform']): string {
     const status = error instanceof HttpErrorResponse ? error.status : 0;
-    if (status === 424) {
-      return "Yahoo refused access to this league's draft.";
+    if (status === 424 || (platform === 'ESPN' && status === 400)) {
+      return `${platform} refused access to this league's draft.`;
     }
-    return "Couldn't load the Yahoo draft.";
+    return `Couldn't load the ${platform} draft.`;
   }
 
   requestFinishDraft(): void {
