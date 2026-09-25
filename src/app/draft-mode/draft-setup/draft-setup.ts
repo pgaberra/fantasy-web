@@ -2,12 +2,14 @@ import {
   Component,
   computed,
   DestroyRef,
+  ElementRef,
   inject,
   input,
   linkedSignal,
   OnInit,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable } from 'rxjs';
@@ -81,6 +83,11 @@ export class DraftSetupComponent implements OnInit {
   // that names none leaves this false, because where a team sits in a league's team list is not
   // where it drafts, and a draft built on the wrong seat is wrong all the way down.
   readonly draftPositionKnown = signal(false);
+  // Whether a league was loaded into this setup, so the hint can say the league named no seat.
+  readonly leagueLoaded = signal(false);
+  // Set when Start is pressed with no seat chosen: the button stays enabled so the user learns what
+  // is missing from the field itself, instead of guessing at why a disabled button won't go.
+  readonly startAttempted = signal(false);
   // Tracks the roster-slots input so a Yahoo sync (which updates it upstream) flows in,
   // while still letting the user edit the slots locally before starting the draft.
   readonly editableRosterSlots = linkedSignal<RosterSlots>(() => this.rosterSlots());
@@ -93,6 +100,9 @@ export class DraftSetupComponent implements OnInit {
   readonly myPosition = computed(() => this.rows().findIndex((row) => row.mine) + 1);
   readonly positions = computed(() => Array.from({ length: this.numTeams() }, (_, i) => i + 1));
   readonly canStart = computed(() => this.draftPositionKnown());
+  readonly positionMissing = computed(() => this.startAttempted() && !this.draftPositionKnown());
+
+  private readonly positionSelect = viewChild<ElementRef<HTMLSelectElement>>('positionSelect');
 
   ngOnInit(): void {
     const existing = this.initial();
@@ -216,10 +226,13 @@ export class DraftSetupComponent implements OnInit {
     );
     this.rows.set(rows);
     this.draftPositionKnown.set(known);
+    this.leagueLoaded.set(true);
   }
 
   submit(): void {
     if (!this.canStart()) {
+      this.startAttempted.set(true);
+      this.positionSelect()?.nativeElement.focus();
       return;
     }
     const rows = this.rows();

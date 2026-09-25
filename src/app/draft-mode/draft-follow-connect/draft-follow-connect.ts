@@ -28,6 +28,16 @@ import { leagueSettingsDifferences } from '../league-settings-difference';
 /** A platform whose league a board can be linked to from the board itself. */
 export type LinkPlatform = 'Yahoo' | 'ESPN';
 
+/**
+ * A followed ESPN league that needs the user's cookies before it can be followed: ESPN refused its
+ * draft, or no team in it could be told apart as the user's.
+ */
+export interface CookieRepair {
+  leagueId: string;
+  /** Why the cookies are asked for, shown in place of the dialog's usual lead. */
+  reason: string;
+}
+
 /** The league to follow, and the settings to import with it — none when the user keeps their own. */
 export interface FollowLeagueLink {
   platform: LinkPlatform;
@@ -40,8 +50,13 @@ export interface FollowLeagueLink {
 /**
  * Links a Yahoo or ESPN league to a draft that was set up without one, from inside the board, and
  * hands it back for the board to follow. Yahoo: connect the account if it isn't, pick the league.
- * ESPN, which has no account to connect: the league id, and for a private league the user's
- * espn_s2 and SWID cookies, stored server-side as the settings import stores them.
+ * ESPN, which has no account to connect: the league id and the user's espn_s2 and SWID cookies,
+ * stored server-side as the settings import stores them. The cookies are asked for whatever the
+ * league's privacy: without the SWID no team in a league can be told apart as the user's, and a
+ * draft that cannot find its user's team cannot be followed. Once stored they are not asked again.
+ *
+ * With `repair` set it asks only for the cookies of a league already linked, and hands the link
+ * back as soon as ESPN takes them: the league and its settings are the board's already.
  *
  * The league's settings are a separate question from its picks, so they are only imported when
  * they would change something the user set, and then only if they say so — a draft in progress is
@@ -74,6 +89,8 @@ export class DraftFollowConnectComponent implements OnInit {
   readonly platforms = input<readonly LinkPlatform[]>(['Yahoo']);
   /** The platform to open on, when the page knows: the one a Yahoo connect just came back from. */
   readonly startOn = input<LinkPlatform | null>(null);
+  /** A followed ESPN league whose cookies are missing or refused, when that is why this opened. */
+  readonly repair = input<CookieRepair | null>(null);
 
   readonly linked = output<FollowLeagueLink>();
   readonly cancelled = output<void>();
@@ -83,6 +100,9 @@ export class DraftFollowConnectComponent implements OnInit {
    * from ESPN, since that is the league the user is most likely drafting in; otherwise the first.
    */
   readonly platform = linkedSignal<LinkPlatform>(() => {
+    if (this.repair()) {
+      return 'ESPN';
+    }
     const offered = this.platforms();
     const asked = this.startOn();
     if (asked && offered.includes(asked)) {
@@ -100,9 +120,10 @@ export class DraftFollowConnectComponent implements OnInit {
   readonly loadingLeagues = this.picker.loadingLeagues;
   readonly selectedKey = this.picker.selectedKey;
 
-  /** The ESPN league id, starting from the one the draft last imported settings from. */
-  readonly espnLeagueId = linkedSignal<string>(() => this.current()?.lastEspnLeagueId ?? '');
-  readonly espnPrivate = signal(false);
+  /** The ESPN league id: the repaired league's, or the one the draft last imported settings from. */
+  readonly espnLeagueId = linkedSignal<string>(
+    () => this.repair()?.leagueId ?? this.current()?.lastEspnLeagueId ?? '',
+  );
   readonly espnS2 = signal('');
   readonly swid = signal('');
   readonly hasStoredCookies = signal(false);
@@ -115,10 +136,19 @@ export class DraftFollowConnectComponent implements OnInit {
   readonly error = computed(() =>
     this.platform() === 'ESPN' ? this.espnError() : this.picker.error(),
   );
-  /** Whether the chosen league can be taken: a Yahoo league picked, or an ESPN id typed. */
-  readonly canChoose = computed(() =>
-    this.platform() === 'ESPN' ? this.espnLeagueId().trim().length > 0 : !!this.selectedKey(),
-  );
+  /**
+   * Whether the ESPN cookies must be pasted before going on: when none are stored, and always when
+   * repairing, since the stored pair is what ESPN just refused or could not place the user by.
+   */
+  readonly cookiesRequired = computed(() => !!this.repair() || !this.hasStoredCookies());
+  /** Whether the chosen league can be taken: a Yahoo league picked, or an ESPN id and cookies. */
+  readonly canChoose = computed(() => {
+    if (this.platform() !== 'ESPN') {
+      return !!this.selectedKey();
+    }
+    const cookiesGiven = this.espnS2().trim().length > 0 && this.swid().trim().length > 0;
+    return this.espnLeagueId().trim().length > 0 && (cookiesGiven || !this.cookiesRequired());
+  });
   /**
    * What the chosen league's settings would change, once they are known. Empty while the league is
    * still being chosen; a non-empty list is the question put to the user.
@@ -154,10 +184,6 @@ export class DraftFollowConnectComponent implements OnInit {
     this.espnLeagueId.set((event.target as HTMLInputElement).value);
     this.espnError.set(null);
     this.settingsFailed.set(false);
-  }
-
-  toggleEspnPrivate(): void {
-    this.espnPrivate.update((isPrivate) => !isPrivate);
   }
 
   onEspnS2Input(event: Event): void {
@@ -202,18 +228,13 @@ export class DraftFollowConnectComponent implements OnInit {
     }
     if (platform === 'ESPN' && !this.espnStarted) {
       this.espnStarted = true;
-      // Cookies on file mean the user's league is private, as in the settings import. A failed
-      // probe leaves the box unticked, which a refused league then ticks.
+      // A failed probe counts as none stored: the fields are then required, which costs a paste at
+      // worst, where guessing the other way would link a league that cannot be followed.
       this.espn
         .credentialStatus()
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
-          next: (status) => {
-            this.hasStoredCookies.set(status.hasCredentials);
-            if (status.hasCredentials) {
-              this.espnPrivate.set(true);
-            }
-          },
+          next: (status) => this.hasStoredCookies.set(status.hasCredentials),
           error: () => this.hasStoredCookies.set(false),
         });
     }
@@ -242,8 +263,7 @@ export class DraftFollowConnectComponent implements OnInit {
     const espnS2 = this.espnS2().trim();
     const swid = this.swid().trim();
     // Empty fields keep the stored pair; a pasted pair replaces it.
-    const savingCookies = this.espnPrivate() && espnS2.length > 0 && swid.length > 0;
-    const hadCookies = savingCookies || this.hasStoredCookies();
+    const savingCookies = espnS2.length > 0 && swid.length > 0;
     this.espnError.set(null);
     const save: Observable<void> = savingCookies
       ? this.espn.saveCredentials({ espnS2, swid })
@@ -261,11 +281,8 @@ export class DraftFollowConnectComponent implements OnInit {
       // ESPN refusing the league, or not knowing it, refuses its draft just the same, so there is
       // nothing to follow either: the fix is in the fields above.
       if (status === 400) {
-        this.espnPrivate.set(true);
         this.espnError.set(
-          hadCookies
-            ? 'ESPN did not accept those cookies. Check the league ID and make sure espn_s2 and SWID were copied in full.'
-            : 'This league is private. Add your espn_s2 and SWID cookies, then try again.',
+          'ESPN did not accept those cookies. Check the league ID and make sure espn_s2 and SWID were copied in full.',
         );
         return;
       }
@@ -288,6 +305,12 @@ export class DraftFollowConnectComponent implements OnInit {
       next: (read) => {
         this.loadingSettings.set(false);
         this.espnLeagueName.set(read.leagueName ?? null);
+        // Repairing, the settings were read only to prove ESPN takes the cookies: whether they
+        // differ is a question already settled when the league was linked.
+        if (this.repair()) {
+          this.emitLink(null);
+          return;
+        }
         const differences = leagueSettingsDifferences(this.current(), read);
         if (differences.length === 0) {
           this.emitLink(read);

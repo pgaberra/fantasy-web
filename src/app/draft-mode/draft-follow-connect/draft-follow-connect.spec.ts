@@ -3,7 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import { DraftFollowConnectComponent, FollowLeagueLink } from './draft-follow-connect';
+import {
+  CookieRepair,
+  DraftFollowConnectComponent,
+  FollowLeagueLink,
+} from './draft-follow-connect';
 import { YahooService } from '../../services/yahoo.service';
 import { EspnService } from '../../services/espn.service';
 import { YahooConnectReturnService } from '../../services/yahoo-connect-return.service';
@@ -179,11 +183,13 @@ describe('DraftFollowConnectComponent', () => {
       espn: Partial<EspnService> = {},
       yahoo: Partial<YahooService> = {},
       draft: DraftSettings = current,
+      repair: CookieRepair | null = null,
     ) => {
       await build(yahoo, espn);
       const fixture = MockRender(DraftFollowConnectComponent, {
         current: draft,
-        platforms: ['Yahoo', 'ESPN'],
+        platforms: repair ? ['ESPN'] : ['Yahoo', 'ESPN'],
+        repair,
       });
       await fixture.whenStable();
       return fixture;
@@ -210,13 +216,15 @@ describe('DraftFollowConnectComponent', () => {
       expect(connectionStatus).toHaveBeenCalled();
     });
 
+    const typed = (value: string) => ({ target: { value } }) as unknown as Event;
+
     it('links the ESPN league by the id typed, named as ESPN names it', async () => {
-      const fixture = await renderEspn();
+      const fixture = await renderEspn({ credentialStatus: () => of({ hasCredentials: true }) });
       const component = fixture.point.componentInstance;
       const linked = linkFrom(component);
 
       component.choosePlatform('ESPN');
-      component.onEspnLeagueIdInput({ target: { value: ' 123 ' } } as unknown as Event);
+      component.onEspnLeagueIdInput(typed(' 123 '));
       component.choose();
 
       expect(linked).toHaveBeenCalledWith({
@@ -227,7 +235,21 @@ describe('DraftFollowConnectComponent', () => {
       });
     });
 
-    it('saves pasted cookies before reading a private league', async () => {
+    it('asks for the cookies before linking where none are stored, whatever the league', async () => {
+      const fixture = await renderEspn();
+      const component = fixture.point.componentInstance;
+      component.choosePlatform('ESPN');
+      component.onEspnLeagueIdInput(typed('123'));
+
+      expect(component.cookiesRequired()).toBe(true);
+      expect(component.canChoose()).toBe(false);
+
+      component.onEspnS2Input(typed('s2'));
+      component.onSwidInput(typed('{swid}'));
+      expect(component.canChoose()).toBe(true);
+    });
+
+    it('saves pasted cookies before reading the league', async () => {
       const saveCredentials = vi.fn(() => of(undefined));
       const leagueProjectionSettings = vi.fn(() => of(settings));
       const fixture = await renderEspn({ saveCredentials, leagueProjectionSettings });
@@ -235,7 +257,6 @@ describe('DraftFollowConnectComponent', () => {
 
       component.choosePlatform('ESPN');
       component.onEspnLeagueIdInput({ target: { value: '123' } } as unknown as Event);
-      component.toggleEspnPrivate();
       component.onEspnS2Input({ target: { value: 's2' } } as unknown as Event);
       component.onSwidInput({ target: { value: '{swid}' } } as unknown as Event);
       component.choose();
@@ -244,23 +265,83 @@ describe('DraftFollowConnectComponent', () => {
       expect(leagueProjectionSettings).toHaveBeenCalledWith('123');
     });
 
-    it('asks for cookies when ESPN refuses the league, and offers nothing to follow', async () => {
+    it('says ESPN refused the cookies, and offers nothing to follow', async () => {
       const fixture = await renderEspn({
+        credentialStatus: () => of({ hasCredentials: true }),
         leagueProjectionSettings: () => throwError(() => new HttpErrorResponse({ status: 400 })),
       });
       const component = fixture.point.componentInstance;
       const linked = linkFrom(component);
 
       component.choosePlatform('ESPN');
-      component.onEspnLeagueIdInput({ target: { value: '123' } } as unknown as Event);
+      component.onEspnLeagueIdInput(typed('123'));
       component.choose();
 
-      expect(component.espnPrivate()).toBe(true);
       expect(component.settingsFailed()).toBe(false);
       expect(component.error()).toBe(
-        'This league is private. Add your espn_s2 and SWID cookies, then try again.',
+        'ESPN did not accept those cookies. Check the league ID and make sure espn_s2 and SWID were copied in full.',
       );
       expect(linked).not.toHaveBeenCalled();
+    });
+
+    describe('repairing a followed league', () => {
+      const repair: CookieRepair = { leagueId: '123', reason: 'SlapStat needs your cookies.' };
+
+      it('asks only for the cookies, even with some stored, and names why', async () => {
+        const fixture = await renderEspn(
+          { credentialStatus: () => of({ hasCredentials: true }) },
+          {},
+          current,
+          repair,
+        );
+        const component = fixture.point.componentInstance;
+        fixture.detectChanges();
+        const page = fixture.nativeElement as HTMLElement;
+
+        expect(component.platform()).toBe('ESPN');
+        expect(component.espnLeagueId()).toBe('123');
+        expect(page.querySelector('.modal-title')?.textContent?.trim()).toBe(
+          'Add your ESPN cookies',
+        );
+        expect(page.querySelector('.modal-text')?.textContent?.trim()).toBe(
+          'SlapStat needs your cookies.',
+        );
+        expect(page.querySelectorAll('.provider-tab')).toHaveLength(0);
+        expect(component.canChoose()).toBe(false);
+      });
+
+      it('hands the league back once ESPN takes the cookies, without the settings question', async () => {
+        const saveCredentials = vi.fn(() => of(undefined));
+        const fixture = await renderEspn(
+          {
+            saveCredentials,
+            leagueProjectionSettings: () =>
+              of({
+                ...settings,
+                activeScoringColumns: ['goals', 'hits'],
+                leagueName: 'Pond League',
+              }),
+          },
+          {},
+          current,
+          repair,
+        );
+        const component = fixture.point.componentInstance;
+        const linked = linkFrom(component);
+
+        component.onEspnS2Input(typed('s2'));
+        component.onSwidInput(typed('{swid}'));
+        component.choose();
+
+        expect(saveCredentials).toHaveBeenCalledWith({ espnS2: 's2', swid: '{swid}' });
+        expect(component.differences()).toEqual([]);
+        expect(linked).toHaveBeenCalledWith({
+          platform: 'ESPN',
+          leagueId: '123',
+          leagueName: 'Pond League',
+          settings: null,
+        });
+      });
     });
 
     it('shows the tabs only where both platforms are offered', async () => {

@@ -249,8 +249,9 @@
       @if (linkOpen()) {
         <app-draft-follow-connect
           [current]="leagueSettings()"
-          [platforms]="linkPlatforms()"
+          [platforms]="linkDialogPlatforms()"
           [startOn]="linkStartOn()"
+          [repair]="cookieRepair()"
           (linked)="linkLeague($event)"
           (cancelled)="closeLink()"
         />
