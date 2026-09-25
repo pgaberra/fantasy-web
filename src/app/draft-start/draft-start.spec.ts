@@ -184,6 +184,7 @@ describe('DraftStartComponent', () => {
     listAll.mockReturnValue(of([summary('p1', 'projection')]));
 
     const component = await render();
+    component.sourceKind.set('preset');
 
     expect(component.previewSource()).toEqual({ kind: 'preset', preset: 'default' });
 
@@ -308,6 +309,7 @@ describe('DraftStartComponent', () => {
     };
 
     it('drafts a preset against the league set on the page', async () => {
+      listAll.mockReturnValue(of([]));
       const component = await render();
       const league = component.leagueSettings()!;
 
@@ -327,6 +329,7 @@ describe('DraftStartComponent', () => {
     });
 
     it('sends nothing along with a preset whose league was left alone', async () => {
+      listAll.mockReturnValue(of([]));
       const component = await render();
 
       component.start();
@@ -374,6 +377,7 @@ describe('DraftStartComponent', () => {
     it('keeps the league set for a preset while a board is looked at', async () => {
       loadProjection.mockReturnValue(of(board('p1')));
       const component = await render();
+      component.sourceKind.set('preset');
       component.setLeagueSettings({ ...component.leagueSettings()!, scoringType: 'category' });
 
       await pickProjections();
@@ -386,6 +390,7 @@ describe('DraftStartComponent', () => {
     // The presets differ only in their numbers, so a league imported with one picked stays with
     // the other rather than falling back to the defaults.
     it('keeps the league set for one preset when another is picked', async () => {
+      listAll.mockReturnValue(of([]));
       const component = await render();
       component.setLeagueSettings({ ...component.leagueSettings()!, leagueSize: 14 });
 
@@ -627,9 +632,9 @@ describe('DraftStartComponent', () => {
     expect(component.draftLabel('finished')).toEqual('View summary');
   });
 
-  // The choice is made in steps: the kind first, and the page opens on the presets since they
-  // need nothing prepared. The other two kinds are segments that say how much they hold.
-  it('asks for the kind of source first, opening on the presets with the rest folded', async () => {
+  // The choice is made in steps: the kind first, and the page opens on the user's own boards when
+  // there are any. The other two kinds are segments that say how much they hold.
+  it('asks for the kind of source first, opening on your projections with the rest folded', async () => {
     listAll.mockReturnValue(of([summary('p1', 'projection', 'none'), imported('i1', 'alex')]));
 
     const fixture = await renderFixture();
@@ -637,6 +642,20 @@ describe('DraftStartComponent', () => {
 
     // Nothing is drafted yet, so the page is one question rather than two.
     expect(texts(fixture, '.section-title')).toEqual(['Start a new draft']);
+    expect(texts(fixture, '.kind-name')).toEqual(['Preset', 'Your projection', 'Following']);
+    expect(texts(fixture, '.kind-count')).toEqual(['2', '1', '1']);
+    // A segmented control, not radios: the pressed one is said on the button itself.
+    const pressed = () =>
+      Array.from(
+        (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('.segmented .kind'),
+      ).map((segment) => segment.getAttribute('aria-pressed'));
+    expect(pressed()).toEqual(['false', 'true', 'false']);
+    expect(component.sourceKind()).toEqual('projection');
+    expect(texts(fixture, '.row-name')).toEqual(['Projection p1']);
+
+    component.sourceKind.set('preset');
+    fixture.detectChanges();
+    expect(pressed()).toEqual(['true', 'false', 'false']);
     // Its steps are headings under it. The import's label under the cards is deliberately not
     // one: it is a way into the first step, not a step.
     expect(texts(fixture, 'h3')).toEqual([
@@ -644,14 +663,6 @@ describe('DraftStartComponent', () => {
       'League settings',
       'Preview',
     ]);
-    expect(texts(fixture, '.kind-name')).toEqual(['Preset', 'Your projection', 'Following']);
-    expect(texts(fixture, '.kind-count')).toEqual(['2', '1', '1']);
-    // A segmented control, not radios: the pressed one is said on the button itself.
-    const pressed = Array.from(
-      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('.segmented .kind'),
-    ).map((segment) => segment.getAttribute('aria-pressed'));
-    expect(pressed).toEqual(['true', 'false', 'false']);
-    expect(component.sourceKind()).toEqual('preset');
     expect(texts(fixture, '.row-name')).toEqual([LAST_SEASON_PRESET_NAME, MODEL_PRESET_NAME]);
     expect(fixture.nativeElement.querySelector('app-projection-import')).toBeNull();
   });
@@ -666,6 +677,8 @@ describe('DraftStartComponent', () => {
     const root: HTMLElement = fixture.nativeElement;
     const cards = () => Array.from(root.querySelectorAll<HTMLElement>('.row'));
     const selected = () => cards().map((card) => card.classList.contains('row--selected'));
+    component.sourceKind.set('preset');
+    fixture.detectChanges();
 
     // Presets: two cards, an icon on each, the checked one marked on the card itself.
     expect(cards()).toHaveLength(PRESETS.length);
@@ -693,6 +706,7 @@ describe('DraftStartComponent', () => {
   it('marks the AI projection as Premium where payments are on', async () => {
     const original = environment.paymentsEnabled;
     environment.paymentsEnabled = true;
+    listAll.mockReturnValue(of([]));
     try {
       const fixture = await renderFixture();
       const component = fixture.point.componentInstance;
@@ -711,6 +725,7 @@ describe('DraftStartComponent', () => {
   it('leaves the badge off where there is no way to buy anything', async () => {
     const original = environment.paymentsEnabled;
     environment.paymentsEnabled = false;
+    listAll.mockReturnValue(of([]));
     try {
       const fixture = await renderFixture();
 
@@ -746,6 +761,7 @@ describe('DraftStartComponent', () => {
   // One press to a draft: the first row of the open kind is checked from the start, and the
   // one Start button on the page drafts against it.
   it('checks the first preset from the start, so one press opens its setup', async () => {
+    listAll.mockReturnValue(of([]));
     const fixture = await renderFixture();
     const component = fixture.point.componentInstance;
 
@@ -798,13 +814,40 @@ describe('DraftStartComponent', () => {
     expect(rowName?.title).toBe(name);
   });
 
-  // A preset is never used up by a draft, so it is always what the page opens on.
-  it('opens on the presets even where both have been drafted against already', async () => {
+  // What the user built is what they came to draft against, so their own boards come first,
+  // the ones they follow next, and the presets only when there is neither.
+  it('opens on your projections when you have one, whatever else there is', async () => {
+    listAll.mockReturnValue(
+      of([
+        summary('model1', 'draft', 'finished', '2026-06-02T00:00:00Z', MODEL),
+        imported('i1', 'alex'),
+        spreadsheet('s1'),
+      ]),
+    );
+
+    const component = await render();
+
+    expect(component.sourceKind()).toEqual('projection');
+    expect(component.selection()).toEqual({ kind: 'board', id: 's1' });
+  });
+
+  it('opens on the boards you follow when you have none of your own', async () => {
+    listAll.mockReturnValue(
+      of([summary('lastSeason1', 'draft', 'in_progress'), imported('i1', 'alex')]),
+    );
+
+    const component = await render();
+
+    expect(component.sourceKind()).toEqual('following');
+    expect(component.selection()).toEqual({ kind: 'board', id: 'i1' });
+  });
+
+  // A preset is never used up by a draft, so it is still there for someone with no boards at all.
+  it('opens on the presets when you have no boards, drafted against or not', async () => {
     listAll.mockReturnValue(
       of([
         summary('lastSeason1', 'draft', 'in_progress'),
         summary('model1', 'draft', 'finished', '2026-06-02T00:00:00Z', MODEL),
-        summary('p1', 'projection', 'none'),
       ]),
     );
 
@@ -1128,6 +1171,7 @@ describe('DraftStartComponent', () => {
     ) => {
       const original = environment.paymentsEnabled;
       environment.paymentsEnabled = true;
+      listAll.mockReturnValue(of([]));
       try {
         test(await renderFixture());
       } finally {
@@ -1189,6 +1233,18 @@ describe('DraftStartComponent', () => {
     });
   });
   describe('the preset a link asks for', () => {
+    // The home page's AI card says what it opens; the user's own boards must not override it.
+    it('opens on the presets for the link even where there are boards of your own', async () => {
+      queryParams['start'] = 'model';
+      listAll.mockReturnValue(of([summary('p1', 'projection'), imported('i1', 'alex')]));
+      const fixture = MockRender(DraftStartComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+
+      expect(component.sourceKind()).toEqual('preset');
+      expect(component.selection()).toEqual({ kind: 'preset', preset: MODEL });
+    });
+
     it('opens on the AI projection when the link says so', async () => {
       queryParams['start'] = 'model';
       const fixture = MockRender(DraftStartComponent);
@@ -1239,6 +1295,7 @@ describe('DraftStartComponent', () => {
 
     it('ignores a value that names no preset', async () => {
       queryParams['start'] = 'blank';
+      listAll.mockReturnValue(of([]));
       const fixture = MockRender(DraftStartComponent);
       await fixture.whenStable();
 
