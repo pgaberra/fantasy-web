@@ -21,15 +21,11 @@
         </button>
       </div>
     } @else {
-      <h2 class="modal-title">
-        @if (platforms().length > 1) {
-          Follow your league's draft
-        } @else {
-          Follow a {{ platform() }} draft
-        }
-      </h2>
+      <h2 class="modal-title">Enable auto-sync</h2>
+      <p class="modal-subtitle">On {{ platforms().join(' or ') }}</p>
       <p class="modal-text">
-        Pick the league this draft is being played in. Its picks then appear here as they are made.
+        Connect to your draft to automatically track the picks made in real time, so they're
+        reflected here.
       </p>
 
       @if (platforms().length > 1) {
