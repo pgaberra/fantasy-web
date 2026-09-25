@@ -16,11 +16,11 @@ import { leagueProjectionFrom, scoreHeadingFor } from './power-rankings-data';
 import { powerRankingsMessage, powerRankingsRetryable } from './power-rankings-error';
 
 /**
- * How a league's teams stack up, for a manager who drafted on Yahoo rather than here.
+ * How a league's teams stack up today, for a manager who plays on Yahoo rather than here.
  *
  * <p>Nothing is saved. The page is a read of a league that already exists somewhere else, so it
  * holds no board, no draft and no row of its own: leaving it and coming back reads the league
- * again. That is also why the picks are never posted — the league key is the whole of what this
+ * again. That is also why no players are ever posted — the league key is the whole of what this
  * page sends, and the BFF reads the rosters from Yahoo itself.
  *
  * <p>The totals are everyone's; the players behind them are Premium's. Which is why the numbers
