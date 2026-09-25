@@ -21,79 +21,142 @@
         </button>
       </div>
     } @else {
-      <h2 class="modal-title">Follow a Yahoo draft</h2>
+      <h2 class="modal-title">
+        @if (platforms().length > 1) {
+          Follow your league's draft
+        } @else {
+          Follow a {{ platform() }} draft
+        }
+      </h2>
       <p class="modal-text">
         Pick the league this draft is being played in. Its picks then appear here as they are made.
       </p>
 
-      @switch (connected()) {
-        @case (null) {
-          <p class="link-status"><app-loading-indicator variant="inline" label="Checking" /></p>
-        }
-        @case (false) {
-          <p class="modal-note">
-            Connect your Yahoo account to let SlapStat read the draft as it happens.
-          </p>
-          <div class="modal-actions">
-            <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
+      @if (platforms().length > 1) {
+        <div class="provider-picker" role="tablist" aria-label="Fantasy platform of your league">
+          @for (option of platforms(); track option) {
             <button
               type="button"
-              class="btn btn-primary"
-              [disabled]="connecting()"
-              (click)="connect()"
+              role="tab"
+              class="provider-tab"
+              [class.provider-tab--active]="platform() === option"
+              [attr.aria-selected]="platform() === option"
+              (click)="choosePlatform(option)"
             >
-              @if (connecting()) {
-                <app-loading-indicator variant="inline" label="Connecting" />
+              @if (option === 'Yahoo') {
+                <app-yahoo-mark />
               } @else {
-                Connect Yahoo account
+                <img
+                  class="provider-mark provider-mark--espn"
+                  src="espn-logo.png"
+                  alt=""
+                  aria-hidden="true"
+                />
               }
+              {{ option }}
             </button>
+          }
+        </div>
+      }
+
+      @if (platform() === 'ESPN') {
+        <label class="link-field">
+          <span class="link-label">ESPN league ID</span>
+          <input
+            class="link-input"
+            type="text"
+            inputmode="numeric"
+            placeholder="e.g. 123456"
+            [value]="espnLeagueId()"
+            (input)="onEspnLeagueIdInput($event)"
+          />
+        </label>
+        <label class="link-private">
+          <input type="checkbox" [checked]="espnPrivate()" (change)="toggleEspnPrivate()" />
+          <span>My league is private</span>
+        </label>
+        @if (espnPrivate()) {
+          <div class="link-cookies">
+            <label class="link-field link-field--tight">
+              <span class="link-label">espn_s2</span>
+              <input
+                class="link-input"
+                type="password"
+                autocomplete="off"
+                aria-label="espn_s2 cookie"
+                [value]="espnS2()"
+                (input)="onEspnS2Input($event)"
+              />
+            </label>
+            <label class="link-field link-field--tight">
+              <span class="link-label">SWID</span>
+              <input
+                class="link-input"
+                type="password"
+                autocomplete="off"
+                placeholder="{...}"
+                aria-label="SWID cookie"
+                [value]="swid()"
+                (input)="onSwidInput($event)"
+              />
+            </label>
+            @if (hasStoredCookies()) {
+              <p class="link-hint">Your ESPN cookies are saved. Paste new ones to replace them.</p>
+            }
+            <app-espn-cookie-help />
           </div>
         }
-        @default {
-          @if (loadingLeagues()) {
-            <p class="link-status">
-              <app-loading-indicator variant="inline" label="Loading your leagues" />
-            </p>
-          } @else if (leagues().length === 0) {
-            <p class="link-status">No NHL leagues found on your Yahoo account.</p>
-          } @else {
-            <label class="link-field">
-              <span class="link-label">Yahoo league</span>
-              <select class="link-select" (change)="onLeagueChange($event)">
-                <option value="">Select a league…</option>
-                @for (league of leagues(); track league.leagueKey) {
-                  <option
-                    [value]="league.leagueKey"
-                    [selected]="league.leagueKey === selectedKey()"
-                  >
-                    {{ league.name }}
-                  </option>
-                }
-              </select>
-            </label>
+        <ng-container *ngTemplateOutlet="actions" />
+      } @else {
+        @switch (connected()) {
+          @case (null) {
+            <p class="link-status"><app-loading-indicator variant="inline" label="Checking" /></p>
           }
-          <div class="modal-actions">
-            <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
-            @if (settingsFailed()) {
-              <button type="button" class="btn btn-primary" (click)="keepMySettings()">
-                Follow picks anyway
-              </button>
-            } @else {
+          @case (false) {
+            <p class="modal-note">
+              Connect your Yahoo account to let SlapStat read the draft as it happens.
+            </p>
+            <div class="modal-actions">
+              <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
               <button
                 type="button"
                 class="btn btn-primary"
-                [disabled]="!selectedKey() || loadingSettings()"
-                (click)="choose()"
+                [disabled]="connecting()"
+                (click)="connect()"
               >
-                @if (loadingSettings()) {
-                  <app-loading-indicator variant="inline" label="Checking the league" />
+                @if (connecting()) {
+                  <app-loading-indicator variant="inline" label="Connecting" />
                 } @else {
-                  Sync picks
+                  Connect Yahoo account
                 }
               </button>
+            </div>
+          }
+          @default {
+            @if (loadingLeagues()) {
+              <p class="link-status">
+                <app-loading-indicator variant="inline" label="Loading your leagues" />
+              </p>
+            } @else if (leagues().length === 0) {
+              <p class="link-status">No NHL leagues found on your Yahoo account.</p>
+            } @else {
+              <label class="link-field">
+                <span class="link-label">Yahoo league</span>
+                <select class="link-select" (change)="onLeagueChange($event)">
+                  <option value="">Select a league…</option>
+                  @for (league of leagues(); track league.leagueKey) {
+                    <option
+                      [value]="league.leagueKey"
+                      [selected]="league.leagueKey === selectedKey()"
+                    >
+                      {{ league.name }}
+                    </option>
+                  }
+                </select>
+              </label>
             }
-          </div>
+            <ng-container *ngTemplateOutlet="actions" />
+          }
         }
       }
 
@@ -105,3 +168,27 @@
     }
   </div>
 </div>
+
+<ng-template #actions>
+  <div class="modal-actions">
+    <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
+    @if (settingsFailed()) {
+      <button type="button" class="btn btn-primary" (click)="keepMySettings()">
+        Follow picks anyway
+      </button>
+    } @else {
+      <button
+        type="button"
+        class="btn btn-primary"
+        [disabled]="!canChoose() || loadingSettings()"
+        (click)="choose()"
+      >
+        @if (loadingSettings()) {
+          <app-loading-indicator variant="inline" label="Checking the league" />
+        } @else {
+          Sync picks
+        }
+      </button>
+    }
+  </div>
+</ng-template>

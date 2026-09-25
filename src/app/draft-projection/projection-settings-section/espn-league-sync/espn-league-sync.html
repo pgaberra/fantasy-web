@@ -68,28 +68,7 @@
       @if (hasStoredCredentials()) {
         <p class="espn-stored-hint">Your ESPN cookies are saved. Paste new ones to replace them.</p>
       }
-      <button type="button" class="espn-help-toggle" (click)="toggleHelp()">
-        {{ showHelp() ? 'Hide' : 'How do I find these?' }}
-      </button>
-      @if (showHelp()) {
-        <ol class="espn-help">
-          <li>
-            Sign in at
-            <a href="https://fantasy.espn.com" target="_blank" rel="noopener noreferrer"
-              >fantasy.espn.com</a
-            >
-            in your browser.
-          </li>
-          <li>
-            Open your browser developer tools (F12), then go to Application (or Storage) → Cookies →
-            fantasy.espn.com.
-          </li>
-          <li>
-            Copy the <code>espn_s2</code> and <code>SWID</code> values, including SWID's braces, and
-            paste them above.
-          </li>
-        </ol>
-      }
+      <app-espn-cookie-help />
     </div>
   }
 

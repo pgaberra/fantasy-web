@@ -198,7 +198,11 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   `followedLeague` picks the linked platform and the copy names it. ESPN's refusal (private
   league, missing or stale cookies) is a 400. Its team ids are `espn.l.{leagueId}.t.{teamId}`, and
   a drafted player the pool has no counterpart for arrives as a negative id and shows no name.
-  Linking a league from the board itself is still Yahoo only.
+  A board with no league linked gets the switch too: it opens `DraftFollowConnectComponent`, with
+  a Yahoo/ESPN tab for each platform this environment follows (`linkPlatforms`: the BFF feature
+  plus the build's `yahooSyncDisabled` / `espnLeaguesEnabled`). ESPN's tab takes the league id
+  and, for a private league, the cookies, stored as the settings import stores them; a 400 or 404
+  there is not followable, so only a failed settings read offers "Follow picks anyway".
 - `shared-projection/` — the page behind a share link (`/s/:token`), public and unguarded: a
   share link has to open for someone who has never signed in. Its byline carries the author's
   profile picture, or the initial of their username where they have none. A signed-in visitor is offered

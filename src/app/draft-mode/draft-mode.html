@@ -113,7 +113,7 @@
               <span class="sync-control" [class.sync-control--on]="following()">
                 <app-toggle-switch
                   [on]="following()"
-                  [ariaLabel]="'Sync picks from the ' + followPlatform() + ' draft'"
+                  [ariaLabel]="syncLabel()"
                   (toggled)="toggleFollow()"
                 />
                 <span class="sync-label" aria-hidden="true">Sync picks</span>
@@ -249,6 +249,8 @@
       @if (linkOpen()) {
         <app-draft-follow-connect
           [current]="leagueSettings()"
+          [platforms]="linkPlatforms()"
+          [startOn]="linkStartOn()"
           (linked)="linkLeague($event)"
           (cancelled)="closeLink()"
         />

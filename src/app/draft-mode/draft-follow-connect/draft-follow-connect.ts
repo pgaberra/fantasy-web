@@ -1,24 +1,47 @@
-import { Component, DestroyRef, inject, input, OnInit, output, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  input,
+  linkedSignal,
+  OnInit,
+  output,
+  signal,
+} from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Observable, of, switchMap } from 'rxjs';
 import { DraftSettings } from '../../api/models/draft-settings';
 import { LeagueProjectionSettingsResponse } from '../../api/models/league-projection-settings-response';
+import { EspnService } from '../../services/espn.service';
 import { YahooService } from '../../services/yahoo.service';
+import { EspnCookieHelpComponent } from '../../shared/espn-cookie-help/espn-cookie-help';
 import { IconComponent } from '../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 import { isYahooRefusal } from '../../shared/yahoo-refused';
 import { YahooLeaguePicker } from '../../shared/yahoo-league-picker';
+import { YahooMarkComponent } from '../../shared/yahoo-mark/yahoo-mark';
 import { leagueSettingsDifferences } from '../league-settings-difference';
+
+/** A platform whose league a board can be linked to from the board itself. */
+export type LinkPlatform = 'Yahoo' | 'ESPN';
 
 /** The league to follow, and the settings to import with it — none when the user keeps their own. */
 export interface FollowLeagueLink {
-  leagueKey: string;
+  platform: LinkPlatform;
+  /** Yahoo's league key, or ESPN's league id. */
+  leagueId: string;
   leagueName: string;
   settings: LeagueProjectionSettingsResponse | null;
 }
 
 /**
- * Links a Yahoo league to a draft that was set up without one, from inside the board: connect the
- * account if it isn't, pick the league, and hand it back for the board to follow.
+ * Links a Yahoo or ESPN league to a draft that was set up without one, from inside the board, and
+ * hands it back for the board to follow. Yahoo: connect the account if it isn't, pick the league.
+ * ESPN, which has no account to connect: the league id, and for a private league the user's
+ * espn_s2 and SWID cookies, stored server-side as the settings import stores them.
  *
  * The league's settings are a separate question from its picks, so they are only imported when
  * they would change something the user set, and then only if they say so — a draft in progress is
@@ -27,31 +50,75 @@ export interface FollowLeagueLink {
  */
 @Component({
   selector: 'app-draft-follow-connect',
-  imports: [IconComponent, LoadingIndicatorComponent],
+  imports: [
+    NgTemplateOutlet,
+    IconComponent,
+    LoadingIndicatorComponent,
+    YahooMarkComponent,
+    EspnCookieHelpComponent,
+  ],
   providers: [YahooLeaguePicker],
   templateUrl: './draft-follow-connect.html',
   styleUrl: './draft-follow-connect.css',
 })
 export class DraftFollowConnectComponent implements OnInit {
   private readonly yahoo = inject(YahooService);
+  private readonly espn = inject(EspnService);
   private readonly destroyRef = inject(DestroyRef);
   /** Connecting the account and choosing a league: the same picker the other screens use. */
   private readonly picker = inject(YahooLeaguePicker);
 
-  /** The draft's own league settings, to tell whether the Yahoo league's differ from them. */
+  /** The draft's own league settings, to tell whether the league's differ from them. */
   readonly current = input<DraftSettings | null>(null);
+  /** The platforms this environment follows drafts on, in the order the tabs show them. */
+  readonly platforms = input<readonly LinkPlatform[]>(['Yahoo']);
+  /** The platform to open on, when the page knows: the one a Yahoo connect just came back from. */
+  readonly startOn = input<LinkPlatform | null>(null);
 
   readonly linked = output<FollowLeagueLink>();
   readonly cancelled = output<void>();
+
+  /**
+   * The tab showing. Where the page names none, ESPN when the draft's league was last imported
+   * from ESPN, since that is the league the user is most likely drafting in; otherwise the first.
+   */
+  readonly platform = linkedSignal<LinkPlatform>(() => {
+    const offered = this.platforms();
+    const asked = this.startOn();
+    if (asked && offered.includes(asked)) {
+      return asked;
+    }
+    if (this.current()?.lastEspnLeagueId && offered.includes('ESPN')) {
+      return 'ESPN';
+    }
+    return offered[0] ?? 'Yahoo';
+  });
 
   readonly connected = this.picker.connected;
   readonly connecting = this.picker.connecting;
   readonly leagues = this.picker.leagues;
   readonly loadingLeagues = this.picker.loadingLeagues;
   readonly selectedKey = this.picker.selectedKey;
+
+  /** The ESPN league id, starting from the one the draft last imported settings from. */
+  readonly espnLeagueId = linkedSignal<string>(() => this.current()?.lastEspnLeagueId ?? '');
+  readonly espnPrivate = signal(false);
+  readonly espnS2 = signal('');
+  readonly swid = signal('');
+  readonly hasStoredCookies = signal(false);
+  private readonly espnError = signal<string | null>(null);
+  /** ESPN's name for the league, once its settings have been read. */
+  private readonly espnLeagueName = signal<string | null>(null);
+
   readonly loadingSettings = signal(false);
-  /** What went wrong: the picker's failures and this dialog's own, in one line on screen. */
-  readonly error = this.picker.error;
+  /** What went wrong on the tab showing, in one line on screen. */
+  readonly error = computed(() =>
+    this.platform() === 'ESPN' ? this.espnError() : this.picker.error(),
+  );
+  /** Whether the chosen league can be taken: a Yahoo league picked, or an ESPN id typed. */
+  readonly canChoose = computed(() =>
+    this.platform() === 'ESPN' ? this.espnLeagueId().trim().length > 0 : !!this.selectedKey(),
+  );
   /**
    * What the chosen league's settings would change, once they are known. Empty while the league is
    * still being chosen; a non-empty list is the question put to the user.
@@ -60,9 +127,18 @@ export class DraftFollowConnectComponent implements OnInit {
   /** Whether the league's settings couldn't be read, leaving its picks as all there is to take. */
   readonly settingsFailed = signal(false);
   private readonly leagueSettings = signal<LeagueProjectionSettingsResponse | null>(null);
+  private yahooStarted = false;
+  private espnStarted = false;
 
   ngOnInit(): void {
-    this.picker.start();
+    this.startPlatform(this.platform());
+  }
+
+  /** Switches tab. Each platform is only asked about once its tab has been opened. */
+  choosePlatform(platform: LinkPlatform): void {
+    this.platform.set(platform);
+    this.settingsFailed.set(false);
+    this.startPlatform(platform);
   }
 
   connect(): void {
@@ -74,44 +150,37 @@ export class DraftFollowConnectComponent implements OnInit {
     this.settingsFailed.set(false);
   }
 
+  onEspnLeagueIdInput(event: Event): void {
+    this.espnLeagueId.set((event.target as HTMLInputElement).value);
+    this.espnError.set(null);
+    this.settingsFailed.set(false);
+  }
+
+  toggleEspnPrivate(): void {
+    this.espnPrivate.update((isPrivate) => !isPrivate);
+  }
+
+  onEspnS2Input(event: Event): void {
+    this.espnS2.set((event.target as HTMLInputElement).value);
+  }
+
+  onSwidInput(event: Event): void {
+    this.swid.set((event.target as HTMLInputElement).value);
+  }
+
   /**
    * Takes the chosen league. Its settings are read first, only to see whether they differ: where
    * they don't, there is nothing to ask and the board starts following at once.
    */
   choose(): void {
-    const key = this.selectedKey();
-    if (!key || this.loadingSettings()) {
+    if (!this.canChoose() || this.loadingSettings()) {
       return;
     }
-    this.loadingSettings.set(true);
-    this.error.set(null);
-    this.yahoo
-      .leagueProjectionSettings(key)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (settings) => {
-          this.loadingSettings.set(false);
-          const differences = leagueSettingsDifferences(this.current(), settings);
-          if (differences.length === 0) {
-            this.emitLink(settings);
-            return;
-          }
-          this.leagueSettings.set(settings);
-          this.differences.set(differences);
-        },
-        // Following needs the league's picks, not its settings, so a settings read that fails is
-        // not a reason to refuse the link: it only means there is nothing to import, which the
-        // user is told rather than left to wonder about.
-        error: (err: unknown) => {
-          this.loadingSettings.set(false);
-          this.settingsFailed.set(true);
-          this.error.set(
-            isYahooRefusal(err)
-              ? "Yahoo refused access to this league's settings. Its picks can still be followed."
-              : "Couldn't read this league's settings. Its picks can still be followed.",
-          );
-        },
-      });
+    if (this.platform() === 'ESPN') {
+      this.chooseEspn();
+    } else {
+      this.chooseYahoo();
+    }
   }
 
   keepMySettings(): void {
@@ -126,14 +195,136 @@ export class DraftFollowConnectComponent implements OnInit {
     this.cancelled.emit();
   }
 
+  private startPlatform(platform: LinkPlatform): void {
+    if (platform === 'Yahoo' && !this.yahooStarted) {
+      this.yahooStarted = true;
+      this.picker.start();
+    }
+    if (platform === 'ESPN' && !this.espnStarted) {
+      this.espnStarted = true;
+      // Cookies on file mean the user's league is private, as in the settings import. A failed
+      // probe leaves the box unticked, which a refused league then ticks.
+      this.espn
+        .credentialStatus()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (status) => {
+            this.hasStoredCookies.set(status.hasCredentials);
+            if (status.hasCredentials) {
+              this.espnPrivate.set(true);
+            }
+          },
+          error: () => this.hasStoredCookies.set(false),
+        });
+    }
+  }
+
+  private chooseYahoo(): void {
+    const key = this.selectedKey();
+    if (!key) {
+      return;
+    }
+    this.readSettings(this.yahoo.leagueProjectionSettings(key), (err) => {
+      // Following needs the league's picks, not its settings, so a settings read that fails is
+      // not a reason to refuse the link: it only means there is nothing to import, which the
+      // user is told rather than left to wonder about.
+      this.settingsFailed.set(true);
+      this.picker.error.set(
+        isYahooRefusal(err)
+          ? "Yahoo refused access to this league's settings. Its picks can still be followed."
+          : "Couldn't read this league's settings. Its picks can still be followed.",
+      );
+    });
+  }
+
+  private chooseEspn(): void {
+    const leagueId = this.espnLeagueId().trim();
+    const espnS2 = this.espnS2().trim();
+    const swid = this.swid().trim();
+    // Empty fields keep the stored pair; a pasted pair replaces it.
+    const savingCookies = this.espnPrivate() && espnS2.length > 0 && swid.length > 0;
+    const hadCookies = savingCookies || this.hasStoredCookies();
+    this.espnError.set(null);
+    const save: Observable<void> = savingCookies
+      ? this.espn.saveCredentials({ espnS2, swid })
+      : of(undefined);
+    const settings = save.pipe(
+      switchMap(() => {
+        if (savingCookies) {
+          this.hasStoredCookies.set(true);
+        }
+        return this.espn.leagueProjectionSettings(leagueId);
+      }),
+    );
+    this.readSettings(settings, (err) => {
+      const status = err instanceof HttpErrorResponse ? err.status : 0;
+      // ESPN refusing the league, or not knowing it, refuses its draft just the same, so there is
+      // nothing to follow either: the fix is in the fields above.
+      if (status === 400) {
+        this.espnPrivate.set(true);
+        this.espnError.set(
+          hadCookies
+            ? 'ESPN did not accept those cookies. Check the league ID and make sure espn_s2 and SWID were copied in full.'
+            : 'This league is private. Add your espn_s2 and SWID cookies, then try again.',
+        );
+        return;
+      }
+      if (status === 404) {
+        this.espnError.set('No ESPN league found for that id.');
+        return;
+      }
+      this.settingsFailed.set(true);
+      this.espnError.set("Couldn't read this league's settings. Its picks can still be followed.");
+    });
+  }
+
+  private readSettings(
+    settings: Observable<LeagueProjectionSettingsResponse>,
+    onError: (err: unknown) => void,
+  ): void {
+    this.loadingSettings.set(true);
+    this.picker.error.set(null);
+    settings.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (read) => {
+        this.loadingSettings.set(false);
+        this.espnLeagueName.set(read.leagueName ?? null);
+        const differences = leagueSettingsDifferences(this.current(), read);
+        if (differences.length === 0) {
+          this.emitLink(read);
+          return;
+        }
+        this.leagueSettings.set(read);
+        this.differences.set(differences);
+      },
+      error: (err: unknown) => {
+        this.loadingSettings.set(false);
+        onError(err);
+      },
+    });
+  }
+
   private emitLink(settings: LeagueProjectionSettingsResponse | null): void {
+    if (this.platform() === 'ESPN') {
+      const leagueId = this.espnLeagueId().trim();
+      if (!leagueId) {
+        return;
+      }
+      this.linked.emit({
+        platform: 'ESPN',
+        leagueId,
+        leagueName: this.espnLeagueName() ?? leagueId,
+        settings,
+      });
+      return;
+    }
     const key = this.selectedKey();
     if (!key) {
       return;
     }
     const league = this.leagues().find((candidate) => candidate.leagueKey === key);
     this.linked.emit({
-      leagueKey: key,
+      platform: 'Yahoo',
+      leagueId: key,
       leagueName: league?.name ?? 'your league',
       settings,
     });

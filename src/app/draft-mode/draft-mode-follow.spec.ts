@@ -129,7 +129,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
         updateProjection,
         renameProjection,
       })
-      .mock(FeatureService, { leagueDraftSync })
+      .mock(FeatureService, { leagueDraftSync, espnLeagueDraftSync: signal(false) })
       .mock(YahooService, { leagueDraft: leagueDraftCall })
       .mock(YahooConnectReturnService, { returnedTo })
       .provide({
@@ -651,7 +651,12 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       const component = await render();
       component.toggleFollow();
 
-      component.linkLeague({ leagueKey: '465.l.9', leagueName: 'Beer League', settings: null });
+      component.linkLeague({
+        platform: 'Yahoo',
+        leagueId: '465.l.9',
+        leagueName: 'Beer League',
+        settings: null,
+      });
 
       expect(component.linkOpen()).toBe(false);
       expect(component.following()).toBe(true);
@@ -666,7 +671,8 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       const component = await render();
 
       component.linkLeague({
-        leagueKey: '465.l.9',
+        platform: 'Yahoo',
+        leagueId: '465.l.9',
         leagueName: 'Beer League',
         settings: leagueSettings,
       });
