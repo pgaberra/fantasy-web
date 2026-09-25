@@ -317,7 +317,7 @@ describe('DraftSetupComponent', () => {
     fixture.detectChanges();
 
     expect(element.querySelector('.field-hint')?.textContent).toContain(
-      "Your league doesn't say where you pick",
+      'Unable to fetch your draft position. Please select it manually.',
     );
   });
 
