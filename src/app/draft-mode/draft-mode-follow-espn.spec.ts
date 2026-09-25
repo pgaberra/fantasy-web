@@ -279,4 +279,82 @@ describe('DraftModeComponent following an ESPN draft', () => {
       expect(saved?.activeScoringColumns).toEqual(['goals']);
     });
   });
+
+  describe('when the cookies are what stopped it', () => {
+    const noTeamOfMine = (): LeagueDraftResponse => ({
+      ...leagueDraft(),
+      teams: leagueDraft().teams.map((team) => ({ ...team, mine: false })),
+    });
+
+    it('asks for the cookies of the linked league when no team in it is yours', async () => {
+      espnLeagueDraft.mockReturnValue(of(noTeamOfMine()));
+      const component = await render();
+
+      component.toggleFollow();
+
+      expect(component.following()).toBe(false);
+      expect(component.linkOpen()).toBe(true);
+      expect(component.linkDialogPlatforms()).toEqual(['ESPN']);
+      expect(component.cookieRepair()?.leagueId).toBe('123');
+      expect(component.cookieRepair()?.reason).toContain("couldn't tell which team");
+    });
+
+    it('asks for them again when ESPN refuses the draft mid-sync', async () => {
+      espnLeagueDraft.mockReturnValue(of(leagueDraft()));
+      const component = await render();
+      component.requestFollow();
+
+      espnLeagueDraft.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 400 })));
+      await vi.advanceTimersByTimeAsync(5000);
+
+      expect(component.following()).toBe(false);
+      expect(component.cookieRepair()?.reason).toContain('no longer valid');
+    });
+
+    it('does not ask when the league is simply gone', async () => {
+      espnLeagueDraft.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+      const component = await render();
+
+      component.requestFollow();
+
+      expect(component.cookieRepair()).toBeNull();
+      expect(component.linkOpen()).toBe(false);
+    });
+
+    it('syncs again once the cookies are in, leaving the board and its name alone', async () => {
+      espnLeagueDraft.mockReturnValue(of(noTeamOfMine()));
+      const component = await render();
+      component.requestFollow();
+      updateProjection.mockClear();
+      renameProjection.mockClear();
+
+      espnLeagueDraft.mockReturnValue(of(leagueDraft()));
+      component.linkLeague({
+        platform: 'ESPN',
+        leagueId: '123',
+        leagueName: 'Beer League',
+        settings: null,
+      });
+
+      expect(component.linkOpen()).toBe(false);
+      expect(component.cookieRepair()).toBeNull();
+      expect(component.following()).toBe(true);
+      expect(renameProjection).not.toHaveBeenCalled();
+      expect(updateProjection.mock.calls[0][1].data.draft?.settings?.espnSync?.leagueId).toBe(
+        '123',
+      );
+    });
+
+    it('lets the user close it and draft by hand', async () => {
+      espnLeagueDraft.mockReturnValue(of(noTeamOfMine()));
+      const component = await render();
+      component.requestFollow();
+
+      component.closeLink();
+
+      expect(component.linkOpen()).toBe(false);
+      expect(component.following()).toBe(false);
+      expect(component.canUndo()).toBe(component.picks().length > 0);
+    });
+  });
 });

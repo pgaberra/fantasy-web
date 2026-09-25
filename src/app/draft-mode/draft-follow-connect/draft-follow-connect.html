@@ -22,17 +22,24 @@
       </div>
     } @else {
       <h2 class="modal-title">
-        @if (platforms().length > 1) {
+        @if (repair()) {
+          Add your ESPN cookies
+        } @else if (platforms().length > 1) {
           Follow your league's draft
         } @else {
           Follow a {{ platform() }} draft
         }
       </h2>
       <p class="modal-text">
-        Pick the league this draft is being played in. Its picks then appear here as they are made.
+        @if (repair(); as repairing) {
+          {{ repairing.reason }}
+        } @else {
+          Pick the league this draft is being played in. Its picks then appear here as they are
+          made.
+        }
       </p>
 
-      @if (platforms().length > 1) {
+      @if (platforms().length > 1 && !repair()) {
         <div class="provider-picker" role="tablist" aria-label="Fantasy platform of your league">
           @for (option of platforms(); track option) {
             <button
@@ -71,41 +78,39 @@
             (input)="onEspnLeagueIdInput($event)"
           />
         </label>
-        <label class="link-private">
-          <input type="checkbox" [checked]="espnPrivate()" (change)="toggleEspnPrivate()" />
-          <span>My league is private</span>
-        </label>
-        @if (espnPrivate()) {
-          <div class="link-cookies">
-            <label class="link-field link-field--tight">
-              <span class="link-label">espn_s2</span>
-              <input
-                class="link-input"
-                type="password"
-                autocomplete="off"
-                aria-label="espn_s2 cookie"
-                [value]="espnS2()"
-                (input)="onEspnS2Input($event)"
-              />
-            </label>
-            <label class="link-field link-field--tight">
-              <span class="link-label">SWID</span>
-              <input
-                class="link-input"
-                type="password"
-                autocomplete="off"
-                placeholder="{...}"
-                aria-label="SWID cookie"
-                [value]="swid()"
-                (input)="onSwidInput($event)"
-              />
-            </label>
-            @if (hasStoredCookies()) {
-              <p class="link-hint">Your ESPN cookies are saved. Paste new ones to replace them.</p>
-            }
-            <app-espn-cookie-help />
-          </div>
-        }
+        <div class="link-cookies">
+          <p class="link-hint">
+            Your ESPN cookies let SlapStat read the draft and find your team in it, in a private or
+            a public league.
+          </p>
+          <label class="link-field link-field--tight">
+            <span class="link-label">espn_s2</span>
+            <input
+              class="link-input"
+              type="password"
+              autocomplete="off"
+              aria-label="espn_s2 cookie"
+              [value]="espnS2()"
+              (input)="onEspnS2Input($event)"
+            />
+          </label>
+          <label class="link-field link-field--tight">
+            <span class="link-label">SWID</span>
+            <input
+              class="link-input"
+              type="password"
+              autocomplete="off"
+              placeholder="{...}"
+              aria-label="SWID cookie"
+              [value]="swid()"
+              (input)="onSwidInput($event)"
+            />
+          </label>
+          @if (hasStoredCookies() && !repair()) {
+            <p class="link-hint">Your ESPN cookies are saved. Paste new ones to replace them.</p>
+          }
+          <app-espn-cookie-help />
+        </div>
         <ng-container *ngTemplateOutlet="actions" />
       } @else {
         @switch (connected()) {
