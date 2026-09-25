@@ -24,18 +24,15 @@
       <h2 class="modal-title">
         @if (repair()) {
           Add your ESPN cookies
-        } @else if (platforms().length > 1) {
-          Follow your league's draft
         } @else {
-          Follow a {{ platform() }} draft
+          Sync your draft
         }
       </h2>
       <p class="modal-text">
         @if (repair(); as repairing) {
           {{ repairing.reason }}
         } @else {
-          Pick the league this draft is being played in. Its picks then appear here as they are
-          made.
+          Automatically update this page as picks are made in your draft.
         }
       </p>
 
