@@ -43,7 +43,15 @@
 
     <div class="setup-field">
       <label class="setup-label" for="draft-position">Your draft position</label>
-      <select id="draft-position" class="position-select" (change)="onPositionChange($event)">
+      <select
+        #positionSelect
+        id="draft-position"
+        class="position-select"
+        [class.invalid]="positionMissing()"
+        [attr.aria-invalid]="positionMissing()"
+        [attr.aria-describedby]="positionMissing() ? 'draft-position-error' : null"
+        (change)="onPositionChange($event)"
+      >
         @if (!draftPositionKnown()) {
           <option value="" selected disabled>Select</option>
         }
@@ -53,13 +61,14 @@
           </option>
         }
       </select>
+      @if (positionMissing()) {
+        <p id="draft-position-error" class="field-error">
+          Choose your draft position to start the draft.
+        </p>
+      } @else if (leagueLoaded() && !draftPositionKnown()) {
+        <p class="field-hint">Your league doesn't say where you pick, so choose it here.</p>
+      }
     </div>
-
-    @if (!draftPositionKnown()) {
-      <p class="setup-hint">
-        Your league doesn't say where you pick, so choose your draft position to start.
-      </p>
-    }
   }
 
   <div class="setup-field">
@@ -71,7 +80,7 @@
     @if (canCancel()) {
       <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">Cancel</button>
     }
-    <button type="button" class="btn btn-primary" [disabled]="!canStart()" (click)="submit()">
+    <button type="button" class="btn btn-primary" (click)="submit()">
       {{ canCancel() ? 'Save setup' : 'Start draft' }}
     </button>
   </div>

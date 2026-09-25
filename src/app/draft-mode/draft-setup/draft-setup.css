@@ -79,6 +79,24 @@
   font-size: 1rem;
 }
 
+.position-select.invalid {
+  border-color: var(--color-error);
+}
+
+.field-error,
+.field-hint {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+}
+
+.field-error {
+  color: var(--color-error);
+}
+
+.field-hint {
+  color: var(--color-text-muted);
+}
+
 .setup-actions {
   display: flex;
   justify-content: flex-end;
