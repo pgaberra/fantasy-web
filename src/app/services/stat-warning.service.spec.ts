@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { StatWarningService } from './stat-warning.service';
 import {
+  ActiveColumns,
   GoalieProjection,
   GoalieScoringStats,
   GoalieUtilityStats,
@@ -8,8 +9,20 @@ import {
   SkaterScoringStats,
   SkaterUtilityStats,
 } from '../models/projection.model';
+import { SCORING_STAT_KEYS, SKATER_UTILITY_STAT_KEYS, StatKey } from '../models/stat-key.model';
 
 const DEFAULT_GAMES = 82;
+
+const EVERY_COLUMN: ActiveColumns = {
+  utility: new Set(SKATER_UTILITY_STAT_KEYS),
+  scoring: new Set(SCORING_STAT_KEYS),
+};
+
+/** Every column but the ones named, as a projection that doesn't count them has. */
+const without = (...off: StatKey[]): ActiveColumns => ({
+  utility: new Set([...EVERY_COLUMN.utility].filter((key) => !off.includes(key))),
+  scoring: new Set([...EVERY_COLUMN.scoring].filter((key) => !off.includes(key))),
+});
 const DEFAULT_TOI_PER_GAME = 1200;
 
 // The line every skater test starts from is deliberately consistent with itself — the derived
@@ -81,7 +94,12 @@ const goalie = (
 });
 
 describe('StatWarningService', () => {
-  const service = new StatWarningService();
+  const stats = new StatWarningService();
+  // Every case but the ones about inactive columns checks a projection that counts every stat.
+  const service = {
+    warningsFor: (line: SkaterProjection | GoalieProjection) =>
+      stats.warningsFor(line, EVERY_COLUMN),
+  };
 
   it('warns when GP exceeds the 84-game season', () => {
     expect(service.warningsFor(skater({}, { gp: 85 })).has('gp')).toEqual(true);
@@ -332,6 +350,36 @@ describe('StatWarningService', () => {
     expect(service.warningsFor(goalie({ toi: 3900 }, { gp: 1 })).has('toi')).toEqual(false);
     expect(service.warningsFor(goalie({ toi: 3901 }, { gp: 1 })).has('toi')).toEqual(true);
     expect(service.warningsFor(goalie({ toi: 1200 }, { gp: 0 })).has('toi')).toEqual(true);
+  });
+
+  it('checks a rule only when every stat it reads is a column', () => {
+    const line = skater({ ppg: 10, ppa: 15, ppp: 20 });
+    expect(stats.warningsFor(line, EVERY_COLUMN).has('ppp')).toEqual(true);
+    // A projection counting PPP alone: PPG and PPA are nowhere on the board to be out of step with.
+    expect(stats.warningsFor(line, without('ppg', 'ppa')).has('ppp')).toEqual(false);
+    // One part of the sum missing is as good as both.
+    expect(stats.warningsFor(line, without('ppg')).has('ppp')).toEqual(false);
+    expect(stats.warningsFor(line, without('ppa')).has('ppp')).toEqual(false);
+  });
+
+  it('drops a bound whose other side is not a column', () => {
+    const line = skater({ goals: 10, ppg: 11 });
+    expect(stats.warningsFor(line, without('goals')).has('ppg')).toEqual(false);
+    expect(stats.warningsFor(line, without('ppg')).has('ppg')).toEqual(false);
+  });
+
+  it('drops a goalie rule when one of its stats is not a column', () => {
+    const line = goalie({ sa: 100, sv: 90, ga: 5 });
+    expect(stats.warningsFor(line, EVERY_COLUMN).has('sa')).toEqual(true);
+    expect(stats.warningsFor(line, without('ga')).has('sa')).toEqual(false);
+    expect(
+      stats.warningsFor(goalie({ w: 30, l: 25, otl: 6 }, { gp: 60 }), without('otl')).has('w'),
+    ).toEqual(false);
+  });
+
+  it('checks a stat against a fixed bound whenever the stat itself is a column', () => {
+    expect(stats.warningsFor(skater({}, { gp: 85 }), without('toi')).has('gp')).toEqual(true);
+    expect(stats.warningsFor(skater({}, { gp: 85 }), without('gp')).has('gp')).toEqual(false);
   });
 
   it('produces no warnings for a plausible line', () => {

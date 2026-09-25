@@ -1,9 +1,20 @@
 import { Goalie, Skater } from '../../models/player.model';
-import { GoalieProjection, SkaterProjection } from '../../models/projection.model';
+import { ActiveColumns, GoalieProjection, SkaterProjection } from '../../models/projection.model';
 import { SkaterPosition } from '../../models/position.model';
-import { GOALIE_SCORING_STAT_KEYS, SKATER_SCORING_STAT_KEYS } from '../../models/stat-key.model';
+import {
+  GOALIE_SCORING_STAT_KEYS,
+  SCORING_STAT_KEYS,
+  SKATER_SCORING_STAT_KEYS,
+  SKATER_UTILITY_STAT_KEYS,
+} from '../../models/stat-key.model';
 
 /** A small pool for the import specs, with the spellings a sheet gets wrong. */
+
+/** Every stat as a column, so the stat warnings check every rule. */
+export const EVERY_COLUMN: ActiveColumns = {
+  utility: new Set(SKATER_UTILITY_STAT_KEYS),
+  scoring: new Set(SCORING_STAT_KEYS),
+};
 
 const zeros = (keys: readonly string[]) => Object.fromEntries(keys.map((key) => [key, 0]));
 

@@ -4,7 +4,7 @@ import { StatWarningService } from '../../services/stat-warning.service';
 import { GoalieProjection, SkaterProjection } from '../../models/projection.model';
 import { applyImportedStats, ImportedStats } from './spreadsheet-import';
 import { reconcileImportedLine } from './spreadsheet-reconcile';
-import { goalie, lineOf, skater } from './spreadsheet-test-players';
+import { EVERY_COLUMN, goalie, lineOf, skater } from './spreadsheet-test-players';
 
 describe('spreadsheet-reconcile', () => {
   const warnings = new StatWarningService();
@@ -49,7 +49,7 @@ describe('spreadsheet-reconcile', () => {
 
     expect(result.stats.scoring.points).toBeCloseTo(129.1);
     expect(result.stats.scoring.ppg + result.stats.scoring.ppa).toBeCloseTo(43.3);
-    expect(warnings.warningsFor(result).size).toBe(0);
+    expect(warnings.warningsFor(result, EVERY_COLUMN).size).toBe(0);
   });
 
   it('splits an imported total the way the line already split it', () => {
@@ -69,7 +69,7 @@ describe('spreadsheet-reconcile', () => {
 
     expect(result.stats.scoring.ppg).toBeCloseTo(12);
     expect(result.stats.scoring.ppa).toBeCloseTo(18);
-    expect(warnings.warningsFor(result).size).toBe(0);
+    expect(warnings.warningsFor(result, EVERY_COLUMN).size).toBe(0);
   });
 
   it("moves a defenceman's points with his points", () => {
@@ -134,7 +134,7 @@ describe('spreadsheet-reconcile', () => {
     expect(result.stats.scoring.ga).toBeCloseTo(150);
     expect(result.stats.scoring.gaa).toBeCloseTo(2.5);
     expect(result.stats.scoring.svPct).toBeCloseTo(0.915);
-    expect(warnings.warningsFor(result).size).toBe(0);
+    expect(warnings.warningsFor(result, EVERY_COLUMN).size).toBe(0);
   });
 
   it('touches nothing the sheet did not reach', () => {

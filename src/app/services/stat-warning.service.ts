@@ -1,5 +1,10 @@
 import { Injectable } from '@angular/core';
-import { GoalieProjection, Projection, SkaterProjection } from '../models/projection.model';
+import {
+  ActiveColumns,
+  GoalieProjection,
+  Projection,
+  SkaterProjection,
+} from '../models/projection.model';
 import { StatKey } from '../models/stat-key.model';
 import { FULL_SEASON_GAMES } from '../draft-projection/projection-defaults';
 
@@ -44,97 +49,133 @@ const FRACTION_TOLERANCE = 0.005;
  */
 const BOUND_TOLERANCE = 1e-6;
 
+/** Whether every stat a rule reads is a column of this projection. */
+type ActiveCheck = (...keys: StatKey[]) => boolean;
+
 @Injectable({
   providedIn: 'root',
 })
 export class StatWarningService {
-  warningsFor(projection: Projection): Map<StatKey, string> {
+  /**
+   * A rule is checked only when every stat it reads is an active column. A stat the projection
+   * doesn't count is never shown, so a projection with PPP but not PPG or PPA must not flag its
+   * PPP against two numbers nobody can see or edit.
+   */
+  warningsFor(projection: Projection, activeColumns: ActiveColumns): Map<StatKey, string> {
     const warnings = new Map<StatKey, string>();
+    const active = new Set<StatKey>([...activeColumns.utility, ...activeColumns.scoring]);
+    const on: ActiveCheck = (...keys) => keys.every((key) => active.has(key));
 
-    if (this.exceeds(projection.stats.utility.gp, FULL_SEASON_GAMES)) {
+    if (on('gp') && this.exceeds(projection.stats.utility.gp, FULL_SEASON_GAMES)) {
       this.warn(warnings, 'gp', `Projected beyond the ${FULL_SEASON_GAMES}-game season`);
     }
 
     if (projection.type === 'skater') {
-      this.addSkaterWarnings(projection, warnings);
+      this.addSkaterWarnings(projection, warnings, on);
     } else {
-      this.addGoalieWarnings(projection, warnings);
+      this.addGoalieWarnings(projection, warnings, on);
     }
 
     return warnings;
   }
 
-  private addSkaterWarnings(projection: SkaterProjection, warnings: Map<StatKey, string>): void {
+  private addSkaterWarnings(
+    projection: SkaterProjection,
+    warnings: Map<StatKey, string>,
+    on: ActiveCheck,
+  ): void {
     const { scoring, utility } = projection.stats;
 
-    if (this.exceeds(utility.toiPerGame, MAX_TOI_SECONDS)) {
+    if (on('toiPerGame') && this.exceeds(utility.toiPerGame, MAX_TOI_SECONDS)) {
       this.warn(warnings, 'toiPerGame', 'Over 60 minutes per game');
     }
-    if (this.exceeds(scoring.ppg, scoring.goals)) {
+    if (on('ppg', 'goals') && this.exceeds(scoring.ppg, scoring.goals)) {
       this.warn(warnings, 'ppg', 'More than total goals');
     }
-    if (this.exceeds(scoring.shg, scoring.goals)) {
+    if (on('shg', 'goals') && this.exceeds(scoring.shg, scoring.goals)) {
       this.warn(warnings, 'shg', 'More than total goals');
     }
-    if (this.exceeds(scoring.gwg, scoring.goals)) {
+    if (on('gwg', 'goals') && this.exceeds(scoring.gwg, scoring.goals)) {
       this.warn(warnings, 'gwg', 'More than total goals');
     }
-    if (this.exceeds(scoring.ppa, scoring.assists)) {
+    if (on('ppa', 'assists') && this.exceeds(scoring.ppa, scoring.assists)) {
       this.warn(warnings, 'ppa', 'More than total assists');
     }
-    if (this.exceeds(scoring.sha, scoring.assists)) {
+    if (on('sha', 'assists') && this.exceeds(scoring.sha, scoring.assists)) {
       this.warn(warnings, 'sha', 'More than total assists');
     }
-    if (this.exceeds(scoring.defPoints, scoring.points)) {
+    if (on('defPoints', 'points') && this.exceeds(scoring.defPoints, scoring.points)) {
       this.warn(warnings, 'defPoints', 'More than total points');
     }
-    if (this.exceeds(scoring.goals, scoring.sog)) {
+    if (on('goals', 'sog') && this.exceeds(scoring.goals, scoring.sog)) {
       this.warn(warnings, 'goals', 'More goals than shots on goal');
     }
-    if (this.exceeds(scoring.hatTricks * GOALS_PER_HAT_TRICK, scoring.goals)) {
+    if (
+      on('hatTricks', 'goals') &&
+      this.exceeds(scoring.hatTricks * GOALS_PER_HAT_TRICK, scoring.goals)
+    ) {
       this.warn(warnings, 'hatTricks', 'Needs three goals each');
     }
 
     // Every goal, assist and point is scored at even strength, on the power play or
     // shorthanded, so the special teams share can never be more than the whole.
-    if (this.exceeds(scoring.ppg + scoring.shg, scoring.goals)) {
+    if (on('ppg', 'shg', 'goals') && this.exceeds(scoring.ppg + scoring.shg, scoring.goals)) {
       this.warn(warnings, 'ppg', 'PPG + SHG exceed total goals');
       this.warn(warnings, 'shg', 'PPG + SHG exceed total goals');
     }
-    if (this.exceeds(scoring.ppa + scoring.sha, scoring.assists)) {
+    if (on('ppa', 'sha', 'assists') && this.exceeds(scoring.ppa + scoring.sha, scoring.assists)) {
       this.warn(warnings, 'ppa', 'PPA + SHA exceed total assists');
       this.warn(warnings, 'sha', 'PPA + SHA exceed total assists');
     }
-    if (this.exceeds(scoring.ppp + scoring.shp, scoring.points)) {
+    if (on('ppp', 'shp', 'points') && this.exceeds(scoring.ppp + scoring.shp, scoring.points)) {
       this.warn(warnings, 'ppp', 'PPP + SHP exceed total points');
       this.warn(warnings, 'shp', 'PPP + SHP exceed total points');
     }
 
-    if (this.differs(scoring.goals + scoring.assists, scoring.points, POINTS_TOLERANCE)) {
+    if (
+      on('goals', 'assists', 'points') &&
+      this.differs(scoring.goals + scoring.assists, scoring.points, POINTS_TOLERANCE)
+    ) {
       this.warn(warnings, 'points', "Doesn't equal Goals + Assists");
     }
-    if (this.differs(scoring.ppg + scoring.ppa, scoring.ppp, POINTS_TOLERANCE)) {
+    if (
+      on('ppg', 'ppa', 'ppp') &&
+      this.differs(scoring.ppg + scoring.ppa, scoring.ppp, POINTS_TOLERANCE)
+    ) {
       this.warn(warnings, 'ppp', "Doesn't equal PPG + PPA");
     }
-    if (this.differs(scoring.shg + scoring.sha, scoring.shp, POINTS_TOLERANCE)) {
+    if (
+      on('shg', 'sha', 'shp') &&
+      this.differs(scoring.shg + scoring.sha, scoring.shp, POINTS_TOLERANCE)
+    ) {
       this.warn(warnings, 'shp', "Doesn't equal SHG + SHA");
     }
 
     // Special teams is the power play and the penalty kill counted as one category.
-    if (this.differs(scoring.ppg + scoring.shg, scoring.stpg, POINTS_TOLERANCE)) {
+    if (
+      on('ppg', 'shg', 'stpg') &&
+      this.differs(scoring.ppg + scoring.shg, scoring.stpg, POINTS_TOLERANCE)
+    ) {
       this.warn(warnings, 'stpg', "Doesn't equal PPG + SHG");
     }
-    if (this.differs(scoring.ppa + scoring.sha, scoring.stpa, POINTS_TOLERANCE)) {
+    if (
+      on('ppa', 'sha', 'stpa') &&
+      this.differs(scoring.ppa + scoring.sha, scoring.stpa, POINTS_TOLERANCE)
+    ) {
       this.warn(warnings, 'stpa', "Doesn't equal PPA + SHA");
     }
-    if (this.differs(scoring.stpg + scoring.stpa, scoring.stp, POINTS_TOLERANCE)) {
+    if (
+      on('stpg', 'stpa', 'stp') &&
+      this.differs(scoring.stpg + scoring.stpa, scoring.stp, POINTS_TOLERANCE)
+    ) {
       this.warn(warnings, 'stp', "Doesn't equal STPG + STPA");
     }
 
-    if (this.exceeds(scoring.shPct, MAX_PERCENTAGE)) {
+    if (on('shPct') && this.exceeds(scoring.shPct, MAX_PERCENTAGE)) {
       this.warn(warnings, 'shPct', 'Over 100%');
     }
     if (
+      on('goals', 'sog', 'shPct') &&
       scoring.sog > 0 &&
       this.differs(
         (scoring.goals / scoring.sog) * MAX_PERCENTAGE,
@@ -146,55 +187,73 @@ export class StatWarningService {
     }
 
     const seasonToi = utility.gp * utility.toiPerGame;
-    if (this.differs(seasonToi, scoring.toi, this.toiTolerance(seasonToi))) {
+    if (
+      on('gp', 'toiPerGame', 'toi') &&
+      this.differs(seasonToi, scoring.toi, this.toiTolerance(seasonToi))
+    ) {
       this.warn(warnings, 'toi', "Doesn't equal TOI/G × GP");
     }
   }
 
-  private addGoalieWarnings(projection: GoalieProjection, warnings: Map<StatKey, string>): void {
+  private addGoalieWarnings(
+    projection: GoalieProjection,
+    warnings: Map<StatKey, string>,
+    on: ActiveCheck,
+  ): void {
     const { scoring, utility } = projection.stats;
     const decisions = scoring.w + scoring.l + scoring.otl;
 
-    if (this.exceeds(scoring.gs, utility.gp)) {
+    if (on('gs', 'gp') && this.exceeds(scoring.gs, utility.gp)) {
       this.warn(warnings, 'gs', 'More than games played');
     }
-    if (this.exceeds(decisions, utility.gp)) {
+    if (on('w', 'l', 'otl', 'gp') && this.exceeds(decisions, utility.gp)) {
       const message = 'Wins + losses + OT losses exceed games played';
       this.warn(warnings, 'w', message);
       this.warn(warnings, 'l', message);
       this.warn(warnings, 'otl', message);
     }
-    if (this.exceeds(scoring.sho, scoring.w)) {
+    if (on('sho', 'w') && this.exceeds(scoring.sho, scoring.w)) {
       this.warn(warnings, 'sho', 'More than wins');
     }
-    if (this.exceeds(scoring.sv, scoring.sa)) {
+    if (on('sv', 'sa') && this.exceeds(scoring.sv, scoring.sa)) {
       this.warn(warnings, 'sv', 'More than shots against');
     }
-    if (this.exceeds(scoring.ga, scoring.sa)) {
+    if (on('ga', 'sa') && this.exceeds(scoring.ga, scoring.sa)) {
       this.warn(warnings, 'ga', 'More than shots against');
     }
-    if (this.differs(scoring.sv + scoring.ga, scoring.sa, POINTS_TOLERANCE)) {
+    if (
+      on('sv', 'ga', 'sa') &&
+      this.differs(scoring.sv + scoring.ga, scoring.sa, POINTS_TOLERANCE)
+    ) {
       this.warn(warnings, 'sa', "Doesn't equal Saves + Goals against");
     }
 
-    if (this.exceeds(scoring.svPct, MAX_PERCENTAGE)) {
+    if (on('svPct') && this.exceeds(scoring.svPct, MAX_PERCENTAGE)) {
       this.warn(warnings, 'svPct', 'Over 100%');
     }
     // Save and win percentage are both carried as a fraction of one, the way they are shown.
     if (
+      on('sv', 'sa', 'svPct') &&
       scoring.sa > 0 &&
       this.differs(scoring.sv / scoring.sa, scoring.svPct, FRACTION_TOLERANCE)
     ) {
       this.warn(warnings, 'svPct', "Doesn't match Saves / Shots against");
     }
-    if (decisions > 0 && this.differs(scoring.w / decisions, scoring.winPct, FRACTION_TOLERANCE)) {
+    if (
+      on('w', 'l', 'otl', 'winPct') &&
+      decisions > 0 &&
+      this.differs(scoring.w / decisions, scoring.winPct, FRACTION_TOLERANCE)
+    ) {
       this.warn(warnings, 'winPct', "Doesn't match Wins / Decisions");
     }
 
-    if (this.exceeds(scoring.toi, utility.gp * MAX_GOALIE_TOI_PER_GAME_SECONDS)) {
+    if (
+      on('toi', 'gp') &&
+      this.exceeds(scoring.toi, utility.gp * MAX_GOALIE_TOI_PER_GAME_SECONDS)
+    ) {
       this.warn(warnings, 'toi', 'More ice time than games played allows');
     }
-    if (scoring.toi > 0) {
+    if (on('ga', 'toi', 'gaa') && scoring.toi > 0) {
       const goalsPer60 = (scoring.ga * SECONDS_PER_HOUR) / scoring.toi;
       if (this.differs(goalsPer60, scoring.gaa, this.gaaTolerance(goalsPer60))) {
         this.warn(warnings, 'gaa', "Doesn't match Goals against per 60 minutes");

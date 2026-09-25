@@ -8,7 +8,7 @@ import {
   proposeColumnRoles,
 } from './spreadsheet-import';
 import { PlayerMatcher } from './spreadsheet-players';
-import { POOL, lineOf, skater } from './spreadsheet-test-players';
+import { EVERY_COLUMN, lineOf, POOL, skater } from './spreadsheet-test-players';
 import { Goalie, Skater } from '../../models/player.model';
 
 describe('spreadsheet-import', () => {
@@ -117,7 +117,7 @@ describe('spreadsheet-import', () => {
 
     expect(line.stats.scoring.sog).toBe(300);
     expect(line.stats.scoring.goals).toBeCloseTo(50.4);
-    expect(new StatWarningService().warningsFor(line).size).toBe(0);
+    expect(new StatWarningService().warningsFor(line, EVERY_COLUMN).size).toBe(0);
   });
 
   it("gives a goalie only a goalie's stats", () => {

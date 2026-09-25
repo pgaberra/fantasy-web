@@ -146,7 +146,7 @@ export class PlayerRowComponent {
   private readonly statWarningService = inject(StatWarningService);
   private readonly statInfoService = inject(StatInfoService);
   private readonly warnings = computed(() =>
-    this.statWarningService.warningsFor(this.projection()),
+    this.statWarningService.warningsFor(this.projection(), this.activeColumns()),
   );
 
   warningFor(key: StatKey): string | null {
