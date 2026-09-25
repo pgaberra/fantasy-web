@@ -246,12 +246,79 @@ describe('DraftSetupComponent', () => {
 
     component.submit();
     expect(emitted).toBeUndefined();
+    expect(component.positionMissing()).toBe(true);
 
     component.setMyPosition(3);
+    expect(component.positionMissing()).toBe(false);
 
     expect(component.canStart()).toBe(true);
     component.submit();
     expect(emitted?.draft.order.length).toEqual(3);
+  });
+
+  it('keeps Start enabled, and points at the draft position when pressed without one', () => {
+    const fixture = MockRender(DraftSetupComponent, {
+      initial: null,
+      seedName: 'My Team',
+      rosterSlots: DEFAULT_ROSTER_SLOTS,
+    });
+    const element: HTMLElement = fixture.nativeElement;
+    const component = fixture.point.componentInstance;
+    let emitted: DraftSetupResult | undefined;
+    component.confirmed.subscribe((value) => {
+      emitted = value;
+    });
+    const select = element.querySelector<HTMLSelectElement>('#draft-position')!;
+    const start = element.querySelector<HTMLButtonElement>('.btn-primary')!;
+
+    expect(start.disabled).toBe(false);
+    expect(element.querySelector('.field-error')).toBeNull();
+    // No league was loaded, so nothing claims a league left the seat out.
+    expect(element.querySelector('.field-hint')).toBeNull();
+
+    start.click();
+    fixture.detectChanges();
+
+    expect(emitted).toBeUndefined();
+    expect(element.querySelector('.field-error')?.textContent).toContain(
+      'Choose your draft position',
+    );
+    expect(select.getAttribute('aria-invalid')).toBe('true');
+    expect(select.getAttribute('aria-describedby')).toBe('draft-position-error');
+    expect(document.activeElement).toBe(select);
+
+    select.value = '4';
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(element.querySelector('.field-error')).toBeNull();
+    expect(select.getAttribute('aria-invalid')).toBe('false');
+    start.click();
+    expect(emitted?.draft.order.indexOf('team-me')).toBe(3);
+  });
+
+  it("says the league left the seat out only after a league's teams were loaded", () => {
+    leagueTeams.mockReturnValue(
+      of({
+        teams: [
+          { name: 'Alpha', mine: false },
+          { name: 'Bravo', mine: true },
+        ],
+      }),
+    );
+    const fixture = MockRender(DraftSetupComponent, {
+      initial: null,
+      seedName: 'My Team',
+      rosterSlots: DEFAULT_ROSTER_SLOTS,
+    });
+    const element: HTMLElement = fixture.nativeElement;
+
+    fixture.point.componentInstance.onYahooSynced(syncResult('nhl.l.1'));
+    fixture.detectChanges();
+
+    expect(element.querySelector('.field-hint')?.textContent).toContain(
+      "Your league doesn't say where you pick",
+    );
   });
 
   it('keeps the seat a saved setup already carries', () => {
