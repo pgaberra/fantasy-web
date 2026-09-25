@@ -96,7 +96,7 @@
           @if (finished() || isComplete()) {
             Draft complete
           } @else if (awaitingLeagueDraft()) {
-            Waiting for the Yahoo draft to start
+            Waiting for the {{ followPlatform() }} draft to start
             @if (leagueFirstPick(); as seat) {
               <span class="you-tag">· your first pick is #{{ seat }}</span>
             }
@@ -113,7 +113,7 @@
               <span class="sync-control" [class.sync-control--on]="following()">
                 <app-toggle-switch
                   [on]="following()"
-                  ariaLabel="Sync picks from the Yahoo draft"
+                  [ariaLabel]="'Sync picks from the ' + followPlatform() + ' draft'"
                   (toggled)="toggleFollow()"
                 />
                 <span class="sync-label" aria-hidden="true">Sync picks</span>
@@ -168,8 +168,8 @@
         <p class="follow-status" role="status">
           <span class="follow-live-line"
             ><span class="follow-live" aria-hidden="true"></span>Live from
-            <strong>{{ yahooSync()?.leagueName }}</strong> on Yahoo · {{ picks().length }} of
-            {{ totalPicks() }} picks</span
+            <strong>{{ followedLeague()?.name }}</strong> on {{ followPlatform() }} ·
+            {{ picks().length }} of {{ totalPicks() }} picks</span
           >
         </p>
       }
@@ -257,15 +257,15 @@
       @if (pendingFollow(); as league) {
         <div class="modal-overlay" (click)="cancelFollow()">
           <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
-            <h2 class="modal-title">Replace your picks with the Yahoo draft?</h2>
+            <h2 class="modal-title">Replace your picks with the {{ followPlatform() }} draft?</h2>
             <p class="modal-text">
               @if (pendingFollowKeepsTeams()) {
                 Your {{ picks().length }} picks here are replaced by the
-                {{ league.picks.length }} picks made on Yahoo.
+                {{ league.picks.length }} picks made on {{ followPlatform() }}.
               } @else {
                 Your {{ picks().length }} picks and teams here are replaced by the league's
                 {{ league.teams.length }} teams and the {{ league.picks.length }} picks made on
-                Yahoo.
+                {{ followPlatform() }}.
               }
             </p>
             <div class="modal-actions">
