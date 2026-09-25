@@ -546,32 +546,36 @@ export class SharedProjectionComponent {
   readonly showHeadshots = computed(() => hasHeadshots(this.shared()?.data.players ?? []));
 
   /**
-   * Where each row sits within the position being filtered for. The board ranked every player
-   * together, so under a position filter the top row is the best left wing rather than the best
-   * player, and saying "1" alone would lose which of the two the number is. It is counted off the
-   * published ranking rather than the column being sorted, so it stays the board's own answer
-   * however the reader has arranged it.
-   *
-   * <p>Empty while the whole board is on screen, where the published rank is the answer already.
+   * Where each row sits in the table as the reader has arranged it: sorted by penalty minutes, the
+   * most penalised player is 1, the next 2, whatever the board ranked them. The editor numbers its
+   * rows the same way.
    */
-  private readonly positionRanks = computed<Map<number, number>>(() => {
-    if (this.positionFilter() === 'ALL') {
-      return new Map();
-    }
-    const withinPosition = this.rows()
-      .filter((row) => this.matchesPosition(row))
-      .sort((first, second) => first.shared.rank - second.shared.rank);
-    return new Map(withinPosition.map((row, index) => [row.shared.playerId, index + 1]));
-  });
+  private readonly placeOnScreen = computed<Map<number, number>>(
+    () => new Map(this.sortedRows().map((row, index) => [row.shared.playerId, index + 1])),
+  );
 
-  /** The number in the # column: the position's rank where there is one, the board's otherwise. */
+  /**
+   * Whether the table shows the whole board in its published order, where the place on screen and
+   * the published rank are the same number and saying it twice would be noise.
+   */
+  private readonly inPublishedOrder = computed(
+    () =>
+      this.sortColumn() === 'summary' &&
+      this.sortDirection() === defaultSortDirection('summary') &&
+      this.sortedRows().length === this.rows().length,
+  );
+
+  /** The number in the # column: the row's place in the table on screen. */
   rankOf(row: SharedRow): number {
-    return this.positionRanks().get(row.shared.playerId) ?? row.shared.rank;
+    return this.placeOnScreen().get(row.shared.playerId) ?? row.shared.rank;
   }
 
-  /** The board-wide rank, shown in brackets only when the rank beside it is a position's. */
+  /**
+   * The board-wide rank, in brackets beside the place whenever a sort or a filter has made the
+   * two differ.
+   */
   overallRankOf(row: SharedRow): number | null {
-    return this.positionRanks().has(row.shared.playerId) ? row.shared.rank : null;
+    return this.inPublishedOrder() ? null : row.shared.rank;
   }
 
   private readonly sortedRows = computed<SharedRow[]>(() => {

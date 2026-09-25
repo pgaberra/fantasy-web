@@ -294,7 +294,7 @@ describe('SharedProjectionComponent', () => {
       expect(ranks).toEqual(['1', '2', '3', '4']);
     });
 
-    it('counts off the published ranking, not the column being sorted', async () => {
+    it('numbers the rows in the order of the column being sorted', async () => {
       const fixture = await render();
       const component = fixture.point.componentInstance;
 
@@ -306,7 +306,21 @@ describe('SharedProjectionComponent', () => {
       const ranks = Array.from(
         fixture.nativeElement.querySelectorAll('tbody .col-rank') as NodeListOf<HTMLElement>,
       ).map((cell) => cell.textContent?.trim());
-      expect(ranks).toEqual(['2 (3)', '1 (2)']);
+      expect(ranks).toEqual(['1 (3)', '2 (2)']);
+    });
+
+    it('numbers a sorted whole board from one, with the board rank in brackets', async () => {
+      const fixture = await render();
+      const component = fixture.point.componentInstance;
+
+      component.onSort('goals');
+      fixture.detectChanges();
+
+      const ranks = Array.from(
+        fixture.nativeElement.querySelectorAll('tbody .col-rank') as NodeListOf<HTMLElement>,
+      ).map((cell) => cell.textContent?.trim());
+      // McDavid, then Kaprizov over Robertson, and the goalie with no goals last.
+      expect(ranks).toEqual(['1 (1)', '2 (3)', '3 (2)', '4 (4)']);
     });
 
     /** The cells of the first row: rank, name, the columns on screen, and the value. */
