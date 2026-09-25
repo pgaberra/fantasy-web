@@ -21,12 +21,8 @@
         </button>
       </div>
     } @else {
-      <h2 class="modal-title">Enable auto-sync</h2>
-      <p class="modal-subtitle">On {{ platforms().join(' or ') }}</p>
-      <p class="modal-text">
-        Connect to your draft to automatically track the picks made in real time, so they're
-        reflected here.
-      </p>
+      <h2 class="modal-title">Sync your draft</h2>
+      <p class="modal-text">Automatically update this page as picks are made in your draft.</p>
 
       @if (platforms().length > 1) {
         <div class="provider-picker" role="tablist" aria-label="Fantasy platform of your league">
