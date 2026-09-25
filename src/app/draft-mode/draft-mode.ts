@@ -96,6 +96,7 @@ import { IconComponent } from '../shared/icon/icon';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import {
   DraftFollowConnectComponent,
+  CookieRepair,
   FollowLeagueLink,
   LinkPlatform,
 } from './draft-follow-connect/draft-follow-connect';
@@ -126,6 +127,23 @@ interface FollowedLeague {
   /** Yahoo's league key, or ESPN's league id. */
   readonly id: string;
   readonly name: string;
+}
+
+/** Why a followed ESPN league needs the user's cookies. */
+type CookieCause = 'no-team' | 'refused';
+
+const COOKIE_REPAIR_REASON: Record<CookieCause, string> = {
+  'no-team':
+    "SlapStat couldn't tell which team in this ESPN league is yours. Add your ESPN cookies and " +
+    'syncing picks starts again.',
+  refused:
+    "ESPN refused this league's draft: your ESPN cookies are missing or no longer valid. Paste " +
+    'them again and syncing picks starts again.',
+};
+
+/** A 400 is ESPN's refusal to read the league with the cookies it was given, or without any. */
+function refusal(error: unknown): CookieCause | null {
+  return error instanceof HttpErrorResponse && error.status === 400 ? 'refused' : null;
 }
 
 function unfollowableNotice(
@@ -271,6 +289,12 @@ export class DraftModeComponent implements OnInit {
     const league = this.pendingFollow();
     return !!league && hasLeagueTeams(this.draft(), league);
   });
+  /**
+   * A followed ESPN league that stopped for want of the user's cookies, so the link dialog opens on
+   * them: without the SWID no team in a league is the user's, and ESPN refuses a private league's
+   * draft without both.
+   */
+  readonly cookieRepair = signal<CookieRepair | null>(null);
   /** Whether the user asked, from the board, to link a league to follow. */
   private readonly linkRequested = signal<boolean>(false);
   /** Whether the board was saved following its league, so opening it picks the draft back up. */
@@ -617,7 +641,13 @@ export class DraftModeComponent implements OnInit {
   readonly canSyncPicks = computed(() => this.canFollow() || this.canLinkLeague());
   /** The dialog that links a league: asked for here, or reopened after Yahoo's consent. */
   readonly linkOpen = computed(
-    () => this.canLinkLeague() && (this.linkRequested() || this.backFromYahoo()),
+    () =>
+      this.cookieRepair() !== null ||
+      (this.canLinkLeague() && (this.linkRequested() || this.backFromYahoo())),
+  );
+  /** The tabs the link dialog shows: only ESPN while it asks for a followed league's cookies. */
+  readonly linkDialogPlatforms = computed<LinkPlatform[]>(() =>
+    this.cookieRepair() ? ['ESPN'] : this.linkPlatforms(),
   );
   /**
    * Whether a setup reopened here should open on Yahoo: the connect came back to this page, and
@@ -1299,6 +1329,7 @@ export class DraftModeComponent implements OnInit {
           const reason = unfollowableReason(league);
           if (reason) {
             this.followNotice.set(unfollowableNotice(reason, followed.platform));
+            this.offerCookieRepair(followed, reason === 'no-team' ? 'no-team' : null);
             return;
           }
           if (isLeagueBoard(this.draft(), league)) {
@@ -1310,6 +1341,7 @@ export class DraftModeComponent implements OnInit {
         error: (error: unknown) => {
           this.followLoading.set(false);
           this.followNotice.set(this.followErrorNotice(error, followed.platform));
+          this.offerCookieRepair(followed, refusal(error));
         },
       });
   }
@@ -1335,6 +1367,7 @@ export class DraftModeComponent implements OnInit {
   }
 
   closeLink(): void {
+    this.cookieRepair.set(null);
     this.linkRequested.set(false);
     this.backFromYahoo.set(false);
   }
@@ -1345,7 +1378,14 @@ export class DraftModeComponent implements OnInit {
    * the draft so a reload can pick the draft back up.
    */
   linkLeague(link: FollowLeagueLink): void {
+    const repairing = this.cookieRepair()?.leagueId === link.leagueId;
     this.closeLink();
+    // The league and its settings are the board's already; only the cookies were missing. A
+    // different id typed over it is a new link, and goes the usual way.
+    if (repairing) {
+      this.requestFollow();
+      return;
+    }
     if (link.settings && link.platform === 'ESPN') {
       this.applyEspnSync({
         settings: link.settings,
@@ -1426,7 +1466,7 @@ export class DraftModeComponent implements OnInit {
     this.pendingRemoval.set(null);
     this.setupOpen.set(false);
     this.analytics.capture('draft_follow_started');
-    if (!this.applyLeagueDraft(league, followed.platform)) {
+    if (!this.applyLeagueDraft(league, followed)) {
       return;
     }
     // A hidden tab skips its turn rather than queueing one, and a slow answer is never overtaken
@@ -1452,22 +1492,20 @@ export class DraftModeComponent implements OnInit {
       )
       .subscribe(({ league: next, error }) => {
         if (next) {
-          this.applyLeagueDraft(next, followed.platform);
+          this.applyLeagueDraft(next, followed);
         } else {
-          this.onFollowError(error, followed.platform);
+          this.onFollowError(error, followed);
         }
       });
   }
 
   /** Puts the league's board in place. False when following has stopped because of it. */
-  private applyLeagueDraft(
-    league: LeagueDraftResponse,
-    platform: FollowedLeague['platform'],
-  ): boolean {
+  private applyLeagueDraft(league: LeagueDraftResponse, followed: FollowedLeague): boolean {
     const reason = unfollowableReason(league);
     if (reason) {
-      this.followNotice.set(unfollowableNotice(reason, platform));
+      this.followNotice.set(unfollowableNotice(reason, followed.platform));
       this.stopFollowing();
+      this.offerCookieRepair(followed, reason === 'no-team' ? 'no-team' : null);
       return false;
     }
     this.leagueOrderKnown.set(league.orderKnown);
@@ -1506,14 +1544,27 @@ export class DraftModeComponent implements OnInit {
    * no longer served, answers the same way next time, so following stops. ESPN's refusal is a 400:
    * its private league read without the user's cookies, or with cookies ESPN no longer takes.
    */
-  private onFollowError(error: unknown, platform: FollowedLeague['platform']): void {
+  private onFollowError(error: unknown, followed: FollowedLeague): void {
     const status = error instanceof HttpErrorResponse ? error.status : 0;
     if (status === 400 || status === 404 || status === 424) {
-      this.followNotice.set(this.followErrorNotice(error, platform));
+      this.followNotice.set(this.followErrorNotice(error, followed.platform));
       this.stopFollowing();
+      this.offerCookieRepair(followed, refusal(error));
       return;
     }
     this.followNotice.set('Sync unavailable at the moment.');
+  }
+
+  /**
+   * Opens the link dialog on the ESPN league's cookies when they are what stopped it: a league with
+   * no team found as the user's (no SWID to tell), or a draft ESPN refused (a private league's,
+   * without cookies or with ones ESPN no longer takes). Yahoo's causes have no such cure here.
+   */
+  private offerCookieRepair(followed: FollowedLeague, cause: CookieCause | null): void {
+    if (followed.platform !== 'ESPN' || cause === null) {
+      return;
+    }
+    this.cookieRepair.set({ leagueId: followed.id, reason: COOKIE_REPAIR_REASON[cause] });
   }
 
   private followErrorNotice(error: unknown, platform: FollowedLeague['platform']): string {

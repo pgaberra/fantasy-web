@@ -201,8 +201,12 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   A board with no league linked gets the switch too: it opens `DraftFollowConnectComponent`, with
   a Yahoo/ESPN tab for each platform this environment follows (`linkPlatforms`: the BFF feature
   plus the build's `yahooSyncDisabled` / `espnLeaguesEnabled`). ESPN's tab takes the league id
-  and, for a private league, the cookies, stored as the settings import stores them; a 400 or 404
-  there is not followable, so only a failed settings read offers "Follow picks anyway".
+  and the cookies, stored as the settings import stores them (always shown: following needs the
+  SWID to find the user's team even in a public league; required only when none are stored); a
+  400 or 404 there is not followable, so only a failed settings read offers "Follow picks anyway".
+  When an ESPN follow stops on "no team is yours" or a 400, the same dialog opens in repair mode
+  (`cookieRepair`): ESPN tab only, league id filled in, cookies required, and on success it just
+  follows again without touching the board's league, settings or name.
 - `shared-projection/` — the page behind a share link (`/s/:token`), public and unguarded: a
   share link has to open for someone who has never signed in. Its byline carries the author's
   profile picture, or the initial of their username where they have none. A signed-in visitor is offered
