@@ -640,9 +640,9 @@ export class PlayerProjectionsTableComponent implements OnInit {
    * z-score in a category one, with the goalies below the games minimum kept last exactly as the
    * summary column keeps them.
    *
-   * <p>Deliberately not the order on screen. This is the number in brackets beside a position's
-   * rank, and it only reads as "and 7th overall" if it is counted off the ranking. Counted off
-   * the arrangement, sorting the wingers by hits printed each player's place in a list of
+   * <p>Deliberately not the order on screen. This is the number in brackets beside a row's place
+   * on screen, and it only reads as "and 7th overall" if it is counted off the ranking. Counted
+   * off the arrangement, sorting the wingers by hits printed each player's place in a list of
    * hitters instead.
    */
   overallRanks: Signal<Map<number, number>> = computed(() => {
@@ -660,16 +660,21 @@ export class PlayerProjectionsTableComponent implements OnInit {
   });
 
   /**
-   * Whether the rows on screen are a narrowed pool, whichever filter did the narrowing — the
-   * position, the team, the rookies. That is what decides whether the # column carries two
-   * numbers: narrowed, it counts what is on screen and the ranking follows in brackets, and
-   * unfiltered the single number is the ranking already.
+   * Whether the # column carries two numbers: the row's place on screen, and the ranking in
+   * brackets. It does whenever the table is not the whole pool in ranking order — narrowed by any
+   * filter (the position, the team, the rookies) or sorted by another column, since sorted by
+   * penalty minutes the "1" is the most penalised player, not the best. In ranking order over the
+   * whole pool the two are the same number, and the single one is the ranking already.
    *
-   * <p>Measured against the ranking rather than asking each filter in turn, so a filter added
-   * later is covered by having narrowed the table, without anything here being told about it.
+   * <p>Narrowing is measured against the ranking rather than asking each filter in turn, so a
+   * filter added later is covered by having narrowed the table, without anything here being told
+   * about it.
    */
-  readonly isNarrowed = computed(
-    () => this.filteredAndSortedProjections().length < this.overallRanks().size,
+  readonly showsOverallRank = computed(
+    () =>
+      this.sortColumn() !== 'summary' ||
+      this.sortDirection() !== 'desc' ||
+      this.filteredAndSortedProjections().length < this.overallRanks().size,
   );
 
   positionRanks: Signal<Map<number, number>> = computed(() => {
@@ -684,7 +689,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
    * player the number someone would type to move him, so only then is the column an input.
    *
    * Measured off the rows rather than by asking each filter, so a filter added later is covered by
-   * having narrowed the table, the same way {@link isNarrowed} is.
+   * having narrowed the table, the same way {@link showsOverallRank} is.
    */
   readonly rankableType = computed<RankedPlayerType | null>(() => {
     if (!this.rankingEnabled || !this.rankingControls()) {

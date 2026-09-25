@@ -217,7 +217,7 @@
               [readonly]="readOnly()"
               [rankEditable]="!readOnly() && rankableType() !== null"
               [totalRank]="
-                isNarrowed() ? (overallRanks().get(sp.projection.playerId) ?? null) : null
+                showsOverallRank() ? (overallRanks().get(sp.projection.playerId) ?? null) : null
               "
               [projection]="sp.projection"
               [playerScore]="sp.score"
