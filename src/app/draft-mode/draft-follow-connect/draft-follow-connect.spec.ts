@@ -5,6 +5,7 @@ import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { DraftFollowConnectComponent, FollowLeagueLink } from './draft-follow-connect';
 import { YahooService } from '../../services/yahoo.service';
+import { EspnService } from '../../services/espn.service';
 import { YahooConnectReturnService } from '../../services/yahoo-connect-return.service';
 import { YahooLeaguePicker } from '../../shared/yahoo-league-picker';
 import { DraftSettings } from '../../api/models/draft-settings';
@@ -35,7 +36,7 @@ describe('DraftFollowConnectComponent', () => {
     leagues: [{ leagueKey: '465.l.9', name: 'Beer League', numTeams: 12 }],
   };
 
-  const build = (yahoo: Partial<YahooService>) =>
+  const build = (yahoo: Partial<YahooService>, espn: Partial<EspnService> = {}) =>
     MockBuilder(DraftFollowConnectComponent)
       .keep(YahooLeaguePicker)
       .mock(YahooService, {
@@ -44,6 +45,12 @@ describe('DraftFollowConnectComponent', () => {
         leagueProjectionSettings: () => of(settings),
         startConnect: () => of({ authorizeUrl: 'https://example.test/auth' }),
         ...yahoo,
+      })
+      .mock(EspnService, {
+        credentialStatus: () => of({ hasCredentials: false }),
+        leagueProjectionSettings: () => of({ ...settings, leagueName: 'Pond League' }),
+        saveCredentials: () => of(undefined),
+        ...espn,
       })
       .mock(YahooConnectReturnService);
 
@@ -75,7 +82,8 @@ describe('DraftFollowConnectComponent', () => {
 
     expect(component.differences()).toEqual([]);
     expect(linked).toHaveBeenCalledWith({
-      leagueKey: '465.l.9',
+      platform: 'Yahoo',
+      leagueId: '465.l.9',
       leagueName: 'Beer League',
       settings,
     });
@@ -95,7 +103,8 @@ describe('DraftFollowConnectComponent', () => {
     component.keepMySettings();
 
     expect(linked).toHaveBeenCalledWith({
-      leagueKey: '465.l.9',
+      platform: 'Yahoo',
+      leagueId: '465.l.9',
       leagueName: 'Beer League',
       settings: null,
     });
@@ -110,7 +119,8 @@ describe('DraftFollowConnectComponent', () => {
     component.useLeagueSettings();
 
     expect(linked).toHaveBeenCalledWith({
-      leagueKey: '465.l.9',
+      platform: 'Yahoo',
+      leagueId: '465.l.9',
       leagueName: 'Beer League',
       settings: theirs,
     });
@@ -135,7 +145,8 @@ describe('DraftFollowConnectComponent', () => {
     component.keepMySettings();
 
     expect(linked).toHaveBeenCalledWith({
-      leagueKey: '465.l.9',
+      platform: 'Yahoo',
+      leagueId: '465.l.9',
       leagueName: 'Beer League',
       settings: null,
     });
@@ -151,6 +162,7 @@ describe('DraftFollowConnectComponent', () => {
         // A failed start keeps the test from navigating the page to Yahoo.
         startConnect: () => throwError(() => new HttpErrorResponse({ status: 502 })),
       })
+      .mock(EspnService)
       .mock(YahooConnectReturnService, { remember })
       .mock(Router, { url: '/drafts/42' });
     const fixture = MockRender(DraftFollowConnectComponent, { current });
@@ -160,5 +172,103 @@ describe('DraftFollowConnectComponent', () => {
 
     expect(remember).toHaveBeenCalledWith('/drafts/42');
     expect(fixture.point.componentInstance.error()).toBe("Couldn't start the Yahoo connection.");
+  });
+
+  describe('on ESPN', () => {
+    const renderEspn = async (
+      espn: Partial<EspnService> = {},
+      yahoo: Partial<YahooService> = {},
+      draft: DraftSettings = current,
+    ) => {
+      await build(yahoo, espn);
+      const fixture = MockRender(DraftFollowConnectComponent, {
+        current: draft,
+        platforms: ['Yahoo', 'ESPN'],
+      });
+      await fixture.whenStable();
+      return fixture;
+    };
+
+    it('opens on ESPN where the draft last imported an ESPN league, with its id filled in', async () => {
+      const connectionStatus = vi.fn(() => of({ connected: true }));
+      const fixture = await renderEspn(
+        {},
+        { connectionStatus },
+        {
+          ...current,
+          lastEspnLeagueId: '777',
+        },
+      );
+      const component = fixture.point.componentInstance;
+
+      expect(component.platform()).toBe('ESPN');
+      expect(component.espnLeagueId()).toBe('777');
+      // Yahoo is not asked about until its tab is opened.
+      expect(connectionStatus).not.toHaveBeenCalled();
+
+      component.choosePlatform('Yahoo');
+      expect(connectionStatus).toHaveBeenCalled();
+    });
+
+    it('links the ESPN league by the id typed, named as ESPN names it', async () => {
+      const fixture = await renderEspn();
+      const component = fixture.point.componentInstance;
+      const linked = linkFrom(component);
+
+      component.choosePlatform('ESPN');
+      component.onEspnLeagueIdInput({ target: { value: ' 123 ' } } as unknown as Event);
+      component.choose();
+
+      expect(linked).toHaveBeenCalledWith({
+        platform: 'ESPN',
+        leagueId: '123',
+        leagueName: 'Pond League',
+        settings: { ...settings, leagueName: 'Pond League' },
+      });
+    });
+
+    it('saves pasted cookies before reading a private league', async () => {
+      const saveCredentials = vi.fn(() => of(undefined));
+      const leagueProjectionSettings = vi.fn(() => of(settings));
+      const fixture = await renderEspn({ saveCredentials, leagueProjectionSettings });
+      const component = fixture.point.componentInstance;
+
+      component.choosePlatform('ESPN');
+      component.onEspnLeagueIdInput({ target: { value: '123' } } as unknown as Event);
+      component.toggleEspnPrivate();
+      component.onEspnS2Input({ target: { value: 's2' } } as unknown as Event);
+      component.onSwidInput({ target: { value: '{swid}' } } as unknown as Event);
+      component.choose();
+
+      expect(saveCredentials).toHaveBeenCalledWith({ espnS2: 's2', swid: '{swid}' });
+      expect(leagueProjectionSettings).toHaveBeenCalledWith('123');
+    });
+
+    it('asks for cookies when ESPN refuses the league, and offers nothing to follow', async () => {
+      const fixture = await renderEspn({
+        leagueProjectionSettings: () => throwError(() => new HttpErrorResponse({ status: 400 })),
+      });
+      const component = fixture.point.componentInstance;
+      const linked = linkFrom(component);
+
+      component.choosePlatform('ESPN');
+      component.onEspnLeagueIdInput({ target: { value: '123' } } as unknown as Event);
+      component.choose();
+
+      expect(component.espnPrivate()).toBe(true);
+      expect(component.settingsFailed()).toBe(false);
+      expect(component.error()).toBe(
+        'This league is private. Add your espn_s2 and SWID cookies, then try again.',
+      );
+      expect(linked).not.toHaveBeenCalled();
+    });
+
+    it('shows the tabs only where both platforms are offered', async () => {
+      const fixture = await renderEspn();
+      fixture.detectChanges();
+      const tabs = (fixture.nativeElement as HTMLElement).querySelectorAll('.provider-tab');
+
+      expect([...tabs].map((tab) => tab.textContent?.trim())).toEqual(['Yahoo', 'ESPN']);
+    });
   });
 });

@@ -97,6 +97,7 @@ import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import {
   DraftFollowConnectComponent,
   FollowLeagueLink,
+  LinkPlatform,
 } from './draft-follow-connect/draft-follow-connect';
 import {
   boardFromLeagueDraft,
@@ -255,10 +256,14 @@ export class DraftModeComponent implements OnInit {
       `${platform}'s teams and order, and picks can't be edited by hand while it's on.`
     );
   }
-  private readonly LINK_TIP =
-    'Asks which Yahoo league this draft is being played in, then mirrors its picks here as they ' +
-    "are made. The board takes Yahoo's teams and order, and picks can't be edited by hand while " +
-    "it's on.";
+  private linkTip(platforms: readonly LinkPlatform[]): string {
+    const which = platforms.join(' or ');
+    return (
+      `Asks which ${which} league this draft is being played in, then mirrors its picks here as ` +
+      "they are made. The board takes the league's teams and order, and picks can't be edited by " +
+      "hand while it's on."
+    );
+  }
   /** A league draft waiting for the user to agree to replace the picks entered by hand. */
   readonly pendingFollow = signal<LeagueDraftResponse | null>(null);
   /** Whether the board waiting to be replaced already has the league's teams, so only picks go. */
@@ -572,6 +577,13 @@ export class DraftModeComponent implements OnInit {
   });
   /** The platform named beside the switch and in its messages. */
   readonly followPlatform = computed(() => this.followedLeague()?.platform ?? 'Yahoo');
+  /** The switch's name: the linked league's platform, or the league still to be chosen. */
+  readonly syncLabel = computed(() => {
+    const followed = this.followedLeague();
+    return followed
+      ? `Sync picks from the ${followed.platform} draft`
+      : "Sync picks from your league's draft";
+  });
   readonly canFollow = computed(() => this.followedLeague() !== null && !this.finished());
   /**
    * Whether the board may link a Yahoo league of its own. A draft set up without one is the whole
@@ -580,11 +592,26 @@ export class DraftModeComponent implements OnInit {
    */
   readonly canLinkLeague = computed(
     () =>
-      this.features.leagueDraftSync() &&
-      !environment.yahooSyncDisabled &&
+      this.linkPlatforms().length > 0 &&
       this.yahooSync() === null &&
       this.followedLeague() === null &&
       !this.finished(),
+  );
+  /**
+   * The platforms the link dialog offers: each one this environment follows drafts on, and whose
+   * leagues this build shows at all (the same switches the settings import answers to).
+   */
+  readonly linkPlatforms = computed<LinkPlatform[]>(() => [
+    ...(this.features.leagueDraftSync() && !environment.yahooSyncDisabled
+      ? ['Yahoo' as const]
+      : []),
+    ...(this.features.espnLeagueDraftSync() && environment.espnLeaguesEnabled
+      ? ['ESPN' as const]
+      : []),
+  ]);
+  /** The tab the link dialog opens on: Yahoo when a Yahoo connect is what brought the page back. */
+  readonly linkStartOn = computed<LinkPlatform | null>(() =>
+    this.backFromYahoo() ? 'Yahoo' : null,
   );
   /** Whether the sync control is on screen at all: either league linked, or linkable. */
   readonly canSyncPicks = computed(() => this.canFollow() || this.canLinkLeague());
@@ -601,7 +628,7 @@ export class DraftModeComponent implements OnInit {
   readonly leagueSettings = computed(() => this.league());
   /** The tip beside the switch, which says first what turning it on will ask for. */
   readonly syncTip = computed(() =>
-    this.canFollow() ? this.followTip(this.followPlatform()) : this.LINK_TIP,
+    this.canFollow() ? this.followTip(this.followPlatform()) : this.linkTip(this.linkPlatforms()),
   );
   readonly finished = computed(() => !!this.draft()?.finishedAt);
 
@@ -1295,7 +1322,7 @@ export class DraftModeComponent implements OnInit {
 
   /**
    * The sync switch: on asks the league for its draft, off simply stops. With no league linked yet
-   * it asks which Yahoo league first — the switch means the same thing either way.
+   * it asks which league first — the switch means the same thing either way.
    */
   toggleFollow(): void {
     if (this.following()) {
@@ -1319,26 +1346,37 @@ export class DraftModeComponent implements OnInit {
    */
   linkLeague(link: FollowLeagueLink): void {
     this.closeLink();
-    if (link.settings) {
+    if (link.settings && link.platform === 'ESPN') {
+      this.applyEspnSync({
+        settings: link.settings,
+        leagueName: link.leagueName,
+        leagueId: link.leagueId,
+      });
+    } else if (link.settings) {
       this.applyYahooSync({
         settings: link.settings,
         leagueName: link.leagueName,
-        leagueKey: link.leagueKey,
+        leagueKey: link.leagueId,
       });
     } else {
       this.nameAfterLeague(link.leagueName);
-      this.league.update((league) =>
-        league
+      const syncedAt = new Date().toISOString();
+      this.league.update((league) => {
+        if (!league) {
+          return league;
+        }
+        // Only the link: the settings stay the draft's own, so no import stamp moves with it.
+        return link.platform === 'ESPN'
           ? {
               ...league,
-              yahooSync: {
-                leagueName: link.leagueName,
-                leagueKey: link.leagueKey,
-                syncedAt: new Date().toISOString(),
-              },
+              espnSync: { leagueName: link.leagueName, leagueId: link.leagueId, syncedAt },
+              yahooSync: undefined,
             }
-          : league,
-      );
+          : {
+              ...league,
+              yahooSync: { leagueName: link.leagueName, leagueKey: link.leagueId, syncedAt },
+            };
+      });
       if (this.draft()) {
         this.save();
       }

@@ -6,6 +6,7 @@ import { EspnService } from '../../../services/espn.service';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
 import { IconComponent } from '../../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../../shared/loading-indicator/loading-indicator';
+import { EspnCookieHelpComponent } from '../../../shared/espn-cookie-help/espn-cookie-help';
 
 export interface EspnSyncResult {
   settings: LeagueProjectionSettingsResponse;
@@ -32,7 +33,7 @@ export interface EspnSyncResult {
  */
 @Component({
   selector: 'app-espn-league-sync',
-  imports: [DatePipe, IconComponent, LoadingIndicatorComponent],
+  imports: [DatePipe, IconComponent, LoadingIndicatorComponent, EspnCookieHelpComponent],
   templateUrl: './espn-league-sync.html',
   styleUrl: './espn-league-sync.css',
 })
@@ -52,7 +53,6 @@ export class EspnLeagueSyncComponent implements OnInit {
   readonly espnS2 = signal<string>('');
   readonly swid = signal<string>('');
   readonly hasStoredCredentials = signal<boolean>(false);
-  readonly showHelp = signal<boolean>(false);
   readonly syncing = signal<boolean>(false);
   readonly error = signal<string | null>(null);
   readonly syncedLeagueId = signal<string | null>(null);
@@ -83,10 +83,6 @@ export class EspnLeagueSyncComponent implements OnInit {
 
   togglePrivate(): void {
     this.isPrivate.update((isPrivate) => !isPrivate);
-  }
-
-  toggleHelp(): void {
-    this.showHelp.update((showHelp) => !showHelp);
   }
 
   onEspnS2Input(event: Event): void {

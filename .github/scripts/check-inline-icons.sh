@@ -44,7 +44,7 @@ svg_allowed=(
 # Files allowed an icon-like character, because there it is text.
 glyph_allowed=(
   "src/app/admin/admin.html" # coloured status dots in the internal admin page
-  "src/app/draft-projection/projection-settings-section/espn-league-sync/espn-league-sync.html" # arrows between browser menu names in written steps
+  "src/app/shared/espn-cookie-help/espn-cookie-help.ts" # arrows between browser menu names in written steps
 )
 
 svg_offenders=()

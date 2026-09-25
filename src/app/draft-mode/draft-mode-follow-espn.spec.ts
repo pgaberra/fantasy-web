@@ -21,6 +21,7 @@ import { ProjectionResponse } from '../api/models/projection-response';
 import { UpdateProjectionRequest } from '../api/models/update-projection-request';
 import { DraftState } from '../api/models/draft-state';
 import { LeagueDraftResponse } from '../api/models/league-draft-response';
+import { environment } from '../../environments/environment';
 
 describe('DraftModeComponent following an ESPN draft', () => {
   const players: Player[] = [
@@ -226,5 +227,56 @@ describe('DraftModeComponent following an ESPN draft', () => {
 
     expect(component.following()).toBe(false);
     expect(component.followNotice()).toBe("Couldn't find your team in this ESPN league.");
+  });
+
+  describe('on a board with no league linked', () => {
+    // The settings import's own switch, which this build keeps off outside a deployment.
+    const espnLeaguesEnabled = environment.espnLeaguesEnabled;
+    afterEach(() => {
+      environment.espnLeaguesEnabled = espnLeaguesEnabled;
+    });
+
+    beforeEach(() => {
+      environment.espnLeaguesEnabled = true;
+      loaded = projectionWith({
+        ...espnDraft,
+        settings: { ...espnDraft.settings!, espnSync: undefined },
+      });
+    });
+
+    it('offers to link a league on either platform whose drafts are followed here', async () => {
+      const component = await render();
+      expect(component.linkPlatforms()).toEqual(['Yahoo', 'ESPN']);
+      expect(component.syncTip()).toContain('which Yahoo or ESPN league');
+
+      leagueDraftSync.set(false);
+      const espnOnly = await render();
+      expect(espnOnly.canLinkLeague()).toBe(true);
+      expect(espnOnly.linkPlatforms()).toEqual(['ESPN']);
+
+      environment.espnLeaguesEnabled = false;
+      expect((await render()).canLinkLeague()).toBe(false);
+    });
+
+    it("follows the ESPN league it is given, keeping the draft's own settings", async () => {
+      espnLeagueDraft.mockReturnValue(of(leagueDraft()));
+      const component = await render();
+      component.toggleFollow();
+
+      component.linkLeague({
+        platform: 'ESPN',
+        leagueId: '123',
+        leagueName: 'Pond League',
+        settings: null,
+      });
+
+      expect(component.linkOpen()).toBe(false);
+      expect(component.following()).toBe(true);
+      expect(espnLeagueDraft).toHaveBeenCalledWith('123');
+      const saved = updateProjection.mock.calls[0][1].data.draft?.settings;
+      expect(saved?.espnSync?.leagueId).toBe('123');
+      expect(saved?.espnSync?.leagueName).toBe('Pond League');
+      expect(saved?.activeScoringColumns).toEqual(['goals']);
+    });
   });
 });
