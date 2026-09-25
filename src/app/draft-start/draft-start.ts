@@ -169,16 +169,29 @@ export class DraftStartComponent {
   readonly availablePresets = this.presets;
 
   /**
-   * The kind the page opens on: the first with something in it, presets ahead of the rest since
-   * they are the way in that needs nothing prepared. A computed rather than read inline, so the
-   * tile below only re-derives when this answer actually changes, and a kind the user picked
-   * survives a reload of the lists that leaves the answer where it was.
+   * A preset the link asked for (`?start=model`, from the home page's AI projection card). Read
+   * once: it decides the kind the page opens on as well as the row picked in it.
+   */
+  private readonly linkedPreset = presetById(
+    (this.route.snapshot.queryParams['start'] as string | undefined) ?? null,
+  );
+
+  /**
+   * The kind the page opens on: the user's own boards if they have any, else the ones they
+   * follow, else the presets, which need nothing prepared. What the user built is what they came
+   * to draft against; a preset is the way in for someone who has nothing yet. A link naming a
+   * preset overrides all of it. A computed rather than read inline, so the tile below only
+   * re-derives when this answer actually changes, and a kind the user picked survives a reload of
+   * the lists that leaves the answer where it was.
    */
   private readonly defaultKind = computed<SourceKind>(() => {
-    if (this.availablePresets().length > 0) {
+    if (this.linkedPreset) {
       return 'preset';
     }
-    return this.projections().length > 0 ? 'projection' : 'following';
+    if (this.projections().length > 0) {
+      return 'projection';
+    }
+    return this.followed().length > 0 ? 'following' : 'preset';
   });
 
   /** The tile that is down: which of the three kinds the rows below are showing. */
@@ -220,9 +233,7 @@ export class DraftStartComponent {
     // picked once its row is there to pick. Not at once: the AI preset is offered only after the
     // BFF has said it serves the model, and `selection` falls back to the first row whenever the
     // picked one is not among the options, so an early pick would be undone by that answer.
-    const wanted = presetById(
-      (this.route.snapshot.queryParams['start'] as string | undefined) ?? null,
-    );
+    const wanted = this.linkedPreset;
     if (wanted) {
       const pending = effect(() => {
         const offered = this.availablePresets().find((preset) => preset.id === wanted.id);
