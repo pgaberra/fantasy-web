@@ -326,6 +326,14 @@ describe('HotPlayersTableComponent', () => {
     expect(component.matchingCount()).toEqual(1);
   });
 
+  it('shows only the picked players while any are picked', () => {
+    const component = render([skater(1, 20), skater(2, 20), skater(3, 20)]);
+
+    component.pickedPlayerIds.set([1, 3]);
+
+    expect(component.visiblePlayers().map((ranked) => ranked.projection.playerId)).toEqual([1, 3]);
+  });
+
   it('gives per-game counting stats enough decimals to stay distinguishable', () => {
     const totals = render([skater(1, 20)]);
     const perGame = render([skater(1, 20)], { perGame: true });

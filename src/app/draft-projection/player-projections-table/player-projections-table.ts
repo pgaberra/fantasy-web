@@ -81,6 +81,11 @@ import { DecimalsMenuComponent } from './decimals-menu/decimals-menu';
 import { RankingMenuComponent } from './ranking-menu/ranking-menu';
 import { environment } from '../../../environments/environment';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
+import {
+  PickablePlayer,
+  PlayerPickerComponent,
+  matchesPlayerFilter,
+} from '../../shared/player-picker/player-picker';
 import { IconComponent } from '../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 
@@ -111,6 +116,7 @@ function toggledSet<T>(members: ReadonlySet<T>, member: T): Set<T> {
     PlayerRowComponent,
     PositionFilterComponent,
     TeamFilterComponent,
+    PlayerPickerComponent,
     PopoverTriggerDirective,
     PinnedTableHeaderDirective,
     TableScrollDirective,
@@ -585,16 +591,32 @@ export class PlayerProjectionsTableComponent implements OnInit {
   }
 
   readonly searchTerm = signal('');
+  /** The players ticked in the search box's list, which the table then shows alone. */
+  readonly pickedPlayerIds = signal<readonly number[]>([]);
+
+  /** Everyone the table can draw, which is who the search box offers to tick. */
+  readonly pickablePlayers = computed<PickablePlayer[]>(() => {
+    const players = this.playerMap();
+    return this.scoredProjections()
+      .map((sp) => players.get(sp.projection.playerId))
+      .filter((player): player is Player => !!player);
+  });
 
   readonly searchedProjections = computed<ScoredProjection[]>(() => {
-    const term = this.searchTerm().trim().toLowerCase();
+    const term = this.searchTerm();
+    const picked = new Set(this.pickedPlayerIds());
     const scored = this.filteredAndSortedPlayerProjectionsExcludingCurrentPlayerEdit();
-    if (!term) {
+    if (!term.trim() && picked.size === 0) {
       return scored;
     }
     const players = this.playerMap();
     return scored.filter((sp) =>
-      players.get(sp.projection.playerId)!.name.toLowerCase().includes(term),
+      matchesPlayerFilter(
+        sp.projection.playerId,
+        players.get(sp.projection.playerId)!.name,
+        term,
+        picked,
+      ),
     );
   });
 
@@ -603,6 +625,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly visibleCount = linkedSignal({
     source: () => ({
       term: this.searchTerm(),
+      picked: this.pickedPlayerIds(),
       position: this.positionFilter(),
       team: this.teamFilter(),
       rookiesOnly: this.rookiesOnly(),
@@ -733,6 +756,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
    */
   showForRanking(type: RankedPlayerType): void {
     this.searchTerm.set('');
+    this.pickedPlayerIds.set([]);
     this.teamFilter.set('ALL');
     this.rookiesOnly.set(false);
     this.newPlayersOnly.set(false);
@@ -808,7 +832,8 @@ export class PlayerProjectionsTableComponent implements OnInit {
       position === null ||
       !orderedByValue ||
       this.teamFilter() !== 'ALL' ||
-      this.searchTerm().trim() !== ''
+      this.searchTerm().trim() !== '' ||
+      this.pickedPlayerIds().length > 0
     ) {
       return new Map();
     }
@@ -842,10 +867,6 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   getPlayer(playerId: number): Player {
     return this.playerMap().get(playerId)!;
-  }
-
-  onSearchInput(event: Event): void {
-    this.searchTerm.set((event.target as HTMLInputElement).value);
   }
 
   showMore(): void {

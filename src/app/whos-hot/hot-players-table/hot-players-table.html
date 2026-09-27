@@ -46,16 +46,14 @@
       </div>
 
       <div class="filter-controls">
-        <div class="search-control">
-          <label for="hot-player-search">Search</label>
-          <input
-            id="hot-player-search"
-            type="search"
-            placeholder="Search player…"
-            [value]="searchTerm()"
-            (input)="onSearchInput($event)"
-          />
-        </div>
+        <app-player-picker
+          class="search-control"
+          inputId="hot-player-search"
+          [showLabel]="true"
+          [players]="pickablePlayers()"
+          [(term)]="searchTerm"
+          [(picked)]="pickedPlayerIds"
+        />
         <app-position-filter [value]="positionFilter()" (valueChange)="setPositionFilter($event)" />
         @if (availableTeams().length) {
           <app-team-filter [teams]="availableTeams()" [(value)]="teamFilter" />

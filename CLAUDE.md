@@ -51,6 +51,10 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   bulk **Decimals** setting sits folded under the Stats menu rather than on the toolbar, as the one
   other question asked of every column at once. The filter selects carry no visible label: their
   first option already says what they narrow.
+  The search box is `shared/player-picker`, shared with the share page and Who's Hot: typing
+  narrows the table by name as it always did, and ticking names in the list under it shows those
+  players and nobody else (the other filters still apply on top). While anyone is ticked the
+  typed text only searches the list, so it cannot hide the players already picked.
   The player pool moves under a saved projection — a new season brings a new roster, trades
   and call-ups follow — and the **BFF** adds the newcomers on the read that notices, seeding
   them from what the projection started as. It never removes: a row whose player has left the

@@ -54,6 +54,11 @@ import { ColumnsMenuComponent } from '../../draft-projection/player-projections-
 import { LeagueSettingsMenuComponent } from '../../draft-projection/player-projections-table/league-settings-menu/league-settings-menu';
 import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
+import {
+  PickablePlayer,
+  PlayerPickerComponent,
+  matchesPlayerFilter,
+} from '../../shared/player-picker/player-picker';
 import { PinnedTableHeaderDirective } from '../../shared/pinned-table-header/pinned-table-header.directive';
 import { TableScrollDirective } from '../../shared/table-scroll/table-scroll.directive';
 import { FormatToiPipe } from '../../pipes/format-toi.pipe';
@@ -92,6 +97,7 @@ interface RankedPlayer extends ScoredProjection {
     ProjectionsTableHeaderComponent,
     PositionFilterComponent,
     TeamFilterComponent,
+    PlayerPickerComponent,
     PopoverTriggerDirective,
     TooltipDirective,
     PinnedTableHeaderDirective,
@@ -162,6 +168,8 @@ export class HotPlayersTableComponent {
   readonly positionFilter: Signal<PositionFilter> = this.positionFilterState.asReadonly();
   readonly teamFilter = signal<string>('ALL');
   readonly searchTerm = signal('');
+  /** The players ticked in the search box's list, which the table then shows alone. */
+  readonly pickedPlayerIds = signal<readonly number[]>([]);
 
   readonly filteredActiveColumns = computed<ActiveColumns>(() =>
     this.activeColumnsService.filterAndSortActiveColumns(
@@ -329,7 +337,8 @@ export class HotPlayersTableComponent {
     const sorted = this.sortedPlayers();
     const filter = this.positionFilter();
     const team = this.teamFilter();
-    const term = this.searchTerm().trim().toLowerCase();
+    const term = this.searchTerm();
+    const picked = new Set(this.pickedPlayerIds());
     const players = this.playerMap();
     return sorted.filter((ranked) => {
       if (!this.positionFilterService.matches(ranked.projection, players, filter)) {
@@ -338,15 +347,25 @@ export class HotPlayersTableComponent {
       if (team !== 'ALL' && ranked.hot.teamAbbrev !== team) {
         return false;
       }
-      return !term || ranked.hot.name.toLowerCase().includes(term);
+      return matchesPlayerFilter(ranked.projection.playerId, ranked.hot.name, term, picked);
     });
   });
 
   readonly matchingCount = computed(() => this.filteredPlayers().length);
 
+  /** Everyone on the leaderboard, which is who the search box offers to tick. */
+  readonly pickablePlayers = computed<PickablePlayer[]>(() =>
+    this.sortedPlayers().map((ranked) => ({
+      id: ranked.projection.playerId,
+      name: ranked.hot.name,
+      teamAbbrev: ranked.hot.teamAbbrev,
+    })),
+  );
+
   readonly visibleCount = linkedSignal({
     source: () => ({
       term: this.searchTerm(),
+      picked: this.pickedPlayerIds(),
       position: this.positionFilter(),
       team: this.teamFilter(),
       sortColumn: this.sortColumn(),
@@ -381,10 +400,6 @@ export class HotPlayersTableComponent {
       this.sortColumn.set(column);
       this.sortDirection.set(defaultSortDirection(column));
     }
-  }
-
-  onSearchInput(event: Event): void {
-    this.searchTerm.set((event.target as HTMLInputElement).value);
   }
 
   showMore(): void {

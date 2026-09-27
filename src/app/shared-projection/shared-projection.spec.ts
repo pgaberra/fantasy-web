@@ -654,6 +654,17 @@ describe('SharedProjectionComponent', () => {
       expect(component.visibleRows().map((row) => row.player.name)).toEqual(['Igor Shesterkin']);
     });
 
+    it('shows only the picked players while any are picked', async () => {
+      const fixture = await render();
+      const component = fixture.point.componentInstance;
+      const shesterkin = component.pickablePlayers().find((p) => p.name === 'Igor Shesterkin')!;
+
+      component.pickedPlayerIds.set([shesterkin.id]);
+      fixture.detectChanges();
+
+      expect(component.visibleRows().map((row) => row.player.name)).toEqual(['Igor Shesterkin']);
+    });
+
     it('narrows to one team', async () => {
       const fixture = await render();
       const component = fixture.point.componentInstance;

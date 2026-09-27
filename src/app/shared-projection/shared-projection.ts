@@ -55,6 +55,11 @@ import { PinnedTableHeaderDirective } from '../shared/pinned-table-header/pinned
 import { TableScrollDirective } from '../shared/table-scroll/table-scroll.directive';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
+import {
+  PickablePlayer,
+  PlayerPickerComponent,
+  matchesPlayerFilter,
+} from '../shared/player-picker/player-picker';
 import { hasHeadshots, PlayerHeadshotComponent } from '../shared/player-headshot/player-headshot';
 import { SHARED_BOARD } from '../auth/auth-reason';
 import { environment } from '../../environments/environment';
@@ -103,6 +108,7 @@ interface SharedRow {
     PlayerRowComponent,
     PositionFilterComponent,
     TeamFilterComponent,
+    PlayerPickerComponent,
     ProjectionsTableHeaderComponent,
     PinnedTableHeaderDirective,
     TableScrollDirective,
@@ -385,14 +391,23 @@ export class SharedProjectionComponent {
   private readonly positionFilterState = signal<PositionFilter>('ALL');
   readonly positionFilter: Signal<PositionFilter> = this.positionFilterState.asReadonly();
   readonly searchTerm = signal('');
+  /** The players ticked in the search box's list, which the board then shows alone. */
+  readonly pickedPlayerIds = signal<readonly number[]>([]);
   readonly teamFilter = signal('ALL');
   readonly rookiesOnly = signal(false);
   readonly sortColumn = signal<SortColumn>('summary');
   readonly sortDirection = signal<SortDirection>('desc');
 
-  onSearchInput(event: Event): void {
-    this.searchTerm.set((event.target as HTMLInputElement).value);
-  }
+  /** Everyone on the board, which is who the search box offers to tick. */
+  readonly pickablePlayers = computed<PickablePlayer[]>(() =>
+    this.rows().map((row) => ({
+      id: row.shared.playerId,
+      name: row.shared.name,
+      teamAbbrev: row.shared.teamAbbrev,
+    })),
+  );
+
+  private readonly pickedIds = computed(() => new Set(this.pickedPlayerIds()));
 
   /** The teams and the rookies the controls offer, as the BFF reads them off the board. */
   readonly availableTeams = computed<string[]>(() => this.shared()?.teams ?? []);
@@ -592,6 +607,7 @@ export class SharedProjectionComponent {
     source: () => ({
       position: this.positionFilter(),
       search: this.searchTerm(),
+      picked: this.pickedPlayerIds(),
       team: this.teamFilter(),
       rookiesOnly: this.rookiesOnly(),
       sortColumn: this.sortColumn(),
@@ -696,8 +712,12 @@ export class SharedProjectionComponent {
   }
 
   private matchesSearch(row: SharedRow): boolean {
-    const term = this.searchTerm().trim().toLowerCase();
-    return !term || row.shared.name.toLowerCase().includes(term);
+    return matchesPlayerFilter(
+      row.shared.playerId,
+      row.shared.name,
+      this.searchTerm(),
+      this.pickedIds(),
+    );
   }
 
   private matchesTeam(row: SharedRow): boolean {
