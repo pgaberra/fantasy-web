@@ -33,6 +33,7 @@ import {
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { freeNameFrom } from '../services/projection-name';
 import { NotificationService } from '../services/notification.service';
+import { isNotFound } from '../shared/http-error';
 import { FeatureService } from '../services/feature.service';
 import {
   PositionTiers,
@@ -880,8 +881,14 @@ export class DraftModeComponent implements OnInit {
           );
           this.loaded.set(true);
         },
-        error: () => {
-          this.notification.error("Couldn't load the draft. Please try again.");
+        error: (error: unknown) => {
+          if (isNotFound(error)) {
+            this.notification.notice(
+              "That draft isn't in this account. It may have been deleted, or belong to another account.",
+            );
+          } else {
+            this.notification.error("Couldn't load the draft. Please try again.");
+          }
           void this.router.navigate(['/projections']);
         },
       });
@@ -956,8 +963,14 @@ export class DraftModeComponent implements OnInit {
           );
           this.loaded.set(true);
         },
-        error: () => {
-          this.notification.error("Couldn't open that board. Please try again.");
+        error: (error: unknown) => {
+          if (isNotFound(error)) {
+            this.notification.notice(
+              "That projection isn't in this account. It may have been deleted, or belong to another account.",
+            );
+          } else {
+            this.notification.error("Couldn't open that board. Please try again.");
+          }
           void this.router.navigate(['/draft']);
         },
       });
