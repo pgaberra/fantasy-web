@@ -1506,6 +1506,12 @@ export class DraftModeComponent implements OnInit {
       });
   }
 
+  /** Whether every team has made a pick for every roster slot — the count `isComplete` reads. */
+  private fillsEverySlot(board: DraftState): boolean {
+    const totalPicks = board.teams.length * this.totalSlots();
+    return totalPicks > 0 && board.picks.length >= totalPicks;
+  }
+
   /** Puts the league's board in place. False when following has stopped because of it. */
   private applyLeagueDraft(league: LeagueDraftResponse, followed: FollowedLeague): boolean {
     const reason = unfollowableReason(league);
@@ -1519,11 +1525,16 @@ export class DraftModeComponent implements OnInit {
     // A draft the league has finished is brought over whole and finishes the board with it: nothing is
     // left to follow, and a board still open beside a switch that turned itself off read as a
     // sync that refused to start.
+    //
+    // So does its last pick. Yahoo reports the draft over (`postdraft`) half a minute to a minute
+    // after that pick lands, and until then the board read "Draft complete" with no way on: no
+    // summary, and no Finish draft while following.
     const current = this.draft();
-    const leagueFinished = league.status === 'FINISHED';
+    const leagueBoard = boardFromLeagueDraft(current, league);
+    const leagueFinished = league.status === 'FINISHED' || this.fillsEverySlot(leagueBoard);
     // The switch is saved with the board it put in place, in the same save.
     const board = {
-      ...boardFromLeagueDraft(current, league),
+      ...leagueBoard,
       following: !leagueFinished || undefined,
     };
     const next =

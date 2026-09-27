@@ -579,6 +579,54 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     expect(leagueDraftCall).not.toHaveBeenCalled();
   });
 
+  // Yahoo reports the draft over half a minute to a minute after its last pick; the board does
+  // not wait for it, or it sat on "Draft complete" with no summary and no way to finish.
+  describe('the last pick, before the league reports the draft over', () => {
+    // Two teams and seven roster slots: fourteen picks fill the board.
+    const picksUpTo = (count: number): LeagueDraftResponse['picks'] =>
+      Array.from({ length: count }, (_, index) => ({
+        overall: index + 1,
+        round: Math.floor(index / 2) + 1,
+        teamId: index % 2 === 0 ? '465.l.9.t.2' : '465.l.9.t.1',
+        playerId: 9000 + index,
+      }));
+
+    it('finishes the board and stops following', async () => {
+      leagueDraftCall.mockReturnValue(of(leagueDraft()));
+      const fixture = await renderFixture();
+      const component = fixture.point.componentInstance;
+      component.requestFollow();
+
+      leagueDraftCall.mockReturnValue(of(leagueDraft(picksUpTo(14))));
+      await vi.advanceTimersByTimeAsync(5000);
+      fixture.detectChanges();
+
+      expect(component.picks()).toHaveLength(14);
+      expect(component.following()).toBe(false);
+      expect(component.finished()).toBe(true);
+      expect(updateProjection.mock.lastCall?.[1].data.draft?.finishedAt).toBeTruthy();
+      expect(updateProjection.mock.lastCall?.[1].data.draft?.following).toBeFalsy();
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain('View summary');
+      leagueDraftCall.mockClear();
+      await vi.advanceTimersByTimeAsync(15000);
+      expect(leagueDraftCall).not.toHaveBeenCalled();
+    });
+
+    it('keeps following while a pick is still to come', async () => {
+      leagueDraftCall.mockReturnValue(of(leagueDraft()));
+      const component = await render();
+      component.requestFollow();
+
+      leagueDraftCall.mockReturnValue(of(leagueDraft(picksUpTo(13))));
+      await vi.advanceTimersByTimeAsync(5000);
+
+      expect(component.picks()).toHaveLength(13);
+      expect(component.following()).toBe(true);
+      expect(component.finished()).toBe(false);
+      component.stopFollowing();
+    });
+  });
+
   // Switching sync on for a draft Yahoo has already finished takes the whole board over in one
   // go and then has nothing left to follow. The board is finished with it, so the switch goes
   // away rather than sitting there off again, which read as a switch that refused to turn on.
