@@ -612,6 +612,24 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       expect(leagueDraftCall).not.toHaveBeenCalled();
     });
 
+    // The league's own count wins where the board has fewer slots than the league has rounds.
+    it('keeps following past a full board while the league lists more picks', async () => {
+      leagueDraftCall.mockReturnValue(of(leagueDraft()));
+      const component = await render();
+      component.requestFollow();
+
+      leagueDraftCall.mockReturnValue(of({ ...leagueDraft(picksUpTo(14)), totalPicks: 16 }));
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(component.following()).toBe(true);
+      expect(component.finished()).toBe(false);
+
+      leagueDraftCall.mockReturnValue(of({ ...leagueDraft(picksUpTo(16)), totalPicks: 16 }));
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(component.picks()).toHaveLength(16);
+      expect(component.following()).toBe(false);
+      expect(component.finished()).toBe(true);
+    });
+
     it('keeps following while a pick is still to come', async () => {
       leagueDraftCall.mockReturnValue(of(leagueDraft()));
       const component = await render();
