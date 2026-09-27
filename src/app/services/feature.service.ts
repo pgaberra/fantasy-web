@@ -25,6 +25,12 @@ export class FeatureService {
   });
 
   /**
+   * Whether the answer is in, or has failed. A page that takes one of two paths by a feature waits
+   * for this, rather than take the path the default points at and then switch.
+   */
+  readonly settled = computed(() => !this.features.isLoading());
+
+  /**
    * Whether the AI projection is served here at all. False until the answer lands, so a preset
    * the environment turns out not to serve is never shown and then taken away. Nothing to do
    * with this account's plan: a locked AI projection is still served.
