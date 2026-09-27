@@ -6,6 +6,7 @@ import {
   hasLeagueTeams,
   isLeagueBoard,
   sameBoard,
+  seatIsGuess,
   unfollowableReason,
 } from './league-draft-follow';
 
@@ -46,23 +47,38 @@ describe('league draft follow', () => {
     expect(board.finishedAt).toBe('2026-09-01T00:00:00Z');
   });
 
-  it("keeps the board's own teams and order while the league's order is not known", () => {
+  // The league owns the teams while it is followed, set order or not; what stops its unset order
+  // being drafted by hand is `seatIsGuess`.
+  it("takes the league's teams even where the league has not set its order", () => {
     const waiting: LeagueDraftResponse = { ...league, orderKnown: false, picks: [] };
 
     const board = boardFromLeagueDraft(handEntered, waiting);
 
-    expect(board.teams).toEqual(handEntered.teams);
-    expect(board.order).toEqual(['team-me', 'team-1']);
+    expect(board.teams.map((team) => team.name)).toEqual(['Bravo', 'Alpha']);
+    expect(board.order).toEqual(['l.9.t.2', 'l.9.t.1']);
     expect(board.picks).toEqual([]);
     expect(board.finishedAt).toBe('2026-09-01T00:00:00Z');
     expect(sameBoard(board, boardFromLeagueDraft(board, waiting))).toBe(true);
+    expect(boardFromLeagueDraft(handEntered, { ...league, orderKnown: false }).picks).toHaveLength(
+      2,
+    );
   });
 
-  it("takes the league's teams with its picks, which name them, even where the order is not known", () => {
-    const board = boardFromLeagueDraft(handEntered, { ...league, orderKnown: false });
+  it("calls the seat a guess only on the league's unordered board with nothing picked", () => {
+    const waiting: LeagueDraftResponse = { ...league, orderKnown: false, picks: [] };
+    const listed = boardFromLeagueDraft(null, waiting);
 
-    expect(board.order).toEqual(['l.9.t.2', 'l.9.t.1']);
-    expect(board.picks).toHaveLength(2);
+    expect(seatIsGuess(listed, waiting)).toBe(true);
+    // The league set its order: the seat is the league's.
+    expect(seatIsGuess(boardFromLeagueDraft(null, { ...league, picks: [] }), league)).toBe(false);
+    // A pick was made: the league's order came with it.
+    expect(seatIsGuess({ ...listed, picks: [{ playerId: 1, teamId: 'l.9.t.2' }] }, waiting)).toBe(
+      false,
+    );
+    // The user's own teams: the seat is theirs, chosen in the setup.
+    expect(seatIsGuess({ ...handEntered, picks: [] }, waiting)).toBe(false);
+    expect(seatIsGuess(listed, null)).toBe(false);
+    expect(seatIsGuess(null, waiting)).toBe(false);
   });
 
   it('builds a board where there was none', () => {

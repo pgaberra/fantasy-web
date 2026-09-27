@@ -78,18 +78,21 @@
     </div>
 
     @if (phase() === 'setup') {
-      <app-draft-setup
-        [initial]="draft()"
-        [rosterSlots]="rosterSlots()"
-        [leagueSize]="leagueSize()"
-        [lastSync]="yahooSync()"
-        [lastEspnSync]="espnSync()"
-        [openOnYahoo]="setupBackFromYahoo()"
-        (confirmed)="onSetupConfirmed($event)"
-        (cancelled)="cancelSetup()"
-        (yahooSynced)="applyYahooSync($event)"
-        (espnSynced)="applyEspnSync($event)"
-      />
+      @if (startingFromLeague()) {
+        <app-loading-indicator label="Loading your league's draft" />
+      } @else {
+        <app-draft-setup
+          [initial]="draft()"
+          [positionKnown]="!seatRequired()"
+          [rosterSlots]="rosterSlots()"
+          [leagueSize]="leagueSize()"
+          [syncLabel]="canSyncPicks() ? syncLabel() : null"
+          [notice]="followNotice()"
+          (confirmed)="onSetupConfirmed($event)"
+          (cancelled)="cancelSetup()"
+          (syncRequested)="syncFromSetup()"
+        />
+      }
     } @else {
       <div class="draft-toolbar">
         <span class="draft-progress">
@@ -169,6 +172,12 @@
           <span class="follow-live-line"
             ><span class="follow-live" aria-hidden="true"></span>Live from
             <strong>{{ followedLeague()?.name }}</strong> on {{ followPlatform() }} ·
+            {{ teams().length }} teams ·
+            @if (leagueFirstPick(); as seat) {
+              draft position {{ seat }} ·
+            } @else if (awaitingLeagueDraft()) {
+              draft position set when the draft starts ·
+            }
             {{ picks().length }} of {{ totalPicks() }} picks</span
           >
         </p>
@@ -246,43 +255,6 @@
         </div>
       }
 
-      @if (linkOpen()) {
-        <app-draft-follow-connect
-          [current]="leagueSettings()"
-          [platforms]="linkDialogPlatforms()"
-          [startOn]="linkStartOn()"
-          [repair]="cookieRepair()"
-          (linked)="linkLeague($event)"
-          (cancelled)="closeLink()"
-        />
-      }
-
-      @if (pendingFollow(); as league) {
-        <div class="modal-overlay" (click)="cancelFollow()">
-          <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
-            <h2 class="modal-title">Replace your picks with the {{ followPlatform() }} draft?</h2>
-            <p class="modal-text">
-              @if (pendingFollowKeepsTeams()) {
-                Your {{ picks().length }} picks here are replaced by the
-                {{ league.picks.length }} picks made on {{ followPlatform() }}.
-              } @else {
-                Your {{ picks().length }} picks and teams here are replaced by the league's
-                {{ league.teams.length }} teams and the {{ league.picks.length }} picks made on
-                {{ followPlatform() }}.
-              }
-            </p>
-            <div class="modal-actions">
-              <button type="button" class="btn btn-secondary" (click)="cancelFollow()">
-                Cancel
-              </button>
-              <button type="button" class="btn btn-primary" (click)="confirmFollow()">
-                Sync picks
-              </button>
-            </div>
-          </div>
-        </div>
-      }
-
       @if (removalPreview(); as preview) {
         <div class="modal-overlay" (click)="cancelRemovePick()">
           <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
@@ -321,6 +293,42 @@
           </div>
         </div>
       }
+    }
+
+    <!-- Both open from the setup as well as the board: the setup offers the league's draft too. -->
+    @if (linkOpen()) {
+      <app-draft-follow-connect
+        [current]="leagueSettings()"
+        [platforms]="linkDialogPlatforms()"
+        [startOn]="linkStartOn()"
+        [repair]="cookieRepair()"
+        (linked)="linkLeague($event)"
+        (cancelled)="closeLink()"
+      />
+    }
+
+    @if (pendingFollow(); as league) {
+      <div class="modal-overlay" (click)="cancelFollow()">
+        <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+          <h2 class="modal-title">Replace your picks with the {{ followPlatform() }} draft?</h2>
+          <p class="modal-text">
+            @if (pendingFollowKeepsTeams()) {
+              Your {{ picks().length }} picks here are replaced by the
+              {{ league.picks.length }} picks made on {{ followPlatform() }}.
+            } @else {
+              Your {{ picks().length }} picks and teams here are replaced by the league's
+              {{ league.teams.length }} teams and the {{ league.picks.length }} picks made on
+              {{ followPlatform() }}.
+            }
+          </p>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="cancelFollow()">Cancel</button>
+            <button type="button" class="btn btn-primary" (click)="confirmFollow()">
+              Sync picks
+            </button>
+          </div>
+        </div>
+      </div>
     }
   </div>
 }
