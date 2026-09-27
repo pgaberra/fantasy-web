@@ -57,6 +57,8 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   typed text only searches the list, so it cannot hide the players already picked.
   The pill beside the box is two buttons: the count opens the list of who is picked, where one
   player can be taken out, and the cross clears them all.
+  A pick of skaters alone drops the goalie columns, and a pick of goalies alone the skater ones,
+  as the position filter would (`ActiveColumnsService.columnFilter`).
   The player pool moves under a saved projection — a new season brings a new roster, trades
   and call-ups follow — and the **BFF** adds the newcomers on the read that notices, seeding
   them from what the projection started as. It never removes: a row whose player has left the

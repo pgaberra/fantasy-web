@@ -9,6 +9,7 @@ import {
   linkedSignal,
   Signal,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -527,11 +528,33 @@ export class SharedProjectionComponent {
    * the position filter decides which stats are shown exactly as it does in the editor.
    */
   readonly filteredActiveColumns = computed<ActiveColumns>(() =>
-    this.activeColumnsService.filterAndSortActiveColumns(
-      this.activeColumns(),
+    this.activeColumnsService.filterAndSortActiveColumns(this.activeColumns(), this.columnFilter()),
+  );
+
+  /** What the columns are narrowed by: the position filter, or failing that the kind picked. */
+  readonly columnFilter = computed<PositionFilter>(() =>
+    this.activeColumnsService.columnFilter(
       this.positionFilter(),
+      this.pickedPlayerIds(),
+      this.rows().map((row) => ({ id: row.shared.playerId, type: row.shared.type })),
     ),
   );
+
+  /**
+   * The columns can leave with a pick as they can with the position filter, and take the sorted
+   * column with them: the same fall back to the ranking, for the same reason.
+   */
+  private readonly keepSortOnScreen = effect(() => {
+    const filter = this.columnFilter();
+    const columns = untracked(() => this.activeColumns());
+    if (
+      untracked(() => this.activeColumnsService.showsSortColumn(this.sortColumn(), columns, filter))
+    ) {
+      return;
+    }
+    this.sortColumn.set('summary');
+    this.sortDirection.set(defaultSortDirection('summary'));
+  });
 
   /** The weights the published totals were scored with — the weight row says them to a visitor. */
   readonly statWeights = computed<Record<ScoringStatKey, number>>(

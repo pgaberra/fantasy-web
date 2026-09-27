@@ -89,6 +89,42 @@ describe('ActiveColumnsService', () => {
     expect([...result.utility]).toEqual(['gp', 'toiPerGame']);
   });
 
+  describe('columnFilter', () => {
+    const players = [
+      { id: 1, type: 'skater' as const },
+      { id: 2, type: 'skater' as const },
+      { id: 3, type: 'goalie' as const },
+    ];
+
+    const columnFilter = (...args: Parameters<ActiveColumnsService['columnFilter']>) =>
+      ngMocks.findInstance(ActiveColumnsService).columnFilter(...args);
+
+    it('is the position filter while nobody is picked', () => {
+      expect(columnFilter('ALL', [], players)).toEqual('ALL');
+      expect(columnFilter('LW', [], players)).toEqual('LW');
+    });
+
+    it('narrows to skaters when only skaters are picked', () => {
+      expect(columnFilter('ALL', [1, 2], players)).toEqual('SKATER');
+    });
+
+    it('narrows to goalies when only goalies are picked', () => {
+      expect(columnFilter('ALL', [3], players)).toEqual('G');
+    });
+
+    it('keeps every column for a pick of both kinds', () => {
+      expect(columnFilter('ALL', [1, 3], players)).toEqual('ALL');
+    });
+
+    it('leaves a position filter that already narrows to decide', () => {
+      expect(columnFilter('G', [1], players)).toEqual('G');
+    });
+
+    it('keeps every column when none of the picked players is on the board', () => {
+      expect(columnFilter('ALL', [99], players)).toEqual('ALL');
+    });
+  });
+
   describe('showsSortColumn', () => {
     const columns: ActiveColumns = {
       scoring: new Set(['goals', 'w']),

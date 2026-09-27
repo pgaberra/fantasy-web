@@ -1079,6 +1079,43 @@ describe('PlayerProjectionsTableComponent', () => {
       ).toEqual([1, 2]);
     });
 
+    describe('the columns of a pick', () => {
+      const withBothKinds = () =>
+        getComponent({
+          activeScoringColumns: new Set<ScoringStatKey>(['goals', 'assists', 'w', 'sv']),
+        });
+
+      it('drops the goalie columns while only skaters are picked', () => {
+        const component = withBothKinds();
+        component.pickedPlayerIds.set([1, 2]);
+        expect([...component.filteredActiveColumns().scoring]).toEqual(['goals', 'assists']);
+      });
+
+      it('drops the skater columns while only goalies are picked', () => {
+        const component = withBothKinds();
+        component.pickedPlayerIds.set([3]);
+        expect([...component.filteredActiveColumns().scoring]).toEqual(['w', 'sv']);
+      });
+
+      it('keeps them all for a pick of both kinds, and once the pick is cleared', () => {
+        const component = withBothKinds();
+        component.pickedPlayerIds.set([1, 3]);
+        expect(component.filteredActiveColumns().scoring.size).toEqual(4);
+
+        component.pickedPlayerIds.set([1]);
+        component.pickedPlayerIds.set([]);
+        expect(component.filteredActiveColumns().scoring.size).toEqual(4);
+      });
+
+      it('falls back to the ranking when the sorted column leaves with the pick', () => {
+        const component = withBothKinds();
+        component.sortColumn.set('w');
+        component.pickedPlayerIds.set([1, 2]);
+        TestBed.tick();
+        expect(component.sortColumn()).toEqual('summary');
+      });
+    });
+
     it('offers every player in the pool to pick', () => {
       const component = getComponent();
       expect(component.pickablePlayers()).toHaveLength(mockPlayers.length);

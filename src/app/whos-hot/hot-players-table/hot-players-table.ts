@@ -1,6 +1,7 @@
 import {
   Component,
   computed,
+  effect,
   inject,
   input,
   linkedSignal,
@@ -8,6 +9,7 @@ import {
   output,
   Signal,
   signal,
+  untracked,
 } from '@angular/core';
 import { Player } from '../../models/player.model';
 import {
@@ -172,11 +174,33 @@ export class HotPlayersTableComponent {
   readonly pickedPlayerIds = signal<readonly number[]>([]);
 
   readonly filteredActiveColumns = computed<ActiveColumns>(() =>
-    this.activeColumnsService.filterAndSortActiveColumns(
-      this.activeColumns(),
+    this.activeColumnsService.filterAndSortActiveColumns(this.activeColumns(), this.columnFilter()),
+  );
+
+  /** What the columns are narrowed by: the position filter, or failing that the kind picked. */
+  readonly columnFilter = computed<PositionFilter>(() =>
+    this.activeColumnsService.columnFilter(
       this.positionFilter(),
+      this.pickedPlayerIds(),
+      this.players(),
     ),
   );
+
+  /**
+   * The columns can leave with a pick as they can with the position filter, and take the sorted
+   * column with them: the same fall back to the ranking, for the same reason.
+   */
+  private readonly keepSortOnScreen = effect(() => {
+    const filter = this.columnFilter();
+    const columns = untracked(() => this.activeColumns());
+    if (
+      untracked(() => this.activeColumnsService.showsSortColumn(this.sortColumn(), columns, filter))
+    ) {
+      return;
+    }
+    this.sortColumn.set('summary');
+    this.sortDirection.set(defaultSortDirection('summary'));
+  });
 
   /**
    * Narrowing to a position can take the sorted column off the screen with it: a leaderboard of
