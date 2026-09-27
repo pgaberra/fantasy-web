@@ -125,16 +125,13 @@
       }
 
       <div class="filter-controls">
-        <div class="search-control">
-          <input
-            id="player-search"
-            type="search"
-            aria-label="Search player"
-            placeholder="Search player…"
-            [value]="searchTerm()"
-            (input)="onSearchInput($event)"
-          />
-        </div>
+        <app-player-picker
+          class="search-control"
+          inputId="player-search"
+          [players]="pickablePlayers()"
+          [(term)]="searchTerm"
+          [(picked)]="pickedPlayerIds"
+        />
         <app-position-filter [value]="positionFilter()" (valueChange)="setPositionFilter($event)" />
         @if (availableTeams().length) {
           <app-team-filter [teams]="availableTeams()" [(value)]="teamFilter" />
