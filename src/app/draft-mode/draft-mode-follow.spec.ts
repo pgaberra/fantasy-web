@@ -239,9 +239,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     expect(component.awaitingLeagueDraft()).toBe(true);
     expect(component.leagueFirstPick()).toBeNull();
     expect(progressText(fixture)).toEqual('Waiting for the Yahoo draft to start');
-    expect(statusText(fixture).replace(/\s+/g, ' ')).toContain(
-      '2 teams · draft position set when the draft starts · 0 of 14 picks',
-    );
+    expect(statusText(fixture).replace(/\s+/g, ' ')).toContain('2 teams · 0 of 14 picks');
     expect(savedDraft()?.teams.map((team) => team.name)).toEqual(['Bravo', 'Alpha']);
     expect(savedDraft()?.following).toBe(true);
 

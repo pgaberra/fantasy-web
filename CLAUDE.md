@@ -185,7 +185,7 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   Both sources then run the same board in `draft-mode/`.
   **Every draft setting has one owner.** While a board follows its league, the league owns the
   teams and the order: the board shows them read-only on its live line ("12 teams · draft
-  position 6", or "set when the draft starts"), and "Edit teams" is off. With sync off the user
+  position 6", the position only once the league has set its order), and "Edit teams" is off. With sync off the user
   owns them and edits them in the setup. So **a new draft with a league to follow has no setup**
   (`startingFromLeague`): the page reads the league's draft and creates the draft from its board,
   following it (the league's teams, its order where set, any picks already made), and falls back

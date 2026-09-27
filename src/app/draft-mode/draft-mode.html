@@ -175,8 +175,6 @@
             {{ teams().length }} teams ·
             @if (leagueFirstPick(); as seat) {
               draft position {{ seat }} ·
-            } @else if (awaitingLeagueDraft()) {
-              draft position set when the draft starts ·
             }
             {{ picks().length }} of {{ totalPicks() }} picks</span
           >
