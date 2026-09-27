@@ -2,6 +2,7 @@ import {
   Component,
   computed,
   DestroyRef,
+  effect,
   inject,
   input,
   linkedSignal,
@@ -10,6 +11,7 @@ import {
   output,
   Signal,
   signal,
+  untracked,
 } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { PlayerInjury } from '../../api/models/player-injury';
@@ -242,7 +244,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
   readonly filteredActiveColumns = computed<ActiveColumns>(() =>
     this.activeColumnsService.filterAndSortActiveColumns(
       { scoring: this.activeScoringColumns(), utility: this.activeUtilityColumns() },
-      this.positionFilter(),
+      this.columnFilter(),
     ),
   );
   readonly scaleSettings = model.required<Record<UtilityStatKey, ScaleConfig>>();
@@ -618,6 +620,34 @@ export class PlayerProjectionsTableComponent implements OnInit {
         picked,
       ),
     );
+  });
+
+  /** What the columns are narrowed by: the position filter, or failing that the kind picked. */
+  readonly columnFilter = computed<PositionFilter>(() =>
+    this.activeColumnsService.columnFilter(
+      this.positionFilter(),
+      this.pickedPlayerIds(),
+      this.players(),
+    ),
+  );
+
+  /**
+   * The columns can leave with a pick as they can with the position filter, and take the sorted
+   * column with them: the same fall back to the ranking, for the same reason.
+   */
+  private readonly keepSortOnScreen = effect(() => {
+    const filter = this.columnFilter();
+    const columns = untracked(() => ({
+      scoring: this.activeScoringColumns(),
+      utility: this.activeUtilityColumns(),
+    }));
+    if (
+      untracked(() => this.activeColumnsService.showsSortColumn(this.sortColumn(), columns, filter))
+    ) {
+      return;
+    }
+    this.sortColumn.set('summary');
+    this.sortDirection.set(defaultSortDirection('summary'));
   });
 
   readonly matchingCount = computed(() => this.searchedProjections().length);

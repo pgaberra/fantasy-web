@@ -54,6 +54,31 @@ export class ActiveColumnsService {
   }
 
   /**
+   * The filter the columns are chosen by, which is the position filter until players are picked by
+   * name. Picking only skaters leaves the goalie columns a run of dashes, and picking only goalies
+   * does the same to the skater ones, so a pick of one kind narrows the columns as the position
+   * filter would have. A pick of both kinds needs both, and a position filter that is already
+   * narrowing is left to decide.
+   */
+  columnFilter(
+    filter: PositionFilter,
+    pickedIds: readonly number[],
+    players: readonly { readonly id: number; readonly type: 'skater' | 'goalie' }[],
+  ): PositionFilter {
+    if (filter !== 'ALL' || pickedIds.length === 0) {
+      return filter;
+    }
+    const picked = new Set(pickedIds);
+    const types = new Set(
+      players.filter((player) => picked.has(player.id)).map((player) => player.type),
+    );
+    if (types.size !== 1) {
+      return 'ALL';
+    }
+    return types.has('goalie') ? 'G' : 'SKATER';
+  }
+
+  /**
    * Whether a table narrowed to `filter` still shows the column it is sorted by. The name and the
    * ranking are always on screen; a stat column is only there while the filter keeps it, and a
    * table left sorted by a column it no longer shows sits in an order nothing on screen explains.
