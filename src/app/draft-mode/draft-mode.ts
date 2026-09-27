@@ -579,6 +579,12 @@ export class DraftModeComponent implements OnInit {
   });
   readonly isMyPick = computed(() => !!this.upNextTeam()?.mine);
   /**
+   * Whether the up-next line names the team on the clock. A board linked to a league but not
+   * syncing it is drafted by hand, and its teams are only the league's as they were last read:
+   * naming one says the league has it on the clock, which nothing here knows. It says the pick.
+   */
+  readonly namesUpNextTeam = computed(() => this.following() || this.followedLeague() === null);
+  /**
    * Whether the board is waiting for the followed league's draft to make its first pick, when it
    * names no team up next: a league that has set its order says only the user's own seat in it,
    * and one that has not says nothing about who picks when. The first pick made is Yahoo's, and
