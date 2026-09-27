@@ -11,6 +11,7 @@ import { PlayerService } from '../services/player.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { ProjectionSyncService } from '../services/projection-sync.service';
 import { ProjectionShareService } from '../services/projection-share.service';
+import { NotificationService } from '../services/notification.service';
 import { ShareLinkResponse } from '../api/models/share-link-response';
 import { LeagueImportButtonComponent } from '../shared/league-import-button/league-import-button';
 import { Goalie, Skater } from '../models/player.model';
@@ -1062,6 +1063,40 @@ describe('DraftProjectionComponent', () => {
         ['/projections', 'copy9'],
         renameOnOpenExtras,
       );
+    });
+  });
+  // A board's address opened by an account that does not hold it is answered 404: not a fault to
+  // report, and not something trying again would fix.
+  describe('a projection this account does not hold', () => {
+    const notifyError = vi.fn();
+    const notifyNotice = vi.fn();
+
+    beforeEach(() => {
+      notifyError.mockClear();
+      notifyNotice.mockClear();
+      routerStub.navigate.mockClear();
+      return MockBuilder(DraftProjectionComponent)
+        .mock(PlayerService, { getPlayers: () => of([]) })
+        .mock(ProjectionStorageService, {
+          loadProjection: () => throwError(() => new HttpErrorResponse({ status: 404 })),
+        })
+        .mock(NotificationService, { error: notifyError, notice: notifyNotice })
+        .keep(ProjectionSyncService)
+        .provide({ provide: Location, useValue: locationStub })
+        .provide({ provide: Router, useValue: routerStub })
+        .provide({
+          provide: ActivatedRoute,
+          useValue: { snapshot: { paramMap: { get: () => 'p1' } } },
+        });
+    });
+
+    it('says so without reporting it, and goes back to the list', async () => {
+      const fixture = MockRender(DraftProjectionComponent);
+      await fixture.whenStable();
+
+      expect(notifyNotice).toHaveBeenCalledWith(expect.stringContaining("isn't in this account"));
+      expect(notifyError).not.toHaveBeenCalled();
+      expect(routerStub.navigate).toHaveBeenCalledWith(['/projections']);
     });
   });
 });
