@@ -185,20 +185,37 @@
   outline-offset: 2px;
 }
 
+/* One set of tracks for the head and every row, so the heading sits over the scores. A track
+   that is not there is an empty value: no avatar column when no player has a picture, no button
+   column on a locked board or on a phone. The score is counted from the row's end, which is
+   why its line moves with the button column and not with the avatar's. */
 .available-list {
+  --avatar-track: 2rem;
+  --score-track: 3.2rem;
+  --action-track: 4.5rem;
+  --score-line: -3;
   display: flex;
   flex-direction: column;
 }
 
+.available-list--no-avatars {
+  --avatar-track: ;
+}
+
+.available-list--no-actions {
+  --action-track: ;
+  --score-line: -2;
+}
+
 .available-list-head {
   display: grid;
-  grid-template-columns: 1.6rem 2rem 1fr 3.2rem;
+  grid-template-columns: 1.6rem var(--avatar-track) 1fr var(--score-track) var(--action-track);
   gap: var(--space-2);
   padding: 0 0.25rem 0.3rem;
 }
 
 .score-heading {
-  grid-column: 4;
+  grid-column: var(--score-line);
   justify-self: end;
   white-space: nowrap;
   font-size: var(--text-xs);
@@ -208,25 +225,13 @@
   color: var(--color-text-subtle);
 }
 
-/* The score is the last column, in the head and in every row, so the heading sits over the
-   numbers. The button is not a column: it has the row under the stats (see .row-actions). */
 .available-row {
   display: grid;
-  grid-template-columns: 1.6rem 2rem 1fr 3.2rem;
+  grid-template-columns: 1.6rem var(--avatar-track) 1fr var(--score-track) var(--action-track);
   align-items: center;
   gap: var(--space-2);
   padding: 0.4rem 0.25rem;
   border-bottom: 1px solid var(--color-border);
-}
-
-/* No player has a picture, so the avatar hides itself and its column goes with it. */
-.available-list--no-avatars .available-list-head,
-.available-list--no-avatars .available-row {
-  grid-template-columns: 1.6rem 1fr 3.2rem;
-}
-
-.available-list--no-avatars .score-heading {
-  grid-column: 3;
 }
 
 .row-rank {
@@ -268,27 +273,28 @@
   text-align: right;
 }
 
+/* The button closes the first line, beside the score, so it adds no height to the row. It
+   reads "Draft" or "Pick" and nothing longer, which is what lets it be a column of fixed width:
+   with a team's name on it, it had a row of its own. Last in the markup, first line on screen. */
 .row-actions {
-  grid-column: 1 / -1;
+  grid-column: -2 / -1;
+  grid-row: 1;
   display: flex;
   justify-content: flex-end;
-  gap: 0.35rem;
   min-width: 0;
-  margin-top: 0.2rem;
 }
 
-/* A locked board has no button, and its row should not keep the gap. */
+/* A locked board has no button. */
 .row-actions:empty {
   display: none;
 }
 
 .row-actions .btn {
+  flex: 1;
   min-width: 0;
-  max-width: 100%;
+  padding-inline: 0;
 }
 
-/* "Draft for <team>": the team's name is the league's, at any length, so the label is cut at the
-   row's width rather than left to size the button. The tooltip gives the whole name. */
 /* Each stat is its label with the value under it. Side by side ("Goals 48 Assists 98 …") a
    league's categories ran past the row and the last one dropped to a line of its own; stacked,
    a cell is only as wide as its label, and the values line up from one player to the next.
@@ -351,20 +357,18 @@
 }
 
 @media (max-width: 560px) {
-  .available-row,
-  .available-list-head {
-    grid-template-columns: 1.6rem 2rem 1fr auto;
-  }
-  .available-list--no-avatars .available-row,
-  .available-list--no-avatars .available-list-head {
-    grid-template-columns: 1.6rem 1fr auto;
+  .available-list {
+    --score-track: auto;
+    --action-track: ;
+    --score-line: -2;
   }
   .available-row {
     row-gap: 0.4rem;
   }
-  /* A thumb wants the whole row to aim at. */
-  .available-row .row-actions .btn {
-    flex: 1;
+  /* A thumb wants the whole row to aim at, so here the button keeps the line under the stats. */
+  .available-row .row-actions {
+    grid-column: 1 / -1;
+    grid-row: auto;
   }
 }
 

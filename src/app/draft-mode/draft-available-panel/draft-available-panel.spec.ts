@@ -65,8 +65,9 @@ describe('DraftAvailablePanelComponent', () => {
       qualified: true,
     } as unknown as ScoredProjection;
 
-    const render = (isMyPick: boolean) =>
+    const render = (isMyPick: boolean, locked = false) =>
       MockRender(DraftAvailablePanelComponent, {
+        locked,
         editingInfo: null,
         searchTerm: '',
         positionFilters: [{ value: 'ALL', label: 'All' }],
@@ -90,14 +91,29 @@ describe('DraftAvailablePanelComponent', () => {
       ngMocks.find(fixture, '.row-actions button');
 
     /**
-     * Beside the player the button was a grid column, which cut the label to a few letters and
-     * pushed the score heading off the scores. It closes the row instead, under the stats.
+     * The stylesheet lifts the button to the row's first line on a wide screen and leaves it
+     * under the stats on a phone, which works only while it is the row's last element.
      */
     it('puts the button last in the row, after the score', () => {
       const fixture = render(false);
 
       const rowEl: HTMLElement = fixture.nativeElement.querySelector('.available-row');
       expect(rowEl.lastElementChild?.classList.contains('row-actions')).toBe(true);
+    });
+
+    it('keeps a column for the button while there is one', () => {
+      const fixture = render(false);
+
+      const list: HTMLElement = fixture.nativeElement.querySelector('.available-list');
+      expect(list.classList.contains('available-list--no-actions')).toBe(false);
+    });
+
+    it('drops the button column on a locked board, which has no button', () => {
+      const fixture = render(false, true);
+
+      const list: HTMLElement = fixture.nativeElement.querySelector('.available-list');
+      expect(button(fixture)).toBeNull();
+      expect(list.classList.contains('available-list--no-actions')).toBe(true);
     });
 
     it("reads Draft on another team's pick, with no tooltip", () => {
