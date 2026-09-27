@@ -64,7 +64,6 @@
       type="button"
       class="picked-count"
       [appPopover]="pickedList"
-      #list="appPopover"
       popoverAlign="start"
       appTooltip="Edit player filter"
     >
@@ -103,9 +102,6 @@
           </li>
         }
       </ul>
-      <button type="button" class="show-all" (click)="list.close(); clear()">
-        Show all players
-      </button>
     </div>
   </ng-template>
 }

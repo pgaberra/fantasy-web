@@ -238,8 +238,9 @@ tbody tr:hover td.fan-pts-col {
     margin-left: 0;
   }
 
+  /* A row to itself, so the box keeps its width when the pill of picked players joins it. */
   .search-control {
-    flex: 1 1 auto;
+    flex: 1 1 100%;
   }
 
   /* The picture and the team stay on a phone here, where the other boards drop them: this is a
