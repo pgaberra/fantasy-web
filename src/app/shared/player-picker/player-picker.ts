@@ -9,6 +9,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { IconComponent } from '../icon/icon';
+import { PopoverTriggerDirective } from '../popover/popover-trigger.directive';
 import { TooltipDirective } from '../tooltip/tooltip.directive';
 
 /** What the picker needs to know of a player to list him. */
@@ -56,7 +57,7 @@ export function matchesPlayerFilter(
  */
 @Component({
   selector: 'app-player-picker',
-  imports: [IconComponent, TooltipDirective],
+  imports: [IconComponent, PopoverTriggerDirective, TooltipDirective],
   templateUrl: './player-picker.html',
   styleUrl: './player-picker.css',
   host: { '(focusout)': 'onFocusOut($event)' },
@@ -76,20 +77,24 @@ export class PlayerPickerComponent {
 
   readonly pickedIds = computed(() => new Set(this.picked()));
 
+  /** The picked players in the order they were picked, less any the pool no longer holds. */
+  readonly pickedPlayers = computed<readonly PickablePlayer[]>(() => {
+    const byId = new Map(this.players().map((player) => [player.id, player]));
+    return this.picked()
+      .map((id) => byId.get(id))
+      .filter((player): player is PickablePlayer => !!player);
+  });
+
   /**
    * The names under the box: those holding the typed term, or with nothing typed the players
    * already picked, so one can be unticked without remembering how he was found.
    */
   readonly options = computed<readonly PickablePlayer[]>(() => {
     const term = this.term().trim();
-    const players = this.players();
     if (!term) {
-      const byId = new Map(players.map((player) => [player.id, player]));
-      return this.picked()
-        .map((id) => byId.get(id))
-        .filter((player): player is PickablePlayer => !!player);
+      return this.pickedPlayers();
     }
-    return players
+    return this.players()
       .filter((player) => nameMatches(player.name, term))
       .sort((first, second) => first.name.localeCompare(second.name))
       .slice(0, MAX_OPTIONS);
@@ -166,6 +171,24 @@ export class PlayerPickerComponent {
     const box = this.box().nativeElement;
     box.focus();
     box.select();
+  }
+
+  /**
+   * Takes one player out from the list behind the count. The list stays open, since the next
+   * press is as likely another removal, and focus moves to the row that took this one's place
+   * rather than fall to the top of the page with the button it was on.
+   */
+  remove(playerId: number, event: Event): void {
+    const row = (event.currentTarget as HTMLElement).closest('li');
+    const next = (row?.nextElementSibling ?? row?.previousElementSibling)?.querySelector('button');
+    this.picked.update((ids) => ids.filter((id) => id !== playerId));
+    if (next) {
+      next.focus();
+    } else {
+      // The last one out takes the pill and its list with it, so the box is what is left to hold
+      // the focus.
+      this.box().nativeElement.focus();
+    }
   }
 
   clear(): void {

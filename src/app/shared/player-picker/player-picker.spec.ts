@@ -152,16 +152,70 @@ describe('PlayerPickerComponent', () => {
     expect(host.picked()).toEqual([2]);
   });
 
-  it('counts the picked players on a button that clears them', () => {
+  it('counts the picked players beside a button that clears them', () => {
     const { host, fixture, root } = setup();
     host.picked.set([1, 2]);
     fixture.detectChanges();
-    const clear = root.querySelector<HTMLButtonElement>('.picked')!;
-    expect(clear.textContent).toContain('2 players');
+    expect(root.querySelector('.picked-count')!.textContent).toContain('2 players');
 
-    clear.click();
+    root.querySelector<HTMLButtonElement>('.picked-clear')!.click();
     fixture.detectChanges();
     expect(host.picked()).toEqual([]);
     expect(root.querySelector('.picked')).toBeNull();
+  });
+
+  describe('the list behind the count', () => {
+    function openList() {
+      const made = setup();
+      // Attached, so that focus can land somewhere and be looked for afterwards.
+      document.body.appendChild(made.root);
+      made.host.picked.set([1, 2, 4]);
+      made.fixture.detectChanges();
+      made.root.querySelector<HTMLButtonElement>('.picked-count')!.click();
+      made.fixture.detectChanges();
+      const rows = () => [...document.querySelectorAll<HTMLElement>('.picked-list li')];
+      return { ...made, rows };
+    }
+
+    it('names the picked players without clearing them', () => {
+      const { host, rows } = openList();
+      expect(rows().map((row) => row.querySelector('.name')!.textContent)).toEqual([
+        'Sidney Crosby',
+        'Cale Makar',
+        'Alexander Ovechkin',
+      ]);
+      expect(host.picked()).toEqual([1, 2, 4]);
+    });
+
+    it('takes one player out, stays open and moves focus to the next row', () => {
+      const { host, rows, fixture } = openList();
+      rows()[1].querySelector('button')!.click();
+      fixture.detectChanges();
+      expect(host.picked()).toEqual([1, 4]);
+      expect(rows()).toHaveLength(2);
+      expect(document.activeElement?.getAttribute('aria-label')).toEqual(
+        'Remove Alexander Ovechkin',
+      );
+    });
+
+    it('closes with the pill when the last player is taken out, leaving focus in the box', () => {
+      const { host, rows, fixture, root, box } = openList();
+      host.picked.set([2]);
+      fixture.detectChanges();
+      rows()[0].querySelector('button')!.click();
+      fixture.detectChanges();
+      expect(host.picked()).toEqual([]);
+      expect(root.querySelector('.picked')).toBeNull();
+      expect(document.querySelector('.picked-list')).toBeNull();
+      expect(document.activeElement).toBe(box);
+    });
+
+    it('clears every pick from Show all players, and closes', () => {
+      const { host, fixture } = openList();
+      document.querySelector<HTMLButtonElement>('.show-all')!.click();
+      fixture.detectChanges();
+      expect(host.picked()).toEqual([]);
+      expect(document.querySelector('.picked-list')).toBeNull();
+    });
   });
 });

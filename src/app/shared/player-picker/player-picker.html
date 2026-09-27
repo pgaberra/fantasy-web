@@ -57,14 +57,55 @@
   }
 </div>
 @if (picked().length; as count) {
-  <button
-    type="button"
-    class="picked"
-    (click)="clear()"
-    appTooltip="Show all players again"
-    [attr.aria-label]="'Clear ' + count + (count === 1 ? ' picked player' : ' picked players')"
-  >
-    {{ count }} {{ count === 1 ? 'player' : 'players' }}
-    <app-icon name="close" [size]="14" />
-  </button>
+  <!-- Two buttons in one pill: the count opens the list of who is picked, so one player can be
+       taken out without losing the rest, and the cross is still the one press that clears them. -->
+  <span class="picked">
+    <button
+      type="button"
+      class="picked-count"
+      [appPopover]="pickedList"
+      #list="appPopover"
+      popoverAlign="start"
+      appTooltip="Edit player filter"
+    >
+      {{ count }} {{ count === 1 ? 'player' : 'players' }}
+      <app-icon name="chevron-down" [size]="14" />
+    </button>
+    <button
+      type="button"
+      class="picked-clear"
+      (click)="clear()"
+      appTooltip="Show all players again"
+      [attr.aria-label]="'Clear ' + count + (count === 1 ? ' picked player' : ' picked players')"
+    >
+      <app-icon name="close" [size]="14" />
+    </button>
+  </span>
+
+  <ng-template #pickedList>
+    <div class="picked-list">
+      <p class="picked-heading">Showing only</p>
+      <ul>
+        @for (player of pickedPlayers(); track player.id) {
+          <li>
+            <span class="name">{{ player.name }}</span>
+            @if (player.teamAbbrev) {
+              <span class="team">{{ player.teamAbbrev }}</span>
+            }
+            <button
+              type="button"
+              class="remove"
+              [attr.aria-label]="'Remove ' + player.name"
+              (click)="remove(player.id, $event)"
+            >
+              <app-icon name="close" [size]="14" />
+            </button>
+          </li>
+        }
+      </ul>
+      <button type="button" class="show-all" (click)="list.close(); clear()">
+        Show all players
+      </button>
+    </div>
+  </ng-template>
 }
