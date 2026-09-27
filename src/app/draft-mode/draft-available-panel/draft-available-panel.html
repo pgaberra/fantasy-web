@@ -97,13 +97,12 @@
             <span class="row-name">{{ lookup.name(sp.projection.playerId) }}</span>
             <span class="row-sub">
               <app-player-position-chips [playerId]="sp.projection.playerId" />
+              <span class="row-team">{{ lookup.team(sp.projection.playerId) }}</span>
               @if (tierBadges().get(sp.projection.playerId); as badge) {
                 <span class="tier-chip" [appTooltip]="badge.tooltip">{{ badge.label }}</span>
               }
-              <span class="row-team">{{ lookup.team(sp.projection.playerId) }}</span>
             </span>
           </span>
-          <span class="row-score">{{ scoreLabel(sp) }}</span>
           @if (showStats()) {
             <div class="row-stats">
               @for (stat of statStrip(sp.projection); track stat.key) {
@@ -114,11 +113,12 @@
               }
             </div>
           }
-          <span class="row-actions">
+          <span class="row-rail">
+            <span class="row-score">{{ scoreLabel(sp) }}</span>
             @if (editingInfo()) {
               <button
                 type="button"
-                class="btn btn-primary btn-sm"
+                class="btn btn-primary btn-sm row-draft"
                 (click)="replace.emit(sp.projection.playerId)"
               >
                 Pick
@@ -126,7 +126,7 @@
             } @else if (!locked()) {
               <button
                 type="button"
-                class="btn btn-sm"
+                class="btn btn-sm row-draft"
                 [class.btn-primary]="isMyPick()"
                 [class.btn-secondary]="!isMyPick()"
                 [disabled]="isComplete()"
