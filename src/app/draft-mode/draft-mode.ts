@@ -1506,10 +1506,17 @@ export class DraftModeComponent implements OnInit {
       });
   }
 
-  /** Whether every team has made a pick for every roster slot — the count `isComplete` reads. */
-  private fillsEverySlot(board: DraftState): boolean {
+  /**
+   * Whether the league's last pick is in: every team has a pick for every roster slot — the count
+   * `isComplete` reads — and, when the league says how many picks its draft holds, all of those.
+   * The board's slots can be fewer than the league's rounds, and ending there would stop following
+   * with picks still to come; both must agree, so a league count that only ever matched the picks
+   * made could not end a draft early either.
+   */
+  private holdsEveryPick(board: DraftState, league: LeagueDraftResponse): boolean {
     const totalPicks = board.teams.length * this.totalSlots();
-    return totalPicks > 0 && board.picks.length >= totalPicks;
+    const leagueTotal = league.totalPicks ?? 0;
+    return totalPicks > 0 && board.picks.length >= Math.max(totalPicks, leagueTotal);
   }
 
   /** Puts the league's board in place. False when following has stopped because of it. */
@@ -1531,7 +1538,7 @@ export class DraftModeComponent implements OnInit {
     // summary, and no Finish draft while following.
     const current = this.draft();
     const leagueBoard = boardFromLeagueDraft(current, league);
-    const leagueFinished = league.status === 'FINISHED' || this.fillsEverySlot(leagueBoard);
+    const leagueFinished = league.status === 'FINISHED' || this.holdsEveryPick(leagueBoard, league);
     // The switch is saved with the board it put in place, in the same save.
     const board = {
       ...leagueBoard,
