@@ -183,18 +183,29 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   is not one. An imported card says whose board it is and offers no Share, since a share
   credits the account that publishes it.
   Both sources then run the same board in `draft-mode/`.
-  The draft **setup asks only the league size and the user's own draft position** (plus roster
-  slots); a Yahoo or ESPN sync fills both, and the user's team takes its league name. The other
-  teams are "Team 1", "Team 2"…, because Yahoo tells only the signed-in manager's seat before
-  its draft starts; following the league's draft brings in the real teams and order.
+  **Every draft setting has one owner.** While a board follows its league, the league owns the
+  teams and the order: the board shows them read-only on its live line ("12 teams · draft
+  position 6", or "set when the draft starts"), and "Edit teams" is off. With sync off the user
+  owns them and edits them in the setup. So **a new draft with a league to follow has no setup**
+  (`startingFromLeague`): the page reads the league's draft and creates the draft from its board,
+  following it (the league's teams, its order where set, any picks already made), and falls back
+  to the setup, with the reason on it, only where that draft can't be read or followed.
+  The **setup** is for a draft with no league to follow: it asks the league size, the user's own
+  draft position (on "Select" until chosen) and the roster slots, with the other teams "Team 1",
+  "Team 2"…, and offers "Sync picks from your league's draft" instead, which opens the link
+  dialog. It imports no league itself; it used to, and its numbers were then overwritten by the
+  first poll. Sync switched off (or stopped) before the league has set its order
+  (`seatIsGuess`: the board is the league's team list and nothing is picked) opens the setup with
+  the seat on "Select" and no Cancel, and the switch stays saved on until a seat is chosen, so a
+  reload never opens a board drafted on a seat read off the team list.
   A draft whose league came from Yahoo can **follow that league's live draft** ("Follow Yahoo
   draft"), offered only where `FeatureService.leagueDraftSync` (the BFF's `GET /api/v1/features`)
   says so. Following makes the league the source of the board: its teams, keyed by Yahoo's team
   key, in draft order, and its picks, polled every 5 s while the tab is visible and at once when
   it comes back into view (`league-draft-follow.ts` holds the pure mapping). Until the league's
   order is known (the BFF's `orderKnown`: Yahoo lists a live draft's slots only once it runs) the
-  board keeps its own teams and order and says only that it is waiting, never a seat read off
-  Yahoo's team list. Every pick edit is locked meanwhile, a board with a pick that is not the
+  board holds the league's teams in the league's list order and says only that it is waiting,
+  never a seat read off that list. Every pick edit is locked meanwhile, a board with a pick that is not the
   league's pick in that place asks before it is replaced, and following stops on an auction draft,
   a league without the user's team, a finished draft, or a 400/404/424. A dropped connection keeps
   polling. The switch is saved with the board as `draft.following` (only while on), so opening the

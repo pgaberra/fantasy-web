@@ -22,16 +22,14 @@ export function unfollowableReason(league: LeagueDraftResponse): UnfollowableRea
  * there. Whatever else the draft holds (its league settings, whether it was finished) is kept.
  *
  * A league whose order is not known yet (`orderKnown`: Yahoo lists a live draft's slots only once
- * it runs) lists its teams in an order that says nothing about who picks when, so until its first
- * pick the board keeps its own teams and order rather than saving that order as the draft's.
+ * it runs) lists its teams in an order that says nothing about who picks when. The board still
+ * takes them, since the league owns the teams while it is followed, and `seatIsGuess` is what keeps
+ * that order from being played by hand.
  */
 export function boardFromLeagueDraft(
   current: DraftState | null,
   league: LeagueDraftResponse,
 ): DraftState {
-  if (current && !league.orderKnown && league.picks.length === 0) {
-    return { ...current, picks: [] };
-  }
   return {
     ...current,
     teams: league.teams.map((team) => ({ id: team.id, name: team.name, mine: team.mine })),
@@ -67,6 +65,21 @@ export function sameBoard(a: DraftState | null, b: DraftState): boolean {
 export function hasLeagueTeams(current: DraftState | null, league: LeagueDraftResponse): boolean {
   const leagueTeamIds = new Set(league.teams.map((team) => team.id));
   return !!current && current.teams.every((team) => leagueTeamIds.has(team.id));
+}
+
+/**
+ * Whether the user's seat on this board is only the place the league lists their team: the board
+ * is the league's, taken before the league set its draft order, and nothing has been picked since.
+ * A board like that cannot be drafted by hand until the user says where they pick.
+ */
+export function seatIsGuess(board: DraftState | null, league: LeagueDraftResponse | null): boolean {
+  return (
+    !!board &&
+    !!league &&
+    !league.orderKnown &&
+    board.picks.length === 0 &&
+    hasLeagueTeams(board, league)
+  );
 }
 
 /**
