@@ -1034,17 +1034,24 @@ export class DraftModeComponent implements OnInit {
       league ? { ...league, rosterSlots: result.rosterSlots } : league,
     );
     this.analytics.capture('draft_started');
+    // A new draft set up against a league it can follow starts with sync on: that is what the
+    // league was linked for. Saved with the switch on, the draft's own address picks it up the
+    // way it picks up a board left following. Teams edited later leave the switch as it was.
+    const startsFollowing =
+      !this.snake.isValidDraft(this.draft()) && this.followedLeague() !== null;
+    const draft = startsFollowing ? { ...result.draft, following: true } : result.draft;
     const preset = this.unsavedPreset();
     if (preset) {
-      this.createPresetDraft(preset, result.draft);
+      this.createPresetDraft(preset, draft);
       return;
     }
     const board = this.unsavedBoard();
     if (board) {
-      this.createBoardDraft(board, result.draft);
+      this.createBoardDraft(board, draft);
       return;
     }
-    this.applySetup(result.draft);
+    this.applySetup(draft);
+    this.resumeFollowing.set(startsFollowing);
   }
 
   /**
