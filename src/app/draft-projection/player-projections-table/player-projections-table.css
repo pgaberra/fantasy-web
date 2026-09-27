@@ -302,20 +302,20 @@ tbody tr:hover {
 
   /* Two rows: the search with the rookies box beside it, then the two selects sharing the row
      under it. Three controls on one row left the selects too narrow for their own first option. */
+  /* Held to the column's width: left to size itself it grows to fit the search box and the pill
+     at their full widths, and takes the second row off the edge of the screen with it. */
   .filter-controls {
     gap: var(--space-2) var(--space-3);
+    max-width: 100%;
   }
 
-  /* The bases are what decide the rows: search plus the rookies box fill the first, and a select
-     no longer fits beside them, so the two selects take the second between them. */
+  /* The search has the first row to itself: once players are picked the pill sits beside the box,
+     and sharing the row with anything else left the box too narrow to read what was typed in it.
+     The two selects take the second between them, at a width their words can be read at, and
+     the rookies box follows on its own. */
   .search-control {
-    flex: 1 1 55%;
+    flex: 1 1 100%;
     min-width: 0;
-  }
-
-  .filter-control--check {
-    flex: none;
-    order: 1;
   }
 
   .filter-controls app-position-filter,
@@ -323,6 +323,11 @@ tbody tr:hover {
     display: flex;
     flex: 1 1 45%;
     min-width: 0;
+    order: 1;
+  }
+
+  .filter-control--check {
+    flex: none;
     order: 2;
   }
 

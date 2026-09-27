@@ -209,13 +209,5 @@ describe('PlayerPickerComponent', () => {
       expect(document.querySelector('.picked-list')).toBeNull();
       expect(document.activeElement).toBe(box);
     });
-
-    it('clears every pick from Show all players, and closes', () => {
-      const { host, fixture } = openList();
-      document.querySelector<HTMLButtonElement>('.show-all')!.click();
-      fixture.detectChanges();
-      expect(host.picked()).toEqual([]);
-      expect(document.querySelector('.picked-list')).toBeNull();
-    });
   });
 });

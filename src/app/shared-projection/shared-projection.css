@@ -308,8 +308,9 @@ tbody tr:hover {
 
   /* Four controls on a phone: let the box take the room the dropdowns leave rather than
      wrapping to a line of its own at whatever width it was born with. */
+  /* A row to itself, so the box keeps its width when the pill of picked players joins it. */
   .search-control {
-    flex: 1 1 auto;
+    flex: 1 1 100%;
   }
 }
 
