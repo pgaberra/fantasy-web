@@ -105,6 +105,10 @@ describe('DraftModeComponent following a Yahoo draft', () => {
   const leagueDraftSync = signal(true);
   const returnedTo = vi.fn<(url: string) => boolean>();
   const renameProjection = vi.fn();
+  const createProjection = vi.fn();
+  const startDraft = vi.fn();
+  const listAll = vi.fn();
+  let routeParams: Record<string, string>;
   let loaded: ProjectionResponse;
 
   beforeEach(() => {
@@ -115,6 +119,9 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     returnedTo.mockReturnValue(false);
     renameProjection.mockReset();
     renameProjection.mockImplementation((id: string, name: string) => of({ id, name }));
+    createProjection.mockReset();
+    createProjection.mockReturnValue(of({ id: 'd1', name: 'Beer League' }));
+    routeParams = { id: 'p1' };
     leagueDraftSync.set(true);
     loaded = projectionWith(handEnteredDraft);
     updateProjection.mockImplementation(() => of(loaded));
@@ -128,6 +135,9 @@ describe('DraftModeComponent following a Yahoo draft', () => {
         loadProjection: () => of(loaded),
         updateProjection,
         renameProjection,
+        createProjection,
+        startDraft,
+        listAll,
       })
       .mock(FeatureService, { leagueDraftSync, espnLeagueDraftSync: signal(false) })
       .mock(YahooService, { leagueDraft: leagueDraftCall })
@@ -135,7 +145,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       .provide({
         provide: ActivatedRoute,
         useValue: {
-          snapshot: { paramMap: { get: (key: string) => (key === 'id' ? 'p1' : null) } },
+          snapshot: { paramMap: { get: (key: string) => routeParams[key] ?? null } },
         },
       });
   });
@@ -697,6 +707,84 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       expect(component.canSyncPicks()).toBe(false);
       component.toggleFollow();
       expect(component.linkOpen()).toBe(false);
+    });
+  });
+
+  describe('a new draft set up against a linked league', () => {
+    const { settings, ...setup } = handEnteredDraft;
+    const syncedSettings = { ...settings!, unsupportedRosterCodes: [], unsupportedStats: [] };
+
+    beforeEach(() => {
+      startDraft.mockReset();
+      startDraft.mockReturnValue(of({ id: 'd1', name: 'Beer League' }));
+      listAll.mockReset();
+      listAll.mockReturnValue(of([]));
+    });
+
+    afterEach(() => {
+      history.replaceState(null, '');
+    });
+
+    it('is created with sync on from a preset', async () => {
+      routeParams = { preset: 'model' };
+      const component = await render();
+      component.applyYahooSync({
+        leagueName: 'Beer League',
+        leagueKey: '465.l.9',
+        settings: syncedSettings,
+      });
+
+      component.onSetupConfirmed({ draft: setup, rosterSlots: component.rosterSlots() });
+
+      expect(createProjection.mock.calls[0][0].data.draft.following).toBe(true);
+    });
+
+    it('is created with sync on from a board, with the league set on the draft picker', async () => {
+      routeParams = { board: 'p1' };
+      loaded = { ...projectionWith(handEnteredDraft), kind: 'projection' };
+      history.replaceState({ draftLeagueSettings: settings }, '');
+      const component = await render();
+
+      component.onSetupConfirmed({ draft: setup, rosterSlots: component.rosterSlots() });
+
+      expect(startDraft.mock.calls[0][1].draft.following).toBe(true);
+    });
+
+    it('follows at once when the setup is confirmed on the page', async () => {
+      loaded = { ...projectionWith(handEnteredDraft), data: { ...loaded.data, draft: undefined } };
+      history.replaceState({ draftLeagueSettings: settings }, '');
+      leagueDraftCall.mockReturnValue(of(leagueDraft()));
+      const fixture = await renderFixture();
+      const component = fixture.point.componentInstance;
+      expect(component.phase()).toBe('setup');
+
+      component.onSetupConfirmed({ draft: setup, rosterSlots: component.rosterSlots() });
+      fixture.detectChanges();
+
+      expect(leagueDraftCall).toHaveBeenCalledWith('465.l.9');
+      expect(component.following()).toBe(true);
+      expect(savedDraft()?.following).toBe(true);
+      component.stopFollowing();
+    });
+
+    it('leaves sync off where no league is linked', async () => {
+      routeParams = { preset: 'model' };
+      const component = await render();
+
+      component.onSetupConfirmed({ draft: setup, rosterSlots: component.rosterSlots() });
+
+      expect(createProjection.mock.calls[0][0].data.draft.following).toBeUndefined();
+    });
+
+    it('leaves the switch alone when the teams of a started draft are edited', async () => {
+      const fixture = await renderFixture();
+      const component = fixture.point.componentInstance;
+
+      component.onSetupConfirmed({ draft: setup, rosterSlots: component.rosterSlots() });
+      fixture.detectChanges();
+
+      expect(leagueDraftCall).not.toHaveBeenCalled();
+      expect(savedDraft()?.following).toBeUndefined();
     });
   });
 
