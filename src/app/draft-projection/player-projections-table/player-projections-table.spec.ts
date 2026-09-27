@@ -1,6 +1,7 @@
 import { MockBuilder, MockInstance, MockRender, ngMocks } from 'ng-mocks';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PlayerProjectionsTableComponent } from './player-projections-table';
+import { PlayerPickerComponent } from '../../shared/player-picker/player-picker';
 import { Goalie, Player, Skater } from '../../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../../models/stat-key.model';
 import { StatInfoService } from '../../services/stat-info.service';
@@ -1064,6 +1065,25 @@ describe('PlayerProjectionsTableComponent', () => {
       expect(component.matchingCount()).toEqual(2);
     });
 
+    it('shows only the picked players while any are picked, whatever is typed', () => {
+      // The term is then only a search for the next player to tick, so typing it must not take
+      // the ones already chosen off the table.
+      const component = getComponent();
+      component.pickedPlayerIds.set([2, 1]);
+      component.searchTerm.set('connor');
+      expect(
+        component
+          .visibleProjections()
+          .map((sp) => sp.projection.playerId)
+          .sort((a, b) => a - b),
+      ).toEqual([1, 2]);
+    });
+
+    it('offers every player in the pool to pick', () => {
+      const component = getComponent();
+      expect(component.pickablePlayers()).toHaveLength(mockPlayers.length);
+    });
+
     it('should report no matches for a search that hits nobody', () => {
       const component = getComponent();
       component.searchTerm.set('nobody');
@@ -1460,10 +1480,7 @@ describe('PlayerProjectionsTableComponent', () => {
       // "All players" and "All teams" already say what each select narrows; the label is kept
       // for screen readers only.
       getComponent({ columnControls: true });
-      expect(ngMocks.findAll('.search-control label')).toHaveLength(0);
-      expect(ngMocks.find('#player-search').nativeElement.getAttribute('aria-label')).toEqual(
-        'Search player',
-      );
+      expect(ngMocks.findInstance(PlayerPickerComponent).showLabel()).toBeFalsy();
     });
   });
 

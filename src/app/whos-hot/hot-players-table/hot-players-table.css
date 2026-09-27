@@ -88,33 +88,6 @@
   box-shadow: var(--shadow-sm);
 }
 
-.search-control {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.search-control label {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  color: var(--color-primary);
-}
-
-.search-control input {
-  font-size: var(--text-sm);
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border-control);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-primary);
-}
-
-.search-control input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
-}
-
 /* The stat columns are the point of the table, so the horizontal scroll lives here rather
    than on the page — the page body must never scroll sideways. Sideways only: this used to be
    a viewport-tall scrollbox as well, capped at `100vh - 20rem`, a guess at how much chrome sat
@@ -267,11 +240,6 @@ tbody tr:hover td.fan-pts-col {
 
   .search-control {
     flex: 1 1 auto;
-  }
-
-  .search-control input {
-    flex: 1;
-    min-width: 0;
   }
 
   /* The picture and the team stay on a phone here, where the other boards drop them: this is a

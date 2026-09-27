@@ -218,27 +218,6 @@
   box-shadow: var(--shadow-sm);
 }
 
-.search-control {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.search-control input {
-  font-size: var(--text-sm);
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border-control);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-primary);
-}
-
-.search-control input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
-}
-
 /* Only the stat columns scroll. The rows run down the page itself — a ranking reads as one
    list, and a second scrollbar inside a viewport-tall box left the page around it inert.
    `appPinnedTableHeader` is what keeps the column headings in view without that box. */
@@ -349,11 +328,6 @@ tbody tr:hover {
 
   .position-overrides {
     order: 3;
-  }
-
-  .search-control input {
-    flex: 1;
-    min-width: 0;
   }
 }
 

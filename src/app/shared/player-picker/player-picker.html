@@ -1,0 +1,70 @@
+@if (showLabel()) {
+  <label [for]="inputId()">Search</label>
+}
+<div class="box">
+  <input
+    #box
+    [id]="inputId()"
+    type="search"
+    role="combobox"
+    autocomplete="off"
+    aria-autocomplete="list"
+    [attr.aria-label]="showLabel() ? null : 'Search player'"
+    [attr.aria-expanded]="expanded()"
+    [attr.aria-controls]="listId()"
+    [attr.aria-activedescendant]="activeOptionId()"
+    [placeholder]="placeholder()"
+    [value]="term()"
+    (input)="onInput($event)"
+    (focus)="open.set(true)"
+    (click)="open.set(true)"
+    (keydown)="onKeydown($event)"
+  />
+  @if (expanded()) {
+    <!-- Pressing an option must not take focus off the box first, or the list would close under
+         the click and the box lose the caret the next name is typed at. -->
+    <ul
+      class="options"
+      role="listbox"
+      aria-multiselectable="true"
+      aria-label="Players"
+      [id]="listId()"
+      (mousedown)="$event.preventDefault()"
+    >
+      @for (player of options(); track player.id; let index = $index) {
+        <li
+          role="option"
+          [id]="optionId(player)"
+          [attr.aria-selected]="pickedIds().has(player.id)"
+          [class.active]="index === active()"
+          (click)="toggle(player.id)"
+          (mouseenter)="active.set(index)"
+        >
+          <span class="name">{{ player.name }}</span>
+          @if (player.teamAbbrev) {
+            <span class="team">{{ player.teamAbbrev }}</span>
+          }
+          <span class="check" aria-hidden="true">
+            @if (pickedIds().has(player.id)) {
+              <app-icon name="check" [size]="14" />
+            }
+          </span>
+        </li>
+      } @empty {
+        <li class="none" role="presentation">No players found</li>
+      }
+    </ul>
+  }
+</div>
+@if (picked().length; as count) {
+  <button
+    type="button"
+    class="picked"
+    (click)="clear()"
+    appTooltip="Show all players again"
+    [attr.aria-label]="'Clear ' + count + (count === 1 ? ' picked player' : ' picked players')"
+  >
+    {{ count }} {{ count === 1 ? 'player' : 'players' }}
+    <app-icon name="close" [size]="14" />
+  </button>
+}
