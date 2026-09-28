@@ -47,6 +47,15 @@ export class ProjectionCardComponent {
     () => !this.isFollow() && this.projection().kind === 'imported',
   );
 
+  /** Where the numbers came from, ahead of the updated time on the meta line; nothing for the user's own. */
+  readonly sourceLabel = computed(() => {
+    const from = this.origin();
+    if (from) {
+      return `Following ${from.authorUsername}`;
+    }
+    return this.isFromSpreadsheet() ? 'From a spreadsheet' : null;
+  });
+
   /** The tile the create page and the draft picker give the same row. */
   readonly iconName = computed<IconName>(() => {
     if (this.isFollow()) {

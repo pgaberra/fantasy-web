@@ -82,6 +82,13 @@ describe('ProjectionCardComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Updated');
   });
 
+  /** The name is cut to one line so every card in the grid is the same height. */
+  it('carries the whole name on hover, for a name the card cuts short', () => {
+    render();
+
+    expect(ngMocks.find<HTMLElement>('.card-name').nativeElement.title).toEqual('My league');
+  });
+
   describe('where the numbers came from', () => {
     const renderCard = (overrides: Partial<ProjectionSummaryResponse>) => {
       const fixture = MockRender(template, {
@@ -127,6 +134,18 @@ describe('ProjectionCardComponent', () => {
       expect(tile.classList).not.toContain('card-icon--spreadsheet');
       expect(text).toContain('Following alex');
       expect(text).not.toContain('From a spreadsheet');
+    });
+
+    /** A long username can push the updated time past the card's edge. */
+    it('carries the whole meta line on hover, since it is cut to one line too', () => {
+      renderCard({
+        kind: 'imported',
+        origin: { authorUsername: 'alex', shareToken: 'tok123' },
+      });
+
+      expect(ngMocks.find<HTMLElement>('.card-meta').nativeElement.title).toMatch(
+        /^Following alex · Updated /,
+      );
     });
   });
 
