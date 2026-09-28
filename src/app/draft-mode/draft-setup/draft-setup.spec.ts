@@ -490,7 +490,7 @@ describe('DraftSetupComponent', () => {
       expect(fixture.point.componentInstance.leaguePosition()).toBeNull();
       expect(element.querySelector('#draft-position')?.textContent?.trim()).toBe('–');
       expect(element.querySelector('app-notice')?.textContent).toContain(
-        'Yahoo sets the draft order when the draft starts',
+        'Your draft position will be available when the draft starts',
       );
     });
 
