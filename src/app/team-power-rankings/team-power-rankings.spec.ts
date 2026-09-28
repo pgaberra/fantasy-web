@@ -71,18 +71,17 @@ describe('TeamPowerRankingsComponent', () => {
     return fixture;
   };
 
-  /** Picking a league in the dropdown and pressing the button, as a reader would. */
+  /** Picking a league in the dropdown, as a reader would. There is nothing else to press. */
   const choose = async (
     fixture: Awaited<ReturnType<typeof render>>,
-    component: TeamPowerRankingsComponent,
+    _component: TeamPowerRankingsComponent,
     leagueKey: string,
   ) => {
-    const select = fixture.nativeElement.querySelector('.picker-select') as HTMLSelectElement;
+    const select = fixture.nativeElement.querySelector('.league-select') as HTMLSelectElement;
     select.value = leagueKey;
     select.dispatchEvent(new Event('change'));
-    fixture.detectChanges();
-    component.show();
     await fixture.whenStable();
+    fixture.detectChanges();
   };
 
   beforeEach(() => {
@@ -116,9 +115,8 @@ describe('TeamPowerRankingsComponent', () => {
   });
 
   /**
-   * The league is chosen the way draft setup chooses one: a dropdown of the account's leagues and
-   * a button. Nothing is read until the button is pressed — the leagues load on their own, the
-   * league does not.
+   * A dropdown of the account's leagues and no button: picking one reads it. With several to
+   * choose from none is picked for the reader, so nothing is read until they do.
    */
   it('offers the leagues on the account in a dropdown and reads the one picked', async () => {
     const fixture = await render();
@@ -127,6 +125,10 @@ describe('TeamPowerRankingsComponent', () => {
     expect(component.picker.leagues()).toHaveLength(2);
     expect(component.picker.selectedKey()).toBeNull();
     expect(yahooLeague).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('.rankings-note')?.textContent).toContain(
+      'Select a league',
+    );
+    expect(fixture.nativeElement.querySelector('.league-picker button')).toBeNull();
 
     await choose(fixture, component, '465.l.1');
 
@@ -142,12 +144,32 @@ describe('TeamPowerRankingsComponent', () => {
     const component = fixture.point.componentInstance;
     await choose(fixture, component, '465.l.1');
 
-    expect(component.canShow()).toBe(false);
-
     await choose(fixture, component, '465.l.2');
 
     expect(yahooLeague).toHaveBeenLastCalledWith('465.l.2', 'model');
     expect(component.leagueName()).toEqual('Work League');
+  });
+
+  /** One league is not a choice, so the page opens on its rankings. */
+  it('reads the only league on the account without being asked', async () => {
+    myLeagues.mockReturnValue(of({ leagues: [leagues.leagues[0]] }));
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+
+    expect(yahooLeague).toHaveBeenCalledWith('465.l.1', 'model');
+    expect(component.leagueName()).toEqual('Beer League');
+  });
+
+  /** Back to the placeholder is back to nothing on screen, not the last league left standing. */
+  it('clears the rankings when the league is unpicked', async () => {
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    await choose(fixture, component, '465.l.1');
+
+    await choose(fixture, component, '');
+
+    expect(component.rankingsData()).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-league-projection-table')).toBeNull();
   });
 
   /** An account with no Yahoo behind it gets the connect button, not a dead dropdown. */
@@ -159,6 +181,9 @@ describe('TeamPowerRankingsComponent', () => {
     expect(component.picker.connected()).toBe(false);
     expect(myLeagues).not.toHaveBeenCalled();
     expect(fixture.nativeElement.querySelector('.picker-select')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.league-picker button')?.textContent).toContain(
+      'Connect Yahoo account',
+    );
   });
 
   /**
