@@ -7,6 +7,7 @@ import {
   OnInit,
   output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { DraftState } from '../../api/models/draft-state';
@@ -34,6 +35,8 @@ export interface DraftSetupResult {
   draft: DraftState;
   /** The league the draft is ranked by, its size the number of teams set up. */
   league: DraftSettings;
+  /** The name typed for a draft that does not exist yet; absent where the setup asked none. */
+  name?: string;
 }
 
 const MIN_TEAMS = 2;
@@ -50,7 +53,8 @@ const MINE_ID = 'team-me';
  * <p>The league is set here rather than on the page that picks what to draft against: it belongs
  * to the draft, not to the board it is played against, and here it stays within reach for as long
  * as the draft runs. Nothing is kept until the setup is confirmed, so Cancel leaves the draft as
- * it was.
+ * it was. What Cancel leads to is the page's call: back to the board, or off the page where there
+ * is no board to play yet.
  */
 @Component({
   selector: 'app-draft-setup',
@@ -78,6 +82,12 @@ export class DraftSetupComponent implements OnInit {
   readonly syncLabel = input<string | null>(null);
   /** Why following the league's draft did not work, where that is how the setup was reached. */
   readonly notice = input<string | null>(null);
+  /**
+   * The name a draft not saved yet will be created under, to be changed here. The setup covers
+   * the page's heading, where a saved draft is renamed, so a new one is named in the setup. Null
+   * for a saved draft.
+   */
+  readonly draftName = input<string | null>(null);
 
   readonly confirmed = output<DraftSetupResult>();
   readonly cancelled = output<void>();
@@ -97,11 +107,18 @@ export class DraftSetupComponent implements OnInit {
     leagueSettingsFromDraft(this.league()),
   );
   readonly scoresByPoints = computed(() => this.editableLeague().scoringType === 'points');
+  // The name as typed. The page's proposal can arrive after the setup opens (it is numbered once
+  // the user's drafts are read), and it replaces the field only until the user has typed in it.
+  private readonly nameTyped = signal(false);
+  readonly nameValue = linkedSignal<string | null, string>({
+    source: () => this.draftName(),
+    computation: (proposed, previous) =>
+      previous && untracked(this.nameTyped) ? previous.value : (proposed ?? ''),
+  });
 
   readonly numTeams = computed(() => this.rows().length);
   readonly canAdd = computed(() => this.rows().length < MAX_TEAMS);
   readonly canRemove = computed(() => this.rows().length > MIN_TEAMS);
-  readonly canCancel = computed(() => this.initial() !== null && this.positionKnown());
   /** Whether this is a league's board whose draft order the league has not set yet. */
   readonly leagueOrderPending = computed(() => this.initial() !== null && !this.positionKnown());
   /** The user's own seat in the draft order, from 1. The other teams fill the seats around it. */
@@ -146,6 +163,11 @@ export class DraftSetupComponent implements OnInit {
 
   setRosterSlots(rosterSlots: RosterSlots): void {
     this.editableLeague.update((league) => ({ ...league, rosterSlots }));
+  }
+
+  onNameInput(event: Event): void {
+    this.nameTyped.set(true);
+    this.nameValue.set((event.target as HTMLInputElement).value);
   }
 
   onPositionChange(event: Event): void {
@@ -218,9 +240,12 @@ export class DraftSetupComponent implements OnInit {
       mine: row.mine,
     }));
     const order = rows.map((row) => row.id);
+    const proposed = this.draftName();
     this.confirmed.emit({
       draft: { teams, order, picks: this.initial()?.picks ?? [] },
       league: draftSettingsOf({ ...this.editableLeague(), leagueSize: rows.length }),
+      // A cleared name keeps the proposal, as an unnamed team keeps "Team N".
+      ...(proposed === null ? {} : { name: this.nameValue().trim() || proposed }),
     });
   }
 }

@@ -235,6 +235,7 @@ export class DraftModeComponent implements OnInit {
   private leagueStartInFlight = false;
 
   private readonly renameInput = viewChild<ElementRef<HTMLInputElement>>('renameInput');
+  private readonly setupDialog = viewChild<ElementRef<HTMLElement>>('setupDialog');
 
   readonly isRenaming = signal<boolean>(false);
   readonly renameValue = signal<string>('');
@@ -346,11 +347,19 @@ export class DraftModeComponent implements OnInit {
   readonly order = computed(() => this.draft()?.order ?? []);
   readonly picks = computed(() => this.draft()?.picks ?? []);
 
+  /** Whether the board has teams and an order to draft on, which a draft not set up yet lacks. */
+  readonly boardReady = computed(() => this.snake.isValidDraft(this.draft()));
   readonly phase = computed<'setup' | 'draft'>(() =>
-    !this.snake.isValidDraft(this.draft()) || this.setupOpen() || this.seatRequired()
-      ? 'setup'
-      : 'draft',
+    !this.boardReady() || this.setupOpen() || this.seatRequired() ? 'setup' : 'draft',
   );
+  /** Whether the setup popup is over the board. */
+  readonly setupShown = computed(() => this.phase() === 'setup');
+  /**
+   * Whether the setup can be closed onto the board. Not for a draft that has no board yet, nor for
+   * one whose seat is a guess: no draft is played on a seat nobody chose, so the only way out of
+   * those is off the page.
+   */
+  readonly setupDismissible = computed(() => this.boardReady() && !this.seatRequired());
   /**
    * Whether a new draft is being started from its league's own draft, which it is wherever it has
    * a league to follow: the league sets the teams and the order, so there is nothing to set up.
@@ -800,6 +809,10 @@ export class DraftModeComponent implements OnInit {
         this.renameInput()?.nativeElement.focus();
       }
     });
+    // The setup opens over the board, which it shuts to the keyboard, so focus goes into it.
+    effect(() => {
+      this.setupDialog()?.nativeElement.focus();
+    });
     // A board left following picks the league's draft back up once following is offered here,
     // which waits on the features the BFF reports as well as on the board itself.
     effect(() => {
@@ -1083,11 +1096,20 @@ export class DraftModeComponent implements OnInit {
       this.cancelRemovePick();
     } else if (this.editingPick() !== null) {
       this.cancelEditPick();
+    } else if (!this.linkOpen() && this.pendingFollow() === null) {
+      // The link and replace-picks dialogs open over the setup, and go before it.
+      this.dismissSetup();
     }
   }
 
   onSetupConfirmed(result: DraftSetupResult): void {
     const followedBefore = this.followedLeague();
+    // A draft not saved yet is named in its setup, which covers the heading it is otherwise
+    // renamed in. Held like a rename made there: it goes with the draft when it is created.
+    if (result.name !== undefined && !this.draftId() && result.name !== this.draftName()) {
+      this.draftName.set(result.name);
+      this.nameIsTheirs.set(true);
+    }
     this.league.set(result.league);
     // A league imported in a new draft's setup is one it can follow: the league sets the teams
     // and the order from there, as it does for a board that already had one linked.
@@ -1419,8 +1441,21 @@ export class DraftModeComponent implements OnInit {
     this.save();
   }
 
+  /**
+   * The setup's Cancel: back to the board where there is one to play, and otherwise off the page,
+   * which for a draft not saved yet leaves nothing behind.
+   */
   cancelSetup(): void {
-    if (this.snake.isValidDraft(this.draft())) {
+    if (this.setupDismissible()) {
+      this.setupOpen.set(false);
+    } else {
+      void this.router.navigate(this.exitLink);
+    }
+  }
+
+  /** A click beside the setup, or Escape: closes it where the board can be played without it. */
+  dismissSetup(): void {
+    if (this.setupShown() && this.setupDismissible()) {
       this.setupOpen.set(false);
     }
   }
