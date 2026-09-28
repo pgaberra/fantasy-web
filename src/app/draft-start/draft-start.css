@@ -247,12 +247,11 @@
   min-width: 0;
 }
 
-/* The three steps under "Start a new draft": what to draft against, the league, the preview.
-   The same title the new-projection page gives the same three (projection-create.css). The first
-   used to be a muted line and the other two 12px grey labels, as quiet as a card's "Updated 8
-   hours ago" under card names that outweighed them. The labels of the two functions under the
-   cards (share-import.css, spreadsheet-import-button.css) stay small and grey on purpose: they
-   are ways into the first step, not steps. */
+/* The step under "Start a new draft": what to draft against. The same title the new-projection
+   page gives its steps (projection-create.css). It used to be a muted line, as quiet as a card's
+   "Updated 8 hours ago" under card names that outweighed it. The follow field's label under the
+   cards (share-import.css) stays small and grey on purpose: it is a way into the step, not a
+   step. */
 .step-title {
   margin: 0 0 var(--space-2);
   font-size: var(--text-sm);
@@ -349,14 +348,8 @@
 }
 
 /* The follow field sits straight under the followed boards' cards. Without a gap its label read
-   as the last card's caption rather than a field of its own. The spreadsheet import is the same
-   case: it makes a board rather than being one, so it stands as far off the cards. Under the
-   user's own boards the "Create a new projection" line comes between, so the import is matched
-   after that too — keyed on the cards alone the gap never applied here, and the import's label
-   sat flush under the link. */
-.rows + app-share-import,
-.rows + app-spreadsheet-import-button,
-.group-footer + app-spreadsheet-import-button {
+   as the last card's caption rather than a field of its own. */
+.rows + app-share-import {
   display: block;
   margin-top: var(--space-5);
 }
