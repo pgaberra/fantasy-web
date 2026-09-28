@@ -190,6 +190,29 @@ describe('DraftSetupComponent', () => {
       expect(emitted()?.league.statWeights['goals']).toEqual(6);
     });
 
+    it('sets the goalie minimum in the scoring section of a category league only', () => {
+      const fixture = MockRender(DraftSetupComponent, {
+        initial: null,
+        seedName: 'My Team',
+        league: leagueWith(),
+      });
+      const field = () => fixture.nativeElement.querySelector('#min-goalie-games-input');
+      expect(field()).toBeNull();
+
+      const component = fixture.point.componentInstance;
+      component.setLeague({ ...component.editableLeague(), scoringType: 'category' });
+      fixture.detectChanges();
+      expect(field()).not.toBeNull();
+
+      field().value = '99';
+      field().dispatchEvent(new Event('input'));
+      const emitted = confirmedBy(component);
+      component.setMyPosition(1);
+      component.submit();
+
+      expect(emitted()?.league.minGoalieGames).toEqual(84);
+    });
+
     it('takes the size of a league imported here', () => {
       const component = renderSetup();
 
