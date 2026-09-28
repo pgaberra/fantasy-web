@@ -52,11 +52,35 @@ const boardSummary = (id: string, name: string, following: boolean): ProjectionS
 
 const boards = [boardSummary('b1', 'My board', false), boardSummary('b2', 'Their board', true)];
 
+const draftSummary = (
+  id: string,
+  name: string,
+  from: Partial<ProjectionSummaryResponse>,
+  draftStatus: ProjectionSummaryResponse['draftStatus'] = 'finished',
+): ProjectionSummaryResponse => ({
+  ...boardSummary(id, name, false),
+  kind: 'draft',
+  draftStatus,
+  ...from,
+});
+
+/** A mock drafted off one of the user's boards, one off the AI preset, and one still going. */
+const drafts = [
+  draftSummary('d1', 'Mock #1', { sourceProjectionId: 'b1' }),
+  draftSummary('d2', 'Mock #2', { preset: 'model' }),
+  draftSummary('d3', 'Mock #3', {}, 'in_progress'),
+];
+
 describe('TeamPowerRankingsComponent', () => {
   const yahooLeague = vi.fn<(key: string, rankBy?: RankBy) => Observable<LeagueSummaryResponse>>(
     () => of(summary),
   );
-  const listEditable = vi.fn<() => Observable<ProjectionSummaryResponse[]>>(() => of(boards));
+  const draftCall = vi.fn<(id: string, rankBy?: RankBy) => Observable<LeagueSummaryResponse>>(() =>
+    of(summary),
+  );
+  const listAll = vi.fn<() => Observable<ProjectionSummaryResponse[]>>(() =>
+    of([...boards, ...drafts]),
+  );
   const aiProjection = vi.fn(() => true);
   const myLeagues = vi.fn<() => Observable<LeaguesResponse>>(() => of(leagues));
   const connectionStatus = vi.fn<() => Observable<{ connected: boolean }>>(() =>
@@ -65,6 +89,8 @@ describe('TeamPowerRankingsComponent', () => {
   const leagueDraftSync = vi.fn(() => true);
   /** The `?league=` the page was opened with, as a finished draft's link carries it. */
   let linkedLeague: string | null = null;
+  /** The `?draft=` the page was opened with, as a finished draft's link carries it. */
+  let linkedDraft: string | null = null;
   const originalPayments = environment.paymentsEnabled;
   const originalSharedNotice = environment.sharedNoticeEnabled;
 
@@ -97,9 +123,12 @@ describe('TeamPowerRankingsComponent', () => {
     connectionStatus.mockReturnValue(of({ connected: true }));
     leagueDraftSync.mockReturnValue(true);
     aiProjection.mockReturnValue(true);
-    listEditable.mockReset();
-    listEditable.mockReturnValue(of(boards));
+    draftCall.mockReset();
+    draftCall.mockReturnValue(of(summary));
+    listAll.mockReset();
+    listAll.mockReturnValue(of([...boards, ...drafts]));
     linkedLeague = null;
+    linkedDraft = null;
     return MockBuilder(TeamPowerRankingsComponent)
       .keep(YahooLeaguePicker)
       .mock(YahooService, {
@@ -108,14 +137,17 @@ describe('TeamPowerRankingsComponent', () => {
         startConnect: () => of({ authorizeUrl: 'https://example.test/auth' }),
       } as never)
       .mock(YahooConnectReturnService)
-      .mock(LeagueSummaryService, { yahooLeague })
-      .mock(ProjectionStorageService, { listEditable })
+      .mock(LeagueSummaryService, { yahooLeague, draft: draftCall })
+      .mock(ProjectionStorageService, { listAll })
       .mock(FeatureService, { leagueDraftSync, aiProjection } as never)
       .provide({
         provide: ActivatedRoute,
         useValue: {
           snapshot: {
-            queryParamMap: { get: (key: string) => (key === 'league' ? linkedLeague : null) },
+            queryParamMap: {
+              get: (key: string) =>
+                ({ league: linkedLeague, draft: linkedDraft })[key as 'league' | 'draft'] ?? null,
+            },
           },
         },
       });
@@ -185,6 +217,98 @@ describe('TeamPowerRankingsComponent', () => {
     expect(select.value).toEqual('465.l.2');
   });
 
+  /**
+   * A mock draft's picks are nowhere but here, so the user's finished drafts are leagues to pick
+   * too, and a picked one is ranked by what it was played against.
+   */
+  it('offers the finished drafts beside the leagues, each ranked by its own projection', async () => {
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+
+    const groups = Array.from(
+      fixture.nativeElement.querySelectorAll('.league-select optgroup') as NodeListOf<HTMLElement>,
+    ).map((group) => group.getAttribute('label'));
+    expect(groups).toEqual(['Yahoo', 'My drafts']);
+    expect(component.drafts().map((draft) => draft.id)).toEqual(['d1', 'd2']);
+
+    await choose(fixture, component, 'draft:d1');
+
+    expect(draftCall).toHaveBeenLastCalledWith('d1', 'board:b1');
+    expect(yahooLeague).not.toHaveBeenCalled();
+    expect(component.leagueName()).toEqual('Mock #1');
+    expect(component.isRankedBy('board:b1')).toBe(true);
+
+    await choose(fixture, component, 'draft:d2');
+
+    expect(draftCall).toHaveBeenLastCalledWith('d2', 'model');
+  });
+
+  /** Back to a Yahoo league reads the league, ranked by whatever the second dropdown says. */
+  it('reads a Yahoo league again after a draft', async () => {
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    await choose(fixture, component, 'draft:d1');
+
+    await choose(fixture, component, '465.l.1');
+
+    expect(yahooLeague).toHaveBeenLastCalledWith('465.l.1', 'board:b1');
+    expect(component.draftId()).toBeNull();
+    expect(component.leagueName()).toEqual('Beer League');
+  });
+
+  /**
+   * The board's button: the draft is read, and read once, by the projection it was played
+   * against — not by the default first and then again.
+   */
+  it('opens on the draft a link names, ranked by its own projection', async () => {
+    linkedDraft = 'd1';
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+
+    expect(draftCall).toHaveBeenCalledTimes(1);
+    expect(draftCall).toHaveBeenCalledWith('d1', 'board:b1');
+    expect(component.leagueName()).toEqual('Mock #1');
+    const select = fixture.nativeElement.querySelector('.league-select') as HTMLSelectElement;
+    expect(select.value).toEqual('draft:d1');
+  });
+
+  /** A draft that followed a Yahoo league opens on the league, by the draft's own projection. */
+  it('opens a followed draft on its league, ranked by the draft', async () => {
+    linkedLeague = '465.l.2';
+    linkedDraft = 'd2';
+    aiProjection.mockReturnValue(true);
+    listAll.mockReturnValue(
+      of([...boards, draftSummary('d2', 'Mock #2', { preset: 'last_season' })]),
+    );
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+
+    expect(yahooLeague).toHaveBeenCalledTimes(1);
+    expect(yahooLeague).toHaveBeenCalledWith('465.l.2', 'last_season');
+    expect(draftCall).not.toHaveBeenCalled();
+    expect(component.leagueName()).toEqual('Work League');
+  });
+
+  /** The drafts need no Yahoo account, so they are offered beside the button that connects one. */
+  it('offers the drafts to an account with no Yahoo behind it', async () => {
+    connectionStatus.mockReturnValue(of({ connected: false }));
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+
+    expect(fixture.nativeElement.querySelector('.league-picker button')?.textContent).toContain(
+      'Connect Yahoo account',
+    );
+    const groups = Array.from(
+      fixture.nativeElement.querySelectorAll('.league-select optgroup') as NodeListOf<HTMLElement>,
+    ).map((group) => group.getAttribute('label'));
+    expect(groups).toEqual(['My drafts']);
+    expect(fixture.nativeElement.querySelector('#rank-by')).not.toBeNull();
+
+    await choose(fixture, component, 'draft:d2');
+
+    expect(draftCall).toHaveBeenLastCalledWith('d2', 'model');
+  });
+
   /** Back to the placeholder is back to nothing on screen, not the last league left standing. */
   it('clears the rankings when the league is unpicked', async () => {
     const fixture = await render();
@@ -200,6 +324,7 @@ describe('TeamPowerRankingsComponent', () => {
   /** An account with no Yahoo behind it gets the connect button, not a dead dropdown. */
   it('offers to connect Yahoo where the account is not connected', async () => {
     connectionStatus.mockReturnValue(of({ connected: false }));
+    listAll.mockReturnValue(of(boards));
     const fixture = await render();
     const component = fixture.point.componentInstance;
 
@@ -364,7 +489,7 @@ describe('TeamPowerRankingsComponent', () => {
   });
 
   it('keeps our own projections on offer when the boards cannot be listed', async () => {
-    listEditable.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+    listAll.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
     const fixture = await render();
     const component = fixture.point.componentInstance;
 

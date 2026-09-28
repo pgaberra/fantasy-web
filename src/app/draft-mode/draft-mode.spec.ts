@@ -388,20 +388,6 @@ describe('DraftModeComponent', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  // The power rankings read a league from Yahoo; a draft without one has nothing there to read.
-  it('offers no power rankings for a finished draft without a Yahoo league', async () => {
-    const fixture = MockRender(DraftModeComponent);
-    await fixture.whenStable();
-    const component = fixture.point.componentInstance;
-    component.applySetup(draft);
-
-    component.finishDraft();
-    fixture.detectChanges();
-
-    expect(component.rankingsLeagueKey()).toBeNull();
-    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Team power rankings');
-  });
-
   it('says so when saving the finished draft fails', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
