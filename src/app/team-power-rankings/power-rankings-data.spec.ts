@@ -8,6 +8,7 @@ const base: LeagueSummaryResponse = {
   scoringType: 'points',
   status: 'FINISHED',
   picks: 2,
+  unprojectedPlayers: 0,
   categoryKeys: ['goals', 'svPct'],
   positionKeys: ['C', 'G', 'BN'],
   teams: [
