@@ -795,7 +795,7 @@ describe('DraftStartComponent', () => {
 
     expect(menuPanel()).toBeNull();
     const prompt = fixture.nativeElement.querySelector('.confirm-text') as HTMLElement;
-    expect(prompt.textContent?.trim()).toEqual('Discard this draft? Your picks will be lost.');
+    expect(prompt.textContent?.trim()).toEqual('Discard this draft?');
     expect(document.activeElement).toBe(prompt);
   });
 
@@ -939,7 +939,7 @@ describe('DraftStartComponent', () => {
       'Discard this draft? The picks go, the projection stays.',
     );
     expect(component.discardPrompt(summary('preset1', 'draft', 'in_progress'))).toEqual(
-      'Discard this draft? Your picks will be lost.',
+      'Discard this draft?',
     );
   });
 
@@ -952,9 +952,7 @@ describe('DraftStartComponent', () => {
     fixture.detectChanges();
 
     expect(texts(fixture, '.draft-actions button')).toEqual(['Yes, discard', 'Cancel']);
-    expect(texts(fixture, '.confirm-text')).toEqual([
-      'Discard this draft? Your picks will be lost.',
-    ]);
+    expect(texts(fixture, '.confirm-text')).toEqual(['Discard this draft?']);
   });
 
   /**

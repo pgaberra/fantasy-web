@@ -45,11 +45,11 @@
             (toggled)="toggleSync()"
           />
           <span class="sync-text">
-            <span class="sync-title" aria-hidden="true">Sync picks automatically</span>
-            <span class="sync-note">
-              Picks made in your {{ league.platform }} draft show up here as they happen, and can't
-              be edited by hand while it's on.
-            </span>
+            <span class="sync-title" aria-hidden="true">Auto-sync</span>
+            <app-help-tip
+              label="What auto-sync does"
+              text="Automatically update this page with picks from your draft."
+            />
           </span>
         </div>
         @if (syncChecking()) {

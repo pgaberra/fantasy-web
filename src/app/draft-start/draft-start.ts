@@ -440,11 +440,11 @@ export class DraftStartComponent {
     return this.discarding() === draft.id;
   }
 
-  /** What is actually lost. Never the board: the draft holds a copy of its own. */
+  /** Only worth spelling out when something survives: the board, never the draft's own copy. */
   discardPrompt(draft: ProjectionSummaryResponse): string {
     return this.sourceBoard(draft)
       ? 'Discard this draft? The picks go, the projection stays.'
-      : 'Discard this draft? Your picks will be lost.';
+      : 'Discard this draft?';
   }
 
   /**
