@@ -452,6 +452,9 @@ export class DraftStartComponent {
    * a copy of the numbers it was played against, and the board those were copied from is a row of
    * its own that this never touches. Nothing is freed up by it either — the source it came from
    * was always available to be drafted again.
+   *
+   * <p>So the list is not read again once the server has said yes: nothing in it changes but the
+   * one row, which is taken out where it stands.
    */
   confirmDiscard(draft: ProjectionSummaryResponse): void {
     this.confirmingDiscard.set(null);
@@ -460,7 +463,9 @@ export class DraftStartComponent {
     discarded.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.discarding.set(null);
-        this.sourcesResource.reload();
+        this.sourcesResource.update((sources) =>
+          sources.filter((source) => source.id !== draft.id),
+        );
       },
       error: () => {
         this.discarding.set(null);

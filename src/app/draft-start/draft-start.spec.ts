@@ -1,7 +1,7 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { signal } from '@angular/core';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { provideLocationMocks } from '@angular/common/testing';
@@ -849,19 +849,69 @@ describe('DraftStartComponent', () => {
     expect(component.isDiscarding(draft)).toEqual(false);
   });
 
-  it('reloads the sources once a draft is discarded, so its row goes away', async () => {
-    const draft = summary('d1', 'draft', 'in_progress');
-    listAll.mockReturnValue(of([draft]));
+  // Nothing in the list changes but the one row, so the page takes it out where it stands rather
+  // than reading everything again behind a spinner.
+  it('takes a discarded draft out of the list without reading the list again', async () => {
+    listAll.mockReturnValue(
+      of([summary('p1', 'projection'), boardDraft('d1', 'p1'), boardDraft('d2', 'p1')]),
+    );
+
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
+    component.confirmDiscard(component.drafts()[0]);
+    fixture.detectChanges();
+
+    expect(component.drafts().map((draft) => draft.id)).toEqual(['d2']);
+    expect(component.projections().map((board) => board.id)).toEqual(['p1']);
+    expect(texts(fixture, '.draft-name')).toEqual(['Projection p1']);
+    expect(listAll).toHaveBeenCalledTimes(1);
+  });
+
+  // A rename or a follow still re-reads the list, and the page it re-reads under stays put: it
+  // used to be swapped for a spinner until the list came back.
+  it('keeps the page on screen while the list is read again', async () => {
+    listAll.mockReturnValue(of([summary('p1', 'projection'), boardDraft('d1', 'p1')]));
+    const fixture = await renderFixture();
+    const pending = new Subject<ProjectionSummaryResponse[]>();
+    listAll.mockReturnValue(pending);
+
+    fixture.point.componentInstance.retry();
+    fixture.detectChanges();
+
+    expect(fixture.point.componentInstance.sourcesResource.isLoading()).toBe(true);
+    expect(fixture.nativeElement.querySelector('app-loading-indicator')).toBeNull();
+    expect(texts(fixture, '.section-title')).toEqual(['Your drafts', 'Start a new draft']);
+
+    pending.next([summary('p1', 'projection')]);
+    pending.complete();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(texts(fixture, '.section-title')).toEqual(['Start a new draft']);
+  });
+
+  it('shows the spinner while there is nothing to show yet', async () => {
+    listAll.mockReturnValue(new Subject<ProjectionSummaryResponse[]>());
 
     const fixture = MockRender(DraftStartComponent);
-    await fixture.whenStable();
-    const component = fixture.point.componentInstance;
-    listAll.mockReturnValue(of([]));
+    fixture.detectChanges();
 
-    component.confirmDiscard(draft);
-    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('app-loading-indicator')).not.toBeNull();
+    expect(texts(fixture, '.section-title')).toEqual([]);
+  });
 
-    expect(component.drafts()).toEqual([]);
+  // After a failed load there is no list to keep, only the error, so Try again shows the spinner.
+  it('shows the spinner, not an empty page, while a failed load is tried again', async () => {
+    listAll.mockReturnValue(throwError(() => new Error('boom')));
+    const fixture = await renderFixture();
+    listAll.mockReturnValue(new Subject<ProjectionSummaryResponse[]>());
+
+    fixture.point.componentInstance.retry();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('app-loading-indicator')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('app-error-state')).toBeNull();
+    expect(texts(fixture, '.section-title')).toEqual([]);
   });
 
   it('surfaces a failed discard and leaves the row where it was', async () => {
