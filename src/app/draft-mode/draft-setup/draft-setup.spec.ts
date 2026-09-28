@@ -489,7 +489,9 @@ describe('DraftSetupComponent', () => {
 
       expect(fixture.point.componentInstance.leaguePosition()).toBeNull();
       expect(element.querySelector('#draft-position')?.textContent?.trim()).toBe('–');
-      expect(element.textContent).toContain('Yahoo sets the draft order when the draft starts');
+      expect(element.querySelector('app-notice')?.textContent).toContain(
+        'Yahoo sets the draft order when the draft starts',
+      );
     });
 
     it('hands the three back to the user when syncing is switched off, and asks again when on', () => {
