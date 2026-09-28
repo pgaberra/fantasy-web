@@ -143,6 +143,18 @@ describe('StreamerPlannerComponent', () => {
     expect(ngMocks.formatText(rows[0])).toContain('@SJS');
   });
 
+  // The tooltip already hands its text to screen readers as the cell's description; an
+  // aria-label with the same text made them read the matchup twice.
+  it('describes a matchup once, through its tooltip', async () => {
+    const fixture = await render();
+    const cell = ngMocks.find(fixture, 'td.game:not(.game--none)');
+
+    expect(ngMocks.input(cell, 'appTooltip')).toEqual(
+      'at SJS. SJS allows 12% more goals than average. Off-night. Back-to-back.',
+    );
+    expect(cell.nativeElement.getAttribute('aria-label')).toEqual(null);
+  });
+
   it('says so when no schedule is published', async () => {
     invoke.mockImplementation(() => Promise.resolve({ weeks: [] }));
     const fixture = await render();

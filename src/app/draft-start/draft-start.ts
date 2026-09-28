@@ -28,6 +28,7 @@ import { AiProjectionAccess } from '../shared/premium/ai-projection-access';
 import { isFollowedBoard, isOwnBoard, SOURCE_KINDS, SourceKind } from '../models/source-kind';
 import { environment } from '../../environments/environment';
 import { IconComponent } from '../shared/icon/icon';
+import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 
 /**
  * The one thing the Start button will draft against. A preset is seeded on the server the
@@ -58,6 +59,7 @@ export type DraftSource =
 @Component({
   selector: 'app-draft-start',
   imports: [
+    TooltipDirective,
     RouterLink,
     LoadingIndicatorComponent,
     ErrorStateComponent,

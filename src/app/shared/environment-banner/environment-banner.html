@@ -26,7 +26,7 @@
                   class="version-dot"
                   [class.up]="service.up"
                   [class.down]="!service.up"
-                  [attr.title]="service.up ? 'Reachable' : 'Unreachable'"
+                  [appTooltip]="service.up ? 'Reachable' : 'Unreachable'"
                 ></span>
                 <span class="version-name">{{ service.name }}</span>
                 <span class="version-value">{{ service.version ?? '—' }}</span>
