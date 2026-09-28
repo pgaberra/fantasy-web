@@ -59,6 +59,12 @@
         @if (finished()) {
           <span class="draft-tag draft-tag--done">Finished</span>
         }
+        @if (syncedFrom(); as league) {
+          <span class="draft-tag draft-tag--source">
+            <app-icon name="link" [size]="14" />
+            <span>Synced from {{ league.platform }} · {{ league.name }}</span>
+          </span>
+        }
         @switch (saveStatus()) {
           @case ('saving') {
             <span class="save-status"
