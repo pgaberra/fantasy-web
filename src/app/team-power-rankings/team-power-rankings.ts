@@ -35,8 +35,11 @@ import { RankBy, rankByBoard } from './rank-by';
  * league is the obvious next thing to do and it should not cost a trip back to a list.
  *
  * <p>What the league is ranked against is a second dropdown: the AI projection by default, last
- * season, or any board of the user's own or one they follow. Changing it re-reads the league on
- * screen at once — comparing the same league under two projections is the point of offering it.
+ * season, or any board of the user's own or one they follow.
+ *
+ * <p>Neither dropdown has a button. Nothing here is saved or sent anywhere but to be read, so
+ * there is nothing to confirm: what the two point at is what is on screen, and an account with
+ * one league opens on its rankings.
  */
 @Component({
   selector: 'app-team-power-rankings',
@@ -63,8 +66,8 @@ export class TeamPowerRankingsComponent implements OnInit {
 
   protected readonly sharedNotice = environment.sharedNoticeEnabled;
 
-  /** The league being read: the chosen one, once it has been asked for. */
-  readonly leagueKey = signal<string | null>(null);
+  /** The league being read: whichever one the dropdown points at. */
+  readonly leagueKey = computed(() => this.picker.selectedKey());
 
   readonly offered = computed(() => this.features.leagueDraftSync());
 
@@ -132,9 +135,13 @@ export class TeamPowerRankingsComponent implements OnInit {
   );
   readonly rankingsError = computed(() => this.rankingsResource.error());
 
-  /** Whether the dropdown is pointing at a league other than the one on screen. */
-  readonly canShow = computed(
-    () => !!this.picker.selectedKey() && this.picker.selectedKey() !== this.leagueKey(),
+  /** Whether there are leagues to choose from and none chosen, which is worth saying. */
+  readonly awaitingLeague = computed(
+    () =>
+      !!this.picker.connected() &&
+      !this.picker.loadingLeagues() &&
+      this.picker.leagues().length > 0 &&
+      !this.leagueKey(),
   );
 
   readonly leagueName = computed(() => {
@@ -187,14 +194,6 @@ export class TeamPowerRankingsComponent implements OnInit {
   });
 
   readonly rankingsRetryable = computed(() => powerRankingsRetryable(this.rankingsError()));
-
-  /** Reads whatever the dropdown is pointing at. */
-  show(): void {
-    const key = this.picker.selectedKey();
-    if (key) {
-      this.leagueKey.set(key);
-    }
-  }
 
   /** Ranks by what the second dropdown points at, re-reading the league on screen if there is one. */
   selectRankBy(event: Event): void {
