@@ -61,7 +61,7 @@
         }
         @if (syncedFrom(); as league) {
           <span class="draft-tag draft-tag--source">
-            <app-icon name="link" [size]="14" />
+            <span class="sync-dot" aria-hidden="true"></span>
             <span>Synced from {{ league.platform }} · {{ league.name }}</span>
           </span>
         }
