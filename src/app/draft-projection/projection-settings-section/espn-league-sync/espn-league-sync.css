@@ -133,11 +133,7 @@
   color: var(--color-text);
 }
 
-.espn-synced-dot {
-  flex: none;
+/* The row is baseline-aligned for the text; the dot has no baseline, so it centres instead. */
+.espn-synced-status .sync-dot {
   align-self: center;
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: var(--color-success);
 }

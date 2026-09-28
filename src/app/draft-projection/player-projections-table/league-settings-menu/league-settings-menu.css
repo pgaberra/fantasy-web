@@ -123,14 +123,6 @@
   padding: 0.1rem 0.75rem 0.35rem;
 }
 
-.sync-dot {
-  flex: none;
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 50%;
-  background: var(--color-success);
-}
-
 .sync-league {
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
