@@ -18,10 +18,43 @@
          away. -->
     <div class="league-picker">
       <div class="picker-field">
-        <span class="picker-label" id="rankings-league-label">
-          <app-yahoo-mark size="1.15rem" />
-          Yahoo league
-        </span>
+        <span class="picker-label" id="rankings-league-label">League</span>
+
+        <!-- The Yahoo leagues and the user's own finished drafts, in one list: both are a league
+             to rank. The drafts need no Yahoo account, so they are offered without one. -->
+        @if (hasChoices()) {
+          <select
+            class="picker-select league-select"
+            aria-labelledby="rankings-league-label"
+            (change)="selectLeague($event)"
+          >
+            <option value="">Select a league…</option>
+            @if (picker.leagues().length > 0) {
+              <optgroup label="Yahoo">
+                @for (league of picker.leagues(); track league.leagueKey) {
+                  <option
+                    [value]="league.leagueKey"
+                    [selected]="league.leagueKey === selectedValue()"
+                  >
+                    {{ league.name }}
+                  </option>
+                }
+              </optgroup>
+            }
+            @if (drafts().length > 0) {
+              <optgroup label="My drafts">
+                @for (draft of drafts(); track draft.id) {
+                  <option
+                    [value]="draftOption(draft.id)"
+                    [selected]="draftOption(draft.id) === selectedValue()"
+                  >
+                    {{ draft.name }}
+                  </option>
+                }
+              </optgroup>
+            }
+          </select>
+        }
 
         @switch (picker.connected()) {
           @case (null) {
@@ -48,32 +81,16 @@
               <span class="picker-status"
                 ><app-loading-indicator variant="inline" label="Loading your leagues"
               /></span>
-            } @else if (picker.leagues().length === 0) {
+            } @else if (!hasChoices()) {
               <span class="picker-status">No NHL leagues found.</span>
-            } @else {
-              <select
-                class="picker-select league-select"
-                aria-labelledby="rankings-league-label"
-                (change)="picker.select($event)"
-              >
-                <option value="">Select a league…</option>
-                @for (league of picker.leagues(); track league.leagueKey) {
-                  <option
-                    [value]="league.leagueKey"
-                    [selected]="league.leagueKey === picker.selectedKey()"
-                  >
-                    {{ league.name }}
-                  </option>
-                }
-              </select>
             }
           }
         }
       </div>
 
-      @if (picker.connected()) {
+      @if (picker.connected() || drafts().length > 0) {
         <!-- What the league is ranked against. Offered with or without a league on screen;
-             changing it re-reads the one that is. Nothing to rank without Yahoo. -->
+             changing it re-reads the one that is. Nothing to rank without Yahoo or a draft. -->
         <div class="picker-field">
           <label class="picker-label" for="rank-by">Rank by</label>
           <select id="rank-by" class="picker-select rank-by-select" (change)="selectRankBy($event)">
