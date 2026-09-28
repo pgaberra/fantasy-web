@@ -594,11 +594,93 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       following: true,
       finishedAt: '2026-09-24T09:15:06Z',
     });
+    leagueDraftCall.mockReturnValue(of(leagueDraft()));
     const fixture = await renderFixture();
     fixture.detectChanges();
 
-    expect(leagueDraftCall).not.toHaveBeenCalled();
+    // Asked once, to say where the picks came from, and not polled after.
+    expect(leagueDraftCall).toHaveBeenCalledTimes(1);
     expect(fixture.point.componentInstance.following()).toBe(false);
+    await vi.advanceTimersByTimeAsync(15000);
+    expect(leagueDraftCall).toHaveBeenCalledTimes(1);
+  });
+
+  describe('a finished board says which league its picks came from', () => {
+    const leaguePicks: LeagueDraftResponse['picks'] = [
+      { overall: 1, round: 1, teamId: '465.l.9.t.2', playerId: 6743 },
+      { overall: 2, round: 1, teamId: '465.l.9.t.1', playerId: 7109 },
+    ];
+    const finishedLeague: LeagueDraftResponse = { ...leagueDraft(leaguePicks), status: 'FINISHED' };
+    const finishedBoard: DraftState = {
+      ...boardFromLeagueDraft(handEnteredDraft, finishedLeague),
+      finishedAt: '2026-09-24T09:15:06Z',
+    };
+
+    const source = (fixture: Awaited<ReturnType<typeof renderFixture>>) => {
+      fixture.detectChanges();
+      return (fixture.nativeElement as HTMLElement).querySelector('.draft-tag--source');
+    };
+
+    it("names the league when the board is the league's draft", async () => {
+      loaded = projectionWith(finishedBoard);
+      leagueDraftCall.mockReturnValue(of(finishedLeague));
+      const fixture = await renderFixture();
+
+      expect(source(fixture)?.textContent).toContain('Synced from Yahoo · Beer League');
+      expect(updateProjection).not.toHaveBeenCalled();
+    });
+
+    it('names it as soon as the followed draft finishes, without asking again', async () => {
+      leagueDraftCall.mockReturnValue(of(finishedLeague));
+      const fixture = await renderFixture();
+      fixture.point.componentInstance.requestFollow();
+
+      expect(source(fixture)?.textContent).toContain('Beer League');
+      expect(leagueDraftCall).toHaveBeenCalledTimes(1);
+    });
+
+    it("says nothing of a board whose picks are not the league's", async () => {
+      loaded = projectionWith({
+        ...finishedBoard,
+        picks: [finishedBoard.picks[0], { playerId: 9001, teamId: '465.l.9.t.1' }],
+      });
+      leagueDraftCall.mockReturnValue(of(finishedLeague));
+
+      expect(source(await renderFixture())).toBeNull();
+    });
+
+    it('stops naming it once a pick is changed by hand', async () => {
+      loaded = projectionWith(finishedBoard);
+      leagueDraftCall.mockReturnValue(of(finishedLeague));
+      const fixture = await renderFixture();
+      expect(source(fixture)).not.toBeNull();
+
+      fixture.point.componentInstance.undoLast();
+
+      expect(source(fixture)).toBeNull();
+    });
+
+    it('says nothing when the league does not answer, and asks only once', async () => {
+      loaded = projectionWith(finishedBoard);
+      leagueDraftCall.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 424 })));
+      const fixture = await renderFixture();
+
+      expect(source(fixture)).toBeNull();
+      expect(fixture.point.componentInstance.followNotice()).toBeNull();
+      expect(leagueDraftCall).toHaveBeenCalledTimes(1);
+    });
+
+    it('says nothing of a board in progress, or where syncing is not offered', async () => {
+      loaded = projectionWith({ ...finishedBoard, finishedAt: undefined });
+      leagueDraftCall.mockReturnValue(of(finishedLeague));
+      expect(source(await renderFixture())).toBeNull();
+      expect(leagueDraftCall).not.toHaveBeenCalled();
+
+      leagueDraftSync.set(false);
+      loaded = projectionWith(finishedBoard);
+      expect(source(await renderFixture())).toBeNull();
+      expect(leagueDraftCall).not.toHaveBeenCalled();
+    });
   });
 
   it('forgets the switch when the user declines to replace picks entered by hand', async () => {
