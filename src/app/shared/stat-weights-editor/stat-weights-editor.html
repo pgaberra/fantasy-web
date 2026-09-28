@@ -1,0 +1,35 @@
+@if (columns().length === 0) {
+  <p class="weights-empty">No stats count yet. Pick them under Stats.</p>
+} @else {
+  <div class="weight-groups">
+    @for (group of groups(); track group.id) {
+      <section class="weight-group">
+        <h4 class="weight-group-heading" [id]="group.id">{{ group.heading }}</h4>
+        <ul class="weights" [attr.aria-labelledby]="group.id">
+          @for (col of group.columns; track col) {
+            <li class="weight">
+              <label
+                class="weight-name"
+                [attr.for]="'weight-' + col"
+                [appTooltip]="col | statTooltip"
+                >{{ col | statLabel }}</label
+              >
+              <!-- A text field, not a number field: see decimal-input.ts. -->
+              <input
+                type="text"
+                inputmode="decimal"
+                class="weight-input"
+                [id]="'weight-' + col"
+                [value]="statWeights()[col]"
+                [attr.aria-label]="'Points per ' + (col | statLabel)"
+                (input)="onInput(col, $event)"
+                (keydown)="onKeydown(col, $event)"
+                (blur)="onBlur(col, $event)"
+              />
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+}

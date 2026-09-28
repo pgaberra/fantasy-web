@@ -14,7 +14,17 @@
     </p>
   </div>
 
-  @if (sourcesResource.isLoading()) {
+  <!--
+    The spinner only while there is no list on screen to keep: the first load, and a Try again
+    after a failed one. `isLoading` is true through every reload as well, and a rename or a follow
+    re-reads the list: gating on it alone blanked the whole page for each of them. A reload over a
+    list keeps the page as it is and swaps the list in when it lands. (`hasValue` cannot tell the
+    first load apart: the resource's default value counts as one.)
+  -->
+  @if (
+    sourcesResource.status() === 'loading' ||
+    (sourcesResource.isLoading() && sourcesResource.error())
+  ) {
     <app-loading-indicator />
   } @else if (sourcesResource.error()) {
     <app-error-state
@@ -235,7 +245,7 @@
                       </span>
                       <span class="row-main">
                         <span class="row-heading">
-                          <span class="row-name" [title]="projection.name">{{
+                          <span class="row-name" [appTooltip]="projection.name">{{
                             projection.name
                           }}</span>
                         </span>
@@ -261,12 +271,6 @@
                 </a>
               </p>
             }
-            <!-- A spreadsheet becomes the user's own board, so its door belongs in their own
-                 group. The button draws nothing unless the build turns the upload on. -->
-            <app-spreadsheet-import-button
-              label="Add a projection from a file"
-              (imported)="onUploaded($event.id)"
-            />
           }
           @case ('following') {
             @if (followed().length === 0) {
@@ -287,7 +291,7 @@
                       </span>
                       <span class="row-main">
                         <span class="row-heading">
-                          <span class="row-name" [title]="board.name">{{ board.name }}</span>
+                          <span class="row-name" [appTooltip]="board.name">{{ board.name }}</span>
                         </span>
                         <span class="row-meta">
                           {{ sourceLabel(board) }} · added {{ board.createdAt | relativeTime }}
@@ -335,7 +339,7 @@
                       </span>
                       <span class="row-main">
                         <span class="row-heading">
-                          <span class="row-name" [title]="preset.name">{{ preset.name }}</span>
+                          <span class="row-name" [appTooltip]="preset.name">{{ preset.name }}</span>
                           @if (showsPremiumBadge(preset)) {
                             <span class="row-badge premium-badge">
                               <!-- The padlock only once it is actually shut: with a subscription
@@ -357,39 +361,6 @@
           }
         }
       </fieldset>
-
-      <!--
-        The pick is made against the board it would draft: the same preview the new-projection
-        page draws, out of the same starting points. Only when something is picked — an empty
-        kind has its own line in the panel above, and a preview would only say so again.
-      -->
-      <!--
-        The league the draft is ranked by, set against the preview it ranks: the editor's own
-        toolbar above, and the weights in the preview's weight row. They start from what the
-        picked source opens with, and belong to the draft: they go to the draft page with Start
-        and are saved with the draft, never into the board it is played against.
-      -->
-      @if (leagueSettings(); as league) {
-        <div class="league">
-          <h3 class="step-title">League settings</h3>
-          <app-league-settings-controls
-            [settings]="league"
-            (settingsChange)="setLeagueSettings($event)"
-          />
-        </div>
-      }
-
-      @if (previewSource(); as previewed) {
-        <div class="preview">
-          <h3 class="step-title">Preview</h3>
-          <app-starting-point-preview
-            [source]="previewed"
-            [fallbackNote]="previewFallbackNote()"
-            [leagueSettings]="leagueSettings()"
-            (statWeightsChange)="setStatWeights($event)"
-          />
-        </div>
-      }
 
       <!-- The page's one primary action, and it follows what is picked. Left as "Start draft"
            over a locked preset it would be a button whose only outcome is a refusal; as a link

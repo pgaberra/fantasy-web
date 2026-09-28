@@ -14,10 +14,17 @@ import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.di
 import { IconComponent, IconName } from '../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 import { isFollowedBoard } from '../../models/source-kind';
+import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 
 @Component({
   selector: 'li[app-projection-card]',
-  imports: [RelativeTimePipe, PopoverTriggerDirective, IconComponent, LoadingIndicatorComponent],
+  imports: [
+    TooltipDirective,
+    RelativeTimePipe,
+    PopoverTriggerDirective,
+    IconComponent,
+    LoadingIndicatorComponent,
+  ],
   templateUrl: './projection-card.html',
   styleUrl: './projection-card.css',
 })
@@ -46,6 +53,15 @@ export class ProjectionCardComponent {
   readonly isFromSpreadsheet = computed(
     () => !this.isFollow() && this.projection().kind === 'imported',
   );
+
+  /** Where the numbers came from, ahead of the updated time on the meta line; nothing for the user's own. */
+  readonly sourceLabel = computed(() => {
+    const from = this.origin();
+    if (from) {
+      return `Following ${from.authorUsername}`;
+    }
+    return this.isFromSpreadsheet() ? 'From a spreadsheet' : null;
+  });
 
   /** The tile the create page and the draft picker give the same row. */
   readonly iconName = computed<IconName>(() => {

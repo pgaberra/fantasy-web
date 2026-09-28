@@ -14,10 +14,6 @@ import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ProjectionStorageService } from '../services/projection-storage.service';
-import { ProjectionSerializerService } from '../services/projection-serializer.service';
-import { StatInfoService } from '../services/stat-info.service';
-import { ProjectionResponse } from '../api/models/projection-response';
-import { createDefaultProjectionState } from '../draft-projection/projection-defaults';
 import { NotificationService } from '../services/notification.service';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { Preset, presetById, PRESETS } from '../models/preset';
@@ -27,29 +23,12 @@ import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { PopoverTriggerDirective } from '../shared/popover/popover-trigger.directive';
 import { OpenPopovers } from '../shared/popover/open-popovers';
 import { ShareImportComponent } from '../shared/share-import/share-import';
-import { SpreadsheetImportButtonComponent } from '../shared/spreadsheet-import/spreadsheet-import-button';
 import { FeatureService } from '../services/feature.service';
-import {
-  PreviewSource,
-  StartingPointPreviewComponent,
-} from '../shared/starting-point-preview/starting-point-preview';
-import { ProjectionBoardCache } from '../services/projection-board-cache';
 import { AiProjectionAccess } from '../shared/premium/ai-projection-access';
 import { isFollowedBoard, isOwnBoard, SOURCE_KINDS, SourceKind } from '../models/source-kind';
 import { environment } from '../../environments/environment';
 import { IconComponent } from '../shared/icon/icon';
-import {
-  DRAFT_LEAGUE_STATE_KEY,
-  draftSettingsOf,
-  LeagueSettings,
-  leagueSettingsOf,
-  NO_PAGE_LEAGUES,
-  PageLeagues,
-  pageLeagueFor,
-  withPageLeague,
-} from '../shared/league-settings/league-settings';
-import { ScoringStatKey } from '../models/stat-key.model';
-import { LeagueSettingsControlsComponent } from '../shared/league-settings-controls/league-settings-controls';
+import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 
 /**
  * The one thing the Start button will draft against. A preset is seeded on the server the
@@ -73,40 +52,33 @@ export type DraftSource =
  * one: above, the drafts that exist; below, what a new one would be drafted against. Starting a
  * second draft off a projection is pressing Start again.
  *
- * <p>Nothing is saved from here. The draft page asks for the teams and the order first and only
- * then creates the draft, so a setup someone backs out of leaves nothing behind.
+ * <p>Nothing is saved from here, and nothing about the league is asked: the draft page's setup
+ * asks how the league scores, the teams and the order, and only then creates the draft, so a setup
+ * someone backs out of leaves nothing behind.
  */
 @Component({
   selector: 'app-draft-start',
   imports: [
+    TooltipDirective,
     RouterLink,
     LoadingIndicatorComponent,
     ErrorStateComponent,
     RelativeTimePipe,
     PopoverTriggerDirective,
     ShareImportComponent,
-    SpreadsheetImportButtonComponent,
     IconComponent,
-    StartingPointPreviewComponent,
-    LeagueSettingsControlsComponent,
   ],
   templateUrl: './draft-start.html',
   styleUrl: './draft-start.css',
-  // The preview inside this page loads boards through it. Page-scoped, so a board edited in the
-  // editor is drawn as it is now rather than as this page last saw it.
-  providers: [ProjectionBoardCache],
 })
 export class DraftStartComponent {
   private readonly storage = inject(ProjectionStorageService);
-  private readonly serializer = inject(ProjectionSerializerService);
-  private readonly statInfoService = inject(StatInfoService);
   private readonly notification = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly aiAccess = inject(AiProjectionAccess);
   private readonly features = inject(FeatureService);
-  private readonly boardCache = inject(ProjectionBoardCache);
   private readonly openPopovers = inject(OpenPopovers);
 
   private readonly confirmPrompt = viewChild<ElementRef<HTMLElement>>('confirmPrompt');
@@ -310,109 +282,6 @@ export class DraftStartComponent {
     return !!preset.premium && this.aiAccess.locked();
   }
 
-  /** The league a new preset draft is ranked by until someone changes it: a new projection's. */
-  private readonly defaultLeague = leagueSettingsOf(
-    createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
-  );
-
-  /**
-   * The picked board, for the league it is ranked by. Through the page's cache, which the preview
-   * reads the same board from, so picking one is still one download.
-   */
-  private readonly pickedBoard = rxResource({
-    params: () => {
-      const chosen = this.selection();
-      return chosen?.kind === 'board' ? chosen.id : undefined;
-    },
-    stream: ({ params: id }) => this.boardCache.load(id),
-    defaultValue: undefined as ProjectionResponse | undefined,
-  });
-
-  /**
-   * The leagues set on this page. A hand edit is kept per source rather than as one league for the
-   * page: a board already carries a league of its own, and switching to it and back must neither
-   * lose the one set for the presets nor lay that one over the board. The presets share one, since
-   * they differ only in their numbers. An import is the page's: it says which league the user
-   * plays in, so a board is drafted against it as much as a preset is.
-   */
-  private readonly changedLeagues = signal<PageLeagues>(NO_PAGE_LEAGUES);
-
-  /**
-   * What a source opens with — a new projection's defaults for a preset, a board's own settings
-   * for a board — or null while that board is still on its way.
-   */
-  private openingLeague(source: DraftSource): LeagueSettings | null {
-    if (source.kind === 'preset') {
-      return this.defaultLeague;
-    }
-    const board = this.pickedBoard.hasValue() ? this.pickedBoard.value() : undefined;
-    return board?.id === source.id
-      ? leagueSettingsOf(this.serializer.fromProjectionData(board.data))
-      : null;
-  }
-
-  /** The league set on this page for a source, or undefined when it opens as it is. */
-  private changedLeague(source: DraftSource): LeagueSettings | undefined {
-    return pageLeagueFor(this.changedLeagues(), sourceKey(source), this.openingLeague(source));
-  }
-
-  /**
-   * The league the picked source will be drafted with: what was set here, or else what it opens
-   * with. Null while a picked board is still on its way, which holds the controls back rather than
-   * showing defaults that would jump the moment it lands.
-   */
-  readonly leagueSettings = computed<LeagueSettings | null>(() => {
-    const chosen = this.selection();
-    return chosen ? (this.changedLeague(chosen) ?? this.openingLeague(chosen)) : null;
-  });
-
-  setLeagueSettings(settings: LeagueSettings): void {
-    const chosen = this.selection();
-    if (!chosen) {
-      return;
-    }
-    const previous = this.leagueSettings();
-    this.changedLeagues.update((leagues) =>
-      withPageLeague(leagues, sourceKey(chosen), previous, settings),
-    );
-  }
-
-  setStatWeights(statWeights: Record<ScoringStatKey, number>): void {
-    const league = this.leagueSettings();
-    if (league) {
-      this.setLeagueSettings({ ...league, statWeights });
-    }
-  }
-
-  /**
-   * What the preview draws: whatever is picked. Null when the open kind holds nothing, where the
-   * panel's own empty state is the whole answer and a preview would only say so again.
-   */
-  readonly previewSource = computed<PreviewSource | null>(() => {
-    const chosen = this.selection();
-    if (!chosen) {
-      return null;
-    }
-    if (chosen.kind === 'board') {
-      return { kind: 'board', id: chosen.id };
-    }
-    const preset = chosen.preset.source;
-    return preset ? { kind: 'preset', preset } : null;
-  });
-
-  /**
-   * What the preview says when a board will not download. The page knows its name, and naming
-   * what a draft would be run against beats the preview's own "unavailable".
-   */
-  readonly previewFallbackNote = computed<string | null>(() => {
-    const chosen = this.selection();
-    if (chosen?.kind !== 'board') {
-      return null;
-    }
-    const board = this.sourcesResource.value().find((source) => source.id === chosen.id);
-    return board ? `Drafts against ${board.name}, using its saved numbers.` : null;
-  });
-
   /** Whether what is picked right now is behind the subscription, so the Start button is not it. */
   readonly selectionLocked = computed(() => {
     const chosen = this.selection();
@@ -456,12 +325,11 @@ export class DraftStartComponent {
     if (!chosen) {
       return;
     }
-    const league = this.changedLeague(chosen);
-    if (chosen.kind === 'preset') {
-      this.navigateWithLeague(['/draft/new/preset', chosen.preset.id], league);
-    } else {
-      this.navigateWithLeague(['/draft/new/board', chosen.id], league);
-    }
+    void this.router.navigate(
+      chosen.kind === 'preset'
+        ? ['/draft/new/preset', chosen.preset.id]
+        : ['/draft/new/board', chosen.id],
+    );
   }
 
   /** Only where the board it was started from is still there to open. */
@@ -572,11 +440,11 @@ export class DraftStartComponent {
     return this.discarding() === draft.id;
   }
 
-  /** What is actually lost. Never the board: the draft holds a copy of its own. */
+  /** Only worth spelling out when something survives: the board, never the draft's own copy. */
   discardPrompt(draft: ProjectionSummaryResponse): string {
     return this.sourceBoard(draft)
       ? 'Discard this draft? The picks go, the projection stays.'
-      : 'Discard this draft? Your picks will be lost.';
+      : 'Discard this draft?';
   }
 
   /**
@@ -584,6 +452,9 @@ export class DraftStartComponent {
    * a copy of the numbers it was played against, and the board those were copied from is a row of
    * its own that this never touches. Nothing is freed up by it either — the source it came from
    * was always available to be drafted again.
+   *
+   * <p>So the list is not read again once the server has said yes: nothing in it changes but the
+   * one row, which is taken out where it stands.
    */
   confirmDiscard(draft: ProjectionSummaryResponse): void {
     this.confirmingDiscard.set(null);
@@ -592,7 +463,9 @@ export class DraftStartComponent {
     discarded.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.discarding.set(null);
-        this.sourcesResource.reload();
+        this.sourcesResource.update((sources) =>
+          sources.filter((source) => source.id !== draft.id),
+        );
       },
       error: () => {
         this.discarding.set(null);
@@ -610,25 +483,10 @@ export class DraftStartComponent {
     this.pickBoard('following', id);
   }
 
-  /** A spreadsheet upload is the user's own board, so it is picked in their own group. */
-  onUploaded(id: string): void {
-    this.pickBoard('projection', id);
-  }
-
   private pickBoard(kind: SourceKind, id: string): void {
     this.sourceKind.set(kind);
     this.selection.set({ kind: 'board', id });
     this.sourcesResource.reload();
-  }
-
-  private navigateWithLeague(path: string[], league: LeagueSettings | undefined): void {
-    if (league) {
-      void this.router.navigate(path, {
-        state: { [DRAFT_LEAGUE_STATE_KEY]: draftSettingsOf(league) },
-      });
-    } else {
-      void this.router.navigate(path);
-    }
   }
 
   private optionsOf(kind: SourceKind): readonly DraftSource[] {
@@ -650,11 +508,6 @@ export class DraftStartComponent {
       .filter((projection) => projection.kind !== 'draft' && belongsHere(projection))
       .sort((first, second) => second.updatedAt.localeCompare(first.updatedAt));
   }
-}
-
-/** What a league changed on this page is filed under: the presets together, each board apart. */
-function sourceKey(source: DraftSource): string {
-  return source.kind === 'preset' ? 'preset' : `board:${source.id}`;
 }
 
 function sameSource(first: DraftSource, second: DraftSource): boolean {

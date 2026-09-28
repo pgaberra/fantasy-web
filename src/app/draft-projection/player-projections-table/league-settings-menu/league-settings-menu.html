@@ -13,20 +13,22 @@
 }
 
 @if (scoringType() === 'category') {
-  <div class="menu-field">
-    <label for="league-size-input">League size</label>
-    <span class="field-with-unit">
-      <input
-        id="league-size-input"
-        type="number"
-        min="2"
-        max="30"
-        [value]="leagueSize()"
-        (input)="onLeagueSizeInput($event)"
-      />
-      <span class="field-unit">teams</span>
-    </span>
-  </div>
+  @if (sizing()) {
+    <div class="menu-field">
+      <label for="league-size-input">League size</label>
+      <span class="field-with-unit">
+        <input
+          id="league-size-input"
+          type="number"
+          min="2"
+          max="30"
+          [value]="leagueSize()"
+          (input)="onLeagueSizeInput($event)"
+        />
+        <span class="field-unit">teams</span>
+      </span>
+    </div>
+  }
 
   <div class="menu-field">
     <span class="field-label">
@@ -46,10 +48,12 @@
     />
   </div>
 
-  <div class="menu-separator"></div>
-  <p class="menu-title">Roster slots</p>
-  <app-roster-slots-editor [(rosterSlots)]="rosterSlots" />
-  <p class="menu-note">
-    The Z-Score algorithm uses league size and roster slots to refine your player rankings.
-  </p>
+  @if (sizing()) {
+    <div class="menu-separator"></div>
+    <p class="menu-title">Roster slots</p>
+    <app-roster-slots-editor [(rosterSlots)]="rosterSlots" />
+    <p class="menu-note">
+      The Z-Score algorithm uses league size and roster slots to refine your player rankings.
+    </p>
+  }
 }

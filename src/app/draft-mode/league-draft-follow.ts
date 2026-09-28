@@ -1,6 +1,24 @@
 import { DraftState } from '../api/models/draft-state';
 import { LeagueDraftResponse } from '../api/models/league-draft-response';
 
+/** A league whose draft a board can follow: Yahoo's league key, or ESPN's league id. */
+export interface FollowedLeague {
+  readonly platform: 'Yahoo' | 'ESPN';
+  readonly id: string;
+  readonly name: string;
+}
+
+/**
+ * Whether the league linked in the draft's settings can be followed, as far as the settings have
+ * been able to find out: asked only once the sync switch is on, and `ok` holds what the league
+ * answered, which is where the teams and the user's seat are read from while it is followed.
+ */
+export type DraftSyncCheck =
+  | { readonly state: 'idle' }
+  | { readonly state: 'checking' }
+  | { readonly state: 'ok'; readonly league: LeagueDraftResponse }
+  | { readonly state: 'failed'; readonly notice: string };
+
 /** Why a league's draft cannot be followed, or null when it can. */
 export type UnfollowableReason = 'auction' | 'no-team' | 'too-few-teams';
 

@@ -2,7 +2,7 @@
   <app-loading-indicator />
 } @else {
   <div class="draft-mode">
-    <div class="draft-header">
+    <div class="draft-header" [attr.inert]="setupShown() ? '' : null">
       <a [routerLink]="exitLink" class="back-link"
         ><app-icon name="arrow-left" [size]="14" />Exit Draft Mode</a
       >
@@ -77,236 +77,241 @@
       </div>
     </div>
 
-    @if (phase() === 'setup') {
-      @if (startingFromLeague()) {
-        <app-loading-indicator label="Loading your league's draft" />
-      } @else {
-        <app-draft-setup
-          [initial]="draft()"
-          [positionKnown]="!seatRequired()"
-          [rosterSlots]="rosterSlots()"
-          [leagueSize]="leagueSize()"
-          [syncLabel]="canSyncPicks() ? syncLabel() : null"
-          [notice]="followNotice()"
-          (confirmed)="onSetupConfirmed($event)"
-          (cancelled)="cancelSetup()"
-          (syncRequested)="syncFromSetup()"
-        />
-      }
+    @if (phase() === 'setup' && startingFromLeague()) {
+      <app-loading-indicator label="Loading your league's draft" />
     } @else {
-      <div class="draft-toolbar">
-        <span class="draft-progress">
-          @if (finished() || isComplete()) {
-            Draft complete
-          } @else if (awaitingLeagueDraft()) {
-            Waiting for the {{ followPlatform() }} draft to start
-            @if (leagueFirstPick(); as seat) {
-              <span class="you-tag">· your first pick is #{{ seat }}</span>
-            }
-          } @else {
-            @if (namesUpNextTeam()) {
-              Up next: <strong>{{ upNextTeam()?.name }}</strong>
-            } @else {
-              Up next: <strong>pick #{{ pickNumber() }}</strong>
-            }
-            @if (isMyPick()) {
-              <span class="you-tag">· you</span>
-            }
-          }
-        </span>
-        <span class="toolbar-actions">
-          @if (canSyncPicks()) {
-            <span class="sync-group">
-              <span class="sync-control" [class.sync-control--on]="following()">
-                <app-toggle-switch
-                  [on]="following()"
-                  [ariaLabel]="syncLabel()"
-                  (toggled)="toggleFollow()"
-                />
-                <span class="sync-label" aria-hidden="true">Sync picks</span>
-                @if (followLoading()) {
-                  <app-loading-indicator variant="inline" />
-                }
-                <app-help-tip label="What syncing picks does" [text]="syncTip()" />
-              </span>
-              @if (followNotice(); as notice) {
-                <span class="sync-message sync-message--warn" role="status"
-                  ><app-icon name="alert-triangle" [size]="14" />{{ notice }}</span
-                >
+      <!-- The board is drawn under the setup as well, so a draft opens on what it is played
+           against; while the setup covers it, it is out of reach of the keyboard and readers. -->
+      <div class="draft-board" [attr.inert]="setupShown() ? '' : null">
+        <div class="draft-toolbar">
+          <span class="draft-progress">
+            @if (!boardReady()) {
+              Draft not set up yet
+            } @else if (finished() || isComplete()) {
+              Draft complete
+            } @else if (awaitingLeagueDraft()) {
+              Waiting for the {{ followPlatform() }} draft to start
+              @if (leagueFirstPick(); as seat) {
+                <span class="you-tag">· your first pick is #{{ seat }}</span>
               }
-            </span>
-            <span class="toolbar-divider" aria-hidden="true"></span>
-          }
-          <button
-            type="button"
-            class="btn btn-secondary btn-sm"
-            [disabled]="!canUndo()"
-            (click)="undoLast()"
-          >
-            Undo last pick
-          </button>
-          <button
-            type="button"
-            class="btn btn-secondary btn-sm"
-            [disabled]="following()"
-            (click)="editTeams()"
-          >
-            Edit teams
-          </button>
-          @if (finished()) {
-            <button type="button" class="btn btn-primary btn-sm" (click)="viewSummary()">
-              View summary
-            </button>
-          } @else if (!following()) {
+            } @else {
+              @if (namesUpNextTeam()) {
+                Up next: <strong>{{ upNextTeam()?.name }}</strong>
+              } @else {
+                Up next: <strong>pick #{{ pickNumber() }}</strong>
+              }
+              @if (isMyPick()) {
+                <span class="you-tag">· you</span>
+              }
+            }
+          </span>
+          <span class="toolbar-actions">
             <button
               type="button"
-              class="btn btn-sm"
-              [class.btn-primary]="isComplete()"
-              [class.btn-secondary]="!isComplete()"
-              (click)="requestFinishDraft()"
+              class="btn btn-secondary btn-sm"
+              [disabled]="!canUndo()"
+              (click)="undoLast()"
             >
-              Finish draft
+              Undo last pick
             </button>
-          }
-        </span>
-      </div>
-
-      @if (following()) {
-        <p class="follow-status" role="status">
-          <span class="follow-live-line"
-            ><span class="follow-live" aria-hidden="true"></span>Live from
-            <strong>{{ followedLeague()?.name }}</strong> on {{ followPlatform() }} ·
-            {{ teams().length }} teams ·
-            @if (leagueFirstPick(); as seat) {
-              draft position {{ seat }} ·
-            } @else if (awaitingLeagueDraft()) {
-              draft position set when the draft starts ·
-            }
-            {{ picks().length }} of {{ totalPicks() }} picks</span
-          >
-        </p>
-      }
-
-      <div class="draft-layout">
-        <app-draft-roster-panel
-          [roster]="roster()"
-          [draftedCount]="draftedCount()"
-          [totalSlots]="totalSlots()"
-        />
-
-        <app-draft-available-panel
-          [editingInfo]="editingInfo()"
-          [searchTerm]="searchTerm()"
-          [positionFilters]="positionFilters"
-          [selectedPositions]="selectedPositions()"
-          [showStats]="showStats()"
-          [pageSizeOptions]="pageSizeOptions"
-          [pageSize]="pageSize()"
-          [scoreHeading]="scoreHeading()"
-          [visibleAvailable]="visibleAvailable()"
-          [boardRanks]="boardRanks()"
-          [availableCount]="available().length"
-          [hasMore]="hasMoreAvailable()"
-          [isMyPick]="isMyPick()"
-          [isComplete]="isComplete()"
-          [locked]="following()"
-          [scoringType]="scoringType()"
-          [statColumns]="statColumns()"
-          [tierBadges]="tierBadges()"
-          [tierStrip]="tierStrip()"
-          (searchChange)="searchTerm.set($event)"
-          (positionFilterToggle)="togglePositionFilter($event)"
-          (statsToggle)="showStats.set($event)"
-          (pageSizeChange)="pageSize.set($event)"
-          (showMore)="showMore()"
-          (draft)="draftCurrent($event)"
-          (replace)="replacePick($event)"
-          (cancelEdit)="cancelEditPick()"
-        />
-
-        <app-draft-picks-panel
-          [pickRounds]="pickRounds()"
-          [editingPick]="editingPick()"
-          [picksCount]="picks().length"
-          [locked]="following()"
-          (startEdit)="startEditPick($event)"
-          (requestRemove)="requestRemovePick($event)"
-        />
-      </div>
-
-      @if (confirmingFinish()) {
-        <div class="modal-overlay" (click)="cancelFinish()">
-          <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
-            <h2 class="modal-title">Finish the draft?</h2>
-            <p class="modal-text">
-              @if (isComplete()) {
-                Finishing marks the draft complete and opens the summary. You can return to the
-                board and keep editing.
-              } @else {
-                The draft is not finished yet, {{ picks().length }} of {{ totalPicks() }} picks
-                made. You can finish now and return to the board later.
-              }
-            </p>
-            <div class="modal-actions">
-              <button type="button" class="btn btn-secondary" (click)="cancelFinish()">
-                Cancel
+            <button type="button" class="btn btn-secondary btn-sm" (click)="editTeams()">
+              Settings
+            </button>
+            @if (finished()) {
+              <button type="button" class="btn btn-primary btn-sm" (click)="viewSummary()">
+                View summary
               </button>
-              <button type="button" class="btn btn-primary" (click)="finishDraft()">
+            } @else if (!following()) {
+              <button
+                type="button"
+                class="btn btn-sm"
+                [class.btn-primary]="isComplete()"
+                [class.btn-secondary]="!isComplete()"
+                (click)="requestFinishDraft()"
+              >
                 Finish draft
               </button>
-            </div>
-          </div>
+            }
+          </span>
         </div>
-      }
 
-      @if (removalPreview(); as preview) {
-        <div class="modal-overlay" (click)="cancelRemovePick()">
-          <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
-            <h2 class="modal-title">Remove pick #{{ preview.overall }}?</h2>
-            <p class="modal-text">
-              Removing <strong>{{ lookup.name(preview.playerId) }}</strong> will affect the
-              following picks:
-            </p>
-            <div class="modal-changes">
-              @for (change of preview.changes; track change.oldOverall) {
-                <div
-                  class="change-row"
-                  [class.team-changed]="change.teamChanged"
-                  [class.affects-mine]="change.affectsMine"
-                >
-                  <span class="change-player">{{ lookup.name(change.playerId) }}</span>
-                  <span class="change-move">
-                    #{{ change.oldOverall }} {{ change.oldTeamName }}
-                    <app-icon name="arrow-right" [size]="14" class="change-arrow" /><span
-                      class="sr-only"
-                      >to</span
-                    >
-                    #{{ change.newOverall }} {{ change.newTeamName }}
-                  </span>
-                </div>
+        @if (followLoading()) {
+          <p class="follow-status" role="status">
+            <app-loading-indicator
+              variant="inline"
+              [label]="'Loading the ' + followPlatform() + ' draft'"
+            />
+          </p>
+        } @else if (followNotice(); as notice) {
+          <!-- Syncing is switched on in the settings, so what stopped it says where to go. -->
+          <p class="follow-status follow-status--warn" role="status">
+            <app-icon name="alert-triangle" [size]="14" />
+            <span>{{ notice }} Picks are not syncing. You can switch it back on in Settings.</span>
+          </p>
+        }
+
+        @if (following()) {
+          <p class="follow-status" role="status">
+            <span class="follow-live-line"
+              ><span class="follow-live" aria-hidden="true"></span>Live from
+              <strong>{{ followedLeague()?.name }}</strong> on {{ followPlatform() }} ·
+              {{ teams().length }} teams ·
+              @if (leagueFirstPick(); as seat) {
+                draft position {{ seat }} ·
               }
-            </div>
-            <div class="modal-actions">
-              <button type="button" class="btn btn-secondary" (click)="cancelRemovePick()">
-                Cancel
-              </button>
-              <button type="button" class="btn btn-remove" (click)="confirmRemovePick()">
-                Remove pick
-              </button>
+              {{ picks().length }} of {{ totalPicks() }} picks</span
+            >
+          </p>
+        }
+
+        <div class="draft-layout">
+          <app-draft-roster-panel
+            [roster]="roster()"
+            [draftedCount]="draftedCount()"
+            [totalSlots]="totalSlots()"
+          />
+
+          <app-draft-available-panel
+            [editingInfo]="editingInfo()"
+            [searchTerm]="searchTerm()"
+            [positionFilters]="positionFilters"
+            [selectedPositions]="selectedPositions()"
+            [showStats]="showStats()"
+            [pageSizeOptions]="pageSizeOptions"
+            [pageSize]="pageSize()"
+            [scoreHeading]="scoreHeading()"
+            [visibleAvailable]="visibleAvailable()"
+            [boardRanks]="boardRanks()"
+            [availableCount]="available().length"
+            [hasMore]="hasMoreAvailable()"
+            [isMyPick]="isMyPick()"
+            [isComplete]="isComplete()"
+            [locked]="following()"
+            [scoringType]="scoringType()"
+            [statColumns]="statColumns()"
+            [tierBadges]="tierBadges()"
+            [tierStrip]="tierStrip()"
+            (searchChange)="searchTerm.set($event)"
+            (positionFilterToggle)="togglePositionFilter($event)"
+            (statsToggle)="showStats.set($event)"
+            (pageSizeChange)="pageSize.set($event)"
+            (showMore)="showMore()"
+            (draft)="draftCurrent($event)"
+            (replace)="replacePick($event)"
+            (cancelEdit)="cancelEditPick()"
+          />
+
+          <app-draft-picks-panel
+            [pickRounds]="pickRounds()"
+            [editingPick]="editingPick()"
+            [picksCount]="picks().length"
+            [locked]="following()"
+            (startEdit)="startEditPick($event)"
+            (requestRemove)="requestRemovePick($event)"
+          />
+        </div>
+
+        @if (confirmingFinish()) {
+          <div class="modal-overlay" (click)="cancelFinish()">
+            <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+              <h2 class="modal-title">Finish the draft?</h2>
+              <p class="modal-text">
+                @if (isComplete()) {
+                  Finishing marks the draft complete and opens the summary. You can return to the
+                  board and keep editing.
+                } @else {
+                  The draft is not finished yet, {{ picks().length }} of {{ totalPicks() }} picks
+                  made. You can finish now and return to the board later.
+                }
+              </p>
+              <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" (click)="cancelFinish()">
+                  Cancel
+                </button>
+                <button type="button" class="btn btn-primary" (click)="finishDraft()">
+                  Finish draft
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        }
+
+        @if (removalPreview(); as preview) {
+          <div class="modal-overlay" (click)="cancelRemovePick()">
+            <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+              <h2 class="modal-title">Remove pick #{{ preview.overall }}?</h2>
+              <p class="modal-text">
+                Removing <strong>{{ lookup.name(preview.playerId) }}</strong> will affect the
+                following picks:
+              </p>
+              <div class="modal-changes">
+                @for (change of preview.changes; track change.oldOverall) {
+                  <div
+                    class="change-row"
+                    [class.team-changed]="change.teamChanged"
+                    [class.affects-mine]="change.affectsMine"
+                  >
+                    <span class="change-player">{{ lookup.name(change.playerId) }}</span>
+                    <span class="change-move">
+                      #{{ change.oldOverall }} {{ change.oldTeamName }}
+                      <app-icon name="arrow-right" [size]="14" class="change-arrow" /><span
+                        class="sr-only"
+                        >to</span
+                      >
+                      #{{ change.newOverall }} {{ change.newTeamName }}
+                    </span>
+                  </div>
+                }
+              </div>
+              <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" (click)="cancelRemovePick()">
+                  Cancel
+                </button>
+                <button type="button" class="btn btn-remove" (click)="confirmRemovePick()">
+                  Remove pick
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (setupShown()) {
+        @if (leagueSettings(); as league) {
+          <div class="modal-overlay setup-overlay" (click)="dismissSetup()">
+            <div
+              #setupDialog
+              class="modal setup-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="draft-setup-title"
+              tabindex="-1"
+              (click)="$event.stopPropagation()"
+            >
+              <app-draft-setup
+                [initial]="draft()"
+                [positionKnown]="!seatUnknown()"
+                [league]="league"
+                [syncPlatforms]="syncPlatforms()"
+                [following]="following()"
+                [syncCheck]="setupCheck()"
+                [openImport]="backFromYahoo()"
+                [draftName]="draftId() === null ? draftName() : null"
+                (confirmed)="onSetupConfirmed($event)"
+                (cancelled)="cancelSetup()"
+                (syncCheckRequested)="checkSetupSync($event)"
+              />
+            </div>
+          </div>
+        }
       }
     }
 
-    <!-- Both open from the setup as well as the board: the setup offers the league's draft too. -->
-    @if (linkOpen()) {
+    <!-- Both open from the settings as well as the board: syncing is switched on in the settings. -->
+    @if (cookieRepair(); as repair) {
       <app-draft-follow-connect
-        [current]="leagueSettings()"
-        [platforms]="linkDialogPlatforms()"
-        [startOn]="linkStartOn()"
-        [repair]="cookieRepair()"
-        (linked)="linkLeague($event)"
+        [repair]="repair"
+        (repaired)="cookiesRepaired()"
         (cancelled)="closeLink()"
       />
     }

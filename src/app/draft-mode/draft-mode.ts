@@ -68,11 +68,7 @@ import { UpdateProjectionData } from '../api/models/update-projection-data';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import { StatInfoService } from '../services/stat-info.service';
 import { DraftSettings } from '../api/models/draft-settings';
-import { LeagueProjectionSettingsResponse } from '../api/models/league-projection-settings-response';
-import {
-  draftLeagueFromHistory,
-  draftSettingsFromProjection,
-} from '../shared/league-settings/league-settings';
+import { draftSettingsFromProjection } from '../shared/league-settings/league-settings';
 import { Preset, presetById } from '../models/preset';
 import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/premium-refused';
 import {
@@ -81,14 +77,10 @@ import {
   DEFAULT_ROSTER_SLOTS,
 } from '../draft-projection/projection-defaults';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
-import { HelpTipComponent } from '../shared/help-tip/help-tip';
-import { ToggleSwitchComponent } from '../draft-projection/projection-settings-section/toggle-switch/toggle-switch';
 import { DraftRosterService } from './draft-roster.service';
 import { DraftSnakeService } from './draft-snake.service';
 import { draftRankingInput } from './draft-ranking';
 import { DraftSetupComponent, DraftSetupResult } from './draft-setup/draft-setup';
-import { YahooSyncResult } from '../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
-import { EspnSyncResult } from '../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
 import { DraftPlayerLookupService } from './draft-player-lookup.service';
 import { DraftRosterPanelComponent } from './draft-roster-panel/draft-roster-panel';
 import { DraftAvailablePanelComponent } from './draft-available-panel/draft-available-panel';
@@ -98,11 +90,11 @@ import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import {
   DraftFollowConnectComponent,
   CookieRepair,
-  FollowLeagueLink,
-  LinkPlatform,
 } from './draft-follow-connect/draft-follow-connect';
 import {
   boardFromLeagueDraft,
+  DraftSyncCheck,
+  FollowedLeague,
   hasLeagueTeams,
   isLeagueBoard,
   sameBoard,
@@ -121,14 +113,6 @@ export interface TierStripEntry {
   readonly remaining: number;
   /** Whether the roster still has a slot this position could fill. */
   readonly needed: boolean;
-}
-
-/** The league a board can follow: the one linked to it, on a platform this environment follows. */
-interface FollowedLeague {
-  readonly platform: 'Yahoo' | 'ESPN';
-  /** Yahoo's league key, or ESPN's league id. */
-  readonly id: string;
-  readonly name: string;
 }
 
 /** Why a followed ESPN league needs the user's cookies. */
@@ -174,8 +158,6 @@ function unfollowableNotice(
     DraftPicksPanelComponent,
     IconComponent,
     TooltipDirective,
-    ToggleSwitchComponent,
-    HelpTipComponent,
   ],
   providers: [DraftPlayerLookupService],
   templateUrl: './draft-mode.html',
@@ -224,20 +206,19 @@ export class DraftModeComponent implements OnInit {
    * against it.
    */
   private readonly unsavedBoard = signal<string | null>(null);
-  /**
-   * A league name a sync produced while there was still no row to rename. The draft takes it
-   * once it is created, through the same derived rename an established draft gets.
-   */
-  private readonly pendingLeagueName = signal<string | null>(null);
   /** Whether this page is setting up a draft that does not exist yet. */
   private readonly isNewDraft = computed(
     () => this.unsavedPreset() !== null || this.unsavedBoard() !== null,
   );
-  /** Whether starting this new draft from its league's draft failed, which leaves it to the setup. */
+  /**
+   * Whether this new draft is left to its settings rather than made from its league's draft:
+   * starting from the league failed, or the settings were confirmed with syncing switched off.
+   */
   private readonly leagueStartFailed = signal<boolean>(false);
   private leagueStartInFlight = false;
 
   private readonly renameInput = viewChild<ElementRef<HTMLInputElement>>('renameInput');
+  private readonly setupDialog = viewChild<ElementRef<HTMLElement>>('setupDialog');
 
   readonly isRenaming = signal<boolean>(false);
   readonly renameValue = signal<string>('');
@@ -274,23 +255,17 @@ export class DraftModeComponent implements OnInit {
   /** Whether the board is following the linked league's draft, which locks every pick edit. */
   readonly following = signal<boolean>(false);
   readonly followLoading = signal<boolean>(false);
-  /** What stopped or is holding up following, shown beside the control. */
+  /** What stopped or is holding up following, shown over the board. */
   readonly followNotice = signal<string | null>(null);
-  /** What the sync switch does, for the tip beside it: one way, and it takes the board over. */
-  private followTip(platform: FollowedLeague['platform']): string {
-    return (
-      `Mirrors the picks made in your ${platform} draft here, automatically. The board takes ` +
-      `${platform}'s teams and order, and picks can't be edited by hand while it's on.`
-    );
-  }
-  private linkTip(platforms: readonly LinkPlatform[]): string {
-    const which = platforms.join(' or ');
-    return (
-      `Asks which ${which} league this draft is being played in, then mirrors its picks here as ` +
-      "they are made. The board takes the league's teams and order, and picks can't be edited by " +
-      "hand while it's on."
-    );
-  }
+  /**
+   * What the league in the settings answered when asked for its draft. The settings ask as soon
+   * as syncing is switched on in them, before anything is saved, so the teams and the seat are
+   * only ever locked to a league that has actually answered.
+   */
+  readonly setupCheck = signal<DraftSyncCheck>({ state: 'idle' });
+  /** The league the settings last asked about, which is not the draft's until they are saved. */
+  private setupCheckLeague: FollowedLeague | null = null;
+  private setupCheckSubscription: Subscription | null = null;
   /** A league draft waiting for the user to agree to replace the picks entered by hand. */
   readonly pendingFollow = signal<LeagueDraftResponse | null>(null);
   /** Whether the board waiting to be replaced already has the league's teams, so only picks go. */
@@ -299,24 +274,25 @@ export class DraftModeComponent implements OnInit {
     return !!league && hasLeagueTeams(this.draft(), league);
   });
   /**
-   * A followed ESPN league that stopped for want of the user's cookies, so the link dialog opens on
-   * them: without the SWID no team in a league is the user's, and ESPN refuses a private league's
+   * A followed ESPN league that stopped for want of the user's cookies, so the dialog asking for
+   * them opens: without the SWID no team in a league is the user's, and ESPN refuses a private league's
    * draft without both.
    */
   readonly cookieRepair = signal<CookieRepair | null>(null);
-  /** Whether the user asked, from the board, to link a league to follow. */
-  private readonly linkRequested = signal<boolean>(false);
   /** Whether the board was saved following its league, so opening it picks the draft back up. */
   private readonly resumeFollowing = signal<boolean>(false);
-  /** Whether this page is the one a Yahoo connect left from, so it reopens what started it. */
-  private readonly backFromYahoo = signal<boolean>(false);
+  /**
+   * Whether this page is the one a Yahoo connect left from. The connect starts in the settings'
+   * league import, so the settings open again with the import in them.
+   */
+  readonly backFromYahoo = signal<boolean>(false);
   private followSubscription: Subscription | null = null;
 
   private readonly data = signal<ProjectionData | null>(null);
   /**
-   * The league this draft is ranked by. The draft's own once it has one; before that, the one set
-   * on the draft picker, or else the projection's. Every change made here lands in this and is
-   * saved with the draft, never in the projection's settings.
+   * The league this draft is ranked by. The draft's own once it has one; before that, what it is
+   * played against opens with. Set in the setup, where every change lands in this and is saved
+   * with the draft, never in the projection's settings.
    */
   private readonly league = signal<DraftSettings | null>(null);
   private readonly allPlayers = signal<Player[]>([]);
@@ -349,11 +325,19 @@ export class DraftModeComponent implements OnInit {
   readonly order = computed(() => this.draft()?.order ?? []);
   readonly picks = computed(() => this.draft()?.picks ?? []);
 
+  /** Whether the board has teams and an order to draft on, which a draft not set up yet lacks. */
+  readonly boardReady = computed(() => this.snake.isValidDraft(this.draft()));
   readonly phase = computed<'setup' | 'draft'>(() =>
-    !this.snake.isValidDraft(this.draft()) || this.setupOpen() || this.seatRequired()
-      ? 'setup'
-      : 'draft',
+    !this.boardReady() || this.setupOpen() || this.seatRequired() ? 'setup' : 'draft',
   );
+  /** Whether the setup popup is over the board. */
+  readonly setupShown = computed(() => this.phase() === 'setup');
+  /**
+   * Whether the setup can be closed onto the board. Not for a draft that has no board yet, nor for
+   * one whose seat is a guess: no draft is played on a seat nobody chose, so the only way out of
+   * those is off the page.
+   */
+  readonly setupDismissible = computed(() => this.boardReady() && !this.seatRequired());
   /**
    * Whether a new draft is being started from its league's own draft, which it is wherever it has
    * a league to follow: the league sets the teams and the order, so there is nothing to set up.
@@ -610,7 +594,7 @@ export class DraftModeComponent implements OnInit {
    * Whether the user's seat on this board is only where the league lists their team (see
    * `seatIsGuess`). Following, that is the league's business and nothing on screen reads it.
    */
-  private readonly seatUnknown = computed(() => seatIsGuess(this.draft(), this.lastLeagueDraft()));
+  readonly seatUnknown = computed(() => seatIsGuess(this.draft(), this.lastLeagueDraft()));
   /**
    * Whether the board is to be drafted by hand on a seat nobody chose: sync switched off, or
    * stopped, before the league set its draft order. The setup asks for the seat first.
@@ -645,62 +629,28 @@ export class DraftModeComponent implements OnInit {
     }
     return null;
   });
-  /** The platform named beside the switch and in its messages. */
+  /** The platform named in what syncing has to say. */
   readonly followPlatform = computed(() => this.followedLeague()?.platform ?? 'Yahoo');
-  /** The switch's name: the linked league's platform, or the league still to be chosen. */
-  readonly syncLabel = computed(() => {
-    const followed = this.followedLeague();
-    return followed
-      ? `Sync picks from the ${followed.platform} draft`
-      : "Sync picks from your league's draft";
-  });
   readonly canFollow = computed(() => this.followedLeague() !== null && !this.finished());
   /**
-   * Whether the board may link a Yahoo league of its own. A draft set up without one is the whole
-   * reason this exists: following was offered only where a league had already been imported in
-   * the setup, which left a draft started without one with no way back to it.
+   * The platforms whose drafts this environment follows, which is where the settings offer
+   * syncing picks. None for a finished draft: there is nothing left to follow.
    */
-  readonly canLinkLeague = computed(
-    () =>
-      this.linkPlatforms().length > 0 &&
-      this.yahooSync() === null &&
-      this.followedLeague() === null &&
-      !this.finished(),
+  readonly syncPlatforms = computed<FollowedLeague['platform'][]>(() =>
+    this.finished()
+      ? []
+      : [
+          ...(this.features.leagueDraftSync() ? ['Yahoo' as const] : []),
+          ...(this.features.espnLeagueDraftSync() ? ['ESPN' as const] : []),
+        ],
   );
   /**
-   * The platforms the link dialog offers: each one this environment follows drafts on, and whose
-   * leagues this build shows at all (the same switches the settings import answers to).
+   * The dialog that asks for an ESPN league's cookies. Linking a league is the settings' import;
+   * this is left for the one thing the import does not ask: the cookies a draft is read with.
    */
-  readonly linkPlatforms = computed<LinkPlatform[]>(() => [
-    ...(this.features.leagueDraftSync() && !environment.yahooSyncDisabled
-      ? ['Yahoo' as const]
-      : []),
-    ...(this.features.espnLeagueDraftSync() && environment.espnLeaguesEnabled
-      ? ['ESPN' as const]
-      : []),
-  ]);
-  /** The tab the link dialog opens on: Yahoo when a Yahoo connect is what brought the page back. */
-  readonly linkStartOn = computed<LinkPlatform | null>(() =>
-    this.backFromYahoo() ? 'Yahoo' : null,
-  );
-  /** Whether the sync control is on screen at all: either league linked, or linkable. */
-  readonly canSyncPicks = computed(() => this.canFollow() || this.canLinkLeague());
-  /** The dialog that links a league: asked for here, or reopened after Yahoo's consent. */
-  readonly linkOpen = computed(
-    () =>
-      this.cookieRepair() !== null ||
-      (this.canLinkLeague() && (this.linkRequested() || this.backFromYahoo())),
-  );
-  /** The tabs the link dialog shows: only ESPN while it asks for a followed league's cookies. */
-  readonly linkDialogPlatforms = computed<LinkPlatform[]>(() =>
-    this.cookieRepair() ? ['ESPN'] : this.linkPlatforms(),
-  );
-  /** The draft's own league settings, for the link dialog to compare a league's against. */
+  readonly linkOpen = computed(() => this.cookieRepair() !== null);
+  /** The draft's own league settings. */
   readonly leagueSettings = computed(() => this.league());
-  /** The tip beside the switch, which says first what turning it on will ask for. */
-  readonly syncTip = computed(() =>
-    this.canFollow() ? this.followTip(this.followPlatform()) : this.linkTip(this.linkPlatforms()),
-  );
   readonly finished = computed(() => !!this.draft()?.finishedAt);
 
   // A draft is a board of its own, holding a copy of whatever it was started against, so there
@@ -803,6 +753,10 @@ export class DraftModeComponent implements OnInit {
         this.renameInput()?.nativeElement.focus();
       }
     });
+    // The setup opens over the board, which it shuts to the keyboard, so focus goes into it.
+    effect(() => {
+      this.setupDialog()?.nativeElement.focus();
+    });
     // A board left following picks the league's draft back up once following is offered here,
     // which waits on the features the BFF reports as well as on the board itself.
     effect(() => {
@@ -828,8 +782,9 @@ export class DraftModeComponent implements OnInit {
 
   ngOnInit(): void {
     // Yahoo's consent is a full-page round trip, so whatever was open when it left is gone. Asked
-    // once, here, so the dialog it left from opens again instead of the user starting over.
+    // once, here, so the settings it left from open again instead of the user starting over.
     this.backFromYahoo.set(this.connectReturn.returnedTo(this.router.url));
+    this.setupOpen.set(this.backFromYahoo());
     const presetId = this.route.snapshot.paramMap.get('preset');
     if (presetId !== null) {
       this.openUnsavedPresetDraft(presetId);
@@ -875,9 +830,7 @@ export class DraftModeComponent implements OnInit {
           // A draft saved before drafts held a league is ranked by the projection's, and takes a
           // copy of it with its next save.
           this.league.set(
-            loadedDraft?.settings ??
-              draftLeagueFromHistory() ??
-              draftSettingsFromProjection(projection.data.settings),
+            loadedDraft?.settings ?? draftSettingsFromProjection(projection.data.settings),
           );
           this.loaded.set(true);
         },
@@ -912,8 +865,8 @@ export class DraftModeComponent implements OnInit {
       createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
     );
     this.data.set(defaults);
-    // The league set on the draft picker, if one was: the draft is created with it.
-    this.league.set(draftLeagueFromHistory() ?? draftSettingsFromProjection(defaults.settings));
+    // What a new projection would be ranked by, until the setup says otherwise.
+    this.league.set(draftSettingsFromProjection(defaults.settings));
     this.playerService
       .getPlayers()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -957,10 +910,8 @@ export class DraftModeComponent implements OnInit {
           );
           this.allPlayers.set(pool);
           this.lookup.setPlayers(pool);
-          // The league set on the draft picker, if one was; otherwise the board's own.
-          this.league.set(
-            draftLeagueFromHistory() ?? draftSettingsFromProjection(board.data.settings),
-          );
+          // The board's own league, until the setup says otherwise.
+          this.league.set(draftSettingsFromProjection(board.data.settings));
           this.loaded.set(true);
         },
         error: (error: unknown) => {
@@ -1090,26 +1041,87 @@ export class DraftModeComponent implements OnInit {
       this.cancelRemovePick();
     } else if (this.editingPick() !== null) {
       this.cancelEditPick();
+    } else if (!this.linkOpen() && this.pendingFollow() === null) {
+      // The cookie and replace-picks dialogs open over the setup, and go before it.
+      this.dismissSetup();
     }
   }
 
   onSetupConfirmed(result: DraftSetupResult): void {
-    this.league.update((league) =>
-      league ? { ...league, rosterSlots: result.rosterSlots } : league,
-    );
-    this.analytics.capture('draft_started');
-    // A new draft set up against a league it can follow starts with sync on: that is what the
-    // league was linked for. Saved with the switch on, the draft's own address picks it up the
-    // way it picks up a board left following. Teams edited later leave the switch as it was.
-    const startsFollowing =
-      !this.snake.isValidDraft(this.draft()) && this.followedLeague() !== null;
-    const draft = startsFollowing ? { ...result.draft, following: true } : result.draft;
-    if (this.isNewDraft()) {
-      this.createDraft(draft);
+    const linkedBefore = this.league()?.yahooSync?.leagueKey ?? this.league()?.espnSync?.leagueId;
+    this.backFromYahoo.set(false);
+    // A draft not saved yet is named in its setup, which covers the heading it is otherwise
+    // renamed in. Held like a rename made there: it goes with the draft when it is created.
+    if (result.name !== undefined && !this.draftId() && result.name !== this.draftName()) {
+      this.draftName.set(result.name);
+      this.nameIsTheirs.set(true);
+    }
+    // Said before the league is set: a new draft with a league to follow is otherwise made from
+    // the league's board the moment it has one, which is what switching sync off declined.
+    if (!result.follow) {
+      this.leagueStartFailed.set(true);
+    }
+    this.league.set(result.league);
+    const linked = result.league.yahooSync ?? result.league.espnSync;
+    const linkedNow = result.league.yahooSync?.leagueKey ?? result.league.espnSync?.leagueId;
+    if (this.draftId() && linkedNow && linkedNow !== linkedBefore) {
+      this.nameAfterLeague(linked?.leagueName);
+    }
+    // Syncing picks: the league sets the teams and the order from here, so the board is made
+    // from the league's draft rather than from the teams in the settings.
+    if (result.follow && this.followedLeague() !== null) {
+      this.setupOpen.set(false);
+      if (this.draft()) {
+        this.save();
+      }
+      if (!this.following()) {
+        this.followLinkedLeague();
+      }
       return;
     }
-    this.applySetup(draft);
-    this.resumeFollowing.set(startsFollowing);
+    if (this.following()) {
+      this.stopFollowing();
+    }
+    this.analytics.capture('draft_started');
+    if (this.isNewDraft()) {
+      this.createDraft(result.draft);
+      return;
+    }
+    this.applySetup(result.draft);
+  }
+
+  /**
+   * Asks the league in the settings for its draft, to say whether it can be followed. Nothing is
+   * saved and nothing follows yet: the answer is what the settings lock the teams and the seat
+   * to, and a refusal leaves them to be set by hand.
+   */
+  checkSetupSync(league: FollowedLeague): void {
+    this.setupCheckSubscription?.unsubscribe();
+    this.setupCheckLeague = league;
+    this.setupCheck.set({ state: 'checking' });
+    this.setupCheckSubscription = this.leagueDraft(league)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (answer) => {
+          const reason = unfollowableReason(answer);
+          if (reason) {
+            this.setupCheck.set({
+              state: 'failed',
+              notice: unfollowableNotice(reason, league.platform),
+            });
+            this.offerCookieRepair(league, reason === 'no-team' ? 'no-team' : null);
+            return;
+          }
+          this.setupCheck.set({ state: 'ok', league: answer });
+        },
+        error: (error: unknown) => {
+          this.setupCheck.set({
+            state: 'failed',
+            notice: this.followErrorNotice(error, league.platform),
+          });
+          this.offerCookieRepair(league, refusal(error));
+        },
+      });
   }
 
   /**
@@ -1151,6 +1163,7 @@ export class DraftModeComponent implements OnInit {
     this.leagueStartFailed.set(true);
     if (notice !== null) {
       this.followNotice.set(notice);
+      this.setupCheck.set({ state: 'failed', notice });
     }
   }
 
@@ -1241,75 +1254,10 @@ export class DraftModeComponent implements OnInit {
   /**
    * Moves to the draft's own address once it exists. That address loads it afresh, which is what
    * brings in the rows the server copied or seeded; replacing the history entry keeps Back from
-   * reopening a setup for a draft that has already been created. A league synced during that
-   * setup names the draft here, where there is at last a row to rename.
+   * reopening a setup for a draft that has already been created.
    */
   private openCreatedDraft(created: ProjectionResponse): void {
-    const league = this.pendingLeagueName();
-    this.pendingLeagueName.set(null);
-    if (league) {
-      this.projectionStorage
-        .renameProjection(created.id, league, true)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          error: () => this.notification.error("Couldn't name the draft after the league."),
-        });
-    }
     void this.router.navigate(['/drafts', created.id], { replaceUrl: true });
-  }
-
-  applyEspnSync(result: EspnSyncResult): void {
-    this.nameAfterLeague(result.leagueName);
-    this.applyImportedLeague(result.settings, {
-      espnSync: {
-        // ESPN names the league in its settings response; the user only ever typed the id.
-        leagueName: result.leagueName ?? result.leagueId,
-        leagueId: result.leagueId,
-        syncedAt: new Date().toISOString(),
-      },
-      lastEspnLeagueId: result.leagueId,
-      // These settings are ESPN's now, so a Yahoo stamp would mislabel them.
-      yahooSync: undefined,
-    });
-  }
-
-  applyYahooSync(result: YahooSyncResult): void {
-    this.nameAfterLeague(result.leagueName);
-    this.applyImportedLeague(result.settings, {
-      yahooSync: {
-        leagueName: result.leagueName,
-        leagueKey: result.leagueKey,
-        syncedAt: new Date().toISOString(),
-      },
-      espnSync: undefined,
-    });
-  }
-
-  /**
-   * An import, into the draft's league. Saved at once if the draft already exists; during the
-   * setup of a new one it is held until the setup is confirmed, like the rest of the setup.
-   */
-  private applyImportedLeague(
-    mapped: LeagueProjectionSettingsResponse,
-    stamps: Partial<DraftSettings>,
-  ): void {
-    this.league.update((league) =>
-      league
-        ? {
-            ...league,
-            scoringType: mapped.scoringType,
-            activeScoringColumns: [...mapped.activeScoringColumns],
-            activeUtilityColumns: [...mapped.activeUtilityColumns],
-            rosterSlots: mapped.rosterSlots,
-            ...(mapped.leagueSize != null ? { leagueSize: mapped.leagueSize } : {}),
-            ...(mapped.statWeights ? { statWeights: mapped.statWeights } : {}),
-            ...stamps,
-          }
-        : league,
-    );
-    if (this.draft()) {
-      this.save();
-    }
   }
 
   /**
@@ -1319,17 +1267,13 @@ export class DraftModeComponent implements OnInit {
    * would replace. A clash with another draft is numbered rather than refused, for the same
    * reason: nobody typed this name either.
    *
-   * <p>During the setup of a draft that does not exist yet there is nothing to rename, so the
-   * name is held until the row is created.
+   * <p>A draft that does not exist yet has no row to rename: it is named in its setup, which
+   * proposes the league's name there.
    */
   private nameAfterLeague(leagueName: string | null | undefined): void {
     const name = leagueName?.trim();
-    if (!name) {
-      return;
-    }
     const id = this.draftId();
-    if (!id) {
-      this.pendingLeagueName.set(name);
+    if (!name || !id) {
       return;
     }
     this.projectionStorage
@@ -1421,17 +1365,33 @@ export class DraftModeComponent implements OnInit {
     this.save();
   }
 
+  /**
+   * The setup's Cancel: back to the board where there is one to play, and otherwise off the page,
+   * which for a draft not saved yet leaves nothing behind.
+   */
   cancelSetup(): void {
-    if (this.snake.isValidDraft(this.draft())) {
+    this.backFromYahoo.set(false);
+    if (this.setupDismissible()) {
+      this.setupOpen.set(false);
+    } else {
+      void this.router.navigate(this.exitLink);
+    }
+  }
+
+  /** A click beside the setup, or Escape: closes it where the board can be played without it. */
+  dismissSetup(): void {
+    if (this.setupShown() && this.setupDismissible()) {
+      this.backFromYahoo.set(false);
       this.setupOpen.set(false);
     }
   }
 
   editTeams(): void {
-    if (this.following()) {
-      return;
-    }
     this.editingPick.set(null);
+    // A board that is following has the league's answer already, so its settings open locked to
+    // it; any other asks the league once syncing is switched on in them.
+    const league = this.lastLeagueDraft();
+    this.setupCheck.set(this.following() && league ? { state: 'ok', league } : { state: 'idle' });
     this.setupOpen.set(true);
   }
 
@@ -1453,7 +1413,7 @@ export class DraftModeComponent implements OnInit {
           this.followLoading.set(false);
           const reason = unfollowableReason(league);
           if (reason) {
-            this.followNotice.set(unfollowableNotice(reason, followed.platform));
+            this.failFollow(unfollowableNotice(reason, followed.platform));
             this.offerCookieRepair(followed, reason === 'no-team' ? 'no-team' : null);
             return;
           }
@@ -1465,43 +1425,22 @@ export class DraftModeComponent implements OnInit {
         },
         error: (error: unknown) => {
           this.followLoading.set(false);
-          this.followNotice.set(this.followErrorNotice(error, followed.platform));
+          this.failFollow(this.followErrorNotice(error, followed.platform));
           this.offerCookieRepair(followed, refusal(error));
         },
       });
+  }
+
+  /** Says why following did not start, on the board and in the settings that may open for it. */
+  private failFollow(notice: string): void {
+    this.followNotice.set(notice);
+    this.setupCheck.set({ state: 'failed', notice });
   }
 
   private leagueDraft(followed: FollowedLeague): Observable<LeagueDraftResponse> {
     return followed.platform === 'ESPN'
       ? this.espn.leagueDraft(followed.id)
       : this.yahoo.leagueDraft(followed.id);
-  }
-
-  /**
-   * The sync switch: on asks the league for its draft, off simply stops. With no league linked yet
-   * it asks which league first — the switch means the same thing either way.
-   */
-  toggleFollow(): void {
-    if (this.following()) {
-      this.stopFollowing();
-    } else if (this.followedLeague()) {
-      this.requestFollow();
-    } else {
-      this.linkRequested.set(true);
-    }
-  }
-
-  /**
-   * The setup's way to the league's draft instead of setting one up by hand: the same thing the
-   * sync switch does, except that a draft not yet saved is made from the league's board.
-   */
-  syncFromSetup(): void {
-    if (!this.followedLeague()) {
-      this.linkRequested.set(true);
-      return;
-    }
-    this.setupOpen.set(false);
-    this.followLinkedLeague();
   }
 
   /** Follows the linked league: a new draft is made from its board, a saved one switches over. */
@@ -1515,60 +1454,23 @@ export class DraftModeComponent implements OnInit {
 
   closeLink(): void {
     this.cookieRepair.set(null);
-    this.linkRequested.set(false);
-    this.backFromYahoo.set(false);
   }
 
   /**
-   * Takes the league the dialog came back with and starts following it. Its settings come along
-   * only where the user said so; the link itself is what following needs, and it is saved with
-   * the draft so a reload can pick the draft back up.
+   * ESPN took the cookies of the league that had stopped for want of them. The league and its
+   * settings are the board's already, so nothing of them is touched: it is only asked again.
    */
-  linkLeague(link: FollowLeagueLink): void {
-    const repairing = this.cookieRepair()?.leagueId === link.leagueId;
+  cookiesRepaired(): void {
+    const leagueId = this.cookieRepair()?.leagueId;
     this.closeLink();
-    // The league and its settings are the board's already; only the cookies were missing. A
-    // different id typed over it is a new link, and goes the usual way.
-    if (repairing) {
-      this.followLinkedLeague();
-      return;
-    }
-    if (link.settings && link.platform === 'ESPN') {
-      this.applyEspnSync({
-        settings: link.settings,
-        leagueName: link.leagueName,
-        leagueId: link.leagueId,
-      });
-    } else if (link.settings) {
-      this.applyYahooSync({
-        settings: link.settings,
-        leagueName: link.leagueName,
-        leagueKey: link.leagueId,
-      });
+    // Asked for by the settings, the league is theirs to ask again: nothing follows until they
+    // are saved.
+    const asked = this.setupCheckLeague;
+    if (this.setupShown() && asked && asked.id === leagueId) {
+      this.checkSetupSync(asked);
     } else {
-      this.nameAfterLeague(link.leagueName);
-      const syncedAt = new Date().toISOString();
-      this.league.update((league) => {
-        if (!league) {
-          return league;
-        }
-        // Only the link: the settings stay the draft's own, so no import stamp moves with it.
-        return link.platform === 'ESPN'
-          ? {
-              ...league,
-              espnSync: { leagueName: link.leagueName, leagueId: link.leagueId, syncedAt },
-              yahooSync: undefined,
-            }
-          : {
-              ...league,
-              yahooSync: { leagueName: link.leagueName, leagueKey: link.leagueId, syncedAt },
-            };
-      });
-      if (this.draft()) {
-        this.save();
-      }
+      this.followLinkedLeague();
     }
-    this.followLinkedLeague();
   }
 
   confirmFollow(): void {
@@ -1718,7 +1620,7 @@ export class DraftModeComponent implements OnInit {
   }
 
   /**
-   * Opens the link dialog on the ESPN league's cookies when they are what stopped it: a league with
+   * Asks for the ESPN league's cookies when they are what stopped it: a league with
    * no team found as the user's (no SWID to tell), or a draft ESPN refused (a private league's,
    * without cookies or with ones ESPN no longer takes). Yahoo's causes have no such cure here.
    */

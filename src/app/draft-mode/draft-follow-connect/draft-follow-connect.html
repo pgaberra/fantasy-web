@@ -1,196 +1,68 @@
 <div class="modal-overlay" (click)="cancel()">
   <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
-    @if (differences().length) {
-      <h2 class="modal-title">Use the league's settings too?</h2>
-      <p class="modal-text">
-        This league scores differently from your draft. Its picks are followed either way. These are
-        what would change if you take its settings as well:
-      </p>
-      <ul class="link-differences">
-        @for (difference of differences(); track difference) {
-          <li>{{ difference }}</li>
-        }
-      </ul>
-      <p class="modal-note">Taking them re-ranks the players you have left.</p>
-      <div class="modal-actions">
-        <button type="button" class="btn btn-secondary" (click)="keepMySettings()">
-          Keep my settings
-        </button>
-        <button type="button" class="btn btn-primary" (click)="useLeagueSettings()">
-          Use the league's
-        </button>
-      </div>
-    } @else {
-      <h2 class="modal-title">
-        @if (repair()) {
-          Add your ESPN cookies
-        } @else {
-          Sync your draft
-        }
-      </h2>
-      <p class="modal-text">
-        @if (repair(); as repairing) {
-          {{ repairing.reason }}
-        } @else {
-          Automatically update this page as picks are made in your draft.
-        }
-      </p>
+    <h2 class="modal-title">Add your ESPN cookies</h2>
+    <p class="modal-text">{{ repair().reason }}</p>
 
-      @if (platforms().length > 1 && !repair()) {
-        <div class="provider-picker" role="tablist" aria-label="Fantasy platform of your league">
-          @for (option of platforms(); track option) {
-            <button
-              type="button"
-              role="tab"
-              class="provider-tab"
-              [class.provider-tab--active]="platform() === option"
-              [attr.aria-selected]="platform() === option"
-              (click)="choosePlatform(option)"
-            >
-              @if (option === 'Yahoo') {
-                <app-yahoo-mark />
-              } @else {
-                <img
-                  class="provider-mark provider-mark--espn"
-                  src="espn-logo.png"
-                  alt=""
-                  aria-hidden="true"
-                />
-              }
-              {{ option }}
-            </button>
-          }
-        </div>
-      }
-
-      @if (platform() === 'ESPN') {
-        <label class="link-field">
-          <span class="link-label">ESPN league ID</span>
-          <input
-            class="link-input"
-            type="text"
-            inputmode="numeric"
-            placeholder="e.g. 123456"
-            [value]="espnLeagueId()"
-            (input)="onEspnLeagueIdInput($event)"
-          />
-        </label>
-        <div class="link-cookies">
-          <p class="link-hint">
-            Your ESPN cookies let SlapStat read the draft and find your team in it, in a private or
-            a public league.
-          </p>
-          <label class="link-field link-field--tight">
-            <span class="link-label">espn_s2</span>
-            <input
-              class="link-input"
-              type="password"
-              autocomplete="off"
-              aria-label="espn_s2 cookie"
-              [value]="espnS2()"
-              (input)="onEspnS2Input($event)"
-            />
-          </label>
-          <label class="link-field link-field--tight">
-            <span class="link-label">SWID</span>
-            <input
-              class="link-input"
-              type="password"
-              autocomplete="off"
-              placeholder="{...}"
-              aria-label="SWID cookie"
-              [value]="swid()"
-              (input)="onSwidInput($event)"
-            />
-          </label>
-          @if (hasStoredCookies() && !repair()) {
-            <p class="link-hint">Your ESPN cookies are saved. Paste new ones to replace them.</p>
-          }
-          <app-espn-cookie-help />
-        </div>
-        <ng-container *ngTemplateOutlet="actions" />
+    <label class="link-field">
+      <span class="link-label">ESPN league ID</span>
+      <input class="link-input" type="text" readonly [value]="repair().leagueId" />
+    </label>
+    <div class="link-cookies">
+      <p class="link-hint">
+        Your ESPN cookies let SlapStat read the draft and find your team in it, in a private or a
+        public league.
+      </p>
+      <label class="link-field link-field--tight">
+        <span class="link-label">espn_s2</span>
+        <input
+          class="link-input"
+          type="password"
+          autocomplete="off"
+          aria-label="espn_s2 cookie"
+          [value]="espnS2()"
+          (input)="onEspnS2Input($event)"
+        />
+      </label>
+      <label class="link-field link-field--tight">
+        <span class="link-label">SWID</span>
+        <input
+          class="link-input"
+          type="password"
+          autocomplete="off"
+          placeholder="{...}"
+          aria-label="SWID cookie"
+          [value]="swid()"
+          (input)="onSwidInput($event)"
+        />
+      </label>
+      <app-espn-cookie-help />
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
+      @if (settingsFailed()) {
+        <button type="button" class="btn btn-primary" (click)="followAnyway()">
+          Follow picks anyway
+        </button>
       } @else {
-        @switch (connected()) {
-          @case (null) {
-            <p class="link-status"><app-loading-indicator variant="inline" label="Checking" /></p>
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="!canSave() || checking()"
+          (click)="save()"
+        >
+          @if (checking()) {
+            <app-loading-indicator variant="inline" label="Checking the league" />
+          } @else {
+            Sync picks
           }
-          @case (false) {
-            <p class="modal-note">
-              Connect your Yahoo account to let SlapStat read the draft as it happens.
-            </p>
-            <div class="modal-actions">
-              <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
-              <button
-                type="button"
-                class="btn btn-primary"
-                [disabled]="connecting()"
-                (click)="connect()"
-              >
-                @if (connecting()) {
-                  <app-loading-indicator variant="inline" label="Connecting" />
-                } @else {
-                  Connect Yahoo account
-                }
-              </button>
-            </div>
-          }
-          @default {
-            @if (loadingLeagues()) {
-              <p class="link-status">
-                <app-loading-indicator variant="inline" label="Loading your leagues" />
-              </p>
-            } @else if (leagues().length === 0) {
-              <p class="link-status">No NHL leagues found on your Yahoo account.</p>
-            } @else {
-              <label class="link-field">
-                <span class="link-label">Yahoo league</span>
-                <select class="link-select" (change)="onLeagueChange($event)">
-                  <option value="">Select a league…</option>
-                  @for (league of leagues(); track league.leagueKey) {
-                    <option
-                      [value]="league.leagueKey"
-                      [selected]="league.leagueKey === selectedKey()"
-                    >
-                      {{ league.name }}
-                    </option>
-                  }
-                </select>
-              </label>
-            }
-            <ng-container *ngTemplateOutlet="actions" />
-          }
-        }
+        </button>
       }
+    </div>
 
-      @if (error(); as message) {
-        <p class="link-error" role="alert">
-          <app-icon name="alert-triangle" [size]="14" />{{ message }}
-        </p>
-      }
+    @if (error(); as message) {
+      <p class="link-error" role="alert">
+        <app-icon name="alert-triangle" [size]="14" />{{ message }}
+      </p>
     }
   </div>
 </div>
-
-<ng-template #actions>
-  <div class="modal-actions">
-    <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
-    @if (settingsFailed()) {
-      <button type="button" class="btn btn-primary" (click)="keepMySettings()">
-        Follow picks anyway
-      </button>
-    } @else {
-      <button
-        type="button"
-        class="btn btn-primary"
-        [disabled]="!canChoose() || loadingSettings()"
-        (click)="choose()"
-      >
-        @if (loadingSettings()) {
-          <app-loading-indicator variant="inline" label="Checking the league" />
-        } @else {
-          Sync picks
-        }
-      </button>
-    }
-  </div>
-</ng-template>

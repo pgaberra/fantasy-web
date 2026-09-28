@@ -11,6 +11,7 @@ import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { FreeAgentsComponent } from './free-agents/free-agents';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
+import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 
 export type PlannerPosition = 'skaters' | 'goalies';
 export type Tier = 'good' | 'bad' | null;
@@ -34,7 +35,13 @@ export interface PlannerDay {
  */
 @Component({
   selector: 'app-streamer-planner',
-  imports: [ErrorStateComponent, FreeAgentsComponent, HelpTipComponent, LoadingIndicatorComponent],
+  imports: [
+    TooltipDirective,
+    ErrorStateComponent,
+    FreeAgentsComponent,
+    HelpTipComponent,
+    LoadingIndicatorComponent,
+  ],
   templateUrl: './streamer-planner.html',
   styleUrl: './streamer-planner.css',
 })

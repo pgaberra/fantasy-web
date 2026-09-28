@@ -22,6 +22,18 @@ import { DraftState } from '../api/models/draft-state';
 import { LeagueDraftResponse } from '../api/models/league-draft-response';
 import { boardFromLeagueDraft } from './league-draft-follow';
 
+/**
+ * The sync switch as the settings save it: on asks the league for its draft, off stops. The
+ * settings' own part in it (the switch, the check, what is locked) is draft-setup.spec.ts's.
+ */
+function toggleSync(component: DraftModeComponent): void {
+  if (component.following()) {
+    component.stopFollowing();
+  } else {
+    component.requestFollow();
+  }
+}
+
 describe('DraftModeComponent following a Yahoo draft', () => {
   const players: Player[] = [
     {
@@ -258,9 +270,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     expect(component.awaitingLeagueDraft()).toBe(true);
     expect(component.leagueFirstPick()).toBeNull();
     expect(progressText(fixture)).toEqual('Waiting for the Yahoo draft to start');
-    expect(statusText(fixture).replace(/\s+/g, ' ')).toContain(
-      '2 teams · draft position set when the draft starts · 0 of 14 picks',
-    );
+    expect(statusText(fixture).replace(/\s+/g, ' ')).toContain('2 teams · 0 of 14 picks');
     expect(savedDraft()?.teams.map((team) => team.name)).toEqual(['Bravo', 'Alpha']);
     expect(savedDraft()?.following).toBe(true);
 
@@ -287,7 +297,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       expect(component.phase()).toBe('draft');
       updateProjection.mockClear();
 
-      component.toggleFollow();
+      toggleSync(component);
 
       expect(component.following()).toBe(false);
       expect(component.seatRequired()).toBe(true);
@@ -297,8 +307,9 @@ describe('DraftModeComponent following a Yahoo draft', () => {
 
       const board = component.draft()!;
       component.onSetupConfirmed({
+        follow: false,
         draft: { teams: board.teams, order: ['465.l.9.t.1', '465.l.9.t.2'], picks: [] },
-        rosterSlots: component.rosterSlots(),
+        league: component.leagueSettings()!,
       });
 
       expect(component.seatRequired()).toBe(false);
@@ -308,14 +319,18 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       expect(savedDraft()?.order).toEqual(['465.l.9.t.1', '465.l.9.t.2']);
     });
 
-    it('goes back to the league from the setup', async () => {
+    it('goes back to the league from the settings, with syncing switched back on', async () => {
       leagueDraftCall.mockReturnValue(of(leagueDraft([], false)));
       const component = await render();
       component.requestFollow();
-      component.toggleFollow();
+      toggleSync(component);
       expect(component.phase()).toBe('setup');
 
-      component.syncFromSetup();
+      component.onSetupConfirmed({
+        follow: true,
+        draft: component.draft()!,
+        league: component.leagueSettings()!,
+      });
 
       expect(component.following()).toBe(true);
       expect(component.phase()).toBe('draft');
@@ -342,7 +357,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       const component = await render();
       component.requestFollow();
 
-      component.toggleFollow();
+      toggleSync(component);
 
       expect(component.seatRequired()).toBe(false);
       expect(component.phase()).toBe('draft');
@@ -416,11 +431,11 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     leagueDraftCall.mockReturnValue(of(leagueDraft()));
     const component = await render();
 
-    component.toggleFollow();
+    toggleSync(component);
     expect(leagueDraftCall).toHaveBeenCalledTimes(1);
     expect(component.following()).toBe(true);
 
-    component.toggleFollow();
+    toggleSync(component);
     expect(component.following()).toBe(false);
     await vi.advanceTimersByTimeAsync(5000);
     expect(leagueDraftCall).toHaveBeenCalledTimes(1);
@@ -531,10 +546,10 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     leagueDraftCall.mockReturnValue(of(leagueDraft()));
     const component = await render();
 
-    component.toggleFollow();
+    toggleSync(component);
     expect(savedDraft()?.following).toBe(true);
 
-    component.toggleFollow();
+    toggleSync(component);
     expect(component.following()).toBe(false);
     expect(savedDraft()?.following).toBeUndefined();
   });
@@ -621,7 +636,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     component.requestFinishDraft();
     expect(component.confirmingFinish()).toBe(false);
 
-    component.toggleFollow();
+    toggleSync(component);
     expect(finishButton()).toBeDefined();
   });
 
@@ -759,7 +774,8 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     expect(statusText(fixture)).toEqual('');
   });
 
-  it('puts a notice beside the switch rather than on the line under the toolbar', async () => {
+  // The switch is in the settings, so the board says what stopped and where to switch it back on.
+  it('says over the board why syncing stopped, and that the settings switch it back on', async () => {
     leagueDraftCall.mockReturnValue(of({ ...leagueDraft(), auction: true }));
     const fixture = await renderFixture();
     const component = fixture.point.componentInstance;
@@ -768,10 +784,63 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     fixture.detectChanges();
 
     const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelector('.sync-group .sync-message--warn')?.textContent).toContain(
-      "Draft Mode can't follow an auction draft.",
-    );
-    expect(statusText(fixture)).toEqual('');
+    expect(element.querySelector('.sync-control')).toBeNull();
+    const notice = element.querySelector('.follow-status--warn')?.textContent ?? '';
+    expect(notice).toContain("Draft Mode can't follow an auction draft.");
+    expect(notice).toContain('Settings');
+  });
+
+  it('opens the settings of a board that is following, locked to what the league answered', async () => {
+    leagueDraftCall.mockReturnValue(of(leagueDraft()));
+    const component = await render();
+    component.requestFollow();
+
+    component.editTeams();
+
+    expect(component.setupShown()).toBe(true);
+    expect(component.setupCheck()).toEqual({ state: 'ok', league: leagueDraft() });
+    // Still following under the settings: nothing stops until they are saved with it off.
+    expect(component.following()).toBe(true);
+    component.stopFollowing();
+  });
+
+  it('stops following when the settings are saved with syncing switched off', async () => {
+    leagueDraftCall.mockReturnValue(of(leagueDraft()));
+    const component = await render();
+    component.requestFollow();
+    component.editTeams();
+
+    component.onSetupConfirmed({
+      follow: false,
+      draft: { teams: component.teams(), order: component.order(), picks: [] },
+      league: component.leagueSettings()!,
+    });
+
+    expect(component.following()).toBe(false);
+    expect(component.phase()).toBe('draft');
+    expect(savedDraft()?.following).toBeUndefined();
+    expect(component.canUndo()).toBe(false);
+  });
+
+  it('keeps following, and saves the league, when the settings are saved with syncing on', async () => {
+    leagueDraftCall.mockReturnValue(of(leagueDraft()));
+    const component = await render();
+    component.requestFollow();
+    component.editTeams();
+    leagueDraftCall.mockClear();
+
+    component.onSetupConfirmed({
+      follow: true,
+      draft: component.draft()!,
+      league: { ...component.leagueSettings()!, statWeights: { goals: 3 } },
+    });
+
+    expect(component.following()).toBe(true);
+    expect(component.setupShown()).toBe(false);
+    expect(leagueDraftCall).not.toHaveBeenCalled();
+    expect(savedDraft()?.settings?.statWeights).toEqual({ goals: 3 });
+    expect(savedDraft()?.following).toBe(true);
+    component.stopFollowing();
   });
 
   describe('a draft set up without a league', () => {
@@ -781,73 +850,77 @@ describe('DraftModeComponent following a Yahoo draft', () => {
         settings: { ...handEnteredDraft.settings!, yahooSync: undefined },
       });
 
-    const leagueSettings = {
-      scoringType: 'points' as const,
-      statWeights: { goals: 2 },
-      activeScoringColumns: ['goals', 'assists'],
-      activeUtilityColumns: ['gp'],
-      rosterSlots: { c: 1, lw: 1, rw: 1, d: 1, util: 1, bn: 1, g: 1 },
-      unsupportedRosterCodes: [],
-      unsupportedStats: [],
-    };
-
     beforeEach(() => {
       loaded = withoutLeague();
     });
 
-    it('still offers the switch, which asks which league before it follows anything', async () => {
+    it('offers syncing in its settings, and follows nothing until a league is imported', async () => {
       const component = await render();
 
       expect(component.canFollow()).toBe(false);
-      expect(component.canSyncPicks()).toBe(true);
+      expect(component.syncPlatforms()).toEqual(['Yahoo']);
 
-      component.toggleFollow();
+      toggleSync(component);
 
-      expect(component.linkOpen()).toBe(true);
+      expect(component.following()).toBe(false);
       expect(leagueDraftCall).not.toHaveBeenCalled();
     });
 
-    it("follows the league it is given, keeping the draft's own settings", async () => {
+    it('follows the league imported in its settings once they are saved with syncing on', async () => {
       leagueDraftCall.mockReturnValue(of(leagueDraft()));
       const component = await render();
-      component.toggleFollow();
+      component.editTeams();
+      const league = { platform: 'Yahoo' as const, id: '465.l.9', name: 'Beer League' };
 
-      component.linkLeague({
-        platform: 'Yahoo',
-        leagueId: '465.l.9',
-        leagueName: 'Beer League',
-        settings: null,
-      });
+      component.checkSetupSync(league);
 
-      expect(component.linkOpen()).toBe(false);
-      expect(component.following()).toBe(true);
-      expect(leagueDraftCall).toHaveBeenCalledWith('465.l.9');
-      const saved = updateProjection.mock.calls[0][1].data.draft?.settings;
-      expect(saved?.yahooSync?.leagueKey).toBe('465.l.9');
-      expect(saved?.activeScoringColumns).toEqual(['goals']);
-    });
+      // Asked, and answered, without anything following or being saved yet.
+      expect(component.setupCheck().state).toBe('ok');
+      expect(component.following()).toBe(false);
+      expect(updateProjection).not.toHaveBeenCalled();
 
-    it("takes the league's settings when that is what was chosen", async () => {
-      leagueDraftCall.mockReturnValue(of(leagueDraft()));
-      const component = await render();
-
-      component.linkLeague({
-        platform: 'Yahoo',
-        leagueId: '465.l.9',
-        leagueName: 'Beer League',
-        settings: leagueSettings,
+      component.onSetupConfirmed({
+        follow: true,
+        draft: component.draft()!,
+        league: {
+          ...component.leagueSettings()!,
+          yahooSync: { leagueName: 'Beer League', leagueKey: '465.l.9', syncedAt: 'now' },
+        },
       });
 
       expect(component.following()).toBe(true);
-      const saved = updateProjection.mock.calls[0][1].data.draft?.settings;
-      expect(saved?.activeScoringColumns).toEqual(['goals', 'assists']);
-      expect(saved?.yahooSync?.leagueName).toBe('Beer League');
+      expect(component.phase()).toBe('draft');
+      expect(component.order()).toEqual(['465.l.9.t.2', '465.l.9.t.1']);
+      expect(savedDraft()?.settings?.yahooSync?.leagueKey).toBe('465.l.9');
+      expect(renameProjection).toHaveBeenCalledWith('p1', 'Beer League', true);
+      component.stopFollowing();
     });
 
-    it("reopens the dialog on the way back from Yahoo's consent", async () => {
+    it('says in the settings why a league cannot be synced, and leaves the board by hand', async () => {
+      leagueDraftCall.mockReturnValue(of({ ...leagueDraft(), auction: true }));
+      const component = await render();
+      component.editTeams();
+
+      component.checkSetupSync({ platform: 'Yahoo', id: '465.l.9', name: 'Beer League' });
+
+      expect(component.setupCheck()).toEqual({
+        state: 'failed',
+        notice: "Draft Mode can't follow an auction draft.",
+      });
+      expect(component.following()).toBe(false);
+    });
+
+    it("reopens the settings, and the import in them, on the way back from Yahoo's consent", async () => {
       returnedTo.mockReturnValue(true);
 
-      expect((await render()).linkOpen()).toBe(true);
+      const component = await render();
+
+      expect(component.setupShown()).toBe(true);
+      expect(component.backFromYahoo()).toBe(true);
+      expect(component.linkOpen()).toBe(false);
+
+      component.cancelSetup();
+      expect(component.backFromYahoo()).toBe(false);
     });
 
     it('offers nothing where the feature is off', async () => {
@@ -855,15 +928,12 @@ describe('DraftModeComponent following a Yahoo draft', () => {
 
       const component = await render();
 
-      expect(component.canSyncPicks()).toBe(false);
-      component.toggleFollow();
-      expect(component.linkOpen()).toBe(false);
+      expect(component.syncPlatforms()).toEqual([]);
     });
   });
 
   describe('a new draft against a linked league', () => {
     const { settings, ...setup } = handEnteredDraft;
-    const syncedSettings = { ...settings!, unsupportedRosterCodes: [], unsupportedStats: [] };
 
     beforeEach(() => {
       startDraft.mockReset();
@@ -872,14 +942,18 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       listAll.mockReturnValue(of([]));
     });
 
-    afterEach(() => {
-      history.replaceState(null, '');
-    });
-
+    /** A board imported from the Yahoo league, which a new draft against it then follows. */
     const startAgainstBoard = () => {
       routeParams = { board: 'p1' };
-      loaded = { ...projectionWith(handEnteredDraft), kind: 'projection' };
-      history.replaceState({ draftLeagueSettings: settings }, '');
+      const board = projectionWith(handEnteredDraft);
+      loaded = {
+        ...board,
+        kind: 'projection',
+        data: {
+          ...board.data,
+          settings: { ...board.data.settings, yahooSync: settings!.yahooSync },
+        },
+      };
     };
 
     // The league owns the teams and the order while it is followed, so there is nothing to set up.
@@ -937,10 +1011,20 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       expect(component.startingFromLeague()).toBe(false);
       expect(component.phase()).toBe('setup');
       expect(component.followNotice()).toBe("Draft Mode can't follow an auction draft.");
+      expect(component.setupCheck()).toEqual({
+        state: 'failed',
+        notice: "Draft Mode can't follow an auction draft.",
+      });
 
-      // The setup offers the league again.
+      // The settings offer the league again: the switch asks it, and saving follows it.
       leagueDraftCall.mockReturnValue(of(leagueDraft()));
-      component.syncFromSetup();
+      component.checkSetupSync({ platform: 'Yahoo', id: '465.l.9', name: 'Beer League' });
+      expect(component.setupCheck().state).toBe('ok');
+      component.onSetupConfirmed({
+        follow: true,
+        draft: setup,
+        league: component.leagueSettings()!,
+      });
 
       expect(startDraft.mock.calls[0][1].draft.following).toBe(true);
     });
@@ -953,42 +1037,25 @@ describe('DraftModeComponent following a Yahoo draft', () => {
 
       expect(component.phase()).toBe('setup');
       expect(component.followNotice()).toBe("Yahoo refused access to this league's draft.");
-      // Set up by hand, it still follows the league once opened, which may answer by then.
-      component.onSetupConfirmed({ draft: setup, rosterSlots: component.rosterSlots() });
-      expect(startDraft.mock.calls[0][1].draft.following).toBe(true);
-    });
-
-    it('is made from the league a preset draft links in its setup', async () => {
-      routeParams = { preset: 'model' };
-      leagueDraftCall.mockReturnValue(of(leagueDraft()));
-      const component = await render();
-      expect(component.phase()).toBe('setup');
-      expect(component.startingFromLeague()).toBe(false);
-
-      component.syncFromSetup();
-      expect(component.linkOpen()).toBe(true);
-      component.linkLeague({
-        platform: 'Yahoo',
-        leagueId: '465.l.9',
-        leagueName: 'Beer League',
-        settings: syncedSettings,
+      // Set up by hand, with syncing off, it is drafted by hand: the league stays linked for the
+      // settings to switch syncing back on.
+      component.onSetupConfirmed({
+        follow: false,
+        draft: setup,
+        league: component.leagueSettings()!,
       });
-
-      const created = createProjection.mock.calls[0][0].data.draft;
-      expect(created.following).toBe(true);
-      expect(created.order).toEqual(['465.l.9.t.2', '465.l.9.t.1']);
-      expect(renameProjection).toHaveBeenCalledWith('d1', 'Beer League', true);
+      expect(startDraft.mock.calls[0][1].draft.following).toBeUndefined();
+      expect(startDraft.mock.calls[0][1].draft.settings.yahooSync.leagueKey).toBe('465.l.9');
     });
 
     it('follows at once when the setup is confirmed on the page', async () => {
       loaded = { ...projectionWith(handEnteredDraft), data: { ...loaded.data, draft: undefined } };
-      history.replaceState({ draftLeagueSettings: settings }, '');
       leagueDraftCall.mockReturnValue(of(leagueDraft()));
       const fixture = await renderFixture();
       const component = fixture.point.componentInstance;
       expect(component.phase()).toBe('setup');
 
-      component.onSetupConfirmed({ draft: setup, rosterSlots: component.rosterSlots() });
+      component.onSetupConfirmed({ follow: true, draft: setup, league: settings! });
       fixture.detectChanges();
 
       expect(leagueDraftCall).toHaveBeenCalledWith('465.l.9');
@@ -997,11 +1064,54 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       component.stopFollowing();
     });
 
+    it('is set up by hand where its settings import the league with syncing switched off', async () => {
+      routeParams = { preset: 'model' };
+      const component = await render();
+
+      component.onSetupConfirmed({
+        follow: false,
+        draft: setup,
+        league: { ...component.leagueSettings()!, yahooSync: settings!.yahooSync },
+      });
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(leagueDraftCall).not.toHaveBeenCalled();
+      const created = createProjection.mock.calls[0][0].data.draft;
+      expect(created.following).toBeUndefined();
+      expect(created.order).toEqual(['team-me', 'team-1']);
+      expect(created.settings.yahooSync.leagueKey).toBe('465.l.9');
+    });
+
+    // The settings are where a new draft's league is set, import included: a Yahoo league
+    // imported there with syncing on is one to follow, so the league's board replaces the teams.
+    it("is made from the league's board when its settings import the league", async () => {
+      routeParams = { preset: 'model' };
+      leagueDraftCall.mockReturnValue(of(leagueDraft()));
+      const component = await render();
+      expect(component.phase()).toBe('setup');
+
+      component.onSetupConfirmed({
+        follow: true,
+        draft: setup,
+        league: { ...component.leagueSettings()!, yahooSync: settings!.yahooSync },
+      });
+
+      expect(leagueDraftCall).toHaveBeenCalledWith('465.l.9');
+      const created = createProjection.mock.calls[0][0].data.draft;
+      expect(created.following).toBe(true);
+      expect(created.order).toEqual(['465.l.9.t.2', '465.l.9.t.1']);
+      expect(created.settings.yahooSync.leagueKey).toBe('465.l.9');
+    });
+
     it('leaves sync off where no league is linked', async () => {
       routeParams = { preset: 'model' };
       const component = await render();
 
-      component.onSetupConfirmed({ draft: setup, rosterSlots: component.rosterSlots() });
+      component.onSetupConfirmed({
+        follow: false,
+        draft: setup,
+        league: component.leagueSettings()!,
+      });
 
       expect(createProjection.mock.calls[0][0].data.draft.following).toBeUndefined();
     });
@@ -1010,7 +1120,11 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       const fixture = await renderFixture();
       const component = fixture.point.componentInstance;
 
-      component.onSetupConfirmed({ draft: setup, rosterSlots: component.rosterSlots() });
+      component.onSetupConfirmed({
+        follow: false,
+        draft: setup,
+        league: component.leagueSettings()!,
+      });
       fixture.detectChanges();
 
       expect(leagueDraftCall).not.toHaveBeenCalled();

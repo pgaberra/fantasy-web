@@ -30,7 +30,7 @@ npm run check:copy     # hold user-facing copy to COPY-RULES.md (CI uses this)
 
 CI runs (and must pass): `generate:api`, `lint`, `format:check`, `check:copy`, `test`, `build`, and the
 guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deployment-args.sh`,
-`check-inline-icons.sh`, `check-pending-states.sh`).
+`check-inline-icons.sh`, `check-native-tooltips.sh`, `check-pending-states.sh`).
 
 > **After cloning, run `npm run generate:api` once** — `src/app/api` is generated,
 > not committed, so lint/test/build will fail until it exists.
@@ -99,13 +99,17 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   calling one group two things; everything else is repeated per page, since component
   styles are scoped. That page went via four cards with the boards folded into a `<select>`
   (#508, #514), which was its own invention and made the reader learn the question twice.
-  Both pages also set the **league** above the preview, with the one
+  The new-projection page also sets the **league** above a preview, with the one
   `shared/league-settings-controls` component (the editor's toolbar: points/category, League
-  setup, Stats, Import league) and the preview's editable weight row. Each page keeps the
-  changed league per starting point. The draft picker hands it to the draft in history state;
-  the new-projection page lays it over the settings it creates with (a copy stays byte-exact
-  when the league was left alone). A preview scored by defaults read as "not my league" and
-  put people off creating at all.
+  setup, Stats, Import league) and the preview's editable weight row, kept per starting point
+  and laid over the settings it creates with (a copy stays byte-exact when the league was left
+  alone). A preview scored by defaults read as "not my league" and put people off creating at
+  all. **The draft picker does neither any more**: it is the source and Start. A draft's league
+  is set in the draft page's setup (`draft-mode/draft-setup`, a popup over the board: open by
+  itself on a new draft, and the Settings button once the draft runs) — the same controls with `[sizing]="false"`, since the league's size there is the teams
+  it seats, plus `shared/stat-weights-editor` for the points. Alexander's call (2026-09-28): the
+  picker's preview was not the board the draft shows, and a league set before Start had to
+  travel in history state and could not be changed once the draft ran.
   The first row of the open kind is
   checked from the start (`selection`, a
   `linkedSignal` that keeps a pick whose row survives a reload), so a preset draft is
@@ -137,8 +141,10 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   clash (409) asks for a name rather than reporting a failure the user cannot act on — which
   is now a rare path, since db-service numbers a taken name rather than refusing unless the
   caller chose it.
-  Beside the paste field sits **Import a spreadsheet** (`shared/spreadsheet-import`, on the home
-  page's import panel too): an .xlsx or .csv file read in the browser becomes an imported board like a share
+  **Import a spreadsheet** (`shared/spreadsheet-import`) sits on the new-projection page and the
+  home page's import panel, **not on the draft picker**: Alexander took it off there (2026-09-28),
+  since a file becomes a projection and the picker's own group already links to where
+  projections are made. An .xlsx or .csv file read in the browser becomes an imported board like a share
   link's, created with `kind: imported` and its own rows (every pool player: empty unless the sheet
   names him, and a named player's own line under the sheet's stats, so a sheet without a SOG
   column does not leave 50 goals on no shots) and no origin, which is how the lists tell it apart ("From a spreadsheet", a green
@@ -155,7 +161,7 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   owner likes**, and editing or deleting that board leaves a draft under way exactly as it was.
   Start never saves anything: it opens `/draft/new/preset/:preset` or `/draft/new/board/:id`,
   and the draft page creates the draft once its setup is confirmed (`POST
-  /api/v1/projections/{id}/drafts` for a board, which copies the rows server-side; a plain
+/api/v1/projections/{id}/drafts` for a board, which copies the rows server-side; a plain
   create with `kind: draft` and `source` for a preset, whose rows the server seeds). The draft
   then lives at `/drafts/:id`. Before this a draft was a field on the board, so "one draft per
   projection" was a property of the storage rather than anyone's decision, and a preset could be
@@ -185,16 +191,24 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   Both sources then run the same board in `draft-mode/`.
   **Every draft setting has one owner.** While a board follows its league, the league owns the
   teams and the order: the board shows them read-only on its live line ("12 teams · draft
-  position 6", or "set when the draft starts"), and "Edit teams" is off. With sync off the user
-  owns them and edits them in the setup. So **a new draft with a league to follow has no setup**
+  position 6", the position only once the league has set its order), and the settings show
+  them locked. With sync off the user owns them and edits them in the settings. **A new draft
+  against a board that already has a league to follow has no setup**
   (`startingFromLeague`): the page reads the league's draft and creates the draft from its board,
   following it (the league's teams, its order where set, any picks already made), and falls back
-  to the setup, with the reason on it, only where that draft can't be read or followed.
-  The **setup** is for a draft with no league to follow: it asks the league size, the user's own
-  draft position (on "Select" until chosen) and the roster slots, with the other teams "Team 1",
-  "Team 2"…, and offers "Sync picks from your league's draft" instead, which opens the link
-  dialog. It imports no league itself; it used to, and its numbers were then overwritten by the
-  first poll. Sync switched off (or stopped) before the league has set its order
+  to the settings, with the reason on them, only where that draft can't be read or followed.
+  The **settings** ("Draft Settings", `draft-mode/draft-setup`) hold everything else, in three
+  sections. *League*: the import itself (`app-league-sync`, the Yahoo/ESPN picker, drawn in the section rather than behind an "Import league" button; Alexander's call), which sets the scoring; where the league's
+  draft can be followed (`syncPlatforms`, the BFF's feature switches) the import turns on
+  **Sync picks automatically**, the only place that switch lives (the board's toolbar has
+  none). The switch asks the page for the league's draft before anything is saved
+  (`checkSetupSync` → `DraftSyncCheck`), and only a league that answered locks anything.
+  *Scoring*: always editable. *Teams and roster*: the league size, the user's draft position
+  (on "Select" until chosen) and the roster slots, set by hand, or shown locked from the
+  league's answer while picks are synced (the seat reads "–" until the league has set its
+  order). An ESPN league, a league that refused, a switch turned off and no league at all all
+  leave the three by hand. Saving with the switch on follows the league (`follow: true`);
+  saving with it off stops following. Sync switched off (or stopped) before the league has set its order
   (`seatIsGuess`: the board is the league's team list and nothing is picked) opens the setup with
   the seat on "Select" and no Cancel, and the switch stays saved on until a seat is chosen, so a
   reload never opens a board drafted on a seat read off the team list.
@@ -217,15 +231,14 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   `followedLeague` picks the linked platform and the copy names it. ESPN's refusal (private
   league, missing or stale cookies) is a 400. Its team ids are `espn.l.{leagueId}.t.{teamId}`, and
   a drafted player the pool has no counterpart for arrives as a negative id and shows no name.
-  A board with no league linked gets the switch too: it opens `DraftFollowConnectComponent`, with
-  a Yahoo/ESPN tab for each platform this environment follows (`linkPlatforms`: the BFF feature
-  plus the build's `yahooSyncDisabled` / `espnLeaguesEnabled`). ESPN's tab takes the league id
-  and the cookies, stored as the settings import stores them (always shown: following needs the
-  SWID to find the user's team even in a public league; required only when none are stored); a
-  400 or 404 there is not followable, so only a failed settings read offers "Follow picks anyway".
-  When an ESPN follow stops on "no team is yours" or a 400, the same dialog opens in repair mode
-  (`cookieRepair`): ESPN tab only, league id filled in, cookies required, and on success it just
-  follows again without touching the board's league, settings or name.
+  A league is linked in one place only: the league import inside Draft Settings (`draft-setup/`).
+  `DraftFollowConnectComponent` links nothing. It opens when an ESPN follow, or the settings'
+  sync check, stops on "no team is yours" or a 400 (`cookieRepair`), and asks for the espn_s2 and
+  SWID cookies of the league already linked: league id shown read-only, both cookies required,
+  saved and then proven by reading the league. A 400 or 404 there is not followable, so only a
+  failed settings read offers "Follow picks anyway". On success (`cookiesRepaired`) the board's
+  league, settings and name are left alone: the settings' sync check runs again when the
+  settings popup is what asked, otherwise the board follows again.
 - `shared-projection/` — the page behind a share link (`/s/:token`), public and unguarded: a
   share link has to open for someone who has never signed in. Its byline carries the author's
   profile picture, or the initial of their username where they have none. A signed-in visitor is offered

@@ -1,10 +1,15 @@
+/* The page's popup is the card; this fills it, so a phone's full-screen popup keeps the actions at
+   its foot. */
+:host {
+  display: flex;
+  flex-direction: column;
+}
+
 .draft-setup {
-  max-width: 520px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-5);
-  box-shadow: var(--shadow-md);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-5) var(--space-5) 0;
 }
 
 .draft-setup h2 {
@@ -20,49 +25,142 @@
   color: var(--color-text-muted);
 }
 
-/* A warning says so by its icon as much as its colour. */
-.setup-notice {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-1);
-  margin: 0 0 var(--space-4);
-  font-size: var(--text-sm);
-  line-height: 1.35;
-  color: var(--color-warning-text);
-}
-
-.setup-notice app-icon {
-  flex: none;
-  margin-top: 2px;
-}
-
-.setup-sync {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2) var(--space-3);
+/* Three sections, each under its own heading with a hairline between them: the league, how it
+   scores, and the teams and roster the league may set itself. */
+.setup-section {
   margin-bottom: var(--space-4);
   padding-bottom: var(--space-4);
   border-bottom: 1px solid var(--color-border);
 }
 
-.setup-sync .btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
+.setup-section--last {
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
-.setup-sync-note {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
+.setup-section--last .setup-field:last-child {
+  margin-bottom: var(--space-4);
 }
 
 .setup-field {
   margin-bottom: var(--space-4);
 }
 
+.setup-note {
+  font-size: var(--text-sm);
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
+.setup-note--block {
+  margin: var(--space-3) 0 0;
+}
+
+/* Under the pair of fields it is about, and clear of the roster below it. */
+.setup-pair + .setup-note--block,
+.setup-pair + .field-error {
+  margin: calc(-1 * var(--space-2)) 0 var(--space-4);
+}
+
+/* Syncing picks is a mode of the whole draft, so it gets a row of its own under the league it
+   follows rather than a place among the buttons. */
+.sync-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+
+.sync-row--on {
+  border-color: var(--color-primary);
+  background: var(--color-surface-alt);
+}
+
+.sync-row app-toggle-switch {
+  --toggle-width: 34px;
+  --toggle-height: 20px;
+  --toggle-border-radius: 10px;
+  --toggle-thumb-size: 14px;
+  --toggle-thumb-translate: 14px;
+  display: inline-flex;
+  flex: none;
+}
+
+.sync-text {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.sync-title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.sync-status {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
+.sync-status app-icon {
+  flex: none;
+  margin-top: 2px;
+}
+
+/* A warning says so by its icon as much as its colour. */
+.sync-status--warn {
+  color: var(--color-warning-text);
+}
+
+/* Why the fields under it cannot be changed, said once for all three. */
+.locked-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
+.locked-note app-icon {
+  flex: none;
+  margin-top: 2px;
+}
+
+.setup-pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-6);
+}
+
+.setup-weights {
+  margin-top: var(--space-3);
+}
+
+.setup-sublabel {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
+
 .setup-label {
   display: block;
+  margin-top: 0;
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   text-transform: uppercase;
@@ -111,6 +209,22 @@
   font-size: 1rem;
 }
 
+.name-input {
+  width: 100%;
+  max-width: 24rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.position-select:disabled {
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+}
+
 .position-select.invalid {
   border-color: var(--color-error);
 }
@@ -121,8 +235,15 @@
   color: var(--color-error);
 }
 
+/* The form is longer than a small screen, so Start stays in reach at the popup's foot. */
 .setup-actions {
+  position: sticky;
+  bottom: 0;
   display: flex;
   justify-content: flex-end;
   gap: var(--space-2);
+  margin: auto calc(-1 * var(--space-5)) 0;
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
 }
