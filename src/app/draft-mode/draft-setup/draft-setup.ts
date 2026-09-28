@@ -18,6 +18,7 @@ import { ScoringStatKey } from '../../models/stat-key.model';
 import { RosterSlotsEditorComponent } from '../../shared/roster-slots-editor/roster-slots-editor';
 import { IconComponent } from '../../shared/icon/icon';
 import { HelpTipComponent } from '../../shared/help-tip/help-tip';
+import { NoticeComponent } from '../../shared/notice/notice';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 import {
   draftSettingsOf,
@@ -81,6 +82,7 @@ const MINE_ID = 'team-me';
     IconComponent,
     HelpTipComponent,
     LoadingIndicatorComponent,
+    NoticeComponent,
     LeagueSettingsControlsComponent,
     LeagueSyncComponent,
     StatWeightsEditorComponent,
