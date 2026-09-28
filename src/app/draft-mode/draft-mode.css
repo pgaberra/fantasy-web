@@ -61,15 +61,6 @@
   overflow-wrap: anywhere;
 }
 
-/* The same green dot as League setup's "Imported from": a league connection that holds. */
-.draft-tag--source .sync-dot {
-  flex: none;
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 50%;
-  background: var(--color-success);
-}
-
 .save-status {
   font-size: 0.8rem;
   font-weight: var(--weight-semibold);
