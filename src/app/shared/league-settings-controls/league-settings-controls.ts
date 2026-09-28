@@ -43,7 +43,7 @@ import { EspnSyncResult } from '../../draft-projection/projection-settings-secti
 })
 export class LeagueSettingsControlsComponent {
   readonly settings = model.required<LeagueSettings>();
-  /** Whether League setup sets the size and roster; the draft setup asks for those itself. */
+  /** Whether League setup sets the size and roster; the draft setup asks for those itself, and the goalie minimum with them. */
   readonly sizing = input<boolean>(true);
   /** Whether the import is offered here; the draft settings give the league a section of its own. */
   readonly importing = input<boolean>(true);
@@ -63,9 +63,14 @@ export class LeagueSettingsControlsComponent {
       : null,
   );
 
-  /** A points league with nothing imported has nothing behind League setup — see the editor's. */
+  /**
+   * A points league with nothing imported has nothing behind League setup — see the editor's. Nor
+   * does a category league that neither sizes nor imports: the goalie minimum is all the menu
+   * would hold, and the draft setup asks for that beside the scoring instead.
+   */
   readonly hasLeagueSetup = computed(
-    () => this.settings().scoringType === 'category' || !!this.syncedLeagueName(),
+    () =>
+      (this.settings().scoringType === 'category' && this.sizing()) || !!this.syncedLeagueName(),
   );
 
   selectScoringType(scoringType: ScoringType): void {

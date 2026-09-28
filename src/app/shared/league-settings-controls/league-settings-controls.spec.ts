@@ -66,6 +66,16 @@ describe('LeagueSettingsControlsComponent', () => {
     expect(setupButton()).not.toBeNull();
   });
 
+  it('leaves League setup out when the page asks for size and roster itself', () => {
+    const fixture = MockRender(LeagueSettingsControlsComponent, {
+      settings: { ...league(), scoringType: 'category' },
+      sizing: false,
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.league-setup')).toBeNull();
+  });
+
   it('invites an import, then names the league it came from', () => {
     const fixture = render();
     expect(fixture.nativeElement.textContent).toContain('Import league');
