@@ -368,8 +368,10 @@ describe('DraftStartComponent', () => {
     expect(new Set(ids).size).toEqual(ids.length);
   });
 
-  /** The door to a spreadsheet stands in the group the upload lands in, not beside the link. */
-  it('puts the upload with the boards the user owns and the follow field with the followed', async () => {
+  // A file becomes a projection, and projections are made on the new-projection page, which the
+  // user's own group links to. Only the follow field, under the followed boards, makes a source
+  // here.
+  it('offers no upload, and the follow field only with the followed', async () => {
     listAll.mockReturnValue(of([summary('p1', 'projection'), imported('i1', 'alex')]));
 
     const fixture = MockRender(DraftStartComponent);
@@ -379,25 +381,14 @@ describe('DraftStartComponent', () => {
 
     component.sourceKind.set('projection');
     fixture.detectChanges();
-    expect(root.querySelector('app-spreadsheet-import-button')).not.toBeNull();
+    expect(root.querySelector('app-spreadsheet-import-button')).toBeNull();
     expect(root.querySelector('app-share-import')).toBeNull();
+    expect(root.querySelector('.create-projection')).not.toBeNull();
 
     component.sourceKind.set('following');
     fixture.detectChanges();
     expect(root.querySelector('app-share-import')).not.toBeNull();
     expect(root.querySelector('app-spreadsheet-import-button')).toBeNull();
-  });
-
-  it('picks a spreadsheet upload among the boards the user owns', async () => {
-    const fixture = MockRender(DraftStartComponent);
-    await fixture.whenStable();
-
-    fixture.point.componentInstance.onUploaded('s9');
-    await fixture.whenStable();
-
-    expect(fixture.point.componentInstance.sourceKind()).toEqual('projection');
-    expect(fixture.point.componentInstance.selection()).toEqual({ kind: 'board', id: 's9' });
-    expect(listAll).toHaveBeenCalledTimes(2);
   });
 
   it('re-reads the sources when a board is followed, so it joins the list', async () => {
