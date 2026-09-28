@@ -7,6 +7,7 @@
         min="0"
         max="50"
         [value]="rosterSlots()[slot.key]"
+        [disabled]="disabled()"
         (input)="onRosterSlotInput(slot.key, $event)"
       />
     </label>

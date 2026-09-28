@@ -273,6 +273,7 @@ describe('DraftModeComponent', () => {
       await fixture.whenStable();
       const component = fixture.point.componentInstance;
       component.onSetupConfirmed({
+        follow: false,
         draft,
         league: {
           ...component.leagueSettings()!,
@@ -349,6 +350,7 @@ describe('DraftModeComponent', () => {
     const component = fixture.point.componentInstance;
 
     component.onSetupConfirmed({
+      follow: false,
       draft,
       league: {
         ...component.leagueSettings()!,
@@ -417,7 +419,7 @@ describe('DraftModeComponent', () => {
     });
     expect(updateProjection).not.toHaveBeenCalled();
 
-    component.onSetupConfirmed({ draft, league: component.leagueSettings()! });
+    component.onSetupConfirmed({ follow: false, draft, league: component.leagueSettings()! });
 
     const sent = updateProjection.mock.calls[0][1].data;
     expect(sent.draft?.settings?.espnSync?.leagueId).toEqual('42');
@@ -526,6 +528,7 @@ describe('DraftModeComponent', () => {
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
     component.onSetupConfirmed({
+      follow: false,
       draft,
       league: {
         ...component.leagueSettings()!,
@@ -551,6 +554,7 @@ describe('DraftModeComponent', () => {
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
     component.onSetupConfirmed({
+      follow: false,
       draft,
       league: {
         ...component.leagueSettings()!,
@@ -1196,7 +1200,7 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
     expect(updateProjection).not.toHaveBeenCalled();
     expect(createProjection).not.toHaveBeenCalled();
 
-    component.onSetupConfirmed({ draft, league: component.leagueSettings()! });
+    component.onSetupConfirmed({ follow: false, draft, league: component.leagueSettings()! });
 
     expect(createProjection.mock.calls[0][0].data.draft.settings.yahooSync.leagueKey).toEqual(
       'nhl.l.123',
@@ -1220,7 +1224,12 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
   it('creates the draft under the name typed in its setup', async () => {
     const component = await renderDraftMode();
 
-    component.onSetupConfirmed({ draft, league: component.leagueSettings()!, name: 'Mock #3' });
+    component.onSetupConfirmed({
+      follow: false,
+      draft,
+      league: component.leagueSettings()!,
+      name: 'Mock #3',
+    });
 
     expect(createProjection.mock.calls[0][0].name).toEqual('Mock #3');
     expect(component.draftName()).toEqual('Mock #3');
@@ -1232,6 +1241,7 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
     expect(component.scoringType()).toEqual('points');
 
     component.onSetupConfirmed({
+      follow: false,
       draft,
       league: { ...component.leagueSettings()!, scoringType: 'category', leagueSize: 8 },
     });
@@ -1247,6 +1257,7 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
     const component = await renderDraftMode();
 
     component.onSetupConfirmed({
+      follow: false,
       draft,
       league: {
         ...component.leagueSettings()!,
@@ -1276,8 +1287,8 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
     createProjection.mockReturnValue(new Observable());
     const component = await renderDraftMode();
 
-    component.onSetupConfirmed({ draft, league: component.leagueSettings()! });
-    component.onSetupConfirmed({ draft, league: component.leagueSettings()! });
+    component.onSetupConfirmed({ follow: false, draft, league: component.leagueSettings()! });
+    component.onSetupConfirmed({ follow: false, draft, league: component.leagueSettings()! });
 
     expect(createProjection).toHaveBeenCalledOnce();
   });
@@ -1286,7 +1297,7 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
     createProjection.mockReturnValue(throwError(() => new Error('boom')));
     const component = await renderDraftMode();
 
-    component.onSetupConfirmed({ draft, league: component.leagueSettings()! });
+    component.onSetupConfirmed({ follow: false, draft, league: component.leagueSettings()! });
 
     expect(notifyError).toHaveBeenCalledWith("Couldn't start the draft. Please try again.");
     expect(component.phase()).toEqual('setup');
@@ -1298,7 +1309,7 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
     createProjection.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
     const component = await renderDraftMode();
 
-    component.onSetupConfirmed({ draft, league: component.leagueSettings()! });
+    component.onSetupConfirmed({ follow: false, draft, league: component.leagueSettings()! });
 
     expect(notifyError).toHaveBeenCalledWith(expect.stringContaining('part of Premium'));
   });
@@ -1454,7 +1465,7 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
     );
     const component = await renderDraftMode();
 
-    component.onSetupConfirmed({ draft, league: component.leagueSettings()! });
+    component.onSetupConfirmed({ follow: false, draft, league: component.leagueSettings()! });
 
     expect(startDraft).toHaveBeenCalledWith('p1', expect.anything(), 'My league (2)');
   });
@@ -1471,7 +1482,7 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
     // Nothing exists to rename yet, so nothing is sent until the setup is confirmed.
     expect(renameProjection).not.toHaveBeenCalled();
 
-    component.onSetupConfirmed({ draft, league: component.leagueSettings()! });
+    component.onSetupConfirmed({ follow: false, draft, league: component.leagueSettings()! });
 
     expect(startDraft).toHaveBeenCalledWith('p1', expect.anything(), 'Mock #3');
   });
@@ -1494,6 +1505,7 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
     const component = await renderDraftMode();
 
     component.onSetupConfirmed({
+      follow: false,
       draft,
       league: {
         ...component.leagueSettings()!,
@@ -1515,7 +1527,7 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
     startDraft.mockReturnValue(throwError(() => new Error('boom')));
     const component = await renderDraftMode();
 
-    component.onSetupConfirmed({ draft, league: component.leagueSettings()! });
+    component.onSetupConfirmed({ follow: false, draft, league: component.leagueSettings()! });
 
     expect(notifyError).toHaveBeenCalledWith("Couldn't start the draft. Please try again.");
     expect(component.phase()).toEqual('setup');
@@ -1544,7 +1556,7 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
 
     expect(renameProjection).not.toHaveBeenCalled();
 
-    component.onSetupConfirmed({ draft, league: component.leagueSettings()! });
+    component.onSetupConfirmed({ follow: false, draft, league: component.leagueSettings()! });
 
     expect(renameProjection).toHaveBeenCalledWith('d1', 'Beer League', true);
   });

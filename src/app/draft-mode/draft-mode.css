@@ -81,8 +81,6 @@
   font-weight: var(--weight-semibold);
 }
 
-/* Top-aligned, so the message hanging under the sync switch lengthens the row without stretching
-   the buttons beside it. */
 .toolbar-actions {
   display: inline-flex;
   flex-wrap: wrap;
@@ -254,81 +252,6 @@
   border: 0;
 }
 
-/* Syncing picks is a mode, not an action, so it sits apart from the action buttons: a pill
-   holding the switch, its label and the explaining tip, with a hairline between it and them. */
-.sync-control {
-  display: inline-flex;
-  align-items: center;
-  /* Sized to a small button, which the row no longer stretches it to now that it sits in a column
-     with whatever syncing has to say. */
-  min-height: 30px;
-  gap: var(--space-2);
-  padding: 2px var(--space-2) 2px 3px;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 999px;
-  font-size: var(--text-sm);
-  color: var(--color-text);
-  transition:
-    border-color 0.2s,
-    background 0.2s;
-}
-
-.sync-control--on {
-  border-color: var(--color-primary);
-  background: var(--color-surface-alt);
-}
-
-.sync-control app-toggle-switch {
-  --toggle-width: 34px;
-  --toggle-height: 20px;
-  --toggle-border-radius: 10px;
-  --toggle-thumb-size: 14px;
-  --toggle-thumb-translate: 14px;
-  display: inline-flex;
-}
-
-.sync-label {
-  font-weight: var(--weight-medium);
-  white-space: nowrap;
-}
-
-/* Whatever syncing has to say belongs against the switch it is about: stacked directly under the
-   pill, never on a line of its own across the page, where it reads as a note about something
-   else. The column is capped so a long message wraps instead of stretching the toolbar. */
-.sync-group {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-1);
-  max-width: 260px;
-}
-
-.sync-message {
-  display: inline-flex;
-  align-items: flex-start;
-  gap: var(--space-1);
-  padding-left: 3px;
-  font-size: var(--text-xs);
-  line-height: 1.35;
-}
-
-.sync-message app-icon {
-  flex: none;
-  margin-top: 1px;
-}
-
-/* A warning says so by its icon as much as its colour. */
-.sync-message--warn {
-  color: var(--color-warning-text);
-}
-
-.toolbar-divider {
-  align-self: center;
-  width: 1px;
-  height: 22px;
-  background: var(--color-border);
-}
-
 .follow-status {
   display: flex;
   flex-wrap: wrap;
@@ -337,6 +260,18 @@
   margin: 0 0 var(--space-3);
   font-size: var(--text-sm);
   color: var(--color-text-muted);
+}
+
+/* A warning says so by its icon as much as its colour. */
+.follow-status--warn {
+  align-items: flex-start;
+  gap: var(--space-1);
+  color: var(--color-warning-text);
+}
+
+.follow-status--warn app-icon {
+  flex: none;
+  margin-top: 2px;
 }
 
 .follow-status strong {

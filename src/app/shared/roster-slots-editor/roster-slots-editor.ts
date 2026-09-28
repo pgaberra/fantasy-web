@@ -1,4 +1,4 @@
-import { Component, model } from '@angular/core';
+import { Component, input, model } from '@angular/core';
 import { RosterSlots } from '../../api/models/roster-slots';
 
 /**
@@ -16,6 +16,8 @@ import { RosterSlots } from '../../api/models/roster-slots';
 })
 export class RosterSlotsEditorComponent {
   readonly rosterSlots = model.required<RosterSlots>();
+  /** Shown but not editable: the draft settings, while the league sets the roster. */
+  readonly disabled = input<boolean>(false);
 
   protected readonly ROSTER_POSITIONS: { key: keyof RosterSlots; label: string }[] = [
     { key: 'c', label: 'C' },

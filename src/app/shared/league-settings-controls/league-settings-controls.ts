@@ -45,6 +45,8 @@ export class LeagueSettingsControlsComponent {
   readonly settings = model.required<LeagueSettings>();
   /** Whether League setup sets the size and roster; the draft setup asks for those itself. */
   readonly sizing = input<boolean>(true);
+  /** Whether the import is offered here; the draft settings give the league a section of its own. */
+  readonly importing = input<boolean>(true);
 
   /**
    * The import dialog, open from the start when this page is where a Yahoo connect started in it
@@ -55,8 +57,10 @@ export class LeagueSettingsControlsComponent {
   );
   readonly showSyncDialog = signal(this.backFromYahoo);
 
-  readonly syncedLeagueName = computed(
-    () => this.settings().yahooSync?.leagueName ?? this.settings().espnSync?.leagueName ?? null,
+  readonly syncedLeagueName = computed(() =>
+    this.importing()
+      ? (this.settings().yahooSync?.leagueName ?? this.settings().espnSync?.leagueName ?? null)
+      : null,
   );
 
   /** A points league with nothing imported has nothing behind League setup — see the editor's. */

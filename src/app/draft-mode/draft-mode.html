@@ -106,28 +106,6 @@
             }
           </span>
           <span class="toolbar-actions">
-            @if (canSyncPicks()) {
-              <span class="sync-group">
-                <span class="sync-control" [class.sync-control--on]="following()">
-                  <app-toggle-switch
-                    [on]="following()"
-                    [ariaLabel]="syncLabel()"
-                    (toggled)="toggleFollow()"
-                  />
-                  <span class="sync-label" aria-hidden="true">Sync picks</span>
-                  @if (followLoading()) {
-                    <app-loading-indicator variant="inline" />
-                  }
-                  <app-help-tip label="What syncing picks does" [text]="syncTip()" />
-                </span>
-                @if (followNotice(); as notice) {
-                  <span class="sync-message sync-message--warn" role="status"
-                    ><app-icon name="alert-triangle" [size]="14" />{{ notice }}</span
-                  >
-                }
-              </span>
-              <span class="toolbar-divider" aria-hidden="true"></span>
-            }
             <button
               type="button"
               class="btn btn-secondary btn-sm"
@@ -136,12 +114,7 @@
             >
               Undo last pick
             </button>
-            <button
-              type="button"
-              class="btn btn-secondary btn-sm"
-              [disabled]="following()"
-              (click)="editTeams()"
-            >
+            <button type="button" class="btn btn-secondary btn-sm" (click)="editTeams()">
               Settings
             </button>
             @if (finished()) {
@@ -161,6 +134,21 @@
             }
           </span>
         </div>
+
+        @if (followLoading()) {
+          <p class="follow-status" role="status">
+            <app-loading-indicator
+              variant="inline"
+              [label]="'Loading the ' + followPlatform() + ' draft'"
+            />
+          </p>
+        } @else if (followNotice(); as notice) {
+          <!-- Syncing is switched on in the settings, so what stopped it says where to go. -->
+          <p class="follow-status follow-status--warn" role="status">
+            <app-icon name="alert-triangle" [size]="14" />
+            <span>{{ notice }} Picks are not syncing. You can switch it back on in Settings.</span>
+          </p>
+        }
 
         @if (following()) {
           <p class="follow-status" role="status">
@@ -302,14 +290,16 @@
             >
               <app-draft-setup
                 [initial]="draft()"
-                [positionKnown]="!seatRequired()"
+                [positionKnown]="!seatUnknown()"
                 [league]="league"
-                [syncLabel]="canSyncPicks() ? syncLabel() : null"
-                [notice]="followNotice()"
+                [syncPlatforms]="syncPlatforms()"
+                [following]="following()"
+                [syncCheck]="setupCheck()"
+                [openImport]="backFromYahoo()"
                 [draftName]="draftId() === null ? draftName() : null"
                 (confirmed)="onSetupConfirmed($event)"
                 (cancelled)="cancelSetup()"
-                (syncRequested)="syncFromSetup()"
+                (syncCheckRequested)="checkSetupSync($event)"
               />
             </div>
           </div>
@@ -317,12 +307,11 @@
       }
     }
 
-    <!-- Both open from the setup as well as the board: the setup offers the league's draft too. -->
+    <!-- Both open from the settings as well as the board: syncing is switched on in the settings. -->
     @if (linkOpen()) {
       <app-draft-follow-connect
         [current]="leagueSettings()"
-        [platforms]="linkDialogPlatforms()"
-        [startOn]="linkStartOn()"
+        [platforms]="linkDialogPlatforms"
         [repair]="cookieRepair()"
         (linked)="linkLeague($event)"
         (cancelled)="closeLink()"
