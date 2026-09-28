@@ -19,6 +19,30 @@ describe('StatWeightsEditorComponent', () => {
     expect(component.columns()).toEqual(['goals', 'assists']);
   });
 
+  it('keeps skater stats and goalie stats under their own headings', () => {
+    const element: HTMLElement = render(['w', 'goals', 'sv', 'hits']).nativeElement;
+
+    const groups = [...element.querySelectorAll('.weight-group')].map((group) => ({
+      heading: group.querySelector('.weight-group-heading')?.textContent?.trim(),
+      fields: [...group.querySelectorAll('.weight-input')].map((field) => field.id),
+    }));
+
+    expect(groups).toEqual([
+      { heading: 'Skaters', fields: ['weight-goals', 'weight-hits'] },
+      { heading: 'Goalies', fields: ['weight-w', 'weight-sv'] },
+    ]);
+  });
+
+  it('leaves out the heading of a group with no stat that counts', () => {
+    const element: HTMLElement = render(['goals']).nativeElement;
+
+    const headings = [...element.querySelectorAll('.weight-group-heading')].map((heading) =>
+      heading.textContent?.trim(),
+    );
+
+    expect(headings).toEqual(['Skaters']);
+  });
+
   it('reads a typed comma as the decimal point', () => {
     const component = render(['goals']).point.componentInstance;
     const field = document.createElement('input');
