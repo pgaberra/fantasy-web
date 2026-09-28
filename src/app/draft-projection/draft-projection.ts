@@ -63,6 +63,7 @@ import { RosterSlots } from '../api/models/roster-slots';
 import { StatInfoService } from '../services/stat-info.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { NotificationService } from '../services/notification.service';
+import { isNotFound } from '../shared/http-error';
 import { PlayerBasis, ProjectionState } from '../services/projection-serializer';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import { ProjectionSyncService, SyncedSettings } from '../services/projection-sync.service';
@@ -538,8 +539,14 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
             this.startRename();
           }
         },
-        error: () => {
-          this.notification.error("Couldn't open the projection. Please try again.");
+        error: (error: unknown) => {
+          if (isNotFound(error)) {
+            this.notification.notice(
+              "That projection isn't in this account. It may have been deleted, or belong to another account.",
+            );
+          } else {
+            this.notification.error("Couldn't open the projection. Please try again.");
+          }
           void this.router.navigate(['/projections']);
         },
       });
