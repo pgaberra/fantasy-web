@@ -68,6 +68,44 @@ describe('YahooLeagueSyncComponent', () => {
     expect(component.selectedKey()).toBeNull();
   });
 
+  it('makes syncing the primary action once a league is chosen, not before', async () => {
+    await MockBuilder(YahooLeagueSyncComponent).mock(YahooService, {
+      connectionStatus: () => of(connected),
+      myLeagues: () =>
+        of({
+          leagues: [
+            { leagueKey: 'nhl.l.123', name: 'My League', numTeams: 12 },
+            { leagueKey: 'nhl.l.456', name: 'Other League', numTeams: 10 },
+          ],
+        }),
+      leagueProjectionSettings: () => of(settings),
+      startConnect: () => of({ authorizeUrl: 'https://example.test/auth' }),
+    });
+    const fixture = MockRender(YahooLeagueSyncComponent);
+    await fixture.whenStable();
+    const button = () => fixture.nativeElement.querySelector('.yahoo-sync-controls button');
+
+    expect(button().classList).toContain('btn-secondary');
+    expect(button().classList).not.toContain('btn-primary');
+
+    fixture.point.componentInstance.selectedKey.set('nhl.l.456');
+    fixture.detectChanges();
+    expect(button().classList).toContain('btn-primary');
+    expect(button().classList).not.toContain('btn-secondary');
+  });
+
+  it('keeps a re-sync of the league already synced secondary', async () => {
+    await buildConnected();
+    const synced: YahooSync = { leagueName: 'My League', leagueKey: 'nhl.l.123', syncedAt: 't' };
+    const fixture = MockRender(YahooLeagueSyncComponent, { lastSync: synced });
+    await fixture.whenStable();
+
+    expect(fixture.point.componentInstance.syncPending()).toBe(false);
+    expect(fixture.nativeElement.querySelector('.yahoo-sync-controls button').classList).toContain(
+      'btn-secondary',
+    );
+  });
+
   it('shows the disconnected state when not connected', async () => {
     await MockBuilder(YahooLeagueSyncComponent).mock(YahooService, {
       connectionStatus: () => of(disconnected),

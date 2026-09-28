@@ -1,4 +1,13 @@
-import { Component, inject, input, linkedSignal, OnInit, output, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  OnInit,
+  output,
+  signal,
+} from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { YahooService } from '../../../services/yahoo.service';
@@ -50,6 +59,14 @@ export class YahooLeagueSyncComponent implements OnInit {
   readonly leagues = signal<LeagueSummary[]>([]);
   readonly loadingLeagues = signal(false);
   readonly selectedKey = linkedSignal<string | null>(() => this.lastSync()?.leagueKey ?? null);
+  /**
+   * A league is chosen that isn't the one these settings came from, so syncing is the step the
+   * user is here for: the button turns primary. A re-sync of the same league stays secondary.
+   */
+  readonly syncPending = computed(() => {
+    const key = this.selectedKey();
+    return key !== null && key !== this.lastSync()?.leagueKey;
+  });
   readonly syncing = signal(false);
   readonly error = signal<string | null>(null);
   readonly unsupportedStats = signal<string[]>([]);
