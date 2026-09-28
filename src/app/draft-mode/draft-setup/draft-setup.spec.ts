@@ -603,7 +603,7 @@ describe('DraftSetupComponent', () => {
       expect(component.locked()).toBe(true);
       expect(component.numTeams()).toBe(3);
       expect(component.leaguePosition()).toBe(2);
-      expect(element.querySelector('.locked-note')?.textContent).toContain('Beer League');
+      expect(element.querySelector('.locked-note strong')?.textContent?.trim()).toBe('Beer League');
       const seat = element.querySelector<HTMLSelectElement>('#draft-position')!;
       expect(seat.disabled).toBe(true);
       expect(seat.textContent).toContain('2');
