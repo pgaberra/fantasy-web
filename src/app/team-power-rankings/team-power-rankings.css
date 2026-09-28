@@ -34,12 +34,13 @@
   color: var(--color-text-muted);
 }
 
-/* The same card the draft setup's Yahoo sync sits in, so the two read as one control in two
-   places rather than two controls. */
+/* The same card the draft setup's Yahoo sync sits in. The choices run left to right in the order
+   they are read, each under its own name, and wrap to a column where there is no room. */
 .league-picker {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
   margin-bottom: var(--space-4);
   padding: var(--space-3);
   border: 1px solid var(--color-border);
@@ -47,15 +48,16 @@
   background: var(--color-surface-alt);
 }
 
-.picker-row {
+.picker-field {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-3);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  flex: 0 1 16rem;
+  min-width: 0;
 }
 
-.picker-brand {
+.picker-label {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -64,22 +66,19 @@
   color: var(--color-primary);
 }
 
-.picker-action,
-.picker-controls {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
 .picker-select {
+  width: 100%;
   font-size: var(--text-sm);
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-2);
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-primary);
-  max-width: 14rem;
+}
+
+/* Anything said about the choices gets a line of its own under them. */
+.picker-wide {
+  flex-basis: 100%;
 }
 
 .picker-status {
@@ -125,11 +124,6 @@
   gap: 0.35rem;
   margin-bottom: var(--space-3);
   font-size: var(--text-sm);
-}
-
-/* Board names run longer than league names. */
-.rank-by-select {
-  max-width: 18rem;
 }
 
 /* Under the table rather than over it: the totals are the page, and the offer is what the reader
