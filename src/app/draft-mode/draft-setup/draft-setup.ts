@@ -18,7 +18,6 @@ import { ScoringStatKey } from '../../models/stat-key.model';
 import { RosterSlotsEditorComponent } from '../../shared/roster-slots-editor/roster-slots-editor';
 import { IconComponent } from '../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
-import { LeagueImportButtonComponent } from '../../shared/league-import-button/league-import-button';
 import {
   draftSettingsOf,
   LeagueSettings,
@@ -29,7 +28,6 @@ import {
 import { LeagueSettingsControlsComponent } from '../../shared/league-settings-controls/league-settings-controls';
 import { StatWeightsEditorComponent } from '../../shared/stat-weights-editor/stat-weights-editor';
 import { ToggleSwitchComponent } from '../../draft-projection/projection-settings-section/toggle-switch/toggle-switch';
-import { LeagueSyncDialogComponent } from '../../draft-projection/league-sync-dialog/league-sync-dialog';
 import { LeagueSyncComponent } from '../../draft-projection/projection-settings-section/league-sync/league-sync';
 import { YahooSyncResult } from '../../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
 import { EspnSyncResult } from '../../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
@@ -62,7 +60,8 @@ const MINE_ID = 'team-me';
  * A draft's settings: the league it is played in, how that league scores, and its size, the
  * user's own seat and the roster slots.
  *
- * <p>The league is one import, from Yahoo or ESPN, and it sets the scoring. Where the league's
+ * <p>The league is one import, from Yahoo or ESPN, drawn in the settings themselves rather than
+ * behind a button, and it sets the scoring. Where the league's
  * draft can be followed as well, the import switches on syncing picks, and once the league has
  * answered for its draft the teams, the seat and the roster are the league's: shown, not set.
  * Where it cannot (ESPN today, or a league that refused), or with the switch off, or with no
@@ -80,9 +79,7 @@ const MINE_ID = 'team-me';
     RosterSlotsEditorComponent,
     IconComponent,
     LoadingIndicatorComponent,
-    LeagueImportButtonComponent,
     LeagueSettingsControlsComponent,
-    LeagueSyncDialogComponent,
     LeagueSyncComponent,
     StatWeightsEditorComponent,
     ToggleSwitchComponent,
@@ -107,7 +104,7 @@ export class DraftSetupComponent implements OnInit {
   readonly following = input<boolean>(false);
   /** What the linked league answered when asked for its draft, which the page does the asking of. */
   readonly syncCheck = input<DraftSyncCheck>({ state: 'idle' });
-  /** Whether a Yahoo connect started in the import has just come back, so the import reopens. */
+  /** Whether a Yahoo connect started in the import has just come back, so it opens on Yahoo. */
   readonly openImport = input<boolean>(false);
   /**
    * The name a draft not saved yet will be created under, to be changed here. The setup covers
@@ -136,7 +133,6 @@ export class DraftSetupComponent implements OnInit {
   );
   readonly scoresByPoints = computed(() => this.editableLeague().scoringType === 'points');
 
-  readonly showImport = linkedSignal(() => this.openImport());
   /** The league the settings were imported from, which is the one a draft can follow. */
   readonly linked = computed<FollowedLeague | null>(() => {
     const { yahooSync, espnSync } = this.editableLeague();
@@ -244,12 +240,10 @@ export class DraftSetupComponent implements OnInit {
 
   applyYahoo(result: YahooSyncResult): void {
     this.importLeague(withYahooImport(this.editableLeague(), result), result.leagueName);
-    this.closeImportUnlessThereIsMoreToSay(result.settings.unsupportedStats);
   }
 
   applyEspn(result: EspnSyncResult): void {
     this.importLeague(withEspnImport(this.editableLeague(), result), result.leagueName);
-    this.closeImportUnlessThereIsMoreToSay(result.settings.unsupportedStats);
   }
 
   /**
@@ -280,16 +274,6 @@ export class DraftSetupComponent implements OnInit {
     const league = this.linked();
     if (league && this.syncOffered() && this.syncWanted()) {
       this.syncCheckRequested.emit(league);
-    }
-  }
-
-  /**
-   * As in the editor: a clean import is finished the moment it lands, and one that could not map
-   * every stat keeps the dialog open, since that list is the only place the user is told.
-   */
-  private closeImportUnlessThereIsMoreToSay(unsupportedStats: string[]): void {
-    if (!unsupportedStats.length) {
-      this.showImport.set(false);
     }
   }
 
