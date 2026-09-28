@@ -23,7 +23,6 @@ import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { PopoverTriggerDirective } from '../shared/popover/popover-trigger.directive';
 import { OpenPopovers } from '../shared/popover/open-popovers';
 import { ShareImportComponent } from '../shared/share-import/share-import';
-import { SpreadsheetImportButtonComponent } from '../shared/spreadsheet-import/spreadsheet-import-button';
 import { FeatureService } from '../services/feature.service';
 import { AiProjectionAccess } from '../shared/premium/ai-projection-access';
 import { isFollowedBoard, isOwnBoard, SOURCE_KINDS, SourceKind } from '../models/source-kind';
@@ -65,7 +64,6 @@ export type DraftSource =
     RelativeTimePipe,
     PopoverTriggerDirective,
     ShareImportComponent,
-    SpreadsheetImportButtonComponent,
     IconComponent,
   ],
   templateUrl: './draft-start.html',
@@ -481,11 +479,6 @@ export class DraftStartComponent {
    */
   onFollowed(id: string): void {
     this.pickBoard('following', id);
-  }
-
-  /** A spreadsheet upload is the user's own board, so it is picked in their own group. */
-  onUploaded(id: string): void {
-    this.pickBoard('projection', id);
   }
 
   private pickBoard(kind: SourceKind, id: string): void {

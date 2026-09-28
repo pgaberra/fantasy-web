@@ -141,8 +141,10 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   clash (409) asks for a name rather than reporting a failure the user cannot act on — which
   is now a rare path, since db-service numbers a taken name rather than refusing unless the
   caller chose it.
-  Beside the paste field sits **Import a spreadsheet** (`shared/spreadsheet-import`, on the home
-  page's import panel too): an .xlsx or .csv file read in the browser becomes an imported board like a share
+  **Import a spreadsheet** (`shared/spreadsheet-import`) sits on the new-projection page and the
+  home page's import panel, **not on the draft picker**: Alexander took it off there (2026-09-28),
+  since a file becomes a projection and the picker's own group already links to where
+  projections are made. An .xlsx or .csv file read in the browser becomes an imported board like a share
   link's, created with `kind: imported` and its own rows (every pool player: empty unless the sheet
   names him, and a named player's own line under the sheet's stats, so a sheet without a SOG
   column does not leave 50 goals on no shots) and no origin, which is how the lists tell it apart ("From a spreadsheet", a green
