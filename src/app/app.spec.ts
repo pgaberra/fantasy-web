@@ -110,7 +110,7 @@ describe('App', () => {
 
     const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
 
-    expect(items).toContain('Team Power Rankings');
+    expect(items).toContain('Power Rankings');
   });
 
   it('drops the power rankings where no league draft can be read', () => {
@@ -118,7 +118,7 @@ describe('App', () => {
 
     const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
 
-    expect(items).not.toContain('Team Power Rankings');
+    expect(items).not.toContain('Power Rankings');
   });
 
   it('leaves out the links the header itself leaves out', () => {
