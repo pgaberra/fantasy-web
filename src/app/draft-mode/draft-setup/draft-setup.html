@@ -126,28 +126,34 @@
 
     <div class="setup-pair">
       <div class="setup-field">
-        <span class="setup-sublabel">Number of teams</span>
-        <div class="stepper">
-          <button
-            type="button"
-            class="stepper-btn"
-            [disabled]="locked() || !canRemove()"
-            (click)="removeTeam()"
-            aria-label="Remove a team"
+        <label class="setup-sublabel" for="draft-teams">Number of teams</label>
+        @if (locked()) {
+          <select
+            id="draft-teams"
+            class="setup-select"
+            disabled
+            aria-describedby="setup-locked-note"
           >
-            −
-          </button>
-          <span class="stepper-value">{{ numTeams() }}</span>
-          <button
-            type="button"
-            class="stepper-btn"
-            [disabled]="locked() || !canAdd()"
-            (click)="addTeam()"
-            aria-label="Add a team"
+            <option selected>{{ numTeams() }}</option>
+          </select>
+        } @else {
+          <select
+            #teamsSelect
+            id="draft-teams"
+            class="setup-select"
+            [class.invalid]="teamsMissing()"
+            [attr.aria-invalid]="teamsMissing()"
+            [attr.aria-describedby]="teamsMissing() ? 'draft-teams-error' : null"
+            (change)="onTeamsChange($event)"
           >
-            +
-          </button>
-        </div>
+            @if (!teamCountKnown()) {
+              <option value="" selected disabled>Select</option>
+            }
+            @for (count of teamCounts(); track count) {
+              <option [value]="count" [selected]="count === numTeams()">{{ count }}</option>
+            }
+          </select>
+        }
       </div>
 
       <div class="setup-field">
@@ -155,7 +161,7 @@
         @if (locked()) {
           <select
             id="draft-position"
-            class="position-select"
+            class="setup-select"
             disabled
             aria-describedby="setup-locked-note"
           >
@@ -165,10 +171,11 @@
           <select
             #positionSelect
             id="draft-position"
-            class="position-select"
+            class="setup-select"
             [class.invalid]="positionMissing()"
             [attr.aria-invalid]="positionMissing()"
             [attr.aria-describedby]="positionMissing() ? 'draft-position-error' : null"
+            [disabled]="!teamCountKnown()"
             (change)="onPositionChange($event)"
           >
             @if (!draftPositionKnown()) {
@@ -190,6 +197,11 @@
       <app-notice class="order-notice" role="note">
         Your draft position will be available when the draft starts.
       </app-notice>
+    }
+    @if (teamsMissing()) {
+      <p id="draft-teams-error" class="field-error">
+        Choose the number of teams to start the draft.
+      </p>
     }
     @if (positionMissing()) {
       <p id="draft-position-error" class="field-error">

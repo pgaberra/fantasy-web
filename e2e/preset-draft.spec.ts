@@ -49,8 +49,9 @@ test.describe('draft mode from a preset', () => {
     await startDraft.click();
     await expect(page).toHaveURL(/\/draft\/new\/preset\/[a-z_]+$/i);
     await expect(page.locator('app-draft-setup')).toBeVisible({ timeout: 30_000 });
-    // A preset carries no league, so nothing names a draft position: the setup opens on a
-    // disabled "Select" and Start is disabled until a seat is chosen. Seat 1 is always offered.
+    // A preset carries no league, so nothing names the number of teams or a draft position: the
+    // setup opens on "Select" for both. Seat 1 is always offered.
+    await page.locator('#draft-teams').selectOption('12');
     await page.locator('#draft-position').selectOption('1');
     await expect(startDraft).toBeEnabled();
     await startDraft.click();
