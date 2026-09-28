@@ -164,6 +164,20 @@
   box-shadow: 6px 0 6px -5px rgba(15, 52, 96, 0.18);
 }
 
+/* With a chevron beside it the rank outgrows its 2.5rem, and the team column — pinned at the
+   width the rank was meant to have — slid over a two-digit rank once the table scrolled. So a
+   table that opens gets a rank column wide enough for both, and the team is pinned past it. */
+.lp-table:has(.lp-chevron) .col-rank {
+  width: 3.25rem;
+  min-width: 3.25rem;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+}
+
+.lp-table:has(.lp-chevron) .col-team {
+  left: 3.25rem;
+}
+
 .lp-team-head {
   display: flex;
   align-items: center;
@@ -361,11 +375,51 @@
   color: var(--color-text-subtle);
 }
 
+/* On a phone the two pinned edges are most of the screen, and the columns between them are what
+   the table is for. So the edges give way: the team's name wraps inside a narrower column rather
+   than holding its line, and the score's heading breaks in two. The name column's width has to
+   undo the `min-width` above, which a `max-width` alone loses to. */
 @media (max-width: 640px) {
+  .lp-table th,
+  .lp-table td {
+    padding-left: 0.4rem;
+    padding-right: 0.4rem;
+  }
+
   .lp-table td.col-team,
   .lp-table th.col-team {
-    max-width: 8rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    width: 6.5rem;
+    min-width: 6.5rem;
+    max-width: 6.5rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .lp-team-head {
+    flex-wrap: wrap;
+  }
+
+  /* Two lines hold nearly every name; a longer one ends in an ellipsis rather than making its
+     row the tallest in the table. */
+  .lp-team-name {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  .lp-player-name {
+    padding-left: 0.5rem;
+  }
+
+  .lp-showall {
+    padding-left: 0.5rem;
+    text-align: left;
+  }
+
+  .lp-table th.col-total {
+    white-space: normal;
+    min-width: 4rem;
+    max-width: 5rem;
   }
 }
