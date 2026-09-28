@@ -14,10 +14,17 @@ import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.di
 import { IconComponent, IconName } from '../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 import { isFollowedBoard } from '../../models/source-kind';
+import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 
 @Component({
   selector: 'li[app-projection-card]',
-  imports: [RelativeTimePipe, PopoverTriggerDirective, IconComponent, LoadingIndicatorComponent],
+  imports: [
+    TooltipDirective,
+    RelativeTimePipe,
+    PopoverTriggerDirective,
+    IconComponent,
+    LoadingIndicatorComponent,
+  ],
   templateUrl: './projection-card.html',
   styleUrl: './projection-card.css',
 })

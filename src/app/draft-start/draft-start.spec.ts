@@ -615,7 +615,7 @@ describe('DraftStartComponent', () => {
   });
 
   // A card's name is one line, cut with an ellipsis; the full name must still be reachable.
-  it('carries the whole name in the title, so a cut name can be read on hover', async () => {
+  it('carries the whole name in a tooltip, so a cut name can be read on hover', async () => {
     const name = 'Kopia av Apples & Ginos 2024-25 NHL Skater Projections_';
     listAll.mockReturnValue(of([{ ...summary('p1', 'projection'), name }]));
 
@@ -623,9 +623,9 @@ describe('DraftStartComponent', () => {
     fixture.point.componentInstance.sourceKind.set('projection');
     fixture.detectChanges();
 
-    const rowName: HTMLElement | null = fixture.nativeElement.querySelector('.row-name');
-    expect(rowName?.textContent?.trim()).toBe(name);
-    expect(rowName?.title).toBe(name);
+    const rowName = ngMocks.find(fixture, '.row-name');
+    expect(rowName.nativeElement.textContent?.trim()).toEqual(name);
+    expect(ngMocks.input(rowName, 'appTooltip')).toEqual(name);
   });
 
   // What the user built is what they came to draft against, so their own boards come first,
