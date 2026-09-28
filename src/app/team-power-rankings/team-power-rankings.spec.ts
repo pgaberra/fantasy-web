@@ -283,9 +283,9 @@ describe('TeamPowerRankingsComponent', () => {
     const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
 
     const options = Array.from(select.options).map((option) => option.textContent?.trim());
-    expect(options).toEqual(['SlapStat AI projection', 'Last season', 'My board', 'Their board']);
+    expect(options).toEqual(['AI projection', 'Last season', 'My board', 'Their board']);
     const groups = Array.from(select.querySelectorAll('optgroup')).map((group) => group.label);
-    expect(groups).toEqual(['My projections', 'Following']);
+    expect(groups).toEqual(['SlapStat', 'My projections', 'Following']);
     expect(select.value).toEqual('model');
   });
 
