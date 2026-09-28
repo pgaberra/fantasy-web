@@ -308,12 +308,10 @@
     }
 
     <!-- Both open from the settings as well as the board: syncing is switched on in the settings. -->
-    @if (linkOpen()) {
+    @if (cookieRepair(); as repair) {
       <app-draft-follow-connect
-        [current]="leagueSettings()"
-        [platforms]="linkDialogPlatforms"
-        [repair]="cookieRepair()"
-        (linked)="linkLeague($event)"
+        [repair]="repair"
+        (repaired)="cookiesRepaired()"
         (cancelled)="closeLink()"
       />
     }

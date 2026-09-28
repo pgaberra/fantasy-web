@@ -1,355 +1,155 @@
 import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, expect, it, vi } from 'vitest';
-import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import {
-  CookieRepair,
-  DraftFollowConnectComponent,
-  FollowLeagueLink,
-} from './draft-follow-connect';
-import { YahooService } from '../../services/yahoo.service';
+import { CookieRepair, DraftFollowConnectComponent } from './draft-follow-connect';
 import { EspnService } from '../../services/espn.service';
-import { YahooConnectReturnService } from '../../services/yahoo-connect-return.service';
-import { YahooLeaguePicker } from '../../shared/yahoo-league-picker';
-import { DraftSettings } from '../../api/models/draft-settings';
 import { LeagueProjectionSettingsResponse } from '../../api/models/league-projection-settings-response';
 
 describe('DraftFollowConnectComponent', () => {
-  const slots = { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 };
-
-  const current: DraftSettings = {
-    scoringType: 'points',
-    statWeights: { goals: 3 },
-    activeScoringColumns: ['goals'],
-    activeUtilityColumns: ['gp'],
-    rosterSlots: slots,
-  };
-
   const settings: LeagueProjectionSettingsResponse = {
     scoringType: 'points',
     statWeights: { goals: 3 },
     activeScoringColumns: ['goals'],
     activeUtilityColumns: ['gp'],
-    rosterSlots: slots,
+    rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
     unsupportedRosterCodes: [],
     unsupportedStats: [],
+    leagueName: 'Pond League',
   };
 
-  const leagues = {
-    leagues: [{ leagueKey: '465.l.9', name: 'Beer League', numTeams: 12 }],
-  };
+  const repair: CookieRepair = { leagueId: '123', reason: 'SlapStat needs your cookies.' };
 
-  const build = (yahoo: Partial<YahooService>, espn: Partial<EspnService> = {}) =>
-    MockBuilder(DraftFollowConnectComponent)
-      .keep(YahooLeaguePicker)
-      .mock(YahooService, {
-        connectionStatus: () => of({ connected: true }),
-        myLeagues: () => of(leagues),
-        leagueProjectionSettings: () => of(settings),
-        startConnect: () => of({ authorizeUrl: 'https://example.test/auth' }),
-        ...yahoo,
-      })
-      .mock(EspnService, {
-        credentialStatus: () => of({ hasCredentials: false }),
-        leagueProjectionSettings: () => of({ ...settings, leagueName: 'Pond League' }),
-        saveCredentials: () => of(undefined),
-        ...espn,
-      })
-      .mock(YahooConnectReturnService);
-
-  const render = async (yahoo: Partial<YahooService> = {}) => {
-    await build(yahoo);
-    const fixture = MockRender(DraftFollowConnectComponent, { current });
+  const render = async (espn: Partial<EspnService> = {}) => {
+    await MockBuilder(DraftFollowConnectComponent).mock(EspnService, {
+      leagueProjectionSettings: () => of(settings),
+      saveCredentials: () => of(undefined),
+      ...espn,
+    });
+    const fixture = MockRender(DraftFollowConnectComponent, { repair });
     await fixture.whenStable();
-    return fixture.point.componentInstance;
+    return fixture;
   };
 
-  const linkFrom = (component: DraftFollowConnectComponent) => {
-    const linked = vi.fn<(link: FollowLeagueLink) => void>();
-    component.linked.subscribe(linked);
-    return linked;
+  const repairedFrom = (component: DraftFollowConnectComponent) => {
+    const repaired = vi.fn<() => void>();
+    component.repaired.subscribe(repaired);
+    return repaired;
   };
 
-  it('loads the leagues of a connected account and takes the only one on offer', async () => {
-    const component = await render();
+  const typed = (value: string) => ({ target: { value } }) as unknown as Event;
 
-    expect(component.connected()).toBe(true);
-    expect(component.selectedKey()).toBe('465.l.9');
+  const pasteCookies = (component: DraftFollowConnectComponent) => {
+    component.onEspnS2Input(typed(' s2 '));
+    component.onSwidInput(typed('{swid}'));
+  };
+
+  it('asks only for the cookies of the league it was given, and names why', async () => {
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    const page = fixture.nativeElement as HTMLElement;
+
+    expect(page.querySelector('.modal-title')?.textContent?.trim()).toBe('Add your ESPN cookies');
+    expect(page.querySelector('.modal-text')?.textContent?.trim()).toBe(
+      'SlapStat needs your cookies.',
+    );
+    const leagueId = page.querySelector<HTMLInputElement>('.link-field > .link-input');
+    expect(leagueId?.value).toBe('123');
+    expect(leagueId?.readOnly).toBe(true);
+    expect(component.canSave()).toBe(false);
   });
 
-  it('links without a question where the league scores the draft as it stands', async () => {
-    const component = await render();
-    const linked = linkFrom(component);
+  it('wants both cookies before it goes on', async () => {
+    const saveCredentials = vi.fn(() => of(undefined));
+    const component = (await render({ saveCredentials })).point.componentInstance;
 
-    component.choose();
+    component.onEspnS2Input(typed('s2'));
+    component.save();
 
-    expect(component.differences()).toEqual([]);
-    expect(linked).toHaveBeenCalledWith({
-      platform: 'Yahoo',
-      leagueId: '465.l.9',
-      leagueName: 'Beer League',
-      settings,
-    });
+    expect(component.canSave()).toBe(false);
+    expect(saveCredentials).not.toHaveBeenCalled();
+
+    component.onSwidInput(typed('{swid}'));
+    expect(component.canSave()).toBe(true);
   });
 
-  it('asks about the settings only where they differ, and keeps the draft’s if told to', async () => {
-    const component = await render({
-      leagueProjectionSettings: () => of({ ...settings, activeScoringColumns: ['goals', 'hits'] }),
-    });
-    const linked = linkFrom(component);
+  it('saves the pasted cookies, reads the league with them, and says it is repaired', async () => {
+    const saveCredentials = vi.fn(() => of(undefined));
+    const leagueProjectionSettings = vi.fn(() => of(settings));
+    const component = (await render({ saveCredentials, leagueProjectionSettings })).point
+      .componentInstance;
+    const repaired = repairedFrom(component);
 
-    component.choose();
+    pasteCookies(component);
+    component.save();
 
-    expect(component.differences()).toEqual(['Scoring categories']);
-    expect(linked).not.toHaveBeenCalled();
-
-    component.keepMySettings();
-
-    expect(linked).toHaveBeenCalledWith({
-      platform: 'Yahoo',
-      leagueId: '465.l.9',
-      leagueName: 'Beer League',
-      settings: null,
-    });
+    expect(saveCredentials).toHaveBeenCalledWith({ espnS2: 's2', swid: '{swid}' });
+    expect(leagueProjectionSettings).toHaveBeenCalledWith('123');
+    expect(repaired).toHaveBeenCalledOnce();
   });
 
-  it("hands the league's settings over when those are the ones wanted", async () => {
-    const theirs = { ...settings, activeScoringColumns: ['goals', 'hits'] };
-    const component = await render({ leagueProjectionSettings: () => of(theirs) });
-    const linked = linkFrom(component);
+  it('says ESPN refused the cookies, and offers nothing to follow', async () => {
+    const component = (
+      await render({
+        leagueProjectionSettings: () => throwError(() => new HttpErrorResponse({ status: 400 })),
+      })
+    ).point.componentInstance;
+    const repaired = repairedFrom(component);
 
-    component.choose();
-    component.useLeagueSettings();
+    pasteCookies(component);
+    component.save();
 
-    expect(linked).toHaveBeenCalledWith({
-      platform: 'Yahoo',
-      leagueId: '465.l.9',
-      leagueName: 'Beer League',
-      settings: theirs,
-    });
+    expect(component.settingsFailed()).toBe(false);
+    expect(component.error()).toBe(
+      'ESPN did not accept those cookies. Check the league ID and make sure espn_s2 and SWID were copied in full.',
+    );
+    expect(repaired).not.toHaveBeenCalled();
   });
 
-  // The picks are what following needs; settings that can't be read only cost the import.
+  it('says so when ESPN knows no such league', async () => {
+    const component = (
+      await render({
+        leagueProjectionSettings: () => throwError(() => new HttpErrorResponse({ status: 404 })),
+      })
+    ).point.componentInstance;
+
+    pasteCookies(component);
+    component.save();
+
+    expect(component.settingsFailed()).toBe(false);
+    expect(component.error()).toBe('No ESPN league found for that id.');
+  });
+
   it('says so when the settings cannot be read, and still offers the picks', async () => {
-    const component = await render({
-      leagueProjectionSettings: () =>
-        throwError(
-          () => new HttpErrorResponse({ status: 424, error: { code: 'YAHOO_ACCESS_DENIED' } }),
-        ),
-    });
-    const linked = linkFrom(component);
+    const component = (
+      await render({
+        leagueProjectionSettings: () => throwError(() => new HttpErrorResponse({ status: 500 })),
+      })
+    ).point.componentInstance;
+    const repaired = repairedFrom(component);
 
-    component.choose();
+    pasteCookies(component);
+    component.save();
 
     expect(component.settingsFailed()).toBe(true);
-    expect(component.error()).toContain('Yahoo refused access');
-    expect(linked).not.toHaveBeenCalled();
+    expect(component.error()).toBe(
+      "Couldn't read this league's settings. Its picks can still be followed.",
+    );
+    expect(repaired).not.toHaveBeenCalled();
 
-    component.keepMySettings();
-
-    expect(linked).toHaveBeenCalledWith({
-      platform: 'Yahoo',
-      leagueId: '465.l.9',
-      leagueName: 'Beer League',
-      settings: null,
-    });
+    component.followAnyway();
+    expect(repaired).toHaveBeenCalledOnce();
   });
 
-  /** The connect leaves the app, so the way back must land on the board, not on projections. */
-  it('remembers the board before leaving for Yahoo', async () => {
-    const remember = vi.fn<(path: string) => void>();
-    await MockBuilder(DraftFollowConnectComponent)
-      .keep(YahooLeaguePicker)
-      .mock(YahooService, {
-        connectionStatus: () => of({ connected: false }),
-        // A failed start keeps the test from navigating the page to Yahoo.
-        startConnect: () => throwError(() => new HttpErrorResponse({ status: 502 })),
-      })
-      .mock(EspnService)
-      .mock(YahooConnectReturnService, { remember })
-      .mock(Router, { url: '/drafts/42' });
-    const fixture = MockRender(DraftFollowConnectComponent, { current });
-    await fixture.whenStable();
+  it('closes without a word to ESPN when cancelled', async () => {
+    const saveCredentials = vi.fn(() => of(undefined));
+    const component = (await render({ saveCredentials })).point.componentInstance;
+    const cancelled = vi.fn<() => void>();
+    component.cancelled.subscribe(cancelled);
 
-    fixture.point.componentInstance.connect();
+    component.cancel();
 
-    expect(remember).toHaveBeenCalledWith('/drafts/42');
-    expect(fixture.point.componentInstance.error()).toBe("Couldn't start the Yahoo connection.");
-  });
-
-  describe('on ESPN', () => {
-    const renderEspn = async (
-      espn: Partial<EspnService> = {},
-      yahoo: Partial<YahooService> = {},
-      draft: DraftSettings = current,
-      repair: CookieRepair | null = null,
-    ) => {
-      await build(yahoo, espn);
-      const fixture = MockRender(DraftFollowConnectComponent, {
-        current: draft,
-        platforms: repair ? ['ESPN'] : ['Yahoo', 'ESPN'],
-        repair,
-      });
-      await fixture.whenStable();
-      return fixture;
-    };
-
-    it('opens on ESPN where the draft last imported an ESPN league, with its id filled in', async () => {
-      const connectionStatus = vi.fn(() => of({ connected: true }));
-      const fixture = await renderEspn(
-        {},
-        { connectionStatus },
-        {
-          ...current,
-          lastEspnLeagueId: '777',
-        },
-      );
-      const component = fixture.point.componentInstance;
-
-      expect(component.platform()).toBe('ESPN');
-      expect(component.espnLeagueId()).toBe('777');
-      // Yahoo is not asked about until its tab is opened.
-      expect(connectionStatus).not.toHaveBeenCalled();
-
-      component.choosePlatform('Yahoo');
-      expect(connectionStatus).toHaveBeenCalled();
-    });
-
-    const typed = (value: string) => ({ target: { value } }) as unknown as Event;
-
-    it('links the ESPN league by the id typed, named as ESPN names it', async () => {
-      const fixture = await renderEspn({ credentialStatus: () => of({ hasCredentials: true }) });
-      const component = fixture.point.componentInstance;
-      const linked = linkFrom(component);
-
-      component.choosePlatform('ESPN');
-      component.onEspnLeagueIdInput(typed(' 123 '));
-      component.choose();
-
-      expect(linked).toHaveBeenCalledWith({
-        platform: 'ESPN',
-        leagueId: '123',
-        leagueName: 'Pond League',
-        settings: { ...settings, leagueName: 'Pond League' },
-      });
-    });
-
-    it('asks for the cookies before linking where none are stored, whatever the league', async () => {
-      const fixture = await renderEspn();
-      const component = fixture.point.componentInstance;
-      component.choosePlatform('ESPN');
-      component.onEspnLeagueIdInput(typed('123'));
-
-      expect(component.cookiesRequired()).toBe(true);
-      expect(component.canChoose()).toBe(false);
-
-      component.onEspnS2Input(typed('s2'));
-      component.onSwidInput(typed('{swid}'));
-      expect(component.canChoose()).toBe(true);
-    });
-
-    it('saves pasted cookies before reading the league', async () => {
-      const saveCredentials = vi.fn(() => of(undefined));
-      const leagueProjectionSettings = vi.fn(() => of(settings));
-      const fixture = await renderEspn({ saveCredentials, leagueProjectionSettings });
-      const component = fixture.point.componentInstance;
-
-      component.choosePlatform('ESPN');
-      component.onEspnLeagueIdInput({ target: { value: '123' } } as unknown as Event);
-      component.onEspnS2Input({ target: { value: 's2' } } as unknown as Event);
-      component.onSwidInput({ target: { value: '{swid}' } } as unknown as Event);
-      component.choose();
-
-      expect(saveCredentials).toHaveBeenCalledWith({ espnS2: 's2', swid: '{swid}' });
-      expect(leagueProjectionSettings).toHaveBeenCalledWith('123');
-    });
-
-    it('says ESPN refused the cookies, and offers nothing to follow', async () => {
-      const fixture = await renderEspn({
-        credentialStatus: () => of({ hasCredentials: true }),
-        leagueProjectionSettings: () => throwError(() => new HttpErrorResponse({ status: 400 })),
-      });
-      const component = fixture.point.componentInstance;
-      const linked = linkFrom(component);
-
-      component.choosePlatform('ESPN');
-      component.onEspnLeagueIdInput(typed('123'));
-      component.choose();
-
-      expect(component.settingsFailed()).toBe(false);
-      expect(component.error()).toBe(
-        'ESPN did not accept those cookies. Check the league ID and make sure espn_s2 and SWID were copied in full.',
-      );
-      expect(linked).not.toHaveBeenCalled();
-    });
-
-    describe('repairing a followed league', () => {
-      const repair: CookieRepair = { leagueId: '123', reason: 'SlapStat needs your cookies.' };
-
-      it('asks only for the cookies, even with some stored, and names why', async () => {
-        const fixture = await renderEspn(
-          { credentialStatus: () => of({ hasCredentials: true }) },
-          {},
-          current,
-          repair,
-        );
-        const component = fixture.point.componentInstance;
-        fixture.detectChanges();
-        const page = fixture.nativeElement as HTMLElement;
-
-        expect(component.platform()).toBe('ESPN');
-        expect(component.espnLeagueId()).toBe('123');
-        expect(page.querySelector('.modal-title')?.textContent?.trim()).toBe(
-          'Add your ESPN cookies',
-        );
-        expect(page.querySelector('.modal-text')?.textContent?.trim()).toBe(
-          'SlapStat needs your cookies.',
-        );
-        expect(page.querySelectorAll('.provider-tab')).toHaveLength(0);
-        expect(component.canChoose()).toBe(false);
-      });
-
-      it('hands the league back once ESPN takes the cookies, without the settings question', async () => {
-        const saveCredentials = vi.fn(() => of(undefined));
-        const fixture = await renderEspn(
-          {
-            saveCredentials,
-            leagueProjectionSettings: () =>
-              of({
-                ...settings,
-                activeScoringColumns: ['goals', 'hits'],
-                leagueName: 'Pond League',
-              }),
-          },
-          {},
-          current,
-          repair,
-        );
-        const component = fixture.point.componentInstance;
-        const linked = linkFrom(component);
-
-        component.onEspnS2Input(typed('s2'));
-        component.onSwidInput(typed('{swid}'));
-        component.choose();
-
-        expect(saveCredentials).toHaveBeenCalledWith({ espnS2: 's2', swid: '{swid}' });
-        expect(component.differences()).toEqual([]);
-        expect(linked).toHaveBeenCalledWith({
-          platform: 'ESPN',
-          leagueId: '123',
-          leagueName: 'Pond League',
-          settings: null,
-        });
-      });
-    });
-
-    it('shows the tabs only where both platforms are offered', async () => {
-      const fixture = await renderEspn();
-      fixture.detectChanges();
-      const tabs = (fixture.nativeElement as HTMLElement).querySelectorAll('.provider-tab');
-
-      expect([...tabs].map((tab) => tab.textContent?.trim())).toEqual(['Yahoo', 'ESPN']);
-    });
+    expect(cancelled).toHaveBeenCalledOnce();
+    expect(saveCredentials).not.toHaveBeenCalled();
   });
 });
