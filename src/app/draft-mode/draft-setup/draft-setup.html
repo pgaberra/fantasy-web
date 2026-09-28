@@ -225,4 +225,18 @@
       {{ initial() ? 'Save settings' : 'Start draft' }}
     </button>
   </div>
+
+  @if (syncWarning(); as league) {
+    <app-sync-warning-dialog
+      [leagueName]="league.name"
+      [platform]="league.platform"
+      subject="draft"
+      change="these settings"
+      [reSyncOffered]="false"
+      cancelLabel="Go back to the settings"
+      confirmLabel="Save anyway"
+      (confirm)="confirmSyncBreak()"
+      (cancelled)="cancelSyncBreak()"
+    />
+  }
 </div>
