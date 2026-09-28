@@ -117,7 +117,10 @@
     @if (locked()) {
       <p id="setup-locked-note" class="locked-note">
         <app-icon name="lock" [size]="14" />
-        <span>Set by {{ linked()?.name }} while picks are synced.</span>
+        <span
+          >Auto-sync is active. Team and roster settings from {{ linked()?.name }} will be
+          applied.</span
+        >
       </p>
     }
 
