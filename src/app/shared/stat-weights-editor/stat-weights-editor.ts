@@ -53,6 +53,11 @@ export class StatWeightsEditorComponent {
     ].filter((group) => group.columns.length > 0);
   });
 
+  /** A weight is replaced more often than it is amended, so the field arrives selected. */
+  onFocus(event: Event): void {
+    (event.target as HTMLInputElement).select();
+  }
+
   onInput(statKey: ScoringStatKey, event: Event): void {
     this.setWeight(statKey, parseDecimalInput((event.target as HTMLInputElement).value));
   }
