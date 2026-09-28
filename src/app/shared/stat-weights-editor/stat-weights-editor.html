@@ -4,7 +4,7 @@
   <ul class="weights">
     @for (col of columns(); track col) {
       <li class="weight">
-        <label class="weight-name" [attr.for]="'weight-' + col" [attr.title]="col | statTooltip">{{
+        <label class="weight-name" [attr.for]="'weight-' + col" [appTooltip]="col | statTooltip">{{
           col | statLabel
         }}</label>
         <!-- A text field, not a number field: see decimal-input.ts. -->

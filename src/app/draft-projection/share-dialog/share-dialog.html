@@ -23,7 +23,7 @@
           class="copy-button"
           [class.copied]="copied()"
           [attr.aria-label]="copied() ? 'Link copied' : 'Copy link'"
-          [attr.title]="copied() ? 'Copied' : 'Copy link'"
+          [appTooltip]="copied() ? 'Copied' : 'Copy link'"
           (click)="copyLink()"
         >
           <app-icon [name]="copied() ? 'check' : 'copy'" [size]="16" />

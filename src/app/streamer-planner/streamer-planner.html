@@ -85,7 +85,7 @@
                 <th scope="col" class="team">Team</th>
                 <th scope="col" class="num">Games</th>
                 <th scope="col" class="num">Off-nights</th>
-                <th scope="col" class="num" title="Back-to-backs">B2B</th>
+                <th scope="col" class="num" appTooltip="Back-to-backs">B2B</th>
                 @for (day of days(); track day.date) {
                   <th scope="col" class="day" [class.off-night]="day.offNight">
                     <span class="day-name">{{ dayName(day) }}</span>
@@ -114,7 +114,7 @@
                         class="game"
                         [class.off-night]="day.offNight"
                         [attr.data-tier]="matchupTier(game)"
-                        [attr.title]="matchupLabel(game)"
+                        [appTooltip]="matchupLabel(game)"
                         [attr.aria-label]="matchupLabel(game)"
                       >
                         {{ game.home ? '' : '@' }}{{ game.opponent }}
