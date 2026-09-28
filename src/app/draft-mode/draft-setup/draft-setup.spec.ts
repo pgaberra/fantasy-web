@@ -30,10 +30,32 @@ describe('DraftSetupComponent', () => {
     ...change,
   });
 
-  function renderSetup(league: DraftSettings = leagueWith()): DraftSetupComponent {
-    return MockRender(DraftSetupComponent, { initial: null, seedName: 'My Team', league }).point
-      .componentInstance;
+  /** A setup with the number of teams chosen, which a fresh one opens without. */
+  function renderSetup(
+    league: DraftSettings = leagueWith(),
+    teams: number | null = 12,
+  ): DraftSetupComponent {
+    const component = MockRender(DraftSetupComponent, {
+      initial: null,
+      seedName: 'My Team',
+      league,
+    }).point.componentInstance;
+    if (teams !== null) {
+      component.setTeamCount(teams);
+    }
+    return component;
   }
+
+  /** What a league answers an import with, as big as said. */
+  const importOf = (leagueSize: number | undefined): LeagueProjectionSettingsResponse => ({
+    scoringType: 'points',
+    activeScoringColumns: ['goals', 'assists'],
+    activeUtilityColumns: [],
+    leagueSize,
+    rosterSlots: DEFAULT_ROSTER_SLOTS,
+    unsupportedRosterCodes: [],
+    unsupportedStats: [],
+  });
 
   function confirmedBy(component: DraftSetupComponent): () => DraftSetupResult | undefined {
     let emitted: DraftSetupResult | undefined;
@@ -55,34 +77,110 @@ describe('DraftSetupComponent', () => {
     following: true,
   };
 
-  it('seeds a default 12-team league with exactly one mine', () => {
-    const component = renderSetup();
+  it('starts on no number of teams, with exactly one mine', () => {
+    const component = renderSetup(leagueWith(), null);
 
-    expect(component.numTeams()).toEqual(12);
+    expect(component.teamCountKnown()).toBe(false);
+    expect(component.numTeams()).toBeNull();
     const mine = component.rows().filter((row) => row.mine);
     expect(mine.length).toEqual(1);
     expect(mine[0].name).toEqual('My Team');
   });
 
-  it('seeds the team count from the projection league size', () => {
-    const component = MockRender(DraftSetupComponent, {
-      initial: null,
-      seedName: 'My Team',
-      league: leagueWith({ leagueSize: 8 }),
-    }).point.componentInstance;
+  // The size a projection carries may be nothing but its default, so it is not taken as chosen.
+  it('does not take the team count from a league nobody imported', () => {
+    const component = renderSetup(leagueWith({ leagueSize: 8 }), null);
+
+    expect(component.numTeams()).toBeNull();
+  });
+
+  it('takes the team count of a league imported earlier', () => {
+    const component = renderSetup(
+      leagueWith({
+        leagueSize: 8,
+        yahooSync: { leagueName: 'Beer League', leagueKey: '465.l.9', syncedAt: 'then' },
+      }),
+      null,
+    );
 
     expect(component.numTeams()).toEqual(8);
     expect(component.rows().filter((row) => row.mine).length).toEqual(1);
   });
 
-  it('adds and removes teams', () => {
+  it('sets the number of teams to the one chosen, up or down', () => {
     const component = renderSetup();
 
-    component.addTeam();
-    expect(component.numTeams()).toEqual(13);
+    component.setTeamCount(14);
+    expect(component.numTeams()).toEqual(14);
 
-    component.removeTeam();
-    expect(component.numTeams()).toEqual(12);
+    component.setTeamCount(10);
+    expect(component.numTeams()).toEqual(10);
+    expect(component.rows().filter((row) => row.mine).length).toEqual(1);
+  });
+
+  it('will not start the draft until the number of teams is chosen, and asks for it first', () => {
+    const fixture = MockRender(DraftSetupComponent, {
+      initial: null,
+      seedName: 'My Team',
+      league: leagueWith(),
+    });
+    const element: HTMLElement = fixture.nativeElement;
+    const emitted = confirmedBy(fixture.point.componentInstance);
+    const teams = element.querySelector<HTMLSelectElement>('#draft-teams')!;
+    const seat = element.querySelector<HTMLSelectElement>('#draft-position')!;
+    const start = element.querySelector<HTMLButtonElement>('.btn-primary')!;
+
+    expect(element.querySelector('#draft-teams option:checked')?.textContent).toContain('Select');
+    // No teams, no seats to offer.
+    expect(seat.disabled).toBe(true);
+
+    start.click();
+    fixture.detectChanges();
+
+    expect(emitted()).toBeUndefined();
+    expect(element.querySelector('.field-error')?.textContent).toContain(
+      'Choose the number of teams',
+    );
+    expect(teams.getAttribute('aria-invalid')).toBe('true');
+    expect(teams.getAttribute('aria-describedby')).toBe('draft-teams-error');
+    expect(document.activeElement).toBe(teams);
+
+    teams.value = '10';
+    teams.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(element.querySelector('.field-error')).toBeNull();
+    expect(seat.disabled).toBe(false);
+    expect(seat.querySelectorAll('option:not([disabled])').length).toBe(10);
+
+    seat.value = '4';
+    seat.dispatchEvent(new Event('change'));
+    start.click();
+    expect(emitted()?.draft.teams.length).toBe(10);
+    expect(emitted()?.league.leagueSize).toBe(10);
+  });
+
+  it('offers no size smaller than the teams that have picked', () => {
+    const component = MockRender(DraftSetupComponent, {
+      initial: {
+        teams: [
+          { id: 'team-me', name: 'My Team', mine: true },
+          { id: 'team-1', name: 'Team 1', mine: false },
+          { id: 'team-2', name: 'Team 2', mine: false },
+          { id: 'team-3', name: 'Team 3', mine: false },
+        ],
+        order: ['team-me', 'team-1', 'team-2', 'team-3'],
+        picks: [
+          { playerId: 1, teamId: 'team-2' },
+          { playerId: 2, teamId: 'team-3' },
+        ],
+      },
+      seedName: 'My Team',
+      league: leagueWith({ leagueSize: 4 }),
+    }).point.componentInstance;
+
+    expect(component.numTeams()).toEqual(4);
+    expect(component.teamCounts()[0]).toEqual(3);
   });
 
   it('moves your team to the chosen draft position, keeping the others in order', () => {
@@ -170,7 +268,7 @@ describe('DraftSetupComponent', () => {
       const emitted = confirmedBy(component);
       component.setMyPosition(1);
 
-      component.addTeam();
+      component.setTeamCount(13);
       component.submit();
 
       expect(emitted()?.draft.teams.length).toEqual(13);
@@ -207,6 +305,7 @@ describe('DraftSetupComponent', () => {
       field().value = '99';
       field().dispatchEvent(new Event('input'));
       const emitted = confirmedBy(component);
+      component.setTeamCount(12);
       component.setMyPosition(1);
       component.submit();
 
@@ -214,9 +313,13 @@ describe('DraftSetupComponent', () => {
     });
 
     it('takes the size of a league imported here', () => {
-      const component = renderSetup();
+      const component = renderSetup(leagueWith(), null);
 
-      component.setLeague({ ...component.editableLeague(), leagueSize: 8 });
+      component.applyYahoo({
+        settings: importOf(8),
+        leagueName: 'Beer League',
+        leagueKey: '465.l.9',
+      });
 
       expect(component.numTeams()).toEqual(8);
       expect(component.rows().filter((row) => row.mine).length).toEqual(1);
@@ -237,9 +340,21 @@ describe('DraftSetupComponent', () => {
         league: leagueWith({ leagueSize: 3 }),
       }).point.componentInstance;
 
-      component.setLeague({ ...component.editableLeague(), leagueSize: 2 });
+      component.applyYahoo({
+        settings: importOf(2),
+        leagueName: 'Beer League',
+        leagueKey: '465.l.9',
+      });
 
       expect(component.rows().map((row) => row.id)).toEqual(['team-me', 'team-2']);
+    });
+
+    it('leaves the number of teams to be chosen when the league does not report its size', () => {
+      const component = renderSetup(leagueWith(), null);
+
+      component.applyEspn({ settings: importOf(undefined), leagueName: 'Pond', leagueId: '123' });
+
+      expect(component.numTeams()).toBeNull();
     });
 
     it('leaves the draft as it was until the setup is confirmed', () => {
@@ -301,6 +416,8 @@ describe('DraftSetupComponent', () => {
     component.confirmed.subscribe((value) => {
       emitted = value;
     });
+    component.setTeamCount(12);
+    fixture.detectChanges();
     const select = element.querySelector<HTMLSelectElement>('#draft-position')!;
     const start = element.querySelector<HTMLButtonElement>('.btn-primary')!;
 
@@ -431,7 +548,8 @@ describe('DraftSetupComponent', () => {
       expect(component.locked()).toBe(false);
       expect(element.querySelector('.sync-row')).toBeNull();
       expect(element.querySelector('.locked-note')).toBeNull();
-      expect(element.querySelector<HTMLSelectElement>('#draft-position')?.disabled).toBe(false);
+      expect(element.querySelector<HTMLSelectElement>('#draft-teams')?.disabled).toBe(false);
+      expect(component.numTeams()).toBeNull();
     });
 
     it('takes the scoring of an imported Yahoo league, switches syncing on and asks about its draft', () => {
@@ -489,11 +607,9 @@ describe('DraftSetupComponent', () => {
       const seat = element.querySelector<HTMLSelectElement>('#draft-position')!;
       expect(seat.disabled).toBe(true);
       expect(seat.textContent).toContain('2');
-      expect(
-        [...element.querySelectorAll<HTMLButtonElement>('.stepper-btn')].every(
-          (button) => button.disabled,
-        ),
-      ).toBe(true);
+      const teams = element.querySelector<HTMLSelectElement>('#draft-teams')!;
+      expect(teams.disabled).toBe(true);
+      expect(teams.textContent).toContain('3');
       expect(ngMocks.findInstance(RosterSlotsEditorComponent).disabled()).toBe(true);
 
       // No seat to choose: the league's is the seat.
@@ -673,6 +789,7 @@ describe('DraftSetupComponent', () => {
       fixture.detectChanges();
       const component = fixture.point.componentInstance;
       const confirmed = confirmedBy(component);
+      component.setTeamCount(12);
       component.setMyPosition(1);
 
       type(fixture.nativeElement, '  Mock #3 ');
@@ -687,6 +804,7 @@ describe('DraftSetupComponent', () => {
       fixture.detectChanges();
       const component = fixture.point.componentInstance;
       const confirmed = confirmedBy(component);
+      component.setTeamCount(12);
       component.setMyPosition(1);
 
       type(fixture.nativeElement, '   ');

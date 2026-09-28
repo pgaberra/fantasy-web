@@ -128,8 +128,13 @@ export class DraftSetupComponent implements OnInit {
   // already carries one. A fresh setup starts without, since nothing has told this page the seat,
   // and a draft built on the wrong seat is wrong all the way down.
   readonly draftPositionKnown = signal(false);
-  // Set when Start is pressed with no seat chosen: the button stays enabled so the user learns what
-  // is missing from the field itself, instead of guessing at why a disabled button won't go.
+  // Whether the number of teams was actually named: by the user choosing it, by a league imported
+  // here or before, or by a saved setup. A fresh setup with no league starts without, for the
+  // seat's reason: a guessed league size ranks the whole board for a league that is not this one.
+  readonly teamCountKnown = signal(false);
+  // Set when Start is pressed with the teams or the seat not chosen: the button stays enabled so
+  // the user learns what is missing from the field itself, instead of guessing at why a disabled
+  // button won't go.
   readonly startAttempted = signal(false);
   // The league as edited here, kept apart from the draft's until the setup is confirmed. Its size
   // is not edited as a number: it is the teams below, and is read off them on the way out.
@@ -198,7 +203,17 @@ export class DraftSetupComponent implements OnInit {
       previous && untracked(this.nameTyped) ? previous.value : (proposed ?? ''),
   });
 
-  readonly numTeams = computed(() => this.leagueDraft()?.teams.length ?? this.rows().length);
+  /** The number of teams in the draft, or null while nobody has said. */
+  readonly numTeams = computed(
+    () => this.leagueDraft()?.teams.length ?? (this.teamCountKnown() ? this.rows().length : null),
+  );
+  /** The sizes on offer: none smaller than the user's team and the teams that have picked. */
+  readonly teamCounts = computed(() => {
+    const picked = new Set((this.initial()?.picks ?? []).map((pick) => pick.teamId));
+    const kept = this.rows().filter((row) => row.mine || picked.has(row.id)).length;
+    const smallest = Math.max(MIN_TEAMS, kept);
+    return Array.from({ length: MAX_TEAMS - smallest + 1 }, (_, i) => smallest + i);
+  });
   readonly canAdd = computed(() => this.rows().length < MAX_TEAMS);
   readonly canRemove = computed(() => this.rows().length > MIN_TEAMS);
   /** Whether this is a league's board whose draft order the league has not set yet. */
@@ -207,12 +222,25 @@ export class DraftSetupComponent implements OnInit {
   );
   /** The user's own seat in the draft order, from 1. The other teams fill the seats around it. */
   readonly myPosition = computed(() => this.rows().findIndex((row) => row.mine) + 1);
-  readonly positions = computed(() => Array.from({ length: this.numTeams() }, (_, i) => i + 1));
-  readonly canStart = computed(() => this.locked() || this.draftPositionKnown());
+  readonly positions = computed(() =>
+    Array.from({ length: this.numTeams() ?? 0 }, (_, i) => i + 1),
+  );
+  readonly canStart = computed(
+    () => this.locked() || (this.teamCountKnown() && this.draftPositionKnown()),
+  );
+  readonly teamsMissing = computed(
+    () => this.startAttempted() && !this.locked() && !this.teamCountKnown(),
+  );
+  // Asked for after the teams: the seats on offer are the teams', so there is none to choose yet.
   readonly positionMissing = computed(
-    () => this.startAttempted() && !this.locked() && !this.draftPositionKnown(),
+    () =>
+      this.startAttempted() &&
+      !this.locked() &&
+      this.teamCountKnown() &&
+      !this.draftPositionKnown(),
   );
 
+  private readonly teamsSelect = viewChild<ElementRef<HTMLSelectElement>>('teamsSelect');
   private readonly positionSelect = viewChild<ElementRef<HTMLSelectElement>>('positionSelect');
 
   ngOnInit(): void {
@@ -225,16 +253,16 @@ export class DraftSetupComponent implements OnInit {
         }),
       );
       this.draftPositionKnown.set(this.positionKnown());
+      this.teamCountKnown.set(true);
       return;
     }
     this.rows.set([{ id: MINE_ID, name: this.seedName(), mine: true }]);
-    this.resizeTo(this.editableLeague().leagueSize);
+    // Only a league imported earlier has said how big it is; any other size here is a default.
+    if (this.linked()) {
+      this.setTeamCount(this.editableLeague().leagueSize);
+    }
   }
 
-  /**
-   * A change from the league controls. The only one that moves the size is an import, which says
-   * how many teams the league has, so the teams follow it.
-   */
   protected readonly FULL_SEASON_GAMES = FULL_SEASON_GAMES;
 
   onMinGoalieGamesInput(event: Event): void {
@@ -245,20 +273,17 @@ export class DraftSetupComponent implements OnInit {
     }
   }
 
+  /** A change from the league controls, which set how the league scores and never its size. */
   setLeague(next: LeagueSettings): void {
-    const size = this.editableLeague().leagueSize;
     this.editableLeague.set(next);
-    if (next.leagueSize !== size) {
-      this.resizeTo(next.leagueSize);
-    }
   }
 
   applyYahoo(result: YahooSyncResult): void {
-    this.importLeague(withYahooImport(this.editableLeague(), result), result.leagueName);
+    this.importLeague(withYahooImport(this.editableLeague(), result), result);
   }
 
   applyEspn(result: EspnSyncResult): void {
-    this.importLeague(withEspnImport(this.editableLeague(), result), result.leagueName);
+    this.importLeague(withEspnImport(this.editableLeague(), result), result);
   }
 
   /**
@@ -266,9 +291,14 @@ export class DraftSetupComponent implements OnInit {
    * follow. Where it can, syncing picks comes on with the import, since a league is imported into
    * a draft to draft in it; the league is asked for its draft before anything is locked to it.
    */
-  private importLeague(next: LeagueSettings, leagueName: string | null | undefined): void {
+  private importLeague(next: LeagueSettings, result: YahooSyncResult | EspnSyncResult): void {
     this.setLeague(next);
-    const name = leagueName?.trim();
+    // A league that does not report its size leaves the teams as they were, chosen or not.
+    const size = result.settings.leagueSize;
+    if (size != null) {
+      this.setTeamCount(size);
+    }
+    const name = result.leagueName?.trim();
     if (name && this.draftName() !== null && !this.nameTyped()) {
       this.nameValue.set(name);
     }
@@ -303,6 +333,22 @@ export class DraftSetupComponent implements OnInit {
   onNameInput(event: Event): void {
     this.nameTyped.set(true);
     this.nameValue.set((event.target as HTMLInputElement).value);
+  }
+
+  onTeamsChange(event: Event): void {
+    const chosen = (event.target as HTMLSelectElement).value;
+    if (!chosen) {
+      return;
+    }
+    // The seat is asked for next, and not as an error: nobody has tried to start without it yet.
+    this.startAttempted.set(false);
+    this.setTeamCount(Number(chosen));
+  }
+
+  /** Sets the number of teams, as chosen here or as a league reported it. */
+  setTeamCount(count: number): void {
+    this.resizeTo(count);
+    this.teamCountKnown.set(true);
   }
 
   onPositionChange(event: Event): void {
@@ -365,9 +411,11 @@ export class DraftSetupComponent implements OnInit {
     if (this.syncChecking()) {
       return;
     }
-    if (!this.canStart()) {
+    const numTeams = this.numTeams();
+    if (!this.canStart() || numTeams === null) {
       this.startAttempted.set(true);
-      this.positionSelect()?.nativeElement.focus();
+      const missing = this.teamCountKnown() ? this.positionSelect() : this.teamsSelect();
+      missing?.nativeElement.focus();
       return;
     }
     const rows = this.rows();
@@ -381,7 +429,7 @@ export class DraftSetupComponent implements OnInit {
     const proposed = this.draftName();
     this.confirmed.emit({
       draft: { teams, order, picks: this.initial()?.picks ?? [] },
-      league: draftSettingsOf({ ...this.editableLeague(), leagueSize: this.numTeams() }),
+      league: draftSettingsOf({ ...this.editableLeague(), leagueSize: numTeams }),
       // A cleared name keeps the proposal, as an unnamed team keeps "Team N".
       ...(proposed === null ? {} : { name: this.nameValue().trim() || proposed }),
       follow: this.locked(),
