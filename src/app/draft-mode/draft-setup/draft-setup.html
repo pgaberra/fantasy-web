@@ -166,9 +166,9 @@
       </div>
     </div>
     @if (locked() && leaguePosition() === null) {
-      <p class="setup-note setup-note--block">
+      <app-notice class="order-notice" role="note">
         {{ linked()?.platform }} sets the draft order when the draft starts.
-      </p>
+      </app-notice>
     }
     @if (positionMissing()) {
       <p id="draft-position-error" class="field-error">
