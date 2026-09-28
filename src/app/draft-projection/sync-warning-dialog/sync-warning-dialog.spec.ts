@@ -66,4 +66,44 @@ describe('SyncWarningDialogComponent', () => {
 
     expect(events).toEqual(['reSync', 'confirm']);
   });
+
+  describe('asked before a change, with nothing to re-sync', () => {
+    const renderAsking = () =>
+      MockRender(SyncWarningDialogComponent, {
+        leagueName: 'HHL',
+        platform: 'Yahoo',
+        subject: 'draft',
+        change: 'a pick',
+        reSyncOffered: false,
+        cancelLabel: 'Leave the pick and stay in sync',
+        confirmLabel: 'Change the pick',
+      });
+
+    it('names the draft and the change, and offers no re-sync', () => {
+      const fixture = renderAsking();
+      const text = fixture.nativeElement.textContent;
+
+      expect(text).toContain('Changing a pick will disconnect this draft from');
+      expect(text).not.toContain('re-sync');
+      expect(text).not.toContain('Re-sync');
+    });
+
+    it('cancels from its second button and goes on from the first', () => {
+      const fixture = renderAsking();
+      const component = fixture.point.componentInstance;
+      const events: string[] = [];
+      component.cancelled.subscribe(() => events.push('cancelled'));
+      component.confirm.subscribe(() => events.push('confirm'));
+
+      const close = fixture.nativeElement.querySelector('.dialog-close') as HTMLButtonElement;
+      expect(close.getAttribute('aria-label')).toEqual('Leave the pick and stay in sync');
+      ngMocks.click(ngMocks.find('.btn-secondary'));
+      ngMocks.click(ngMocks.find('.btn-primary'));
+
+      expect(ngMocks.find('.btn-primary').nativeElement.textContent.trim()).toEqual(
+        'Change the pick',
+      );
+      expect(events).toEqual(['cancelled', 'confirm']);
+    });
+  });
 });

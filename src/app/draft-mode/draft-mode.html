@@ -247,6 +247,20 @@
           </div>
         }
 
+        @if (pendingSyncBreak() !== null && syncedFrom(); as league) {
+          <app-sync-warning-dialog
+            [leagueName]="league.name"
+            [platform]="league.platform"
+            subject="draft"
+            change="a pick"
+            [reSyncOffered]="false"
+            cancelLabel="Leave the pick and stay in sync"
+            confirmLabel="Change the pick"
+            (confirm)="confirmSyncBreak()"
+            (cancelled)="cancelSyncBreak()"
+          />
+        }
+
         @if (removalPreview(); as preview) {
           <div class="modal-overlay" (click)="cancelRemovePick()">
             <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
@@ -309,6 +323,7 @@
                 [syncCheck]="setupCheck()"
                 [openImport]="backFromYahoo()"
                 [draftName]="draftId() === null ? draftName() : null"
+                [boardSyncedFrom]="syncedFrom()"
                 (confirmed)="onSetupConfirmed($event)"
                 (cancelled)="cancelSetup()"
                 (syncCheckRequested)="checkSetupSync($event)"

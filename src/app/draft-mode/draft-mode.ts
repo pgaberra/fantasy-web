@@ -85,6 +85,7 @@ import { DraftPlayerLookupService } from './draft-player-lookup.service';
 import { DraftRosterPanelComponent } from './draft-roster-panel/draft-roster-panel';
 import { DraftAvailablePanelComponent } from './draft-available-panel/draft-available-panel';
 import { DraftPicksPanelComponent } from './draft-picks-panel/draft-picks-panel';
+import { SyncWarningDialogComponent } from '../draft-projection/sync-warning-dialog/sync-warning-dialog';
 import { IconComponent } from '../shared/icon/icon';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import {
@@ -158,6 +159,7 @@ function unfollowableNotice(
     DraftRosterPanelComponent,
     DraftAvailablePanelComponent,
     DraftPicksPanelComponent,
+    SyncWarningDialogComponent,
     IconComponent,
     TooltipDirective,
     // The settings popup scrolls inside itself, so a team dragged in it scrolls it along.
@@ -223,6 +225,7 @@ export class DraftModeComponent implements OnInit {
 
   private readonly renameInput = viewChild<ElementRef<HTMLInputElement>>('renameInput');
   private readonly setupDialog = viewChild<ElementRef<HTMLElement>>('setupDialog');
+  private readonly setupComponent = viewChild(DraftSetupComponent);
 
   readonly isRenaming = signal<boolean>(false);
   readonly renameValue = signal<string>('');
@@ -254,6 +257,11 @@ export class DraftModeComponent implements OnInit {
   readonly setupOpen = signal<boolean>(false);
   readonly editingPick = signal<number | null>(null);
   readonly pendingRemoval = signal<number | null>(null);
+  /**
+   * A pick edit held back until the user agrees to it: on a board that is its league's draft,
+   * changing a pick makes it the user's own board, and nothing brings the league's back.
+   */
+  readonly pendingSyncBreak = signal<(() => void) | null>(null);
   readonly confirmingFinish = signal<boolean>(false);
 
   /** Whether the board is following the linked league's draft, which locks every pick edit. */
@@ -1011,14 +1019,39 @@ export class DraftModeComponent implements OnInit {
     if (this.following() || !this.picks().length) {
       return;
     }
-    this.mutate((draft) => ({ ...draft, picks: draft.picks.slice(0, -1) }));
+    this.unlessItBreaksSync(() =>
+      this.mutate((draft) => ({ ...draft, picks: draft.picks.slice(0, -1) })),
+    );
   }
 
   startEditPick(overall: number): void {
     if (this.following()) {
       return;
     }
-    this.editingPick.set(overall);
+    this.unlessItBreaksSync(() => this.editingPick.set(overall));
+  }
+
+  /**
+   * Runs a pick edit, or asks first where the board is its league's draft (`syncedFrom`). Asked
+   * before the edit, not after: there is no league draft to re-sync a finished board from, so
+   * the edit is the thing to hold back.
+   */
+  private unlessItBreaksSync(edit: () => void): void {
+    if (this.syncedFrom() === null) {
+      edit();
+    } else {
+      this.pendingSyncBreak.set(edit);
+    }
+  }
+
+  confirmSyncBreak(): void {
+    const edit = this.pendingSyncBreak();
+    this.pendingSyncBreak.set(null);
+    edit?.();
+  }
+
+  cancelSyncBreak(): void {
+    this.pendingSyncBreak.set(null);
   }
 
   cancelEditPick(): void {
@@ -1057,12 +1090,14 @@ export class DraftModeComponent implements OnInit {
   }
 
   requestRemovePick(overall: number): void {
-    if (overall >= this.picks().length) {
-      this.removePick(overall);
-    } else {
-      this.editingPick.set(null);
-      this.pendingRemoval.set(overall);
-    }
+    this.unlessItBreaksSync(() => {
+      if (overall >= this.picks().length) {
+        this.removePick(overall);
+      } else {
+        this.editingPick.set(null);
+        this.pendingRemoval.set(overall);
+      }
+    });
   }
 
   confirmRemovePick(): void {
@@ -1079,7 +1114,15 @@ export class DraftModeComponent implements OnInit {
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
-    if (this.confirmingFinish()) {
+    // The settings' own warning goes first, and the settings stay open behind it.
+    const setup = this.setupComponent();
+    if (setup?.syncWarning()) {
+      setup.cancelSyncBreak();
+      return;
+    }
+    if (this.pendingSyncBreak() !== null) {
+      this.cancelSyncBreak();
+    } else if (this.confirmingFinish()) {
       this.cancelFinish();
     } else if (this.pendingRemoval() !== null) {
       this.cancelRemovePick();
