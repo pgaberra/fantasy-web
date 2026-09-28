@@ -124,11 +124,11 @@
               Settings
             </button>
             @if (finished()) {
-              @if (rankingsLeagueKey(); as leagueKey) {
+              @if (rankingsParams(); as params) {
                 <a
                   class="btn btn-primary btn-sm"
                   routerLink="/team-power-rankings"
-                  [queryParams]="{ league: leagueKey }"
+                  [queryParams]="params"
                 >
                   Team power rankings
                 </a>

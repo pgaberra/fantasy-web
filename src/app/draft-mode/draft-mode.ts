@@ -638,13 +638,19 @@ export class DraftModeComponent implements OnInit {
   readonly followPlatform = computed(() => this.followedLeague()?.platform ?? 'Yahoo');
   readonly canFollow = computed(() => this.followedLeague() !== null && !this.finished());
   /**
-   * The Yahoo league a finished draft is read back from on the power rankings, which is where
-   * what the draft came to is shown. None for a draft without one: the rankings read a league from
-   * Yahoo, and a mock draft's picks, or an ESPN league's, are not there to read.
+   * Where a finished draft's power rankings open, which is where what the draft came to is shown.
+   * A draft that followed a Yahoo league opens on that league, which is read from Yahoo and so
+   * follows its trades; any other — a mock draft, or one played against an ESPN league — on the
+   * draft itself. Either way the draft is named, so the rankings are ranked by the projection it
+   * was played against.
    */
-  readonly rankingsLeagueKey = computed(() => {
+  readonly rankingsParams = computed<{ league?: string; draft: string } | null>(() => {
+    const id = this.draftId();
+    if (!this.finished() || !id || !this.features.leagueDraftSync()) {
+      return null;
+    }
     const league = this.followedLeague();
-    return this.finished() && league?.platform === 'Yahoo' ? league.id : null;
+    return league?.platform === 'Yahoo' ? { league: league.id, draft: id } : { draft: id };
   });
   /**
    * The platforms whose drafts this environment follows, which is where the settings offer
