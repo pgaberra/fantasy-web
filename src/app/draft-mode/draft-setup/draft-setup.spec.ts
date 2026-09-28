@@ -1,47 +1,29 @@
 import { MockBuilder, MockRender } from 'ng-mocks';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { of, Subject } from 'rxjs';
-import { LeagueTeamsResponse } from '../../api/models/league-teams-response';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { DraftSetupComponent, DraftSetupResult } from './draft-setup';
-import { YahooSyncResult } from '../../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
-import { YahooService } from '../../services/yahoo.service';
-import { EspnService } from '../../services/espn.service';
 import { RosterSlots } from '../../api/models/roster-slots';
+import { DraftState } from '../../api/models/draft-state';
 import { DEFAULT_ROSTER_SLOTS } from '../../draft-projection/projection-defaults';
 
 describe('DraftSetupComponent', () => {
-  const leagueTeams = vi.fn();
-  const espnLeagueTeams = vi.fn();
-
-  beforeEach(() => {
-    leagueTeams.mockReset();
-    espnLeagueTeams.mockReset();
-    leagueTeams.mockReturnValue(of({ teams: [] }));
-    espnLeagueTeams.mockReturnValue(of({ teams: [] }));
-    return MockBuilder(DraftSetupComponent)
-      .mock(YahooService, { leagueTeams })
-      .mock(EspnService, { leagueTeams: espnLeagueTeams });
-  });
+  beforeEach(() => MockBuilder(DraftSetupComponent));
 
   function renderSetup(rosterSlots: RosterSlots = DEFAULT_ROSTER_SLOTS): DraftSetupComponent {
     return MockRender(DraftSetupComponent, { initial: null, seedName: 'My Team', rosterSlots })
       .point.componentInstance;
   }
 
-  function syncResult(leagueKey: string): YahooSyncResult {
-    return {
-      leagueKey,
-      leagueName: 'HHL',
-      settings: {
-        scoringType: 'category',
-        activeScoringColumns: [],
-        activeUtilityColumns: [],
-        rosterSlots: DEFAULT_ROSTER_SLOTS,
-        unsupportedRosterCodes: [],
-        unsupportedStats: [],
-      },
-    };
-  }
+  /** A league's board, taken before the league set its draft order: its team list, unordered. */
+  const leagueBoard: DraftState = {
+    teams: [
+      { id: '465.l.9.t.2', name: 'Bravo', mine: false },
+      { id: '465.l.9.t.1', name: 'Alpha', mine: true },
+      { id: '465.l.9.t.3', name: 'Charlie', mine: false },
+    ],
+    order: ['465.l.9.t.2', '465.l.9.t.1', '465.l.9.t.3'],
+    picks: [],
+    following: true,
+  };
 
   it('seeds a default 12-team league with exactly one mine', () => {
     const component = renderSetup();
@@ -62,32 +44,6 @@ describe('DraftSetupComponent', () => {
 
     expect(component.numTeams()).toEqual(8);
     expect(component.rows().filter((row) => row.mine).length).toEqual(1);
-  });
-
-  // A league imported on the page the draft was started from is ESPN's as often as Yahoo's.
-  it('takes the size and your seat from the ESPN league the projection was imported from', () => {
-    espnLeagueTeams.mockReturnValue(
-      of({
-        teams: [
-          { name: 'Ice Holes', mine: false },
-          { name: 'Puck Luck', mine: true },
-        ],
-        draftPosition: 2,
-      }),
-    );
-
-    const component = MockRender(DraftSetupComponent, {
-      initial: null,
-      seedName: 'My Team',
-      rosterSlots: DEFAULT_ROSTER_SLOTS,
-      lastEspnSync: { leagueName: 'ESPN league', leagueId: '42', syncedAt: '2026-09-17T08:00:00Z' },
-    }).point.componentInstance;
-
-    expect(espnLeagueTeams).toHaveBeenCalledWith('42');
-    expect(leagueTeams).not.toHaveBeenCalled();
-    expect(component.numTeams()).toEqual(2);
-    expect(component.myPosition()).toEqual(2);
-    expect(component.rows().map((row) => row.name)).toEqual(['', 'Puck Luck']);
   });
 
   it('adds and removes teams', () => {
@@ -178,82 +134,23 @@ describe('DraftSetupComponent', () => {
     expect(emitted?.rosterSlots).toEqual(custom);
   });
 
-  it("takes the size and your seat from a Yahoo sync, and your team's name", () => {
-    leagueTeams.mockReturnValue(
-      of({
-        teams: [
-          { name: 'Alpha', mine: false },
-          { name: 'Bravo', mine: true },
-          { name: 'Charlie', mine: false },
-        ],
-        draftPosition: 2,
-      }),
-    );
-    const component = renderSetup();
-
-    component.onYahooSynced(syncResult('nhl.l.1'));
-
-    expect(component.numTeams()).toEqual(3);
-    expect(component.myPosition()).toEqual(2);
-    expect(component.draftPositionKnown()).toBe(true);
-    const mine = component.rows().filter((row) => row.mine);
-    expect(mine.length).toEqual(1);
-    expect(mine[0].name).toEqual('Bravo');
-  });
-
-  // The seat the league names is the only one worth taking: where a team sits in a team list is
-  // not where it drafts, and a league that lists you tenth can still have you picking twelfth.
-  it('seats you where the league says, not where your team sits in its list', () => {
-    leagueTeams.mockReturnValue(
-      of({
-        teams: [
-          { name: 'Delta', mine: true },
-          { name: 'Alpha', mine: false },
-          { name: 'Bravo', mine: false },
-          { name: 'Charlie', mine: false },
-        ],
-        draftPosition: 4,
-      }),
-    );
-    const component = renderSetup();
-
-    component.onYahooSynced(syncResult('nhl.l.1'));
-
-    expect(component.myPosition()).toEqual(4);
-    expect(component.rows()[3].name).toEqual('Delta');
-  });
-
-  it('asks for your seat, and will not start, when the league names none', () => {
-    leagueTeams.mockReturnValue(
-      of({
-        teams: [
-          { name: 'Alpha', mine: false },
-          { name: 'Bravo', mine: true },
-          { name: 'Charlie', mine: false },
-        ],
-      }),
-    );
+  // Nothing has told a fresh setup where the user drafts, so it starts on no seat at all.
+  it('starts on no seat, and will not start the draft until one is chosen', () => {
     const component = renderSetup();
     let emitted: DraftSetupResult | undefined;
     component.confirmed.subscribe((value) => {
       emitted = value;
     });
 
-    component.onYahooSynced(syncResult('nhl.l.1'));
-
     expect(component.draftPositionKnown()).toBe(false);
-    expect(component.canStart()).toBe(false);
-
     component.submit();
     expect(emitted).toBeUndefined();
     expect(component.positionMissing()).toBe(true);
 
     component.setMyPosition(3);
     expect(component.positionMissing()).toBe(false);
-
-    expect(component.canStart()).toBe(true);
     component.submit();
-    expect(emitted?.draft.order.length).toEqual(3);
+    expect(emitted?.draft.order.indexOf('team-me')).toBe(2);
   });
 
   it('keeps Start enabled, and points at the draft position when pressed without one', () => {
@@ -273,8 +170,6 @@ describe('DraftSetupComponent', () => {
 
     expect(start.disabled).toBe(false);
     expect(element.querySelector('.field-error')).toBeNull();
-    // No league was loaded, so nothing claims a league left the seat out.
-    expect(element.querySelector('.field-hint')).toBeNull();
 
     start.click();
     fixture.detectChanges();
@@ -297,30 +192,6 @@ describe('DraftSetupComponent', () => {
     expect(emitted?.draft.order.indexOf('team-me')).toBe(3);
   });
 
-  it("says the league left the seat out only after a league's teams were loaded", () => {
-    leagueTeams.mockReturnValue(
-      of({
-        teams: [
-          { name: 'Alpha', mine: false },
-          { name: 'Bravo', mine: true },
-        ],
-      }),
-    );
-    const fixture = MockRender(DraftSetupComponent, {
-      initial: null,
-      seedName: 'My Team',
-      rosterSlots: DEFAULT_ROSTER_SLOTS,
-    });
-    const element: HTMLElement = fixture.nativeElement;
-
-    fixture.point.componentInstance.onYahooSynced(syncResult('nhl.l.1'));
-    fixture.detectChanges();
-
-    expect(element.querySelector('.field-hint')?.textContent).toContain(
-      'Unable to fetch your draft position. Please select it manually.',
-    );
-  });
-
   it('keeps the seat a saved setup already carries', () => {
     const component = MockRender(DraftSetupComponent, {
       initial: {
@@ -337,79 +208,85 @@ describe('DraftSetupComponent', () => {
 
     expect(component.draftPositionKnown()).toBe(true);
     expect(component.myPosition()).toEqual(2);
+    expect(component.canCancel()).toBe(true);
   });
 
-  it('marks the first team as mine when Yahoo flags none', () => {
-    leagueTeams.mockReturnValue(
-      of({
-        teams: [
-          { name: 'Alpha', mine: false },
-          { name: 'Bravo', mine: false },
-        ],
-      }),
-    );
-    const component = renderSetup();
+  // Where the league listed the user second, before it had set its order, the second seat is the
+  // list's and nobody's choice: the setup asks again, and offers no way back to a board that would
+  // be drafted on it.
+  it("asks for the seat again on a league's board the league has not ordered", () => {
+    const fixture = MockRender(DraftSetupComponent, {
+      initial: leagueBoard,
+      positionKnown: false,
+      seedName: 'My Team',
+      rosterSlots: DEFAULT_ROSTER_SLOTS,
+    });
+    const element: HTMLElement = fixture.nativeElement;
+    const component = fixture.point.componentInstance;
+    let emitted: DraftSetupResult | undefined;
+    component.confirmed.subscribe((value) => {
+      emitted = value;
+    });
 
-    component.onYahooSynced(syncResult('nhl.l.1'));
-
-    const mine = component.rows().filter((row) => row.mine);
-    expect(mine.length).toEqual(1);
-    expect(component.myPosition()).toEqual(1);
     expect(component.draftPositionKnown()).toBe(false);
-    expect(mine[0].name).toEqual('My Team');
-  });
-
-  it('loads the teams on init when the projection was already synced', () => {
-    leagueTeams.mockReturnValue(
-      of({
-        teams: [
-          { name: 'Alpha', mine: true },
-          { name: 'Bravo', mine: false },
-        ],
-      }),
+    expect(component.canCancel()).toBe(false);
+    expect(element.querySelector('.setup-hint')?.textContent).toContain(
+      "Your league hasn't set its draft order yet.",
     );
-    const component = MockRender(DraftSetupComponent, {
+    expect(element.querySelector('#draft-position option:checked')?.textContent).toContain(
+      'Select',
+    );
+
+    component.submit();
+    expect(emitted).toBeUndefined();
+
+    component.setMyPosition(3);
+    component.submit();
+    expect(emitted?.draft.order).toEqual(['465.l.9.t.2', '465.l.9.t.3', '465.l.9.t.1']);
+    expect(emitted?.draft.teams.map((team) => team.name)).toEqual(['Bravo', 'Charlie', 'Alpha']);
+    // The sync switch goes off with the seat: a board set up here is drafted by hand.
+    expect(emitted?.draft.following).toBeUndefined();
+  });
+
+  it('offers the league instead, where the page names a way to sync', () => {
+    const fixture = MockRender(DraftSetupComponent, {
       initial: null,
       seedName: 'My Team',
       rosterSlots: DEFAULT_ROSTER_SLOTS,
-      lastSync: { leagueKey: 'nhl.l.1', leagueName: 'HHL', syncedAt: '2026-07-05T00:00:00Z' },
-    }).point.componentInstance;
+      syncLabel: 'Sync picks from the Yahoo draft',
+    });
+    const element: HTMLElement = fixture.nativeElement;
+    let requested = 0;
+    fixture.point.componentInstance.syncRequested.subscribe(() => requested++);
 
-    expect(leagueTeams).toHaveBeenCalledWith('nhl.l.1');
-    expect(component.numTeams()).toEqual(2);
-    expect(component.myPosition()).toEqual(1);
-    expect(component.loadingTeams()).toBe(false);
+    const sync = element.querySelector<HTMLButtonElement>('.setup-sync button')!;
+    expect(sync.textContent).toContain('Sync picks from the Yahoo draft');
+    sync.click();
+
+    expect(requested).toBe(1);
   });
 
-  it('flags loadingTeams while the init fetch is still pending', () => {
-    leagueTeams.mockReturnValue(new Subject<LeagueTeamsResponse>());
-    const component = MockRender(DraftSetupComponent, {
+  it('offers no league where the page names none', () => {
+    const element: HTMLElement = MockRender(DraftSetupComponent, {
       initial: null,
       seedName: 'My Team',
       rosterSlots: DEFAULT_ROSTER_SLOTS,
-      lastSync: { leagueKey: 'nhl.l.1', leagueName: 'HHL', syncedAt: '2026-07-05T00:00:00Z' },
-    }).point.componentInstance;
+    }).nativeElement;
 
-    expect(component.loadingTeams()).toBe(true);
+    expect(element.querySelector('.setup-sync')).toBeNull();
+    expect(element.querySelector('.setup-notice')).toBeNull();
   });
 
-  it('keeps the existing teams when a draft already has picks', () => {
-    leagueTeams.mockReturnValue(of({ teams: [{ name: 'Alpha', mine: true }] }));
-    const component = MockRender(DraftSetupComponent, {
-      initial: {
-        teams: [
-          { id: 'team-me', name: 'My Team', mine: true },
-          { id: 'team-1', name: 'Team 1', mine: false },
-        ],
-        order: ['team-me', 'team-1'],
-        picks: [{ playerId: 1, teamId: 'team-me' }],
-      },
+  it("says why the league's draft could not be followed", () => {
+    const element: HTMLElement = MockRender(DraftSetupComponent, {
+      initial: null,
       seedName: 'My Team',
       rosterSlots: DEFAULT_ROSTER_SLOTS,
-    }).point.componentInstance;
+      notice: "Draft Mode can't follow an auction draft.",
+    }).nativeElement;
 
-    component.onYahooSynced(syncResult('nhl.l.1'));
-
-    expect(component.rows().map((row) => row.name)).toEqual(['My Team', 'Team 1']);
+    expect(element.querySelector('.setup-notice')?.textContent).toContain(
+      "Draft Mode can't follow an auction draft.",
+    );
   });
 });

@@ -10,6 +10,7 @@ import { applyPositionOverrides } from '../../models/position-override';
 import { StatWeights } from '../../models/projection.model';
 import { ScoringStatKey } from '../../models/stat-key.model';
 import { NotificationService } from '../../services/notification.service';
+import { isNotFound } from '../../shared/http-error';
 import { PlayerService } from '../../services/player.service';
 import { ProjectionRankingService } from '../../services/projection-ranking.service';
 import { ProjectionSerializerService } from '../../services/projection-serializer.service';
@@ -155,8 +156,14 @@ export class DraftSummaryPageComponent implements OnInit {
           );
           this.loaded.set(true);
         },
-        error: () => {
-          this.notification.error("Couldn't load the draft. Please try again.");
+        error: (error: unknown) => {
+          if (isNotFound(error)) {
+            this.notification.notice(
+              "That draft isn't in this account. It may have been deleted, or belong to another account.",
+            );
+          } else {
+            this.notification.error("Couldn't load the draft. Please try again.");
+          }
           void this.router.navigate(['/draft']);
         },
       });

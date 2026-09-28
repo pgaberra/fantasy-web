@@ -6,11 +6,9 @@ import { saveCredentials as saveCredentialsFn } from '../api/fn/espn/save-creden
 import { deleteCredentials as deleteCredentialsFn } from '../api/fn/espn/delete-credentials';
 import { draft1 } from '../api/fn/espn/draft-1';
 import { projectionSettings1 } from '../api/fn/espn/projection-settings-1';
-import { teams1 } from '../api/fn/espn/teams-1';
 import {
   CredentialStatusResponse,
   EspnCredentialsRequest,
-  EspnLeagueTeamsResponse,
   LeagueDraftResponse,
   LeagueProjectionSettingsResponse,
 } from '../api/models';
@@ -43,9 +41,5 @@ export class EspnService {
 
   leagueDraft(leagueId: string): Observable<LeagueDraftResponse> {
     return from(this.api.invoke(draft1, { leagueId }));
-  }
-
-  leagueTeams(leagueId: string): Observable<EspnLeagueTeamsResponse> {
-    return from(this.api.invoke(teams1, { leagueId }));
   }
 }

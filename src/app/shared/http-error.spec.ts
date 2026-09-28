@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import {
   isConnectivityError,
   isFailureOnOurSide,
+  isNotFound,
   messageForError,
   RequestTimeoutError,
   SERVER_UNREACHABLE_MESSAGE,
@@ -74,6 +75,14 @@ describe('http-error', () => {
       expect(messageForError(new HttpErrorResponse({ status: 401 }), 'Bad credentials')).toEqual(
         'Bad credentials',
       );
+    });
+  });
+  describe('isNotFound', () => {
+    it('is a 404 and nothing else', () => {
+      expect(isNotFound(new HttpErrorResponse({ status: 404 }))).toEqual(true);
+      expect(isNotFound(new HttpErrorResponse({ status: 403 }))).toEqual(false);
+      expect(isNotFound(new HttpErrorResponse({ status: 500 }))).toEqual(false);
+      expect(isNotFound(new Error('404'))).toEqual(false);
     });
   });
 });

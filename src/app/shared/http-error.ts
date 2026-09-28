@@ -40,6 +40,14 @@ export function isFailureOnOurSide(error: unknown, online = navigator.onLine): b
   return error.status >= 500 || (error.status === 0 && online);
 }
 
+/**
+ * The server holds nothing under that id for this user. A row another account owns answers the
+ * same, so a 404 cannot tell deleted from someone else's, and neither should the message.
+ */
+export function isNotFound(error: unknown): boolean {
+  return error instanceof HttpErrorResponse && error.status === 404;
+}
+
 export function messageForError(error: unknown, causeMessage: string): string {
   return isConnectivityError(error) ? SERVER_UNREACHABLE_MESSAGE : causeMessage;
 }

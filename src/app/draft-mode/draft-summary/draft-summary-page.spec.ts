@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Observable, of, throwError } from 'rxjs';
@@ -77,6 +78,7 @@ const draft: ProjectionResponse = {
 describe('DraftSummaryPageComponent', () => {
   const navigate = vi.fn(() => Promise.resolve(true));
   const notifyError = vi.fn();
+  const notifyNotice = vi.fn();
   const loadProjection = vi.fn<(id: string) => Observable<ProjectionResponse>>(() => of(draft));
   let idParam: string | null = 'd1';
 
@@ -89,6 +91,7 @@ describe('DraftSummaryPageComponent', () => {
   beforeEach(() => {
     navigate.mockClear();
     notifyError.mockClear();
+    notifyNotice.mockClear();
     loadProjection.mockReset();
     loadProjection.mockReturnValue(of(draft));
     idParam = 'd1';
@@ -99,7 +102,7 @@ describe('DraftSummaryPageComponent', () => {
       .keep(DraftPlayerLookupService)
       .mock(PlayerService, { getPlayers: () => of(players) })
       .mock(ProjectionStorageService, { loadProjection })
-      .mock(NotificationService, { error: notifyError })
+      .mock(NotificationService, { error: notifyError, notice: notifyNotice })
       .provide({ provide: Router, useValue: { navigate } })
       .provide({
         provide: ActivatedRoute,
@@ -164,6 +167,18 @@ describe('DraftSummaryPageComponent', () => {
     await render();
 
     expect(notifyError).toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['/draft']);
+  });
+
+  // The server answers 404 both for a draft that was deleted and for one another account holds,
+  // so a link from someone else lands here. Trying again cannot help, and nothing is at fault.
+  it('says the draft is not in this account, without reporting it, when the server has none', async () => {
+    loadProjection.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+
+    await render();
+
+    expect(notifyNotice).toHaveBeenCalledWith(expect.stringContaining("isn't in this account"));
+    expect(notifyError).not.toHaveBeenCalled();
     expect(navigate).toHaveBeenCalledWith(['/draft']);
   });
 

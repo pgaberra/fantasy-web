@@ -61,6 +61,27 @@ describe('FeatureService', () => {
     ]);
   });
 
+  it('is not settled while the BFF has yet to answer', () => {
+    invoke.mockReturnValue(new Promise(() => undefined));
+
+    const service = TestBed.inject(FeatureService);
+
+    expect(service.settled()).toEqual(false);
+  });
+
+  it('is settled once the BFF has answered', async () => {
+    invoke.mockResolvedValue({ aiProjection: true });
+
+    expect((await answered()).settled()).toEqual(true);
+  });
+
+  // A page that waits for the answer must not wait forever when it fails.
+  it('is settled when the answer fails', async () => {
+    invoke.mockRejectedValue(new Error('offline'));
+
+    expect((await answered()).settled()).toEqual(true);
+  });
+
   // Offering a preset the server may not serve is the failure this service exists to prevent, so
   // not knowing counts as not served.
   it('does not offer the AI projection when the answer never arrives', async () => {

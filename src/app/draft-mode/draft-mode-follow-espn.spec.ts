@@ -98,6 +98,9 @@ describe('DraftModeComponent following an ESPN draft', () => {
   const espnLeagueDraft = vi.fn<(leagueId: string) => Observable<LeagueDraftResponse>>();
   const yahooLeagueDraft = vi.fn<(leagueKey: string) => Observable<LeagueDraftResponse>>();
   const renameProjection = vi.fn();
+  const startDraft = vi.fn();
+  const listAll = vi.fn();
+  let routeParams: Record<string, string>;
   const leagueDraftSync = signal(true);
   const espnLeagueDraftSync = signal(true);
   let loaded: ProjectionResponse;
@@ -111,6 +114,11 @@ describe('DraftModeComponent following an ESPN draft', () => {
     yahooLeagueDraft.mockReset();
     leagueDraftSync.set(true);
     espnLeagueDraftSync.set(true);
+    startDraft.mockReset();
+    startDraft.mockReturnValue(of({ id: 'd1', name: 'Beer League' }));
+    listAll.mockReset();
+    listAll.mockReturnValue(of([]));
+    routeParams = { id: 'p1' };
     loaded = projectionWith(espnDraft);
     updateProjection.mockImplementation(() => of(loaded));
     return MockBuilder(DraftModeComponent)
@@ -123,15 +131,17 @@ describe('DraftModeComponent following an ESPN draft', () => {
         loadProjection: () => of(loaded),
         updateProjection,
         renameProjection,
+        startDraft,
+        listAll,
       })
-      .mock(FeatureService, { leagueDraftSync, espnLeagueDraftSync })
+      .mock(FeatureService, { leagueDraftSync, espnLeagueDraftSync, settled: signal(true) })
       .mock(EspnService, { leagueDraft: espnLeagueDraft })
       .mock(YahooService, { leagueDraft: yahooLeagueDraft })
       .mock(YahooConnectReturnService, { returnedTo: () => false })
       .provide({
         provide: ActivatedRoute,
         useValue: {
-          snapshot: { paramMap: { get: (key: string) => (key === 'id' ? 'p1' : null) } },
+          snapshot: { paramMap: { get: (key: string) => routeParams[key] ?? null } },
         },
       });
   });
@@ -343,6 +353,33 @@ describe('DraftModeComponent following an ESPN draft', () => {
       expect(updateProjection.mock.calls[0][1].data.draft?.settings?.espnSync?.leagueId).toBe(
         '123',
       );
+    });
+
+    it("asks for them for a new draft's league, then makes the draft from it", async () => {
+      routeParams = { board: 'p1' };
+      loaded = { ...projectionWith(espnDraft), kind: 'projection' };
+      history.replaceState({ draftLeagueSettings: espnDraft.settings }, '');
+      espnLeagueDraft.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 400 })));
+
+      const component = await render();
+
+      expect(startDraft).not.toHaveBeenCalled();
+      expect(component.phase()).toBe('setup');
+      expect(component.cookieRepair()?.leagueId).toBe('123');
+      expect(component.linkOpen()).toBe(true);
+
+      espnLeagueDraft.mockReturnValue(of(leagueDraft()));
+      component.linkLeague({
+        platform: 'ESPN',
+        leagueId: '123',
+        leagueName: 'Beer League',
+        settings: null,
+      });
+
+      const created = startDraft.mock.calls[0][1].draft;
+      expect(created.following).toBe(true);
+      expect(created.order).toEqual(['espn.l.123.t.2', 'espn.l.123.t.1']);
+      history.replaceState(null, '');
     });
 
     it('lets the user close it and draft by hand', async () => {
