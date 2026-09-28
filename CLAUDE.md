@@ -198,7 +198,7 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   following it (the league's teams, its order where set, any picks already made), and falls back
   to the settings, with the reason on them, only where that draft can't be read or followed.
   The **settings** ("Draft Settings", `draft-mode/draft-setup`) hold everything else, in three
-  sections. *League*: one import, from Yahoo or ESPN, which sets the scoring; where the league's
+  sections. *League*: the import itself (`app-league-sync`, the Yahoo/ESPN picker, drawn in the section rather than behind an "Import league" button; Alexander's call), which sets the scoring; where the league's
   draft can be followed (`syncPlatforms`, the BFF's feature switches) the import turns on
   **Sync picks automatically**, the only place that switch lives (the board's toolbar has
   none). The switch asks the page for the league's draft before anything is saved
