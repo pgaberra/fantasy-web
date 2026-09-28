@@ -3,14 +3,38 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { DraftSetupComponent, DraftSetupResult } from './draft-setup';
 import { RosterSlots } from '../../api/models/roster-slots';
 import { DraftState } from '../../api/models/draft-state';
-import { DEFAULT_ROSTER_SLOTS } from '../../draft-projection/projection-defaults';
+import { DraftSettings } from '../../api/models/draft-settings';
+import {
+  DEFAULT_ROSTER_SLOTS,
+  DEFAULT_STAT_WEIGHTS,
+} from '../../draft-projection/projection-defaults';
 
 describe('DraftSetupComponent', () => {
   beforeEach(() => MockBuilder(DraftSetupComponent));
 
-  function renderSetup(rosterSlots: RosterSlots = DEFAULT_ROSTER_SLOTS): DraftSetupComponent {
-    return MockRender(DraftSetupComponent, { initial: null, seedName: 'My Team', rosterSlots })
-      .point.componentInstance;
+  /** A 12-team points league, as a draft stores it. */
+  const leagueWith = (change: Partial<DraftSettings> = {}): DraftSettings => ({
+    scoringType: 'points',
+    statWeights: { ...DEFAULT_STAT_WEIGHTS },
+    activeScoringColumns: ['goals', 'assists'],
+    activeUtilityColumns: [],
+    leagueSize: 12,
+    rosterSlots: DEFAULT_ROSTER_SLOTS,
+    minGoalieGames: 30,
+    ...change,
+  });
+
+  function renderSetup(league: DraftSettings = leagueWith()): DraftSetupComponent {
+    return MockRender(DraftSetupComponent, { initial: null, seedName: 'My Team', league }).point
+      .componentInstance;
+  }
+
+  function confirmedBy(component: DraftSetupComponent): () => DraftSetupResult | undefined {
+    let emitted: DraftSetupResult | undefined;
+    component.confirmed.subscribe((value) => {
+      emitted = value;
+    });
+    return () => emitted;
   }
 
   /** A league's board, taken before the league set its draft order: its team list, unordered. */
@@ -38,8 +62,7 @@ describe('DraftSetupComponent', () => {
     const component = MockRender(DraftSetupComponent, {
       initial: null,
       seedName: 'My Team',
-      rosterSlots: DEFAULT_ROSTER_SLOTS,
-      leagueSize: 8,
+      league: leagueWith({ leagueSize: 8 }),
     }).point.componentInstance;
 
     expect(component.numTeams()).toEqual(8);
@@ -103,7 +126,7 @@ describe('DraftSetupComponent', () => {
     expect(component.myPosition()).toEqual(11);
   });
 
-  it('emits the draft and roster slots on submit', () => {
+  it('emits the draft and its league on submit', () => {
     const component = renderSetup();
     component.setMyPosition(1);
     let emitted: DraftSetupResult | undefined;
@@ -117,12 +140,12 @@ describe('DraftSetupComponent', () => {
     expect(emitted?.draft.order.length).toEqual(12);
     expect(emitted?.draft.teams.filter((team) => team.mine).length).toEqual(1);
     expect(emitted?.draft.picks).toEqual([]);
-    expect(emitted?.rosterSlots).toEqual(DEFAULT_ROSTER_SLOTS);
+    expect(emitted?.league).toEqual(leagueWith());
   });
 
   it('emits the roster slots it was given', () => {
     const custom: RosterSlots = { c: 3, lw: 3, rw: 3, d: 5, util: 1, bn: 2, g: 2 };
-    const component = renderSetup(custom);
+    const component = renderSetup(leagueWith({ rosterSlots: custom }));
     component.setMyPosition(1);
     let emitted: DraftSetupResult | undefined;
     component.confirmed.subscribe((value) => {
@@ -131,7 +154,91 @@ describe('DraftSetupComponent', () => {
 
     component.submit();
 
-    expect(emitted?.rosterSlots).toEqual(custom);
+    expect(emitted?.league.rosterSlots).toEqual(custom);
+  });
+
+  describe('the league', () => {
+    // One number, not two: the size the board is ranked by is the teams it seats.
+    it('is as big as the teams set up', () => {
+      const component = renderSetup();
+      const emitted = confirmedBy(component);
+      component.setMyPosition(1);
+
+      component.addTeam();
+      component.submit();
+
+      expect(emitted()?.draft.teams.length).toEqual(13);
+      expect(emitted()?.league.leagueSize).toEqual(13);
+    });
+
+    it('scores the way it was set here', () => {
+      const component = renderSetup();
+      const emitted = confirmedBy(component);
+      component.setMyPosition(1);
+
+      component.setLeague({ ...component.editableLeague(), scoringType: 'category' });
+      component.setStatWeights({ ...component.editableLeague().statWeights, goals: 6 });
+      component.submit();
+
+      expect(emitted()?.league.scoringType).toEqual('category');
+      expect(emitted()?.league.statWeights['goals']).toEqual(6);
+    });
+
+    it('takes the size of a league imported here', () => {
+      const component = renderSetup();
+
+      component.setLeague({ ...component.editableLeague(), leagueSize: 8 });
+
+      expect(component.numTeams()).toEqual(8);
+      expect(component.rows().filter((row) => row.mine).length).toEqual(1);
+    });
+
+    it('keeps the teams that have picked when an import makes the league smaller', () => {
+      const component = MockRender(DraftSetupComponent, {
+        initial: {
+          teams: [
+            { id: 'team-me', name: 'My Team', mine: true },
+            { id: 'team-1', name: 'Team 1', mine: false },
+            { id: 'team-2', name: 'Team 2', mine: false },
+          ],
+          order: ['team-me', 'team-1', 'team-2'],
+          picks: [{ playerId: 1, teamId: 'team-2' }],
+        },
+        seedName: 'My Team',
+        league: leagueWith({ leagueSize: 3 }),
+      }).point.componentInstance;
+
+      component.setLeague({ ...component.editableLeague(), leagueSize: 2 });
+
+      expect(component.rows().map((row) => row.id)).toEqual(['team-me', 'team-2']);
+    });
+
+    it('leaves the draft as it was until the setup is confirmed', () => {
+      const league = leagueWith();
+      const component = renderSetup(league);
+
+      component.setLeague({ ...component.editableLeague(), scoringType: 'category' });
+
+      expect(league.scoringType).toEqual('points');
+    });
+
+    it('asks for the points per stat only in a points league', () => {
+      const fixture = MockRender(DraftSetupComponent, {
+        initial: null,
+        seedName: 'My Team',
+        league: leagueWith(),
+      });
+      const element: HTMLElement = fixture.nativeElement;
+      expect(element.querySelector('app-stat-weights-editor')).not.toBeNull();
+
+      fixture.point.componentInstance.setLeague({
+        ...fixture.point.componentInstance.editableLeague(),
+        scoringType: 'category',
+      });
+      fixture.detectChanges();
+
+      expect(element.querySelector('app-stat-weights-editor')).toBeNull();
+    });
   });
 
   // Nothing has told a fresh setup where the user drafts, so it starts on no seat at all.
@@ -157,7 +264,7 @@ describe('DraftSetupComponent', () => {
     const fixture = MockRender(DraftSetupComponent, {
       initial: null,
       seedName: 'My Team',
-      rosterSlots: DEFAULT_ROSTER_SLOTS,
+      league: leagueWith(),
     });
     const element: HTMLElement = fixture.nativeElement;
     const component = fixture.point.componentInstance;
@@ -203,7 +310,7 @@ describe('DraftSetupComponent', () => {
         picks: [],
       },
       seedName: 'My Team',
-      rosterSlots: DEFAULT_ROSTER_SLOTS,
+      league: leagueWith(),
     }).point.componentInstance;
 
     expect(component.draftPositionKnown()).toBe(true);
@@ -219,7 +326,7 @@ describe('DraftSetupComponent', () => {
       initial: leagueBoard,
       positionKnown: false,
       seedName: 'My Team',
-      rosterSlots: DEFAULT_ROSTER_SLOTS,
+      league: leagueWith(),
     });
     const element: HTMLElement = fixture.nativeElement;
     const component = fixture.point.componentInstance;
@@ -252,7 +359,7 @@ describe('DraftSetupComponent', () => {
     const fixture = MockRender(DraftSetupComponent, {
       initial: null,
       seedName: 'My Team',
-      rosterSlots: DEFAULT_ROSTER_SLOTS,
+      league: leagueWith(),
       syncLabel: 'Sync picks from the Yahoo draft',
     });
     const element: HTMLElement = fixture.nativeElement;
@@ -270,7 +377,7 @@ describe('DraftSetupComponent', () => {
     const element: HTMLElement = MockRender(DraftSetupComponent, {
       initial: null,
       seedName: 'My Team',
-      rosterSlots: DEFAULT_ROSTER_SLOTS,
+      league: leagueWith(),
     }).nativeElement;
 
     expect(element.querySelector('.setup-sync')).toBeNull();
@@ -281,7 +388,7 @@ describe('DraftSetupComponent', () => {
     const element: HTMLElement = MockRender(DraftSetupComponent, {
       initial: null,
       seedName: 'My Team',
-      rosterSlots: DEFAULT_ROSTER_SLOTS,
+      league: leagueWith(),
       notice: "Draft Mode can't follow an auction draft.",
     }).nativeElement;
 

@@ -1,7 +1,4 @@
-import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
-import { ProjectionSerializerService } from '../services/projection-serializer.service';
-import { createDefaultProjectionState } from '../draft-projection/projection-defaults';
-import { draftSettingsFromProjection } from '../shared/league-settings/league-settings';
+import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Observable, of, Subject, throwError } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -277,7 +274,10 @@ describe('DraftModeComponent', () => {
       const component = fixture.point.componentInstance;
       component.onSetupConfirmed({
         draft,
-        rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+        league: {
+          ...component.leagueSettings()!,
+          rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+        },
       });
 
       const defense = component.tierStrip().find((entry) => entry.position === 'D');
@@ -332,7 +332,10 @@ describe('DraftModeComponent', () => {
 
     component.onSetupConfirmed({
       draft,
-      rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+      league: {
+        ...component.leagueSettings()!,
+        rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+      },
     });
 
     expect(component.rosterSlots()).toEqual({ c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 });
@@ -396,7 +399,7 @@ describe('DraftModeComponent', () => {
     });
     expect(updateProjection).not.toHaveBeenCalled();
 
-    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+    component.onSetupConfirmed({ draft, league: component.leagueSettings()! });
 
     const sent = updateProjection.mock.calls[0][1].data;
     expect(sent.draft?.settings?.espnSync?.leagueId).toEqual('42');
@@ -506,7 +509,10 @@ describe('DraftModeComponent', () => {
     const component = fixture.point.componentInstance;
     component.onSetupConfirmed({
       draft,
-      rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+      league: {
+        ...component.leagueSettings()!,
+        rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+      },
     });
 
     component.draftCurrent(1);
@@ -528,7 +534,10 @@ describe('DraftModeComponent', () => {
     const component = fixture.point.componentInstance;
     component.onSetupConfirmed({
       draft,
-      rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+      league: {
+        ...component.leagueSettings()!,
+        rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+      },
     });
     component.draftCurrent(1);
     component.draftCurrent(2);
@@ -1169,26 +1178,22 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
     expect(updateProjection).not.toHaveBeenCalled();
     expect(createProjection).not.toHaveBeenCalled();
 
-    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+    component.onSetupConfirmed({ draft, league: component.leagueSettings()! });
 
     expect(createProjection.mock.calls[0][0].data.draft.settings.yahooSync.leagueKey).toEqual(
       'nhl.l.123',
     );
   });
 
-  // Set on the draft picker, which saves nothing, so it arrives in the navigation's state.
-  it('creates the board with the league set on the draft picker', async () => {
-    const serializer = ngMocks.findInstance(ProjectionSerializerService);
-    const { settings } = serializer.toProjectionData({
-      ...createDefaultProjectionState(() => false),
-      scoringType: 'category',
-      leagueSize: 8,
-    });
-    history.replaceState({ draftLeagueSettings: draftSettingsFromProjection(settings) }, '');
+  // The league is set in the setup, which saves nothing until it is confirmed.
+  it('creates the board with the league set in its setup', async () => {
     const component = await renderDraftMode();
+    expect(component.scoringType()).toEqual('points');
 
-    expect(component.scoringType()).toEqual('category');
-    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+    component.onSetupConfirmed({
+      draft,
+      league: { ...component.leagueSettings()!, scoringType: 'category', leagueSize: 8 },
+    });
 
     const request = createProjection.mock.calls[0][0];
     expect(request.data.draft.settings.scoringType).toEqual('category');
@@ -1202,7 +1207,10 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
 
     component.onSetupConfirmed({
       draft,
-      rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+      league: {
+        ...component.leagueSettings()!,
+        rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+      },
     });
 
     expect(createProjection).toHaveBeenCalledOnce();
@@ -1227,8 +1235,8 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
     createProjection.mockReturnValue(new Observable());
     const component = await renderDraftMode();
 
-    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
-    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+    component.onSetupConfirmed({ draft, league: component.leagueSettings()! });
+    component.onSetupConfirmed({ draft, league: component.leagueSettings()! });
 
     expect(createProjection).toHaveBeenCalledOnce();
   });
@@ -1237,7 +1245,7 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
     createProjection.mockReturnValue(throwError(() => new Error('boom')));
     const component = await renderDraftMode();
 
-    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+    component.onSetupConfirmed({ draft, league: component.leagueSettings()! });
 
     expect(notifyError).toHaveBeenCalledWith("Couldn't start the draft. Please try again.");
     expect(component.phase()).toEqual('setup');
@@ -1249,7 +1257,7 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
     createProjection.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
     const component = await renderDraftMode();
 
-    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+    component.onSetupConfirmed({ draft, league: component.leagueSettings()! });
 
     expect(notifyError).toHaveBeenCalledWith(expect.stringContaining('part of Premium'));
   });
@@ -1405,7 +1413,7 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
     );
     const component = await renderDraftMode();
 
-    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+    component.onSetupConfirmed({ draft, league: component.leagueSettings()! });
 
     expect(startDraft).toHaveBeenCalledWith('p1', expect.anything(), 'My league (2)');
   });
@@ -1422,7 +1430,7 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
     // Nothing exists to rename yet, so nothing is sent until the setup is confirmed.
     expect(renameProjection).not.toHaveBeenCalled();
 
-    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+    component.onSetupConfirmed({ draft, league: component.leagueSettings()! });
 
     expect(startDraft).toHaveBeenCalledWith('p1', expect.anything(), 'Mock #3');
   });
@@ -1446,7 +1454,10 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
 
     component.onSetupConfirmed({
       draft,
-      rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+      league: {
+        ...component.leagueSettings()!,
+        rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+      },
     });
 
     expect(startDraft).toHaveBeenCalledOnce();
@@ -1463,7 +1474,7 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
     startDraft.mockReturnValue(throwError(() => new Error('boom')));
     const component = await renderDraftMode();
 
-    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+    component.onSetupConfirmed({ draft, league: component.leagueSettings()! });
 
     expect(notifyError).toHaveBeenCalledWith("Couldn't start the draft. Please try again.");
     expect(component.phase()).toEqual('setup');
@@ -1492,7 +1503,7 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
 
     expect(renameProjection).not.toHaveBeenCalled();
 
-    component.onSetupConfirmed({ draft, rosterSlots: component.rosterSlots() });
+    component.onSetupConfirmed({ draft, league: component.leagueSettings()! });
 
     expect(renameProjection).toHaveBeenCalledWith('d1', 'Beer League', true);
   });

@@ -61,6 +61,22 @@
   margin-bottom: var(--space-4);
 }
 
+.setup-league {
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.setup-weights {
+  margin-top: var(--space-3);
+}
+
+.setup-sublabel {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
+
 .setup-label {
   display: block;
   font-size: var(--text-xs);

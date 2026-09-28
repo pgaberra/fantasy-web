@@ -1,6 +1,6 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ApplicationRef, signal } from '@angular/core';
+import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -15,10 +15,6 @@ import { ProjectionSummaryResponse } from '../api/models/projection-summary-resp
 import { environment } from '../../environments/environment';
 import { FeatureService } from '../services/feature.service';
 import { MODEL_PRESET_SOURCE } from '../models/ai-projection';
-import { ProjectionBoardCache } from '../services/projection-board-cache';
-import { ProjectionSerializerService } from '../services/projection-serializer.service';
-import { createDefaultProjectionState } from '../draft-projection/projection-defaults';
-import { ProjectionResponse } from '../api/models/projection-response';
 
 describe('DraftStartComponent', () => {
   const LAST_SEASON = PRESETS.find((preset) => preset.id === 'last_season')!;
@@ -121,8 +117,6 @@ describe('DraftStartComponent', () => {
           loadProjection,
           updateProjection,
         })
-        // Real, so the league a board is drafted with is read from the board it loads.
-        .keep(ProjectionBoardCache)
         .mock(NotificationService, { error: notifyError })
         .mock(EntitlementService, { premium, loadState })
         .mock(FeatureService, {
@@ -173,39 +167,6 @@ describe('DraftStartComponent', () => {
 
     expect(component.projections().map((projection) => projection.id)).toEqual(['p2', 'p1']);
     expect(component.drafts().map((draft) => draft.id)).toEqual(['preset1']);
-  });
-
-  /**
-   * The pick is made against the board it would draft, the same way the new-projection page
-   * previews a starting point. What the preview does with it is its own spec's business; what
-   * matters here is that it is told what is picked.
-   */
-  it('previews whatever is picked', async () => {
-    listAll.mockReturnValue(of([summary('p1', 'projection')]));
-
-    const component = await render();
-    component.sourceKind.set('preset');
-
-    expect(component.previewSource()).toEqual({ kind: 'preset', preset: 'default' });
-
-    component.selectPreset(MODEL);
-    expect(component.previewSource()).toEqual({ kind: 'preset', preset: 'model' });
-
-    component.sourceKind.set('projection');
-    expect(component.previewSource()).toEqual({ kind: 'board', id: 'p1' });
-    expect(component.previewFallbackNote()).toEqual(
-      'Drafts against Projection p1, using its saved numbers.',
-    );
-  });
-
-  it('previews nothing when the open kind holds nothing', async () => {
-    listAll.mockReturnValue(of([]));
-
-    const component = await render();
-    component.sourceKind.set('following');
-
-    expect(component.selection()).toBeNull();
-    expect(component.previewSource()).toBeNull();
   });
 
   it('opens a draft at its own address, which is not the board it was played against', async () => {
@@ -280,163 +241,28 @@ describe('DraftStartComponent', () => {
     expect(component.drafts().map((draft) => draft.id)).toEqual(['d1', 'd2']);
   });
 
-  describe('the league a draft is ranked by', () => {
-    /** A board as the server returns it, scored as a 10-team category league. */
-    const board = (id: string): ProjectionResponse => {
-      const serializer = ngMocks.findInstance(ProjectionSerializerService);
-      return {
-        id,
-        name: `Projection ${id}`,
-        kind: 'projection',
-        season: '20262027',
-        autoNamed: false,
-        createdAt: '2026-06-01T00:00:00Z',
-        updatedAt: '2026-06-01T00:00:00Z',
-        data: serializer.toProjectionData({
-          ...createDefaultProjectionState(() => false),
-          scoringType: 'category',
-          leagueSize: 10,
-        }),
-      };
-    };
-
-    /** Opens the projections and lets the picked board's league arrive. */
-    const pickProjections = async () => {
-      ngMocks.findInstance(DraftStartComponent).sourceKind.set('projection');
-      const app = ngMocks.find(DraftStartComponent).injector.get(ApplicationRef);
-      app.tick();
-      await app.whenStable();
-    };
-
-    it('drafts a preset against the league set on the page', async () => {
+  // The league is the draft setup's to ask for now, so Start carries nothing but what the draft
+  // is played against — and reads nothing either: no board is downloaded to show its league.
+  describe('starting a draft', () => {
+    it('opens the setup for a preset with nothing but the preset', async () => {
       listAll.mockReturnValue(of([]));
       const component = await render();
-      const league = component.leagueSettings()!;
 
-      expect(league.scoringType).toEqual('points');
-      component.setLeagueSettings({ ...league, scoringType: 'category', leagueSize: 8 });
-      component.setStatWeights({ ...component.leagueSettings()!.statWeights, goals: 6 });
       component.start();
 
-      // Nothing is saved from here: the league travels to the setup that creates the board.
       expect(createProjection).not.toHaveBeenCalled();
-      const [path, extras] = navigate.mock.calls[0];
-      expect(path).toEqual(['/draft/new/preset', 'last_season']);
-      const settings = extras.state.draftLeagueSettings;
-      expect(settings.scoringType).toEqual('category');
-      expect(settings.leagueSize).toEqual(8);
-      expect(settings.statWeights.goals).toEqual(6);
-    });
-
-    it('sends nothing along with a preset whose league was left alone', async () => {
-      listAll.mockReturnValue(of([]));
-      const component = await render();
-
-      component.start();
-
       expect(navigate).toHaveBeenCalledWith(['/draft/new/preset', 'last_season']);
     });
 
-    it('shows a board with its own league, not the defaults', async () => {
-      loadProjection.mockReturnValue(of(board('p1')));
+    it('opens the setup for a board without reading or writing it', async () => {
       const component = await render();
-
-      await pickProjections();
-
-      expect(component.leagueSettings()?.scoringType).toEqual('category');
-      expect(component.leagueSettings()?.leagueSize).toEqual(10);
-    });
-
-    // Alexander's call: the league belongs to the draft, and the board is never written to.
-    it('takes a league changed for a board to its draft, leaving the board alone', async () => {
-      loadProjection.mockReturnValue(of(board('p1')));
-      const component = await render();
-      await pickProjections();
-
-      expect(component.leagueSettings()?.scoringType).toEqual('category');
-      component.setLeagueSettings({ ...component.leagueSettings()!, scoringType: 'points' });
-      component.start();
-
-      expect(updateProjection).not.toHaveBeenCalled();
-      const [path, extras] = navigate.mock.calls[0];
-      expect(path).toEqual(['/draft/new/board', 'p1']);
-      expect(extras.state.draftLeagueSettings.scoringType).toEqual('points');
-    });
-
-    it('opens a board without writing to it when its league was left alone', async () => {
-      loadProjection.mockReturnValue(of(board('p1')));
-      const component = await render();
-      await pickProjections();
+      component.sourceKind.set('projection');
 
       component.start();
 
+      expect(loadProjection).not.toHaveBeenCalled();
       expect(updateProjection).not.toHaveBeenCalled();
       expect(navigate).toHaveBeenCalledWith(['/draft/new/board', 'p1']);
-    });
-
-    it('keeps the league set for a preset while a board is looked at', async () => {
-      loadProjection.mockReturnValue(of(board('p1')));
-      const component = await render();
-      component.sourceKind.set('preset');
-      component.setLeagueSettings({ ...component.leagueSettings()!, scoringType: 'category' });
-
-      await pickProjections();
-      expect(component.leagueSettings()?.leagueSize).toEqual(10);
-
-      component.sourceKind.set('preset');
-      expect(component.leagueSettings()?.scoringType).toEqual('category');
-    });
-
-    // The presets differ only in their numbers, so a league imported with one picked stays with
-    // the other rather than falling back to the defaults.
-    it('keeps the league set for one preset when another is picked', async () => {
-      listAll.mockReturnValue(of([]));
-      const component = await render();
-      component.setLeagueSettings({ ...component.leagueSettings()!, leagueSize: 14 });
-
-      component.selectPreset(MODEL);
-
-      expect(component.leagueSettings()?.leagueSize).toEqual(14);
-    });
-
-    // An import says which league the user plays in, so a board is drafted against it too.
-    it('drafts a board against the league imported while a preset was picked', async () => {
-      loadProjection.mockReturnValue(of(board('p1')));
-      const component = await render();
-      component.setLeagueSettings({
-        ...component.leagueSettings()!,
-        leagueSize: 14,
-        yahooSync: {
-          leagueName: 'My league',
-          leagueKey: '465.l.1',
-          syncedAt: '2026-09-17T00:00:00Z',
-        },
-      });
-
-      await pickProjections();
-      expect(component.leagueSettings()?.leagueSize).toEqual(14);
-      component.start();
-
-      expect(updateProjection).not.toHaveBeenCalled();
-      const [path, extras] = navigate.mock.calls[0];
-      expect(path).toEqual(['/draft/new/board', 'p1']);
-      expect(extras.state.draftLeagueSettings.yahooSync.leagueName).toEqual('My league');
-    });
-
-    // A preset is never "occupied" by a draft any more: Start always begins a new one, and the
-    // league set on the page goes with it.
-    it('takes the league to a second draft against a preset that already has one', async () => {
-      listAll.mockReturnValue(of([summary('preset1', 'draft', 'in_progress')]));
-      const component = await render();
-
-      component.setLeagueSettings({ ...component.leagueSettings()!, leagueSize: 14 });
-      component.start();
-
-      expect(createProjection).not.toHaveBeenCalled();
-      expect(updateProjection).not.toHaveBeenCalled();
-      const [path, extras] = navigate.mock.calls[0];
-      expect(path).toEqual(['/draft/new/preset', 'last_season']);
-      expect(extras.state.draftLeagueSettings.leagueSize).toEqual(14);
     });
   });
 
@@ -656,13 +482,10 @@ describe('DraftStartComponent', () => {
     component.sourceKind.set('preset');
     fixture.detectChanges();
     expect(pressed()).toEqual(['true', 'false', 'false']);
-    // Its steps are headings under it. The import's label under the cards is deliberately not
-    // one: it is a way into the first step, not a step.
-    expect(texts(fixture, 'h3')).toEqual([
-      'What do you want to draft against?',
-      'League settings',
-      'Preview',
-    ]);
+    // One step, a heading over it: the league is the draft setup's to ask, and there is no
+    // preview. The import's label under the cards is deliberately not one: it is a way into the
+    // step, not a step.
+    expect(texts(fixture, 'h3')).toEqual(['What do you want to draft against?']);
     expect(texts(fixture, '.row-name')).toEqual([LAST_SEASON_PRESET_NAME, MODEL_PRESET_NAME]);
     expect(fixture.nativeElement.querySelector('app-projection-import')).toBeNull();
   });

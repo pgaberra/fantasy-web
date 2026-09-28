@@ -1,0 +1,25 @@
+@if (columns().length === 0) {
+  <p class="weights-empty">No stats count yet. Pick them under Stats.</p>
+} @else {
+  <ul class="weights">
+    @for (col of columns(); track col) {
+      <li class="weight">
+        <label class="weight-name" [attr.for]="'weight-' + col" [attr.title]="col | statTooltip">{{
+          col | statLabel
+        }}</label>
+        <!-- A text field, not a number field: see decimal-input.ts. -->
+        <input
+          type="text"
+          inputmode="decimal"
+          class="weight-input"
+          [id]="'weight-' + col"
+          [value]="statWeights()[col]"
+          [attr.aria-label]="'Points per ' + (col | statLabel)"
+          (input)="onInput(col, $event)"
+          (keydown)="onKeydown(col, $event)"
+          (blur)="onBlur(col, $event)"
+        />
+      </li>
+    }
+  </ul>
+}

@@ -99,13 +99,17 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   calling one group two things; everything else is repeated per page, since component
   styles are scoped. That page went via four cards with the boards folded into a `<select>`
   (#508, #514), which was its own invention and made the reader learn the question twice.
-  Both pages also set the **league** above the preview, with the one
+  The new-projection page also sets the **league** above a preview, with the one
   `shared/league-settings-controls` component (the editor's toolbar: points/category, League
-  setup, Stats, Import league) and the preview's editable weight row. Each page keeps the
-  changed league per starting point. The draft picker hands it to the draft in history state;
-  the new-projection page lays it over the settings it creates with (a copy stays byte-exact
-  when the league was left alone). A preview scored by defaults read as "not my league" and
-  put people off creating at all.
+  setup, Stats, Import league) and the preview's editable weight row, kept per starting point
+  and laid over the settings it creates with (a copy stays byte-exact when the league was left
+  alone). A preview scored by defaults read as "not my league" and put people off creating at
+  all. **The draft picker does neither any more**: it is the source and Start. A draft's league
+  is set in the draft page's setup (`draft-mode/draft-setup`, the Settings button once the draft
+  runs) — the same controls with `[sizing]="false"`, since the league's size there is the teams
+  it seats, plus `shared/stat-weights-editor` for the points. Alexander's call (2026-09-28): the
+  picker's preview was not the board the draft shows, and a league set before Start had to
+  travel in history state and could not be changed once the draft ran.
   The first row of the open kind is
   checked from the start (`selection`, a
   `linkedSignal` that keeps a pick whose row survives a reload), so a preset draft is
