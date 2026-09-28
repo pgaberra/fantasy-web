@@ -84,7 +84,6 @@
     />
     @if (scoresByPoints()) {
       <div class="setup-weights">
-        <span class="setup-sublabel">Points per stat</span>
         <app-stat-weights-editor
           [statWeights]="editableLeague().statWeights"
           [activeScoringColumns]="editableLeague().activeScoringColumns"
