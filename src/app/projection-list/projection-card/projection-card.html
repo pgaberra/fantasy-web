@@ -5,7 +5,7 @@
     <app-icon [name]="iconName()" [size]="20" />
   </span>
   <div class="card-main">
-    <span class="card-name">{{ projection().name }}</span>
+    <span class="card-name" [title]="projection().name">{{ projection().name }}</span>
     <span class="card-meta">
       @if (origin(); as from) {
         Following {{ from.authorUsername }} ·

@@ -82,6 +82,13 @@ describe('ProjectionCardComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Updated');
   });
 
+  /** The name is cut to one line so every card in the grid is the same height. */
+  it('carries the whole name on hover, for a name the card cuts short', () => {
+    render();
+
+    expect(ngMocks.find<HTMLElement>('.card-name').nativeElement.title).toEqual('My league');
+  });
+
   describe('where the numbers came from', () => {
     const renderCard = (overrides: Partial<ProjectionSummaryResponse>) => {
       const fixture = MockRender(template, {
