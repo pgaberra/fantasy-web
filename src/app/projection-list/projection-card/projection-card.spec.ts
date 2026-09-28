@@ -86,7 +86,7 @@ describe('ProjectionCardComponent', () => {
   it('carries the whole name on hover, for a name the card cuts short', () => {
     render();
 
-    expect(ngMocks.find<HTMLElement>('.card-name').nativeElement.title).toEqual('My league');
+    expect(ngMocks.input(ngMocks.find('.card-name'), 'appTooltip')).toEqual('My league');
   });
 
   describe('where the numbers came from', () => {
@@ -143,7 +143,7 @@ describe('ProjectionCardComponent', () => {
         origin: { authorUsername: 'alex', shareToken: 'tok123' },
       });
 
-      expect(ngMocks.find<HTMLElement>('.card-meta').nativeElement.title).toMatch(
+      expect(ngMocks.input<string>(ngMocks.find('.card-meta'), 'appTooltip')).toMatch(
         /^Following alex · Updated /,
       );
     });

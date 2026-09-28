@@ -3,6 +3,7 @@ import { SCORING_STAT_KEYS, ScoringStatKey } from '../../models/stat-key.model';
 import { StatLabelPipe } from '../../pipes/stat-label.pipe';
 import { StatTooltipPipe } from '../../pipes/stat-tooltip.pipe';
 import { parseDecimalInput, steppedDecimalInput } from '../decimal-input';
+import { TooltipDirective } from '../tooltip/tooltip.directive';
 
 /** The same step the editor's weight row takes on an arrow key. */
 const WEIGHT_STEP = 0.01;
@@ -14,7 +15,7 @@ const WEIGHT_STEP = 0.01;
  */
 @Component({
   selector: 'app-stat-weights-editor',
-  imports: [StatLabelPipe, StatTooltipPipe],
+  imports: [TooltipDirective, StatLabelPipe, StatTooltipPipe],
   templateUrl: './stat-weights-editor.html',
   styleUrl: './stat-weights-editor.css',
 })

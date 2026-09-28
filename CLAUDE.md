@@ -30,7 +30,7 @@ npm run check:copy     # hold user-facing copy to COPY-RULES.md (CI uses this)
 
 CI runs (and must pass): `generate:api`, `lint`, `format:check`, `check:copy`, `test`, `build`, and the
 guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deployment-args.sh`,
-`check-inline-icons.sh`, `check-pending-states.sh`).
+`check-inline-icons.sh`, `check-native-tooltips.sh`, `check-pending-states.sh`).
 
 > **After cloning, run `npm run generate:api` once** — `src/app/api` is generated,
 > not committed, so lint/test/build will fail until it exists.
@@ -161,7 +161,7 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   owner likes**, and editing or deleting that board leaves a draft under way exactly as it was.
   Start never saves anything: it opens `/draft/new/preset/:preset` or `/draft/new/board/:id`,
   and the draft page creates the draft once its setup is confirmed (`POST
-  /api/v1/projections/{id}/drafts` for a board, which copies the rows server-side; a plain
+/api/v1/projections/{id}/drafts` for a board, which copies the rows server-side; a plain
   create with `kind: draft` and `source` for a preset, whose rows the server seeds). The draft
   then lives at `/drafts/:id`. Before this a draft was a field on the board, so "one draft per
   projection" was a property of the storage rather than anyone's decision, and a preset could be

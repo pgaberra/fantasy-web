@@ -23,6 +23,7 @@ import {
   StreamerPlannerLeagueService,
 } from '../../services/streamer-planner-league.service';
 import { YahooService } from '../../services/yahoo.service';
+import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 
 /** The position tabs, in the order a lineup lists them. "All" is every available player. */
 export const POSITION_TABS = ['All', 'C', 'LW', 'RW', 'D', 'G'] as const;
@@ -46,7 +47,13 @@ export interface RankedFreeAgent {
  */
 @Component({
   selector: 'app-free-agents',
-  imports: [ErrorStateComponent, FormsModule, HelpTipComponent, LoadingIndicatorComponent],
+  imports: [
+    TooltipDirective,
+    ErrorStateComponent,
+    FormsModule,
+    HelpTipComponent,
+    LoadingIndicatorComponent,
+  ],
   templateUrl: './free-agents.html',
   styleUrl: './free-agents.css',
 })
