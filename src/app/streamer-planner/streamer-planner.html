@@ -115,7 +115,6 @@
                         [class.off-night]="day.offNight"
                         [attr.data-tier]="matchupTier(game)"
                         [appTooltip]="matchupLabel(game)"
-                        [attr.aria-label]="matchupLabel(game)"
                       >
                         {{ game.home ? '' : '@' }}{{ game.opponent }}
                         @if (game.backToBack) {
