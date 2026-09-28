@@ -33,6 +33,15 @@ export class NotificationService {
   }
 
   /**
+   * Something the user asked for that is not there to have, such as an address naming a draft
+   * this account does not hold. It reads like a failure, but nothing is at fault, so it is not
+   * reported: an expected outcome in the error feed is noise that hides the real faults.
+   */
+  notice(message: string): void {
+    this.show(message, 'error', AUTO_DISMISS_MS);
+  }
+
+  /**
    * Confirms an action that worked, for the moment after the press only: what stays true
    * afterwards belongs on the page itself (the button that now says Unfollow), not in a line of
    * text that outlives the moment. Not reported, since nothing went wrong.

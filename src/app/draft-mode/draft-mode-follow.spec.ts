@@ -224,6 +224,25 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     component.stopFollowing();
   });
 
+  it('says the pick, not a league team, once sync is switched off', async () => {
+    leagueDraftCall.mockReturnValue(
+      of(leagueDraft([{ overall: 1, round: 1, teamId: '465.l.9.t.2', playerId: 6743 }])),
+    );
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
+
+    component.requestFollow();
+    fixture.detectChanges();
+    expect(progressText(fixture)).toContain('Up next: Alpha');
+
+    component.stopFollowing();
+    fixture.detectChanges();
+
+    expect(component.namesUpNextTeam()).toBe(false);
+    expect(progressText(fixture)).toContain('Up next: pick #2');
+    expect(progressText(fixture)).not.toContain('Alpha');
+  });
+
   // Before a live draft runs, Yahoo lists the league's teams in an order of its own. A seat read
   // off that list is a guess nobody can tell from the real one: it said #6 to a manager whose
   // league had him picking twelfth. The board takes the league's teams all the same, since the

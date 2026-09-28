@@ -104,7 +104,11 @@
               <span class="you-tag">· your first pick is #{{ seat }}</span>
             }
           } @else {
-            Up next: <strong>{{ upNextTeam()?.name }}</strong>
+            @if (namesUpNextTeam()) {
+              Up next: <strong>{{ upNextTeam()?.name }}</strong>
+            } @else {
+              Up next: <strong>pick #{{ pickNumber() }}</strong>
+            }
             @if (isMyPick()) {
               <span class="you-tag">· you</span>
             }

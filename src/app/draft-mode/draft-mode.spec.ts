@@ -113,6 +113,9 @@ describe('DraftModeComponent', () => {
   const navigate = vi.fn(() => Promise.resolve(true));
 
   let loadedProjection: ProjectionResponse = projection;
+  let loadFailure: unknown = null;
+  const notifyError = vi.fn();
+  const notifyNotice = vi.fn();
 
   beforeEach(() => {
     updateProjection.mockClear();
@@ -122,6 +125,9 @@ describe('DraftModeComponent', () => {
     startDraft.mockReset();
     startDraft.mockImplementation(() => of({ id: 'd1', name: 'Projection p1' }));
     loadedProjection = projection;
+    loadFailure = null;
+    notifyError.mockClear();
+    notifyNotice.mockClear();
     return MockBuilder(DraftModeComponent)
       .keep(ProjectionRankingService)
       .keep(ProjectionCalculationService)
@@ -130,11 +136,12 @@ describe('DraftModeComponent', () => {
       .keep(TierService)
       .mock(PlayerService, { getPlayers: () => of(players) })
       .mock(ProjectionStorageService, {
-        loadProjection: () => of(loadedProjection),
+        loadProjection: () => (loadFailure ? throwError(() => loadFailure) : of(loadedProjection)),
         updateProjection,
         renameProjection,
         startDraft,
       })
+      .mock(NotificationService, { error: notifyError, notice: notifyNotice })
       .provide({ provide: Router, useValue: { navigate } })
       .provide({
         provide: ActivatedRoute,
@@ -142,6 +149,28 @@ describe('DraftModeComponent', () => {
           snapshot: { paramMap: { get: (key: string) => (key === 'id' ? 'p1' : null) } },
         },
       });
+  });
+
+  // A draft's address opened by an account that does not hold it (deleted, or someone else's) is
+  // answered 404. That is not a fault to report, and "try again" would never work.
+  it('says a draft is not in this account, without reporting it, when the server has none', async () => {
+    loadFailure = new HttpErrorResponse({ status: 404 });
+
+    const component = await renderDraftMode();
+
+    expect(notifyNotice).toHaveBeenCalledWith(expect.stringContaining("isn't in this account"));
+    expect(notifyError).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['/projections']);
+    expect(component.loaded()).toBe(false);
+  });
+
+  it('reports a draft that fails to load for any other reason', async () => {
+    loadFailure = new HttpErrorResponse({ status: 500 });
+
+    await renderDraftMode();
+
+    expect(notifyError).toHaveBeenCalledWith("Couldn't load the draft. Please try again.");
+    expect(notifyNotice).not.toHaveBeenCalled();
   });
 
   /**
@@ -1286,6 +1315,7 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
   const renameProjection = vi.fn();
   const listAll = vi.fn();
   const notifyError = vi.fn();
+  const notifyNotice = vi.fn();
 
   beforeEach(() => {
     history.replaceState(null, '');
@@ -1302,6 +1332,7 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
     listAll.mockReset();
     listAll.mockReturnValue(of([]));
     notifyError.mockClear();
+    notifyNotice.mockClear();
     return MockBuilder(DraftModeComponent)
       .keep(ProjectionRankingService)
       .keep(ProjectionCalculationService)
@@ -1317,7 +1348,7 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
         renameProjection,
         listAll,
       })
-      .mock(NotificationService, { error: notifyError })
+      .mock(NotificationService, { error: notifyError, notice: notifyNotice })
       .provide({ provide: Router, useValue: { navigate } })
       .provide({
         provide: ActivatedRoute,
@@ -1325,6 +1356,16 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
           snapshot: { paramMap: { get: (key: string) => (key === 'board' ? 'p1' : null) } },
         },
       });
+  });
+
+  it('says the board is not in this account, without reporting it, when the server has none', async () => {
+    loadProjection.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+
+    await renderDraftMode();
+
+    expect(notifyNotice).toHaveBeenCalledWith(expect.stringContaining("isn't in this account"));
+    expect(notifyError).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['/draft']);
   });
 
   it('opens the setup on the board without writing anything', async () => {
