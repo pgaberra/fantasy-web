@@ -21,6 +21,7 @@ import { UpdateProjectionRequest } from '../api/models/update-projection-request
 import { DraftState } from '../api/models/draft-state';
 import { LeagueDraftResponse } from '../api/models/league-draft-response';
 import { boardFromLeagueDraft } from './league-draft-follow';
+import { SyncWarningDialogComponent } from '../draft-projection/sync-warning-dialog/sync-warning-dialog';
 
 /**
  * The sync switch as the settings save it: on asks the league for its draft, off stops. The
@@ -627,6 +628,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       const fixture = await renderFixture();
 
       expect(source(fixture)?.textContent).toContain('Synced from Yahoo · Beer League');
+      expect(source(fixture)?.querySelector('.sync-dot')).not.toBeNull();
       expect(updateProjection).not.toHaveBeenCalled();
     });
 
@@ -655,9 +657,101 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       const fixture = await renderFixture();
       expect(source(fixture)).not.toBeNull();
 
-      fixture.point.componentInstance.undoLast();
+      const component = fixture.point.componentInstance;
+      component.undoLast();
+      component.confirmSyncBreak();
 
       expect(source(fixture)).toBeNull();
+    });
+
+    describe('warns before a pick is changed on it', () => {
+      const warning = (fixture: Awaited<ReturnType<typeof renderFixture>>) => {
+        fixture.detectChanges();
+        return (fixture.nativeElement as HTMLElement).querySelector('app-sync-warning-dialog');
+      };
+
+      it('holds back undoing the last pick until told, naming the league', async () => {
+        loaded = projectionWith(finishedBoard);
+        leagueDraftCall.mockReturnValue(of(finishedLeague));
+        const fixture = await renderFixture();
+        const component = fixture.point.componentInstance;
+
+        component.undoLast();
+
+        expect(warning(fixture)).not.toBeNull();
+        expect(ngMocks.findInstance(SyncWarningDialogComponent).leagueName()).toEqual(
+          'Beer League',
+        );
+        expect(component.picks().length).toEqual(2);
+
+        component.confirmSyncBreak();
+
+        expect(warning(fixture)).toBeNull();
+        expect(component.picks().length).toEqual(1);
+      });
+
+      it('leaves the board as it was when cancelled, still named', async () => {
+        loaded = projectionWith(finishedBoard);
+        leagueDraftCall.mockReturnValue(of(finishedLeague));
+        const fixture = await renderFixture();
+        const component = fixture.point.componentInstance;
+
+        component.requestRemovePick(1);
+        expect(warning(fixture)).not.toBeNull();
+        component.cancelSyncBreak();
+
+        expect(warning(fixture)).toBeNull();
+        expect(component.pendingRemoval()).toBeNull();
+        expect(component.picks().length).toEqual(2);
+        expect(source(fixture)).not.toBeNull();
+      });
+
+      it('asks before editing a pick or removing one, then goes on as before', async () => {
+        loaded = projectionWith(finishedBoard);
+        leagueDraftCall.mockReturnValue(of(finishedLeague));
+        const fixture = await renderFixture();
+        const component = fixture.point.componentInstance;
+
+        component.startEditPick(2);
+        expect(component.editingPick()).toBeNull();
+        component.confirmSyncBreak();
+        expect(component.editingPick()).toEqual(2);
+        component.cancelEditPick();
+
+        component.requestRemovePick(1);
+        expect(component.pendingRemoval()).toBeNull();
+        component.confirmSyncBreak();
+        // Not the last pick, so the removal still shows what moves before it goes.
+        expect(component.pendingRemoval()).toEqual(1);
+      });
+
+      it('lets Escape take the warning down', async () => {
+        loaded = projectionWith(finishedBoard);
+        leagueDraftCall.mockReturnValue(of(finishedLeague));
+        const fixture = await renderFixture();
+        const component = fixture.point.componentInstance;
+        component.undoLast();
+
+        component.onEscape();
+
+        expect(component.pendingSyncBreak()).toBeNull();
+        expect(component.picks().length).toEqual(2);
+      });
+
+      it("says nothing on a board that is not the league's draft", async () => {
+        loaded = projectionWith({
+          ...finishedBoard,
+          picks: [finishedBoard.picks[0], { playerId: 9001, teamId: '465.l.9.t.1' }],
+        });
+        leagueDraftCall.mockReturnValue(of(finishedLeague));
+        const fixture = await renderFixture();
+        const component = fixture.point.componentInstance;
+
+        component.undoLast();
+
+        expect(warning(fixture)).toBeNull();
+        expect(component.picks().length).toEqual(1);
+      });
     });
 
     it('says nothing when the league does not answer, and asks only once', async () => {

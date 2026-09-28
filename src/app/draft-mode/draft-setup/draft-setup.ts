@@ -5,6 +5,7 @@ import {
   input,
   linkedSignal,
   OnInit,
+  inject,
   output,
   signal,
   untracked,
@@ -35,6 +36,8 @@ import { LeagueSyncComponent } from '../../draft-projection/projection-settings-
 import { YahooSyncResult } from '../../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
 import { EspnSyncResult } from '../../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
 import { DraftSyncCheck, FollowedLeague } from '../league-draft-follow';
+import { SyncWarningDialogComponent } from '../../draft-projection/sync-warning-dialog/sync-warning-dialog';
+import { ProjectionSyncService } from '../../services/projection-sync.service';
 
 interface SetupRow {
   id: string;
@@ -88,11 +91,14 @@ const MINE_ID = 'team-me';
     LeagueSyncComponent,
     StatWeightsEditorComponent,
     ToggleSwitchComponent,
+    SyncWarningDialogComponent,
   ],
   templateUrl: './draft-setup.html',
   styleUrl: './draft-setup.css',
 })
 export class DraftSetupComponent implements OnInit {
+  private readonly projectionSync = inject(ProjectionSyncService);
+
   readonly initial = input<DraftState | null>(null);
   /**
    * Whether the user's seat in `initial` is one somebody chose. False for a board whose order is
@@ -117,6 +123,11 @@ export class DraftSetupComponent implements OnInit {
    * for a saved draft.
    */
   readonly draftName = input<string | null>(null);
+  /**
+   * The league whose draft the board in `initial` is, pick for pick, or null. Its teams and its
+   * order are the league's then, and changing either makes the board the user's own.
+   */
+  readonly boardSyncedFrom = input<FollowedLeague | null>(null);
 
   readonly confirmed = output<DraftSetupResult>();
   readonly cancelled = output<void>();
@@ -240,6 +251,50 @@ export class DraftSetupComponent implements OnInit {
       !this.draftPositionKnown(),
   );
 
+  /**
+   * The league's settings as they were imported, and the number of teams they came with: the
+   * baseline a change in these settings is measured against. Taken as the settings open and again
+   * on every import, so a fresh import is never itself a change. Null while no league is linked.
+   */
+  private readonly syncBaseline = signal<{ signature: string; teams: number } | null>(null);
+  /** The warning shown on Save when it would take the draft out of sync, naming the league. */
+  readonly syncWarning = signal<FollowedLeague | null>(null);
+
+  /**
+   * Whether the scoring, the roster or the number of teams differ from what the linked league
+   * set. Saved that way, the settings are no longer the league's, so the link goes with them, as
+   * it does in the editor. The teams count only where they are the user's to set: a board locked
+   * to its league takes the league's number whatever the rows say.
+   */
+  readonly settingsDiverged = computed(() => {
+    const baseline = this.syncBaseline();
+    if (!baseline || !this.linked()) {
+      return false;
+    }
+    const teamsChanged = !this.locked() && this.rows().length !== baseline.teams;
+    return teamsChanged || this.signature() !== baseline.signature;
+  });
+  /** Whether the teams or the user's seat differ from a board that is its league's draft. */
+  readonly boardDiverged = computed(() => {
+    const initial = this.initial();
+    if (!initial || !this.boardSyncedFrom()) {
+      return false;
+    }
+    const order = this.rows().map((row) => row.id);
+    return order.length !== initial.order.length || order.some((id, i) => id !== initial.order[i]);
+  });
+
+  private signature(): string {
+    // The size is left to the teams: it is read off them on the way out.
+    return this.projectionSync.settingsSignature({ ...this.editableLeague(), leagueSize: 0 });
+  }
+
+  private takeSyncBaseline(): void {
+    this.syncBaseline.set(
+      this.linked() ? { signature: this.signature(), teams: this.rows().length } : null,
+    );
+  }
+
   private readonly teamsSelect = viewChild<ElementRef<HTMLSelectElement>>('teamsSelect');
   private readonly positionSelect = viewChild<ElementRef<HTMLSelectElement>>('positionSelect');
 
@@ -254,6 +309,7 @@ export class DraftSetupComponent implements OnInit {
       );
       this.draftPositionKnown.set(this.positionKnown());
       this.teamCountKnown.set(true);
+      this.takeSyncBaseline();
       return;
     }
     this.rows.set([{ id: MINE_ID, name: this.seedName(), mine: true }]);
@@ -261,6 +317,7 @@ export class DraftSetupComponent implements OnInit {
     if (this.linked()) {
       this.setTeamCount(this.editableLeague().leagueSize);
     }
+    this.takeSyncBaseline();
   }
 
   protected readonly FULL_SEASON_GAMES = FULL_SEASON_GAMES;
@@ -298,6 +355,7 @@ export class DraftSetupComponent implements OnInit {
     if (size != null) {
       this.setTeamCount(size);
     }
+    this.takeSyncBaseline();
     const name = result.leagueName?.trim();
     if (name && this.draftName() !== null && !this.nameTyped()) {
       this.nameValue.set(name);
@@ -408,14 +466,49 @@ export class DraftSetupComponent implements OnInit {
   }
 
   submit(): void {
-    if (this.syncChecking()) {
+    if (this.syncChecking() || this.bouncedIncomplete()) {
       return;
     }
+    const settingsDiverged = this.settingsDiverged();
+    if (settingsDiverged || this.boardDiverged()) {
+      this.syncWarning.set(settingsDiverged ? this.linked() : this.boardSyncedFrom());
+      return;
+    }
+    this.emitConfirmed();
+  }
+
+  /**
+   * "Save it anyway." Settings that are no longer the league's lose the link to it, as a
+   * projection's do; the league's id stays, so the next import starts from it. A board changed by
+   * hand needs nothing more: it stops naming the league once it no longer matches its draft.
+   */
+  confirmSyncBreak(): void {
+    this.syncWarning.set(null);
+    if (this.settingsDiverged()) {
+      this.editableLeague.update((league) => ({ ...league, yahooSync: null, espnSync: null }));
+    }
+    this.emitConfirmed();
+  }
+
+  cancelSyncBreak(): void {
+    this.syncWarning.set(null);
+  }
+
+  /** Sends the user to what is missing, if anything is. True when something was. */
+  private bouncedIncomplete(): boolean {
+    if (this.canStart() && this.numTeams() !== null) {
+      return false;
+    }
+    this.startAttempted.set(true);
+    const missing = this.teamCountKnown() ? this.positionSelect() : this.teamsSelect();
+    missing?.nativeElement.focus();
+    return true;
+  }
+
+  private emitConfirmed(): void {
+    // Asked again: a board that was locked to its league is the user's to set once the link goes.
     const numTeams = this.numTeams();
-    if (!this.canStart() || numTeams === null) {
-      this.startAttempted.set(true);
-      const missing = this.teamCountKnown() ? this.positionSelect() : this.teamsSelect();
-      missing?.nativeElement.focus();
+    if (this.bouncedIncomplete() || numTeams === null) {
       return;
     }
     const rows = this.rows();

@@ -17,14 +17,6 @@
   max-width: 18rem;
 }
 
-.synced-dot {
-  flex: none;
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: var(--color-success);
-}
-
 /* The platform's own mark, in its own colours: it says where the league lives without spending
    any of the button's width on the word "ESPN" or "Yahoo". */
 .synced-mark {

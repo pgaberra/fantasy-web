@@ -5,7 +5,7 @@
     [appTooltip]="'Imported from ' + leagueName + ' · click to re-sync or change league'"
     (click)="pressed.emit()"
   >
-    <span class="synced-dot" aria-hidden="true"></span>
+    <span class="sync-dot" aria-hidden="true"></span>
     @switch (provider()) {
       @case ('espn') {
         <img class="synced-mark synced-mark--espn" src="espn-logo.png" alt="" />
