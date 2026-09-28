@@ -38,6 +38,7 @@
 <ng-template #leagueMenu>
   <app-league-settings-menu
     [scoringType]="settings().scoringType"
+    [sizing]="sizing()"
     [syncedLeagueName]="syncedLeagueName()"
     (manageSync)="showSyncDialog.set(true)"
     [leagueSize]="settings().leagueSize"

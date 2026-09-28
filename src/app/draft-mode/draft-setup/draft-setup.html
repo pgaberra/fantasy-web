@@ -6,7 +6,7 @@
     </p>
   } @else {
     <p class="setup-hint">
-      Set the league size and your draft position. You can change these later.
+      Set how your league scores, its size and your draft position. You can change these later.
     </p>
   }
 
@@ -24,6 +24,27 @@
       <span class="setup-sync-note">The league sets the teams and your draft position.</span>
     </div>
   }
+
+  <!-- How the league scores comes first: it is what ranks the board, and an import here fills in
+       the size and the roster below as well. -->
+  <div class="setup-field setup-league">
+    <span class="setup-label">Scoring</span>
+    <app-league-settings-controls
+      [settings]="editableLeague()"
+      [sizing]="false"
+      (settingsChange)="setLeague($event)"
+    />
+    @if (scoresByPoints()) {
+      <div class="setup-weights">
+        <span class="setup-sublabel">Points per stat</span>
+        <app-stat-weights-editor
+          [statWeights]="editableLeague().statWeights"
+          [activeScoringColumns]="editableLeague().activeScoringColumns"
+          (statWeightsChange)="setStatWeights($event)"
+        />
+      </div>
+    }
+  </div>
 
   <div class="setup-field">
     <span class="setup-label">Number of teams</span>
@@ -79,7 +100,10 @@
 
   <div class="setup-field">
     <span class="setup-label">Roster slots</span>
-    <app-roster-slots-editor [(rosterSlots)]="editableRosterSlots" />
+    <app-roster-slots-editor
+      [rosterSlots]="editableLeague().rosterSlots"
+      (rosterSlotsChange)="setRosterSlots($event)"
+    />
   </div>
 
   <div class="setup-actions">

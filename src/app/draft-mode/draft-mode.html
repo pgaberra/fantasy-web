@@ -80,12 +80,11 @@
     @if (phase() === 'setup') {
       @if (startingFromLeague()) {
         <app-loading-indicator label="Loading your league's draft" />
-      } @else {
+      } @else if (leagueSettings(); as league) {
         <app-draft-setup
           [initial]="draft()"
           [positionKnown]="!seatRequired()"
-          [rosterSlots]="rosterSlots()"
-          [leagueSize]="leagueSize()"
+          [league]="league"
           [syncLabel]="canSyncPicks() ? syncLabel() : null"
           [notice]="followNotice()"
           (confirmed)="onSetupConfirmed($event)"

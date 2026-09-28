@@ -69,10 +69,7 @@ import { ProjectionSerializerService } from '../services/projection-serializer.s
 import { StatInfoService } from '../services/stat-info.service';
 import { DraftSettings } from '../api/models/draft-settings';
 import { LeagueProjectionSettingsResponse } from '../api/models/league-projection-settings-response';
-import {
-  draftLeagueFromHistory,
-  draftSettingsFromProjection,
-} from '../shared/league-settings/league-settings';
+import { draftSettingsFromProjection } from '../shared/league-settings/league-settings';
 import { Preset, presetById } from '../models/preset';
 import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/premium-refused';
 import {
@@ -314,9 +311,9 @@ export class DraftModeComponent implements OnInit {
 
   private readonly data = signal<ProjectionData | null>(null);
   /**
-   * The league this draft is ranked by. The draft's own once it has one; before that, the one set
-   * on the draft picker, or else the projection's. Every change made here lands in this and is
-   * saved with the draft, never in the projection's settings.
+   * The league this draft is ranked by. The draft's own once it has one; before that, what it is
+   * played against opens with. Set in the setup, where every change lands in this and is saved
+   * with the draft, never in the projection's settings.
    */
   private readonly league = signal<DraftSettings | null>(null);
   private readonly allPlayers = signal<Player[]>([]);
@@ -875,9 +872,7 @@ export class DraftModeComponent implements OnInit {
           // A draft saved before drafts held a league is ranked by the projection's, and takes a
           // copy of it with its next save.
           this.league.set(
-            loadedDraft?.settings ??
-              draftLeagueFromHistory() ??
-              draftSettingsFromProjection(projection.data.settings),
+            loadedDraft?.settings ?? draftSettingsFromProjection(projection.data.settings),
           );
           this.loaded.set(true);
         },
@@ -912,8 +907,8 @@ export class DraftModeComponent implements OnInit {
       createDefaultProjectionState((key) => this.statInfoService.isRateStat(key)),
     );
     this.data.set(defaults);
-    // The league set on the draft picker, if one was: the draft is created with it.
-    this.league.set(draftLeagueFromHistory() ?? draftSettingsFromProjection(defaults.settings));
+    // What a new projection would be ranked by, until the setup says otherwise.
+    this.league.set(draftSettingsFromProjection(defaults.settings));
     this.playerService
       .getPlayers()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -957,10 +952,8 @@ export class DraftModeComponent implements OnInit {
           );
           this.allPlayers.set(pool);
           this.lookup.setPlayers(pool);
-          // The league set on the draft picker, if one was; otherwise the board's own.
-          this.league.set(
-            draftLeagueFromHistory() ?? draftSettingsFromProjection(board.data.settings),
-          );
+          // The board's own league, until the setup says otherwise.
+          this.league.set(draftSettingsFromProjection(board.data.settings));
           this.loaded.set(true);
         },
         error: (error: unknown) => {
@@ -1094,9 +1087,14 @@ export class DraftModeComponent implements OnInit {
   }
 
   onSetupConfirmed(result: DraftSetupResult): void {
-    this.league.update((league) =>
-      league ? { ...league, rosterSlots: result.rosterSlots } : league,
-    );
+    const followedBefore = this.followedLeague();
+    this.league.set(result.league);
+    // A league imported in a new draft's setup is one it can follow: the league sets the teams
+    // and the order from there, as it does for a board that already had one linked.
+    if (this.isNewDraft() && followedBefore === null && this.followedLeague() !== null) {
+      this.startFromLeague();
+      return;
+    }
     this.analytics.capture('draft_started');
     // A new draft set up against a league it can follow starts with sync on: that is what the
     // league was linked for. Saved with the switch on, the draft's own address picks it up the

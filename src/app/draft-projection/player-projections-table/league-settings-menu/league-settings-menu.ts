@@ -32,6 +32,11 @@ export class LeagueSettingsMenuComponent {
   /** Set once a league has been imported — these settings then have a provenance worth stating. */
   readonly syncedLeagueName = input<string | null>(null);
   readonly manageSync = output<void>();
+  /**
+   * Whether the menu sets the league's size and roster. Off in the draft setup, which asks for
+   * both itself — the size as the teams it seats — and must not ask twice.
+   */
+  readonly sizing = input<boolean>(true);
 
   readonly leagueSize = model<number>(DEFAULT_LEAGUE_SIZE);
   readonly rosterSlots = model<RosterSlots>(DEFAULT_ROSTER_SLOTS);

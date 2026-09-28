@@ -358,39 +358,6 @@
         }
       </fieldset>
 
-      <!--
-        The pick is made against the board it would draft: the same preview the new-projection
-        page draws, out of the same starting points. Only when something is picked — an empty
-        kind has its own line in the panel above, and a preview would only say so again.
-      -->
-      <!--
-        The league the draft is ranked by, set against the preview it ranks: the editor's own
-        toolbar above, and the weights in the preview's weight row. They start from what the
-        picked source opens with, and belong to the draft: they go to the draft page with Start
-        and are saved with the draft, never into the board it is played against.
-      -->
-      @if (leagueSettings(); as league) {
-        <div class="league">
-          <h3 class="step-title">League settings</h3>
-          <app-league-settings-controls
-            [settings]="league"
-            (settingsChange)="setLeagueSettings($event)"
-          />
-        </div>
-      }
-
-      @if (previewSource(); as previewed) {
-        <div class="preview">
-          <h3 class="step-title">Preview</h3>
-          <app-starting-point-preview
-            [source]="previewed"
-            [fallbackNote]="previewFallbackNote()"
-            [leagueSettings]="leagueSettings()"
-            (statWeightsChange)="setStatWeights($event)"
-          />
-        </div>
-      }
-
       <!-- The page's one primary action, and it follows what is picked. Left as "Start draft"
            over a locked preset it would be a button whose only outcome is a refusal; as a link
            to the Premium page it is the one thing that can actually be done next. -->

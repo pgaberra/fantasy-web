@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
+  draftSettingsOf,
   LeagueSettings,
+  leagueSettingsFromDraft,
   NO_PAGE_LEAGUES,
   pageLeagueFor,
   withEspnImport,
@@ -9,9 +11,11 @@ import {
 } from './league-settings';
 import {
   DEFAULT_LEAGUE_SIZE,
+  DEFAULT_MIN_GOALIE_GAMES,
   DEFAULT_ROSTER_SLOTS,
   DEFAULT_STAT_WEIGHTS,
 } from '../../draft-projection/projection-defaults';
+import { DraftSettings } from '../../api/models/draft-settings';
 import { LeagueProjectionSettingsResponse } from '../../api/models/league-projection-settings-response';
 
 describe('league settings imports', () => {
@@ -154,5 +158,37 @@ describe('leagues set on a page', () => {
     leagues = withPageLeague(leagues, 'preset', base, synced('t2'));
 
     expect(pageLeagueFor(leagues, 'copy:b', board)?.leagueSize).toEqual(10);
+  });
+});
+
+describe('a draft league in the setup', () => {
+  it('comes back as it went in, through the controls and back to the draft', () => {
+    const stored: DraftSettings = {
+      scoringType: 'category',
+      statWeights: { ...DEFAULT_STAT_WEIGHTS },
+      activeScoringColumns: ['goals', 'assists'],
+      activeUtilityColumns: ['gp'],
+      leagueSize: 10,
+      rosterSlots: { ...DEFAULT_ROSTER_SLOTS },
+      minGoalieGames: 25,
+      yahooSync: { leagueName: 'HHL', leagueKey: '465.l.1', syncedAt: '2026-09-01T00:00:00Z' },
+    };
+
+    expect(draftSettingsOf(leagueSettingsFromDraft(stored))).toEqual(stored);
+  });
+
+  it('fills in what a draft saved without a size or a goalie minimum never had', () => {
+    const league = leagueSettingsFromDraft({
+      scoringType: 'points',
+      statWeights: { ...DEFAULT_STAT_WEIGHTS },
+      activeScoringColumns: ['goals'],
+      activeUtilityColumns: [],
+      rosterSlots: { ...DEFAULT_ROSTER_SLOTS },
+    });
+
+    expect(league.leagueSize).toBe(DEFAULT_LEAGUE_SIZE);
+    expect(league.minGoalieGames).toBe(DEFAULT_MIN_GOALIE_GAMES);
+    expect(league.yahooSync).toBeNull();
+    expect(league.espnSync).toBeNull();
   });
 });

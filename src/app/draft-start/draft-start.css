@@ -567,23 +567,6 @@
   }
 }
 
-/* The preview sits between the choice and the Start button, where the reader's eye already is
-   after picking a card. */
-/* Four times the room above a step's title as under it, so the title belongs to what follows. */
-.league {
-  margin-top: var(--space-6);
-}
-
-.preview {
-  margin-top: var(--space-6);
-}
-
-/* Closer under the controls than the steps are to each other: they and the preview are one
-   thing, the league and what it ranks. */
-.league + .preview {
-  margin-top: var(--space-5);
-}
-
 /* Naming a draft from its row. The input takes the place of the confirmation prompt, in the same
    strip under the card, so the row grows the same way whichever the kebab was used for. */
 .rename-input {

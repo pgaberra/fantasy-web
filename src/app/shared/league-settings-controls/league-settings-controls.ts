@@ -1,4 +1,4 @@
-import { Component, computed, inject, model, signal } from '@angular/core';
+import { Component, computed, inject, input, model, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ScoringType } from '../../models/projection.model';
 import { ScoringStatKey, UtilityStatKey } from '../../models/stat-key.model';
@@ -21,11 +21,11 @@ import { EspnSyncResult } from '../../draft-projection/projection-settings-secti
 
 /**
  * The league a board is ranked by, set before it exists: the editor's league toolbar, over the
- * preview on the draft picker and on the new-projection page. Same controls in the same order —
- * how the league scores, its size and
- * roster, which stats count, and the import that fills all of it in from Yahoo or ESPN. The
- * points weights are not here, for the same reason they are not in the editor's toolbar: they are
- * the preview's weight row, under the columns they weight.
+ * preview on the new-projection page, and in the draft setup. Same controls in the same order —
+ * how the league scores, its size and roster, which stats count, and the import that fills all of
+ * it in from Yahoo or ESPN. The points weights are not here, for the same reason they are not in
+ * the editor's toolbar: they belong beside the stats they weight — the preview's weight row, or
+ * the draft setup's list of them.
  */
 @Component({
   selector: 'app-league-settings-controls',
@@ -43,6 +43,8 @@ import { EspnSyncResult } from '../../draft-projection/projection-settings-secti
 })
 export class LeagueSettingsControlsComponent {
   readonly settings = model.required<LeagueSettings>();
+  /** Whether League setup sets the size and roster; the draft setup asks for those itself. */
+  readonly sizing = input<boolean>(true);
 
   /**
    * The import dialog, open from the start when this page is where a Yahoo connect started in it

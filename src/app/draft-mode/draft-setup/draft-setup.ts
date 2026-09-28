@@ -11,13 +11,18 @@ import {
 } from '@angular/core';
 import { DraftState } from '../../api/models/draft-state';
 import { DraftTeam } from '../../api/models/draft-team';
+import { DraftSettings } from '../../api/models/draft-settings';
 import { RosterSlots } from '../../api/models/roster-slots';
-import {
-  DEFAULT_LEAGUE_SIZE,
-  DEFAULT_ROSTER_SLOTS,
-} from '../../draft-projection/projection-defaults';
+import { ScoringStatKey } from '../../models/stat-key.model';
 import { RosterSlotsEditorComponent } from '../../shared/roster-slots-editor/roster-slots-editor';
 import { IconComponent } from '../../shared/icon/icon';
+import {
+  draftSettingsOf,
+  LeagueSettings,
+  leagueSettingsFromDraft,
+} from '../../shared/league-settings/league-settings';
+import { LeagueSettingsControlsComponent } from '../../shared/league-settings-controls/league-settings-controls';
+import { StatWeightsEditorComponent } from '../../shared/stat-weights-editor/stat-weights-editor';
 
 interface SetupRow {
   id: string;
@@ -27,7 +32,8 @@ interface SetupRow {
 
 export interface DraftSetupResult {
   draft: DraftState;
-  rosterSlots: RosterSlots;
+  /** The league the draft is ranked by, its size the number of teams set up. */
+  league: DraftSettings;
 }
 
 const MIN_TEAMS = 2;
@@ -35,15 +41,25 @@ const MAX_TEAMS = 32;
 const MINE_ID = 'team-me';
 
 /**
- * The setup of a draft played by hand: the league size, the user's own seat and the roster slots.
- * A draft that follows its league's draft never comes here, because the league owns the teams and
- * the order while it is followed. This is where a draft with no league to follow starts, and where
- * a board goes when its teams are edited with sync off. It offers following the league instead
- * wherever the page can.
+ * The setup of a draft played by hand: how the league scores, its size, the user's own seat and
+ * the roster slots. A draft that follows its league's draft never comes here, because the league
+ * owns the teams and the order while it is followed. This is where a draft with no league to
+ * follow starts, and where a board goes when its settings are edited with sync off. It offers
+ * following the league instead wherever the page can.
+ *
+ * <p>The league is set here rather than on the page that picks what to draft against: it belongs
+ * to the draft, not to the board it is played against, and here it stays within reach for as long
+ * as the draft runs. Nothing is kept until the setup is confirmed, so Cancel leaves the draft as
+ * it was.
  */
 @Component({
   selector: 'app-draft-setup',
-  imports: [RosterSlotsEditorComponent, IconComponent],
+  imports: [
+    RosterSlotsEditorComponent,
+    IconComponent,
+    LeagueSettingsControlsComponent,
+    StatWeightsEditorComponent,
+  ],
   templateUrl: './draft-setup.html',
   styleUrl: './draft-setup.css',
 })
@@ -56,8 +72,8 @@ export class DraftSetupComponent implements OnInit {
    */
   readonly positionKnown = input<boolean>(true);
   readonly seedName = input<string>('My Team');
-  readonly rosterSlots = input<RosterSlots>(DEFAULT_ROSTER_SLOTS);
-  readonly leagueSize = input<number>(DEFAULT_LEAGUE_SIZE);
+  /** The league the draft is ranked by as it stands: the draft's own, or what it starts from. */
+  readonly league = input.required<DraftSettings>();
   /** The sync switch's name, where this draft can follow its league's draft instead. */
   readonly syncLabel = input<string | null>(null);
   /** Why following the league's draft did not work, where that is how the setup was reached. */
@@ -75,9 +91,12 @@ export class DraftSetupComponent implements OnInit {
   // Set when Start is pressed with no seat chosen: the button stays enabled so the user learns what
   // is missing from the field itself, instead of guessing at why a disabled button won't go.
   readonly startAttempted = signal(false);
-  // Tracks the roster-slots input so a league import upstream flows in, while still letting the
-  // user edit the slots locally before starting the draft.
-  readonly editableRosterSlots = linkedSignal<RosterSlots>(() => this.rosterSlots());
+  // The league as edited here, kept apart from the draft's until the setup is confirmed. Its size
+  // is not edited as a number: it is the teams below, and is read off them on the way out.
+  readonly editableLeague = linkedSignal<LeagueSettings>(() =>
+    leagueSettingsFromDraft(this.league()),
+  );
+  readonly scoresByPoints = computed(() => this.editableLeague().scoringType === 'points');
 
   readonly numTeams = computed(() => this.rows().length);
   readonly canAdd = computed(() => this.rows().length < MAX_TEAMS);
@@ -105,12 +124,28 @@ export class DraftSetupComponent implements OnInit {
       this.draftPositionKnown.set(this.positionKnown());
       return;
     }
-    const teamCount = Math.max(MIN_TEAMS, Math.min(MAX_TEAMS, this.leagueSize()));
-    const rows: SetupRow[] = [{ id: MINE_ID, name: this.seedName(), mine: true }];
-    for (let index = 1; index < teamCount; index++) {
-      rows.push({ id: crypto.randomUUID(), name: '', mine: false });
+    this.rows.set([{ id: MINE_ID, name: this.seedName(), mine: true }]);
+    this.resizeTo(this.editableLeague().leagueSize);
+  }
+
+  /**
+   * A change from the league controls. The only one that moves the size is an import, which says
+   * how many teams the league has, so the teams follow it.
+   */
+  setLeague(next: LeagueSettings): void {
+    const size = this.editableLeague().leagueSize;
+    this.editableLeague.set(next);
+    if (next.leagueSize !== size) {
+      this.resizeTo(next.leagueSize);
     }
-    this.rows.set(rows);
+  }
+
+  setStatWeights(statWeights: Record<ScoringStatKey, number>): void {
+    this.editableLeague.update((league) => ({ ...league, statWeights }));
+  }
+
+  setRosterSlots(rosterSlots: RosterSlots): void {
+    this.editableLeague.update((league) => ({ ...league, rosterSlots }));
   }
 
   onPositionChange(event: Event): void {
@@ -142,17 +177,30 @@ export class DraftSetupComponent implements OnInit {
     this.rows.update((rows) => [...rows, { id: crypto.randomUUID(), name: '', mine: false }]);
   }
 
-  removeTeam(): void {
+  /** Drops the last team that is not the user's and has no picks; none such, and nothing goes. */
+  removeTeam(): boolean {
     if (!this.canRemove()) {
-      return;
+      return false;
     }
     const picked = new Set((this.initial()?.picks ?? []).map((pick) => pick.teamId));
     const rows = this.rows();
     for (let index = rows.length - 1; index >= 0; index--) {
       if (!rows[index].mine && !picked.has(rows[index].id)) {
         this.rows.set(rows.filter((_, i) => i !== index));
-        return;
+        return true;
       }
+    }
+    return false;
+  }
+
+  /** Adds or drops teams toward `count`, as far as the bounds and the picks already made allow. */
+  private resizeTo(count: number): void {
+    const target = Math.max(MIN_TEAMS, Math.min(MAX_TEAMS, count));
+    while (this.rows().length < target) {
+      this.addTeam();
+    }
+    while (this.rows().length > target && this.removeTeam()) {
+      // Each pass drops one team.
     }
   }
 
@@ -172,7 +220,7 @@ export class DraftSetupComponent implements OnInit {
     const order = rows.map((row) => row.id);
     this.confirmed.emit({
       draft: { teams, order, picks: this.initial()?.picks ?? [] },
-      rosterSlots: this.editableRosterSlots(),
+      league: draftSettingsOf({ ...this.editableLeague(), leagueSize: rows.length }),
     });
   }
 }

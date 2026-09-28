@@ -357,8 +357,16 @@ describe('DraftModeComponent following an ESPN draft', () => {
 
     it("asks for them for a new draft's league, then makes the draft from it", async () => {
       routeParams = { board: 'p1' };
-      loaded = { ...projectionWith(espnDraft), kind: 'projection' };
-      history.replaceState({ draftLeagueSettings: espnDraft.settings }, '');
+      // A board imported from the ESPN league, which a new draft against it then follows.
+      const board = projectionWith(espnDraft);
+      loaded = {
+        ...board,
+        kind: 'projection',
+        data: {
+          ...board.data,
+          settings: { ...board.data.settings, espnSync: espnDraft.settings!.espnSync },
+        },
+      };
       espnLeagueDraft.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 400 })));
 
       const component = await render();
@@ -379,7 +387,6 @@ describe('DraftModeComponent following an ESPN draft', () => {
       const created = startDraft.mock.calls[0][1].draft;
       expect(created.following).toBe(true);
       expect(created.order).toEqual(['espn.l.123.t.2', 'espn.l.123.t.1']);
-      history.replaceState(null, '');
     });
 
     it('lets the user close it and draft by hand', async () => {
