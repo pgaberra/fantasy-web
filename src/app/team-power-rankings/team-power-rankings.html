@@ -77,10 +77,15 @@
         <div class="picker-field">
           <label class="picker-label" for="rank-by">Rank by</label>
           <select id="rank-by" class="picker-select rank-by-select" (change)="selectRankBy($event)">
-            @if (modelOffered()) {
-              <option value="model" [selected]="isRankedBy('model')">SlapStat AI projection</option>
-            }
-            <option value="last_season" [selected]="isRankedBy('last_season')">Last season</option>
+            <!-- Named for whose numbers they are, like the two groups under it. -->
+            <optgroup label="SlapStat">
+              @if (modelOffered()) {
+                <option value="model" [selected]="isRankedBy('model')">AI projection</option>
+              }
+              <option value="last_season" [selected]="isRankedBy('last_season')">
+                Last season
+              </option>
+            </optgroup>
             @if (ownBoards().length > 0) {
               <optgroup label="My projections">
                 @for (board of ownBoards(); track board.id) {
