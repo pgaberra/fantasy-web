@@ -300,7 +300,7 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
     if (!draft) {
       return 'Draft Mode';
     }
-    return draft.finishedAt ? 'View draft summary' : 'Resume draft';
+    return draft.finishedAt ? 'View draft' : 'Resume draft';
   });
 
   /**

@@ -177,12 +177,12 @@ describe('DraftStartComponent', () => {
     expect(navigate).toHaveBeenCalledWith(['/drafts', 'd1']);
   });
 
-  it('opens a finished draft on its summary, which is what there is to see of it', async () => {
+  it('opens a finished draft on its board too', async () => {
     const component = await render();
 
     component.openDraft({ id: 'd1', draftStatus: 'finished' } as never);
 
-    expect(navigate).toHaveBeenCalledWith(['/drafts', 'd1', 'summary']);
+    expect(navigate).toHaveBeenCalledWith(['/drafts', 'd1']);
   });
 
   // The draft is created by the draft page once its setup is confirmed. Saving it here, before
@@ -446,7 +446,7 @@ describe('DraftStartComponent', () => {
     expect(labelOf('d1')).toEqual('From Projection p1');
     expect(labelOf('d2')).toEqual('Projection deleted');
     expect(component.draftLabel('in_progress')).toEqual('Resume draft');
-    expect(component.draftLabel('finished')).toEqual('View summary');
+    expect(component.draftLabel('finished')).toEqual('View draft');
   });
 
   // The choice is made in steps: the kind first, and the page opens on the user's own boards when
@@ -749,7 +749,7 @@ describe('DraftStartComponent', () => {
     );
     expect(cards.map((card) => card.getAttribute('aria-label'))).toEqual([
       'Resume draft: Beer League',
-      'View summary: Mock #2',
+      'View draft: Mock #2',
     ]);
     expect(texts(fixture, '.draft-status')).toEqual(['In progress', 'Complete']);
     expect(fixture.nativeElement.querySelectorAll('.draft .btn')).toHaveLength(0);
@@ -757,8 +757,7 @@ describe('DraftStartComponent', () => {
 
     cards[1].click();
 
-    // The card says "View summary", and that is where it goes.
-    expect(navigate).toHaveBeenCalledWith(['/drafts', 'd2', 'summary']);
+    expect(navigate).toHaveBeenCalledWith(['/drafts', 'd2']);
   });
 
   it('keeps the discard behind the card menu rather than on the card', async () => {

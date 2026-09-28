@@ -367,7 +367,7 @@ describe('DraftModeComponent', () => {
     expect(component.scoreHeading()).toEqual('Z-Score');
   });
 
-  it('confirms before finishing, then opens the summary page', async () => {
+  it('confirms before finishing, and stays on the board', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
@@ -384,30 +384,25 @@ describe('DraftModeComponent', () => {
     component.requestFinishDraft();
     component.finishDraft();
     expect(component.confirmingFinish()).toBe(false);
-    expect(navigate).toHaveBeenCalledWith(['/drafts', 'p1', 'summary']);
+    expect(component.finished()).toBe(true);
+    expect(navigate).not.toHaveBeenCalled();
   });
 
-  /**
-   * The summary reads the draft back from the server, so it may only be opened once the finished
-   * draft is saved - opening it on the click would show the draft as it was a moment ago.
-   */
-  it('opens the summary only after the finished draft is saved', async () => {
+  // The power rankings read a league from Yahoo; a draft without one has nothing there to read.
+  it('offers no power rankings for a finished draft without a Yahoo league', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
     component.applySetup(draft);
-    const saved = new Subject<ProjectionResponse>();
-    updateProjection.mockReturnValueOnce(saved);
 
-    component.requestFinishDraft();
     component.finishDraft();
-    expect(navigate).not.toHaveBeenCalled();
+    fixture.detectChanges();
 
-    saved.next(projection);
-    expect(navigate).toHaveBeenCalledWith(['/drafts', 'p1', 'summary']);
+    expect(component.rankingsLeagueKey()).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Team power rankings');
   });
 
-  it('stays on the board when saving the finished draft fails', async () => {
+  it('says so when saving the finished draft fails', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
@@ -987,9 +982,7 @@ describe('DraftModeComponent — finished draft', () => {
 
   /**
    * The board is the board, whatever state the draft is in. A finished draft opens on it with the
-   * picks it was left with, and "View summary" goes to the summary's own page; it used to open on
-   * the summary inside this page, which an address of its own cannot do without bouncing the way
-   * back to the board straight off again.
+   * picks it was left with.
    */
   it('opens a finished draft on the board, with the picks it was left with', async () => {
     const fixture = MockRender(DraftModeComponent);

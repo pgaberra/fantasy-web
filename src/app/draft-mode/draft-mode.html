@@ -118,9 +118,15 @@
               Settings
             </button>
             @if (finished()) {
-              <button type="button" class="btn btn-primary btn-sm" (click)="viewSummary()">
-                View summary
-              </button>
+              @if (rankingsLeagueKey(); as leagueKey) {
+                <a
+                  class="btn btn-primary btn-sm"
+                  routerLink="/team-power-rankings"
+                  [queryParams]="{ league: leagueKey }"
+                >
+                  Team power rankings
+                </a>
+              }
             } @else if (!following()) {
               <button
                 type="button"
@@ -217,11 +223,10 @@
               <h2 class="modal-title">Finish the draft?</h2>
               <p class="modal-text">
                 @if (isComplete()) {
-                  Finishing marks the draft complete and opens the summary. You can return to the
-                  board and keep editing.
+                  Finishing marks the draft complete. You can still change picks afterwards.
                 } @else {
                   The draft is not finished yet, {{ picks().length }} of {{ totalPicks() }} picks
-                  made. You can finish now and return to the board later.
+                  made. You can finish now and change picks later.
                 }
               </p>
               <div class="modal-actions">

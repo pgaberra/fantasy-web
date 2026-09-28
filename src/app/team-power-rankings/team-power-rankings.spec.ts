@@ -2,6 +2,7 @@ import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Observable, of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
+import { ActivatedRoute } from '@angular/router';
 import { environment } from '../../environments/environment';
 import { TeamPowerRankingsComponent } from './team-power-rankings';
 import { LeagueSummaryResponse } from '../api/models/league-summary-response';
@@ -62,6 +63,8 @@ describe('TeamPowerRankingsComponent', () => {
     of({ connected: true }),
   );
   const leagueDraftSync = vi.fn(() => true);
+  /** The `?league=` the page was opened with, as a finished draft's link carries it. */
+  let linkedLeague: string | null = null;
   const originalPayments = environment.paymentsEnabled;
   const originalSharedNotice = environment.sharedNoticeEnabled;
 
@@ -96,6 +99,7 @@ describe('TeamPowerRankingsComponent', () => {
     aiProjection.mockReturnValue(true);
     listEditable.mockReset();
     listEditable.mockReturnValue(of(boards));
+    linkedLeague = null;
     return MockBuilder(TeamPowerRankingsComponent)
       .keep(YahooLeaguePicker)
       .mock(YahooService, {
@@ -106,7 +110,15 @@ describe('TeamPowerRankingsComponent', () => {
       .mock(YahooConnectReturnService)
       .mock(LeagueSummaryService, { yahooLeague })
       .mock(ProjectionStorageService, { listEditable })
-      .mock(FeatureService, { leagueDraftSync, aiProjection } as never);
+      .mock(FeatureService, { leagueDraftSync, aiProjection } as never)
+      .provide({
+        provide: ActivatedRoute,
+        useValue: {
+          snapshot: {
+            queryParamMap: { get: (key: string) => (key === 'league' ? linkedLeague : null) },
+          },
+        },
+      });
   });
 
   afterEach(() => {
@@ -158,6 +170,19 @@ describe('TeamPowerRankingsComponent', () => {
 
     expect(yahooLeague).toHaveBeenCalledWith('465.l.1', 'model');
     expect(component.leagueName()).toEqual('Beer League');
+  });
+
+  /** A finished draft sends its reader here with its league named, so that league is read. */
+  it('opens on the league a link names', async () => {
+    linkedLeague = '465.l.2';
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+
+    expect(component.picker.selectedKey()).toEqual('465.l.2');
+    expect(yahooLeague).toHaveBeenCalledWith('465.l.2', 'model');
+    expect(component.leagueName()).toEqual('Work League');
+    const select = fixture.nativeElement.querySelector('.league-select') as HTMLSelectElement;
+    expect(select.value).toEqual('465.l.2');
   });
 
   /** Back to the placeholder is back to nothing on screen, not the last league left standing. */

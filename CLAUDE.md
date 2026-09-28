@@ -84,7 +84,7 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   against, across three kinds of source — the presets, the user's own projections, and
   boards copied from someone's share link. Drafts left mid-way lead the page as cards,
   since resuming one is what most visits are for; **the card itself is the button** (a
-  chevron and a "Resume draft" / "View summary" label at its edge), with discard and
+  chevron and a "Resume draft" / "View draft" label at its edge), with discard and
   open-the-projection behind a kebab. Below it, starting a draft is **one choice made in
   steps**: a segmented control for the kind of source (the table toolbar's "Points |
   Category" pill, each segment carrying its count so the two kinds not open are still
@@ -198,12 +198,12 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   following it (the league's teams, its order where set, any picks already made), and falls back
   to the settings, with the reason on them, only where that draft can't be read or followed.
   The **settings** ("Draft Settings", `draft-mode/draft-setup`) hold everything else, in three
-  sections. *League*: the import itself (`app-league-sync`, the Yahoo/ESPN picker, drawn in the section rather than behind an "Import league" button; Alexander's call), which sets the scoring; where the league's
+  sections. _League_: the import itself (`app-league-sync`, the Yahoo/ESPN picker, drawn in the section rather than behind an "Import league" button; Alexander's call), which sets the scoring; where the league's
   draft can be followed (`syncPlatforms`, the BFF's feature switches) the import turns on
   **Sync picks automatically**, the only place that switch lives (the board's toolbar has
   none). The switch asks the page for the league's draft before anything is saved
   (`checkSetupSync` → `DraftSyncCheck`), and only a league that answered locks anything.
-  *Scoring*: always editable. *Teams and roster*: the league size, the user's draft position
+  _Scoring_: always editable. _Teams and roster_: the league size, the user's draft position
   (on "Select" until chosen) and the roster slots, set by hand, or shown locked from the
   league's answer while picks are synced (the seat reads "–" until the league has set its
   order). An ESPN league, a league that refused, a switch turned off and no league at all all
