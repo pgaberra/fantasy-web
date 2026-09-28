@@ -99,6 +99,7 @@ import {
   isLeagueBoard,
   sameBoard,
   seatIsGuess,
+  isLeagueDraft,
   UnfollowableReason,
   unfollowableReason,
 } from './league-draft-follow';
@@ -654,6 +655,32 @@ export class DraftModeComponent implements OnInit {
   /** The draft's own league settings. */
   readonly leagueSettings = computed(() => this.league());
   readonly finished = computed(() => !!this.draft()?.finishedAt);
+  /**
+   * What the linked league last said its draft is, read while following it or asked once for a
+   * board opened finished. Kept with the league it came from, so another league linked in the
+   * settings is asked anew.
+   */
+  private readonly leagueDraftSeen = signal<{
+    readonly leagueId: string;
+    readonly draft: LeagueDraftResponse;
+  } | null>(null);
+  /** The league a finished board was last asked of, so one that does not answer is asked once. */
+  private syncedFromAsked: string | null = null;
+  /**
+   * The league a finished board's picks came from, named beside its title. Read off what the
+   * league answers rather than remembered: a finished board can be edited by hand, and one that
+   * no longer is the league's draft must not say it is.
+   */
+  readonly syncedFrom = computed<FollowedLeague | null>(() => {
+    const followed = this.followedLeague();
+    const seen = this.leagueDraftSeen();
+    return this.finished() &&
+      followed !== null &&
+      seen?.leagueId === followed.id &&
+      isLeagueDraft(this.draft(), seen.draft)
+      ? followed
+      : null;
+  });
 
   // A draft is a board of its own, holding a copy of whatever it was started against, so there
   // is no projection behind it to go back to — and the board it was copied from may since have
@@ -767,6 +794,18 @@ export class DraftModeComponent implements OnInit {
           this.resumeFollowing.set(false);
           this.requestFollow();
         });
+      }
+    });
+    // A board opened finished asks its league once whether these are the league's picks.
+    effect(() => {
+      const followed = this.followedLeague();
+      if (
+        this.loaded() &&
+        this.finished() &&
+        followed !== null &&
+        this.leagueDraftSeen()?.leagueId !== followed.id
+      ) {
+        untracked(() => this.askWhereFinishedBoardCameFrom(followed));
       }
     });
     // A new draft with a league to follow is made from the league's own board, with no setup.
@@ -1439,6 +1478,23 @@ export class DraftModeComponent implements OnInit {
     this.setupCheck.set({ state: 'failed', notice });
   }
 
+  /**
+   * Asks the league for its draft, to say where a finished board's picks came from. A league
+   * that does not answer leaves the board saying nothing, which is what it said before.
+   */
+  private askWhereFinishedBoardCameFrom(followed: FollowedLeague): void {
+    if (this.syncedFromAsked === followed.id) {
+      return;
+    }
+    this.syncedFromAsked = followed.id;
+    this.leagueDraft(followed)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (draft) => this.leagueDraftSeen.set({ leagueId: followed.id, draft }),
+        error: () => undefined,
+      });
+  }
+
   private leagueDraft(followed: FollowedLeague): Observable<LeagueDraftResponse> {
     return followed.platform === 'ESPN'
       ? this.espn.leagueDraft(followed.id)
@@ -1570,6 +1626,7 @@ export class DraftModeComponent implements OnInit {
       return false;
     }
     this.lastLeagueDraft.set(league);
+    this.leagueDraftSeen.set({ leagueId: followed.id, draft: league });
     // A draft the league has finished is brought over whole and finishes the board with it: nothing is
     // left to follow, and a board still open beside a switch that turned itself off read as a
     // sync that refused to start.

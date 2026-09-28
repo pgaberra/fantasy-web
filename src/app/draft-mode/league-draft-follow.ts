@@ -79,6 +79,15 @@ export function sameBoard(a: DraftState | null, b: DraftState): boolean {
   );
 }
 
+/**
+ * Whether the board is the league's draft as the league has it now: the same teams, in the same
+ * order, and the same picks, none more and none fewer. A pick changed by hand since makes it the
+ * user's own board again.
+ */
+export function isLeagueDraft(board: DraftState | null, league: LeagueDraftResponse): boolean {
+  return sameBoard(board, boardFromLeagueDraft(board, league));
+}
+
 /** Whether the board's teams are this league's, as a board that has followed it has. */
 export function hasLeagueTeams(current: DraftState | null, league: LeagueDraftResponse): boolean {
   const leagueTeamIds = new Set(league.teams.map((team) => team.id));

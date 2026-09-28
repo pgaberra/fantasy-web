@@ -49,6 +49,22 @@
   color: var(--color-success);
 }
 
+/* A league's own name, so it keeps its case and may run long. */
+.draft-tag--source {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.draft-tag--source app-icon {
+  flex: none;
+}
+
 .save-status {
   font-size: 0.8rem;
   font-weight: var(--weight-semibold);
