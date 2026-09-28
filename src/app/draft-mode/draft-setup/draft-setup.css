@@ -244,6 +244,148 @@
   color: var(--color-error);
 }
 
+/* A sublabel with a tip beside it: the two on one line, the tip's icon centred on the text. */
+.setup-sublabel--tip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* Every team in its draft order: its seat, its name, the user's marker and a handle to move it. */
+.team-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.team-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  background: var(--color-surface);
+}
+
+.team-pos {
+  flex: none;
+  width: 1.4rem;
+  text-align: right;
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.team-name {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.team-name:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
+}
+
+/* The user's own team stands out by its edge and weight, and says "You" in words beside it. */
+.team-row--mine .team-name {
+  font-weight: var(--weight-semibold);
+  border-color: var(--color-primary);
+}
+
+/* A league's team, shown while the league owns it: read as the locked dropdowns above it are. */
+.team-name--locked {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-color: var(--color-border);
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+}
+
+.team-badge {
+  flex: none;
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+}
+
+.team-badge--mine {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  background: var(--color-surface-hover);
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--radius-sm);
+}
+
+/* A button, so it is reached by Tab and moves its team by the arrow keys; big enough for a thumb. */
+.drag-handle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-subtle);
+  cursor: grab;
+  touch-action: none;
+}
+
+.drag-handle:hover {
+  color: var(--color-primary);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* The ring is the site's own focus ring; the grip darkens with it. */
+.drag-handle:focus-visible {
+  color: var(--color-primary);
+}
+
+.cdk-drag-preview {
+  box-sizing: border-box;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.4;
+}
+
+.cdk-drag-animating {
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.team-list.cdk-drop-list-dragging .team-row:not(.cdk-drag-placeholder) {
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* The form is longer than a small screen, so Start stays in reach at the popup's foot. */
 .setup-actions {
   position: sticky;

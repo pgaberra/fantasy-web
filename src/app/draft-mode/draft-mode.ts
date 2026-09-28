@@ -103,6 +103,7 @@ import {
   UnfollowableReason,
   unfollowableReason,
 } from './league-draft-follow';
+import { CdkScrollable } from '@angular/cdk/scrolling';
 
 const DEFAULT_PAGE_SIZE = 50;
 const FOLLOW_POLL_MS = 5000;
@@ -159,6 +160,8 @@ function unfollowableNotice(
     DraftPicksPanelComponent,
     IconComponent,
     TooltipDirective,
+    // The settings popup scrolls inside itself, so a team dragged in it scrolls it along.
+    CdkScrollable,
   ],
   providers: [DraftPlayerLookupService],
   templateUrl: './draft-mode.html',
