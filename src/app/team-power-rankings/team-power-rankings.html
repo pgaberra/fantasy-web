@@ -5,8 +5,8 @@
     >
     <h1>Team Power Rankings</h1>
     <p class="rankings-lede">
-      See how the teams in your league stack up against each other based on our AI projections. Sort
-      by overall, position, or individual categories.
+      See how the teams in your league stack up against each other — by our AI projection, or by any
+      projection of your own or one you follow. Sort by overall, position, or individual categories.
     </p>
   </div>
 
@@ -86,6 +86,50 @@
         </span>
       </div>
 
+      @if (picker.connected()) {
+        <!-- What the league is ranked against. Its own row, since it matters with or without a league
+             on screen; changing it re-reads the one that is. Nothing to rank without Yahoo. -->
+        <div class="picker-row">
+          <label class="picker-brand" for="rank-by">Rank by</label>
+          <select id="rank-by" class="picker-select rank-by-select" (change)="selectRankBy($event)">
+            @if (modelOffered()) {
+              <option value="model" [selected]="isRankedBy('model')">SlapStat AI projection</option>
+            }
+            <option value="last_season" [selected]="isRankedBy('last_season')">Last season</option>
+            @if (ownBoards().length > 0) {
+              <optgroup label="My projections">
+                @for (board of ownBoards(); track board.id) {
+                  <option
+                    [value]="boardOption(board.id)"
+                    [selected]="isRankedBy(boardOption(board.id))"
+                  >
+                    {{ board.name }}
+                  </option>
+                }
+              </optgroup>
+            }
+            @if (followedBoards().length > 0) {
+              <optgroup label="Following">
+                @for (board of followedBoards(); track board.id) {
+                  <option
+                    [value]="boardOption(board.id)"
+                    [selected]="isRankedBy(boardOption(board.id))"
+                  >
+                    {{ board.name }}
+                  </option>
+                }
+              </optgroup>
+            }
+          </select>
+        </div>
+
+        @if (boardsFailed()) {
+          <p class="picker-status" role="status">
+            Couldn't load your projections, so only ours are offered. Reload the page to try again.
+          </p>
+        }
+      }
+
       @if (picker.error(); as message) {
         @if (sharedNotice) {
           <app-notice tone="error" variant="inline" role="alert">{{ message }}</app-notice>
@@ -109,6 +153,7 @@
       />
     } @else if (rankingsData()) {
       <h2 class="rankings-league">{{ leagueName() }}</h2>
+      <p class="rankings-source">Ranked by {{ rankedByLabel() }}</p>
 
       @if (notDrafted()) {
         @if (sharedNotice) {
@@ -122,6 +167,20 @@
           </p>
         }
       } @else if (leagueProjection(); as projection) {
+        @if (unprojectedPlayers() > 0) {
+          <p class="rankings-note rankings-gap">
+            <app-icon name="info" [size]="14" />
+            {{ unprojectedPlayers() }}
+            {{
+              unprojectedPlayers() === 1
+                ? "player on this league's teams isn't"
+                : "players on this league's teams aren't"
+            }}
+            on this projection and {{ unprojectedPlayers() === 1 ? 'counts' : 'count' }} for
+            nothing.
+          </p>
+        }
+
         <app-league-projection-table
           [data]="projection"
           [scoringType]="scoringType()"
