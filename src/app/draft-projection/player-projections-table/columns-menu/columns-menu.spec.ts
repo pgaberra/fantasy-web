@@ -34,12 +34,20 @@ describe('ColumnsMenuComponent', () => {
     expect(component.isActive(assists)).toEqual(false);
   });
 
-  it('filters by the stat full name, not just its abbreviation', () => {
+  it('filters by the stat full name', () => {
     const component = getComponent();
 
     component.onSearchInput(inputEvent('power play'));
     const keys = component.visibleOptions().map((option) => option.statKey);
     expect(keys).toEqual(['ppg', 'ppa', 'ppp']);
+  });
+
+  it('filters by the stat abbreviation too', () => {
+    const component = getComponent();
+
+    component.onSearchInput(inputEvent('shp'));
+    const keys = component.visibleOptions().map((option) => option.statKey);
+    expect(keys).toEqual(['shp']);
   });
 
   it('emits on the matching output for a scoring and a utility stat', () => {
