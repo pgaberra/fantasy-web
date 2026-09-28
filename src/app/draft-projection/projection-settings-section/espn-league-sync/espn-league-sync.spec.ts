@@ -119,7 +119,7 @@ describe('EspnLeagueSyncComponent', () => {
     expect(status.textContent).toContain('My 2027 League');
     expect(status.textContent).toContain('14 Aug 2026');
     // Same green dot as the toolbar button that opened this dialog.
-    expect(status.querySelector('.espn-synced-dot')).toBeTruthy();
+    expect(status.querySelector('.sync-dot')).toBeTruthy();
   });
 
   it('states the sync without a name when ESPN gave the league none', async () => {

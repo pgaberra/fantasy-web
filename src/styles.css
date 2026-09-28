@@ -327,6 +327,20 @@ summary:focus-visible,
   flex: none;
 }
 
+/*
+ * The mark a league connection wears wherever it is shown: the toolbar's "Synced with" button,
+ * League setup's "Imported from", the ESPN dialog's status, a synced Draft Mode board. Green
+ * because the connection holds; a dot rather than an icon so it reads as a state, not an action.
+ * It was four copies in two sizes before it was one class.
+ */
+.sync-dot {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-success);
+}
+
 /* A badge that is also the way to the pricing page: it darkens under the pointer, as a link
    should, and nothing else about it changes. */
 a.premium-badge:hover,
