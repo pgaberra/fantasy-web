@@ -6,11 +6,14 @@ import { environment } from '../../environments/environment';
 import { TeamPowerRankingsComponent } from './team-power-rankings';
 import { LeagueSummaryResponse } from '../api/models/league-summary-response';
 import { LeaguesResponse } from '../api/models/leagues-response';
+import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { FeatureService } from '../services/feature.service';
 import { LeagueSummaryService } from '../services/league-summary.service';
+import { ProjectionStorageService } from '../services/projection-storage.service';
 import { YahooService } from '../services/yahoo.service';
 import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
+import { RankBy } from './rank-by';
 
 const leagues: LeaguesResponse = {
   leagues: [
@@ -25,6 +28,7 @@ const summary: LeagueSummaryResponse = {
   scoringType: 'points',
   status: 'FINISHED',
   picks: 24,
+  unprojectedPlayers: 0,
   categoryKeys: ['goals'],
   positionKeys: ['C', 'BN'],
   teams: [
@@ -33,8 +37,26 @@ const summary: LeagueSummaryResponse = {
   ],
 };
 
+const boardSummary = (id: string, name: string, following: boolean): ProjectionSummaryResponse => ({
+  id,
+  name,
+  kind: following ? 'imported' : 'projection',
+  season: '20262027',
+  createdAt: '2026-09-01T00:00:00Z',
+  updatedAt: '2026-09-01T00:00:00Z',
+  draftStatus: 'none',
+  autoNamed: false,
+  origin: following ? { shareToken: 'tok', authorUsername: 'someone' } : undefined,
+});
+
+const boards = [boardSummary('b1', 'My board', false), boardSummary('b2', 'Their board', true)];
+
 describe('TeamPowerRankingsComponent', () => {
-  const yahooLeague = vi.fn<(key: string) => Observable<LeagueSummaryResponse>>(() => of(summary));
+  const yahooLeague = vi.fn<(key: string, rankBy?: RankBy) => Observable<LeagueSummaryResponse>>(
+    () => of(summary),
+  );
+  const listEditable = vi.fn<() => Observable<ProjectionSummaryResponse[]>>(() => of(boards));
+  const aiProjection = vi.fn(() => true);
   const myLeagues = vi.fn<() => Observable<LeaguesResponse>>(() => of(leagues));
   const connectionStatus = vi.fn<() => Observable<{ connected: boolean }>>(() =>
     of({ connected: true }),
@@ -72,6 +94,9 @@ describe('TeamPowerRankingsComponent', () => {
     connectionStatus.mockReset();
     connectionStatus.mockReturnValue(of({ connected: true }));
     leagueDraftSync.mockReturnValue(true);
+    aiProjection.mockReturnValue(true);
+    listEditable.mockReset();
+    listEditable.mockReturnValue(of(boards));
     return MockBuilder(TeamPowerRankingsComponent)
       .keep(YahooLeaguePicker)
       .mock(YahooService, {
@@ -81,7 +106,8 @@ describe('TeamPowerRankingsComponent', () => {
       } as never)
       .mock(YahooConnectReturnService)
       .mock(LeagueSummaryService, { yahooLeague })
-      .mock(FeatureService, { leagueDraftSync } as never);
+      .mock(ProjectionStorageService, { listEditable })
+      .mock(FeatureService, { leagueDraftSync, aiProjection } as never);
   });
 
   afterEach(() => {
@@ -104,7 +130,7 @@ describe('TeamPowerRankingsComponent', () => {
 
     await choose(fixture, component, '465.l.1');
 
-    expect(yahooLeague).toHaveBeenCalledWith('465.l.1');
+    expect(yahooLeague).toHaveBeenCalledWith('465.l.1', 'model');
     expect(component.leagueName()).toEqual('Beer League');
     expect(component.leagueProjection()?.teams).toHaveLength(2);
     expect(component.scoreHeading()).toEqual('Total Points');
@@ -120,7 +146,7 @@ describe('TeamPowerRankingsComponent', () => {
 
     await choose(fixture, component, '465.l.2');
 
-    expect(yahooLeague).toHaveBeenLastCalledWith('465.l.2');
+    expect(yahooLeague).toHaveBeenLastCalledWith('465.l.2', 'model');
     expect(component.leagueName()).toEqual('Work League');
   });
 
@@ -224,5 +250,76 @@ describe('TeamPowerRankingsComponent', () => {
 
     expect(fixture.point.componentInstance.offered()).toBe(false);
     expect(connectionStatus).not.toHaveBeenCalled();
+  });
+
+  /** The second dropdown: ours first, then the reader's own boards, then the ones they follow. */
+  it('offers the model, last season, and the boards the user owns and follows', async () => {
+    const fixture = await render();
+    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
+
+    const options = Array.from(select.options).map((option) => option.textContent?.trim());
+    expect(options).toEqual(['SlapStat AI projection', 'Last season', 'My board', 'Their board']);
+    const groups = Array.from(select.querySelectorAll('optgroup')).map((group) => group.label);
+    expect(groups).toEqual(['My projections', 'Following']);
+    expect(select.value).toEqual('model');
+  });
+
+  it('ranks by last season by default where the AI projection is not served', async () => {
+    aiProjection.mockReturnValue(false);
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    await choose(fixture, component, '465.l.1');
+
+    expect(component.rankBy()).toEqual('last_season');
+    expect(yahooLeague).toHaveBeenCalledWith('465.l.1', 'last_season');
+    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
+    expect(Array.from(select.options).map((option) => option.value)).not.toContain('model');
+  });
+
+  /** Comparing one league under two projections is the point: no second button press. */
+  it('re-reads the league on screen when another projection is chosen', async () => {
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    await choose(fixture, component, '465.l.1');
+    yahooLeague.mockReturnValue(
+      of({ ...summary, source: 'projection' as const, projectionId: 'b1', premium: true }),
+    );
+
+    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
+    select.value = 'board:b1';
+    select.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(yahooLeague).toHaveBeenLastCalledWith('465.l.1', 'board:b1');
+    expect(component.rankedByLabel()).toEqual('My board');
+    expect(component.hasPlayers()).toBe(true);
+    expect(fixture.nativeElement.querySelector('.rankings-source')?.textContent).toContain(
+      'Ranked by My board',
+    );
+  });
+
+  it("says how many of the league's players a board leaves out", async () => {
+    yahooLeague.mockReturnValue(
+      of({ ...summary, source: 'projection' as const, projectionId: 'b1', unprojectedPlayers: 3 }),
+    );
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    await choose(fixture, component, '465.l.1');
+
+    expect(component.unprojectedPlayers()).toEqual(3);
+    expect(fixture.nativeElement.querySelector('.rankings-gap')?.textContent).toContain(
+      "3 players on this league's teams aren't",
+    );
+  });
+
+  it('keeps our own projections on offer when the boards cannot be listed', async () => {
+    listEditable.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+
+    expect(component.boardsFailed()).toBe(true);
+    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
+    expect(select.options).toHaveLength(2);
   });
 });
