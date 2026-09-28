@@ -191,16 +191,24 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   Both sources then run the same board in `draft-mode/`.
   **Every draft setting has one owner.** While a board follows its league, the league owns the
   teams and the order: the board shows them read-only on its live line ("12 teams · draft
-  position 6", the position only once the league has set its order), and "Settings" is off. With sync off the user
-  owns them and edits them in the setup. So **a new draft with a league to follow has no setup**
+  position 6", the position only once the league has set its order), and the settings show
+  them locked. With sync off the user owns them and edits them in the settings. **A new draft
+  against a board that already has a league to follow has no setup**
   (`startingFromLeague`): the page reads the league's draft and creates the draft from its board,
   following it (the league's teams, its order where set, any picks already made), and falls back
-  to the setup, with the reason on it, only where that draft can't be read or followed.
-  The **setup** is for a draft with no league to follow: it asks the league size, the user's own
-  draft position (on "Select" until chosen) and the roster slots, with the other teams "Team 1",
-  "Team 2"…, and offers "Sync picks from your league's draft" instead, which opens the link
-  dialog. It imports no league itself; it used to, and its numbers were then overwritten by the
-  first poll. Sync switched off (or stopped) before the league has set its order
+  to the settings, with the reason on them, only where that draft can't be read or followed.
+  The **settings** ("Draft Settings", `draft-mode/draft-setup`) hold everything else, in three
+  sections. *League*: one import, from Yahoo or ESPN, which sets the scoring; where the league's
+  draft can be followed (`syncPlatforms`, the BFF's feature switches) the import turns on
+  **Sync picks automatically**, the only place that switch lives (the board's toolbar has
+  none). The switch asks the page for the league's draft before anything is saved
+  (`checkSetupSync` → `DraftSyncCheck`), and only a league that answered locks anything.
+  *Scoring*: always editable. *Teams and roster*: the league size, the user's draft position
+  (on "Select" until chosen) and the roster slots, set by hand, or shown locked from the
+  league's answer while picks are synced (the seat reads "–" until the league has set its
+  order). An ESPN league, a league that refused, a switch turned off and no league at all all
+  leave the three by hand. Saving with the switch on follows the league (`follow: true`);
+  saving with it off stops following. Sync switched off (or stopped) before the league has set its order
   (`seatIsGuess`: the board is the league's team list and nothing is picked) opens the setup with
   the seat on "Select" and no Cancel, and the switch stays saved on until a seat is chosen, so a
   reload never opens a board drafted on a seat read off the team list.
