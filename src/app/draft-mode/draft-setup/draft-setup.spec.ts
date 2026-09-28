@@ -6,6 +6,7 @@ import { DraftState } from '../../api/models/draft-state';
 import { DraftSettings } from '../../api/models/draft-settings';
 import { LeagueDraftResponse } from '../../api/models/league-draft-response';
 import { LeagueProjectionSettingsResponse } from '../../api/models/league-projection-settings-response';
+import { LeagueSyncComponent } from '../../draft-projection/projection-settings-section/league-sync/league-sync';
 import { RosterSlotsEditorComponent } from '../../shared/roster-slots-editor/roster-slots-editor';
 import { FollowedLeague } from '../league-draft-follow';
 import {
@@ -578,9 +579,12 @@ describe('DraftSetupComponent', () => {
       expect(typed.nameValue()).toBe('Mock #3');
     });
 
-    it('opens on the import when a Yahoo connect started in it has just come back', () => {
-      expect(render({ openImport: true }).point.componentInstance.showImport()).toBe(true);
-      expect(render().point.componentInstance.showImport()).toBe(false);
+    it('draws the import in the settings, open on Yahoo when a connect has just come back', () => {
+      const fixture = render({ openImport: true });
+
+      expect(ngMocks.findInstance(LeagueSyncComponent).openOnYahoo()).toBe(true);
+      expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Import league');
+      expect(ngMocks.findInstance(render().point, LeagueSyncComponent).openOnYahoo()).toBe(false);
     });
   });
 

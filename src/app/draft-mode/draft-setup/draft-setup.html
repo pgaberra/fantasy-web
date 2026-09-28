@@ -29,18 +29,17 @@
        that is left to set by hand. -->
   <section class="setup-section" aria-labelledby="setup-league-heading">
     <h3 id="setup-league-heading" class="setup-label">League</h3>
-    <div class="league-row">
-      <app-league-import-button
-        [yahooSync]="editableLeague().yahooSync"
-        [espnSync]="editableLeague().espnSync"
-        (pressed)="showImport.set(true)"
-      />
-      @if (!linked()) {
-        <span class="setup-note">
-          Import your Yahoo or ESPN league to fill in its scoring, or set everything by hand.
-        </span>
-      }
-    </div>
+    <!-- The import itself, not a button that opens it: choosing the platform is the first thing
+         the settings ask. -->
+    <app-league-sync
+      [lastSync]="editableLeague().yahooSync"
+      [openOnYahoo]="openImport()"
+      [lastEspnLeagueId]="editableLeague().lastEspnLeagueId"
+      [lastEspnSyncedAt]="editableLeague().espnSync?.syncedAt ?? null"
+      [lastEspnLeagueName]="editableLeague().espnSync?.leagueName ?? null"
+      (yahooSynced)="applyYahoo($event)"
+      (espnSynced)="applyEspn($event)"
+    />
 
     @if (linked(); as league) {
       @if (syncOffered()) {
@@ -199,17 +198,3 @@
     </button>
   </div>
 </div>
-
-@if (showImport()) {
-  <app-league-sync-dialog (closed)="showImport.set(false)">
-    <app-league-sync
-      [lastSync]="editableLeague().yahooSync"
-      [openOnYahoo]="openImport()"
-      [lastEspnLeagueId]="editableLeague().lastEspnLeagueId"
-      [lastEspnSyncedAt]="editableLeague().espnSync?.syncedAt ?? null"
-      [lastEspnLeagueName]="editableLeague().espnSync?.leagueName ?? null"
-      (yahooSynced)="applyYahoo($event)"
-      (espnSynced)="applyEspn($event)"
-    />
-  </app-league-sync-dialog>
-}
