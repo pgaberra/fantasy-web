@@ -28,11 +28,13 @@
     Stats
   </button>
 
-  <app-league-import-button
-    [yahooSync]="settings().yahooSync"
-    [espnSync]="settings().espnSync"
-    (pressed)="showSyncDialog.set(true)"
-  />
+  @if (importing()) {
+    <app-league-import-button
+      [yahooSync]="settings().yahooSync"
+      [espnSync]="settings().espnSync"
+      (pressed)="showSyncDialog.set(true)"
+    />
+  }
 </div>
 
 <ng-template #leagueMenu>
@@ -59,7 +61,7 @@
   />
 </ng-template>
 
-@if (showSyncDialog()) {
+@if (importing() && showSyncDialog()) {
   <app-league-sync-dialog (closed)="showSyncDialog.set(false)">
     <app-league-sync
       [lastSync]="settings().yahooSync"

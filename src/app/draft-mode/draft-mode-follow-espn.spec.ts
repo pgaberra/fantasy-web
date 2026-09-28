@@ -23,6 +23,18 @@ import { DraftState } from '../api/models/draft-state';
 import { LeagueDraftResponse } from '../api/models/league-draft-response';
 import { environment } from '../../environments/environment';
 
+/**
+ * The sync switch as the settings save it: on asks the league for its draft, off stops. The
+ * settings' own part in it (the switch, the check, what is locked) is draft-setup.spec.ts's.
+ */
+function toggleSync(component: DraftModeComponent): void {
+  if (component.following()) {
+    component.stopFollowing();
+  } else {
+    component.requestFollow();
+  }
+}
+
 describe('DraftModeComponent following an ESPN draft', () => {
   const players: Player[] = [
     {
@@ -171,13 +183,13 @@ describe('DraftModeComponent following an ESPN draft', () => {
   it("is offered on a board linked to an ESPN league only behind ESPN's own switch", async () => {
     const on = await render();
     expect(on.canFollow()).toBe(true);
-    expect(on.canLinkLeague()).toBe(false);
+    expect(on.syncPlatforms()).toEqual(['Yahoo', 'ESPN']);
 
     espnLeagueDraftSync.set(false);
     const off = await render();
     expect(off.canFollow()).toBe(false);
-    // Yahoo's switch alone still offers linking a Yahoo league, as before.
-    expect(off.canLinkLeague()).toBe(true);
+    // Yahoo's switch alone still offers syncing a Yahoo league's picks in the settings.
+    expect(off.syncPlatforms()).toEqual(['Yahoo']);
   });
 
   it('follows the ESPN league: its teams, order and picks, named as ESPN', async () => {
@@ -187,7 +199,7 @@ describe('DraftModeComponent following an ESPN draft', () => {
     const fixture = await renderFixture();
     const component = fixture.point.componentInstance;
 
-    component.toggleFollow();
+    toggleSync(component);
 
     expect(espnLeagueDraft).toHaveBeenCalledWith('123');
     expect(yahooLeagueDraft).not.toHaveBeenCalled();
@@ -195,7 +207,6 @@ describe('DraftModeComponent following an ESPN draft', () => {
     expect(component.order()).toEqual(['espn.l.123.t.2', 'espn.l.123.t.1']);
     expect(component.picks()).toEqual([{ playerId: 6743, teamId: 'espn.l.123.t.2' }]);
     expect(text(fixture, '.follow-status')).toContain('Live from Beer League on ESPN');
-    expect(component.syncTip()).toContain('your ESPN draft');
   });
 
   it('keeps polling the ESPN league while following', async () => {
@@ -254,24 +265,17 @@ describe('DraftModeComponent following an ESPN draft', () => {
       });
     });
 
-    it('offers to link a league on either platform whose drafts are followed here', async () => {
+    it('offers syncing picks on either platform whose drafts are followed here', async () => {
       const component = await render();
-      expect(component.linkPlatforms()).toEqual(['Yahoo', 'ESPN']);
-      expect(component.syncTip()).toContain('which Yahoo or ESPN league');
+      expect(component.syncPlatforms()).toEqual(['Yahoo', 'ESPN']);
 
       leagueDraftSync.set(false);
-      const espnOnly = await render();
-      expect(espnOnly.canLinkLeague()).toBe(true);
-      expect(espnOnly.linkPlatforms()).toEqual(['ESPN']);
-
-      environment.espnLeaguesEnabled = false;
-      expect((await render()).canLinkLeague()).toBe(false);
+      expect((await render()).syncPlatforms()).toEqual(['ESPN']);
     });
 
     it("follows the ESPN league it is given, keeping the draft's own settings", async () => {
       espnLeagueDraft.mockReturnValue(of(leagueDraft()));
       const component = await render();
-      component.toggleFollow();
 
       component.linkLeague({
         platform: 'ESPN',
@@ -300,11 +304,11 @@ describe('DraftModeComponent following an ESPN draft', () => {
       espnLeagueDraft.mockReturnValue(of(noTeamOfMine()));
       const component = await render();
 
-      component.toggleFollow();
+      toggleSync(component);
 
       expect(component.following()).toBe(false);
       expect(component.linkOpen()).toBe(true);
-      expect(component.linkDialogPlatforms()).toEqual(['ESPN']);
+      expect(component.linkDialogPlatforms).toEqual(['ESPN']);
       expect(component.cookieRepair()?.leagueId).toBe('123');
       expect(component.cookieRepair()?.reason).toContain("couldn't tell which team");
     });

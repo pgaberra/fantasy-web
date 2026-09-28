@@ -17,13 +17,23 @@ import { RosterSlots } from '../../api/models/roster-slots';
 import { ScoringStatKey } from '../../models/stat-key.model';
 import { RosterSlotsEditorComponent } from '../../shared/roster-slots-editor/roster-slots-editor';
 import { IconComponent } from '../../shared/icon/icon';
+import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
+import { LeagueImportButtonComponent } from '../../shared/league-import-button/league-import-button';
 import {
   draftSettingsOf,
   LeagueSettings,
   leagueSettingsFromDraft,
+  withEspnImport,
+  withYahooImport,
 } from '../../shared/league-settings/league-settings';
 import { LeagueSettingsControlsComponent } from '../../shared/league-settings-controls/league-settings-controls';
 import { StatWeightsEditorComponent } from '../../shared/stat-weights-editor/stat-weights-editor';
+import { ToggleSwitchComponent } from '../../draft-projection/projection-settings-section/toggle-switch/toggle-switch';
+import { LeagueSyncDialogComponent } from '../../draft-projection/league-sync-dialog/league-sync-dialog';
+import { LeagueSyncComponent } from '../../draft-projection/projection-settings-section/league-sync/league-sync';
+import { YahooSyncResult } from '../../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
+import { EspnSyncResult } from '../../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
+import { DraftSyncCheck, FollowedLeague } from '../league-draft-follow';
 
 interface SetupRow {
   id: string;
@@ -37,6 +47,11 @@ export interface DraftSetupResult {
   league: DraftSettings;
   /** The name typed for a draft that does not exist yet; absent where the setup asked none. */
   name?: string;
+  /**
+   * Whether the draft follows its league's draft from here. The league then sets the teams and
+   * the order, so `draft` is not what the board is made from.
+   */
+  follow: boolean;
 }
 
 const MIN_TEAMS = 2;
@@ -44,11 +59,14 @@ const MAX_TEAMS = 32;
 const MINE_ID = 'team-me';
 
 /**
- * The setup of a draft played by hand: how the league scores, its size, the user's own seat and
- * the roster slots. A draft that follows its league's draft never comes here, because the league
- * owns the teams and the order while it is followed. This is where a draft with no league to
- * follow starts, and where a board goes when its settings are edited with sync off. It offers
- * following the league instead wherever the page can.
+ * A draft's settings: the league it is played in, how that league scores, and its size, the
+ * user's own seat and the roster slots.
+ *
+ * <p>The league is one import, from Yahoo or ESPN, and it sets the scoring. Where the league's
+ * draft can be followed as well, the import switches on syncing picks, and once the league has
+ * answered for its draft the teams, the seat and the roster are the league's: shown, not set.
+ * Where it cannot (ESPN today, or a league that refused), or with the switch off, or with no
+ * league at all, those three are set by hand.
  *
  * <p>The league is set here rather than on the page that picks what to draft against: it belongs
  * to the draft, not to the board it is played against, and here it stays within reach for as long
@@ -61,8 +79,13 @@ const MINE_ID = 'team-me';
   imports: [
     RosterSlotsEditorComponent,
     IconComponent,
+    LoadingIndicatorComponent,
+    LeagueImportButtonComponent,
     LeagueSettingsControlsComponent,
+    LeagueSyncDialogComponent,
+    LeagueSyncComponent,
     StatWeightsEditorComponent,
+    ToggleSwitchComponent,
   ],
   templateUrl: './draft-setup.html',
   styleUrl: './draft-setup.css',
@@ -78,10 +101,14 @@ export class DraftSetupComponent implements OnInit {
   readonly seedName = input<string>('My Team');
   /** The league the draft is ranked by as it stands: the draft's own, or what it starts from. */
   readonly league = input.required<DraftSettings>();
-  /** The sync switch's name, where this draft can follow its league's draft instead. */
-  readonly syncLabel = input<string | null>(null);
-  /** Why following the league's draft did not work, where that is how the setup was reached. */
-  readonly notice = input<string | null>(null);
+  /** The platforms whose drafts can be followed here. A league on any other is scored from only. */
+  readonly syncPlatforms = input<readonly FollowedLeague['platform'][]>([]);
+  /** Whether the board follows its league's draft as the settings open. */
+  readonly following = input<boolean>(false);
+  /** What the linked league answered when asked for its draft, which the page does the asking of. */
+  readonly syncCheck = input<DraftSyncCheck>({ state: 'idle' });
+  /** Whether a Yahoo connect started in the import has just come back, so the import reopens. */
+  readonly openImport = input<boolean>(false);
   /**
    * The name a draft not saved yet will be created under, to be changed here. The setup covers
    * the page's heading, where a saved draft is renamed, so a new one is named in the setup. Null
@@ -91,7 +118,8 @@ export class DraftSetupComponent implements OnInit {
 
   readonly confirmed = output<DraftSetupResult>();
   readonly cancelled = output<void>();
-  readonly syncRequested = output<void>();
+  /** Asks the page whether this league's draft can be followed; `syncCheck` is the answer. */
+  readonly syncCheckRequested = output<FollowedLeague>();
 
   readonly rows = signal<SetupRow[]>([]);
   // Whether the seat below was actually named: by the user picking one, or by a saved setup that
@@ -107,6 +135,59 @@ export class DraftSetupComponent implements OnInit {
     leagueSettingsFromDraft(this.league()),
   );
   readonly scoresByPoints = computed(() => this.editableLeague().scoringType === 'points');
+
+  readonly showImport = linkedSignal(() => this.openImport());
+  /** The league the settings were imported from, which is the one a draft can follow. */
+  readonly linked = computed<FollowedLeague | null>(() => {
+    const { yahooSync, espnSync } = this.editableLeague();
+    if (yahooSync) {
+      return { platform: 'Yahoo', id: yahooSync.leagueKey, name: yahooSync.leagueName };
+    }
+    if (espnSync?.leagueId) {
+      return {
+        platform: 'ESPN',
+        id: espnSync.leagueId,
+        name: espnSync.leagueName ?? espnSync.leagueId,
+      };
+    }
+    return null;
+  });
+  /** Whether the linked league's draft can be followed here, so the switch has something to do. */
+  readonly syncOffered = computed(() => {
+    const league = this.linked();
+    return !!league && this.syncPlatforms().includes(league.platform);
+  });
+  // The switch as the user left it. A league that refused its draft shows it off without moving
+  // it, so switching it on again asks the league once more.
+  private readonly syncWanted = linkedSignal(() => this.following());
+  readonly syncOn = computed(
+    () => this.syncOffered() && this.syncWanted() && this.syncCheck().state !== 'failed',
+  );
+  readonly syncChecking = computed(() => this.syncOn() && this.syncCheck().state === 'checking');
+  /** Why the league's draft cannot be followed, once it has said so. */
+  readonly syncNotice = computed(() => {
+    const check = this.syncCheck();
+    return this.syncOffered() && check.state === 'failed' ? check.notice : null;
+  });
+  /**
+   * The league's draft as it answered, while picks are synced from it: what the teams, the seat
+   * and the roster are read from instead of set. Null until the league has answered, so nothing
+   * is locked on a league nobody has heard from.
+   */
+  readonly leagueDraft = computed(() => {
+    const check = this.syncCheck();
+    return this.syncOn() && check.state === 'ok' ? check.league : null;
+  });
+  readonly locked = computed(() => this.leagueDraft() !== null);
+  /** The user's seat in the league's draft, or null while the league has not set its order. */
+  readonly leaguePosition = computed(() => {
+    const league = this.leagueDraft();
+    if (!league?.orderKnown) {
+      return null;
+    }
+    const seat = league.teams.findIndex((team) => team.mine) + 1;
+    return seat > 0 ? seat : null;
+  });
   // The name as typed. The page's proposal can arrive after the setup opens (it is numbered once
   // the user's drafts are read), and it replaces the field only until the user has typed in it.
   private readonly nameTyped = signal(false);
@@ -116,16 +197,20 @@ export class DraftSetupComponent implements OnInit {
       previous && untracked(this.nameTyped) ? previous.value : (proposed ?? ''),
   });
 
-  readonly numTeams = computed(() => this.rows().length);
+  readonly numTeams = computed(() => this.leagueDraft()?.teams.length ?? this.rows().length);
   readonly canAdd = computed(() => this.rows().length < MAX_TEAMS);
   readonly canRemove = computed(() => this.rows().length > MIN_TEAMS);
   /** Whether this is a league's board whose draft order the league has not set yet. */
-  readonly leagueOrderPending = computed(() => this.initial() !== null && !this.positionKnown());
+  readonly leagueOrderPending = computed(
+    () => !this.locked() && this.initial() !== null && !this.positionKnown(),
+  );
   /** The user's own seat in the draft order, from 1. The other teams fill the seats around it. */
   readonly myPosition = computed(() => this.rows().findIndex((row) => row.mine) + 1);
   readonly positions = computed(() => Array.from({ length: this.numTeams() }, (_, i) => i + 1));
-  readonly canStart = computed(() => this.draftPositionKnown());
-  readonly positionMissing = computed(() => this.startAttempted() && !this.draftPositionKnown());
+  readonly canStart = computed(() => this.locked() || this.draftPositionKnown());
+  readonly positionMissing = computed(
+    () => this.startAttempted() && !this.locked() && !this.draftPositionKnown(),
+  );
 
   private readonly positionSelect = viewChild<ElementRef<HTMLSelectElement>>('positionSelect');
 
@@ -154,6 +239,57 @@ export class DraftSetupComponent implements OnInit {
     this.editableLeague.set(next);
     if (next.leagueSize !== size) {
       this.resizeTo(next.leagueSize);
+    }
+  }
+
+  applyYahoo(result: YahooSyncResult): void {
+    this.importLeague(withYahooImport(this.editableLeague(), result), result.leagueName);
+    this.closeImportUnlessThereIsMoreToSay(result.settings.unsupportedStats);
+  }
+
+  applyEspn(result: EspnSyncResult): void {
+    this.importLeague(withEspnImport(this.editableLeague(), result), result.leagueName);
+    this.closeImportUnlessThereIsMoreToSay(result.settings.unsupportedStats);
+  }
+
+  /**
+   * An import: the league's scoring, size and roster, and with them the league the draft can
+   * follow. Where it can, syncing picks comes on with the import, since a league is imported into
+   * a draft to draft in it; the league is asked for its draft before anything is locked to it.
+   */
+  private importLeague(next: LeagueSettings, leagueName: string | null | undefined): void {
+    this.setLeague(next);
+    const name = leagueName?.trim();
+    if (name && this.draftName() !== null && !this.nameTyped()) {
+      this.nameValue.set(name);
+    }
+    this.syncWanted.set(this.syncOffered());
+    this.requestSyncCheck();
+  }
+
+  toggleSync(): void {
+    if (this.syncOn()) {
+      this.syncWanted.set(false);
+      return;
+    }
+    this.syncWanted.set(true);
+    this.requestSyncCheck();
+  }
+
+  private requestSyncCheck(): void {
+    const league = this.linked();
+    if (league && this.syncOffered() && this.syncWanted()) {
+      this.syncCheckRequested.emit(league);
+    }
+  }
+
+  /**
+   * As in the editor: a clean import is finished the moment it lands, and one that could not map
+   * every stat keeps the dialog open, since that list is the only place the user is told.
+   */
+  private closeImportUnlessThereIsMoreToSay(unsupportedStats: string[]): void {
+    if (!unsupportedStats.length) {
+      this.showImport.set(false);
     }
   }
 
@@ -227,6 +363,9 @@ export class DraftSetupComponent implements OnInit {
   }
 
   submit(): void {
+    if (this.syncChecking()) {
+      return;
+    }
     if (!this.canStart()) {
       this.startAttempted.set(true);
       this.positionSelect()?.nativeElement.focus();
@@ -243,9 +382,10 @@ export class DraftSetupComponent implements OnInit {
     const proposed = this.draftName();
     this.confirmed.emit({
       draft: { teams, order, picks: this.initial()?.picks ?? [] },
-      league: draftSettingsOf({ ...this.editableLeague(), leagueSize: rows.length }),
+      league: draftSettingsOf({ ...this.editableLeague(), leagueSize: this.numTeams() }),
       // A cleared name keeps the proposal, as an unnamed team keeps "Team N".
       ...(proposed === null ? {} : { name: this.nameValue().trim() || proposed }),
+      follow: this.locked(),
     });
   }
 }
