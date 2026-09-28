@@ -85,20 +85,12 @@ test.describe('happy path', () => {
     // Start opens the setup with nothing saved; the draft is created when it is confirmed.
     await expect(page).toHaveURL(/\/draft\/new\/board\/[0-9a-f-]+$/i, { timeout: 30_000 });
 
-    // 6) Shrink to the smallest league so a full draft stays quick. Wait for the setup phase to
-    //    render first — the board seeds its rows on arrival, and reading the stepper before it
-    //    exists would take the fallback and remove the wrong number of teams.
+    // 6) Choose the smallest league so a full draft stays quick. Nothing fetched a league size
+    //    here (this account has no league synced), so the setup opens on "Select" for it too.
     await expect(page.locator('app-draft-setup')).toBeVisible({ timeout: 30_000 });
-    const initialTeams = Number(
-      (await page.locator('.stepper-value').textContent())?.trim() ?? '12',
-    );
-    const removeTeam = page.getByRole('button', { name: /remove a team/i });
-    for (let i = 0; i < initialTeams - 2; i++) {
-      await removeTeam.click();
-    }
-    // Then choose a seat. Nothing fetched a draft position here — this account has no league
-    // synced — so the setup opens on a disabled "Select" and Start stays disabled until the user
-    // picks. Seat 1 is offered at every league size, including the two teams left above.
+    await page.locator('#draft-teams').selectOption('2');
+    // Then choose a seat, which opens on "Select" for the same reason. Seat 1 is offered at
+    // every league size, including the two teams chosen above.
     await page.locator('#draft-position').selectOption('1');
     const confirmSetup = page.getByRole('button', { name: /^start draft$/i });
     await expect(confirmSetup).toBeEnabled();
