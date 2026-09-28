@@ -628,6 +628,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       const fixture = await renderFixture();
 
       expect(source(fixture)?.textContent).toContain('Synced from Yahoo · Beer League');
+      expect(source(fixture)?.querySelector('.sync-dot')).not.toBeNull();
       expect(updateProjection).not.toHaveBeenCalled();
     });
 

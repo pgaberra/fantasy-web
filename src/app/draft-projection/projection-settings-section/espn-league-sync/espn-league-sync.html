@@ -8,7 +8,7 @@
 
   @if (lastSyncedAt(); as syncedAt) {
     <p class="espn-synced-status">
-      <span class="espn-synced-dot" aria-hidden="true"></span>
+      <span class="sync-dot" aria-hidden="true"></span>
       <span>
         @if (lastLeagueName(); as leagueName) {
           Synced with <strong>{{ leagueName }}</strong>

@@ -61,10 +61,6 @@
   overflow-wrap: anywhere;
 }
 
-.draft-tag--source app-icon {
-  flex: none;
-}
-
 .save-status {
   font-size: 0.8rem;
   font-weight: var(--weight-semibold);
