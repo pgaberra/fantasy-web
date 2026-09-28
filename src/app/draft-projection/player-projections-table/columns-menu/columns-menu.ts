@@ -7,7 +7,7 @@ import {
   UTILITY_STAT_KEYS,
   UtilityStatKey,
 } from '../../../models/stat-key.model';
-import { StatLabelPipe } from '../../../pipes/stat-label.pipe';
+import { STAT_LABELS, StatLabelPipe } from '../../../pipes/stat-label.pipe';
 import { STAT_FULL_NAMES } from '../../../pipes/stat-tooltip.pipe';
 import { IconComponent } from '../../../shared/icon/icon';
 
@@ -69,13 +69,19 @@ export class ColumnsMenuComponent {
     if (!term) {
       return this.optionsInGroup();
     }
-    return this.optionsInGroup().filter((option) =>
-      this.fullNameOf(option).toLowerCase().includes(term),
+    return this.optionsInGroup().filter(
+      (option) =>
+        this.fullNameOf(option).toLowerCase().includes(term) ||
+        this.abbreviationOf(option).toLowerCase().includes(term),
     );
   });
 
   fullNameOf(option: StatOption): string {
     return STAT_FULL_NAMES[option.statKey];
+  }
+
+  abbreviationOf(option: StatOption): string {
+    return STAT_LABELS[option.statKey];
   }
 
   isActive(option: StatOption): boolean {
