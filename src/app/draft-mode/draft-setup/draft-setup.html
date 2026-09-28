@@ -90,6 +90,25 @@
           (statWeightsChange)="setStatWeights($event)"
         />
       </div>
+    } @else {
+      <div class="setup-goalie-min">
+        <span class="setup-sublabel">
+          <label for="min-goalie-games-input">Minimum goalie games</label>
+          <app-help-tip
+            label="What the goalie minimum does"
+            text="Goalies projected below this minimum are ranked last."
+          />
+        </span>
+        <input
+          id="min-goalie-games-input"
+          class="games-input"
+          type="number"
+          min="0"
+          [max]="FULL_SEASON_GAMES"
+          [value]="editableLeague().minGoalieGames"
+          (input)="onMinGoalieGamesInput($event)"
+        />
+      </div>
     }
   </section>
 

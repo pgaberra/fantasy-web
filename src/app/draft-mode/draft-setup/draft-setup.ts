@@ -27,6 +27,7 @@ import {
   withEspnImport,
   withYahooImport,
 } from '../../shared/league-settings/league-settings';
+import { FULL_SEASON_GAMES } from '../../draft-projection/projection-defaults';
 import { LeagueSettingsControlsComponent } from '../../shared/league-settings-controls/league-settings-controls';
 import { StatWeightsEditorComponent } from '../../shared/stat-weights-editor/stat-weights-editor';
 import { ToggleSwitchComponent } from '../../draft-projection/projection-settings-section/toggle-switch/toggle-switch';
@@ -234,6 +235,16 @@ export class DraftSetupComponent implements OnInit {
    * A change from the league controls. The only one that moves the size is an import, which says
    * how many teams the league has, so the teams follow it.
    */
+  protected readonly FULL_SEASON_GAMES = FULL_SEASON_GAMES;
+
+  onMinGoalieGamesInput(event: Event): void {
+    const parsed = Number((event.target as HTMLInputElement).value);
+    if (Number.isFinite(parsed)) {
+      const minGoalieGames = Math.min(FULL_SEASON_GAMES, Math.max(0, Math.round(parsed)));
+      this.editableLeague.update((league) => ({ ...league, minGoalieGames }));
+    }
+  }
+
   setLeague(next: LeagueSettings): void {
     const size = this.editableLeague().leagueSize;
     this.editableLeague.set(next);

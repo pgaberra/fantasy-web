@@ -156,6 +156,20 @@
   margin-top: var(--space-3);
 }
 
+.setup-goalie-min {
+  margin-top: var(--space-4);
+}
+
+.games-input {
+  width: 5rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
 .setup-sublabel {
   display: block;
   font-size: var(--text-sm);
