@@ -1,5 +1,5 @@
 <div class="draft-setup">
-  <h2>Draft setup</h2>
+  <h2 id="draft-setup-title">Draft setup</h2>
   @if (leagueOrderPending()) {
     <p class="setup-hint">
       Your league hasn't set its draft order yet. Choose your draft position to draft by hand.
@@ -22,6 +22,20 @@
         <app-icon name="link" [size]="14" />{{ label }}
       </button>
       <span class="setup-sync-note">The league sets the teams and your draft position.</span>
+    </div>
+  }
+
+  @if (draftName() !== null) {
+    <div class="setup-field">
+      <label class="setup-label" for="draft-name">Draft name</label>
+      <input
+        id="draft-name"
+        class="name-input"
+        type="text"
+        maxlength="100"
+        [value]="nameValue()"
+        (input)="onNameInput($event)"
+      />
     </div>
   }
 
@@ -107,9 +121,7 @@
   </div>
 
   <div class="setup-actions">
-    @if (canCancel()) {
-      <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">Cancel</button>
-    }
+    <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">Cancel</button>
     <button type="button" class="btn btn-primary" (click)="submit()">
       {{ initial() ? 'Save setup' : 'Start draft' }}
     </button>

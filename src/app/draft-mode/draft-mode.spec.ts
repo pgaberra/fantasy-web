@@ -300,6 +300,24 @@ describe('DraftModeComponent', () => {
     expect(component.phase()).toEqual('setup');
   });
 
+  // The setup is a popup over the board. Once there is a board to play, it closes onto it.
+  it('closes the setup onto a board that can be played, changing nothing', async () => {
+    const component = await renderDraftMode();
+    component.applySetup(draft);
+    updateProjection.mockClear();
+
+    component.editTeams();
+    expect(component.setupShown()).toBe(true);
+    component.dismissSetup();
+    expect(component.setupShown()).toBe(false);
+
+    component.editTeams();
+    component.cancelSetup();
+    expect(component.setupShown()).toBe(false);
+    expect(navigate).not.toHaveBeenCalled();
+    expect(updateProjection).not.toHaveBeenCalled();
+  });
+
   it('applies a setup, enters the draft phase and persists', async () => {
     const fixture = MockRender(DraftModeComponent);
     await fixture.whenStable();
@@ -1183,6 +1201,29 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
     expect(createProjection.mock.calls[0][0].data.draft.settings.yahooSync.leagueKey).toEqual(
       'nhl.l.123',
     );
+  });
+
+  // There is no board under a new draft's setup yet, so it cannot be closed onto one: Cancel
+  // leaves for the drafts, and nothing was saved to leave behind.
+  it('keeps the setup up until it is confirmed, and Cancel leaves the page', async () => {
+    const component = await renderDraftMode();
+
+    component.dismissSetup();
+    expect(component.setupShown()).toBe(true);
+
+    component.cancelSetup();
+    expect(navigate).toHaveBeenCalledWith(['/draft']);
+    expect(createProjection).not.toHaveBeenCalled();
+  });
+
+  // The setup covers the heading, so a draft not saved yet is named in the setup.
+  it('creates the draft under the name typed in its setup', async () => {
+    const component = await renderDraftMode();
+
+    component.onSetupConfirmed({ draft, league: component.leagueSettings()!, name: 'Mock #3' });
+
+    expect(createProjection.mock.calls[0][0].name).toEqual('Mock #3');
+    expect(component.draftName()).toEqual('Mock #3');
   });
 
   // The league is set in the setup, which saves nothing until it is confirmed.

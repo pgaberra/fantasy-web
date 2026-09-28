@@ -131,6 +131,36 @@
   box-shadow: var(--shadow-lg, 0 12px 40px rgba(15, 23, 42, 0.25));
 }
 
+/* The setup is a long form over the board: wider than the confirmations, scrolling inside itself
+   with its actions pinned at the foot (draft-setup.css), and the whole screen on a phone. */
+.setup-modal {
+  max-width: 560px;
+  max-height: 90vh;
+  padding: 0;
+  overflow: hidden auto;
+}
+
+.setup-modal:focus {
+  outline: none;
+}
+
+.setup-modal app-draft-setup {
+  flex: 1 0 auto;
+}
+
+@media (max-width: 640px) {
+  .setup-overlay {
+    padding: 0;
+  }
+
+  .setup-modal {
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    border-radius: 0;
+  }
+}
+
 .modal-title {
   margin: 0 0 var(--space-2);
   font-size: 1.1rem;
