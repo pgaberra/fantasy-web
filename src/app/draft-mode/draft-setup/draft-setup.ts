@@ -1,11 +1,13 @@
 import {
+  afterNextRender,
   Component,
   computed,
   ElementRef,
+  inject,
+  Injector,
   input,
   linkedSignal,
   OnInit,
-  inject,
   output,
   signal,
   untracked,
@@ -36,6 +38,13 @@ import { LeagueSyncComponent } from '../../draft-projection/projection-settings-
 import { YahooSyncResult } from '../../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
 import { EspnSyncResult } from '../../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
 import { DraftSyncCheck, FollowedLeague } from '../league-draft-follow';
+import {
+  CdkDrag,
+  CdkDragDrop,
+  CdkDragHandle,
+  CdkDropList,
+  moveItemInArray,
+} from '@angular/cdk/drag-drop';
 import { SyncWarningDialogComponent } from '../../draft-projection/sync-warning-dialog/sync-warning-dialog';
 import { ProjectionSyncService } from '../../services/projection-sync.service';
 
@@ -64,14 +73,15 @@ const MINE_ID = 'team-me';
 
 /**
  * A draft's settings: the league it is played in, how that league scores, and its size, the
- * user's own seat and the roster slots.
+ * user's own seat, the teams in their draft order and the roster slots.
  *
  * <p>The league is one import, from Yahoo or ESPN, drawn in the settings themselves rather than
  * behind a button, and it sets the scoring. Where the league's
  * draft can be followed as well, the import switches on syncing picks, and once the league has
  * answered for its draft the teams, the seat and the roster are the league's: shown, not set.
  * Where it cannot (ESPN today, or a league that refused), or with the switch off, or with no
- * league at all, those three are set by hand.
+ * league at all, those three are set by hand: the size and the seat first, and then every team's
+ * name and place in the order, which only the user can know for a draft no league is telling.
  *
  * <p>The league is set here rather than on the page that picks what to draft against: it belongs
  * to the draft, not to the board it is played against, and here it stays within reach for as long
@@ -82,6 +92,9 @@ const MINE_ID = 'team-me';
 @Component({
   selector: 'app-draft-setup',
   imports: [
+    CdkDropList,
+    CdkDrag,
+    CdkDragHandle,
     RosterSlotsEditorComponent,
     IconComponent,
     HelpTipComponent,
@@ -97,6 +110,8 @@ const MINE_ID = 'team-me';
   styleUrl: './draft-setup.css',
 })
 export class DraftSetupComponent implements OnInit {
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
   private readonly projectionSync = inject(ProjectionSyncService);
 
   readonly initial = input<DraftState | null>(null);
@@ -236,6 +251,30 @@ export class DraftSetupComponent implements OnInit {
   readonly positions = computed(() =>
     Array.from({ length: this.numTeams() ?? 0 }, (_, i) => i + 1),
   );
+  /**
+   * What each team is saved as when its field is left blank: the user's own team "My Team", and
+   * the others "Team N", numbered down the order without the user's. Shown in the empty fields, so
+   * what is saved is what was on screen.
+   */
+  readonly defaultNames = computed(() => {
+    let others = 0;
+    return this.rows().map((row) => (row.mine ? 'My Team' : `Team ${++others}`));
+  });
+  /**
+   * Whether the teams are listed to be named and put in order. Only once the size and the seat
+   * are chosen: the list is those two drawn out, and a list drawn before them would show the
+   * user's team in a seat nobody chose. Never while the league owns the teams.
+   */
+  readonly orderShown = computed(
+    () => !this.locked() && this.teamCountKnown() && this.draftPositionKnown(),
+  );
+  /** The league's own teams in its draft order, while it owns them and has set that order. */
+  readonly leagueOrder = computed(() => {
+    const league = this.leagueDraft();
+    return league?.orderKnown ? league.teams : null;
+  });
+  /** What a screen reader hears after a team is moved: where it now sits. */
+  readonly moveAnnouncement = signal('');
   readonly canStart = computed(
     () => this.locked() || (this.teamCountKnown() && this.draftPositionKnown()),
   );
@@ -431,6 +470,73 @@ export class DraftSetupComponent implements OnInit {
     });
   }
 
+  onTeamNameInput(index: number, event: Event): void {
+    const name = (event.target as HTMLInputElement).value;
+    this.rows.update((rows) => rows.map((row, i) => (i === index ? { ...row, name } : row)));
+  }
+
+  /** The team's name as it would be saved now: as typed, or its default. */
+  nameAt(index: number): string {
+    return this.rows()[index]?.name.trim() || this.defaultNames()[index] || '';
+  }
+
+  teamHasPicks(id: string): boolean {
+    return (this.initial()?.picks ?? []).some((pick) => pick.teamId === id);
+  }
+
+  drop(event: CdkDragDrop<unknown>): void {
+    this.moveTeam(event.previousIndex, event.currentIndex);
+  }
+
+  /** Moves a team to another place in the draft order; the teams between shift over by one. */
+  moveTeam(from: number, to: number): void {
+    const rows = this.rows();
+    const target = Math.max(0, Math.min(to, rows.length - 1));
+    if (from === target || from < 0 || from >= rows.length) {
+      return;
+    }
+    const next = [...rows];
+    moveItemInArray(next, from, target);
+    this.rows.set(next);
+    this.moveAnnouncement.set(
+      `${this.nameAt(target)} moved to position ${target + 1} of ${next.length}.`,
+    );
+  }
+
+  /**
+   * The handle moves its team by keyboard as well as by drag: up and down one place, Home and End
+   * to either end. Focus stays on the handle as the team moves, so it can be moved again.
+   *
+   * <p>The team is found by its id, not by the row's index in the template: a held arrow key
+   * repeats faster than the list is drawn again, and a stale index moved the team next to it.
+   */
+  onHandleKeydown(event: KeyboardEvent, id: string): void {
+    const rows = this.rows();
+    const index = rows.findIndex((row) => row.id === id);
+    const targets: Partial<Record<string, number>> = {
+      ArrowUp: index - 1,
+      ArrowDown: index + 1,
+      Home: 0,
+      End: rows.length - 1,
+    };
+    const target = targets[event.key];
+    if (index < 0 || target === undefined) {
+      return;
+    }
+    event.preventDefault();
+    this.moveTeam(index, target);
+    // Drawing the list again can move the focused handle out and back into the page, which drops
+    // its focus.
+    afterNextRender(
+      () => {
+        this.host.nativeElement
+          .querySelector<HTMLButtonElement>(`.drag-handle[data-team-id="${id}"]`)
+          ?.focus();
+      },
+      { injector: this.injector },
+    );
+  }
+
   addTeam(): void {
     if (!this.canAdd()) {
       return;
@@ -512,10 +618,9 @@ export class DraftSetupComponent implements OnInit {
       return;
     }
     const rows = this.rows();
-    let unnamed = 0;
-    const teams: DraftTeam[] = rows.map((row) => ({
+    const teams: DraftTeam[] = rows.map((row, index) => ({
       id: row.id,
-      name: row.name.trim() || (row.mine ? 'My Team' : `Team ${++unnamed}`),
+      name: this.nameAt(index),
       mine: row.mine,
     }));
     const order = rows.map((row) => row.id);

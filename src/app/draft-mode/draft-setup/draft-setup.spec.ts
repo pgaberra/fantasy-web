@@ -11,6 +11,7 @@ import { RosterSlotsEditorComponent } from '../../shared/roster-slots-editor/ros
 import { FollowedLeague } from '../league-draft-follow';
 import { SyncWarningDialogComponent } from '../../draft-projection/sync-warning-dialog/sync-warning-dialog';
 import { HelpTipComponent } from '../../shared/help-tip/help-tip';
+import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import {
   DEFAULT_ROSTER_SLOTS,
   DEFAULT_STAT_WEIGHTS,
@@ -229,6 +230,187 @@ describe('DraftSetupComponent', () => {
 
     expect(component.numTeams()).toEqual(11);
     expect(component.myPosition()).toEqual(11);
+  });
+
+  // A draft no league is telling about: only the user knows who is in it and in what order.
+  describe('the teams in their draft order', () => {
+    /** A fresh setup with the size and the seat chosen, drawn. */
+    function renderList(teams = 4, seat = 2) {
+      const fixture = MockRender(DraftSetupComponent, {
+        initial: null,
+        seedName: 'Puck Luck',
+        league: leagueWith(),
+      });
+      const component = fixture.point.componentInstance;
+      component.setTeamCount(teams);
+      component.setMyPosition(seat);
+      fixture.detectChanges();
+      return { fixture, component, element: fixture.nativeElement as HTMLElement };
+    }
+
+    const namesOf = (result: DraftSetupResult | undefined) =>
+      result?.draft.order.map((id) => result.draft.teams.find((team) => team.id === id)?.name);
+
+    it('is listed only once the number of teams and your draft position are chosen', () => {
+      const fixture = MockRender(DraftSetupComponent, {
+        initial: null,
+        seedName: 'My Team',
+        league: leagueWith(),
+      });
+      const element: HTMLElement = fixture.nativeElement;
+      const component = fixture.point.componentInstance;
+      expect(element.querySelector('.team-list')).toBeNull();
+
+      component.setTeamCount(4);
+      fixture.detectChanges();
+      // Your team would sit in a seat nobody chose.
+      expect(element.querySelector('.team-list')).toBeNull();
+
+      component.setMyPosition(3);
+      fixture.detectChanges();
+      const rows = element.querySelectorAll('.team-row');
+      expect(rows.length).toBe(4);
+      expect(rows[2].querySelector('.team-badge--mine')?.textContent?.trim()).toBe('You');
+      expect(element.querySelectorAll('.team-badge--mine').length).toBe(1);
+    });
+
+    it('shows each blank field the name it will be saved as', () => {
+      const { element } = renderList(4, 2);
+
+      const fields = [...element.querySelectorAll<HTMLInputElement>('.team-name')];
+      expect(fields.map((field) => field.value)).toEqual(['', 'Puck Luck', '', '']);
+      expect(fields.map((field) => field.placeholder)).toEqual([
+        'Team 1',
+        'My Team',
+        'Team 2',
+        'Team 3',
+      ]);
+      expect(fields[1].getAttribute('aria-label')).toBe('Your team, draft position 2');
+    });
+
+    it('saves the names typed, and the blank ones as "Team N"', () => {
+      const { fixture, component, element } = renderList(4, 2);
+      const emitted = confirmedBy(component);
+      const fields = element.querySelectorAll<HTMLInputElement>('.team-name');
+
+      fields[0].value = 'Ice Holes';
+      fields[0].dispatchEvent(new Event('input'));
+      fields[3].value = '  Beer Leaguers ';
+      fields[3].dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      component.submit();
+
+      expect(namesOf(emitted())).toEqual(['Ice Holes', 'Puck Luck', 'Team 2', 'Beer Leaguers']);
+      expect(
+        emitted()
+          ?.draft.teams.filter((team) => team.mine)
+          .map((team) => team.name),
+      ).toEqual(['Puck Luck']);
+    });
+
+    it('reorders the teams by drag, and your draft position follows your team', () => {
+      const { component } = renderList(4, 2);
+      const emitted = confirmedBy(component);
+      const ids = component.rows().map((row) => row.id);
+
+      component.drop({ previousIndex: 1, currentIndex: 3 } as CdkDragDrop<unknown>);
+
+      expect(component.rows().map((row) => row.id)).toEqual([ids[0], ids[2], ids[3], ids[1]]);
+      expect(component.myPosition()).toBe(4);
+      expect(component.moveAnnouncement()).toBe('Puck Luck moved to position 4 of 4.');
+      component.submit();
+      expect(emitted()?.draft.order).toEqual([ids[0], ids[2], ids[3], ids[1]]);
+    });
+
+    it('moves a team by keyboard from its handle, and keeps the focus on it', async () => {
+      const { fixture, component, element } = renderList(4, 2);
+      const moved = component.rows()[0].id;
+      const handle = () =>
+        element.querySelector<HTMLButtonElement>(`.drag-handle[data-team-id="${moved}"]`)!;
+      handle().focus();
+
+      handle().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(component.rows()[1].id).toBe(moved);
+      expect(component.myPosition()).toBe(1);
+      expect(document.activeElement).toBe(handle());
+      expect(handle().getAttribute('aria-label')).toBe('Move Team 1, position 2 of 4');
+
+      handle().dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+      fixture.detectChanges();
+      expect(component.rows()[3].id).toBe(moved);
+
+      handle().dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+      fixture.detectChanges();
+      expect(component.rows()[0].id).toBe(moved);
+
+      // A held key repeats before the list is drawn again: each press still moves the same team.
+      handle().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      handle().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      expect(component.rows()[2].id).toBe(moved);
+      handle().dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+      fixture.detectChanges();
+
+      // Already at the top: nothing moves, and nothing is said.
+      component.moveAnnouncement.set('');
+      handle().dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+      expect(component.rows()[0].id).toBe(moved);
+      expect(component.moveAnnouncement()).toBe('');
+    });
+
+    it("keeps an existing draft's teams and names, and marks the teams that have picked", () => {
+      const fixture = MockRender(DraftSetupComponent, {
+        initial: {
+          teams: [
+            { id: 'team-me', name: 'Puck Luck', mine: true },
+            { id: 'team-1', name: 'Ice Holes', mine: false },
+            { id: 'team-2', name: 'Team 2', mine: false },
+          ],
+          order: ['team-1', 'team-me', 'team-2'],
+          picks: [{ playerId: 1, teamId: 'team-1' }],
+        },
+        seedName: 'My Team',
+        league: leagueWith({ leagueSize: 3 }),
+      });
+      const element: HTMLElement = fixture.nativeElement;
+      const emitted = confirmedBy(fixture.point.componentInstance);
+
+      const rows = [...element.querySelectorAll('.team-row')];
+      expect(rows.map((row) => row.querySelector<HTMLInputElement>('.team-name')?.value)).toEqual([
+        'Ice Holes',
+        'Puck Luck',
+        'Team 2',
+      ]);
+      expect(rows[0].querySelector('.team-badge')?.textContent?.trim()).toBe('Drafted');
+      expect(rows[2].querySelector('.team-badge')).toBeNull();
+
+      fixture.point.componentInstance.submit();
+      expect(emitted()?.draft.teams).toEqual([
+        { id: 'team-1', name: 'Ice Holes', mine: false },
+        { id: 'team-me', name: 'Puck Luck', mine: true },
+        { id: 'team-2', name: 'Team 2', mine: false },
+      ]);
+      expect(emitted()?.draft.picks).toEqual([{ playerId: 1, teamId: 'team-1' }]);
+    });
+
+    it('keeps the names typed when the number of teams grows, and drops from the end', () => {
+      const { component } = renderList(3, 1);
+      component.onTeamNameInput(1, { target: { value: 'Ice Holes' } } as unknown as Event);
+
+      component.setTeamCount(5);
+      expect(component.rows().map((row) => row.name)).toEqual([
+        'Puck Luck',
+        'Ice Holes',
+        '',
+        '',
+        '',
+      ]);
+
+      component.setTeamCount(2);
+      expect(component.rows().map((row) => row.name)).toEqual(['Puck Luck', 'Ice Holes']);
+    });
   });
 
   it('emits the draft and its league on submit', () => {
@@ -612,6 +794,16 @@ describe('DraftSetupComponent', () => {
       expect(teams.disabled).toBe(true);
       expect(teams.textContent).toContain('3');
       expect(ngMocks.findInstance(RosterSlotsEditorComponent).disabled()).toBe(true);
+      // The league's teams in its order, to read and not to change.
+      const rows = [...element.querySelectorAll('.team-row')];
+      expect(rows.map((row) => row.querySelector('.team-name')?.textContent?.trim())).toEqual([
+        'Bravo',
+        'Alpha',
+        'Charlie',
+      ]);
+      expect(rows[1].querySelector('.team-badge--mine')).not.toBeNull();
+      expect(element.querySelector('.drag-handle')).toBeNull();
+      expect(element.querySelector('input.team-name')).toBeNull();
 
       // No seat to choose: the league's is the seat.
       component.submit();
@@ -632,6 +824,8 @@ describe('DraftSetupComponent', () => {
       expect(element.querySelector('app-notice')?.textContent).toContain(
         'Your draft position will be available when the draft starts',
       );
+      // The league's list is not its order yet, so it is not drawn as one.
+      expect(element.querySelector('.team-list')).toBeNull();
     });
 
     it('hands the three back to the user when syncing is switched off, and asks again when on', () => {

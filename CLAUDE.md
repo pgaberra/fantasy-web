@@ -204,10 +204,18 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   none). The switch asks the page for the league's draft before anything is saved
   (`checkSetupSync` → `DraftSyncCheck`), and only a league that answered locks anything.
   _Scoring_: always editable. _Teams and roster_: the league size, the user's draft position
-  (on "Select" until chosen) and the roster slots, set by hand, or shown locked from the
-  league's answer while picks are synced (the seat reads "–" until the league has set its
-  order). An ESPN league, a league that refused, a switch turned off and no league at all all
-  leave the three by hand. Saving with the switch on follows the league (`follow: true`);
+  (on "Select" until chosen), the teams in their draft order and the roster slots, set by hand,
+  or shown locked from the league's answer while picks are synced (the seat reads "–" and no
+  order is drawn until the league has set its order). Once the size and the seat are chosen by
+  hand, **Draft order** lists every team: a name field each (blank saves as "Team N", numbered
+  down the order without the user's, shown as the placeholder), the user's team marked "You",
+  a team with picks marked "Drafted", and a grip handle that drags the team (CDK drag-drop; the
+  popup is a `cdkScrollable` so a drag scrolls it) and, being a button, moves it with the arrow
+  keys, Home and End, announced in a live region. The seat select and the list are one order:
+  moving the user's team changes the seat. Alexander brought the list back on 2026-09-28 after
+  #816 had dropped it, since it now only serves drafts without a league (see DECISIONS.md). An
+  ESPN league, a league that refused, a switch turned off and no league at all all leave these
+  by hand. Saving with the switch on follows the league (`follow: true`);
   saving with it off stops following. Sync switched off (or stopped) before the league has set its order
   (`seatIsGuess`: the board is the league's team list and nothing is picked) opens the setup with
   the seat on "Select" and no Cancel, and the switch stays saved on until a seat is chosen, so a

@@ -209,6 +209,86 @@
       </p>
     }
 
+    <!-- Every team by name, in its draft order: drawn only once the size and the seat are chosen,
+         which place the user's own team in it. The handle drags a team, and moves it by keyboard
+         (arrows, Home, End) where dragging is not an option. -->
+    @if (orderShown()) {
+      <div class="setup-field">
+        <span class="setup-sublabel setup-sublabel--tip">
+          <span id="draft-order-label">Draft order</span>
+          <app-help-tip
+            label="How to change the draft order"
+            text="Drag a team by its handle, or focus the handle and use the arrow keys."
+          />
+        </span>
+        <ol
+          class="team-list"
+          cdkDropList
+          cdkDropListLockAxis="y"
+          aria-labelledby="draft-order-label"
+          (cdkDropListDropped)="drop($event)"
+        >
+          @for (row of rows(); track row.id; let i = $index) {
+            <li class="team-row" cdkDrag [class.team-row--mine]="row.mine">
+              <span class="team-pos" aria-hidden="true">{{ i + 1 }}</span>
+              <input
+                type="text"
+                class="team-name"
+                maxlength="64"
+                [value]="row.name"
+                [placeholder]="defaultNames()[i]"
+                [attr.aria-label]="
+                  (row.mine ? 'Your team, draft position ' : 'Team at draft position ') + (i + 1)
+                "
+                (input)="onTeamNameInput(i, $event)"
+              />
+              @if (row.mine) {
+                <span class="team-badge team-badge--mine">You</span>
+              } @else if (teamHasPicks(row.id)) {
+                <span class="team-badge">Drafted</span>
+              }
+              <button
+                type="button"
+                class="drag-handle"
+                cdkDragHandle
+                [attr.data-team-id]="row.id"
+                [attr.aria-label]="
+                  'Move ' + nameAt(i) + ', position ' + (i + 1) + ' of ' + rows().length
+                "
+                aria-describedby="draft-order-keys"
+                (keydown)="onHandleKeydown($event, row.id)"
+              >
+                <app-icon name="grip-vertical" [size]="16" />
+              </button>
+            </li>
+          }
+        </ol>
+        <p id="draft-order-keys" class="sr-only">
+          Use the arrow keys to move the team up or down the order.
+        </p>
+        <p class="sr-only" aria-live="polite">{{ moveAnnouncement() }}</p>
+      </div>
+    } @else if (leagueOrder(); as teams) {
+      <div class="setup-field">
+        <span class="setup-sublabel" id="draft-order-label">Draft order</span>
+        <ol
+          class="team-list"
+          aria-labelledby="draft-order-label"
+          aria-describedby="setup-locked-note"
+        >
+          @for (team of teams; track team.id; let i = $index) {
+            <li class="team-row" [class.team-row--mine]="team.mine">
+              <span class="team-pos" aria-hidden="true">{{ i + 1 }}</span>
+              <span class="team-name team-name--locked">{{ team.name }}</span>
+              @if (team.mine) {
+                <span class="team-badge team-badge--mine">You</span>
+              }
+            </li>
+          }
+        </ol>
+      </div>
+    }
+
     <div class="setup-field">
       <span class="setup-sublabel">Roster slots</span>
       <app-roster-slots-editor
