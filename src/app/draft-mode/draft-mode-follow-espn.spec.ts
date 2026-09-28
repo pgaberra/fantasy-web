@@ -272,26 +272,6 @@ describe('DraftModeComponent following an ESPN draft', () => {
       leagueDraftSync.set(false);
       expect((await render()).syncPlatforms()).toEqual(['ESPN']);
     });
-
-    it("follows the ESPN league it is given, keeping the draft's own settings", async () => {
-      espnLeagueDraft.mockReturnValue(of(leagueDraft()));
-      const component = await render();
-
-      component.linkLeague({
-        platform: 'ESPN',
-        leagueId: '123',
-        leagueName: 'Pond League',
-        settings: null,
-      });
-
-      expect(component.linkOpen()).toBe(false);
-      expect(component.following()).toBe(true);
-      expect(espnLeagueDraft).toHaveBeenCalledWith('123');
-      const saved = updateProjection.mock.calls[0][1].data.draft?.settings;
-      expect(saved?.espnSync?.leagueId).toBe('123');
-      expect(saved?.espnSync?.leagueName).toBe('Pond League');
-      expect(saved?.activeScoringColumns).toEqual(['goals']);
-    });
   });
 
   describe('when the cookies are what stopped it', () => {
@@ -308,7 +288,6 @@ describe('DraftModeComponent following an ESPN draft', () => {
 
       expect(component.following()).toBe(false);
       expect(component.linkOpen()).toBe(true);
-      expect(component.linkDialogPlatforms).toEqual(['ESPN']);
       expect(component.cookieRepair()?.leagueId).toBe('123');
       expect(component.cookieRepair()?.reason).toContain("couldn't tell which team");
     });
@@ -343,12 +322,7 @@ describe('DraftModeComponent following an ESPN draft', () => {
       renameProjection.mockClear();
 
       espnLeagueDraft.mockReturnValue(of(leagueDraft()));
-      component.linkLeague({
-        platform: 'ESPN',
-        leagueId: '123',
-        leagueName: 'Beer League',
-        settings: null,
-      });
+      component.cookiesRepaired();
 
       expect(component.linkOpen()).toBe(false);
       expect(component.cookieRepair()).toBeNull();
@@ -381,16 +355,27 @@ describe('DraftModeComponent following an ESPN draft', () => {
       expect(component.linkOpen()).toBe(true);
 
       espnLeagueDraft.mockReturnValue(of(leagueDraft()));
-      component.linkLeague({
-        platform: 'ESPN',
-        leagueId: '123',
-        leagueName: 'Beer League',
-        settings: null,
-      });
+      component.cookiesRepaired();
 
       const created = startDraft.mock.calls[0][1].draft;
       expect(created.following).toBe(true);
       expect(created.order).toEqual(['espn.l.123.t.2', 'espn.l.123.t.1']);
+    });
+
+    it('asks the league again for the settings that asked, and follows nothing yet', async () => {
+      espnLeagueDraft.mockReturnValue(of(noTeamOfMine()));
+      const component = await render();
+      component.editTeams();
+      component.checkSetupSync({ platform: 'ESPN', id: '123', name: 'Beer League' });
+      expect(component.setupCheck().state).toBe('failed');
+      expect(component.cookieRepair()?.leagueId).toBe('123');
+
+      espnLeagueDraft.mockReturnValue(of(leagueDraft()));
+      component.cookiesRepaired();
+
+      expect(component.cookieRepair()).toBeNull();
+      expect(component.setupCheck()).toEqual({ state: 'ok', league: leagueDraft() });
+      expect(component.following()).toBe(false);
     });
 
     it('lets the user close it and draft by hand', async () => {

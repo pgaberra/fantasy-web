@@ -231,15 +231,14 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   `followedLeague` picks the linked platform and the copy names it. ESPN's refusal (private
   league, missing or stale cookies) is a 400. Its team ids are `espn.l.{leagueId}.t.{teamId}`, and
   a drafted player the pool has no counterpart for arrives as a negative id and shows no name.
-  A board with no league linked gets the switch too: it opens `DraftFollowConnectComponent`, with
-  a Yahoo/ESPN tab for each platform this environment follows (`linkPlatforms`: the BFF feature
-  plus the build's `yahooSyncDisabled` / `espnLeaguesEnabled`). ESPN's tab takes the league id
-  and the cookies, stored as the settings import stores them (always shown: following needs the
-  SWID to find the user's team even in a public league; required only when none are stored); a
-  400 or 404 there is not followable, so only a failed settings read offers "Follow picks anyway".
-  When an ESPN follow stops on "no team is yours" or a 400, the same dialog opens in repair mode
-  (`cookieRepair`): ESPN tab only, league id filled in, cookies required, and on success it just
-  follows again without touching the board's league, settings or name.
+  A league is linked in one place only: the league import inside Draft Settings (`draft-setup/`).
+  `DraftFollowConnectComponent` links nothing. It opens when an ESPN follow, or the settings'
+  sync check, stops on "no team is yours" or a 400 (`cookieRepair`), and asks for the espn_s2 and
+  SWID cookies of the league already linked: league id shown read-only, both cookies required,
+  saved and then proven by reading the league. A 400 or 404 there is not followable, so only a
+  failed settings read offers "Follow picks anyway". On success (`cookiesRepaired`) the board's
+  league, settings and name are left alone: the settings' sync check runs again when the
+  settings popup is what asked, otherwise the board follows again.
 - `shared-projection/` — the page behind a share link (`/s/:token`), public and unguarded: a
   share link has to open for someone who has never signed in. Its byline carries the author's
   profile picture, or the initial of their username where they have none. A signed-in visitor is offered

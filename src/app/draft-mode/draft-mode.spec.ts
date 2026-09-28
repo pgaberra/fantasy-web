@@ -175,30 +175,6 @@ describe('DraftModeComponent', () => {
    * best tier left at each position is still on the board. What matters is that it counts only
    * undrafted players and that it goes quiet when the feature is off.
    */
-  /**
-   * The name is the draft's own. A league sync derives one and the server declines it once the
-   * owner has named the draft themselves, so the page sends the rename and shows what comes back
-   * rather than deciding for itself.
-   */
-  it('names a synced draft after its league, as a derived rename', async () => {
-    const component = await renderDraftMode();
-
-    component.applyYahooSync({
-      leagueName: 'Beer League',
-      leagueKey: 'nhl.l.1',
-      settings: {
-        scoringType: 'points',
-        activeScoringColumns: ['goals'],
-        activeUtilityColumns: ['gp'],
-        rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
-        leagueSize: 12,
-      },
-    } as never);
-
-    expect(renameProjection).toHaveBeenCalledWith('p1', 'Beer League', true);
-    expect(component.draftName()).toEqual('Beer League');
-  });
-
   it('renames the draft to what its owner typed, which no sync may then overwrite', async () => {
     const component = await renderDraftMode();
 
@@ -361,69 +337,6 @@ describe('DraftModeComponent', () => {
     expect(component.rosterSlots()).toEqual({ c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 });
     expect(component.totalSlots()).toEqual(1);
     expect(component.phase()).toEqual('draft');
-  });
-
-  it('applies a Yahoo sync to the draft, never to the projection it is played against', async () => {
-    const fixture = MockRender(DraftModeComponent);
-    await fixture.whenStable();
-    const component = fixture.point.componentInstance;
-    component.applySetup(draft);
-    updateProjection.mockClear();
-
-    component.applyYahooSync({
-      leagueName: 'My Yahoo League',
-      leagueKey: 'nhl.l.123',
-      settings: {
-        scoringType: 'category',
-        activeScoringColumns: ['goals', 'assists'],
-        activeUtilityColumns: ['gp'],
-        rosterSlots: { c: 3, lw: 3, rw: 3, d: 5, util: 1, bn: 2, g: 2 },
-        leagueSize: 10,
-        statWeights: { goals: 1 },
-        unsupportedRosterCodes: [],
-        unsupportedStats: [],
-      },
-    });
-
-    expect(component.rosterSlots()).toEqual({ c: 3, lw: 3, rw: 3, d: 5, util: 1, bn: 2, g: 2 });
-    expect(component.yahooSync()).toEqual({
-      leagueName: 'My Yahoo League',
-      leagueKey: 'nhl.l.123',
-      syncedAt: expect.any(String),
-    });
-    expect(updateProjection).toHaveBeenCalledOnce();
-    const sent = updateProjection.mock.calls[0][1].data;
-    expect(sent.draft?.settings?.yahooSync?.leagueKey).toEqual('nhl.l.123');
-    expect(sent.draft?.settings?.scoringType).toEqual('category');
-    // The projection's own settings go back exactly as they were loaded.
-    expect(sent.settings).toEqual(projection.data.settings);
-  });
-
-  it('holds a sync made before the draft exists until its setup is confirmed', async () => {
-    const fixture = MockRender(DraftModeComponent);
-    await fixture.whenStable();
-    const component = fixture.point.componentInstance;
-    updateProjection.mockClear();
-
-    component.applyEspnSync({
-      leagueId: '42',
-      leagueName: 'Puck Luck',
-      settings: {
-        scoringType: 'category',
-        activeScoringColumns: ['goals'],
-        activeUtilityColumns: ['gp'],
-        rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
-        unsupportedRosterCodes: [],
-        unsupportedStats: [],
-      },
-    });
-    expect(updateProjection).not.toHaveBeenCalled();
-
-    component.onSetupConfirmed({ follow: false, draft, league: component.leagueSettings()! });
-
-    const sent = updateProjection.mock.calls[0][1].data;
-    expect(sent.draft?.settings?.espnSync?.leagueId).toEqual('42');
-    expect(sent.settings).toEqual(projection.data.settings);
   });
 
   it("ranks a draft by the league it holds rather than the projection's", async () => {
@@ -1180,33 +1093,6 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
     expect(updateProjection).not.toHaveBeenCalled();
   });
 
-  it('keeps a league sync made during the setup in memory until the draft is saved', async () => {
-    const component = await renderDraftMode();
-
-    component.applyYahooSync({
-      leagueName: 'My Yahoo League',
-      leagueKey: 'nhl.l.123',
-      settings: {
-        scoringType: 'category',
-        activeScoringColumns: ['goals'],
-        activeUtilityColumns: ['gp'],
-        rosterSlots: { c: 3, lw: 3, rw: 3, d: 5, util: 1, bn: 2, g: 2 },
-        leagueSize: 10,
-        unsupportedRosterCodes: [],
-        unsupportedStats: [],
-      },
-    });
-
-    expect(updateProjection).not.toHaveBeenCalled();
-    expect(createProjection).not.toHaveBeenCalled();
-
-    component.onSetupConfirmed({ follow: false, draft, league: component.leagueSettings()! });
-
-    expect(createProjection.mock.calls[0][0].data.draft.settings.yahooSync.leagueKey).toEqual(
-      'nhl.l.123',
-    );
-  });
-
   // There is no board under a new draft's setup yet, so it cannot be closed onto one: Cancel
   // leaves for the drafts, and nothing was saved to leave behind.
   it('keeps the setup up until it is confirmed, and Cancel leaves the page', async () => {
@@ -1532,32 +1418,5 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
     expect(notifyError).toHaveBeenCalledWith("Couldn't start the draft. Please try again.");
     expect(component.phase()).toEqual('setup');
     expect(navigate).not.toHaveBeenCalled();
-  });
-
-  /**
-   * A league synced during the setup has no draft to name yet, so the name is held and applied
-   * to the draft the moment it exists — as a derived rename, which the server declines once the
-   * owner has named the draft themselves.
-   */
-  it('names the draft after a league synced before it existed', async () => {
-    const component = await renderDraftMode();
-
-    component.applyYahooSync({
-      leagueName: 'Beer League',
-      leagueKey: 'nhl.l.1',
-      settings: {
-        scoringType: 'points',
-        activeScoringColumns: ['goals'],
-        activeUtilityColumns: ['gp'],
-        rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
-        leagueSize: 12,
-      },
-    } as never);
-
-    expect(renameProjection).not.toHaveBeenCalled();
-
-    component.onSetupConfirmed({ follow: false, draft, league: component.leagueSettings()! });
-
-    expect(renameProjection).toHaveBeenCalledWith('d1', 'Beer League', true);
   });
 });

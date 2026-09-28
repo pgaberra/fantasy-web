@@ -850,16 +850,6 @@ describe('DraftModeComponent following a Yahoo draft', () => {
         settings: { ...handEnteredDraft.settings!, yahooSync: undefined },
       });
 
-    const leagueSettings = {
-      scoringType: 'points' as const,
-      statWeights: { goals: 2 },
-      activeScoringColumns: ['goals', 'assists'],
-      activeUtilityColumns: ['gp'],
-      rosterSlots: { c: 1, lw: 1, rw: 1, d: 1, util: 1, bn: 1, g: 1 },
-      unsupportedRosterCodes: [],
-      unsupportedStats: [],
-    };
-
     beforeEach(() => {
       loaded = withoutLeague();
     });
@@ -918,42 +908,6 @@ describe('DraftModeComponent following a Yahoo draft', () => {
         notice: "Draft Mode can't follow an auction draft.",
       });
       expect(component.following()).toBe(false);
-    });
-
-    it("follows the league it is given, keeping the draft's own settings", async () => {
-      leagueDraftCall.mockReturnValue(of(leagueDraft()));
-      const component = await render();
-
-      component.linkLeague({
-        platform: 'Yahoo',
-        leagueId: '465.l.9',
-        leagueName: 'Beer League',
-        settings: null,
-      });
-
-      expect(component.linkOpen()).toBe(false);
-      expect(component.following()).toBe(true);
-      expect(leagueDraftCall).toHaveBeenCalledWith('465.l.9');
-      const saved = updateProjection.mock.calls[0][1].data.draft?.settings;
-      expect(saved?.yahooSync?.leagueKey).toBe('465.l.9');
-      expect(saved?.activeScoringColumns).toEqual(['goals']);
-    });
-
-    it("takes the league's settings when that is what was chosen", async () => {
-      leagueDraftCall.mockReturnValue(of(leagueDraft()));
-      const component = await render();
-
-      component.linkLeague({
-        platform: 'Yahoo',
-        leagueId: '465.l.9',
-        leagueName: 'Beer League',
-        settings: leagueSettings,
-      });
-
-      expect(component.following()).toBe(true);
-      const saved = updateProjection.mock.calls[0][1].data.draft?.settings;
-      expect(saved?.activeScoringColumns).toEqual(['goals', 'assists']);
-      expect(saved?.yahooSync?.leagueName).toBe('Beer League');
     });
 
     it("reopens the settings, and the import in them, on the way back from Yahoo's consent", async () => {
