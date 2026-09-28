@@ -9,6 +9,7 @@ import { LeagueProjectionSettingsResponse } from '../../api/models/league-projec
 import { LeagueSyncComponent } from '../../draft-projection/projection-settings-section/league-sync/league-sync';
 import { RosterSlotsEditorComponent } from '../../shared/roster-slots-editor/roster-slots-editor';
 import { FollowedLeague } from '../league-draft-follow';
+import { HelpTipComponent } from '../../shared/help-tip/help-tip';
 import {
   DEFAULT_ROSTER_SLOTS,
   DEFAULT_STAT_WEIGHTS,
@@ -421,6 +422,12 @@ describe('DraftSetupComponent', () => {
       expect(component.editableLeague().scoringType).toBe('category');
       expect(component.syncOn()).toBe(true);
       expect(asked).toEqual([{ platform: 'Yahoo', id: '465.l.9', name: 'Beer League' }]);
+      // The switch is named in a word, and what it does is left to its tip.
+      const element: HTMLElement = fixture.nativeElement;
+      expect(element.querySelector('.sync-title')?.textContent?.trim()).toBe('Auto-sync');
+      expect(ngMocks.findInstance(HelpTipComponent).text()).toBe(
+        'Automatically update this page with picks from your draft.',
+      );
       // Nothing is locked on a league nobody has heard from.
       expect(component.locked()).toBe(false);
       expect(component.numTeams()).toBe(10);
