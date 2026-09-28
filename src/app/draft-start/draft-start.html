@@ -14,7 +14,17 @@
     </p>
   </div>
 
-  @if (sourcesResource.isLoading()) {
+  <!--
+    The spinner only while there is no list on screen to keep: the first load, and a Try again
+    after a failed one. `isLoading` is true through every reload as well, and a rename or a follow
+    re-reads the list: gating on it alone blanked the whole page for each of them. A reload over a
+    list keeps the page as it is and swaps the list in when it lands. (`hasValue` cannot tell the
+    first load apart: the resource's default value counts as one.)
+  -->
+  @if (
+    sourcesResource.status() === 'loading' ||
+    (sourcesResource.isLoading() && sourcesResource.error())
+  ) {
     <app-loading-indicator />
   } @else if (sourcesResource.error()) {
     <app-error-state
