@@ -73,15 +73,11 @@ export const routes: Routes = [
     loadComponent: () => import('./draft-mode/draft-mode').then((m) => m.DraftModeComponent),
     canActivate: [authGuard],
   },
-  // What the draft came to: a page of its own, so the summary survives a reload and can be
-  // linked to. The board is where picks are made; reading the totals needs none of it.
+  // A draft's summary had an address of its own until the power rankings took its place; a link
+  // saved to it opens the draft instead of the not-found page.
   {
     path: 'drafts/:id/summary',
-    loadComponent: () =>
-      import('./draft-mode/draft-summary/draft-summary-page').then(
-        (m) => m.DraftSummaryPageComponent,
-      ),
-    canActivate: [authGuard],
+    redirectTo: 'drafts/:id',
   },
   // A league drafted somewhere else, read rather than played: nothing is saved for it, so it has
   // no id of its own and a reload reads the league again.

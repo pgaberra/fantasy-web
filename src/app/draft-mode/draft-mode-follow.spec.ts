@@ -780,7 +780,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
   });
 
   // Yahoo reports the draft over half a minute to a minute after its last pick; the board does
-  // not wait for it, or it sat on "Draft complete" with no summary and no way to finish.
+  // not wait for it, or it sat on "Draft complete" with no way on and no way to finish.
   describe('the last pick, before the league reports the draft over', () => {
     // Two teams and seven roster slots: fourteen picks fill the board.
     const picksUpTo = (count: number): LeagueDraftResponse['picks'] =>
@@ -806,7 +806,8 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       expect(component.finished()).toBe(true);
       expect(updateProjection.mock.lastCall?.[1].data.draft?.finishedAt).toBeTruthy();
       expect(updateProjection.mock.lastCall?.[1].data.draft?.following).toBeFalsy();
-      expect((fixture.nativeElement as HTMLElement).textContent).toContain('View summary');
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain('Team power rankings');
+      expect(component.rankingsLeagueKey()).toEqual('465.l.9');
       leagueDraftCall.mockClear();
       await vi.advanceTimersByTimeAsync(15000);
       expect(leagueDraftCall).not.toHaveBeenCalled();
@@ -852,7 +853,8 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelector('.sync-group')).toBeNull();
     expect(element.querySelector('.draft-tag--done')?.textContent).toContain('Finished');
-    expect(element.textContent).toContain('View summary');
+    expect(element.textContent).toContain('Team power rankings');
+    expect(component.rankingsLeagueKey()).toEqual('465.l.9');
     expect(statusText(fixture)).toEqual('');
   });
 

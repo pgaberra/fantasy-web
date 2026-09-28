@@ -219,7 +219,7 @@ export class DraftStartComponent {
   }
 
   draftLabel(status: ProjectionSummaryResponse['draftStatus']): string {
-    return status === 'finished' ? 'View summary' : 'Resume draft';
+    return status === 'finished' ? 'View draft' : 'Resume draft';
   }
 
   /** Whose numbers a row holds, said in the row rather than only by the heading above it. */
@@ -348,15 +348,9 @@ export class DraftStartComponent {
     this.sourcesResource.reload();
   }
 
-  /**
-   * Opens a draft that exists: its own address, which is not the board's. A finished draft opens
-   * on its summary — what it came to is what there is to see — and the board is a click away from
-   * there. One still being drafted opens on the board.
-   */
+  /** Opens a draft that exists on its board, finished or not. */
   openDraft(draft: ProjectionSummaryResponse): void {
-    const path =
-      draft.draftStatus === 'finished' ? ['/drafts', draft.id, 'summary'] : ['/drafts', draft.id];
-    void this.router.navigate(path);
+    void this.router.navigate(['/drafts', draft.id]);
   }
 
   /**

@@ -370,13 +370,6 @@ export class DraftModeComponent implements OnInit {
     return input ? this.ranking.rankOverall(input) : [];
   });
 
-  private readonly contributionsByPlayerId = computed<Map<number, Record<string, number>>>(() => {
-    const input = this.rankingInput();
-    return input
-      ? this.ranking.contributionsByPlayerId(input)
-      : new Map<number, Record<string, number>>();
-  });
-
   /** The undrafted players under the chosen position chips, best first, before any search. */
   private readonly availableAtPositions = computed<ScoredProjection[]>(() => {
     const drafted = this.draftedIds();
@@ -633,6 +626,15 @@ export class DraftModeComponent implements OnInit {
   /** The platform named in what syncing has to say. */
   readonly followPlatform = computed(() => this.followedLeague()?.platform ?? 'Yahoo');
   readonly canFollow = computed(() => this.followedLeague() !== null && !this.finished());
+  /**
+   * The Yahoo league a finished draft is read back from on the power rankings, which is where
+   * what the draft came to is shown. None for a draft without one: the rankings read a league from
+   * Yahoo, and a mock draft's picks, or an ESPN league's, are not there to read.
+   */
+  readonly rankingsLeagueKey = computed(() => {
+    const league = this.followedLeague();
+    return this.finished() && league?.platform === 'Yahoo' ? league.id : null;
+  });
   /**
    * The platforms whose drafts this environment follows, which is where the settings offer
    * syncing picks. None for a finished draft: there is nothing left to follow.
@@ -1631,7 +1633,7 @@ export class DraftModeComponent implements OnInit {
     //
     // So does its last pick. Yahoo reports the draft over (`postdraft`) half a minute to a minute
     // after that pick lands, and until then the board read "Draft complete" with no way on: no
-    // summary, and no Finish draft while following.
+    // power rankings, and no Finish draft while following.
     const current = this.draft();
     const leagueBoard = boardFromLeagueDraft(current, league);
     const leagueFinished = league.status === 'FINISHED' || this.fillsEverySlot(leagueBoard);
@@ -1713,20 +1715,7 @@ export class DraftModeComponent implements OnInit {
 
   finishDraft(): void {
     this.confirmingFinish.set(false);
-    // The summary is a page of its own and reads the draft back from the server, so it opens
-    // once the finished draft is saved — opening it first would show the draft as it was.
-    this.persistDraft(
-      (draft) => ({ ...draft, finishedAt: new Date().toISOString() }),
-      () => this.viewSummary(),
-    );
-  }
-
-  /** Opens what the draft came to. Nothing to summarise until the draft has been saved once. */
-  viewSummary(): void {
-    const id = this.draftId();
-    if (id) {
-      void this.router.navigate(['/drafts', id, 'summary']);
-    }
+    this.persistDraft((draft) => ({ ...draft, finishedAt: new Date().toISOString() }));
   }
 
   togglePositionFilter(filter: PositionFilter): void {

@@ -13,8 +13,7 @@ import { readableDecimalSettings } from '../draft-projection/projection-settings
 
 /**
  * How a draft's players are ranked: the projection it is played against, scored by the league the
- * draft carries. The board and the summary both rank this way, and they have to rank identically —
- * the summary's table is the board's own order, totalled per team.
+ * draft carries.
  */
 export function draftRankingInput(
   data: ProjectionData,

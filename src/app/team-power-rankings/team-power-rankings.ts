@@ -1,5 +1,5 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { environment } from '../../environments/environment';
 import { LeagueSummaryResponse } from '../api/models/league-summary-response';
@@ -32,7 +32,9 @@ import { RankBy, rankByBoard } from './rank-by';
  * <p>The league is picked the way every other screen picks one — the shared
  * {@link YahooLeaguePicker} behind a dropdown — so that choosing a league means the same thing
  * here as in draft setup. The dropdown stays put once a league is read, because reading a second
- * league is the obvious next thing to do and it should not cost a trip back to a list.
+ * league is the obvious next thing to do and it should not cost a trip back to a list. A link can
+ * name the league to open on (`?league=<key>`): a finished draft that followed a Yahoo league
+ * sends its reader here, since this is where what the draft came to is shown.
  *
  * <p>What the league is ranked against is a second dropdown: the AI projection by default, last
  * season, or any board of the user's own or one they follow.
@@ -60,6 +62,7 @@ export class TeamPowerRankingsComponent implements OnInit {
   private readonly rankings = inject(LeagueSummaryService);
   private readonly features = inject(FeatureService);
   private readonly storage = inject(ProjectionStorageService);
+  private readonly route = inject(ActivatedRoute);
 
   /** The league picker every screen shares, so choosing a league means the same thing here. */
   readonly picker = inject(YahooLeaguePicker);
@@ -73,7 +76,7 @@ export class TeamPowerRankingsComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.offered()) {
-      this.picker.start();
+      this.picker.start(this.route.snapshot.queryParamMap.get('league'));
     }
   }
 
