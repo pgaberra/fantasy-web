@@ -315,7 +315,6 @@ describe('DraftSetupComponent', () => {
 
     expect(component.draftPositionKnown()).toBe(true);
     expect(component.myPosition()).toEqual(2);
-    expect(component.canCancel()).toBe(true);
   });
 
   // Where the league listed the user second, before it had set its order, the second seat is the
@@ -336,7 +335,6 @@ describe('DraftSetupComponent', () => {
     });
 
     expect(component.draftPositionKnown()).toBe(false);
-    expect(component.canCancel()).toBe(false);
     expect(element.querySelector('.setup-hint')?.textContent).toContain(
       "Your league hasn't set its draft order yet.",
     );
@@ -395,5 +393,97 @@ describe('DraftSetupComponent', () => {
     expect(element.querySelector('.setup-notice')?.textContent).toContain(
       "Draft Mode can't follow an auction draft.",
     );
+  });
+  // The page decides what Cancel means (back to the board, or off the page), so it is always there.
+  it('offers Cancel on a new setup too', () => {
+    const fixture = MockRender(DraftSetupComponent, {
+      initial: null,
+      seedName: 'My Team',
+      league: leagueWith(),
+    });
+    const element: HTMLElement = fixture.nativeElement;
+    let cancelled = false;
+    fixture.point.componentInstance.cancelled.subscribe(() => {
+      cancelled = true;
+    });
+
+    const cancel = [...element.querySelectorAll('button')].find(
+      (button) => button.textContent?.trim() === 'Cancel',
+    );
+    cancel?.click();
+
+    expect(cancelled).toBe(true);
+  });
+
+  describe('the name of a draft not saved yet', () => {
+    const renderNamed = (draftName: string | null) =>
+      MockRender(DraftSetupComponent, {
+        initial: null,
+        seedName: 'My Team',
+        league: leagueWith(),
+        draftName,
+      });
+
+    const type = (element: HTMLElement, value: string) => {
+      const input = element.querySelector<HTMLInputElement>('#draft-name')!;
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+    };
+
+    it('asks no name for a saved draft, which is renamed from its heading', () => {
+      const fixture = renderNamed(null);
+      const component = fixture.point.componentInstance;
+      const confirmed = confirmedBy(component);
+      component.setMyPosition(1);
+
+      component.submit();
+
+      expect(fixture.nativeElement.querySelector('#draft-name')).toBeNull();
+      expect(confirmed()?.name).toBeUndefined();
+    });
+
+    it('sends the name typed', () => {
+      const fixture = renderNamed('AI Projection');
+      fixture.detectChanges();
+      const component = fixture.point.componentInstance;
+      const confirmed = confirmedBy(component);
+      component.setMyPosition(1);
+
+      type(fixture.nativeElement, '  Mock #3 ');
+      component.submit();
+
+      expect(confirmed()?.name).toEqual('Mock #3');
+    });
+
+    // As an unnamed team keeps "Team N": a blank name is not one to create a draft under.
+    it('keeps the proposed name when the field is cleared', () => {
+      const fixture = renderNamed('AI Projection');
+      fixture.detectChanges();
+      const component = fixture.point.componentInstance;
+      const confirmed = confirmedBy(component);
+      component.setMyPosition(1);
+
+      type(fixture.nativeElement, '   ');
+      component.submit();
+
+      expect(confirmed()?.name).toEqual('AI Projection');
+    });
+
+    // The page numbers its proposal once the user's drafts are read, which can be after the setup
+    // opened: it fills the field until the user types, and never over what they typed.
+    it('takes a later proposal until the user types, and not after', () => {
+      const fixture = renderNamed('AI Projection');
+      fixture.detectChanges();
+      const component = fixture.point.componentInstance;
+
+      fixture.componentInstance.draftName = 'AI Projection (2)';
+      fixture.detectChanges();
+      expect(component.nameValue()).toEqual('AI Projection (2)');
+
+      type(fixture.nativeElement, 'Mock #3');
+      fixture.componentInstance.draftName = 'AI Projection (3)';
+      fixture.detectChanges();
+      expect(component.nameValue()).toEqual('Mock #3');
+    });
   });
 });

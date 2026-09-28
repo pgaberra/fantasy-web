@@ -1,10 +1,15 @@
+/* The page's popup is the card; this fills it, so a phone's full-screen popup keeps the actions at
+   its foot. */
+:host {
+  display: flex;
+  flex-direction: column;
+}
+
 .draft-setup {
-  max-width: 520px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-5);
-  box-shadow: var(--shadow-md);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-5) var(--space-5) 0;
 }
 
 .draft-setup h2 {
@@ -127,6 +132,17 @@
   font-size: 1rem;
 }
 
+.name-input {
+  width: 100%;
+  max-width: 24rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
 .position-select.invalid {
   border-color: var(--color-error);
 }
@@ -137,8 +153,15 @@
   color: var(--color-error);
 }
 
+/* The form is longer than a small screen, so Start stays in reach at the popup's foot. */
 .setup-actions {
+  position: sticky;
+  bottom: 0;
   display: flex;
   justify-content: flex-end;
   gap: var(--space-2);
+  margin: auto calc(-1 * var(--space-5)) 0;
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
 }

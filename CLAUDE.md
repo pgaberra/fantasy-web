@@ -105,8 +105,8 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   and laid over the settings it creates with (a copy stays byte-exact when the league was left
   alone). A preview scored by defaults read as "not my league" and put people off creating at
   all. **The draft picker does neither any more**: it is the source and Start. A draft's league
-  is set in the draft page's setup (`draft-mode/draft-setup`, the Settings button once the draft
-  runs) — the same controls with `[sizing]="false"`, since the league's size there is the teams
+  is set in the draft page's setup (`draft-mode/draft-setup`, a popup over the board: open by
+  itself on a new draft, and the Settings button once the draft runs) — the same controls with `[sizing]="false"`, since the league's size there is the teams
   it seats, plus `shared/stat-weights-editor` for the points. Alexander's call (2026-09-28): the
   picker's preview was not the board the draft shows, and a league set before Start had to
   travel in history state and could not be changed once the draft ran.
