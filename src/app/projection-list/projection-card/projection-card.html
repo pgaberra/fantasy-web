@@ -6,14 +6,11 @@
   </span>
   <div class="card-main">
     <span class="card-name" [title]="projection().name">{{ projection().name }}</span>
-    <span class="card-meta">
-      @if (origin(); as from) {
-        Following {{ from.authorUsername }} ·
-      } @else if (isFromSpreadsheet()) {
-        From a spreadsheet ·
-      }
-      Updated {{ projection().updatedAt | relativeTime }}
-    </span>
+    @let metaLine =
+      (sourceLabel() ? sourceLabel() + ' · ' : '') +
+      'Updated ' +
+      (projection().updatedAt | relativeTime);
+    <span class="card-meta" [title]="metaLine">{{ metaLine }}</span>
   </div>
   @if (!confirmingDelete()) {
     <button

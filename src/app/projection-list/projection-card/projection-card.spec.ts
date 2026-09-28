@@ -135,6 +135,18 @@ describe('ProjectionCardComponent', () => {
       expect(text).toContain('Following alex');
       expect(text).not.toContain('From a spreadsheet');
     });
+
+    /** A long username can push the updated time past the card's edge. */
+    it('carries the whole meta line on hover, since it is cut to one line too', () => {
+      renderCard({
+        kind: 'imported',
+        origin: { authorUsername: 'alex', shareToken: 'tok123' },
+      });
+
+      expect(ngMocks.find<HTMLElement>('.card-meta').nativeElement.title).toMatch(
+        /^Following alex · Updated /,
+      );
+    });
   });
 
   it('emits edit when Edit is clicked', () => {
