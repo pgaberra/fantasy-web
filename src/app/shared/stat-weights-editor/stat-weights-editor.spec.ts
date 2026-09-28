@@ -43,6 +43,18 @@ describe('StatWeightsEditorComponent', () => {
     expect(headings).toEqual(['Skaters']);
   });
 
+  it('selects the weight in a field that takes focus, so typing replaces it', () => {
+    const component = render(['goals']).point.componentInstance;
+    const field = document.createElement('input');
+    field.value = '4.5';
+    document.body.appendChild(field);
+
+    component.onFocus({ target: field } as unknown as Event);
+
+    expect([field.selectionStart, field.selectionEnd]).toEqual([0, 3]);
+    field.remove();
+  });
+
   it('reads a typed comma as the decimal point', () => {
     const component = render(['goals']).point.componentInstance;
     const field = document.createElement('input');

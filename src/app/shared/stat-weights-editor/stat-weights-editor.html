@@ -22,6 +22,7 @@
                 [id]="'weight-' + col"
                 [value]="statWeights()[col]"
                 [attr.aria-label]="'Points per ' + (col | statLabel)"
+                (focus)="onFocus($event)"
                 (input)="onInput(col, $event)"
                 (keydown)="onKeydown(col, $event)"
                 (blur)="onBlur(col, $event)"
