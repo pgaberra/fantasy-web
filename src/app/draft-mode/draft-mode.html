@@ -163,9 +163,15 @@
         }
 
         @if (following()) {
+          <!-- ESPN shows a draft's picks only once it is over, so its board is not live: it is
+               drafted by hand meanwhile, and says so. -->
           <p class="follow-status" role="status">
-            <span class="follow-live-line"
-              ><span class="follow-live" aria-hidden="true"></span>Live from
+            <span class="follow-live-line">
+              @if (followsEspn()) {
+                Following
+              } @else {
+                <span class="follow-live" aria-hidden="true"></span>Live from
+              }
               <strong>{{ followedLeague()?.name }}</strong> on {{ followPlatform() }} ·
               {{ teams().length }} teams ·
               @if (leagueFirstPick(); as seat) {
@@ -173,6 +179,12 @@
               }
               {{ picks().length }} of {{ totalPicks() }} picks</span
             >
+            @if (followsEspn()) {
+              <span class="follow-hint"
+                >ESPN shares a draft's picks only once it's over, so enter them here as they're
+                made. The board takes ESPN's results when the draft ends.</span
+              >
+            }
           </p>
         }
 
@@ -198,7 +210,7 @@
             [hasMore]="hasMoreAvailable()"
             [isMyPick]="isMyPick()"
             [isComplete]="isComplete()"
-            [locked]="following()"
+            [locked]="picksLocked()"
             [scoringType]="scoringType()"
             [statColumns]="statColumns()"
             [tierBadges]="tierBadges()"
@@ -217,15 +229,15 @@
             [pickRounds]="pickRounds()"
             [editingPick]="editingPick()"
             [picksCount]="picks().length"
-            [locked]="following()"
+            [locked]="picksLocked()"
             (startEdit)="startEditPick($event)"
             (requestRemove)="requestRemovePick($event)"
           />
         </div>
 
         @if (confirmingFinish()) {
-          <div class="modal-overlay" (click)="cancelFinish()">
-            <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+          <div class="modal-overlay">
+            <div class="modal" role="dialog" aria-modal="true">
               <h2 class="modal-title">Finish the draft?</h2>
               <p class="modal-text">
                 @if (isComplete()) {
@@ -262,8 +274,8 @@
         }
 
         @if (removalPreview(); as preview) {
-          <div class="modal-overlay" (click)="cancelRemovePick()">
-            <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+          <div class="modal-overlay">
+            <div class="modal" role="dialog" aria-modal="true">
               <h2 class="modal-title">Remove pick #{{ preview.overall }}?</h2>
               <p class="modal-text">
                 Removing <strong>{{ lookup.name(preview.playerId) }}</strong> will affect the
@@ -303,7 +315,7 @@
 
       @if (setupShown()) {
         @if (leagueSettings(); as league) {
-          <div class="modal-overlay setup-overlay" (click)="dismissSetup()">
+          <div class="modal-overlay setup-overlay">
             <div
               #setupDialog
               class="modal setup-modal"
@@ -312,7 +324,6 @@
               aria-modal="true"
               aria-labelledby="draft-setup-title"
               tabindex="-1"
-              (click)="$event.stopPropagation()"
             >
               <app-draft-setup
                 [initial]="draft()"
@@ -344,10 +355,15 @@
     }
 
     @if (pendingFollow(); as league) {
-      <div class="modal-overlay" (click)="cancelFollow()">
-        <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+      <div class="modal-overlay">
+        <div class="modal" role="dialog" aria-modal="true">
           <h2 class="modal-title">Replace your picks with the {{ followPlatform() }} draft?</h2>
           <p class="modal-text">
+            <!-- Asked mid-follow, when ESPN shares a draft's picks at its end and they are not
+                 the ones entered by hand. -->
+            @if (following()) {
+              {{ followPlatform() }} has shared the draft's picks.
+            }
             @if (pendingFollowKeepsTeams()) {
               Your {{ picks().length }} picks here are replaced by the
               {{ league.picks.length }} picks made on {{ followPlatform() }}.
@@ -358,9 +374,19 @@
             }
           </p>
           <div class="modal-actions">
-            <button type="button" class="btn btn-secondary" (click)="cancelFollow()">Cancel</button>
+            <button type="button" class="btn btn-secondary" (click)="cancelFollow()">
+              @if (following()) {
+                Keep my picks
+              } @else {
+                Cancel
+              }
+            </button>
             <button type="button" class="btn btn-primary" (click)="confirmFollow()">
-              Sync picks
+              @if (following()) {
+                Use {{ followPlatform() }}'s picks
+              } @else {
+                Sync picks
+              }
             </button>
           </div>
         </div>
