@@ -72,6 +72,9 @@ jobs:
       - name: Verify no tooltip uses the native title
         run: bash .github/scripts/check-native-tooltips.sh
 
+      - name: Verify no password field sits outside the sign-in pages
+        run: bash .github/scripts/check-password-fields.sh
+
       - name: Verify no dialog closes on a backdrop click
         run: bash .github/scripts/check-backdrop-clicks.sh
 

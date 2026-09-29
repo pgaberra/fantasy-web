@@ -16,6 +16,7 @@ import { LeagueProjectionSettingsResponse } from '../../../api/models/league-pro
 import { IconComponent } from '../../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../../shared/loading-indicator/loading-indicator';
 import { EspnCookieHelpComponent } from '../../../shared/espn-cookie-help/espn-cookie-help';
+import { CookieFieldDirective } from '../../../shared/cookie-field/cookie-field';
 
 export interface EspnSyncResult {
   settings: LeagueProjectionSettingsResponse;
@@ -42,7 +43,13 @@ export interface EspnSyncResult {
  */
 @Component({
   selector: 'app-espn-league-sync',
-  imports: [DatePipe, IconComponent, LoadingIndicatorComponent, EspnCookieHelpComponent],
+  imports: [
+    DatePipe,
+    IconComponent,
+    LoadingIndicatorComponent,
+    EspnCookieHelpComponent,
+    CookieFieldDirective,
+  ],
   templateUrl: './espn-league-sync.html',
   styleUrl: './espn-league-sync.css',
 })
