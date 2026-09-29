@@ -32,13 +32,14 @@ import { RankBy, rankByBoard } from './rank-by';
  * <p>The league is picked the way every other screen picks one — the shared
  * {@link YahooLeaguePicker} behind a dropdown — so that choosing a league means the same thing
  * here as in draft setup. The dropdown stays put once a league is read, because reading a second
- * league is the obvious next thing to do and it should not cost a trip back to a list. A link can
- * name the league to open on (`?league=<key>`): a finished draft that followed a Yahoo league
- * sends its reader here, since this is where what the draft came to is shown.
+ * league is the obvious next thing to do and it should not cost a trip back to a list.
  *
- * <p>The user's finished drafts are offered beside the Yahoo leagues: a mock draft, or one played
- * against an ESPN league, has its picks nowhere but here, and is ranked from them by the same
- * rules as a league (`?draft=<id>` opens on one). A link that names a draft also ranks by the
+ * <p>The user's finished drafts are offered beside the Yahoo leagues, ranked from their picks by
+ * the same rules as a league. A mock draft, or one played against an ESPN league, has its picks
+ * nowhere but here; one that followed a Yahoo league sits beside that league, the draft as it was
+ * made and the league as it stands today. A finished draft's board sends its reader here with the
+ * draft named (`?draft=<id>`), and the page opens on the draft — never on its league, since the
+ * reader came from the draft. A link that names a draft also ranks by the
  * projection that draft was played against, and so does picking a draft in the dropdown: that is
  * what the draft was made with, which the reader can still change.
  *
@@ -106,15 +107,10 @@ export class TeamPowerRankingsComponent implements OnInit {
     if (!this.offered()) {
       return;
     }
-    const params = this.route.snapshot.queryParamMap;
-    const league = params.get('league');
-    const draft = params.get('draft');
-    // A draft that followed a Yahoo league opens on the league, and ranks by its own projection.
-    if (draft && !league) {
-      this.draftId.set(draft);
-    }
+    const draft = this.route.snapshot.queryParamMap.get('draft');
+    this.draftId.set(draft);
     this.linkedDraft.set(draft);
-    this.picker.start(league);
+    this.picker.start();
   }
 
   /** Whether this environment serves the AI projection, which is then what ranks by default. */
