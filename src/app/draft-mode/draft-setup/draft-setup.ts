@@ -69,7 +69,6 @@ export interface DraftSetupResult {
 
 const MIN_TEAMS = 2;
 const MAX_TEAMS = 32;
-const MINE_ID = 'team-me';
 
 /**
  * A draft's settings: the league it is played in, how that league scores, and its size, the
@@ -80,8 +79,9 @@ const MINE_ID = 'team-me';
  * draft can be followed as well, the import switches on syncing picks, and once the league has
  * answered for its draft the teams, the seat and the roster are the league's: shown, not set.
  * Where it cannot (ESPN today, or a league that refused), or with the switch off, or with no
- * league at all, those three are set by hand: the size and the seat first, and then every team's
- * name and place in the order, which only the user can know for a draft no league is telling.
+ * league at all, those three are set by hand: the size first, and then every team's name and place
+ * in the order, with the user's own team marked "You", which only the user can know for a draft no
+ * league is telling.
  *
  * <p>The league is set here rather than on the page that picks what to draft against: it belongs
  * to the draft, not to the board it is played against, and here it stays within reach for as long
@@ -150,9 +150,9 @@ export class DraftSetupComponent implements OnInit {
   readonly syncCheckRequested = output<FollowedLeague>();
 
   readonly rows = signal<SetupRow[]>([]);
-  // Whether the seat below was actually named: by the user picking one, or by a saved setup that
-  // already carries one. A fresh setup starts without, since nothing has told this page the seat,
-  // and a draft built on the wrong seat is wrong all the way down.
+  // Whether the user's seat in the list was actually named: by the user marking a team "You", or
+  // by a saved setup that already carries one. A fresh setup starts without, since nothing has
+  // told this page the seat, and a draft built on the wrong seat is wrong all the way down.
   readonly draftPositionKnown = signal(false);
   // Whether the number of teams was actually named: by the user choosing it, by a league imported
   // here or before, or by a saved setup. A fresh setup with no league starts without, for the
@@ -246,10 +246,15 @@ export class DraftSetupComponent implements OnInit {
   readonly leagueOrderPending = computed(
     () => !this.locked() && this.initial() !== null && !this.positionKnown(),
   );
-  /** The user's own seat in the draft order, from 1. The other teams fill the seats around it. */
+  /** The user's own seat in the draft order, from 1, or 0 with no team of theirs in it yet. */
   readonly myPosition = computed(() => this.rows().findIndex((row) => row.mine) + 1);
-  readonly positions = computed(() =>
-    Array.from({ length: this.numTeams() ?? 0 }, (_, i) => i + 1),
+  /**
+   * The team marked "You" in the list, or null while no seat is chosen: a league's team that is
+   * the user's but sits where the league happened to list it is not marked, since that seat is
+   * nobody's choice.
+   */
+  readonly markedId = computed(() =>
+    this.draftPositionKnown() ? (this.rows().find((row) => row.mine)?.id ?? null) : null,
   );
   /**
    * What each team is saved as when its field is left blank: the user's own team "My Team", and
@@ -258,16 +263,14 @@ export class DraftSetupComponent implements OnInit {
    */
   readonly defaultNames = computed(() => {
     let others = 0;
-    return this.rows().map((row) => (row.mine ? 'My Team' : `Team ${++others}`));
+    const marked = this.markedId();
+    return this.rows().map((row) => (row.id === marked ? 'My Team' : `Team ${++others}`));
   });
   /**
-   * Whether the teams are listed to be named and put in order. Only once the size and the seat
-   * are chosen: the list is those two drawn out, and a list drawn before them would show the
-   * user's team in a seat nobody chose. Never while the league owns the teams.
+   * Whether the teams are listed to be named, put in order and one marked as the user's. Once the
+   * size is chosen, since the list is that many teams; never while the league owns the teams.
    */
-  readonly orderShown = computed(
-    () => !this.locked() && this.teamCountKnown() && this.draftPositionKnown(),
-  );
+  readonly orderShown = computed(() => !this.locked() && this.teamCountKnown());
   /** The league's own teams in its draft order, while it owns them and has set that order. */
   readonly leagueOrder = computed(() => {
     const league = this.leagueDraft();
@@ -281,7 +284,7 @@ export class DraftSetupComponent implements OnInit {
   readonly teamsMissing = computed(
     () => this.startAttempted() && !this.locked() && !this.teamCountKnown(),
   );
-  // Asked for after the teams: the seats on offer are the teams', so there is none to choose yet.
+  // Asked for after the teams: the seats to mark are the teams', so there is none to mark yet.
   readonly positionMissing = computed(
     () =>
       this.startAttempted() &&
@@ -335,7 +338,6 @@ export class DraftSetupComponent implements OnInit {
   }
 
   private readonly teamsSelect = viewChild<ElementRef<HTMLSelectElement>>('teamsSelect');
-  private readonly positionSelect = viewChild<ElementRef<HTMLSelectElement>>('positionSelect');
 
   ngOnInit(): void {
     const existing = this.initial();
@@ -351,7 +353,8 @@ export class DraftSetupComponent implements OnInit {
       this.takeSyncBaseline();
       return;
     }
-    this.rows.set([{ id: MINE_ID, name: this.seedName(), mine: true }]);
+    // No team is the user's until one is marked: a fresh list has no seat for it that anyone chose.
+    this.rows.set([]);
     // Only a league imported earlier has said how big it is; any other size here is a default.
     if (this.linked()) {
       this.setTeamCount(this.editableLeague().leagueSize);
@@ -448,26 +451,30 @@ export class DraftSetupComponent implements OnInit {
     this.teamCountKnown.set(true);
   }
 
-  onPositionChange(event: Event): void {
-    const chosen = (event.target as HTMLSelectElement).value;
-    if (!chosen) {
+  /**
+   * "You" pressed on the team at the given seat. With no team of the user's yet, that team becomes
+   * theirs, under their name where its field is blank. With one, the user's team moves to the seat
+   * and the other teams keep their order around it, as a drag would leave them: a league's team is
+   * the user's by the league's word, and only its seat was unknown.
+   */
+  setMyPosition(position: number): void {
+    const rows = this.rows();
+    const seat = Math.max(1, Math.min(position, rows.length));
+    if (rows.length === 0) {
       return;
     }
-    this.setMyPosition(Number(chosen));
-  }
-
-  /** Moves the user's own team to the given seat; the other teams keep their order around it. */
-  setMyPosition(position: number): void {
     this.draftPositionKnown.set(true);
-    this.rows.update((rows) => {
-      const mine = rows.find((row) => row.mine);
-      if (!mine) {
-        return rows;
-      }
-      const others = rows.filter((row) => !row.mine);
-      const seat = Math.max(1, Math.min(position, rows.length));
-      return [...others.slice(0, seat - 1), mine, ...others.slice(seat - 1)];
-    });
+    const mine = rows.find((row) => row.mine);
+    if (!mine) {
+      this.rows.set(
+        rows.map((row, i) =>
+          i === seat - 1 ? { ...row, name: row.name || this.seedName(), mine: true } : row,
+        ),
+      );
+      return;
+    }
+    const others = rows.filter((row) => !row.mine);
+    this.rows.set([...others.slice(0, seat - 1), mine, ...others.slice(seat - 1)]);
   }
 
   onTeamNameInput(index: number, event: Event): void {
@@ -606,8 +613,10 @@ export class DraftSetupComponent implements OnInit {
       return false;
     }
     this.startAttempted.set(true);
-    const missing = this.teamCountKnown() ? this.positionSelect() : this.teamsSelect();
-    missing?.nativeElement.focus();
+    const missing = this.teamCountKnown()
+      ? this.host.nativeElement.querySelector<HTMLButtonElement>('.team-you')
+      : this.teamsSelect()?.nativeElement;
+    missing?.focus();
     return true;
   }
 

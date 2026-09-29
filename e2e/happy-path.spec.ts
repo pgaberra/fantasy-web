@@ -89,9 +89,9 @@ test.describe('happy path', () => {
     //    here (this account has no league synced), so the setup opens on "Select" for it too.
     await expect(page.locator('app-draft-setup')).toBeVisible({ timeout: 30_000 });
     await page.locator('#draft-teams').selectOption('2');
-    // Then choose a seat, which opens on "Select" for the same reason. Seat 1 is offered at
-    // every league size, including the two teams chosen above.
-    await page.locator('#draft-position').selectOption('1');
+    // Then mark a seat, which no team is for the same reason: "You" on the first team, which
+    // every league size has, including the two teams chosen above.
+    await page.locator('.team-you').first().click();
     const confirmSetup = page.getByRole('button', { name: /^start draft$/i });
     await expect(confirmSetup).toBeEnabled();
     await confirmSetup.click();
