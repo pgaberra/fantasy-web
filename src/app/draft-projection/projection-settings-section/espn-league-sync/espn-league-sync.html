@@ -2,7 +2,7 @@
   <div class="espn-sync-row">
     <span class="espn-sync-brand">
       <img class="espn-logo" src="espn-logo.png" alt="" aria-hidden="true" />
-      Sync from your ESPN league
+      {{ purpose() === 'rankings' ? 'Rank your ESPN league' : 'Sync from your ESPN league' }}
     </span>
   </div>
 
@@ -80,7 +80,12 @@
       (click)="sync()"
     >
       @if (syncing()) {
-        <app-loading-indicator variant="inline" label="Syncing" />
+        <app-loading-indicator
+          variant="inline"
+          [label]="purpose() === 'rankings' ? 'Reading' : 'Syncing'"
+        />
+      } @else if (purpose() === 'rankings') {
+        Show rankings
       } @else {
         {{ syncedLeagueId() ? 'Re-sync settings' : 'Sync settings' }}
       }
@@ -90,7 +95,8 @@
   @if (error()) {
     <p class="espn-sync-error" role="alert">{{ error() }}</p>
   }
-  @if (syncedLeagueId(); as id) {
+  <!-- The rankings name the league over their own table, so only an import says it here. -->
+  @if (purpose() === 'settings' && syncedLeagueId(); as id) {
     <p class="espn-sync-synced" role="status">
       <app-icon name="check-circle" class="espn-sync-check" />
       <span
@@ -99,6 +105,9 @@
     </p>
   }
   @if (unsupportedStats().length) {
-    <p class="espn-sync-muted">Not synced: {{ unsupportedStats().join(', ') }}</p>
+    <p class="espn-sync-muted">
+      {{ purpose() === 'rankings' ? 'Not counted' : 'Not synced' }}:
+      {{ unsupportedStats().join(', ') }}
+    </p>
   }
 </div>

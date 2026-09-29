@@ -1,4 +1,4 @@
-import { MockBuilder, MockRender } from 'ng-mocks';
+import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Observable, of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -15,6 +15,8 @@ import { YahooService } from '../services/yahoo.service';
 import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
 import { RankBy } from './rank-by';
+import { EspnLeagueSyncComponent } from '../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
+import { PlatformTabsComponent } from '../shared/platform-tabs/platform-tabs';
 
 const leagues: LeaguesResponse = {
   leagues: [
@@ -76,6 +78,9 @@ describe('TeamPowerRankingsComponent', () => {
   const yahooLeague = vi.fn<(key: string, rankBy?: RankBy) => Observable<LeagueSummaryResponse>>(
     () => of(summary),
   );
+  const espnCall = vi.fn<(id: string, rankBy?: RankBy) => Observable<LeagueSummaryResponse>>(() =>
+    of(summary),
+  );
   const draftCall = vi.fn<(id: string, rankBy?: RankBy) => Observable<LeagueSummaryResponse>>(() =>
     of(summary),
   );
@@ -92,6 +97,7 @@ describe('TeamPowerRankingsComponent', () => {
   let linkedDraft: string | null = null;
   const originalPayments = environment.paymentsEnabled;
   const originalSharedNotice = environment.sharedNoticeEnabled;
+  const originalEspnLeagues = environment.espnLeaguesEnabled;
 
   const render = async () => {
     const fixture = MockRender(TeamPowerRankingsComponent);
@@ -124,6 +130,9 @@ describe('TeamPowerRankingsComponent', () => {
     aiProjection.mockReturnValue(true);
     draftCall.mockReset();
     draftCall.mockReturnValue(of(summary));
+    espnCall.mockReset();
+    espnCall.mockReturnValue(of(summary));
+    environment.espnLeaguesEnabled = true;
     listAll.mockReset();
     listAll.mockReturnValue(of([...boards, ...drafts]));
     linkedDraft = null;
@@ -135,7 +144,8 @@ describe('TeamPowerRankingsComponent', () => {
         startConnect: () => of({ authorizeUrl: 'https://example.test/auth' }),
       } as never)
       .mock(YahooConnectReturnService)
-      .mock(LeagueSummaryService, { yahooLeague, draft: draftCall })
+      .keep(PlatformTabsComponent)
+      .mock(LeagueSummaryService, { yahooLeague, draft: draftCall, espnLeague: espnCall })
       .mock(ProjectionStorageService, { listAll })
       .mock(FeatureService, { leagueDraftSync, aiProjection } as never)
       .provide({
@@ -153,6 +163,7 @@ describe('TeamPowerRankingsComponent', () => {
   afterEach(() => {
     environment.paymentsEnabled = originalPayments;
     environment.sharedNoticeEnabled = originalSharedNotice;
+    environment.espnLeaguesEnabled = originalEspnLeagues;
   });
 
   /**
@@ -497,5 +508,96 @@ describe('TeamPowerRankingsComponent', () => {
     expect(component.boardsFailed()).toBe(true);
     const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
     expect(select.options).toHaveLength(2);
+  });
+
+  /** Picking a platform's tab, as a reader would. */
+  const chooseTab = async (fixture: Awaited<ReturnType<typeof render>>, name: string) => {
+    const root: HTMLElement = fixture.nativeElement;
+    const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('.provider-tab'));
+    tabs.find((tab) => tab.textContent?.includes(name))?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+
+  const chooseEspn = (fixture: Awaited<ReturnType<typeof render>>) => chooseTab(fixture, 'ESPN');
+
+  /** The ESPN card has checked the league with ESPN and hands it over. */
+  const espnCardReads = async (fixture: Awaited<ReturnType<typeof render>>, leagueId: string) => {
+    ngMocks.findInstance(EspnLeagueSyncComponent).synced.emit({
+      leagueId,
+      leagueName: 'Office League',
+      settings: {} as never,
+    });
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+
+  it('offers Yahoo and ESPN tabs where ESPN leagues are offered, and no tabs where not', async () => {
+    let fixture = await render();
+    expect(fixture.nativeElement.querySelectorAll('.provider-tab')).toHaveLength(2);
+    expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeNull();
+
+    fixture.destroy();
+    environment.espnLeaguesEnabled = false;
+    fixture = await render();
+    expect(fixture.nativeElement.querySelector('.provider-tab')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.league-select')).not.toBeNull();
+  });
+
+  /**
+   * The ESPN tab shows the settings import's card in place of the league dropdown, and the league
+   * it hands over is ranked by whatever the rank-by dropdown says.
+   */
+  it('ranks the ESPN league the card hands over, by the projection chosen', async () => {
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+
+    await chooseEspn(fixture);
+
+    expect(fixture.nativeElement.querySelector('app-espn-league-sync')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.league-select')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.rank-by-select')).not.toBeNull();
+    expect(espnCall).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('.rankings-note')).toBeNull();
+
+    await espnCardReads(fixture, '123456');
+
+    expect(espnCall).toHaveBeenCalledWith('123456', 'model');
+    expect(yahooLeague).not.toHaveBeenCalled();
+    expect(component.leagueName()).toEqual('Office League');
+    expect(fixture.nativeElement.querySelector('.rankings-league')?.textContent).toContain(
+      'Office League',
+    );
+
+    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
+    select.value = 'last_season';
+    select.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+
+    expect(espnCall).toHaveBeenLastCalledWith('123456', 'last_season');
+  });
+
+  /** Each tab keeps its own league, so going back to Yahoo is going back to what was there. */
+  it('keeps the Yahoo league for when the reader comes back to it', async () => {
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    await choose(fixture, component, '465.l.1');
+    await chooseEspn(fixture);
+    await espnCardReads(fixture, '123456');
+
+    await chooseTab(fixture, 'Yahoo');
+
+    expect(component.leagueName()).toEqual('Beer League');
+    expect(yahooLeague).toHaveBeenLastCalledWith('465.l.1', 'model');
+  });
+
+  it("says ESPN's refusal of an ESPN league in ESPN's terms", async () => {
+    espnCall.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    await chooseEspn(fixture);
+    await espnCardReads(fixture, '123456');
+
+    expect(component.rankingsMessage()).toContain('ESPN has no league');
   });
 });

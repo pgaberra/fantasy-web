@@ -48,6 +48,11 @@
   background: var(--color-surface-alt);
 }
 
+/* The ESPN card sits over the rank-by choice the way the league dropdown sits beside it. */
+.espn-league {
+  margin-bottom: var(--space-3);
+}
+
 .picker-field {
   display: flex;
   flex-direction: column;
