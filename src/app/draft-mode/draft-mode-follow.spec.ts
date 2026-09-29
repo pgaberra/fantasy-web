@@ -156,7 +156,6 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       })
       .mock(FeatureService, {
         leagueDraftSync,
-        espnLeagueDraftSync: signal(false),
         settled: featuresSettled,
       })
       .mock(YahooService, { leagueDraft: leagueDraftCall })
@@ -1069,7 +1068,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       const component = await render();
 
       expect(component.canFollow()).toBe(false);
-      expect(component.syncPlatforms()).toEqual(['Yahoo']);
+      expect(component.syncAvailable()).toBe(true);
 
       toggleSync(component);
 
@@ -1128,7 +1127,6 @@ describe('DraftModeComponent following a Yahoo draft', () => {
 
       expect(component.setupShown()).toBe(true);
       expect(component.backFromYahoo()).toBe(true);
-      expect(component.linkOpen()).toBe(false);
 
       component.cancelSetup();
       expect(component.backFromYahoo()).toBe(false);
@@ -1139,7 +1137,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
 
       const component = await render();
 
-      expect(component.syncPlatforms()).toEqual([]);
+      expect(component.syncAvailable()).toBe(false);
     });
   });
 
@@ -1361,5 +1359,36 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     await vi.advanceTimersByTimeAsync(5000);
     expect(component.following()).toBe(false);
     expect(component.followNotice()).toBe("Yahoo refused access to this league's draft.");
+  });
+
+  it('stops when the BFF rejects the request, which it would again next time', async () => {
+    leagueDraftCall.mockReturnValue(of(leagueDraft()));
+    const component = await render();
+    component.requestFollow();
+
+    leagueDraftCall.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 400 })));
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(component.following()).toBe(false);
+    expect(component.followNotice()).toBe("Couldn't load the Yahoo draft.");
+  });
+
+  it('follows nothing for an ESPN league, whose draft shows its picks only once it is over', async () => {
+    // Saved following while ESPN drafts were followed: the board opens drafted by hand.
+    loaded = projectionWith({
+      ...handEnteredDraft,
+      settings: {
+        ...handEnteredDraft.settings!,
+        yahooSync: undefined,
+        espnSync: { leagueName: 'Pond League', leagueId: '123', syncedAt: 'then' },
+      },
+      following: true,
+    });
+    const component = await render();
+
+    expect(component.followedLeague()).toBeNull();
+    expect(component.canFollow()).toBe(false);
+    expect(component.following()).toBe(false);
+    expect(component.namesUpNextTeam()).toBe(true);
+    expect(leagueDraftCall).not.toHaveBeenCalled();
   });
 });

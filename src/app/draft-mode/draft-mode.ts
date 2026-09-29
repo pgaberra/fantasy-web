@@ -44,7 +44,6 @@ import {
 } from '../services/tier.service';
 import { RosterSlots } from '../api/models/roster-slots';
 import { environment } from '../../environments/environment';
-import { EspnService } from '../services/espn.service';
 import { YahooService } from '../services/yahoo.service';
 import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { LeagueDraftResponse } from '../api/models/league-draft-response';
@@ -89,16 +88,11 @@ import { SyncWarningDialogComponent } from '../draft-projection/sync-warning-dia
 import { IconComponent } from '../shared/icon/icon';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import {
-  DraftFollowConnectComponent,
-  CookieRepair,
-} from './draft-follow-connect/draft-follow-connect';
-import {
   boardFromLeagueDraft,
   DraftSyncCheck,
   FollowedLeague,
   hasLeagueTeams,
   isLeagueBoard,
-  picksWithheld,
   sameBoard,
   seatIsGuess,
   isLeagueDraft,
@@ -119,36 +113,11 @@ export interface TierStripEntry {
   readonly needed: boolean;
 }
 
-/** Why a followed ESPN league needs the user's cookies. */
-type CookieCause = 'no-team' | 'refused';
-
-const COOKIE_REPAIR_REASON: Record<CookieCause, string> = {
-  'no-team':
-    "SlapStat couldn't tell which team in this ESPN league is yours. Add your ESPN cookies and " +
-    'syncing picks starts again.',
-  refused:
-    "ESPN refused this league's draft: your ESPN cookies are missing or no longer valid. Paste " +
-    'them again and syncing picks starts again.',
+const UNFOLLOWABLE_NOTICE: Record<UnfollowableReason, string> = {
+  auction: "Draft Mode can't follow an auction draft.",
+  'no-team': "Couldn't find your team in this Yahoo league.",
+  'too-few-teams': "Couldn't find the teams in this Yahoo league.",
 };
-
-/** A 400 is ESPN's refusal to read the league with the cookies it was given, or without any. */
-function refusal(error: unknown): CookieCause | null {
-  return error instanceof HttpErrorResponse && error.status === 400 ? 'refused' : null;
-}
-
-function unfollowableNotice(
-  reason: UnfollowableReason,
-  platform: FollowedLeague['platform'],
-): string {
-  switch (reason) {
-    case 'auction':
-      return "Draft Mode can't follow an auction draft.";
-    case 'no-team':
-      return `Couldn't find your team in this ${platform} league.`;
-    case 'too-few-teams':
-      return `Couldn't find the teams in this ${platform} league.`;
-  }
-}
 
 @Component({
   selector: 'app-draft-mode',
@@ -156,7 +125,6 @@ function unfollowableNotice(
     RouterLink,
     LoadingIndicatorComponent,
     DraftSetupComponent,
-    DraftFollowConnectComponent,
     DraftRosterPanelComponent,
     DraftAvailablePanelComponent,
     DraftPicksPanelComponent,
@@ -188,7 +156,6 @@ export class DraftModeComponent implements OnInit {
   readonly lookup = inject(DraftPlayerLookupService);
   private readonly features = inject(FeatureService);
   private readonly yahoo = inject(YahooService);
-  private readonly espn = inject(EspnService);
   private readonly connectReturn = inject(YahooConnectReturnService);
 
   /** The saved draft this page is on, or null while one is still being set up. */
@@ -265,7 +232,7 @@ export class DraftModeComponent implements OnInit {
   readonly pendingSyncBreak = signal<(() => void) | null>(null);
   readonly confirmingFinish = signal<boolean>(false);
 
-  /** Whether the board is following the linked league's draft, which locks pick edits (`picksLocked`). */
+  /** Whether the board is following the linked league's draft, which locks every pick edit. */
   readonly following = signal<boolean>(false);
   readonly followLoading = signal<boolean>(false);
   /** What stopped or is holding up following, shown over the board. */
@@ -276,8 +243,6 @@ export class DraftModeComponent implements OnInit {
    * only ever locked to a league that has actually answered.
    */
   readonly setupCheck = signal<DraftSyncCheck>({ state: 'idle' });
-  /** The league the settings last asked about, which is not the draft's until they are saved. */
-  private setupCheckLeague: FollowedLeague | null = null;
   private setupCheckSubscription: Subscription | null = null;
   /** A league draft waiting for the user to agree to replace the picks entered by hand. */
   readonly pendingFollow = signal<LeagueDraftResponse | null>(null);
@@ -286,12 +251,6 @@ export class DraftModeComponent implements OnInit {
     const league = this.pendingFollow();
     return !!league && hasLeagueTeams(this.draft(), league);
   });
-  /**
-   * A followed ESPN league that stopped for want of the user's cookies, so the dialog asking for
-   * them opens: without the SWID no team in a league is the user's, and ESPN refuses a private league's
-   * draft without both.
-   */
-  readonly cookieRepair = signal<CookieRepair | null>(null);
   /** Whether the board was saved following its league, so opening it picks the draft back up. */
   private readonly resumeFollowing = signal<boolean>(false);
   /**
@@ -332,7 +291,6 @@ export class DraftModeComponent implements OnInit {
   readonly rosterSlots = computed(() => this.league()?.rosterSlots ?? DEFAULT_ROSTER_SLOTS);
   readonly leagueSize = computed(() => this.league()?.leagueSize ?? DEFAULT_LEAGUE_SIZE);
   readonly yahooSync = computed(() => this.league()?.yahooSync ?? null);
-  readonly espnSync = computed(() => this.league()?.espnSync ?? null);
 
   readonly teams = computed(() => this.draft()?.teams ?? []);
   readonly order = computed(() => this.draft()?.order ?? []);
@@ -588,8 +546,7 @@ export class DraftModeComponent implements OnInit {
    * following never shows an up-next read off the league's team list.
    */
   readonly awaitingLeagueDraft = computed(
-    () =>
-      (this.following() || this.followLoading()) && this.picks().length === 0 && !this.handEntry(),
+    () => (this.following() || this.followLoading()) && this.picks().length === 0,
   );
   /** The user's own seat in this board's order. */
   readonly myDraftPosition = computed(() => {
@@ -623,46 +580,18 @@ export class DraftModeComponent implements OnInit {
     const seat = this.myDraftPosition();
     return this.leagueOrderKnown() && seat > 0 ? seat : null;
   });
+  readonly canUndo = computed(() => this.picks().length > 0 && !this.following());
   /**
-   * Whether the board is drafted by hand while it follows its league: an ESPN draft under way that
-   * shows none of its picks (`picksWithheld`), on a board whose teams are the league's. ESPN shares a
-   * draft's picks only once it is over, so the user enters them as they are made, and the board
-   * takes ESPN's when it shares them. Following stays on meanwhile, polling as ever.
-   */
-  readonly handEntry = computed(() => {
-    const league = this.lastLeagueDraft();
-    return (
-      this.following() &&
-      this.followsEspn() &&
-      !!league &&
-      picksWithheld(league) &&
-      hasLeagueTeams(this.draft(), league)
-    );
-  });
-  /** Whether every pick edit is locked: following a league, except while its picks are entered by hand. */
-  readonly picksLocked = computed(() => this.following() && !this.handEntry());
-  readonly canUndo = computed(() => this.picks().length > 0 && !this.picksLocked());
-  /**
-   * The league the sync switch follows: the linked Yahoo league, or the linked ESPN one, where
-   * this environment follows that platform's drafts. A board links one league at a time.
+   * The league the sync switch follows: the linked Yahoo league, where this environment follows
+   * Yahoo drafts. An ESPN league is never followed: ESPN shares a draft's picks only once it is
+   * over, so there is nothing to sync while it runs.
    */
   readonly followedLeague = computed<FollowedLeague | null>(() => {
     const yahoo = this.yahooSync();
-    if (yahoo) {
-      return this.features.leagueDraftSync()
-        ? { platform: 'Yahoo', id: yahoo.leagueKey, name: yahoo.leagueName }
-        : null;
-    }
-    const espn = this.espnSync();
-    if (espn?.leagueId && this.features.espnLeagueDraftSync()) {
-      return { platform: 'ESPN', id: espn.leagueId, name: espn.leagueName ?? espn.leagueId };
-    }
-    return null;
+    return yahoo && this.features.leagueDraftSync()
+      ? { platform: 'Yahoo', id: yahoo.leagueKey, name: yahoo.leagueName }
+      : null;
   });
-  /** The platform named in what syncing has to say. */
-  readonly followPlatform = computed(() => this.followedLeague()?.platform ?? 'Yahoo');
-  /** Whether the league followed is ESPN's, whose draft shows its picks only once it is over. */
-  readonly followsEspn = computed(() => this.followedLeague()?.platform === 'ESPN');
   readonly canFollow = computed(() => this.followedLeague() !== null && !this.finished());
   /**
    * Where a finished draft's power rankings open, which is where what the draft came to is shown:
@@ -676,22 +605,10 @@ export class DraftModeComponent implements OnInit {
     return this.finished() && id && this.features.leagueDraftSync() ? { draft: id } : null;
   });
   /**
-   * The platforms whose drafts this environment follows, which is where the settings offer
-   * syncing picks. None for a finished draft: there is nothing left to follow.
+   * Whether this environment follows Yahoo drafts, which is where the settings offer syncing
+   * picks. Not for a finished draft: there is nothing left to follow.
    */
-  readonly syncPlatforms = computed<FollowedLeague['platform'][]>(() =>
-    this.finished()
-      ? []
-      : [
-          ...(this.features.leagueDraftSync() ? ['Yahoo' as const] : []),
-          ...(this.features.espnLeagueDraftSync() ? ['ESPN' as const] : []),
-        ],
-  );
-  /**
-   * The dialog that asks for an ESPN league's cookies. Linking a league is the settings' import;
-   * this is left for the one thing the import does not ask: the cookies a draft is read with.
-   */
-  readonly linkOpen = computed(() => this.cookieRepair() !== null);
+  readonly syncAvailable = computed(() => !this.finished() && this.features.leagueDraftSync());
   /** The draft's own league settings. */
   readonly leagueSettings = computed(() => this.league());
   readonly finished = computed(() => !!this.draft()?.finishedAt);
@@ -1035,7 +952,7 @@ export class DraftModeComponent implements OnInit {
 
   draftCurrent(playerId: number): void {
     const slot = this.currentSlot();
-    if (this.picksLocked() || !slot || this.draftedIds().has(playerId)) {
+    if (this.following() || !slot || this.draftedIds().has(playerId)) {
       return;
     }
     this.mutate((draft) => ({
@@ -1045,7 +962,7 @@ export class DraftModeComponent implements OnInit {
   }
 
   undoLast(): void {
-    if (this.picksLocked() || !this.picks().length) {
+    if (this.following() || !this.picks().length) {
       return;
     }
     this.unlessItBreaksSync(() =>
@@ -1054,7 +971,7 @@ export class DraftModeComponent implements OnInit {
   }
 
   startEditPick(overall: number): void {
-    if (this.picksLocked()) {
+    if (this.following()) {
       return;
     }
     this.unlessItBreaksSync(() => this.editingPick.set(overall));
@@ -1102,7 +1019,7 @@ export class DraftModeComponent implements OnInit {
   }
 
   removePick(overall: number): void {
-    if (this.picksLocked() || overall < 1 || overall > this.picks().length) {
+    if (this.following() || overall < 1 || overall > this.picks().length) {
       return;
     }
     this.editingPick.set(null);
@@ -1157,8 +1074,8 @@ export class DraftModeComponent implements OnInit {
       this.cancelRemovePick();
     } else if (this.editingPick() !== null) {
       this.cancelEditPick();
-    } else if (!this.linkOpen() && this.pendingFollow() === null) {
-      // The cookie and replace-picks dialogs open over the setup, and go before it.
+    } else if (this.pendingFollow() === null) {
+      // The replace-picks dialog opens over the setup, and goes before it.
       this.dismissSetup();
     }
   }
@@ -1213,7 +1130,6 @@ export class DraftModeComponent implements OnInit {
    */
   checkSetupSync(league: FollowedLeague): void {
     this.setupCheckSubscription?.unsubscribe();
-    this.setupCheckLeague = league;
     this.setupCheck.set({ state: 'checking' });
     this.setupCheckSubscription = this.leagueDraft(league)
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -1221,21 +1137,13 @@ export class DraftModeComponent implements OnInit {
         next: (answer) => {
           const reason = unfollowableReason(answer);
           if (reason) {
-            this.setupCheck.set({
-              state: 'failed',
-              notice: unfollowableNotice(reason, league.platform),
-            });
-            this.offerCookieRepair(league, reason === 'no-team' ? 'no-team' : null);
+            this.setupCheck.set({ state: 'failed', notice: UNFOLLOWABLE_NOTICE[reason] });
             return;
           }
           this.setupCheck.set({ state: 'ok', league: answer });
         },
         error: (error: unknown) => {
-          this.setupCheck.set({
-            state: 'failed',
-            notice: this.followErrorNotice(error, league.platform),
-          });
-          this.offerCookieRepair(league, refusal(error));
+          this.setupCheck.set({ state: 'failed', notice: this.followErrorNotice(error) });
         },
       });
   }
@@ -1259,16 +1167,14 @@ export class DraftModeComponent implements OnInit {
         next: (league) => {
           const reason = unfollowableReason(league);
           if (reason) {
-            this.failLeagueStart(unfollowableNotice(reason, followed.platform));
-            this.offerCookieRepair(followed, reason === 'no-team' ? 'no-team' : null);
+            this.failLeagueStart(UNFOLLOWABLE_NOTICE[reason]);
             return;
           }
           this.analytics.capture('draft_started');
           this.createDraft({ ...boardFromLeagueDraft(null, league), following: true });
         },
         error: (error: unknown) => {
-          this.failLeagueStart(this.followErrorNotice(error, followed.platform));
-          this.offerCookieRepair(followed, refusal(error));
+          this.failLeagueStart(this.followErrorNotice(error));
         },
       });
   }
@@ -1529,14 +1435,10 @@ export class DraftModeComponent implements OnInit {
           this.followLoading.set(false);
           const reason = unfollowableReason(league);
           if (reason) {
-            this.failFollow(unfollowableNotice(reason, followed.platform));
-            this.offerCookieRepair(followed, reason === 'no-team' ? 'no-team' : null);
+            this.failFollow(UNFOLLOWABLE_NOTICE[reason]);
             return;
           }
-          if (
-            isLeagueBoard(this.draft(), league) ||
-            this.keepsHandPicks(this.draft(), league, followed)
-          ) {
+          if (isLeagueBoard(this.draft(), league)) {
             this.startFollowing(followed, league);
           } else {
             this.pendingFollow.set(league);
@@ -1544,8 +1446,7 @@ export class DraftModeComponent implements OnInit {
         },
         error: (error: unknown) => {
           this.followLoading.set(false);
-          this.failFollow(this.followErrorNotice(error, followed.platform));
-          this.offerCookieRepair(followed, refusal(error));
+          this.failFollow(this.followErrorNotice(error));
         },
       });
   }
@@ -1574,9 +1475,7 @@ export class DraftModeComponent implements OnInit {
   }
 
   private leagueDraft(followed: FollowedLeague): Observable<LeagueDraftResponse> {
-    return followed.platform === 'ESPN'
-      ? this.espn.leagueDraft(followed.id)
-      : this.yahoo.leagueDraft(followed.id);
+    return this.yahoo.leagueDraft(followed.id);
   }
 
   /** Follows the linked league: a new draft is made from its board, a saved one switches over. */
@@ -1588,51 +1487,18 @@ export class DraftModeComponent implements OnInit {
     }
   }
 
-  closeLink(): void {
-    this.cookieRepair.set(null);
-  }
-
-  /**
-   * ESPN took the cookies of the league that had stopped for want of them. The league and its
-   * settings are the board's already, so nothing of them is touched: it is only asked again.
-   */
-  cookiesRepaired(): void {
-    const leagueId = this.cookieRepair()?.leagueId;
-    this.closeLink();
-    // Asked for by the settings, the league is theirs to ask again: nothing follows until they
-    // are saved.
-    const asked = this.setupCheckLeague;
-    if (this.setupShown() && asked && asked.id === leagueId) {
-      this.checkSetupSync(asked);
-    } else {
-      this.followLinkedLeague();
-    }
-  }
-
   confirmFollow(): void {
     const league = this.pendingFollow();
     const followed = this.followedLeague();
     this.pendingFollow.set(null);
-    if (!league || !followed) {
-      return;
-    }
-    // Asked mid-follow, when ESPN shared picks that are not the ones entered by hand: following is
-    // on already, so the league's board is only put in place.
-    if (this.following()) {
-      this.applyLeagueDraft(league, followed, true);
-    } else {
+    if (league && followed) {
       this.startFollowing(followed, league);
     }
   }
 
-  /** Keeps the picks on the board. Asked mid-follow, that is the board's own from here: syncing stops. */
   cancelFollow(): void {
     this.pendingFollow.set(null);
-    if (this.following()) {
-      this.stopFollowing();
-    } else {
-      this.rememberFollowing(false);
-    }
+    this.rememberFollowing(false);
   }
 
   stopFollowing(): void {
@@ -1667,9 +1533,7 @@ export class DraftModeComponent implements OnInit {
     this.pendingRemoval.set(null);
     this.setupOpen.set(false);
     this.analytics.capture('draft_follow_started');
-    // Whatever this replaces was settled before it started: the board was the league's already,
-    // or the user said to replace it.
-    if (!this.applyLeagueDraft(league, followed, true)) {
+    if (!this.applyLeagueDraft(league, followed)) {
       return;
     }
     // A hidden tab skips its turn rather than queueing one, and a slow answer is never overtaken
@@ -1697,7 +1561,7 @@ export class DraftModeComponent implements OnInit {
         if (next) {
           this.applyLeagueDraft(next, followed);
         } else {
-          this.onFollowError(error, followed);
+          this.onFollowError(error);
         }
       });
   }
@@ -1708,72 +1572,29 @@ export class DraftModeComponent implements OnInit {
     return totalPicks > 0 && board.picks.length >= totalPicks;
   }
 
-  /**
-   * Whether following this league keeps the picks on the board rather than replacing them: an ESPN
-   * draft under way that shows none of its picks yet, on a board with the league's teams, whose
-   * picks are the ones entered by hand while it runs (`handEntry`).
-   */
-  private keepsHandPicks(
-    board: DraftState | null,
-    league: LeagueDraftResponse,
-    followed: FollowedLeague,
-  ): boolean {
-    return followed.platform === 'ESPN' && picksWithheld(league) && hasLeagueTeams(board, league);
-  }
-
-  /**
-   * Puts the league's board in place. False when following has stopped because of it.
-   *
-   * <p>An ESPN board drafted by hand keeps its picks while ESPN shows none, and once ESPN shares
-   * them asks before replacing any pick that is not ESPN's in that place (`replace` is that yes).
-   * Yahoo's board is always the league's: its picks cannot be edited while it follows.
-   */
-  private applyLeagueDraft(
-    league: LeagueDraftResponse,
-    followed: FollowedLeague,
-    replace = false,
-  ): boolean {
+  /** Puts the league's board in place. False when following has stopped because of it. */
+  private applyLeagueDraft(league: LeagueDraftResponse, followed: FollowedLeague): boolean {
     const reason = unfollowableReason(league);
     if (reason) {
-      this.followNotice.set(unfollowableNotice(reason, followed.platform));
+      this.followNotice.set(UNFOLLOWABLE_NOTICE[reason]);
       this.stopFollowing();
-      this.offerCookieRepair(followed, reason === 'no-team' ? 'no-team' : null);
       return false;
     }
     this.lastLeagueDraft.set(league);
     this.leagueDraftSeen.set({ leagueId: followed.id, draft: league });
     const current = this.draft();
-    // Read at the answer, not at the request, so a pick entered while it was on its way stays.
-    const handPicks = this.keepsHandPicks(current, league, followed)
-      ? (current?.picks ?? [])
-      : null;
-    if (
-      followed.platform === 'ESPN' &&
-      handPicks === null &&
-      !replace &&
-      !isLeagueBoard(current, league)
-    ) {
-      // ESPN has shared picks that are not the ones entered here: the user says which stand.
-      this.editingPick.set(null);
-      this.pendingRemoval.set(null);
-      this.pendingFollow.set(league);
-      this.followNotice.set(null);
-      return true;
-    }
     // A draft the league has finished is brought over whole and finishes the board with it: nothing is
     // left to follow, and a board still open beside a switch that turned itself off read as a
     // sync that refused to start.
     //
     // So does its last pick. Yahoo reports the draft over (`postdraft`) half a minute to a minute
     // after that pick lands, and until then the board read "Draft complete" with no way on: no
-    // power rankings, and no Finish draft while following. Counted on the league's picks alone:
-    // a board filled by hand is not a draft ESPN has finished.
+    // power rankings, and no Finish draft while following.
     const leagueBoard = boardFromLeagueDraft(current, league);
     const leagueFinished = league.status === 'FINISHED' || this.fillsEverySlot(leagueBoard);
     // The switch is saved with the board it put in place, in the same save.
     const board = {
       ...leagueBoard,
-      ...(handPicks === null ? {} : { picks: handPicks }),
       following: !leagueFinished || undefined,
     };
     const next =
@@ -1797,39 +1618,26 @@ export class DraftModeComponent implements OnInit {
   }
 
   /**
-   * A dropped connection is worth another try, so polling carries on. A refusal, or a draft that is
-   * no longer served, answers the same way next time, so following stops. ESPN's refusal is a 400:
-   * its private league read without the user's cookies, or with cookies ESPN no longer takes.
+   * A dropped connection is worth another try, so polling carries on. A refusal, a request the BFF
+   * rejects, or a draft that is no longer served answers the same way next time, so following
+   * stops.
    */
-  private onFollowError(error: unknown, followed: FollowedLeague): void {
+  private onFollowError(error: unknown): void {
     const status = error instanceof HttpErrorResponse ? error.status : 0;
     if (status === 400 || status === 404 || status === 424) {
-      this.followNotice.set(this.followErrorNotice(error, followed.platform));
+      this.followNotice.set(this.followErrorNotice(error));
       this.stopFollowing();
-      this.offerCookieRepair(followed, refusal(error));
       return;
     }
     this.followNotice.set('Sync unavailable at the moment.');
   }
 
-  /**
-   * Asks for the ESPN league's cookies when they are what stopped it: a league with
-   * no team found as the user's (no SWID to tell), or a draft ESPN refused (a private league's,
-   * without cookies or with ones ESPN no longer takes). Yahoo's causes have no such cure here.
-   */
-  private offerCookieRepair(followed: FollowedLeague, cause: CookieCause | null): void {
-    if (followed.platform !== 'ESPN' || cause === null) {
-      return;
-    }
-    this.cookieRepair.set({ leagueId: followed.id, reason: COOKIE_REPAIR_REASON[cause] });
-  }
-
-  private followErrorNotice(error: unknown, platform: FollowedLeague['platform']): string {
+  private followErrorNotice(error: unknown): string {
     const status = error instanceof HttpErrorResponse ? error.status : 0;
-    if (status === 424 || (platform === 'ESPN' && status === 400)) {
-      return `${platform} refused access to this league's draft.`;
+    if (status === 424) {
+      return "Yahoo refused access to this league's draft.";
     }
-    return `Couldn't load the ${platform} draft.`;
+    return "Couldn't load the Yahoo draft.";
   }
 
   requestFinishDraft(): void {
