@@ -1494,7 +1494,7 @@ export class DraftModeComponent implements OnInit {
     }
   }
 
-  /** A click beside the setup, or Escape: closes it where the board can be played without it. */
+  /** Escape: closes the setup where the board can be played without it. */
   dismissSetup(): void {
     if (this.setupShown() && this.setupDismissible()) {
       this.backFromYahoo.set(false);

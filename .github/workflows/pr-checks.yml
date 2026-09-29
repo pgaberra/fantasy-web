@@ -72,6 +72,9 @@ jobs:
       - name: Verify no tooltip uses the native title
         run: bash .github/scripts/check-native-tooltips.sh
 
+      - name: Verify no dialog closes on a backdrop click
+        run: bash .github/scripts/check-backdrop-clicks.sh
+
       - name: Check copy against COPY-RULES.md
         run: npm run check:copy
 
