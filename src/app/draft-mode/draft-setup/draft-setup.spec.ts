@@ -79,14 +79,12 @@ describe('DraftSetupComponent', () => {
     following: true,
   };
 
-  it('starts on no number of teams, with exactly one mine', () => {
+  it('starts on no number of teams, and no team of yours', () => {
     const component = renderSetup(leagueWith(), null);
 
     expect(component.teamCountKnown()).toBe(false);
     expect(component.numTeams()).toBeNull();
-    const mine = component.rows().filter((row) => row.mine);
-    expect(mine.length).toEqual(1);
-    expect(mine[0].name).toEqual('My Team');
+    expect(component.rows().some((row) => row.mine)).toBe(false);
   });
 
   // The size a projection carries may be nothing but its default, so it is not taken as chosen.
@@ -106,11 +104,12 @@ describe('DraftSetupComponent', () => {
     );
 
     expect(component.numTeams()).toEqual(8);
-    expect(component.rows().filter((row) => row.mine).length).toEqual(1);
+    expect(component.rows().some((row) => row.mine)).toBe(false);
   });
 
   it('sets the number of teams to the one chosen, up or down', () => {
     const component = renderSetup();
+    component.setMyPosition(12);
 
     component.setTeamCount(14);
     expect(component.numTeams()).toEqual(14);
@@ -129,12 +128,11 @@ describe('DraftSetupComponent', () => {
     const element: HTMLElement = fixture.nativeElement;
     const emitted = confirmedBy(fixture.point.componentInstance);
     const teams = element.querySelector<HTMLSelectElement>('#draft-teams')!;
-    const seat = element.querySelector<HTMLSelectElement>('#draft-position')!;
     const start = element.querySelector<HTMLButtonElement>('.btn-primary')!;
 
     expect(element.querySelector('#draft-teams option:checked')?.textContent).toContain('Select');
     // No teams, no seats to offer.
-    expect(seat.disabled).toBe(true);
+    expect(element.querySelector('.team-you')).toBeNull();
 
     start.click();
     fixture.detectChanges();
@@ -152,11 +150,10 @@ describe('DraftSetupComponent', () => {
     fixture.detectChanges();
 
     expect(element.querySelector('.field-error')).toBeNull();
-    expect(seat.disabled).toBe(false);
-    expect(seat.querySelectorAll('option:not([disabled])').length).toBe(10);
+    const seats = element.querySelectorAll<HTMLButtonElement>('.team-you');
+    expect(seats.length).toBe(10);
 
-    seat.value = '4';
-    seat.dispatchEvent(new Event('change'));
+    seats[3].click();
     start.click();
     expect(emitted()?.draft.teams.length).toBe(10);
     expect(emitted()?.league.leagueSize).toBe(10);
@@ -185,8 +182,21 @@ describe('DraftSetupComponent', () => {
     expect(component.teamCounts()[0]).toEqual(3);
   });
 
-  it('moves your team to the chosen draft position, keeping the others in order', () => {
+  it('makes the team at the seat pressed yours, and under your name where it had none', () => {
     const component = renderSetup();
+    const ids = component.rows().map((row) => row.id);
+
+    component.setMyPosition(3);
+
+    expect(component.myPosition()).toEqual(3);
+    expect(component.rows().map((row) => row.id)).toEqual(ids);
+    expect(component.rows()[2].name).toEqual('My Team');
+    expect(component.rows().filter((row) => row.mine).length).toEqual(1);
+  });
+
+  it('moves your team to the seat pressed next, keeping the others in order', () => {
+    const component = renderSetup();
+    component.setMyPosition(1);
     const others = component
       .rows()
       .filter((row) => !row.mine)
@@ -251,7 +261,7 @@ describe('DraftSetupComponent', () => {
     const namesOf = (result: DraftSetupResult | undefined) =>
       result?.draft.order.map((id) => result.draft.teams.find((team) => team.id === id)?.name);
 
-    it('is listed only once the number of teams and your draft position are chosen', () => {
+    it('is listed once the number of teams is chosen, with no team yours until pressed', () => {
       const fixture = MockRender(DraftSetupComponent, {
         initial: null,
         seedName: 'My Team',
@@ -263,15 +273,29 @@ describe('DraftSetupComponent', () => {
 
       component.setTeamCount(4);
       fixture.detectChanges();
+      const rows = () => [...element.querySelectorAll('.team-row')];
+      expect(rows().length).toBe(4);
       // Your team would sit in a seat nobody chose.
-      expect(element.querySelector('.team-list')).toBeNull();
+      expect(element.querySelector('.team-row--mine')).toBeNull();
+      expect(element.querySelector('[aria-pressed="true"]')).toBeNull();
+      expect(element.querySelector('.order-hint')?.textContent).toContain('Press You');
+      expect(
+        rows().map((row) => row.querySelector<HTMLInputElement>('.team-name')?.placeholder),
+      ).toEqual(['Team 1', 'Team 2', 'Team 3', 'Team 4']);
 
-      component.setMyPosition(3);
+      rows()[2].querySelector<HTMLButtonElement>('.team-you')!.click();
       fixture.detectChanges();
-      const rows = element.querySelectorAll('.team-row');
-      expect(rows.length).toBe(4);
-      expect(rows[2].querySelector('.team-badge--mine')?.textContent?.trim()).toBe('You');
-      expect(element.querySelectorAll('.team-badge--mine').length).toBe(1);
+      expect(rows()[2].classList).toContain('team-row--mine');
+      expect(rows()[2].querySelector('.team-you')?.getAttribute('aria-pressed')).toBe('true');
+      expect(element.querySelectorAll('[aria-pressed="true"]').length).toBe(1);
+      expect(element.querySelector('.order-hint')).toBeNull();
+
+      // Pressed on another team, yours moves there and the others close up around it.
+      rows()[0].querySelector<HTMLButtonElement>('.team-you')!.click();
+      fixture.detectChanges();
+      expect(component.myPosition()).toBe(1);
+      expect(rows()[0].querySelector<HTMLInputElement>('.team-name')?.value).toBe('My Team');
+      expect(element.querySelectorAll('[aria-pressed="true"]').length).toBe(1);
     });
 
     it('shows each blank field the name it will be saved as', () => {
@@ -385,6 +409,7 @@ describe('DraftSetupComponent', () => {
       ]);
       expect(rows[0].querySelector('.team-badge')?.textContent?.trim()).toBe('Drafted');
       expect(rows[2].querySelector('.team-badge')).toBeNull();
+      expect(rows[1].querySelector('.team-you')?.getAttribute('aria-pressed')).toBe('true');
 
       fixture.point.componentInstance.submit();
       expect(emitted()?.draft.teams).toEqual([
@@ -505,7 +530,8 @@ describe('DraftSetupComponent', () => {
       });
 
       expect(component.numTeams()).toEqual(8);
-      expect(component.rows().filter((row) => row.mine).length).toEqual(1);
+      // The league said how big it is, not where the user sits.
+      expect(component.draftPositionKnown()).toBe(false);
     });
 
     it('keeps the teams that have picked when an import makes the league smaller', () => {
@@ -584,10 +610,11 @@ describe('DraftSetupComponent', () => {
     component.setMyPosition(3);
     expect(component.positionMissing()).toBe(false);
     component.submit();
-    expect(emitted?.draft.order.indexOf('team-me')).toBe(2);
+    const mine = emitted?.draft.teams.find((team) => team.mine);
+    expect(emitted?.draft.order.indexOf(mine!.id)).toBe(2);
   });
 
-  it('keeps Start enabled, and points at the draft position when pressed without one', () => {
+  it('keeps Start enabled, and points at the You buttons when pressed without a seat', () => {
     const fixture = MockRender(DraftSetupComponent, {
       initial: null,
       seedName: 'My Team',
@@ -601,7 +628,8 @@ describe('DraftSetupComponent', () => {
     });
     component.setTeamCount(12);
     fixture.detectChanges();
-    const select = element.querySelector<HTMLSelectElement>('#draft-position')!;
+    const list = element.querySelector<HTMLOListElement>('.team-list')!;
+    const seats = element.querySelectorAll<HTMLButtonElement>('.team-you');
     const start = element.querySelector<HTMLButtonElement>('.btn-primary')!;
 
     expect(start.disabled).toBe(false);
@@ -612,20 +640,19 @@ describe('DraftSetupComponent', () => {
 
     expect(emitted).toBeUndefined();
     expect(element.querySelector('.field-error')?.textContent).toContain(
-      'Choose your draft position',
+      'Press You at your draft position',
     );
-    expect(select.getAttribute('aria-invalid')).toBe('true');
-    expect(select.getAttribute('aria-describedby')).toBe('draft-position-error');
-    expect(document.activeElement).toBe(select);
+    expect(list.getAttribute('aria-describedby')).toBe('draft-position-error');
+    expect(document.activeElement).toBe(seats[0]);
 
-    select.value = '4';
-    select.dispatchEvent(new Event('change'));
+    seats[3].click();
     fixture.detectChanges();
 
     expect(element.querySelector('.field-error')).toBeNull();
-    expect(select.getAttribute('aria-invalid')).toBe('false');
+    expect(list.getAttribute('aria-describedby')).toBeNull();
     start.click();
-    expect(emitted?.draft.order.indexOf('team-me')).toBe(3);
+    const mine = emitted?.draft.teams.find((team) => team.mine);
+    expect(emitted?.draft.order.indexOf(mine!.id)).toBe(3);
   });
 
   it('keeps the seat a saved setup already carries', () => {
@@ -667,13 +694,20 @@ describe('DraftSetupComponent', () => {
     expect(element.querySelector('.setup-hint')?.textContent).toContain(
       "Your league hasn't set its draft order yet.",
     );
-    expect(element.querySelector('#draft-position option:checked')?.textContent).toContain(
-      'Select',
-    );
+    // The league's teams as it listed them, and yours not marked where it happened to list you.
+    const rows = [...element.querySelectorAll('.team-row')];
+    expect(rows.map((row) => row.querySelector<HTMLInputElement>('.team-name')?.value)).toEqual([
+      'Bravo',
+      'Alpha',
+      'Charlie',
+    ]);
+    expect(element.querySelector('.team-row--mine')).toBeNull();
+    expect(element.querySelector('[aria-pressed="true"]')).toBeNull();
 
     component.submit();
     expect(emitted).toBeUndefined();
 
+    // Your own team, Alpha, goes to the seat pressed: it stays yours, only its seat was unknown.
     component.setMyPosition(3);
     component.submit();
     expect(emitted?.draft.order).toEqual(['465.l.9.t.2', '465.l.9.t.3', '465.l.9.t.1']);
@@ -787,9 +821,6 @@ describe('DraftSetupComponent', () => {
       expect(component.numTeams()).toBe(3);
       expect(component.leaguePosition()).toBe(2);
       expect(element.querySelector('.locked-note strong')?.textContent?.trim()).toBe('Beer League');
-      const seat = element.querySelector<HTMLSelectElement>('#draft-position')!;
-      expect(seat.disabled).toBe(true);
-      expect(seat.textContent).toContain('2');
       const teams = element.querySelector<HTMLSelectElement>('#draft-teams')!;
       expect(teams.disabled).toBe(true);
       expect(teams.textContent).toContain('3');
@@ -804,6 +835,7 @@ describe('DraftSetupComponent', () => {
       expect(rows[1].querySelector('.team-badge--mine')).not.toBeNull();
       expect(element.querySelector('.drag-handle')).toBeNull();
       expect(element.querySelector('input.team-name')).toBeNull();
+      expect(element.querySelector('.team-you')).toBeNull();
 
       // No seat to choose: the league's is the seat.
       component.submit();
@@ -820,7 +852,6 @@ describe('DraftSetupComponent', () => {
       const element: HTMLElement = fixture.nativeElement;
 
       expect(fixture.point.componentInstance.leaguePosition()).toBeNull();
-      expect(element.querySelector('#draft-position')?.textContent?.trim()).toBe('–');
       expect(element.querySelector('app-notice')?.textContent).toContain(
         'Your draft position will be available when the draft starts',
       );
@@ -894,7 +925,7 @@ describe('DraftSetupComponent', () => {
       expect(asked).toEqual([]);
       expect(element.querySelector('.sync-row')).toBeNull();
       expect(element.textContent).toContain("Picks can't be synced from ESPN yet");
-      expect(element.querySelector<HTMLSelectElement>('#draft-position')?.disabled).toBe(false);
+      expect(element.querySelectorAll('.team-you').length).toBe(10);
 
       component.setMyPosition(4);
       component.submit();
