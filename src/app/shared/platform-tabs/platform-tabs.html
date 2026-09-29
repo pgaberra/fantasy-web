@@ -1,0 +1,25 @@
+<div class="provider-picker" role="tablist" [attr.aria-label]="label()">
+  @for (platform of platforms(); track platform) {
+    <button
+      type="button"
+      role="tab"
+      class="provider-tab"
+      [class.provider-tab--active]="selected() === platform"
+      [attr.aria-selected]="selected() === platform"
+      (click)="selected.set(platform)"
+    >
+      @if (platform === 'yahoo') {
+        <app-yahoo-mark />
+        Yahoo
+      } @else {
+        <img
+          class="provider-mark provider-mark--espn"
+          src="espn-logo.png"
+          alt=""
+          aria-hidden="true"
+        />
+        ESPN
+      }
+    </button>
+  }
+</div>

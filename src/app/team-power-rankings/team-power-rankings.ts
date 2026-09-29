@@ -13,12 +13,17 @@ import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { NoticeComponent } from '../shared/notice/notice';
 import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
+import { Platform, PlatformTabsComponent } from '../shared/platform-tabs/platform-tabs';
+import {
+  EspnLeagueSyncComponent,
+  EspnSyncResult,
+} from '../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
 import { leagueProjectionFrom, scoreHeadingFor } from './power-rankings-data';
 import { powerRankingsMessage, powerRankingsRetryable } from './power-rankings-error';
 import { RankBy, rankByBoard } from './rank-by';
 
 /**
- * How a league's teams stack up today: a Yahoo league, or a draft made here.
+ * How a league's teams stack up today: a Yahoo league, an ESPN league, or a draft made here.
  *
  * <p>Nothing is saved. The page is a read of a league that already exists somewhere else, so it
  * holds no board, no draft and no row of its own: leaving it and coming back reads the league
@@ -43,6 +48,13 @@ import { RankBy, rankByBoard } from './rank-by';
  * projection that draft was played against, and so does picking a draft in the dropdown: that is
  * what the draft was made with, which the reader can still change.
  *
+ * <p>An ESPN league is picked the way the league settings' import picks one (Alexander's call,
+ * 2026-09-29): the same Yahoo / ESPN tabs, and under ESPN the same card — league id, "My league is
+ * private", the espn_s2 and SWID cookies. ESPN lists no leagues for an account, so there is no
+ * dropdown to fill; the card's button is the one button here, because a typed id is not read
+ * until the reader says it is finished. The user's drafts stay under Yahoo, beside the leagues
+ * they sat under before there was a choice.
+ *
  * <p>What the league is ranked against is a second dropdown: the AI projection by default, last
  * season, or any board of the user's own or one they follow.
  *
@@ -59,6 +71,8 @@ import { RankBy, rankByBoard } from './rank-by';
     IconComponent,
     LoadingIndicatorComponent,
     NoticeComponent,
+    PlatformTabsComponent,
+    EspnLeagueSyncComponent,
   ],
   providers: [YahooLeaguePicker],
   templateUrl: './team-power-rankings.html',
@@ -74,6 +88,16 @@ export class TeamPowerRankingsComponent implements OnInit {
   readonly picker = inject(YahooLeaguePicker);
 
   protected readonly sharedNotice = environment.sharedNoticeEnabled;
+
+  /** Whether ESPN leagues are offered at all: where the league settings' import offers them. */
+  protected readonly espnOffered = environment.espnLeaguesEnabled;
+  protected readonly platforms: readonly Platform[] = ['yahoo', 'espn'];
+
+  /** Which platform's league is on screen. Yahoo, where the user's drafts also sit, until ESPN is chosen. */
+  readonly platform = signal<Platform | 'none'>('yahoo');
+
+  /** The ESPN league the card last read, which ESPN accepted with the cookies it was given. */
+  readonly espnLeague = signal<{ id: string; name: string | null } | null>(null);
 
   /** The draft being read, where the dropdown points at one of the user's own drafts. */
   readonly draftId = signal<string | null>(null);
@@ -190,17 +214,28 @@ export class TeamPowerRankingsComponent implements OnInit {
       if (this.linkedDraft()) {
         return undefined;
       }
+      const rankBy = this.rankBy();
+      if (this.platform() === 'espn') {
+        const espn = this.espnLeague();
+        return espn ? { kind: 'espn' as const, id: espn.id, rankBy } : undefined;
+      }
       const draftId = this.draftId();
       if (draftId) {
-        return { draftId, leagueKey: null, rankBy: this.rankBy() };
+        return { kind: 'draft' as const, id: draftId, rankBy };
       }
       const leagueKey = this.leagueKey();
-      return leagueKey ? { draftId: null, leagueKey, rankBy: this.rankBy() } : undefined;
+      return leagueKey ? { kind: 'yahoo' as const, id: leagueKey, rankBy } : undefined;
     },
-    stream: ({ params }) =>
-      params.draftId
-        ? this.rankings.draft(params.draftId, params.rankBy)
-        : this.rankings.yahooLeague(params.leagueKey as string, params.rankBy),
+    stream: ({ params }) => {
+      switch (params.kind) {
+        case 'espn':
+          return this.rankings.espnLeague(params.id, params.rankBy);
+        case 'draft':
+          return this.rankings.draft(params.id, params.rankBy);
+        default:
+          return this.rankings.yahooLeague(params.id, params.rankBy);
+      }
+    },
   });
 
   readonly loadingRankings = computed(() => this.rankingsResource.isLoading());
@@ -212,10 +247,26 @@ export class TeamPowerRankingsComponent implements OnInit {
   /** Whether there are leagues or drafts to choose from and none chosen, which is worth saying. */
   readonly awaitingLeague = computed(
     () =>
-      !this.picker.loadingLeagues() && this.hasChoices() && !this.leagueKey() && !this.draftId(),
+      this.platform() !== 'espn' &&
+      !this.picker.loadingLeagues() &&
+      this.hasChoices() &&
+      !this.leagueKey() &&
+      !this.draftId(),
+  );
+
+  /** Whether there is something to rank, and so something to rank it by. */
+  readonly offersRankBy = computed(
+    () => this.platform() === 'espn' || !!this.picker.connected() || this.drafts().length > 0,
   );
 
   readonly leagueName = computed(() => {
+    if (this.platform() === 'espn') {
+      const espn = this.espnLeague();
+      if (!espn) {
+        return '';
+      }
+      return espn.name ?? espn.id;
+    }
     const draftId = this.draftId();
     if (draftId) {
       return this.drafts().find((draft) => draft.id === draftId)?.name ?? '';
@@ -265,7 +316,7 @@ export class TeamPowerRankingsComponent implements OnInit {
    */
   readonly rankingsMessage = computed(() => {
     const error = this.rankingsError();
-    return error ? powerRankingsMessage(error) : null;
+    return error ? powerRankingsMessage(error, this.platform()) : null;
   });
 
   readonly rankingsRetryable = computed(() => powerRankingsRetryable(this.rankingsError()));
@@ -304,6 +355,14 @@ export class TeamPowerRankingsComponent implements OnInit {
     } else if (board && this.boards().some((candidate) => candidate.id === board)) {
       this.chosenRankBy.set(rankByBoard(board));
     }
+  }
+
+  /**
+   * Reads the ESPN league the card has just checked with ESPN. Pressing its button again reads the
+   * league again, which is how a reader sees the rosters as they are now.
+   */
+  rankEspnLeague(result: EspnSyncResult): void {
+    this.espnLeague.set({ id: result.leagueId, name: result.leagueName ?? null });
   }
 
   /** Ranks by what the second dropdown points at, re-reading the league on screen if there is one. */

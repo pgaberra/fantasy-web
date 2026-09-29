@@ -1,38 +1,10 @@
 @if (anyAvailable) {
   <p class="league-sync-hint">{{ hint }}</p>
-  <div class="provider-picker" role="tablist" aria-label="Fantasy platform to import from">
-    @if (yahooAvailable) {
-      <button
-        type="button"
-        role="tab"
-        class="provider-tab"
-        [class.provider-tab--active]="provider() === 'yahoo'"
-        [attr.aria-selected]="provider() === 'yahoo'"
-        (click)="provider.set('yahoo')"
-      >
-        <app-yahoo-mark />
-        Yahoo
-      </button>
-    }
-    @if (espnAvailable) {
-      <button
-        type="button"
-        role="tab"
-        class="provider-tab"
-        [class.provider-tab--active]="provider() === 'espn'"
-        [attr.aria-selected]="provider() === 'espn'"
-        (click)="provider.set('espn')"
-      >
-        <img
-          class="provider-mark provider-mark--espn"
-          src="espn-logo.png"
-          alt=""
-          aria-hidden="true"
-        />
-        ESPN
-      </button>
-    }
-  </div>
+  <app-platform-tabs
+    label="Fantasy platform to import from"
+    [platforms]="platforms"
+    [(selected)]="provider"
+  />
   @switch (provider()) {
     @case ('yahoo') {
       <app-yahoo-league-sync [lastSync]="lastSync()" (synced)="yahooSynced.emit($event)" />

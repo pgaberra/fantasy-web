@@ -273,4 +273,25 @@ describe('EspnLeagueSyncComponent', () => {
     expect(fixture.nativeElement.querySelector('.espn-cookies')).toBeTruthy();
     expect(component.error()).toContain('cookies');
   });
+
+  /** Team Power Rankings asks for its league with this card; only the words change. */
+  it('names the card and its button for the rankings when asked for them', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent, { purpose: 'rankings' });
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.leagueId.set('123456');
+    component.sync();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('Rank your ESPN league');
+    expect(text).toContain('Show rankings');
+    expect(text).not.toContain('Sync settings');
+    // The rankings name the league over their table, so the card does not.
+    expect(fixture.nativeElement.querySelector('.espn-sync-synced')).toBeNull();
+    expect(text).toContain('Not counted');
+  });
 });

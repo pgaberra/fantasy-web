@@ -8,6 +8,13 @@ import { IconComponent } from '../../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../../shared/loading-indicator/loading-indicator';
 import { EspnCookieHelpComponent } from '../../../shared/espn-cookie-help/espn-cookie-help';
 
+/**
+ * What the league is read for: its settings, imported into a board, or its teams, ranked by Team
+ * Power Rankings. The form, the cookies and the errors are the same either way; only what the
+ * card is called and what its button says differ.
+ */
+export type EspnLeaguePurpose = 'settings' | 'rankings';
+
 export interface EspnSyncResult {
   settings: LeagueProjectionSettingsResponse;
   leagueId: string;
@@ -30,6 +37,10 @@ export interface EspnSyncResult {
  * stored cookies read back from the server. That read is what makes the prefill possible and is
  * also its cost — the pair is a session credential for the whole ESPN account, and from the
  * moment it is displayed it lives in the page rather than only on the server.
+ *
+ * Team Power Rankings asks for its ESPN league with this same card (`purpose="rankings"`), so an
+ * ESPN league is picked the same way wherever it is picked. The settings read is then only the
+ * proof that ESPN takes the league and the cookies; what the page reads next is the league's teams.
  */
 @Component({
   selector: 'app-espn-league-sync',
@@ -46,6 +57,7 @@ export class EspnLeagueSyncComponent implements OnInit {
   readonly lastSyncedAt = input<string | null>(null);
   /** ESPN's name for that league, so the status line names it rather than its id. */
   readonly lastLeagueName = input<string | null>(null);
+  readonly purpose = input<EspnLeaguePurpose>('settings');
   readonly synced = output<EspnSyncResult>();
 
   readonly leagueId = linkedSignal<string>(() => this.lastLeagueId() ?? '');
