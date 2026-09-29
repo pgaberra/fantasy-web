@@ -206,7 +206,7 @@ describe('DraftModeComponent following an ESPN draft', () => {
     expect(component.following()).toBe(true);
     expect(component.order()).toEqual(['espn.l.123.t.2', 'espn.l.123.t.1']);
     expect(component.picks()).toEqual([{ playerId: 6743, teamId: 'espn.l.123.t.2' }]);
-    expect(text(fixture, '.follow-status')).toContain('Live from Beer League on ESPN');
+    expect(text(fixture, '.follow-status')).toContain('Following Beer League on ESPN');
   });
 
   it('keeps polling the ESPN league while following', async () => {
@@ -388,6 +388,204 @@ describe('DraftModeComponent following an ESPN draft', () => {
       expect(component.linkOpen()).toBe(false);
       expect(component.following()).toBe(false);
       expect(component.canUndo()).toBe(component.picks().length > 0);
+    });
+  });
+
+  // ESPN publishes a draft's picks only once it is over, all at once: through a whole live draft
+  // (2026-09-29) it said `inProgress` with every pick empty, then 220 of 220 within one poll.
+  describe('while ESPN shows none of the picks of a draft under way', () => {
+    const finished = (picks: LeagueDraftResponse['picks']): LeagueDraftResponse => ({
+      ...leagueDraft(picks),
+      status: 'FINISHED',
+    });
+    const bravoTakesMcDavid = { overall: 1, round: 1, teamId: 'espn.l.123.t.2', playerId: 6743 };
+    const lastSaved = () => updateProjection.mock.calls.at(-1)![1].data.draft;
+
+    it('lets the picks be entered by hand, and says why', async () => {
+      espnLeagueDraft.mockReturnValue(of(leagueDraft()));
+      const fixture = await renderFixture();
+      const component = fixture.point.componentInstance;
+
+      component.requestFollow();
+
+      expect(component.following()).toBe(true);
+      expect(component.handEntry()).toBe(true);
+      expect(component.picksLocked()).toBe(false);
+      expect(component.awaitingLeagueDraft()).toBe(false);
+      expect(text(fixture, '.draft-progress')).toBe('Up next: Bravo');
+      const status = text(fixture, '.follow-status');
+      expect(status).toContain('Following Beer League on ESPN');
+      expect(status).not.toContain('Live from');
+      expect(status).toContain(
+        "ESPN shares a draft's picks only once it's over, so enter them here as they're made. " +
+          "The board takes ESPN's results when the draft ends.",
+      );
+
+      component.draftCurrent(6743);
+
+      expect(component.picks()).toEqual([{ playerId: 6743, teamId: 'espn.l.123.t.2' }]);
+      expect(lastSaved()?.picks).toEqual([{ playerId: 6743, teamId: 'espn.l.123.t.2' }]);
+      expect(lastSaved()?.following).toBe(true);
+      expect(component.canUndo()).toBe(true);
+      expect(text(fixture, '.draft-progress')).toMatch(/^Up next: Alpha ?· you$/);
+    });
+
+    it('keeps the picks entered by hand across polls, and still polls', async () => {
+      espnLeagueDraft.mockReturnValue(of(leagueDraft()));
+      const component = await render();
+      component.requestFollow();
+      component.draftCurrent(6743);
+      component.draftCurrent(7109);
+      updateProjection.mockClear();
+
+      await vi.advanceTimersByTimeAsync(10000);
+
+      expect(espnLeagueDraft).toHaveBeenCalledTimes(3);
+      expect(component.picks()).toEqual([
+        { playerId: 6743, teamId: 'espn.l.123.t.2' },
+        { playerId: 7109, teamId: 'espn.l.123.t.1' },
+      ]);
+      // A poll that says nothing new saves nothing.
+      expect(updateProjection).not.toHaveBeenCalled();
+      expect(component.following()).toBe(true);
+
+      component.undoLast();
+      expect(component.picks()).toEqual([{ playerId: 6743, teamId: 'espn.l.123.t.2' }]);
+    });
+
+    it('picks the hand-entered board back up on a reload, picks and all', async () => {
+      loaded = projectionWith({
+        ...espnDraft,
+        teams: leagueDraft().teams,
+        order: ['espn.l.123.t.2', 'espn.l.123.t.1'],
+        picks: [{ playerId: 6743, teamId: 'espn.l.123.t.2' }],
+        following: true,
+      });
+      espnLeagueDraft.mockReturnValue(of(leagueDraft()));
+
+      const component = await render();
+
+      expect(component.following()).toBe(true);
+      expect(component.pendingFollow()).toBeNull();
+      expect(component.handEntry()).toBe(true);
+      expect(component.picks()).toEqual([{ playerId: 6743, teamId: 'espn.l.123.t.2' }]);
+    });
+
+    it("takes ESPN's results without asking when they match the picks entered, and finishes", async () => {
+      espnLeagueDraft.mockReturnValue(of(leagueDraft()));
+      const component = await render();
+      component.requestFollow();
+      component.draftCurrent(6743);
+
+      espnLeagueDraft.mockReturnValue(
+        of(
+          finished([
+            bravoTakesMcDavid,
+            { overall: 2, round: 1, teamId: 'espn.l.123.t.1', playerId: 7109 },
+          ]),
+        ),
+      );
+      await vi.advanceTimersByTimeAsync(5000);
+
+      expect(component.pendingFollow()).toBeNull();
+      expect(component.picks()).toEqual([
+        { playerId: 6743, teamId: 'espn.l.123.t.2' },
+        { playerId: 7109, teamId: 'espn.l.123.t.1' },
+      ]);
+      expect(component.finished()).toBe(true);
+      expect(component.following()).toBe(false);
+      expect(lastSaved()?.finishedAt).toBeTruthy();
+      expect(lastSaved()?.following).toBeUndefined();
+    });
+
+    it("asks before ESPN's results replace picks entered by hand that differ", async () => {
+      espnLeagueDraft.mockReturnValue(of(leagueDraft()));
+      const fixture = await renderFixture();
+      const component = fixture.point.componentInstance;
+      component.requestFollow();
+      component.draftCurrent(7109);
+
+      espnLeagueDraft.mockReturnValue(of(finished([bravoTakesMcDavid])));
+      await vi.advanceTimersByTimeAsync(5000);
+
+      expect(component.pendingFollow()?.status).toBe('FINISHED');
+      expect(component.picks()).toEqual([{ playerId: 7109, teamId: 'espn.l.123.t.2' }]);
+      expect(component.following()).toBe(true);
+      expect(component.picksLocked()).toBe(true);
+      expect(text(fixture, '.modal')).toContain("ESPN has shared the draft's picks.");
+
+      component.confirmFollow();
+
+      expect(component.picks()).toEqual([{ playerId: 6743, teamId: 'espn.l.123.t.2' }]);
+      expect(component.finished()).toBe(true);
+      expect(component.following()).toBe(false);
+    });
+
+    it('keeps the picks entered by hand, and stops syncing, when asked to', async () => {
+      espnLeagueDraft.mockReturnValue(of(leagueDraft()));
+      const component = await render();
+      component.requestFollow();
+      component.draftCurrent(7109);
+      espnLeagueDraft.mockReturnValue(of(finished([bravoTakesMcDavid])));
+      await vi.advanceTimersByTimeAsync(5000);
+
+      component.cancelFollow();
+
+      expect(component.following()).toBe(false);
+      expect(component.picks()).toEqual([{ playerId: 7109, teamId: 'espn.l.123.t.2' }]);
+      expect(lastSaved()?.following).toBeUndefined();
+      await vi.advanceTimersByTimeAsync(10000);
+      expect(espnLeagueDraft).toHaveBeenCalledTimes(2);
+    });
+
+    it("stays locked before ESPN's draft starts", async () => {
+      espnLeagueDraft.mockReturnValue(of({ ...leagueDraft(), status: 'PRE_DRAFT' }));
+      const fixture = await renderFixture();
+      const component = fixture.point.componentInstance;
+
+      component.requestFollow();
+      component.draftCurrent(6743);
+
+      expect(component.picksLocked()).toBe(true);
+      expect(component.picks()).toEqual([]);
+      expect(text(fixture, '.draft-progress')).toBe(
+        'Waiting for the ESPN draft to start · your first pick is #2',
+      );
+    });
+
+    it('stays locked where ESPN has not said its order, which a pick by hand would guess', async () => {
+      espnLeagueDraft.mockReturnValue(of({ ...leagueDraft(), orderKnown: false }));
+      const component = await render();
+
+      component.requestFollow();
+      component.draftCurrent(6743);
+
+      expect(component.picksLocked()).toBe(true);
+      expect(component.picks()).toEqual([]);
+    });
+
+    it("leaves a Yahoo draft in progress with no picks locked, as it's always been", async () => {
+      loaded = projectionWith({
+        ...espnDraft,
+        settings: {
+          ...espnDraft.settings!,
+          espnSync: undefined,
+          yahooSync: { leagueName: 'Beer League', leagueKey: '465.l.9', syncedAt: 'now' },
+        },
+      });
+      yahooLeagueDraft.mockReturnValue(of(leagueDraft()));
+      const fixture = await renderFixture();
+      const component = fixture.point.componentInstance;
+
+      component.requestFollow();
+      component.draftCurrent(6743);
+
+      expect(component.following()).toBe(true);
+      expect(component.handEntry()).toBe(false);
+      expect(component.picksLocked()).toBe(true);
+      expect(component.picks()).toEqual([]);
+      expect(text(fixture, '.follow-status')).toContain('Live from Beer League on Yahoo');
+      expect(text(fixture, '.follow-status')).not.toContain('ESPN shares');
     });
   });
 });

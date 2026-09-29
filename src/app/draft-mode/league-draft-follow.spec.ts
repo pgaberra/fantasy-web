@@ -5,6 +5,7 @@ import {
   boardFromLeagueDraft,
   hasLeagueTeams,
   isLeagueBoard,
+  picksWithheld,
   sameBoard,
   seatIsGuess,
   unfollowableReason,
@@ -138,5 +139,14 @@ describe('league draft follow', () => {
     expect(isLeagueBoard(followed, { ...league, picks: [] })).toBe(false);
     expect(hasLeagueTeams(followed, league)).toBe(true);
     expect(hasLeagueTeams(handEntered, league)).toBe(false);
+  });
+
+  it('holds back picks only for a draft under way with none shown and its order known', () => {
+    const underWay = { ...league, picks: [] };
+    expect(picksWithheld(underWay)).toBe(true);
+    expect(picksWithheld(league)).toBe(false);
+    expect(picksWithheld({ ...underWay, status: 'PRE_DRAFT' })).toBe(false);
+    expect(picksWithheld({ ...underWay, status: 'FINISHED' })).toBe(false);
+    expect(picksWithheld({ ...underWay, orderKnown: false })).toBe(false);
   });
 });

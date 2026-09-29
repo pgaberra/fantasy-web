@@ -942,6 +942,36 @@ describe('DraftSetupComponent', () => {
       expect(component.syncOffered()).toBe(true);
     });
 
+    it('says, with the switch on, that an ESPN draft is entered by hand until it ends', () => {
+      const fixture = render({
+        league: leagueWith({ espnSync }),
+        syncPlatforms: ['Yahoo', 'ESPN'],
+        following: true,
+        syncCheck: { state: 'ok', league: answered() },
+      });
+      const element: HTMLElement = fixture.nativeElement;
+      const note = () => element.querySelector('.sync-status')?.textContent?.replace(/\s+/g, ' ');
+
+      expect(note()).toContain(
+        "ESPN shares a draft's picks only once it's over. Enter them on the board as they're " +
+          "made, and the board takes ESPN's results when the draft ends.",
+      );
+
+      fixture.point.componentInstance.toggleSync();
+      fixture.detectChanges();
+      expect(note()).toBeUndefined();
+    });
+
+    it('says nothing of the kind for a Yahoo league', () => {
+      const fixture = render({
+        league: leagueWith({ yahooSync }),
+        following: true,
+        syncCheck: { state: 'ok', league: answered() },
+      });
+
+      expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('ESPN shares');
+    });
+
     it('names a draft not saved yet after the imported league, unless a name was typed', () => {
       const named = render({ draftName: 'AI Projection (7)' }).point.componentInstance;
       named.applyYahoo({ settings: imported, leagueName: 'Beer League', leagueKey: '465.l.9' });
