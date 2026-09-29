@@ -143,11 +143,26 @@ describe('EspnLeagueSyncComponent', () => {
 
   it('offers a re-sync to a user coming back to a league synced before', async () => {
     await buildDefault();
-    const fixture = MockRender(EspnLeagueSyncComponent, { lastLeagueId: '123456' });
+    const fixture = MockRender(EspnLeagueSyncComponent, {
+      lastLeagueId: '123456',
+      lastSyncedAt: '2026-08-14T17:12:00.000Z',
+    });
     await fixture.whenStable();
 
     expect(fixture.nativeElement.querySelector('.espn-sync-row button').textContent.trim()).toEqual(
       'Re-sync settings',
+    );
+  });
+
+  it('offers a sync again, not a re-sync, for a league disconnected since', async () => {
+    await buildDefault();
+    // The id outlives a disconnect, so the form starts from it; the stamp is what went.
+    const fixture = MockRender(EspnLeagueSyncComponent, { lastLeagueId: '123456' });
+    await fixture.whenStable();
+
+    expect(fixture.point.componentInstance.leagueId()).toEqual('123456');
+    expect(fixture.nativeElement.querySelector('.espn-sync-row button').textContent.trim()).toEqual(
+      'Sync settings',
     );
   });
 
