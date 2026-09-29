@@ -3,21 +3,26 @@
   <app-platform-tabs
     label="Fantasy platform to import from"
     [platforms]="platforms"
-    [(selected)]="provider"
+    [selected]="provider()"
+    (selectedChange)="choose($event)"
   />
-  @if (linkedElsewhere(); as link) {
+  @if (pendingSwitch(); as ask) {
+    <app-platform-switch-dialog
+      [linkedPlatform]="ask.linkedPlatform"
+      [leagueName]="ask.leagueName"
+      [targetPlatform]="ask.targetPlatform"
+      (confirm)="switchAndDisconnect(ask.target)"
+      (cancelled)="pendingTarget.set(null)"
+    />
+  }
+  <!-- The league's own tab is not on offer (Yahoo between seasons), so no panel names the link. -->
+  @if (linkedOffTab(); as leagueName) {
     <div class="league-sync-linked">
       <span class="sync-dot" aria-hidden="true"></span>
-      <span class="league-sync-linked-text">
-        @if (link.leagueName) {
-          Synced with your {{ link.platform }} league <strong>{{ link.leagueName }}</strong
-          >.
-        } @else {
-          Synced with your {{ link.platform }} league.
-        }
-        Syncing {{ link.replacedBy }} league here replaces it.
-      </span>
-      <button type="button" class="btn btn-secondary btn-sm" (click)="disconnected.emit()">
+      <span class="league-sync-linked-text"
+        >Synced with <strong>{{ leagueName }}</strong></span
+      >
+      <button type="button" class="btn btn-secondary btn-sm" (click)="disconnected.emit('button')">
         Disconnect
       </button>
     </div>
@@ -28,7 +33,7 @@
         [lastSync]="lastSync()"
         [disconnectable]="linkedPlatform() === 'yahoo'"
         (synced)="yahooSynced.emit($event)"
-        (disconnected)="disconnected.emit()"
+        (disconnected)="disconnected.emit('button')"
       />
     }
     @case ('espn') {
@@ -38,7 +43,7 @@
         [lastLeagueName]="lastEspnLeagueName()"
         [disconnectable]="linkedPlatform() === 'espn'"
         (synced)="espnSynced.emit($event)"
-        (disconnected)="disconnected.emit()"
+        (disconnected)="disconnected.emit('button')"
       />
     }
   }
@@ -50,7 +55,7 @@
     <span class="league-sync-linked-text"
       >Synced with <strong>{{ leagueName }}</strong></span
     >
-    <button type="button" class="btn btn-secondary btn-sm" (click)="disconnected.emit()">
+    <button type="button" class="btn btn-secondary btn-sm" (click)="disconnected.emit('button')">
       Disconnect
     </button>
   </div>

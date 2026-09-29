@@ -180,5 +180,18 @@ describe('LeagueSettingsControlsComponent', () => {
       expect(component.settings().lastEspnLeagueId).toEqual('123');
       expect(component.lockedBy()).toBeNull();
     });
+
+    it('closes the import on the Disconnect button, but not on a switch to the other platform', () => {
+      const component = render(imported()).point.componentInstance;
+      component.showSyncDialog.set(true);
+
+      // The user switched tabs to sync a league on the other platform: that sync is still to come.
+      component.disconnect('platform-switch');
+      expect(component.lockedBy()).toBeNull();
+      expect(component.showSyncDialog()).toBe(true);
+
+      component.disconnect('button');
+      expect(component.showSyncDialog()).toBe(false);
+    });
   });
 });

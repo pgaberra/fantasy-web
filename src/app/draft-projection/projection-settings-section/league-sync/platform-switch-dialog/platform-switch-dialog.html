@@ -1,0 +1,39 @@
+<div class="dialog-backdrop">
+  <div
+    class="dialog-card"
+    role="alertdialog"
+    aria-modal="true"
+    aria-labelledby="platform-switch-title"
+    aria-describedby="platform-switch-body"
+    (keydown.escape)="$event.stopPropagation(); cancelled.emit()"
+  >
+    <div class="dialog-header">
+      <h2 id="platform-switch-title" class="dialog-title">
+        Disconnect your {{ linkedPlatform() }} league?
+      </h2>
+      <!-- Not a plain dismissal: the cross keeps the league and stays on its tab. -->
+      <button
+        type="button"
+        class="dialog-close"
+        [attr.aria-label]="'Stay on ' + linkedPlatform()"
+        [appTooltip]="'Stay on ' + linkedPlatform()"
+        (click)="cancelled.emit()"
+      >
+        <app-icon name="close" [size]="20" />
+      </button>
+    </div>
+    <p id="platform-switch-body" class="dialog-body">
+      You already have a league synced: <strong>{{ leagueName() }}</strong> on
+      {{ linkedPlatform() }}. Switching to {{ targetPlatform() }} disconnects it. The settings stay
+      as they are until you sync a {{ targetPlatform() }} league.
+    </p>
+    <div class="dialog-actions">
+      <button #cancel type="button" class="btn btn-secondary btn-sm" (click)="cancelled.emit()">
+        Cancel
+      </button>
+      <button type="button" class="btn btn-primary btn-sm" (click)="confirm.emit()">
+        Disconnect and switch
+      </button>
+    </div>
+  </div>
+</div>

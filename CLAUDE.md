@@ -52,6 +52,8 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   the user's. The way out is **Disconnect league** in `app-league-sync` (the import dialog, or the
   League section of Draft Settings), which drops `yahooSync`/`espnSync` and keeps the values,
   now editable, and `lastEspnLeagueId`; in a draft it also ends following the league's picks.
+  Opening the other platform's tab while linked asks first (`platform-switch-dialog`), and
+  going on disconnects the same way but leaves the import dialog open for the new sync.
   Each shared control takes the league's name as `lockedBy` (null = the user's). Until
   2026-09-29 the settings stayed editable and a "No longer in sync" dialog broke the link after
   the edit; that dialog now only guards Draft Mode's picks and a league board's order.

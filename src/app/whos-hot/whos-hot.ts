@@ -15,7 +15,10 @@ import { RosterSlots } from '../api/models/roster-slots';
 import { YahooSync } from '../api/models/yahoo-sync';
 import { EspnSync } from '../api/models/espn-sync';
 import { LeagueProjectionSettingsResponse } from '../api/models/league-projection-settings-response';
-import { LeagueSyncComponent } from '../draft-projection/projection-settings-section/league-sync/league-sync';
+import {
+  LeagueSyncComponent,
+  DisconnectCause,
+} from '../draft-projection/projection-settings-section/league-sync/league-sync';
 import { LeagueSyncDialogComponent } from '../draft-projection/league-sync-dialog/league-sync-dialog';
 import { YahooSyncResult } from '../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
 import { EspnSyncResult } from '../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
@@ -407,10 +410,13 @@ export class WhosHotComponent {
    * Disconnect league: the settings stay as they are and become the user's to change. The ESPN
    * league's id stays, so the next import starts from it.
    */
-  disconnectLeague(): void {
+  disconnectLeague(cause: DisconnectCause = 'button'): void {
     this.yahooSync.set(null);
     this.espnSync.set(null);
-    this.showSyncDialog.set(false);
+    // A switch to the other platform lets go of the league to sync one there: the dialog stays.
+    if (cause === 'button') {
+      this.showSyncDialog.set(false);
+    }
   }
 
   /**

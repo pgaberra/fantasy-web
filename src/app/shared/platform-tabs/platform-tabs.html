@@ -6,7 +6,7 @@
       class="provider-tab"
       [class.provider-tab--active]="selected() === platform"
       [attr.aria-selected]="selected() === platform"
-      (click)="selected.set(platform)"
+      (click)="selectedChange.emit(platform)"
     >
       @if (platform === 'yahoo') {
         <app-yahoo-mark />
