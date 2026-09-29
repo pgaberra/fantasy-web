@@ -1,11 +1,5 @@
-<div class="dialog-backdrop" (click)="closed.emit()">
-  <div
-    class="dialog-card"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="league-sync-title"
-    (click)="$event.stopPropagation()"
-  >
+<div class="dialog-backdrop">
+  <div class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="league-sync-title">
     <div class="dialog-header">
       <h2 id="league-sync-title" class="dialog-title">Import league settings</h2>
       <button type="button" class="dialog-close" aria-label="Close" (click)="closed.emit()">
