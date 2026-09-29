@@ -37,7 +37,7 @@ import { ToggleSwitchComponent } from '../../draft-projection/projection-setting
 import { LeagueSyncComponent } from '../../draft-projection/projection-settings-section/league-sync/league-sync';
 import { YahooSyncResult } from '../../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
 import { EspnSyncResult } from '../../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
-import { DraftSyncCheck, FollowedLeague } from '../league-draft-follow';
+import { DraftSyncCheck, FollowedLeague, LinkedLeague } from '../league-draft-follow';
 import {
   CdkDrag,
   CdkDragDrop,
@@ -77,10 +77,10 @@ const MAX_TEAMS = 32;
  * behind a button, and it sets the scoring. Where the league's
  * draft can be followed as well, the import switches on syncing picks, and once the league has
  * answered for its draft the teams, the seat and the roster are the league's: shown, not set.
- * Where it cannot (ESPN today, or a league that refused), or with the switch off, or with no
- * league at all, those three are set by hand: the size first, and then every team's name and place
- * in the order, with the user's own team marked "You", which only the user can know for a draft no
- * league is telling.
+ * Where it cannot (an ESPN league, whose picks ESPN shares only once the draft is over, or a league
+ * that refused), or with the switch off, or with no league at all, those three are set by hand:
+ * the size first, and then every team's name and place in the order, with the user's own team
+ * marked "You", which only the user can know for a draft no league is telling.
  *
  * <p>The league is set here rather than on the page that picks what to draft against: it belongs
  * to the draft, not to the board it is played against, and here it stays within reach for as long
@@ -122,8 +122,8 @@ export class DraftSetupComponent implements OnInit {
   readonly seedName = input<string>('My Team');
   /** The league the draft is ranked by as it stands: the draft's own, or what it starts from. */
   readonly league = input.required<DraftSettings>();
-  /** The platforms whose drafts can be followed here. A league on any other is scored from only. */
-  readonly syncPlatforms = input<readonly FollowedLeague['platform'][]>([]);
+  /** Whether a Yahoo league's draft can be followed here. An ESPN league is only scored from. */
+  readonly syncAvailable = input<boolean>(false);
   /** Whether the board follows its league's draft as the settings open. */
   readonly following = input<boolean>(false);
   /** What the linked league answered when asked for its draft, which the page does the asking of. */
@@ -167,8 +167,8 @@ export class DraftSetupComponent implements OnInit {
   );
   readonly scoresByPoints = computed(() => this.editableLeague().scoringType === 'points');
 
-  /** The league the settings were imported from, which is the one a draft can follow. */
-  readonly linked = computed<FollowedLeague | null>(() => {
+  /** The league the settings were imported from. */
+  readonly linked = computed<LinkedLeague | null>(() => {
     const { yahooSync, espnSync } = this.editableLeague();
     if (yahooSync) {
       return { platform: 'Yahoo', id: yahooSync.leagueKey, name: yahooSync.leagueName };
@@ -182,11 +182,13 @@ export class DraftSetupComponent implements OnInit {
     }
     return null;
   });
-  /** Whether the linked league's draft can be followed here, so the switch has something to do. */
-  readonly syncOffered = computed(() => {
+  /** The linked league, where its draft can be followed here: a Yahoo league, never an ESPN one. */
+  private readonly followable = computed<FollowedLeague | null>(() => {
     const league = this.linked();
-    return !!league && this.syncPlatforms().includes(league.platform);
+    return league?.platform === 'Yahoo' && this.syncAvailable() ? league : null;
   });
+  /** Whether the linked league's draft can be followed here, so the switch has something to do. */
+  readonly syncOffered = computed(() => this.followable() !== null);
   // The switch as the user left it. A league that refused its draft shows it off without moving
   // it, so switching it on again asks the league once more.
   private readonly syncWanted = linkedSignal(() => this.following());
@@ -401,8 +403,8 @@ export class DraftSetupComponent implements OnInit {
   }
 
   private requestSyncCheck(): void {
-    const league = this.linked();
-    if (league && this.syncOffered() && this.syncWanted()) {
+    const league = this.followable();
+    if (league && this.syncWanted()) {
       this.syncCheckRequested.emit(league);
     }
   }

@@ -96,7 +96,7 @@
             } @else if (finished() || isComplete()) {
               Draft complete
             } @else if (awaitingLeagueDraft()) {
-              Waiting for the {{ followPlatform() }} draft to start
+              Waiting for the Yahoo draft to start
               @if (leagueFirstPick(); as seat) {
                 <span class="you-tag">· your first pick is #{{ seat }}</span>
               }
@@ -149,10 +149,7 @@
 
         @if (followLoading()) {
           <p class="follow-status" role="status">
-            <app-loading-indicator
-              variant="inline"
-              [label]="'Loading the ' + followPlatform() + ' draft'"
-            />
+            <app-loading-indicator variant="inline" label="Loading the Yahoo draft" />
           </p>
         } @else if (followNotice(); as notice) {
           <!-- Syncing is switched on in the settings, so what stopped it says where to go. -->
@@ -163,28 +160,15 @@
         }
 
         @if (following()) {
-          <!-- ESPN shows a draft's picks only once it is over, so its board is not live: it is
-               drafted by hand meanwhile, and says so. -->
           <p class="follow-status" role="status">
-            <span class="follow-live-line">
-              @if (followsEspn()) {
-                Following
-              } @else {
-                <span class="follow-live" aria-hidden="true"></span>Live from
-              }
-              <strong>{{ followedLeague()?.name }}</strong> on {{ followPlatform() }} ·
-              {{ teams().length }} teams ·
+            <span class="follow-live-line"
+              ><span class="follow-live" aria-hidden="true"></span>Live from
+              <strong>{{ followedLeague()?.name }}</strong> on Yahoo · {{ teams().length }} teams ·
               @if (leagueFirstPick(); as seat) {
                 draft position {{ seat }} ·
               }
               {{ picks().length }} of {{ totalPicks() }} picks</span
             >
-            @if (followsEspn()) {
-              <span class="follow-hint"
-                >ESPN shares a draft's picks only once it's over, so enter them here as they're
-                made. The board takes ESPN's results when the draft ends.</span
-              >
-            }
           </p>
         }
 
@@ -210,7 +194,7 @@
             [hasMore]="hasMoreAvailable()"
             [isMyPick]="isMyPick()"
             [isComplete]="isComplete()"
-            [locked]="picksLocked()"
+            [locked]="following()"
             [scoringType]="scoringType()"
             [statColumns]="statColumns()"
             [tierBadges]="tierBadges()"
@@ -229,7 +213,7 @@
             [pickRounds]="pickRounds()"
             [editingPick]="editingPick()"
             [picksCount]="picks().length"
-            [locked]="picksLocked()"
+            [locked]="following()"
             (startEdit)="startEditPick($event)"
             (requestRemove)="requestRemovePick($event)"
           />
@@ -327,7 +311,7 @@
                 [initial]="draft()"
                 [positionKnown]="!seatUnknown()"
                 [league]="league"
-                [syncPlatforms]="syncPlatforms()"
+                [syncAvailable]="syncAvailable()"
                 [following]="following()"
                 [syncCheck]="setupCheck()"
                 [openImport]="backFromYahoo()"
@@ -343,48 +327,24 @@
       }
     }
 
-    <!-- Both open from the settings as well as the board: syncing is switched on in the settings. -->
-    @if (cookieRepair(); as repair) {
-      <app-draft-follow-connect
-        [repair]="repair"
-        (repaired)="cookiesRepaired()"
-        (cancelled)="closeLink()"
-      />
-    }
-
+    <!-- Opens from the settings as well as the board: syncing is switched on in the settings. -->
     @if (pendingFollow(); as league) {
       <div class="modal-overlay">
         <div class="modal" role="dialog" aria-modal="true">
-          <h2 class="modal-title">Replace your picks with the {{ followPlatform() }} draft?</h2>
+          <h2 class="modal-title">Replace your picks with the Yahoo draft?</h2>
           <p class="modal-text">
-            <!-- Asked mid-follow, when ESPN shares a draft's picks at its end and they are not
-                 the ones entered by hand. -->
-            @if (following()) {
-              {{ followPlatform() }} has shared the draft's picks.
-            }
             @if (pendingFollowKeepsTeams()) {
               Your {{ picks().length }} picks here are replaced by the
-              {{ league.picks.length }} picks made on {{ followPlatform() }}.
+              {{ league.picks.length }} picks made on Yahoo.
             } @else {
               Your {{ picks().length }} picks and teams here are replaced by the league's
-              {{ league.teams.length }} teams and the {{ league.picks.length }} picks made on
-              {{ followPlatform() }}.
+              {{ league.teams.length }} teams and the {{ league.picks.length }} picks made on Yahoo.
             }
           </p>
           <div class="modal-actions">
-            <button type="button" class="btn btn-secondary" (click)="cancelFollow()">
-              @if (following()) {
-                Keep my picks
-              } @else {
-                Cancel
-              }
-            </button>
+            <button type="button" class="btn btn-secondary" (click)="cancelFollow()">Cancel</button>
             <button type="button" class="btn btn-primary" (click)="confirmFollow()">
-              @if (following()) {
-                Use {{ followPlatform() }}'s picks
-              } @else {
-                Sync picks
-              }
+              Sync picks
             </button>
           </div>
         </div>
