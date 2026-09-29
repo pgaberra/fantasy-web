@@ -10,6 +10,7 @@ import { LeagueSyncComponent } from '../../draft-projection/projection-settings-
 import { RosterSlotsEditorComponent } from '../../shared/roster-slots-editor/roster-slots-editor';
 import { FollowedLeague } from '../league-draft-follow';
 import { HelpTipComponent } from '../../shared/help-tip/help-tip';
+import { ToggleSwitchComponent } from '../../draft-projection/projection-settings-section/toggle-switch/toggle-switch';
 import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import {
   DEFAULT_ROSTER_SLOTS,
@@ -781,7 +782,9 @@ describe('DraftSetupComponent', () => {
       expect(asked).toEqual([{ platform: 'Yahoo', id: '465.l.9', name: 'Beer League' }]);
       // The switch is named in a word, and what it does is left to its tip.
       const element: HTMLElement = fixture.nativeElement;
-      expect(element.querySelector('.sync-title')?.textContent?.trim()).toBe('Auto-sync');
+      expect(element.querySelector('.sync-title')?.textContent?.trim()).toBe(
+        'Autosync draft picks',
+      );
       expect(ngMocks.findInstance(HelpTipComponent).text()).toBe(
         'Automatically update this page with picks from your draft.',
       );
@@ -907,7 +910,7 @@ describe('DraftSetupComponent', () => {
       expect(asked.length).toBe(1);
     });
 
-    it('takes the scoring of an ESPN league and leaves the rest by hand, with no switch', () => {
+    it('takes the scoring of an ESPN league and leaves the rest by hand, its switch greyed out', () => {
       const fixture = render();
       const element: HTMLElement = fixture.nativeElement;
       const component = fixture.point.componentInstance;
@@ -922,8 +925,15 @@ describe('DraftSetupComponent', () => {
       expect(component.syncOffered()).toBe(false);
       expect(component.syncOn()).toBe(false);
       expect(asked).toEqual([]);
-      expect(element.querySelector('.sync-row')).toBeNull();
-      expect(element.textContent).toContain("Picks can't be synced from ESPN yet");
+      expect(ngMocks.findInstance(ToggleSwitchComponent).disabled()).toBe(true);
+      expect(ngMocks.findInstance(ToggleSwitchComponent).on()).toBe(false);
+      expect(element.querySelector('.sync-title')?.textContent?.trim()).toBe(
+        'Autosync draft picks',
+      );
+      expect(element.querySelector('.sync-unavailable')?.textContent?.trim()).toBe(
+        'Not available on ESPN',
+      );
+      expect(element.textContent).not.toContain("Picks can't be synced");
       expect(element.querySelectorAll('.team-you').length).toBe(10);
 
       component.setMyPosition(4);
@@ -941,7 +951,7 @@ describe('DraftSetupComponent', () => {
       expect(component.syncOffered()).toBe(true);
     });
 
-    it('says, with the switch on, that an ESPN draft is entered by hand until it ends', () => {
+    it('says nothing under the switch of an ESPN league whose draft is followed', () => {
       const fixture = render({
         league: leagueWith({ espnSync }),
         syncPlatforms: ['Yahoo', 'ESPN'],
@@ -949,26 +959,10 @@ describe('DraftSetupComponent', () => {
         syncCheck: { state: 'ok', league: answered() },
       });
       const element: HTMLElement = fixture.nativeElement;
-      const note = () => element.querySelector('.sync-status')?.textContent?.replace(/\s+/g, ' ');
 
-      expect(note()).toContain(
-        "ESPN shares a draft's picks only once it's over. Enter them on the board as they're " +
-          "made, and the board takes ESPN's results when the draft ends.",
-      );
-
-      fixture.point.componentInstance.toggleSync();
-      fixture.detectChanges();
-      expect(note()).toBeUndefined();
-    });
-
-    it('says nothing of the kind for a Yahoo league', () => {
-      const fixture = render({
-        league: leagueWith({ yahooSync }),
-        following: true,
-        syncCheck: { state: 'ok', league: answered() },
-      });
-
-      expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('ESPN shares');
+      expect(ngMocks.findInstance(ToggleSwitchComponent).disabled()).toBeFalsy();
+      expect(element.querySelector('.sync-status')).toBeNull();
+      expect(element.querySelector('.sync-unavailable')).toBeNull();
     });
 
     it('names a draft not saved yet after the imported league, unless a name was typed', () => {
