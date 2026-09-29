@@ -42,7 +42,7 @@
               </optgroup>
             }
             @if (drafts().length > 0) {
-              <optgroup label="My drafts">
+              <optgroup label="My Drafts">
                 @for (draft of drafts(); track draft.id) {
                   <option
                     [value]="draftOption(draft.id)"
@@ -104,7 +104,7 @@
               </option>
             </optgroup>
             @if (ownBoards().length > 0) {
-              <optgroup label="My projections">
+              <optgroup label="My Projections">
                 @for (board of ownBoards(); track board.id) {
                   <option
                     [value]="boardOption(board.id)"
