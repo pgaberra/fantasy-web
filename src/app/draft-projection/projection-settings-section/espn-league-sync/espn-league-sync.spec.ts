@@ -106,6 +106,41 @@ describe('EspnLeagueSyncComponent', () => {
     expect(input.value).toEqual('123456');
   });
 
+  it('makes syncing the primary action once a league id is entered, not before', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent);
+    await fixture.whenStable();
+    const button = () => fixture.nativeElement.querySelector('.espn-sync-row button');
+
+    expect(button().classList).toContain('btn-secondary');
+    expect(button().classList).not.toContain('btn-primary');
+
+    fixture.point.componentInstance.leagueId.set('123456');
+    fixture.detectChanges();
+    expect(button().classList).toContain('btn-primary');
+    expect(button().classList).not.toContain('btn-secondary');
+  });
+
+  it('keeps a re-sync of the league already synced secondary', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent, { lastLeagueId: '123456' });
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    const button = () => fixture.nativeElement.querySelector('.espn-sync-row button');
+
+    expect(component.syncPending()).toBe(false);
+    expect(button().classList).toContain('btn-secondary');
+
+    component.leagueId.set('654321');
+    fixture.detectChanges();
+    expect(button().classList).toContain('btn-primary');
+
+    component.sync();
+    await fixture.whenStable();
+    expect(component.syncPending()).toBe(false);
+    expect(button().classList).toContain('btn-secondary');
+  });
+
   it('says when the league was last synced', async () => {
     await buildDefault();
     const fixture = MockRender(EspnLeagueSyncComponent, {

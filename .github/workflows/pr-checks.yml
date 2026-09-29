@@ -75,6 +75,9 @@ jobs:
       - name: Verify no password field sits outside the sign-in pages
         run: bash .github/scripts/check-password-fields.sh
 
+      - name: Verify no dialog closes on a backdrop click
+        run: bash .github/scripts/check-backdrop-clicks.sh
+
       - name: Check copy against COPY-RULES.md
         run: npm run check:copy
 
