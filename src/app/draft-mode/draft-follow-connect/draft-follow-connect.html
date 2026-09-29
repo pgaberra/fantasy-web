@@ -16,8 +16,7 @@
         <span class="link-label">espn_s2</span>
         <input
           class="link-input"
-          type="password"
-          autocomplete="off"
+          appCookieField
           aria-label="espn_s2 cookie"
           [value]="espnS2()"
           (input)="onEspnS2Input($event)"
@@ -27,8 +26,7 @@
         <span class="link-label">SWID</span>
         <input
           class="link-input"
-          type="password"
-          autocomplete="off"
+          appCookieField
           placeholder="{...}"
           aria-label="SWID cookie"
           [value]="swid()"

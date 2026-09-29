@@ -4,6 +4,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { switchMap } from 'rxjs';
 import { EspnService } from '../../services/espn.service';
 import { EspnCookieHelpComponent } from '../../shared/espn-cookie-help/espn-cookie-help';
+import { CookieFieldDirective } from '../../shared/cookie-field/cookie-field';
 import { IconComponent } from '../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 
@@ -31,7 +32,12 @@ export interface CookieRepair {
  */
 @Component({
   selector: 'app-draft-follow-connect',
-  imports: [IconComponent, LoadingIndicatorComponent, EspnCookieHelpComponent],
+  imports: [
+    IconComponent,
+    LoadingIndicatorComponent,
+    EspnCookieHelpComponent,
+    CookieFieldDirective,
+  ],
   templateUrl: './draft-follow-connect.html',
   styleUrl: './draft-follow-connect.css',
 })

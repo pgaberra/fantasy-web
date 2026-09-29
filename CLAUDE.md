@@ -30,8 +30,8 @@ npm run check:copy     # hold user-facing copy to COPY-RULES.md (CI uses this)
 
 CI runs (and must pass): `generate:api`, `lint`, `format:check`, `check:copy`, `test`, `build`, and the
 guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deployment-args.sh`,
-`check-inline-icons.sh`, `check-native-tooltips.sh`, `check-pending-states.sh`,
-`check-backdrop-clicks.sh`).
+`check-inline-icons.sh`, `check-native-tooltips.sh`, `check-password-fields.sh`,
+`check-pending-states.sh`, `check-backdrop-clicks.sh`).
 
 > **After cloning, run `npm run generate:api` once** — `src/app/api` is generated,
 > not committed, so lint/test/build will fail until it exists.
