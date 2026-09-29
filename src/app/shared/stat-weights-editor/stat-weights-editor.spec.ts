@@ -84,4 +84,16 @@ describe('StatWeightsEditorComponent', () => {
     expect(element.querySelector('.weights-empty')).not.toBeNull();
     expect(element.querySelector('.weight-input')).toBeNull();
   });
+
+  it('shows the weights of an imported league without letting them be typed over', () => {
+    const element: HTMLElement = MockRender(StatWeightsEditorComponent, {
+      statWeights: { ...DEFAULT_STAT_WEIGHTS },
+      activeScoringColumns: new Set<ScoringStatKey>(['goals']),
+      lockedBy: 'HHL',
+    }).nativeElement;
+
+    const field = element.querySelector<HTMLInputElement>('#weight-goals')!;
+    expect(field.disabled).toBe(true);
+    expect(field.value).toEqual(`${DEFAULT_STAT_WEIGHTS.goals}`);
+  });
 });

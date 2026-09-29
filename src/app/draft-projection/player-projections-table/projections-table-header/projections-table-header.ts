@@ -86,6 +86,16 @@ export class ProjectionsTableHeaderComponent {
    * set, and the weights belong under the columns they weight there as much as in the editor.
    */
   readonly editableWeights = input<boolean>(false);
+  /**
+   * The league the scoring was imported from, which then owns the weights and which stats score:
+   * the weights read as text, as on a read-only table, and a scoring column cannot be removed.
+   * Null while the scoring is the user's.
+   */
+  readonly lockedBy = input<string | null>(null);
+  /** Whether the weights are drawn as fields; see `readonly`, `editableWeights` and `lockedBy`. */
+  readonly weightsEditable = computed(
+    () => (!this.readonly() || this.editableWeights()) && this.lockedBy() === null,
+  );
   readonly fullSeason = output<void>();
 
   /**
@@ -217,6 +227,11 @@ export class ProjectionsTableHeaderComponent {
 
   decimalsFor(statKey: StatKey): number {
     return this.isDecimalColumn(statKey) ? this.decimalSettings()[statKey] : 0;
+  }
+
+  /** A scoring column held by the league stays; a utility column only shows numbers. */
+  canRemoveColumn(statKey: StatKey): boolean {
+    return this.isUtilityColumn(statKey) || this.lockedBy() === null;
   }
 
   removeColumn(statKey: StatKey): void {

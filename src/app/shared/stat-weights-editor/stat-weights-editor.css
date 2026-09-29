@@ -59,6 +59,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+.weight-input:disabled {
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+}
+
 .weight-input:focus {
   outline: none;
   border-color: var(--color-accent);

@@ -24,6 +24,7 @@
             [statWeights]="previewStatWeights()"
             (statWeightsChange)="statWeightsChange.emit($event)"
             [editableWeights]="!!leagueSettings()"
+            [lockedBy]="lockedBy()"
             [decimalSettings]="previewDecimalSettings()"
             [sortColumn]="'summary'"
             [sortDirection]="'desc'"

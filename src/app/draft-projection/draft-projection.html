@@ -172,20 +172,9 @@
           [lastEspnLeagueName]="espnSync()?.leagueName ?? null"
           (yahooSynced)="applyYahooSettings($event)"
           (espnSynced)="applyEspnSettings($event)"
+          (disconnected)="disconnectLeague()"
         />
       </app-league-sync-dialog>
-    }
-
-    @if (diverged() && syncedLeagueName(); as leagueName) {
-      <app-sync-warning-dialog
-        [leagueName]="leagueName"
-        [platform]="syncedProvider() === 'espn' ? 'ESPN' : 'Yahoo'"
-        [reSyncing]="reSyncing()"
-        [error]="reSyncError()"
-        (reSync)="reSync()"
-        (confirm)="confirmUnsync()"
-        (cancelled)="revertToSyncedSettings()"
-      />
     }
 
     @if (showFullSeasonDialog()) {

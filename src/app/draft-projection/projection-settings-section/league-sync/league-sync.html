@@ -33,3 +33,17 @@
     }
   }
 }
+
+<!-- Outside the platforms' own block: a league imported while its platform's sync was on still owns
+     the settings once it is off (Yahoo between seasons), and disconnecting is how they come back. -->
+@if (linkedLeagueName(); as leagueName) {
+  <div class="league-link">
+    <p class="league-link-note">
+      <app-icon name="lock" [size]="14" />
+      <span>The scoring and league settings are locked to {{ leagueName }} while synced.</span>
+    </p>
+    <button type="button" class="btn btn-secondary btn-sm" (click)="disconnected.emit()">
+      Disconnect league
+    </button>
+  </div>
+}

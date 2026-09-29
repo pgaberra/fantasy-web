@@ -1,8 +1,14 @@
 <div class="league-controls">
-  <div class="segmented" role="group" aria-label="League type">
+  <div
+    class="segmented"
+    role="group"
+    aria-label="League type"
+    [appTooltip]="lockedBy() ? 'Set by ' + lockedBy() : null"
+  >
     <button
       type="button"
       [attr.aria-pressed]="settings().scoringType === 'points'"
+      [disabled]="lockedBy() !== null && settings().scoringType !== 'points'"
       (click)="selectScoringType('points')"
     >
       Points
@@ -10,6 +16,7 @@
     <button
       type="button"
       [attr.aria-pressed]="settings().scoringType === 'category'"
+      [disabled]="lockedBy() !== null && settings().scoringType !== 'category'"
       (click)="selectScoringType('category')"
     >
       Category
@@ -56,6 +63,7 @@
   <app-columns-menu
     [activeScoringColumns]="settings().activeScoringColumns"
     [activeUtilityColumns]="settings().activeUtilityColumns"
+    [lockedBy]="lockedBy()"
     (scoringToggled)="toggleScoringColumn($event)"
     (utilityToggled)="toggleUtilityColumn($event)"
   />
@@ -71,6 +79,7 @@
       [lastEspnLeagueName]="settings().espnSync?.leagueName ?? null"
       (yahooSynced)="applyYahoo($event)"
       (espnSynced)="applyEspn($event)"
+      (disconnected)="disconnect()"
     />
   </app-league-sync-dialog>
 }

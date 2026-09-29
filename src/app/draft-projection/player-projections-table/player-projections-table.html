@@ -69,10 +69,16 @@
           id="league-settings"
           [class.league-controls--open]="settingsOpen()"
         >
-          <div class="segmented" role="group" aria-label="League type">
+          <div
+            class="segmented"
+            role="group"
+            aria-label="League type"
+            [appTooltip]="syncedLeagueName() ? 'Set by ' + syncedLeagueName() : null"
+          >
             <button
               type="button"
               [attr.aria-pressed]="scoringType() === 'points'"
+              [disabled]="syncedLeagueName() !== null && scoringType() !== 'points'"
               (click)="selectScoringType('points')"
             >
               Points
@@ -80,6 +86,7 @@
             <button
               type="button"
               [attr.aria-pressed]="scoringType() === 'category'"
+              [disabled]="syncedLeagueName() !== null && scoringType() !== 'category'"
               (click)="selectScoringType('category')"
             >
               Category
@@ -189,6 +196,7 @@
           [columnControls]="columnControls()"
           [readonly]="readOnly()"
           [showWeights]="readOnly()"
+          [lockedBy]="syncedLeagueName()"
           [allActiveScoringColumns]="activeScoringColumns()"
           [scaleSettings]="scaleSettings()"
           (sort)="onSort($event)"
@@ -283,6 +291,7 @@
     <app-columns-menu
       [activeScoringColumns]="shownScoringColumns()"
       [activeUtilityColumns]="shownUtilityColumns()"
+      [lockedBy]="syncedLeagueName()"
       (scoringToggled)="toggleScoringColumn($event)"
       (utilityToggled)="toggleUtilityColumn($event)"
     />

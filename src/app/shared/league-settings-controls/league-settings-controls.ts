@@ -10,6 +10,7 @@ import {
 } from '../league-settings/league-settings';
 import { PopoverTriggerDirective } from '../popover/popover-trigger.directive';
 import { IconComponent } from '../icon/icon';
+import { TooltipDirective } from '../tooltip/tooltip.directive';
 import { LeagueImportButtonComponent } from '../league-import-button/league-import-button';
 import { ColumnsMenuComponent } from '../../draft-projection/player-projections-table/columns-menu/columns-menu';
 import { YahooConnectReturnService } from '../../services/yahoo-connect-return.service';
@@ -26,12 +27,16 @@ import { EspnSyncResult } from '../../draft-projection/projection-settings-secti
  * it in from Yahoo or ESPN. The points weights are not here, for the same reason they are not in
  * the editor's toolbar: they belong beside the stats they weight — the preview's weight row, or
  * the draft setup's list of them.
+ *
+ * An imported league holds what it set, here as everywhere: the league type and the scoring stats
+ * stay as they came (`lockedBy`) until the league is disconnected in the import.
  */
 @Component({
   selector: 'app-league-settings-controls',
   imports: [
     PopoverTriggerDirective,
     IconComponent,
+    TooltipDirective,
     LeagueImportButtonComponent,
     ColumnsMenuComponent,
     LeagueSettingsMenuComponent,
@@ -63,6 +68,11 @@ export class LeagueSettingsControlsComponent {
       : null,
   );
 
+  /** The league these settings were imported from, which holds them; wherever it is imported. */
+  readonly lockedBy = computed(
+    () => this.settings().yahooSync?.leagueName ?? this.settings().espnSync?.leagueName ?? null,
+  );
+
   /**
    * A points league with nothing imported has nothing behind League setup — see the editor's. Nor
    * does a category league that neither sizes nor imports: the goalie minimum is all the menu
@@ -74,7 +84,9 @@ export class LeagueSettingsControlsComponent {
   );
 
   selectScoringType(scoringType: ScoringType): void {
-    this.patch({ scoringType });
+    if (this.lockedBy() === null) {
+      this.patch({ scoringType });
+    }
   }
 
   setLeagueSize(leagueSize: number): void {
@@ -87,6 +99,12 @@ export class LeagueSettingsControlsComponent {
 
   setMinGoalieGames(minGoalieGames: number): void {
     this.patch({ minGoalieGames });
+  }
+
+  /** Lets go of the league; the settings stay as they are, the user's now. */
+  disconnect(): void {
+    this.patch({ yahooSync: null, espnSync: null });
+    this.showSyncDialog.set(false);
   }
 
   toggleScoringColumn(statKey: ScoringStatKey): void {
