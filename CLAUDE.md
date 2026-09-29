@@ -44,6 +44,16 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
 - `draft-projection/` — main feature: `projection-settings-section`,
   `scoring-type-section`, `scoring-stats-section`, `player-projections-table`,
   `share-dialog` (publishing the projection as a public link).
+  **League settings are locked to an imported league**, on every page that imports one (the
+  editor, Who's Hot, New projection, Draft Settings): the league type, which stats score, the
+  points weights, the league size and the roster slots show as the league set them and cannot be
+  changed; the goalie minimum, the utility columns (GP, TOI) and everything about display stay
+  the user's. The way out is **Disconnect league** in `app-league-sync` (the import dialog, or the
+  League section of Draft Settings), which drops `yahooSync`/`espnSync` and keeps the values,
+  now editable, and `lastEspnLeagueId`; in a draft it also ends following the league's picks.
+  Each shared control takes the league's name as `lockedBy` (null = the user's). Until
+  2026-09-29 the settings stayed editable and a "No longer in sync" dialog broke the link after
+  the edit; that dialog now only guards Draft Mode's picks and a league board's order.
   The table's toolbar is two groups: the **league settings** (Points/Category, League setup, Stats,
   Ranking, Import league), which change the numbers, and the **filters** (search, position, team,
   rookies), which change which rows show. On a phone the first group folds behind one
@@ -192,7 +202,8 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   **Every draft setting has one owner.** While a board follows its league, the league owns the
   teams and the order: the board shows them read-only on its live line ("12 teams · draft
   position 6", the position only once the league has set its order), and the settings show
-  them locked. With sync off the user owns them and edits them in the settings. **A new draft
+  them locked. With sync off the user owns the order and the seat and edits them in the settings;
+  the number of teams stays the imported league's (below). **A new draft
   against a board that already has a league to follow has no setup**
   (`startingFromLeague`): the page reads the league's draft and creates the draft from its board,
   following it (the league's teams, its order where set, any picks already made), and falls back
@@ -203,7 +214,8 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   **Sync picks automatically**, the only place that switch lives (the board's toolbar has
   none). The switch asks the page for the league's draft before anything is saved
   (`checkSetupSync` → `DraftSyncCheck`), and only a league that answered locks anything.
-  _Scoring_: always editable. _Teams and roster_: the league size, the user's draft position
+  _Scoring_: editable until a league is imported, then locked to it like everywhere else (see
+  "League settings are locked" under `draft-projection/`). _Teams and roster_: the league size, the user's draft position
   (on "Select" until chosen), the teams in their draft order and the roster slots, set by hand,
   or shown locked from the league's answer while picks are synced (the seat reads "–" and no
   order is drawn until the league has set its order). Once the size and the seat are chosen by

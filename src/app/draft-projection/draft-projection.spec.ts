@@ -9,7 +9,6 @@ import { AUTOSAVE_DEBOUNCE_MS, DraftProjectionComponent } from './draft-projecti
 import { PlayerProjectionsTableComponent } from './player-projections-table/player-projections-table';
 import { PlayerService } from '../services/player.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
-import { ProjectionSyncService } from '../services/projection-sync.service';
 import { ProjectionShareService } from '../services/projection-share.service';
 import { NotificationService } from '../services/notification.service';
 import { ShareLinkResponse } from '../api/models/share-link-response';
@@ -133,7 +132,6 @@ describe('DraftProjectionComponent', () => {
         updateProjection: () => of(mockProjection),
       })
       .mock(ProjectionShareService, notSharedYet)
-      .keep(ProjectionSyncService)
       // Real, so the toolbar says which league the projection is synced with.
       .keep(LeagueImportButtonComponent)
       .provide({ provide: Location, useValue: locationStub })
@@ -464,7 +462,7 @@ describe('DraftProjectionComponent', () => {
     expect(updateSpy).not.toHaveBeenCalled();
   });
 
-  it('warns when a synced setting changes and clears the sync on confirm', async () => {
+  it('keeps the league settings as they came when the league is disconnected', async () => {
     const fixture = MockRender(DraftProjectionComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
@@ -483,14 +481,15 @@ describe('DraftProjectionComponent', () => {
       leagueName: 'HHL',
       leagueKey: 'nhl.l.1',
     });
-    expect(component.diverged()).toEqual(false);
 
-    component.leagueSize.set(20);
-    expect(component.diverged()).toEqual(true);
+    component.disconnectLeague();
 
-    component.confirmUnsync();
+    // Only the claim goes: what the league set is still what the board is ranked by.
     expect(component.yahooSync()).toBeNull();
-    expect(component.diverged()).toEqual(false);
+    expect(component.syncedLeagueName()).toBeNull();
+    expect(component.leagueSize()).toEqual(12);
+    expect(component.scoringType()).toEqual('category');
+    expect(component.statWeights().goals).toEqual(5);
   });
 
   it('names the ESPN league it synced from, and stops naming the Yahoo one', async () => {
@@ -572,15 +571,17 @@ describe('DraftProjectionComponent', () => {
     });
     fixture.detectChanges();
 
-    expect(component.syncedProvider()).toEqual('yahoo');
     expect(fixture.nativeElement.querySelector('app-yahoo-mark')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.synced-mark--espn')).toBeNull();
   });
 
-  it('warns when a setting drifts from the ESPN league, and lets the user own it', async () => {
+  it('locks the table to the ESPN league until it is disconnected', async () => {
     const fixture = MockRender(DraftProjectionComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
+    // The table holds every league setting to the league it is handed; null lets go of them.
+    const lockedTo = (): string | null =>
+      ngMocks.input(ngMocks.find(PlayerProjectionsTableComponent), 'syncedLeagueName');
 
     component.applyEspnSettings({
       settings: {
@@ -596,20 +597,20 @@ describe('DraftProjectionComponent', () => {
       leagueId: '123456',
       leagueName: 'Puck Luck Dynasty',
     });
-    expect(component.diverged()).toEqual(false);
+    fixture.detectChanges();
 
-    component.scoringType.set('points');
-    expect(component.diverged()).toEqual(true);
+    expect(lockedTo()).toEqual('Puck Luck Dynasty');
 
-    // "Ok, I understand": the projection is its own from here, and the toolbar stops claiming
-    // a league.
-    component.confirmUnsync();
-    expect(component.diverged()).toEqual(false);
+    // Disconnected, the settings are the user's, and the toolbar stops claiming a league.
+    component.disconnectLeague();
+    fixture.detectChanges();
+
+    expect(lockedTo()).toBeNull();
     expect(component.espnSync()).toBeNull();
     expect(component.syncedLeagueName()).toBeNull();
   });
 
-  it('keeps the league to import from after the projection is taken out of sync', async () => {
+  it('keeps the league to import from after the league is disconnected', async () => {
     const fixture = MockRender(DraftProjectionComponent);
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
@@ -627,7 +628,7 @@ describe('DraftProjectionComponent', () => {
       leagueName: 'My 2027 League',
     });
 
-    component.confirmUnsync();
+    component.disconnectLeague();
 
     // The claim is gone — the toolbar asks to import again...
     expect(component.espnSync()).toBeNull();
@@ -768,7 +769,6 @@ describe('DraftProjectionComponent', () => {
           loadProjection: () => of(mockProjection),
           updateProjection: () => of(mockProjection),
         })
-        .keep(ProjectionSyncService)
         .provide({ provide: Location, useValue: locationStub })
         .provide({ provide: Router, useValue: routerStub })
         .provide({
@@ -985,7 +985,6 @@ describe('DraftProjectionComponent', () => {
           copyFromShare,
         })
         .mock(ProjectionShareService, notSharedYet)
-        .keep(ProjectionSyncService)
         .provide({ provide: Location, useValue: locationStub })
         .provide({ provide: Router, useValue: routerStub })
         .provide({
@@ -1081,7 +1080,6 @@ describe('DraftProjectionComponent', () => {
           loadProjection: () => throwError(() => new HttpErrorResponse({ status: 404 })),
         })
         .mock(NotificationService, { error: notifyError, notice: notifyNotice })
-        .keep(ProjectionSyncService)
         .provide({ provide: Location, useValue: locationStub })
         .provide({ provide: Router, useValue: routerStub })
         .provide({

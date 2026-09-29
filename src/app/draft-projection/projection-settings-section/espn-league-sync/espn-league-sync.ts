@@ -55,8 +55,13 @@ export class EspnLeagueSyncComponent implements OnInit {
   readonly hasStoredCredentials = signal<boolean>(false);
   readonly syncing = signal<boolean>(false);
   readonly error = signal<string | null>(null);
-  readonly syncedLeagueId = signal<string | null>(null);
-  readonly syncedLeagueName = signal<string | null>(null);
+  // Follow the page's stamp, so a league disconnected there stops being reported here.
+  readonly syncedLeagueId = linkedSignal<string | null>(() =>
+    this.lastSyncedAt() ? this.lastLeagueId() : null,
+  );
+  readonly syncedLeagueName = linkedSignal<string | null>(() =>
+    this.lastSyncedAt() ? this.lastLeagueName() : null,
+  );
   readonly unsupportedStats = signal<string[]>([]);
 
   ngOnInit(): void {

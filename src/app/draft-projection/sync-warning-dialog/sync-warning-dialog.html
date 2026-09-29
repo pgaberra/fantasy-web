@@ -9,14 +9,12 @@
   >
     <div class="dialog-header">
       <h2 id="sync-warning-title" class="dialog-title">No longer in sync</h2>
-      <!-- Not a plain dismissal: leaving the warning unanswered would keep a projection that
-           claims a league it no longer matches, so the cross undoes the edit that raised it. -->
+      <!-- Not a plain dismissal: the cross leaves the change unmade and keeps the league. -->
       <button
         type="button"
         class="dialog-close"
         [attr.aria-label]="cancelLabel()"
         [appTooltip]="cancelLabel()"
-        [disabled]="reSyncing()"
         (click)="cancelled.emit()"
       >
         <app-icon name="close" [size]="20" />
@@ -26,38 +24,12 @@
       Changing {{ change() }} will disconnect this {{ subject() }} from
       <strong>{{ leagueName() }}</strong
       >.
-      @if (reSyncOffered()) {
-        If the league changed on {{ platform() }}, re-sync to import the latest settings.
-      }
     </p>
-    @if (error()) {
-      <p class="dialog-error" role="alert">{{ error() }}</p>
-    }
     <div class="dialog-actions">
-      @if (reSyncOffered()) {
-        <button
-          type="button"
-          class="btn btn-secondary btn-sm"
-          [disabled]="reSyncing()"
-          (click)="reSync.emit()"
-        >
-          @if (reSyncing()) {
-            <app-loading-indicator variant="inline" label="Re-syncing" />
-          } @else {
-            Re-sync settings
-          }
-        </button>
-      } @else {
-        <button type="button" class="btn btn-secondary btn-sm" (click)="cancelled.emit()">
-          Cancel
-        </button>
-      }
-      <button
-        type="button"
-        class="btn btn-primary btn-sm"
-        [disabled]="reSyncing()"
-        (click)="confirm.emit()"
-      >
+      <button type="button" class="btn btn-secondary btn-sm" (click)="cancelled.emit()">
+        Cancel
+      </button>
+      <button type="button" class="btn btn-primary btn-sm" (click)="confirm.emit()">
         {{ confirmLabel() }}
       </button>
     </div>

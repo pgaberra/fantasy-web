@@ -91,4 +91,39 @@ describe('ColumnsMenuComponent', () => {
     expect(ngMocks.findAll('#default-decimals-label')).toHaveLength(0);
     expect(ngMocks.findAll('app-toggle-switch')).toHaveLength(0);
   });
+
+  describe('held by an imported league', () => {
+    const renderLocked = () =>
+      MockRender(ColumnsMenuComponent, {
+        activeScoringColumns: new Set<ScoringStatKey>(['goals']),
+        activeUtilityColumns: new Set<UtilityStatKey>(),
+        lockedBy: 'HHL',
+      });
+
+    it('keeps the scoring stats as the league set them, and says so', () => {
+      const fixture = renderLocked();
+      const component = fixture.point.componentInstance;
+      const toggled = vi.spyOn(component.scoringToggled, 'emit');
+      const goals = component.visibleOptions().find((option) => option.statKey === 'goals')!;
+
+      component.toggle(goals);
+
+      expect(toggled).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.querySelector('.add-row').disabled).toBe(true);
+      expect(fixture.nativeElement.textContent).toContain('The scoring stats come from HHL.');
+    });
+
+    it('leaves the utility columns, which score nothing, to the user', () => {
+      const fixture = renderLocked();
+      const component = fixture.point.componentInstance;
+      const toggled = vi.spyOn(component.utilityToggled, 'emit');
+      component.selectGroup('utility');
+      fixture.detectChanges();
+
+      component.toggle(component.visibleOptions()[0]);
+
+      expect(toggled).toHaveBeenCalled();
+      expect(fixture.nativeElement.querySelector('.add-locked')).toBeNull();
+    });
+  });
 });

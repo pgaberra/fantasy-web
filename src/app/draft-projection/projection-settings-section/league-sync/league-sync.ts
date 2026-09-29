@@ -1,9 +1,10 @@
-import { Component, input, linkedSignal, output } from '@angular/core';
+import { Component, computed, input, linkedSignal, output } from '@angular/core';
 import { environment } from '../../../../environments/environment';
 import { YahooSync } from '../../../api/models/yahoo-sync';
 import { YahooLeagueSyncComponent, YahooSyncResult } from '../yahoo-league-sync/yahoo-league-sync';
 import { EspnLeagueSyncComponent, EspnSyncResult } from '../espn-league-sync/espn-league-sync';
 import { YahooMarkComponent } from '../../../shared/yahoo-mark/yahoo-mark';
+import { IconComponent } from '../../../shared/icon/icon';
 
 type Provider = 'none' | 'yahoo' | 'espn';
 
@@ -15,10 +16,14 @@ type Provider = 'none' | 'yahoo' | 'espn';
  * A platform whose sync is turned off (Yahoo between NHL seasons, ESPN before it's enabled) has
  * its tab hidden rather than shown disabled, and the hint names only what's actually on offer.
  * With neither available the whole section disappears.
+ *
+ * A league once imported owns the settings it set: every page holds them as they came until the
+ * user presses Disconnect league here, which drops the link (`disconnected`) and leaves the values
+ * where they are, now the user's. Importing again is how the link comes back.
  */
 @Component({
   selector: 'app-league-sync',
-  imports: [YahooLeagueSyncComponent, EspnLeagueSyncComponent, YahooMarkComponent],
+  imports: [YahooLeagueSyncComponent, EspnLeagueSyncComponent, YahooMarkComponent, IconComponent],
   templateUrl: './league-sync.html',
   styleUrl: './league-sync.css',
 })
@@ -35,6 +40,20 @@ export class LeagueSyncComponent {
   readonly openOnYahoo = input(false);
   readonly yahooSynced = output<YahooSyncResult>();
   readonly espnSynced = output<EspnSyncResult>();
+  /** The user let go of the league: the settings stay as they are and become theirs to change. */
+  readonly disconnected = output<void>();
+
+  /**
+   * The league the settings are held to, if any. The ESPN stamp, not the remembered id, says an
+   * ESPN league is linked: the id outlives a disconnect so the next import can start from it.
+   */
+  readonly linkedLeagueName = computed<string | null>(() => {
+    const yahoo = this.lastSync();
+    if (yahoo) {
+      return yahoo.leagueName;
+    }
+    return this.lastEspnSyncedAt() ? (this.lastEspnLeagueName() ?? this.lastEspnLeagueId()) : null;
+  });
 
   protected readonly yahooAvailable = !environment.yahooSyncDisabled;
   protected readonly espnAvailable = environment.espnLeaguesEnabled;

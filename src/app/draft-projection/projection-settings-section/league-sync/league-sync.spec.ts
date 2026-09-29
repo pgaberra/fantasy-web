@@ -1,5 +1,5 @@
 import { MockBuilder, MockRender } from 'ng-mocks';
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { LeagueSyncComponent } from './league-sync';
 import { YahooLeagueSyncComponent } from '../yahoo-league-sync/yahoo-league-sync';
 import { EspnLeagueSyncComponent } from '../espn-league-sync/espn-league-sync';
@@ -146,5 +146,52 @@ describe('LeagueSyncComponent', () => {
 
     expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeNull();
+  });
+
+  describe('disconnecting a league', () => {
+    const yahooSync: YahooSync = { leagueName: 'HHL', leagueKey: '465.l.9', syncedAt: 'then' };
+    const renderWith = async (params: Record<string, unknown>, yahooDisabled = false) => {
+      environment.yahooSyncDisabled = yahooDisabled;
+      environment.espnLeaguesEnabled = true;
+      await MockBuilder(LeagueSyncComponent)
+        .mock(YahooLeagueSyncComponent)
+        .mock(EspnLeagueSyncComponent);
+      return MockRender(LeagueSyncComponent, params);
+    };
+
+    it('offers nothing to disconnect while no league is linked', async () => {
+      const fixture = await renderWith({ lastEspnLeagueId: '123' });
+
+      // A remembered ESPN id is where the next import starts, not a link.
+      expect(fixture.point.componentInstance.linkedLeagueName()).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('Disconnect league');
+    });
+
+    it('lets go of a linked league on request', async () => {
+      const fixture = await renderWith({ lastSync: yahooSync });
+      const disconnected = vi.fn();
+      fixture.point.componentInstance.disconnected.subscribe(disconnected);
+
+      expect(fixture.nativeElement.textContent).toContain('locked to HHL');
+      (fixture.nativeElement.querySelector('.league-link button') as HTMLButtonElement).click();
+
+      expect(disconnected).toHaveBeenCalled();
+    });
+
+    it("still offers it while the league's platform cannot be synced", async () => {
+      const fixture = await renderWith({ lastSync: yahooSync }, true);
+
+      expect(fixture.nativeElement.textContent).toContain('Disconnect league');
+    });
+
+    it('names a linked ESPN league by its stamp', async () => {
+      const fixture = await renderWith({
+        lastEspnLeagueId: '123',
+        lastEspnSyncedAt: 'then',
+        lastEspnLeagueName: 'Puck Luck Dynasty',
+      });
+
+      expect(fixture.point.componentInstance.linkedLeagueName()).toEqual('Puck Luck Dynasty');
+    });
   });
 });

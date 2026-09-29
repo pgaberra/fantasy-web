@@ -404,6 +404,16 @@ export class WhosHotComponent {
   }
 
   /**
+   * Disconnect league: the settings stay as they are and become the user's to change. The ESPN
+   * league's id stays, so the next import starts from it.
+   */
+  disconnectLeague(): void {
+    this.yahooSync.set(null);
+    this.espnSync.set(null);
+    this.showSyncDialog.set(false);
+  }
+
+  /**
    * A sync that had nothing to report is finished the moment it lands, so the dialog gets out of
    * the way and the toolbar states the league it came from. One that could not map every stat
    * keeps the dialog open: that list is the only place the user is told their league scores

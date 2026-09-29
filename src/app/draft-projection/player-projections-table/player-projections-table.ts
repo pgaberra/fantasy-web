@@ -1006,7 +1006,10 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   private restore(snapshot: TableSnapshot): void {
     this.playerProjections.set(snapshot.playerProjections);
-    this.activeScoringColumns.set(snapshot.activeScoringColumns);
+    // A step taken before a league was imported must not undo what the league set.
+    if (this.syncedLeagueName() === null) {
+      this.activeScoringColumns.set(snapshot.activeScoringColumns);
+    }
     this.activeUtilityColumns.set(snapshot.activeUtilityColumns);
   }
 
@@ -1100,8 +1103,11 @@ export class PlayerProjectionsTableComponent implements OnInit {
     }));
   }
 
+  /** An imported league's type is its own; see `syncedLeagueName`. */
   selectScoringType(type: ScoringType): void {
-    this.scoringType.set(type);
+    if (this.syncedLeagueName() === null) {
+      this.scoringType.set(type);
+    }
   }
 
   undo(): void {

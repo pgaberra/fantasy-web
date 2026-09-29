@@ -218,6 +218,11 @@
   box-shadow: var(--shadow-sm);
 }
 
+.segmented button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 /* Only the stat columns scroll. The rows run down the page itself — a ranking reads as one
    list, and a second scrollbar inside a viewport-tall box left the page around it inert.
    `appPinnedTableHeader` is what keeps the column headings in view without that box. */

@@ -34,6 +34,7 @@
       [lastEspnLeagueName]="editableLeague().espnSync?.leagueName ?? null"
       (yahooSynced)="applyYahoo($event)"
       (espnSynced)="applyEspn($event)"
+      (disconnected)="disconnect()"
     />
 
     @if (linked(); as league) {
@@ -62,13 +63,13 @@
         } @else if (syncNotice(); as notice) {
           <p class="sync-status sync-status--warn" role="status">
             <app-icon name="alert-triangle" [size]="14" />
-            <span>{{ notice }} Set the teams, your draft position and the roster yourself.</span>
+            <span>{{ notice }} Name the teams and set the draft order yourself.</span>
           </p>
         }
       } @else {
         <p class="setup-note setup-note--block">
           Picks can't be synced from {{ league.platform }} yet, so you enter them as they are made.
-          Set the teams, your draft position and the roster below.
+          Name the teams and set the draft order below.
         </p>
       }
     }
@@ -87,6 +88,7 @@
         <app-stat-weights-editor
           [statWeights]="editableLeague().statWeights"
           [activeScoringColumns]="editableLeague().activeScoringColumns"
+          [lockedBy]="lockedBy()"
           (statWeightsChange)="setStatWeights($event)"
         />
       </div>
@@ -122,12 +124,20 @@
           <strong>{{ linked()?.name }}</strong> will be applied.</span
         >
       </p>
+    } @else if (lockedBy(); as leagueName) {
+      <p id="setup-locked-note" class="locked-note">
+        <app-icon name="lock" [size]="14" />
+        <span
+          >The number of teams and the roster slots come from <strong>{{ leagueName }}</strong
+          >.</span
+        >
+      </p>
     }
 
     <div class="setup-pair">
       <div class="setup-field">
         <label class="setup-sublabel" for="draft-teams">Number of teams</label>
-        @if (locked()) {
+        @if (teamsLocked()) {
           <select
             id="draft-teams"
             class="setup-select"
@@ -272,7 +282,7 @@
       <span class="setup-sublabel">Roster slots</span>
       <app-roster-slots-editor
         [rosterSlots]="editableLeague().rosterSlots"
-        [disabled]="locked()"
+        [disabled]="lockedBy() !== null"
         (rosterSlotsChange)="setRosterSlots($event)"
       />
     </div>
@@ -288,10 +298,8 @@
   @if (syncWarning(); as league) {
     <app-sync-warning-dialog
       [leagueName]="league.name"
-      [platform]="league.platform"
       subject="draft"
-      change="these settings"
-      [reSyncOffered]="false"
+      change="the draft order"
       cancelLabel="Go back to the settings"
       confirmLabel="Save anyway"
       (confirm)="confirmSyncBreak()"

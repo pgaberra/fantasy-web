@@ -9,7 +9,6 @@ import { LeagueProjectionSettingsResponse } from '../../api/models/league-projec
 import { LeagueSyncComponent } from '../../draft-projection/projection-settings-section/league-sync/league-sync';
 import { RosterSlotsEditorComponent } from '../../shared/roster-slots-editor/roster-slots-editor';
 import { FollowedLeague } from '../league-draft-follow';
-import { SyncWarningDialogComponent } from '../../draft-projection/sync-warning-dialog/sync-warning-dialog';
 import { HelpTipComponent } from '../../shared/help-tip/help-tip';
 import { CdkDragDrop } from '@angular/cdk/drag-drop';
 import {
@@ -1088,51 +1087,38 @@ describe('DraftSetupComponent', () => {
       expect(emitted()?.league.yahooSync).toEqual(yahooSync);
     });
 
-    it('warns before saving scoring the league did not set, and unlinks the league once told to', () => {
-      const fixture = render();
+    it('holds the teams and the roster to the league until it is disconnected', () => {
+      const fixture = render({ boardSyncedFrom: null });
       const component = fixture.point.componentInstance;
-      const emitted = confirmedBy(component);
-
-      component.setStatWeights({ ...component.editableLeague().statWeights, goals: 9 });
-      component.submit();
+      const teamsSelect = (): HTMLSelectElement =>
+        fixture.nativeElement.querySelector('#draft-teams');
       fixture.detectChanges();
 
-      expect(emitted()).toBeUndefined();
-      expect(component.syncWarning()).toEqual(hhl);
-      const dialog = ngMocks.findInstance(SyncWarningDialogComponent);
-      expect(dialog.leagueName()).toEqual('HHL');
-      expect(dialog.subject()).toEqual('draft');
+      expect(component.lockedBy()).toEqual('HHL');
+      expect(teamsSelect().disabled).toBe(true);
+      expect(fixture.nativeElement.textContent).toContain(
+        'The number of teams and the roster slots come from HHL.',
+      );
 
-      component.confirmSyncBreak();
+      component.disconnect();
+      fixture.detectChanges();
 
-      expect(emitted()?.league.statWeights['goals']).toEqual(9);
-      expect(emitted()?.league.yahooSync).toBeUndefined();
-      expect(emitted()?.follow).toBe(false);
+      expect(component.lockedBy()).toBeNull();
+      expect(teamsSelect().disabled).toBe(false);
     });
 
-    it('warns about a changed roster the same way', () => {
+    it('saves a disconnected league as it was imported, unlinked and not followed', () => {
       const component = render().point.componentInstance;
       const emitted = confirmedBy(component);
+      const weights = component.editableLeague().statWeights;
 
-      component.setRosterSlots({ ...DEFAULT_ROSTER_SLOTS, bn: 9 });
+      component.disconnect();
       component.submit();
-
-      expect(emitted()).toBeUndefined();
-      expect(component.syncWarning()).toEqual(hhl);
-    });
-
-    it('goes back to the settings, still linked, when the warning is cancelled', () => {
-      const component = render().point.componentInstance;
-      const emitted = confirmedBy(component);
-      component.setStatWeights({ ...component.editableLeague().statWeights, goals: 9 });
-      component.submit();
-
-      component.cancelSyncBreak();
 
       expect(component.syncWarning()).toBeNull();
-      expect(emitted()).toBeUndefined();
-      expect(component.editableLeague().yahooSync).toEqual(yahooSync);
-      expect(component.editableLeague().statWeights['goals']).toEqual(9);
+      expect(emitted()?.league.yahooSync).toBeUndefined();
+      expect(emitted()?.league.statWeights).toEqual(weights);
+      expect(emitted()?.follow).toBe(false);
     });
 
     it("warns before moving the user's seat on the league's board, and keeps the link", () => {
@@ -1147,16 +1133,6 @@ describe('DraftSetupComponent', () => {
       expect(emitted()?.draft.order[0]).toEqual('465.l.9.t.1');
       // The scoring is still the league's: only the board stops naming it.
       expect(emitted()?.league.yahooSync).toEqual(yahooSync);
-    });
-
-    it('warns before changing the number of teams on a board linked to its league', () => {
-      const component = render({ boardSyncedFrom: null }).point.componentInstance;
-
-      component.setTeamCount(4);
-      component.submit();
-
-      // A board that no longer is the league's draft still has the league's settings.
-      expect(component.syncWarning()).toEqual(hhl);
     });
 
     it('lets a board that is not the league draft be reseated without a word', () => {

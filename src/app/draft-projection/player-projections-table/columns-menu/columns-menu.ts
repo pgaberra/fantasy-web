@@ -34,6 +34,10 @@ const GROUP_LABELS: Record<StatGroup, string> = {
  *
  * How a column's numbers are formatted is a different question, and lives in that column's own
  * menu; the bulk version of it sits folded under this menu in the table's Stats popover.
+ *
+ * Which stats score is the league's to say once one is imported, so `lockedBy` (the league's
+ * name) holds the skater and goalie stats as they came. The utility columns only show numbers and
+ * stay the user's.
  */
 @Component({
   selector: 'app-columns-menu',
@@ -44,6 +48,8 @@ const GROUP_LABELS: Record<StatGroup, string> = {
 export class ColumnsMenuComponent {
   readonly activeScoringColumns = input.required<Set<ScoringStatKey>>();
   readonly activeUtilityColumns = input.required<Set<UtilityStatKey>>();
+  /** The league the scoring stats were imported from, which holds them; null while they are the user's. */
+  readonly lockedBy = input<string | null>(null);
 
   readonly scoringToggled = output<ScoringStatKey>();
   readonly utilityToggled = output<UtilityStatKey>();
@@ -90,7 +96,14 @@ export class ColumnsMenuComponent {
       : this.activeScoringColumns().has(option.statKey as ScoringStatKey);
   }
 
+  isLocked(option: StatOption): boolean {
+    return !option.isUtility && this.lockedBy() !== null;
+  }
+
   toggle(option: StatOption): void {
+    if (this.isLocked(option)) {
+      return;
+    }
     if (option.isUtility) {
       this.utilityToggled.emit(option.statKey as UtilityStatKey);
     } else {
