@@ -1,4 +1,13 @@
-import { Component, inject, input, linkedSignal, OnInit, output, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  OnInit,
+  output,
+  signal,
+} from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { of, switchMap } from 'rxjs';
@@ -58,6 +67,14 @@ export class EspnLeagueSyncComponent implements OnInit {
   readonly syncedLeagueId = signal<string | null>(null);
   readonly syncedLeagueName = signal<string | null>(null);
   readonly unsupportedStats = signal<string[]>([]);
+  /**
+   * A league id is entered that isn't the one these settings came from, so syncing is the step
+   * the user is here for: the button turns primary. A re-sync of the same league stays secondary.
+   */
+  readonly syncPending = computed(() => {
+    const id = this.leagueId().trim();
+    return id !== '' && id !== (this.syncedLeagueId() ?? this.lastLeagueId());
+  });
 
   ngOnInit(): void {
     this.espn.credentialStatus().subscribe({
