@@ -2,7 +2,7 @@
   <h2 id="draft-setup-title">Draft Settings</h2>
   @if (leagueOrderPending()) {
     <p class="setup-hint">
-      Your league hasn't set its draft order yet. Choose your draft position to draft by hand.
+      Your league hasn't set its draft order yet. Set it below to draft by hand.
     </p>
   }
 
@@ -155,43 +155,6 @@
           </select>
         }
       </div>
-
-      <div class="setup-field">
-        <label class="setup-sublabel" for="draft-position">Your draft position</label>
-        @if (locked()) {
-          <select
-            id="draft-position"
-            class="setup-select"
-            disabled
-            aria-describedby="setup-locked-note"
-          >
-            <option selected>{{ leaguePosition() ?? '–' }}</option>
-          </select>
-        } @else {
-          <select
-            #positionSelect
-            id="draft-position"
-            class="setup-select"
-            [class.invalid]="positionMissing()"
-            [attr.aria-invalid]="positionMissing()"
-            [attr.aria-describedby]="positionMissing() ? 'draft-position-error' : null"
-            [disabled]="!teamCountKnown()"
-            (change)="onPositionChange($event)"
-          >
-            @if (!draftPositionKnown()) {
-              <option value="" selected disabled>Select</option>
-            }
-            @for (position of positions(); track position) {
-              <option
-                [value]="position"
-                [selected]="draftPositionKnown() && position === myPosition()"
-              >
-                {{ position }}
-              </option>
-            }
-          </select>
-        }
-      </div>
     </div>
     @if (locked() && leaguePosition() === null) {
       <app-notice class="order-notice" role="note">
@@ -203,33 +166,41 @@
         Choose the number of teams in your league to start the draft.
       </p>
     }
-    @if (positionMissing()) {
-      <p id="draft-position-error" class="field-error">
-        Choose your draft position to start the draft.
-      </p>
-    }
 
-    <!-- Every team by name, in its draft order: drawn only once the size and the seat are chosen,
-         which place the user's own team in it. The handle drags a team, and moves it by keyboard
-         (arrows, Home, End) where dragging is not an option. -->
+    <!-- Every team by name, in its draft order, drawn once the size is chosen. The user's seat is
+         the team marked "You", which no team is until the user presses it: a seat nobody chose is
+         never shown as theirs. The handle drags a team, and moves it by keyboard (arrows, Home,
+         End) where dragging is not an option. -->
     @if (orderShown()) {
       <div class="setup-field">
         <span class="setup-sublabel setup-sublabel--tip">
           <span id="draft-order-label">Draft order</span>
           <app-help-tip
-            label="How to change the draft order"
-            text="Drag a team by its handle, or focus the handle and use the arrow keys."
+            label="How to set the draft order"
+            text="Press You at your draft position. Drag a team by its handle, or focus the handle and use the arrow keys."
           />
         </span>
+        <!-- The error takes the hint's place, over the list and beside the first button, which
+             is where Start sends the focus. -->
+        @if (positionMissing()) {
+          <p id="draft-position-error" class="field-error order-hint">
+            Press You at your draft position to start the draft.
+          </p>
+        } @else if (!draftPositionKnown()) {
+          <p class="setup-note order-hint">Press <strong>You</strong> at your draft position.</p>
+        }
         <ol
           class="team-list"
+          [class.team-list--marked]="draftPositionKnown()"
           cdkDropList
           cdkDropListLockAxis="y"
           aria-labelledby="draft-order-label"
+          [attr.aria-describedby]="positionMissing() ? 'draft-position-error' : null"
           (cdkDropListDropped)="drop($event)"
         >
           @for (row of rows(); track row.id; let i = $index) {
-            <li class="team-row" cdkDrag [class.team-row--mine]="row.mine">
+            @let mine = row.id === markedId();
+            <li class="team-row" cdkDrag [class.team-row--mine]="mine">
               <span class="team-pos" aria-hidden="true">{{ i + 1 }}</span>
               <input
                 type="text"
@@ -238,15 +209,23 @@
                 [value]="row.name"
                 [placeholder]="defaultNames()[i]"
                 [attr.aria-label]="
-                  (row.mine ? 'Your team, draft position ' : 'Team at draft position ') + (i + 1)
+                  (mine ? 'Your team, draft position ' : 'Team at draft position ') + (i + 1)
                 "
                 (input)="onTeamNameInput(i, $event)"
               />
-              @if (row.mine) {
-                <span class="team-badge team-badge--mine">You</span>
-              } @else if (teamHasPicks(row.id)) {
+              @if (teamHasPicks(row.id)) {
                 <span class="team-badge">Drafted</span>
               }
+              <button
+                type="button"
+                class="team-you"
+                [class.team-you--on]="mine"
+                [attr.aria-pressed]="mine"
+                [attr.aria-label]="'You draft at position ' + (i + 1)"
+                (click)="setMyPosition(i + 1)"
+              >
+                You
+              </button>
               <button
                 type="button"
                 class="drag-handle"

@@ -326,6 +326,48 @@
   border-radius: var(--radius-sm);
 }
 
+/* The user's seat is the team marked "You": every row offers it, faint until pressed, and the one
+   pressed reads as the badge the user's team carried. */
+.team-you {
+  flex: none;
+  min-height: 1.75rem;
+  padding: 0.1rem 0.45rem;
+  border: 1px dashed var(--color-border-control);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-subtle);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+.team-you:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.team-you--on,
+.team-you--on:hover {
+  border: 1px solid transparent;
+  background: var(--color-surface-hover);
+  color: var(--color-primary);
+  cursor: default;
+}
+
+/* Once a seat is pressed the other buttons step back: still there to move it, no longer asking. */
+.team-list--marked .team-you:not(.team-you--on) {
+  opacity: 0.5;
+}
+
+.team-list--marked .team-you:not(.team-you--on):hover,
+.team-list--marked .team-you:not(.team-you--on):focus-visible {
+  opacity: 1;
+}
+
+.order-hint {
+  margin: 0 0 var(--space-2);
+}
+
 /* A button, so it is reached by Tab and moves its team by the arrow keys; big enough for a thumb. */
 .drag-handle {
   flex: none;
