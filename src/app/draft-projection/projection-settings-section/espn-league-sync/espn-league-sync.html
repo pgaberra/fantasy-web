@@ -82,7 +82,7 @@
       @if (syncing()) {
         <app-loading-indicator variant="inline" label="Syncing" />
       } @else {
-        {{ syncedLeagueId() ? 'Re-sync settings' : 'Sync settings' }}
+        {{ syncedLeagueId() || lastLeagueId() ? 'Re-sync settings' : 'Sync settings' }}
       }
     </button>
   </div>

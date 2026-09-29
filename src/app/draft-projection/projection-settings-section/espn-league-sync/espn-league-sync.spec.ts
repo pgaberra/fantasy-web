@@ -141,6 +141,26 @@ describe('EspnLeagueSyncComponent', () => {
     expect(button().classList).toContain('btn-secondary');
   });
 
+  it('offers a re-sync to a user coming back to a league synced before', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent, { lastLeagueId: '123456' });
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelector('.espn-sync-row button').textContent.trim()).toEqual(
+      'Re-sync settings',
+    );
+  });
+
+  it('offers a first sync when nothing has been synced', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent);
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelector('.espn-sync-row button').textContent.trim()).toEqual(
+      'Sync settings',
+    );
+  });
+
   it('says when the league was last synced', async () => {
     await buildDefault();
     const fixture = MockRender(EspnLeagueSyncComponent, {
