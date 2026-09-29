@@ -4,6 +4,7 @@ import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { CookieRepair, DraftFollowConnectComponent } from './draft-follow-connect';
 import { EspnService } from '../../services/espn.service';
+import { CookieFieldDirective } from '../../shared/cookie-field/cookie-field';
 import { LeagueProjectionSettingsResponse } from '../../api/models/league-projection-settings-response';
 
 describe('DraftFollowConnectComponent', () => {
@@ -57,6 +58,31 @@ describe('DraftFollowConnectComponent', () => {
     expect(leagueId?.value).toBe('123');
     expect(leagueId?.readOnly).toBe(true);
     expect(component.canSave()).toBe(false);
+  });
+
+  it('gives the password manager no login form: the cookie fields are masked text fields', async () => {
+    await MockBuilder(DraftFollowConnectComponent)
+      .keep(CookieFieldDirective)
+      .mock(EspnService, {
+        leagueProjectionSettings: () => of(settings),
+        saveCredentials: () => of(undefined),
+      });
+    const fixture = MockRender(DraftFollowConnectComponent, { repair });
+    await fixture.whenStable();
+    const page = fixture.nativeElement as HTMLElement;
+
+    expect(page.querySelectorAll('input[type="password"]').length).toEqual(0);
+    const cookieFields = Array.from(page.querySelectorAll<HTMLInputElement>('.link-cookies input'));
+    expect(cookieFields.map((field) => field.getAttribute('aria-label'))).toEqual([
+      'espn_s2 cookie',
+      'SWID cookie',
+    ]);
+    for (const field of cookieFields) {
+      expect(field.type).toEqual('text');
+      expect(field.getAttribute('autocomplete')).toEqual('off');
+      expect(field.hasAttribute('data-1p-ignore')).toEqual(true);
+      expect(field.getAttribute('style')).toContain('-webkit-text-security: disc');
+    }
   });
 
   it('wants both cookies before it goes on', async () => {

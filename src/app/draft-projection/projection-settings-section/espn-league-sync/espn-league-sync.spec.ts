@@ -5,6 +5,7 @@ import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { EspnLeagueSyncComponent, EspnSyncResult } from './espn-league-sync';
 import { EspnService } from '../../../services/espn.service';
+import { CookieFieldDirective } from '../../../shared/cookie-field/cookie-field';
 import { CredentialStatusResponse } from '../../../api/models/credential-status-response';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
 
@@ -200,6 +201,30 @@ describe('EspnLeagueSyncComponent', () => {
 
     expect(fixture.nativeElement.querySelector('.espn-cookies')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.espn-stored-hint')).toBeNull();
+  });
+
+  it('gives the password manager no login form: the cookie fields are masked text fields', async () => {
+    // A password input here made Chrome fill the saved SlapStat sign-in into League ID and espn_s2.
+    await buildDefault().keep(CookieFieldDirective);
+    const fixture = MockRender(EspnLeagueSyncComponent);
+    await fixture.whenStable();
+
+    fixture.point.componentInstance.isPrivate.set(true);
+    fixture.detectChanges();
+
+    const page = fixture.nativeElement as HTMLElement;
+    expect(page.querySelectorAll('input[type="password"]').length).toEqual(0);
+    const cookieFields = Array.from(page.querySelectorAll<HTMLInputElement>('.espn-cookies input'));
+    expect(cookieFields.map((field) => field.getAttribute('aria-label'))).toEqual([
+      'espn_s2 cookie',
+      'SWID cookie',
+    ]);
+    for (const field of cookieFields) {
+      expect(field.type).toEqual('text');
+      expect(field.getAttribute('autocomplete')).toEqual('off');
+      expect(field.hasAttribute('data-1p-ignore')).toEqual(true);
+      expect(field.getAttribute('style')).toContain('-webkit-text-security: disc');
+    }
   });
 
   it('leaves the private section closed for a user with nothing on file', async () => {
