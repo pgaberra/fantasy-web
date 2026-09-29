@@ -456,7 +456,7 @@ describe('DraftSetupComponent', () => {
   });
 
   it('emits the roster slots it was given', () => {
-    const custom: RosterSlots = { c: 3, lw: 3, rw: 3, d: 5, util: 1, bn: 2, g: 2 };
+    const custom: RosterSlots = { c: 3, lw: 3, rw: 3, w: 0, f: 0, d: 5, util: 1, bn: 2, g: 2 };
     const component = renderSetup(leagueWith({ rosterSlots: custom }));
     component.setMyPosition(1);
     let emitted: DraftSetupResult | undefined;
@@ -724,7 +724,7 @@ describe('DraftSetupComponent', () => {
       activeScoringColumns: ['goals', 'hits'],
       activeUtilityColumns: [],
       leagueSize: 10,
-      rosterSlots: { c: 1, lw: 1, rw: 1, d: 2, util: 1, bn: 3, g: 1 },
+      rosterSlots: { c: 1, lw: 1, rw: 1, w: 0, f: 0, d: 2, util: 1, bn: 3, g: 1 },
       unsupportedRosterCodes: [],
       unsupportedStats: [],
     };

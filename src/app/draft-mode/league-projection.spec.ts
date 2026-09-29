@@ -51,7 +51,7 @@ function player(
 }
 
 function slots(overrides: Partial<RosterSlots>): RosterSlots {
-  return { c: 0, lw: 0, rw: 0, d: 0, util: 0, g: 0, bn: 0, ...overrides };
+  return { c: 0, lw: 0, rw: 0, w: 0, f: 0, d: 0, util: 0, g: 0, bn: 0, ...overrides };
 }
 
 describe('buildLeagueProjection', () => {
@@ -185,12 +185,124 @@ describe('buildLeagueProjection', () => {
     expect(alpha.positionPlayers['BN'].map((entry) => entry.name)).toEqual(['WingOnly']);
   });
 
+  function lineup(
+    entries: [id: number, score: number, positions: string[], name: string][],
+    roster: RosterSlots,
+  ) {
+    const players = new Map<number, LeagueProjectionPlayer>(
+      entries.map(([id, score, positions, name]) => [
+        id,
+        player(skater(id, {}), score, positions, {}, name),
+      ]),
+    );
+    const data = buildLeagueProjection(
+      [{ id: 'a', name: 'Alpha', mine: false, playerIds: entries.map(([id]) => id) }],
+      players,
+      [],
+      roster,
+      'points',
+      null,
+    );
+    const names = (column: string) =>
+      (data.teams[0].positionPlayers[column] ?? []).map((entry) => entry.name);
+    return { data, names };
+  }
+
+  it('starts forwards in F and a defenceman who misses his slot in Util, never in F', () => {
+    const { data, names } = lineup(
+      [
+        [1, 10, ['D'], 'TopD'],
+        [2, 8, ['D'], 'SecondD'],
+        [3, 6, ['C'], 'Centre'],
+        [4, 4, ['LW'], 'Winger'],
+      ],
+      slots({ f: 2, d: 1, util: 1 }),
+    );
+
+    expect(data.positionColumns.map((column) => column.key)).toEqual(['F', 'D', 'UTIL']);
+    expect(names('F')).toEqual(['Centre', 'Winger']);
+    expect(names('D')).toEqual(['TopD']);
+    expect(names('UTIL')).toEqual(['SecondD']);
+  });
+
+  it('seats a winger in W before F, and a centre only in F', () => {
+    const { names } = lineup(
+      [
+        [1, 10, ['C'], 'TopCentre'],
+        [2, 8, ['LW'], 'Winger'],
+        [3, 6, ['C'], 'SecondCentre'],
+      ],
+      slots({ c: 1, w: 1, f: 1 }),
+    );
+
+    expect(names('C')).toEqual(['TopCentre']);
+    expect(names('W')).toEqual(['Winger']);
+    expect(names('F')).toEqual(['SecondCentre']);
+  });
+
+  it('moves a centre-winger to W so a pure centre can start', () => {
+    const { names } = lineup(
+      [
+        [1, 10, ['C', 'LW'], 'Dual'],
+        [2, 8, ['C'], 'CentreOnly'],
+      ],
+      slots({ c: 1, w: 1 }),
+    );
+
+    expect(names('C')).toEqual(['CentreOnly']);
+    expect(names('W')).toEqual(['Dual']);
+    expect(names('BN')).toEqual([]);
+  });
+
+  it('keeps the better winger in the named slot and the other in the flex', () => {
+    const { names } = lineup(
+      [
+        [1, 10, ['LW'], 'Better'],
+        [2, 8, ['LW'], 'Worse'],
+      ],
+      slots({ lw: 1, w: 1 }),
+    );
+
+    expect(names('LW')).toEqual(['Better']);
+    expect(names('W')).toEqual(['Worse']);
+  });
+
+  it('labels the flex columns W and F, after the named forwards and before D', () => {
+    const data = buildLeagueProjection(
+      [],
+      new Map(),
+      [],
+      slots({ c: 1, lw: 1, rw: 1, w: 1, f: 1, d: 1, g: 1 }),
+      'points',
+      null,
+    );
+
+    expect(data.positionColumns.map((column) => column.key)).toEqual([
+      'LW',
+      'C',
+      'RW',
+      'W',
+      'F',
+      'D',
+      'G',
+    ]);
+    expect(data.positionColumns.map((column) => column.label)).toEqual([
+      'LW',
+      'C',
+      'RW',
+      'W',
+      'F',
+      'D',
+      'G',
+    ]);
+  });
+
   it('exposes category and position column metadata driven by scoring type and roster slots', () => {
     const pointsData = buildLeagueProjection(
       [],
       new Map(),
       ['goals', 'gaa'],
-      slots({ c: 2, lw: 2, rw: 2, d: 4, util: 2, g: 2, bn: 3 }),
+      slots({ c: 2, lw: 2, rw: 2, w: 0, f: 0, d: 4, util: 2, g: 2, bn: 3 }),
       'points',
       { goals: 3, gaa: -1 },
     );
@@ -216,7 +328,7 @@ describe('buildLeagueProjection', () => {
       [],
       new Map(),
       ['goals'],
-      slots({ c: 2, lw: 2, rw: 2, d: 4, g: 2 }),
+      slots({ c: 2, lw: 2, rw: 2, w: 0, f: 0, d: 4, g: 2 }),
       'category',
       { goals: 3 },
     );

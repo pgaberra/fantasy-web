@@ -5,6 +5,7 @@ import { RosterSlots } from '../api/models/roster-slots';
 import { YahooSync } from '../api/models/yahoo-sync';
 import { EspnSync } from '../api/models/espn-sync';
 import { DEFAULT_STAT_WEIGHTS } from '../draft-projection/projection-defaults';
+import { withFlexSlots } from '../models/roster-slots';
 
 /**
  * Everything the Who's hot page remembers between visits: the span being looked at, how it is
@@ -101,6 +102,8 @@ export class WhosHotSettingsService {
         season: version === SETTINGS_VERSION ? (stored.season ?? null) : null,
         // Written before "the last N" was a count: the range stands as the bounds it saved.
         lastGames: stored.lastGames ?? null,
+        // Written before the wing and forward flex slots existed: those read as none.
+        ...(stored.rosterSlots ? { rosterSlots: withFlexSlots(stored.rosterSlots) } : {}),
         espnSync: stored.espnSync ?? null,
         lastEspnLeagueId: stored.lastEspnLeagueId ?? null,
         // Defaults first, so a stat this page learns to score later arrives on its own.

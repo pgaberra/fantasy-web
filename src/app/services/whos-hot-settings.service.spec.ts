@@ -15,7 +15,7 @@ const settings: WhosHotSettings = {
   activeScoringColumns: new Set<ScoringStatKey>(['goals', 'hits']),
   activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
   leagueSize: 12,
-  rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
+  rosterSlots: { c: 2, lw: 2, rw: 2, w: 0, f: 0, d: 4, util: 1, bn: 4, g: 2 },
   minGoalieGames: 30,
   yahooSync: { leagueName: 'HHL', leagueKey: 'nhl.l.1', syncedAt: 't' },
   espnSync: null,
@@ -47,6 +47,30 @@ describe('WhosHotSettingsService', () => {
     expect(loaded).toEqual(settings);
     expect(loaded?.activeScoringColumns.has('hits')).toEqual(true);
     expect(loaded?.activeUtilityColumns).toBeInstanceOf(Set);
+  });
+
+  it('reads a roster saved before the wing and forward flex slots as having none', () => {
+    localStorage.setItem(
+      'slapstat.whosHot.settings',
+      JSON.stringify({
+        version: 3,
+        fromGame: 1,
+        toGame: 82,
+        rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
+      }),
+    );
+
+    expect(service.load()?.rosterSlots).toEqual({
+      c: 2,
+      lw: 2,
+      rw: 2,
+      w: 0,
+      f: 0,
+      d: 4,
+      util: 1,
+      bn: 4,
+      g: 2,
+    });
   });
 
   it('falls back to no settings when what is stored no longer parses', () => {

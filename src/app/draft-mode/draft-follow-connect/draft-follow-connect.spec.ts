@@ -12,7 +12,7 @@ describe('DraftFollowConnectComponent', () => {
     statWeights: { goals: 3 },
     activeScoringColumns: ['goals'],
     activeUtilityColumns: ['gp'],
-    rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
+    rosterSlots: { c: 2, lw: 2, rw: 2, w: 0, f: 0, d: 4, util: 1, bn: 4, g: 2 },
     unsupportedRosterCodes: [],
     unsupportedStats: [],
     leagueName: 'Pond League',

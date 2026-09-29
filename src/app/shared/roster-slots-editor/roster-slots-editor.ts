@@ -23,6 +23,8 @@ export class RosterSlotsEditorComponent {
     { key: 'c', label: 'C' },
     { key: 'lw', label: 'LW' },
     { key: 'rw', label: 'RW' },
+    { key: 'w', label: 'W' },
+    { key: 'f', label: 'F' },
     { key: 'd', label: 'D' },
     { key: 'util', label: 'Util' },
     { key: 'bn', label: 'BN' },

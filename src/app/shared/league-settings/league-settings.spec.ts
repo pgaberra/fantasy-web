@@ -40,7 +40,7 @@ describe('league settings imports', () => {
     scoringType: 'category',
     activeScoringColumns: ['goals', 'hits'],
     activeUtilityColumns: [],
-    rosterSlots: { c: 1, lw: 1, rw: 1, d: 2, util: 1, bn: 3, g: 1 },
+    rosterSlots: { c: 1, lw: 1, rw: 1, w: 0, f: 0, d: 2, util: 1, bn: 3, g: 1 },
     unsupportedRosterCodes: [],
     unsupportedStats: [],
     ...change,

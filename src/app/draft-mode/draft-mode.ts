@@ -542,7 +542,12 @@ export class DraftModeComponent implements OnInit {
     if (position === 'G') {
       return openSlots.has('g');
     }
-    return openSlots.has(position.toLowerCase() as keyof RosterSlots) || openSlots.has('util');
+    return (
+      openSlots.has(position.toLowerCase() as keyof RosterSlots) ||
+      openSlots.has('util') ||
+      (position !== 'D' && openSlots.has('f')) ||
+      ((position === 'LW' || position === 'RW') && openSlots.has('w'))
+    );
   }
 
   readonly roster = computed(() =>

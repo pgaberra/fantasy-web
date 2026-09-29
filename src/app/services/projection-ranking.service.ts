@@ -7,6 +7,7 @@ import {
   SKATER_SCORING_STAT_KEYS,
 } from '../models/stat-key.model';
 import { RosterSlots } from '../api/models/roster-slots';
+import { skaterSlotCount } from '../models/roster-slots';
 import { applyManualRanking, ManualRanking, PROJECTED_RANKING } from '../models/manual-ranking';
 
 const SKATER_SCORING_STAT_KEY_SET: ReadonlySet<string> = new Set(SKATER_SCORING_STAT_KEYS);
@@ -86,8 +87,7 @@ export class ProjectionRankingService {
     }
 
     const roster = input.rosterSlots;
-    const skaterPoolSize =
-      input.leagueSize * (roster.c + roster.lw + roster.rw + roster.d + roster.util + roster.bn);
+    const skaterPoolSize = input.leagueSize * skaterSlotCount(roster);
     const goaliePoolSize = input.leagueSize * roster.g;
     const zContributions = this.calculation.computeZScoreContributions(
       rounded,
@@ -119,8 +119,7 @@ export class ProjectionRankingService {
           ),
     );
     const roster = input.rosterSlots;
-    const skaterPoolSize =
-      input.leagueSize * (roster.c + roster.lw + roster.rw + roster.d + roster.util + roster.bn);
+    const skaterPoolSize = input.leagueSize * skaterSlotCount(roster);
     const goaliePoolSize = input.leagueSize * roster.g;
     const zScores = this.calculation.computeZScores(
       rounded,

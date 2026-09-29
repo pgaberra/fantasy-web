@@ -26,7 +26,7 @@ const SETTINGS: LeagueProjectionSettingsResponse = {
   statWeights: { goals: 3, assists: 2 },
   activeScoringColumns: ['goals', 'assists'],
   activeUtilityColumns: ['gp'],
-  rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, g: 2, util: 1, bn: 4 },
+  rosterSlots: { c: 2, lw: 2, rw: 2, w: 0, f: 0, d: 4, g: 2, util: 1, bn: 4 },
   leagueSize: 12,
   unsupportedRosterCodes: [],
   unsupportedStats: [],

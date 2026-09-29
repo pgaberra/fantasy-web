@@ -13,7 +13,7 @@ describe('EspnService', () => {
     scoringType: 'points',
     activeScoringColumns: [],
     activeUtilityColumns: ['gp'],
-    rosterSlots: { c: 0, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+    rosterSlots: { c: 0, lw: 0, rw: 0, w: 0, f: 0, d: 0, util: 0, bn: 0, g: 0 },
     unsupportedStats: [],
     unsupportedRosterCodes: [],
   };

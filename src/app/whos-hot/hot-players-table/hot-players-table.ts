@@ -35,6 +35,7 @@ import { ActiveColumnsService } from '../../services/active-columns.service';
 import { StatInfoService } from '../../services/stat-info.service';
 import { HotPlayer } from '../../services/whos-hot.service';
 import { RosterSlots } from '../../api/models/roster-slots';
+import { skaterSlotCount } from '../../models/roster-slots';
 import {
   DecimalStatKey,
   DEFAULT_DECIMAL_SETTINGS,
@@ -310,8 +311,7 @@ export class HotPlayersTableComponent {
     );
 
     const roster = this.rosterSlots();
-    const skaterPoolSize =
-      this.leagueSize() * (roster.c + roster.lw + roster.rw + roster.d + roster.util + roster.bn);
+    const skaterPoolSize = this.leagueSize() * skaterSlotCount(roster);
     const goaliePoolSize = this.leagueSize() * roster.g;
     const zScores = this.projectionCalculationService.computeZScores(
       projections,

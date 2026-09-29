@@ -27,7 +27,7 @@ const sampleState: ProjectionState = {
   decimalSettings: fullRecord([...SCORING_STAT_KEYS, 'gp'] as DecimalStatKey[], 0),
   useDefaultDecimals: true,
   leagueSize: 10,
-  rosterSlots: { c: 1, lw: 1, rw: 1, d: 2, util: 1, bn: 2, g: 2 },
+  rosterSlots: { c: 1, lw: 1, rw: 1, w: 0, f: 0, d: 2, util: 1, bn: 2, g: 2 },
   minGoalieGames: 25,
   yahooSync: {
     leagueName: 'My League',
@@ -162,7 +162,7 @@ describe('ProjectionSerializerService', () => {
       activeScoringColumns: ['goals', 'hits'],
       activeUtilityColumns: ['gp'],
       leagueSize: 10,
-      rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
+      rosterSlots: { c: 2, lw: 2, rw: 2, w: 0, f: 0, d: 4, util: 1, bn: 4, g: 2 },
       minGoalieGames: 84,
       espnSync: { leagueName: 'Puck Luck', leagueId: '42', syncedAt: '2026-09-17T08:00:00Z' },
     };
@@ -289,7 +289,17 @@ describe('ProjectionSerializerService', () => {
 
     expect(settings.leagueSize).toBeUndefined();
     expect(settings.minGoalieGames).toBeUndefined();
-    expect(settings.rosterSlots).toEqual({ c: 1, lw: 1, rw: 1, d: 2, util: 1, bn: 2, g: 2 });
+    expect(settings.rosterSlots).toEqual({
+      c: 1,
+      lw: 1,
+      rw: 1,
+      w: 0,
+      f: 0,
+      d: 2,
+      util: 1,
+      bn: 2,
+      g: 2,
+    });
   });
 
   it('round-trips the positions an owner corrected by hand', () => {
@@ -338,7 +348,7 @@ describe('ProjectionSerializerService', () => {
   });
 
   it('round-trips rosterSlots for both category and points leagues', () => {
-    const expected = { c: 1, lw: 1, rw: 1, d: 2, util: 1, bn: 2, g: 2 };
+    const expected = { c: 1, lw: 1, rw: 1, w: 0, f: 0, d: 2, util: 1, bn: 2, g: 2 };
 
     expect(service.fromProjectionData(service.toProjectionData(sampleState)).rosterSlots).toEqual(
       expected,

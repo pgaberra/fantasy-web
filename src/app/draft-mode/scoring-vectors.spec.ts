@@ -68,6 +68,8 @@ describe('scoring vectors', () => {
       (categories.league.rosterSlots.c +
         categories.league.rosterSlots.lw +
         categories.league.rosterSlots.rw +
+        categories.league.rosterSlots.w +
+        categories.league.rosterSlots.f +
         categories.league.rosterSlots.d +
         categories.league.rosterSlots.util +
         categories.league.rosterSlots.bn);
@@ -86,5 +88,38 @@ describe('scoring vectors', () => {
       points.pool.some((player) => player.type === 'skater' && player.stats.scoring['sog'] === 0),
     ).toBe(true);
     expect(points.pool.some((player) => player.positions.length > 1)).toBe(true);
+  });
+
+  /**
+   * The flex slots are the part most likely to drift: which wing takes W rather than F, and that
+   * a defenceman who misses his slot may start in Util but never in F.
+   */
+  it('fills the wing and forward flex slots in the committed vectors', () => {
+    const cases = scoringVectorCases();
+    const flex = cases.find((testCase) => testCase.name === 'wing and forward flex league')!;
+    const forwardsOnly = cases.find(
+      (testCase) => testCase.name === 'forwards-only category league',
+    )!;
+    const flexExpected = runScoringVectorCase(flex, ranking);
+    const forwardsExpected = runScoringVectorCase(forwardsOnly, ranking);
+    const byName = new Map(flex.pool.map((player) => [player.name, player]));
+
+    expect(flexExpected.positionKeys).toEqual(['LW', 'C', 'W', 'F', 'D', 'G', 'BN']);
+    expect(forwardsExpected.positionKeys).toEqual(['F', 'D', 'UTIL', 'G', 'BN']);
+    for (const team of flexExpected.teams) {
+      for (const player of team.positionPlayers['W'] ?? []) {
+        const positions = byName.get(player.name)!.positions;
+        expect(positions.includes('LW') || positions.includes('RW')).toEqual(true);
+      }
+    }
+    for (const team of forwardsExpected.teams) {
+      expect(team.positionPlayers['F'].length).toEqual(2);
+      for (const player of team.positionPlayers['F']) {
+        expect(byName.get(player.name)!.positions.includes('D')).toEqual(false);
+      }
+    }
+    expect(flexExpected.teams.some((team) => (team.positionPlayers['W'] ?? []).length > 0)).toEqual(
+      true,
+    );
   });
 });
