@@ -4,7 +4,6 @@ import { YahooSync } from '../../../api/models/yahoo-sync';
 import { YahooLeagueSyncComponent, YahooSyncResult } from '../yahoo-league-sync/yahoo-league-sync';
 import { EspnLeagueSyncComponent, EspnSyncResult } from '../espn-league-sync/espn-league-sync';
 import { Platform, PlatformTabsComponent } from '../../../shared/platform-tabs/platform-tabs';
-import { IconComponent } from '../../../shared/icon/icon';
 import {
   PlatformName,
   PlatformSwitchDialogComponent,
@@ -13,7 +12,7 @@ import {
 type Provider = Platform | 'none';
 
 /**
- * Why the league was let go of: the Disconnect league button, which is all the user came for, or a
+ * Why the league was let go of: a Disconnect button, which is all the user came for, or a
  * confirmed move to the other platform's tab, where they are about to sync another league.
  */
 export type DisconnectCause = 'button' | 'platform-switch';
@@ -37,8 +36,10 @@ const PLATFORM_NAMES: Record<Platform, PlatformName> = { yahoo: 'Yahoo', espn: '
  * With neither available the whole section disappears.
  *
  * A league once imported owns the settings it set: every page holds them as they came until the
- * user presses Disconnect league here, which drops the link (`disconnected`) and leaves the values
- * where they are, now the user's. Importing again is how the link comes back. Opening the other
+ * user presses Disconnect, which drops the link (`disconnected`) and leaves the values where they
+ * are, now the user's. Importing again is how the link comes back. The button sits on whichever
+ * line names the link — the platform's own synced line or, with that platform's tab not on offer,
+ * a line of its own — so the link is stated once, with the way out beside it. Opening the other
  * platform's tab while linked asks first, and going on disconnects the league the same way.
  */
 @Component({
@@ -47,7 +48,6 @@ const PLATFORM_NAMES: Record<Platform, PlatformName> = { yahoo: 'Yahoo', espn: '
     YahooLeagueSyncComponent,
     EspnLeagueSyncComponent,
     PlatformTabsComponent,
-    IconComponent,
     PlatformSwitchDialogComponent,
   ],
   templateUrl: './league-sync.html',
@@ -70,11 +70,11 @@ export class LeagueSyncComponent {
   readonly disconnected = output<DisconnectCause>();
 
   /**
-   * The platform the settings are synced from, if any. Yahoo wins when both are set, as it does in
-   * the draft's own reading of the link. The ESPN stamp, not the remembered id, says an ESPN league
-   * is linked: the id outlives a disconnect so the next import can start from it.
+   * The platform whose league the settings are held to, if any. Yahoo wins when both are set, as it
+   * does in the draft's own reading of the link. The ESPN stamp, not the remembered id, says an
+   * ESPN league is linked: the id outlives a disconnect so the next import can start from it.
    */
-  private readonly linkedPlatform = computed<Platform | null>(() => {
+  protected readonly linkedPlatform = computed<Platform | null>(() => {
     if (this.lastSync()) {
       return 'yahoo';
     }
@@ -115,6 +115,15 @@ export class LeagueSyncComponent {
       previous?.source.linked && !source.linked
         ? previous.value
         : this.initialProvider(source.linked, source.openOnYahoo),
+  });
+
+  /**
+   * The linked league, while its platform has no tab here (Yahoo between seasons): no panel
+   * names it then, so a line of its own does, with the way out beside it.
+   */
+  protected readonly linkedOffTab = computed<string | null>(() => {
+    const linked = this.linkedPlatform();
+    return linked && !this.platforms.includes(linked) ? this.linkedLeagueName() : null;
   });
 
   /** The other platform's tab, clicked while a league is synced: the question is open. */

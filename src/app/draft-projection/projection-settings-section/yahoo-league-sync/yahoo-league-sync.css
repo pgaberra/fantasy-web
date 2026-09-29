@@ -78,6 +78,10 @@
   font-weight: 400;
 }
 
+.yahoo-sync-disconnect {
+  margin-left: auto;
+}
+
 .yahoo-sync-muted {
   margin: 0;
   font-size: var(--text-sm);

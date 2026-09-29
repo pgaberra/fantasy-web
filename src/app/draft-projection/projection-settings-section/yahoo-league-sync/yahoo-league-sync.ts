@@ -52,7 +52,10 @@ export class YahooLeagueSyncComponent implements OnInit {
   protected readonly syncDisabled = environment.yahooSyncDisabled;
 
   readonly lastSync = input<YahooSync | null>(null);
+  /** The settings are held to that league, so its synced line offers to let go of it. */
+  readonly disconnectable = input(false);
   readonly synced = output<YahooSyncResult>();
+  readonly disconnected = output<void>();
 
   readonly connected = signal<boolean | null>(null);
   readonly connecting = signal(false);

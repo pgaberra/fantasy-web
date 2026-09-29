@@ -283,24 +283,62 @@ describe('LeagueSyncComponent', () => {
 
       // A remembered ESPN id is where the next import starts, not a link.
       expect(fixture.point.componentInstance.linkedLeagueName()).toBeNull();
-      expect(fixture.nativeElement.textContent).not.toContain('Disconnect league');
+      expect(fixture.nativeElement.textContent).not.toContain('Disconnect');
     });
 
-    it('lets go of a linked league on request', async () => {
+    it("hands the button to the linked platform's own synced line, and passes its press on", async () => {
       const fixture = await renderWith({ lastSync: yahooSync });
       const disconnected = vi.fn();
       fixture.point.componentInstance.disconnected.subscribe(disconnected);
 
-      expect(fixture.nativeElement.textContent).toContain('locked to HHL');
-      (fixture.nativeElement.querySelector('.league-link button') as HTMLButtonElement).click();
+      const yahoo = ngMocks.find(YahooLeagueSyncComponent);
+      expect(ngMocks.input(yahoo, 'disconnectable')).toBe(true);
+      // Stated once, where the link is named: no second line of its own.
+      expect(fixture.nativeElement.querySelector('.league-sync-linked')).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('locked to');
+      ngMocks.output(yahoo, 'disconnected').emit();
 
       expect(disconnected).toHaveBeenCalledWith('button');
     });
 
+    it('hands it to the ESPN panel for a linked ESPN league', async () => {
+      const fixture = await renderWith({
+        lastEspnLeagueId: '123',
+        lastEspnSyncedAt: 'then',
+        lastEspnLeagueName: 'Tampa Bay Pro',
+      });
+
+      expect(ngMocks.input(ngMocks.find(EspnLeagueSyncComponent), 'disconnectable')).toBe(true);
+      expect(fixture.nativeElement.querySelector('.league-sync-linked')).toBeNull();
+    });
+
     it("still offers it while the league's platform cannot be synced", async () => {
       const fixture = await renderWith({ lastSync: yahooSync }, true);
+      const disconnected = vi.fn();
+      fixture.point.componentInstance.disconnected.subscribe(disconnected);
 
-      expect(fixture.nativeElement.textContent).toContain('Disconnect league');
+      // Only ESPN is on offer, so no panel names the Yahoo link: a line of its own does.
+      const line = fixture.nativeElement.querySelector('.league-sync-linked') as HTMLElement;
+      expect(line.textContent).toContain('Synced with HHL');
+      expect(ngMocks.input(ngMocks.find(EspnLeagueSyncComponent), 'disconnectable')).toBe(false);
+      (line.querySelector('button') as HTMLButtonElement).click();
+
+      expect(disconnected).toHaveBeenCalledWith('button');
+    });
+
+    it('still offers it with no platform to sync from at all', async () => {
+      environment.yahooSyncDisabled = true;
+      environment.espnLeaguesEnabled = false;
+      await MockBuilder(LeagueSyncComponent);
+      const fixture = MockRender(LeagueSyncComponent, { lastSync: yahooSync });
+      const disconnected = vi.fn();
+      fixture.point.componentInstance.disconnected.subscribe(disconnected);
+
+      const line = fixture.nativeElement.querySelector('.league-sync-linked') as HTMLElement;
+      expect(line.textContent).toContain('Synced with HHL');
+      (line.querySelector('button') as HTMLButtonElement).click();
+
+      expect(disconnected).toHaveBeenCalled();
     });
 
     it('names a linked ESPN league by its stamp', async () => {

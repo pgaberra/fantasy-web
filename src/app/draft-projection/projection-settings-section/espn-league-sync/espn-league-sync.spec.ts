@@ -206,6 +206,50 @@ describe('EspnLeagueSyncComponent', () => {
     expect(status.textContent).toContain('14 Aug 2026');
   });
 
+  it('names a fresh sync once, on the status line the page stamps', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent, {
+      lastLeagueId: null as string | null,
+      lastSyncedAt: null as string | null,
+    });
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.leagueId.set('123456');
+    component.sync();
+    // What every host does with the emitted result: stamp the league and the time.
+    fixture.componentInstance.lastLeagueId = '123456';
+    fixture.componentInstance.lastSyncedAt = '2026-09-30T00:33:00.000Z';
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent as string;
+    expect(text.match(/Synced/g)?.length).toEqual(1);
+    expect(text).toContain('Re-sync settings');
+  });
+
+  it('offers Disconnect on the status line only when the host says the link is its own', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent, {
+      lastLeagueId: '123456',
+      lastSyncedAt: '2026-08-14T17:12:00.000Z',
+      lastLeagueName: 'Tampa Bay Pro',
+      disconnectable: false,
+    });
+    await fixture.whenStable();
+    const status = () => fixture.nativeElement.querySelector('.espn-synced-status') as HTMLElement;
+    expect(status().querySelector('button')).toBeNull();
+
+    fixture.componentInstance.disconnectable = true;
+    fixture.detectChanges();
+    const disconnected = vi.fn();
+    fixture.point.componentInstance.disconnected.subscribe(disconnected);
+    const button = status().querySelector('button') as HTMLButtonElement;
+    expect(button.textContent?.trim()).toEqual('Disconnect');
+    button.click();
+
+    expect(disconnected).toHaveBeenCalled();
+  });
+
   it('says nothing about a previous sync when there has not been one', async () => {
     await buildDefault();
     const fixture = MockRender(EspnLeagueSyncComponent);
@@ -404,8 +448,6 @@ describe('EspnLeagueSyncComponent', () => {
     expect(text).toContain('Rank your ESPN league');
     expect(text).toContain('Show rankings');
     expect(text).not.toContain('Sync settings');
-    // The rankings name the league over their table, so the card does not.
-    expect(fixture.nativeElement.querySelector('.espn-sync-synced')).toBeNull();
     expect(text).toContain('Not counted');
   });
 });

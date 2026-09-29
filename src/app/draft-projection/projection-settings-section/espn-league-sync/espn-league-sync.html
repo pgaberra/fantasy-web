@@ -7,9 +7,9 @@
   </div>
 
   @if (lastSyncedAt(); as syncedAt) {
-    <p class="espn-synced-status">
+    <div class="espn-synced-status" role="status">
       <span class="sync-dot" aria-hidden="true"></span>
-      <span>
+      <span class="espn-synced-text">
         @if (lastLeagueName(); as leagueName) {
           Synced with <strong>{{ leagueName }}</strong>
         } @else {
@@ -17,7 +17,12 @@
         }
         · {{ syncedAt | date: 'd MMM y, HH:mm' }}
       </span>
-    </p>
+      @if (disconnectable()) {
+        <button type="button" class="btn btn-secondary btn-sm" (click)="disconnected.emit()">
+          Disconnect
+        </button>
+      }
+    </div>
   }
 
   <div class="espn-sync-form">
@@ -94,15 +99,6 @@
 
   @if (error()) {
     <p class="espn-sync-error" role="alert">{{ error() }}</p>
-  }
-  <!-- The rankings name the league over their own table, so only an import says it here. -->
-  @if (purpose() === 'settings' && syncedLeagueId(); as id) {
-    <p class="espn-sync-synced" role="status">
-      <app-icon name="check-circle" class="espn-sync-check" />
-      <span
-        >Synced from <strong>{{ syncedLeagueName() ?? id }}</strong></span
-      >
-    </p>
   }
   @if (unsupportedStats().length) {
     <p class="espn-sync-muted">

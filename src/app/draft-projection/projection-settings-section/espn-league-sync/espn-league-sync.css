@@ -101,21 +101,6 @@
   color: var(--color-danger);
 }
 
-.espn-sync-synced {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--color-primary);
-}
-
-.espn-sync-check {
-  flex-shrink: 0;
-  color: var(--color-success);
-}
-
 .espn-sync-muted {
   margin: 0;
   font-size: var(--text-sm);
@@ -123,17 +108,19 @@
 }
 
 /* The dialog's answer to the toolbar button that opened it, so it wears the same green dot:
-   a connection that exists, named, with the date that says whether it is still worth trusting. */
+   a connection that exists, named, with the date that says whether it is still worth trusting,
+   and the way to let go of it. */
 .espn-synced-status {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 0.4rem;
   margin: 0.15rem 0 0.1rem;
   font-size: var(--text-sm);
   color: var(--color-text);
 }
 
-/* The row is baseline-aligned for the text; the dot has no baseline, so it centres instead. */
-.espn-synced-status .sync-dot {
-  align-self: center;
+/* Takes the free width, so Disconnect sits at the row's end and wraps below only when it must. */
+.espn-synced-text {
+  flex: 1 1 12rem;
 }
