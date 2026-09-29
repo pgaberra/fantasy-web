@@ -32,9 +32,10 @@ matched case-insensitively.
 | Draft mode | Draft Mode |
 | draft mode | Draft Mode |
 | My projections | My Projections |
+| My drafts | My Drafts |
 
 Navigation and footer links are title case (*Send Feedback*, *Sign In*), and so are the
-names Draft Mode, My Projections and Who's Hot wherever they appear. Buttons, headings and
+names Draft Mode, My Projections, My Drafts and Who's Hot wherever they appear. Buttons, headings and
 labels elsewhere stay sentence case.
 
 ## Phrases to avoid

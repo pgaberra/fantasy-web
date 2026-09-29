@@ -212,7 +212,7 @@ describe('TeamPowerRankingsComponent', () => {
     const groups = Array.from(
       fixture.nativeElement.querySelectorAll('.league-select optgroup') as NodeListOf<HTMLElement>,
     ).map((group) => group.getAttribute('label'));
-    expect(groups).toEqual(['Yahoo', 'My drafts']);
+    expect(groups).toEqual(['Yahoo', 'My Drafts']);
     expect(component.drafts().map((draft) => draft.id)).toEqual(['d1', 'd2']);
 
     await choose(fixture, component, 'draft:d1');
@@ -290,7 +290,7 @@ describe('TeamPowerRankingsComponent', () => {
     const groups = Array.from(
       fixture.nativeElement.querySelectorAll('.league-select optgroup') as NodeListOf<HTMLElement>,
     ).map((group) => group.getAttribute('label'));
-    expect(groups).toEqual(['My drafts']);
+    expect(groups).toEqual(['My Drafts']);
     expect(fixture.nativeElement.querySelector('#rank-by')).not.toBeNull();
 
     await choose(fixture, component, 'draft:d2');
@@ -436,7 +436,7 @@ describe('TeamPowerRankingsComponent', () => {
     const options = Array.from(select.options).map((option) => option.textContent?.trim());
     expect(options).toEqual(['AI projection', 'Last season', 'My board', 'Their board']);
     const groups = Array.from(select.querySelectorAll('optgroup')).map((group) => group.label);
-    expect(groups).toEqual(['SlapStat', 'My projections', 'Following']);
+    expect(groups).toEqual(['SlapStat', 'My Projections', 'Following']);
     expect(select.value).toEqual('model');
   });
 
