@@ -106,6 +106,28 @@ describe('YahooLeagueSyncComponent', () => {
     );
   });
 
+  it('offers Disconnect on the synced line only when the host says the link is its own', async () => {
+    await buildConnected();
+    const synced: YahooSync = { leagueName: 'My League', leagueKey: 'nhl.l.123', syncedAt: 't' };
+    const fixture = MockRender(YahooLeagueSyncComponent, {
+      lastSync: synced,
+      disconnectable: false,
+    });
+    await fixture.whenStable();
+    const line = () => fixture.nativeElement.querySelector('.yahoo-sync-synced') as HTMLElement;
+    expect(line().querySelector('button')).toBeNull();
+
+    fixture.componentInstance.disconnectable = true;
+    fixture.detectChanges();
+    const onDisconnect = vi.fn();
+    fixture.point.componentInstance.disconnected.subscribe(onDisconnect);
+    const button = line().querySelector('button') as HTMLButtonElement;
+    expect(button.textContent?.trim()).toEqual('Disconnect');
+    button.click();
+
+    expect(onDisconnect).toHaveBeenCalled();
+  });
+
   it('shows the disconnected state when not connected', async () => {
     await MockBuilder(YahooLeagueSyncComponent).mock(YahooService, {
       connectionStatus: () => of(disconnected),
