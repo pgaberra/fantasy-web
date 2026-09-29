@@ -4,6 +4,7 @@
   role="switch"
   [class.on]="on()"
   [attr.aria-checked]="on()"
+  [disabled]="disabled()"
   [attr.aria-label]="ariaLabel() || null"
   (click)="toggled.emit()"
 >

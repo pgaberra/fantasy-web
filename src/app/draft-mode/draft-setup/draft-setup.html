@@ -45,9 +45,9 @@
             (toggled)="toggleSync()"
           />
           <span class="sync-text">
-            <span class="sync-title" aria-hidden="true">Auto-sync</span>
+            <span class="sync-title" aria-hidden="true">Autosync draft picks</span>
             <app-help-tip
-              label="What auto-sync does"
+              label="What autosync does"
               text="Automatically update this page with picks from your draft."
             />
           </span>
@@ -64,13 +64,21 @@
             <app-icon name="alert-triangle" [size]="14" />
             <span>{{ notice }} Set the teams, your draft position and the roster yourself.</span>
           </p>
-        } @else if (syncOn() && league.platform === 'ESPN') {
-          <!-- ESPN publishes a draft's picks all at once when it ends, so syncing one is not live. -->
-          <p class="sync-status">
-            ESPN shares a draft's picks only once it's over. Enter them on the board as they're
-            made, and the board takes ESPN's results when the draft ends.
-          </p>
         }
+      } @else if (league.platform === 'ESPN') {
+        <!-- ESPN holds a draft's picks back until it ends, so they can't be synced as they're made:
+             the switch stays, greyed out, and says why beside its name. -->
+        <div class="sync-row sync-row--unavailable">
+          <app-toggle-switch
+            [on]="false"
+            [disabled]="true"
+            ariaLabel="Sync picks from the ESPN draft, not available on ESPN"
+          />
+          <span class="sync-text">
+            <span class="sync-title" aria-hidden="true">Autosync draft picks</span>
+            <span class="sync-unavailable" aria-hidden="true">Not available on ESPN</span>
+          </span>
+        </div>
       } @else {
         <p class="setup-note setup-note--block">
           Picks can't be synced from {{ league.platform }} yet, so you enter them as they are made.
@@ -124,7 +132,7 @@
       <p id="setup-locked-note" class="locked-note">
         <app-icon name="lock" [size]="14" />
         <span
-          >Auto-sync is active. Team and roster settings from
+          >Autosync is active. Team and roster settings from
           <strong>{{ linked()?.name }}</strong> will be applied.</span
         >
       </p>

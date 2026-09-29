@@ -110,6 +110,17 @@
   color: var(--color-text);
 }
 
+/* The switch is there to say the setting does not apply here, so it reads as greyed out. */
+.sync-row--unavailable .sync-title {
+  color: var(--color-text-muted);
+}
+
+.sync-unavailable {
+  margin-left: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
 .sync-status {
   display: flex;
   align-items: flex-start;
