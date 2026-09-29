@@ -179,7 +179,14 @@ export class TeamPowerRankingsComponent implements OnInit {
       const board = this.boards().find((candidate) => candidate.id === data.projectionId);
       return board ? board.name : 'your projection';
     }
-    return data.source === 'last_season' ? "last season's stats" : 'the SlapStat AI projection';
+    if (data.source === 'last_season') {
+      return "last season's stats";
+    }
+    // Once the season is under way the model is asked about the games left, and the totals are
+    // that much smaller than a whole season's; the line says so rather than leave it a puzzle.
+    return data.restOfSeason
+      ? 'the SlapStat AI projection for the rest of the season'
+      : 'the SlapStat AI projection';
   });
 
   private readonly rankingsResource = rxResource({
