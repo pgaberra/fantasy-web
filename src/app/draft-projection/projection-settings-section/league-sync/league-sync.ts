@@ -3,9 +3,9 @@ import { environment } from '../../../../environments/environment';
 import { YahooSync } from '../../../api/models/yahoo-sync';
 import { YahooLeagueSyncComponent, YahooSyncResult } from '../yahoo-league-sync/yahoo-league-sync';
 import { EspnLeagueSyncComponent, EspnSyncResult } from '../espn-league-sync/espn-league-sync';
-import { YahooMarkComponent } from '../../../shared/yahoo-mark/yahoo-mark';
+import { Platform, PlatformTabsComponent } from '../../../shared/platform-tabs/platform-tabs';
 
-type Provider = 'none' | 'yahoo' | 'espn';
+type Provider = Platform | 'none';
 
 interface LinkedElsewhere {
   platform: 'Yahoo' | 'ESPN';
@@ -25,7 +25,7 @@ interface LinkedElsewhere {
  */
 @Component({
   selector: 'app-league-sync',
-  imports: [YahooLeagueSyncComponent, EspnLeagueSyncComponent, YahooMarkComponent],
+  imports: [YahooLeagueSyncComponent, EspnLeagueSyncComponent, PlatformTabsComponent],
   templateUrl: './league-sync.html',
   styleUrl: './league-sync.css',
 })
@@ -46,6 +46,10 @@ export class LeagueSyncComponent {
   protected readonly yahooAvailable = !environment.yahooSyncDisabled;
   protected readonly espnAvailable = environment.espnLeaguesEnabled;
   protected readonly anyAvailable = this.yahooAvailable || this.espnAvailable;
+  protected readonly platforms: Platform[] = [
+    ...(this.yahooAvailable ? ['yahoo' as const] : []),
+    ...(this.espnAvailable ? ['espn' as const] : []),
+  ];
   protected readonly hint = this.buildHint();
 
   // Already synced from somewhere? Open on that platform, so its status stays shown and

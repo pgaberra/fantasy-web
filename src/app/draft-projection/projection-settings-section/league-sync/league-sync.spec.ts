@@ -3,6 +3,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { LeagueSyncComponent } from './league-sync';
 import { YahooLeagueSyncComponent } from '../yahoo-league-sync/yahoo-league-sync';
 import { EspnLeagueSyncComponent } from '../espn-league-sync/espn-league-sync';
+import { PlatformTabsComponent } from '../../../shared/platform-tabs/platform-tabs';
 import { YahooSync } from '../../../api/models/yahoo-sync';
 import { environment } from '../../../../environments/environment';
 
@@ -19,6 +20,7 @@ describe('LeagueSyncComponent', () => {
     environment.yahooSyncDisabled = yahooDisabled;
     environment.espnLeaguesEnabled = espnEnabled;
     await MockBuilder(LeagueSyncComponent)
+      .keep(PlatformTabsComponent)
       .mock(YahooLeagueSyncComponent)
       .mock(EspnLeagueSyncComponent);
     return MockRender(LeagueSyncComponent);
@@ -82,6 +84,7 @@ describe('LeagueSyncComponent', () => {
     environment.yahooSyncDisabled = true;
     environment.espnLeaguesEnabled = true;
     await MockBuilder(LeagueSyncComponent)
+      .keep(PlatformTabsComponent)
       .mock(YahooLeagueSyncComponent)
       .mock(EspnLeagueSyncComponent);
     const lastSync: YahooSync = { leagueName: 'My League', leagueKey: 'nhl.l.1', syncedAt: 't' };
@@ -96,6 +99,7 @@ describe('LeagueSyncComponent', () => {
     environment.yahooSyncDisabled = false;
     environment.espnLeaguesEnabled = true;
     await MockBuilder(LeagueSyncComponent)
+      .keep(PlatformTabsComponent)
       .mock(YahooLeagueSyncComponent)
       .mock(EspnLeagueSyncComponent);
     const fixture = MockRender(LeagueSyncComponent, {
@@ -111,6 +115,7 @@ describe('LeagueSyncComponent', () => {
     environment.yahooSyncDisabled = false;
     environment.espnLeaguesEnabled = true;
     await MockBuilder(LeagueSyncComponent)
+      .keep(PlatformTabsComponent)
       .mock(YahooLeagueSyncComponent)
       .mock(EspnLeagueSyncComponent);
     // The id outlives an unsync; the stamp does not, and the stamp is what claims a platform.
@@ -124,6 +129,7 @@ describe('LeagueSyncComponent', () => {
     environment.yahooSyncDisabled = false;
     environment.espnLeaguesEnabled = true;
     await MockBuilder(LeagueSyncComponent)
+      .keep(PlatformTabsComponent)
       .mock(YahooLeagueSyncComponent)
       .mock(EspnLeagueSyncComponent);
     const lastSync: YahooSync = { leagueName: 'My League', leagueKey: 'nhl.l.1', syncedAt: 't' };
@@ -136,6 +142,7 @@ describe('LeagueSyncComponent', () => {
     environment.yahooSyncDisabled = false;
     environment.espnLeaguesEnabled = true;
     await MockBuilder(LeagueSyncComponent)
+      .keep(PlatformTabsComponent)
       .mock(YahooLeagueSyncComponent)
       .mock(EspnLeagueSyncComponent);
     const fixture = MockRender(LeagueSyncComponent, {

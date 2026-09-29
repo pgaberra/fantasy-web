@@ -41,4 +41,12 @@ describe('power rankings failures', () => {
     expect(powerRankingsRetryable(refusal(503))).toBe(true);
     expect(powerRankingsRetryable(null)).toBe(true);
   });
+
+  /** ESPN's refusals are about the league id and the cookies, never about a Yahoo account. */
+  it("speaks of ESPN's league and cookies for an ESPN league", () => {
+    expect(powerRankingsMessage(refusal(400), 'espn')).toContain('espn_s2 and SWID');
+    expect(powerRankingsMessage(refusal(404), 'espn')).toContain('this season');
+    expect(powerRankingsMessage(refusal(404), 'espn')).not.toContain('Yahoo');
+    expect(powerRankingsMessage(refusal(400), 'yahoo')).toEqual(FAILURE_ON_OUR_SIDE_MESSAGE);
+  });
 });

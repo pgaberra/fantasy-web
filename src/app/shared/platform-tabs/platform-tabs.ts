@@ -1,0 +1,26 @@
+import { ChangeDetectionStrategy, Component, input, model } from '@angular/core';
+import { YahooMarkComponent } from '../yahoo-mark/yahoo-mark';
+
+/** A fantasy platform a league can be read from. */
+export type Platform = 'yahoo' | 'espn';
+
+/**
+ * The Yahoo / ESPN switch every screen that reads a league from a platform puts above it, so the
+ * choice looks and behaves the same wherever it is made: the league settings' import, and Team
+ * Power Rankings. Which platforms are on offer, and what choosing one opens, stay the screen's.
+ */
+@Component({
+  selector: 'app-platform-tabs',
+  imports: [YahooMarkComponent],
+  templateUrl: './platform-tabs.html',
+  styleUrl: './platform-tabs.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class PlatformTabsComponent {
+  /** The platforms to offer, in order. */
+  readonly platforms = input.required<readonly Platform[]>();
+  /** What the tabs are a choice of, for a screen reader. */
+  readonly label = input.required<string>();
+  /** The platform chosen, or `none` while nothing is. */
+  readonly selected = model<Platform | 'none'>('none');
+}
