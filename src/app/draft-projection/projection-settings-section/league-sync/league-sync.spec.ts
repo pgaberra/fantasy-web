@@ -147,4 +147,57 @@ describe('LeagueSyncComponent', () => {
     expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeNull();
   });
+
+  describe('the link held by the other platform', () => {
+    const renderSynced = async (inputs: Record<string, unknown>) => {
+      environment.yahooSyncDisabled = false;
+      environment.espnLeaguesEnabled = true;
+      await MockBuilder(LeagueSyncComponent)
+        .mock(YahooLeagueSyncComponent)
+        .mock(EspnLeagueSyncComponent);
+      return MockRender(LeagueSyncComponent, inputs);
+    };
+    const linkedLine = (fixture: { nativeElement: HTMLElement }) =>
+      fixture.nativeElement.querySelector('.league-sync-linked');
+
+    it('stays on the Yahoo tab: switching tabs unlinks nothing', async () => {
+      const fixture = await renderSynced({
+        lastEspnLeagueId: '12345',
+        lastEspnSyncedAt: 't',
+        lastEspnLeagueName: 'Tampa Bay Pro',
+      });
+      // Its own tab shows its own status line; nothing to add there.
+      expect(linkedLine(fixture)).toBeNull();
+
+      fixture.point.componentInstance.provider.set('yahoo');
+      fixture.detectChanges();
+
+      const line = linkedLine(fixture);
+      expect(line?.textContent).toContain('Synced with your ESPN league');
+      expect(line?.textContent).toContain('Tampa Bay Pro');
+      expect(line?.textContent).toContain('Syncing a Yahoo league here replaces it.');
+    });
+
+    it('names the Yahoo league on the ESPN tab', async () => {
+      const lastSync: YahooSync = { leagueName: 'HHL', leagueKey: 'nhl.l.1', syncedAt: 't' };
+      const fixture = await renderSynced({ lastSync });
+
+      fixture.point.componentInstance.provider.set('espn');
+      fixture.detectChanges();
+
+      const line = linkedLine(fixture);
+      expect(line?.textContent).toContain('Synced with your Yahoo league');
+      expect(line?.textContent).toContain('HHL');
+      expect(line?.textContent).toContain('Syncing an ESPN league here replaces it.');
+    });
+
+    it('says nothing for a league id left over from a sync that was since undone', async () => {
+      const fixture = await renderSynced({ lastEspnLeagueId: '12345' });
+
+      fixture.point.componentInstance.provider.set('yahoo');
+      fixture.detectChanges();
+
+      expect(linkedLine(fixture)).toBeNull();
+    });
+  });
 });
