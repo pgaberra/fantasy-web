@@ -65,7 +65,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       statWeights: { goals: 1 },
       activeScoringColumns: ['goals'],
       activeUtilityColumns: ['gp'],
-      rosterSlots: { c: 1, lw: 1, rw: 1, d: 1, util: 1, bn: 1, g: 1 },
+      rosterSlots: { c: 1, lw: 1, rw: 1, w: 0, f: 0, d: 1, util: 1, bn: 1, g: 1 },
       yahooSync: {
         leagueName: 'Beer League',
         leagueKey: '465.l.9',
@@ -91,7 +91,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
         scaleSettings: {},
         decimalSettings: { goals: 0 },
         useDefaultDecimals: false,
-        rosterSlots: { c: 1, lw: 1, rw: 1, d: 1, util: 1, bn: 1, g: 1 },
+        rosterSlots: { c: 1, lw: 1, rw: 1, w: 0, f: 0, d: 1, util: 1, bn: 1, g: 1 },
       },
       players: [],
       draft,

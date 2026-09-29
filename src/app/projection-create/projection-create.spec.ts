@@ -65,7 +65,7 @@ describe('ProjectionCreateComponent', () => {
         decimalSettings: { goals: 0 },
         useDefaultDecimals: false,
         leagueSize: 10,
-        rosterSlots: { c: 1, lw: 1, rw: 1, d: 2, util: 1, bn: 2, g: 2 },
+        rosterSlots: { c: 1, lw: 1, rw: 1, w: 0, f: 0, d: 2, util: 1, bn: 2, g: 2 },
         minGoalieGames: 25,
       },
       players: [

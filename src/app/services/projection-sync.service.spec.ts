@@ -8,7 +8,7 @@ const settings: SyncedSettings = {
   activeScoringColumns: new Set<ScoringStatKey>(['goals', 'assists']),
   activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
   leagueSize: 12,
-  rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
+  rosterSlots: { c: 2, lw: 2, rw: 2, w: 0, f: 0, d: 4, util: 1, bn: 4, g: 2 },
   statWeights: { goals: 5, assists: 3 } as Record<ScoringStatKey, number>,
 };
 

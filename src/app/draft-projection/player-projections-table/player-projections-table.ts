@@ -57,6 +57,7 @@ import {
   DEFAULT_ROSTER_SLOTS,
 } from '../projection-defaults';
 import { RosterSlots } from '../../api/models/roster-slots';
+import { skaterSlotCount } from '../../models/roster-slots';
 import { ProjectionsTableHeaderComponent } from './projections-table-header/projections-table-header';
 import { PlayerRowComponent } from './player-row/player-row';
 import { PositionFilterComponent } from './position-filter/position-filter';
@@ -447,8 +448,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
     const roster = this.rosterSlots();
     const teams = this.leagueSize();
-    const skaterPoolSize =
-      teams * (roster.c + roster.lw + roster.rw + roster.d + roster.util + roster.bn);
+    const skaterPoolSize = teams * skaterSlotCount(roster);
     const goaliePoolSize = teams * roster.g;
     const zScores = this.projectionCalculationService.computeZScores(
       roundedProjections,

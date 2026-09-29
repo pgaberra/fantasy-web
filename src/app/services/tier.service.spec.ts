@@ -169,7 +169,7 @@ describe('TierService', () => {
       },
     };
 
-    const rosterSlots: RosterSlots = { c: 2, lw: 2, rw: 2, d: 4, util: 0, bn: 4, g: 2 };
+    const rosterSlots: RosterSlots = { c: 2, lw: 2, rw: 2, w: 0, f: 0, d: 4, util: 0, bn: 4, g: 2 };
 
     function skater(id: number, positions: SkaterPosition[]): Player {
       return {
@@ -285,6 +285,31 @@ describe('TierService', () => {
       expect(d.depth).toBeLessThan(200);
       expect(d.tierByPlayerId.has(1)).toBe(true);
       expect(d.tierByPlayerId.has(200)).toBe(false);
+    });
+
+    it('shares the forward flex out over C, LW and RW and the wing flex over LW and RW', () => {
+      const players = new Map<number, Player>();
+      const ranked: ScoredProjection[] = [];
+      for (let id = 1; id <= 60; id++) {
+        players.set(id, skater(id, ['C']));
+        players.set(100 + id, skater(100 + id, ['LW']));
+        players.set(200 + id, skater(200 + id, ['D']));
+        ranked.push(scored(id, 500 - id), scored(100 + id, 500 - id), scored(200 + id, 500 - id));
+      }
+
+      const tiers = service.tiersByPosition({
+        ranked,
+        players,
+        scoringType: 'points',
+        leagueSize: 4,
+        rosterSlots: { c: 0, lw: 0, rw: 0, w: 2, f: 9, d: 5, util: 1, bn: 5, g: 2 },
+      });
+
+      // Four teams with 1.5x slack: C gets F/3 and a quarter of Util and bench, LW adds W/2 on
+      // top, and D gets no share of either forward flex.
+      expect(tiers.get('C')!.depth).toEqual(27);
+      expect(tiers.get('LW')!.depth).toEqual(33);
+      expect(tiers.get('D')!.depth).toEqual(39);
     });
 
     it('gives every tiered player a tier, numbered from one without gaps', () => {

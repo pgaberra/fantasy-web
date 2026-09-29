@@ -51,7 +51,7 @@ describe('DraftModeComponent', () => {
         decimalSettings: { goals: 0 },
         useDefaultDecimals: false,
         leagueSize: 12,
-        rosterSlots: { c: 1, lw: 1, rw: 1, d: 1, util: 1, bn: 1, g: 1 },
+        rosterSlots: { c: 1, lw: 1, rw: 1, w: 0, f: 0, d: 1, util: 1, bn: 1, g: 1 },
         minGoalieGames: 25,
       },
       players: [
@@ -253,12 +253,30 @@ describe('DraftModeComponent', () => {
         draft,
         league: {
           ...component.leagueSettings()!,
-          rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+          rosterSlots: { c: 1, lw: 0, rw: 0, w: 0, f: 0, d: 0, util: 0, bn: 0, g: 0 },
         },
       });
 
       const defense = component.tierStrip().find((entry) => entry.position === 'D');
       expect(defense?.needed).toBe(false);
+    });
+
+    it('counts a forward flex slot as room for a centre but not for a defenceman', async () => {
+      const fixture = MockRender(DraftModeComponent);
+      await fixture.whenStable();
+      const component = fixture.point.componentInstance;
+      component.onSetupConfirmed({
+        follow: false,
+        draft,
+        league: {
+          ...component.leagueSettings()!,
+          rosterSlots: { c: 0, lw: 0, rw: 0, w: 0, f: 1, d: 0, util: 0, bn: 0, g: 0 },
+        },
+      });
+
+      const byPosition = new Map(component.tierStrip().map((entry) => [entry.position, entry]));
+      expect(byPosition.get('C')?.needed).toBe(true);
+      expect(byPosition.get('D')?.needed).toBe(false);
     });
   });
 
@@ -330,11 +348,21 @@ describe('DraftModeComponent', () => {
       draft,
       league: {
         ...component.leagueSettings()!,
-        rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+        rosterSlots: { c: 1, lw: 0, rw: 0, w: 0, f: 0, d: 0, util: 0, bn: 0, g: 0 },
       },
     });
 
-    expect(component.rosterSlots()).toEqual({ c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 });
+    expect(component.rosterSlots()).toEqual({
+      c: 1,
+      lw: 0,
+      rw: 0,
+      w: 0,
+      f: 0,
+      d: 0,
+      util: 0,
+      bn: 0,
+      g: 0,
+    });
     expect(component.totalSlots()).toEqual(1);
     expect(component.phase()).toEqual('draft');
   });
@@ -352,7 +380,7 @@ describe('DraftModeComponent', () => {
             activeScoringColumns: ['goals'],
             activeUtilityColumns: ['gp'],
             leagueSize: 6,
-            rosterSlots: { c: 1, lw: 1, rw: 1, d: 2, util: 0, bn: 1, g: 1 },
+            rosterSlots: { c: 1, lw: 1, rw: 1, w: 0, f: 0, d: 2, util: 0, bn: 1, g: 1 },
           },
         },
       },
@@ -426,7 +454,7 @@ describe('DraftModeComponent', () => {
       draft,
       league: {
         ...component.leagueSettings()!,
-        rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+        rosterSlots: { c: 1, lw: 0, rw: 0, w: 0, f: 0, d: 0, util: 0, bn: 0, g: 0 },
       },
     });
 
@@ -452,7 +480,7 @@ describe('DraftModeComponent', () => {
       draft,
       league: {
         ...component.leagueSettings()!,
-        rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+        rosterSlots: { c: 1, lw: 0, rw: 0, w: 0, f: 0, d: 0, util: 0, bn: 0, g: 0 },
       },
     });
     component.draftCurrent(1);
@@ -769,7 +797,7 @@ describe('DraftModeComponent — available pagination', () => {
         decimalSettings: { goals: 0 },
         useDefaultDecimals: false,
         leagueSize: 12,
-        rosterSlots: { c: 1, lw: 1, rw: 1, d: 1, util: 1, bn: 1, g: 1 },
+        rosterSlots: { c: 1, lw: 1, rw: 1, w: 0, f: 0, d: 1, util: 1, bn: 1, g: 1 },
         minGoalieGames: 25,
       },
       players: manyPlayers.map((player, i) => ({
@@ -896,7 +924,7 @@ describe('DraftModeComponent — finished draft', () => {
         decimalSettings: { goals: 0 },
         useDefaultDecimals: false,
         leagueSize: 12,
-        rosterSlots: { c: 1, lw: 1, rw: 1, d: 1, util: 1, bn: 1, g: 1 },
+        rosterSlots: { c: 1, lw: 1, rw: 1, w: 0, f: 0, d: 1, util: 1, bn: 1, g: 1 },
         minGoalieGames: 25,
       },
       players: [
@@ -1126,7 +1154,7 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
       draft,
       league: {
         ...component.leagueSettings()!,
-        rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+        rosterSlots: { c: 1, lw: 0, rw: 0, w: 0, f: 0, d: 0, util: 0, bn: 0, g: 0 },
       },
     });
 
@@ -1140,6 +1168,8 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
       c: 1,
       lw: 0,
       rw: 0,
+      w: 0,
+      f: 0,
       d: 0,
       util: 0,
       bn: 0,
@@ -1374,7 +1404,7 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
       draft,
       league: {
         ...component.leagueSettings()!,
-        rosterSlots: { c: 1, lw: 0, rw: 0, d: 0, util: 0, bn: 0, g: 0 },
+        rosterSlots: { c: 1, lw: 0, rw: 0, w: 0, f: 0, d: 0, util: 0, bn: 0, g: 0 },
       },
     });
 

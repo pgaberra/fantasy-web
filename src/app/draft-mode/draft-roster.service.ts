@@ -19,6 +19,8 @@ const SLOT_ORDER: { key: keyof RosterSlots; label: string }[] = [
   { key: 'c', label: 'C' },
   { key: 'lw', label: 'LW' },
   { key: 'rw', label: 'RW' },
+  { key: 'w', label: 'W' },
+  { key: 'f', label: 'F' },
   { key: 'd', label: 'D' },
   { key: 'util', label: 'Util' },
   { key: 'g', label: 'G' },
@@ -63,7 +65,10 @@ export class DraftRosterService {
     return { slots, unplaced };
   }
 
-  /** Slot keys a player is eligible for, in placement priority (specific positions → util → bench). */
+  /**
+   * Slot keys a player is eligible for, in placement priority: his own positions, then the
+   * narrowest flex that takes him (W before F), then Util, then the bench.
+   */
   private eligibleSlotKeys(player: Player): (keyof RosterSlots)[] {
     if (player.type === 'goalie') {
       return ['g', 'bn'];
@@ -73,6 +78,9 @@ export class DraftRosterService {
     if (player.positions.has('LW')) keys.push('lw');
     if (player.positions.has('RW')) keys.push('rw');
     if (player.positions.has('D')) keys.push('d');
+    const isWing = player.positions.has('LW') || player.positions.has('RW');
+    if (isWing) keys.push('w');
+    if (isWing || player.positions.has('C')) keys.push('f');
     keys.push('util', 'bn');
     return keys;
   }

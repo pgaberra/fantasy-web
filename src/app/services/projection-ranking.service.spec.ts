@@ -56,7 +56,7 @@ const input = (scoringType: ScoringType, categories: ScoringStatKey[]): RankingI
   statWeights: { ...DEFAULT_STAT_WEIGHTS, gaa: -2, svPct: 50 },
   activeScoringColumns: new Set(categories),
   leagueSize: 12,
-  rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 0, bn: 4, g: 2 },
+  rosterSlots: { c: 2, lw: 2, rw: 2, w: 0, f: 0, d: 4, util: 0, bn: 4, g: 2 },
   minGoalieGames: 0,
   decimalSettings: DEFAULT_DECIMAL_SETTINGS,
 });

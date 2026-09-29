@@ -371,6 +371,8 @@ a.premium-badge:focus-visible {
   --pos: #b45309;
   --pos-bg: #fdf6ec;
 }
+.pos--w,
+.pos--f,
 .pos--util,
 .pos--bn {
   --pos: #64748b;

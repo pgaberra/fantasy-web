@@ -25,7 +25,7 @@ describe('YahooLeagueSyncComponent', () => {
     activeScoringColumns: ['goals', 'assists'],
     activeUtilityColumns: ['gp'],
     statWeights: { goals: 2, assists: 1 },
-    rosterSlots: { c: 2, lw: 0, rw: 0, d: 4, util: 0, bn: 4, g: 2 },
+    rosterSlots: { c: 2, lw: 0, rw: 0, w: 0, f: 0, d: 4, util: 0, bn: 4, g: 2 },
     leagueSize: 12,
     unsupportedStats: ['Game-Tying Goals'],
     unsupportedRosterCodes: ['IR'],
