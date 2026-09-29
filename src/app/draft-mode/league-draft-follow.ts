@@ -1,12 +1,22 @@
 import { DraftState } from '../api/models/draft-state';
 import { LeagueDraftResponse } from '../api/models/league-draft-response';
 
-/** A league whose draft a board can follow: Yahoo's league key, or ESPN's league id. */
+/**
+ * A league whose draft a board can follow: a Yahoo league, by its league key. An ESPN league's
+ * draft is not followed, since ESPN shares a draft's picks only once it is over.
+ */
 export interface FollowedLeague {
-  readonly platform: 'Yahoo' | 'ESPN';
+  readonly platform: 'Yahoo';
   readonly id: string;
   readonly name: string;
 }
+
+/**
+ * The league a draft's settings were imported from: a Yahoo league, which can be followed, or an
+ * ESPN league (by its league id), which the draft is only scored from.
+ */
+export type LinkedLeague =
+  FollowedLeague | { readonly platform: 'ESPN'; readonly id: string; readonly name: string };
 
 /**
  * Whether the league linked in the draft's settings can be followed, as far as the settings have
@@ -107,18 +117,6 @@ export function seatIsGuess(board: DraftState | null, league: LeagueDraftRespons
     board.picks.length === 0 &&
     hasLeagueTeams(board, league)
   );
-}
-
-/**
- * Whether the league's draft is under way but shows none of its picks, while its order is known.
- * ESPN's does exactly that: it publishes a draft's picks only once the draft is over, all at once
- * (seen 2026-09-29: every pick empty for the whole of a live draft, then all of them within one
- * poll). A board following such a league is drafted by hand meanwhile, on the league's own order.
- * Only ever asked of an ESPN league: Yahoo's draft is in progress with no picks for the minute
- * before its first one, and a board following it stays locked.
- */
-export function picksWithheld(league: LeagueDraftResponse): boolean {
-  return league.status === 'IN_PROGRESS' && league.orderKnown && league.picks.length === 0;
 }
 
 /**
