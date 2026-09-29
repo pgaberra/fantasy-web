@@ -900,7 +900,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       expect(component.finished()).toBe(true);
       expect(updateProjection.mock.lastCall?.[1].data.draft?.finishedAt).toBeTruthy();
       expect(updateProjection.mock.lastCall?.[1].data.draft?.following).toBeFalsy();
-      expect((fixture.nativeElement as HTMLElement).textContent).toContain('Team power rankings');
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain('Power Rankings');
       expect(component.rankingsParams()).toEqual({ league: '465.l.9', draft: 'p1' });
       leagueDraftCall.mockClear();
       await vi.advanceTimersByTimeAsync(15000);
@@ -947,7 +947,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelector('.sync-group')).toBeNull();
     expect(element.querySelector('.draft-tag--done')?.textContent).toContain('Finished');
-    expect(element.textContent).toContain('Team power rankings');
+    expect(element.textContent).toContain('Power Rankings');
     expect(component.rankingsParams()).toEqual({ league: '465.l.9', draft: 'p1' });
     expect(statusText(fixture)).toEqual('');
   });
@@ -1043,7 +1043,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       fixture.detectChanges();
 
       expect(component.rankingsParams()).toEqual({ draft: 'p1' });
-      expect((fixture.nativeElement as HTMLElement).textContent).toContain('Team power rankings');
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain('Power Rankings');
     });
 
     it('offers no power rankings where this environment does not rank leagues', async () => {
@@ -1056,9 +1056,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       fixture.detectChanges();
 
       expect(fixture.point.componentInstance.rankingsParams()).toBeNull();
-      expect((fixture.nativeElement as HTMLElement).textContent).not.toContain(
-        'Team power rankings',
-      );
+      expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Power Rankings');
     });
 
     it('offers no power rankings before it is finished', async () => {
