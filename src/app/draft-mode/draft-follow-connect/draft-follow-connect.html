@@ -1,5 +1,5 @@
-<div class="modal-overlay" (click)="cancel()">
-  <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+<div class="modal-overlay">
+  <div class="modal" role="dialog" aria-modal="true">
     <h2 class="modal-title">Add your ESPN cookies</h2>
     <p class="modal-text">{{ repair().reason }}</p>
 
@@ -16,8 +16,7 @@
         <span class="link-label">espn_s2</span>
         <input
           class="link-input"
-          type="password"
-          autocomplete="off"
+          appCookieField
           aria-label="espn_s2 cookie"
           [value]="espnS2()"
           (input)="onEspnS2Input($event)"
@@ -27,8 +26,7 @@
         <span class="link-label">SWID</span>
         <input
           class="link-input"
-          type="password"
-          autocomplete="off"
+          appCookieField
           placeholder="{...}"
           aria-label="SWID cookie"
           [value]="swid()"

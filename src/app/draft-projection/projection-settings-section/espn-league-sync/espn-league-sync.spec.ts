@@ -5,6 +5,7 @@ import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { EspnLeagueSyncComponent, EspnSyncResult } from './espn-league-sync';
 import { EspnService } from '../../../services/espn.service';
+import { CookieFieldDirective } from '../../../shared/cookie-field/cookie-field';
 import { CredentialStatusResponse } from '../../../api/models/credential-status-response';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
 
@@ -105,6 +106,61 @@ describe('EspnLeagueSyncComponent', () => {
     expect(input.value).toEqual('123456');
   });
 
+  it('makes syncing the primary action once a league id is entered, not before', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent);
+    await fixture.whenStable();
+    const button = () => fixture.nativeElement.querySelector('.espn-sync-row button');
+
+    expect(button().classList).toContain('btn-secondary');
+    expect(button().classList).not.toContain('btn-primary');
+
+    fixture.point.componentInstance.leagueId.set('123456');
+    fixture.detectChanges();
+    expect(button().classList).toContain('btn-primary');
+    expect(button().classList).not.toContain('btn-secondary');
+  });
+
+  it('keeps a re-sync of the league already synced secondary', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent, { lastLeagueId: '123456' });
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    const button = () => fixture.nativeElement.querySelector('.espn-sync-row button');
+
+    expect(component.syncPending()).toBe(false);
+    expect(button().classList).toContain('btn-secondary');
+
+    component.leagueId.set('654321');
+    fixture.detectChanges();
+    expect(button().classList).toContain('btn-primary');
+
+    component.sync();
+    await fixture.whenStable();
+    expect(component.syncPending()).toBe(false);
+    expect(button().classList).toContain('btn-secondary');
+  });
+
+  it('offers a re-sync to a user coming back to a league synced before', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent, { lastLeagueId: '123456' });
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelector('.espn-sync-row button').textContent.trim()).toEqual(
+      'Re-sync settings',
+    );
+  });
+
+  it('offers a first sync when nothing has been synced', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent);
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelector('.espn-sync-row button').textContent.trim()).toEqual(
+      'Sync settings',
+    );
+  });
+
   it('says when the league was last synced', async () => {
     await buildDefault();
     const fixture = MockRender(EspnLeagueSyncComponent, {
@@ -143,6 +199,22 @@ describe('EspnLeagueSyncComponent', () => {
     expect(fixture.nativeElement.querySelector('.espn-synced-status')).toBeNull();
   });
 
+  it('leaves the private box unticked for a user whose cookies are on file', async () => {
+    await MockBuilder(EspnLeagueSyncComponent)
+      .mock(EspnService, {
+        credentialStatus: () => of<CredentialStatusResponse>({ hasCredentials: true }),
+        saveCredentials: () => of(undefined),
+        leagueProjectionSettings: () => of(settings),
+      })
+      .keep(DatePipe);
+    const fixture = MockRender(EspnLeagueSyncComponent, { lastLeagueId: '123456' });
+    await fixture.whenStable();
+
+    // The cookies belong to the account, not to this league, which may well be public.
+    expect(fixture.point.componentInstance.isPrivate()).toEqual(false);
+    expect(fixture.nativeElement.querySelector('.espn-cookies')).toBeNull();
+  });
+
   it('opens the private section with empty fields for a user whose cookies are on file', async () => {
     await MockBuilder(EspnLeagueSyncComponent)
       .mock(EspnService, {
@@ -155,8 +227,10 @@ describe('EspnLeagueSyncComponent', () => {
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
 
+    component.togglePrivate();
+    fixture.detectChanges();
+
     // The stored cookies are never read back into the page; the note says they are in use.
-    expect(component.isPrivate()).toEqual(true);
     expect(component.espnS2()).toEqual('');
     expect(component.swid()).toEqual('');
     expect(fixture.nativeElement.querySelector('.espn-stored-hint')?.textContent).toContain(
@@ -182,6 +256,7 @@ describe('EspnLeagueSyncComponent', () => {
     await fixture.whenStable();
     expect(saveCredentials).not.toHaveBeenCalled();
 
+    component.togglePrivate();
     component.espnS2.set('fresh-s2');
     component.swid.set('{FRESH}');
     component.sync();
@@ -200,6 +275,30 @@ describe('EspnLeagueSyncComponent', () => {
 
     expect(fixture.nativeElement.querySelector('.espn-cookies')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.espn-stored-hint')).toBeNull();
+  });
+
+  it('gives the password manager no login form: the cookie fields are masked text fields', async () => {
+    // A password input here made Chrome fill the saved SlapStat sign-in into League ID and espn_s2.
+    await buildDefault().keep(CookieFieldDirective);
+    const fixture = MockRender(EspnLeagueSyncComponent);
+    await fixture.whenStable();
+
+    fixture.point.componentInstance.isPrivate.set(true);
+    fixture.detectChanges();
+
+    const page = fixture.nativeElement as HTMLElement;
+    expect(page.querySelectorAll('input[type="password"]').length).toEqual(0);
+    const cookieFields = Array.from(page.querySelectorAll<HTMLInputElement>('.espn-cookies input'));
+    expect(cookieFields.map((field) => field.getAttribute('aria-label'))).toEqual([
+      'espn_s2 cookie',
+      'SWID cookie',
+    ]);
+    for (const field of cookieFields) {
+      expect(field.type).toEqual('text');
+      expect(field.getAttribute('autocomplete')).toEqual('off');
+      expect(field.hasAttribute('data-1p-ignore')).toEqual(true);
+      expect(field.getAttribute('style')).toContain('-webkit-text-security: disc');
+    }
   });
 
   it('leaves the private section closed for a user with nothing on file', async () => {

@@ -30,7 +30,8 @@ npm run check:copy     # hold user-facing copy to COPY-RULES.md (CI uses this)
 
 CI runs (and must pass): `generate:api`, `lint`, `format:check`, `check:copy`, `test`, `build`, and the
 guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deployment-args.sh`,
-`check-inline-icons.sh`, `check-native-tooltips.sh`, `check-pending-states.sh`).
+`check-inline-icons.sh`, `check-native-tooltips.sh`, `check-password-fields.sh`,
+`check-pending-states.sh`, `check-backdrop-clicks.sh`).
 
 > **After cloning, run `npm run generate:api` once** — `src/app/api` is generated,
 > not committed, so lint/test/build will fail until it exists.
@@ -251,6 +252,13 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   `followedLeague` picks the linked platform and the copy names it. ESPN's refusal (private
   league, missing or stale cookies) is a 400. Its team ids are `espn.l.{leagueId}.t.{teamId}`, and
   a drafted player the pool has no counterpart for arrives as a negative id and shows no name.
+  **ESPN shows a draft's picks only once it is over**, all at once (seen 2026-09-29: `IN_PROGRESS`
+  with every pick empty for the whole live draft, then all of them in one poll). So while an ESPN
+  draft is under way with no picks and its order known (`picksWithheld`), the followed board is
+  drafted by hand (`handEntry`: `picksLocked` is off) and keeps polling; each poll keeps the hand
+  picks. Once ESPN shares its picks the board takes them, silently where every hand pick is ESPN's
+  pick in that place, and otherwise asks first ("Keep my picks" stops syncing). The status line says
+  "Following … on ESPN", not "Live from", with a line on why. Yahoo's board stays locked throughout.
   A league is linked in one place only: the league import inside Draft Settings (`draft-setup/`).
   `DraftFollowConnectComponent` links nothing. It opens when an ESPN follow, or the settings'
   sync check, stops on "no team is yours" or a 400 (`cookieRepair`), and asks for the espn_s2 and

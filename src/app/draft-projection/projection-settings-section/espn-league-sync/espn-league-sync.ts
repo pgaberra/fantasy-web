@@ -1,4 +1,13 @@
-import { Component, inject, input, linkedSignal, OnInit, output, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  OnInit,
+  output,
+  signal,
+} from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { of, switchMap } from 'rxjs';
@@ -7,6 +16,7 @@ import { LeagueProjectionSettingsResponse } from '../../../api/models/league-pro
 import { IconComponent } from '../../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../../shared/loading-indicator/loading-indicator';
 import { EspnCookieHelpComponent } from '../../../shared/espn-cookie-help/espn-cookie-help';
+import { CookieFieldDirective } from '../../../shared/cookie-field/cookie-field';
 
 export interface EspnSyncResult {
   settings: LeagueProjectionSettingsResponse;
@@ -21,19 +31,25 @@ export interface EspnSyncResult {
  * their espn_s2 + SWID cookies (stored server-side so they aren't re-entered). Emits the mapped
  * settings; the parent applies them.
  *
- * The private-league checkbox starts unticked for a user the app knows nothing about. Reading two
- * cookies out of the browser's dev tools is the heaviest thing this flow asks for, and a public
- * league needs none of it. It ticks itself on evidence: cookies already on file, or a league ESPN
- * has just refused.
+ * The private-league checkbox starts unticked. Reading two cookies out of the browser's dev tools
+ * is the heaviest thing this flow asks for, and a public league needs none of it. It ticks itself
+ * only on evidence about this league: ESPN has just refused it. Cookies on file are no such
+ * evidence — they belong to the account, not a league, and following a public league's draft
+ * stores them too — and the box does not change the sync anyway: the server uses the stored pair
+ * whether it is ticked or not, so all it gates is the fields for pasting a new one.
  *
- * A returning user finds the form as they left it: the league id they synced last time, and the
- * stored cookies read back from the server. That read is what makes the prefill possible and is
- * also its cost — the pair is a session credential for the whole ESPN account, and from the
- * moment it is displayed it lives in the page rather than only on the server.
+ * A returning user finds the league id they synced last time. The stored cookies are never read
+ * back: the pair is a session credential for the whole ESPN account, and it stays on the server.
  */
 @Component({
   selector: 'app-espn-league-sync',
-  imports: [DatePipe, IconComponent, LoadingIndicatorComponent, EspnCookieHelpComponent],
+  imports: [
+    DatePipe,
+    IconComponent,
+    LoadingIndicatorComponent,
+    EspnCookieHelpComponent,
+    CookieFieldDirective,
+  ],
   templateUrl: './espn-league-sync.html',
   styleUrl: './espn-league-sync.css',
 })
@@ -63,20 +79,20 @@ export class EspnLeagueSyncComponent implements OnInit {
     this.lastSyncedAt() ? this.lastLeagueName() : null,
   );
   readonly unsupportedStats = signal<string[]>([]);
+  /**
+   * A league id is entered that isn't the one these settings came from, so syncing is the step
+   * the user is here for: the button turns primary. A re-sync of the same league stays secondary.
+   */
+  readonly syncPending = computed(() => {
+    const id = this.leagueId().trim();
+    return id !== '' && id !== (this.syncedLeagueId() ?? this.lastLeagueId());
+  });
 
   ngOnInit(): void {
     this.espn.credentialStatus().subscribe({
-      next: (status) => {
-        this.hasStoredCredentials.set(status.hasCredentials);
-        // Cookies on file mean the last sync was of a private league, so open the section the
-        // way the user left it. The fields stay empty: the cookies are never read back, and a
-        // sync with the fields empty uses the stored pair.
-        if (status.hasCredentials) {
-          this.isPrivate.set(true);
-        }
-      },
-      // Best-effort: if the status probe fails we just show the cookie inputs (the safe default —
-      // the user can always re-enter them), so there's nothing to surface to the user here.
+      next: (status) => this.hasStoredCredentials.set(status.hasCredentials),
+      // Best-effort: if the status probe fails the saved note just stays hidden (the user can
+      // always re-enter the cookies), so there's nothing to surface to the user here.
       error: () => this.hasStoredCredentials.set(false),
     });
   }
