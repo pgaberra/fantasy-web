@@ -88,8 +88,6 @@ describe('TeamPowerRankingsComponent', () => {
     of({ connected: true }),
   );
   const leagueDraftSync = vi.fn(() => true);
-  /** The `?league=` the page was opened with, as a finished draft's link carries it. */
-  let linkedLeague: string | null = null;
   /** The `?draft=` the page was opened with, as a finished draft's link carries it. */
   let linkedDraft: string | null = null;
   const originalPayments = environment.paymentsEnabled;
@@ -128,7 +126,6 @@ describe('TeamPowerRankingsComponent', () => {
     draftCall.mockReturnValue(of(summary));
     listAll.mockReset();
     listAll.mockReturnValue(of([...boards, ...drafts]));
-    linkedLeague = null;
     linkedDraft = null;
     return MockBuilder(TeamPowerRankingsComponent)
       .keep(YahooLeaguePicker)
@@ -146,8 +143,7 @@ describe('TeamPowerRankingsComponent', () => {
         useValue: {
           snapshot: {
             queryParamMap: {
-              get: (key: string) =>
-                ({ league: linkedLeague, draft: linkedDraft })[key as 'league' | 'draft'] ?? null,
+              get: (key: string) => (key === 'draft' ? linkedDraft : null),
             },
           },
         },
@@ -205,19 +201,6 @@ describe('TeamPowerRankingsComponent', () => {
     expect(component.leagueName()).toEqual('Beer League');
   });
 
-  /** A finished draft sends its reader here with its league named, so that league is read. */
-  it('opens on the league a link names', async () => {
-    linkedLeague = '465.l.2';
-    const fixture = await render();
-    const component = fixture.point.componentInstance;
-
-    expect(component.picker.selectedKey()).toEqual('465.l.2');
-    expect(yahooLeague).toHaveBeenCalledWith('465.l.2', 'model');
-    expect(component.leagueName()).toEqual('Work League');
-    const select = fixture.nativeElement.querySelector('.league-select') as HTMLSelectElement;
-    expect(select.value).toEqual('465.l.2');
-  });
-
   /**
    * A mock draft's picks are nowhere but here, so the user's finished drafts are leagues to pick
    * too, and a picked one is ranked by what it was played against.
@@ -273,21 +256,26 @@ describe('TeamPowerRankingsComponent', () => {
     expect(select.value).toEqual('draft:d1');
   });
 
-  /** A draft that followed a Yahoo league opens on the league, by the draft's own projection. */
-  it('opens a followed draft on its league, ranked by the draft', async () => {
-    linkedLeague = '465.l.2';
+  /**
+   * A draft that followed a Yahoo league sits beside that league in the dropdown, and its board's
+   * link opens on the draft — not on the league, even on an account whose only league it is and
+   * which would otherwise open on it.
+   */
+  it('opens a followed draft on the draft, not on its league', async () => {
+    myLeagues.mockReturnValue(of({ leagues: [leagues.leagues[1]] }));
     linkedDraft = 'd2';
-    aiProjection.mockReturnValue(true);
     listAll.mockReturnValue(
       of([...boards, draftSummary('d2', 'Mock #2', { preset: 'last_season' })]),
     );
     const fixture = await render();
     const component = fixture.point.componentInstance;
 
-    expect(yahooLeague).toHaveBeenCalledTimes(1);
-    expect(yahooLeague).toHaveBeenCalledWith('465.l.2', 'last_season');
-    expect(draftCall).not.toHaveBeenCalled();
-    expect(component.leagueName()).toEqual('Work League');
+    expect(draftCall).toHaveBeenCalledTimes(1);
+    expect(draftCall).toHaveBeenCalledWith('d2', 'last_season');
+    expect(yahooLeague).not.toHaveBeenCalled();
+    expect(component.leagueName()).toEqual('Mock #2');
+    const select = fixture.nativeElement.querySelector('.league-select') as HTMLSelectElement;
+    expect(select.value).toEqual('draft:d2');
   });
 
   /** The drafts need no Yahoo account, so they are offered beside the button that connects one. */

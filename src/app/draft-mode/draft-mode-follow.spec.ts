@@ -901,7 +901,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
       expect(updateProjection.mock.lastCall?.[1].data.draft?.finishedAt).toBeTruthy();
       expect(updateProjection.mock.lastCall?.[1].data.draft?.following).toBeFalsy();
       expect((fixture.nativeElement as HTMLElement).textContent).toContain('Power Rankings');
-      expect(component.rankingsParams()).toEqual({ league: '465.l.9', draft: 'p1' });
+      expect(component.rankingsParams()).toEqual({ draft: 'p1' });
       leagueDraftCall.mockClear();
       await vi.advanceTimersByTimeAsync(15000);
       expect(leagueDraftCall).not.toHaveBeenCalled();
@@ -948,7 +948,7 @@ describe('DraftModeComponent following a Yahoo draft', () => {
     expect(element.querySelector('.sync-group')).toBeNull();
     expect(element.querySelector('.draft-tag--done')?.textContent).toContain('Finished');
     expect(element.textContent).toContain('Power Rankings');
-    expect(component.rankingsParams()).toEqual({ league: '465.l.9', draft: 'p1' });
+    expect(component.rankingsParams()).toEqual({ draft: 'p1' });
     expect(statusText(fixture)).toEqual('');
   });
 
