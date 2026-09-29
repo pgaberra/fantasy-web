@@ -110,6 +110,18 @@ export function seatIsGuess(board: DraftState | null, league: LeagueDraftRespons
 }
 
 /**
+ * Whether the league's draft is under way but shows none of its picks, while its order is known.
+ * ESPN's does exactly that: it publishes a draft's picks only once the draft is over, all at once
+ * (seen 2026-09-29: every pick empty for the whole of a live draft, then all of them within one
+ * poll). A board following such a league is drafted by hand meanwhile, on the league's own order.
+ * Only ever asked of an ESPN league: Yahoo's draft is in progress with no picks for the minute
+ * before its first one, and a board following it stays locked.
+ */
+export function picksWithheld(league: LeagueDraftResponse): boolean {
+  return league.status === 'IN_PROGRESS' && league.orderKnown && league.picks.length === 0;
+}
+
+/**
  * Whether the board already is this league's, so following it replaces nothing the user entered:
  * its teams are the league's and every pick on it is the league's pick in that place. Teams alone
  * do not say it — a board that followed once keeps the league's teams while sync is off, and a
