@@ -221,6 +221,18 @@ describe('AvatarCropDialogComponent', () => {
     expect(closed).toEqual(2);
   });
 
+  /** A click that misses the card by a pixel would otherwise throw the placed crop away. */
+  it('stays open on a click beside it', async () => {
+    const fixture = await opened();
+    let closed = 0;
+    fixture.point.componentInstance.closed.subscribe(() => closed++);
+
+    (fixture.nativeElement.querySelector('.dialog-backdrop') as HTMLElement).click();
+    await settle(fixture);
+
+    expect(closed).toEqual(0);
+  });
+
   /** A file that claimed to be a JPEG and is not gets this far, and only the browser can tell. */
   it('reports a file the browser cannot draw', async () => {
     const fixture = await render();

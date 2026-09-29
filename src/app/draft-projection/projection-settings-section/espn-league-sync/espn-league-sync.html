@@ -75,14 +75,16 @@
   <div class="espn-sync-row">
     <button
       type="button"
-      class="btn btn-secondary btn-sm"
+      class="btn btn-sm"
+      [class.btn-primary]="syncPending()"
+      [class.btn-secondary]="!syncPending()"
       [disabled]="!leagueId().trim() || syncing()"
       (click)="sync()"
     >
       @if (syncing()) {
         <app-loading-indicator variant="inline" label="Syncing" />
       } @else {
-        {{ syncedLeagueId() ? 'Re-sync settings' : 'Sync settings' }}
+        {{ syncedLeagueId() || lastLeagueId() ? 'Re-sync settings' : 'Sync settings' }}
       }
     </button>
   </div>
