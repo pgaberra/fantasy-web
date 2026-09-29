@@ -75,7 +75,9 @@
   <div class="espn-sync-row">
     <button
       type="button"
-      class="btn btn-secondary btn-sm"
+      class="btn btn-sm"
+      [class.btn-primary]="syncPending()"
+      [class.btn-secondary]="!syncPending()"
       [disabled]="!leagueId().trim() || syncing()"
       (click)="sync()"
     >
