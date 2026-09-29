@@ -6,9 +6,9 @@
     [(selected)]="provider"
   />
   @if (linkedElsewhere(); as link) {
-    <p class="league-sync-linked">
+    <div class="league-sync-linked">
       <span class="sync-dot" aria-hidden="true"></span>
-      <span>
+      <span class="league-sync-linked-text">
         @if (link.leagueName) {
           Synced with your {{ link.platform }} league <strong>{{ link.leagueName }}</strong
           >.
@@ -17,33 +17,41 @@
         }
         Syncing {{ link.replacedBy }} league here replaces it.
       </span>
-    </p>
+      <button type="button" class="btn btn-secondary btn-sm" (click)="disconnected.emit()">
+        Disconnect
+      </button>
+    </div>
   }
   @switch (provider()) {
     @case ('yahoo') {
-      <app-yahoo-league-sync [lastSync]="lastSync()" (synced)="yahooSynced.emit($event)" />
+      <app-yahoo-league-sync
+        [lastSync]="lastSync()"
+        [disconnectable]="linkedPlatform() === 'yahoo'"
+        (synced)="yahooSynced.emit($event)"
+        (disconnected)="disconnected.emit()"
+      />
     }
     @case ('espn') {
       <app-espn-league-sync
         [lastLeagueId]="lastEspnLeagueId()"
         [lastSyncedAt]="lastEspnSyncedAt()"
         [lastLeagueName]="lastEspnLeagueName()"
+        [disconnectable]="linkedPlatform() === 'espn'"
         (synced)="espnSynced.emit($event)"
+        (disconnected)="disconnected.emit()"
       />
     }
   }
-}
-
-<!-- Outside the platforms' own block: a league imported while its platform's sync was on still owns
-     the settings once it is off (Yahoo between seasons), and disconnecting is how they come back. -->
-@if (linkedLeagueName(); as leagueName) {
-  <div class="league-link">
-    <p class="league-link-note">
-      <app-icon name="lock" [size]="14" />
-      <span>The scoring and league settings are locked to {{ leagueName }} while synced.</span>
-    </p>
+} @else if (linkedLeagueName(); as leagueName) {
+  <!-- No platform can be synced (Yahoo between seasons, ESPN off), yet a league imported while
+       one could still owns the settings, and disconnecting is how they come back. -->
+  <div class="league-sync-linked">
+    <span class="sync-dot" aria-hidden="true"></span>
+    <span class="league-sync-linked-text"
+      >Synced with <strong>{{ leagueName }}</strong></span
+    >
     <button type="button" class="btn btn-secondary btn-sm" (click)="disconnected.emit()">
-      Disconnect league
+      Disconnect
     </button>
   </div>
 }

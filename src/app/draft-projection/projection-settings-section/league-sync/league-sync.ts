@@ -4,7 +4,6 @@ import { YahooSync } from '../../../api/models/yahoo-sync';
 import { YahooLeagueSyncComponent, YahooSyncResult } from '../yahoo-league-sync/yahoo-league-sync';
 import { EspnLeagueSyncComponent, EspnSyncResult } from '../espn-league-sync/espn-league-sync';
 import { Platform, PlatformTabsComponent } from '../../../shared/platform-tabs/platform-tabs';
-import { IconComponent } from '../../../shared/icon/icon';
 
 type Provider = Platform | 'none';
 
@@ -25,17 +24,14 @@ interface LinkedElsewhere {
  * With neither available the whole section disappears.
  *
  * A league once imported owns the settings it set: every page holds them as they came until the
- * user presses Disconnect league here, which drops the link (`disconnected`) and leaves the values
- * where they are, now the user's. Importing again is how the link comes back.
+ * user presses Disconnect, which drops the link (`disconnected`) and leaves the values where they
+ * are, now the user's. Importing again is how the link comes back. The button sits on whichever
+ * line names the link — the platform's own synced line, the other tab's note about it, or, with no
+ * platform on offer, a line of its own — so the link is stated once, with the way out beside it.
  */
 @Component({
   selector: 'app-league-sync',
-  imports: [
-    YahooLeagueSyncComponent,
-    EspnLeagueSyncComponent,
-    PlatformTabsComponent,
-    IconComponent,
-  ],
+  imports: [YahooLeagueSyncComponent, EspnLeagueSyncComponent, PlatformTabsComponent],
   templateUrl: './league-sync.html',
   styleUrl: './league-sync.css',
 })
@@ -56,15 +52,27 @@ export class LeagueSyncComponent {
   readonly disconnected = output<void>();
 
   /**
-   * The league the settings are held to, if any. The ESPN stamp, not the remembered id, says an
+   * The platform whose league the settings are held to, if any. Yahoo wins when both are set, as it
+   * does in the draft's own reading of the link. The ESPN stamp, not the remembered id, says an
    * ESPN league is linked: the id outlives a disconnect so the next import can start from it.
    */
-  readonly linkedLeagueName = computed<string | null>(() => {
-    const yahoo = this.lastSync();
-    if (yahoo) {
-      return yahoo.leagueName;
+  protected readonly linkedPlatform = computed<Platform | null>(() => {
+    if (this.lastSync()) {
+      return 'yahoo';
     }
-    return this.lastEspnSyncedAt() ? (this.lastEspnLeagueName() ?? this.lastEspnLeagueId()) : null;
+    return this.lastEspnSyncedAt() ? 'espn' : null;
+  });
+
+  /** The league the settings are held to, if any. */
+  readonly linkedLeagueName = computed<string | null>(() => {
+    switch (this.linkedPlatform()) {
+      case 'yahoo':
+        return this.lastSync()?.leagueName ?? null;
+      case 'espn':
+        return this.lastEspnLeagueName() ?? this.lastEspnLeagueId();
+      default:
+        return null;
+    }
   });
 
   protected readonly yahooAvailable = !environment.yahooSyncDisabled;

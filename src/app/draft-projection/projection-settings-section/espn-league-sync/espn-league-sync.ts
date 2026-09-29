@@ -13,7 +13,6 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { of, switchMap } from 'rxjs';
 import { EspnService } from '../../../services/espn.service';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
-import { IconComponent } from '../../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../../shared/loading-indicator/loading-indicator';
 import { EspnCookieHelpComponent } from '../../../shared/espn-cookie-help/espn-cookie-help';
 import { CookieFieldDirective } from '../../../shared/cookie-field/cookie-field';
@@ -54,13 +53,7 @@ export interface EspnSyncResult {
  */
 @Component({
   selector: 'app-espn-league-sync',
-  imports: [
-    DatePipe,
-    IconComponent,
-    LoadingIndicatorComponent,
-    EspnCookieHelpComponent,
-    CookieFieldDirective,
-  ],
+  imports: [DatePipe, LoadingIndicatorComponent, EspnCookieHelpComponent, CookieFieldDirective],
   templateUrl: './espn-league-sync.html',
   styleUrl: './espn-league-sync.css',
 })
@@ -74,7 +67,13 @@ export class EspnLeagueSyncComponent implements OnInit {
   /** ESPN's name for that league, so the status line names it rather than its id. */
   readonly lastLeagueName = input<string | null>(null);
   readonly purpose = input<EspnLeaguePurpose>('settings');
+  /**
+   * The settings are held to this league, so its status line offers to let go of it. The host
+   * owns the link and says so; the card only puts the button where the link is named.
+   */
+  readonly disconnectable = input(false);
   readonly synced = output<EspnSyncResult>();
+  readonly disconnected = output<void>();
 
   readonly leagueId = linkedSignal<string>(() => this.lastLeagueId() ?? '');
   readonly isPrivate = signal<boolean>(false);
@@ -87,9 +86,6 @@ export class EspnLeagueSyncComponent implements OnInit {
   // linked (the button says Re-sync), and one disconnected since is not (it says Sync again).
   readonly syncedLeagueId = linkedSignal<string | null>(() =>
     this.lastSyncedAt() ? this.lastLeagueId() : null,
-  );
-  readonly syncedLeagueName = linkedSignal<string | null>(() =>
-    this.lastSyncedAt() ? this.lastLeagueName() : null,
   );
   readonly unsupportedStats = signal<string[]>([]);
   /**
@@ -147,7 +143,6 @@ export class EspnLeagueSyncComponent implements OnInit {
       next: (settings) => {
         this.syncing.set(false);
         this.syncedLeagueId.set(leagueId);
-        this.syncedLeagueName.set(settings.leagueName ?? null);
         this.unsupportedStats.set(settings.unsupportedStats);
         if (savingCookies) {
           this.hasStoredCredentials.set(true);

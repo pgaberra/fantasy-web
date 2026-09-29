@@ -85,6 +85,15 @@
       <span class="yahoo-sync-time"
         >· last synced {{ sync.syncedAt | date: 'MMM d, y, h:mm a' }}</span
       >
+      @if (disconnectable()) {
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm yahoo-sync-disconnect"
+          (click)="disconnected.emit()"
+        >
+          Disconnect
+        </button>
+      }
     </p>
   }
   @if (unsupportedStats().length) {
