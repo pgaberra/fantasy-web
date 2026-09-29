@@ -30,6 +30,7 @@ const summary: LeagueSummaryResponse = {
   status: 'FINISHED',
   picks: 24,
   unprojectedPlayers: 0,
+  restOfSeason: false,
   categoryKeys: ['goals'],
   positionKeys: ['C', 'BN'],
   teams: [
@@ -307,6 +308,18 @@ describe('TeamPowerRankingsComponent', () => {
     await choose(fixture, component, 'draft:d2');
 
     expect(draftCall).toHaveBeenLastCalledWith('d2', 'model');
+  });
+
+  /** Mid-season the model's totals cover the games left, and the line above the table says so. */
+  it('says when the model ranked the rest of the season', async () => {
+    yahooLeague.mockReturnValue(of({ ...summary, restOfSeason: true }));
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    await choose(fixture, component, '465.l.1');
+
+    expect(fixture.nativeElement.querySelector('.rankings-source')?.textContent).toContain(
+      'Ranked by the SlapStat AI projection for the rest of the season',
+    );
   });
 
   /** Back to the placeholder is back to nothing on screen, not the last league left standing. */
