@@ -1,19 +1,31 @@
-import { Component, computed, input, linkedSignal, output } from '@angular/core';
+import { Component, computed, input, linkedSignal, output, signal } from '@angular/core';
 import { environment } from '../../../../environments/environment';
 import { YahooSync } from '../../../api/models/yahoo-sync';
 import { YahooLeagueSyncComponent, YahooSyncResult } from '../yahoo-league-sync/yahoo-league-sync';
 import { EspnLeagueSyncComponent, EspnSyncResult } from '../espn-league-sync/espn-league-sync';
 import { Platform, PlatformTabsComponent } from '../../../shared/platform-tabs/platform-tabs';
 import { IconComponent } from '../../../shared/icon/icon';
+import {
+  PlatformName,
+  PlatformSwitchDialogComponent,
+} from './platform-switch-dialog/platform-switch-dialog';
 
 type Provider = Platform | 'none';
 
-interface LinkedElsewhere {
-  platform: 'Yahoo' | 'ESPN';
-  leagueName: string | null;
-  /** Article and platform of a sync on the open tab, which would take the link over. */
-  replacedBy: string;
+/**
+ * Why the league was let go of: the Disconnect league button, which is all the user came for, or a
+ * confirmed move to the other platform's tab, where they are about to sync another league.
+ */
+export type DisconnectCause = 'button' | 'platform-switch';
+
+interface PendingSwitch {
+  target: Platform;
+  targetPlatform: PlatformName;
+  linkedPlatform: PlatformName;
+  leagueName: string;
 }
+
+const PLATFORM_NAMES: Record<Platform, PlatformName> = { yahoo: 'Yahoo', espn: 'ESPN' };
 
 /**
  * Wraps the per-provider league-sync UIs behind an optional platform picker. Syncing is a
@@ -26,7 +38,8 @@ interface LinkedElsewhere {
  *
  * A league once imported owns the settings it set: every page holds them as they came until the
  * user presses Disconnect league here, which drops the link (`disconnected`) and leaves the values
- * where they are, now the user's. Importing again is how the link comes back.
+ * where they are, now the user's. Importing again is how the link comes back. Opening the other
+ * platform's tab while linked asks first, and going on disconnects the league the same way.
  */
 @Component({
   selector: 'app-league-sync',
@@ -35,6 +48,7 @@ interface LinkedElsewhere {
     EspnLeagueSyncComponent,
     PlatformTabsComponent,
     IconComponent,
+    PlatformSwitchDialogComponent,
   ],
   templateUrl: './league-sync.html',
   styleUrl: './league-sync.css',
@@ -53,18 +67,30 @@ export class LeagueSyncComponent {
   readonly yahooSynced = output<YahooSyncResult>();
   readonly espnSynced = output<EspnSyncResult>();
   /** The user let go of the league: the settings stay as they are and become theirs to change. */
-  readonly disconnected = output<void>();
+  readonly disconnected = output<DisconnectCause>();
 
   /**
-   * The league the settings are held to, if any. The ESPN stamp, not the remembered id, says an
-   * ESPN league is linked: the id outlives a disconnect so the next import can start from it.
+   * The platform the settings are synced from, if any. Yahoo wins when both are set, as it does in
+   * the draft's own reading of the link. The ESPN stamp, not the remembered id, says an ESPN league
+   * is linked: the id outlives a disconnect so the next import can start from it.
    */
-  readonly linkedLeagueName = computed<string | null>(() => {
-    const yahoo = this.lastSync();
-    if (yahoo) {
-      return yahoo.leagueName;
+  private readonly linkedPlatform = computed<Platform | null>(() => {
+    if (this.lastSync()) {
+      return 'yahoo';
     }
-    return this.lastEspnSyncedAt() ? (this.lastEspnLeagueName() ?? this.lastEspnLeagueId()) : null;
+    return this.lastEspnSyncedAt() ? 'espn' : null;
+  });
+
+  /** The league the settings are held to, if any. */
+  readonly linkedLeagueName = computed<string | null>(() => {
+    switch (this.linkedPlatform()) {
+      case 'yahoo':
+        return this.lastSync()?.leagueName ?? null;
+      case 'espn':
+        return this.lastEspnLeagueName() ?? this.lastEspnLeagueId();
+      default:
+        return null;
+    }
   });
 
   protected readonly yahooAvailable = !environment.yahooSyncDisabled;
@@ -81,33 +107,58 @@ export class LeagueSyncComponent {
   // only mean something when there are two of them: with a single platform on offer the picker
   // is a one-button choice, so make it, and the user lands straight on the form instead of
   // having to click a tab that had no alternative.
-  readonly provider = linkedSignal<Provider>(() => this.initialProvider());
-
-  /**
-   * The league the settings are synced with, while the open tab is the other platform. A tab is
-   * only where an import would come from: looking at it unlinks nothing, and the link changes only
-   * when a league is actually synced. Without this line the tab's own form reads as if nothing
-   * were synced at all.
-   */
-  protected readonly linkedElsewhere = computed<LinkedElsewhere | null>(() => {
-    const yahoo = this.lastSync();
-    if (this.provider() === 'espn' && yahoo) {
-      return { platform: 'Yahoo', leagueName: yahoo.leagueName, replacedBy: 'an ESPN' };
-    }
-    // Yahoo wins when both are set, as it does in the draft's own reading of the link.
-    if (this.provider() === 'yahoo' && !yahoo && this.lastEspnSyncedAt()) {
-      return { platform: 'ESPN', leagueName: this.lastEspnLeagueName(), replacedBy: 'a Yahoo' };
-    }
-    return null;
+  // Letting go of a league moves no tab, though: the user stays where they are, which after a
+  // confirmed switch is the platform they switched to.
+  readonly provider = linkedSignal<{ linked: Platform | null; openOnYahoo: boolean }, Provider>({
+    source: () => ({ linked: this.linkedPlatform(), openOnYahoo: this.openOnYahoo() }),
+    computation: (source, previous) =>
+      previous?.source.linked && !source.linked
+        ? previous.value
+        : this.initialProvider(source.linked, source.openOnYahoo),
   });
 
-  private initialProvider(): Provider {
-    if ((this.openOnYahoo() || this.lastSync()) && this.yahooAvailable) {
+  /** The other platform's tab, clicked while a league is synced: the question is open. */
+  protected readonly pendingTarget = signal<Platform | null>(null);
+
+  protected readonly pendingSwitch = computed<PendingSwitch | null>(() => {
+    const target = this.pendingTarget();
+    const linked = this.linkedPlatform();
+    const leagueName = this.linkedLeagueName();
+    if (!target || !linked || !leagueName) {
+      return null;
+    }
+    return {
+      target,
+      targetPlatform: PLATFORM_NAMES[target],
+      linkedPlatform: PLATFORM_NAMES[linked],
+      leagueName,
+    };
+  });
+
+  /**
+   * A tab clicked. The settings follow one league at a time, so the other platform's tab is where
+   * the synced one would be replaced: ask first rather than let the league go quietly.
+   */
+  protected choose(target: Platform): void {
+    const linked = this.linkedPlatform();
+    if (linked && target !== linked && target !== this.provider()) {
+      this.pendingTarget.set(target);
+      return;
+    }
+    this.provider.set(target);
+  }
+
+  protected switchAndDisconnect(target: Platform): void {
+    this.pendingTarget.set(null);
+    this.provider.set(target);
+    this.disconnected.emit('platform-switch');
+  }
+
+  private initialProvider(linked: Platform | null, openOnYahoo: boolean): Provider {
+    if ((openOnYahoo || linked === 'yahoo') && this.yahooAvailable) {
       return 'yahoo';
     }
-    // The stamp of the last ESPN sync, not the remembered league id: the id outlives an unsync
-    // and would keep re-opening on ESPN long after the settings stopped being ESPN's.
-    if (this.lastEspnSyncedAt() && this.espnAvailable) {
+    if (linked === 'espn' && this.espnAvailable) {
       return 'espn';
     }
     if (this.yahooAvailable && this.espnAvailable) {

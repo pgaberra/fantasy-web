@@ -79,7 +79,7 @@
       [lastEspnLeagueName]="settings().espnSync?.leagueName ?? null"
       (yahooSynced)="applyYahoo($event)"
       (espnSynced)="applyEspn($event)"
-      (disconnected)="disconnect()"
+      (disconnected)="disconnect($event)"
     />
   </app-league-sync-dialog>
 }

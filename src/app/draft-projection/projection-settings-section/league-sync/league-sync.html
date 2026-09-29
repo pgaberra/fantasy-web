@@ -3,21 +3,17 @@
   <app-platform-tabs
     label="Fantasy platform to import from"
     [platforms]="platforms"
-    [(selected)]="provider"
+    [selected]="provider()"
+    (selectedChange)="choose($event)"
   />
-  @if (linkedElsewhere(); as link) {
-    <p class="league-sync-linked">
-      <span class="sync-dot" aria-hidden="true"></span>
-      <span>
-        @if (link.leagueName) {
-          Synced with your {{ link.platform }} league <strong>{{ link.leagueName }}</strong
-          >.
-        } @else {
-          Synced with your {{ link.platform }} league.
-        }
-        Syncing {{ link.replacedBy }} league here replaces it.
-      </span>
-    </p>
+  @if (pendingSwitch(); as ask) {
+    <app-platform-switch-dialog
+      [linkedPlatform]="ask.linkedPlatform"
+      [leagueName]="ask.leagueName"
+      [targetPlatform]="ask.targetPlatform"
+      (confirm)="switchAndDisconnect(ask.target)"
+      (cancelled)="pendingTarget.set(null)"
+    />
   }
   @switch (provider()) {
     @case ('yahoo') {
@@ -42,7 +38,7 @@
       <app-icon name="lock" [size]="14" />
       <span>The scoring and league settings are locked to {{ leagueName }} while synced.</span>
     </p>
-    <button type="button" class="btn btn-secondary btn-sm" (click)="disconnected.emit()">
+    <button type="button" class="btn btn-secondary btn-sm" (click)="disconnected.emit('button')">
       Disconnect league
     </button>
   </div>

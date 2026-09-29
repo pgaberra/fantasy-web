@@ -16,7 +16,10 @@ import { ColumnsMenuComponent } from '../../draft-projection/player-projections-
 import { YahooConnectReturnService } from '../../services/yahoo-connect-return.service';
 import { LeagueSettingsMenuComponent } from '../../draft-projection/player-projections-table/league-settings-menu/league-settings-menu';
 import { LeagueSyncDialogComponent } from '../../draft-projection/league-sync-dialog/league-sync-dialog';
-import { LeagueSyncComponent } from '../../draft-projection/projection-settings-section/league-sync/league-sync';
+import {
+  LeagueSyncComponent,
+  DisconnectCause,
+} from '../../draft-projection/projection-settings-section/league-sync/league-sync';
 import { YahooSyncResult } from '../../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
 import { EspnSyncResult } from '../../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
 
@@ -102,9 +105,12 @@ export class LeagueSettingsControlsComponent {
   }
 
   /** Lets go of the league; the settings stay as they are, the user's now. */
-  disconnect(): void {
+  disconnect(cause: DisconnectCause = 'button'): void {
     this.patch({ yahooSync: null, espnSync: null });
-    this.showSyncDialog.set(false);
+    // A switch to the other platform lets go of the league to sync one there: the dialog stays.
+    if (cause === 'button') {
+      this.showSyncDialog.set(false);
+    }
   }
 
   toggleScoringColumn(statKey: ScoringStatKey): void {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, model } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { YahooMarkComponent } from '../yahoo-mark/yahoo-mark';
 
 /** A fantasy platform a league can be read from. */
@@ -22,5 +22,7 @@ export class PlatformTabsComponent {
   /** What the tabs are a choice of, for a screen reader. */
   readonly label = input.required<string>();
   /** The platform chosen, or `none` while nothing is. */
-  readonly selected = model<Platform | 'none'>('none');
+  readonly selected = input<Platform | 'none'>('none');
+  /** A tab clicked; `[(selected)]` opens it at once. */
+  readonly selectedChange = output<Platform>();
 }

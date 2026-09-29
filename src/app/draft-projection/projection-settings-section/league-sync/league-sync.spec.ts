@@ -1,6 +1,7 @@
-import { MockBuilder, MockRender } from 'ng-mocks';
+import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { LeagueSyncComponent } from './league-sync';
+import { DisconnectCause, LeagueSyncComponent } from './league-sync';
+import { PlatformSwitchDialogComponent } from './platform-switch-dialog/platform-switch-dialog';
 import { YahooLeagueSyncComponent } from '../yahoo-league-sync/yahoo-league-sync';
 import { EspnLeagueSyncComponent } from '../espn-league-sync/espn-league-sync';
 import { PlatformTabsComponent } from '../../../shared/platform-tabs/platform-tabs';
@@ -155,56 +156,114 @@ describe('LeagueSyncComponent', () => {
     expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeNull();
   });
 
-  describe('the link held by the other platform', () => {
+  describe('switching platform while a league is synced', () => {
+    const espnLinked = {
+      lastEspnLeagueId: '12345',
+      lastEspnSyncedAt: 't',
+      lastEspnLeagueName: 'Tampa Bay Pro',
+    };
     const renderSynced = async (inputs: Record<string, unknown>) => {
       environment.yahooSyncDisabled = false;
       environment.espnLeaguesEnabled = true;
       await MockBuilder(LeagueSyncComponent)
+        .keep(PlatformTabsComponent)
+        .keep(PlatformSwitchDialogComponent)
         .mock(YahooLeagueSyncComponent)
         .mock(EspnLeagueSyncComponent);
-      return MockRender(LeagueSyncComponent, inputs);
+      const fixture = MockRender(LeagueSyncComponent, inputs);
+      const causes: DisconnectCause[] = [];
+      fixture.point.componentInstance.disconnected.subscribe((cause) => causes.push(cause));
+      return { fixture, causes };
     };
-    const linkedLine = (fixture: { nativeElement: HTMLElement }) =>
-      fixture.nativeElement.querySelector('.league-sync-linked');
-
-    it('stays on the Yahoo tab: switching tabs unlinks nothing', async () => {
-      const fixture = await renderSynced({
-        lastEspnLeagueId: '12345',
-        lastEspnSyncedAt: 't',
-        lastEspnLeagueName: 'Tampa Bay Pro',
-      });
-      // Its own tab shows its own status line; nothing to add there.
-      expect(linkedLine(fixture)).toBeNull();
-
-      fixture.point.componentInstance.provider.set('yahoo');
+    const tab = (fixture: { nativeElement: HTMLElement }, name: string) =>
+      Array.from(fixture.nativeElement.querySelectorAll<HTMLElement>('.provider-tab')).find(
+        (button) => button.textContent?.includes(name),
+      )!;
+    const dialog = (fixture: { nativeElement: HTMLElement }) =>
+      fixture.nativeElement.querySelector<HTMLElement>('app-platform-switch-dialog');
+    const clickTab = (
+      fixture: { nativeElement: HTMLElement; detectChanges(): void },
+      name: string,
+    ) => {
+      tab(fixture, name).click();
       fixture.detectChanges();
+    };
 
-      const line = linkedLine(fixture);
-      expect(line?.textContent).toContain('Synced with your ESPN league');
-      expect(line?.textContent).toContain('Tampa Bay Pro');
-      expect(line?.textContent).toContain('Syncing a Yahoo league here replaces it.');
+    it('asks before leaving the synced ESPN league for the Yahoo tab', async () => {
+      const { fixture, causes } = await renderSynced(espnLinked);
+
+      clickTab(fixture, 'Yahoo');
+
+      const text = dialog(fixture)?.textContent;
+      expect(text).toContain('Disconnect your ESPN league?');
+      expect(text).toContain('Tampa Bay Pro');
+      expect(text).toContain('Switching to Yahoo disconnects it.');
+      // Asking changes nothing yet: the tab and the league are where they were.
+      expect(tab(fixture, 'ESPN').getAttribute('aria-selected')).toEqual('true');
+      expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeTruthy();
+      expect(causes).toEqual([]);
     });
 
-    it('names the Yahoo league on the ESPN tab', async () => {
+    it('asks the same the other way round, naming the Yahoo league', async () => {
       const lastSync: YahooSync = { leagueName: 'HHL', leagueKey: 'nhl.l.1', syncedAt: 't' };
-      const fixture = await renderSynced({ lastSync });
+      const { fixture } = await renderSynced({ lastSync });
 
-      fixture.point.componentInstance.provider.set('espn');
-      fixture.detectChanges();
+      clickTab(fixture, 'ESPN');
 
-      const line = linkedLine(fixture);
-      expect(line?.textContent).toContain('Synced with your Yahoo league');
-      expect(line?.textContent).toContain('HHL');
-      expect(line?.textContent).toContain('Syncing an ESPN league here replaces it.');
+      const text = dialog(fixture)?.textContent;
+      expect(text).toContain('Disconnect your Yahoo league?');
+      expect(text).toContain('HHL');
+      expect(text).toContain('Switching to ESPN disconnects it.');
     });
 
-    it('says nothing for a league id left over from a sync that was since undone', async () => {
-      const fixture = await renderSynced({ lastEspnLeagueId: '12345' });
+    it('keeps the league and the tab when the question is declined', async () => {
+      const { fixture, causes } = await renderSynced(espnLinked);
+      clickTab(fixture, 'Yahoo');
 
-      fixture.point.componentInstance.provider.set('yahoo');
+      ngMocks.click(ngMocks.find('app-platform-switch-dialog .btn-secondary'));
       fixture.detectChanges();
 
-      expect(linkedLine(fixture)).toBeNull();
+      expect(dialog(fixture)).toBeNull();
+      expect(tab(fixture, 'ESPN').getAttribute('aria-selected')).toEqual('true');
+      expect(tab(fixture, 'Yahoo').getAttribute('aria-selected')).toEqual('false');
+      expect(causes).toEqual([]);
+    });
+
+    it('disconnects the league and opens the other tab on confirmation', async () => {
+      const { fixture, causes } = await renderSynced(espnLinked);
+      clickTab(fixture, 'Yahoo');
+
+      ngMocks.click(ngMocks.find('app-platform-switch-dialog .btn-primary'));
+      fixture.detectChanges();
+
+      expect(causes).toEqual(['platform-switch']);
+      expect(dialog(fixture)).toBeNull();
+      expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeTruthy();
+
+      // The host drops the link; the tab the user switched to stays open for the new sync.
+      fixture.componentInstance['lastEspnSyncedAt'] = null;
+      fixture.detectChanges();
+
+      expect(fixture.point.componentInstance.provider()).toEqual('yahoo');
+      expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeTruthy();
+    });
+
+    it('switches without asking when no league is synced', async () => {
+      // A remembered id is where the next import starts, not a link.
+      const { fixture, causes } = await renderSynced({ lastEspnLeagueId: '12345' });
+
+      clickTab(fixture, 'ESPN');
+      clickTab(fixture, 'Yahoo');
+
+      expect(dialog(fixture)).toBeNull();
+      expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeTruthy();
+      expect(causes).toEqual([]);
+    });
+
+    it("says nothing about the other platform's league on the tab itself", async () => {
+      const { fixture } = await renderSynced(espnLinked);
+
+      expect(fixture.nativeElement.textContent).not.toContain('replaces it');
     });
   });
 
@@ -235,7 +294,7 @@ describe('LeagueSyncComponent', () => {
       expect(fixture.nativeElement.textContent).toContain('locked to HHL');
       (fixture.nativeElement.querySelector('.league-link button') as HTMLButtonElement).click();
 
-      expect(disconnected).toHaveBeenCalled();
+      expect(disconnected).toHaveBeenCalledWith('button');
     });
 
     it("still offers it while the league's platform cannot be synced", async () => {

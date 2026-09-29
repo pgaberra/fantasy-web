@@ -23,7 +23,10 @@ import { SkaterPosition } from '../models/position.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
 import { Projection, ScoringType } from '../models/projection.model';
 import { ManualRanking, PROJECTED_RANKING } from '../models/manual-ranking';
-import { LeagueSyncComponent } from './projection-settings-section/league-sync/league-sync';
+import {
+  LeagueSyncComponent,
+  DisconnectCause,
+} from './projection-settings-section/league-sync/league-sync';
 import { LeagueSyncDialogComponent } from './league-sync-dialog/league-sync-dialog';
 import { YahooSyncResult } from './projection-settings-section/yahoo-league-sync/yahoo-league-sync';
 import { EspnSyncResult } from './projection-settings-section/espn-league-sync/espn-league-sync';
@@ -376,10 +379,13 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
    * settings stay as they are, now editable. `lastEspnLeagueId` stays too, so the next import
    * starts from the league they were on rather than asking for the id again.
    */
-  disconnectLeague(): void {
+  disconnectLeague(cause: DisconnectCause = 'button'): void {
     this.yahooSync.set(null);
     this.espnSync.set(null);
-    this.showSyncDialog.set(false);
+    // A switch to the other platform lets go of the league to sync one there: the dialog stays.
+    if (cause === 'button') {
+      this.showSyncDialog.set(false);
+    }
   }
 
   openFullSeasonDialog(): void {
