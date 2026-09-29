@@ -742,7 +742,7 @@ describe('DraftSetupComponent', () => {
         initial: null,
         seedName: 'My Team',
         league: leagueWith(),
-        syncPlatforms: ['Yahoo'],
+        syncAvailable: true,
         following: false,
         syncCheck: { state: 'idle' },
         draftName: null as string | null,
@@ -942,27 +942,36 @@ describe('DraftSetupComponent', () => {
       expect(confirmed()?.league.espnSync?.leagueId).toBe('123');
     });
 
-    it("offers the switch for an ESPN league where ESPN's drafts are followed", () => {
-      const component = render({
-        league: leagueWith({ espnSync }),
-        syncPlatforms: ['Yahoo', 'ESPN'],
-      }).point.componentInstance;
-
-      expect(component.syncOffered()).toBe(true);
-    });
-
-    it('says nothing under the switch of an ESPN league whose draft is followed', () => {
+    it('greys the switch out for an ESPN league even on a board saved following it', () => {
+      // A board saved while ESPN drafts were followed still says so; nothing follows it now.
       const fixture = render({
         league: leagueWith({ espnSync }),
-        syncPlatforms: ['Yahoo', 'ESPN'],
         following: true,
         syncCheck: { state: 'ok', league: answered() },
       });
       const element: HTMLElement = fixture.nativeElement;
+      const component = fixture.point.componentInstance;
+      const asked = checksAskedOf(component);
 
-      expect(ngMocks.findInstance(ToggleSwitchComponent).disabled()).toBeFalsy();
-      expect(element.querySelector('.sync-status')).toBeNull();
-      expect(element.querySelector('.sync-unavailable')).toBeNull();
+      expect(component.syncOffered()).toBe(false);
+      expect(component.syncOn()).toBe(false);
+      expect(component.locked()).toBe(false);
+      expect(ngMocks.findInstance(ToggleSwitchComponent).disabled()).toBe(true);
+      expect(element.querySelector('.sync-unavailable')?.textContent?.trim()).toBe(
+        'Not available on ESPN',
+      );
+
+      component.toggleSync();
+      expect(asked).toEqual([]);
+    });
+
+    it('says a Yahoo league cannot be synced where Yahoo drafts are not followed', () => {
+      const fixture = render({ league: leagueWith({ yahooSync }), syncAvailable: false });
+      const element: HTMLElement = fixture.nativeElement;
+
+      expect(fixture.point.componentInstance.syncOffered()).toBe(false);
+      expect(element.querySelector('.sync-row')).toBeNull();
+      expect(element.textContent).toContain("Picks can't be synced from Yahoo yet");
     });
 
     it('names a draft not saved yet after the imported league, unless a name was typed', () => {

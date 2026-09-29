@@ -41,8 +41,9 @@ export interface EspnSyncResult {
  * is the heaviest thing this flow asks for, and a public league needs none of it. It ticks itself
  * only on evidence about this league: ESPN has just refused it. Cookies on file are no such
  * evidence — they belong to the account, not a league, and following a public league's draft
- * stores them too — and the box does not change the sync anyway: the server uses the stored pair
- * whether it is ticked or not, so all it gates is the fields for pasting a new one.
+ * stored them too while Draft Mode followed ESPN drafts — and the box does not change the sync
+ * anyway: the server uses the stored pair whether it is ticked or not, so all it gates is the
+ * fields for pasting a new one.
  *
  * A returning user finds the league id they synced last time. The stored cookies are never read
  * back: the pair is a session credential for the whole ESPN account, and it stays on the server.

@@ -211,8 +211,8 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   to the settings, with the reason on them, only where that draft can't be read or followed.
   The **settings** ("Draft Settings", `draft-mode/draft-setup`) hold everything else, in three
   sections. _League_: the import itself (`app-league-sync`, the Yahoo/ESPN picker, drawn in the section rather than behind an "Import league" button; Alexander's call), which sets the scoring; where the league's
-  draft can be followed (`syncPlatforms`, the BFF's feature switches) the import turns on
-  **Sync picks automatically**, the only place that switch lives (the board's toolbar has
+  draft can be followed (`syncAvailable`: a Yahoo league, where the BFF's feature switch is on)
+  the import turns on **Autosync draft picks**, the only place that switch lives (the board's toolbar has
   none). The switch asks the page for the league's draft before anything is saved
   (`checkSetupSync` → `DraftSyncCheck`), and only a league that answered locks anything.
   _Scoring_: editable until a league is imported, then locked to it like everywhere else (see
@@ -247,26 +247,13 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   board again, on any device, picks the league's draft back up once the BFF's features say
   following is offered; leaving the page is not switching it off. "Finish draft" is not offered
   while following: the board finishes when the league's draft does.
-  A board whose league came from **ESPN** (`espnSync`) follows it the same way, through
-  `EspnService.leagueDraft`, behind its own switch `FeatureService.espnLeagueDraftSync`;
-  `followedLeague` picks the linked platform and the copy names it. ESPN's refusal (private
-  league, missing or stale cookies) is a 400. Its team ids are `espn.l.{leagueId}.t.{teamId}`, and
-  a drafted player the pool has no counterpart for arrives as a negative id and shows no name.
-  **ESPN shows a draft's picks only once it is over**, all at once (seen 2026-09-29: `IN_PROGRESS`
-  with every pick empty for the whole live draft, then all of them in one poll). So while an ESPN
-  draft is under way with no picks and its order known (`picksWithheld`), the followed board is
-  drafted by hand (`handEntry`: `picksLocked` is off) and keeps polling; each poll keeps the hand
-  picks. Once ESPN shares its picks the board takes them, silently where every hand pick is ESPN's
-  pick in that place, and otherwise asks first ("Keep my picks" stops syncing). The status line says
-  "Following … on ESPN", not "Live from", with a line on why. Yahoo's board stays locked throughout.
+  **An ESPN league's draft is never followed** (removed 2026-09-30, see DECISIONS.md): ESPN's
+  league API publishes a draft's picks only once it is over, all at once (seen 2026-09-29), so
+  there is nothing to sync while it runs. An ESPN league still sets the draft's scoring, size and
+  roster through the import, and Draft Settings shows its switch greyed out with "Not available
+  on ESPN". A board saved following an ESPN league before then (`draft.following`) opens drafted
+  by hand, and the flag is left as it lies.
   A league is linked in one place only: the league import inside Draft Settings (`draft-setup/`).
-  `DraftFollowConnectComponent` links nothing. It opens when an ESPN follow, or the settings'
-  sync check, stops on "no team is yours" or a 400 (`cookieRepair`), and asks for the espn_s2 and
-  SWID cookies of the league already linked: league id shown read-only, both cookies required,
-  saved and then proven by reading the league. A 400 or 404 there is not followable, so only a
-  failed settings read offers "Follow picks anyway". On success (`cookiesRepaired`) the board's
-  league, settings and name are left alone: the settings' sync check runs again when the
-  settings popup is what asked, otherwise the board follows again.
 - `shared-projection/` — the page behind a share link (`/s/:token`), public and unguarded: a
   share link has to open for someone who has never signed in. Its byline carries the author's
   profile picture, or the initial of their username where they have none. A signed-in visitor is offered

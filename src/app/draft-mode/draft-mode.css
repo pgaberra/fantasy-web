@@ -298,12 +298,6 @@
   gap: 0 0.3em;
 }
 
-/* Why an ESPN board is drafted by hand, on a line of its own under the status. */
-.follow-hint {
-  flex-basis: 100%;
-  line-height: 1.35;
-}
-
 .follow-live {
   display: inline-block;
   width: 8px;
