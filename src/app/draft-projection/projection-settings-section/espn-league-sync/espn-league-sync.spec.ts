@@ -198,6 +198,22 @@ describe('EspnLeagueSyncComponent', () => {
     expect(fixture.nativeElement.querySelector('.espn-synced-status')).toBeNull();
   });
 
+  it('leaves the private box unticked for a user whose cookies are on file', async () => {
+    await MockBuilder(EspnLeagueSyncComponent)
+      .mock(EspnService, {
+        credentialStatus: () => of<CredentialStatusResponse>({ hasCredentials: true }),
+        saveCredentials: () => of(undefined),
+        leagueProjectionSettings: () => of(settings),
+      })
+      .keep(DatePipe);
+    const fixture = MockRender(EspnLeagueSyncComponent, { lastLeagueId: '123456' });
+    await fixture.whenStable();
+
+    // The cookies belong to the account, not to this league, which may well be public.
+    expect(fixture.point.componentInstance.isPrivate()).toEqual(false);
+    expect(fixture.nativeElement.querySelector('.espn-cookies')).toBeNull();
+  });
+
   it('opens the private section with empty fields for a user whose cookies are on file', async () => {
     await MockBuilder(EspnLeagueSyncComponent)
       .mock(EspnService, {
@@ -210,8 +226,10 @@ describe('EspnLeagueSyncComponent', () => {
     await fixture.whenStable();
     const component = fixture.point.componentInstance;
 
+    component.togglePrivate();
+    fixture.detectChanges();
+
     // The stored cookies are never read back into the page; the note says they are in use.
-    expect(component.isPrivate()).toEqual(true);
     expect(component.espnS2()).toEqual('');
     expect(component.swid()).toEqual('');
     expect(fixture.nativeElement.querySelector('.espn-stored-hint')?.textContent).toContain(
@@ -237,6 +255,7 @@ describe('EspnLeagueSyncComponent', () => {
     await fixture.whenStable();
     expect(saveCredentials).not.toHaveBeenCalled();
 
+    component.togglePrivate();
     component.espnS2.set('fresh-s2');
     component.swid.set('{FRESH}');
     component.sync();

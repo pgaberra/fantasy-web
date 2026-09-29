@@ -1,4 +1,4 @@
-import { Component, input, linkedSignal, output } from '@angular/core';
+import { Component, computed, input, linkedSignal, output } from '@angular/core';
 import { environment } from '../../../../environments/environment';
 import { YahooSync } from '../../../api/models/yahoo-sync';
 import { YahooLeagueSyncComponent, YahooSyncResult } from '../yahoo-league-sync/yahoo-league-sync';
@@ -6,6 +6,13 @@ import { EspnLeagueSyncComponent, EspnSyncResult } from '../espn-league-sync/esp
 import { Platform, PlatformTabsComponent } from '../../../shared/platform-tabs/platform-tabs';
 
 type Provider = Platform | 'none';
+
+interface LinkedElsewhere {
+  platform: 'Yahoo' | 'ESPN';
+  leagueName: string | null;
+  /** Article and platform of a sync on the open tab, which would take the link over. */
+  replacedBy: string;
+}
 
 /**
  * Wraps the per-provider league-sync UIs behind an optional platform picker. Syncing is a
@@ -51,6 +58,24 @@ export class LeagueSyncComponent {
   // is a one-button choice, so make it, and the user lands straight on the form instead of
   // having to click a tab that had no alternative.
   readonly provider = linkedSignal<Provider>(() => this.initialProvider());
+
+  /**
+   * The league the settings are synced with, while the open tab is the other platform. A tab is
+   * only where an import would come from: looking at it unlinks nothing, and the link changes only
+   * when a league is actually synced. Without this line the tab's own form reads as if nothing
+   * were synced at all.
+   */
+  protected readonly linkedElsewhere = computed<LinkedElsewhere | null>(() => {
+    const yahoo = this.lastSync();
+    if (this.provider() === 'espn' && yahoo) {
+      return { platform: 'Yahoo', leagueName: yahoo.leagueName, replacedBy: 'an ESPN' };
+    }
+    // Yahoo wins when both are set, as it does in the draft's own reading of the link.
+    if (this.provider() === 'yahoo' && !yahoo && this.lastEspnSyncedAt()) {
+      return { platform: 'ESPN', leagueName: this.lastEspnLeagueName(), replacedBy: 'a Yahoo' };
+    }
+    return null;
+  });
 
   private initialProvider(): Provider {
     if ((this.openOnYahoo() || this.lastSync()) && this.yahooAvailable) {

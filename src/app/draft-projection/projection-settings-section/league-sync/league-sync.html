@@ -5,6 +5,20 @@
     [platforms]="platforms"
     [(selected)]="provider"
   />
+  @if (linkedElsewhere(); as link) {
+    <p class="league-sync-linked">
+      <span class="sync-dot" aria-hidden="true"></span>
+      <span>
+        @if (link.leagueName) {
+          Synced with your {{ link.platform }} league <strong>{{ link.leagueName }}</strong
+          >.
+        } @else {
+          Synced with your {{ link.platform }} league.
+        }
+        Syncing {{ link.replacedBy }} league here replaces it.
+      </span>
+    </p>
+  }
   @switch (provider()) {
     @case ('yahoo') {
       <app-yahoo-league-sync [lastSync]="lastSync()" (synced)="yahooSynced.emit($event)" />

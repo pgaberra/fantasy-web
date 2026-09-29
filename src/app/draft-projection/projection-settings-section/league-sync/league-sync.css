@@ -7,3 +7,18 @@
   font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
+
+/* The link held by the other platform, worn like the synced line on that platform's own tab. */
+.league-sync-linked {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+.league-sync-linked .sync-dot {
+  flex-shrink: 0;
+  align-self: center;
+}
