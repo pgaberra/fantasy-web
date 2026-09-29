@@ -64,6 +64,12 @@
             <app-icon name="alert-triangle" [size]="14" />
             <span>{{ notice }} Set the teams, your draft position and the roster yourself.</span>
           </p>
+        } @else if (syncOn() && league.platform === 'ESPN') {
+          <!-- ESPN publishes a draft's picks all at once when it ends, so syncing one is not live. -->
+          <p class="sync-status">
+            ESPN shares a draft's picks only once it's over. Enter them on the board as they're
+            made, and the board takes ESPN's results when the draft ends.
+          </p>
         }
       } @else {
         <p class="setup-note setup-note--block">

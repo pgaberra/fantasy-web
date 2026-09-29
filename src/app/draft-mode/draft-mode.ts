@@ -98,6 +98,7 @@ import {
   FollowedLeague,
   hasLeagueTeams,
   isLeagueBoard,
+  picksWithheld,
   sameBoard,
   seatIsGuess,
   isLeagueDraft,
@@ -264,7 +265,7 @@ export class DraftModeComponent implements OnInit {
   readonly pendingSyncBreak = signal<(() => void) | null>(null);
   readonly confirmingFinish = signal<boolean>(false);
 
-  /** Whether the board is following the linked league's draft, which locks every pick edit. */
+  /** Whether the board is following the linked league's draft, which locks pick edits (`picksLocked`). */
   readonly following = signal<boolean>(false);
   readonly followLoading = signal<boolean>(false);
   /** What stopped or is holding up following, shown over the board. */
@@ -587,7 +588,8 @@ export class DraftModeComponent implements OnInit {
    * following never shows an up-next read off the league's team list.
    */
   readonly awaitingLeagueDraft = computed(
-    () => (this.following() || this.followLoading()) && this.picks().length === 0,
+    () =>
+      (this.following() || this.followLoading()) && this.picks().length === 0 && !this.handEntry(),
   );
   /** The user's own seat in this board's order. */
   readonly myDraftPosition = computed(() => {
@@ -621,7 +623,25 @@ export class DraftModeComponent implements OnInit {
     const seat = this.myDraftPosition();
     return this.leagueOrderKnown() && seat > 0 ? seat : null;
   });
-  readonly canUndo = computed(() => this.picks().length > 0 && !this.following());
+  /**
+   * Whether the board is drafted by hand while it follows its league: an ESPN draft under way that
+   * shows none of its picks (`picksWithheld`), on a board whose teams are the league's. ESPN shares a
+   * draft's picks only once it is over, so the user enters them as they are made, and the board
+   * takes ESPN's when it shares them. Following stays on meanwhile, polling as ever.
+   */
+  readonly handEntry = computed(() => {
+    const league = this.lastLeagueDraft();
+    return (
+      this.following() &&
+      this.followsEspn() &&
+      !!league &&
+      picksWithheld(league) &&
+      hasLeagueTeams(this.draft(), league)
+    );
+  });
+  /** Whether every pick edit is locked: following a league, except while its picks are entered by hand. */
+  readonly picksLocked = computed(() => this.following() && !this.handEntry());
+  readonly canUndo = computed(() => this.picks().length > 0 && !this.picksLocked());
   /**
    * The league the sync switch follows: the linked Yahoo league, or the linked ESPN one, where
    * this environment follows that platform's drafts. A board links one league at a time.
@@ -641,6 +661,8 @@ export class DraftModeComponent implements OnInit {
   });
   /** The platform named in what syncing has to say. */
   readonly followPlatform = computed(() => this.followedLeague()?.platform ?? 'Yahoo');
+  /** Whether the league followed is ESPN's, whose draft shows its picks only once it is over. */
+  readonly followsEspn = computed(() => this.followedLeague()?.platform === 'ESPN');
   readonly canFollow = computed(() => this.followedLeague() !== null && !this.finished());
   /**
    * Where a finished draft's power rankings open, which is where what the draft came to is shown:
@@ -1013,7 +1035,7 @@ export class DraftModeComponent implements OnInit {
 
   draftCurrent(playerId: number): void {
     const slot = this.currentSlot();
-    if (this.following() || !slot || this.draftedIds().has(playerId)) {
+    if (this.picksLocked() || !slot || this.draftedIds().has(playerId)) {
       return;
     }
     this.mutate((draft) => ({
@@ -1023,7 +1045,7 @@ export class DraftModeComponent implements OnInit {
   }
 
   undoLast(): void {
-    if (this.following() || !this.picks().length) {
+    if (this.picksLocked() || !this.picks().length) {
       return;
     }
     this.unlessItBreaksSync(() =>
@@ -1032,7 +1054,7 @@ export class DraftModeComponent implements OnInit {
   }
 
   startEditPick(overall: number): void {
-    if (this.following()) {
+    if (this.picksLocked()) {
       return;
     }
     this.unlessItBreaksSync(() => this.editingPick.set(overall));
@@ -1080,7 +1102,7 @@ export class DraftModeComponent implements OnInit {
   }
 
   removePick(overall: number): void {
-    if (this.following() || overall < 1 || overall > this.picks().length) {
+    if (this.picksLocked() || overall < 1 || overall > this.picks().length) {
       return;
     }
     this.editingPick.set(null);
@@ -1511,7 +1533,10 @@ export class DraftModeComponent implements OnInit {
             this.offerCookieRepair(followed, reason === 'no-team' ? 'no-team' : null);
             return;
           }
-          if (isLeagueBoard(this.draft(), league)) {
+          if (
+            isLeagueBoard(this.draft(), league) ||
+            this.keepsHandPicks(this.draft(), league, followed)
+          ) {
             this.startFollowing(followed, league);
           } else {
             this.pendingFollow.set(league);
@@ -1588,14 +1613,26 @@ export class DraftModeComponent implements OnInit {
     const league = this.pendingFollow();
     const followed = this.followedLeague();
     this.pendingFollow.set(null);
-    if (league && followed) {
+    if (!league || !followed) {
+      return;
+    }
+    // Asked mid-follow, when ESPN shared picks that are not the ones entered by hand: following is
+    // on already, so the league's board is only put in place.
+    if (this.following()) {
+      this.applyLeagueDraft(league, followed, true);
+    } else {
       this.startFollowing(followed, league);
     }
   }
 
+  /** Keeps the picks on the board. Asked mid-follow, that is the board's own from here: syncing stops. */
   cancelFollow(): void {
     this.pendingFollow.set(null);
-    this.rememberFollowing(false);
+    if (this.following()) {
+      this.stopFollowing();
+    } else {
+      this.rememberFollowing(false);
+    }
   }
 
   stopFollowing(): void {
@@ -1630,7 +1667,9 @@ export class DraftModeComponent implements OnInit {
     this.pendingRemoval.set(null);
     this.setupOpen.set(false);
     this.analytics.capture('draft_follow_started');
-    if (!this.applyLeagueDraft(league, followed)) {
+    // Whatever this replaces was settled before it started: the board was the league's already,
+    // or the user said to replace it.
+    if (!this.applyLeagueDraft(league, followed, true)) {
       return;
     }
     // A hidden tab skips its turn rather than queueing one, and a slow answer is never overtaken
@@ -1669,8 +1708,31 @@ export class DraftModeComponent implements OnInit {
     return totalPicks > 0 && board.picks.length >= totalPicks;
   }
 
-  /** Puts the league's board in place. False when following has stopped because of it. */
-  private applyLeagueDraft(league: LeagueDraftResponse, followed: FollowedLeague): boolean {
+  /**
+   * Whether following this league keeps the picks on the board rather than replacing them: an ESPN
+   * draft under way that shows none of its picks yet, on a board with the league's teams, whose
+   * picks are the ones entered by hand while it runs (`handEntry`).
+   */
+  private keepsHandPicks(
+    board: DraftState | null,
+    league: LeagueDraftResponse,
+    followed: FollowedLeague,
+  ): boolean {
+    return followed.platform === 'ESPN' && picksWithheld(league) && hasLeagueTeams(board, league);
+  }
+
+  /**
+   * Puts the league's board in place. False when following has stopped because of it.
+   *
+   * <p>An ESPN board drafted by hand keeps its picks while ESPN shows none, and once ESPN shares
+   * them asks before replacing any pick that is not ESPN's in that place (`replace` is that yes).
+   * Yahoo's board is always the league's: its picks cannot be edited while it follows.
+   */
+  private applyLeagueDraft(
+    league: LeagueDraftResponse,
+    followed: FollowedLeague,
+    replace = false,
+  ): boolean {
     const reason = unfollowableReason(league);
     if (reason) {
       this.followNotice.set(unfollowableNotice(reason, followed.platform));
@@ -1680,19 +1742,38 @@ export class DraftModeComponent implements OnInit {
     }
     this.lastLeagueDraft.set(league);
     this.leagueDraftSeen.set({ leagueId: followed.id, draft: league });
+    const current = this.draft();
+    // Read at the answer, not at the request, so a pick entered while it was on its way stays.
+    const handPicks = this.keepsHandPicks(current, league, followed)
+      ? (current?.picks ?? [])
+      : null;
+    if (
+      followed.platform === 'ESPN' &&
+      handPicks === null &&
+      !replace &&
+      !isLeagueBoard(current, league)
+    ) {
+      // ESPN has shared picks that are not the ones entered here: the user says which stand.
+      this.editingPick.set(null);
+      this.pendingRemoval.set(null);
+      this.pendingFollow.set(league);
+      this.followNotice.set(null);
+      return true;
+    }
     // A draft the league has finished is brought over whole and finishes the board with it: nothing is
     // left to follow, and a board still open beside a switch that turned itself off read as a
     // sync that refused to start.
     //
     // So does its last pick. Yahoo reports the draft over (`postdraft`) half a minute to a minute
     // after that pick lands, and until then the board read "Draft complete" with no way on: no
-    // power rankings, and no Finish draft while following.
-    const current = this.draft();
+    // power rankings, and no Finish draft while following. Counted on the league's picks alone:
+    // a board filled by hand is not a draft ESPN has finished.
     const leagueBoard = boardFromLeagueDraft(current, league);
     const leagueFinished = league.status === 'FINISHED' || this.fillsEverySlot(leagueBoard);
     // The switch is saved with the board it put in place, in the same save.
     const board = {
       ...leagueBoard,
+      ...(handPicks === null ? {} : { picks: handPicks }),
       following: !leagueFinished || undefined,
     };
     const next =
