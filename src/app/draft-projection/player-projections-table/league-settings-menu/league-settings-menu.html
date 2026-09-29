@@ -7,7 +7,7 @@
   </div>
   <button type="button" class="menu-item" (click)="manageSync.emit()">
     <app-icon name="refresh" />
-    Re-sync or change league
+    Re-sync, change or disconnect
   </button>
   <div class="menu-separator"></div>
 }
@@ -23,6 +23,7 @@
           min="2"
           max="30"
           [value]="leagueSize()"
+          [disabled]="locked()"
           (input)="onLeagueSizeInput($event)"
         />
         <span class="field-unit">teams</span>
@@ -51,9 +52,14 @@
   @if (sizing()) {
     <div class="menu-separator"></div>
     <p class="menu-title">Roster slots</p>
-    <app-roster-slots-editor [(rosterSlots)]="rosterSlots" />
+    <app-roster-slots-editor [(rosterSlots)]="rosterSlots" [disabled]="locked()" />
     <p class="menu-note">
-      The Z-Score algorithm uses league size and roster slots to refine your player rankings.
+      @if (locked()) {
+        League size and roster slots come from {{ syncedLeagueName() }}. Disconnect the league to
+        change them.
+      } @else {
+        The Z-Score algorithm uses league size and roster slots to refine your player rankings.
+      }
     </p>
   }
 }

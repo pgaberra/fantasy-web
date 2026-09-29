@@ -42,6 +42,11 @@
   margin-left: 0.3rem;
 }
 
+.menu-field input[type='number']:disabled {
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+}
+
 .menu-field input[type='number'] {
   flex: none;
   box-sizing: border-box;

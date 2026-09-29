@@ -64,6 +64,7 @@ describe('ProjectionsTableHeaderComponent', () => {
         [gamesPlayedScope]="gamesPlayedScope"
         [readonly]="readonly"
         [showWeights]="showWeights"
+        [lockedBy]="lockedBy"
       ></thead>
     </table>
   `;
@@ -99,6 +100,7 @@ describe('ProjectionsTableHeaderComponent', () => {
       gamesPlayedScope: null,
       readonly: false,
       showWeights: false,
+      lockedBy: null,
       ...overrides,
     });
 
@@ -598,6 +600,24 @@ describe('ProjectionsTableHeaderComponent', () => {
 
       component.toggleScaleList('gp');
       expect(component.expandedScaleList()).toBeNull();
+    });
+  });
+
+  describe('held by an imported league', () => {
+    it('shows the weights as the league set them, as text', () => {
+      getFixture({ scoringType: 'points', lockedBy: 'HHL' });
+
+      expect(ngMocks.findAll('.weight-row .weight-input')).toHaveLength(0);
+      expect(
+        ngMocks.findAll('.weight-row .weight-value').map((cell) => cell.nativeElement.textContent),
+      ).toEqual(['4.5', '3']);
+    });
+
+    it('keeps a scoring column, and lets a utility column go', () => {
+      const component = getComponent({ lockedBy: 'HHL' });
+
+      expect(component.canRemoveColumn('goals')).toBe(false);
+      expect(component.canRemoveColumn('gp')).toBe(true);
     });
   });
 });

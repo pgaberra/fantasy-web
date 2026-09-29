@@ -46,7 +46,6 @@ import {
   moveItemInArray,
 } from '@angular/cdk/drag-drop';
 import { SyncWarningDialogComponent } from '../../draft-projection/sync-warning-dialog/sync-warning-dialog';
-import { ProjectionSyncService } from '../../services/projection-sync.service';
 
 interface SetupRow {
   id: string;
@@ -112,7 +111,6 @@ const MAX_TEAMS = 32;
 export class DraftSetupComponent implements OnInit {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
-  private readonly projectionSync = inject(ProjectionSyncService);
 
   readonly initial = input<DraftState | null>(null);
   /**
@@ -211,6 +209,19 @@ export class DraftSetupComponent implements OnInit {
     return this.syncOn() && check.state === 'ok' ? check.league : null;
   });
   readonly locked = computed(() => this.leagueDraft() !== null);
+  /**
+   * The linked league's name, which holds what it set: the scoring, the roster and the number of
+   * teams stay as imported until the league is disconnected. Only its draft goes further, and
+   * only while picks are synced (`locked`): the order and the seat as well.
+   */
+  readonly lockedBy = computed(() => this.linked()?.name ?? null);
+  /**
+   * Whether the number of teams is the league's. A league that did not report its size leaves the
+   * count to the user, so a setup is never stuck on a number nobody can choose.
+   */
+  readonly teamsLocked = computed(
+    () => this.locked() || (this.lockedBy() !== null && this.teamCountKnown()),
+  );
   /** The user's seat in the league's draft, or null while the league has not set its order. */
   readonly leaguePosition = computed(() => {
     const league = this.leagueDraft();
@@ -293,29 +304,9 @@ export class DraftSetupComponent implements OnInit {
       !this.draftPositionKnown(),
   );
 
-  /**
-   * The league's settings as they were imported, and the number of teams they came with: the
-   * baseline a change in these settings is measured against. Taken as the settings open and again
-   * on every import, so a fresh import is never itself a change. Null while no league is linked.
-   */
-  private readonly syncBaseline = signal<{ signature: string; teams: number } | null>(null);
-  /** The warning shown on Save when it would take the draft out of sync, naming the league. */
+  /** The warning shown on Save when a changed order would take the board out of its league's draft. */
   readonly syncWarning = signal<FollowedLeague | null>(null);
 
-  /**
-   * Whether the scoring, the roster or the number of teams differ from what the linked league
-   * set. Saved that way, the settings are no longer the league's, so the link goes with them, as
-   * it does in the editor. The teams count only where they are the user's to set: a board locked
-   * to its league takes the league's number whatever the rows say.
-   */
-  readonly settingsDiverged = computed(() => {
-    const baseline = this.syncBaseline();
-    if (!baseline || !this.linked()) {
-      return false;
-    }
-    const teamsChanged = !this.locked() && this.rows().length !== baseline.teams;
-    return teamsChanged || this.signature() !== baseline.signature;
-  });
   /** Whether the teams or the user's seat differ from a board that is its league's draft. */
   readonly boardDiverged = computed(() => {
     const initial = this.initial();
@@ -325,17 +316,6 @@ export class DraftSetupComponent implements OnInit {
     const order = this.rows().map((row) => row.id);
     return order.length !== initial.order.length || order.some((id, i) => id !== initial.order[i]);
   });
-
-  private signature(): string {
-    // The size is left to the teams: it is read off them on the way out.
-    return this.projectionSync.settingsSignature({ ...this.editableLeague(), leagueSize: 0 });
-  }
-
-  private takeSyncBaseline(): void {
-    this.syncBaseline.set(
-      this.linked() ? { signature: this.signature(), teams: this.rows().length } : null,
-    );
-  }
 
   private readonly teamsSelect = viewChild<ElementRef<HTMLSelectElement>>('teamsSelect');
 
@@ -350,7 +330,6 @@ export class DraftSetupComponent implements OnInit {
       );
       this.draftPositionKnown.set(this.positionKnown());
       this.teamCountKnown.set(true);
-      this.takeSyncBaseline();
       return;
     }
     // No team is the user's until one is marked: a fresh list has no seat for it that anyone chose.
@@ -359,7 +338,6 @@ export class DraftSetupComponent implements OnInit {
     if (this.linked()) {
       this.setTeamCount(this.editableLeague().leagueSize);
     }
-    this.takeSyncBaseline();
   }
 
   protected readonly FULL_SEASON_GAMES = FULL_SEASON_GAMES;
@@ -397,13 +375,20 @@ export class DraftSetupComponent implements OnInit {
     if (size != null) {
       this.setTeamCount(size);
     }
-    this.takeSyncBaseline();
     const name = result.leagueName?.trim();
     if (name && this.draftName() !== null && !this.nameTyped()) {
       this.nameValue.set(name);
     }
     this.syncWanted.set(this.syncOffered());
     this.requestSyncCheck();
+  }
+
+  /**
+   * Disconnect league: the settings stay as imported and become the user's, and with the link goes
+   * the draft this board could follow. The league's id stays, so the next import starts from it.
+   */
+  disconnect(): void {
+    this.editableLeague.update((league) => ({ ...league, yahooSync: null, espnSync: null }));
   }
 
   toggleSync(): void {
@@ -582,24 +567,20 @@ export class DraftSetupComponent implements OnInit {
     if (this.syncChecking() || this.bouncedIncomplete()) {
       return;
     }
-    const settingsDiverged = this.settingsDiverged();
-    if (settingsDiverged || this.boardDiverged()) {
-      this.syncWarning.set(settingsDiverged ? this.linked() : this.boardSyncedFrom());
+    if (this.boardDiverged()) {
+      this.syncWarning.set(this.boardSyncedFrom());
       return;
     }
     this.emitConfirmed();
   }
 
   /**
-   * "Save it anyway." Settings that are no longer the league's lose the link to it, as a
-   * projection's do; the league's id stays, so the next import starts from it. A board changed by
-   * hand needs nothing more: it stops naming the league once it no longer matches its draft.
+   * "Save it anyway." A board changed by hand needs nothing more: it stops naming the league once
+   * it no longer matches its draft. The settings cannot drift from the league at all: they are
+   * locked to it until it is disconnected.
    */
   confirmSyncBreak(): void {
     this.syncWarning.set(null);
-    if (this.settingsDiverged()) {
-      this.editableLeague.update((league) => ({ ...league, yahooSync: null, espnSync: null }));
-    }
     this.emitConfirmed();
   }
 

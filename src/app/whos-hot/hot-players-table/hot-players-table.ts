@@ -405,8 +405,11 @@ export class HotPlayersTableComponent {
 
   readonly hasMore = computed(() => this.visibleCount() < this.matchingCount());
 
+  /** An imported league's type is its own; see `syncedLeagueName`. */
   selectScoringType(type: ScoringType): void {
-    this.scoringType.set(type);
+    if (this.syncedLeagueName() === null) {
+      this.scoringType.set(type);
+    }
   }
 
   toggleScoringColumn(key: ScoringStatKey): void {

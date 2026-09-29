@@ -88,6 +88,11 @@
   box-shadow: var(--shadow-sm);
 }
 
+.segmented button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 /* The stat columns are the point of the table, so the horizontal scroll lives here rather
    than on the page — the page body must never scroll sideways. Sideways only: this used to be
    a viewport-tall scrollbox as well, capped at `100vh - 20rem`, a guess at how much chrome sat

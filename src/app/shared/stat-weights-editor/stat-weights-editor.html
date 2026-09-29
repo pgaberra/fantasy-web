@@ -21,6 +21,7 @@
                 class="weight-input"
                 [id]="'weight-' + col"
                 [value]="statWeights()[col]"
+                [disabled]="lockedBy() !== null"
                 [attr.aria-label]="'Points per ' + (col | statLabel)"
                 (focus)="onFocus($event)"
                 (input)="onInput(col, $event)"

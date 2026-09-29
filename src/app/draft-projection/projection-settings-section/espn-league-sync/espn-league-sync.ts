@@ -83,8 +83,14 @@ export class EspnLeagueSyncComponent implements OnInit {
   readonly hasStoredCredentials = signal<boolean>(false);
   readonly syncing = signal<boolean>(false);
   readonly error = signal<string | null>(null);
-  readonly syncedLeagueId = signal<string | null>(null);
-  readonly syncedLeagueName = signal<string | null>(null);
+  // Follow the page's stamp, not the remembered id: a league synced on an earlier visit is still
+  // linked (the button says Re-sync), and one disconnected since is not (it says Sync again).
+  readonly syncedLeagueId = linkedSignal<string | null>(() =>
+    this.lastSyncedAt() ? this.lastLeagueId() : null,
+  );
+  readonly syncedLeagueName = linkedSignal<string | null>(() =>
+    this.lastSyncedAt() ? this.lastLeagueName() : null,
+  );
   readonly unsupportedStats = signal<string[]>([]);
   /**
    * A league id is entered that isn't the one these settings came from, so syncing is the step

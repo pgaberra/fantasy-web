@@ -316,6 +316,11 @@ export class StartingPointPreviewComponent {
   }));
   readonly previewScoringType = computed(() => this.previewSettings().scoringType);
   readonly previewStatWeights = computed(() => this.previewSettings().statWeights);
+  /** The league the weights were imported from, which holds them in the weight row. */
+  readonly lockedBy = computed(() => {
+    const league = this.leagueSettings();
+    return league?.yahooSync?.leagueName ?? league?.espnSync?.leagueName ?? null;
+  });
   /**
    * The model's lines are fractional, and at the defaults every one of them would be printed as
    * a whole number — the preview of the AI projection would look exactly like the preview of last

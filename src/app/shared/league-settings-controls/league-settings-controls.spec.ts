@@ -144,4 +144,41 @@ describe('LeagueSettingsControlsComponent', () => {
   it('leaves the import dialog closed on an ordinary visit', () => {
     expect(render().point.componentInstance.showSyncDialog()).toBe(false);
   });
+
+  describe('with a league imported', () => {
+    const imported = (): LeagueSettings => ({
+      ...league(),
+      yahooSync: { leagueName: 'HHL', leagueKey: '465.l.9', syncedAt: 'then' },
+      lastEspnLeagueId: '123',
+    });
+
+    it("holds the league type to the league's, wherever the import happened", () => {
+      const fixture = MockRender(LeagueSettingsControlsComponent, {
+        settings: imported(),
+        importing: false,
+      });
+      fixture.detectChanges();
+      const component = fixture.point.componentInstance;
+
+      component.selectScoringType('category');
+
+      expect(component.lockedBy()).toEqual('HHL');
+      expect(component.settings().scoringType).toEqual('points');
+      const [points, category] = ngMocks.findAll('[aria-label="League type"] button');
+      expect(points.nativeElement.disabled).toBe(false);
+      expect(category.nativeElement.disabled).toBe(true);
+    });
+
+    it('lets go of the league and keeps its settings on disconnect', () => {
+      const component = render(imported()).point.componentInstance;
+
+      component.disconnect();
+
+      expect(component.settings().yahooSync).toBeNull();
+      expect(component.settings().statWeights).toEqual(DEFAULT_STAT_WEIGHTS);
+      // Where the next import starts from.
+      expect(component.settings().lastEspnLeagueId).toEqual('123');
+      expect(component.lockedBy()).toBeNull();
+    });
+  });
 });

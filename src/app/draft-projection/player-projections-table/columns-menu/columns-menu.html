@@ -22,6 +22,16 @@
   />
 </div>
 
+@if (lockedBy() && group() !== 'utility') {
+  <p class="add-locked">
+    <app-icon name="lock" [size]="14" />
+    <span
+      >The scoring stats come from <strong>{{ lockedBy() }}</strong
+      >. Disconnect the league to change them.</span
+    >
+  </p>
+}
+
 <div class="add-list">
   @for (option of visibleOptions(); track option.statKey) {
     <button
@@ -29,6 +39,7 @@
       role="checkbox"
       class="add-row"
       [attr.aria-checked]="isActive(option)"
+      [disabled]="isLocked(option)"
       (click)="toggle(option)"
     >
       <span class="add-check" aria-hidden="true">

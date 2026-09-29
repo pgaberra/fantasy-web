@@ -34,7 +34,6 @@ import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { DraftState } from '../api/models/draft-state';
 import { ProjectionData } from '../api/models/projection-data';
 import { UpdateProjectionData } from '../api/models/update-projection-data';
-import { SyncWarningDialogComponent } from './sync-warning-dialog/sync-warning-dialog';
 import {
   FullSeasonConfig,
   FullSeasonDialogComponent,
@@ -66,11 +65,8 @@ import { NotificationService } from '../services/notification.service';
 import { isNotFound } from '../shared/http-error';
 import { PlayerBasis, ProjectionState } from '../services/projection-serializer';
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
-import { ProjectionSyncService, SyncedSettings } from '../services/projection-sync.service';
 import { ProjectionShareService } from '../services/projection-share.service';
 import { SharedPlayer } from '../api/models/shared-player';
-import { YahooService } from '../services/yahoo.service';
-import { EspnService } from '../services/espn.service';
 import { IconComponent } from '../shared/icon/icon';
 import { LeagueImportButtonComponent } from '../shared/league-import-button/league-import-button';
 import { ProjectionOrigin } from '../api/models/projection-origin';
@@ -87,7 +83,6 @@ export const AUTOSAVE_DEBOUNCE_MS = 1200;
     PlayerProjectionsTableComponent,
     LoadingIndicatorComponent,
     ErrorStateComponent,
-    SyncWarningDialogComponent,
     FullSeasonDialogComponent,
     OffseasonDataNoticeComponent,
     PlayerPoolNoticeComponent,
@@ -107,9 +102,6 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
   private readonly projectionStorage = inject(ProjectionStorageService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly yahoo = inject(YahooService);
-  private readonly espn = inject(EspnService);
-  private readonly projectionSync = inject(ProjectionSyncService);
   private readonly projectionShare = inject(ProjectionShareService);
   private readonly serializer = inject(ProjectionSerializerService);
   private readonly notification = inject(NotificationService);
@@ -212,32 +204,6 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
   /** The positions the owner corrected by hand, keyed by player. Empty when none have been. */
   readonly positionOverrides = signal<PositionOverrides>(new Map());
 
-  private readonly syncedSnapshot = signal<string | null>(null);
-  /**
-   * The synced settings themselves, not just the signature we compare against. The warning is
-   * blocking, so it is raised by one edit and this is what putting that edit back means.
-   */
-  private readonly syncedSettings = signal<SyncedSettings | null>(null);
-  private readonly currentSyncedSettings = computed<SyncedSettings>(() => ({
-    scoringType: this.scoringType(),
-    activeScoringColumns: this.activeScoringColumns(),
-    activeUtilityColumns: this.activeUtilityColumns(),
-    leagueSize: this.leagueSize(),
-    rosterSlots: this.rosterSlots(),
-    statWeights: this.statWeights(),
-  }));
-  private readonly syncedSettingsKey = computed(() =>
-    this.projectionSync.settingsSignature(this.currentSyncedSettings()),
-  );
-  readonly diverged = computed(() =>
-    this.projectionSync.hasDiverged(
-      this.yahooSync() ?? this.espnSync(),
-      this.syncedSettingsKey(),
-      this.syncedSnapshot(),
-    ),
-  );
-  readonly reSyncing = signal<boolean>(false);
-  readonly reSyncError = signal<string | null>(null);
   readonly showFullSeasonDialog = signal<boolean>(false);
   readonly showShareDialog = signal<boolean>(false);
   /**
@@ -253,14 +219,6 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
   readonly syncedLeagueName = computed(
     () => this.yahooSync()?.leagueName ?? this.espnSync()?.leagueName ?? null,
   );
-
-  /** Which platform that league is on, so the toolbar can wear its mark. */
-  readonly syncedProvider = computed<'yahoo' | 'espn' | null>(() => {
-    if (this.yahooSync()) {
-      return 'yahoo';
-    }
-    return this.espnSync() ? 'espn' : null;
-  });
 
   /**
    * The rows a share would publish, from the board as it stands. The edited rows live in the
@@ -384,7 +342,6 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
       syncedAt: new Date().toISOString(),
     });
     this.espnSync.set(null);
-    this.rememberSyncedSettings();
     this.closeSyncDialogUnlessThereIsMoreToSay(result.settings.unsupportedStats);
   }
 
@@ -399,7 +356,6 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
     this.lastEspnLeagueId.set(result.leagueId);
     // These settings are ESPN's now, so a Yahoo stamp would mislabel them.
     this.yahooSync.set(null);
-    this.rememberSyncedSettings();
     this.closeSyncDialogUnlessThereIsMoreToSay(result.settings.unsupportedStats);
   }
 
@@ -415,83 +371,15 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Pulls the league's current settings again — the answer for an edit that the league itself made. */
-  reSync(): void {
-    if (this.reSyncing()) {
-      return;
-    }
-    const yahoo = this.yahooSync();
-    const espn = this.espnSync();
-    if (yahoo) {
-      this.runReSync(this.yahoo.leagueProjectionSettings(yahoo.leagueKey), 'Yahoo', (settings) =>
-        this.applyYahooSettings({
-          settings,
-          leagueName: yahoo.leagueName,
-          leagueKey: yahoo.leagueKey,
-        }),
-      );
-    } else if (espn) {
-      // The league id is all ESPN needs from us; any cookies a private league wants are the
-      // pair already stored server-side.
-      this.runReSync(this.espn.leagueProjectionSettings(espn.leagueId), 'ESPN', (settings) =>
-        this.applyEspnSettings({
-          settings,
-          leagueId: espn.leagueId,
-          leagueName: settings.leagueName ?? espn.leagueName,
-        }),
-      );
-    }
-  }
-
-  private runReSync(
-    request: Observable<LeagueProjectionSettingsResponse>,
-    platform: string,
-    apply: (settings: LeagueProjectionSettingsResponse) => void,
-  ): void {
-    this.reSyncing.set(true);
-    this.reSyncError.set(null);
-    request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (settings) => {
-        apply(settings);
-        this.reSyncing.set(false);
-      },
-      error: () => {
-        this.reSyncing.set(false);
-        this.reSyncError.set(`Could not re-sync from ${platform}. Please try again.`);
-      },
-    });
-  }
-
-  private rememberSyncedSettings(): void {
-    this.syncedSnapshot.set(this.syncedSettingsKey());
-    this.syncedSettings.set(this.currentSyncedSettings());
-  }
-
   /**
-   * The way out of the warning that keeps the league: put back what it was synced with. The
-   * dialog blocks the page from the first edit onwards, so this undoes that edit and no more.
+   * "These settings are mine now": Disconnect league in the import. Only the claim goes, and the
+   * settings stay as they are, now editable. `lastEspnLeagueId` stays too, so the next import
+   * starts from the league they were on rather than asking for the id again.
    */
-  revertToSyncedSettings(): void {
-    const synced = this.syncedSettings();
-    if (!synced) {
-      return;
-    }
-    this.scoringType.set(synced.scoringType);
-    this.activeScoringColumns.set(new Set(synced.activeScoringColumns));
-    this.activeUtilityColumns.set(new Set(synced.activeUtilityColumns));
-    this.leagueSize.set(synced.leagueSize);
-    this.rosterSlots.set({ ...synced.rosterSlots });
-    this.statWeights.set({ ...synced.statWeights });
-  }
-
-  /**
-   * "These settings are mine now." Only the claim goes — `lastEspnLeagueId` stays, so the next
-   * import starts from the league they were on rather than asking for the id again.
-   */
-  confirmUnsync(): void {
+  disconnectLeague(): void {
     this.yahooSync.set(null);
     this.espnSync.set(null);
-    this.syncedSnapshot.set(null);
+    this.showSyncDialog.set(false);
   }
 
   openFullSeasonDialog(): void {
@@ -598,7 +486,6 @@ export class DraftProjectionComponent implements OnInit, OnDestroy {
     this.draft.set(state.draft);
     this.positionOverrides.set(state.positionOverrides);
     this.loadedProjections.set(state.playerProjections);
-    this.rememberSyncedSettings();
   }
 
   /**

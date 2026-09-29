@@ -2,10 +2,16 @@
   <div class="table-header">
     <div class="table-controls">
       <div class="league-controls">
-        <div class="segmented" role="group" aria-label="League type">
+        <div
+          class="segmented"
+          role="group"
+          aria-label="League type"
+          [appTooltip]="syncedLeagueName() ? 'Set by ' + syncedLeagueName() : null"
+        >
           <button
             type="button"
             [attr.aria-pressed]="scoringType() === 'points'"
+            [disabled]="syncedLeagueName() !== null && scoringType() !== 'points'"
             (click)="selectScoringType('points')"
           >
             Points
@@ -13,6 +19,7 @@
           <button
             type="button"
             [attr.aria-pressed]="scoringType() === 'category'"
+            [disabled]="syncedLeagueName() !== null && scoringType() !== 'category'"
             (click)="selectScoringType('category')"
           >
             Category
@@ -77,6 +84,7 @@
               [scoringType]="scoringType()"
               [(statWeights)]="statWeights"
               [(decimalSettings)]="decimalSettings"
+              [lockedBy]="syncedLeagueName()"
               [sortColumn]="sortColumn()"
               [sortDirection]="sortDirection()"
               gamesPlayedScope="the selected game range"
@@ -193,6 +201,7 @@
   <app-columns-menu
     [activeScoringColumns]="activeScoringColumns()"
     [activeUtilityColumns]="activeUtilityColumns()"
+    [lockedBy]="syncedLeagueName()"
     (scoringToggled)="toggleScoringColumn($event)"
     (utilityToggled)="toggleUtilityColumn($event)"
   />

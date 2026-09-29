@@ -262,10 +262,8 @@
         @if (pendingSyncBreak() !== null && syncedFrom(); as league) {
           <app-sync-warning-dialog
             [leagueName]="league.name"
-            [platform]="league.platform"
             subject="draft"
             change="a pick"
-            [reSyncOffered]="false"
             cancelLabel="Leave the pick and stay in sync"
             confirmLabel="Change the pick"
             (confirm)="confirmSyncBreak()"
