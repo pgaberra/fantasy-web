@@ -8,21 +8,7 @@
   color: var(--color-text-muted);
 }
 
-/* A link whose platform has no tab here, worn like the synced line on that platform's own tab. */
-.league-sync-linked {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin: 0 0 var(--space-2);
-  font-size: var(--text-sm);
-  color: var(--color-text);
-}
-
-.league-sync-linked .sync-dot {
-  flex-shrink: 0;
-}
-
-.league-sync-linked-text {
-  flex: 1 1 12rem;
+/* A link whose platform has no tab here: the same synced line that platform's own tab would show. */
+app-synced-line {
+  margin-bottom: var(--space-2);
 }

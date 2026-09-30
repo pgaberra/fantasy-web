@@ -8,7 +8,6 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { YahooService } from '../../../services/yahoo.service';
 import { YahooConnectReturnService } from '../../../services/yahoo-connect-return.service';
@@ -16,8 +15,8 @@ import { environment } from '../../../../environments/environment';
 import { LeagueSummary } from '../../../api/models/league-summary';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
 import { YahooSync } from '../../../api/models/yahoo-sync';
-import { IconComponent } from '../../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../../shared/loading-indicator/loading-indicator';
+import { SyncedLineComponent } from '../../../shared/synced-line/synced-line';
 import { isYahooRefusal } from '../../../shared/yahoo-refused';
 import { leaveFor } from '../../../shared/leave-for';
 import { YahooMarkComponent } from '../../../shared/yahoo-mark/yahoo-mark';
@@ -35,7 +34,7 @@ export interface YahooSyncResult {
  */
 @Component({
   selector: 'app-yahoo-league-sync',
-  imports: [DatePipe, IconComponent, LoadingIndicatorComponent, YahooMarkComponent],
+  imports: [LoadingIndicatorComponent, SyncedLineComponent, YahooMarkComponent],
   templateUrl: './yahoo-league-sync.html',
   styleUrl: './yahoo-league-sync.css',
 })
