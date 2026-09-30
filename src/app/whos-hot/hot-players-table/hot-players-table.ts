@@ -459,8 +459,15 @@ export class HotPlayersTableComponent {
    * A stat the player cannot have shows a dash rather than a zero. The split fills every key
    * for every player because the ranking engine works on complete lines, so without this a
    * skater's save percentage and a forward's defencemen points read as measured zeroes.
+   *
+   * A rate over no games is not one either: a goalie yet to play in the range has no save
+   * percentage, and 0.000 would read as the worst in the league. `statValueOf` already leaves
+   * it out of the sort for that reason, so the cell follows it.
    */
   isApplicable(ranked: RankedPlayer, key: StatKey): boolean {
+    if (statValueOf(ranked.projection, key) === null) {
+      return false;
+    }
     const player = this.playerMap().get(ranked.projection.playerId);
     // Without the player we don't know their positions, and showing the number beats hiding
     // a defenceman's points behind a dash.

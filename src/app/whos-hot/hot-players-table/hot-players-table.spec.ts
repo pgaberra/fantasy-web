@@ -387,6 +387,19 @@ describe('HotPlayersTableComponent', () => {
     expect(ngMocks.input(header, 'gamesPlayedScope')).toEqual('the selected game range');
   });
 
+  it('marks every stat cell, and only those, to end on the line its heading ends on', () => {
+    render([skater(1, 20)]);
+
+    // The shared header right-aligns its labels at --stat-value-inset; `stat-cell` is what
+    // puts the values there too. Centred, they sat half a column left of their headings.
+    const cells = ngMocks.findAll('tbody tr td').map((cell) => cell.nativeElement as HTMLElement);
+    const marked = cells.filter((cell) => cell.classList.contains('stat-cell'));
+    expect(marked).toHaveLength(activeColumns.utility.size + activeColumns.scoring.size);
+    expect(cells[0].classList.contains('stat-cell')).toEqual(false);
+    expect(cells[1].classList.contains('stat-cell')).toEqual(false);
+    expect(cells[cells.length - 1].classList.contains('stat-cell')).toEqual(false);
+  });
+
   it('marks the summary cell as the pinned column so it paints over the scrolled stats', () => {
     render([skater(1, 20)]);
 
@@ -481,9 +494,9 @@ describe('HotPlayersTableComponent', () => {
   });
 
   describe('stats the player cannot have', () => {
-    const withColumns = (scoring: ScoringStatKey[], positions: SkaterPosition[]) =>
+    const withColumns = (scoring: ScoringStatKey[], positions: SkaterPosition[], games = 20) =>
       MockRender(HotPlayersTableComponent, {
-        hotPlayers: [skater(1, 20)],
+        hotPlayers: [skater(1, games)],
         players: [player(1, positions)],
         activeColumns: { scoring: new Set(scoring), utility: new Set(['gp']) },
         scoringType: 'points',
@@ -520,6 +533,15 @@ describe('HotPlayersTableComponent', () => {
       withColumns(['goals'], ['C']);
 
       expect(ngMocks.findAll('tbody .stat-placeholder')).toHaveLength(0);
+    });
+
+    it('shows a dash for a rate over no games, and the counts beside it as zeros', () => {
+      withColumns(['goals', 'shPct'], ['C'], 0);
+
+      // A player yet to play in the range has no shooting percentage; 0.0 would read as one
+      // who shot and missed everything. Their goals are a real zero and stay one.
+      expect(ngMocks.findAll('tbody .stat-placeholder')).toHaveLength(1);
+      expect(cellTexts()).toContain('-');
     });
   });
 });
