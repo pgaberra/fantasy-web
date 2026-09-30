@@ -141,6 +141,14 @@ td.col-name {
   text-align: left;
 }
 
+/* The headings come from the projection editor's header, which right-aligns every stat label
+   and ends it --stat-value-inset short of the column's edge (styles.css). A value centred under
+   such a label sat half a column to its left, so the values end on that same line instead. */
+td.stat-cell {
+  text-align: right;
+  padding-right: var(--stat-value-inset);
+}
+
 .player-name {
   font-weight: var(--weight-semibold);
   white-space: nowrap;
@@ -196,6 +204,9 @@ td.col-name {
    read as the total having stray digits appended to it. The row's own striping sits on the
    `tr`, which a sticky cell does not inherit, so each state is repeated here. */
 tbody td.fan-pts-col {
+  /* Right-aligned at th.summary-pts-col's own padding, so the total ends under its heading. */
+  text-align: right;
+  padding-right: 0.5rem;
   background: #fff8e6;
   color: #5a3a00;
   font-weight: var(--weight-bold);

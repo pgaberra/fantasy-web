@@ -33,14 +33,49 @@ type Thumb = 'from' | 'to';
  */
 export const FREE_PRESET: LastGamesPreset = { label: 'Last 5', lastGames: 5 };
 
+/**
+ * Where the rail starts: before the season's first game. A range reaching back this far holds
+ * everyone's season from its start, so it takes in the players who have not played a game in it
+ * yet too — on the board with nothing measured, rather than missing from it.
+ *
+ * That is what "the last 5" is a few nights into a season, when no team has played five and some
+ * have played none: games 0-2. Drawn as 1-2 it asked only about players who had dressed, so every
+ * team yet to play was absent from the board, and the board read as though it hid them. The first
+ * half and the full season start here too, since both run from the season's start.
+ */
+export const BEFORE_FIRST_GAME = 0;
+
+/** The first game there is. A range that starts here measures only the players who dressed. */
+export const FIRST_GAME = 1;
+
+/**
+ * Where "the last N" falls on the rail: back from the latest game the season has reached, and no
+ * further back than its start. The server counts each team's own last N, so this is only where
+ * the rail draws it.
+ */
+export function lastGamesRange(
+  latestGame: number,
+  lastGames: number,
+): { from: number; to: number } {
+  return { from: Math.max(BEFORE_FIRST_GAME, latestGame - lastGames + 1), to: latestGame };
+}
+
+/** How many games a range covers. Starting before the first game adds none. */
+export function gamesIn(fromGame: number, toGame: number): number {
+  return toGame - Math.max(FIRST_GAME, fromGame) + 1;
+}
+
 const PRESETS: RangePreset[] = [
   FREE_PRESET,
   { label: 'Last 10', lastGames: 10 },
   { label: 'Last 20', lastGames: 20 },
   { label: 'Last 30', lastGames: 30 },
-  { label: 'First half', range: (games) => ({ from: 1, to: Math.ceil(games / 2) }) },
+  {
+    label: 'First half',
+    range: (games) => ({ from: BEFORE_FIRST_GAME, to: Math.ceil(games / 2) }),
+  },
   { label: 'Second half', range: (games) => ({ from: Math.ceil(games / 2) + 1, to: games }) },
-  { label: 'Full season', range: (games) => ({ from: 1, to: games }) },
+  { label: 'Full season', range: (games) => ({ from: BEFORE_FIRST_GAME, to: games }) },
 ];
 
 function isLastGames(preset: RangePreset): preset is LastGamesPreset {
@@ -91,6 +126,8 @@ export class GameRangeSelectorComponent {
   readonly minGames = model.required<number>();
 
   readonly presets = PRESETS;
+  readonly railStart = BEFORE_FIRST_GAME;
+  readonly firstGame = FIRST_GAME;
 
   /**
    * Which handle the pointer is closest to. Stacked handles overlap when the range is narrow,
@@ -99,7 +136,7 @@ export class GameRangeSelectorComponent {
    */
   readonly activeThumb = signal<Thumb>('to');
 
-  readonly spanLength = computed(() => this.toGame() - this.fromGame() + 1);
+  readonly spanLength = computed(() => gamesIn(this.fromGame(), this.toGame()));
 
   /**
    * Only the span length. The two bounds sit in the boxes at either end of the rail, so
@@ -138,10 +175,10 @@ export class GameRangeSelectorComponent {
 
   applyPreset(preset: RangePreset): void {
     if (isLastGames(preset)) {
-      const latest = this.latestGame();
+      const { from, to } = lastGamesRange(this.latestGame(), preset.lastGames);
       this.lastGames.set(preset.lastGames);
-      this.fromGame.set(Math.max(1, latest - preset.lastGames + 1));
-      this.toGame.set(latest);
+      this.fromGame.set(from);
+      this.toGame.set(to);
       return;
     }
     const { from, to } = preset.range(this.scheduleLength());
@@ -150,8 +187,9 @@ export class GameRangeSelectorComponent {
     this.toGame.set(to);
   }
 
+  /** The start may reach back before the first game; see {@link BEFORE_FIRST_GAME}. */
   onFromInput(event: Event): void {
-    const value = this.clamp(event);
+    const value = this.clamp(event, BEFORE_FIRST_GAME);
     this.lastGames.set(null);
     this.fromGame.set(value);
     if (value > this.toGame()) {
@@ -159,8 +197,9 @@ export class GameRangeSelectorComponent {
     }
   }
 
+  /** The end may not: a range has to hold at least one game to measure. */
   onToInput(event: Event): void {
-    const value = this.clamp(event);
+    const value = this.clamp(event, FIRST_GAME);
     this.lastGames.set(null);
     this.toGame.set(value);
     if (value < this.fromGame()) {
@@ -202,10 +241,10 @@ export class GameRangeSelectorComponent {
     this.activeThumb.set(toFrom <= toTo ? 'from' : 'to');
   }
 
-  /** Where a game number sits along the track, 0 at the first game and 1 at the last. */
+  /** Where a game number sits along the track, 0 before the first game and 1 at the last. */
   private positionOf(game: number): number {
-    const span = Math.max(1, this.scheduleLength() - 1);
-    return Math.min(1, Math.max(0, (game - 1) / span));
+    const span = Math.max(1, this.scheduleLength() - BEFORE_FIRST_GAME);
+    return Math.min(1, Math.max(0, (game - BEFORE_FIRST_GAME) / span));
   }
 
   /**
@@ -217,11 +256,11 @@ export class GameRangeSelectorComponent {
     return `calc(${(fraction * 100).toFixed(3)}% + ${(0.5 - fraction).toFixed(4)} * var(--thumb-size))`;
   }
 
-  private clamp(event: Event): number {
+  private clamp(event: Event, lowest: number): number {
     const raw = Number((event.target as HTMLInputElement).value);
     if (!Number.isFinite(raw)) {
       return this.fromGame();
     }
-    return Math.min(this.scheduleLength(), Math.max(1, Math.round(raw)));
+    return Math.min(this.scheduleLength(), Math.max(lowest, Math.round(raw)));
   }
 }

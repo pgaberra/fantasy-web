@@ -14,6 +14,7 @@ import {
   SKATER_UTILITY_STAT_KEYS,
 } from '../models/stat-key.model';
 import { Projection } from '../models/projection.model';
+import { Player } from '../models/player.model';
 
 /**
  * A stretch of a season's schedule, in team game numbers: both bounds, inclusive, or `lastGames`,
@@ -80,6 +81,35 @@ export class WhosHotService {
       goalies: goalieSplits(this.http, this.rootUrl, params).pipe(map((sent) => sent.body)),
     }).pipe(map(({ skaters, goalies }) => [...skaters.map(toSkater), ...goalies.map(toGoalie)]));
   }
+}
+
+/**
+ * The board with every pool player it has no game for added beneath the measured ones: on it at
+ * zero games, rather than off it. The server measures game logs, so a player with none in the
+ * range — their team has not played yet — is not in its answer at all, and a board built from
+ * that answer alone reads as though it hid them.
+ *
+ * Only for a range that reaches back before the first game (see `BEFORE_FIRST_GAME`): one that
+ * starts later asks who dressed in it, and a player who did not has no place on it. The pool's
+ * own order — highest scoring first — is kept, so the unplayed rows tie at zero in an order that
+ * still means something.
+ */
+export function withPlayersYetToPlay(measured: HotPlayer[], pool: Player[]): HotPlayer[] {
+  const onBoard = new Set(measured.map((hot) => hot.projection.playerId));
+  const yetToPlay = pool.filter((player) => !onBoard.has(player.id)).map(unmeasured);
+  return [...measured, ...yetToPlay];
+}
+
+function unmeasured(player: Player): HotPlayer {
+  const split: PlayerSplitResponse = {
+    playerId: player.id,
+    name: player.name,
+    teamAbbrev: player.teamAbbrev,
+    type: player.type,
+    games: 0,
+    stats: {},
+  };
+  return player.type === 'skater' ? toSkater(split) : toGoalie(split);
 }
 
 /**

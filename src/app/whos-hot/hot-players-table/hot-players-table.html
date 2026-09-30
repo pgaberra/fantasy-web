@@ -135,7 +135,7 @@
                     </div>
                   </td>
                   @for (col of filteredActiveColumns().utility; track col) {
-                    <td class="col-{{ col }}">
+                    <td class="col-{{ col }} stat-cell">
                       @if (!isApplicable(ranked, col)) {
                         <span class="stat-placeholder">-</span>
                       } @else if (isToi(col)) {
@@ -146,7 +146,7 @@
                     </td>
                   }
                   @for (col of filteredActiveColumns().scoring; track col) {
-                    <td>
+                    <td class="stat-cell">
                       @if (isApplicable(ranked, col)) {
                         {{ statValue(ranked, col) | number: decimalsFor(col) }}
                       } @else {

@@ -7,7 +7,7 @@ import { EntitlementService } from '../services/entitlement.service';
 import { PlayerService } from '../services/player.service';
 import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { Player } from '../models/player.model';
-import { GameSpan, WhosHotService } from '../services/whos-hot.service';
+import { GameSpan, WhosHotService, withPlayersYetToPlay } from '../services/whos-hot.service';
 import { WhosHotSettingsService } from '../services/whos-hot-settings.service';
 import { ActiveColumns, ScoringType } from '../models/projection.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
@@ -34,7 +34,14 @@ import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-i
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { LeagueImportButtonComponent } from '../shared/league-import-button/league-import-button';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
-import { FREE_PRESET, GameRangeSelectorComponent } from './game-range-selector/game-range-selector';
+import {
+  BEFORE_FIRST_GAME,
+  FIRST_GAME,
+  FREE_PRESET,
+  GameRangeSelectorComponent,
+  gamesIn,
+  lastGamesRange,
+} from './game-range-selector/game-range-selector';
 import { SEASONS, seasonLabelOf } from './season.model';
 import { HotPlayersTableComponent } from './hot-players-table/hot-players-table';
 
@@ -162,7 +169,18 @@ export class WhosHotComponent {
    * that changes on its own whenever the range moves reads as the page overriding the user.
    */
   readonly appliedMinGames = computed(() =>
-    Math.min(this.minGames(), Math.max(1, this.toGame() - this.fromGame() + 1)),
+    Math.min(this.minGames(), Math.max(1, gamesIn(this.fromGame(), this.toGame()))),
+  );
+
+  /**
+   * Whether the board also lists the players the range has no game for: when it reaches back
+   * before the first game, in a season that has one. Early in a season "the last 5" does that
+   * by itself — five nights in it is games 0-4 — and a team that has not played yet is on the
+   * board at zero rather than missing from it. A season with no game at all keeps saying so,
+   * rather than listing the whole pool at zero.
+   */
+  readonly includesPlayersYetToPlay = computed(
+    () => this.fromGame() === BEFORE_FIRST_GAME && (this.seasonProgress()?.gamesPlayed ?? 0) > 0,
   );
 
   readonly scoringType = signal<ScoringType>(this.stored?.scoringType ?? 'points');
@@ -226,7 +244,11 @@ export class WhosHotComponent {
     utility: this.activeUtilityColumns(),
   }));
 
-  /** Nothing to ask until the season, and its length, are known. */
+  /**
+   * Nothing to ask until the season, and its length, are known. The server only measures games,
+   * so a range reaching back before the first one asks from the first; the players it has no
+   * game for are the page's to add.
+   */
   private readonly span = computed<GameSpan | undefined>(() => {
     const season = this.season();
     if (season === undefined || this.scheduleLength() === null) {
@@ -235,7 +257,7 @@ export class WhosHotComponent {
     const lastGames = this.lastGames();
     return lastGames !== null
       ? { season, lastGames }
-      : { season, fromGame: this.fromGame(), toGame: this.toGame() };
+      : { season, fromGame: Math.max(FIRST_GAME, this.fromGame()), toGame: this.toGame() };
   });
 
   /**
@@ -282,7 +304,12 @@ export class WhosHotComponent {
   });
 
   readonly players = computed(() => this.playersResource.value());
-  readonly hotPlayers = computed(() => this.splitsResource.value());
+  readonly hotPlayers = computed(() => {
+    const measured = this.splitsResource.value();
+    return this.includesPlayersYetToPlay()
+      ? withPlayersYetToPlay(measured, this.players())
+      : measured;
+  });
   readonly isLoading = computed(
     () =>
       this.seasonsResource.isLoading() ||
@@ -311,8 +338,8 @@ export class WhosHotComponent {
 
     /**
      * "The last N" is resolved per team by the server, so the rail only shows where it falls:
-     * back from the latest game the season has reached. Moving either handle leaves it for the
-     * explicit range it was showing.
+     * back from the latest game the season has reached, as far as its start. Moving either
+     * handle leaves it for the explicit range it was showing.
      */
     effect(() => {
       const lastGames = this.lastGames();
@@ -320,8 +347,9 @@ export class WhosHotComponent {
       if (lastGames === null || latest === null) {
         return;
       }
-      this.fromGame.set(Math.max(1, latest - lastGames + 1));
-      this.toGame.set(latest);
+      const { from, to } = lastGamesRange(latest, lastGames);
+      this.fromGame.set(from);
+      this.toGame.set(to);
     });
 
     /** A range kept from an 84-game season must not point past the end of an 82-game one. */
