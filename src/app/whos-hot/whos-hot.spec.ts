@@ -309,6 +309,155 @@ describe('WhosHotComponent', () => {
     });
   });
 
+  describe('a range carried into another season', () => {
+    /** A premium account, so the range is the test's to set. */
+    beforeEach(() => {
+      environment.paymentsEnabled = false;
+    });
+
+    const switchTo = (fixture: ReturnType<typeof MockRender<WhosHotComponent>>, year: number) => {
+      fixture.point.componentInstance.onSeasonChange({
+        target: { value: String(year) },
+      } as unknown as Event);
+      fixture.detectChanges();
+    };
+
+    it('goes back to the last 5 in a season that has not reached the range yet', async () => {
+      seasonsAnswer = OPENING_NIGHT;
+      stored = { season: 2025, fromGame: 38, toGame: 59, lastGames: null } as WhosHotSettings;
+
+      const fixture = await renderSettled();
+      const component = fixture.point.componentInstance;
+      expect([component.fromGame(), component.toGame()]).toEqual([38, 59]);
+
+      switchTo(fixture, 2026);
+
+      // Games 38-59 of a season one night old is a board with nobody on it.
+      expect(component.lastGames()).toEqual(5);
+      expect([component.fromGame(), component.toGame()]).toEqual([0, 1]);
+      expect(save).toHaveBeenLastCalledWith(expect.objectContaining({ lastGames: 5 }));
+    });
+
+    it('does the same when the season the page follows moves on between visits', async () => {
+      // Saved while the page followed 2025-26, read back once the server has moved on to 2026-27.
+      seasonsAnswer = OPENING_NIGHT;
+      stored = { season: null, fromGame: 38, toGame: 59, lastGames: null } as WhosHotSettings;
+
+      const component = (await renderSettled()).point.componentInstance;
+
+      expect(component.season()).toEqual(2026);
+      expect(component.lastGames()).toEqual(5);
+      // Checked before the first request, so the range it gave up is never asked about.
+      expect(splits).toHaveBeenCalledTimes(1);
+      expect(splits).toHaveBeenCalledWith({ season: 2026, lastGames: 5 });
+    });
+
+    it('keeps a range the season it moves to has reached', async () => {
+      seasonsAnswer = NOVEMBER;
+      stored = { season: 2025, fromGame: 5, toGame: 20, lastGames: null } as WhosHotSettings;
+
+      const fixture = await renderSettled();
+      switchTo(fixture, 2026);
+
+      // Twelve games in, games 5-20 still has games 5-12 to show.
+      const component = fixture.point.componentInstance;
+      expect(component.lastGames()).toEqual(null);
+      expect([component.fromGame(), component.toGame()]).toEqual([5, 20]);
+    });
+
+    it('keeps the range in a season yet to start, which says so on the board itself', async () => {
+      stored = { season: 2025, fromGame: 38, toGame: 59, lastGames: null } as WhosHotSettings;
+
+      const fixture = await renderSettled();
+      switchTo(fixture, 2026);
+
+      // A look at next season in the summer must not cost the range this one was read over.
+      const component = fixture.point.componentInstance;
+      expect(component.lastGames()).toEqual(null);
+      expect([component.fromGame(), component.toGame()]).toEqual([38, 59]);
+
+      switchTo(fixture, 2025);
+      expect([component.fromGame(), component.toGame()]).toEqual([38, 59]);
+    });
+
+    it('leaves a handle dragged past the latest game where it was put', async () => {
+      seasonsAnswer = NOVEMBER;
+      stored = { season: 2026, fromGame: 1, toGame: 12, lastGames: null } as WhosHotSettings;
+
+      const fixture = await renderSettled();
+      const component = fixture.point.componentInstance;
+
+      // Only a change of season is checked: the range moving within one is the visitor's own.
+      component.fromGame.set(30);
+      component.toGame.set(40);
+      fixture.detectChanges();
+
+      expect(component.lastGames()).toEqual(null);
+      expect([component.fromGame(), component.toGame()]).toEqual([30, 40]);
+    });
+
+    it('draws the full season against the season it is shown in', async () => {
+      seasonsAnswer = NOVEMBER;
+      stored = {
+        season: 2025,
+        fromGame: 0,
+        toGame: 82,
+        lastGames: null,
+        seasonSpan: 'fullSeason',
+      } as WhosHotSettings;
+
+      const fixture = await renderSettled();
+      const component = fixture.point.componentInstance;
+      expect([component.fromGame(), component.toGame()]).toEqual([0, 82]);
+
+      switchTo(fixture, 2026);
+
+      // Kept as games 0-82 it left out the last two of an 84-game season.
+      expect(component.seasonSpan()).toEqual('fullSeason');
+      expect([component.fromGame(), component.toGame()]).toEqual([0, 84]);
+
+      switchTo(fixture, 2025);
+      expect([component.fromGame(), component.toGame()]).toEqual([0, 82]);
+    });
+
+    it('goes back to the last 5 from a second half the season has not reached', async () => {
+      seasonsAnswer = NOVEMBER;
+      stored = {
+        season: 2025,
+        fromGame: 42,
+        toGame: 82,
+        lastGames: null,
+        seasonSpan: 'secondHalf',
+      } as WhosHotSettings;
+
+      const fixture = await renderSettled();
+      switchTo(fixture, 2026);
+
+      // 2026-27's second half starts at game 43, and the furthest team has played twelve.
+      const component = fixture.point.componentInstance;
+      expect(component.seasonSpan()).toEqual(null);
+      expect(component.lastGames()).toEqual(5);
+      expect([component.fromGame(), component.toGame()]).toEqual([8, 12]);
+    });
+
+    it('lets go of the season pill when a lapsed account is put back on the last 5', async () => {
+      environment.paymentsEnabled = true;
+      stored = {
+        fromGame: 0,
+        toGame: 82,
+        lastGames: null,
+        seasonSpan: 'fullSeason',
+      } as WhosHotSettings;
+
+      const component = (await renderSettled()).point.componentInstance;
+
+      // Left kept, the pill would redraw the rail over the last 5 it was put back on.
+      expect(component.seasonSpan()).toEqual(null);
+      expect(component.lastGames()).toEqual(5);
+      expect([component.fromGame(), component.toGame()]).toEqual([78, 82]);
+    });
+  });
+
   describe('players yet to play, early in a season', () => {
     const SWAYMAN = 3;
     const VASILEVSKIY = 2;
