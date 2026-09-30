@@ -8,12 +8,12 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { of, switchMap } from 'rxjs';
 import { EspnService } from '../../../services/espn.service';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
 import { LoadingIndicatorComponent } from '../../../shared/loading-indicator/loading-indicator';
+import { SyncedLineComponent } from '../../../shared/synced-line/synced-line';
 import { EspnCookieHelpComponent } from '../../../shared/espn-cookie-help/espn-cookie-help';
 import { CookieFieldDirective } from '../../../shared/cookie-field/cookie-field';
 
@@ -54,7 +54,12 @@ export interface EspnSyncResult {
  */
 @Component({
   selector: 'app-espn-league-sync',
-  imports: [DatePipe, LoadingIndicatorComponent, EspnCookieHelpComponent, CookieFieldDirective],
+  imports: [
+    LoadingIndicatorComponent,
+    SyncedLineComponent,
+    EspnCookieHelpComponent,
+    CookieFieldDirective,
+  ],
   templateUrl: './espn-league-sync.html',
   styleUrl: './espn-league-sync.css',
 })

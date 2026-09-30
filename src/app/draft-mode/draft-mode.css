@@ -105,9 +105,13 @@
   white-space: nowrap;
 }
 
+/* The picks column is the wider of the two sides: its row carries a pick number, the name, two
+   actions and the team's name, where the roster's carries a slot chip and the name. At 320px a
+   name as long as "Jonathan Marchessault" sits on one line; at 280px one pick in twenty wrapped.
+   The roster gives up the 20px it never used, so the board's middle keeps its width. */
 .draft-layout {
   display: grid;
-  grid-template-columns: 300px 1fr 280px;
+  grid-template-columns: 280px 1fr 320px;
   gap: var(--space-4);
   align-items: start;
 }

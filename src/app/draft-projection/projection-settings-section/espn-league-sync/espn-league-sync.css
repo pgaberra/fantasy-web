@@ -106,21 +106,3 @@
   font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
-
-/* The dialog's answer to the toolbar button that opened it, so it wears the same green dot:
-   a connection that exists, named, with the date that says whether it is still worth trusting,
-   and the way to let go of it. */
-.espn-synced-status {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin: 0.15rem 0 0.1rem;
-  font-size: var(--text-sm);
-  color: var(--color-text);
-}
-
-/* Takes the free width, so Disconnect sits at the row's end and wraps below only when it must. */
-.espn-synced-text {
-  flex: 1 1 12rem;
-}
