@@ -20,6 +20,7 @@ import {
 } from '../services/streamer-planner-league.service';
 import { YahooService } from '../services/yahoo.service';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
+import { PLANNER_TODAY } from './planner-schedule';
 import { StreamerPlannerComponent } from './streamer-planner';
 
 const WEEKS: PlannerWeeksResponse = {
@@ -152,13 +153,20 @@ function goalie(playerId: string, name: string, wins: number): FreeAgentWeek['pl
   };
 }
 
+function dateInput(value: string): Event {
+  return { target: { value } } as unknown as Event;
+}
+
 describe('StreamerPlannerComponent', () => {
   const invoke = vi.fn();
   const freeAgents = vi.fn();
   let chosen: PlannerLeague | null = null;
+  /** The Monday of week 2 unless a test says otherwise. */
+  let today = '2026-10-12';
 
   beforeEach(() => {
     chosen = null;
+    today = '2026-10-12';
     invoke.mockReset();
     freeAgents.mockReset();
     invoke.mockImplementation((fn: unknown, params?: { start: string; end: string }) => {
@@ -182,6 +190,7 @@ describe('StreamerPlannerComponent', () => {
     );
     return MockBuilder(StreamerPlannerComponent)
       .provide({ provide: Api, useValue: { invoke } })
+      .provide({ provide: PLANNER_TODAY, useValue: () => today })
       .mock(StreamerPlannerFreeAgentsService, { freeAgents })
       .mock(StreamerPlannerLeagueService, {
         get league() {
@@ -199,7 +208,7 @@ describe('StreamerPlannerComponent', () => {
     return fixture;
   }
 
-  it('opens on the week the server says today falls in, with every night of it', async () => {
+  it('opens on the rest of this week, with every night of it', async () => {
     const fixture = await render();
     const planner = fixture.point.componentInstance;
 
@@ -217,36 +226,82 @@ describe('StreamerPlannerComponent', () => {
       '2026-10-18',
     ]);
     expect(planner.days()[1]).toEqual({ date: '2026-10-13', games: 3, offNight: true });
+    expect(planner.activePreset()).toBe('this-week');
     expect(planner.weeksTitle()).toBe('Week 2');
-    expect(planner.nightsTitle()).toBe('2 of 2');
-    expect(planner.leagueTitle()).toBe('Not chosen');
+    expect(planner.stretchTitle()).toBe('Oct 12 to Oct 18');
+    expect(planner.nightsTitle()).toBe('2 of 2 nights');
+    expect(planner.leadingDays()).toEqual([]);
   });
 
-  it('spans the weeks from the starting one to the ending one and asks for their dates', async () => {
+  // A night already played is not a night to stream for.
+  it('starts today rather than on Monday, and draws the days before it as the week they were', async () => {
+    today = '2026-10-14';
     const fixture = await render();
     const planner = fixture.point.componentInstance;
 
-    planner.selectEndWeek({ target: { value: '4' } } as unknown as Event);
-    await fixture.whenStable();
+    expect(invoke).toHaveBeenCalledWith(streamerPlannerTeams, {
+      start: '2026-10-14',
+      end: '2026-10-18',
+    });
+    expect(planner.days().length).toBe(5);
+    expect(planner.leadingDays()).toEqual(['2026-10-12', '2026-10-13']);
+    expect(planner.presets().map((preset) => [preset.key, preset.stretch])).toEqual([
+      ['this-week', { start: '2026-10-14', end: '2026-10-18' }],
+      ['next-week', { start: '2026-10-19', end: '2026-10-25' }],
+      ['two-weeks', { start: '2026-10-14', end: '2026-10-25' }],
+    ]);
+    expect(ngMocks.findAll(fixture, '.day--past').length).toBe(2);
+    expect(ngMocks.findAll(fixture, 'label.day').length).toBe(5);
+  });
 
-    expect(planner.weeksTitle()).toBe('Weeks 2 to 4');
+  it('moves to next week, or to both weeks, at a word', async () => {
+    const fixture = await render();
+    const planner = fixture.point.componentInstance;
+
+    planner.applyPreset('next-week');
+    await fixture.whenStable();
+    expect(planner.activePreset()).toBe('next-week');
+    expect(planner.weeksTitle()).toBe('Week 3');
+    expect(invoke).toHaveBeenCalledWith(streamerPlannerTeams, {
+      start: '2026-10-19',
+      end: '2026-10-25',
+    });
+
+    planner.applyPreset('two-weeks');
+    await fixture.whenStable();
+    expect(planner.weeksTitle()).toBe('Weeks 2 to 3');
     expect(invoke).toHaveBeenCalledWith(streamerPlannerTeams, {
       start: '2026-10-12',
-      end: '2026-11-01',
+      end: '2026-10-25',
     });
   });
 
-  it('offers only ending weeks the server would rate, and falls back when the start moves past the end', async () => {
+  it('takes any two dates, held to today, the season and the longest stretch the server rates', async () => {
     const fixture = await render();
     const planner = fixture.point.componentInstance;
 
-    expect(planner.endOptions().map((week) => week.week)).toEqual([2, 3, 4, 5]);
+    // The rest of this week and Monday and Tuesday of the next: no preset says that.
+    planner.setEnd(dateInput('2026-10-20'));
+    expect(planner.stretch()).toEqual({ start: '2026-10-12', end: '2026-10-20' });
+    expect(planner.activePreset()).toBeNull();
+    expect(planner.weeksTitle()).toBe('Weeks 2 to 3');
 
-    planner.selectEndWeek({ target: { value: '3' } } as unknown as Event);
-    planner.selectStartWeek({ target: { value: '5' } } as unknown as Event);
+    // A start past the end takes the end with it.
+    planner.setStart(dateInput('2026-10-21'));
+    expect(planner.stretch()).toEqual({ start: '2026-10-21', end: '2026-10-21' });
 
-    expect(planner.endWeek()?.week).toBe(5);
-    expect(planner.endOptions().map((week) => week.week)).toEqual([5, 6]);
+    // A start in the past is today; an end too far off is the longest stretch.
+    planner.setStart(dateInput('2026-10-01'));
+    expect(planner.stretch()?.start).toBe('2026-10-12');
+    planner.setEnd(dateInput('2026-12-25'));
+    expect(planner.stretch()?.end).toBe('2026-11-11');
+    expect(planner.latestEnd()).toBe('2026-11-11');
+
+    // Nothing typed, nothing changed; the box is put back to what is on screen.
+    const box = { value: 'not a date' };
+    planner.setEnd({ target: box } as unknown as Event);
+    expect(planner.stretch()?.end).toBe('2026-11-11');
+    expect(box.value).toBe('2026-11-11');
   });
 
   it("ranks by the server's goalie rank when goalies are picked", async () => {
@@ -254,24 +309,24 @@ describe('StreamerPlannerComponent', () => {
     const planner = fixture.point.componentInstance;
     expect(planner.teamRows().map((row) => row.team)).toEqual(['EDM', 'TBL']);
 
-    planner.selectPosition({ target: { value: 'goalies' } } as unknown as Event);
+    planner.setPosition('goalies');
     expect(planner.teamRows().map((row) => row.team)).toEqual(['TBL', 'EDM']);
   });
 
-  it('re-rates the teams over the nights left when one is unticked, and forgets that on a new interval', async () => {
+  it('re-rates the teams over the nights left when one is unticked, and forgets that on a new stretch', async () => {
     const fixture = await render();
     const planner = fixture.point.componentInstance;
 
     planner.toggleDay(planner.days()[1]);
 
-    expect(planner.nightsTitle()).toBe('1 of 2');
+    expect(planner.nightsTitle()).toBe('1 of 2 nights');
     // Only the Oct 15 game is left: 1 game against a 0.9 opponent, for both teams alike.
     expect(planner.teamRows().map((row) => [row.team, row.score, row.games])).toEqual([
       ['EDM', 0.9, 1],
       ['TBL', 0.9, 1],
     ]);
 
-    planner.selectEndWeek({ target: { value: '3' } } as unknown as Event);
+    planner.applyPreset('next-week');
     await fixture.whenStable();
     expect(planner.everyNightCounted()).toBe(true);
   });
@@ -279,11 +334,13 @@ describe('StreamerPlannerComponent', () => {
   it('renders a night per day with its games, and a row per team', async () => {
     const fixture = await render();
 
-    const nights = ngMocks.findAll(fixture, '.day');
+    const nights = ngMocks.findAll(fixture, 'label.day');
     expect(nights.length).toBe(7);
     expect(ngMocks.formatText(nights[1])).toContain('3 games');
     expect(ngMocks.formatText(nights[0])).toContain('No games');
     expect(ngMocks.formatText(fixture)).toContain('Week 2');
+    expect(ngMocks.formatText(fixture)).toContain('Pick a league above');
+    expect(fixture.point.componentInstance.showsTopOptions()).toBe(false);
   });
 
   it('says so when no schedule is published', async () => {
@@ -311,20 +368,25 @@ describe('StreamerPlannerComponent', () => {
       ]);
       expect(planner.ranked()[0].score).toBeCloseTo(11, 5);
       expect(planner.scoringType()).toBe('points');
-      expect(planner.leagueTitle()).toBe('The Gordie Howes');
     });
 
     it('cards the best three and groups the rest by position, the two-way forward under both', async () => {
       const fixture = await render();
       const planner = fixture.point.componentInstance;
 
+      expect(planner.showsTopOptions()).toBe(true);
       expect(planner.topOptions().map((row) => row.rank)).toEqual([1, 2, 3]);
       expect(planner.groups().map((group) => group.position)).toEqual(['C', 'LW', 'G']);
       expect(planner.groups()[1].rows.map((row) => row.player.name)).toEqual(['Top Scorer']);
 
-      planner.selectPerPosition({ target: { value: '5' } } as unknown as Event);
+      planner.setPerPosition(5);
       expect(planner.perPosition()).toBe(5);
-      expect(ngMocks.findAll(fixture, '.option-card').length).toBe(3);
+      const cards = ngMocks.findAll(fixture, '.option-card');
+      expect(cards.length).toBe(3);
+      // 11 points over 2 games; the goalie is the one to claim rather than add.
+      expect(ngMocks.formatText(cards[0])).toContain('5.5');
+      expect(ngMocks.formatText(cards[0])).not.toContain('Waivers');
+      expect(ngMocks.formatText(cards[2])).toContain('Waivers');
     });
 
     it("scales a free agent's line to the share of his club's games on the nights counted", async () => {
@@ -357,6 +419,7 @@ describe('StreamerPlannerComponent', () => {
         .find((element) => ngMocks.input(element, 'title') === "Couldn't load free agents");
       expect(errorState).toBeDefined();
       expect(fixture.point.componentInstance.ranked()).toHaveLength(0);
+      expect(fixture.point.componentInstance.showsTopOptions()).toBe(false);
     });
   });
 });

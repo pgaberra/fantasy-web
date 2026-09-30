@@ -3,7 +3,6 @@ import { TeamSchedule } from '../api/models/team-schedule';
 import { GOALIE_SCORING_STAT_KEYS, SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
 import { FreeAgent } from '../services/streamer-planner-free-agents.service';
 import {
-  availabilityLabel,
   formatGames,
   formatToi,
   groupByPosition,
@@ -140,11 +139,5 @@ describe('formatting', () => {
   it('writes games to a decimal only where the expectation has one', () => {
     expect(formatGames(3)).toBe('3');
     expect(formatGames(3.75)).toBe('3.8');
-  });
-
-  it('names a status', () => {
-    expect(availabilityLabel('FREE_AGENT')).toBe('Free agent');
-    expect(availabilityLabel('WAIVERS')).toBe('Waivers');
-    expect(availabilityLabel('UNKNOWN')).toBe('Available');
   });
 });

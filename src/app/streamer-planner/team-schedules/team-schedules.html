@@ -38,6 +38,7 @@
               (click)="toggle(row.team)"
             >
               <span class="rank" [attr.data-tier]="tier(row)">{{ row.rank }}</span>
+              <app-team-logo class="team-logo" [team]="row.team" />
               <span class="team-name">{{ row.team }}</span>
               <app-icon class="chevron" name="chevron-down" [size]="14" />
             </button>
@@ -48,8 +49,8 @@
           <td class="num">{{ row.awayGames }}</td>
           <td class="num">{{ row.offNightGames }}</td>
           <td class="num">{{ row.backToBacks }}</td>
-          <td class="num fav">{{ row.favourable }}</td>
-          <td class="num unfav">{{ row.unfavourable }}</td>
+          <td class="num fav" [class.nil]="row.favourable === 0">{{ row.favourable }}</td>
+          <td class="num unfav" [class.nil]="row.unfavourable === 0">{{ row.unfavourable }}</td>
         </tr>
         @if (expanded() === row.team) {
           <tr class="games-row">
@@ -66,6 +67,7 @@
                       [appTooltip]="matchupLabel(game)"
                     >
                       <span class="game-day">{{ gameDay(game) }}</span>
+                      <app-team-logo class="game-logo" [team]="game.opponent" />
                       <span class="game-opponent"
                         >{{ game.home ? 'vs' : 'at' }} {{ game.opponent ?? 'TBD' }}</span
                       >

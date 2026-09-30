@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import { ScheduledGame } from '../../api/models/scheduled-game';
 import { IconComponent } from '../../shared/icon/icon';
+import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import {
   formatDay,
@@ -48,7 +49,7 @@ export const TEAM_COLUMNS: readonly TeamColumn[] = [
  */
 @Component({
   selector: 'app-team-schedules',
-  imports: [IconComponent, TooltipDirective],
+  imports: [IconComponent, TeamLogoComponent, TooltipDirective],
   templateUrl: './team-schedules.html',
   styleUrl: './team-schedules.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

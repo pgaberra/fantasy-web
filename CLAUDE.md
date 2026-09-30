@@ -349,20 +349,26 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   failed. `shared/premium/premium-refused.ts` is the one message for it, and it deliberately
   does not say "try again".
 - `streamer-planner/` — the **Streamer Planner** page (`/streamer-planner`, signed in, served only
-  where the BFF's `streamerPlanner` feature says so): every NHL team rated by its schedule over an
-  interval of weeks, and the best players a league has available for it. Laid out after
-  LineupExperts' streaming planner: a settings bar (starting and ending week, skaters or goalies,
-  how many free agents a position, the league), the interval's nights as a strip of tick boxes, the
-  three best pickups as cards, then the team schedules beside the free agents grouped by position.
-  No buttons: what the settings point at is what is on screen. `planner-schedule.ts` re-rates the
-  teams over the nights ticked, by projection-service's own rule (a game is 1, or 1.25 on an
-  off-night, scaled by the opponent), and uses the server's numbers untouched while every night is
-  ticked; `planner-free-agents.ts` scales a free agent's line to the share of his club's games on
-  those nights, groups by position (a two-way forward under both) and keeps two decimals on every
-  stat for the ranking engine, whose default rounds a week's 0.4 goals to none. The free agents are
-  ranked here, by the league's own scoring settings through `ProjectionRankingService`; the
-  league is remembered on the device by `StreamerPlannerLeagueService` and picked in
-  `league-field` (a Yahoo league reads at once, an ESPN id waits for Use).
+  where the BFF's `streamerPlanner` feature says so): every NHL team rated by its schedule over the
+  nights ahead, and the best players a league has available for them. The nights are the page's
+  one setting: presets (the rest of this week, next week, both) or two dates, held to today, the
+  season and the BFF's 31-day cap (`planner-schedule.ts`: `presetStretch`, `clampStretch`;
+  `PLANNER_TODAY` is the reader's own clock, so a night already played is never offered), then a
+  strip of tick boxes, one a night, seven to a row so each row is a Monday-to-Sunday week (the days
+  of the first week already behind are drawn faint). The league sits beside the nights; the
+  controls that concern one table sit on it (skaters or goalies on the team schedules, 3/5/10 a
+  position on the free agents). No buttons: what the nights point at is what is on screen.
+  `planner-schedule.ts` re-rates the teams over the nights ticked, by projection-service's own
+  rule (a game is 1, or 1.25 on an off-night, scaled by the opponent), and uses the server's
+  numbers untouched while every night is ticked; `planner-free-agents.ts` scales a free agent's
+  line to the share of his club's games on those nights, groups by position (a two-way forward
+  under both) and keeps two decimals on every stat for the ranking engine, whose default rounds a
+  week's 0.4 goals to none. The free agents are ranked here, by the league's own scoring settings
+  through `ProjectionRankingService`; the league is remembered on the device by
+  `StreamerPlannerLeagueService` and picked in `league-field` (a Yahoo league reads at once, an
+  ESPN id waits for Use). Clubs are drawn with `<app-team-logo>` (`shared/team-logo`): the NHL's
+  own crest read from `assets.nhle.com`, an abbreviation badge where it fails; only a player on
+  waivers gets a tag, since an add is what the list is a list of.
 - `services/` — app services (auth, projections, etc.)
 - `interceptors/` — HTTP interceptors: `authInterceptor` attaches the JWT and refreshes
   once on 401 (all environments). **Only a 401/403 from `/auth/refresh` itself ends the

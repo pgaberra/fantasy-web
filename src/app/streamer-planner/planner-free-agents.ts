@@ -117,15 +117,3 @@ export function formatToi(seconds: number | undefined): string {
 export function formatGames(games: number): string {
   return Number.isInteger(games) ? games.toString() : games.toFixed(1);
 }
-
-/** The label a status gets. A player the platform says nothing about is on the list, so available. */
-export function availabilityLabel(availability: FreeAgent['availability']): string {
-  switch (availability) {
-    case 'WAIVERS':
-      return 'Waivers';
-    case 'FREE_AGENT':
-      return 'Free agent';
-    default:
-      return 'Available';
-  }
-}

@@ -3,14 +3,17 @@ import { PlannerWeek } from '../api/models/planner-week';
 import { ScheduledGame } from '../api/models/scheduled-game';
 import { TeamSchedule } from '../api/models/team-schedule';
 import {
-  daysBetween,
-  endWeekOptions,
+  clampStretch,
+  leadingDays,
+  localIsoDate,
   matchupLabel,
   matchupTier,
   plannerDays,
+  presetStretch,
   rankTier,
   rateTeams,
-  weeksLabel,
+  weekColumn,
+  weeksTitle,
 } from './planner-schedule';
 
 function game(date: string, overrides: Partial<ScheduledGame> = {}): ScheduledGame {
@@ -172,20 +175,68 @@ describe('matchups', () => {
   });
 });
 
-describe('weeks', () => {
-  it('offers ending weeks from the start up to the longest stretch the server rates', () => {
-    // From the Monday of week 2, weeks 2 to 5 span 28 days; week 6 would make it 35.
-    expect(endWeekOptions(WEEKS, WEEKS[1]).map((week) => week.week)).toEqual([2, 3, 4, 5]);
-    expect(endWeekOptions(WEEKS, WEEKS[5]).map((week) => week.week)).toEqual([6]);
+describe('presets', () => {
+  // A Wednesday in week 2.
+  const TODAY = '2026-10-14';
+
+  it('names the rest of this week from today, next week whole, and both together', () => {
+    expect(presetStretch('this-week', WEEKS, TODAY)).toEqual({
+      start: '2026-10-14',
+      end: '2026-10-18',
+    });
+    expect(presetStretch('next-week', WEEKS, TODAY)).toEqual({
+      start: '2026-10-19',
+      end: '2026-10-25',
+    });
+    expect(presetStretch('two-weeks', WEEKS, TODAY)).toEqual({
+      start: '2026-10-14',
+      end: '2026-10-25',
+    });
   });
 
-  it('counts days with both ends included', () => {
-    expect(daysBetween('2026-10-12', '2026-10-12')).toBe(1);
-    expect(daysBetween('2026-10-12', '2026-10-18')).toBe(7);
+  it('starts on opening night before the season, and has no next week after its last', () => {
+    expect(presetStretch('this-week', WEEKS, '2026-10-01')).toEqual({
+      start: '2026-10-07',
+      end: '2026-10-11',
+    });
+    expect(presetStretch('next-week', WEEKS, '2026-11-10')).toBeUndefined();
+    expect(presetStretch('two-weeks', WEEKS, '2026-11-10')).toBeUndefined();
+    expect(presetStretch('this-week', [], TODAY)).toBeUndefined();
   });
 
-  it('names one week or an interval of them', () => {
-    expect(weeksLabel(WEEKS[2], WEEKS[2])).toBe('Week 3');
-    expect(weeksLabel(WEEKS[2], WEEKS[4])).toBe('Weeks 3 to 5');
+  it('holds a stretch to today, the season and the longest stretch the server rates', () => {
+    // A start in the past moves up to today; an end before the start moves up to it.
+    expect(clampStretch({ start: '2026-10-12', end: '2026-10-13' }, WEEKS, TODAY)).toEqual({
+      start: '2026-10-14',
+      end: '2026-10-14',
+    });
+    // 31 days from Oct 14 is Nov 13; the season's last day is Nov 15.
+    expect(clampStretch({ start: '2026-10-14', end: '2026-12-01' }, WEEKS, TODAY)).toEqual({
+      start: '2026-10-14',
+      end: '2026-11-13',
+    });
+    expect(clampStretch({ start: '2026-11-09', end: '2026-12-01' }, WEEKS, TODAY)).toEqual({
+      start: '2026-11-09',
+      end: '2026-11-15',
+    });
+    expect(clampStretch({ start: '2026-10-14', end: '2026-10-20' }, [], TODAY)).toBeUndefined();
+  });
+
+  it('names the weeks a stretch touches', () => {
+    expect(weeksTitle(WEEKS, { start: '2026-10-19', end: '2026-10-25' })).toBe('Week 3');
+    expect(weeksTitle(WEEKS, { start: '2026-10-22', end: '2026-11-03' })).toBe('Weeks 3 to 5');
+    expect(weeksTitle(WEEKS, { start: '2027-01-01', end: '2027-01-02' })).toBe('');
+  });
+
+  it('places a date in its Monday-first week, and lists the days of the week before a start', () => {
+    expect(weekColumn('2026-10-12')).toBe(1);
+    expect(weekColumn('2026-10-18')).toBe(7);
+    expect(leadingDays('2026-10-15')).toEqual(['2026-10-12', '2026-10-13', '2026-10-14']);
+    expect(leadingDays('2026-10-12')).toEqual([]);
+  });
+
+  it("spells today as the API spells a date, on the reader's own clock", () => {
+    expect(localIsoDate(new Date(2026, 9, 1, 23, 30))).toBe('2026-10-01');
+    expect(localIsoDate(new Date(2026, 0, 5))).toBe('2026-01-05');
   });
 });

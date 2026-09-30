@@ -88,6 +88,10 @@ th[aria-sort] .sort {
   outline-offset: 1px;
 }
 
+.team-logo {
+  --team-logo-size: 22px;
+}
+
 .chevron {
   color: var(--color-text-subtle);
   transition: transform var(--transition-fast);
@@ -133,6 +137,12 @@ tr.open .chevron {
   color: var(--color-danger);
 }
 
+/* A count of none is nothing to colour: it stays in the column's tint but not in its voice. */
+.fav.nil,
+.unfav.nil {
+  color: var(--color-text-subtle);
+}
+
 /* The games behind a row, in the band of the row they belong to. */
 .games-row td {
   background: var(--color-surface-alt);
@@ -173,6 +183,12 @@ tr.open .chevron {
 
 .game-day {
   color: var(--color-text-muted);
+}
+
+.game-logo {
+  --team-logo-size: 16px;
+
+  align-self: center;
 }
 
 .game-opponent {

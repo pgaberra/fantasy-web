@@ -1,3 +1,4 @@
+import { InjectionToken } from '@angular/core';
 import { PlannerWeek } from '../api/models/planner-week';
 import { ScheduledGame } from '../api/models/scheduled-game';
 import { ScheduleStrengthResponse } from '../api/models/schedule-strength-response';
@@ -165,26 +166,137 @@ export function matchupLabel(game: ScheduledGame, position: PlannerPosition): st
   return `${sentences.join('. ')}.`;
 }
 
-/** The weeks an interval may end on, given where it starts: that week or a later one, within the longest stretch. */
-export function endWeekOptions(weeks: readonly PlannerWeek[], start: PlannerWeek): PlannerWeek[] {
-  return weeks.filter(
-    (week) => week.week >= start.week && daysBetween(start.start, week.end) <= MAX_STRETCH_DAYS,
-  );
+/** The dates a report covers, both included. */
+export interface Stretch {
+  readonly start: string;
+  readonly end: string;
 }
 
-/** Days from one date to another, both included. */
-export function daysBetween(start: string, end: string): number {
-  const millisPerDay = 24 * 60 * 60 * 1000;
-  return Math.round((parseDate(end).getTime() - parseDate(start).getTime()) / millisPerDay) + 1;
+/** The stretches a reader picks by name. */
+export type PlannerPreset = 'this-week' | 'next-week' | 'two-weeks';
+
+export const PLANNER_PRESETS: readonly { readonly key: PlannerPreset; readonly label: string }[] = [
+  { key: 'this-week', label: 'This week' },
+  { key: 'next-week', label: 'Next week' },
+  { key: 'two-weeks', label: 'Two weeks' },
+];
+
+/**
+ * Today where the reader sits, as the API spells a date. The reader's own clock, not the server's:
+ * a night is over for a streamer once it has been played where he is, and the server only says
+ * which week today falls in.
+ */
+export const PLANNER_TODAY = new InjectionToken<() => string>('PLANNER_TODAY', {
+  providedIn: 'root',
+  factory: () => () => localIsoDate(),
+});
+
+export function localIsoDate(now: Date = new Date()): string {
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
 }
 
-export function weekLabel(week: PlannerWeek): string {
-  return `Week ${week.week} (${formatDay(week.start)} to ${formatDay(week.end)})`;
+/** The week today falls in: the first before opening night, the last after the season. */
+export function weekOf(weeks: readonly PlannerWeek[], today: string): PlannerWeek | undefined {
+  return weeks.find((week) => today <= week.end) ?? weeks[weeks.length - 1];
 }
 
-/** "Week 3", or "Weeks 3 to 5" for an interval. */
-export function weeksLabel(start: PlannerWeek, end: PlannerWeek): string {
-  return start.week === end.week ? `Week ${start.week}` : `Weeks ${start.week} to ${end.week}`;
+/**
+ * The stretch a preset names, from today: the rest of this week, the whole of next week, or both
+ * together. A night already played is not a night to stream for, so this week starts today rather
+ * than on Monday; before opening night it starts on opening night. Nothing where the season has no
+ * next week to offer.
+ */
+export function presetStretch(
+  preset: PlannerPreset,
+  weeks: readonly PlannerWeek[],
+  today: string,
+): Stretch | undefined {
+  const current = weekOf(weeks, today);
+  if (!current) {
+    return undefined;
+  }
+  const next = weeks[weeks.indexOf(current) + 1];
+  const start = clampDate(today, current.start, current.end);
+  switch (preset) {
+    case 'this-week':
+      return { start, end: current.end };
+    case 'next-week':
+      return next ? { start: next.start, end: next.end } : undefined;
+    case 'two-weeks':
+      return next ? { start, end: next.end } : undefined;
+  }
+}
+
+/**
+ * A stretch held to what the planner can show: no earlier than today or opening night, no later
+ * than the season's last day, no longer than the BFF rates, and never ending before it starts.
+ */
+export function clampStretch(
+  stretch: Stretch,
+  weeks: readonly PlannerWeek[],
+  today: string,
+): Stretch | undefined {
+  if (weeks.length === 0) {
+    return undefined;
+  }
+  const last = weeks[weeks.length - 1].end;
+  const start = clampDate(stretch.start, earliestStart(weeks, today), last);
+  const end = clampDate(stretch.end, start, latestEnd(weeks, start));
+  return { start, end };
+}
+
+/** The first night a stretch may start on: today, or opening night if that is later. */
+export function earliestStart(weeks: readonly PlannerWeek[], today: string): string {
+  const first = weeks[0]?.start ?? today;
+  const last = weeks[weeks.length - 1]?.end ?? today;
+  return clampDate(today, first, last);
+}
+
+/** The last night a stretch from a start may end on: the season's end, or the longest stretch the BFF rates. */
+export function latestEnd(weeks: readonly PlannerWeek[], start: string): string {
+  const last = weeks[weeks.length - 1]?.end ?? start;
+  const longest = addDays(start, MAX_STRETCH_DAYS - 1);
+  return longest < last ? longest : last;
+}
+
+export function sameStretch(a: Stretch | undefined, b: Stretch | undefined): boolean {
+  return !!a && !!b && a.start === b.start && a.end === b.end;
+}
+
+/** ISO dates compare as strings, so a clamp is two comparisons. */
+export function clampDate(value: string, min: string, max: string): string {
+  if (value < min) {
+    return min;
+  }
+  return value > max ? max : value;
+}
+
+export function isIsoDate(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(parseDate(value).getTime());
+}
+
+export function addDays(iso: string, days: number): string {
+  const date = parseDate(iso);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+/** "Week 3", or "Weeks 3 to 5": the weeks a stretch touches. */
+export function weeksTitle(weeks: readonly PlannerWeek[], stretch: Stretch): string {
+  const touched = weeks.filter((week) => week.end >= stretch.start && week.start <= stretch.end);
+  if (touched.length === 0) {
+    return '';
+  }
+  const first = touched[0].week;
+  const last = touched[touched.length - 1].week;
+  return first === last ? `Week ${first}` : `Weeks ${first} to ${last}`;
+}
+
+/** The column of a Monday-first week a date falls in: 1 for a Monday, 7 for a Sunday. */
+export function weekColumn(iso: string): number {
+  return ((parseDate(iso).getUTCDay() + 6) % 7) + 1;
 }
 
 /** "Oct 19 to Oct 25". */
@@ -193,7 +305,21 @@ export function stretchLabel(start: string, end: string): string {
 }
 
 export function dayName(day: PlannerDay): string {
-  return parseDate(day.date).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
+  return weekdayName(day.date);
+}
+
+/** "Thu". */
+export function weekdayName(iso: string): string {
+  return parseDate(iso).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
+}
+
+/**
+ * The days of the week before a stretch starts, so its first row of nights can be drawn as the
+ * Monday-to-Sunday week it is part of: three days before a Thursday, none before a Monday.
+ */
+export function leadingDays(start: string): string[] {
+  const column = weekColumn(start);
+  return Array.from({ length: column - 1 }, (_, index) => addDays(start, index - column + 1));
 }
 
 export function formatDay(iso: string): string {
