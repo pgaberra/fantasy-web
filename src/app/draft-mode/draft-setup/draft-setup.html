@@ -80,12 +80,9 @@
             <span class="sync-unavailable" aria-hidden="true">Not available on ESPN</span>
           </span>
         </div>
-      } @else {
-        <p class="setup-note setup-note--block">
-          Picks can't be synced from {{ league.platform }} yet, so you enter them as they are made.
-          Name the teams and set the draft order below.
-        </p>
       }
+      <!-- A Yahoo league whose draft is not followed here (a finished draft, or the switch off in
+           this environment) shows no switch and no note: there is nothing to sync. -->
     }
   </section>
 
