@@ -8,6 +8,7 @@ import {
   lucideArrowUpToLine,
   lucideBell,
   lucideBellOff,
+  lucideCalendarDays,
   lucideChartColumn,
   lucideChartNoAxesColumn,
   lucideCheck,
@@ -40,10 +41,12 @@ import {
   lucideSlidersVertical,
   lucideSparkles,
   lucideSquareDashed,
+  lucideStar,
   lucideTable,
   lucideTrash,
   lucideTriangleAlert,
   lucideUndo2,
+  lucideUserPlus,
   lucideX,
 } from '@ng-icons/lucide';
 
@@ -62,6 +65,7 @@ const ICONS = {
   'arrow-right': lucideArrowRight,
   'arrow-up': lucideArrowUp,
   'arrow-up-to-line': lucideArrowUpToLine,
+  'calendar-days': lucideCalendarDays,
   'chart-bar': lucideChartColumn,
   'chart-columns': lucideChartNoAxesColumn,
   check: lucideCheck,
@@ -84,7 +88,6 @@ const ICONS = {
   mail: lucideMail,
   menu: lucideMenu,
   'more-vertical': lucideEllipsisVertical,
-  spreadsheet: lucideFileSpreadsheet,
   pencil: lucidePencil,
   play: lucidePlay,
   plus: lucidePlus,
@@ -95,11 +98,14 @@ const ICONS = {
   share: lucideShare,
   sliders: lucideSlidersVertical,
   sparkles: lucideSparkles,
+  spreadsheet: lucideFileSpreadsheet,
   'square-dashed': lucideSquareDashed,
+  star: lucideStar,
   table: lucideTable,
   trash: lucideTrash,
   undo: lucideUndo2,
   unfollow: lucideBellOff,
+  'user-plus': lucideUserPlus,
 } satisfies Record<string, string>;
 
 export type IconName = keyof typeof ICONS;
