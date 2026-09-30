@@ -93,15 +93,13 @@
         <div class="available-row">
           <span class="row-rank">{{ boardRanks().get(sp.projection.playerId) ?? i + 1 }}</span>
           <app-player-avatar [playerId]="sp.projection.playerId" />
-          <span class="row-info">
-            <span class="row-name">{{ lookup.name(sp.projection.playerId) }}</span>
-            <span class="row-sub">
-              <app-player-position-chips [playerId]="sp.projection.playerId" />
-              <span class="row-team">{{ lookup.team(sp.projection.playerId) }}</span>
-              @if (tierBadges().get(sp.projection.playerId); as badge) {
-                <span class="tier-chip" [appTooltip]="badge.tooltip">{{ badge.label }}</span>
-              }
-            </span>
+          <span class="row-name">{{ lookup.name(sp.projection.playerId) }}</span>
+          <span class="row-sub">
+            <app-player-position-chips [playerId]="sp.projection.playerId" />
+            <span class="row-team">{{ lookup.team(sp.projection.playerId) }}</span>
+            @if (tierBadges().get(sp.projection.playerId); as badge) {
+              <span class="tier-chip" [appTooltip]="badge.tooltip">{{ badge.label }}</span>
+            }
           </span>
           @if (showStats()) {
             <div class="row-stats">
@@ -113,30 +111,28 @@
               }
             </div>
           }
-          <span class="row-rail">
-            <span class="row-score">{{ scoreLabel(sp) }}</span>
-            @if (editingInfo()) {
-              <button
-                type="button"
-                class="btn btn-primary btn-sm row-draft"
-                (click)="replace.emit(sp.projection.playerId)"
-              >
-                Pick
-              </button>
-            } @else if (!locked()) {
-              <button
-                type="button"
-                class="btn btn-sm row-draft"
-                [class.btn-primary]="isMyPick()"
-                [class.btn-secondary]="!isMyPick()"
-                [disabled]="isComplete()"
-                [attr.aria-label]="'Draft: ' + lookup.name(sp.projection.playerId)"
-                (click)="draft.emit(sp.projection.playerId)"
-              >
-                Draft
-              </button>
-            }
-          </span>
+          <span class="row-score">{{ scoreLabel(sp) }}</span>
+          @if (editingInfo()) {
+            <button
+              type="button"
+              class="btn btn-primary btn-sm row-draft"
+              (click)="replace.emit(sp.projection.playerId)"
+            >
+              Pick
+            </button>
+          } @else if (!locked()) {
+            <button
+              type="button"
+              class="btn btn-sm row-draft"
+              [class.btn-primary]="isMyPick()"
+              [class.btn-secondary]="!isMyPick()"
+              [disabled]="isComplete()"
+              [attr.aria-label]="'Draft: ' + lookup.name(sp.projection.playerId)"
+              (click)="draft.emit(sp.projection.playerId)"
+            >
+              Draft
+            </button>
+          }
         </div>
       }
     </div>
