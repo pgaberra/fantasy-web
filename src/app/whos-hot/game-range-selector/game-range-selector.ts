@@ -40,7 +40,8 @@ export const FREE_PRESET: LastGamesPreset = { label: 'Last 5', lastGames: 5 };
  *
  * That is what "the last 5" is a few nights into a season, when no team has played five and some
  * have played none: games 0-2. Drawn as 1-2 it asked only about players who had dressed, so every
- * team yet to play was absent from the board, and the board read as though it hid them.
+ * team yet to play was absent from the board, and the board read as though it hid them. The first
+ * half and the full season start here too, since both run from the season's start.
  */
 export const BEFORE_FIRST_GAME = 0;
 
@@ -69,9 +70,12 @@ const PRESETS: RangePreset[] = [
   { label: 'Last 10', lastGames: 10 },
   { label: 'Last 20', lastGames: 20 },
   { label: 'Last 30', lastGames: 30 },
-  { label: 'First half', range: (games) => ({ from: 1, to: Math.ceil(games / 2) }) },
+  {
+    label: 'First half',
+    range: (games) => ({ from: BEFORE_FIRST_GAME, to: Math.ceil(games / 2) }),
+  },
   { label: 'Second half', range: (games) => ({ from: Math.ceil(games / 2) + 1, to: games }) },
-  { label: 'Full season', range: (games) => ({ from: 1, to: games }) },
+  { label: 'Full season', range: (games) => ({ from: BEFORE_FIRST_GAME, to: games }) },
 ];
 
 function isLastGames(preset: RangePreset): preset is LastGamesPreset {

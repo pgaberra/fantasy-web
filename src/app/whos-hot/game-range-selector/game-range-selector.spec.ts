@@ -150,12 +150,29 @@ describe('GameRangeSelectorComponent', () => {
     expect(component.toGame()).toEqual(42);
 
     component.applyPreset(preset(component, 'Full season'));
-    expect(component.fromGame()).toEqual(1);
+    expect(component.fromGame()).toEqual(0);
     expect(component.toGame()).toEqual(84);
+    expect(component.summary()).toEqual('84 games');
+  });
+
+  it('starts the first half and the full season before the first game, like the season does', () => {
+    const component = renderMidSeason();
+
+    // Both run from the season's start, so both take in the players yet to play: on the second
+    // night "Full season" listed only the ones who had dressed.
+    component.applyPreset(preset(component, 'First half'));
+    expect([component.fromGame(), component.toGame()]).toEqual([0, 42]);
+
+    component.applyPreset(preset(component, 'Full season'));
+    expect([component.fromGame(), component.toGame()]).toEqual([0, 84]);
+
+    // The second half starts where the first ended, and asks only who dressed in it.
+    component.applyPreset(preset(component, 'Second half'));
+    expect(component.fromGame()).toEqual(43);
   });
 
   it('marks the preset that matches the current range', () => {
-    const component = render(1, 82);
+    const component = render(0, 82);
 
     expect(component.isPresetActive()(preset(component, 'Full season'))).toEqual(true);
     expect(component.isPresetActive()(preset(component, 'Last 10'))).toEqual(false);
