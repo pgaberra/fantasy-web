@@ -965,13 +965,14 @@ describe('DraftSetupComponent', () => {
       expect(asked).toEqual([]);
     });
 
-    it('says a Yahoo league cannot be synced where Yahoo drafts are not followed', () => {
+    it('shows neither switch nor note for a Yahoo league whose draft is not followed here', () => {
+      // A finished draft, or Yahoo following switched off: nothing to sync, so nothing is said.
       const fixture = render({ league: leagueWith({ yahooSync }), syncAvailable: false });
       const element: HTMLElement = fixture.nativeElement;
 
       expect(fixture.point.componentInstance.syncOffered()).toBe(false);
       expect(element.querySelector('.sync-row')).toBeNull();
-      expect(element.textContent).toContain("Picks can't be synced from Yahoo yet");
+      expect(element.textContent).not.toContain("Picks can't be synced");
     });
 
     it('names a draft not saved yet after the imported league, unless a name was typed', () => {

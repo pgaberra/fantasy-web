@@ -52,12 +52,7 @@
   color: var(--color-text-muted);
 }
 
-.setup-note--block {
-  margin: var(--space-3) 0 0;
-}
-
 /* Under the pair of fields it is about, and clear of the roster below it. */
-.setup-pair + .setup-note--block,
 .setup-pair + .field-error {
   margin: calc(-1 * var(--space-2)) 0 var(--space-4);
 }
