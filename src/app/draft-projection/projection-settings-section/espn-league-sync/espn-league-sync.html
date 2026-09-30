@@ -7,22 +7,12 @@
   </div>
 
   @if (lastSyncedAt(); as syncedAt) {
-    <div class="espn-synced-status" role="status">
-      <span class="sync-dot" aria-hidden="true"></span>
-      <span class="espn-synced-text">
-        @if (lastLeagueName(); as leagueName) {
-          Synced with <strong>{{ leagueName }}</strong>
-        } @else {
-          Synced
-        }
-        · {{ syncedAt | date: 'd MMM y, HH:mm' }}
-      </span>
-      @if (disconnectable()) {
-        <button type="button" class="btn btn-secondary btn-sm" (click)="disconnected.emit()">
-          Disconnect
-        </button>
-      }
-    </div>
+    <app-synced-line
+      [leagueName]="lastLeagueName()"
+      [syncedAt]="syncedAt"
+      [disconnectable]="disconnectable()"
+      (disconnected)="disconnected.emit()"
+    />
   }
 
   <div class="espn-sync-form">

@@ -6,6 +6,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { EspnLeagueSyncComponent, EspnSyncResult } from './espn-league-sync';
 import { EspnService } from '../../../services/espn.service';
 import { CookieFieldDirective } from '../../../shared/cookie-field/cookie-field';
+import { SyncedLineComponent } from '../../../shared/synced-line/synced-line';
 import { CredentialStatusResponse } from '../../../api/models/credential-status-response';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
 
@@ -30,8 +31,9 @@ describe('EspnLeagueSyncComponent', () => {
         saveCredentials: () => of(undefined),
         leagueProjectionSettings: () => of(settings),
       })
-      // Left real: a mocked DatePipe renders nothing, which is exactly what the "last synced"
-      // line is asserting about.
+      // Left real, with its DatePipe: a mocked pipe renders nothing, which is exactly what the
+      // synced line is asserting about.
+      .keep(SyncedLineComponent)
       .keep(DatePipe);
 
   it('reflects stored credentials from the status probe on init', async () => {
@@ -185,10 +187,10 @@ describe('EspnLeagueSyncComponent', () => {
     });
     await fixture.whenStable();
 
-    const status = fixture.nativeElement.querySelector('.espn-synced-status');
+    const status = fixture.nativeElement.querySelector('app-synced-line');
     expect(status.textContent).toContain('Synced with');
     expect(status.textContent).toContain('My 2027 League');
-    expect(status.textContent).toContain('14 Aug 2026');
+    expect(status.textContent).toContain('Aug 14, 2026');
     // Same green dot as the toolbar button that opened this dialog.
     expect(status.querySelector('.sync-dot')).toBeTruthy();
   });
@@ -201,9 +203,9 @@ describe('EspnLeagueSyncComponent', () => {
     });
     await fixture.whenStable();
 
-    const status = fixture.nativeElement.querySelector('.espn-synced-status');
+    const status = fixture.nativeElement.querySelector('app-synced-line');
     expect(status.textContent).toContain('Synced');
-    expect(status.textContent).toContain('14 Aug 2026');
+    expect(status.textContent).toContain('Aug 14, 2026');
   });
 
   it('names a fresh sync once, on the status line the page stamps', async () => {
@@ -236,7 +238,7 @@ describe('EspnLeagueSyncComponent', () => {
       disconnectable: false,
     });
     await fixture.whenStable();
-    const status = () => fixture.nativeElement.querySelector('.espn-synced-status') as HTMLElement;
+    const status = () => fixture.nativeElement.querySelector('app-synced-line') as HTMLElement;
     expect(status().querySelector('button')).toBeNull();
 
     fixture.componentInstance.disconnectable = true;
@@ -255,7 +257,7 @@ describe('EspnLeagueSyncComponent', () => {
     const fixture = MockRender(EspnLeagueSyncComponent);
     await fixture.whenStable();
 
-    expect(fixture.nativeElement.querySelector('.espn-synced-status')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-synced-line')).toBeNull();
   });
 
   it('leaves the private box unticked for a user whose cookies are on file', async () => {

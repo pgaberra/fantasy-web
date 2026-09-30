@@ -12,14 +12,6 @@
   background: var(--color-surface-alt);
 }
 
-.yahoo-sync-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-3);
-}
-
 .yahoo-sync-brand {
   display: inline-flex;
   align-items: center;
@@ -29,9 +21,8 @@
   color: var(--color-primary);
 }
 
-.yahoo-sync-action,
 .yahoo-sync-controls {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-2);
@@ -56,30 +47,6 @@
   font-size: var(--text-sm);
   color: var(--color-danger);
   margin: 0;
-}
-
-.yahoo-sync-synced {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--color-primary);
-}
-
-.yahoo-sync-check {
-  flex-shrink: 0;
-  color: var(--color-success);
-}
-
-.yahoo-sync-time {
-  color: var(--color-text-muted);
-  font-weight: 400;
-}
-
-.yahoo-sync-disconnect {
-  margin-left: auto;
 }
 
 .yahoo-sync-muted {
