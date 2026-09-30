@@ -18,6 +18,7 @@ describe('PlatformSwitchDialogComponent', () => {
     expect(text).toContain('Disconnect your ESPN league?');
     expect(text).toContain('Tampa Bay Pro');
     expect(text).toContain('Switching to Yahoo disconnects it.');
+    expect(text).toContain('The settings stay as they are until a new league is synced.');
   });
 
   it('cancels from the cross, Escape and Cancel, and goes on from the other button', () => {
