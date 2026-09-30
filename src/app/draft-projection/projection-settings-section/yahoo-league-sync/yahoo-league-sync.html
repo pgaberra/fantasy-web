@@ -1,100 +1,84 @@
 <div class="yahoo-sync">
-  <div class="yahoo-sync-row">
-    <span class="yahoo-sync-brand">
-      <app-yahoo-mark size="1.15rem" />
-      Sync from your Yahoo league
-    </span>
+  <span class="yahoo-sync-brand">
+    <app-yahoo-mark size="1.15rem" />
+    Sync from your Yahoo league
+  </span>
 
-    @if (!syncDisabled) {
-      <span class="yahoo-sync-action">
-        @switch (connected()) {
-          @case (null) {
+  <!-- The link before the controls, as the ESPN card has it: what the settings are held to,
+       then the way to sync them again. -->
+  @if (lastSync(); as sync) {
+    <app-synced-line
+      [leagueName]="sync.leagueName"
+      [syncedAt]="sync.syncedAt"
+      [disconnectable]="disconnectable()"
+      (disconnected)="disconnected.emit()"
+    />
+  }
+
+  @if (!syncDisabled) {
+    <div class="yahoo-sync-controls">
+      @switch (connected()) {
+        @case (null) {
+          <span class="yahoo-sync-status"
+            ><app-loading-indicator variant="inline" label="Checking"
+          /></span>
+        }
+        @case (false) {
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            [disabled]="connecting()"
+            (click)="connect()"
+          >
+            @if (connecting()) {
+              <app-loading-indicator variant="inline" label="Connecting" />
+            } @else {
+              Connect Yahoo account
+            }
+          </button>
+        }
+        @default {
+          @if (loadingLeagues()) {
             <span class="yahoo-sync-status"
-              ><app-loading-indicator variant="inline" label="Checking"
+              ><app-loading-indicator variant="inline" label="Loading your leagues"
             /></span>
-          }
-          @case (false) {
+          } @else if (leagues().length === 0) {
+            <span class="yahoo-sync-status">No NHL leagues found.</span>
+          } @else {
+            <select
+              class="yahoo-sync-select"
+              aria-label="Yahoo league"
+              (change)="onLeagueChange($event)"
+            >
+              <option value="">Select a league…</option>
+              @for (league of leagues(); track league.leagueKey) {
+                <option [value]="league.leagueKey" [selected]="league.leagueKey === selectedKey()">
+                  {{ league.name }}
+                </option>
+              }
+            </select>
             <button
               type="button"
-              class="btn btn-secondary btn-sm"
-              [disabled]="connecting()"
-              (click)="connect()"
+              class="btn btn-sm"
+              [class.btn-primary]="syncPending()"
+              [class.btn-secondary]="!syncPending()"
+              [disabled]="!selectedKey() || syncing()"
+              (click)="sync()"
             >
-              @if (connecting()) {
-                <app-loading-indicator variant="inline" label="Connecting" />
+              @if (syncing()) {
+                <app-loading-indicator variant="inline" label="Syncing" />
               } @else {
-                Connect Yahoo account
+                {{ lastSync() ? 'Re-sync settings' : 'Sync settings' }}
               }
             </button>
           }
-          @default {
-            @if (loadingLeagues()) {
-              <span class="yahoo-sync-status"
-                ><app-loading-indicator variant="inline" label="Loading your leagues"
-              /></span>
-            } @else if (leagues().length === 0) {
-              <span class="yahoo-sync-status">No NHL leagues found.</span>
-            } @else {
-              <span class="yahoo-sync-controls">
-                <select
-                  class="yahoo-sync-select"
-                  aria-label="Yahoo league"
-                  (change)="onLeagueChange($event)"
-                >
-                  <option value="">Select a league…</option>
-                  @for (league of leagues(); track league.leagueKey) {
-                    <option
-                      [value]="league.leagueKey"
-                      [selected]="league.leagueKey === selectedKey()"
-                    >
-                      {{ league.name }}
-                    </option>
-                  }
-                </select>
-                <button
-                  type="button"
-                  class="btn btn-sm"
-                  [class.btn-primary]="syncPending()"
-                  [class.btn-secondary]="!syncPending()"
-                  [disabled]="!selectedKey() || syncing()"
-                  (click)="sync()"
-                >
-                  @if (syncing()) {
-                    <app-loading-indicator variant="inline" label="Syncing" />
-                  } @else {
-                    {{ lastSync() ? 'Re-sync settings' : 'Sync settings' }}
-                  }
-                </button>
-              </span>
-            }
-          }
         }
-      </span>
-    }
-  </div>
+      }
+    </div>
+  }
 
   @if (error()) {
     <p class="yahoo-sync-error" role="alert">{{ error() }}</p>
-  }
-  @if (lastSync(); as sync) {
-    <p class="yahoo-sync-synced" role="status">
-      <app-icon name="check-circle" class="yahoo-sync-check" />
-      <span
-        >Synced from <strong>{{ sync.leagueName }}</strong></span
-      >
-      <span class="yahoo-sync-time"
-        >· last synced {{ sync.syncedAt | date: 'MMM d, y, h:mm a' }}</span
-      >
-      @if (disconnectable()) {
-        <button
-          type="button"
-          class="btn btn-secondary btn-sm yahoo-sync-disconnect"
-          (click)="disconnected.emit()"
-        >
-          Disconnect
-        </button>
-      }
-    </p>
   }
   @if (unsupportedStats().length) {
     <p class="yahoo-sync-muted">Not synced: {{ unsupportedStats().join(', ') }}</p>

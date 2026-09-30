@@ -17,15 +17,11 @@
   }
   <!-- The league's own tab is not on offer (Yahoo between seasons), so no panel names the link. -->
   @if (linkedOffTab(); as leagueName) {
-    <div class="league-sync-linked">
-      <span class="sync-dot" aria-hidden="true"></span>
-      <span class="league-sync-linked-text"
-        >Synced with <strong>{{ leagueName }}</strong></span
-      >
-      <button type="button" class="btn btn-secondary btn-sm" (click)="disconnected.emit('button')">
-        Disconnect
-      </button>
-    </div>
+    <app-synced-line
+      [leagueName]="leagueName"
+      [disconnectable]="true"
+      (disconnected)="disconnected.emit('button')"
+    />
   }
   @switch (provider()) {
     @case ('yahoo') {
@@ -50,13 +46,9 @@
 } @else if (linkedLeagueName(); as leagueName) {
   <!-- No platform can be synced (Yahoo between seasons, ESPN off), yet a league imported while
        one could still owns the settings, and disconnecting is how they come back. -->
-  <div class="league-sync-linked">
-    <span class="sync-dot" aria-hidden="true"></span>
-    <span class="league-sync-linked-text"
-      >Synced with <strong>{{ leagueName }}</strong></span
-    >
-    <button type="button" class="btn btn-secondary btn-sm" (click)="disconnected.emit('button')">
-      Disconnect
-    </button>
-  </div>
+  <app-synced-line
+    [leagueName]="leagueName"
+    [disconnectable]="true"
+    (disconnected)="disconnected.emit('button')"
+  />
 }
