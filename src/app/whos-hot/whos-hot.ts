@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, filter, merge, skip, skipWhile, take } from 'rxjs';
 import { Router } from '@angular/router';
@@ -41,6 +41,8 @@ import {
   GameRangeSelectorComponent,
   gamesIn,
   lastGamesRange,
+  SeasonSpan,
+  seasonSpanRange,
 } from './game-range-selector/game-range-selector';
 import { SEASONS, seasonLabelOf } from './season.model';
 import { HotPlayersTableComponent } from './hot-players-table/hot-players-table';
@@ -151,6 +153,8 @@ export class WhosHotComponent {
   readonly lastGames = signal<number | null>(
     this.stored ? (this.stored.lastGames ?? null) : FREE_PRESET.lastGames,
   );
+  /** First half, second half or full season, kept by name so it follows the season shown. */
+  readonly seasonSpan = signal<SeasonSpan | null>(this.stored?.seasonSpan ?? null);
   readonly fromGame = signal(this.stored?.fromGame ?? 1);
   readonly toGame = signal(this.stored?.toGame ?? 1);
   readonly perGame = signal(this.stored?.perGame ?? false);
@@ -245,13 +249,25 @@ export class WhosHotComponent {
   }));
 
   /**
-   * Nothing to ask until the season, and its length, are known. The server only measures games,
-   * so a range reaching back before the first one asks from the first; the players it has no
-   * game for are the page's to add.
+   * The season the range was last checked against (see the constructor), so the page never asks
+   * about a range it is about to give up. The first span is fetched the moment it appears; asked
+   * before the check, a range the season had not reached spent that request, and a quarter second
+   * on an empty board, before the last 5 it fell back to was asked for at all.
+   */
+  private readonly rangeCheckedFor = signal<number | undefined>(undefined);
+
+  /**
+   * Nothing to ask until the season, and its length, are known, and the range has been checked
+   * against it. The server only measures games, so a range reaching back before the first one
+   * asks from the first; the players it has no game for are the page's to add.
    */
   private readonly span = computed<GameSpan | undefined>(() => {
     const season = this.season();
-    if (season === undefined || this.scheduleLength() === null) {
+    if (
+      season === undefined ||
+      this.scheduleLength() === null ||
+      this.rangeCheckedFor() !== season
+    ) {
       return undefined;
     }
     const lastGames = this.lastGames();
@@ -333,7 +349,35 @@ export class WhosHotComponent {
       if (!this.entitlementSettled() || this.canPickRange()) {
         return;
       }
-      this.lastGames.set(FREE_PRESET.lastGames);
+      this.fallBackToFreeRange();
+    });
+
+    /**
+     * Game numbers only mean a stretch of the season they were picked in. Games 38-59 picked in
+     * 2025-26 and kept into 2026-27's first week asked about games nobody had played, and the
+     * board sat empty for a reason nothing on it explained. A range the season under it has not
+     * reached goes back to the last 5, which every season with a game can answer.
+     *
+     * Checked when the season under the range changes — a pick, or, between visits, the season
+     * the page follows moving on — and not as the range moves within one, where a handle dragged
+     * past the latest game must not be snatched back. A season yet to start has reached no range
+     * and says so on the board itself, so it is no reason to give one up.
+     */
+    effect(() => {
+      const progress = this.seasonProgress();
+      if (!progress) {
+        return;
+      }
+      untracked(() => {
+        if (
+          progress.gamesPlayed > 0 &&
+          this.lastGames() === null &&
+          this.rangeStartIn(progress.scheduleGames) > progress.gamesPlayed
+        ) {
+          this.fallBackToFreeRange();
+        }
+        this.rangeCheckedFor.set(progress.season);
+      });
     });
 
     /**
@@ -348,6 +392,18 @@ export class WhosHotComponent {
         return;
       }
       const { from, to } = lastGamesRange(latest, lastGames);
+      this.fromGame.set(from);
+      this.toGame.set(to);
+    });
+
+    /** A season pill is drawn against the season shown: the full season is 84 games in 2026-27. */
+    effect(() => {
+      const seasonSpan = this.seasonSpan();
+      const length = this.scheduleLength();
+      if (seasonSpan === null || length === null) {
+        return;
+      }
+      const { from, to } = seasonSpanRange(seasonSpan, length);
       this.fromGame.set(from);
       this.toGame.set(to);
     });
@@ -372,6 +428,7 @@ export class WhosHotComponent {
         fromGame: this.fromGame(),
         toGame: this.toGame(),
         lastGames: this.lastGames(),
+        seasonSpan: this.seasonSpan(),
         perGame: this.perGame(),
         minGames: this.minGames(),
         scoringType: this.scoringType(),
@@ -470,5 +527,24 @@ export class WhosHotComponent {
     if (settings.statWeights) {
       this.statWeights.set(settings.statWeights as Record<ScoringStatKey, number>);
     }
+  }
+
+  /** The last 5, with the season pill let go: the rail follows it from the effects above. */
+  private fallBackToFreeRange(): void {
+    this.seasonSpan.set(null);
+    this.lastGames.set(FREE_PRESET.lastGames);
+  }
+
+  /**
+   * The first game an explicit range or a season pill asks about, in a season of this length.
+   * Worked out here rather than read off the rail, which may not have been redrawn for this
+   * season yet: a pill is drawn against it, and a range past its end is pulled back inside.
+   */
+  private rangeStartIn(scheduleLength: number): number {
+    const seasonSpan = this.seasonSpan();
+    const from = seasonSpan
+      ? seasonSpanRange(seasonSpan, scheduleLength).from
+      : Math.min(this.fromGame(), scheduleLength);
+    return Math.max(FIRST_GAME, from);
   }
 }

@@ -6,6 +6,7 @@ import { YahooSync } from '../api/models/yahoo-sync';
 import { EspnSync } from '../api/models/espn-sync';
 import { DEFAULT_STAT_WEIGHTS } from '../draft-projection/projection-defaults';
 import { withFlexSlots } from '../models/roster-slots';
+import { isSeasonSpan, SeasonSpan } from '../whos-hot/game-range-selector/game-range-selector';
 
 /**
  * Everything the Who's hot page remembers between visits: the span being looked at, how it is
@@ -25,6 +26,11 @@ export interface WhosHotSettings {
   toGame: number;
   /** "The last N games" as a count the server resolves per team, or null for an explicit range. */
   lastGames: number | null;
+  /**
+   * A part of the season kept by name, drawn against whichever season is shown, or null. At most
+   * one of this and `lastGames` is set; with neither, the range is `fromGame` to `toGame`.
+   */
+  seasonSpan: SeasonSpan | null;
   perGame: boolean;
   minGames: number;
   scoringType: ScoringType;
@@ -102,6 +108,9 @@ export class WhosHotSettingsService {
         season: version === SETTINGS_VERSION ? (stored.season ?? null) : null,
         // Written before "the last N" was a count: the range stands as the bounds it saved.
         lastGames: stored.lastGames ?? null,
+        // Written before a season pill was kept by name, or naming one this build doesn't
+        // draw: the range stands as the bounds it saved.
+        seasonSpan: isSeasonSpan(stored.seasonSpan) ? stored.seasonSpan : null,
         // Written before the wing and forward flex slots existed: those read as none.
         ...(stored.rosterSlots ? { rosterSlots: withFlexSlots(stored.rosterSlots) } : {}),
         espnSync: stored.espnSync ?? null,
