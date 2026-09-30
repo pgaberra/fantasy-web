@@ -1,0 +1,64 @@
+<div class="league-field">
+  <label class="field-label" for="planner-league">League</label>
+  <div class="field-row">
+    <select
+      id="planner-league"
+      class="field-select"
+      [value]="selectedValue()"
+      (change)="select($event)"
+    >
+      <option value="">Select a league</option>
+      @if (yahooLeagues().length > 0) {
+        <optgroup label="Yahoo">
+          @for (option of yahooLeagues(); track option.leagueKey) {
+            <option [value]="option.leagueKey" [selected]="option.leagueKey === selectedValue()">
+              {{ option.name }}
+            </option>
+          }
+        </optgroup>
+      }
+      <optgroup label="ESPN">
+        <option [value]="espnOption" [selected]="selectedValue() === espnOption">
+          ESPN league by ID
+        </option>
+      </optgroup>
+    </select>
+
+    @if (showsEspnId()) {
+      <label class="visually-hidden" for="planner-espn-league">ESPN league ID</label>
+      <input
+        id="planner-espn-league"
+        class="field-input"
+        type="text"
+        inputmode="numeric"
+        maxlength="20"
+        placeholder="League ID"
+        [ngModel]="espnLeagueId()"
+        (ngModelChange)="espnLeagueId.set($event)"
+        (keydown.enter)="useEspn()"
+      />
+      <button
+        type="button"
+        class="btn btn-secondary btn-sm"
+        [disabled]="!espnLeagueId().trim()"
+        (click)="useEspn()"
+      >
+        Use
+      </button>
+    }
+  </div>
+
+  @if (loadingLeagues()) {
+    <span class="field-note"
+      ><app-loading-indicator variant="inline" label="Loading your Yahoo leagues"
+    /></span>
+  } @else if (yahooFailed()) {
+    <span class="field-note">
+      Couldn't load your Yahoo leagues. Connect Yahoo on a projection first.
+    </span>
+  } @else if (showsEspnId()) {
+    <span class="field-note">
+      A private ESPN league needs the cookies you save on a projection's league setup.
+    </span>
+  }
+</div>
