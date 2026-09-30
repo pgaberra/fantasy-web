@@ -3,7 +3,7 @@
     Draft picks <span class="picks-count">{{ picksCount() }}</span>
   </h2>
   @if (pickRounds().length) {
-    <div class="feed-list">
+    <div class="feed-list" [class.feed-list--no-avatars]="!lookup.showAvatars()">
       @for (round of pickRounds(); track round.round) {
         <div class="feed-round">Round {{ round.round }}</div>
         @for (entry of round.picks; track entry.overall) {
@@ -14,9 +14,7 @@
           >
             <span class="feed-pick">{{ entry.overall }}</span>
             <app-player-avatar [playerId]="entry.playerId" [small]="true" />
-            <span class="feed-info">
-              <span class="feed-player">{{ lookup.name(entry.playerId) }}</span>
-            </span>
+            <span class="feed-player">{{ lookup.name(entry.playerId) }}</span>
             @if (!locked()) {
               <span class="feed-actions">
                 <button
