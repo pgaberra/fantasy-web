@@ -1,0 +1,18 @@
+<div class="synced-line" role="status">
+  <span class="synced-line-text">
+    <span class="sync-dot" aria-hidden="true"></span>
+    @if (leagueName(); as leagueName) {
+      Synced with <strong>{{ leagueName }}</strong>
+    } @else {
+      Synced
+    }
+    @if (syncedAt(); as syncedAt) {
+      <span class="synced-line-time"> · {{ syncedAt | date: dateFormat }}</span>
+    }
+  </span>
+  @if (disconnectable()) {
+    <button type="button" class="btn btn-secondary btn-sm" (click)="disconnected.emit()">
+      Disconnect
+    </button>
+  }
+</div>

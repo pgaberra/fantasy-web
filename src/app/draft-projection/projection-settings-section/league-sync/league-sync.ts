@@ -4,6 +4,7 @@ import { YahooSync } from '../../../api/models/yahoo-sync';
 import { YahooLeagueSyncComponent, YahooSyncResult } from '../yahoo-league-sync/yahoo-league-sync';
 import { EspnLeagueSyncComponent, EspnSyncResult } from '../espn-league-sync/espn-league-sync';
 import { Platform, PlatformTabsComponent } from '../../../shared/platform-tabs/platform-tabs';
+import { SyncedLineComponent } from '../../../shared/synced-line/synced-line';
 import {
   PlatformName,
   PlatformSwitchDialogComponent,
@@ -49,6 +50,7 @@ const PLATFORM_NAMES: Record<Platform, PlatformName> = { yahoo: 'Yahoo', espn: '
     EspnLeagueSyncComponent,
     PlatformTabsComponent,
     PlatformSwitchDialogComponent,
+    SyncedLineComponent,
   ],
   templateUrl: './league-sync.html',
   styleUrl: './league-sync.css',

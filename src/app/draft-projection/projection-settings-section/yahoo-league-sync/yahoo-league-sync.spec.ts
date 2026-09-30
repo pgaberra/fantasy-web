@@ -10,6 +10,7 @@ import { ConnectionResponse } from '../../../api/models/connection-response';
 import { LeaguesResponse } from '../../../api/models/leagues-response';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
 import { YahooSync } from '../../../api/models/yahoo-sync';
+import { SyncedLineComponent } from '../../../shared/synced-line/synced-line';
 import { environment } from '../../../../environments/environment';
 
 describe('YahooLeagueSyncComponent', () => {
@@ -32,12 +33,15 @@ describe('YahooLeagueSyncComponent', () => {
   };
 
   const buildConnected = () =>
-    MockBuilder(YahooLeagueSyncComponent).mock(YahooService, {
-      connectionStatus: () => of(connected),
-      myLeagues: () => of(oneLeague),
-      leagueProjectionSettings: () => of(settings),
-      startConnect: () => of({ authorizeUrl: 'https://example.test/auth' }),
-    });
+    MockBuilder(YahooLeagueSyncComponent)
+      .mock(YahooService, {
+        connectionStatus: () => of(connected),
+        myLeagues: () => of(oneLeague),
+        leagueProjectionSettings: () => of(settings),
+        startConnect: () => of({ authorizeUrl: 'https://example.test/auth' }),
+      })
+      // The synced line is where Disconnect lives, so it has to render for real.
+      .keep(SyncedLineComponent);
 
   it('loads leagues and auto-selects the only one when connected', async () => {
     await buildConnected();
@@ -55,7 +59,7 @@ describe('YahooLeagueSyncComponent', () => {
     const synced: YahooSync | null = {
       leagueName: 'My League',
       leagueKey: 'nhl.l.123',
-      syncedAt: 't',
+      syncedAt: '2026-09-30T20:43:00.000Z',
     };
     const fixture = MockRender(YahooLeagueSyncComponent, { lastSync: synced });
     await fixture.whenStable();
@@ -96,7 +100,11 @@ describe('YahooLeagueSyncComponent', () => {
 
   it('keeps a re-sync of the league already synced secondary', async () => {
     await buildConnected();
-    const synced: YahooSync = { leagueName: 'My League', leagueKey: 'nhl.l.123', syncedAt: 't' };
+    const synced: YahooSync = {
+      leagueName: 'My League',
+      leagueKey: 'nhl.l.123',
+      syncedAt: '2026-09-30T20:43:00.000Z',
+    };
     const fixture = MockRender(YahooLeagueSyncComponent, { lastSync: synced });
     await fixture.whenStable();
 
@@ -108,13 +116,17 @@ describe('YahooLeagueSyncComponent', () => {
 
   it('offers Disconnect on the synced line only when the host says the link is its own', async () => {
     await buildConnected();
-    const synced: YahooSync = { leagueName: 'My League', leagueKey: 'nhl.l.123', syncedAt: 't' };
+    const synced: YahooSync = {
+      leagueName: 'My League',
+      leagueKey: 'nhl.l.123',
+      syncedAt: '2026-09-30T20:43:00.000Z',
+    };
     const fixture = MockRender(YahooLeagueSyncComponent, {
       lastSync: synced,
       disconnectable: false,
     });
     await fixture.whenStable();
-    const line = () => fixture.nativeElement.querySelector('.yahoo-sync-synced') as HTMLElement;
+    const line = () => fixture.nativeElement.querySelector('app-synced-line') as HTMLElement;
     expect(line().querySelector('button')).toBeNull();
 
     fixture.componentInstance.disconnectable = true;
