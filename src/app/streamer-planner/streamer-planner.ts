@@ -21,11 +21,10 @@ import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
-import { PlayerHeadshotComponent } from '../shared/player-headshot/player-headshot';
+import { TeamLogoComponent } from '../shared/team-logo/team-logo';
 import { FreeAgentsTableComponent } from './free-agents-table/free-agents-table';
 import { LeagueFieldComponent } from './league-field/league-field';
 import {
-  availabilityLabel,
   FREE_AGENTS_PER_POSITION,
   FreeAgentsPerPosition,
   formatGames,
@@ -38,37 +37,50 @@ import {
   WEEK_DECIMALS,
 } from './planner-free-agents';
 import {
+  clampStretch,
   dayName,
-  endWeekOptions,
+  earliestStart,
   formatDay,
+  isIsoDate,
+  latestEnd,
+  leadingDays,
+  PLANNER_PRESETS,
+  PLANNER_TODAY,
   PlannerDay,
   plannerDays,
   PlannerPosition,
+  PlannerPreset,
+  presetStretch,
   rateTeams,
+  sameStretch,
+  Stretch,
   stretchLabel,
-  weekLabel,
-  weeksLabel,
+  weekdayName,
+  weeksTitle,
 } from './planner-schedule';
 import { TeamSchedulesComponent } from './team-schedules/team-schedules';
 
-/** The dates a report covers, both included. */
-export interface Stretch {
-  readonly start: string;
-  readonly end: string;
+export type { Stretch } from './planner-schedule';
+
+/** A preset with the stretch it names today, for the reader to pick by name. */
+export interface PresetOption {
+  readonly key: PlannerPreset;
+  readonly label: string;
+  readonly stretch: Stretch;
 }
 
 /**
- * The streamer planner: every NHL team ranked by how good its schedule is over an interval of
- * weeks, and the best players a league has available for it.
+ * The streamer planner: every NHL team ranked by how good its schedule is over the nights ahead,
+ * and the best players a league has available for them.
  *
- * <p>The page is laid out the way LineupExperts lays out its streaming planner (Alexander's call,
- * 2026-09-30): the report's settings in one bar, the interval's nights in a strip, the three best
- * pickups as cards, and the team schedules beside the free agents by position. Two things differ
- * on purpose. There is no "Run report" button: nothing here is saved or sent anywhere but to be
- * read, so what the settings point at is what is on screen, as on Team Power Rankings. And the
- * nights have no "Apply" either: unticking one re-rates the teams at once.
+ * <p>The nights are the page's one setting. They are picked by name (the rest of this week, next
+ * week, both) or by two dates, and any night among them can be left out; the teams and the free
+ * agents follow at once, with no button, as on Team Power Rankings. A night already played is not
+ * offered: a stretch starts no earlier than today. The controls that only concern one table sit on
+ * that table (skaters or goalies on the team schedules, how many a position on the free agents),
+ * and the league, which the free agents are read from, sits beside the nights.
  *
- * <p>The server rates the whole interval; a night the reader leaves out is taken out here, by the
+ * <p>The server rates the whole stretch; a night the reader leaves out is taken out here, by the
  * server's own rule (`planner-schedule.ts`), and a free agent's line is scaled to the share of
  * his club's games that fall on the nights kept (`planner-free-agents.ts`). The ranking of the
  * free agents happens here too, by the league's own scoring settings through the same engine a
@@ -83,7 +95,7 @@ export interface Stretch {
     IconComponent,
     LeagueFieldComponent,
     LoadingIndicatorComponent,
-    PlayerHeadshotComponent,
+    TeamLogoComponent,
     TeamSchedulesComponent,
   ],
   templateUrl: './streamer-planner.html',
@@ -96,8 +108,10 @@ export class StreamerPlannerComponent {
   private readonly ranking = inject(ProjectionRankingService);
   private readonly yahoo = inject(YahooService);
   private readonly espn = inject(EspnService);
+  /** Read once, when the page opens: the nights are counted from this day. */
+  private readonly today = inject(PLANNER_TODAY)();
 
-  // --- The interval -----------------------------------------------------------------------------
+  // --- The nights -------------------------------------------------------------------------------
 
   private readonly weeksResource = rxResource({
     stream: () => from(this.api.invoke(streamerPlannerWeeks)),
@@ -107,66 +121,57 @@ export class StreamerPlannerComponent {
     this.weeksResource.hasValue() ? this.weeksResource.value().weeks : [],
   );
 
-  /** The weeks the reader picked, or null for the week the server says today falls in. */
-  private readonly chosenStart = signal<number | null>(null);
-  private readonly chosenEnd = signal<number | null>(null);
-
-  readonly startWeek = computed<PlannerWeek | undefined>(() => {
-    const weeks = this.weeks();
-    const wanted = this.chosenStart() ?? this.weeksResource.value()?.currentWeek;
-    return weeks.find((week) => week.week === wanted) ?? weeks[0];
-  });
-
-  /** The weeks the interval may end on: the starting week or a later one the server still rates. */
-  readonly endOptions = computed<readonly PlannerWeek[]>(() => {
-    const start = this.startWeek();
-    return start ? endWeekOptions(this.weeks(), start) : [];
-  });
-
-  /** The chosen ending week while it is still on offer; the starting week once it is not. */
-  readonly endWeek = computed<PlannerWeek | undefined>(() => {
-    const start = this.startWeek();
-    if (!start) {
-      return undefined;
-    }
-    return this.endOptions().find((week) => week.week === this.chosenEnd()) ?? start;
-  });
+  /** The stretch the reader asked for, or null for the rest of this week. */
+  private readonly chosen = signal<Stretch | null>(null);
 
   readonly stretch = computed<Stretch | undefined>(() => {
-    const start = this.startWeek();
-    const end = this.endWeek();
-    return start && end ? { start: start.start, end: end.end } : undefined;
+    const weeks = this.weeks();
+    const wanted = this.chosen() ?? presetStretch('this-week', weeks, this.today);
+    return wanted ? clampStretch(wanted, weeks, this.today) : undefined;
   });
 
-  readonly position = signal<PlannerPosition>('skaters');
-  readonly perPosition = signal<FreeAgentsPerPosition>(3);
-  readonly perPositionOptions = FREE_AGENTS_PER_POSITION;
+  /** The presets the season still has a stretch for. */
+  readonly presets = computed<readonly PresetOption[]>(() =>
+    PLANNER_PRESETS.flatMap((preset) => {
+      const stretch = presetStretch(preset.key, this.weeks(), this.today);
+      return stretch ? [{ ...preset, stretch }] : [];
+    }),
+  );
 
-  selectStartWeek(event: Event): void {
-    const number = Number((event.target as HTMLSelectElement).value);
-    if (this.weeks().some((week) => week.week === number)) {
-      this.chosenStart.set(number);
+  /** The preset the stretch on screen is, if it is one. */
+  readonly activePreset = computed<PlannerPreset | null>(
+    () => this.presets().find((preset) => sameStretch(preset.stretch, this.stretch()))?.key ?? null,
+  );
+
+  readonly earliestStart = computed(() => earliestStart(this.weeks(), this.today));
+  readonly latestEnd = computed(() => latestEnd(this.weeks(), this.stretch()?.start ?? this.today));
+  readonly seasonEnd = computed(() => this.weeks()[this.weeks().length - 1]?.end ?? '');
+
+  applyPreset(key: PlannerPreset): void {
+    const preset = this.presets().find((candidate) => candidate.key === key);
+    if (preset) {
+      this.chosen.set(preset.stretch);
     }
   }
 
-  selectEndWeek(event: Event): void {
-    const number = Number((event.target as HTMLSelectElement).value);
-    if (this.endOptions().some((week) => week.week === number)) {
-      this.chosenEnd.set(number);
+  /** The first night, typed or picked; the last follows it if it has to. */
+  setStart(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const stretch = this.stretch();
+    if (isIsoDate(input.value) && stretch) {
+      this.chosen.set({ start: input.value, end: stretch.end });
     }
+    // Written back, since a clamped date leaves the box showing what was typed.
+    input.value = this.stretch()?.start ?? '';
   }
 
-  selectPosition(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
-    this.position.set(value === 'goalies' ? 'goalies' : 'skaters');
-  }
-
-  selectPerPosition(event: Event): void {
-    const number = Number((event.target as HTMLSelectElement).value);
-    const option = FREE_AGENTS_PER_POSITION.find((candidate) => candidate === number);
-    if (option) {
-      this.perPosition.set(option);
+  setEnd(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const stretch = this.stretch();
+    if (isIsoDate(input.value) && stretch) {
+      this.chosen.set({ start: stretch.start, end: input.value });
     }
+    input.value = this.stretch()?.end ?? '';
   }
 
   // --- The teams and the nights -----------------------------------------------------------------
@@ -180,13 +185,13 @@ export class StreamerPlannerComponent {
     this.teamsResource.hasValue() ? this.teamsResource.value() : undefined,
   );
 
-  /** Every date of the interval, in order, including one without a game. */
+  /** Every date of the stretch, in order, including one without a game. */
   readonly days = computed<readonly PlannerDay[]>(() => {
     const strength = this.strength();
     return strength ? plannerDays(strength) : [];
   });
 
-  /** The nights the reader has left out. A new interval starts with every night counted. */
+  /** The nights the reader has left out. A new stretch starts with every night counted. */
   private readonly excluded = linkedSignal<Stretch | undefined, ReadonlySet<string>>({
     source: this.stretch,
     computation: () => new Set<string>(),
@@ -222,6 +227,12 @@ export class StreamerPlannerComponent {
     });
   }
 
+  readonly position = signal<PlannerPosition>('skaters');
+
+  setPosition(position: PlannerPosition): void {
+    this.position.set(position);
+  }
+
   /** The teams over the nights counted, best first for the chosen kind of player. */
   readonly teamRows = computed(() =>
     rateTeams(
@@ -252,6 +263,13 @@ export class StreamerPlannerComponent {
   // --- The league and its free agents -----------------------------------------------------------
 
   readonly league = this.leagueService.league;
+
+  readonly perPosition = signal<FreeAgentsPerPosition>(3);
+  readonly perPositionOptions = FREE_AGENTS_PER_POSITION;
+
+  setPerPosition(option: FreeAgentsPerPosition): void {
+    this.perPosition.set(option);
+  }
 
   private readonly settingsResource = rxResource({
     params: () => this.league() ?? undefined,
@@ -356,6 +374,11 @@ export class StreamerPlannerComponent {
   readonly topOptions = computed(() => this.ranked().slice(0, TOP_OPTIONS));
   readonly groups = computed(() => groupByPosition(this.ranked(), this.perPosition()));
 
+  /** The cards have something to show, or will once the list lands. */
+  readonly showsTopOptions = computed(
+    () => !!this.league() && (this.loadingFreeAgents() || this.topOptions().length > 0),
+  );
+
   readonly noFreeAgents = computed(
     () =>
       !!this.league() &&
@@ -377,9 +400,8 @@ export class StreamerPlannerComponent {
 
   /** "Week 3", or "Weeks 3 to 5". */
   readonly weeksTitle = computed(() => {
-    const start = this.startWeek();
-    const end = this.endWeek();
-    return start && end ? weeksLabel(start, end) : '';
+    const stretch = this.stretch();
+    return stretch ? weeksTitle(this.weeks(), stretch) : '';
   });
 
   /** "Oct 19 to Oct 25". */
@@ -388,25 +410,24 @@ export class StreamerPlannerComponent {
     return stretch ? stretchLabel(stretch.start, stretch.end) : '';
   });
 
-  /** "6 of 7": the nights counted, of the nights with games. */
-  readonly nightsTitle = computed(() => `${this.counted().size} of ${this.nightsWithGames()}`);
+  /** "6 of 7 nights": the nights counted, of the nights with games. */
+  readonly nightsTitle = computed(() => {
+    const nights = this.nightsWithGames();
+    return nights === 0 ? 'No games' : `${this.counted().size} of ${nights} nights`;
+  });
 
-  readonly leagueTitle = computed(() => this.league()?.name ?? 'Not chosen');
+  /** What a night is worth, said once, in the tip beside the nights. */
+  readonly nightsHelp = computed(() => {
+    const max = this.offNightMaxGames();
+    const offNight = max
+      ? `An off-night has ${max} games or fewer, when most lineups have an open slot, so a game on one counts 1.25.`
+      : 'A game on an off-night, when most lineups have an open slot, counts 1.25.';
+    return `${offNight} Untick a night your lineup has no room on.`;
+  });
 
   readonly scoreHeading = computed(() =>
     this.scoringType() === 'points' ? 'Proj. pts' : 'Z-Score',
   );
-
-  readonly freeAgentsLede = computed(() => {
-    const league = this.league();
-    return league
-      ? `The best available in ${league.name} by position, scored by its own settings.`
-      : "The best available players by position, scored by your league's settings.";
-  });
-
-  weekLabel(week: PlannerWeek): string {
-    return weekLabel(week);
-  }
 
   dayName(day: PlannerDay): string {
     return dayName(day);
@@ -414,6 +435,20 @@ export class StreamerPlannerComponent {
 
   dayOfMonth(day: PlannerDay): string {
     return formatDay(day.date);
+  }
+
+  /** The days of the week already behind the stretch, drawn faint so its first row reads as a week. */
+  readonly leadingDays = computed<readonly string[]>(() => {
+    const start = this.stretch()?.start;
+    return start && this.days().length > 0 ? leadingDays(start) : [];
+  });
+
+  weekdayName(date: string): string {
+    return weekdayName(date);
+  }
+
+  formatDay(date: string): string {
+    return formatDay(date);
   }
 
   gamesLabel(day: PlannerDay): string {
@@ -427,12 +462,21 @@ export class StreamerPlannerComponent {
     return row.score.toFixed(this.scoringType() === 'points' ? 1 : 2);
   }
 
+  /** The score a game he plays, the way a streamer compares a three-game week to a four. */
+  perGameText(row: RankedFreeAgent): string {
+    if (row.games <= 0) {
+      return '';
+    }
+    return (row.score / row.games).toFixed(this.scoringType() === 'points' ? 1 : 2);
+  }
+
   games(row: RankedFreeAgent): string {
     return formatGames(row.games);
   }
 
-  availability(row: RankedFreeAgent): string {
-    return availabilityLabel(row.player.availability);
+  /** A claim rather than an add: the one status a streamer has to know before acting. */
+  onWaivers(row: RankedFreeAgent): boolean {
+    return row.player.availability === 'WAIVERS';
   }
 
   /** "EDM, C" under a card's name. */

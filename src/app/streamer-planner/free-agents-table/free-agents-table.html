@@ -25,15 +25,25 @@
         @for (row of group.rows; track row.player.playerId) {
           <tr>
             <th scope="row" class="player-col">
-              <span class="player-name">{{ row.player.name }}</span>
-              @if (row.player.teamAbbrev) {
-                <span class="player-team">{{ row.player.teamAbbrev }}</span>
-              }
-              <span class="player-status">{{ availability(row) }}</span>
-              <span class="player-line">
-                @for (stat of line(row); track stat) {
-                  <span>{{ stat }}</span>
-                }
+              <span class="player-cell">
+                <app-team-logo class="player-logo" [team]="row.player.teamAbbrev" />
+                <span class="player-text">
+                  <span class="player-head">
+                    <span class="player-name">{{ row.player.name }}</span>
+                    @if (row.player.teamAbbrev) {
+                      <span class="player-team">{{ row.player.teamAbbrev }}</span>
+                    }
+                    <!-- Only a claim is worth a tag: an add is what the list is a list of. -->
+                    @if (onWaivers(row)) {
+                      <span class="player-status">Waivers</span>
+                    }
+                  </span>
+                  <span class="player-line">
+                    @for (stat of line(row); track stat) {
+                      <span>{{ stat }}</span>
+                    }
+                  </span>
+                </span>
               </span>
             </th>
             <td><app-position-chips [positions]="row.player.positions" /></td>

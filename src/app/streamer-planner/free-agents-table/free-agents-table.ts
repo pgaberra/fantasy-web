@@ -1,14 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { ScoringType } from '../../models/projection.model';
 import { PositionChipsComponent } from '../../shared/position-chips/position-chips';
+import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
-import {
-  availabilityLabel,
-  formatGames,
-  formatToi,
-  FreeAgentGroup,
-  RankedFreeAgent,
-} from '../planner-free-agents';
+import { formatGames, formatToi, FreeAgentGroup, RankedFreeAgent } from '../planner-free-agents';
 
 /**
  * The best available players by position, the few of each worth a look, with the model's line for
@@ -16,7 +11,7 @@ import {
  */
 @Component({
   selector: 'app-free-agents-table',
-  imports: [PositionChipsComponent, TooltipDirective],
+  imports: [PositionChipsComponent, TeamLogoComponent, TooltipDirective],
   templateUrl: './free-agents-table.html',
   styleUrl: './free-agents-table.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -53,8 +48,9 @@ export class FreeAgentsTableComponent {
     return formatToi(row.player.projection.stats.utility.toiPerGame);
   }
 
-  availability(row: RankedFreeAgent): string {
-    return availabilityLabel(row.player.availability);
+  /** A claim rather than an add: the one status a streamer has to know before acting. */
+  onWaivers(row: RankedFreeAgent): boolean {
+    return row.player.availability === 'WAIVERS';
   }
 
   /**

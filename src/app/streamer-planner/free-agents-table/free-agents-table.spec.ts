@@ -102,6 +102,15 @@ describe('FreeAgentsTableComponent', () => {
     expect(table.line(SKATER)).toEqual(['2.1 G', '3.0 A', '11.2 SOG']);
     expect(table.line(GOALIE)).toEqual(['1.4 W', '57 SV', '0.908 SV%']);
     expect(table.games(SKATER)).toBe('3.8');
-    expect(table.availability(GOALIE)).toBe('Waivers');
+  });
+
+  // An add is what the list is a list of; only a claim changes what the reader does next.
+  it('tags a player on waivers and nobody else', () => {
+    const fixture = render();
+    const tags = ngMocks.findAll(fixture, '.player-status');
+
+    expect(tags.length).toBe(1);
+    expect(ngMocks.formatText(tags[0])).toBe('Waivers');
+    expect(ngMocks.formatText(ngMocks.findAll(fixture, 'tbody tr')[1])).not.toContain('Free agent');
   });
 });

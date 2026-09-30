@@ -7,75 +7,19 @@
   padding: var(--space-5) var(--space-4);
 }
 
-/* --- Hero: the title and what the report is a report of ---------------------------------------- */
-
-.hero {
-  display: grid;
-  gap: var(--space-4) var(--space-6);
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-}
+/* --- Hero ------------------------------------------------------------------------------------- */
 
 .hero h1 {
-  align-items: center;
   color: var(--color-primary);
-  display: flex;
   font-size: var(--text-xl);
   font-weight: var(--weight-bold);
-  gap: var(--space-2);
   margin: 0;
 }
 
 .lede {
   color: var(--color-text-muted);
-  margin: var(--space-2) 0 0;
+  margin: var(--space-1) 0 0;
   max-width: 62ch;
-}
-
-/* Beside the title, ruled off from it, so it reads as a summary rather than more of the lede. */
-.view-summary {
-  border-left: 1px solid var(--color-border);
-  padding-left: var(--space-5);
-}
-
-.view-title {
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  margin: 0 0 var(--space-2);
-}
-
-.view-tiles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin: 0;
-}
-
-.view-tile {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  min-width: 9rem;
-  padding: var(--space-2) var(--space-3);
-}
-
-.view-tile dt {
-  color: var(--color-text-muted);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.view-tile dd {
-  color: var(--color-text);
-  font-weight: var(--weight-semibold);
-  margin: 2px 0 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 16rem;
 }
 
 /* --- Cards ------------------------------------------------------------------------------------ */
@@ -89,10 +33,10 @@
 }
 
 .card-head {
-  align-items: flex-start;
+  align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
+  gap: var(--space-2) var(--space-3);
   justify-content: space-between;
   margin-bottom: var(--space-3);
 }
@@ -114,39 +58,81 @@
   color: var(--color-primary);
 }
 
-.card-lede,
-.section-lede {
+/* --- Pills: one choice among a few, drawn as on Who's Hot's game range ------------------------- */
+
+.pills {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.pills-label {
   color: var(--color-text-muted);
-  font-size: var(--text-sm);
-  margin: var(--space-1) 0 0;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  margin-right: var(--space-1);
 }
 
-/* --- Report settings -------------------------------------------------------------------------- */
-
-.settings .card-title {
-  margin-bottom: var(--space-3);
+.pill {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  line-height: 1.2;
+  padding: var(--space-1) var(--space-3);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
 }
 
-.fields {
+.pill:hover:not(.pill--active) {
+  background: var(--color-surface-hover);
+}
+
+.pill:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.pill--active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
+/* --- The nights -------------------------------------------------------------------------------- */
+
+/* The nights on the left, the league on the right, each under its own label. */
+.settings {
   align-items: flex-start;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3) var(--space-4);
+  gap: var(--space-3) var(--space-6);
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
 }
 
-.field {
+.range {
   display: flex;
-  flex: 1 1 14rem;
+  flex: 1 1 28rem;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
   min-width: 0;
 }
 
-.field--narrow {
-  flex: 0 1 12rem;
+.range-head {
+  align-items: center;
+  display: flex;
+  gap: var(--space-1);
 }
 
-.field-label {
+.group-label {
   color: var(--color-text-muted);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
@@ -154,53 +140,59 @@
   text-transform: uppercase;
 }
 
-.field-select {
+/* The presets and the two dates are one question asked twice: by name, then exactly. */
+.range-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.dates {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+}
+
+.date-field {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-2);
+}
+
+.date-label {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.field-date {
   background: var(--color-surface);
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-sm);
   color: var(--color-text);
   font: inherit;
   font-size: var(--text-sm);
-  padding: var(--space-2);
-  width: 100%;
+  padding: calc(var(--space-1) + 1px) var(--space-2);
 }
 
-.field-select:focus-visible {
+.field-date:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 1px;
 }
 
-/* --- Streaming outlook ------------------------------------------------------------------------ */
-
-/* The interval, named where the reader looks for it: at the right edge of the outlook's head. */
-.week-badge {
-  background: var(--color-primary);
-  border-radius: var(--radius-md);
-  color: var(--color-text-on-dark);
-  display: flex;
-  flex-direction: column;
-  padding: var(--space-2) var(--space-3);
-  text-align: center;
+.league {
+  flex: 0 1 20rem;
 }
 
-.week-badge-title {
-  font-weight: var(--weight-bold);
-}
-
-.week-badge-dates {
-  color: var(--color-text-on-dark-muted);
-  font-size: var(--text-xs);
-}
-
-/* One cell a night, wrapping to a second row on a phone rather than scrolling the page. */
+/* One cell a night, seven to a row, so a row is a Monday-to-Sunday week. */
 .day-strip {
   display: grid;
   gap: var(--space-2);
-  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 
 .day {
-  align-items: center;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -208,8 +200,8 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
   padding: var(--space-2);
-  text-align: center;
   transition:
     background var(--transition-fast),
     border-color var(--transition-fast),
@@ -243,6 +235,29 @@
   opacity: 0.55;
 }
 
+/* A day of the week already behind the stretch: there, so the row reads as a week, and no more. */
+.day--past {
+  border-style: dashed;
+  cursor: default;
+  opacity: 0.4;
+}
+
+/* The tick box first, then the day, on one line: level in every cell whatever follows below. */
+.day-head {
+  align-items: center;
+  display: flex;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.day-head input {
+  accent-color: var(--color-accent);
+  flex: none;
+  height: 1rem;
+  margin: 0;
+  width: 1rem;
+}
+
 .day-name {
   color: var(--color-text-muted);
   font-size: var(--text-xs);
@@ -253,42 +268,47 @@
 
 .day-date {
   color: var(--color-text);
+  font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
+  margin-left: auto;
+  white-space: nowrap;
 }
 
 .day-games {
   color: var(--color-primary);
   font-size: var(--text-sm);
   font-weight: var(--weight-bold);
+  padding-left: calc(1rem + var(--space-1));
 }
 
 .day-tag {
   color: var(--color-accent);
-  font-size: 0.65rem;
+  font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   letter-spacing: 0.04em;
+  padding-left: calc(1rem + var(--space-1));
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.day input {
-  accent-color: var(--color-accent);
-  height: 1rem;
-  margin: var(--space-1) 0 0;
-  width: 1rem;
-}
-
-.legend {
-  align-items: center;
+/* What is on screen, in one line under the strip: the weeks, the dates, the nights kept. */
+.range-summary {
   color: var(--color-text-muted);
   display: flex;
+  flex-wrap: wrap;
   font-size: var(--text-sm);
-  gap: var(--space-2);
+  font-variant-numeric: tabular-nums;
+  gap: var(--space-1) var(--space-3);
   margin: var(--space-3) 0 0;
+}
+
+.range-summary span:empty {
+  display: none;
 }
 
 /* --- Top streaming options -------------------------------------------------------------------- */
 
-.section-head {
+.top-options .section-title {
   border-bottom: 1px solid var(--color-border);
   margin-bottom: var(--space-3);
   padding-bottom: var(--space-2);
@@ -333,9 +353,8 @@
   width: 1.6rem;
 }
 
-.option-headshot {
-  --headshot-size: 44px;
-  --headshot-initials-size: 0.9rem;
+.option-logo {
+  --team-logo-size: 44px;
 }
 
 .option-identity {
@@ -354,8 +373,21 @@
 }
 
 .option-meta {
+  align-items: center;
   color: var(--color-text-muted);
+  display: flex;
+  flex-wrap: wrap;
   font-size: var(--text-sm);
+  gap: var(--space-2);
+}
+
+.waivers {
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
+  border-radius: var(--radius-pill);
+  color: var(--color-accent);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  padding: 0 var(--space-2);
 }
 
 .option-stats {
@@ -397,7 +429,7 @@
   align-items: start;
   display: grid;
   gap: var(--space-4);
-  grid-template-columns: minmax(0, 11fr) minmax(0, 13fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
 .prompt,
@@ -415,21 +447,6 @@
 @media (max-width: 1023px) {
   .columns {
     grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (max-width: 760px) {
-  .hero {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .view-summary {
-    border-left: 0;
-    padding-left: 0;
-  }
-
-  .view-tile {
-    flex: 1 1 8rem;
   }
 }
 
@@ -452,7 +469,23 @@
     font-size: var(--text-base);
   }
 
-  .week-badge {
-    width: 100%;
+  .league {
+    flex-basis: 100%;
+  }
+
+  /* Three to a row on a phone, where seven would not hold a date; the week alignment is a
+     desktop courtesy, and the days that only served it go with it. */
+  .day-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .day--past {
+    display: none;
+  }
+
+  /* Under the tick box rather than beside it: the cell is too narrow to indent. */
+  .day-games,
+  .day-tag {
+    padding-left: 0;
   }
 }
