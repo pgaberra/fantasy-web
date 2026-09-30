@@ -8,8 +8,14 @@ import {
 } from '@angular/common/http/testing';
 import { firstValueFrom } from 'rxjs';
 import { PlayerSplitResponse } from '../api/models/player-split-response';
-import { GameSpan, HotPlayer, WhosHotService } from './whos-hot.service';
-import { GoalieScoringStats, SkaterScoringStats } from '../models/projection.model';
+import { GameSpan, HotPlayer, WhosHotService, withPlayersYetToPlay } from './whos-hot.service';
+import {
+  GoalieScoringStats,
+  GoalieStats,
+  SkaterScoringStats,
+  SkaterStats,
+} from '../models/projection.model';
+import { Player } from '../models/player.model';
 
 function skaterScoring(hot: HotPlayer): SkaterScoringStats {
   if (hot.projection.type !== 'skater') {
@@ -170,5 +176,88 @@ describe('WhosHotService', () => {
 
     expect(hot.map((player) => player.projection.type)).toEqual(['skater', 'goalie']);
     expect(goalieScoring(hot[1]).w).toEqual(12);
+  });
+});
+
+describe('withPlayersYetToPlay', () => {
+  /** Measured over the range, as the service hands a split back. */
+  const measured = (playerId: number, games: number): HotPlayer => ({
+    name: `Measured ${playerId}`,
+    teamAbbrev: 'BOS',
+    games,
+    projection: {
+      type: 'goalie',
+      playerId,
+      stats: {
+        scoring: {
+          gs: 1,
+          w: 1,
+          l: 0,
+          otl: 0,
+          sho: 0,
+          sa: 25,
+          sv: 24,
+          ga: 1,
+          gaa: 1,
+          svPct: 0.96,
+          winPct: 1,
+          toi: 3600,
+        },
+        utility: { gp: games },
+      },
+    },
+  });
+
+  const pool: Player[] = [
+    {
+      type: 'skater',
+      id: 1,
+      name: 'Nikita Kucherov',
+      teamAbbrev: 'TB',
+      positions: new Set(['RW']),
+      stats: {} as SkaterStats,
+    },
+    {
+      type: 'goalie',
+      id: 2,
+      name: 'Andrei Vasilevskiy',
+      teamAbbrev: 'TB',
+      stats: {} as GoalieStats,
+    },
+    {
+      type: 'goalie',
+      id: 3,
+      name: 'Jeremy Swayman',
+      teamAbbrev: 'BOS',
+      stats: {} as GoalieStats,
+    },
+  ];
+
+  it('puts every pool player the range has no game for on the board, at zero', () => {
+    const board = withPlayersYetToPlay([measured(3, 1)], pool);
+
+    // The server only answers for players with a game in the range, so a team yet to play was
+    // missing from the board entirely.
+    expect(board.map((hot) => hot.projection.playerId)).toEqual([3, 1, 2]);
+    const vasilevskiy = board[2];
+    expect(vasilevskiy.name).toEqual('Andrei Vasilevskiy');
+    expect(vasilevskiy.teamAbbrev).toEqual('TB');
+    expect(vasilevskiy.games).toEqual(0);
+    expect(vasilevskiy.projection.stats.utility.gp).toEqual(0);
+    expect(goalieScoring(vasilevskiy).w).toEqual(0);
+  });
+
+  it('scores each as the kind of player the pool says they are', () => {
+    const board = withPlayersYetToPlay([], pool);
+
+    expect(board.map((hot) => hot.projection.type)).toEqual(['skater', 'goalie', 'goalie']);
+    expect(skaterScoring(board[0]).goals).toEqual(0);
+  });
+
+  it('never lists a measured player twice', () => {
+    const board = withPlayersYetToPlay([measured(2, 1), measured(3, 1)], pool);
+
+    expect(board.map((hot) => hot.projection.playerId)).toEqual([2, 3, 1]);
+    expect(board[0].games).toEqual(1);
   });
 });

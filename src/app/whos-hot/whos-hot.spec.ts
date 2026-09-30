@@ -11,6 +11,8 @@ import { WhosHotSettings, WhosHotSettingsService } from '../services/whos-hot-se
 import { SplitSeasonListResponse } from '../api/models/split-season-list-response';
 import { HotPlayersTableComponent } from './hot-players-table/hot-players-table';
 import { HotPlayer } from '../services/whos-hot.service';
+import { Player } from '../models/player.model';
+import { GoalieStats } from '../models/projection.model';
 
 /** Longer than the component's settle delay, so a settled range has had its chance to fetch. */
 const AFTER_THE_DRAG_MS = 400;
@@ -33,6 +35,46 @@ const NOVEMBER: SplitSeasonListResponse = {
   ],
 };
 
+/** Opening night of 2026-27: the furthest team has played once, and half the league not at all. */
+const OPENING_NIGHT: SplitSeasonListResponse = {
+  defaultSeason: 2026,
+  seasons: [
+    { season: 2026, scheduleGames: 84, gamesPlayed: 1 },
+    { season: 2025, scheduleGames: 82, gamesPlayed: 82 },
+  ],
+};
+
+/** The fifth night: the furthest team has five games in. */
+const FIFTH_NIGHT: SplitSeasonListResponse = {
+  defaultSeason: 2026,
+  seasons: [
+    { season: 2026, scheduleGames: 84, gamesPlayed: 5 },
+    { season: 2025, scheduleGames: 82, gamesPlayed: 82 },
+  ],
+};
+
+function poolGoalie(id: number, name: string, teamAbbrev: string): Player {
+  return { type: 'goalie', id, name, teamAbbrev, stats: {} as GoalieStats };
+}
+
+/** A goalie the server measured in the range: one game, one win. */
+function measuredGoalie(playerId: number, name: string): HotPlayer {
+  const scoring = { gs: 1, w: 1, l: 0, otl: 0, sho: 0, sa: 25, sv: 24, ga: 1 };
+  return {
+    name,
+    teamAbbrev: 'BOS',
+    games: 1,
+    projection: {
+      type: 'goalie',
+      playerId,
+      stats: {
+        scoring: { ...scoring, gaa: 1, svPct: 0.96, winPct: 1, toi: 3600 },
+        utility: { gp: 1 },
+      },
+    },
+  };
+}
+
 describe('WhosHotComponent', () => {
   const splits = vi.fn<(span: GameSpan) => ReturnType<WhosHotService['splits']>>(() => of([]));
   let seasonsAnswer: SplitSeasonListResponse = SUMMER;
@@ -51,6 +93,9 @@ describe('WhosHotComponent', () => {
   /** What the last visit left in this browser, or nothing on a first visit. */
   let stored: WhosHotSettings | null = null;
 
+  /** The player pool, which the board is filled out from when a range reaches before game 1. */
+  let pool: Player[] = [];
+
   const paymentsWereEnabled = environment.paymentsEnabled;
 
   afterEach(() => {
@@ -61,14 +106,16 @@ describe('WhosHotComponent', () => {
   beforeEach(() => {
     localStorage.clear();
     splits.mockClear();
+    splits.mockImplementation(() => of([]));
     seasons.mockClear();
     save.mockClear();
     seasonsAnswer = SUMMER;
     stored = null;
+    pool = [];
     entitlement.premium.set(false);
     entitlement.loadState.set('loaded');
     return MockBuilder(WhosHotComponent)
-      .mock(PlayerService, { getPlayers: () => of([]) })
+      .mock(PlayerService, { getPlayers: () => of(pool) })
       .mock(WhosHotService, { splits, seasons })
       .mock(WhosHotSettingsService, { load: () => stored, save })
       .provide({ provide: EntitlementService, useValue: entitlement });
@@ -262,6 +309,70 @@ describe('WhosHotComponent', () => {
     });
   });
 
+  describe('players yet to play, early in a season', () => {
+    const SWAYMAN = 3;
+    const VASILEVSKIY = 2;
+
+    /** Boston has played and Tampa has not; the server can only answer for Boston's goalie. */
+    beforeEach(() => {
+      pool = [
+        poolGoalie(SWAYMAN, 'Jeremy Swayman', 'BOS'),
+        poolGoalie(VASILEVSKIY, 'Andrei Vasilevskiy', 'TB'),
+      ];
+      splits.mockImplementation(() => of([measuredGoalie(SWAYMAN, 'Jeremy Swayman')]));
+    });
+
+    const boardIds = (component: WhosHotComponent) =>
+      component.hotPlayers().map((hot) => hot.projection.playerId);
+
+    it('opens the last 5 after one night on games 0-1, with the teams yet to play at zero', async () => {
+      seasonsAnswer = OPENING_NIGHT;
+
+      const component = (await renderSettled()).point.componentInstance;
+
+      expect(component.fromGame()).toEqual(0);
+      expect(component.toGame()).toEqual(1);
+      // Still asked as a count: the server resolves each team's own last 5.
+      expect(splits).toHaveBeenCalledWith({ season: 2026, lastGames: 5 });
+      // Drawn as 1-1, the board left Vasilevskiy off it entirely.
+      expect(boardIds(component)).toEqual([SWAYMAN, VASILEVSKIY]);
+      expect(component.hotPlayers()[1].games).toEqual(0);
+    });
+
+    it('starts the last 5 at game 1 on the fifth night, and lists only who dressed', async () => {
+      seasonsAnswer = FIFTH_NIGHT;
+
+      const component = (await renderSettled()).point.componentInstance;
+
+      expect(component.fromGame()).toEqual(1);
+      expect(component.toGame()).toEqual(5);
+      expect(boardIds(component)).toEqual([SWAYMAN]);
+    });
+
+    it('asks the server from game 1 for a range the visitor starts before it', async () => {
+      environment.paymentsEnabled = false;
+      seasonsAnswer = OPENING_NIGHT;
+      stored = { fromGame: 0, toGame: 1, lastGames: null } as WhosHotSettings;
+
+      const component = (await renderSettled()).point.componentInstance;
+
+      // The server measures games, and there is no game 0 to measure.
+      expect(splits).toHaveBeenCalledWith({ season: 2026, fromGame: 1, toGame: 1 });
+      expect(boardIds(component)).toEqual([SWAYMAN, VASILEVSKIY]);
+    });
+
+    it('still says a season has not started, rather than listing the pool at zero', async () => {
+      environment.paymentsEnabled = false;
+      splits.mockImplementation(() => of([]));
+      stored = { season: 2026, fromGame: 0, toGame: 10, lastGames: null } as WhosHotSettings;
+
+      const component = (await renderSettled()).point.componentInstance;
+
+      expect(component.includesPlayersYetToPlay()).toEqual(false);
+      expect(component.hotPlayers()).toEqual([]);
+    });
+  });
+
   describe('the minimum-games filter against a range that moved under it', () => {
     /** A premium account, so the range is the test's to move. */
     beforeEach(() => {
@@ -313,6 +424,14 @@ describe('WhosHotComponent', () => {
       // is held to what the narrower stretch can contain.
       expect(ngMocks.input(ngMocks.find('app-game-range-selector'), 'minGames')).toEqual(25);
       expect(ngMocks.input(ngMocks.find('app-hot-players-table'), 'minGames')).toEqual(23);
+    });
+
+    it('counts no game for a start before the first one', async () => {
+      stored = { fromGame: 0, toGame: 3, perGame: true, minGames: 25 } as WhosHotSettings;
+
+      const component = (await renderSettled()).point.componentInstance;
+
+      expect(component.appliedMinGames()).toEqual(3);
     });
 
     it('clamps a stored minimum against the range stored beside it', async () => {
