@@ -8,6 +8,7 @@ const settings: WhosHotSettings = {
   fromGame: 50,
   toGame: 82,
   lastGames: null,
+  seasonSpan: null,
   perGame: true,
   minGames: 5,
   scoringType: 'category',
@@ -123,6 +124,25 @@ describe('WhosHotSettingsService', () => {
 
     localStorage.setItem('slapstat.whosHot.settings', JSON.stringify({ fromGame: 78, toGame: 82 }));
     expect(service.load()?.lastGames).toEqual(null);
+  });
+
+  it('keeps a season pill by name, and reads a blob from before it as the bounds it saved', () => {
+    service.save({ ...settings, fromGame: 0, toGame: 82, seasonSpan: 'fullSeason' });
+    expect(service.load()?.seasonSpan).toEqual('fullSeason');
+
+    localStorage.setItem('slapstat.whosHot.settings', JSON.stringify({ fromGame: 0, toGame: 82 }));
+    const beforeIt = service.load();
+    expect(beforeIt?.seasonSpan).toEqual(null);
+    expect([beforeIt?.fromGame, beforeIt?.toGame]).toEqual([0, 82]);
+  });
+
+  it('reads a season pill this build cannot draw as none, rather than failing the page on it', () => {
+    localStorage.setItem(
+      'slapstat.whosHot.settings',
+      JSON.stringify({ fromGame: 0, toGame: 82, seasonSpan: 'lastWeek' }),
+    );
+
+    expect(service.load()?.seasonSpan).toEqual(null);
   });
 
   it('reads a blob written before ESPN was remembered as having no ESPN league', () => {

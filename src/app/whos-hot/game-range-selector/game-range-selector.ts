@@ -13,10 +13,19 @@ export interface LastGamesPreset {
   lastGames: number;
 }
 
-/** A stretch fixed by the season's length, the same game numbers for every team. */
+/**
+ * A part of the season fixed by its length, the same game numbers for every team.
+ *
+ * Kept by name rather than as the games it covers, so it means the same part of whichever season
+ * it is looked at in. Kept as its numbers, "Full season" picked in 2025-26 went on meaning games
+ * 0-82 once the page moved to 2026-27, which is 84 games long: the pill went dark and the last two
+ * games were left out.
+ */
+export type SeasonSpan = 'firstHalf' | 'secondHalf' | 'fullSeason';
+
 export interface SpanPreset {
   label: string;
-  range: (scheduleLength: number) => { from: number; to: number };
+  seasonSpan: SeasonSpan;
 }
 
 export type RangePreset = LastGamesPreset | SpanPreset;
@@ -65,17 +74,36 @@ export function gamesIn(fromGame: number, toGame: number): number {
   return toGame - Math.max(FIRST_GAME, fromGame) + 1;
 }
 
+const SEASON_SPAN_RANGES: Record<
+  SeasonSpan,
+  (scheduleLength: number) => { from: number; to: number }
+> = {
+  firstHalf: (games) => ({ from: BEFORE_FIRST_GAME, to: Math.ceil(games / 2) }),
+  secondHalf: (games) => ({ from: Math.ceil(games / 2) + 1, to: games }),
+  fullSeason: (games) => ({ from: BEFORE_FIRST_GAME, to: games }),
+};
+
+/** The games a part of the season covers, in a season of this length. */
+export function seasonSpanRange(
+  seasonSpan: SeasonSpan,
+  scheduleLength: number,
+): { from: number; to: number } {
+  return SEASON_SPAN_RANGES[seasonSpan](scheduleLength);
+}
+
+/** Whether a stored value is a part of the season this page still knows how to draw. */
+export function isSeasonSpan(value: unknown): value is SeasonSpan {
+  return typeof value === 'string' && Object.hasOwn(SEASON_SPAN_RANGES, value);
+}
+
 const PRESETS: RangePreset[] = [
   FREE_PRESET,
   { label: 'Last 10', lastGames: 10 },
   { label: 'Last 20', lastGames: 20 },
   { label: 'Last 30', lastGames: 30 },
-  {
-    label: 'First half',
-    range: (games) => ({ from: BEFORE_FIRST_GAME, to: Math.ceil(games / 2) }),
-  },
-  { label: 'Second half', range: (games) => ({ from: Math.ceil(games / 2) + 1, to: games }) },
-  { label: 'Full season', range: (games) => ({ from: BEFORE_FIRST_GAME, to: games }) },
+  { label: 'First half', seasonSpan: 'firstHalf' },
+  { label: 'Second half', seasonSpan: 'secondHalf' },
+  { label: 'Full season', seasonSpan: 'fullSeason' },
 ];
 
 function isLastGames(preset: RangePreset): preset is LastGamesPreset {
@@ -97,7 +125,9 @@ function isLastGames(preset: RangePreset): preset is LastGamesPreset {
  * `to` takes `to` with it, which is what a user reaching for a later window means.
  *
  * A "Last N" pill is kept as `lastGames` and the rail only shows where it falls, back from
- * `latestGame`. Moving either handle turns it into the explicit range it was showing.
+ * `latestGame`. A season pill is kept as `seasonSpan`, by name, and the page draws it against
+ * whichever season is shown. Moving either handle turns either kind into the explicit range it
+ * was showing.
  */
 @Component({
   selector: 'app-game-range-selector',
@@ -122,6 +152,8 @@ export class GameRangeSelectorComponent {
   readonly fromGame = model.required<number>();
   readonly toGame = model.required<number>();
   readonly lastGames = model.required<number | null>();
+  /** At most one of this and `lastGames` is set; with neither, the range is its two bounds. */
+  readonly seasonSpan = model.required<SeasonSpan | null>();
   readonly perGame = model.required<boolean>();
   readonly minGames = model.required<number>();
 
@@ -160,29 +192,29 @@ export class GameRangeSelectorComponent {
     return (preset: RangePreset) => locked && preset !== FREE_PRESET;
   });
 
+  /**
+   * By what is kept, not by the games on the rail. A range dragged by hand onto games 0-82 is not
+   * "Full season": it stays games 0-82 in an 84-game season, and a lit pill would say it follows.
+   */
   readonly isPresetActive = computed(() => {
     const lastGames = this.lastGames();
-    const { from, to } = { from: this.fromGame(), to: this.toGame() };
-    const scheduleLength = this.scheduleLength();
-    return (preset: RangePreset) => {
-      if (isLastGames(preset)) {
-        return lastGames === preset.lastGames;
-      }
-      const resolved = preset.range(scheduleLength);
-      return lastGames === null && resolved.from === from && resolved.to === to;
-    };
+    const seasonSpan = this.seasonSpan();
+    return (preset: RangePreset) =>
+      isLastGames(preset) ? lastGames === preset.lastGames : seasonSpan === preset.seasonSpan;
   });
 
   applyPreset(preset: RangePreset): void {
     if (isLastGames(preset)) {
       const { from, to } = lastGamesRange(this.latestGame(), preset.lastGames);
       this.lastGames.set(preset.lastGames);
+      this.seasonSpan.set(null);
       this.fromGame.set(from);
       this.toGame.set(to);
       return;
     }
-    const { from, to } = preset.range(this.scheduleLength());
+    const { from, to } = seasonSpanRange(preset.seasonSpan, this.scheduleLength());
     this.lastGames.set(null);
+    this.seasonSpan.set(preset.seasonSpan);
     this.fromGame.set(from);
     this.toGame.set(to);
   }
@@ -191,6 +223,7 @@ export class GameRangeSelectorComponent {
   onFromInput(event: Event): void {
     const value = this.clamp(event, BEFORE_FIRST_GAME);
     this.lastGames.set(null);
+    this.seasonSpan.set(null);
     this.fromGame.set(value);
     if (value > this.toGame()) {
       this.toGame.set(value);
@@ -201,6 +234,7 @@ export class GameRangeSelectorComponent {
   onToInput(event: Event): void {
     const value = this.clamp(event, FIRST_GAME);
     this.lastGames.set(null);
+    this.seasonSpan.set(null);
     this.toGame.set(value);
     if (value < this.fromGame()) {
       this.fromGame.set(value);
