@@ -4,6 +4,7 @@ import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import { IconComponent, type IconName } from '../../shared/icon/icon';
 import { PositionChipsComponent } from '../../shared/position-chips/position-chips';
 import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
+import { shortNames } from '../../shared/short-name';
 import { SKATER_SCORING_STAT_KEYS } from '../../models/stat-key.model';
 import {
   LeagueProjectionColumn,
@@ -238,7 +239,40 @@ export class LeagueProjectionTableComponent {
     );
   }
 
-  /** Players listed inside a position cell when its row is expanded. */
+  /**
+   * What the lineup row needs to know about a team's players besides the slot each fills: his
+   * club, and his name short enough for a slot's column ("M. Samuelsson"). A slot's players come
+   * as a name and a value, so both are looked up by name in the team's own roster; two players
+   * of one name on one team would share a crest, which is the worst it can do.
+   */
+  private readonly lineupDetails = computed(() => {
+    const details = new Map<
+      string,
+      { clubs: Map<string, string | null>; short: Map<string, string> }
+    >();
+    for (const team of this.data().teams) {
+      const names = Object.values(team.positionPlayers).flatMap((players) =>
+        players.map((player) => player.name),
+      );
+      details.set(team.teamId, {
+        clubs: new Map(team.roster.map((row) => [row.name, row.team ?? null])),
+        short: shortNames(names),
+      });
+    }
+    return details;
+  });
+
+  /** The club of a player in the team's lineup, for the crest beside his name. */
+  clubOf(team: LeagueProjectionTeamRow, name: string): string | null {
+    return this.lineupDetails().get(team.teamId)?.clubs.get(name) ?? null;
+  }
+
+  /** A lineup player's name as his slot's column has room for it. */
+  slotName(team: LeagueProjectionTeamRow, name: string): string {
+    return this.lineupDetails().get(team.teamId)?.short.get(name) ?? name;
+  }
+
+  /** Players listed under a position column when its team is expanded. */
   cellPlayers(
     team: LeagueProjectionTeamRow,
     column: LeagueProjectionColumn,
