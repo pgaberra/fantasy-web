@@ -482,7 +482,7 @@ describe('StreamerPlannerComponent', () => {
 
     it('says so when no goalie is available, and not that the league has nobody', async () => {
       freeAgents.mockReturnValue(
-        of<FreeAgentWeek>({ players: [skater('1', 'Second Best', 1, 1)] }),
+        of<FreeAgentWeek>({ creases: [], players: [skater('1', 'Second Best', 1, 1)] }),
       );
       const fixture = await render();
 
