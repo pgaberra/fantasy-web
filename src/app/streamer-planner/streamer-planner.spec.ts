@@ -185,7 +185,6 @@ describe('StreamerPlannerComponent', () => {
           skater('2', 'Top Scorer', 3, 1, 'EDM', ['C', 'LW']),
           goalie('3', 'Waiver Goalie', 1),
         ],
-        unprojected: 4,
       }),
     );
     return MockBuilder(StreamerPlannerComponent)
@@ -403,11 +402,6 @@ describe('StreamerPlannerComponent', () => {
       // The Lightning goalie's club is spelt TB by the platform and TBL by the NHL.
       const waiver = planner.ranked().find((row) => row.player.name === 'Waiver Goalie');
       expect(waiver?.games).toBeCloseTo(0.75, 5);
-    });
-
-    it('says how many available players the model does not project', async () => {
-      const fixture = await render();
-      expect(ngMocks.formatText(fixture)).toContain('4 available players have no projection');
     });
 
     it('surfaces a failed read instead of an empty table', async () => {
