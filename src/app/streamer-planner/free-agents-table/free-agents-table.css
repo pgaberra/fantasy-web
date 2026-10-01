@@ -38,6 +38,13 @@
   background: var(--color-surface-hover);
 }
 
+/* Every number sits on the line of the name, so a row reads straight across: the score has its
+   per-game figure under it, and centred in the row it stood half a line above the rest. */
+.free-agents-table tbody td {
+  line-height: 1.25;
+  vertical-align: top;
+}
+
 /* His place among all of them, so a list narrowed to one position still says how it compares. */
 .free-agents-table .rank-col {
   color: var(--color-text-subtle);
@@ -45,11 +52,13 @@
   width: 1%;
 }
 
-/* The player stays put while the numbers scroll sideways. */
+/* The player stays put while the numbers scroll sideways, and takes whatever room the card has to
+   spare: shared out among the numbers it would space them unevenly about the rule. */
 .free-agents-table .player-col {
   background: var(--color-surface);
   left: 0;
   position: sticky;
+  width: 100%;
   z-index: 1;
 }
 
@@ -104,10 +113,6 @@
   padding: 0 var(--space-2);
 }
 
-.score-col {
-  line-height: 1.2;
-}
-
 .score {
   color: var(--color-primary);
   display: block;
@@ -130,6 +135,11 @@
   .free-agents-table .toi-col {
     display: none;
   }
+
+  /* The games column now ends its group, and takes the room before the rule with it. */
+  .free-agents-table :is(th, td):has(+ .toi-col) {
+    padding-right: var(--space-3);
+  }
 }
 
 /* The categories, a column each: narrow, since a week's number is three or four characters, and
@@ -143,9 +153,10 @@
   padding-left: var(--space-3);
 }
 
-.free-agents-table thead .stat-col {
-  font-size: var(--text-xs);
-  letter-spacing: 0.02em;
+/* The rule stands midway between the two groups: whichever column ends the first one keeps as
+   much room before the rule as the categories keep after it. */
+.free-agents-table :is(th, td):has(+ .stat-col--first) {
+  padding-right: var(--space-3);
 }
 
 /* A category he is projected nothing in steps back, so the ones he is picked up for stand out. */
