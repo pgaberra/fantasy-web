@@ -1,0 +1,33 @@
+<ol class="option-cards">
+  @for (row of rows(); track row.player.playerId) {
+    <li class="option-card">
+      <div class="option-head">
+        <span class="option-rank" aria-hidden="true">{{ row.rank }}</span>
+        <app-team-logo class="option-logo" [team]="row.player.teamAbbrev" />
+        <div class="option-identity">
+          <span class="option-name">{{ row.player.name }}</span>
+          <span class="option-meta">
+            {{ identity(row) }}
+            @if (onWaivers(row)) {
+              <span class="waivers">Waivers</span>
+            }
+          </span>
+        </div>
+      </div>
+      <div class="option-stats">
+        <div class="option-stat">
+          <span class="stat-value stat-value--score">{{ score(row) }}</span>
+          <span class="stat-label">{{ scoreHeading() }}</span>
+        </div>
+        <div class="option-stat">
+          <span class="stat-value">{{ games(row) }}</span>
+          <span class="stat-label">Games</span>
+        </div>
+        <div class="option-stat">
+          <span class="stat-value">{{ perGame(row) }}</span>
+          <span class="stat-label">Per game</span>
+        </div>
+      </div>
+    </li>
+  }
+</ol>

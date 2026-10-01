@@ -78,12 +78,24 @@
         <!-- One cell a night, each row a Monday-to-Sunday week, so a stretch across two weeks reads
              as two weeks. The tick box sits in the cell's first line, level with every other. -->
         <div class="day-strip" role="group" aria-label="Nights to count">
-          @for (date of leadingDays(); track date) {
+          @for (day of leadingDays(); track day.date) {
             <span class="day day--past" aria-hidden="true">
               <span class="day-head">
-                <span class="day-name">{{ weekdayName(date) }}</span>
-                <span class="day-date">{{ formatDay(date) }}</span>
+                <span class="day-name">{{ weekdayName(day.date) }}</span>
+                <span class="day-date">{{ formatDay(day.date) }}</span>
               </span>
+              @if (day.games !== undefined) {
+                <span class="day-body">
+                  @if (day.games === 0) {
+                    <span class="day-games day-games--none">No games</span>
+                  } @else {
+                    <span class="day-games">
+                      <span class="day-count">{{ day.games }}</span>
+                      {{ day.games === 1 ? 'game' : 'games' }}
+                    </span>
+                  }
+                </span>
+              }
             </span>
           }
           @for (day of days(); track day.date) {
@@ -145,42 +157,33 @@
         @if (loadingFreeAgents()) {
           <app-loading-indicator />
         } @else {
-          <ol class="option-cards">
-            @for (row of topOptions(); track row.player.playerId) {
-              <li class="option-card">
-                <div class="option-head">
-                  <span class="option-rank" aria-hidden="true">{{ row.rank }}</span>
-                  <app-team-logo class="option-logo" [team]="row.player.teamAbbrev" />
-                  <div class="option-identity">
-                    <span class="option-name">{{ row.player.name }}</span>
-                    <span class="option-meta">
-                      {{ identity(row) }}
-                      @if (onWaivers(row)) {
-                        <span class="waivers">Waivers</span>
-                      }
-                    </span>
-                  </div>
-                </div>
-                <div class="option-stats">
-                  <div class="option-stat">
-                    <span class="stat-value stat-value--score">{{ scoreText(row) }}</span>
-                    <span class="stat-label">{{ scoreHeading() }}</span>
-                  </div>
-                  <div class="option-stat">
-                    <span class="stat-value">{{ games(row) }}</span>
-                    <span class="stat-label">Games</span>
-                  </div>
-                  <div class="option-stat">
-                    <span class="stat-value">{{ perGameText(row) }}</span>
-                    <span class="stat-label">Per game</span>
-                  </div>
-                </div>
-              </li>
-            }
-          </ol>
+          <app-top-options [rows]="topOptions()" [scoringType]="scoringType()" />
         }
       </section>
     }
+
+    <!-- Asked once, over the two tables it changes: the schedules are rated for that kind of
+         player and the free agents are that kind alone. The cards above are the best pickups of
+         either kind and do not follow it. -->
+    <div class="kind">
+      <span id="planner-kind-label" class="group-label">Show</span>
+      <div class="segmented" role="group" aria-labelledby="planner-kind-label">
+        <button
+          type="button"
+          [attr.aria-pressed]="position() === 'skaters'"
+          (click)="setPosition('skaters')"
+        >
+          Skaters
+        </button>
+        <button
+          type="button"
+          [attr.aria-pressed]="position() === 'goalies'"
+          (click)="setPosition('goalies')"
+        >
+          Goalies
+        </button>
+      </div>
+    </div>
 
     <div class="columns">
       <section class="card" aria-labelledby="planner-teams-title">
@@ -192,27 +195,6 @@
               text="Each game on a night you count is worth 1, or 1.25 on an off-night. A home game counts about 7% more than a road game, since teams score more at home. For skaters, a game against an opponent that allows more goals counts more; for goalies, one against an opponent that scores less."
             />
           </h2>
-          <!-- On the table it ranks, not up in the settings: it changes nothing else on the page. -->
-          <div class="pills" role="group" aria-label="Rank the schedules for">
-            <button
-              type="button"
-              class="pill"
-              [class.pill--active]="position() === 'skaters'"
-              [attr.aria-pressed]="position() === 'skaters'"
-              (click)="setPosition('skaters')"
-            >
-              Skaters
-            </button>
-            <button
-              type="button"
-              class="pill"
-              [class.pill--active]="position() === 'goalies'"
-              [attr.aria-pressed]="position() === 'goalies'"
-              (click)="setPosition('goalies')"
-            >
-              Goalies
-            </button>
-          </div>
         </div>
         @if (loadingSchedule()) {
           <app-loading-indicator />
@@ -230,40 +212,42 @@
               text="The model's projection for the nights you count, scored with your league's settings. A player is only worth what your league pays for what he does."
             />
           </h2>
-          <!-- One list, narrowed by any number of positions at once. "All" is the list with none
-               picked, and the way back to it. -->
-          <div class="pills" role="group" aria-label="Positions to show">
-            <button
-              type="button"
-              class="pill"
-              [class.pill--active]="positions().size === 0"
-              [attr.aria-pressed]="positions().size === 0"
-              (click)="clearPositions()"
-            >
-              All
-            </button>
-            @for (option of positionOptions; track option) {
+          <!-- The skaters are one list, narrowed by any number of positions at once. "All" is the
+               list with none picked, and the way back to it. Goalies have the one position. -->
+          @if (position() === 'skaters') {
+            <div class="pills" role="group" aria-label="Positions to show">
               <button
                 type="button"
                 class="pill"
-                [class.pill--active]="positions().has(option)"
-                [attr.aria-pressed]="positions().has(option)"
-                (click)="togglePosition(option)"
+                [class.pill--active]="positions().size === 0"
+                [attr.aria-pressed]="positions().size === 0"
+                (click)="clearPositions()"
               >
-                {{ option }}
+                All
               </button>
-            }
-          </div>
+              @for (option of positionOptions; track option) {
+                <button
+                  type="button"
+                  class="pill"
+                  [class.pill--active]="positions().has(option)"
+                  [attr.aria-pressed]="positions().has(option)"
+                  (click)="togglePosition(option)"
+                >
+                  {{ option }}
+                </button>
+              }
+            </div>
+          }
         </div>
         <!-- A category matchup is mostly settled before the week is out: the add worth making is
-             the one that swings the categories still open. Picking them ranks the list by those
-             alone; none picked is the league's whole set. -->
-        @if (league() && focusOptions().length > 0) {
+             the one that swings the categories still open. Picking them ranks the skaters by those
+             alone; none picked is the league's whole set, which the goalies are always ranked by. -->
+        @if (position() === 'skaters' && league() && focusOptions().length > 0) {
           <div class="focus" role="group" aria-labelledby="planner-focus-label">
             <span id="planner-focus-label" class="group-label">Rank by</span>
             <app-help-tip
               label="Ranking by categories"
-              text="Pick the categories still open in your matchup, and skaters are ranked by those alone. Goalies are left out while any is picked. The choice is kept for this league until the week ends."
+              text="Pick the categories still open in your matchup, and skaters are ranked by those alone. The choice is kept for this league until the week ends."
             />
             <div class="pills">
               <button
@@ -303,19 +287,15 @@
           <app-loading-indicator />
         } @else if (noFreeAgents()) {
           <p class="empty">No available player in this league has a projection for these nights.</p>
-        } @else if (goaliesOutOfFocus()) {
-          <p class="empty">
-            Goalies aren't ranked by skater categories. Pick All categories to see them.
-          </p>
         } @else if (filtered().length === 0) {
-          <p class="empty">No available player at these positions has a projection.</p>
+          <p class="empty">{{ emptyText() }}</p>
         } @else {
           <app-free-agents-table
             [rows]="visible()"
             [scoringType]="scoringType()"
             [categories]="categories()"
-            [focus]="focus()"
-            [focusLabel]="focusLabel()"
+            [focus]="listFocus()"
+            [focusLabel]="listFocusLabel()"
           />
           <div class="list-foot">
             <span class="list-count" aria-live="polite">

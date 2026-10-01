@@ -74,14 +74,22 @@ const GOALIE_PLAYER: RankedFreeAgent['player'] = {
 };
 
 const GOALIE: RankedFreeAgent = {
-  rank: 2,
+  rank: 1,
   score: 4,
   games: 2,
   player: GOALIE_PLAYER,
   line: GOALIE_PLAYER.projection,
 };
 
-const ROWS: RankedFreeAgent[] = [SKATER, GOALIE];
+const SECOND_SKATER: RankedFreeAgent = {
+  ...SKATER,
+  rank: 2,
+  score: 6,
+  player: { ...SKATER_PLAYER, playerId: '4', name: 'Second Line', teamAbbrev: 'TB' },
+};
+
+/** The table is handed one kind of player: these are the skaters. */
+const ROWS: RankedFreeAgent[] = [SKATER, SECOND_SKATER];
 
 /** A Yahoo categories league: seven for skaters, three for goalies, in the league's order. */
 const CATEGORIES: ScoringStatKey[] = [
@@ -118,14 +126,14 @@ describe('FreeAgentsTableComponent', () => {
     return ngMocks.findAll(fixture, 'thead .stat-col').map((cell) => ngMocks.formatText(cell));
   }
 
-  /** Each player's stat cells: a cell a column, or the one cell his written-out line spans. */
+  /** Each player's stat cells: a cell a column. */
   function cells(fixture: ReturnType<typeof render>): string[][] {
     return ngMocks
       .findAll(fixture, 'tbody tr')
       .map((row) => ngMocks.findAll(row, 'td.stat-col').map((cell) => ngMocks.formatText(cell)));
   }
 
-  it('writes the players as one list in the order given, each with his overall rank', () => {
+  it('writes the players as one list in the order given, each with the rank he was given', () => {
     const fixture = render();
     const rows = ngMocks.findAll(fixture, 'tbody tr.player-row');
 
@@ -134,7 +142,14 @@ describe('FreeAgentsTableComponent', () => {
       '2',
     ]);
     expect(ngMocks.formatText(rows[0])).toContain('Top Scorer');
-    expect(ngMocks.formatText(rows[1])).toContain('Waiver Goalie');
+    expect(ngMocks.formatText(rows[1])).toContain('Second Line');
+  });
+
+  it('says whose list the rank is a place in', () => {
+    expect(render().point.componentInstance.rankTip()).toContain('every available skater');
+    expect(render('points', CATEGORIES, [GOALIE]).point.componentInstance.rankTip()).toContain(
+      'every available goalie',
+    );
   });
 
   it("writes the score the way the league's scoring is written, with the rate a game", () => {
@@ -166,21 +181,7 @@ describe('FreeAgentsTableComponent', () => {
     expect(cells(fixture)[0]).toEqual(['2.1', '3.0', '11.2', '1.5', '0.8', '2.0', '6.4']);
   });
 
-  // The columns are the skaters' categories, so a goalie among them brings his own labels.
-  it("writes a goalie's line across the skaters' columns, with its own labels", () => {
-    const fixture = render();
-    const goalieRow = ngMocks.findAll(fixture, 'tbody tr')[1];
-    const line = ngMocks.find(goalieRow, 'td.other-line');
-
-    expect((line.nativeElement as HTMLTableCellElement).colSpan).toBe(7);
-    expect(ngMocks.findAll(line, 'li').map((stat) => ngMocks.formatText(stat))).toEqual([
-      '1.4 W',
-      '2.61 GAA',
-      '0.908 SV%',
-    ]);
-  });
-
-  it("heads the columns with the goalies' categories once the list is goalies alone", () => {
+  it("heads the columns with the goalies' categories when the list is the goalies", () => {
     const fixture = render('points', CATEGORIES, [GOALIE]);
 
     expect(headings(fixture)).toEqual(['W', 'GAA', 'SV%']);
@@ -193,7 +194,10 @@ describe('FreeAgentsTableComponent', () => {
     const fixture = render('points', ['goals', 'assists', 'sv']);
 
     expect(headings(fixture)).toEqual(['G', 'A']);
-    expect(cells(fixture)).toEqual([['2.1', '3.0'], ['57 SV']]);
+    expect(cells(fixture)).toEqual([
+      ['2.1', '3.0'],
+      ['2.1', '3.0'],
+    ]);
   });
 
   it('leaves a cell empty where the model gave the player no number, and keeps the column', () => {
@@ -246,11 +250,17 @@ describe('FreeAgentsTableComponent', () => {
 
   // An add is what the list is a list of; only a claim changes what the reader does next.
   it('tags a player on waivers and nobody else', () => {
-    const fixture = render();
+    const claim: RankedFreeAgent = {
+      ...SECOND_SKATER,
+      player: { ...SECOND_SKATER.player, availability: 'WAIVERS' },
+    };
+    const fixture = render('points', CATEGORIES, [SKATER, claim]);
     const tags = ngMocks.findAll(fixture, '.player-status');
 
     expect(tags.length).toBe(1);
-    expect(ngMocks.formatText(tags[0])).toBe('Waivers');
+    expect(tags[0].attributes['aria-label']).toBe('On waivers');
+    // By the name, not among the positions, where a W would read as a wing.
+    expect(tags[0].parent?.classes['player-name-line']).toBe(true);
     expect(ngMocks.formatText(ngMocks.find(fixture, '.player-row'))).not.toContain('Free agent');
   });
   // Ranked by a few categories, those are the columns the order is read from.
