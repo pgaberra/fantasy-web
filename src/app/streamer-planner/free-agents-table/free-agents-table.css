@@ -1,8 +1,16 @@
+/* A container, so a player's line can ask how wide the table is rather than the screen: the card
+   is half the page on a desktop and all of it on a tablet. */
 .table-scroll {
+  container-type: inline-size;
   overflow-x: auto;
 }
 
 .free-agents-table {
+  --player-logo-size: 26px;
+  /* How far the crest reaches below the name's row, into the indent of the line under it. */
+  --player-logo-hang: 14px;
+  /* Where the name starts, and the line under it: past the crest. */
+  --player-indent: calc(var(--player-logo-size) + var(--space-2));
   border-collapse: collapse;
   font-size: var(--text-sm);
   width: 100%;
@@ -48,21 +56,37 @@
   padding-left: 0;
 }
 
-/* The crest at the left of the two lines the cell holds, so the club is read before the name. */
+/* Side by side even where the table is squeezed: stacked, they would make the name's row two
+   chips tall for nothing but a second position. */
+.free-agents-table app-position-chips {
+  flex-wrap: nowrap;
+}
+
+/* A player's two rows read as one: only the second closes with a rule, and the score, which
+   stands beside both, closes with it. */
+.free-agents-table .player-row--lined > th,
+.free-agents-table .player-row--lined > td:not(.score-col) {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* The crest at the left of the name and of the line under it, so the club is read before either.
+   It is taller than the name's row and hangs into the next, which is indented to leave it room. */
 .player-cell {
-  align-items: center;
+  align-items: flex-start;
   display: flex;
   gap: var(--space-2);
 }
 
 .player-logo {
-  --team-logo-size: 26px;
+  --team-logo-size: var(--player-logo-size);
+  flex: none;
+  margin-bottom: calc(-1 * var(--player-logo-hang));
+  margin-top: 2px;
 }
 
-.player-text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+.player-row:not(.player-row--lined) .player-logo {
+  margin-block: 0;
 }
 
 .player-head {
@@ -87,15 +111,53 @@
   padding: 0 var(--space-2);
 }
 
-/* What the score is made of, under the name and in the same column so the row stays one line tall
-   for the numbers. */
+/* What the score is made of: his line in every category the league scores, under the name and
+   out across the columns beside it, where a week's numbers leave the width unused. */
+.free-agents-table .line-row > td {
+  padding-left: var(--player-indent);
+  padding-top: 2px;
+}
+
+/* A track a category, the same tracks on every skater and on every goalie (the component sizes
+   them), so a category is in the same place from one player to the next and reads down the list
+   as a column. A line too long for the table breaks into even lines, never one stat alone. Like
+   the name, it stays put while the numbers scroll sideways on a narrow screen. */
 .player-line {
-  color: var(--color-text-muted);
-  display: flex;
+  display: grid;
   font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
-  gap: var(--space-2);
-  margin-top: 2px;
+  gap: 2px var(--space-2);
+  grid-template-columns: var(--line-narrow);
+  left: var(--player-indent);
+  line-height: 1.35;
+  list-style: none;
+  margin: 0;
+  max-width: calc(100cqi - var(--player-indent));
+  padding: 0;
+  position: sticky;
+  width: fit-content;
+}
+
+@container (min-width: 26rem) {
+  .player-line {
+    grid-template-columns: var(--line-mid);
+  }
+}
+
+@container (min-width: 35rem) {
+  .player-line {
+    grid-template-columns: var(--line-wide);
+  }
+}
+
+/* The number is what is read; the label only says which number it is. */
+.stat-value {
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+}
+
+.stat-label {
+  color: var(--color-text-muted);
 }
 
 .toi {

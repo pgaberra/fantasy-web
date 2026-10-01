@@ -373,7 +373,14 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   `StreamerPlannerLeagueService` and picked in `league-field` (a Yahoo league reads at once, an
   ESPN id waits for Use). Clubs are drawn with `<app-team-logo>` (`shared/team-logo`): the NHL's
   own crest read from `assets.nhle.com`, an abbreviation badge where it fails; only a player on
-  waivers gets a tag, since an add is what the list is a list of.
+  waivers gets a tag, since an add is what the list is a list of. Under each free agent is his
+  line over the nights counted **in every category the league scores**, in the league's order
+  (`lineStats`): a table row of its own beside the score, each stat in a track sized to its
+  widest value (`lineGrid`), the same tracks for every skater and for every goalie, so a category
+  reads down the list as a column; a line too long for the table breaks into even lines by
+  container query, and it stays put, like the name, when a phone scrolls the numbers sideways. A
+  category the BFF sent no number for is left out, never written as the zero the ranking engine
+  was handed (`FreeAgent.projected`).
 - `services/` — app services (auth, projections, etc.)
 - `interceptors/` — HTTP interceptors: `authInterceptor` attaches the JWT and refreshes
   once on 401 (all environments). **Only a 401/403 from `/auth/refresh` itself ends the

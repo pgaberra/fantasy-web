@@ -27,6 +27,11 @@ export interface FreeAgent {
   /** Games the player's club plays in the week, and the ones he is expected to dress for. */
   clubGames: number;
   expectedGames: number;
+  /**
+   * The stats the model gave a number for. The projection holds a zero for every other one, for
+   * the ranking engine's sake, and a zero nobody projected must not be shown as his line.
+   */
+  projected: ReadonlySet<string>;
 }
 
 export interface FreeAgentWeek {
@@ -75,6 +80,7 @@ function toFreeAgent(player: FreeAgentResponse): FreeAgent {
     availability: player.availability,
     clubGames: player.clubGames,
     expectedGames: player.expectedGames,
+    projected: new Set(Object.keys(player.stats)),
     projection: {
       type: skater ? 'skater' : 'goalie',
       playerId: Number.isFinite(playerId) ? playerId : -1,

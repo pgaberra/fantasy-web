@@ -251,7 +251,11 @@
         } @else if (filtered().length === 0) {
           <p class="empty">No available player at these positions has a projection.</p>
         } @else {
-          <app-free-agents-table [rows]="visible()" [scoringType]="scoringType()" />
+          <app-free-agents-table
+            [rows]="visible()"
+            [scoringType]="scoringType()"
+            [categories]="categories()"
+          />
           <div class="list-foot">
             <span class="list-count" aria-live="polite">
               Showing {{ visible().length }} of {{ filtered().length }}
