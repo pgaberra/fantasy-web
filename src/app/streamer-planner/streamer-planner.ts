@@ -23,12 +23,15 @@ import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { TeamLogoComponent } from '../shared/team-logo/team-logo';
+import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { FreeAgentsTableComponent } from './free-agents-table/free-agents-table';
 import { LeagueFieldComponent } from './league-field/league-field';
 import {
+  categoryColumn,
   filterByPositions,
   formatGames,
   FREE_AGENTS_PAGE,
+  LineColumn,
   nightsFactor,
   PLANNER_POSITIONS,
   PlannerPositionGroup,
@@ -38,6 +41,7 @@ import {
   TOP_OPTIONS,
   WEEK_DECIMALS,
 } from './planner-free-agents';
+import { focusableCategories, readFocus, writeFocus } from './planner-focus';
 import {
   clampStretch,
   dayName,
@@ -58,6 +62,7 @@ import {
   Stretch,
   stretchLabel,
   weekdayName,
+  weekOf,
   weeksTitle,
 } from './planner-schedule';
 import { TeamSchedulesComponent } from './team-schedules/team-schedules';
@@ -99,6 +104,7 @@ export interface PresetOption {
     LoadingIndicatorComponent,
     TeamLogoComponent,
     TeamSchedulesComponent,
+    TooltipDirective,
   ],
   templateUrl: './streamer-planner.html',
   styleUrl: './streamer-planner.css',
@@ -344,12 +350,82 @@ export class StreamerPlannerComponent {
 
   private readonly teamsByKey = computed(() => teamsByKey(this.strength()?.teams ?? []));
 
-  /** Every available player with a projection, best first by the league's scoring. */
+  // --- The categories the list is ranked by ----------------------------------------------------
+
+  /** The league, as the remembered focus is filed under. */
+  private readonly leagueKey = computed(() => {
+    const league = this.league();
+    return league ? `${league.platform}:${league.leagueId}` : null;
+  });
+
+  /**
+   * The skater categories a streamer can rank by: a category league's own. A points league has
+   * none, since a point is worth the same whichever category it came from.
+   */
+  readonly focusOptions = computed<readonly LineColumn[]>(() =>
+    this.scoringType() === 'category'
+      ? focusableCategories(this.categories()).map(categoryColumn)
+      : [],
+  );
+
+  /** The categories picked, as remembered for the league until this week is over. */
+  private readonly focusPicked = linkedSignal<string | null, ReadonlySet<ScoringStatKey>>({
+    source: this.leagueKey,
+    computation: (league) => new Set(league ? readFocus(league, this.today) : []),
+  });
+
+  /**
+   * The categories the list is ranked by. None is the league's whole set, which is how the page
+   * opens. A category the league no longer scores is dropped rather than ranked by.
+   */
+  readonly focus = computed<ReadonlySet<ScoringStatKey>>(() => {
+    const offered = new Set(this.focusOptions().map((option) => option.key));
+    return new Set([...this.focusPicked()].filter((key) => offered.has(key)));
+  });
+
+  toggleFocus(key: ScoringStatKey): void {
+    const next = new Set(this.focus());
+    if (next.has(key)) {
+      next.delete(key);
+    } else {
+      next.add(key);
+    }
+    this.setFocus(next);
+  }
+
+  clearFocus(): void {
+    this.setFocus(new Set());
+  }
+
+  private setFocus(focus: ReadonlySet<ScoringStatKey>): void {
+    this.focusPicked.set(focus);
+    const league = this.leagueKey();
+    const week = weekOf(this.weeks(), this.today);
+    // Without the season's weeks there is no end to hold it to: it holds for this visit only.
+    if (league && week) {
+      writeFocus(league, focus, week.end, this.today);
+    }
+  }
+
+  /** "PPP, SOG": the categories picked, as the score's tip names them. */
+  readonly focusLabel = computed(() =>
+    this.focusOptions()
+      .filter((option) => this.focus().has(option.key))
+      .map((option) => option.label)
+      .join(', '),
+  );
+
+  /**
+   * Every available player with a projection, best first by the league's scoring. With categories
+   * picked, only skaters, scored in those alone: a goalie has nothing to give in a skater
+   * category, and his own z-score is not on the same scale as one category's.
+   */
   readonly ranked = computed<RankedFreeAgent[]>(() => {
     const week = this.freeAgentsResource.hasValue() ? this.freeAgentsResource.value() : null;
     if (!week) {
       return [];
     }
+    const focus = this.focus();
     const scoring = this.scoring();
     const teams = this.teamsByKey();
     const counted = this.counted();
@@ -357,7 +433,11 @@ export class StreamerPlannerComponent {
     const factors = new Map<string, number>();
     const lines = new Map<string, Projection>();
     const byPlayerId = new Map(week.players.map((player) => [player.projection.playerId, player]));
-    const projections = week.players.map((player) => {
+    const players =
+      focus.size > 0
+        ? week.players.filter((player) => player.projection.type === 'skater')
+        : week.players;
+    const projections = players.map((player) => {
       const factor = nightsFactor(player, teams, counted, everyNightCounted);
       const line = scaledProjection(player.projection, factor);
       factors.set(player.playerId, factor);
@@ -368,7 +448,7 @@ export class StreamerPlannerComponent {
       projections,
       scoringType: scoring.scoringType,
       statWeights: scoring.statWeights,
-      activeScoringColumns: scoring.activeScoringColumns,
+      activeScoringColumns: focus.size > 0 ? new Set(focus) : scoring.activeScoringColumns,
       leagueSize: DEFAULT_LEAGUE_SIZE,
       rosterSlots: DEFAULT_ROSTER_SLOTS,
       // A goalie streamed for a week has nothing like a season's starts behind him, and the
@@ -399,11 +479,19 @@ export class StreamerPlannerComponent {
   /** The one list, narrowed to the positions picked. */
   readonly filtered = computed(() => filterByPositions(this.ranked(), this.positions()));
 
-  /** How many rows are drawn. Other positions are another list, so it starts from the top again. */
-  private readonly shown = linkedSignal<ReadonlySet<PlannerPositionGroup>, number>({
-    source: this.positions,
+  /**
+   * How many rows are drawn. Other positions or other categories are another list, so it starts
+   * from the top again.
+   */
+  private readonly shown = linkedSignal<unknown, number>({
+    source: () => [this.positions(), this.focus()],
     computation: () => FREE_AGENTS_PAGE,
   });
+
+  /** Narrowed to goalies alone while skater categories are picked: an empty list, and why. */
+  readonly goaliesOutOfFocus = computed(
+    () => this.focus().size > 0 && this.filtered().length === 0 && this.positions().has('G'),
+  );
 
   readonly visible = computed(() => this.filtered().slice(0, this.shown()));
   readonly hiddenCount = computed(() => Math.max(0, this.filtered().length - this.shown()));

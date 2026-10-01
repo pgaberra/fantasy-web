@@ -12,11 +12,7 @@
         <th scope="col" class="player-col">Player</th>
         <!-- Straight after the name, as on the team table beside it, and so that a phone shows
              who and how good before anything has to be scrolled. -->
-        <th
-          scope="col"
-          class="num"
-          appTooltip="The model's line for the nights counted, scored by your league's settings"
-        >
+        <th scope="col" class="num" [appTooltip]="scoreTip()">
           {{ scoreHeading() }}
         </th>
         <th scope="col" class="num" appTooltip="Games he is expected to play on the nights counted">
@@ -31,6 +27,8 @@
             scope="col"
             class="num stat-col"
             [class.stat-col--first]="first"
+            [class.stat-col--focus]="focused(column.key) === true"
+            [class.stat-col--muted]="focused(column.key) === false"
             [appTooltip]="column.name"
           >
             {{ column.label }}
@@ -75,6 +73,8 @@
               <td
                 class="num stat-col"
                 [class.stat-col--first]="first"
+                [class.stat-col--focus]="focused(columns()[$index].key) === true"
+                [class.stat-col--muted]="focused(columns()[$index].key) === false"
                 [class.nil]="cell && isNil(cell)"
               >
                 {{ cell?.value }}

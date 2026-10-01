@@ -253,4 +253,28 @@ describe('FreeAgentsTableComponent', () => {
     expect(ngMocks.formatText(tags[0])).toBe('Waivers');
     expect(ngMocks.formatText(ngMocks.find(fixture, '.player-row'))).not.toContain('Free agent');
   });
+  // Ranked by a few categories, those are the columns the order is read from.
+  it('marks the columns the list is ranked by, and steps the rest back', () => {
+    const fixture = MockRender(FreeAgentsTableComponent, {
+      rows: [SKATER],
+      scoringType: 'category',
+      categories: ['goals', 'ppp', 'sog'],
+      focus: new Set<ScoringStatKey>(['ppp']),
+      focusLabel: 'PPP',
+    });
+    fixture.detectChanges();
+
+    const text = (selector: string) =>
+      ngMocks.findAll(fixture, selector).map((cell) => ngMocks.formatText(cell));
+    expect(text('thead .stat-col--focus')).toEqual(['PPP']);
+    expect(text('thead .stat-col--muted')).toEqual(['G', 'SOG']);
+    expect(text('tbody .stat-col--focus')).toEqual(['0.8']);
+    expect(fixture.point.componentInstance.scoreTip()).toContain('scored in PPP alone');
+  });
+
+  it('marks no column while the list is ranked by every category', () => {
+    const fixture = render('category', ['goals', 'ppp'], [SKATER]);
+
+    expect(ngMocks.findAll(fixture, '.stat-col--focus, .stat-col--muted')).toHaveLength(0);
+  });
 });

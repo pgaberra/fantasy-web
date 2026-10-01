@@ -134,6 +134,26 @@ function skater(
   };
 }
 
+/** A skater in a category league, with whatever line the test needs. */
+function lineSkater(
+  playerId: string,
+  name: string,
+  line: Record<string, number>,
+): FreeAgentWeek['players'][number] {
+  const player = skater(playerId, name, 0, 0);
+  return {
+    ...player,
+    projected: new Set(Object.keys(line)),
+    projection: {
+      ...player.projection,
+      stats: {
+        scoring: scoringLine(SKATER_SCORING_STAT_KEYS, line),
+        utility: { gp: 2, toiPerGame: 1100 },
+      },
+    } as never,
+  };
+}
+
 function goalie(playerId: string, name: string, wins: number): FreeAgentWeek['players'][number] {
   return {
     playerId,
@@ -165,10 +185,13 @@ describe('StreamerPlannerComponent', () => {
   let chosen: PlannerLeague | null = null;
   /** The Monday of week 2 unless a test says otherwise. */
   let today = '2026-10-12';
+  let settings = SETTINGS;
 
   beforeEach(() => {
     chosen = null;
     today = '2026-10-12';
+    settings = SETTINGS;
+    localStorage.clear();
     invoke.mockReset();
     freeAgents.mockReset();
     invoke.mockImplementation((fn: unknown, params?: { start: string; end: string }) => {
@@ -198,8 +221,8 @@ describe('StreamerPlannerComponent', () => {
           return () => chosen;
         },
       } as never)
-      .mock(YahooService, { leagueProjectionSettings: () => of(SETTINGS) })
-      .mock(EspnService, { leagueProjectionSettings: () => of(SETTINGS) });
+      .mock(YahooService, { leagueProjectionSettings: () => of(settings) })
+      .mock(EspnService, { leagueProjectionSettings: () => of(settings) });
   });
 
   async function render() {
@@ -465,6 +488,104 @@ describe('StreamerPlannerComponent', () => {
       expect(errorState).toBeDefined();
       expect(fixture.point.componentInstance.ranked()).toHaveLength(0);
       expect(fixture.point.componentInstance.showsTopOptions()).toBe(false);
+    });
+  });
+  describe('in a category league', () => {
+    /** Goals, assists, power-play points and shots, with goalie wins. */
+    const CATEGORY_SETTINGS: LeagueProjectionSettingsResponse = {
+      ...SETTINGS,
+      scoringType: 'category',
+      statWeights: {},
+      activeScoringColumns: ['goals', 'assists', 'ppp', 'sog', 'w'],
+    };
+
+    beforeEach(() => {
+      chosen = LEAGUE;
+      settings = CATEGORY_SETTINGS;
+      freeAgents.mockReturnValue(
+        of<FreeAgentWeek>({
+          players: [
+            lineSkater('1', 'Sniper', { goals: 3, assists: 1, ppp: 0, sog: 12 }),
+            lineSkater('2', 'Power Play', { goals: 0, assists: 1, ppp: 2, sog: 3 }),
+            lineSkater('3', 'Middle', { goals: 1, assists: 1, ppp: 1, sog: 5 }),
+            goalie('4', 'Waiver Goalie', 1),
+          ],
+        }),
+      );
+    });
+
+    const names = (rows: readonly { player: { name: string } }[]) =>
+      rows.map((row) => row.player.name);
+
+    it('offers the skater categories to rank by, and ranks by every category until one is picked', async () => {
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+
+      expect(planner.focusOptions().map((option) => option.key)).toEqual([
+        'goals',
+        'assists',
+        'ppp',
+        'sog',
+      ]);
+      expect(planner.focus().size).toBe(0);
+      expect(names(planner.ranked())[0]).toBe('Sniper');
+      expect(names(planner.ranked())).toContain('Waiver Goalie');
+      expect(ngMocks.formatText(fixture)).toContain('All categories');
+    });
+
+    it('ranks skaters alone by the categories picked, and goes back to all of them', async () => {
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+
+      planner.toggleFocus('ppp');
+      expect(names(planner.ranked())).toEqual(['Power Play', 'Middle', 'Sniper']);
+      expect(planner.topOptions()[0].player.name).toBe('Power Play');
+      expect(planner.focusLabel()).toBe('PPP');
+
+      planner.toggleFocus('sog');
+      expect(names(planner.ranked())[0]).not.toBe('Waiver Goalie');
+      expect(names(planner.ranked())).not.toContain('Waiver Goalie');
+
+      planner.clearFocus();
+      expect(names(planner.ranked())).toContain('Waiver Goalie');
+      expect(names(planner.ranked())[0]).toBe('Sniper');
+    });
+
+    it('says why goalies are missing while skater categories are picked', async () => {
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+
+      planner.toggleFocus('ppp');
+      planner.togglePosition('G');
+      fixture.detectChanges();
+      expect(planner.goaliesOutOfFocus()).toBe(true);
+      expect(ngMocks.formatText(fixture)).toContain("Goalies aren't ranked by skater categories");
+    });
+
+    it('remembers the categories for the league until the week is over', async () => {
+      const first = await render();
+      first.point.componentInstance.toggleFocus('ppp');
+      first.destroy();
+
+      // Later the same week: still chasing power-play points.
+      today = '2026-10-17';
+      const later = await render();
+      expect([...later.point.componentInstance.focus()]).toEqual(['ppp']);
+      expect(names(later.point.componentInstance.ranked())[0]).toBe('Power Play');
+      later.destroy();
+
+      // The Monday after: a new matchup, so every category again.
+      today = '2026-10-19';
+      const nextWeek = await render();
+      expect(nextWeek.point.componentInstance.focus().size).toBe(0);
+    });
+
+    it('offers nothing to pick in a points league', async () => {
+      settings = SETTINGS;
+      const fixture = await render();
+
+      expect(fixture.point.componentInstance.focusOptions()).toEqual([]);
+      expect(ngMocks.formatText(fixture)).not.toContain('All categories');
     });
   });
 });

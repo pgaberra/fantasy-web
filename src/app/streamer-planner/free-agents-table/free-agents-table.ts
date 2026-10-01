@@ -45,6 +45,10 @@ export class FreeAgentsTableComponent {
   readonly scoringType = input.required<ScoringType>();
   /** The categories the league scores, in the league's order. */
   readonly categories = input.required<readonly ScoringStatKey[]>();
+  /** The categories the list is ranked by, if narrowed to some: those columns are the ones read. */
+  readonly focus = input<ReadonlySet<ScoringStatKey>>(new Set());
+  /** "PPP, SOG": the same categories, as the score's tip names them. */
+  readonly focusLabel = input('');
 
   private readonly lines = computed(() => {
     const categories = this.categories();
@@ -86,6 +90,19 @@ export class FreeAgentsTableComponent {
   readonly scoreHeading = computed(() =>
     this.scoringType() === 'points' ? 'Proj. pts' : 'Z-Score',
   );
+
+  readonly scoreTip = computed(() => {
+    const label = this.focusLabel();
+    return label
+      ? `The model's line for the nights counted, scored in ${label} alone`
+      : "The model's line for the nights counted, scored by your league's settings";
+  });
+
+  /** Picked, while the list is ranked by some categories; null while it is ranked by all. */
+  focused(key: ScoringStatKey): boolean | null {
+    const focus = this.focus();
+    return focus.size === 0 ? null : focus.has(key);
+  }
 
   score(row: RankedFreeAgent): string {
     return row.score.toFixed(this.scoringType() === 'points' ? 1 : 2);
