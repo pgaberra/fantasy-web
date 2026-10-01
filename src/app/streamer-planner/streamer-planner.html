@@ -78,12 +78,24 @@
         <!-- One cell a night, each row a Monday-to-Sunday week, so a stretch across two weeks reads
              as two weeks. The tick box sits in the cell's first line, level with every other. -->
         <div class="day-strip" role="group" aria-label="Nights to count">
-          @for (date of leadingDays(); track date) {
+          @for (day of leadingDays(); track day.date) {
             <span class="day day--past" aria-hidden="true">
               <span class="day-head">
-                <span class="day-name">{{ weekdayName(date) }}</span>
-                <span class="day-date">{{ formatDay(date) }}</span>
+                <span class="day-name">{{ weekdayName(day.date) }}</span>
+                <span class="day-date">{{ formatDay(day.date) }}</span>
               </span>
+              @if (day.games !== undefined) {
+                <span class="day-body">
+                  @if (day.games === 0) {
+                    <span class="day-games day-games--none">No games</span>
+                  } @else {
+                    <span class="day-games">
+                      <span class="day-count">{{ day.games }}</span>
+                      {{ day.games === 1 ? 'game' : 'games' }}
+                    </span>
+                  }
+                </span>
+              }
             </span>
           }
           @for (day of days(); track day.date) {

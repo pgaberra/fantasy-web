@@ -259,6 +259,8 @@ describe('StreamerPlannerComponent', () => {
     expect(planner.stretchTitle()).toBe('Oct 12 to Oct 18');
     expect(planner.nightsTitle()).toBe('2 of 2 nights');
     expect(planner.leadingDays()).toEqual([]);
+    // Monday has no days before it, so nothing is asked for them.
+    expect(invoke.mock.calls.filter(([fn]) => fn === streamerPlannerTeams)).toHaveLength(1);
   });
 
   // A night already played is not a night to stream for.
@@ -272,13 +274,24 @@ describe('StreamerPlannerComponent', () => {
       end: '2026-10-18',
     });
     expect(planner.days().length).toBe(5);
-    expect(planner.leadingDays()).toEqual(['2026-10-12', '2026-10-13']);
+    expect(invoke).toHaveBeenCalledWith(streamerPlannerTeams, {
+      start: '2026-10-12',
+      end: '2026-10-13',
+    });
+    expect(planner.leadingDays()).toEqual([
+      { date: '2026-10-12', games: 0 },
+      { date: '2026-10-13', games: 3 },
+    ]);
     expect(planner.presets().map((preset) => [preset.key, preset.stretch])).toEqual([
       ['this-week', { start: '2026-10-14', end: '2026-10-18' }],
       ['next-week', { start: '2026-10-19', end: '2026-10-25' }],
       ['two-weeks', { start: '2026-10-14', end: '2026-10-25' }],
     ]);
-    expect(ngMocks.findAll(fixture, '.day--past').length).toBe(2);
+    const past = ngMocks.findAll(fixture, '.day--past');
+    expect(past.length).toBe(2);
+    expect(past[0].nativeElement.textContent).toContain('No games');
+    expect(past[1].nativeElement.querySelector('.day-count').textContent).toBe('3');
+    expect(past[1].nativeElement.querySelector('input')).toBeNull();
     expect(ngMocks.findAll(fixture, 'label.day').length).toBe(5);
   });
 

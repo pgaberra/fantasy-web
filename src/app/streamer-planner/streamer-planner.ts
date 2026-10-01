@@ -43,6 +43,7 @@ import {
 } from './planner-free-agents';
 import { focusableCategories, readFocus, writeFocus } from './planner-focus';
 import {
+  addDays,
   clampStretch,
   dayName,
   earliestStart,
@@ -68,6 +69,12 @@ import {
 import { TeamSchedulesComponent } from './team-schedules/team-schedules';
 
 export type { Stretch } from './planner-schedule';
+
+/** A day before the stretch: its date, and its games once they have been asked for. */
+export interface LeadingDay {
+  readonly date: string;
+  readonly games?: number;
+}
 
 /** A preset with the stretch it names today, for the reader to pick by name. */
 export interface PresetOption {
@@ -569,10 +576,32 @@ export class StreamerPlannerComponent {
     return formatDay(day.date);
   }
 
-  /** The days of the week already behind the stretch, drawn faint so its first row reads as a week. */
-  readonly leadingDays = computed<readonly string[]>(() => {
+  /** The dates of the week before the stretch starts, asked for only to say how many games they held. */
+  private readonly leadingStretch = computed<Stretch | undefined>(() => {
     const start = this.stretch()?.start;
-    return start && this.days().length > 0 ? leadingDays(start) : [];
+    const dates = start ? leadingDays(start) : [];
+    return start && dates.length > 0 ? { start: dates[0], end: addDays(start, -1) } : undefined;
+  });
+
+  private readonly leadingResource = rxResource({
+    params: () => this.leadingStretch(),
+    stream: ({ params }) => from(this.api.invoke(streamerPlannerTeams, params)),
+  });
+
+  /**
+   * The days of the week already behind the stretch, drawn faint so its first row reads as a week,
+   * with the games they held: a night played still had its games. The count is left off until it
+   * has come, and stays off if it cannot.
+   */
+  readonly leadingDays = computed<readonly LeadingDay[]>(() => {
+    const start = this.stretch()?.start;
+    if (!start || this.days().length === 0) {
+      return [];
+    }
+    const nights = this.leadingResource.hasValue()
+      ? new Map(plannerDays(this.leadingResource.value()).map((day) => [day.date, day.games]))
+      : undefined;
+    return leadingDays(start).map((date) => ({ date, games: nights?.get(date) }));
   });
 
   weekdayName(date: string): string {
