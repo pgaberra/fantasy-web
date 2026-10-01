@@ -2,6 +2,7 @@ import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { HotPlayersTableComponent } from './hot-players-table';
 import { PositionChipsComponent } from '../../shared/position-chips/position-chips';
+import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
 import { HotPlayer } from '../../services/whos-hot.service';
 import { Player } from '../../models/player.model';
 import { SkaterPosition } from '../../models/position.model';
@@ -217,6 +218,34 @@ describe('HotPlayersTableComponent', () => {
         .findAll(fixture, PositionChipsComponent)
         .map((chips) => chips.componentInstance.positions()),
     ).toEqual([['C', 'LW'], ['D'], []]);
+  });
+
+  // The crest stands in for the abbreviation, so it is the one that names the club to a screen
+  // reader; a row without a club draws neither.
+  it("draws each row's club as a crest that carries the club's name", () => {
+    const fixture = MockRender(HotPlayersTableComponent, {
+      hotPlayers: [
+        skater(1, 20, 12),
+        { ...skater(2, 20, 10), teamAbbrev: 'TOR' },
+        { ...skater(3, 20, 8), teamAbbrev: '' },
+      ],
+      players: [player(1), player(2), player(3)],
+      activeColumns,
+      scoringType: 'points',
+      statWeights: DEFAULT_STAT_WEIGHTS,
+      seasonLabel: '2025-26',
+    });
+    fixture.detectChanges();
+
+    expect(
+      ngMocks
+        .findAll(fixture, TeamLogoComponent)
+        .map((logo) => [logo.componentInstance.team(), logo.componentInstance.alt()]),
+    ).toEqual([
+      ['EDM', 'EDM'],
+      ['TOR', 'TOR'],
+    ]);
+    expect(ngMocks.findAll(fixture, '.player-meta span.player-team')).toEqual([]);
   });
 
   it('offers no League setup in a points league that has imported nothing — the menu would be empty', () => {

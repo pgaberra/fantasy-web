@@ -134,8 +134,13 @@
                         </span>
                         <div class="player-meta">
                           <app-position-chips [positions]="positions(ranked)" />
+                          <!-- The crest is the club's only mention in the row, so it carries the name. -->
                           @if (ranked.hot.teamAbbrev) {
-                            <span class="player-team">{{ ranked.hot.teamAbbrev }}</span>
+                            <app-team-logo
+                              class="player-team"
+                              [team]="ranked.hot.teamAbbrev"
+                              [alt]="ranked.hot.teamAbbrev"
+                            />
                           }
                           @if (!ranked.qualified) {
                             <span

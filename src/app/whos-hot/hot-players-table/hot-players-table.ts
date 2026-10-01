@@ -69,6 +69,7 @@ import { DecimalPipe } from '@angular/common';
 import { shortNames } from '../../shared/short-name';
 import { IconComponent } from '../../shared/icon/icon';
 import { ToggleSwitchComponent } from '../../draft-projection/projection-settings-section/toggle-switch/toggle-switch';
+import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
 
 const PLAYERS_PER_PAGE = 100;
 
@@ -112,6 +113,7 @@ interface RankedPlayer extends ScoredProjection {
     DecimalPipe,
     IconComponent,
     ToggleSwitchComponent,
+    TeamLogoComponent,
   ],
   templateUrl: './hot-players-table.html',
   styleUrl: './hot-players-table.css',
