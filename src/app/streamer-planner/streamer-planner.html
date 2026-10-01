@@ -240,11 +240,6 @@
           <p class="empty">No available player in this league has a projection for these nights.</p>
         } @else {
           <app-free-agents-table [groups]="groups()" [scoringType]="scoringType()" />
-          @if (unprojected() > 0) {
-            <p class="footnote">
-              {{ unprojected() }} available players have no projection and are left out.
-            </p>
-          }
         }
       </section>
     </div>

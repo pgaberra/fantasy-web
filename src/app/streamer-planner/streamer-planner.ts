@@ -300,9 +300,6 @@ export class StreamerPlannerComponent {
   readonly freeAgentsFailure = computed(
     () => this.freeAgentsResource.error() ?? this.settingsResource.error(),
   );
-  readonly unprojected = computed(() =>
-    this.freeAgentsResource.hasValue() ? this.freeAgentsResource.value().unprojected : 0,
-  );
 
   /** The league's own scoring, or the app's defaults until its settings land. */
   private readonly scoring = computed(() => {
