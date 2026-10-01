@@ -12,6 +12,7 @@ import {
   lineStats,
   LineColumn,
   LineStat,
+  NO_RATE,
   RankedFreeAgent,
 } from '../planner-free-agents';
 
@@ -126,6 +127,6 @@ export class FreeAgentsTableComponent {
 
   /** Nothing projected in the category: there, but not what he is picked up for. */
   isNil(stat: LineStat): boolean {
-    return Number(stat.value) === 0;
+    return stat.value === NO_RATE || Number(stat.value) === 0;
   }
 }
