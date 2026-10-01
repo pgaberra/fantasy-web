@@ -17,12 +17,6 @@ import { FreeAgent } from '../services/streamer-planner-free-agents.service';
 export const PLANNER_POSITIONS = ['C', 'LW', 'RW', 'D'] as const;
 export type PlannerPositionGroup = (typeof PLANNER_POSITIONS)[number];
 
-/**
- * How many players the list opens with, and how many more each press of "Show more" adds. About
- * the depth of the team table beside it; the rest is a press away, never out of reach.
- */
-export const FREE_AGENTS_PAGE = 25;
-
 /** How many players the cards over the tables show. */
 export const TOP_OPTIONS = 3;
 

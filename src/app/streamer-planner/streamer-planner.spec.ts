@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
@@ -20,6 +21,7 @@ import {
 } from '../services/streamer-planner-league.service';
 import { YahooService } from '../services/yahoo.service';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
+import { PLANNER_LAYOUT, PlannerLayout } from './planner-page-size';
 import { PLANNER_TODAY } from './planner-schedule';
 import { StreamerPlannerComponent } from './streamer-planner';
 
@@ -190,8 +192,10 @@ describe('StreamerPlannerComponent', () => {
   /** The Monday of week 2 unless a test says otherwise. */
   let today = '2026-10-12';
   let settings = SETTINGS;
+  const layout = signal<PlannerLayout>('desktop');
 
   beforeEach(() => {
+    layout.set('desktop');
     chosen = null;
     today = '2026-10-12';
     settings = SETTINGS;
@@ -219,6 +223,7 @@ describe('StreamerPlannerComponent', () => {
     return MockBuilder(StreamerPlannerComponent)
       .provide({ provide: Api, useValue: { invoke } })
       .provide({ provide: PLANNER_TODAY, useValue: () => today })
+      .provide({ provide: PLANNER_LAYOUT, useValue: layout.asReadonly() })
       .mock(StreamerPlannerFreeAgentsService, { freeAgents })
       .mock(StreamerPlannerLeagueService, {
         get league() {
@@ -435,7 +440,7 @@ describe('StreamerPlannerComponent', () => {
       expect(planner.topOptions().map((row) => row.rank)).toEqual([1, 2, 3]);
       const names = () => planner.visible().map((row) => row.player.name);
       expect(names()).toEqual(['Top Scorer', 'Second Best']);
-      expect(ngMocks.formatText(fixture)).toContain('Showing 2 of 2');
+      expect(ngMocks.formatText(fixture)).toContain('1–2 of 2');
       expect(planner.positionOptions).toEqual(['C', 'LW', 'RW', 'D']);
 
       planner.togglePosition('LW');
@@ -469,7 +474,7 @@ describe('StreamerPlannerComponent', () => {
       expect(planner.visible().map((row) => [row.player.name, row.rank])).toEqual([
         ['Waiver Goalie', 1],
       ]);
-      expect(ngMocks.formatText(fixture)).toContain('Showing 1 of 1');
+      expect(ngMocks.formatText(fixture)).toContain('1 of 1');
       // The positions are the skaters' to narrow: no pills over a list of goalies, and the ones
       // picked wait for the skaters to come back.
       expect(ngMocks.findAll(fixture, '[aria-label="Positions to show"]')).toHaveLength(0);
@@ -493,44 +498,123 @@ describe('StreamerPlannerComponent', () => {
       );
     });
 
-    it('opens on a page of a long list, adds a page a press, and starts over on other positions', async () => {
-      freeAgents.mockReturnValue(
-        of<FreeAgentWeek>({
-          players: Array.from({ length: 60 }, (_, index) =>
-            skater(`${index + 1}`, `Skater ${index + 1}`, 60 - index, 0, 'EDM', [
-              index % 2 === 0 ? 'C' : 'D',
-            ]),
-          ),
-        }),
-      );
+    function longList(length: number): FreeAgentWeek {
+      return {
+        players: Array.from({ length }, (_, index) =>
+          skater(`${index + 1}`, `Skater ${index + 1}`, length - index, 0, 'EDM', [
+            index % 2 === 0 ? 'C' : 'D',
+          ]),
+        ),
+      };
+    }
+
+    function select(value: number): Event {
+      return { target: { value: String(value) } } as unknown as Event;
+    }
+
+    it('shows a long list a page at a time, and starts over on other positions', async () => {
+      freeAgents.mockReturnValue(of(longList(60)));
       const fixture = await render();
       const planner = fixture.point.componentInstance;
 
       expect(planner.visible()).toHaveLength(25);
-      expect(ngMocks.formatText(fixture)).toContain('Showing 25 of 60');
-      expect(ngMocks.formatText(fixture)).toContain('Show 25 more');
+      expect(planner.visible()[0].rank).toBe(1);
+      expect(ngMocks.formatText(fixture)).toContain('1–25 of 60');
+      expect(ngMocks.formatText(fixture)).toContain('Page 1 of 3');
 
-      planner.showMore();
-      planner.showMore();
-      expect(planner.visible()).toHaveLength(60);
-      expect(planner.hiddenCount()).toBe(0);
+      planner.goToPage(1);
+      fixture.detectChanges();
+      expect(planner.visible().map((row) => row.rank)).toEqual(
+        Array.from({ length: 25 }, (_, index) => index + 26),
+      );
+      expect(ngMocks.formatText(fixture)).toContain('26–50 of 60');
 
-      // Thirty defensemen: the list is another list, so it opens on its first page again.
+      // The last page holds what is left, and there is no page past it.
+      planner.goToPage(2);
+      planner.goToPage(3);
+      expect(planner.currentPage()).toBe(2);
+      expect(planner.visible()).toHaveLength(10);
+      expect(planner.visible()[0].rank).toBe(51);
+
+      // Thirty defensemen: another list, so its first page.
       planner.togglePosition('D');
-      expect(planner.visible()).toHaveLength(25);
-      expect(planner.nextPage()).toBe(5);
+      expect(planner.currentPage()).toBe(0);
+      expect(planner.pageCount()).toBe(2);
       // A narrowed list keeps each player's place among all of them.
       expect(planner.visible()[0].rank).toBe(2);
 
-      planner.showAll();
-      expect(planner.visible()).toHaveLength(30);
-
-      // The goalies and back: another list again, so the first page.
+      // The goalies and back: another list again.
       planner.clearPositions();
-      planner.showAll();
+      planner.goToPage(1);
       planner.setPosition('goalies');
       planner.setPosition('skaters');
-      expect(planner.visible()).toHaveLength(25);
+      expect(planner.currentPage()).toBe(0);
+    });
+
+    it('turns the page buttons off at either end, and draws none for a single page', async () => {
+      freeAgents.mockReturnValue(of(longList(30)));
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+
+      const button = (label: string) =>
+        ngMocks.find(fixture, `button[aria-label="${label}"]`).nativeElement as HTMLButtonElement;
+      expect(button('Previous page').disabled).toBe(true);
+      expect(button('Next page').disabled).toBe(false);
+
+      button('Next page').click();
+      fixture.detectChanges();
+      expect(planner.currentPage()).toBe(1);
+      expect(button('Previous page').disabled).toBe(false);
+      expect(button('Next page').disabled).toBe(true);
+
+      planner.setPageSize(select(50));
+      fixture.detectChanges();
+      expect(ngMocks.findAll(fixture, 'nav.pager')).toHaveLength(0);
+      expect(ngMocks.formatText(fixture)).toContain('1–30 of 30');
+    });
+
+    it('opens on ten a page on a phone and twenty-five on a desktop', async () => {
+      freeAgents.mockReturnValue(of(longList(60)));
+      layout.set('phone');
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+
+      expect(planner.pageSize()).toBe(10);
+      expect(planner.visible()).toHaveLength(10);
+      expect(planner.pageCount()).toBe(6);
+
+      layout.set('desktop');
+      expect(planner.pageSize()).toBe(25);
+    });
+
+    it('keeps the page size picked for its layout alone, and keeps the first player on screen', async () => {
+      freeAgents.mockReturnValue(of(longList(120)));
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+
+      // On the third page, 51 to 75; at 10 a page, the page holding 51 is the sixth.
+      planner.goToPage(2);
+      planner.setPageSize(select(10));
+      expect(planner.currentPage()).toBe(5);
+      expect(planner.visible()[0].rank).toBe(51);
+
+      // Not a size on offer: nothing changes.
+      planner.setPageSize(select(7));
+      expect(planner.pageSize()).toBe(10);
+
+      // The desktop's choice is remembered, on its first page.
+      fixture.destroy();
+      const again = (await render()).point.componentInstance;
+      expect(again.pageSize()).toBe(10);
+      expect(again.currentPage()).toBe(0);
+
+      // The phone has a choice of its own, and picking it leaves the desktop's alone.
+      layout.set('phone');
+      again.setPageSize(select(50));
+      layout.set('desktop');
+      expect(again.pageSize()).toBe(10);
+      layout.set('phone');
+      expect(again.pageSize()).toBe(50);
     });
 
     it("scales a free agent's line to the share of his club's games on the nights counted", async () => {
