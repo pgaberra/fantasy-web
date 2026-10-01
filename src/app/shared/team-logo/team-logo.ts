@@ -13,8 +13,8 @@ export function teamLogoUrl(team: string | null | undefined): string | undefined
 /**
  * A club's crest: the NHL's own drawing, read from its CDN rather than copied here, with the
  * abbreviation in a badge where there is no crest to draw (no club, or a picture that failed to
- * load). Decorative unless told otherwise: everywhere it is drawn the abbreviation is written
- * beside it, so a screen reader would read the club twice.
+ * load). Decorative unless told otherwise: where the abbreviation is written beside it, a screen
+ * reader would read the club twice; where the crest stands alone, pass `alt`.
  */
 @Component({
   selector: 'app-team-logo',

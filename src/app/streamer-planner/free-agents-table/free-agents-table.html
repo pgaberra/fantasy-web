@@ -26,13 +26,15 @@
           <tr>
             <th scope="row" class="player-col">
               <span class="player-cell">
-                <app-team-logo class="player-logo" [team]="row.player.teamAbbrev" />
+                <!-- The crest is the club's only mention in the row, so it carries the name. -->
+                <app-team-logo
+                  class="player-logo"
+                  [team]="row.player.teamAbbrev"
+                  [alt]="row.player.teamAbbrev ?? ''"
+                />
                 <span class="player-text">
                   <span class="player-head">
                     <span class="player-name">{{ row.player.name }}</span>
-                    @if (row.player.teamAbbrev) {
-                      <span class="player-team">{{ row.player.teamAbbrev }}</span>
-                    }
                     <!-- Only a claim is worth a tag: an add is what the list is a list of. -->
                     @if (onWaivers(row)) {
                       <span class="player-status">Waivers</span>
