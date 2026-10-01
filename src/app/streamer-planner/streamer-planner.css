@@ -277,21 +277,42 @@
   white-space: nowrap;
 }
 
-.day-games {
-  color: var(--color-primary);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-bold);
-  padding-left: calc(1rem + var(--space-1));
+/* The games and the off-night mark share the second line, so every cell is two lines tall. */
+.day-body {
+  align-items: center;
+  display: flex;
+  gap: var(--space-1);
+  justify-content: space-between;
+  min-height: 1.75rem;
+  min-width: 0;
 }
 
-.day-tag {
-  color: var(--color-accent);
+.day-games {
+  color: var(--color-text-muted);
   font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: 0.04em;
-  padding-left: calc(1rem + var(--space-1));
-  text-transform: uppercase;
+  font-weight: var(--weight-medium);
   white-space: nowrap;
+}
+
+/* The number is what a night is read for; its unit only names it. */
+.day-count {
+  color: var(--color-primary);
+  font-size: var(--text-lg);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-bold);
+  line-height: 1;
+}
+
+.day-mark {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  border-radius: var(--radius-pill);
+  color: var(--color-accent);
+  display: inline-flex;
+  flex: none;
+  height: 1.5rem;
+  justify-content: center;
+  width: 1.5rem;
 }
 
 /* What is on screen, in one line under the strip: the weeks, the dates, the nights kept. */
@@ -307,6 +328,15 @@
 
 .range-summary span:empty {
   display: none;
+}
+
+/* What the mark in a cell means, said once where the nights are summed up. */
+.range-legend {
+  align-items: center;
+  color: var(--color-accent);
+  display: inline-flex;
+  gap: var(--space-1);
+  margin-left: auto;
 }
 
 /* --- Top streaming options -------------------------------------------------------------------- */
@@ -532,11 +562,5 @@
 
   .day--past {
     display: none;
-  }
-
-  /* Under the tick box rather than beside it: the cell is too narrow to indent. */
-  .day-games,
-  .day-tag {
-    padding-left: 0;
   }
 }

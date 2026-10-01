@@ -212,6 +212,13 @@ tr.open .chevron {
   font-size: 0.65rem;
 }
 
+/* The day strip's off-night mark, small enough for a chip; the chip's tip still says it in words. */
+.game-mark {
+  align-self: center;
+  color: var(--color-accent);
+  display: inline-flex;
+}
+
 .no-games {
   color: var(--color-text-muted);
   font-size: var(--text-sm);

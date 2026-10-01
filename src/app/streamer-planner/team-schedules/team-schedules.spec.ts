@@ -83,6 +83,7 @@ describe('TeamSchedulesComponent', () => {
       'at SJS. SJS allows 12% more goals than average. Off-night. Back-to-back.',
     );
     expect(game.nativeElement.getAttribute('aria-label')).toBeNull();
+    expect(ngMocks.find(game, '.game-mark').attributes['aria-label']).toEqual('Off-night');
 
     table.toggle('EDM');
     fixture.detectChanges();
