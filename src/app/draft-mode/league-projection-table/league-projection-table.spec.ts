@@ -32,6 +32,8 @@ describe('LeagueProjectionTableComponent', () => {
         roster: [
           {
             name: 'McDavid',
+            team: 'EDM',
+            positions: ['C'],
             total: 9,
             values: { goals: 40, gaa: null },
             contributions: { goals: 40, gaa: null },
@@ -297,28 +299,100 @@ describe('LeagueProjectionTableComponent', () => {
     expect(render().nativeElement.textContent as string).not.toContain('×');
   });
 
-  it('shades cells on a diverging green-red scale, including the total column', () => {
+  it('shades cells on a diverging teal-orange scale, including the total column', () => {
     const component = render().point.componentInstance;
 
-    // Column leader trends green, laggard red (goals: a=6 is the min, b=8 the max).
-    expect(component.shade('goals', 8)).toContain('rgba(22, 163, 74');
-    expect(component.shade('goals', 6)).toContain('rgba(233, 69, 96');
+    // Column leader trends teal, laggard orange (goals: a=6 is the min, b=8 the max).
+    expect(component.shade('goals', 8)).toContain('rgba(13, 148, 136');
+    expect(component.shade('goals', 6)).toContain('rgba(234, 88, 12');
 
-    // The total column now carries the same heat (a.total=20 min, b.total=30 max).
-    expect(component.shade('total', 30)).toContain('rgba(22, 163, 74');
-    expect(component.shade('total', 20)).toContain('rgba(233, 69, 96');
+    // The total column carries the same heat (a.total=20 min, b.total=30 max).
+    expect(component.shade('total', 30)).toContain('rgba(13, 148, 136');
+    expect(component.shade('total', 20)).toContain('rgba(234, 88, 12');
 
     // Missing values stay clear.
     expect(component.shade('goals', null)).toEqual('transparent');
   });
 
-  it("lays the pinned total column's heat over an opaque fill, as a background image", () => {
-    const component = render().point.componentInstance;
+  it('draws the heat as a chip inside each team cell, the pinned total included', () => {
+    const fixture = render();
+    const bravo = fixture.nativeElement.querySelector('tr.lp-row') as HTMLElement;
 
-    // The score column is pinned while the stats scroll beneath it, so its tint rides on a
-    // background image and leaves the stylesheet's opaque background colour in place.
-    expect(component.totalShade(30)).toMatch(/^linear-gradient\(rgba\(22, 163, 74/);
-    expect(component.totalShade(20)).toMatch(/^linear-gradient\(rgba\(233, 69, 96/);
+    // Bravo leads on total and on goals: both chips carry the leader's tint, and the cells
+    // themselves stay the row's own opaque colour for the pinned columns to scroll over.
+    const chips = Array.from(bravo.querySelectorAll<HTMLElement>('.lp-heat'));
+    expect(chips).toHaveLength(data.categoryColumns.length + 1);
+    expect(chips[0].style.getPropertyValue('--heat')).toContain('rgba(13, 148, 136');
+    expect(chips.at(-1)?.style.getPropertyValue('--heat')).toContain('rgba(13, 148, 136');
+    expect((bravo.querySelector('td.col-total') as HTMLElement).style.background).toBe('');
+  });
+
+  // The row once spanned the stat columns and the score with one cell, which cut the score
+  // column's divider and the sorted column's marking in two at exactly that row.
+  it('gives the show-all row a cell under every column, so no column breaks at it', () => {
+    const fixture = render();
+    fixture.point.componentInstance.toggleExpand('a');
+    fixture.point.componentInstance.sortBy('goals');
+    fixture.detectChanges();
+
+    const row = fixture.nativeElement.querySelector('tr.lp-showall-row') as HTMLElement;
+    const headers = fixture.nativeElement.querySelectorAll('thead th');
+    expect(row.querySelectorAll('td')).toHaveLength(headers.length);
+    expect(row.querySelector('td[colspan]')).toBeNull();
+    expect(row.querySelector('td.col-total')).not.toBeNull();
+    expect(row.querySelectorAll('td.sorted')).toHaveLength(1);
+  });
+
+  it("stresses the team's best figure in each column of its player rows", () => {
+    const component = render().point.componentInstance;
+    const alpha = data.teams[0];
+    const named = (name: string) => alpha.roster.find((row) => row.name === name)!;
+
+    // Zacha gives Alpha the most goals; McDavid, for all his total, does not.
+    expect(component.isTeamBest(alpha, named('Zacha'), 'goals')).toBe(true);
+    expect(component.isTeamBest(alpha, named('McDavid'), 'goals')).toBe(false);
+    // A stat that is not his kind is never his best.
+    expect(component.isTeamBest(alpha, named('Oettinger'), 'goals')).toBe(false);
+    expect(component.isTeamBest(alpha, named('Oettinger'), 'gaa')).toBe(true);
+  });
+
+  it('rules off the goalie stats from the skater stats, in the category breakdown only', () => {
+    const fixture = render();
+    const component = fixture.point.componentInstance;
+
+    expect(component.groupStartKey()).toBe('gaa');
+    expect(fixture.nativeElement.querySelectorAll('thead th.group-start')).toHaveLength(1);
+
+    component.setMode('position');
+    expect(component.groupStartKey()).toBeNull();
+  });
+
+  it('leads each player with his club crest only where the rows came with clubs', () => {
+    const fixture = render();
+    fixture.point.componentInstance.toggleExpand('a');
+    fixture.detectChanges();
+
+    // One row names a club, so every row keeps the slot and the names stay in line.
+    expect(fixture.point.componentInstance.showsClubs()).toBe(true);
+    expect(fixture.nativeElement.querySelectorAll('tr.lp-player-row app-team-logo')).toHaveLength(
+      5,
+    );
+    expect(fixture.nativeElement.querySelectorAll('app-position-chips')).toHaveLength(1);
+
+    const bare = MockRender(LeagueProjectionTableComponent, {
+      data: {
+        ...data,
+        teams: data.teams.map((team) => ({
+          ...team,
+          roster: team.roster.map((row) => ({ ...row, team: null })),
+        })),
+      },
+      scoringType: 'category',
+      scoreHeading: 'Z-Score',
+    });
+    bare.point.componentInstance.toggleExpand('a');
+    bare.detectChanges();
+    expect(bare.nativeElement.querySelector('app-team-logo')).toBeNull();
   });
 
   it('pins the total column and casts its edge shadow only while columns sit beneath it', () => {

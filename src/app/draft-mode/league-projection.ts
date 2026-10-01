@@ -35,6 +35,10 @@ export interface LeagueProjectionContributor {
  */
 export interface LeagueProjectionRosterRow {
   name: string;
+  /** The NHL club he plays for, for the crest beside his name; absent where the source has none. */
+  team?: string | null;
+  /** The positions he is eligible at, in lineup order; absent where the source does not say. */
+  positions?: readonly string[];
   /** The player's overall projected value (fantasy points or z-score), matching the team total's basis. */
   total: number;
   /** Raw stat value per category key; null where the stat doesn't apply to this player (a goalie has no hits). */
