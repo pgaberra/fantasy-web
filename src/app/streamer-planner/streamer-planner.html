@@ -125,8 +125,8 @@
                   </span>
                 }
                 @if (day.offNight) {
-                  <span class="day-mark" role="img" aria-label="Off-night" appTooltip="Off-night">
-                    <app-icon name="off-night" [size]="14" />
+                  <span class="day-mark" appTooltip="Off-night">
+                    <span aria-hidden="true">Off</span><span class="sr-only">Off-night</span>
                   </span>
                 }
               </span>
@@ -138,7 +138,9 @@
           <span>{{ stretchTitle() }}</span>
           <span>{{ nightsTitle() }}</span>
           @if (hasOffNight()) {
-            <span class="range-legend"><app-icon name="off-night" [size]="14" />Off-night</span>
+            <span class="range-legend"
+              ><span class="day-mark" aria-hidden="true">Off</span>Off-night</span
+            >
           }
         </p>
       }
