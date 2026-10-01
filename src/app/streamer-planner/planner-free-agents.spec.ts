@@ -1,14 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { TeamSchedule } from '../api/models/team-schedule';
-import { GOALIE_SCORING_STAT_KEYS, SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
+import {
+  GOALIE_SCORING_STAT_KEYS,
+  ScoringStatKey,
+  SKATER_SCORING_STAT_KEYS,
+} from '../models/stat-key.model';
 import { FreeAgent } from '../services/streamer-planner-free-agents.service';
 import {
   formatGames,
   formatToi,
   groupByPosition,
+  lineGrid,
+  lineStats,
   nightsFactor,
   RankedFreeAgent,
   scaledProjection,
+  statsPerLine,
   teamsByKey,
 } from './planner-free-agents';
 
@@ -19,7 +26,12 @@ function scoringLine<K extends string>(keys: readonly K[], set: Record<string, n
   ) as never;
 }
 
-function skater(name: string, positions: string[], team = 'EDM'): FreeAgent {
+function skater(
+  name: string,
+  positions: string[],
+  team = 'EDM',
+  stats: Record<string, number> = { goals: 2, assists: 3, shPct: 0.12 },
+): FreeAgent {
   return {
     playerId: name,
     name,
@@ -28,19 +40,38 @@ function skater(name: string, positions: string[], team = 'EDM'): FreeAgent {
     availability: 'FREE_AGENT',
     clubGames: 4,
     expectedGames: 3.8,
+    projected: new Set(Object.keys(stats)),
     projection: {
       type: 'skater',
       playerId: 1,
       stats: {
-        scoring: scoringLine(SKATER_SCORING_STAT_KEYS, { goals: 2, assists: 3, shPct: 0.12 }),
+        scoring: scoringLine(SKATER_SCORING_STAT_KEYS, stats),
         utility: { gp: 3.8, toiPerGame: 1052 },
       },
     },
   };
 }
 
-function ranked(player: FreeAgent, rank: number): RankedFreeAgent {
-  return { player, score: 10 - rank, rank, games: 3 };
+function goalie(stats: Record<string, number>): FreeAgent {
+  return {
+    playerId: 'Goalie',
+    name: 'Goalie',
+    teamAbbrev: 'TB',
+    positions: ['G'],
+    availability: 'FREE_AGENT',
+    clubGames: 3,
+    expectedGames: 2,
+    projected: new Set(Object.keys(stats)),
+    projection: {
+      type: 'goalie',
+      playerId: 2,
+      stats: { scoring: scoringLine(GOALIE_SCORING_STAT_KEYS, stats), utility: { gp: 2 } },
+    },
+  };
+}
+
+function ranked(player: FreeAgent, rank: number, line = player.projection): RankedFreeAgent {
+  return { player, line, score: 10 - rank, rank, games: 3 };
 }
 
 const TEAMS: TeamSchedule[] = [
@@ -125,6 +156,141 @@ describe('scaledProjection', () => {
     };
     const scaled = scaledProjection(goalie, 0.5);
     expect(scaled.stats.scoring).toMatchObject({ w: 1, sv: 30, svPct: 0.91, gaa: 2.5 });
+  });
+});
+
+describe('lineStats', () => {
+  /** A Yahoo categories league: seven for skaters, four for goalies, in the league's order. */
+  const CATEGORIES = [
+    'goals',
+    'assists',
+    'sog',
+    'pim',
+    'ppp',
+    'blocks',
+    'hits',
+    'w',
+    'gaa',
+    'svPct',
+    'sho',
+  ] as const;
+
+  function written(row: RankedFreeAgent, categories: readonly ScoringStatKey[] = CATEGORIES) {
+    return lineStats(row, categories).map((stat) => `${stat.value} ${stat.label}`);
+  }
+
+  it("writes a skater's line in every skater category the league scores, in its order", () => {
+    const row = ranked(
+      skater('Winger', ['LW'], 'EDM', {
+        goals: 1.84,
+        assists: 2,
+        sog: 15.06,
+        pim: 3.2,
+        ppp: 0.8,
+        blocks: 4.1,
+        hits: 6,
+        // Projected, and not a category of this league: left out.
+        fw: 12,
+      }),
+      1,
+    );
+
+    expect(written(row)).toEqual([
+      '1.8 G',
+      '2.0 A',
+      '15.1 SOG',
+      '3.2 PIM',
+      '0.8 PPP',
+      '4.1 BLK',
+      '6.0 HIT',
+    ]);
+    expect(lineStats(row, CATEGORIES).map((stat) => stat.name)).toContain('Shots on Goal');
+  });
+
+  it("writes a goalie's in the goalie categories, a rate as the editor writes it", () => {
+    const row = ranked(goalie({ w: 1.4, gaa: 2.613, svPct: 0.9084, sho: 0.12, sv: 57.4 }), 1);
+
+    expect(written(row)).toEqual(['1.4 W', '2.61 GAA', '0.908 SV%', '0.1 SHO']);
+    // Saves run to dozens in a week, so they are written whole.
+    expect(written(row, ['sv'])).toEqual(['57 SV']);
+  });
+
+  it('reads the line over the nights counted, not the whole stretch', () => {
+    const player = skater('Winger', ['LW'], 'EDM', { goals: 2, assists: 3 });
+    const row = ranked(player, 1, scaledProjection(player.projection, 0.5));
+
+    expect(written(row, ['goals', 'assists'])).toEqual(['1.0 G', '1.5 A']);
+  });
+
+  // The projection holds a zero for every stat, projected or not, because the ranking engine
+  // needs a whole line. Written out, that zero would read as the model's own number.
+  it('leaves out a category the model gave no number for', () => {
+    const row = ranked(skater('Defender', ['D'], 'EDM', { goals: 1, assists: 2 }), 1);
+
+    expect(written(row, ['goals', 'defPoints', 'assists'])).toEqual(['1.0 G', '2.0 A']);
+  });
+
+  it('signs a plus/minus, drops the decimal past a hundred, and writes ice time as a clock', () => {
+    const row = ranked(
+      skater('Grinder', ['C'], 'EDM', { plusMinus: 0.62, hits: 104.4, pim: 0, shPct: 11.94 }),
+      1,
+    );
+    expect(written(row, ['plusMinus', 'hits', 'pim', 'shPct'])).toEqual([
+      '+0.6 +/-',
+      '104 HIT',
+      '0.0 PIM',
+      '11.9 SH%',
+    ]);
+
+    const minus = ranked(skater('Minus', ['C'], 'EDM', { plusMinus: -0.31 }), 1);
+    expect(written(minus, ['plusMinus'])).toEqual(['-0.3 +/-']);
+    const even = ranked(skater('Even', ['C'], 'EDM', { plusMinus: 0.04 }), 1);
+    expect(written(even, ['plusMinus'])).toEqual(['0.0 +/-']);
+
+    const starter = ranked(goalie({ toi: 7100 }), 1);
+    expect(written(starter, ['toi'])).toEqual(['118:20 TOI']);
+  });
+});
+
+describe('statsPerLine', () => {
+  it('holds a line that fits whole', () => {
+    expect(statsPerLine(7, 8)).toBe(7);
+    expect(statsPerLine(4, 4)).toBe(4);
+  });
+
+  it('breaks one that does not into even lines, never one stat alone', () => {
+    // Seven on a phone are four and three; nine across a desk are five and four.
+    expect(statsPerLine(7, 4)).toBe(4);
+    expect(statsPerLine(7, 6)).toBe(4);
+    expect(statsPerLine(9, 8)).toBe(5);
+    expect(statsPerLine(12, 4)).toBe(4);
+  });
+
+  it('is a grid of one for a line with nothing on it', () => {
+    expect(statsPerLine(0, 8)).toBe(1);
+  });
+});
+
+describe('lineGrid', () => {
+  function stat(value: string, label: string) {
+    return { key: 'goals' as const, label, name: label, value };
+  }
+  const first = [stat('1.8', 'G'), stat('2.0', 'A'), stat('9.1', 'SOG')];
+  const second = [stat('0.6', 'G'), stat('0.7', 'A'), stat('15.1', 'SOG')];
+
+  it('gives each category a track as wide as its widest stat on any player', () => {
+    // "1.8 G" is five characters with its space; "15.1 SOG" is eight, the longer of the two shots.
+    expect(lineGrid([first, second], 8)).toBe('minmax(0, 5ch) minmax(0, 5ch) minmax(0, 8ch)');
+  });
+
+  it('shares a track between the stats that fall under each other when the line breaks', () => {
+    // Three stats, two to a line: the shots sit under the goals, and the track fits both.
+    expect(lineGrid([first, second], 2)).toBe('minmax(0, 8ch) minmax(0, 5ch)');
+  });
+
+  it('is no grid at all for players with nothing to write', () => {
+    expect(lineGrid([[], []], 8)).toBe('');
+    expect(lineGrid([], 8)).toBe('');
   });
 });
 

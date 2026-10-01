@@ -122,6 +122,7 @@ function skater(
     availability: 'FREE_AGENT',
     clubGames: 2,
     expectedGames: 2,
+    projected: new Set(['goals', 'assists', 'points']),
     projection: {
       type: 'skater',
       playerId: Number(playerId),
@@ -142,6 +143,7 @@ function goalie(playerId: string, name: string, wins: number): FreeAgentWeek['pl
     availability: 'WAIVERS',
     clubGames: 2,
     expectedGames: 1.5,
+    projected: new Set(['w', 'sv', 'svPct']),
     projection: {
       type: 'goalie',
       playerId: Number(playerId),
@@ -367,6 +369,8 @@ describe('StreamerPlannerComponent', () => {
       ]);
       expect(planner.ranked()[0].score).toBeCloseTo(11, 5);
       expect(planner.scoringType()).toBe('points');
+      // The table writes each line in the league's categories, in the league's order.
+      expect(planner.categories()).toEqual(['goals', 'assists']);
     });
 
     it('cards the best three and groups the rest by position, the two-way forward under both', async () => {
@@ -399,6 +403,9 @@ describe('StreamerPlannerComponent', () => {
       expect(top.player.name).toBe('Top Scorer');
       expect(top.score).toBeCloseTo(5.5, 5);
       expect(top.games).toBe(1);
+      // The line the table writes is the one the score was reached from, not the whole stretch's.
+      expect(top.line.stats.scoring).toMatchObject({ goals: 1.5, assists: 0.5 });
+      expect(top.player.projection.stats.scoring).toMatchObject({ goals: 3, assists: 1 });
       // The Lightning goalie's club is spelt TB by the platform and TBL by the NHL.
       const waiver = planner.ranked().find((row) => row.player.name === 'Waiver Goalie');
       expect(waiver?.games).toBeCloseTo(0.75, 5);

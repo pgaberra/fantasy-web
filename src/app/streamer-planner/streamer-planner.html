@@ -239,7 +239,11 @@
         } @else if (noFreeAgents()) {
           <p class="empty">No available player in this league has a projection for these nights.</p>
         } @else {
-          <app-free-agents-table [groups]="groups()" [scoringType]="scoringType()" />
+          <app-free-agents-table
+            [groups]="groups()"
+            [scoringType]="scoringType()"
+            [categories]="categories()"
+          />
         }
       </section>
     </div>
