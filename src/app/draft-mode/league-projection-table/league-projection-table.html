@@ -102,25 +102,10 @@
                 class="lp-num"
                 [class.sorted]="sortKey() === column.key"
                 [class.group-start]="column.key === groupStartKey()"
-                [class.expanded]="isExpanded(team.teamId) && !showsRosterRows()"
               >
                 <span class="lp-heat" [style.--heat]="shade(column.key, team.values[column.key])">{{
                   format(team.values[column.key], column.decimals)
                 }}</span>
-                @if (isExpanded(team.teamId) && !showsRosterRows()) {
-                  <ul class="lp-cell-players">
-                    @for (player of cellPlayers(team, column); track player.name + $index) {
-                      <li>
-                        <span class="lp-cp-name">{{ player.name }}</span>
-                        <span class="lp-cp-val">{{
-                          format(player.value, column.rawDecimals)
-                        }}</span>
-                      </li>
-                    } @empty {
-                      <li class="lp-cp-empty">—</li>
-                    }
-                  </ul>
-                }
               </td>
             }
             <td class="col-total" [class.sorted]="sortKey() === 'total'">
@@ -129,6 +114,39 @@
               }}</span>
             </td>
           </tr>
+
+          @if (isExpanded(team.teamId) && !showsRosterRows()) {
+            <!-- The lineup, one row under the team: who fills each slot, under the slot's own
+                 column. The same block an open team is in the category breakdown. -->
+            <tr class="lp-player-row lp-lineup-row group-end">
+              <td class="col-rank"></td>
+              <td class="col-team"></td>
+              @for (column of columns(); track column.key) {
+                <td class="lp-slot" [class.sorted]="sortKey() === column.key">
+                  <ul class="lp-slot-players">
+                    @for (player of cellPlayers(team, column); track player.name + $index) {
+                      <li>
+                        @if (showsClubs()) {
+                          <app-team-logo
+                            class="lp-slot-logo"
+                            [team]="clubOf(team, player.name)"
+                            [alt]="clubOf(team, player.name) ?? ''"
+                          />
+                        }
+                        <span class="lp-slot-name">{{ slotName(team, player.name) }}</span>
+                        <span class="lp-slot-value">{{
+                          format(player.value, column.rawDecimals)
+                        }}</span>
+                      </li>
+                    } @empty {
+                      <li class="lp-slot-empty">—</li>
+                    }
+                  </ul>
+                </td>
+              }
+              <td class="col-total" [class.sorted]="sortKey() === 'total'"></td>
+            </tr>
+          }
 
           @if (isExpanded(team.teamId) && showsRosterRows()) {
             @for (player of rosterRows(team); track player.name + $index; let last = $last) {
