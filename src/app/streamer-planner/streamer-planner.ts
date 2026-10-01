@@ -1,4 +1,12 @@
-import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  linkedSignal,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { from } from 'rxjs';
 import { Api } from '../api/api';
@@ -28,7 +36,6 @@ import { LeagueFieldComponent } from './league-field/league-field';
 import {
   categoryColumn,
   filterByPositions,
-  FREE_AGENTS_PAGE,
   LineColumn,
   nightsFactor,
   ofKind,
@@ -43,6 +50,13 @@ import {
   WEEK_DECIMALS,
 } from './planner-free-agents';
 import { focusableCategories, readFocus, writeFocus } from './planner-focus';
+import {
+  isPageSize,
+  PAGE_SIZES,
+  PLANNER_LAYOUT,
+  readPageSize,
+  writePageSize,
+} from './planner-page-size';
 import {
   addDays,
   clampStretch,
@@ -136,6 +150,8 @@ export class StreamerPlannerComponent {
   private readonly espn = inject(EspnService);
   /** Read once, when the page opens: the nights are counted from this day. */
   private readonly today = inject(PLANNER_TODAY)();
+  /** Phone or desktop: each keeps its own page size. */
+  private readonly layout = inject(PLANNER_LAYOUT);
 
   // --- The nights -------------------------------------------------------------------------------
 
@@ -525,15 +541,6 @@ export class StreamerPlannerComponent {
     this.position() === 'skaters' ? this.focusLabel() : '',
   );
 
-  /**
-   * How many rows are drawn. The other kind of player, other positions or other categories are
-   * another list, so it starts from the top again.
-   */
-  private readonly shown = linkedSignal<unknown, number>({
-    source: () => [this.position(), this.positions(), this.focus()],
-    computation: () => FREE_AGENTS_PAGE,
-  });
-
   /** Why the list on screen has nobody in it, though the league has players available. */
   readonly emptyText = computed(() => {
     if (this.position() === 'goalies') {
@@ -544,17 +551,71 @@ export class StreamerPlannerComponent {
       : 'No available skater has a projection for these nights.';
   });
 
-  readonly visible = computed(() => this.filtered().slice(0, this.shown()));
-  readonly hiddenCount = computed(() => Math.max(0, this.filtered().length - this.shown()));
-  /** What the next press adds: a page, or what is left of one. */
-  readonly nextPage = computed(() => Math.min(FREE_AGENTS_PAGE, this.hiddenCount()));
+  // --- The pages of the list --------------------------------------------------------------------
 
-  showMore(): void {
-    this.shown.update((shown) => shown + FREE_AGENTS_PAGE);
+  readonly pageSizes = PAGE_SIZES;
+
+  /** Players to a page: the reader's choice for this layout, or its default. */
+  readonly pageSize = linkedSignal(() => readPageSize(this.layout()));
+
+  /**
+   * The page asked for, counted from 0. The other kind of player, other positions or other
+   * categories are another list, so it opens on its first page again.
+   */
+  private readonly page = linkedSignal<unknown, number>({
+    source: () => [this.position(), this.positions(), this.focus()],
+    computation: () => 0,
+  });
+
+  readonly pageCount = computed(() =>
+    Math.max(1, Math.ceil(this.filtered().length / this.pageSize())),
+  );
+
+  /** The page on screen: the one asked for, or the last one if the list has since grown shorter. */
+  readonly currentPage = computed(() => Math.min(this.page(), this.pageCount() - 1));
+
+  private readonly firstShown = computed(() => this.currentPage() * this.pageSize());
+
+  readonly visible = computed(() =>
+    this.filtered().slice(this.firstShown(), this.firstShown() + this.pageSize()),
+  );
+
+  /** "26–50 of 212": the places on screen, of the whole list. */
+  readonly rangeText = computed(() => {
+    const total = this.filtered().length;
+    const first = this.firstShown() + 1;
+    const last = this.firstShown() + this.visible().length;
+    return first === last ? `${first} of ${total}` : `${first}–${last} of ${total}`;
+  });
+
+  /** The table's top, brought back into view when a page is turned from below it. */
+  private readonly listTop = viewChild('listTop', { read: ElementRef });
+
+  goToPage(page: number): void {
+    const target = Math.max(0, Math.min(page, this.pageCount() - 1));
+    if (target === this.currentPage()) {
+      return;
+    }
+    this.page.set(target);
+    const top = this.listTop()?.nativeElement as HTMLElement | undefined;
+    if (top && top.getBoundingClientRect().top < 0) {
+      top.scrollIntoView?.({ block: 'start' });
+    }
   }
 
-  showAll(): void {
-    this.shown.set(Number.MAX_SAFE_INTEGER);
+  /**
+   * Another page size, kept for this layout until changed. The list turns to the page holding the
+   * first player that was on screen, so the reader does not lose their place.
+   */
+  setPageSize(event: Event): void {
+    const size = Number((event.target as HTMLSelectElement).value);
+    if (!isPageSize(size)) {
+      return;
+    }
+    const first = this.firstShown();
+    this.pageSize.set(size);
+    this.page.set(Math.floor(first / size));
+    writePageSize(this.layout(), size);
   }
 
   /** The cards have something to show, or will once the list lands. */
