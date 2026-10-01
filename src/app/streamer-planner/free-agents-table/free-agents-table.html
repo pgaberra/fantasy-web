@@ -2,13 +2,7 @@
   <table class="free-agents-table">
     <thead>
       <tr>
-        <th
-          scope="col"
-          class="num rank-col"
-          appTooltip="His place among every available player, whatever the positions shown"
-        >
-          #
-        </th>
+        <th scope="col" class="num rank-col" [appTooltip]="rankTip()">#</th>
         <th scope="col" class="player-col">Player</th>
         <!-- Straight after the name, as on the team table beside it, and so that a phone shows
              who and how good before anything has to be scrolled. -->
@@ -49,13 +43,24 @@
                 [alt]="entry.row.player.teamAbbrev ?? ''"
               />
               <span class="player-identity">
-                <span class="player-name">{{ entry.row.player.name }}</span>
+                <!-- Waivers is his status, not a position, so it sits by the name. Only a claim is
+                     marked: an add is what the list is a list of. -->
+                <span class="player-name-line">
+                  <span class="player-name">{{ entry.row.player.name }}</span>
+                  @if (onWaivers(entry.row)) {
+                    <span
+                      class="player-status"
+                      role="img"
+                      aria-label="On waivers"
+                      tabindex="0"
+                      appTooltip="On waivers: put in a claim, and he may still go to another team first"
+                    >
+                      <app-icon name="hourglass" [size]="14" />
+                    </span>
+                  }
+                </span>
                 <span class="player-meta">
                   <app-position-chips [positions]="entry.row.player.positions" />
-                  <!-- Only a claim is worth a tag: an add is what the list is a list of. -->
-                  @if (onWaivers(entry.row)) {
-                    <span class="player-status">Waivers</span>
-                  }
                 </span>
               </span>
             </span>
@@ -68,32 +73,15 @@
           @if (kind() === 'skater') {
             <td class="num toi-col">{{ toi(entry.row) }}</td>
           }
-          @if (entry.cells; as cells) {
-            @for (cell of cells; track $index; let first = $first) {
-              <td
-                class="num stat-col"
-                [class.stat-col--first]="first"
-                [class.stat-col--focus]="focused(columns()[$index].key) === true"
-                [class.stat-col--muted]="focused(columns()[$index].key) === false"
-                [class.nil]="cell && isNil(cell)"
-              >
-                {{ cell?.value }}
-              </td>
-            }
-          } @else if (columns().length > 0) {
-            <!-- A goalie among skaters: the columns are not his categories, so his line is
-                 written across them with its own labels. -->
-            <td class="stat-col stat-col--first other-line" [attr.colspan]="columns().length">
-              <ul class="inline-line">
-                @for (stat of entry.inline; track stat.key) {
-                  <!-- A real space between the two, so the line copies and is read out as
-                       "1.8 W" and not as "1.8W". -->
-                  <li [appTooltip]="stat.name">
-                    <span class="inline-value">{{ stat.value }}</span
-                    >&ngsp;<span class="inline-label">{{ stat.label }}</span>
-                  </li>
-                }
-              </ul>
+          @for (cell of entry.cells; track $index; let first = $first) {
+            <td
+              class="num stat-col"
+              [class.stat-col--first]="first"
+              [class.stat-col--focus]="focused(columns()[$index].key) === true"
+              [class.stat-col--muted]="focused(columns()[$index].key) === false"
+              [class.nil]="cell && isNil(cell)"
+            >
+              {{ cell?.value }}
             </td>
           }
         </tr>
