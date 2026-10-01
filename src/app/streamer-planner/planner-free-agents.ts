@@ -13,8 +13,8 @@ import { STAT_LABELS } from '../pipes/stat-label.pipe';
 import { STAT_FULL_NAMES } from '../pipes/stat-tooltip.pipe';
 import { FreeAgent } from '../services/streamer-planner-free-agents.service';
 
-/** The position groups, in the order a lineup lists them. */
-export const PLANNER_POSITIONS = ['C', 'LW', 'RW', 'D', 'G'] as const;
+/** The skater position groups, in the order a lineup lists them. Goalies are a list of their own. */
+export const PLANNER_POSITIONS = ['C', 'LW', 'RW', 'D'] as const;
 export type PlannerPositionGroup = (typeof PLANNER_POSITIONS)[number];
 
 /**
@@ -44,6 +44,20 @@ export interface RankedFreeAgent {
   readonly rank: number;
   /** Games he is expected to play on the nights counted. */
   readonly games: number;
+}
+
+/**
+ * The skaters or the goalies of a ranking, in its order, each with his place among his own kind:
+ * the two fill different roster slots and score different categories, so a place among both says
+ * less than a place among the players he can be picked instead of.
+ */
+export function ofKind(
+  ranked: readonly RankedFreeAgent[],
+  kind: Projection['type'],
+): readonly RankedFreeAgent[] {
+  return ranked
+    .filter((row) => row.line.type === kind)
+    .map((row, index) => ({ ...row, rank: index + 1 }));
 }
 
 /**
