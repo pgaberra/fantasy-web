@@ -156,7 +156,7 @@ describe('FreeAgentsTableComponent', () => {
 
     expect(table.toi(SKATER)).toBe('17:32');
     expect(table.toi(GOALIE)).toBe('');
-    expect(table.games(SKATER)).toBe('3.8');
+    expect(table.games(SKATER)).toBe('4');
   });
 
   it('heads a column with each skater category the league scores, named once', () => {
