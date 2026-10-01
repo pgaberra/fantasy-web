@@ -33,6 +33,7 @@ import {
   FREE_AGENTS_PAGE,
   LineColumn,
   nightsFactor,
+  ofKind,
   PLANNER_POSITIONS,
   PlannerPositionGroup,
   projectedStarts,
@@ -71,6 +72,9 @@ import { TeamSchedulesComponent } from './team-schedules/team-schedules';
 
 export type { Stretch } from './planner-schedule';
 
+/** No category picked: the list is ranked by the league's whole set. */
+const NO_FOCUS: ReadonlySet<ScoringStatKey> = new Set();
+
 /** A preset with the stretch it names today, for the reader to pick by name. */
 export interface PresetOption {
   readonly key: PlannerPreset;
@@ -85,9 +89,14 @@ export interface PresetOption {
  * <p>The nights are the page's one setting. They are picked by name (the rest of this week, next
  * week, both) or by two dates, and any night among them can be left out; the teams and the free
  * agents follow at once, with no button, as on Team Power Rankings. A night already played is not
- * offered: a stretch starts no earlier than today. The controls that only concern one table sit on
- * that table (skaters or goalies on the team schedules, which positions on the free agents),
- * and the league, which the free agents are read from, sits beside the nights.
+ * offered: a stretch starts no earlier than today. The league, which the free agents are read from,
+ * sits beside the nights.
+ *
+ * <p>Skaters or goalies is asked once, over the two tables, and both follow it: the schedules are
+ * rated for that kind of player and the free agents are that kind alone, in its own categories.
+ * The two fill different roster slots and score different things, so a list of both had columns
+ * that meant one thing on a skater's row and nothing on a goalie's. What concerns one table only
+ * (which positions, which categories to rank by) sits on that table.
  *
  * <p>The server rates the whole stretch; a night the reader leaves out is taken out here, by the
  * server's own rule (`planner-schedule.ts`), and a skater's line is scaled to the share of his
@@ -238,6 +247,7 @@ export class StreamerPlannerComponent {
     });
   }
 
+  /** Skaters or goalies: the kind of player both tables are about. */
   readonly position = signal<PlannerPosition>('skaters');
 
   setPosition(position: PlannerPosition): void {
@@ -277,7 +287,7 @@ export class StreamerPlannerComponent {
 
   readonly positionOptions = PLANNER_POSITIONS;
 
-  /** The positions the list is narrowed to. None is every position, which is how the page opens. */
+  /** The positions the skaters are narrowed to. None is every position, as the page opens. */
   readonly positions = signal<ReadonlySet<PlannerPositionGroup>>(new Set());
 
   /** One more position, or one fewer: any number can be on at once. */
@@ -423,12 +433,11 @@ export class StreamerPlannerComponent {
    * picked, only skaters, scored in those alone: a goalie has nothing to give in a skater
    * category, and his own z-score is not on the same scale as one category's.
    */
-  readonly ranked = computed<RankedFreeAgent[]>(() => {
+  private rankedBy(focus: ReadonlySet<ScoringStatKey>): RankedFreeAgent[] {
     const week = this.freeAgentsResource.hasValue() ? this.freeAgentsResource.value() : null;
     if (!week) {
       return [];
     }
-    const focus = this.focus();
     const scoring = this.scoring();
     const teams = this.teamsByKey();
     const counted = this.counted();
@@ -482,26 +491,52 @@ export class StreamerPlannerComponent {
       }
     }
     return ranked;
-  });
+  }
+
+  /** The best pickups of either kind, or the skaters in the categories picked: what the cards read. */
+  readonly ranked = computed(() => this.rankedBy(this.focus()));
+
+  /** Everyone by the league's whole set of categories, which is what a goalie is always ranked by. */
+  private readonly rankedByAll = computed(() =>
+    this.focus().size === 0 ? this.ranked() : this.rankedBy(NO_FOCUS),
+  );
 
   readonly topOptions = computed(() => this.ranked().slice(0, TOP_OPTIONS));
 
-  /** The one list, narrowed to the positions picked. */
-  readonly filtered = computed(() => filterByPositions(this.ranked(), this.positions()));
+  /**
+   * The list on screen: the skaters, narrowed to the positions picked and ranked by the categories
+   * picked, or the goalies. Each is placed among his own kind.
+   */
+  readonly filtered = computed(() =>
+    this.position() === 'skaters'
+      ? filterByPositions(ofKind(this.ranked(), 'skater'), this.positions())
+      : ofKind(this.rankedByAll(), 'goalie'),
+  );
+
+  /** The categories the list on screen is ranked by: the picker is the skaters' alone. */
+  readonly listFocus = computed(() => (this.position() === 'skaters' ? this.focus() : NO_FOCUS));
+  readonly listFocusLabel = computed(() =>
+    this.position() === 'skaters' ? this.focusLabel() : '',
+  );
 
   /**
-   * How many rows are drawn. Other positions or other categories are another list, so it starts
-   * from the top again.
+   * How many rows are drawn. The other kind of player, other positions or other categories are
+   * another list, so it starts from the top again.
    */
   private readonly shown = linkedSignal<unknown, number>({
-    source: () => [this.positions(), this.focus()],
+    source: () => [this.position(), this.positions(), this.focus()],
     computation: () => FREE_AGENTS_PAGE,
   });
 
-  /** Narrowed to goalies alone while skater categories are picked: an empty list, and why. */
-  readonly goaliesOutOfFocus = computed(
-    () => this.focus().size > 0 && this.filtered().length === 0 && this.positions().has('G'),
-  );
+  /** Why the list on screen has nobody in it, though the league has players available. */
+  readonly emptyText = computed(() => {
+    if (this.position() === 'goalies') {
+      return 'No available goalie has a projection for these nights.';
+    }
+    return this.positions().size > 0
+      ? 'No available player at these positions has a projection.'
+      : 'No available skater has a projection for these nights.';
+  });
 
   readonly visible = computed(() => this.filtered().slice(0, this.shown()));
   readonly hiddenCount = computed(() => Math.max(0, this.filtered().length - this.shown()));
@@ -526,7 +561,7 @@ export class StreamerPlannerComponent {
       !!this.league() &&
       !this.loadingFreeAgents() &&
       !this.freeAgentsFailure() &&
-      this.ranked().length === 0,
+      this.rankedByAll().length === 0,
   );
 
   retryFreeAgents(): void {
