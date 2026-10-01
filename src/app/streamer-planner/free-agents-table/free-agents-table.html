@@ -2,6 +2,13 @@
   <table class="free-agents-table">
     <thead>
       <tr>
+        <th
+          scope="col"
+          class="num rank-col"
+          appTooltip="His place among every available player, whatever the positions shown"
+        >
+          #
+        </th>
         <th scope="col" class="player-col">Player</th>
         <th scope="col">Pos</th>
         <th scope="col" class="num" appTooltip="Games he is expected to play on the nights counted">
@@ -17,63 +24,61 @@
         </th>
       </tr>
     </thead>
-    @for (band of bands(); track band.position) {
-      <tbody>
-        <tr class="group-row">
-          <th scope="rowgroup" colspan="5">{{ band.position }}</th>
-        </tr>
-        @for (entry of band.rows; track entry.row.player.playerId) {
-          <!-- A player is two rows: his name and numbers, then his line in the league's categories
-               under all of them but the score, which stands beside both. -->
-          <tr class="player-row" [class.player-row--lined]="entry.stats.length > 0">
-            <th scope="row" class="player-col">
-              <span class="player-cell">
-                <!-- The crest is the club's only mention in the row, so it carries the name. -->
-                <app-team-logo
-                  class="player-logo"
-                  [team]="entry.row.player.teamAbbrev"
-                  [alt]="entry.row.player.teamAbbrev ?? ''"
-                />
-                <span class="player-head">
-                  <span class="player-name">{{ entry.row.player.name }}</span>
-                  <!-- Only a claim is worth a tag: an add is what the list is a list of. -->
-                  @if (onWaivers(entry.row)) {
-                    <span class="player-status">Waivers</span>
-                  }
-                </span>
+    <tbody>
+      @for (entry of entries(); track entry.row.player.playerId) {
+        <!-- A player is two rows: his name and numbers, then his line in the league's categories
+             under all of them but the score, which stands beside both. -->
+        <tr class="player-row" [class.player-row--lined]="entry.stats.length > 0">
+          <td class="num rank-col" [attr.rowspan]="entry.stats.length > 0 ? 2 : null">
+            {{ entry.row.rank }}
+          </td>
+          <th scope="row" class="player-col">
+            <span class="player-cell">
+              <!-- The crest is the club's only mention in the row, so it carries the name. -->
+              <app-team-logo
+                class="player-logo"
+                [team]="entry.row.player.teamAbbrev"
+                [alt]="entry.row.player.teamAbbrev ?? ''"
+              />
+              <span class="player-head">
+                <span class="player-name">{{ entry.row.player.name }}</span>
+                <!-- Only a claim is worth a tag: an add is what the list is a list of. -->
+                @if (onWaivers(entry.row)) {
+                  <span class="player-status">Waivers</span>
+                }
               </span>
-            </th>
-            <td><app-position-chips [positions]="entry.row.player.positions" /></td>
-            <td class="num">{{ games(entry.row) }}</td>
-            <td class="num toi">{{ toi(entry.row) }}</td>
-            <td class="num score-col" [attr.rowspan]="entry.stats.length > 0 ? 2 : null">
-              <span class="score">{{ score(entry.row) }}</span>
-              <span class="per-game">{{ perGame(entry.row) }}</span>
+            </span>
+          </th>
+          <td><app-position-chips [positions]="entry.row.player.positions" /></td>
+          <td class="num">{{ games(entry.row) }}</td>
+          <td class="num toi">{{ toi(entry.row) }}</td>
+          <td class="num score-col" [attr.rowspan]="entry.stats.length > 0 ? 2 : null">
+            <span class="score">{{ score(entry.row) }}</span>
+            <span class="per-game">{{ perGame(entry.row) }}</span>
+          </td>
+        </tr>
+        @if (entry.stats.length > 0) {
+          <tr class="line-row">
+            <td colspan="4">
+              <ul
+                class="player-line"
+                [style.--line-wide]="entry.grid.wide"
+                [style.--line-mid]="entry.grid.mid"
+                [style.--line-narrow]="entry.grid.narrow"
+              >
+                @for (stat of entry.stats; track stat.key) {
+                  <!-- A real space between the two, so the line copies and is read out as
+                       "1.8 G" and not as "1.8G". -->
+                  <li class="stat" [appTooltip]="stat.name">
+                    <span class="stat-value">{{ stat.value }}</span
+                    >&ngsp;<span class="stat-label">{{ stat.label }}</span>
+                  </li>
+                }
+              </ul>
             </td>
           </tr>
-          @if (entry.stats.length > 0) {
-            <tr class="line-row">
-              <td colspan="4">
-                <ul
-                  class="player-line"
-                  [style.--line-wide]="entry.grid.wide"
-                  [style.--line-mid]="entry.grid.mid"
-                  [style.--line-narrow]="entry.grid.narrow"
-                >
-                  @for (stat of entry.stats; track stat.key) {
-                    <!-- A real space between the two, so the line copies and is read out as
-                         "1.8 G" and not as "1.8G". -->
-                    <li class="stat" [appTooltip]="stat.name">
-                      <span class="stat-value">{{ stat.value }}</span
-                      >&ngsp;<span class="stat-label">{{ stat.label }}</span>
-                    </li>
-                  }
-                </ul>
-              </td>
-            </tr>
-          }
         }
-      </tbody>
-    }
+      }
+    </tbody>
   </table>
 </div>

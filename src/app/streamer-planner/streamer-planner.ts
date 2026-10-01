@@ -26,11 +26,12 @@ import { TeamLogoComponent } from '../shared/team-logo/team-logo';
 import { FreeAgentsTableComponent } from './free-agents-table/free-agents-table';
 import { LeagueFieldComponent } from './league-field/league-field';
 import {
-  FREE_AGENTS_PER_POSITION,
-  FreeAgentsPerPosition,
+  filterByPositions,
   formatGames,
-  groupByPosition,
+  FREE_AGENTS_PAGE,
   nightsFactor,
+  PLANNER_POSITIONS,
+  PlannerPositionGroup,
   RankedFreeAgent,
   scaledProjection,
   teamsByKey,
@@ -78,7 +79,7 @@ export interface PresetOption {
  * week, both) or by two dates, and any night among them can be left out; the teams and the free
  * agents follow at once, with no button, as on Team Power Rankings. A night already played is not
  * offered: a stretch starts no earlier than today. The controls that only concern one table sit on
- * that table (skaters or goalies on the team schedules, how many a position on the free agents),
+ * that table (skaters or goalies on the team schedules, which positions on the free agents),
  * and the league, which the free agents are read from, sits beside the nights.
  *
  * <p>The server rates the whole stretch; a night the reader leaves out is taken out here, by the
@@ -265,11 +266,26 @@ export class StreamerPlannerComponent {
 
   readonly league = this.leagueService.league;
 
-  readonly perPosition = signal<FreeAgentsPerPosition>(3);
-  readonly perPositionOptions = FREE_AGENTS_PER_POSITION;
+  readonly positionOptions = PLANNER_POSITIONS;
 
-  setPerPosition(option: FreeAgentsPerPosition): void {
-    this.perPosition.set(option);
+  /** The positions the list is narrowed to. None is every position, which is how the page opens. */
+  readonly positions = signal<ReadonlySet<PlannerPositionGroup>>(new Set());
+
+  /** One more position, or one fewer: any number can be on at once. */
+  togglePosition(position: PlannerPositionGroup): void {
+    this.positions.update((positions) => {
+      const next = new Set(positions);
+      if (next.has(position)) {
+        next.delete(position);
+      } else {
+        next.add(position);
+      }
+      return next;
+    });
+  }
+
+  clearPositions(): void {
+    this.positions.set(new Set());
   }
 
   private readonly settingsResource = rxResource({
@@ -379,7 +395,28 @@ export class StreamerPlannerComponent {
   });
 
   readonly topOptions = computed(() => this.ranked().slice(0, TOP_OPTIONS));
-  readonly groups = computed(() => groupByPosition(this.ranked(), this.perPosition()));
+
+  /** The one list, narrowed to the positions picked. */
+  readonly filtered = computed(() => filterByPositions(this.ranked(), this.positions()));
+
+  /** How many rows are drawn. Other positions are another list, so it starts from the top again. */
+  private readonly shown = linkedSignal<ReadonlySet<PlannerPositionGroup>, number>({
+    source: this.positions,
+    computation: () => FREE_AGENTS_PAGE,
+  });
+
+  readonly visible = computed(() => this.filtered().slice(0, this.shown()));
+  readonly hiddenCount = computed(() => Math.max(0, this.filtered().length - this.shown()));
+  /** What the next press adds: a page, or what is left of one. */
+  readonly nextPage = computed(() => Math.min(FREE_AGENTS_PAGE, this.hiddenCount()));
+
+  showMore(): void {
+    this.shown.update((shown) => shown + FREE_AGENTS_PAGE);
+  }
+
+  showAll(): void {
+    this.shown.set(Number.MAX_SAFE_INTEGER);
+  }
 
   /** The cards have something to show, or will once the list lands. */
   readonly showsTopOptions = computed(

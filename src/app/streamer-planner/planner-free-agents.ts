@@ -17,9 +17,11 @@ import { FreeAgent } from '../services/streamer-planner-free-agents.service';
 export const PLANNER_POSITIONS = ['C', 'LW', 'RW', 'D', 'G'] as const;
 export type PlannerPositionGroup = (typeof PLANNER_POSITIONS)[number];
 
-/** How many players a position group shows. Three is a wire's worth; ten is as deep as anyone streams. */
-export const FREE_AGENTS_PER_POSITION = [3, 5, 10] as const;
-export type FreeAgentsPerPosition = (typeof FREE_AGENTS_PER_POSITION)[number];
+/**
+ * How many players the list opens with, and how many more each press of "Show more" adds. About
+ * the depth of the team table beside it; the rest is a press away, never out of reach.
+ */
+export const FREE_AGENTS_PAGE = 25;
 
 /** How many players the cards over the tables show. */
 export const TOP_OPTIONS = 3;
@@ -44,23 +46,21 @@ export interface RankedFreeAgent {
   readonly games: number;
 }
 
-export interface FreeAgentGroup {
-  readonly position: PlannerPositionGroup;
-  readonly rows: readonly RankedFreeAgent[];
-}
-
 /**
- * The ranked players by position, the best few of each. A player eligible at two positions is in
- * both groups: the question a group answers is who to slot there.
+ * The ranked players eligible at any of the positions picked, in the order they were ranked. No
+ * position picked is every player: the filter narrows the one list, it never empties it. A player
+ * eligible at two positions is listed once, under either.
  */
-export function groupByPosition(
+export function filterByPositions(
   ranked: readonly RankedFreeAgent[],
-  perPosition: number,
-): FreeAgentGroup[] {
-  return PLANNER_POSITIONS.map((position) => ({
-    position,
-    rows: ranked.filter((row) => row.player.positions.includes(position)).slice(0, perPosition),
-  })).filter((group) => group.rows.length > 0);
+  positions: ReadonlySet<PlannerPositionGroup>,
+): readonly RankedFreeAgent[] {
+  if (positions.size === 0) {
+    return ranked;
+  }
+  return ranked.filter((row) =>
+    row.player.positions.some((position) => positions.has(position as PlannerPositionGroup)),
+  );
 }
 
 /** The teams the server rated, findable by a club abbreviation in any platform's spelling. */

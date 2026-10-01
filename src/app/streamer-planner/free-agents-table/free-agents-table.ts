@@ -7,11 +7,9 @@ import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import {
   formatGames,
   formatToi,
-  FreeAgentGroup,
   lineGrid,
   lineStats,
   LineStat,
-  PlannerPositionGroup,
   RankedFreeAgent,
 } from '../planner-free-agents';
 
@@ -30,11 +28,6 @@ export interface FreeAgentRow {
   readonly grid: LineGrids;
 }
 
-export interface FreeAgentBand {
-  readonly position: PlannerPositionGroup;
-  readonly rows: readonly FreeAgentRow[];
-}
-
 /**
  * The most stats a line holds in a wide table, a middling one and a phone's. The widths these
  * stand for are the container queries in the stylesheet; a line of more breaks into even lines.
@@ -42,8 +35,9 @@ export interface FreeAgentBand {
 const MOST_PER_LINE = { wide: 8, mid: 5, narrow: 4 } as const;
 
 /**
- * The best available players by position, the few of each worth a look, with the model's line for
- * the nights counted, in every category the league scores, and scored by the league's own settings.
+ * The best available players as one list, best first, with the model's line for the nights
+ * counted, in every category the league scores, and scored by the league's own settings. Which
+ * positions and how many rows is the page's to say.
  */
 @Component({
   selector: 'app-free-agents-table',
@@ -53,24 +47,21 @@ const MOST_PER_LINE = { wide: 8, mid: 5, narrow: 4 } as const;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FreeAgentsTableComponent {
-  readonly groups = input.required<readonly FreeAgentGroup[]>();
+  readonly rows = input.required<readonly RankedFreeAgent[]>();
   readonly scoringType = input.required<ScoringType>();
   /** The categories the league scores, in the league's order. */
   readonly categories = input.required<readonly ScoringStatKey[]>();
 
   /**
-   * Each position with its players' lines. Every skater's line is drawn on one grid and every
-   * goalie's on another, so a category sits in the same place from one player to the next, down
-   * the whole list and across its positions, and reads as a column.
+   * The players with their lines. Every skater's line is drawn on one grid and every goalie's on
+   * another, so a category sits in the same place from one player to the next, down the whole
+   * list, and reads as a column.
    */
-  readonly bands = computed<readonly FreeAgentBand[]>(() => {
+  readonly entries = computed<readonly FreeAgentRow[]>(() => {
     const categories = this.categories();
-    const lines = this.groups().map((group) =>
-      group.rows.map((row) => ({ row, stats: lineStats(row, categories) })),
-    );
+    const lines = this.rows().map((row) => ({ row, stats: lineStats(row, categories) }));
     const gridFor = (type: RankedFreeAgent['line']['type']): LineGrids => {
       const ofType = lines
-        .flat()
         .filter((entry) => entry.row.line.type === type)
         .map((entry) => entry.stats);
       return {
@@ -80,10 +71,7 @@ export class FreeAgentsTableComponent {
       };
     };
     const grids = { skater: gridFor('skater'), goalie: gridFor('goalie') };
-    return this.groups().map((group, index) => ({
-      position: group.position,
-      rows: lines[index].map((entry) => ({ ...entry, grid: grids[entry.row.line.type] })),
-    }));
+    return lines.map((entry) => ({ ...entry, grid: grids[entry.row.line.type] }));
   });
 
   readonly scoreHeading = computed(() =>

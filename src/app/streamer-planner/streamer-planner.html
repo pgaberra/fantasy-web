@@ -211,15 +211,25 @@
               text="The model's projection for the nights you count, scored with your league's settings. A player is only worth what your league pays for what he does."
             />
           </h2>
-          <div class="pills" role="group" aria-label="Players to show per position">
-            <span class="pills-label">Per position</span>
-            @for (option of perPositionOptions; track option) {
+          <!-- One list, narrowed by any number of positions at once. "All" is the list with none
+               picked, and the way back to it. -->
+          <div class="pills" role="group" aria-label="Positions to show">
+            <button
+              type="button"
+              class="pill"
+              [class.pill--active]="positions().size === 0"
+              [attr.aria-pressed]="positions().size === 0"
+              (click)="clearPositions()"
+            >
+              All
+            </button>
+            @for (option of positionOptions; track option) {
               <button
                 type="button"
                 class="pill"
-                [class.pill--active]="option === perPosition()"
-                [attr.aria-pressed]="option === perPosition()"
-                (click)="setPerPosition(option)"
+                [class.pill--active]="positions().has(option)"
+                [attr.aria-pressed]="positions().has(option)"
+                (click)="togglePosition(option)"
               >
                 {{ option }}
               </button>
@@ -238,12 +248,29 @@
           <app-loading-indicator />
         } @else if (noFreeAgents()) {
           <p class="empty">No available player in this league has a projection for these nights.</p>
+        } @else if (filtered().length === 0) {
+          <p class="empty">No available player at these positions has a projection.</p>
         } @else {
           <app-free-agents-table
-            [groups]="groups()"
+            [rows]="visible()"
             [scoringType]="scoringType()"
             [categories]="categories()"
           />
+          <div class="list-foot">
+            <span class="list-count" aria-live="polite">
+              Showing {{ visible().length }} of {{ filtered().length }}
+            </span>
+            @if (hiddenCount() > 0) {
+              <span class="list-actions">
+                <button type="button" class="btn btn-secondary btn-sm" (click)="showMore()">
+                  Show {{ nextPage() }} more
+                </button>
+                @if (hiddenCount() > nextPage()) {
+                  <button type="button" class="link-button" (click)="showAll()">Show all</button>
+                }
+              </span>
+            }
+          </div>
         }
       </section>
     </div>

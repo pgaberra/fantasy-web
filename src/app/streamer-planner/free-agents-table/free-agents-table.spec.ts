@@ -6,7 +6,7 @@ import {
   SKATER_SCORING_STAT_KEYS,
 } from '../../models/stat-key.model';
 import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
-import { FreeAgentGroup, RankedFreeAgent } from '../planner-free-agents';
+import { RankedFreeAgent } from '../planner-free-agents';
 import { FreeAgentsTableComponent } from './free-agents-table';
 
 function scoringLine<K extends string>(keys: readonly K[], set: Record<string, number>) {
@@ -81,10 +81,7 @@ const GOALIE: RankedFreeAgent = {
   line: GOALIE_PLAYER.projection,
 };
 
-const GROUPS: FreeAgentGroup[] = [
-  { position: 'C', rows: [SKATER] },
-  { position: 'G', rows: [GOALIE] },
-];
+const ROWS: RankedFreeAgent[] = [SKATER, GOALIE];
 
 /** A Yahoo categories league: seven for skaters, three for goalies, in the league's order. */
 const CATEGORIES: ScoringStatKey[] = [
@@ -108,7 +105,7 @@ describe('FreeAgentsTableComponent', () => {
     categories: ScoringStatKey[] = CATEGORIES,
   ) {
     const fixture = MockRender(FreeAgentsTableComponent, {
-      groups: GROUPS,
+      rows: ROWS,
       scoringType,
       categories,
     });
@@ -122,13 +119,16 @@ describe('FreeAgentsTableComponent', () => {
       .map((line) => ngMocks.findAll(line, '.stat').map((stat) => ngMocks.formatText(stat)));
   }
 
-  it('writes each position as a band with its players under it', () => {
+  it('writes the players as one list in the order given, each with his overall rank', () => {
     const fixture = render();
-    const bands = ngMocks.findAll(fixture, '.group-row');
+    const rows = ngMocks.findAll(fixture, 'tbody tr.player-row');
 
-    expect(bands.map((band) => ngMocks.formatText(band))).toEqual(['C', 'G']);
-    expect(ngMocks.formatText(fixture)).toContain('Top Scorer');
-    expect(ngMocks.formatText(fixture)).toContain('Waiver Goalie');
+    expect(rows.map((row) => ngMocks.formatText(ngMocks.find(row, '.rank-col')))).toEqual([
+      '1',
+      '2',
+    ]);
+    expect(ngMocks.formatText(rows[0])).toContain('Top Scorer');
+    expect(ngMocks.formatText(rows[1])).toContain('Waiver Goalie');
   });
 
   it("writes the score the way the league's scoring is written, with the rate a game", () => {
@@ -174,10 +174,13 @@ describe('FreeAgentsTableComponent', () => {
     const rows = ngMocks.findAll(fixture, 'tbody tr');
     const classes = rows.map((row) => (row.nativeElement as HTMLElement).className);
 
-    expect(classes.slice(0, 3)).toEqual(['group-row', 'player-row player-row--lined', 'line-row']);
-    const score = ngMocks.find(rows[1], '.score-col').nativeElement as HTMLTableCellElement;
+    expect(classes.slice(0, 2)).toEqual(['player-row player-row--lined', 'line-row']);
+    const score = ngMocks.find(rows[0], '.score-col').nativeElement as HTMLTableCellElement;
     expect(score.rowSpan).toBe(2);
-    expect((ngMocks.find(rows[2], 'td').nativeElement as HTMLTableCellElement).colSpan).toBe(4);
+    expect((ngMocks.find(rows[0], '.rank-col').nativeElement as HTMLTableCellElement).rowSpan).toBe(
+      2,
+    );
+    expect((ngMocks.find(rows[1], 'td').nativeElement as HTMLTableCellElement).colSpan).toBe(4);
   });
 
   it('draws no empty line for a player whose kind the league scores nothing for', () => {
@@ -196,32 +199,29 @@ describe('FreeAgentsTableComponent', () => {
   // the same place from one player to the next.
   it('sizes the line to the width of the table: whole where it fits, in even lines where not', () => {
     const fixture = render();
-    const [skaters, goalies] = fixture.point.componentInstance.bands();
+    const [skater, goalie] = fixture.point.componentInstance.entries();
     const tracks = (grid: string) => grid.split(') ').length;
 
-    expect(tracks(skaters.rows[0].grid.wide)).toBe(7);
-    expect(tracks(skaters.rows[0].grid.mid)).toBe(4);
-    expect(tracks(skaters.rows[0].grid.narrow)).toBe(4);
-    expect(tracks(goalies.rows[0].grid.narrow)).toBe(3);
+    expect(tracks(skater.grid.wide)).toBe(7);
+    expect(tracks(skater.grid.mid)).toBe(4);
+    expect(tracks(skater.grid.narrow)).toBe(4);
+    expect(tracks(goalie.grid.narrow)).toBe(3);
 
     const line = ngMocks.find(fixture, '.player-line').nativeElement as HTMLElement;
-    expect(line.style.getPropertyValue('--line-wide')).toBe(skaters.rows[0].grid.wide);
-    expect(line.style.getPropertyValue('--line-narrow')).toBe(skaters.rows[0].grid.narrow);
+    expect(line.style.getPropertyValue('--line-wide')).toBe(skater.grid.wide);
+    expect(line.style.getPropertyValue('--line-narrow')).toBe(skater.grid.narrow);
   });
 
-  it('draws a skater under two positions on the same grid in both', () => {
+  it('draws every skater on the same grid, whichever positions the list is narrowed to', () => {
     const fixture = MockRender(FreeAgentsTableComponent, {
-      groups: [
-        { position: 'C', rows: [SKATER] },
-        { position: 'LW', rows: [SKATER] },
-      ] as FreeAgentGroup[],
+      rows: [SKATER, { ...SKATER, rank: 3 }],
       scoringType: 'points',
       categories: CATEGORIES,
     });
     fixture.detectChanges();
-    const [centres, wingers] = fixture.point.componentInstance.bands();
+    const [first, second] = fixture.point.componentInstance.entries();
 
-    expect(wingers.rows[0].grid).toBe(centres.rows[0].grid);
+    expect(second.grid).toBe(first.grid);
   });
 
   // The crest already says which club; the abbreviation beside it said it twice.

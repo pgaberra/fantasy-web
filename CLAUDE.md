@@ -356,13 +356,18 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   `PLANNER_TODAY` is the reader's own clock, so a night already played is never offered), then a
   strip of tick boxes, one a night, seven to a row so each row is a Monday-to-Sunday week (the days
   of the first week already behind are drawn faint). The league sits beside the nights; the
-  controls that concern one table sit on it (skaters or goalies on the team schedules, 3/5/10 a
-  position on the free agents). No buttons: what the nights point at is what is on screen.
+  controls that concern one table sit on it (skaters or goalies on the team schedules, the
+  positions on the free agents). **The free agents are one list**, best first, not a block per
+  position: the pills over it (All, C, LW, RW, D, G) narrow it to any number of positions at
+  once, a player eligible at two is listed once, and the # column keeps his place among everyone
+  available so a list of defensemen still says how they compare. It opens on 25 rows
+  (`FREE_AGENTS_PAGE`) with "Show 25 more" and "Show all" under it, and starts from the top when
+  the positions change. Until 2026-10-01 it copied LineupExperts: three, five or ten a position. No buttons: what the nights point at is what is on screen.
   `planner-schedule.ts` re-rates the teams over the nights ticked, by projection-service's own
   rule (a game is 1, or 1.25 on an off-night, scaled by the opponent), and uses the server's
   numbers untouched while every night is ticked; `planner-free-agents.ts` scales a free agent's
-  line to the share of his club's games on those nights, groups by position (a two-way forward
-  under both) and keeps two decimals on every stat for the ranking engine, whose default rounds a
+  line to the share of his club's games on those nights, filters by position and keeps two
+  decimals on every stat for the ranking engine, whose default rounds a
   week's 0.4 goals to none. The free agents are ranked here, by the league's own scoring settings
   through `ProjectionRankingService`; the league is remembered on the device by
   `StreamerPlannerLeagueService` and picked in `league-field` (a Yahoo league reads at once, an
