@@ -22,6 +22,7 @@ import { YahooService } from '../services/yahoo.service';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { PLANNER_TODAY } from './planner-schedule';
 import { StreamerPlannerComponent } from './streamer-planner';
+import { TopOptionsComponent } from './top-options/top-options';
 
 const WEEKS: PlannerWeeksResponse = {
   season: 2026,
@@ -209,6 +210,7 @@ describe('StreamerPlannerComponent', () => {
     });
     freeAgents.mockReturnValue(
       of<FreeAgentWeek>({
+        creases: [],
         players: [
           skater('1', 'Second Best', 1, 1),
           skater('2', 'Top Scorer', 3, 1, 'EDM', ['C', 'LW']),
@@ -259,6 +261,8 @@ describe('StreamerPlannerComponent', () => {
     expect(planner.stretchTitle()).toBe('Oct 12 to Oct 18');
     expect(planner.nightsTitle()).toBe('2 of 2 nights');
     expect(planner.leadingDays()).toEqual([]);
+    // Monday has no days before it, so nothing is asked for them.
+    expect(invoke.mock.calls.filter(([fn]) => fn === streamerPlannerTeams)).toHaveLength(1);
   });
 
   // A night already played is not a night to stream for.
@@ -272,13 +276,24 @@ describe('StreamerPlannerComponent', () => {
       end: '2026-10-18',
     });
     expect(planner.days().length).toBe(5);
-    expect(planner.leadingDays()).toEqual(['2026-10-12', '2026-10-13']);
+    expect(invoke).toHaveBeenCalledWith(streamerPlannerTeams, {
+      start: '2026-10-12',
+      end: '2026-10-13',
+    });
+    expect(planner.leadingDays()).toEqual([
+      { date: '2026-10-12', games: 0 },
+      { date: '2026-10-13', games: 3 },
+    ]);
     expect(planner.presets().map((preset) => [preset.key, preset.stretch])).toEqual([
       ['this-week', { start: '2026-10-14', end: '2026-10-18' }],
       ['next-week', { start: '2026-10-19', end: '2026-10-25' }],
       ['two-weeks', { start: '2026-10-14', end: '2026-10-25' }],
     ]);
-    expect(ngMocks.findAll(fixture, '.day--past').length).toBe(2);
+    const past = ngMocks.findAll(fixture, '.day--past');
+    expect(past.length).toBe(2);
+    expect(past[0].nativeElement.textContent).toContain('No games');
+    expect(past[1].nativeElement.querySelector('.day-count').textContent).toBe('3');
+    expect(past[1].nativeElement.querySelector('input')).toBeNull();
     expect(ngMocks.findAll(fixture, 'label.day').length).toBe(5);
   });
 
@@ -447,12 +462,13 @@ describe('StreamerPlannerComponent', () => {
       planner.clearPositions();
       expect(names()).toHaveLength(2);
       fixture.detectChanges();
-      const cards = ngMocks.findAll(fixture, '.option-card');
-      expect(cards.length).toBe(3);
-      // 11 points over 2 games; the goalie is the one to claim rather than add.
-      expect(ngMocks.formatText(cards[0])).toContain('5.5');
-      expect(ngMocks.formatText(cards[0])).not.toContain('Waivers');
-      expect(ngMocks.formatText(cards[2])).toContain('Waivers');
+      const cards = ngMocks.findInstance(TopOptionsComponent);
+      expect(cards.rows().map((row) => row.player.name)).toEqual([
+        'Top Scorer',
+        'Second Best',
+        'Waiver Goalie',
+      ]);
+      expect(cards.scoringType()).toBe('points');
     });
 
     // A goalie's categories are not a skater's, so the two are never rows of one table.
@@ -473,7 +489,7 @@ describe('StreamerPlannerComponent', () => {
       // The positions are the skaters' to narrow: no pills over a list of goalies, and the ones
       // picked wait for the skaters to come back.
       expect(ngMocks.findAll(fixture, '[aria-label="Positions to show"]')).toHaveLength(0);
-      expect(ngMocks.findAll(fixture, '.option-card')).toHaveLength(3);
+      expect(ngMocks.findInstance(TopOptionsComponent).rows()).toHaveLength(3);
 
       planner.setPosition('skaters');
       expect(planner.visible().map((row) => row.player.name)).toEqual(['Top Scorer']);
@@ -481,7 +497,7 @@ describe('StreamerPlannerComponent', () => {
 
     it('says so when no goalie is available, and not that the league has nobody', async () => {
       freeAgents.mockReturnValue(
-        of<FreeAgentWeek>({ players: [skater('1', 'Second Best', 1, 1)] }),
+        of<FreeAgentWeek>({ creases: [], players: [skater('1', 'Second Best', 1, 1)] }),
       );
       const fixture = await render();
 
@@ -496,6 +512,7 @@ describe('StreamerPlannerComponent', () => {
     it('opens on a page of a long list, adds a page a press, and starts over on other positions', async () => {
       freeAgents.mockReturnValue(
         of<FreeAgentWeek>({
+          creases: [],
           players: Array.from({ length: 60 }, (_, index) =>
             skater(`${index + 1}`, `Skater ${index + 1}`, 60 - index, 0, 'EDM', [
               index % 2 === 0 ? 'C' : 'D',
@@ -547,9 +564,55 @@ describe('StreamerPlannerComponent', () => {
       // The line the table writes is the one the score was reached from, not the whole stretch's.
       expect(top.line.stats.scoring).toMatchObject({ goals: 1.5, assists: 0.5 });
       expect(top.player.projection.stats.scoring).toMatchObject({ goals: 3, assists: 1 });
-      // The Lightning goalie's club is spelt TB by the platform and TBL by the NHL.
+      // The Lightning goalie's club is spelt TB by the platform and TBL by the NHL. In no crease,
+      // his 1.5 starts come to 0.75 on the nights counted, and a start is whole: one, not two.
       const waiver = planner.ranked().find((row) => row.player.name === 'Waiver Goalie');
-      expect(waiver?.games).toBeCloseTo(0.75, 5);
+      expect(waiver?.games).toBe(1);
+    });
+
+    it("gives a club's one counted game to its likelier starter, and the other no line", async () => {
+      settings = {
+        ...SETTINGS,
+        statWeights: { goals: 3, assists: 2, w: 4 },
+        activeScoringColumns: ['goals', 'assists', 'w'],
+      };
+      const nights = (share: number) => [
+        { date: '2026-10-13', share },
+        { date: '2026-10-15', share },
+      ];
+      freeAgents.mockReturnValue(
+        of<FreeAgentWeek>({
+          creases: [
+            {
+              team: 'TBL',
+              goalies: [
+                { playerId: '3', nights: nights(0.48) },
+                { playerId: '4', nights: nights(0.44) },
+                // Rostered in the league, so not a row: his starts are still not theirs.
+                { nights: nights(0.08) },
+              ],
+            },
+          ],
+          players: [goalie('4', 'Backup', 1), goalie('3', 'Likelier Starter', 1)],
+        }),
+      );
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+
+      // Only Oct 15 is left: one game, and it is the likelier starter's.
+      planner.toggleDay(planner.days()[1]);
+
+      const [first, second] = planner.ranked();
+      expect(first.player.name).toBe('Likelier Starter');
+      expect(first.games).toBe(1);
+      // A win in one and a half starts is two thirds of one a start.
+      expect(first.line.stats.scoring).toMatchObject({ w: 2 / 3 });
+      // Scored on the two decimals the engine keeps: 0.67 wins at 4 apiece.
+      expect(first.score).toBeCloseTo(2.68, 5);
+      expect(second.player.name).toBe('Backup');
+      expect(second.games).toBe(0);
+      expect(second.score).toBe(0);
+      expect(second.line.stats.scoring).toMatchObject({ w: 0, sv: 0, svPct: 0 });
     });
 
     it('surfaces a failed read instead of an empty table', async () => {
@@ -578,6 +641,7 @@ describe('StreamerPlannerComponent', () => {
       settings = CATEGORY_SETTINGS;
       freeAgents.mockReturnValue(
         of<FreeAgentWeek>({
+          creases: [],
           players: [
             lineSkater('1', 'Sniper', { goals: 3, assists: 1, ppp: 0, sog: 12 }),
             lineSkater('2', 'Power Play', { goals: 0, assists: 1, ppp: 2, sog: 3 }),

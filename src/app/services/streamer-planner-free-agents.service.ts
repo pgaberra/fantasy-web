@@ -3,6 +3,7 @@ import { from, map, Observable } from 'rxjs';
 import { Api } from '../api/api';
 import { streamerPlannerFreeAgents } from '../api/fn/streamer-planner/streamer-planner-free-agents';
 import { FreeAgentResponse } from '../api/models/free-agent-response';
+import { PlannerCrease } from '../api/models/planner-crease';
 import {
   GOALIE_SCORING_STAT_KEYS,
   GOALIE_UTILITY_STAT_KEYS,
@@ -36,6 +37,8 @@ export interface FreeAgent {
 
 export interface FreeAgentWeek {
   players: FreeAgent[];
+  /** Every club with a goalie among the players, its whole crease night by night. */
+  creases: readonly PlannerCrease[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -50,7 +53,9 @@ export class StreamerPlannerFreeAgentsService {
   ): Observable<FreeAgentWeek> {
     return from(
       this.api.invoke(streamerPlannerFreeAgents, { platform, leagueId, start, end }),
-    ).pipe(map((answer) => ({ players: answer.players.map(toFreeAgent) })));
+    ).pipe(
+      map((answer) => ({ players: answer.players.map(toFreeAgent), creases: answer.creases })),
+    );
   }
 }
 

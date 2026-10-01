@@ -1,3 +1,4 @@
+import { PlannerCrease } from '../api/models/planner-crease';
 import { TeamSchedule } from '../api/models/team-schedule';
 import { DEFAULT_DECIMAL_SETTINGS } from '../draft-projection/projection-settings-section/model';
 import { nhlTeamKey } from '../models/nhl-team';
@@ -42,7 +43,7 @@ export interface RankedFreeAgent {
   /** Fantasy points or a z-score, whichever the league scores by, over the nights counted. */
   readonly score: number;
   readonly rank: number;
-  /** Games he is expected to play on the nights counted. */
+  /** Games he is expected to play on the nights counted; for a goalie, the starts he is given. */
   readonly games: number;
 }
 
@@ -127,6 +128,125 @@ export function scaledProjection(projection: Projection, factor: number): Projec
   return { ...projection, stats: { scoring, utility } } as Projection;
 }
 
+/**
+ * The starts each listed goalie is given on the nights counted: whole games, each of a club's
+ * counted games handed to one goalie of its crease.
+ *
+ * The model's crease is a chance a night (a starter at 0.7, his backup at 0.3), and a game is
+ * started by one man, not a share of it by each. Scaled player by player, New Jersey's one game
+ * of a weekend left both its free agents at about half a start: each read "0" games and still
+ * carried a line. So a club's counted games are given out together, as the split of them likeliest
+ * to happen: one game goes to the likeliest starter, and four at seventy-thirty go three and one,
+ * which is what a week of them looks like, rather than four and none. The goalies a league has
+ * rostered are in the crease as well, so a free agent behind one of them is given none.
+ *
+ * Keyed by the platform's player id; a goalie in no crease is not in it.
+ */
+export function projectedStarts(
+  creases: readonly PlannerCrease[],
+  counted: ReadonlySet<string>,
+  everyNightCounted: boolean,
+): ReadonlyMap<string, number> {
+  const starts = new Map<string, number>();
+  for (const crease of creases) {
+    const split = likeliestSplit(crease, (date) => everyNightCounted || counted.has(date));
+    crease.goalies.forEach((goalie, index) => {
+      if (goalie.playerId !== undefined) {
+        starts.set(goalie.playerId, split[index]);
+      }
+    });
+  }
+  return starts;
+}
+
+interface Split {
+  readonly counts: readonly number[];
+  readonly chance: number;
+}
+
+/**
+ * Two splits whose chances differ by less than this share of either are a tie: what parts them
+ * is the arithmetic's rounding, not one being likelier.
+ */
+const TIED = 1e-9;
+
+/**
+ * The likeliest number of starts each goalie of a crease makes on the nights kept, with one more
+ * count, last, for a goalie the model does not name: a night whose shares come to less than one
+ * start leaves the rest to him. Each night is its own draw from that night's shares, so the answer
+ * is the commonest outcome of their sum, found by walking the nights and keeping every split
+ * reachable with its chance — a few hundred at most over a month of a three-man crease. A tie goes
+ * to the split giving more to the goalie listed first, who has the most starts over the stretch.
+ */
+function likeliestSplit(crease: PlannerCrease, kept: (date: string) => boolean): readonly number[] {
+  const nights = new Set(
+    crease.goalies.flatMap((goalie) => goalie.nights.map((night) => night.date)),
+  );
+  let splits: Split[] = [{ counts: new Array(crease.goalies.length + 1).fill(0), chance: 1 }];
+  for (const date of [...nights].filter(kept)) {
+    const chances = nightChances(crease, date);
+    const next = new Map<string, Split>();
+    for (const split of splits) {
+      chances.forEach((chance, index) => {
+        if (chance <= 0) {
+          return;
+        }
+        const counts = split.counts.map((count, at) => (at === index ? count + 1 : count));
+        const key = counts.join();
+        next.set(key, { counts, chance: (next.get(key)?.chance ?? 0) + split.chance * chance });
+      });
+    }
+    splits = [...next.values()];
+  }
+  return splits.reduce((best, split) => (likelier(split, best) ? split : best), splits[0]).counts;
+}
+
+/** Each goalie's chance of starting the night, and last the unnamed goalie's: one in all. */
+function nightChances(crease: PlannerCrease, date: string): number[] {
+  const shares = crease.goalies.map((goalie) =>
+    Math.max(0, goalie.nights.find((night) => night.date === date)?.share ?? 0),
+  );
+  const total = shares.reduce((sum, share) => sum + share, 0);
+  // A crease whose starts run past the schedule (a goalie traded in with his own) is held to the
+  // one start a night has.
+  return total > 1 ? [...shares.map((share) => share / total), 0] : [...shares, 1 - total];
+}
+
+function likelier(split: Split, than: Split): boolean {
+  if (Math.abs(split.chance - than.chance) > TIED * Math.max(split.chance, than.chance)) {
+    return split.chance > than.chance;
+  }
+  for (let at = 0; at < split.counts.length; at++) {
+    if (split.counts[at] !== than.counts[at]) {
+      return split.counts[at] > than.counts[at];
+    }
+  }
+  return false;
+}
+
+/**
+ * A goalie's projection over the starts he is given: his line over the stretch, which was
+ * projected over `expectedStarts`, a start at a time, times them. Given none, every number is
+ * nought, his rates too: a goalie who does not play has no save percentage or goals-against
+ * average to help or hurt a team's, and left in, the ranking would weigh them at an average
+ * goalie's minutes.
+ */
+export function startsProjection(
+  projection: Projection,
+  expectedStarts: number,
+  starts: number,
+): Projection {
+  if (starts > 0 && expectedStarts > 0) {
+    return scaledProjection(projection, starts / expectedStarts);
+  }
+  const nought = (stats: Record<string, number>) =>
+    Object.fromEntries(Object.keys(stats).map((key) => [key, 0]));
+  return {
+    ...projection,
+    stats: { scoring: nought(projection.stats.scoring), utility: nought(projection.stats.utility) },
+  } as Projection;
+}
+
 /** Seconds as minutes and seconds, the way ice time is written: 1052 is 17:32. */
 export function formatToi(seconds: number | undefined): string {
   if (seconds === undefined || !Number.isFinite(seconds) || seconds <= 0) {
@@ -201,10 +321,19 @@ export function lineStats(
   const own: readonly string[] =
     row.line.type === 'skater' ? SKATER_SCORING_STAT_KEYS : GOALIE_SCORING_STAT_KEYS;
   const scoring = row.line.stats.scoring as Record<string, number>;
+  // A goalie given no start has no rate to write: nought would read as a save percentage of none.
+  const benched = row.line.type === 'goalie' && row.games === 0;
+  const rates: readonly string[] = RATE_STAT_KEYS;
   return categories
     .filter((key) => own.includes(key) && row.player.projected.has(key))
-    .map((key) => ({ ...categoryColumn(key), value: formatLineStat(key, scoring[key] ?? 0) }));
+    .map((key) => ({
+      ...categoryColumn(key),
+      value: benched && rates.includes(key) ? NO_RATE : formatLineStat(key, scoring[key] ?? 0),
+    }));
 }
+
+/** What a rate over no games is written as. */
+export const NO_RATE = '—';
 
 /** A category as the list heads a column with it. */
 export type LineColumn = Pick<LineStat, 'key' | 'label' | 'name'>;
