@@ -173,10 +173,10 @@ td.stat-cell {
   flex-shrink: 0;
 }
 
+/* The club's crest, as tall as the position chips beside it: the NHL's drawings carry their own
+   margin, so a smaller box reads as a speck. */
 .player-team {
-  color: var(--color-text-subtle);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
+  --team-logo-size: 22px;
 }
 
 /* A stat this player cannot have. Muted so the column reads as "not theirs" at a glance

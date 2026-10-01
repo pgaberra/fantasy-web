@@ -78,12 +78,24 @@
         <!-- One cell a night, each row a Monday-to-Sunday week, so a stretch across two weeks reads
              as two weeks. The tick box sits in the cell's first line, level with every other. -->
         <div class="day-strip" role="group" aria-label="Nights to count">
-          @for (date of leadingDays(); track date) {
+          @for (day of leadingDays(); track day.date) {
             <span class="day day--past" aria-hidden="true">
               <span class="day-head">
-                <span class="day-name">{{ weekdayName(date) }}</span>
-                <span class="day-date">{{ formatDay(date) }}</span>
+                <span class="day-name">{{ weekdayName(day.date) }}</span>
+                <span class="day-date">{{ formatDay(day.date) }}</span>
               </span>
+              @if (day.games !== undefined) {
+                <span class="day-body">
+                  @if (day.games === 0) {
+                    <span class="day-games day-games--none">No games</span>
+                  } @else {
+                    <span class="day-games">
+                      <span class="day-count">{{ day.games }}</span>
+                      {{ day.games === 1 ? 'game' : 'games' }}
+                    </span>
+                  }
+                </span>
+              }
             </span>
           }
           @for (day of days(); track day.date) {
@@ -145,39 +157,7 @@
         @if (loadingFreeAgents()) {
           <app-loading-indicator />
         } @else {
-          <ol class="option-cards">
-            @for (row of topOptions(); track row.player.playerId) {
-              <li class="option-card">
-                <div class="option-head">
-                  <span class="option-rank" aria-hidden="true">{{ row.rank }}</span>
-                  <app-team-logo class="option-logo" [team]="row.player.teamAbbrev" />
-                  <div class="option-identity">
-                    <span class="option-name">{{ row.player.name }}</span>
-                    <span class="option-meta">
-                      {{ identity(row) }}
-                      @if (onWaivers(row)) {
-                        <span class="waivers">Waivers</span>
-                      }
-                    </span>
-                  </div>
-                </div>
-                <div class="option-stats">
-                  <div class="option-stat">
-                    <span class="stat-value stat-value--score">{{ scoreText(row) }}</span>
-                    <span class="stat-label">{{ scoreHeading() }}</span>
-                  </div>
-                  <div class="option-stat">
-                    <span class="stat-value">{{ games(row) }}</span>
-                    <span class="stat-label">Games</span>
-                  </div>
-                  <div class="option-stat">
-                    <span class="stat-value">{{ perGameText(row) }}</span>
-                    <span class="stat-label">Per game</span>
-                  </div>
-                </div>
-              </li>
-            }
-          </ol>
+          <app-top-options [rows]="topOptions()" [scoringType]="scoringType()" />
         }
       </section>
     }

@@ -68,6 +68,7 @@ import { FormatToiPipe } from '../../pipes/format-toi.pipe';
 import { DecimalPipe } from '@angular/common';
 import { shortNames } from '../../shared/short-name';
 import { IconComponent } from '../../shared/icon/icon';
+import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
 
 const PLAYERS_PER_PAGE = 100;
 
@@ -110,6 +111,7 @@ interface RankedPlayer extends ScoredProjection {
     FormatToiPipe,
     DecimalPipe,
     IconComponent,
+    TeamLogoComponent,
   ],
   templateUrl: './hot-players-table.html',
   styleUrl: './hot-players-table.css',

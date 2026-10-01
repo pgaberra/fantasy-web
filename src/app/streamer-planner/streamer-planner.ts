@@ -30,21 +30,21 @@ import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
-import { TeamLogoComponent } from '../shared/team-logo/team-logo';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { FreeAgentsTableComponent } from './free-agents-table/free-agents-table';
 import { LeagueFieldComponent } from './league-field/league-field';
 import {
   categoryColumn,
   filterByPositions,
-  formatGames,
   LineColumn,
   nightsFactor,
   ofKind,
   PLANNER_POSITIONS,
   PlannerPositionGroup,
+  projectedStarts,
   RankedFreeAgent,
   scaledProjection,
+  startsProjection,
   teamsByKey,
   TOP_OPTIONS,
   WEEK_DECIMALS,
@@ -58,6 +58,7 @@ import {
   writePageSize,
 } from './planner-page-size';
 import {
+  addDays,
   clampStretch,
   dayName,
   earliestStart,
@@ -81,8 +82,15 @@ import {
   weeksTitle,
 } from './planner-schedule';
 import { TeamSchedulesComponent } from './team-schedules/team-schedules';
+import { TopOptionsComponent } from './top-options/top-options';
 
 export type { Stretch } from './planner-schedule';
+
+/** A day before the stretch: its date, and its games once they have been asked for. */
+export interface LeadingDay {
+  readonly date: string;
+  readonly games?: number;
+}
 
 /** No category picked: the list is ranked by the league's whole set. */
 const NO_FOCUS: ReadonlySet<ScoringStatKey> = new Set();
@@ -111,8 +119,9 @@ export interface PresetOption {
  * (which positions, which categories to rank by) sits on that table.
  *
  * <p>The server rates the whole stretch; a night the reader leaves out is taken out here, by the
- * server's own rule (`planner-schedule.ts`), and a free agent's line is scaled to the share of
- * his club's games that fall on the nights kept (`planner-free-agents.ts`). The ranking of the
+ * server's own rule (`planner-schedule.ts`), and a skater's line is scaled to the share of his
+ * club's games that fall on the nights kept; a goalie's is his line over the starts his crease's
+ * split of those nights gives him (`planner-free-agents.ts`). The ranking of the
  * free agents happens here too, by the league's own scoring settings through the same engine a
  * projection uses, because "best" only means anything against what the league pays for.
  */
@@ -125,9 +134,9 @@ export interface PresetOption {
     IconComponent,
     LeagueFieldComponent,
     LoadingIndicatorComponent,
-    TeamLogoComponent,
     TeamSchedulesComponent,
     TooltipDirective,
+    TopOptionsComponent,
   ],
   templateUrl: './streamer-planner.html',
   styleUrl: './streamer-planner.css',
@@ -455,7 +464,8 @@ export class StreamerPlannerComponent {
     const teams = this.teamsByKey();
     const counted = this.counted();
     const everyNightCounted = this.everyNightCounted();
-    const factors = new Map<string, number>();
+    const starts = projectedStarts(week.creases, counted, everyNightCounted);
+    const games = new Map<string, number>();
     const lines = new Map<string, Projection>();
     const byPlayerId = new Map(week.players.map((player) => [player.projection.playerId, player]));
     const players =
@@ -464,8 +474,15 @@ export class StreamerPlannerComponent {
         : week.players;
     const projections = players.map((player) => {
       const factor = nightsFactor(player, teams, counted, everyNightCounted);
-      const line = scaledProjection(player.projection, factor);
-      factors.set(player.playerId, factor);
+      let played = player.expectedGames * factor;
+      let line = scaledProjection(player.projection, factor);
+      if (player.projection.type === 'goalie') {
+        // A game is one goalie's, so a goalie's are whole: the crease's split of the nights, or
+        // for one in no crease his own expectation, rounded.
+        played = starts.get(player.playerId) ?? Math.round(played);
+        line = startsProjection(player.projection, player.expectedGames, played);
+      }
+      games.set(player.playerId, played);
       lines.set(player.playerId, line);
       return line;
     });
@@ -486,13 +503,12 @@ export class StreamerPlannerComponent {
     for (const [index, entry] of scored.entries()) {
       const player = byPlayerId.get(entry.projection.playerId);
       if (player) {
-        const factor = factors.get(player.playerId) ?? 1;
         ranked.push({
           player,
           line: lines.get(player.playerId) ?? player.projection,
           score: scoring.scoringType === 'points' ? entry.score.fantasyPoints : entry.score.zScore,
           rank: index + 1,
-          games: player.expectedGames * factor,
+          games: games.get(player.playerId) ?? player.expectedGames,
         });
       }
     }
@@ -653,10 +669,6 @@ export class StreamerPlannerComponent {
     return `${offNight} Untick a night your lineup has no room on.`;
   });
 
-  readonly scoreHeading = computed(() =>
-    this.scoringType() === 'points' ? 'Proj. pts' : 'Z-Score',
-  );
-
   dayName(day: PlannerDay): string {
     return dayName(day);
   }
@@ -665,10 +677,32 @@ export class StreamerPlannerComponent {
     return formatDay(day.date);
   }
 
-  /** The days of the week already behind the stretch, drawn faint so its first row reads as a week. */
-  readonly leadingDays = computed<readonly string[]>(() => {
+  /** The dates of the week before the stretch starts, asked for only to say how many games they held. */
+  private readonly leadingStretch = computed<Stretch | undefined>(() => {
     const start = this.stretch()?.start;
-    return start && this.days().length > 0 ? leadingDays(start) : [];
+    const dates = start ? leadingDays(start) : [];
+    return start && dates.length > 0 ? { start: dates[0], end: addDays(start, -1) } : undefined;
+  });
+
+  private readonly leadingResource = rxResource({
+    params: () => this.leadingStretch(),
+    stream: ({ params }) => from(this.api.invoke(streamerPlannerTeams, params)),
+  });
+
+  /**
+   * The days of the week already behind the stretch, drawn faint so its first row reads as a week,
+   * with the games they held: a night played still had its games. The count is left off until it
+   * has come, and stays off if it cannot.
+   */
+  readonly leadingDays = computed<readonly LeadingDay[]>(() => {
+    const start = this.stretch()?.start;
+    if (!start || this.days().length === 0) {
+      return [];
+    }
+    const nights = this.leadingResource.hasValue()
+      ? new Map(plannerDays(this.leadingResource.value()).map((day) => [day.date, day.games]))
+      : undefined;
+    return leadingDays(start).map((date) => ({ date, games: nights?.get(date) }));
   });
 
   weekdayName(date: string): string {
@@ -681,31 +715,4 @@ export class StreamerPlannerComponent {
 
   /** Whether any night on screen carries the off-night mark, and so whether the line under them explains it. */
   readonly hasOffNight = computed(() => this.days().some((day) => day.offNight));
-
-  scoreText(row: RankedFreeAgent): string {
-    return row.score.toFixed(this.scoringType() === 'points' ? 1 : 2);
-  }
-
-  /** The score a game he plays, the way a streamer compares a three-game week to a four. */
-  perGameText(row: RankedFreeAgent): string {
-    if (row.games <= 0) {
-      return '';
-    }
-    return (row.score / row.games).toFixed(this.scoringType() === 'points' ? 1 : 2);
-  }
-
-  games(row: RankedFreeAgent): string {
-    return formatGames(row.games);
-  }
-
-  /** A claim rather than an add: the one status a streamer has to know before acting. */
-  onWaivers(row: RankedFreeAgent): boolean {
-    return row.player.availability === 'WAIVERS';
-  }
-
-  /** "EDM, C" under a card's name. */
-  identity(row: RankedFreeAgent): string {
-    const positions = row.player.positions.join(', ');
-    return row.player.teamAbbrev ? `${row.player.teamAbbrev}, ${positions}` : positions;
-  }
 }
