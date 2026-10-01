@@ -36,8 +36,6 @@ export interface FreeAgent {
 
 export interface FreeAgentWeek {
   players: FreeAgent[];
-  /** Available players the model has no projection for; they are counted, not listed. */
-  unprojected: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -52,12 +50,7 @@ export class StreamerPlannerFreeAgentsService {
   ): Observable<FreeAgentWeek> {
     return from(
       this.api.invoke(streamerPlannerFreeAgents, { platform, leagueId, start, end }),
-    ).pipe(
-      map((answer) => ({
-        players: answer.players.map(toFreeAgent),
-        unprojected: answer.unprojected,
-      })),
-    );
+    ).pipe(map((answer) => ({ players: answer.players.map(toFreeAgent) })));
   }
 }
 
