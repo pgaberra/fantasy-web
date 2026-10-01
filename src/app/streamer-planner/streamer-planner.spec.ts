@@ -22,6 +22,7 @@ import { YahooService } from '../services/yahoo.service';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { PLANNER_TODAY } from './planner-schedule';
 import { StreamerPlannerComponent } from './streamer-planner';
+import { TopOptionsComponent } from './top-options/top-options';
 
 const WEEKS: PlannerWeeksResponse = {
   season: 2026,
@@ -260,6 +261,8 @@ describe('StreamerPlannerComponent', () => {
     expect(planner.stretchTitle()).toBe('Oct 12 to Oct 18');
     expect(planner.nightsTitle()).toBe('2 of 2 nights');
     expect(planner.leadingDays()).toEqual([]);
+    // Monday has no days before it, so nothing is asked for them.
+    expect(invoke.mock.calls.filter(([fn]) => fn === streamerPlannerTeams)).toHaveLength(1);
   });
 
   // A night already played is not a night to stream for.
@@ -273,13 +276,24 @@ describe('StreamerPlannerComponent', () => {
       end: '2026-10-18',
     });
     expect(planner.days().length).toBe(5);
-    expect(planner.leadingDays()).toEqual(['2026-10-12', '2026-10-13']);
+    expect(invoke).toHaveBeenCalledWith(streamerPlannerTeams, {
+      start: '2026-10-12',
+      end: '2026-10-13',
+    });
+    expect(planner.leadingDays()).toEqual([
+      { date: '2026-10-12', games: 0 },
+      { date: '2026-10-13', games: 3 },
+    ]);
     expect(planner.presets().map((preset) => [preset.key, preset.stretch])).toEqual([
       ['this-week', { start: '2026-10-14', end: '2026-10-18' }],
       ['next-week', { start: '2026-10-19', end: '2026-10-25' }],
       ['two-weeks', { start: '2026-10-14', end: '2026-10-25' }],
     ]);
-    expect(ngMocks.findAll(fixture, '.day--past').length).toBe(2);
+    const past = ngMocks.findAll(fixture, '.day--past');
+    expect(past.length).toBe(2);
+    expect(past[0].nativeElement.textContent).toContain('No games');
+    expect(past[1].nativeElement.querySelector('.day-count').textContent).toBe('3');
+    expect(past[1].nativeElement.querySelector('input')).toBeNull();
     expect(ngMocks.findAll(fixture, 'label.day').length).toBe(5);
   });
 
@@ -448,12 +462,13 @@ describe('StreamerPlannerComponent', () => {
       planner.clearPositions();
       expect(names()).toHaveLength(2);
       fixture.detectChanges();
-      const cards = ngMocks.findAll(fixture, '.option-card');
-      expect(cards.length).toBe(3);
-      // 11 points over 2 games; the goalie is the one to claim rather than add.
-      expect(ngMocks.formatText(cards[0])).toContain('5.5');
-      expect(ngMocks.formatText(cards[0])).not.toContain('Waivers');
-      expect(ngMocks.formatText(cards[2])).toContain('Waivers');
+      const cards = ngMocks.findInstance(TopOptionsComponent);
+      expect(cards.rows().map((row) => row.player.name)).toEqual([
+        'Top Scorer',
+        'Second Best',
+        'Waiver Goalie',
+      ]);
+      expect(cards.scoringType()).toBe('points');
     });
 
     // A goalie's categories are not a skater's, so the two are never rows of one table.
@@ -474,7 +489,7 @@ describe('StreamerPlannerComponent', () => {
       // The positions are the skaters' to narrow: no pills over a list of goalies, and the ones
       // picked wait for the skaters to come back.
       expect(ngMocks.findAll(fixture, '[aria-label="Positions to show"]')).toHaveLength(0);
-      expect(ngMocks.findAll(fixture, '.option-card')).toHaveLength(3);
+      expect(ngMocks.findInstance(TopOptionsComponent).rows()).toHaveLength(3);
 
       planner.setPosition('skaters');
       expect(planner.visible().map((row) => row.player.name)).toEqual(['Top Scorer']);
