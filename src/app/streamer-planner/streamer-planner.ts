@@ -11,6 +11,7 @@ import {
   DEFAULT_SCORING_COLUMNS,
   DEFAULT_STAT_WEIGHTS,
 } from '../draft-projection/projection-defaults';
+import { Projection } from '../models/projection.model';
 import { ScoringStatKey } from '../models/stat-key.model';
 import { EspnService } from '../services/espn.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
@@ -323,6 +324,11 @@ export class StreamerPlannerComponent {
 
   readonly scoringType = computed(() => this.scoring().scoringType);
 
+  /** The categories the league scores, in the order its settings list them. */
+  readonly categories = computed<readonly ScoringStatKey[]>(() => [
+    ...this.scoring().activeScoringColumns,
+  ]);
+
   private readonly teamsByKey = computed(() => teamsByKey(this.strength()?.teams ?? []));
 
   /** Every available player with a projection, best first by the league's scoring. */
@@ -336,11 +342,14 @@ export class StreamerPlannerComponent {
     const counted = this.counted();
     const everyNightCounted = this.everyNightCounted();
     const factors = new Map<string, number>();
+    const lines = new Map<string, Projection>();
     const byPlayerId = new Map(week.players.map((player) => [player.projection.playerId, player]));
     const projections = week.players.map((player) => {
       const factor = nightsFactor(player, teams, counted, everyNightCounted);
+      const line = scaledProjection(player.projection, factor);
       factors.set(player.playerId, factor);
-      return scaledProjection(player.projection, factor);
+      lines.set(player.playerId, line);
+      return line;
     });
     const scored = this.ranking.rankOverall({
       projections,
@@ -362,6 +371,7 @@ export class StreamerPlannerComponent {
         const factor = factors.get(player.playerId) ?? 1;
         ranked.push({
           player,
+          line: lines.get(player.playerId) ?? player.projection,
           score: scoring.scoringType === 'points' ? entry.score.fantasyPoints : entry.score.zScore,
           rank: index + 1,
           games: player.expectedGames * factor,
