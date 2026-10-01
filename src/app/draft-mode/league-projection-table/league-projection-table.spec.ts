@@ -269,6 +269,57 @@ describe('LeagueProjectionTableComponent', () => {
     ).toEqual(['McDavid', 'Point']);
   });
 
+  it('opens a team in the position breakdown into one lineup row under it, on its own cells', () => {
+    const fixture = render();
+    const component = fixture.point.componentInstance;
+    const alpha = data.teams[0];
+
+    component.setMode('position');
+    component.toggleExpand('a');
+    fixture.detectChanges();
+
+    // The team's own cells hold the totals and nothing else; the players are the row beneath.
+    expect(fixture.nativeElement.querySelector('tr.lp-row ul')).toBeNull();
+    const lineup = fixture.nativeElement.querySelectorAll('tr.lp-lineup-row');
+    expect(lineup).toHaveLength(1);
+    expect(lineup[0].querySelectorAll('td')).toHaveLength(
+      fixture.nativeElement.querySelectorAll('thead th').length,
+    );
+    expect(lineup[0].textContent).toContain('McDavid');
+    expect(lineup[0].textContent).toContain('Makar');
+
+    // The club comes from the team's roster, by name; a player it does not name has none.
+    expect(component.clubOf(alpha, 'McDavid')).toBe('EDM');
+    expect(component.clubOf(alpha, 'Makar')).toBeNull();
+  });
+
+  it("shortens a lineup player's first name to its initial, to fit his slot's column", () => {
+    const component = MockRender(LeagueProjectionTableComponent, {
+      data: {
+        ...data,
+        teams: [
+          {
+            ...data.teams[0],
+            positionPlayers: {
+              C: [
+                { name: 'Connor McDavid', value: 6 },
+                { name: 'Jordan Staal', value: 2 },
+                { name: 'Jared Staal', value: 1 },
+              ],
+            },
+          },
+        ],
+      },
+      scoringType: 'category',
+      scoreHeading: 'Z-Score',
+    }).point.componentInstance;
+    const alpha = component.data().teams[0];
+
+    expect(component.slotName(alpha, 'Connor McDavid')).toBe('C. McDavid');
+    // Two names one short form would stand for keep their full names.
+    expect(component.slotName(alpha, 'Jordan Staal')).toBe('Jordan Staal');
+  });
+
   it('shows each stat weight under the column header in a points league, and never elsewhere', () => {
     const pointsData: LeagueProjectionData = {
       ...data,
