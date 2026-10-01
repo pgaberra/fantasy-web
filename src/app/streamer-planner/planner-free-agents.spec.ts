@@ -5,7 +5,7 @@ import { FreeAgent } from '../services/streamer-planner-free-agents.service';
 import {
   formatGames,
   formatToi,
-  groupByPosition,
+  filterByPositions,
   nightsFactor,
   RankedFreeAgent,
   scaledProjection,
@@ -66,20 +66,24 @@ const TEAMS: TeamSchedule[] = [
   },
 ];
 
-describe('groupByPosition', () => {
-  it('lists the best of each position in lineup order, a two-way forward under both', () => {
-    const rows = [
-      ranked(skater('Winger', ['LW']), 1),
-      ranked(skater('Two-way', ['C', 'LW']), 2),
-      ranked(skater('Pivot', ['C']), 3),
-      ranked(skater('Third wing', ['LW']), 4),
-    ];
+describe('filterByPositions', () => {
+  const rows = [
+    ranked(skater('Winger', ['LW']), 1),
+    ranked(skater('Two-way', ['C', 'LW']), 2),
+    ranked(skater('Pivot', ['C']), 3),
+    ranked(skater('Blueliner', ['D']), 4),
+  ];
 
-    const groups = groupByPosition(rows, 2);
+  it('keeps every player, in ranked order, while no position is picked', () => {
+    expect(filterByPositions(rows, new Set())).toBe(rows);
+  });
 
-    expect(groups.map((group) => group.position)).toEqual(['C', 'LW']);
-    expect(groups[0].rows.map((row) => row.player.name)).toEqual(['Two-way', 'Pivot']);
-    expect(groups[1].rows.map((row) => row.player.name)).toEqual(['Winger', 'Two-way']);
+  it('keeps anyone eligible at any position picked, once each and still best first', () => {
+    const names = filterByPositions(rows, new Set(['C', 'D'] as const)).map(
+      (row) => row.player.name,
+    );
+
+    expect(names).toEqual(['Two-way', 'Pivot', 'Blueliner']);
   });
 });
 

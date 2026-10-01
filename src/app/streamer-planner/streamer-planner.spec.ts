@@ -369,23 +369,67 @@ describe('StreamerPlannerComponent', () => {
       expect(planner.scoringType()).toBe('points');
     });
 
-    it('cards the best three and groups the rest by position, the two-way forward under both', async () => {
+    it('cards the best three over one list that any number of positions narrows', async () => {
       const fixture = await render();
       const planner = fixture.point.componentInstance;
 
       expect(planner.showsTopOptions()).toBe(true);
       expect(planner.topOptions().map((row) => row.rank)).toEqual([1, 2, 3]);
-      expect(planner.groups().map((group) => group.position)).toEqual(['C', 'LW', 'G']);
-      expect(planner.groups()[1].rows.map((row) => row.player.name)).toEqual(['Top Scorer']);
+      const names = () => planner.visible().map((row) => row.player.name);
+      expect(names()).toEqual(['Top Scorer', 'Second Best', 'Waiver Goalie']);
+      expect(ngMocks.formatText(fixture)).toContain('Showing 3 of 3');
 
-      planner.setPerPosition(5);
-      expect(planner.perPosition()).toBe(5);
+      planner.togglePosition('LW');
+      expect(names()).toEqual(['Top Scorer']);
+      planner.togglePosition('G');
+      expect(names()).toEqual(['Top Scorer', 'Waiver Goalie']);
+      planner.togglePosition('LW');
+      planner.togglePosition('G');
+      planner.togglePosition('D');
+      fixture.detectChanges();
+      expect(ngMocks.formatText(fixture)).toContain('No available player at these positions');
+      planner.clearPositions();
+      expect(names()).toHaveLength(3);
+      fixture.detectChanges();
       const cards = ngMocks.findAll(fixture, '.option-card');
       expect(cards.length).toBe(3);
       // 11 points over 2 games; the goalie is the one to claim rather than add.
       expect(ngMocks.formatText(cards[0])).toContain('5.5');
       expect(ngMocks.formatText(cards[0])).not.toContain('Waivers');
       expect(ngMocks.formatText(cards[2])).toContain('Waivers');
+    });
+
+    it('opens on a page of a long list, adds a page a press, and starts over on other positions', async () => {
+      freeAgents.mockReturnValue(
+        of<FreeAgentWeek>({
+          players: Array.from({ length: 60 }, (_, index) =>
+            skater(`${index + 1}`, `Skater ${index + 1}`, 60 - index, 0, 'EDM', [
+              index % 2 === 0 ? 'C' : 'D',
+            ]),
+          ),
+        }),
+      );
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+
+      expect(planner.visible()).toHaveLength(25);
+      expect(ngMocks.formatText(fixture)).toContain('Showing 25 of 60');
+      expect(ngMocks.formatText(fixture)).toContain('Show 25 more');
+
+      planner.showMore();
+      planner.showMore();
+      expect(planner.visible()).toHaveLength(60);
+      expect(planner.hiddenCount()).toBe(0);
+
+      // Thirty defensemen: the list is another list, so it opens on its first page again.
+      planner.togglePosition('D');
+      expect(planner.visible()).toHaveLength(25);
+      expect(planner.nextPage()).toBe(5);
+      // A narrowed list keeps each player's place among all of them.
+      expect(planner.visible()[0].rank).toBe(2);
+
+      planner.showAll();
+      expect(planner.visible()).toHaveLength(30);
     });
 
     it("scales a free agent's line to the share of his club's games on the nights counted", async () => {

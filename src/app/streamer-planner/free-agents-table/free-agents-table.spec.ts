@@ -2,7 +2,7 @@ import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { GOALIE_SCORING_STAT_KEYS, SKATER_SCORING_STAT_KEYS } from '../../models/stat-key.model';
 import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
-import { FreeAgentGroup, RankedFreeAgent } from '../planner-free-agents';
+import { RankedFreeAgent } from '../planner-free-agents';
 import { FreeAgentsTableComponent } from './free-agents-table';
 
 function scoringLine<K extends string>(keys: readonly K[], set: Record<string, number>) {
@@ -58,27 +58,27 @@ const GOALIE: RankedFreeAgent = {
   },
 };
 
-const GROUPS: FreeAgentGroup[] = [
-  { position: 'C', rows: [SKATER] },
-  { position: 'G', rows: [GOALIE] },
-];
+const ROWS: RankedFreeAgent[] = [SKATER, GOALIE];
 
 describe('FreeAgentsTableComponent', () => {
   beforeEach(() => MockBuilder(FreeAgentsTableComponent));
 
   function render(scoringType: 'points' | 'category' = 'points') {
-    const fixture = MockRender(FreeAgentsTableComponent, { groups: GROUPS, scoringType });
+    const fixture = MockRender(FreeAgentsTableComponent, { rows: ROWS, scoringType });
     fixture.detectChanges();
     return fixture;
   }
 
-  it('writes each position as a band with its players under it', () => {
+  it('writes the players as one list in the order given, each with his overall rank', () => {
     const fixture = render();
-    const bands = ngMocks.findAll(fixture, '.group-row');
+    const rows = ngMocks.findAll(fixture, 'tbody tr');
 
-    expect(bands.map((band) => ngMocks.formatText(band))).toEqual(['C', 'G']);
-    expect(ngMocks.formatText(fixture)).toContain('Top Scorer');
-    expect(ngMocks.formatText(fixture)).toContain('Waiver Goalie');
+    expect(rows.map((row) => ngMocks.formatText(ngMocks.find(row, '.rank-col')))).toEqual([
+      '1',
+      '2',
+    ]);
+    expect(ngMocks.formatText(rows[0])).toContain('Top Scorer');
+    expect(ngMocks.formatText(rows[1])).toContain('Waiver Goalie');
   });
 
   it("writes the score the way the league's scoring is written, with the rate a game", () => {

@@ -2,6 +2,13 @@
   <table class="free-agents-table">
     <thead>
       <tr>
+        <th
+          scope="col"
+          class="num rank-col"
+          appTooltip="His place among every available player, whatever the positions shown"
+        >
+          #
+        </th>
         <th scope="col" class="player-col">Player</th>
         <th scope="col">Pos</th>
         <th scope="col" class="num" appTooltip="Games he is expected to play on the nights counted">
@@ -17,47 +24,43 @@
         </th>
       </tr>
     </thead>
-    @for (group of groups(); track group.position) {
-      <tbody>
-        <tr class="group-row">
-          <th scope="rowgroup" colspan="5">{{ group.position }}</th>
-        </tr>
-        @for (row of group.rows; track row.player.playerId) {
-          <tr>
-            <th scope="row" class="player-col">
-              <span class="player-cell">
-                <!-- The crest is the club's only mention in the row, so it carries the name. -->
-                <app-team-logo
-                  class="player-logo"
-                  [team]="row.player.teamAbbrev"
-                  [alt]="row.player.teamAbbrev ?? ''"
-                />
-                <span class="player-text">
-                  <span class="player-head">
-                    <span class="player-name">{{ row.player.name }}</span>
-                    <!-- Only a claim is worth a tag: an add is what the list is a list of. -->
-                    @if (onWaivers(row)) {
-                      <span class="player-status">Waivers</span>
-                    }
-                  </span>
-                  <span class="player-line">
-                    @for (stat of line(row); track stat) {
-                      <span>{{ stat }}</span>
-                    }
-                  </span>
+    <tbody>
+      @for (row of rows(); track row.player.playerId) {
+        <tr>
+          <td class="num rank-col">{{ row.rank }}</td>
+          <th scope="row" class="player-col">
+            <span class="player-cell">
+              <!-- The crest is the club's only mention in the row, so it carries the name. -->
+              <app-team-logo
+                class="player-logo"
+                [team]="row.player.teamAbbrev"
+                [alt]="row.player.teamAbbrev ?? ''"
+              />
+              <span class="player-text">
+                <span class="player-head">
+                  <span class="player-name">{{ row.player.name }}</span>
+                  <!-- Only a claim is worth a tag: an add is what the list is a list of. -->
+                  @if (onWaivers(row)) {
+                    <span class="player-status">Waivers</span>
+                  }
+                </span>
+                <span class="player-line">
+                  @for (stat of line(row); track stat) {
+                    <span>{{ stat }}</span>
+                  }
                 </span>
               </span>
-            </th>
-            <td><app-position-chips [positions]="row.player.positions" /></td>
-            <td class="num">{{ games(row) }}</td>
-            <td class="num toi">{{ toi(row) }}</td>
-            <td class="num score-col">
-              <span class="score">{{ score(row) }}</span>
-              <span class="per-game">{{ perGame(row) }}</span>
-            </td>
-          </tr>
-        }
-      </tbody>
-    }
+            </span>
+          </th>
+          <td><app-position-chips [positions]="row.player.positions" /></td>
+          <td class="num">{{ games(row) }}</td>
+          <td class="num toi">{{ toi(row) }}</td>
+          <td class="num score-col">
+            <span class="score">{{ score(row) }}</span>
+            <span class="per-game">{{ perGame(row) }}</span>
+          </td>
+        </tr>
+      }
+    </tbody>
   </table>
 </div>

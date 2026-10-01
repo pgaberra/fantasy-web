@@ -3,11 +3,11 @@ import { ScoringType } from '../../models/projection.model';
 import { PositionChipsComponent } from '../../shared/position-chips/position-chips';
 import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
-import { formatGames, formatToi, FreeAgentGroup, RankedFreeAgent } from '../planner-free-agents';
+import { formatGames, formatToi, RankedFreeAgent } from '../planner-free-agents';
 
 /**
- * The best available players by position, the few of each worth a look, with the model's line for
- * the nights counted scored by the league's own settings.
+ * The best available players as one list, best first, with the model's line for the nights counted
+ * scored by the league's own settings. Which positions and how many rows is the page's to say.
  */
 @Component({
   selector: 'app-free-agents-table',
@@ -17,7 +17,7 @@ import { formatGames, formatToi, FreeAgentGroup, RankedFreeAgent } from '../plan
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FreeAgentsTableComponent {
-  readonly groups = input.required<readonly FreeAgentGroup[]>();
+  readonly rows = input.required<readonly RankedFreeAgent[]>();
   readonly scoringType = input.required<ScoringType>();
 
   readonly scoreHeading = computed(() =>
