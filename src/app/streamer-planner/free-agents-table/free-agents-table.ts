@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { ScoringType } from '../../models/projection.model';
 import { ScoringStatKey } from '../../models/stat-key.model';
+import { IconComponent } from '../../shared/icon/icon';
 import { PositionChipsComponent } from '../../shared/position-chips/position-chips';
 import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
@@ -32,7 +33,7 @@ export interface FreeAgentRow {
  */
 @Component({
   selector: 'app-free-agents-table',
-  imports: [PositionChipsComponent, TeamLogoComponent, TooltipDirective],
+  imports: [IconComponent, PositionChipsComponent, TeamLogoComponent, TooltipDirective],
   templateUrl: './free-agents-table.html',
   styleUrl: './free-agents-table.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

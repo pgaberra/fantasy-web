@@ -258,7 +258,9 @@ describe('FreeAgentsTableComponent', () => {
     const tags = ngMocks.findAll(fixture, '.player-status');
 
     expect(tags.length).toBe(1);
-    expect(ngMocks.formatText(tags[0])).toBe('Waivers');
+    expect(tags[0].attributes['aria-label']).toBe('On waivers');
+    // By the name, not among the positions, where a W would read as a wing.
+    expect(tags[0].parent?.classes['player-name-line']).toBe(true);
     expect(ngMocks.formatText(ngMocks.find(fixture, '.player-row'))).not.toContain('Free agent');
   });
   // Ranked by a few categories, those are the columns the order is read from.
