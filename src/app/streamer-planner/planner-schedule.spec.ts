@@ -25,6 +25,8 @@ function game(date: string, overrides: Partial<ScheduledGame> = {}): ScheduledGa
     backToBack: false,
     opponentGoalsAgainst: 1,
     opponentGoalsFor: 1,
+    skaterWorth: 1,
+    goalieWorth: 1,
     ...overrides,
   };
 }
@@ -81,15 +83,27 @@ describe('rateTeams', () => {
   const edm = team(
     'EDM',
     [
-      game('2026-10-12', { home: true, opponentGoalsAgainst: 1.12, opponentGoalsFor: 1.08 }),
-      game('2026-10-13', { offNight: true, backToBack: true, opponentGoalsAgainst: 0.9 }),
+      game('2026-10-12', {
+        home: true,
+        opponentGoalsAgainst: 1.12,
+        opponentGoalsFor: 1.08,
+        skaterWorth: 1.16,
+        goalieWorth: 0.96,
+      }),
+      game('2026-10-13', {
+        offNight: true,
+        backToBack: true,
+        opponentGoalsAgainst: 0.9,
+        skaterWorth: 1.09,
+        goalieWorth: 1.3,
+      }),
     ],
     2,
     1,
   );
   const cgy = team(
     'CGY',
-    [game('2026-10-13', { offNight: true, opponentGoalsAgainst: 1.2 })],
+    [game('2026-10-13', { offNight: true, opponentGoalsAgainst: 1.2, skaterWorth: 1.45 })],
     1,
     2,
   );
@@ -112,28 +126,34 @@ describe('rateTeams', () => {
     });
   });
 
-  it("rates only the nights counted, by the server's own rule, and ranks the result", () => {
+  it('rates only the nights counted, summing the worth the server put on each game', () => {
     const rows = rateTeams([edm, cgy], 'skaters', new Set(['2026-10-13']), false);
 
-    // EDM: one off-night game against a 0.9 opponent, 1.25 * 0.9. CGY: 1.25 * 1.2.
+    // Only the 13th counts: EDM's game there is worth 1.09, CGY's 1.45.
     expect(rows.map((row) => [row.team, row.score, row.rank])).toEqual([
-      ['CGY', 1.5, 1],
-      ['EDM', 1.13, 2],
+      ['CGY', 1.45, 1],
+      ['EDM', 1.09, 2],
     ]);
     expect(rows[1].games).toBe(1);
     expect(rows[1].schedule.map((entry) => entry.date)).toEqual(['2026-10-13']);
   });
 
-  it('rates a goalie by the inverse of what the opponent scores', () => {
+  it("rates a goalie by the server's goalie worth, not the skater's", () => {
     const rows = rateTeams([edm], 'goalies', new Set(['2026-10-12']), false);
 
-    expect(rows[0].score).toBeCloseTo(1 / 1.08, 2);
+    expect(rows[0].score).toBeCloseTo(0.96, 2);
+  });
+
+  it('sums the worth of every night kept', () => {
+    const rows = rateTeams([edm], 'skaters', new Set(['2026-10-12', '2026-10-13']), false);
+
+    expect(rows[0].score).toBeCloseTo(2.25, 2);
   });
 
   it('lets level teams share a rank and skips the next one', () => {
-    const a = team('A', [game('2026-10-12', { opponentGoalsAgainst: 1.1 })]);
-    const b = team('B', [game('2026-10-12', { opponentGoalsAgainst: 1.1 })]);
-    const c = team('C', [game('2026-10-12', { opponentGoalsAgainst: 1.0 })]);
+    const a = team('A', [game('2026-10-12', { skaterWorth: 1.1 })]);
+    const b = team('B', [game('2026-10-12', { skaterWorth: 1.1 })]);
+    const c = team('C', [game('2026-10-12', { skaterWorth: 1.0 })]);
 
     const rows = rateTeams([c, b, a], 'skaters', new Set(['2026-10-12']), false);
 

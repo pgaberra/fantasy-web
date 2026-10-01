@@ -92,6 +92,8 @@ const TEAMS: TeamSchedule[] = [
       backToBack: false,
       opponentGoalsAgainst: 1,
       opponentGoalsFor: 1,
+      skaterWorth: 1.036,
+      goalieWorth: 1.0363,
     })),
   },
 ];

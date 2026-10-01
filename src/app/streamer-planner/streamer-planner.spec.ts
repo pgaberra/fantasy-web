@@ -56,6 +56,8 @@ function team(name: string, skaterRank: number, goalieRank: number): TeamSchedul
         backToBack: true,
         opponentGoalsAgainst: 1.12,
         opponentGoalsFor: 1.08,
+        skaterWorth: 1.351,
+        goalieWorth: 1.1172,
       },
       {
         date: '2026-10-15',
@@ -65,6 +67,8 @@ function team(name: string, skaterRank: number, goalieRank: number): TeamSchedul
         backToBack: false,
         opponentGoalsAgainst: 0.9,
         opponentGoalsFor: 1.0,
+        skaterWorth: 0.9324,
+        goalieWorth: 1.0363,
       },
     ],
   };
@@ -344,10 +348,10 @@ describe('StreamerPlannerComponent', () => {
     planner.toggleDay(planner.days()[1]);
 
     expect(planner.nightsTitle()).toBe('1 of 2 nights');
-    // Only the Oct 15 game is left: 1 game against a 0.9 opponent, for both teams alike.
+    // Only the Oct 15 game is left, a home game the server put at 0.9324, for both teams alike.
     expect(planner.teamRows().map((row) => [row.team, row.score, row.games])).toEqual([
-      ['EDM', 0.9, 1],
-      ['TBL', 0.9, 1],
+      ['EDM', 0.93, 1],
+      ['TBL', 0.93, 1],
     ]);
 
     planner.applyPreset('next-week');
