@@ -9,7 +9,7 @@ const base: LeagueSummaryResponse = {
   status: 'FINISHED',
   picks: 2,
   unprojectedPlayers: 0,
-  restOfSeason: false,
+  inSeason: false,
   categoryKeys: ['goals', 'svPct'],
   positionKeys: ['C', 'G', 'BN'],
   teams: [
