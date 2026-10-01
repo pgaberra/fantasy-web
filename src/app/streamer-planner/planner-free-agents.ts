@@ -188,33 +188,23 @@ export function lineStats(
     }));
 }
 
-/**
- * How many stats a line holds so that its lines come out even: seven categories that do not fit
- * one line are four and three, not six and one.
- */
-export function statsPerLine(count: number, most: number): number {
-  return count === 0 ? 1 : Math.ceil(count / Math.ceil(count / most));
-}
+/** A category as the list heads a column with it. */
+export type LineColumn = Pick<LineStat, 'key' | 'label' | 'name'>;
 
 /**
- * The grid the lines of one position share, as CSS grid tracks, with at most `most` stats to a
- * line. A track is as wide as the widest stat that falls in it on any of the players (in `ch`,
- * a character for each of the value's and the label's, and one for the space between and the
- * letters' extra width), so a category is in the same place on every player and reads down the
- * list as a column, and a short one ("1.8 G") takes no more room than it needs. A track may give
- * a little where the table is a few pixels short, rather than push the table wider than its card.
+ * The columns the lines of one kind of player are read in: every category any of them has a
+ * number for, in the league's order. A category none of them has is no column, rather than an
+ * empty one.
  */
-export function lineGrid(lines: readonly (readonly LineStat[])[], most: number): string {
-  const widths: number[] = [];
-  for (const line of lines) {
-    line.forEach((stat, index) => {
-      widths[index] = Math.max(widths[index] ?? 0, stat.value.length + stat.label.length + 1);
-    });
+export function lineColumns(
+  lines: readonly (readonly LineStat[])[],
+  categories: readonly ScoringStatKey[],
+): readonly LineColumn[] {
+  const found = new Map<ScoringStatKey, LineColumn>();
+  for (const stat of lines.flat()) {
+    if (!found.has(stat.key)) {
+      found.set(stat.key, { key: stat.key, label: stat.label, name: stat.name });
+    }
   }
-  const perLine = statsPerLine(widths.length, most);
-  return Array.from({ length: Math.min(perLine, widths.length) }, (_, column) =>
-    Math.max(...widths.filter((_, index) => index % perLine === column)),
-  )
-    .map((width) => `minmax(0, ${width}ch)`)
-    .join(' ');
+  return categories.flatMap((key) => found.get(key) ?? []);
 }

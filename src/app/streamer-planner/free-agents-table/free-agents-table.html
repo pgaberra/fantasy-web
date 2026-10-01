@@ -10,11 +10,8 @@
           #
         </th>
         <th scope="col" class="player-col">Player</th>
-        <th scope="col">Pos</th>
-        <th scope="col" class="num" appTooltip="Games he is expected to play on the nights counted">
-          Games
-        </th>
-        <th scope="col" class="num" appTooltip="Ice time per game">TOI/GP</th>
+        <!-- Straight after the name, as on the team table beside it, and so that a phone shows
+             who and how good before anything has to be scrolled. -->
         <th
           scope="col"
           class="num"
@@ -22,16 +19,29 @@
         >
           {{ scoreHeading() }}
         </th>
+        <th scope="col" class="num" appTooltip="Games he is expected to play on the nights counted">
+          GP
+        </th>
+        @if (kind() === 'skater') {
+          <th scope="col" class="num toi-col" appTooltip="Ice time per game">TOI</th>
+        }
+        <!-- What the score is made of: a column a category the league scores, named here once. -->
+        @for (column of columns(); track column.key; let first = $first) {
+          <th
+            scope="col"
+            class="num stat-col"
+            [class.stat-col--first]="first"
+            [appTooltip]="column.name"
+          >
+            {{ column.label }}
+          </th>
+        }
       </tr>
     </thead>
     <tbody>
       @for (entry of entries(); track entry.row.player.playerId) {
-        <!-- A player is two rows: his name and numbers, then his line in the league's categories
-             under all of them but the score, which stands beside both. -->
-        <tr class="player-row" [class.player-row--lined]="entry.stats.length > 0">
-          <td class="num rank-col" [attr.rowspan]="entry.stats.length > 0 ? 2 : null">
-            {{ entry.row.rank }}
-          </td>
+        <tr class="player-row">
+          <td class="num rank-col">{{ entry.row.rank }}</td>
           <th scope="row" class="player-col">
             <span class="player-cell">
               <!-- The crest is the club's only mention in the row, so it carries the name. -->
@@ -40,44 +50,53 @@
                 [team]="entry.row.player.teamAbbrev"
                 [alt]="entry.row.player.teamAbbrev ?? ''"
               />
-              <span class="player-head">
+              <span class="player-identity">
                 <span class="player-name">{{ entry.row.player.name }}</span>
-                <!-- Only a claim is worth a tag: an add is what the list is a list of. -->
-                @if (onWaivers(entry.row)) {
-                  <span class="player-status">Waivers</span>
-                }
+                <span class="player-meta">
+                  <app-position-chips [positions]="entry.row.player.positions" />
+                  <!-- Only a claim is worth a tag: an add is what the list is a list of. -->
+                  @if (onWaivers(entry.row)) {
+                    <span class="player-status">Waivers</span>
+                  }
+                </span>
               </span>
             </span>
           </th>
-          <td><app-position-chips [positions]="entry.row.player.positions" /></td>
-          <td class="num">{{ games(entry.row) }}</td>
-          <td class="num toi">{{ toi(entry.row) }}</td>
-          <td class="num score-col" [attr.rowspan]="entry.stats.length > 0 ? 2 : null">
+          <td class="num score-col">
             <span class="score">{{ score(entry.row) }}</span>
             <span class="per-game">{{ perGame(entry.row) }}</span>
           </td>
-        </tr>
-        @if (entry.stats.length > 0) {
-          <tr class="line-row">
-            <td colspan="4">
-              <ul
-                class="player-line"
-                [style.--line-wide]="entry.grid.wide"
-                [style.--line-mid]="entry.grid.mid"
-                [style.--line-narrow]="entry.grid.narrow"
+          <td class="num">{{ games(entry.row) }}</td>
+          @if (kind() === 'skater') {
+            <td class="num toi-col">{{ toi(entry.row) }}</td>
+          }
+          @if (entry.cells; as cells) {
+            @for (cell of cells; track $index; let first = $first) {
+              <td
+                class="num stat-col"
+                [class.stat-col--first]="first"
+                [class.nil]="cell && isNil(cell)"
               >
-                @for (stat of entry.stats; track stat.key) {
+                {{ cell?.value }}
+              </td>
+            }
+          } @else if (columns().length > 0) {
+            <!-- A goalie among skaters: the columns are not his categories, so his line is
+                 written across them with its own labels. -->
+            <td class="stat-col stat-col--first other-line" [attr.colspan]="columns().length">
+              <ul class="inline-line">
+                @for (stat of entry.inline; track stat.key) {
                   <!-- A real space between the two, so the line copies and is read out as
-                       "1.8 G" and not as "1.8G". -->
-                  <li class="stat" [appTooltip]="stat.name">
-                    <span class="stat-value">{{ stat.value }}</span
-                    >&ngsp;<span class="stat-label">{{ stat.label }}</span>
+                       "1.8 W" and not as "1.8W". -->
+                  <li [appTooltip]="stat.name">
+                    <span class="inline-value">{{ stat.value }}</span
+                    >&ngsp;<span class="inline-label">{{ stat.label }}</span>
                   </li>
                 }
               </ul>
             </td>
-          </tr>
-        }
+          }
+        </tr>
       }
     </tbody>
   </table>

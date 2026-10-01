@@ -10,12 +10,11 @@ import {
   formatGames,
   formatToi,
   filterByPositions,
-  lineGrid,
+  lineColumns,
   lineStats,
   nightsFactor,
   RankedFreeAgent,
   scaledProjection,
-  statsPerLine,
   teamsByKey,
 } from './planner-free-agents';
 
@@ -256,45 +255,25 @@ describe('lineStats', () => {
   });
 });
 
-describe('statsPerLine', () => {
-  it('holds a line that fits whole', () => {
-    expect(statsPerLine(7, 8)).toBe(7);
-    expect(statsPerLine(4, 4)).toBe(4);
-  });
-
-  it('breaks one that does not into even lines, never one stat alone', () => {
-    // Seven on a phone are four and three; nine across a desk are five and four.
-    expect(statsPerLine(7, 4)).toBe(4);
-    expect(statsPerLine(7, 6)).toBe(4);
-    expect(statsPerLine(9, 8)).toBe(5);
-    expect(statsPerLine(12, 4)).toBe(4);
-  });
-
-  it('is a grid of one for a line with nothing on it', () => {
-    expect(statsPerLine(0, 8)).toBe(1);
-  });
-});
-
-describe('lineGrid', () => {
-  function stat(value: string, label: string) {
-    return { key: 'goals' as const, label, name: label, value };
+describe('lineColumns', () => {
+  function stat(key: ScoringStatKey, label: string) {
+    return { key, label, name: label, value: '1.0' };
   }
-  const first = [stat('1.8', 'G'), stat('2.0', 'A'), stat('9.1', 'SOG')];
-  const second = [stat('0.6', 'G'), stat('0.7', 'A'), stat('15.1', 'SOG')];
 
-  it('gives each category a track as wide as its widest stat on any player', () => {
-    // "1.8 G" is five characters with its space; "15.1 SOG" is eight, the longer of the two shots.
-    expect(lineGrid([first, second], 8)).toBe('minmax(0, 5ch) minmax(0, 5ch) minmax(0, 8ch)');
+  it("is every category any of the players has a number for, in the league's order", () => {
+    const first = [stat('goals', 'G'), stat('sog', 'SOG')];
+    const second = [stat('goals', 'G'), stat('assists', 'A')];
+
+    expect(
+      lineColumns([first, second], ['assists', 'goals', 'hits', 'sog']).map(
+        (column) => column.label,
+      ),
+    ).toEqual(['A', 'G', 'SOG']);
   });
 
-  it('shares a track between the stats that fall under each other when the line breaks', () => {
-    // Three stats, two to a line: the shots sit under the goals, and the track fits both.
-    expect(lineGrid([first, second], 2)).toBe('minmax(0, 8ch) minmax(0, 5ch)');
-  });
-
-  it('is no grid at all for players with nothing to write', () => {
-    expect(lineGrid([[], []], 8)).toBe('');
-    expect(lineGrid([], 8)).toBe('');
+  it('is no column at all for players with nothing to write', () => {
+    expect(lineColumns([[], []], ['goals'])).toEqual([]);
+    expect(lineColumns([], ['goals'])).toEqual([]);
   });
 });
 
