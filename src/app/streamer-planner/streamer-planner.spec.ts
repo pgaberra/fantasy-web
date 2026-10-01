@@ -22,6 +22,7 @@ import { YahooService } from '../services/yahoo.service';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { PLANNER_TODAY } from './planner-schedule';
 import { StreamerPlannerComponent } from './streamer-planner';
+import { TopOptionsComponent } from './top-options/top-options';
 
 const WEEKS: PlannerWeeksResponse = {
   season: 2026,
@@ -441,12 +442,13 @@ describe('StreamerPlannerComponent', () => {
       planner.clearPositions();
       expect(names()).toHaveLength(3);
       fixture.detectChanges();
-      const cards = ngMocks.findAll(fixture, '.option-card');
-      expect(cards.length).toBe(3);
-      // 11 points over 2 games; the goalie is the one to claim rather than add.
-      expect(ngMocks.formatText(cards[0])).toContain('5.5');
-      expect(ngMocks.formatText(cards[0])).not.toContain('Waivers');
-      expect(ngMocks.formatText(cards[2])).toContain('Waivers');
+      const cards = ngMocks.findInstance(TopOptionsComponent);
+      expect(cards.rows().map((row) => row.player.name)).toEqual([
+        'Top Scorer',
+        'Second Best',
+        'Waiver Goalie',
+      ]);
+      expect(cards.scoringType()).toBe('points');
     });
 
     it('opens on a page of a long list, adds a page a press, and starts over on other positions', async () => {

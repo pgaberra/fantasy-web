@@ -22,14 +22,12 @@ import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
-import { TeamLogoComponent } from '../shared/team-logo/team-logo';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { FreeAgentsTableComponent } from './free-agents-table/free-agents-table';
 import { LeagueFieldComponent } from './league-field/league-field';
 import {
   categoryColumn,
   filterByPositions,
-  formatGames,
   FREE_AGENTS_PAGE,
   LineColumn,
   nightsFactor,
@@ -67,6 +65,7 @@ import {
   weeksTitle,
 } from './planner-schedule';
 import { TeamSchedulesComponent } from './team-schedules/team-schedules';
+import { TopOptionsComponent } from './top-options/top-options';
 
 export type { Stretch } from './planner-schedule';
 
@@ -109,9 +108,9 @@ export interface PresetOption {
     IconComponent,
     LeagueFieldComponent,
     LoadingIndicatorComponent,
-    TeamLogoComponent,
     TeamSchedulesComponent,
     TooltipDirective,
+    TopOptionsComponent,
   ],
   templateUrl: './streamer-planner.html',
   styleUrl: './streamer-planner.css',
@@ -564,10 +563,6 @@ export class StreamerPlannerComponent {
     return `${offNight} Untick a night your lineup has no room on.`;
   });
 
-  readonly scoreHeading = computed(() =>
-    this.scoringType() === 'points' ? 'Proj. pts' : 'Z-Score',
-  );
-
   dayName(day: PlannerDay): string {
     return dayName(day);
   }
@@ -614,31 +609,4 @@ export class StreamerPlannerComponent {
 
   /** Whether any night on screen carries the off-night mark, and so whether the line under them explains it. */
   readonly hasOffNight = computed(() => this.days().some((day) => day.offNight));
-
-  scoreText(row: RankedFreeAgent): string {
-    return row.score.toFixed(this.scoringType() === 'points' ? 1 : 2);
-  }
-
-  /** The score a game he plays, the way a streamer compares a three-game week to a four. */
-  perGameText(row: RankedFreeAgent): string {
-    if (row.games <= 0) {
-      return '';
-    }
-    return (row.score / row.games).toFixed(this.scoringType() === 'points' ? 1 : 2);
-  }
-
-  games(row: RankedFreeAgent): string {
-    return formatGames(row.games);
-  }
-
-  /** A claim rather than an add: the one status a streamer has to know before acting. */
-  onWaivers(row: RankedFreeAgent): boolean {
-    return row.player.availability === 'WAIVERS';
-  }
-
-  /** "EDM, C" under a card's name. */
-  identity(row: RankedFreeAgent): string {
-    const positions = row.player.positions.join(', ');
-    return row.player.teamAbbrev ? `${row.player.teamAbbrev}, ${positions}` : positions;
-  }
 }
