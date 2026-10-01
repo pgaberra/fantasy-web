@@ -175,19 +175,32 @@ export const PLANNER_PRESETS: readonly { readonly key: PlannerPreset; readonly l
 ];
 
 /**
- * Today where the reader sits, as the API spells a date. The reader's own clock, not the server's:
- * a night is over for a streamer once it has been played where he is, and the server only says
- * which week today falls in.
+ * Today as the NHL counts nights, as the API spells a date. A night is dated where it is played, in
+ * North America, so a reader in Europe is a calendar day ahead while that night's games are still to
+ * come: at 00:30 in Stockholm Thursday's games have not started. A night therefore stays open until
+ * 06:00 Eastern the next morning, hours after the latest West Coast overtime ends.
  */
 export const PLANNER_TODAY = new InjectionToken<() => string>('PLANNER_TODAY', {
   providedIn: 'root',
-  factory: () => () => localIsoDate(),
+  factory: () => () => hockeyNight(),
 });
 
-export function localIsoDate(now: Date = new Date()): string {
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${now.getFullYear()}-${month}-${day}`;
+/** The hour, Eastern time, at which the night before is over everywhere it was played. */
+const NIGHT_ENDS_AT_HOUR = 6;
+
+const EASTERN_DATE = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+export function hockeyNight(now: Date = new Date()): string {
+  const parts = EASTERN_DATE.formatToParts(
+    new Date(now.getTime() - NIGHT_ENDS_AT_HOUR * 3_600_000),
+  );
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value;
+  return `${part('year')}-${part('month')}-${part('day')}`;
 }
 
 /** The week today falls in: the first before opening night, the last after the season. */
