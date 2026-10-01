@@ -67,6 +67,8 @@ th[aria-sort] .sort {
 
 .team-table tbody th.team-col {
   padding-left: 0;
+  /* A body th centres by default, which slid each row's rank and crest by its name's width. */
+  text-align: left;
 }
 
 .team-toggle {
@@ -92,6 +94,12 @@ th[aria-sort] .sort {
   --team-logo-size: 22px;
 }
 
+/* Wide enough for the widest abbreviation, so the chevrons stand in one column too. */
+.team-name {
+  min-width: 2.6em;
+  text-align: left;
+}
+
 .chevron {
   color: var(--color-text-subtle);
   transition: transform var(--transition-fast);
@@ -106,6 +114,7 @@ tr.open .chevron {
   color: var(--color-text-muted);
   display: inline-block;
   font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
   font-weight: var(--weight-semibold);
   min-width: 1.6rem;
   padding: 0 var(--space-1);
