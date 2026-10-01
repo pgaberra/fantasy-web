@@ -55,7 +55,7 @@
 
 .lp-table th,
 .lp-table td {
-  padding: 0.5rem 0.6rem;
+  padding: 0.5rem 0.65rem;
   text-align: right;
   white-space: nowrap;
   border-bottom: 1px solid var(--color-border);
@@ -92,14 +92,23 @@
   background: var(--color-surface-hover);
 }
 
-/* The active sort column is framed top-to-bottom with accent side-rails (header cell included) so
-   it's obvious which column the table is ordered by. Rails are box-shadow rather than borders, so
-   they layer over the heat-shaded cell backgrounds and don't shift the column's width. */
-.lp-table th.sorted,
-.lp-table td.sorted {
-  box-shadow:
-    inset 1px 0 0 var(--color-primary),
-    inset -1px 0 0 var(--color-primary);
+/* Every body cell is opaque: three of the columns are pinned, and the rest scroll beneath them. */
+.lp-table tbody td {
+  background: var(--color-surface);
+}
+
+/* The column the table is ordered by is a band of wash from the header down. It was a pair of
+   accent rails, which every row had to carry for the frame to hold: one row without the cell (the
+   show-all row, once) and the frame was visibly broken. A wash has no edge to break, and leaves
+   the heat as the only thing on the table drawn in a strong colour. */
+.lp-table tbody td.sorted {
+  background: var(--color-surface-alt);
+}
+
+/* Skater stats and goalie stats are different players' columns; one rule between them says where
+   a goalie's row starts counting. */
+.lp-table .group-start {
+  border-left: 1px solid var(--color-border);
 }
 
 .sort-arrow {
@@ -135,6 +144,7 @@
   text-align: center;
   color: var(--color-text-subtle);
   font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
 }
 
 /* The expand/collapse affordance: a single chevron that rotates to point down and turns the
@@ -181,7 +191,7 @@
 .lp-team-head {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
 }
 
 .lp-table thead .col-rank,
@@ -189,20 +199,12 @@
   z-index: 3;
 }
 
-/* Sticky columns carry the row background so it stays opaque while scrolling — a flat
-   white surface (no zebra) that the heat-shaded stat cells sit against. */
-.lp-table tbody td.col-rank,
-.lp-table tbody td.col-team {
-  background: var(--color-surface);
-}
-
 .lp-table tbody tr.lp-row {
   cursor: pointer;
 }
 
-.lp-table tbody tr.lp-row:hover td.col-rank,
-.lp-table tbody tr.lp-row:hover td.col-team {
-  background: var(--color-surface-hover);
+.lp-table tbody tr.lp-row:not(.static, .expanded):hover td {
+  background: var(--color-surface-alt);
 }
 
 /* A table whose rows do not open says so by not inviting the press: no pointer, no hover. */
@@ -210,14 +212,22 @@
   cursor: default;
 }
 
-.lp-table tbody tr.lp-row.static:hover td.col-rank,
-.lp-table tbody tr.lp-row.static:hover td.col-team {
-  background: revert;
+/* An open team is a block of its own inside the table: its row turns into the block's heading,
+   tinted from edge to edge, and an accent rail runs down the left of it and of every player under
+   it, to where the block ends. The players sit on the card's own white. They were on the grey the
+   page behind the card is drawn in, and read as holes through the table rather than as part of it. */
+.lp-table tbody tr.lp-row.expanded td {
+  background: var(--color-surface-hover);
+  border-bottom-color: var(--color-border-strong);
 }
 
-.lp-table tbody tr.expanded td.col-rank,
-.lp-table tbody tr.expanded td.col-team {
-  background: var(--color-surface-alt);
+.lp-table tbody tr.lp-row.expanded td.col-rank,
+.lp-table tbody tr.lp-player-row td.col-rank {
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.lp-table tbody tr.lp-row.expanded .lp-team-name {
+  color: var(--color-primary);
 }
 
 /* My team is marked by the bold name + "You" badge alone — no cell tint or accent rail, so it
@@ -226,28 +236,76 @@
   font-weight: var(--weight-bold);
 }
 
+/* Filled, so it holds on the white of a closed row and on the tint of an open one alike. */
 .you-badge {
-  font-size: var(--text-xs);
-  font-weight: 700;
-  color: var(--color-primary);
-  background: var(--color-surface-hover);
-  padding: 0.05rem 0.3rem;
+  font-size: 0.6875rem;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--color-primary-contrast);
+  background: var(--color-primary);
+  padding: 0.2rem 0.4rem;
+  border-radius: var(--radius-pill);
+}
+
+/* A team's cell is a chip of heat inside the cell rather than the cell itself: the white between
+   the chips is what lets ten columns of colour read as ten values and not as a quilt. The tint is
+   translucent, so it sits on whatever the row is drawn on. */
+.lp-table tbody tr.lp-row td.lp-num,
+.lp-table tbody tr.lp-row td.col-total {
+  padding: 0.2rem 0.15rem;
+}
+
+.lp-heat {
+  display: block;
+  padding: 0.3rem 0.5rem;
   border-radius: var(--radius-sm);
+  background: var(--heat, transparent);
 }
 
 /* Expanding a team in the category breakdown drills down into its roster: one row per player,
-   aligned to the very same columns. The heat stays on the team rows — these sit on a flat, quiet
-   surface so the hierarchy (team vs. its players) reads instantly. */
+   aligned to the very same columns. The heat stays on the team rows; these are quieter all the
+   way through (smaller, lighter, closer together, ruled faintly) so the hierarchy of a team and
+   its players reads before any number does. */
 .lp-table tbody tr.lp-player-row td {
-  background: var(--color-surface-alt);
+  padding-top: 0.3rem;
+  padding-bottom: 0.3rem;
+  border-bottom-color: var(--color-surface-alt);
   color: var(--color-text-muted);
+  font-size: 0.8125rem;
   font-weight: var(--weight-medium);
+  vertical-align: middle;
   cursor: default;
 }
 
+/* Where the block ends, the table's own rule comes back, a shade firmer. */
+.lp-table tbody tr.lp-player-row.group-end td {
+  border-bottom-color: var(--color-border-strong);
+}
+
+/* The one figure in each column a roster is read for: who gives the team most of it. */
+.lp-table tbody tr.lp-player-row td.best {
+  color: var(--color-text);
+  font-weight: var(--weight-bold);
+}
+
+/* A stat that is not his kind (a goalie's goals) is a faint dash, not a figure among figures. */
+.lp-table tbody tr.lp-player-row td.not-his {
+  color: var(--color-border-strong);
+}
+
+.lp-player {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-left: 0.25rem;
+}
+
+.lp-player-logo {
+  --team-logo-size: 24px;
+}
+
 .lp-player-name {
-  display: block;
-  padding-left: 1rem;
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--color-text);
@@ -262,9 +320,12 @@
 /* The show-all toggle closes the player list, sitting in the team column under the names. */
 .lp-showall {
   appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   border: none;
   background: none;
-  padding: 0 0 0 1rem;
+  padding: 0.15rem 0 0.15rem 0.25rem;
   font-family: inherit;
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
@@ -274,6 +335,14 @@
 
 .lp-showall:hover {
   text-decoration: underline;
+}
+
+.lp-showall app-icon {
+  transition: transform var(--transition-fast);
+}
+
+.lp-showall.open app-icon {
+  transform: rotate(180deg);
 }
 
 /* Total sits last, detached from the stat columns by a divider, and carries the same diverging
@@ -291,32 +360,15 @@
   border-left: 1px solid var(--color-border);
 }
 
-/* Opaque under the heat tint (bound as a background image), so the stat columns scrolling
-   beneath don't show through. Player rows and the header bring their own opaque fills. */
-.lp-table tbody tr.lp-row td.col-total {
-  background-color: var(--color-surface);
-}
-
 /* The depth shadow shows only while columns actually sit under the pinned score; with every
-   column on screen the table reads as a plain table. The sorted variant keeps its accent rails. */
+   column on screen the table reads as a plain table. */
 .lp-wrap.has-more .lp-table .col-total {
   box-shadow: -6px 0 6px -5px rgba(15, 52, 96, 0.18);
-}
-
-.lp-wrap.has-more .lp-table .col-total.sorted {
-  box-shadow:
-    inset 1px 0 0 var(--color-primary),
-    inset -1px 0 0 var(--color-primary),
-    -6px 0 6px -5px rgba(15, 52, 96, 0.18);
 }
 
 .lp-num {
   font-variant-numeric: tabular-nums;
   color: var(--color-text);
-}
-
-.lp-cell-value {
-  display: block;
 }
 
 .lp-num.expanded {
@@ -325,7 +377,7 @@
 
 .lp-cell-players {
   list-style: none;
-  margin: 0.4rem 0 0;
+  margin: 0.4rem 0.5rem 0.3rem;
   padding: 0;
   text-align: left;
 }
@@ -382,8 +434,13 @@
 @media (max-width: 640px) {
   .lp-table th,
   .lp-table td {
-    padding-left: 0.4rem;
-    padding-right: 0.4rem;
+    padding-left: 0.45rem;
+    padding-right: 0.45rem;
+  }
+
+  .lp-heat {
+    padding-left: 0.3rem;
+    padding-right: 0.3rem;
   }
 
   .lp-table td.col-team,
@@ -408,12 +465,23 @@
     line-clamp: 2;
   }
 
-  .lp-player-name {
-    padding-left: 0.5rem;
+  /* The name is what the column is for; the crest keeps its place at a smaller size and the
+     positions give theirs up. */
+  .lp-player {
+    gap: 0.3rem;
+    padding-left: 0;
+  }
+
+  .lp-player-logo {
+    --team-logo-size: 16px;
+  }
+
+  .lp-player-pos {
+    display: none;
   }
 
   .lp-showall {
-    padding-left: 0.5rem;
+    padding-left: 0;
     text-align: left;
   }
 

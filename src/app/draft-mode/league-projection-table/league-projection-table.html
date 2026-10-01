@@ -39,6 +39,7 @@
             <th
               class="sortable"
               [class.sorted]="sortKey() === column.key"
+              [class.group-start]="column.key === groupStartKey()"
               [appTooltip]="column.tooltip"
               (click)="sortBy(column.key)"
             >
@@ -100,10 +101,10 @@
               <td
                 class="lp-num"
                 [class.sorted]="sortKey() === column.key"
+                [class.group-start]="column.key === groupStartKey()"
                 [class.expanded]="isExpanded(team.teamId) && !showsRosterRows()"
-                [style.background]="shade(column.key, team.values[column.key])"
               >
-                <span class="lp-cell-value">{{
+                <span class="lp-heat" [style.--heat]="shade(column.key, team.values[column.key])">{{
                   format(team.values[column.key], column.decimals)
                 }}</span>
                 @if (isExpanded(team.teamId) && !showsRosterRows()) {
@@ -122,24 +123,40 @@
                 }
               </td>
             }
-            <td
-              class="col-total"
-              [class.sorted]="sortKey() === 'total'"
-              [style.background-image]="totalShade(team.total)"
-            >
-              {{ formatTotal(team.total) }}
+            <td class="col-total" [class.sorted]="sortKey() === 'total'">
+              <span class="lp-heat" [style.--heat]="shade('total', team.total)">{{
+                formatTotal(team.total)
+              }}</span>
             </td>
           </tr>
 
           @if (isExpanded(team.teamId) && showsRosterRows()) {
-            @for (player of rosterRows(team); track player.name + $index) {
-              <tr class="lp-player-row">
+            @for (player of rosterRows(team); track player.name + $index; let last = $last) {
+              <tr class="lp-player-row" [class.group-end]="last && !hasHiddenPlayers(team)">
                 <td class="col-rank"></td>
                 <td class="col-team">
-                  <span class="lp-player-name">{{ player.name }}</span>
+                  <div class="lp-player">
+                    @if (showsClubs()) {
+                      <app-team-logo
+                        class="lp-player-logo"
+                        [team]="player.team"
+                        [alt]="player.team ?? ''"
+                      />
+                    }
+                    <span class="lp-player-name">{{ player.name }}</span>
+                    @if (player.positions?.length) {
+                      <app-position-chips class="lp-player-pos" [positions]="player.positions!" />
+                    }
+                  </div>
                 </td>
                 @for (column of columns(); track column.key) {
-                  <td class="lp-num" [class.sorted]="sortKey() === column.key">
+                  <td
+                    class="lp-num"
+                    [class.sorted]="sortKey() === column.key"
+                    [class.group-start]="column.key === groupStartKey()"
+                    [class.best]="isTeamBest(team, player, column.key)"
+                    [class.not-his]="player.values[column.key] === null"
+                  >
                     {{ format(player.values[column.key], column.rawDecimals) }}
                   </td>
                 }
@@ -149,10 +166,18 @@
               </tr>
             }
             @if (hasHiddenPlayers(team)) {
-              <tr class="lp-player-row">
+              <!-- A cell under every column, empty: the columns' own lines (the sorted one's
+                   wash, the score's divider) run through this row as through any other. -->
+              <tr class="lp-player-row lp-showall-row group-end">
                 <td class="col-rank"></td>
                 <td class="col-team">
-                  <button type="button" class="lp-showall" (click)="toggleShowAll(team.teamId)">
+                  <button
+                    type="button"
+                    class="lp-showall"
+                    [class.open]="isShowingAll(team.teamId)"
+                    (click)="toggleShowAll(team.teamId)"
+                  >
+                    <app-icon name="chevron-down" [size]="14" />
                     {{
                       isShowingAll(team.teamId)
                         ? 'Show top 5'
@@ -160,7 +185,13 @@
                     }}
                   </button>
                 </td>
-                <td [attr.colspan]="columns().length + 1"></td>
+                @for (column of columns(); track column.key) {
+                  <td
+                    [class.sorted]="sortKey() === column.key"
+                    [class.group-start]="column.key === groupStartKey()"
+                  ></td>
+                }
+                <td class="col-total" [class.sorted]="sortKey() === 'total'"></td>
               </tr>
             }
           }

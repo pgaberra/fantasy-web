@@ -59,5 +59,12 @@ function rosterRow(
     values[key] = row.values?.[key] ?? null;
     contributions[key] = row.contributions?.[key] ?? null;
   }
-  return { name: row.name, total: row.total, values, contributions };
+  return {
+    name: row.name,
+    team: row.team ?? null,
+    positions: row.positions ?? [],
+    total: row.total,
+    values,
+    contributions,
+  };
 }

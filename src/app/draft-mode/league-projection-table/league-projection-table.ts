@@ -2,6 +2,9 @@ import { Component, computed, effect, ElementRef, input, signal, viewChild } fro
 import { ScoringType } from '../../models/projection.model';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import { IconComponent, type IconName } from '../../shared/icon/icon';
+import { PositionChipsComponent } from '../../shared/position-chips/position-chips';
+import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
+import { SKATER_SCORING_STAT_KEYS } from '../../models/stat-key.model';
 import {
   LeagueProjectionColumn,
   LeagueProjectionContributor,
@@ -16,20 +19,26 @@ type BreakdownMode = 'category' | 'position';
 const TOP_ROSTER_ROWS = 5;
 
 /**
- * Diverging heat scale for the stat and total cells: the column leader trends green, the laggard
- * red, and the mid-pack stays clear — so a glance down any column shows who's strongest there.
- * Every value is already "higher is better" (weighted-points / z-score contributions, direction
- * included), so one direction works for every column. The RGB triples mirror --color-success /
- * --color-error in styles.css; they're inlined because the per-cell alpha is computed, not static.
+ * Diverging heat scale for the stat and total cells: the column leader trends teal, the laggard
+ * a warm orange, and the mid-pack stays clear — so a glance down any column shows who's strongest
+ * there. Every value is already "higher is better" (weighted-points / z-score contributions,
+ * direction included), so one direction works for every column.
+ *
+ * The pair is teal and orange rather than the success green and error red it started as: thinned
+ * to a wash those two came out mint and pink, which read as decoration, and they are the pair a
+ * red-green colour-blind reader cannot tell apart. Teal and orange keep "good is the green side"
+ * and differ in blue as well as in red. Inlined because the per-cell alpha is computed.
  */
-const HEAT_LEADER_RGB = '22, 163, 74';
-const HEAT_LAGGARD_RGB = '233, 69, 96';
-const HEAT_LEADER_MAX_ALPHA = 0.22;
-const HEAT_LAGGARD_MAX_ALPHA = 0.2;
+const HEAT_LEADER_RGB = '13, 148, 136';
+const HEAT_LAGGARD_RGB = '234, 88, 12';
+const HEAT_LEADER_MAX_ALPHA = 0.3;
+const HEAT_LAGGARD_MAX_ALPHA = 0.26;
+
+const SKATER_STAT_KEYS: ReadonlySet<string> = new Set(SKATER_SCORING_STAT_KEYS);
 
 @Component({
   selector: 'app-league-projection-table',
-  imports: [TooltipDirective, IconComponent],
+  imports: [TooltipDirective, IconComponent, PositionChipsComponent, TeamLogoComponent],
   templateUrl: './league-projection-table.html',
   styleUrl: './league-projection-table.css',
 })
@@ -95,6 +104,45 @@ export class LeagueProjectionTableComponent {
   readonly columns = computed(() =>
     this.mode() === 'category' ? this.data().categoryColumns : this.data().positionColumns,
   );
+
+  /**
+   * The first goalie stat after the skaters', which a rule is drawn in front of: the two halves of
+   * the table are different players' columns, and a goalie's row is empty under one of them.
+   * Null where the league counts only one kind, and in the position breakdown.
+   */
+  readonly groupStartKey = computed(() => {
+    if (this.mode() !== 'category') {
+      return null;
+    }
+    const keys = this.columns().map((column) => column.key);
+    const firstGoalie = keys.findIndex((key) => !SKATER_STAT_KEYS.has(key));
+    return firstGoalie > 0 ? keys[firstGoalie] : null;
+  });
+
+  /**
+   * Whether the rows came with the players' clubs, and so whether a crest leads each name. All
+   * or nothing: a crest on some rows and a gap on others would misalign the names.
+   */
+  readonly showsClubs = computed(() =>
+    this.data().teams.some((team) => team.roster.some((player) => !!player.team)),
+  );
+
+  /** Each team's best contribution per column, which is the one figure a player row stresses. */
+  private readonly teamBests = computed(() => {
+    const bests = new Map<string, Record<string, number>>();
+    for (const team of this.data().teams) {
+      const best: Record<string, number> = {};
+      for (const player of team.roster) {
+        for (const [key, contribution] of Object.entries(player.contributions)) {
+          if (contribution !== null && (best[key] === undefined || contribution > best[key])) {
+            best[key] = contribution;
+          }
+        }
+      }
+      bests.set(team.teamId, best);
+    }
+    return bests;
+  });
 
   private readonly ranges = computed(() => {
     const teams = this.data().teams;
@@ -171,6 +219,23 @@ export class LeagueProjectionTableComponent {
       }
       return descending ? secondRank - firstRank : firstRank - secondRank;
     });
+  }
+
+  /**
+   * Whether nobody on the team gives it more in this column than this player. A roster is sixteen
+   * rows of ten numbers, and what a reader looks for in it is who carries each column.
+   */
+  isTeamBest(
+    team: LeagueProjectionTeamRow,
+    player: LeagueProjectionRosterRow,
+    key: string,
+  ): boolean {
+    const contribution = player.contributions[key];
+    return (
+      contribution !== null &&
+      team.roster.length > 1 &&
+      contribution === this.teamBests().get(team.teamId)?.[key]
+    );
   }
 
   /** Players listed inside a position cell when its row is expanded. */
@@ -251,16 +316,6 @@ export class LeagueProjectionTableComponent {
     }
     const alpha = (0.5 - intensity) * 2 * HEAT_LAGGARD_MAX_ALPHA;
     return `rgba(${HEAT_LAGGARD_RGB}, ${alpha.toFixed(3)})`;
-  }
-
-  /**
-   * The score column's heat as a background image: it is pinned to the right edge while the table
-   * scrolls, so its own background has to stay opaque (the stylesheet's white) with the
-   * translucent tint laid over it — the stat columns would otherwise show through.
-   */
-  totalShade(value: number): string {
-    const tint = this.shade('total', value);
-    return tint === 'transparent' ? 'none' : `linear-gradient(${tint}, ${tint})`;
   }
 
   /** The points-per-unit multiplier under a points-league column header (3, 0.5, -1, …). */

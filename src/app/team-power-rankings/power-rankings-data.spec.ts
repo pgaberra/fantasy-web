@@ -23,6 +23,8 @@ const base: LeagueSummaryResponse = {
         {
           playerId: 1,
           name: 'A Skater',
+          team: 'EDM',
+          positions: ['C', 'LW'],
           total: 90,
           values: { goals: 45 },
           contributions: { goals: 90 },
@@ -86,5 +88,12 @@ describe('power rankings data', () => {
     expect(team.roster[0].values['goals']).toEqual(45);
     expect(team.roster[0].values['svPct']).toBeNull();
     expect(team.roster[0].contributions['svPct']).toBeNull();
+  });
+
+  it('keeps the club and the positions a roster row came with, for the crest and the chips', () => {
+    const row = leagueProjectionFrom(base).teams[0].roster[0];
+
+    expect(row.team).toEqual('EDM');
+    expect(row.positions).toEqual(['C', 'LW']);
   });
 });
