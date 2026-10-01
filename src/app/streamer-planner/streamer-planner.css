@@ -99,6 +99,16 @@
   color: var(--color-primary-contrast);
 }
 
+/* The categories the free agents are ranked by: under the positions, since they change the order
+   where the positions only narrow it. */
+.focus {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
 /* --- The nights -------------------------------------------------------------------------------- */
 
 /* The nights on the left, the league on the right, each under its own label. */
@@ -300,6 +310,13 @@
 }
 
 /* --- Top streaming options -------------------------------------------------------------------- */
+
+/* The categories picked, said beside the heading: the cards are the best at those, not overall. */
+.section-note {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
 
 .top-options .section-title {
   border-bottom: 1px solid var(--color-border);

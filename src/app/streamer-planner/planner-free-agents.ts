@@ -150,6 +150,11 @@ const SHORT_LABELS: Partial<Record<ScoringStatKey, string>> = {
   sho: 'SHO',
 };
 
+/** A category as the list names it: the short label of a column, and what it stands for. */
+export function categoryColumn(key: ScoringStatKey): LineColumn {
+  return { key, label: SHORT_LABELS[key] ?? STAT_LABELS[key], name: STAT_FULL_NAMES[key] };
+}
+
 /** Counts that run to dozens within a week, where the model's fraction says nothing. */
 const WHOLE_COUNTS: ReadonlySet<ScoringStatKey> = new Set(['sv', 'sa', 'shifts']);
 
@@ -180,12 +185,7 @@ export function lineStats(
   const scoring = row.line.stats.scoring as Record<string, number>;
   return categories
     .filter((key) => own.includes(key) && row.player.projected.has(key))
-    .map((key) => ({
-      key,
-      label: SHORT_LABELS[key] ?? STAT_LABELS[key],
-      name: STAT_FULL_NAMES[key],
-      value: formatLineStat(key, scoring[key] ?? 0),
-    }));
+    .map((key) => ({ ...categoryColumn(key), value: formatLineStat(key, scoring[key] ?? 0) }));
 }
 
 /** A category as the list heads a column with it. */

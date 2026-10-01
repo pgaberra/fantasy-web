@@ -164,6 +164,21 @@
   color: var(--color-text-subtle);
 }
 
+/* Ranked by a few categories, those columns are what the order is read from; the rest step back
+   without going, since a streamer still wants to see what else comes with the add. */
+.free-agents-table .stat-col--focus {
+  color: var(--color-text);
+  font-weight: var(--weight-semibold);
+}
+
+.free-agents-table thead th.stat-col--focus {
+  color: var(--color-primary);
+}
+
+.free-agents-table .stat-col--muted {
+  color: var(--color-text-subtle);
+}
+
 /* A goalie's line among skaters: its own labels, since the headings above are not his. */
 .inline-line {
   display: flex;
