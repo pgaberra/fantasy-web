@@ -7,12 +7,6 @@ import { TeamSchedule } from '../api/models/team-schedule';
 export type PlannerPosition = 'skaters' | 'goalies';
 export type Tier = 'good' | 'bad' | null;
 
-/**
- * What a game on an off-night is worth over a game on any other night. The same constant as
- * projection-service's `schedule_strength.OFF_NIGHT_BONUS`: the server rates the whole stretch,
- * and this is what lets the page rate the nights the reader keeps, by the same rule.
- */
-export const OFF_NIGHT_BONUS = 0.25;
 /** How far an opponent has to sit from the league average before its game is tinted. */
 export const MATCHUP_MARGIN = 0.05;
 /** The top and bottom this many teams get a tinted rank: roughly a quarter of the league each. */
@@ -60,9 +54,9 @@ export function plannerDays(strength: ScheduleStrengthResponse): PlannerDay[] {
  * Every team rated over the nights counted, best first.
  *
  * <p>With every night counted the server's own score and rank are used as they came: the server is
- * the authority on the rating, and this page only re-derives it where the reader has left a night
- * out, by the same rule (a game is worth 1, or 1.25 on an off-night, scaled by the goals the
- * opponent concedes for a skater and by the inverse of the goals it scores for a goalie).
+ * the authority on the rating. Where the reader has left a night out, the page sums the worth the
+ * server put on each game it keeps, so the rule (the night, the opponent and the venue) lives on
+ * the server alone.
  */
 export function rateTeams(
   teams: readonly TeamSchedule[],
@@ -104,8 +98,7 @@ function serverRank(team: TeamSchedule, position: PlannerPosition): number {
 }
 
 function gameWorth(game: ScheduledGame, position: PlannerPosition): number {
-  const worth = 1 + (game.offNight ? OFF_NIGHT_BONUS : 0);
-  return position === 'skaters' ? worth * game.opponentGoalsAgainst : worth / game.opponentGoalsFor;
+  return position === 'skaters' ? game.skaterWorth : game.goalieWorth;
 }
 
 /** Standard competition ranking: two teams level share a rank and the next one skips. */
