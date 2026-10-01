@@ -355,14 +355,21 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   season and the BFF's 31-day cap (`planner-schedule.ts`: `presetStretch`, `clampStretch`;
   `PLANNER_TODAY` is the reader's own clock, so a night already played is never offered), then a
   strip of tick boxes, one a night, seven to a row so each row is a Monday-to-Sunday week (the days
-  of the first week already behind are drawn faint). The league sits beside the nights; the
-  controls that concern one table sit on it (skaters or goalies on the team schedules, the
-  positions on the free agents). **The free agents are one list**, best first, not a block per
-  position: the pills over it (All, C, LW, RW, D, G) narrow it to any number of positions at
-  once, a player eligible at two is listed once, and the # column keeps his place among everyone
-  available so a list of defensemen still says how they compare. It opens on 25 rows
+  of the first week already behind are drawn faint). The league sits beside the nights.
+  **Skaters or goalies is asked once**, by a segmented control over the two tables, and both
+  follow it: the schedules are rated for that kind of player and the free agents are that kind
+  alone (`ofKind`). The two were rows of one table for a day, a goalie's line written across the
+  skaters' columns with its own labels; they fill different roster slots and score different
+  categories, so they are never one table again. The three cards over the switch are the best
+  pickups of either kind and do not follow it. What concerns one table only sits on that table:
+  the positions and the categories to rank by, both the skaters' and both gone while the goalies
+  are shown. **The skaters are one list**, best first, not a block per
+  position: the pills over it (All, C, LW, RW, D) narrow it to any number of positions at
+  once, a player eligible at two is listed once, and the # column keeps his place among every
+  skater available so a list of defensemen still says how they compare; a goalie's is his place
+  among goalies. It opens on 25 rows
   (`FREE_AGENTS_PAGE`) with "Show 25 more" and "Show all" under it, and starts from the top when
-  the positions change. Until 2026-10-01 it copied LineupExperts: three, five or ten a position. No buttons: what the nights point at is what is on screen.
+  the kind, the positions or the categories change. Until 2026-10-01 it copied LineupExperts: three, five or ten a position. No buttons: what the nights point at is what is on screen.
   `planner-schedule.ts` re-rates the teams over the nights ticked, by projection-service's own
   rule (a game is 1, or 1.25 on an off-night, scaled by the opponent), and uses the server's
   numbers untouched while every night is ticked; `planner-free-agents.ts` scales a free agent's
@@ -377,8 +384,9 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   nights counted is drawn **in every category the league scores**, in the league's order
   (`lineStats`), as real table columns named once in the heading (`lineColumns`), after the
   score, GP and TOI; his positions sit under his name, not in a column. The columns are the
-  skaters' categories while a skater is listed and the goalies' once the list is goalies alone; a
-  goalie among skaters has his line written across those columns with its own labels. More
+  skaters' categories over the skaters and the goalies' over the goalies, who have no TOI column.
+  Picking categories to rank by re-ranks the skaters only: the goalies stay ranked by the league's
+  whole set. More
   categories than the card is wide scroll sideways with the name held in place, and TOI is
   dropped by container query where the card is narrow. A
   category the BFF sent no number for is an empty cell, never written as the zero the ranking engine

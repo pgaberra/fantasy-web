@@ -480,6 +480,54 @@
 
 /* --- The two tables --------------------------------------------------------------------------- */
 
+/* Skaters or goalies, over both tables: a switch between two views, so it is drawn as the app's
+   segmented control and not as the pills, which narrow one list. */
+.kind {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+}
+
+.segmented {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  padding: 2px;
+}
+
+.segmented button {
+  background: none;
+  border: none;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  padding: 0.3rem 0.9rem;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.segmented button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* A white pill on a near-white track is a weak signal on its own; the border and the heavier
+   weight are what make the picked option legible at a glance. */
+.segmented button[aria-pressed='true'] {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-control);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+  padding: calc(0.3rem - 1px) calc(0.9rem - 1px);
+}
+
 .columns {
   align-items: start;
   display: grid;
