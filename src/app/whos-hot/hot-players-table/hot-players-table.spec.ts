@@ -16,6 +16,7 @@ import { StatInfoService } from '../../services/stat-info.service';
 import { FormatToiPipe } from '../../pipes/format-toi.pipe';
 import { ProjectionsTableHeaderComponent } from '../../draft-projection/player-projections-table/projections-table-header/projections-table-header';
 import { DecimalPipe } from '@angular/common';
+import { ToggleSwitchComponent } from '../../draft-projection/projection-settings-section/toggle-switch/toggle-switch';
 
 const SKATER_STATS = {
   goals: 10,
@@ -542,6 +543,76 @@ describe('HotPlayersTableComponent', () => {
       // who shot and missed everything. Their goals are a real zero and stay one.
       expect(ngMocks.findAll('tbody .stat-placeholder')).toHaveLength(1);
       expect(cellTexts()).toContain('-');
+    });
+  });
+
+  describe('available players only', () => {
+    const renderLeague = (
+      hotPlayers: HotPlayer[],
+      inputs: { availableFilter?: boolean; rosteredPlayerIds?: ReadonlySet<number> | null } = {},
+    ) =>
+      MockRender(HotPlayersTableComponent, {
+        hotPlayers,
+        players: hotPlayers.map((hot) => player(hot.projection.playerId)),
+        activeColumns,
+        scoringType: 'points',
+        statWeights: DEFAULT_STAT_WEIGHTS,
+        syncedLeagueName: 'Hockey Heroes',
+        seasonLabel: '2025-26',
+        availableFilter: inputs.availableFilter ?? true,
+        rosteredPlayerIds: inputs.rosteredPlayerIds ?? null,
+      });
+
+    const shownIds = (component: HotPlayersTableComponent) =>
+      component.visiblePlayers().map((ranked) => ranked.projection.playerId);
+
+    it('offers the switch only where the page says there is a league to ask', () => {
+      renderLeague([skater(1, 20)], { availableFilter: false });
+      expect(ngMocks.find(ToggleSwitchComponent, null)).toBeNull();
+
+      renderLeague([skater(1, 20)]);
+      expect(ngMocks.find(ToggleSwitchComponent)).toBeTruthy();
+    });
+
+    it('leaves the rostered players off the board and out of the count', () => {
+      const component = renderLeague([skater(1, 20), skater(2, 20), skater(3, 20)], {
+        rosteredPlayerIds: new Set([2]),
+      }).point.componentInstance;
+
+      expect(shownIds(component)).toEqual([1, 3]);
+      expect(component.matchingCount()).toEqual(2);
+    });
+
+    it('does not offer a rostered player in the search box either', () => {
+      const component = renderLeague([skater(1, 20), skater(2, 20)], {
+        rosteredPlayerIds: new Set([2]),
+      }).point.componentInstance;
+
+      expect(component.pickablePlayers().map((pickable) => pickable.id)).toEqual([1]);
+    });
+
+    it('ranks an available player against the whole league, as every other filter does', () => {
+      const board = [skater(1, 20, 30), skater(2, 20, 10), skater(3, 20, 5)];
+      const everyone = renderLeague(board, { rosteredPlayerIds: null }).point.componentInstance;
+      const scoreOf = (component: HotPlayersTableComponent, id: number) =>
+        component.visiblePlayers().find((ranked) => ranked.projection.playerId === id)!.score;
+      const before = scoreOf(everyone, 3);
+
+      const narrowed = renderLeague(board, { rosteredPlayerIds: new Set([1]) }).point
+        .componentInstance;
+
+      expect(scoreOf(narrowed, 3)).toEqual(before);
+    });
+
+    it('flips the two-way switch value when toggled', () => {
+      const fixture = renderLeague([skater(1, 20)]);
+      const component = fixture.point.componentInstance;
+
+      ngMocks.output(ngMocks.find(ToggleSwitchComponent), 'toggled').emit();
+      expect(component.availableOnly()).toBe(true);
+
+      component.toggleAvailableOnly();
+      expect(component.availableOnly()).toBe(false);
     });
   });
 });

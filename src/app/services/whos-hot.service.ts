@@ -5,6 +5,7 @@ import { ApiConfiguration } from '../api/api-configuration';
 import { skaterSplits } from '../api/fn/projection-model/skater-splits';
 import { goalieSplits } from '../api/fn/projection-model/goalie-splits';
 import { splitSeasons } from '../api/fn/projection-model/split-seasons';
+import { leagueRosteredPlayers } from '../api/fn/leagues/league-rostered-players';
 import { PlayerSplitResponse } from '../api/models/player-split-response';
 import { SplitSeasonListResponse } from '../api/models/split-season-list-response';
 import {
@@ -39,6 +40,13 @@ export interface HotPlayer {
   lastTeamGame?: number;
 }
 
+/** A league the board can be narrowed to the available players of: the platform and its id. */
+export interface RosterLeague {
+  platform: 'YAHOO' | 'ESPN';
+  /** The Yahoo league key or the ESPN league id. */
+  leagueId: string;
+}
+
 /**
  * The whole league, near enough — the page ranks everyone and filters client-side, and asking
  * for fewer would silently cut off the tail of a position filter.
@@ -66,6 +74,16 @@ export class WhosHotService {
    */
   seasons(): Observable<SplitSeasonListResponse> {
     return splitSeasons(this.http, this.rootUrl).pipe(map((sent) => sent.body));
+  }
+
+  /**
+   * Every player a team in the league holds today, by the pool's id — which is what a board row
+   * is keyed by, so "available" is simply every row not in here.
+   */
+  rosteredPlayerIds(league: RosterLeague): Observable<ReadonlySet<number>> {
+    return leagueRosteredPlayers(this.http, this.rootUrl, league).pipe(
+      map((sent) => new Set(sent.body.playerIds)),
+    );
   }
 
   splits(span: GameSpan): Observable<HotPlayer[]> {

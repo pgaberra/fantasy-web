@@ -65,6 +65,20 @@
         @if (availableTeams().length) {
           <app-team-filter [teams]="availableTeams()" [(value)]="teamFilter" />
         }
+        <!-- Offered once a league is synced, since only a league says who is taken. -->
+        @if (availableFilter()) {
+          <div
+            class="available-only"
+            [appTooltip]="'Hide players on a roster in ' + syncedLeagueName()"
+          >
+            <app-toggle-switch
+              ariaLabel="Available players only"
+              [on]="availableOnly()"
+              (toggled)="toggleAvailableOnly()"
+            />
+            <span class="available-only-label" aria-hidden="true">Available only</span>
+          </div>
+        }
       </div>
     </div>
   </div>

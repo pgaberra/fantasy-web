@@ -4,10 +4,16 @@ import { debounceTime, distinctUntilChanged, filter, merge, skip, skipWhile, tak
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
 import { EntitlementService } from '../services/entitlement.service';
+import { FeatureService } from '../services/feature.service';
 import { PlayerService } from '../services/player.service';
 import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { Player } from '../models/player.model';
-import { GameSpan, WhosHotService, withPlayersYetToPlay } from '../services/whos-hot.service';
+import {
+  GameSpan,
+  RosterLeague,
+  WhosHotService,
+  withPlayersYetToPlay,
+} from '../services/whos-hot.service';
 import { WhosHotSettingsService } from '../services/whos-hot-settings.service';
 import { ActiveColumns, ScoringType } from '../models/projection.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
@@ -89,6 +95,7 @@ export class WhosHotComponent {
   private readonly whosHot = inject(WhosHotService);
   private readonly settingsStore = inject(WhosHotSettingsService);
   private readonly entitlement = inject(EntitlementService);
+  private readonly features = inject(FeatureService);
 
   protected readonly seasons = SEASONS;
 
@@ -221,6 +228,49 @@ export class WhosHotComponent {
     () => this.yahooSync()?.leagueName ?? this.espnSync()?.leagueName ?? null,
   );
 
+  /** The synced league as the rostered-players endpoint names it, whichever platform it is on. */
+  private readonly rosterLeague = computed<RosterLeague | null>(() => {
+    const yahoo = this.yahooSync();
+    if (yahoo) {
+      return { platform: 'YAHOO', leagueId: yahoo.leagueKey };
+    }
+    const espn = this.espnSync();
+    return espn ? { platform: 'ESPN', leagueId: espn.leagueId } : null;
+  });
+
+  /** Only the players nobody in the synced league holds; see `canShowAvailableOnly`. */
+  readonly availableOnly = signal(this.stored?.availableOnly ?? false);
+
+  /**
+   * Whether the board offers to hide the league's rostered players: where this environment serves
+   * it, and once there is a league to ask. Without one there is nobody to hide, so the switch is
+   * not shown rather than shown doing nothing.
+   */
+  readonly canShowAvailableOnly = computed(
+    () => this.features.whosHotAvailableFilter() && this.rosterLeague() !== null,
+  );
+
+  private readonly filtersAvailable = computed(
+    () => this.canShowAvailableOnly() && this.availableOnly(),
+  );
+
+  /**
+   * Who the league's teams hold, asked only while the switch is on. Fetched fresh on each visit
+   * and each re-sync: a roster moves with every pickup, and a stale one would offer a player
+   * somebody claimed this morning.
+   */
+  private readonly rosteredResource = rxResource({
+    params: () => (this.filtersAvailable() ? (this.rosterLeague() ?? undefined) : undefined),
+    stream: ({ params }) => this.whosHot.rosteredPlayerIds(params),
+  });
+
+  /** The players to leave off the board, or null while it shows everyone. */
+  readonly rosteredPlayerIds = computed<ReadonlySet<number> | null>(() =>
+    this.filtersAvailable() && this.rosteredResource.hasValue()
+      ? this.rosteredResource.value()
+      : null,
+  );
+
   /**
    * Whether this account may pick its own range. Premium buys it; with payments switched off
    * nobody can, so nobody is held to the free range either. /premium redirects home while the
@@ -330,11 +380,15 @@ export class WhosHotComponent {
     () =>
       this.seasonsResource.isLoading() ||
       this.playersResource.isLoading() ||
-      this.splitsResource.isLoading(),
+      this.splitsResource.isLoading() ||
+      this.rosteredResource.isLoading(),
   );
   readonly loadFailure = computed(
     () =>
-      this.seasonsResource.error() ?? this.playersResource.error() ?? this.splitsResource.error(),
+      this.seasonsResource.error() ??
+      this.playersResource.error() ??
+      this.splitsResource.error() ??
+      this.rosteredResource.error(),
   );
   readonly hasError = computed(() => !!this.loadFailure());
 
@@ -441,6 +495,7 @@ export class WhosHotComponent {
         yahooSync: this.yahooSync(),
         espnSync: this.espnSync(),
         lastEspnLeagueId: this.lastEspnLeagueId(),
+        availableOnly: this.availableOnly(),
       });
     });
   }
@@ -462,6 +517,9 @@ export class WhosHotComponent {
     }
     if (this.splitsResource.error()) {
       this.splitsResource.reload();
+    }
+    if (this.rosteredResource.error()) {
+      this.rosteredResource.reload();
     }
   }
 
