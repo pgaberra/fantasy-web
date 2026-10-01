@@ -8,11 +8,11 @@ import { AuthService } from './services/auth.service';
 import { FeatureService } from './services/feature.service';
 import { EntitlementService } from './services/entitlement.service';
 import { ConsentBannerComponent } from './shared/consent-banner/consent-banner';
-import { EnvironmentBannerComponent } from './shared/environment-banner/environment-banner';
+import { LazyEnvironmentBannerComponent } from './shared/environment-banner/lazy-environment-banner';
 import { PlayerHeadshotComponent } from './shared/player-headshot/player-headshot';
 import { SiteFooterComponent } from './shared/site-footer/site-footer';
 import { ToastComponent } from './shared/toast/toast';
-import { UnverifiedBannerComponent } from './shared/unverified-banner/unverified-banner';
+import { LazyUnverifiedBannerComponent } from './shared/unverified-banner/lazy-unverified-banner';
 import { environment } from '../environments/environment';
 import { IconComponent } from './shared/icon/icon';
 
@@ -26,11 +26,11 @@ import { IconComponent } from './shared/icon/icon';
     CdkMenuItem,
     CdkMenuTrigger,
     ConsentBannerComponent,
-    EnvironmentBannerComponent,
+    LazyEnvironmentBannerComponent,
     PlayerHeadshotComponent,
     SiteFooterComponent,
     ToastComponent,
-    UnverifiedBannerComponent,
+    LazyUnverifiedBannerComponent,
     IconComponent,
   ],
   templateUrl: './app.html',

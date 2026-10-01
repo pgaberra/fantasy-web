@@ -12,10 +12,10 @@ import { AuthService } from './services/auth.service';
 import { FeatureService } from './services/feature.service';
 import { EntitlementService } from './services/entitlement.service';
 import { ConsentBannerComponent } from './shared/consent-banner/consent-banner';
-import { EnvironmentBannerComponent } from './shared/environment-banner/environment-banner';
+import { LazyEnvironmentBannerComponent } from './shared/environment-banner/lazy-environment-banner';
 import { PlayerHeadshotComponent } from './shared/player-headshot/player-headshot';
 import { ToastComponent } from './shared/toast/toast';
-import { UnverifiedBannerComponent } from './shared/unverified-banner/unverified-banner';
+import { LazyUnverifiedBannerComponent } from './shared/unverified-banner/lazy-unverified-banner';
 
 describe('App', () => {
   const isLoggedIn = signal(true);
@@ -50,10 +50,12 @@ describe('App', () => {
         .keep(CdkMenuTrigger)
         .keep(PlayerHeadshotComponent)
         .mock(ConsentBannerComponent)
-        .mock(EnvironmentBannerComponent)
+        // ng-mocks cannot mock a component with a @defer block, so the banners' gates stay real;
+        // here neither condition holds, so neither banner loads.
+        .keep(LazyEnvironmentBannerComponent)
+        .keep(LazyUnverifiedBannerComponent)
         .mock(ToastComponent)
-        .mock(UnverifiedBannerComponent)
-        .mock(AuthService, { isLoggedIn, isAdmin, logout })
+        .mock(AuthService, { isLoggedIn, isAdmin, isEmailVerified: signal(true), logout })
         .mock(AccountService, { username, email, avatarUrl })
         .mock(EntitlementService, { premium, loadState })
         .mock(FeatureService, { leagueDraftSync, streamerPlanner } as never)
