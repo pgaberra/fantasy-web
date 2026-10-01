@@ -124,9 +124,13 @@ export function formatToi(seconds: number | undefined): string {
   return `${minutes}:${rest.toString().padStart(2, '0')}`;
 }
 
-/** Games to one decimal where the expectation is fractional; a whole number as it is. */
+/**
+ * Games as a whole number, the way a schedule counts them. The expectation is fractional, and to
+ * one decimal it read as two kinds of number: 2.97 came out "3.0" beside a "3" the arithmetic
+ * happened to land on. The fraction still scales the line and the per-game score.
+ */
 export function formatGames(games: number): string {
-  return Number.isInteger(games) ? games.toString() : games.toFixed(1);
+  return Math.round(games).toString();
 }
 
 /** One stat of a player's line, as the list writes it. */

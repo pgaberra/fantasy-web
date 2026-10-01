@@ -287,8 +287,10 @@ describe('formatting', () => {
     expect(formatToi(0)).toBe('');
   });
 
-  it('writes games to a decimal only where the expectation has one', () => {
+  it('writes games as a whole number, however fractional the expectation', () => {
     expect(formatGames(3)).toBe('3');
-    expect(formatGames(3.75)).toBe('3.8');
+    expect(formatGames(2.97)).toBe('3');
+    expect(formatGames(3.75)).toBe('4');
+    expect(formatGames(2.49)).toBe('2');
   });
 });
