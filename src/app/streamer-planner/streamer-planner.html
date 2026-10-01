@@ -103,10 +103,21 @@
                 <span class="day-name">{{ dayName(day) }}</span>
                 <span class="day-date">{{ dayOfMonth(day) }}</span>
               </span>
-              <span class="day-games">{{ gamesLabel(day) }}</span>
-              @if (day.offNight) {
-                <span class="day-tag">Off-night</span>
-              }
+              <span class="day-body">
+                @if (day.games === 0) {
+                  <span class="day-games day-games--none">No games</span>
+                } @else {
+                  <span class="day-games">
+                    <span class="day-count">{{ day.games }}</span>
+                    {{ day.games === 1 ? 'game' : 'games' }}
+                  </span>
+                }
+                @if (day.offNight) {
+                  <span class="day-mark" role="img" aria-label="Off-night" title="Off-night">
+                    <app-icon name="off-night" [size]="14" />
+                  </span>
+                }
+              </span>
             </label>
           }
         </div>
@@ -114,6 +125,9 @@
           <span>{{ weeksTitle() }}</span>
           <span>{{ stretchTitle() }}</span>
           <span>{{ nightsTitle() }}</span>
+          @if (hasOffNight()) {
+            <span class="range-legend"><app-icon name="off-night" [size]="14" />Off-night</span>
+          }
         </p>
       }
     </section>
