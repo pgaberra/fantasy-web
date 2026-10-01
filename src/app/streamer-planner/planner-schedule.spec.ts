@@ -5,7 +5,7 @@ import { TeamSchedule } from '../api/models/team-schedule';
 import {
   clampStretch,
   leadingDays,
-  localIsoDate,
+  hockeyNight,
   matchupLabel,
   matchupTier,
   plannerDays,
@@ -255,8 +255,14 @@ describe('presets', () => {
     expect(leadingDays('2026-10-12')).toEqual([]);
   });
 
-  it("spells today as the API spells a date, on the reader's own clock", () => {
-    expect(localIsoDate(new Date(2026, 9, 1, 23, 30))).toBe('2026-10-01');
-    expect(localIsoDate(new Date(2026, 0, 5))).toBe('2026-01-05');
+  it("dates today by the NHL's night, which runs until 06:00 Eastern the next morning", () => {
+    // 00:34 in Stockholm on 2 October is still Thursday's night: its games have not started.
+    expect(hockeyNight(new Date('2026-10-01T22:34:00Z'))).toBe('2026-10-01');
+    // The last West Coast game is long over by 06:00 Eastern (EDT, UTC-4).
+    expect(hockeyNight(new Date('2026-10-02T09:59:00Z'))).toBe('2026-10-01');
+    expect(hockeyNight(new Date('2026-10-02T10:00:00Z'))).toBe('2026-10-02');
+    // In winter Eastern is UTC-5.
+    expect(hockeyNight(new Date('2026-01-05T10:59:00Z'))).toBe('2026-01-04');
+    expect(hockeyNight(new Date('2026-01-05T11:00:00Z'))).toBe('2026-01-05');
   });
 });
