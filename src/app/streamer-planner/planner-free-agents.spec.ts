@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { PlannerCrease } from '../api/models/planner-crease';
 import { TeamSchedule } from '../api/models/team-schedule';
 import {
   GOALIE_SCORING_STAT_KEYS,
@@ -13,8 +14,10 @@ import {
   lineColumns,
   lineStats,
   nightsFactor,
+  projectedStarts,
   RankedFreeAgent,
   scaledProjection,
+  startsProjection,
   teamsByKey,
 } from './planner-free-agents';
 
@@ -164,6 +167,148 @@ describe('scaledProjection', () => {
   });
 });
 
+/** A club's crease: each goalie by id (none for one the league has rostered) and his nightly shares. */
+function crease(
+  dates: readonly string[],
+  goalies: [string | undefined, number[]][],
+): PlannerCrease {
+  return {
+    team: 'NJD',
+    goalies: goalies.map(([playerId, shares]) => ({
+      ...(playerId === undefined ? {} : { playerId }),
+      nights: shares.map((share, index) => ({ date: dates[index], share })),
+    })),
+  };
+}
+
+describe('projectedStarts', () => {
+  const SATURDAY = ['2026-10-17'];
+  const WEEK = ['2026-10-13', '2026-10-15', '2026-10-17', '2026-10-18'];
+  const all = (dates: readonly string[]) => new Set(dates);
+
+  it("gives a club's one game to its likeliest starter and none to the man behind him", () => {
+    // New Jersey's weekend: a little under half a start each, and a rostered third the rest.
+    const starts = projectedStarts(
+      [
+        crease(SATURDAY, [
+          ['allen', [0.48]],
+          ['daws', [0.44]],
+          [undefined, [0.08]],
+        ]),
+      ],
+      all(SATURDAY),
+      false,
+    );
+
+    expect(starts.get('allen')).toBe(1);
+    expect(starts.get('daws')).toBe(0);
+  });
+
+  it('gives a free agent nothing behind a rostered goalie likelier to start', () => {
+    const starts = projectedStarts(
+      [
+        crease(SATURDAY, [
+          [undefined, [0.55]],
+          ['backup', [0.45]],
+        ]),
+      ],
+      all(SATURDAY),
+      false,
+    );
+
+    expect(starts.get('backup')).toBe(0);
+  });
+
+  it('splits a week the way it is likeliest to go, not every night to the starter', () => {
+    const shares = (share: number) => WEEK.map(() => share);
+    const week = crease(WEEK, [
+      ['starter', shares(0.7)],
+      ['backup', shares(0.3)],
+    ]);
+
+    // Over four nights at seventy-thirty the backup's likeliest week is one start.
+    const four = projectedStarts([week], all(WEEK), true);
+    expect([four.get('starter'), four.get('backup')]).toEqual([3, 1]);
+    // Over two it is none: both to the starter happens more often than a split.
+    const two = projectedStarts([week], all(WEEK.slice(2)), false);
+    expect([two.get('starter'), two.get('backup')]).toEqual([2, 0]);
+  });
+
+  it("reads each night's own shares, so a starter back from injury takes the nights after", () => {
+    // Out until the Saturday: his backup has the first two nights to himself.
+    const week = crease(WEEK, [
+      ['starter', [0, 0, 0.75, 0.75]],
+      ['backup', [1, 1, 0.25, 0.25]],
+    ]);
+
+    const weekend = projectedStarts([week], all(WEEK.slice(2)), false);
+    expect([weekend.get('starter'), weekend.get('backup')]).toEqual([2, 0]);
+    const midweek = projectedStarts([week], all(WEEK.slice(0, 2)), false);
+    expect([midweek.get('starter'), midweek.get('backup')]).toEqual([0, 2]);
+  });
+
+  it('counts every night of the stretch while none is left out', () => {
+    const week = crease(WEEK, [['starter', WEEK.map(() => 1)]]);
+
+    expect(projectedStarts([week], new Set(), true).get('starter')).toBe(4);
+    expect(projectedStarts([week], new Set(), false).get('starter')).toBe(0);
+  });
+
+  it('breaks a tie for the goalie listed first, who has the most starts over the stretch', () => {
+    const starts = projectedStarts(
+      [
+        crease(SATURDAY, [
+          ['first', [0.5]],
+          ['second', [0.5]],
+        ]),
+      ],
+      all(SATURDAY),
+      false,
+    );
+
+    expect([starts.get('first'), starts.get('second')]).toEqual([1, 0]);
+  });
+
+  it('leaves a game to a goalie the model does not name when the shares fall short of it', () => {
+    const starts = projectedStarts([crease(SATURDAY, [['lone', [0.3]]])], all(SATURDAY), false);
+
+    expect(starts.get('lone')).toBe(0);
+  });
+
+  it('holds a crease whose shares run past one start to the one start a night has', () => {
+    const starts = projectedStarts(
+      [
+        crease(SATURDAY, [
+          ['incumbent', [0.7]],
+          ['arrival', [0.6]],
+        ]),
+      ],
+      all(SATURDAY),
+      false,
+    );
+
+    expect([starts.get('incumbent'), starts.get('arrival')]).toEqual([1, 0]);
+  });
+});
+
+describe('startsProjection', () => {
+  const line = goalie({ gs: 2, w: 1.2, sv: 56, sa: 61, svPct: 0.918, gaa: 2.5, toi: 7200 });
+
+  it('is his line a start at a time, times the starts he is given', () => {
+    const one = startsProjection(line.projection, 2, 1);
+
+    expect(one.stats.scoring).toMatchObject({ gs: 1, w: 0.6, sv: 28, svPct: 0.918, gaa: 2.5 });
+    expect(one.stats.utility.gp).toBe(1);
+  });
+
+  it('is nought in every stat, the rates too, for a goalie given no start', () => {
+    const none = startsProjection(line.projection, 2, 0);
+
+    expect(Object.values(none.stats.scoring).every((value) => value === 0)).toBe(true);
+    expect(none.stats.utility.gp).toBe(0);
+  });
+});
+
 describe('lineStats', () => {
   /** A Yahoo categories league: seven for skaters, four for goalies, in the league's order. */
   const CATEGORIES = [
@@ -218,6 +363,13 @@ describe('lineStats', () => {
     expect(written(row)).toEqual(['1.4 W', '2.61 GAA', '0.908 SV%', '0.1 SHO']);
     // Saves run to dozens in a week, so they are written whole.
     expect(written(row, ['sv'])).toEqual(['57 SV']);
+  });
+
+  it('writes a goalie given no start as nought, with no rate', () => {
+    const player = goalie({ w: 1.4, gaa: 2.613, svPct: 0.9084, sho: 0.12 });
+    const row = { ...ranked(player, 1, startsProjection(player.projection, 2, 0)), games: 0 };
+
+    expect(written(row)).toEqual(['0.0 W', '— GAA', '— SV%', '0.0 SHO']);
   });
 
   it('reads the line over the nights counted, not the whole stretch', () => {

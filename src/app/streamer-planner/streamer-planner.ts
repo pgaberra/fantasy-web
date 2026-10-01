@@ -35,8 +35,10 @@ import {
   nightsFactor,
   PLANNER_POSITIONS,
   PlannerPositionGroup,
+  projectedStarts,
   RankedFreeAgent,
   scaledProjection,
+  startsProjection,
   teamsByKey,
   TOP_OPTIONS,
   WEEK_DECIMALS,
@@ -88,8 +90,9 @@ export interface PresetOption {
  * and the league, which the free agents are read from, sits beside the nights.
  *
  * <p>The server rates the whole stretch; a night the reader leaves out is taken out here, by the
- * server's own rule (`planner-schedule.ts`), and a free agent's line is scaled to the share of
- * his club's games that fall on the nights kept (`planner-free-agents.ts`). The ranking of the
+ * server's own rule (`planner-schedule.ts`), and a skater's line is scaled to the share of his
+ * club's games that fall on the nights kept; a goalie's is his line over the starts his crease's
+ * split of those nights gives him (`planner-free-agents.ts`). The ranking of the
  * free agents happens here too, by the league's own scoring settings through the same engine a
  * projection uses, because "best" only means anything against what the league pays for.
  */
@@ -430,7 +433,8 @@ export class StreamerPlannerComponent {
     const teams = this.teamsByKey();
     const counted = this.counted();
     const everyNightCounted = this.everyNightCounted();
-    const factors = new Map<string, number>();
+    const starts = projectedStarts(week.creases, counted, everyNightCounted);
+    const games = new Map<string, number>();
     const lines = new Map<string, Projection>();
     const byPlayerId = new Map(week.players.map((player) => [player.projection.playerId, player]));
     const players =
@@ -439,8 +443,15 @@ export class StreamerPlannerComponent {
         : week.players;
     const projections = players.map((player) => {
       const factor = nightsFactor(player, teams, counted, everyNightCounted);
-      const line = scaledProjection(player.projection, factor);
-      factors.set(player.playerId, factor);
+      let played = player.expectedGames * factor;
+      let line = scaledProjection(player.projection, factor);
+      if (player.projection.type === 'goalie') {
+        // A game is one goalie's, so a goalie's are whole: the crease's split of the nights, or
+        // for one in no crease his own expectation, rounded.
+        played = starts.get(player.playerId) ?? Math.round(played);
+        line = startsProjection(player.projection, player.expectedGames, played);
+      }
+      games.set(player.playerId, played);
       lines.set(player.playerId, line);
       return line;
     });
@@ -461,13 +472,12 @@ export class StreamerPlannerComponent {
     for (const [index, entry] of scored.entries()) {
       const player = byPlayerId.get(entry.projection.playerId);
       if (player) {
-        const factor = factors.get(player.playerId) ?? 1;
         ranked.push({
           player,
           line: lines.get(player.playerId) ?? player.projection,
           score: scoring.scoringType === 'points' ? entry.score.fantasyPoints : entry.score.zScore,
           rank: index + 1,
-          games: player.expectedGames * factor,
+          games: games.get(player.playerId) ?? player.expectedGames,
         });
       }
     }
