@@ -20,19 +20,16 @@ type PlayerKind = RankedFreeAgent['line']['type'];
 /** A player with his line in the league's categories, ready to draw. */
 export interface FreeAgentRow {
   readonly row: RankedFreeAgent;
-  /**
-   * His line under the table's columns, a cell a column, null where the model gave him no number.
-   * Null altogether for a player of the other kind, whose categories the columns are not.
-   */
-  readonly cells: readonly (LineStat | null)[] | null;
-  /** The line of a player of the other kind, written out with its own labels. */
-  readonly inline: readonly LineStat[];
+  /** His line under the table's columns, a cell a column, null where the model gave him no number. */
+  readonly cells: readonly (LineStat | null)[];
 }
 
 /**
- * The best available players as one list, best first, with the model's line for the nights
- * counted, in every category the league scores, and scored by the league's own settings. Which
- * positions and how many rows is the page's to say.
+ * The best available skaters, or the best available goalies, as one list, best first, with the
+ * model's line for the nights counted, in every category the league scores for that kind of
+ * player, and scored by the league's own settings. The list is one kind or the other, never both:
+ * the two score different categories, and a column has to mean the same thing on every row.
+ * Which kind, which positions and how many rows is the page's to say.
  */
 @Component({
   selector: 'app-free-agents-table',
@@ -56,37 +53,30 @@ export class FreeAgentsTableComponent {
     return this.rows().map((row) => ({ row, stats: lineStats(row, categories) }));
   });
 
-  /**
-   * Whose categories head the columns: the skaters' while there is a skater in the list, the
-   * goalies' once it is narrowed to goalies. The two score different things, so one set of
-   * columns cannot be both.
-   */
-  readonly kind = computed<PlayerKind>(() =>
-    this.rows().some((row) => row.line.type === 'skater') ? 'skater' : 'goalie',
-  );
+  /** Whose list this is, and so whose categories head the columns: the page hands it one kind. */
+  readonly kind = computed<PlayerKind>(() => this.rows()[0]?.line.type ?? 'skater');
 
   /** A column a category, named once in the heading instead of beside every number. */
-  readonly columns = computed<readonly LineColumn[]>(() => {
-    const kind = this.kind();
-    return lineColumns(
-      this.lines()
-        .filter((entry) => entry.row.line.type === kind)
-        .map((entry) => entry.stats),
+  readonly columns = computed<readonly LineColumn[]>(() =>
+    lineColumns(
+      this.lines().map((entry) => entry.stats),
       this.categories(),
-    );
-  });
+    ),
+  );
 
   readonly entries = computed<readonly FreeAgentRow[]>(() => {
-    const kind = this.kind();
     const columns = this.columns();
     return this.lines().map(({ row, stats }) => {
-      if (row.line.type !== kind) {
-        return { row, cells: null, inline: stats };
-      }
       const byKey = new Map(stats.map((stat) => [stat.key, stat]));
-      return { row, cells: columns.map((column) => byKey.get(column.key) ?? null), inline: [] };
+      return { row, cells: columns.map((column) => byKey.get(column.key) ?? null) };
     });
   });
+
+  readonly rankTip = computed(() =>
+    this.kind() === 'skater'
+      ? 'His place among every available skater, whatever the positions shown'
+      : 'His place among every available goalie',
+  );
 
   readonly scoreHeading = computed(() =>
     this.scoringType() === 'points' ? 'Proj. pts' : 'Z-Score',
