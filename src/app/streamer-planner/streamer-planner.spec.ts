@@ -366,6 +366,12 @@ describe('StreamerPlannerComponent', () => {
     expect(nights.length).toBe(7);
     expect(ngMocks.formatText(nights[1])).toContain('3 games');
     expect(ngMocks.formatText(nights[0])).toContain('No games');
+    // The off-night is a mark with a name, not a line of text, and the summary says what it means.
+    const marks = ngMocks.findAll(fixture, '.day-mark');
+    expect(marks.length).toEqual(1);
+    expect(ngMocks.findAll(nights[1], '.day-mark').length).toEqual(1);
+    expect(marks[0].attributes['aria-label']).toEqual('Off-night');
+    expect(ngMocks.formatText(ngMocks.find(fixture, '.range-legend'))).toEqual('Off-night');
     expect(ngMocks.formatText(fixture)).toContain('Week 2');
     expect(ngMocks.formatText(fixture)).toContain('Pick a league above');
     expect(fixture.point.componentInstance.showsTopOptions()).toBe(false);

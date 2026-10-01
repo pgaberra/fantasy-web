@@ -583,12 +583,8 @@ export class StreamerPlannerComponent {
     return formatDay(date);
   }
 
-  gamesLabel(day: PlannerDay): string {
-    if (day.games === 0) {
-      return 'No games';
-    }
-    return day.games === 1 ? '1 game' : `${day.games} games`;
-  }
+  /** Whether any night on screen carries the off-night mark, and so whether the line under them explains it. */
+  readonly hasOffNight = computed(() => this.days().some((day) => day.offNight));
 
   scoreText(row: RankedFreeAgent): string {
     return row.score.toFixed(this.scoringType() === 'points' ? 1 : 2);
