@@ -81,11 +81,6 @@
   font-weight: var(--weight-semibold);
 }
 
-.player-team {
-  color: var(--color-text-muted);
-  font-size: var(--text-xs);
-}
-
 /* Waivers only: a claim is the one status that changes what the reader does next. */
 .player-status {
   background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));

@@ -1,6 +1,7 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { GOALIE_SCORING_STAT_KEYS, SKATER_SCORING_STAT_KEYS } from '../../models/stat-key.model';
+import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
 import { FreeAgentGroup, RankedFreeAgent } from '../planner-free-agents';
 import { FreeAgentsTableComponent } from './free-agents-table';
 
@@ -102,6 +103,15 @@ describe('FreeAgentsTableComponent', () => {
     expect(table.line(SKATER)).toEqual(['2.1 G', '3.0 A', '11.2 SOG']);
     expect(table.line(GOALIE)).toEqual(['1.4 W', '57 SV', '0.908 SV%']);
     expect(table.games(SKATER)).toBe('3.8');
+  });
+
+  // The crest already says which club; the abbreviation beside it said it twice.
+  it('names the club by its crest alone, which then carries the name for a screen reader', () => {
+    const fixture = render();
+    const logos = ngMocks.findAll(fixture, TeamLogoComponent);
+
+    expect(logos.map((logo) => ngMocks.input(logo, 'alt'))).toEqual(['EDM', 'TB']);
+    expect(ngMocks.formatText(ngMocks.findAll(fixture, '.player-head')[0])).toBe('Top Scorer');
   });
 
   // An add is what the list is a list of; only a claim changes what the reader does next.
