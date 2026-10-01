@@ -291,26 +291,54 @@
           <p class="empty">{{ emptyText() }}</p>
         } @else {
           <app-free-agents-table
+            #listTop
             [rows]="visible()"
             [scoringType]="scoringType()"
             [categories]="categories()"
             [focus]="listFocus()"
             [focusLabel]="listFocusLabel()"
           />
+          <!-- A page at a time: most visits never leave the first, so the card stays the height
+               of one page and the next is a press away. The page size is kept per layout. -->
           <div class="list-foot">
-            <span class="list-count" aria-live="polite">
-              Showing {{ visible().length }} of {{ filtered().length }}
+            <span class="list-count" aria-live="polite">{{ rangeText() }}</span>
+            <span class="list-actions">
+              @if (filtered().length > pageSizes[0]) {
+                <label class="page-size">
+                  <span>Per page</span>
+                  <select class="page-size-select" (change)="setPageSize($event)">
+                    @for (size of pageSizes; track size) {
+                      <option [value]="size" [selected]="size === pageSize()">{{ size }}</option>
+                    }
+                  </select>
+                </label>
+              }
+              @if (pageCount() > 1) {
+                <nav class="pager" aria-label="Pages of free agents">
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm pager-button"
+                    aria-label="Previous page"
+                    appTooltip="Previous page"
+                    [disabled]="currentPage() === 0"
+                    (click)="goToPage(currentPage() - 1)"
+                  >
+                    <app-icon name="arrow-left" [size]="16" />
+                  </button>
+                  <span class="pager-label">Page {{ currentPage() + 1 }} of {{ pageCount() }}</span>
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm pager-button"
+                    aria-label="Next page"
+                    appTooltip="Next page"
+                    [disabled]="currentPage() === pageCount() - 1"
+                    (click)="goToPage(currentPage() + 1)"
+                  >
+                    <app-icon name="arrow-right" [size]="16" />
+                  </button>
+                </nav>
+              }
             </span>
-            @if (hiddenCount() > 0) {
-              <span class="list-actions">
-                <button type="button" class="btn btn-secondary btn-sm" (click)="showMore()">
-                  Show {{ nextPage() }} more
-                </button>
-                @if (hiddenCount() > nextPage()) {
-                  <button type="button" class="link-button" (click)="showAll()">Show all</button>
-                }
-              </span>
-            }
           </div>
         }
       </section>
