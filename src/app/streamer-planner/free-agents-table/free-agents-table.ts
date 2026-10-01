@@ -7,32 +7,26 @@ import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import {
   formatGames,
   formatToi,
-  lineGrid,
+  lineColumns,
   lineStats,
+  LineColumn,
   LineStat,
   RankedFreeAgent,
 } from '../planner-free-agents';
 
-/** The grid a line is drawn on at each width of the table, as CSS grid tracks. */
-export interface LineGrids {
-  readonly wide: string;
-  readonly mid: string;
-  readonly narrow: string;
-}
+type PlayerKind = RankedFreeAgent['line']['type'];
 
 /** A player with his line in the league's categories, ready to draw. */
 export interface FreeAgentRow {
   readonly row: RankedFreeAgent;
-  readonly stats: readonly LineStat[];
-  /** The grid every player of his kind shares, skaters one and goalies another. */
-  readonly grid: LineGrids;
+  /**
+   * His line under the table's columns, a cell a column, null where the model gave him no number.
+   * Null altogether for a player of the other kind, whose categories the columns are not.
+   */
+  readonly cells: readonly (LineStat | null)[] | null;
+  /** The line of a player of the other kind, written out with its own labels. */
+  readonly inline: readonly LineStat[];
 }
-
-/**
- * The most stats a line holds in a wide table, a middling one and a phone's. The widths these
- * stand for are the container queries in the stylesheet; a line of more breaks into even lines.
- */
-const MOST_PER_LINE = { wide: 8, mid: 5, narrow: 4 } as const;
 
 /**
  * The best available players as one list, best first, with the model's line for the nights
@@ -52,26 +46,41 @@ export class FreeAgentsTableComponent {
   /** The categories the league scores, in the league's order. */
   readonly categories = input.required<readonly ScoringStatKey[]>();
 
-  /**
-   * The players with their lines. Every skater's line is drawn on one grid and every goalie's on
-   * another, so a category sits in the same place from one player to the next, down the whole
-   * list, and reads as a column.
-   */
-  readonly entries = computed<readonly FreeAgentRow[]>(() => {
+  private readonly lines = computed(() => {
     const categories = this.categories();
-    const lines = this.rows().map((row) => ({ row, stats: lineStats(row, categories) }));
-    const gridFor = (type: RankedFreeAgent['line']['type']): LineGrids => {
-      const ofType = lines
-        .filter((entry) => entry.row.line.type === type)
-        .map((entry) => entry.stats);
-      return {
-        wide: lineGrid(ofType, MOST_PER_LINE.wide),
-        mid: lineGrid(ofType, MOST_PER_LINE.mid),
-        narrow: lineGrid(ofType, MOST_PER_LINE.narrow),
-      };
-    };
-    const grids = { skater: gridFor('skater'), goalie: gridFor('goalie') };
-    return lines.map((entry) => ({ ...entry, grid: grids[entry.row.line.type] }));
+    return this.rows().map((row) => ({ row, stats: lineStats(row, categories) }));
+  });
+
+  /**
+   * Whose categories head the columns: the skaters' while there is a skater in the list, the
+   * goalies' once it is narrowed to goalies. The two score different things, so one set of
+   * columns cannot be both.
+   */
+  readonly kind = computed<PlayerKind>(() =>
+    this.rows().some((row) => row.line.type === 'skater') ? 'skater' : 'goalie',
+  );
+
+  /** A column a category, named once in the heading instead of beside every number. */
+  readonly columns = computed<readonly LineColumn[]>(() => {
+    const kind = this.kind();
+    return lineColumns(
+      this.lines()
+        .filter((entry) => entry.row.line.type === kind)
+        .map((entry) => entry.stats),
+      this.categories(),
+    );
+  });
+
+  readonly entries = computed<readonly FreeAgentRow[]>(() => {
+    const kind = this.kind();
+    const columns = this.columns();
+    return this.lines().map(({ row, stats }) => {
+      if (row.line.type !== kind) {
+        return { row, cells: null, inline: stats };
+      }
+      const byKey = new Map(stats.map((stat) => [stat.key, stat]));
+      return { row, cells: columns.map((column) => byKey.get(column.key) ?? null), inline: [] };
+    });
   });
 
   readonly scoreHeading = computed(() =>
@@ -105,5 +114,10 @@ export class FreeAgentsTableComponent {
   /** A claim rather than an add: the one status a streamer has to know before acting. */
   onWaivers(row: RankedFreeAgent): boolean {
     return row.player.availability === 'WAIVERS';
+  }
+
+  /** Nothing projected in the category: there, but not what he is picked up for. */
+  isNil(stat: LineStat): boolean {
+    return Number(stat.value) === 0;
   }
 }
