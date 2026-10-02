@@ -540,6 +540,24 @@
     flex-basis: 100%;
   }
 
+  /* From and To side by side, label over field: read as one range, aligned whatever the
+     labels' widths, one row shorter than stacking them, and each half a thumb-sized target. */
+  .dates {
+    width: 100%;
+  }
+
+  .date-field {
+    flex: 1;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  .field-date {
+    min-height: 44px;
+    width: 100%;
+  }
+
   /* Three to a row on a phone, where seven would not hold a date; the week alignment is a
      desktop courtesy, and the days that only served it go with it. */
   .day-strip {
