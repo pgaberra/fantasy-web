@@ -673,8 +673,13 @@ export class StreamerPlannerComponent {
     return dayName(day);
   }
 
+  /** "Oct" and "12" apart, so a phone's narrower cell can show the number alone. */
+  dayMonth(day: PlannerDay): string {
+    return formatDay(day.date).split(' ')[0];
+  }
+
   dayOfMonth(day: PlannerDay): string {
-    return formatDay(day.date);
+    return formatDay(day.date).split(' ')[1];
   }
 
   /** The dates of the week before the stretch starts, asked for only to say how many games they held. */
