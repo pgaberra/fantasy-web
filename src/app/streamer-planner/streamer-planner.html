@@ -113,7 +113,10 @@
                   (change)="toggleDay(day)"
                 />
                 <span class="day-name">{{ dayName(day) }}</span>
-                <span class="day-date">{{ dayOfMonth(day) }}</span>
+                <span class="day-date"
+                  ><span class="day-month">{{ dayMonth(day) }}&ngsp;</span
+                  >{{ dayOfMonth(day) }}</span
+                >
               </span>
               <span class="day-body">
                 @if (day.games === 0) {

@@ -567,4 +567,21 @@
   .day--past {
     display: none;
   }
+
+  /* A third of a phone holds the tick box, the weekday and a number, not the month as well; the
+     stretch's own title already names the month. */
+  .day-month {
+    display: none;
+  }
+
+  .day-mark {
+    padding: 0 var(--space-1);
+  }
+}
+
+/* The narrowest phones: a third of one cannot hold the games and the off-night mark on a line. */
+@media (max-width: 359px) {
+  .day-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

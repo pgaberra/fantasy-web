@@ -299,7 +299,12 @@ describe('StreamerPlannerComponent', () => {
     expect(past[0].nativeElement.textContent).toContain('No games');
     expect(past[1].nativeElement.querySelector('.day-count').textContent).toBe('3');
     expect(past[1].nativeElement.querySelector('input')).toBeNull();
-    expect(ngMocks.findAll(fixture, 'label.day').length).toBe(5);
+    const nights = ngMocks.findAll(fixture, 'label.day');
+    expect(nights.length).toBe(5);
+    // The month sits in an element of its own, which a phone hides to fit the cell.
+    const date = ngMocks.find(nights[0], '.day-date');
+    expect(ngMocks.formatText(date)).toBe('Oct 14');
+    expect(ngMocks.formatText(ngMocks.find(date, '.day-month'))).toBe('Oct');
   });
 
   it('moves to next week, or to both weeks, at a word', async () => {
