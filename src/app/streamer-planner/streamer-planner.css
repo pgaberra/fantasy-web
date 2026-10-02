@@ -99,6 +99,11 @@
   color: var(--color-primary-contrast);
 }
 
+/* The skater positions, under the card's title and its skaters-or-goalies switch. */
+.positions {
+  margin-bottom: var(--space-3);
+}
+
 /* The categories the free agents are ranked by: under the positions, since they change the order
    where the positions only narrow it. */
 .focus {
@@ -371,15 +376,8 @@
 
 /* --- The two tables --------------------------------------------------------------------------- */
 
-/* Skaters or goalies, over both tables: a switch between two views, so it is drawn as the app's
-   segmented control and not as the pills, which narrow one list. */
-.kind {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-3);
-}
-
+/* Skaters or goalies, on the free agents alone: a switch between two lists, so it is drawn as the
+   app's segmented control and not as the pills, which narrow one list. */
 .segmented {
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
@@ -424,6 +422,18 @@
   display: grid;
   gap: var(--space-4);
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+/* The free agents come first in the page, so they lead once the cards stack; side by side the
+   schedules keep the left column. */
+.columns .teams {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.columns .free-agents {
+  grid-column: 2;
+  grid-row: 1;
 }
 
 /* Under the list: which places are on screen, the page size, and the way to the other pages. */
@@ -498,6 +508,12 @@
 @media (max-width: 1023px) {
   .columns {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .columns .teams,
+  .columns .free-agents {
+    grid-column: auto;
+    grid-row: auto;
   }
 }
 

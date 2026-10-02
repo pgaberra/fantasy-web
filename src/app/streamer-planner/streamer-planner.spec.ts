@@ -352,25 +352,30 @@ describe('StreamerPlannerComponent', () => {
     expect(box.value).toBe('2026-11-11');
   });
 
-  it("ranks by the server's goalie rank when goalies are picked", async () => {
+  it("keeps one team ranking, the server's skater rank, whichever kind the free agents list", async () => {
     const fixture = await render();
     const planner = fixture.point.componentInstance;
     expect(planner.teamRows().map((row) => row.team)).toEqual(['EDM', 'TBL']);
 
+    // TBL has the better goalie rank, which the page no longer reads.
     planner.setPosition('goalies');
-    expect(planner.teamRows().map((row) => row.team)).toEqual(['TBL', 'EDM']);
+    expect(planner.teamRows().map((row) => row.team)).toEqual(['EDM', 'TBL']);
   });
 
-  it('asks skaters or goalies once, over both tables, and opens on skaters', async () => {
+  it('asks skaters or goalies on the free agents alone, and opens on skaters', async () => {
     const fixture = await render();
-    const buttons = ngMocks.findAll(fixture, '.kind .segmented button');
+    const switches = ngMocks.findAll(fixture, '.segmented');
+    const buttons = ngMocks.findAll(
+      fixture,
+      '[aria-labelledby="planner-free-agents-title"] .segmented button',
+    );
     const pressed = () =>
       buttons.map((button) => button.nativeElement.getAttribute('aria-pressed'));
 
+    // The one switch, on the free agents' card: the schedules have none of their own.
+    expect(switches).toHaveLength(1);
     expect(buttons.map((button) => ngMocks.formatText(button))).toEqual(['Skaters', 'Goalies']);
     expect(pressed()).toEqual(['true', 'false']);
-    // The one switch: neither card carries a second one of its own.
-    expect(ngMocks.findAll(fixture, '.card .segmented')).toHaveLength(0);
 
     ngMocks.click(buttons[1]);
     fixture.detectChanges();
