@@ -22,12 +22,12 @@
   } @else {
     <!-- The page's one setting, with the league beside it. No button: what the nights point at is
          what is on screen. A night is picked by name or by date, and any night can be left out. -->
-    <section class="card nights" aria-label="Nights and league">
+    <section class="card nights" aria-label="Game days and league">
       <div class="settings">
         <div class="range" role="group" aria-labelledby="planner-nights-label">
           <div class="range-head">
-            <span id="planner-nights-label" class="group-label">Nights</span>
-            <app-help-tip label="How the nights count" [text]="nightsHelp()" />
+            <span id="planner-nights-label" class="group-label">Game days</span>
+            <app-help-tip label="How game days count" [text]="nightsHelp()" />
           </div>
           <div class="range-controls">
             <div class="pills">
@@ -77,7 +77,7 @@
       } @else {
         <!-- One cell a night, each row a Monday-to-Sunday week, so a stretch across two weeks reads
              as two weeks. The tick box sits in the cell's first line, level with every other. -->
-        <div class="day-strip" role="group" aria-label="Nights to count">
+        <div class="day-strip" role="group" aria-label="Game days to count">
           @for (day of leadingDays(); track day.date) {
             <span class="day day--past" aria-hidden="true">
               <span class="day-head">
