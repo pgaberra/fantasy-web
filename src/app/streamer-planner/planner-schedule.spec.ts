@@ -109,7 +109,7 @@ describe('rateTeams', () => {
   );
 
   it("keeps the server's score and rank while every night is counted", () => {
-    const rows = rateTeams([edm, cgy], 'skaters', new Set(), true);
+    const rows = rateTeams([edm, cgy], new Set(), true);
 
     expect(rows.map((row) => [row.team, row.score, row.rank])).toEqual([
       ['CGY', 9.99, 1],
@@ -127,7 +127,7 @@ describe('rateTeams', () => {
   });
 
   it('rates only the nights counted, summing the worth the server put on each game', () => {
-    const rows = rateTeams([edm, cgy], 'skaters', new Set(['2026-10-13']), false);
+    const rows = rateTeams([edm, cgy], new Set(['2026-10-13']), false);
 
     // Only the 13th counts: EDM's game there is worth 1.09, CGY's 1.45.
     expect(rows.map((row) => [row.team, row.score, row.rank])).toEqual([
@@ -138,14 +138,14 @@ describe('rateTeams', () => {
     expect(rows[1].schedule.map((entry) => entry.date)).toEqual(['2026-10-13']);
   });
 
-  it("rates a goalie by the server's goalie worth, not the skater's", () => {
-    const rows = rateTeams([edm], 'goalies', new Set(['2026-10-12']), false);
+  it("rates every team by the server's skater worth, never the goalie's", () => {
+    const rows = rateTeams([edm], new Set(['2026-10-12']), false);
 
-    expect(rows[0].score).toBeCloseTo(0.96, 2);
+    expect(rows[0].score).toBeCloseTo(1.16, 2);
   });
 
   it('sums the worth of every night kept', () => {
-    const rows = rateTeams([edm], 'skaters', new Set(['2026-10-12', '2026-10-13']), false);
+    const rows = rateTeams([edm], new Set(['2026-10-12', '2026-10-13']), false);
 
     expect(rows[0].score).toBeCloseTo(2.25, 2);
   });
@@ -155,7 +155,7 @@ describe('rateTeams', () => {
     const b = team('B', [game('2026-10-12', { skaterWorth: 1.1 })]);
     const c = team('C', [game('2026-10-12', { skaterWorth: 1.0 })]);
 
-    const rows = rateTeams([c, b, a], 'skaters', new Set(['2026-10-12']), false);
+    const rows = rateTeams([c, b, a], new Set(['2026-10-12']), false);
 
     expect(rows.map((row) => [row.team, row.rank])).toEqual([
       ['A', 1],
@@ -173,18 +173,21 @@ describe('matchups', () => {
     opponentGoalsFor: 1.08,
   });
 
-  it('tints a matchup for skaters and goalies from opposite sides', () => {
-    expect(matchupTier(scored, 'skaters')).toBe('good');
-    expect(matchupTier(scored, 'goalies')).toBe('bad');
-    expect(matchupTier(game('2026-10-13'), 'skaters')).toBeNull();
+  it('tints a matchup by the goals the opponent concedes, whatever it scores', () => {
+    expect(matchupTier(scored)).toBe('good');
+    // Concedes few and scores few: good for a goalie, but the one tint is the skaters'.
+    expect(
+      matchupTier(game('2026-10-13', { opponentGoalsAgainst: 0.9, opponentGoalsFor: 0.9 })),
+    ).toBe('bad');
+    expect(matchupTier(game('2026-10-13'))).toBeNull();
   });
 
   it('says what the tint means', () => {
-    expect(matchupLabel(scored, 'skaters')).toBe(
+    expect(matchupLabel(scored)).toBe(
       'at SJS. SJS allows 12% more goals than average. Off-night. Back-to-back.',
     );
-    expect(matchupLabel(game('2026-10-13', { home: true }), 'goalies')).toBe(
-      'vs SJS. SJS scores a league-average number of goals.',
+    expect(matchupLabel(game('2026-10-13', { home: true }))).toBe(
+      'vs SJS. SJS allows a league-average number of goals.',
     );
   });
 

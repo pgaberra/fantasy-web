@@ -162,29 +162,6 @@
       </section>
     }
 
-    <!-- Asked once, over the two tables it changes: the schedules are rated for that kind of
-         player and the free agents are that kind alone. The cards above are the best pickups of
-         either kind and do not follow it. -->
-    <div class="kind">
-      <span id="planner-kind-label" class="group-label">Show</span>
-      <div class="segmented" role="group" aria-labelledby="planner-kind-label">
-        <button
-          type="button"
-          [attr.aria-pressed]="position() === 'skaters'"
-          (click)="setPosition('skaters')"
-        >
-          Skaters
-        </button>
-        <button
-          type="button"
-          [attr.aria-pressed]="position() === 'goalies'"
-          (click)="setPosition('goalies')"
-        >
-          Goalies
-        </button>
-      </div>
-    </div>
-
     <div class="columns">
       <section class="card" aria-labelledby="planner-teams-title">
         <div class="card-head">
@@ -192,14 +169,14 @@
             <app-icon name="table" />Team schedules
             <app-help-tip
               label="How teams are ranked"
-              text="Each game on a night you count is worth 1, or 1.25 on an off-night. A home game counts about 7% more than a road game, since teams score more at home. For skaters, a game against an opponent that allows more goals counts more; for goalies, one against an opponent that scores less."
+              text="Each game on a night you count is worth 1, or 1.25 on an off-night. A home game counts about 7% more than a road game, since teams score more at home, and a game against an opponent that allows more goals counts more."
             />
           </h2>
         </div>
         @if (loadingSchedule()) {
           <app-loading-indicator />
         } @else {
-          <app-team-schedules [rows]="teamRows()" [position]="position()" />
+          <app-team-schedules [rows]="teamRows()" />
         }
       </section>
 
@@ -212,33 +189,53 @@
               text="The model's projection for the nights you count, scored with your league's settings. A player is only worth what your league pays for what he does."
             />
           </h2>
-          <!-- The skaters are one list, narrowed by any number of positions at once. "All" is the
-               list with none picked, and the way back to it. Goalies have the one position. -->
-          @if (position() === 'skaters') {
-            <div class="pills" role="group" aria-label="Positions to show">
+          <!-- Skaters or goalies: a switch between two lists, so it is drawn as the app's segmented
+               control and not as the pills, which narrow one list. It is this card's alone: the
+               schedules beside it are rated once for the page, and the cards above are the best
+               pickups of either kind. -->
+          <div class="segmented" role="group" aria-label="Players to list">
+            <button
+              type="button"
+              [attr.aria-pressed]="position() === 'skaters'"
+              (click)="setPosition('skaters')"
+            >
+              Skaters
+            </button>
+            <button
+              type="button"
+              [attr.aria-pressed]="position() === 'goalies'"
+              (click)="setPosition('goalies')"
+            >
+              Goalies
+            </button>
+          </div>
+        </div>
+        <!-- The skaters are one list, narrowed by any number of positions at once. "All" is the list
+             with none picked, and the way back to it. Goalies have the one position. -->
+        @if (position() === 'skaters') {
+          <div class="pills positions" role="group" aria-label="Positions to show">
+            <button
+              type="button"
+              class="pill"
+              [class.pill--active]="positions().size === 0"
+              [attr.aria-pressed]="positions().size === 0"
+              (click)="clearPositions()"
+            >
+              All
+            </button>
+            @for (option of positionOptions; track option) {
               <button
                 type="button"
                 class="pill"
-                [class.pill--active]="positions().size === 0"
-                [attr.aria-pressed]="positions().size === 0"
-                (click)="clearPositions()"
+                [class.pill--active]="positions().has(option)"
+                [attr.aria-pressed]="positions().has(option)"
+                (click)="togglePosition(option)"
               >
-                All
+                {{ option }}
               </button>
-              @for (option of positionOptions; track option) {
-                <button
-                  type="button"
-                  class="pill"
-                  [class.pill--active]="positions().has(option)"
-                  [attr.aria-pressed]="positions().has(option)"
-                  (click)="togglePosition(option)"
-                >
-                  {{ option }}
-                </button>
-              }
-            </div>
-          }
-        </div>
+            }
+          </div>
+        }
         <!-- A category matchup is mostly settled before the week is out: the add worth making is
              the one that swings the categories still open. Picking them ranks the skaters by those
              alone; none picked is the league's whole set, which the goalies are always ranked by. -->
