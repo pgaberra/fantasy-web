@@ -16,12 +16,6 @@
   margin: 0;
 }
 
-.lede {
-  color: var(--color-text-muted);
-  margin: var(--space-1) 0 0;
-  max-width: 62ch;
-}
-
 /* --- Cards ------------------------------------------------------------------------------------ */
 
 .card {
