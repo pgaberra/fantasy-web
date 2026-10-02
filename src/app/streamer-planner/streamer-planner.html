@@ -186,24 +186,7 @@
     </div>
 
     <div class="columns">
-      <section class="card" aria-labelledby="planner-teams-title">
-        <div class="card-head">
-          <h2 id="planner-teams-title" class="card-title">
-            <app-icon name="table" />Team schedules
-            <app-help-tip
-              label="How teams are ranked"
-              text="Each game on a night you count is worth 1, or 1.25 on an off-night. A home game counts about 7% more than a road game, since teams score more at home. For skaters, a game against an opponent that allows more goals counts more; for goalies, one against an opponent that scores less."
-            />
-          </h2>
-        </div>
-        @if (loadingSchedule()) {
-          <app-loading-indicator />
-        } @else {
-          <app-team-schedules [rows]="teamRows()" [position]="position()" />
-        }
-      </section>
-
-      <section class="card" aria-labelledby="planner-free-agents-title">
+      <section class="card free-agents" aria-labelledby="planner-free-agents-title">
         <div class="card-head">
           <h2 id="planner-free-agents-title" class="card-title">
             <app-icon name="user-plus" />Top free agents
@@ -340,6 +323,23 @@
               }
             </span>
           </div>
+        }
+      </section>
+
+      <section class="card teams" aria-labelledby="planner-teams-title">
+        <div class="card-head">
+          <h2 id="planner-teams-title" class="card-title">
+            <app-icon name="table" />Team schedules
+            <app-help-tip
+              label="How teams are ranked"
+              text="Each game on a night you count is worth 1, or 1.25 on an off-night. A home game counts about 7% more than a road game, since teams score more at home. For skaters, a game against an opponent that allows more goals counts more; for goalies, one against an opponent that scores less."
+            />
+          </h2>
+        </div>
+        @if (loadingSchedule()) {
+          <app-loading-indicator />
+        } @else {
+          <app-team-schedules [rows]="teamRows()" [position]="position()" />
         }
       </section>
     </div>
