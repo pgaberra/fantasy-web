@@ -356,14 +356,16 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   `PLANNER_TODAY` is the reader's own clock, so a night already played is never offered), then a
   strip of tick boxes, one a night, seven to a row so each row is a Monday-to-Sunday week (the days
   of the first week already behind are drawn faint). The league sits beside the nights.
-  **Skaters or goalies is asked once**, by a segmented control over the two tables, and both
-  follow it: the schedules are rated for that kind of player and the free agents are that kind
-  alone (`ofKind`). The two were rows of one table for a day, a goalie's line written across the
-  skaters' columns with its own labels; they fill different roster slots and score different
-  categories, so they are never one table again. The three cards over the switch are the best
-  pickups of either kind and do not follow it. What concerns one table only sits on that table:
-  the positions and the categories to rank by, both the skaters' and both gone while the goalies
-  are shown. **The skaters are one list**, best first, not a block per
+  **The team schedules have one rating** for the whole page, the BFF's skater score and rank
+  (`rateTeams`), with the Fav/Unfav tint read from the goals an opponent concedes; the BFF's
+  goalie score and rank are sent but not read (Alexander's call, 2026-10-02). **Skaters or
+  goalies is asked on the free agents alone**, by a segmented control in that card's head: the
+  list is that kind alone (`ofKind`). The two were rows of one table for a day, a goalie's line
+  written across the skaters' columns with its own labels; they fill different roster slots and
+  score different categories, so they are never one table again. The three cards over the tables
+  are the best pickups of either kind and do not follow it. What concerns one table only sits on
+  that table: the kind, the positions and the categories to rank by, the last two the skaters'
+  and gone while the goalies are shown. **The skaters are one list**, best first, not a block per
   position: the pills over it (All, C, LW, RW, D) narrow it to any number of positions at
   once, a player eligible at two is listed once, and the # column keeps his place among every
   skater available so a list of defensemen still says how they compare; a goalie's is his place
