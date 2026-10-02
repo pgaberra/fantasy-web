@@ -8,7 +8,6 @@ import {
   matchupLabel,
   matchupTier,
   parseDate,
-  PlannerPosition,
   PlannerTeamRow,
   rankTier,
   Tier,
@@ -45,7 +44,7 @@ export const TEAM_COLUMNS: readonly TeamColumn[] = [
 
 /**
  * Every team's schedule over the nights counted, best first, one row a team. A row opens to the
- * games behind its numbers, tinted by how the opponent suits the chosen kind of player.
+ * games behind its numbers, tinted by how many goals the opponent concedes.
  */
 @Component({
   selector: 'app-team-schedules',
@@ -56,7 +55,6 @@ export const TEAM_COLUMNS: readonly TeamColumn[] = [
 })
 export class TeamSchedulesComponent {
   readonly rows = input.required<readonly PlannerTeamRow[]>();
-  readonly position = input.required<PlannerPosition>();
 
   readonly columns = TEAM_COLUMNS;
   readonly sortKey = signal<TeamSortKey>('score');
@@ -100,11 +98,11 @@ export class TeamSchedulesComponent {
   }
 
   matchupTier(game: ScheduledGame): Tier {
-    return matchupTier(game, this.position());
+    return matchupTier(game);
   }
 
   matchupLabel(game: ScheduledGame): string {
-    return matchupLabel(game, this.position());
+    return matchupLabel(game);
   }
 
   /** "Mon, Oct 12". */

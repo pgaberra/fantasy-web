@@ -41,7 +41,7 @@ describe('TeamSchedulesComponent', () => {
   beforeEach(() => MockBuilder(TeamSchedulesComponent));
 
   function render() {
-    const fixture = MockRender(TeamSchedulesComponent, { rows: ROWS, position: 'skaters' });
+    const fixture = MockRender(TeamSchedulesComponent, { rows: ROWS });
     fixture.detectChanges();
     return fixture;
   }

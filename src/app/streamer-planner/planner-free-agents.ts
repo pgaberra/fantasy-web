@@ -14,6 +14,9 @@ import { STAT_LABELS } from '../pipes/stat-label.pipe';
 import { STAT_FULL_NAMES } from '../pipes/stat-tooltip.pipe';
 import { FreeAgent } from '../services/streamer-planner-free-agents.service';
 
+/** Skaters or goalies: the kind of player the free agents list. */
+export type PlannerPosition = 'skaters' | 'goalies';
+
 /** The skater position groups, in the order a lineup lists them. Goalies are a list of their own. */
 export const PLANNER_POSITIONS = ['C', 'LW', 'RW', 'D'] as const;
 export type PlannerPositionGroup = (typeof PLANNER_POSITIONS)[number];
