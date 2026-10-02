@@ -40,6 +40,7 @@ import {
   nightsFactor,
   ofKind,
   PLANNER_POSITIONS,
+  PlannerPosition,
   PlannerPositionGroup,
   projectedStarts,
   RankedFreeAgent,
@@ -70,7 +71,6 @@ import {
   PLANNER_TODAY,
   PlannerDay,
   plannerDays,
-  PlannerPosition,
   PlannerPreset,
   presetStretch,
   rateTeams,
@@ -112,11 +112,11 @@ export interface PresetOption {
  * offered: a stretch starts no earlier than today. The league, which the free agents are read from,
  * sits beside the nights.
  *
- * <p>Skaters or goalies is asked once, over the two tables, and both follow it: the schedules are
- * rated for that kind of player and the free agents are that kind alone, in its own categories.
- * The two fill different roster slots and score different things, so a list of both had columns
- * that meant one thing on a skater's row and nothing on a goalie's. What concerns one table only
- * (which positions, which categories to rank by) sits on that table.
+ * <p>The schedules are rated once, for the whole page. Skaters or goalies is asked on the free
+ * agents alone, which are that kind only, in its own categories: the two fill different roster
+ * slots and score different things, so a list of both had columns that meant one thing on a
+ * skater's row and nothing on a goalie's. What concerns one table only (which kind, which
+ * positions, which categories to rank by) sits on that table.
  *
  * <p>The server rates the whole stretch; a night the reader leaves out is taken out here, by the
  * server's own rule (`planner-schedule.ts`), and a skater's line is scaled to the share of his
@@ -269,21 +269,9 @@ export class StreamerPlannerComponent {
     });
   }
 
-  /** Skaters or goalies: the kind of player both tables are about. */
-  readonly position = signal<PlannerPosition>('skaters');
-
-  setPosition(position: PlannerPosition): void {
-    this.position.set(position);
-  }
-
-  /** The teams over the nights counted, best first for the chosen kind of player. */
+  /** The teams over the nights counted, best first. */
   readonly teamRows = computed(() =>
-    rateTeams(
-      this.strength()?.teams ?? [],
-      this.position(),
-      this.counted(),
-      this.everyNightCounted(),
-    ),
+    rateTeams(this.strength()?.teams ?? [], this.counted(), this.everyNightCounted()),
   );
 
   readonly offNightMaxGames = computed(() => this.strength()?.offNightMaxGames);
@@ -308,6 +296,13 @@ export class StreamerPlannerComponent {
   readonly league = this.leagueService.league;
 
   readonly positionOptions = PLANNER_POSITIONS;
+
+  /** Skaters or goalies: the kind of player the free agents list. */
+  readonly position = signal<PlannerPosition>('skaters');
+
+  setPosition(position: PlannerPosition): void {
+    this.position.set(position);
+  }
 
   /** The positions the skaters are narrowed to. None is every position, as the page opens. */
   readonly positions = signal<ReadonlySet<PlannerPositionGroup>>(new Set());
