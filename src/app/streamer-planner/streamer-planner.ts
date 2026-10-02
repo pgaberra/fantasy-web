@@ -649,10 +649,10 @@ export class StreamerPlannerComponent {
     return stretch ? stretchLabel(stretch.start, stretch.end) : '';
   });
 
-  /** "6 of 7 nights": the nights counted, of the nights with games. */
+  /** "6 of 7 game days": the days counted, of the days with games. */
   readonly nightsTitle = computed(() => {
     const nights = this.nightsWithGames();
-    return nights === 0 ? 'No games' : `${this.counted().size} of ${nights} nights`;
+    return nights === 0 ? 'No games' : `${this.counted().size} of ${nights} game days`;
   });
 
   /** What a night is worth, said once, in the tip beside the nights. */
@@ -661,7 +661,7 @@ export class StreamerPlannerComponent {
     const offNight = max
       ? `An off-night has ${max} games or fewer, when most lineups have an open slot, so a game on one counts 1.25.`
       : 'A game on an off-night, when most lineups have an open slot, counts 1.25.';
-    return `${offNight} Untick a night your lineup has no room on.`;
+    return `${offNight} Untick a game day your lineup has no room on.`;
   });
 
   dayName(day: PlannerDay): string {
