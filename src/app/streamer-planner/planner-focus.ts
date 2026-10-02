@@ -1,8 +1,13 @@
-import { ScoringStatKey, SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
+import {
+  GOALIE_SCORING_STAT_KEYS,
+  SCORING_STAT_KEYS,
+  ScoringStatKey,
+  SKATER_SCORING_STAT_KEYS,
+} from '../models/stat-key.model';
 
 /**
- * The skater categories a streamer is chasing this week, remembered per league until the week is
- * over. A category matchup is usually settled in most categories by Friday, and the add that
+ * The categories a streamer is chasing this week, skaters' or goalies', remembered per league until
+ * the week is over. A category matchup is usually settled in most categories by Friday, and the add that
  * matters is the one that swings the few still open; which those are is next week's question, so
  * the choice is let go of when the week ends rather than carried silently into it.
  */
@@ -17,12 +22,16 @@ interface StoredFocus {
 type StoredFocusByLeague = Record<string, StoredFocus>;
 
 const SKATER_KEYS: ReadonlySet<string> = new Set(SKATER_SCORING_STAT_KEYS);
+const GOALIE_KEYS: ReadonlySet<string> = new Set(GOALIE_SCORING_STAT_KEYS);
+const SCORING_KEYS: ReadonlySet<string> = new Set(SCORING_STAT_KEYS);
 
-/** The skater categories among a league's, in the league's order: the ones a focus can pick. */
+/** The categories among a league's, in the league's order, that a focus on one kind can pick. */
 export function focusableCategories(
   categories: readonly ScoringStatKey[],
+  kind: 'skater' | 'goalie' = 'skater',
 ): readonly ScoringStatKey[] {
-  return categories.filter((key) => SKATER_KEYS.has(key));
+  const own = kind === 'skater' ? SKATER_KEYS : GOALIE_KEYS;
+  return categories.filter((key) => own.has(key));
 }
 
 /** The categories remembered for a league, or none once the week they were picked in is over. */
@@ -31,7 +40,7 @@ export function readFocus(league: string, today: string): readonly ScoringStatKe
   if (!stored || today > stored.until) {
     return [];
   }
-  return stored.categories.filter((key): key is ScoringStatKey => SKATER_KEYS.has(key));
+  return stored.categories.filter((key): key is ScoringStatKey => SCORING_KEYS.has(key));
 }
 
 /**
