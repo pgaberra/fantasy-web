@@ -220,33 +220,33 @@
         }
         <!-- A category matchup is mostly settled before the week is out: the add worth making is
              the one that swings the categories still open. Picking them ranks the skaters by those
-             alone; none picked is the league's whole set, which the goalies are always ranked by. -->
-        @if (position() === 'skaters' && league() && focusOptions().length > 0) {
+             alone; none picked is the league's whole set. The goalies have their own. -->
+        @if (league() && pickerOptions().length > 0) {
           <div class="focus" role="group" aria-labelledby="planner-focus-label">
             <span id="planner-focus-label" class="group-label">Rank by</span>
             <app-help-tip
               label="Ranking by categories"
-              text="Pick the categories still open in your matchup, and skaters are ranked by those alone. The choice is kept for this league until the week ends."
+              text="Pick the categories still open in your matchup, and players are ranked by those alone. The choice is kept for this league until the week ends."
             />
             <div class="pills">
               <button
                 type="button"
                 class="pill"
-                [class.pill--active]="focus().size === 0"
-                [attr.aria-pressed]="focus().size === 0"
-                (click)="clearFocus()"
+                [class.pill--active]="pickerFocus().size === 0"
+                [attr.aria-pressed]="pickerFocus().size === 0"
+                (click)="clearPicker()"
               >
                 All categories
               </button>
-              @for (option of focusOptions(); track option.key) {
+              @for (option of pickerOptions(); track option.key) {
                 <button
                   type="button"
                   class="pill"
-                  [class.pill--active]="focus().has(option.key)"
-                  [attr.aria-pressed]="focus().has(option.key)"
+                  [class.pill--active]="pickerFocus().has(option.key)"
+                  [attr.aria-pressed]="pickerFocus().has(option.key)"
                   [attr.aria-label]="option.name"
                   [appTooltip]="option.name"
-                  (click)="toggleFocus(option.key)"
+                  (click)="togglePicker(option.key)"
                 >
                   {{ option.label }}
                 </button>

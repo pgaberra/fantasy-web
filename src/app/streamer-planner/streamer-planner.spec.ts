@@ -783,7 +783,7 @@ describe('StreamerPlannerComponent', () => {
       expect(names(planner.ranked())[0]).toBe('Sniper');
     });
 
-    it("keeps the goalies ranked by the league's own categories while skater ones are picked", async () => {
+    it('keeps the goalies apart from the skater categories picked, and the other way round', async () => {
       const fixture = await render();
       const planner = fixture.point.componentInstance;
 
@@ -791,19 +791,47 @@ describe('StreamerPlannerComponent', () => {
       expect(names(planner.visible())).toEqual(['Power Play', 'Middle', 'Sniper']);
       expect([...planner.listFocus()]).toEqual(['ppp']);
 
+      // The goalies open on every category, with the categories a goalie has to pick from.
       planner.setPosition('goalies');
       fixture.detectChanges();
       expect(planner.visible().map((row) => [row.player.name, row.rank])).toEqual([
         ['Waiver Goalie', 1],
       ]);
-      // The picker is the skaters': it is not drawn over the goalies, and marks none of their columns.
+      expect(planner.pickerOptions().map((option) => option.key)).toEqual(['w']);
       expect(planner.listFocus().size).toBe(0);
       expect(planner.listFocusLabel()).toBe('');
-      expect(ngMocks.formatText(fixture)).not.toContain('All categories');
+      expect(ngMocks.formatText(fixture)).toContain('All categories');
 
       // Still picked when the skaters come back.
       planner.setPosition('skaters');
       expect(names(planner.visible())[0]).toBe('Power Play');
+    });
+
+    it('ranks the goalies by the categories picked for them', async () => {
+      freeAgents.mockReturnValue(
+        of<FreeAgentWeek>({
+          creases: [],
+          players: [
+            lineSkater('1', 'Sniper', { goals: 3, assists: 1, ppp: 0, sog: 12 }),
+            goalie('4', 'Waiver Goalie', 1),
+            goalie('5', 'Winning Goalie', 3),
+          ],
+        }),
+      );
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+
+      planner.setPosition('goalies');
+      planner.toggleGoalieFocus('w');
+      expect(names(planner.visible())).toEqual(['Winning Goalie', 'Waiver Goalie']);
+      expect([...planner.listFocus()]).toEqual(['w']);
+      expect(planner.listFocusLabel()).toBe('W');
+      // The skaters' cards and list are not ranked by a goalie category.
+      expect(planner.focusLabel()).toBe('');
+      expect(names(planner.ranked())).toContain('Sniper');
+
+      planner.clearGoalieFocus();
+      expect(planner.listFocus().size).toBe(0);
     });
 
     it('remembers the categories for the league until the week is over', async () => {
