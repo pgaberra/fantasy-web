@@ -424,6 +424,18 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
+/* The free agents come first in the page, so they lead once the cards stack; side by side the
+   schedules keep the left column. */
+.columns .teams {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.columns .free-agents {
+  grid-column: 2;
+  grid-row: 1;
+}
+
 /* Under the list: which places are on screen, the page size, and the way to the other pages. */
 .list-foot {
   align-items: center;
@@ -496,6 +508,12 @@
 @media (max-width: 1023px) {
   .columns {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .columns .teams,
+  .columns .free-agents {
+    grid-column: auto;
+    grid-row: auto;
   }
 }
 

@@ -202,10 +202,10 @@ export class TeamPowerRankingsComponent implements OnInit {
     if (data.source === 'last_season') {
       return "last season's stats";
     }
-    // Once the season is under way each player's line is his season so far plus the model's rest
-    // of it, so a total holds goals already scored; the line says so rather than leave it a puzzle.
+    // Once the season is under way a team is ranked on what its players will do over the games
+    // left, so the totals are that much smaller than a whole season's; the line says so.
     return data.inSeason
-      ? 'the SlapStat AI projection, with the games played so far'
+      ? 'the SlapStat AI projection for the rest of the season'
       : 'the SlapStat AI projection';
   });
 
