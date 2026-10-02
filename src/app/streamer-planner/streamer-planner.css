@@ -345,10 +345,10 @@
   display: none;
 }
 
-/* What the mark in a cell means, said once where the nights are summed up. */
+/* What the mark in a cell means, said once where the nights are summed up. The words stay in
+   the summary's own colour so the mark reads as the key and the words as what it means. */
 .range-legend {
   align-items: center;
-  color: var(--color-accent);
   display: inline-flex;
   gap: var(--space-1);
   margin-left: auto;
