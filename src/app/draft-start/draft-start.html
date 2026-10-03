@@ -332,6 +332,9 @@
                           @case ('model') {
                             <app-icon name="sparkles" [size]="20" />
                           }
+                          @case ('rest_of_season') {
+                            <app-icon name="calendar-days" [size]="20" />
+                          }
                           @default {
                             <app-icon name="chart-bar" [size]="20" />
                           }
@@ -352,6 +355,9 @@
                             </span>
                           }
                         </span>
+                        @if (preset.meta) {
+                          <span class="row-meta">{{ preset.meta }}</span>
+                        }
                       </span>
                     </label>
                   </li>

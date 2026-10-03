@@ -41,6 +41,12 @@ describe('PlayerPoolNoticeComponent', () => {
       );
     });
 
+    it("the rest of the season, with last season's stats where it has none", () => {
+      expect(footer('rest_of_season')).toContain(
+        'New players start with the AI projection for the rest of the season',
+      );
+    });
+
     it('both starting points when the basis is not known', () => {
       expect(footer(null)).toContain(
         "last season's stats, or zero for projections built from scratch",

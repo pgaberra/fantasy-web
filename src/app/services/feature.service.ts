@@ -4,7 +4,7 @@ import { from } from 'rxjs';
 import { Api } from '../api/api';
 import { getFeatures } from '../api/fn/features/get-features';
 import { CreateProjectionRequest } from '../api/models/create-projection-request';
-import { MODEL_PRESET_SOURCE } from '../models/ai-projection';
+import { MODEL_SOURCES } from '../models/ai-projection';
 
 /**
  * What the BFF says this environment serves, read once per page load.
@@ -54,7 +54,7 @@ export class FeatureService {
 
   /**
    * The presets this environment offers: every one of them where the AI projection is served,
-   * and everything but the model-seeded one where it is not. A starting point the server will not
+   * and everything but the model-seeded ones where it is not. A starting point the server will not
    * fill in must not be offered, on any page that lists presets.
    */
   offeredPresets<T extends { readonly source: CreateProjectionRequest['source'] }>(
@@ -63,6 +63,6 @@ export class FeatureService {
     if (this.aiProjection()) {
       return presets;
     }
-    return presets.filter((preset) => preset.source !== MODEL_PRESET_SOURCE);
+    return presets.filter((preset) => !MODEL_SOURCES.includes(preset.source ?? ''));
   }
 }
