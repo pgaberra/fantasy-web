@@ -43,6 +43,20 @@
   flex-wrap: wrap;
 }
 
+.available-only {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+
+/* Set as the search box's label beside it is, so the toolbar reads as one row of controls. */
+.available-only-label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+}
+
 .league-controls .btn app-icon {
   flex: none;
   margin-right: 0.35rem;

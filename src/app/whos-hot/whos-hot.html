@@ -60,6 +60,9 @@
       [syncedLeagueName]="syncedLeagueName()"
       [perGame]="perGame()"
       [minGames]="appliedMinGames()"
+      [availableFilter]="canShowAvailableOnly()"
+      [(availableOnly)]="availableOnly"
+      [rosteredPlayerIds]="rosteredPlayerIds()"
       (manageSyncRequested)="showSyncDialog.set(true)"
     >
       <!-- The same slot says two different things. With no league yet, importing one is the

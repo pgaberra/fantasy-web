@@ -68,6 +68,7 @@ import { FormatToiPipe } from '../../pipes/format-toi.pipe';
 import { DecimalPipe } from '@angular/common';
 import { shortNames } from '../../shared/short-name';
 import { IconComponent } from '../../shared/icon/icon';
+import { ToggleSwitchComponent } from '../../draft-projection/projection-settings-section/toggle-switch/toggle-switch';
 import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
 
 const PLAYERS_PER_PAGE = 100;
@@ -111,6 +112,7 @@ interface RankedPlayer extends ScoredProjection {
     FormatToiPipe,
     DecimalPipe,
     IconComponent,
+    ToggleSwitchComponent,
     TeamLogoComponent,
   ],
   templateUrl: './hot-players-table.html',
@@ -157,6 +159,18 @@ export class HotPlayersTableComponent {
   /** The league these settings were imported from, once there is one. */
   readonly syncedLeagueName = input<string | null>(null);
   readonly manageSyncRequested = output<void>();
+
+  /** Whether to offer the switch below at all: the page decides, by environment and league. */
+  readonly availableFilter = input(false);
+  /** Only the players nobody in the synced league holds. */
+  readonly availableOnly = model(false);
+  /**
+   * Who the synced league's teams hold, or null while the board shows everyone. Applied as a
+   * filter, after the ranking: the z-scores are measured against the whole league, as they are
+   * under every other filter, so a player ranks the same whether or not the rostered players
+   * are shown beside him.
+   */
+  readonly rosteredPlayerIds = input<ReadonlySet<number> | null>(null);
 
   /**
    * The League setup menu holds the category ranking inputs and, once a league has been imported,
@@ -359,8 +373,18 @@ export class HotPlayersTableComponent {
     });
   });
 
-  private readonly filteredPlayers = computed<RankedPlayer[]>(() => {
+  /**
+   * The board less the league's rostered players, where it is narrowed to them. The search box
+   * offers from this too: ticking a player the board then cannot show would read as broken.
+   */
+  private readonly availablePlayers = computed<RankedPlayer[]>(() => {
     const sorted = this.sortedPlayers();
+    const rostered = this.rosteredPlayerIds();
+    return rostered ? sorted.filter((ranked) => !rostered.has(ranked.projection.playerId)) : sorted;
+  });
+
+  private readonly filteredPlayers = computed<RankedPlayer[]>(() => {
+    const sorted = this.availablePlayers();
     const filter = this.positionFilter();
     const team = this.teamFilter();
     const term = this.searchTerm();
@@ -381,7 +405,7 @@ export class HotPlayersTableComponent {
 
   /** Everyone on the leaderboard, which is who the search box offers to tick. */
   readonly pickablePlayers = computed<PickablePlayer[]>(() =>
-    this.sortedPlayers().map((ranked) => ({
+    this.availablePlayers().map((ranked) => ({
       id: ranked.projection.playerId,
       name: ranked.hot.name,
       teamAbbrev: ranked.hot.teamAbbrev,
@@ -397,6 +421,7 @@ export class HotPlayersTableComponent {
       sortColumn: this.sortColumn(),
       sortDirection: this.sortDirection(),
       perGame: this.perGame(),
+      rostered: this.rosteredPlayerIds(),
     }),
     computation: () => PLAYERS_PER_PAGE,
   });
@@ -412,6 +437,10 @@ export class HotPlayersTableComponent {
     if (this.syncedLeagueName() === null) {
       this.scoringType.set(type);
     }
+  }
+
+  toggleAvailableOnly(): void {
+    this.availableOnly.update((on) => !on);
   }
 
   toggleScoringColumn(key: ScoringStatKey): void {
