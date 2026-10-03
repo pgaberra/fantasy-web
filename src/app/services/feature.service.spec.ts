@@ -11,6 +11,7 @@ describe('FeatureService', () => {
   const presets = [
     { source: 'default' as const },
     { source: 'model' as const },
+    { source: 'rest_of_season' as const },
     { source: 'blank' as const },
   ];
 
