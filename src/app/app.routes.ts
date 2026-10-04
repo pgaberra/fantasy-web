@@ -7,6 +7,7 @@ import { paymentsEnabledGuard } from './guards/payments-enabled.guard';
 import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
 import { draftAnalysisEnabledGuard } from './guards/draft-analysis-enabled.guard';
 import { streamerPlannerEnabledGuard } from './guards/streamer-planner-enabled.guard';
+import { faScoutEnabledGuard } from './guards/fa-scout-enabled.guard';
 import { demoRedemptionGuard } from './guards/demo-redemption.guard';
 import { DESCRIPTION, INDEXABLE } from './shared/crawl-tags';
 
@@ -146,6 +147,12 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./streamer-planner/streamer-planner').then((m) => m.StreamerPlannerComponent),
     canActivate: [authGuard, streamerPlannerEnabledGuard],
+  },
+  // Served only where the BFF's FA_SCOUT_ENABLED says so, and signed in like the planner.
+  {
+    path: 'fa-scout',
+    loadComponent: () => import('./fa-scout/fa-scout').then((m) => m.FaScoutComponent),
+    canActivate: [authGuard, faScoutEnabledGuard],
   },
   {
     path: 'admin',

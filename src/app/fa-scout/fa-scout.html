@@ -1,0 +1,128 @@
+<div class="fa-scout">
+  <header class="hero">
+    <h1>FA Scout</h1>
+    <p class="lede">
+      Players on your league's wire worth keeping for the rest of the season, and the ones the
+      season has lifted furthest since the draft.
+    </p>
+  </header>
+
+  <section class="card" aria-labelledby="scout-list-title">
+    <div class="card-head">
+      <h2 id="scout-list-title" class="card-title">
+        <app-icon name="user-plus" />Available players
+        <app-help-tip
+          label="How these are ranked"
+          text="The AI projection for the rest of the season, scored with your league's settings. Rise is how many places a player has gained among these players since the projection made before the season, so a player traded into a bigger role or given more ice time climbs the list."
+        />
+      </h2>
+      <div class="segmented" role="group" aria-label="Players to list">
+        <button type="button" [attr.aria-pressed]="kind() === 'skater'" (click)="setKind('skater')">
+          Skaters
+        </button>
+        <button type="button" [attr.aria-pressed]="kind() === 'goalie'" (click)="setKind('goalie')">
+          Goalies
+        </button>
+      </div>
+    </div>
+
+    <app-league-field class="league" [(platform)]="platform" [(espnLeague)]="espnLeague" />
+
+    @if (league()) {
+      <div class="filters">
+        @if (kind() === 'skater') {
+          <div class="pills" role="group" aria-label="Positions to show">
+            <button
+              type="button"
+              class="pill"
+              [class.pill--active]="positions().size === 0"
+              [attr.aria-pressed]="positions().size === 0"
+              (click)="clearPositions()"
+            >
+              All
+            </button>
+            @for (option of positionOptions; track option) {
+              <button
+                type="button"
+                class="pill"
+                [class.pill--active]="positions().has(option)"
+                [attr.aria-pressed]="positions().has(option)"
+                (click)="togglePosition(option)"
+              >
+                {{ option }}
+              </button>
+            }
+          </div>
+        }
+        <button
+          type="button"
+          class="pill pill--rising"
+          [class.pill--active]="risingOnly()"
+          [attr.aria-pressed]="risingOnly()"
+          appTooltip="Only players who have gained many places since the preseason projection"
+          (click)="toggleRisingOnly()"
+        >
+          Rising only ({{ risingCount() }})
+        </button>
+      </div>
+    }
+
+    @if (!league()) {
+      <p class="prompt">Pick a league above to see who is available in it.</p>
+    } @else if (failure()) {
+      <app-error-state title="Couldn't load free agents" [error]="failure()" (retry)="retry()" />
+    } @else if (loading()) {
+      <app-loading-indicator />
+    } @else if (outOfSeason()) {
+      <p class="empty">
+        The season isn't under way, so there is no rest of it to scout. Come back after opening
+        night.
+      </p>
+    } @else if (noPlayers()) {
+      <p class="empty">No available player in this league has a projection.</p>
+    } @else {
+      @if (noPreseason()) {
+        <p class="note">
+          The projection made before the season isn't stored, so nobody can be shown as rising yet.
+        </p>
+      }
+      @if (filtered().length === 0) {
+        <p class="empty">{{ emptyText() }}</p>
+      } @else {
+        <app-scout-table
+          [rows]="visible()"
+          [scoringType]="scoringType()"
+          [categories]="categories()"
+        />
+        <div class="list-foot">
+          <span class="list-count" aria-live="polite">{{ rangeText() }}</span>
+          @if (pageCount() > 1) {
+            <nav class="pager" aria-label="Pages of available players">
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm pager-button"
+                aria-label="Previous page"
+                appTooltip="Previous page"
+                [disabled]="currentPage() === 0"
+                (click)="goToPage(currentPage() - 1)"
+              >
+                <app-icon name="arrow-left" [size]="16" />
+              </button>
+              <span class="pager-label">Page {{ currentPage() + 1 }} of {{ pageCount() }}</span>
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm pager-button"
+                aria-label="Next page"
+                appTooltip="Next page"
+                [disabled]="currentPage() === pageCount() - 1"
+                (click)="goToPage(currentPage() + 1)"
+              >
+                <app-icon name="arrow-right" [size]="16" />
+              </button>
+            </nav>
+          }
+        </div>
+      }
+    }
+  </section>
+</div>

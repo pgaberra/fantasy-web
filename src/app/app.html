@@ -26,6 +26,9 @@
           @if (features.streamerPlanner()) {
             <a routerLink="/streamer-planner" routerLinkActive="active">Streamer Planner</a>
           }
+          @if (features.faScout()) {
+            <a routerLink="/fa-scout" routerLinkActive="active">FA Scout</a>
+          }
           <!-- The one link in the header that sells something, and only to an account that has
                not bought it. It used to be an "Account" link to the subscription page, beside an
                avatar that also opened an account menu: two doors marked the same, one of them
@@ -125,6 +128,17 @@
         ariaCurrentWhenActive="page"
       >
         Streamer Planner
+      </a>
+    }
+    @if (features.faScout()) {
+      <a
+        class="nav-menu-item nav-menu-item--collapsed"
+        cdkMenuItem
+        routerLink="/fa-scout"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+      >
+        FA Scout
       </a>
     }
     @if (showsPremiumLink()) {

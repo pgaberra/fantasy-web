@@ -187,6 +187,38 @@
   flex: 0 1 20rem;
 }
 
+/* ESPN's league is a form, several times the height of the dates beside it: with the strip under
+   both, the form's height stood empty over the strip. So the form takes a column of its own and
+   the strip moves up beside it. The last row is the only one that stretches, so a form taller
+   than the nights adds its height under them, not into their cells. Only where seven cells
+   beside the form still hold a date and the off-night mark each: narrower, the strip stays
+   under both. */
+@media (min-width: 1240px) {
+  .nights--beside {
+    column-gap: var(--space-6);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 20rem;
+    grid-template-rows: repeat(4, auto) 1fr;
+  }
+
+  .nights--beside > * {
+    grid-column: 1;
+  }
+
+  .nights--beside .settings {
+    display: contents;
+  }
+
+  .nights--beside .range {
+    margin-bottom: var(--space-3);
+  }
+
+  .nights--beside .league {
+    grid-column: 2;
+    grid-row: 1 / -1;
+  }
+}
+
 /* One cell a night, seven to a row, so a row is a Monday-to-Sunday week. */
 .day-strip {
   display: grid;
