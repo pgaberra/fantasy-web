@@ -13,6 +13,7 @@ import {
 import { STAT_LABELS } from '../pipes/stat-label.pipe';
 import { STAT_FULL_NAMES } from '../pipes/stat-tooltip.pipe';
 import { FreeAgent } from '../services/streamer-planner-free-agents.service';
+import { fitsRoom, NightRoom } from './planner-lineup';
 
 /** Skaters or goalies: the kind of player the free agents list. */
 export type PlannerPosition = 'skaters' | 'goalies';
@@ -99,6 +100,28 @@ export function nightsFactor(
     return 1;
   }
   return club.schedule.filter((game) => counted.has(game.date)).length / club.schedule.length;
+}
+
+/**
+ * The share of a player's club games that fall on nights counted and with room for him in the
+ * user's own lineup: the games he would actually start if picked up. A night his club plays with
+ * every seat he could take already filled scores him nothing, however few games are on it. One
+ * for a club the page cannot find a schedule for, as in {@link nightsFactor}.
+ */
+export function roomFactor(
+  player: FreeAgent,
+  teams: ReadonlyMap<string, TeamSchedule>,
+  counted: ReadonlySet<string>,
+  rooms: ReadonlyMap<string, NightRoom>,
+): number {
+  const club = teams.get(nhlTeamKey(player.teamAbbrev) ?? '');
+  if (!club || club.schedule.length === 0) {
+    return 1;
+  }
+  const started = club.schedule.filter(
+    (game) => counted.has(game.date) && fitsRoom(player.positions, rooms.get(game.date)),
+  );
+  return started.length / club.schedule.length;
 }
 
 /**

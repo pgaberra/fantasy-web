@@ -10,6 +10,7 @@ import {
 import { rxResource } from '@angular/core/rxjs-interop';
 import { from } from 'rxjs';
 import { Api } from '../api/api';
+import { streamerPlannerMyTeam } from '../api/fn/streamer-planner/streamer-planner-my-team';
 import { streamerPlannerTeams } from '../api/fn/streamer-planner/streamer-planner-teams';
 import { streamerPlannerWeeks } from '../api/fn/streamer-planner/streamer-planner-weeks';
 import { PlannerWeek } from '../api/models/planner-week';
@@ -22,6 +23,7 @@ import {
 import { Projection } from '../models/projection.model';
 import { ScoringStatKey } from '../models/stat-key.model';
 import { EspnService } from '../services/espn.service';
+import { FeatureService } from '../services/feature.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { StreamerPlannerFreeAgentsService } from '../services/streamer-planner-free-agents.service';
 import { StreamerPlannerLeagueService } from '../services/streamer-planner-league.service';
@@ -44,6 +46,7 @@ import {
   PlannerPositionGroup,
   projectedStarts,
   RankedFreeAgent,
+  roomFactor,
   scaledProjection,
   startsProjection,
   teamsByKey,
@@ -51,6 +54,7 @@ import {
   WEEK_DECIMALS,
 } from './planner-free-agents';
 import { focusableCategories, readFocus, writeFocus } from './planner-focus';
+import { NightRoom, nightRooms, roomLabel, roomTip } from './planner-lineup';
 import {
   isPageSize,
   PAGE_SIZES,
@@ -174,6 +178,7 @@ export class StreamerPlannerComponent {
   private readonly ranking = inject(ProjectionRankingService);
   private readonly yahoo = inject(YahooService);
   private readonly espn = inject(EspnService);
+  private readonly features = inject(FeatureService);
   /** Read once, when the page opens: the nights are counted from this day. */
   private readonly today = inject(PLANNER_TODAY)();
   /** Phone or desktop: each keeps its own page size. */
@@ -374,7 +379,12 @@ export class StreamerPlannerComponent {
   });
 
   readonly loadingFreeAgents = computed(
-    () => this.freeAgentsResource.isLoading() || this.settingsResource.isLoading(),
+    () =>
+      this.freeAgentsResource.isLoading() ||
+      this.settingsResource.isLoading() ||
+      // The ranking follows the user's own team when there is one: held until it is in, so the
+      // list is not drawn on every night and then redrawn on his.
+      this.myTeamResource.isLoading(),
   );
   readonly freeAgentsFailure = computed(
     () => this.freeAgentsResource.error() ?? this.settingsResource.error(),
@@ -405,6 +415,97 @@ export class StreamerPlannerComponent {
   ]);
 
   private readonly teamsByKey = computed(() => teamsByKey(this.strength()?.teams ?? []));
+
+  // --- The user's own team ----------------------------------------------------------------------
+
+  /**
+   * The user's own team in the league, where this environment reads it. The nights it has room on
+   * follow from it, the league's lineup slots and the club schedules already on the page.
+   */
+  private readonly myTeamResource = rxResource({
+    params: () =>
+      this.features.streamerPlannerMyTeam() ? (this.league() ?? undefined) : undefined,
+    stream: ({ params }) =>
+      from(
+        this.api.invoke(streamerPlannerMyTeam, {
+          platform: params.platform,
+          leagueId: params.leagueId,
+        }),
+      ),
+  });
+
+  private readonly myTeam = computed(() =>
+    this.myTeamResource.hasValue() ? this.myTeamResource.value() : undefined,
+  );
+
+  readonly myTeamName = computed(() => this.myTeam()?.teamName ?? 'Your team');
+
+  /**
+   * What the page can say about the user's own team: nothing where it is not read, and otherwise
+   * whether it is still coming, failed, is not in this league, or is in hand.
+   */
+  readonly myTeamStatus = computed<'off' | 'loading' | 'error' | 'not-found' | 'ready'>(() => {
+    if (!this.features.streamerPlannerMyTeam() || !this.league()) {
+      return 'off';
+    }
+    if (this.myTeamResource.error()) {
+      return 'error';
+    }
+    if (this.myTeamResource.isLoading() || this.settingsResource.isLoading()) {
+      return 'loading';
+    }
+    return this.myTeam()?.found ? 'ready' : 'not-found';
+  });
+
+  /** Each game day's room in the user's lineup, or null while there is no team to place. */
+  readonly rooms = computed<ReadonlyMap<string, NightRoom> | null>(() => {
+    const team = this.myTeam();
+    const settings = this.settingsResource.hasValue() ? this.settingsResource.value() : null;
+    if (this.myTeamStatus() !== 'ready' || !team || !settings?.rosterSlots) {
+      return null;
+    }
+    const dates = this.days()
+      .filter((day) => day.games > 0)
+      .map((day) => day.date);
+    return nightRooms(team.players, settings.rosterSlots, this.teamsByKey(), dates);
+  });
+
+  /** Whether the free agents are scored only on the nights the user's lineup has room for them. */
+  readonly fitMyTeam = signal(true);
+
+  toggleFitMyTeam(): void {
+    this.fitMyTeam.update((fit) => !fit);
+  }
+
+  /** The rooms the ranking follows: none when the reader asks for every counted night. */
+  private readonly rankingRooms = computed(() => (this.fitMyTeam() ? this.rooms() : null));
+
+  room(day: PlannerDay): NightRoom | undefined {
+    return day.games > 0 ? this.rooms()?.get(day.date) : undefined;
+  }
+
+  roomLabel(room: NightRoom): string {
+    return roomLabel(room);
+  }
+
+  roomTip(room: NightRoom): string {
+    return roomTip(room);
+  }
+
+  /** "Room on 4 of 6 game days": the counted nights with a seat open. */
+  readonly roomSummary = computed(() => {
+    const rooms = this.rooms();
+    if (!rooms) {
+      return '';
+    }
+    const counted = [...this.counted()];
+    const open = counted.filter((date) => (rooms.get(date)?.open ?? 0) > 0).length;
+    return `Room on ${open} of ${counted.length} game days`;
+  });
+
+  retryMyTeam(): void {
+    this.myTeamResource.reload();
+  }
 
   // --- The categories the list is ranked by ----------------------------------------------------
 
@@ -528,7 +629,13 @@ export class StreamerPlannerComponent {
     const teams = this.teamsByKey();
     const counted = this.counted();
     const everyNightCounted = this.everyNightCounted();
-    const starts = projectedStarts(week.creases, counted, everyNightCounted);
+    const rooms = this.rankingRooms();
+    // A goalie starts only on a night the lineup has a G seat for him, and every goalie fits the
+    // same nights, so the crease is split over those alone.
+    const goalieNights = rooms
+      ? new Set([...counted].filter((date) => rooms.get(date)?.fits.has('G')))
+      : counted;
+    const starts = projectedStarts(week.creases, goalieNights, everyNightCounted && !rooms);
     const games = new Map<string, number>();
     const lines = new Map<string, Projection>();
     const byPlayerId = new Map(week.players.map((player) => [player.projection.playerId, player]));
@@ -537,7 +644,9 @@ export class StreamerPlannerComponent {
         ? week.players.filter((player) => player.projection.type === kind)
         : week.players;
     const projections = players.map((player) => {
-      const factor = nightsFactor(player, teams, counted, everyNightCounted);
+      const factor = rooms
+        ? roomFactor(player, teams, counted, rooms)
+        : nightsFactor(player, teams, counted, everyNightCounted);
       let played = player.expectedGames * factor;
       let line = scaledProjection(player.projection, factor);
       if (player.projection.type === 'goalie') {
@@ -728,6 +837,13 @@ export class StreamerPlannerComponent {
     const nights = this.nightsWithGames();
     return nights === 0 ? 'No games' : `${this.counted().size} of ${nights} game days`;
   });
+
+  /** How the free agents are ranked, in the tip on their card. */
+  readonly rankingHelp = computed(() =>
+    this.rankingRooms()
+      ? `The model's projection for the game days you count that have room for him in ${this.myTeamName()}, scored with your league's settings. A player is only worth what your league pays for what he does.`
+      : "The model's projection for the nights you count, scored with your league's settings. A player is only worth what your league pays for what he does.",
+  );
 
   /** What a night is worth, said once, in the tip beside the nights. */
   readonly nightsHelp = computed(() => {

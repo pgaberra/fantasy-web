@@ -377,7 +377,14 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   numbers untouched while every night is ticked; `planner-free-agents.ts` scales a free agent's
   line to the share of his club's games on those nights, filters by position and keeps two
   decimals on every stat for the ranking engine, whose default rounds a
-  week's 0.4 goals to none. The free agents are ranked here, by the league's own scoring settings
+  week's 0.4 goals to none. **The user's own team** (where the BFF's `streamerPlannerMyTeam`
+  says so): `GET /streamer-planner/my-team` gives his roster live, and `planner-lineup.ts` seats
+  the players whose club plays each game day in the league's lineup slots (max matching over
+  their positions, so a C/LW goes wherever leaves room); a night's `fits` is the positions that
+  would fill one more seat. Each cell says who would still start ("D", "Any skater, G") or
+  "Full", and while "Rank free agents by the game days … has room" is ticked (the default) a
+  skater counts only the counted nights he fits (`roomFactor`) and the goalies' creases are split
+  over the nights with a G seat. The free agents are ranked here, by the league's own scoring settings
   through `ProjectionRankingService`; the league is remembered on the device by
   `StreamerPlannerLeagueService` and picked in `league-field` (a Yahoo league reads at once, an
   ESPN id waits for Use). Clubs are drawn with `<app-team-logo>` (`shared/team-logo`): the NHL's
