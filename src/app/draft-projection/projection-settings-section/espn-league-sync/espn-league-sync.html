@@ -2,7 +2,7 @@
   <div class="espn-sync-row">
     <span class="espn-sync-brand">
       <img class="espn-logo" src="espn-logo.png" alt="" aria-hidden="true" />
-      {{ purpose() === 'rankings' ? 'Rank your ESPN league' : 'Sync from your ESPN league' }}
+      {{ title() }}
     </span>
   </div>
 
@@ -75,12 +75,9 @@
       (click)="sync()"
     >
       @if (syncing()) {
-        <app-loading-indicator
-          variant="inline"
-          [label]="purpose() === 'rankings' ? 'Reading' : 'Syncing'"
-        />
-      } @else if (purpose() === 'rankings') {
-        Show rankings
+        <app-loading-indicator variant="inline" [label]="readButton() ? 'Reading' : 'Syncing'" />
+      } @else if (readButton(); as label) {
+        {{ label }}
       } @else {
         {{ syncedLeagueId() ? 'Re-sync settings' : 'Sync settings' }}
       }
@@ -92,7 +89,7 @@
   }
   @if (unsupportedStats().length) {
     <p class="espn-sync-muted">
-      {{ purpose() === 'rankings' ? 'Not counted' : 'Not synced' }}:
+      {{ readButton() ? 'Not counted' : 'Not synced' }}:
       {{ unsupportedStats().join(', ') }}
     </p>
   }

@@ -65,7 +65,7 @@
             </div>
           </div>
         </div>
-        <app-league-field class="league" />
+        <app-league-field class="league" [(platform)]="platform" [(espnLeague)]="espnLeague" />
       </div>
 
       @if (loadingSchedule()) {
