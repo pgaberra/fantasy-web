@@ -6,6 +6,7 @@ import { authGuard } from './guards/auth.guard';
 import { paymentsEnabledGuard } from './guards/payments-enabled.guard';
 import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
 import { streamerPlannerEnabledGuard } from './guards/streamer-planner-enabled.guard';
+import { roleChangesEnabledGuard } from './guards/role-changes-enabled.guard';
 import { demoRedemptionGuard } from './guards/demo-redemption.guard';
 import { DESCRIPTION, INDEXABLE } from './shared/crawl-tags';
 
@@ -138,6 +139,12 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./streamer-planner/streamer-planner').then((m) => m.StreamerPlannerComponent),
     canActivate: [authGuard, streamerPlannerEnabledGuard],
+  },
+  // Served only where the BFF's ROLE_CHANGES_ENABLED says so, and signed in like Who's Hot.
+  {
+    path: 'role-changes',
+    loadComponent: () => import('./role-changes/role-changes').then((m) => m.RoleChangesComponent),
+    canActivate: [authGuard, roleChangesEnabledGuard],
   },
   {
     path: 'admin',
