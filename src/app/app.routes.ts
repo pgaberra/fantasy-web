@@ -8,6 +8,7 @@ import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
 import { draftAnalysisEnabledGuard } from './guards/draft-analysis-enabled.guard';
 import { streamerPlannerEnabledGuard } from './guards/streamer-planner-enabled.guard';
 import { faScoutEnabledGuard } from './guards/fa-scout-enabled.guard';
+import { roleChangesEnabledGuard } from './guards/role-changes-enabled.guard';
 import { demoRedemptionGuard } from './guards/demo-redemption.guard';
 import { DESCRIPTION, INDEXABLE } from './shared/crawl-tags';
 
@@ -153,6 +154,12 @@ export const routes: Routes = [
     path: 'fa-scout',
     loadComponent: () => import('./fa-scout/fa-scout').then((m) => m.FaScoutComponent),
     canActivate: [authGuard, faScoutEnabledGuard],
+  },
+  // Served only where the BFF's ROLE_CHANGES_ENABLED says so, and signed in like Who's Hot.
+  {
+    path: 'role-changes',
+    loadComponent: () => import('./role-changes/role-changes').then((m) => m.RoleChangesComponent),
+    canActivate: [authGuard, roleChangesEnabledGuard],
   },
   {
     path: 'admin',
