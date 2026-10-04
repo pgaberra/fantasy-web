@@ -53,6 +53,14 @@ export class FeatureService {
   );
 
   /**
+   * Whether the streamer planner reads the user's own team, to show the nights it has room. False
+   * until the answer lands, like the others, and never without the planner.
+   */
+  readonly streamerPlannerMyTeam = computed(() =>
+    this.features.hasValue() ? this.features.value().streamerPlannerMyTeam : false,
+  );
+
+  /**
    * Whether Who's hot may narrow its board to the players a linked league has available. False
    * until the answer lands, like the others.
    */

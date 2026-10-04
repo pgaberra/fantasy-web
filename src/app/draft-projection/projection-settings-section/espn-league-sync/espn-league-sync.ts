@@ -11,6 +11,7 @@ import {
 import { HttpErrorResponse } from '@angular/common/http';
 import { of, switchMap } from 'rxjs';
 import { EspnService } from '../../../services/espn.service';
+import { LeagueChoiceService } from '../../../services/league-choice.service';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
 import { LoadingIndicatorComponent } from '../../../shared/loading-indicator/loading-indicator';
 import { SyncedLineComponent } from '../../../shared/synced-line/synced-line';
@@ -18,11 +19,23 @@ import { EspnCookieHelpComponent } from '../../../shared/espn-cookie-help/espn-c
 import { CookieFieldDirective } from '../../../shared/cookie-field/cookie-field';
 
 /**
- * What the league is read for: its settings, imported into a board, or its teams, ranked by Team
- * Power Rankings. The form, the cookies and the errors are the same either way; only what the
- * card is called and what its button says differ.
+ * What the league is read for: its settings, imported into a board; its teams, ranked by Team
+ * Power Rankings; or its free agents, planned by the Streamer Planner. The form, the cookies and
+ * the errors are the same every way; only what the card is called and what its button says differ.
  */
-export type EspnLeaguePurpose = 'settings' | 'rankings';
+export type EspnLeaguePurpose = 'settings' | 'rankings' | 'planner';
+
+const TITLES: Record<EspnLeaguePurpose, string> = {
+  settings: 'Sync from your ESPN league',
+  rankings: 'Rank your ESPN league',
+  planner: 'Plan from your ESPN league',
+};
+
+/** What the button says on a page that reads the league rather than importing its settings. */
+const READ_BUTTONS: Record<Exclude<EspnLeaguePurpose, 'settings'>, string> = {
+  rankings: 'Show rankings',
+  planner: 'Show free agents',
+};
 
 export interface EspnSyncResult {
   settings: LeagueProjectionSettingsResponse;
@@ -45,12 +58,15 @@ export interface EspnSyncResult {
  * anyway: the server uses the stored pair whether it is ticked or not, so all it gates is the
  * fields for pasting a new one.
  *
- * A returning user finds the league id they synced last time. The stored cookies are never read
- * back: the pair is a session credential for the whole ESPN account, and it stays on the server.
+ * A returning user finds the league id they synced last time, or, where nothing has been synced
+ * here, the ESPN league they last chose anywhere ({@link LeagueChoiceService}) — and a league ESPN
+ * accepts here is the one the next page opens on. The stored cookies are never read back: the
+ * pair is a session credential for the whole ESPN account, and it stays on the server.
  *
- * Team Power Rankings asks for its ESPN league with this same card (`purpose="rankings"`), so an
- * ESPN league is picked the same way wherever it is picked. The settings read is then only the
- * proof that ESPN takes the league and the cookies; what the page reads next is the league's teams.
+ * Team Power Rankings and the Streamer Planner ask for their ESPN league with this same card
+ * (`purpose="rankings"`, `"planner"`), so an ESPN league is picked the same way wherever it is
+ * picked. The settings read is then only the proof that ESPN takes the league and the cookies;
+ * what the page reads next is the league's teams, or its free agents.
  */
 @Component({
   selector: 'app-espn-league-sync',
@@ -65,6 +81,7 @@ export interface EspnSyncResult {
 })
 export class EspnLeagueSyncComponent implements OnInit {
   private readonly espn = inject(EspnService);
+  private readonly choice = inject(LeagueChoiceService);
 
   /** The league this projection was last synced from, so a re-sync isn't retyped from memory. */
   readonly lastLeagueId = input<string | null>(null);
@@ -81,7 +98,9 @@ export class EspnLeagueSyncComponent implements OnInit {
   readonly synced = output<EspnSyncResult>();
   readonly disconnected = output<void>();
 
-  readonly leagueId = linkedSignal<string>(() => this.lastLeagueId() ?? '');
+  readonly leagueId = linkedSignal<string>(
+    () => this.lastLeagueId() ?? this.choice.on('ESPN')?.leagueId ?? '',
+  );
   readonly isPrivate = signal<boolean>(false);
   readonly espnS2 = signal<string>('');
   readonly swid = signal<string>('');
@@ -101,6 +120,13 @@ export class EspnLeagueSyncComponent implements OnInit {
   readonly syncPending = computed(() => {
     const id = this.leagueId().trim();
     return id !== '' && id !== (this.syncedLeagueId() ?? this.lastLeagueId());
+  });
+
+  readonly title = computed(() => TITLES[this.purpose()]);
+  /** The button's words where the league is read rather than imported; null on the import. */
+  readonly readButton = computed(() => {
+    const purpose = this.purpose();
+    return purpose === 'settings' ? null : READ_BUTTONS[purpose];
   });
 
   ngOnInit(): void {
@@ -153,6 +179,11 @@ export class EspnLeagueSyncComponent implements OnInit {
         if (savingCookies) {
           this.hasStoredCredentials.set(true);
         }
+        this.choice.choose({
+          platform: 'ESPN',
+          leagueId,
+          name: settings.leagueName ?? `ESPN league ${leagueId}`,
+        });
         this.synced.emit({ settings, leagueId, leagueName: settings.leagueName });
       },
       error: (err: unknown) => {

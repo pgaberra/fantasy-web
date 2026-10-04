@@ -1,119 +1,50 @@
+import { ChangeDetectionStrategy, Component, inject, model } from '@angular/core';
+import { environment } from '../../../environments/environment';
 import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  linkedSignal,
-  signal,
-} from '@angular/core';
-import { rxResource } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
-import { LeagueSummary } from '../../api/models/league-summary';
+  EspnLeagueSyncComponent,
+  EspnSyncResult,
+} from '../../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
+import { ChosenLeague } from '../../services/league-choice.service';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
-import {
-  PlannerLeague,
-  StreamerPlannerLeagueService,
-} from '../../services/streamer-planner-league.service';
-import { YahooService } from '../../services/yahoo.service';
-
-/** The dropdown's value for an ESPN league, which is typed rather than picked from a list. */
-export const ESPN_OPTION = 'espn';
+import { Platform, PlatformTabsComponent } from '../../shared/platform-tabs/platform-tabs';
+import { YahooLeaguePicker } from '../../shared/yahoo-league-picker';
 
 /**
- * The league the planner reads free agents from, as one field of the report settings: a dropdown
- * of the account's Yahoo leagues, with an ESPN league as the last choice, typed by its id.
+ * The league the planner reads free agents from, as one field of the report settings, picked the
+ * way Team Power Rankings picks one (Alexander's call, 2026-10-05): the same Yahoo / ESPN tabs,
+ * under Yahoo a dropdown of the account's leagues, under ESPN the same card — league id, "My
+ * league is private", the cookies.
  *
  * <p>A Yahoo league is read the moment it is picked, since nothing here is saved or sent anywhere
- * but to be read (the same rule as Team Power Rankings). An ESPN id is not read until "Use" says
- * the reader has finished typing it. The choice is remembered on this device by
- * {@link StreamerPlannerLeagueService}, so the field opens on last time's league.
+ * but to be read. An ESPN id is not read until the card's button says the reader has finished
+ * typing it. Either is remembered for every page that picks a league, so the field opens on the
+ * one last chosen anywhere. The page owns which tab is open and which ESPN league ESPN accepted,
+ * and the Yahoo league is the page's {@link YahooLeaguePicker}'s, since the free agents follow all
+ * three.
  */
 @Component({
   selector: 'app-league-field',
-  imports: [FormsModule, LoadingIndicatorComponent],
+  imports: [EspnLeagueSyncComponent, LoadingIndicatorComponent, PlatformTabsComponent],
   templateUrl: './league-field.html',
   styleUrl: './league-field.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LeagueFieldComponent {
-  private readonly leagueService = inject(StreamerPlannerLeagueService);
-  private readonly yahoo = inject(YahooService);
+  readonly picker = inject(YahooLeaguePicker);
 
-  readonly league = this.leagueService.league;
-  readonly espnOption = ESPN_OPTION;
+  readonly platform = model.required<Platform>();
+  readonly espnLeague = model<ChosenLeague | null>(null);
 
-  private readonly yahooLeaguesResource = rxResource({ stream: () => this.yahoo.myLeagues() });
+  /** Whether ESPN leagues are offered at all: where Team Power Rankings offers them. */
+  protected readonly espnOffered = environment.espnLeaguesEnabled;
+  protected readonly platforms: readonly Platform[] = ['yahoo', 'espn'];
 
-  readonly loadingLeagues = computed(() => this.yahooLeaguesResource.isLoading());
-  readonly yahooFailed = computed(() => !!this.yahooLeaguesResource.error());
-
-  /**
-   * The Yahoo leagues to offer: the account's, and the remembered one where it is not among them
-   * (the list failed to load, or the league has gone), so the field can still say what is chosen.
-   */
-  readonly yahooLeagues = computed<readonly LeagueSummary[]>(() => {
-    const loaded = this.yahooLeaguesResource.hasValue()
-      ? this.yahooLeaguesResource.value().leagues
-      : [];
-    const remembered = this.league();
-    if (
-      remembered?.platform === 'YAHOO' &&
-      !loaded.some((league) => league.leagueKey === remembered.leagueId)
-    ) {
-      return [{ leagueKey: remembered.leagueId, name: remembered.name }, ...loaded];
-    }
-    return loaded;
-  });
-
-  /** Whether the ESPN choice is open, its id still to be typed or changed. */
-  readonly espnChosen = signal(false);
-
-  /** The id in the ESPN box: last time's, until the reader types another. */
-  readonly espnLeagueId = linkedSignal<PlannerLeague | null, string>({
-    source: this.league,
-    computation: (league) => (league?.platform === 'ESPN' ? league.leagueId : ''),
-  });
-
-  readonly selectedValue = computed(() => {
-    if (this.espnChosen()) {
-      return ESPN_OPTION;
-    }
-    const league = this.league();
-    if (!league) {
-      return '';
-    }
-    return league.platform === 'ESPN' ? ESPN_OPTION : league.leagueId;
-  });
-
-  readonly showsEspnId = computed(() => this.espnChosen() || this.league()?.platform === 'ESPN');
-
-  select(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
-    if (value === ESPN_OPTION) {
-      this.espnChosen.set(true);
-      return;
-    }
-    this.espnChosen.set(false);
-    if (!value) {
-      this.leagueService.forget();
-      return;
-    }
-    const league = this.yahooLeagues().find((candidate) => candidate.leagueKey === value);
-    if (league) {
-      this.leagueService.choose({
-        platform: 'YAHOO',
-        leagueId: league.leagueKey,
-        name: league.name,
-      });
-    }
-  }
-
-  useEspn(): void {
-    const leagueId = this.espnLeagueId().trim();
-    if (!leagueId) {
-      return;
-    }
-    this.leagueService.choose({ platform: 'ESPN', leagueId, name: `ESPN league ${leagueId}` });
-    this.espnChosen.set(false);
+  /** The ESPN league the card has just checked with ESPN, which the free agents now come from. */
+  readEspn(result: EspnSyncResult): void {
+    this.espnLeague.set({
+      platform: 'ESPN',
+      leagueId: result.leagueId,
+      name: result.leagueName ?? `ESPN league ${result.leagueId}`,
+    });
   }
 }

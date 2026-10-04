@@ -1,4 +1,5 @@
-/* The same field as the others in the report settings: a small label over the control. */
+/* The same field as the others in the report settings: a small label over the control. The
+   platform tabs sit between the two, as they sit over the league on Team Power Rankings. */
 .league-field {
   display: flex;
   flex: 1 1 16rem;
@@ -22,28 +23,19 @@
   gap: var(--space-2);
 }
 
-.field-select,
-.field-input {
+.field-select {
   background: var(--color-surface);
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-sm);
   color: var(--color-text);
+  flex: 1 1 12rem;
   font: inherit;
   font-size: var(--text-sm);
+  min-width: 0;
   padding: var(--space-2);
 }
 
-.field-select {
-  flex: 1 1 12rem;
-  min-width: 0;
-}
-
-.field-input {
-  width: 8rem;
-}
-
-.field-select:focus-visible,
-.field-input:focus-visible {
+.field-select:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 1px;
 }
@@ -53,12 +45,8 @@
   font-size: var(--text-xs);
 }
 
-.visually-hidden {
-  border: 0;
-  clip: rect(0 0 0 0);
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  position: absolute;
-  width: 1px;
+.field-error {
+  color: var(--color-danger);
+  font-size: var(--text-xs);
+  margin: 0;
 }
