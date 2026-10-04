@@ -1006,6 +1006,18 @@ describe('StreamerPlannerComponent', () => {
       expect(planner.league()).toEqual(OFFICE);
     });
 
+    /** ESPN's league is a tall form: the nights sit beside it, not under its whole height. */
+    it("sets the nights beside ESPN's form, and under Yahoo's one-line picker", async () => {
+      const fixture = await render();
+      const card = ngMocks.find(fixture, '.nights').nativeElement as HTMLElement;
+
+      expect(card.classList).toContain('nights--beside');
+
+      fixture.point.componentInstance.platform.set('yahoo');
+      fixture.detectChanges();
+      expect(card.classList).not.toContain('nights--beside');
+    });
+
     it('stays on Yahoo where ESPN leagues are not offered', async () => {
       environment.espnLeaguesEnabled = false;
       const fixture = await render();

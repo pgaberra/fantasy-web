@@ -18,7 +18,11 @@
   } @else {
     <!-- The page's one setting, with the league beside it. No button: what the nights point at is
          what is on screen. A night is picked by name or by date, and any night can be left out. -->
-    <section class="card nights" aria-label="Game days and league">
+    <section
+      class="card nights"
+      [class.nights--beside]="platform() === 'espn'"
+      aria-label="Game days and league"
+    >
       <div class="settings">
         <div class="range" role="group" aria-labelledby="planner-nights-label">
           <div class="range-head">
