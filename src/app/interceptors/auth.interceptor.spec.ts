@@ -9,7 +9,6 @@ import { AuthResponse } from '../api/models';
 describe('authInterceptor', () => {
   const tokens: AuthResponse = {
     token: 'new-access',
-    refreshToken: 'new-refresh',
     expiresInSeconds: 900,
     refreshExpiresInSeconds: 2592000,
     admin: false,
