@@ -77,6 +77,11 @@ export class FeatureService {
     this.features.hasValue() ? this.features.value().restOfSeasonPreset : false,
   );
 
+  /** Whether the FA scout is served here. False until the answer lands, like the others. */
+  readonly faScout = computed(() =>
+    this.features.hasValue() ? this.features.value().faScout : false,
+  );
+
   /**
    * The presets this environment offers: every one of them where the AI projection is served,
    * and everything but the model-seeded ones where it is not. A starting point the server will not

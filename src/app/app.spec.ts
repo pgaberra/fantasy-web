@@ -29,6 +29,7 @@ describe('App', () => {
   /** Reading a league drafted on Yahoo. Off by default here, as it is in a fresh environment. */
   const leagueDraftSync = signal(false);
   const streamerPlanner = signal(false);
+  const faScout = signal(false);
 
   beforeEach(() => {
     isLoggedIn.set(true);
@@ -40,6 +41,7 @@ describe('App', () => {
     loadState.set('loaded');
     leagueDraftSync.set(false);
     streamerPlanner.set(false);
+    faScout.set(false);
     logout.mockClear();
     return (
       MockBuilder(App)
@@ -58,7 +60,7 @@ describe('App', () => {
         .mock(AuthService, { isLoggedIn, isAdmin, isEmailVerified: signal(true), logout })
         .mock(AccountService, { username, email, avatarUrl })
         .mock(EntitlementService, { premium, loadState })
-        .mock(FeatureService, { leagueDraftSync, streamerPlanner } as never)
+        .mock(FeatureService, { leagueDraftSync, streamerPlanner, faScout } as never)
         .provide({
           provide: Router,
           useValue: {
@@ -121,6 +123,27 @@ describe('App', () => {
     const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
 
     expect(items).not.toContain('Team Power Rankings');
+  });
+
+  it('offers the FA scout from the header and the burger where the BFF serves it', () => {
+    faScout.set(true);
+    const fixture = render();
+
+    const header = Array.from(
+      fixture.nativeElement.querySelectorAll('.app-nav a') as NodeListOf<HTMLElement>,
+    ).map((link) => link.textContent?.trim());
+    const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
+
+    expect(header).toContain('FA Scout');
+    expect(items).toContain('FA Scout');
+  });
+
+  it('drops the FA scout where the BFF does not serve it', () => {
+    const fixture = render();
+
+    const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
+
+    expect(items).not.toContain('FA Scout');
   });
 
   it('leaves out the links the header itself leaves out', () => {
