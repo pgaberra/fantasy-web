@@ -128,22 +128,6 @@ describe('App', () => {
     expect(items).toContain('Draft Analysis');
   });
 
-  it('drops Draft Analysis where it is not served', () => {
-    const fixture = render();
-
-    const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
-
-    expect(items).not.toContain('Draft Analysis');
-  });
-
-  it('drops the power rankings where no league draft can be read', () => {
-    const fixture = render();
-
-    const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
-
-    expect(items).not.toContain('Team Power Rankings');
-  });
-
   it('offers the FA scout from the header and the burger where the BFF serves it', () => {
     faScout.set(true);
     const fixture = render();
@@ -157,13 +141,16 @@ describe('App', () => {
     expect(items).toContain('FA Scout');
   });
 
-  it('drops the FA scout where the BFF does not serve it', () => {
-    const fixture = render();
+  it.each(['Team Power Rankings', 'Draft Analysis', 'FA Scout'])(
+    'drops %s where the BFF does not serve it',
+    (label) => {
+      const fixture = render();
 
-    const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
+      const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
 
-    expect(items).not.toContain('FA Scout');
-  });
+      expect(items).not.toContain(label);
+    },
+  );
 
   it('leaves out the links the header itself leaves out', () => {
     isAdmin.set(false);
