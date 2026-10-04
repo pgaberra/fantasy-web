@@ -77,6 +77,10 @@ export class FeatureService {
     this.features.hasValue() ? this.features.value().restOfSeasonPreset : false,
   );
 
+  /** Whether the FA scout is served here. False until the answer lands, like the others. */
+  readonly faScout = computed(() =>
+    this.features.hasValue() ? this.features.value().faScout : false,
+  );
   /** Whether Role Changes is served here. False until the answer lands, like the others. */
   readonly roleChanges = computed(() =>
     this.features.hasValue() ? this.features.value().roleChanges : false,

@@ -26,6 +26,9 @@
           @if (features.streamerPlanner()) {
             <a routerLink="/streamer-planner" routerLinkActive="active">Streamer Planner</a>
           }
+          @if (features.faScout()) {
+            <a routerLink="/fa-scout" routerLinkActive="active">FA Scout</a>
+          }
           @if (features.roleChanges()) {
             <a routerLink="/role-changes" routerLinkActive="active">Role Changes</a>
           }
@@ -117,6 +120,17 @@
         ariaCurrentWhenActive="page"
       >
         Streamer Planner
+      </a>
+    }
+    @if (features.faScout()) {
+      <a
+        class="nav-menu-item nav-menu-item--collapsed"
+        cdkMenuItem
+        routerLink="/fa-scout"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+      >
+        FA Scout
       </a>
     }
     @if (features.roleChanges()) {

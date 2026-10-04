@@ -1,0 +1,123 @@
+<div class="table-scroll">
+  <table class="free-agents-table scout-table">
+    <thead>
+      <tr>
+        <th scope="col" class="num rank-col" [appTooltip]="rankTip()">#</th>
+        <th scope="col" class="player-col">Player</th>
+        <th
+          scope="col"
+          class="num"
+          appTooltip="The AI projection for the rest of the season, scored by your league's settings"
+        >
+          {{ scoreHeading() }}
+        </th>
+        <th
+          scope="col"
+          class="num"
+          appTooltip="Places gained among these players since the preseason projection"
+        >
+          Rise
+        </th>
+        <th
+          scope="col"
+          class="num"
+          appTooltip="Games he is expected to play in the rest of the season"
+        >
+          GP
+        </th>
+        @if (kind() === 'skater') {
+          <th
+            scope="col"
+            class="num toi-col"
+            appTooltip="Ice time per game now, and before the season"
+          >
+            TOI
+          </th>
+        }
+        @for (column of columns(); track column.key; let first = $first) {
+          <th
+            scope="col"
+            class="num stat-col"
+            [class.stat-col--first]="first"
+            [appTooltip]="column.name"
+          >
+            {{ column.label }}
+          </th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (entry of entries(); track entry.row.player.playerId) {
+        <tr class="player-row">
+          <td class="num rank-col">{{ entry.row.rank }}</td>
+          <th scope="row" class="player-col">
+            <span class="player-cell">
+              <app-team-logo
+                class="player-logo"
+                [team]="entry.row.player.teamAbbrev"
+                [alt]="entry.row.player.teamAbbrev ?? ''"
+              />
+              <span class="player-identity">
+                <span class="player-name-line">
+                  <span class="player-name">{{ entry.row.player.name }}</span>
+                  @if (onWaivers(entry.row)) {
+                    <span
+                      class="player-status"
+                      role="img"
+                      aria-label="On waivers"
+                      tabindex="0"
+                      appTooltip="On waivers"
+                    >
+                      <app-icon name="hourglass" [size]="14" />
+                    </span>
+                  }
+                </span>
+                <span class="player-meta">
+                  <app-position-chips [positions]="entry.row.player.positions" />
+                  @if (entry.row.rising) {
+                    <span class="scout-tag scout-tag--rising">Rising</span>
+                  } @else if (entry.row.preseasonRank === null) {
+                    <span class="scout-tag">New</span>
+                  }
+                </span>
+              </span>
+            </span>
+          </th>
+          <td class="num score-col">
+            <span class="score">{{ score(entry.row) }}</span>
+            <span class="per-game">{{ perGame(entry.row) }}</span>
+          </td>
+          <td class="num" [appTooltip]="riseTip(entry.row)">
+            @if (entry.row.preseasonRank !== null) {
+              <span
+                class="rise"
+                [class.rise--up]="(entry.row.rise ?? 0) > 0"
+                [class.rise--down]="(entry.row.rise ?? 0) < 0"
+                >{{ rise(entry.row) }}</span
+              >
+              <span class="per-game">was {{ entry.row.preseasonRank }}</span>
+            }
+          </td>
+          <td class="num">{{ games(entry.row) }}</td>
+          @if (kind() === 'skater') {
+            <td class="num toi-col" [class.toi-col--up]="toiUp(entry.row)">
+              <span class="toi-now">{{ toiNow(entry.row) }}</span>
+              @if (toiThen(entry.row)) {
+                <span class="per-game">was {{ toiThen(entry.row) }}</span>
+              }
+            </td>
+          }
+          @for (cell of entry.cells; track $index; let first = $first) {
+            <td
+              class="num stat-col"
+              [class.stat-col--first]="first"
+              [class.nil]="cell && isNil(cell)"
+            >
+              {{ cell?.value }}
+            </td>
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
