@@ -75,6 +75,13 @@ describe('FeatureService', () => {
     expect((await answered()).restOfSeasonPreset()).toEqual(true);
   });
 
+  it('reports the FA scout as the BFF does, and off until it answers', async () => {
+    invoke.mockResolvedValue({ aiProjection: true, faScout: true });
+    expect(TestBed.inject(FeatureService).faScout()).toEqual(false);
+
+    expect((await answered()).faScout()).toEqual(true);
+  });
+
   it('is not settled while the BFF has yet to answer', () => {
     invoke.mockReturnValue(new Promise(() => undefined));
 

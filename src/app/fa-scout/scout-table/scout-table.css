@@ -1,0 +1,39 @@
+/* A tag beside the positions: what the row is, not another position. Rising is what the page is
+   there to find, so it alone is coloured. */
+.scout-tag {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  line-height: 1.4;
+  padding: 0 var(--space-2);
+}
+
+.scout-tag--rising {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.rise {
+  display: block;
+  font-weight: var(--weight-semibold);
+}
+
+.rise--up {
+  color: var(--color-success);
+}
+
+.rise--down {
+  color: var(--color-text-subtle);
+}
+
+.scout-table td.toi-col > span {
+  display: block;
+}
+
+/* More ice than the preseason line gave him: the commonest reason a player is worth more. */
+.scout-table td.toi-col--up .toi-now {
+  color: var(--color-success);
+  font-weight: var(--weight-semibold);
+}
