@@ -62,6 +62,19 @@ describe('FeatureService', () => {
     ]);
   });
 
+  it('reports the rest-of-season preset as the BFF does, and off until it answers', async () => {
+    invoke.mockResolvedValue({ aiProjection: true, restOfSeasonPreset: false });
+    expect(TestBed.inject(FeatureService).restOfSeasonPreset()).toEqual(false);
+
+    expect((await answered()).restOfSeasonPreset()).toEqual(false);
+  });
+
+  it('offers the rest-of-season preset where the BFF switches it on', async () => {
+    invoke.mockResolvedValue({ aiProjection: true, restOfSeasonPreset: true });
+
+    expect((await answered()).restOfSeasonPreset()).toEqual(true);
+  });
+
   it('is not settled while the BFF has yet to answer', () => {
     invoke.mockReturnValue(new Promise(() => undefined));
 
