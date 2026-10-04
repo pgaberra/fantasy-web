@@ -4,14 +4,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Api } from '../api/api';
+import { streamerPlannerMyTeam } from '../api/fn/streamer-planner/streamer-planner-my-team';
 import { streamerPlannerTeams } from '../api/fn/streamer-planner/streamer-planner-teams';
 import { streamerPlannerWeeks } from '../api/fn/streamer-planner/streamer-planner-weeks';
 import { LeagueProjectionSettingsResponse } from '../api/models/league-projection-settings-response';
+import { PlannerMyTeamResponse } from '../api/models/planner-my-team-response';
 import { PlannerWeeksResponse } from '../api/models/planner-weeks-response';
 import { ScheduleStrengthResponse } from '../api/models/schedule-strength-response';
 import { TeamSchedule } from '../api/models/team-schedule';
 import { GOALIE_SCORING_STAT_KEYS, SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
 import { EspnService } from '../services/espn.service';
+import { FeatureService } from '../services/feature.service';
 import {
   FreeAgentWeek,
   StreamerPlannerFreeAgentsService,
@@ -193,6 +196,9 @@ describe('StreamerPlannerComponent', () => {
   /** The Monday of week 2 unless a test says otherwise. */
   let today = '2026-10-12';
   let settings = SETTINGS;
+  /** Whether the BFF reads the user's own team, and the team it answers with. */
+  let myTeamOn = false;
+  let myTeam: PlannerMyTeamResponse = { found: false, players: [] };
   const layout = signal<PlannerLayout>('desktop');
 
   beforeEach(() => {
@@ -200,6 +206,8 @@ describe('StreamerPlannerComponent', () => {
     chosen = null;
     today = '2026-10-12';
     settings = SETTINGS;
+    myTeamOn = false;
+    myTeam = { found: false, players: [] };
     localStorage.clear();
     invoke.mockReset();
     freeAgents.mockReset();
@@ -209,6 +217,9 @@ describe('StreamerPlannerComponent', () => {
       }
       if (fn === streamerPlannerTeams && params) {
         return Promise.resolve(strength(params.start, params.end));
+      }
+      if (fn === streamerPlannerMyTeam) {
+        return Promise.resolve(myTeam);
       }
       return Promise.reject(new Error('unexpected call'));
     });
@@ -247,7 +258,12 @@ describe('StreamerPlannerComponent', () => {
             ],
           }),
       } as never)
-      .mock(EspnService, { leagueProjectionSettings: () => of(settings) });
+      .mock(EspnService, { leagueProjectionSettings: () => of(settings) })
+      .mock(FeatureService, {
+        get streamerPlannerMyTeam() {
+          return () => myTeamOn;
+        },
+      } as never);
   });
 
   async function render() {
@@ -721,6 +737,87 @@ describe('StreamerPlannerComponent', () => {
       expect(second.games).toBe(0);
       expect(second.score).toBe(0);
       expect(second.line.stats.scoring).toMatchObject({ w: 0, sv: 0, svPct: 0 });
+    });
+
+    describe("with the user's own team", () => {
+      /** A Lightning skater on the user's roster: TB plays both of the stretch's game days. */
+      const mine = (playerId: string, positions: string[], out = false) => ({
+        playerId,
+        name: `Mine ${playerId}`,
+        teamAbbrev: 'TB',
+        type: 'skater',
+        positions,
+        out,
+      });
+
+      beforeEach(() => {
+        myTeamOn = true;
+        // Two Cs, a Util and two LWs taken every night; the RWs, the Ds and the Gs are open.
+        myTeam = {
+          found: true,
+          teamName: 'Howe Hard',
+          players: [
+            mine('10', ['C']),
+            mine('11', ['C']),
+            mine('12', ['C']),
+            mine('13', ['LW']),
+            mine('14', ['LW']),
+            mine('15', ['D'], true),
+          ],
+        };
+      });
+
+      it('marks each game day with who would still start, and asks for the team once', async () => {
+        const fixture = await render();
+        const planner = fixture.point.componentInstance;
+
+        expect(invoke).toHaveBeenCalledWith(streamerPlannerMyTeam, {
+          platform: 'YAHOO',
+          leagueId: '465.l.9',
+        });
+        const night = planner.days().find((day) => day.date === '2026-10-13')!;
+        expect(planner.roomLabel(planner.room(night)!)).toBe('RW, D, G');
+        // A day without games has no lineup to fill.
+        expect(planner.room(planner.days()[0])).toBeUndefined();
+        expect(
+          ngMocks.findAll(fixture, '.day-room').map((cell) => ngMocks.formatText(cell)),
+        ).toEqual(['RW, D, G', 'RW, D, G']);
+        expect(planner.roomSummary()).toBe('Room on 2 of 2 game days');
+        expect(ngMocks.formatText(fixture)).toContain('Howe Hard has room for them');
+      });
+
+      it('scores a free agent only on the game days he would start, until that is unticked', async () => {
+        const fixture = await render();
+        const planner = fixture.point.componentInstance;
+
+        // The free agents are an Oilers C and a C/LW, and every C and LW seat is taken.
+        const skaters = planner.ranked().filter((row) => row.line.type === 'skater');
+        expect(skaters.map((row) => row.games)).toEqual([0, 0]);
+        expect(skaters.map((row) => row.score)).toEqual([0, 0]);
+        // A G seat is open both nights, so the goalie keeps his starts.
+        const waiver = planner.ranked().find((row) => row.player.name === 'Waiver Goalie');
+        expect(waiver?.games).toBe(2);
+
+        planner.toggleFitMyTeam();
+        expect(planner.ranked()[0].player.name).toBe('Top Scorer');
+        expect(planner.ranked()[0].games).toBe(2);
+      });
+
+      it('says so when the league has no team of the user', async () => {
+        myTeam = { found: false, players: [] };
+        const fixture = await render();
+        const planner = fixture.point.componentInstance;
+
+        expect(planner.myTeamStatus()).toBe('not-found');
+        expect(planner.rooms()).toBeNull();
+        expect(ngMocks.formatText(fixture)).toContain("Your team isn't in this league");
+        expect(planner.ranked()[0].player.name).toBe('Top Scorer');
+      });
+    });
+
+    it('asks for no team where the environment does not read it', async () => {
+      await render();
+      expect(invoke).not.toHaveBeenCalledWith(streamerPlannerMyTeam, expect.anything());
     });
 
     it('surfaces a failed read instead of an empty table', async () => {

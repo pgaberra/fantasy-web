@@ -129,6 +129,16 @@
                   </span>
                 }
               </span>
+              @if (room(day); as room) {
+                <!-- The user's own lineup that night: who would still start, or that it is full. -->
+                <span
+                  class="day-room"
+                  [class.day-room--full]="room.open === 0"
+                  [appTooltip]="roomTip(room)"
+                  [attr.aria-label]="roomTip(room)"
+                  >{{ roomLabel(room) }}</span
+                >
+              }
             </label>
           }
         </div>
@@ -142,6 +152,32 @@
             >
           }
         </p>
+        <!-- The user's own team, where this environment reads it: the cells above say which nights
+             it has room on, and the free agents are scored on those nights alone unless unticked. -->
+        @switch (myTeamStatus()) {
+          @case ('ready') {
+            <div class="my-team">
+              <label class="my-team-toggle">
+                <input type="checkbox" [checked]="fitMyTeam()" (change)="toggleFitMyTeam()" />
+                Rank free agents by the game days {{ myTeamName() }} has room for them
+              </label>
+              <span class="my-team-summary">{{ roomSummary() }}</span>
+            </div>
+          }
+          @case ('not-found') {
+            <p class="my-team my-team--note">
+              Your team isn't in this league, so open lineup slots aren't shown.
+            </p>
+          }
+          @case ('error') {
+            <p class="my-team my-team--note">
+              Couldn't load your team in this league.
+              <button type="button" class="btn btn-secondary btn-sm" (click)="retryMyTeam()">
+                Try again
+              </button>
+            </p>
+          }
+        }
       }
     </section>
 
@@ -166,10 +202,7 @@
         <div class="card-head">
           <h2 id="planner-free-agents-title" class="card-title">
             <app-icon name="user-plus" />Top free agents
-            <app-help-tip
-              label="How these are ranked"
-              text="The model's projection for the nights you count, scored with your league's settings. A player is only worth what your league pays for what he does."
-            />
+            <app-help-tip label="How these are ranked" [text]="rankingHelp()" />
           </h2>
           <!-- Skaters or goalies: a switch between two lists, so it is drawn as the app's segmented
                control and not as the pills, which narrow one list. It is this card's alone: the
