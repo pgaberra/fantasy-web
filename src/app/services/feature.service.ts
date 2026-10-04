@@ -81,6 +81,10 @@ export class FeatureService {
   readonly faScout = computed(() =>
     this.features.hasValue() ? this.features.value().faScout : false,
   );
+  /** Whether Role Changes is served here. False until the answer lands, like the others. */
+  readonly roleChanges = computed(() =>
+    this.features.hasValue() ? this.features.value().roleChanges : false,
+  );
 
   /**
    * The presets this environment offers: every one of them where the AI projection is served,

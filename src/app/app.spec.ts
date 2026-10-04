@@ -30,6 +30,7 @@ describe('App', () => {
   const leagueDraftSync = signal(false);
   const streamerPlanner = signal(false);
   const faScout = signal(false);
+  const roleChanges = signal(false);
 
   beforeEach(() => {
     isLoggedIn.set(true);
@@ -42,6 +43,7 @@ describe('App', () => {
     leagueDraftSync.set(false);
     streamerPlanner.set(false);
     faScout.set(false);
+    roleChanges.set(false);
     logout.mockClear();
     return (
       MockBuilder(App)
@@ -60,7 +62,7 @@ describe('App', () => {
         .mock(AuthService, { isLoggedIn, isAdmin, isEmailVerified: signal(true), logout })
         .mock(AccountService, { username, email, avatarUrl })
         .mock(EntitlementService, { premium, loadState })
-        .mock(FeatureService, { leagueDraftSync, streamerPlanner, faScout } as never)
+        .mock(FeatureService, { leagueDraftSync, streamerPlanner, faScout, roleChanges } as never)
         .provide({
           provide: Router,
           useValue: {
@@ -115,6 +117,21 @@ describe('App', () => {
     const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
 
     expect(items).toContain('Team Power Rankings');
+  });
+
+  /** Role Changes is a BFF switch: linked in the header and the burger only where it is on. */
+  it('links Role Changes only where the environment serves it', () => {
+    expect(openNavMenu(render()).map((item) => item.textContent?.trim())).not.toContain(
+      'Role Changes',
+    );
+  });
+
+  it('offers Role Changes where the environment serves it', () => {
+    roleChanges.set(true);
+    const fixture = render();
+
+    expect(fixture.nativeElement.textContent ?? '').toContain('Role Changes');
+    expect(openNavMenu(fixture).map((item) => item.textContent?.trim())).toContain('Role Changes');
   });
 
   it('drops the power rankings where no league draft can be read', () => {
