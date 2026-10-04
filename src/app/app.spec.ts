@@ -29,6 +29,7 @@ describe('App', () => {
   /** Reading a league drafted on Yahoo. Off by default here, as it is in a fresh environment. */
   const leagueDraftSync = signal(false);
   const streamerPlanner = signal(false);
+  const draftAnalysis = signal(false);
 
   beforeEach(() => {
     isLoggedIn.set(true);
@@ -40,6 +41,7 @@ describe('App', () => {
     loadState.set('loaded');
     leagueDraftSync.set(false);
     streamerPlanner.set(false);
+    draftAnalysis.set(false);
     logout.mockClear();
     return (
       MockBuilder(App)
@@ -58,7 +60,7 @@ describe('App', () => {
         .mock(AuthService, { isLoggedIn, isAdmin, isEmailVerified: signal(true), logout })
         .mock(AccountService, { username, email, avatarUrl })
         .mock(EntitlementService, { premium, loadState })
-        .mock(FeatureService, { leagueDraftSync, streamerPlanner } as never)
+        .mock(FeatureService, { leagueDraftSync, streamerPlanner, draftAnalysis } as never)
         .provide({
           provide: Router,
           useValue: {
@@ -113,6 +115,23 @@ describe('App', () => {
     const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
 
     expect(items).toContain('Team Power Rankings');
+  });
+
+  it('offers Draft Analysis where the environment serves it', () => {
+    draftAnalysis.set(true);
+    const fixture = render();
+
+    const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
+
+    expect(items).toContain('Draft Analysis');
+  });
+
+  it('drops Draft Analysis where it is not served', () => {
+    const fixture = render();
+
+    const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
+
+    expect(items).not.toContain('Draft Analysis');
   });
 
   it('drops the power rankings where no league draft can be read', () => {

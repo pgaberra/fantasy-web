@@ -1,0 +1,338 @@
+/* As wide as Team Power Rankings, its sibling under the Draft menu. */
+.draft-analysis {
+  max-width: var(--page-width-wide);
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+.analysis-head {
+  margin-bottom: var(--space-4);
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-subtle);
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: var(--color-primary);
+}
+
+.analysis-head h1 {
+  margin: 0;
+  color: var(--color-primary);
+}
+
+.analysis-lede {
+  margin: var(--space-2) 0 0;
+  max-width: 60ch;
+  color: var(--color-text-muted);
+}
+
+/* The same card Team Power Rankings picks its league in. */
+.league-picker {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+}
+
+.picker-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  flex: 0 1 16rem;
+  min-width: 0;
+}
+
+.picker-label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+
+.picker-select {
+  width: 100%;
+  font-size: var(--text-sm);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-primary);
+}
+
+.picker-wide {
+  flex-basis: 100%;
+}
+
+.picker-status {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.analysis-error {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+}
+
+.analysis-league {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+
+.analysis-source {
+  margin: var(--space-1) 0 var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.analysis-note {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.analysis-section {
+  margin-top: var(--space-5);
+}
+
+.analysis-section h3 {
+  margin: 0 0 var(--space-2);
+  font-size: 1.05rem;
+  color: var(--color-primary);
+}
+
+.analysis-help {
+  margin: var(--space-2) 0 0;
+  max-width: 70ch;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* Positioned, so the hidden column heading stays inside the scroll box rather than widening the
+   page on a phone. */
+.table-wrapper {
+  position: relative;
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.analysis-table {
+  --team-logo-size: 24px;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.analysis-table th,
+.analysis-table td {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.analysis-table thead th {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  background: var(--color-surface-alt);
+}
+
+.analysis-table tbody th {
+  font-weight: var(--weight-medium);
+}
+
+.analysis-table tbody tr:last-child th,
+.analysis-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.analysis-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The reader's own team, picked out in both tables so their picks are found at a glance. */
+.analysis-table tr.mine th,
+.analysis-table tr.mine td {
+  background: var(--color-warning-surface);
+}
+
+.teams-table tr.selected .team-name {
+  color: var(--color-accent);
+}
+
+.team-grade {
+  display: inline-block;
+  min-width: 1.6rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-sm);
+  text-align: center;
+  font-weight: var(--weight-semibold);
+  color: var(--color-surface);
+  background: var(--color-text-subtle);
+}
+
+.team-grade[data-grade='A'],
+.team-grade[data-grade='B'] {
+  background: var(--color-success);
+}
+
+.team-grade[data-grade='D'],
+.team-grade[data-grade='F'] {
+  background: var(--color-danger);
+}
+
+.show-picks {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--color-accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.pick-filters {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.segmented button {
+  background: none;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 0.3rem 0.9rem;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.segmented button[aria-pressed='true'] {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-control);
+  padding: calc(0.3rem - 1px) calc(0.9rem - 1px);
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+  box-shadow: var(--shadow-sm);
+}
+
+.pick-number {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-semibold);
+}
+
+.pick-overall,
+.best-rank,
+.player-positions {
+  font-size: 0.85em;
+  font-weight: normal;
+  color: var(--color-text-muted);
+}
+
+.player-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.player-logo {
+  flex: none;
+}
+
+.player-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* Grades in words, so the colour only repeats what the label already says. */
+.grade-badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--radius-pill);
+  font-weight: var(--weight-semibold);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.grade-badge[data-tone='good'] {
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.grade-badge[data-tone='bad'] {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+  background: var(--color-danger-surface);
+}
+
+.analysis-empty {
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.analysis-locked {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 640px) {
+  .analysis-table th,
+  .analysis-table td {
+    padding: var(--space-2);
+  }
+}
