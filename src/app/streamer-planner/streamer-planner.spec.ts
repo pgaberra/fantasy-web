@@ -1,7 +1,8 @@
 import { signal } from '@angular/core';
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
+import { environment } from '../../environments/environment';
 import { Api } from '../api/api';
 import { streamerPlannerMyTeam } from '../api/fn/streamer-planner/streamer-planner-my-team';
 import { streamerPlannerTeams } from '../api/fn/streamer-planner/streamer-planner-teams';
@@ -18,12 +19,11 @@ import {
   FreeAgentWeek,
   StreamerPlannerFreeAgentsService,
 } from '../services/streamer-planner-free-agents.service';
-import {
-  PlannerLeague,
-  StreamerPlannerLeagueService,
-} from '../services/streamer-planner-league.service';
+import { ChosenLeague, LeagueChoiceService } from '../services/league-choice.service';
+import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { YahooService } from '../services/yahoo.service';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
+import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
 import { PLANNER_LAYOUT, PlannerLayout } from './planner-page-size';
 import { PLANNER_TODAY } from './planner-schedule';
 import { StreamerPlannerComponent } from './streamer-planner';
@@ -94,7 +94,7 @@ function strength(start: string, end: string): ScheduleStrengthResponse {
   };
 }
 
-const LEAGUE: PlannerLeague = { platform: 'YAHOO', leagueId: '465.l.9', name: 'The Gordie Howes' };
+const LEAGUE: ChosenLeague = { platform: 'YAHOO', leagueId: '465.l.9', name: 'The Gordie Howes' };
 
 /** A points league that pays 3 for a goal, 2 for an assist and nothing else. */
 const SETTINGS: LeagueProjectionSettingsResponse = {
@@ -192,7 +192,7 @@ function dateInput(value: string): Event {
 describe('StreamerPlannerComponent', () => {
   const invoke = vi.fn();
   const freeAgents = vi.fn();
-  let chosen: PlannerLeague | null = null;
+  let chosen: ChosenLeague | null = null;
   /** The Monday of week 2 unless a test says otherwise. */
   let today = '2026-10-12';
   let settings = SETTINGS;
@@ -238,12 +238,26 @@ describe('StreamerPlannerComponent', () => {
       .provide({ provide: PLANNER_TODAY, useValue: () => today })
       .provide({ provide: PLANNER_LAYOUT, useValue: layout.asReadonly() })
       .mock(StreamerPlannerFreeAgentsService, { freeAgents })
-      .mock(StreamerPlannerLeagueService, {
+      .keep(YahooLeaguePicker)
+      .mock(YahooConnectReturnService)
+      .mock(LeagueChoiceService, {
         get league() {
           return () => chosen;
         },
+        on: (platform: string) => (chosen?.platform === platform ? chosen : null),
       } as never)
-      .mock(YahooService, { leagueProjectionSettings: () => of(settings) })
+      .mock(YahooService, {
+        leagueProjectionSettings: () => of(settings),
+        connectionStatus: () => of({ connected: true }),
+        // Two, so that neither is picked for the reader: only a remembered league is read.
+        myLeagues: () =>
+          of({
+            leagues: [
+              { leagueKey: LEAGUE.leagueId, name: LEAGUE.name },
+              { leagueKey: '465.l.2', name: 'Work League' },
+            ],
+          }),
+      } as never)
       .mock(EspnService, { leagueProjectionSettings: () => of(settings) })
       .mock(FeatureService, {
         get streamerPlannerMyTeam() {
@@ -955,6 +969,51 @@ describe('StreamerPlannerComponent', () => {
 
       expect(fixture.point.componentInstance.focusOptions()).toEqual([]);
       expect(ngMocks.formatText(fixture)).not.toContain('All categories');
+    });
+  });
+
+  describe('with an ESPN league last chosen', () => {
+    const originalEspnLeagues = environment.espnLeaguesEnabled;
+    const OFFICE: ChosenLeague = { platform: 'ESPN', leagueId: '12345', name: 'Office League' };
+
+    beforeEach(() => {
+      chosen = OFFICE;
+      environment.espnLeaguesEnabled = true;
+    });
+
+    afterEach(() => {
+      environment.espnLeaguesEnabled = originalEspnLeagues;
+    });
+
+    it('opens on the ESPN tab and reads its free agents', async () => {
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+
+      expect(planner.platform()).toBe('espn');
+      expect(planner.league()).toEqual(OFFICE);
+      expect(freeAgents).toHaveBeenCalledWith('ESPN', '12345', '2026-10-12', '2026-10-18');
+    });
+
+    /** Each tab is its own league, as on Team Power Rankings: Yahoo's is picked on Yahoo's. */
+    it("reads nothing on the Yahoo tab until a Yahoo league is picked, and keeps ESPN's", async () => {
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+
+      planner.platform.set('yahoo');
+      expect(planner.league()).toBeNull();
+
+      planner.platform.set('espn');
+      expect(planner.league()).toEqual(OFFICE);
+    });
+
+    it('stays on Yahoo where ESPN leagues are not offered', async () => {
+      environment.espnLeaguesEnabled = false;
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+
+      expect(planner.platform()).toBe('yahoo');
+      expect(planner.league()).toBeNull();
+      expect(freeAgents).not.toHaveBeenCalled();
     });
   });
 });

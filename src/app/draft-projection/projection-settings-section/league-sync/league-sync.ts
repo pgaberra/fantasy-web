@@ -1,5 +1,15 @@
-import { Component, computed, input, linkedSignal, output, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  output,
+  signal,
+  untracked,
+} from '@angular/core';
 import { environment } from '../../../../environments/environment';
+import { LeagueChoiceService, LeaguePlatform } from '../../../services/league-choice.service';
 import { YahooSync } from '../../../api/models/yahoo-sync';
 import { YahooLeagueSyncComponent, YahooSyncResult } from '../yahoo-league-sync/yahoo-league-sync';
 import { EspnLeagueSyncComponent, EspnSyncResult } from '../espn-league-sync/espn-league-sync';
@@ -27,10 +37,15 @@ interface PendingSwitch {
 
 const PLATFORM_NAMES: Record<Platform, PlatformName> = { yahoo: 'Yahoo', espn: 'ESPN' };
 
+/** The tab a league remembered from another page opens, by the platform it is on. */
+const REMEMBERED_TABS: Record<LeaguePlatform, Platform> = { YAHOO: 'yahoo', ESPN: 'espn' };
+
 /**
  * Wraps the per-provider league-sync UIs behind an optional platform picker. Syncing is a
  * convenience for the supported platforms — on any other platform (e.g. Fantrax) the user just
- * sets the league settings manually, so with a choice to make no platform is pre-selected.
+ * sets the league settings manually, so with a choice to make no platform is pre-selected —
+ * unless the user has chosen a league on one of them somewhere ({@link LeagueChoiceService}),
+ * which says which platform they play on.
  *
  * A platform whose sync is turned off (Yahoo between NHL seasons, ESPN before it's enabled) has
  * its tab hidden rather than shown disabled, and the hint names only what's actually on offer.
@@ -56,6 +71,8 @@ const PLATFORM_NAMES: Record<Platform, PlatformName> = { yahoo: 'Yahoo', espn: '
   styleUrl: './league-sync.css',
 })
 export class LeagueSyncComponent {
+  private readonly choice = inject(LeagueChoiceService);
+
   readonly lastSync = input<YahooSync | null>(null);
   /** The ESPN league this projection last synced from, for the ESPN panel to start from. */
   readonly lastEspnLeagueId = input<string | null>(null);
@@ -173,7 +190,8 @@ export class LeagueSyncComponent {
       return 'espn';
     }
     if (this.yahooAvailable && this.espnAvailable) {
-      return 'none';
+      const remembered = untracked(() => this.choice.league()?.platform);
+      return remembered ? REMEMBERED_TABS[remembered] : 'none';
     }
     if (this.yahooAvailable) {
       return 'yahoo';
