@@ -53,6 +53,15 @@ export class FeatureService {
   );
 
   /**
+   * Whether a draft may be started from the rest of the season here. False until the answer
+   * lands, like the others; true still offers it only while a season is under way, which
+   * `RestOfSeasonService` asks.
+   */
+  readonly restOfSeasonPreset = computed(() =>
+    this.features.hasValue() ? this.features.value().restOfSeasonPreset : false,
+  );
+
+  /**
    * The presets this environment offers: every one of them where the AI projection is served,
    * and everything but the model-seeded ones where it is not. A starting point the server will not
    * fill in must not be offered, on any page that lists presets.
