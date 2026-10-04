@@ -4,6 +4,7 @@ import { from } from 'rxjs';
 import { Api } from '../api/api';
 import { roleChanges } from '../api/fn/role-changes/role-changes';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
+import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { TeamLogoComponent } from '../shared/team-logo/team-logo';
@@ -31,7 +32,13 @@ export const RECENT_GAME_OPTIONS = [3, 5, 10] as const;
  */
 @Component({
   selector: 'app-role-changes',
-  imports: [HelpTipComponent, LoadingIndicatorComponent, ErrorStateComponent, TeamLogoComponent],
+  imports: [
+    IconComponent,
+    HelpTipComponent,
+    LoadingIndicatorComponent,
+    ErrorStateComponent,
+    TeamLogoComponent,
+  ],
   templateUrl: './role-changes.html',
   styleUrl: './role-changes.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

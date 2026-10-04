@@ -16,6 +16,12 @@ export type RolePosition = 'all' | 'F' | 'D';
 export const MIN_ICE_CHANGE_SECONDS = 60;
 export const MIN_POWER_PLAY_SHARE_CHANGE = 0.1;
 
+/** A listing before and now, for the page to draw with an arrow between. */
+export interface ListingMove {
+  from: string;
+  to: string;
+}
+
 export interface RoleChangeRow {
   player: PlayerRoleChangeResponse;
   /** Seconds a game, recent less baseline. Null without a baseline. */
@@ -24,10 +30,10 @@ export interface RoleChangeRow {
   powerPlayIceChange: number | null;
   /** Share of the club's power play, recent less baseline, -1 to 1. */
   powerPlayShareChange: number | null;
-  /** The lineup page's even-strength listing before and now, when it moved: "L4 → L2". */
-  lineMove: string | null;
-  /** The lineup page's power-play listing before and now, when it moved: "PP2 → PP1". */
-  powerPlayMove: string | null;
+  /** The lineup page's even-strength listing before and now, when it moved: L4 to L2. */
+  lineMove: ListingMove | null;
+  /** The lineup page's power-play listing before and now, when it moved: PP2 to PP1. */
+  powerPlayMove: ListingMove | null;
   /** Whether the lineup page moved him up (true), down (false), or neither (null). */
   listedHigher: boolean | null;
 }
@@ -60,20 +66,20 @@ function powerPlayRank(listing: LineupListing): number {
 
 export function toRoleChangeRow(player: PlayerRoleChangeResponse): RoleChangeRow {
   const { recent, baseline, listedBefore, listedNow } = player;
-  let lineMove: string | null = null;
-  let powerPlayMove: string | null = null;
+  let lineMove: ListingMove | null = null;
+  let powerPlayMove: ListingMove | null = null;
   let listedHigher: boolean | null = null;
   if (listedBefore && listedNow) {
     const before = lineRank(listedBefore);
     const now = lineRank(listedNow);
     if (before != null && now != null && before !== now) {
-      lineMove = `${lineLabel(listedBefore)} → ${lineLabel(listedNow)}`;
+      lineMove = { from: lineLabel(listedBefore)!, to: lineLabel(listedNow)! };
       listedHigher = now < before;
     }
     const ppBefore = powerPlayRank(listedBefore);
     const ppNow = powerPlayRank(listedNow);
     if (ppBefore !== ppNow) {
-      powerPlayMove = `${powerPlayLabel(listedBefore)} → ${powerPlayLabel(listedNow)}`;
+      powerPlayMove = { from: powerPlayLabel(listedBefore), to: powerPlayLabel(listedNow) };
       listedHigher = listedHigher ?? ppNow < ppBefore;
     }
   }

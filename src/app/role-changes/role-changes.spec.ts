@@ -72,7 +72,8 @@ describe('RoleChangesComponent', () => {
     expect(names()).toEqual(['Vasily Podkolzin']);
     const element: HTMLElement = fixture.nativeElement;
     expect(element.querySelector('tbody')!.textContent).toContain('+6:00');
-    expect(element.querySelector('tbody')!.textContent).toContain('L4 → L2');
+    expect(element.querySelector('tbody')!.textContent).toContain('L4');
+    expect(element.querySelector('.lineup .badge app-icon')).not.toBeNull();
   });
 
   it('shows the fallers one switch away', () => {

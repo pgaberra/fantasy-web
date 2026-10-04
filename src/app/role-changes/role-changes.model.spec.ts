@@ -111,8 +111,8 @@ describe('toRoleChangeRow', () => {
       ),
     );
 
-    expect(row.lineMove).toBe('L4 → L2');
-    expect(row.powerPlayMove).toBe('No PP → PP1');
+    expect(row.lineMove).toEqual({ from: 'L4', to: 'L2' });
+    expect(row.powerPlayMove).toEqual({ from: 'No PP', to: 'PP1' });
     expect(row.listedHigher).toBe(true);
   });
 
