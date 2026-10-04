@@ -53,6 +53,14 @@ export class FeatureService {
   );
 
   /**
+   * Whether Who's hot may narrow its board to the players a linked league has available. False
+   * until the answer lands, like the others.
+   */
+  readonly whosHotAvailableFilter = computed(() =>
+    this.features.hasValue() ? this.features.value().whosHotAvailableFilter : false,
+  );
+
+  /**
    * Whether a draft may be started from the rest of the season here. False until the answer
    * lands, like the others; true still offers it only while a season is under way, which
    * `RestOfSeasonService` asks.
