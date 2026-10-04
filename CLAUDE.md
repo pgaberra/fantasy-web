@@ -400,6 +400,19 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   dropped by container query where the card is narrow. A
   category the BFF sent no number for is an empty cell, never written as the zero the ranking engine
   was handed (`FreeAgent.projected`).
+- `fa-scout/` — the **FA Scout** page (`/fa-scout`, signed in, served only where the BFF's
+  `faScout` feature says so): the players a league has available who are worth keeping for the
+  rest of the season, the planner's season-long sibling. The league is picked with the planner's
+  own field (`app-league-field`, `YahooLeaguePicker`) and opens on `LeagueChoiceService`'s league. Every
+  available player is ranked twice by the league's scoring through `ProjectionRankingService`:
+  on the model's served rest of the season, which is the list's order, and on its frozen preseason
+  line, among the same players (`scout-ranking.ts`: `rankScout`). The places gained are the
+  **Rise** column, and `isRising` (his place at least halved, and by at least 5 places, a first
+  guess) tags a row Rising; a player with no preseason line is New. For a skater the TOI column
+  shows the ice time now over the preseason one, picked out at a minute or more. Skaters or
+  goalies by a segmented control, positions by pills, and a "Rising only" pill; 25 rows a page.
+  The table (`scout-table/`) reuses the planner table's stylesheet and line helpers
+  (`lineStats`, `lineColumns`): a `ScoutRow` is a `RankedFreeAgent` plus its preseason rank.
 - `services/` — app services (auth, projections, etc.)
 - `interceptors/` — HTTP interceptors: `authInterceptor` attaches the JWT and refreshes
   once on 401 (all environments). **Only a 401/403 from `/auth/refresh` itself ends the
