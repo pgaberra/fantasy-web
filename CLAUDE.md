@@ -402,8 +402,8 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   was handed (`FreeAgent.projected`).
 - `fa-scout/` — the **FA Scout** page (`/fa-scout`, signed in, served only where the BFF's
   `faScout` feature says so): the players a league has available who are worth keeping for the
-  rest of the season, the planner's season-long sibling. The league is the planner's own
-  (`StreamerPlannerLeagueService`, `app-league-field`), remembered once for both pages. Every
+  rest of the season, the planner's season-long sibling. The league is picked with the planner's
+  own field (`app-league-field`, `YahooLeaguePicker`) and opens on `LeagueChoiceService`'s league. Every
   available player is ranked twice by the league's scoring through `ProjectionRankingService`:
   on the model's served rest of the season, which is the list's order, and on its frozen preseason
   line, among the same players (`scout-ranking.ts`: `rankScout`). The places gained are the

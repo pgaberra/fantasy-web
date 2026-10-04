@@ -26,7 +26,7 @@
       </div>
     </div>
 
-    <app-league-field class="league" />
+    <app-league-field class="league" [(platform)]="platform" [(espnLeague)]="espnLeague" />
 
     @if (league()) {
       <div class="filters">

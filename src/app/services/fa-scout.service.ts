@@ -12,7 +12,7 @@ import {
 } from '../models/stat-key.model';
 import { Projection } from '../models/projection.model';
 import { FreeAgent } from './streamer-planner-free-agents.service';
-import { PlannerPlatform } from './streamer-planner-league.service';
+import { LeaguePlatform } from './league-choice.service';
 
 /**
  * One available player as the FA scout reads him: his rest of the season, shaped as the planner's
@@ -37,7 +37,7 @@ export interface ScoutList {
 export class FaScoutService {
   private readonly api = inject(Api);
 
-  freeAgents(platform: PlannerPlatform, leagueId: string): Observable<ScoutList> {
+  freeAgents(platform: LeaguePlatform, leagueId: string): Observable<ScoutList> {
     return from(this.api.invoke(faScoutFreeAgents, { platform, leagueId })).pipe(
       map((answer) => ({
         inSeason: answer.inSeason,

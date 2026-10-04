@@ -6,16 +6,15 @@ import { Projection } from '../models/projection.model';
 import { GOALIE_SCORING_STAT_KEYS } from '../models/stat-key.model';
 import { EspnService } from '../services/espn.service';
 import { FaScoutService, ScoutList, ScoutPlayer } from '../services/fa-scout.service';
-import {
-  PlannerLeague,
-  StreamerPlannerLeagueService,
-} from '../services/streamer-planner-league.service';
+import { ChosenLeague, LeagueChoiceService } from '../services/league-choice.service';
+import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { YahooService } from '../services/yahoo.service';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
+import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
 import { FaScoutComponent, SCOUT_PAGE_SIZE } from './fa-scout';
 import { ScoutTableComponent } from './scout-table/scout-table';
 
-const LEAGUE: PlannerLeague = { platform: 'YAHOO', leagueId: '465.l.9', name: 'The Gordie Howes' };
+const LEAGUE: ChosenLeague = { platform: 'YAHOO', leagueId: '465.l.9', name: 'The Gordie Howes' };
 
 const SETTINGS: LeagueProjectionSettingsResponse = {
   leagueName: 'The Gordie Howes',
@@ -93,7 +92,7 @@ function wire(): ScoutList {
 }
 
 describe('FaScoutComponent', () => {
-  let chosen: PlannerLeague | null;
+  let chosen: ChosenLeague | null;
   let freeAgents: ReturnType<typeof vi.fn<() => Observable<ScoutList>>>;
 
   beforeEach(() => {
@@ -101,12 +100,26 @@ describe('FaScoutComponent', () => {
     freeAgents = vi.fn(() => of(wire()));
     return MockBuilder(FaScoutComponent)
       .mock(FaScoutService, { freeAgents })
-      .mock(StreamerPlannerLeagueService, {
+      .keep(YahooLeaguePicker)
+      .mock(YahooConnectReturnService)
+      .mock(LeagueChoiceService, {
         get league() {
           return () => chosen;
         },
+        on: (platform: string) => (chosen?.platform === platform ? chosen : null),
       } as never)
-      .mock(YahooService, { leagueProjectionSettings: () => of(SETTINGS) })
+      .mock(YahooService, {
+        leagueProjectionSettings: () => of(SETTINGS),
+        connectionStatus: () => of({ connected: true }),
+        // Two, so that neither is picked for the reader: only a remembered league is read.
+        myLeagues: () =>
+          of({
+            leagues: [
+              { leagueKey: LEAGUE.leagueId, name: LEAGUE.name },
+              { leagueKey: '465.l.2', name: 'Work League' },
+            ],
+          }),
+      } as never)
       .mock(EspnService, { leagueProjectionSettings: () => of(SETTINGS) });
   });
 

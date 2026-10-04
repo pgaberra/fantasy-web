@@ -1,5 +1,6 @@
 import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
+import { environment } from '../../environments/environment';
 import {
   DEFAULT_LEAGUE_SIZE,
   DEFAULT_ROSTER_SLOTS,
@@ -12,13 +13,15 @@ import { ScoringStatKey } from '../models/stat-key.model';
 import { EspnService } from '../services/espn.service';
 import { FaScoutService } from '../services/fa-scout.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
-import { StreamerPlannerLeagueService } from '../services/streamer-planner-league.service';
+import { ChosenLeague, LeagueChoiceService } from '../services/league-choice.service';
 import { YahooService } from '../services/yahoo.service';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
+import { Platform } from '../shared/platform-tabs/platform-tabs';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
+import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
 import { LeagueFieldComponent } from '../streamer-planner/league-field/league-field';
 import { PLANNER_POSITIONS, PlannerPositionGroup } from '../streamer-planner/planner-free-agents';
 import { rankScout, ScoutKind, ScoutRow } from './scout-ranking';
@@ -38,8 +41,9 @@ export const SCOUT_PAGE_SIZE = 25;
  * the season began. The places he has gained between the two say how far the season has moved him
  * past where the draft left him, and a player risen far enough is tagged Rising (`isRising`).
  *
- * <p>The league is the planner's, remembered once for both pages: a reader scouting a league for
- * keepers is the one streaming in it.
+ * <p>The league is picked as the planner picks it, with the same field (Yahoo / ESPN tabs), and
+ * opens on the league last chosen anywhere ({@link LeagueChoiceService}): a reader scouting a
+ * league for keepers is the one streaming in it.
  */
 @Component({
   selector: 'app-fa-scout',
@@ -54,15 +58,48 @@ export const SCOUT_PAGE_SIZE = 25;
   ],
   templateUrl: './fa-scout.html',
   styleUrl: './fa-scout.css',
+  providers: [YahooLeaguePicker],
 })
 export class FaScoutComponent {
   private readonly scoutService = inject(FaScoutService);
-  private readonly leagueService = inject(StreamerPlannerLeagueService);
+  private readonly picker = inject(YahooLeaguePicker);
   private readonly ranking = inject(ProjectionRankingService);
   private readonly yahoo = inject(YahooService);
   private readonly espn = inject(EspnService);
 
-  readonly league = this.leagueService.league;
+  constructor() {
+    this.picker.start();
+  }
+
+  // --- The league, picked as the planner picks it ---------------------------------------------
+
+  /** Whether ESPN leagues are offered at all: where the planner and Team Power Rankings offer them. */
+  private readonly espnOffered = environment.espnLeaguesEnabled;
+  private readonly remembered = inject(LeagueChoiceService).league();
+
+  /** Which platform's league the players come from: last time's, else Yahoo. */
+  readonly platform = signal<Platform>(
+    this.espnOffered && this.remembered?.platform === 'ESPN' ? 'espn' : 'yahoo',
+  );
+
+  /** The ESPN league ESPN last accepted, kept while the reader looks at Yahoo's. */
+  readonly espnLeague = signal<ChosenLeague | null>(
+    this.espnOffered && this.remembered?.platform === 'ESPN' ? this.remembered : null,
+  );
+
+  /** The league the players are read from: the tab's, equal by platform and id alone. */
+  readonly league = computed<ChosenLeague | null>(
+    () => {
+      if (this.platform() === 'espn') {
+        return this.espnLeague();
+      }
+      const key = this.picker.selectedKey();
+      return key
+        ? { platform: 'YAHOO', leagueId: key, name: this.picker.selectedLeague()?.name ?? key }
+        : null;
+    },
+    { equal: (a, b) => a?.platform === b?.platform && a?.leagueId === b?.leagueId },
+  );
 
   private readonly scoutResource = rxResource({
     params: () => this.league() ?? undefined,
