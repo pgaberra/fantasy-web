@@ -18,7 +18,6 @@ describe('authInterceptor', () => {
 
   let authService: {
     getToken: ReturnType<typeof vi.fn>;
-    getRefreshToken: ReturnType<typeof vi.fn>;
     refresh: ReturnType<typeof vi.fn>;
     endExpiredSession: ReturnType<typeof vi.fn>;
   };
@@ -26,7 +25,6 @@ describe('authInterceptor', () => {
   beforeEach(() => {
     authService = {
       getToken: vi.fn(),
-      getRefreshToken: vi.fn(),
       refresh: vi.fn(),
       endExpiredSession: vi.fn(),
     };
@@ -60,9 +58,32 @@ describe('authInterceptor', () => {
     expect(forwarded.headers.get('Authorization')).toBeNull();
   });
 
+  /**
+   * The refresh token is an HttpOnly cookie on the API's origin. Without credentials a
+   * cross-origin response's Set-Cookie is dropped and the cookie is never sent back.
+   */
+  it.each(['/api/v1/auth/login', '/api/v1/auth/refresh', '/api/v1/auth/logout'])(
+    'sends %s with credentials',
+    async (url) => {
+      const next = vi.fn<HttpHandlerFn>().mockReturnValue(of(new HttpResponse()));
+
+      await run(new HttpRequest('POST', `http://localhost:8080${url}`, {}), next);
+
+      expect(next.mock.calls[0][0].withCredentials).toEqual(true);
+    },
+  );
+
+  it('sends every other request without credentials', async () => {
+    authService.getToken.mockReturnValue('access');
+    const next = vi.fn<HttpHandlerFn>().mockReturnValue(of(new HttpResponse()));
+
+    await run(new HttpRequest('GET', 'http://localhost:8080/api/v1/players/skaters'), next);
+
+    expect(next.mock.calls[0][0].withCredentials).toEqual(false);
+  });
+
   it('refreshes once and retries the original request on 401', async () => {
     authService.getToken.mockReturnValue('stale');
-    authService.getRefreshToken.mockReturnValue('refresh');
     authService.refresh.mockReturnValue(of(tokens));
     const next = vi
       .fn<HttpHandlerFn>()
@@ -77,7 +98,6 @@ describe('authInterceptor', () => {
   });
 
   it('does not attempt a refresh when the refresh endpoint itself returns 401', async () => {
-    authService.getRefreshToken.mockReturnValue('refresh');
     const next = vi.fn<HttpHandlerFn>().mockReturnValue(unauthorized());
 
     await expect(
@@ -90,7 +110,6 @@ describe('authInterceptor', () => {
 
   it.each([401, 403])('ends the session when the refresh itself answers %i', async (status) => {
     authService.getToken.mockReturnValue('stale');
-    authService.getRefreshToken.mockReturnValue('refresh');
     authService.refresh.mockReturnValue(throwError(() => new HttpErrorResponse({ status })));
     const next = vi.fn<HttpHandlerFn>().mockReturnValue(unauthorized());
 
@@ -109,7 +128,6 @@ describe('authInterceptor', () => {
     'keeps the session when the refresh fails with status %i, and reports that failure',
     async (status) => {
       authService.getToken.mockReturnValue('stale');
-      authService.getRefreshToken.mockReturnValue('refresh');
       authService.refresh.mockReturnValue(throwError(() => new HttpErrorResponse({ status })));
       const next = vi.fn<HttpHandlerFn>().mockReturnValue(unauthorized());
 
@@ -129,7 +147,6 @@ describe('authInterceptor', () => {
     'keeps the session when the retried request fails with %i after a good refresh',
     async (status) => {
       authService.getToken.mockReturnValue('stale');
-      authService.getRefreshToken.mockReturnValue('refresh');
       authService.refresh.mockReturnValue(of(tokens));
       const next = vi
         .fn<HttpHandlerFn>()
@@ -144,46 +161,20 @@ describe('authInterceptor', () => {
     },
   );
 
-  it('ends the session without refreshing when there is no refresh token', async () => {
-    authService.getToken.mockReturnValue('stale');
-    authService.getRefreshToken.mockReturnValue(null);
-    const next = vi.fn<HttpHandlerFn>().mockReturnValue(unauthorized());
-
-    await expect(run(new HttpRequest('GET', '/api/v1/players/skaters'), next)).rejects.toBeTruthy();
-
-    expect(authService.refresh).not.toHaveBeenCalled();
-    expect(authService.endExpiredSession).toHaveBeenCalledTimes(1);
-  });
-
   /**
    * A public page whose data turns out to need auth must be allowed to say so itself.
    * Ending a session navigates to /login, so doing it for a visitor who never signed in threw
    * them off the page they were reading — the landing demo's own error state never showed.
+   * Nor does it refresh: whether a refresh cookie could sign this browser in was asked once as
+   * the page loaded (`AuthService.restoreSession`), not again on every 401 from a public page.
    */
   it('does not end a session for a visitor who was never signed in', async () => {
     authService.getToken.mockReturnValue(null);
-    authService.getRefreshToken.mockReturnValue(null);
     const next = vi.fn<HttpHandlerFn>().mockReturnValue(unauthorized());
 
     await expect(run(new HttpRequest('GET', '/api/v1/players/skaters'), next)).rejects.toBeTruthy();
 
     expect(authService.endExpiredSession).not.toHaveBeenCalled();
     expect(authService.refresh).not.toHaveBeenCalled();
-  });
-
-  // The access token is the half that expires; a refresh token on its own is still a session.
-  it('still refreshes when only the access token is gone', async () => {
-    authService.getToken.mockReturnValue(null);
-    authService.getRefreshToken.mockReturnValue('refresh');
-    authService.refresh.mockReturnValue(of(tokens));
-    const next = vi
-      .fn<HttpHandlerFn>()
-      .mockReturnValueOnce(unauthorized())
-      .mockReturnValueOnce(of(new HttpResponse({ status: 200 })));
-
-    await run(new HttpRequest('GET', '/api/v1/players/skaters'), next);
-
-    expect(authService.refresh).toHaveBeenCalledTimes(1);
-    expect(authService.endExpiredSession).not.toHaveBeenCalled();
   });
 });
