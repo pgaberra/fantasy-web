@@ -32,7 +32,6 @@ function jwtWith(claims: Record<string, string>): string {
 function authResponse(token: string, emailVerified = true): AuthResponse {
   return {
     token,
-    refreshToken: 'refresh-token',
     expiresInSeconds: 900,
     refreshExpiresInSeconds: 86400,
     admin: false,
