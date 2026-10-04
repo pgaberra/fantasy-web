@@ -203,6 +203,12 @@
   cursor: pointer;
 }
 
+/* A team's row is centred on its own height: where the name takes two lines the rank, the
+   figures and a one-line name all sit in the middle of the row rather than along its top. */
+.lp-table tbody tr.lp-row td {
+  vertical-align: middle;
+}
+
 .lp-table tbody tr.lp-row:not(.static, .expanded):hover td {
   background: var(--color-surface-alt);
 }
@@ -250,22 +256,42 @@
 
 /* A team's cell is a chip of heat inside the cell rather than the cell itself: the white between
    the chips is what lets ten columns of colour read as ten values and not as a quilt. The tint is
-   translucent, so it sits on whatever the row is drawn on. */
+   translucent, so it sits on whatever the row is drawn on.
+
+   The chip is as tall as the row, whatever made the row that tall. It was as tall as its own
+   figure, so beside a team name on two lines the colour filled the top half of the cell and left
+   the bottom half empty. The tint is therefore drawn by a box pinned to the cell's edges, behind
+   the figure, and the figure only has to stand in the middle of it. The cell is its own stacking
+   context so that box lands over the cell's background and under its text. */
 .lp-table tbody tr.lp-row td.lp-num,
 .lp-table tbody tr.lp-row td.col-total {
-  padding: 0.2rem 0.15rem;
+  --chip-inset: 0.2rem 0.15rem;
+
+  padding: var(--chip-inset);
+}
+
+.lp-table tbody tr.lp-row td.lp-num {
+  position: relative;
+  z-index: 0;
 }
 
 .lp-heat {
   display: block;
   padding: 0.3rem 0.5rem;
+}
+
+.lp-heat::before {
+  content: '';
+  position: absolute;
+  inset: var(--chip-inset);
+  z-index: -1;
   border-radius: var(--radius-sm);
   background: var(--heat, transparent);
 }
 
 /* On an open team's tinted heading the chips get a white of their own to sit on: laid straight
    on the tint the oranges went grey-pink, and a middling value's chip was the tint itself. */
-.lp-table tbody tr.lp-row.expanded .lp-heat {
+.lp-table tbody tr.lp-row.expanded .lp-heat::before {
   background:
     linear-gradient(var(--heat, transparent), var(--heat, transparent)), var(--color-surface);
 }
@@ -479,8 +505,14 @@
     overflow-wrap: anywhere;
   }
 
+  /* Every team's row is the same height, two lines of name, whether its name takes one line,
+     two, or one and the badge: rows of three different heights read as a table that had come
+     apart. A shorter name stands in the middle of that height. */
   .lp-team-head {
     flex-wrap: wrap;
+    align-content: center;
+    gap: 0.15rem 0.4rem;
+    min-height: 2.5rem;
   }
 
   /* Two lines hold nearly every name; a longer one ends in an ellipsis rather than making its
@@ -490,6 +522,14 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     line-clamp: 2;
+    line-height: 1.35;
+  }
+
+  /* The badge takes the second line on the reader's own team, so its name keeps to the first:
+     the one name on the table they do not need spelled out. */
+  .lp-table tbody tr.mine .lp-team-name {
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
   }
 
   /* The name is what the column is for; the crest keeps its place at a smaller size and the
