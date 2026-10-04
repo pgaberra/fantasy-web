@@ -486,7 +486,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProjectionResponse"
         "403":
-          description: source=model needs premium and this account has none
+          description: source=model or source=rest_of_season needs premium and this
+            account has none
           content:
             application/json:
               schema:
@@ -1713,6 +1714,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SeededProjectionResponse"
+  /api/v1/projection-model/rest-of-season/status:
+    get:
+      tags:
+      - Projection model
+      summary: Whether the rest of the season can seed a draft right now
+      description: "Whether `POST /api/v1/projections` with `source=rest_of_season`\
+        \ would be seeded now: only while a season is under way, when the model has\
+        \ a line for what is left of it. Says nothing about this account's plan —\
+        \ the rest of the season needs premium like the AI projection, and a client\
+        \ shows it locked rather than hiding it."
+      operationId: restOfSeasonStatus
+      responses:
+        "200":
+          description: Whether the rest of the season is there to seed from
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RestOfSeasonStatusResponse"
+        "404":
+          description: The rest-of-season preset or the AI projection is switched
+            off
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RestOfSeasonStatusResponse"
   /api/v1/projection-model/board:
     get:
       tags:
@@ -2692,6 +2718,7 @@ components:
           - last_season
           - blank
           - model
+          - rest_of_season
         playerPoolSyncedAt:
           type: string
           format: date-time
@@ -3041,6 +3068,7 @@ components:
           enum:
           - last_season
           - model
+          - rest_of_season
         season:
           type: string
           enum:
@@ -3173,10 +3201,10 @@ components:
         kind:
           type: string
           description: "What the projection is for. Defaults to the user's own. A\
-            \ preset draft requires source=default and is named by the server. An\
-            \ imported board may be created with the caller's own rows (a spreadsheet\
-            \ import): it takes data.players, refuses source, and carries no share\
-            \ origin."
+            \ preset draft requires source=default, source=model or source=rest_of_season\
+            \ and is named by the server. An imported board may be created with the\
+            \ caller's own rows (a spreadsheet import): it takes data.players, refuses\
+            \ source, and carries no share origin."
           enum:
           - projection
           - draft
@@ -3192,6 +3220,7 @@ components:
           - default
           - blank
           - model
+          - rest_of_season
       required:
       - data
       - name
@@ -4349,6 +4378,18 @@ components:
       - season
       - skaters
       - unmapped
+    RestOfSeasonStatusResponse:
+      type: object
+      description: Whether a projection or draft can be seeded with source=rest_of_season
+        right now
+      properties:
+        available:
+          type: boolean
+          description: "True while a season is under way and the model has a line\
+            \ for the rest of it. False before its first game and after its last,\
+            \ when source=rest_of_season is refused"
+      required:
+      - available
     ModelBoardResponse:
       type: object
       description: The rows a projection created with source=model would be written
@@ -4771,10 +4812,10 @@ components:
         inSeason:
           type: boolean
           description: "Whether the model's lines are its in-season ones: each player's\
-            \ season so far plus the model's rest of it from the last nightly run,\
-            \ on the season line's scale, which is what the model is ranked by once\
-            \ the season is under way. False for a board and last season's stats,\
-            \ which are whole seasons as they stand, and before the first game."
+            \ rest of the season from the last nightly run, on the season line's scale,\
+            \ which is what the model is ranked by once the season is under way. False\
+            \ for a board and last season's stats, which are whole seasons as they\
+            \ stand, and before the first game."
         categoryKeys:
           type: array
           description: "The stats the league counts, in its own order. The labels\
@@ -4905,9 +4946,16 @@ components:
           description: "Whether Who's hot may show only the players a linked league\
             \ has available. False means the rostered-players endpoint answers 404,\
             \ so a client should not offer it."
+        restOfSeasonPreset:
+          type: boolean
+          description: "Whether a draft may be started from the rest of the season\
+            \ (source=rest_of_season). False means it is refused and its status endpoint\
+            \ answers 404, so a client should not offer it. True still offers it only\
+            \ while a season is under way, which the status endpoint says."
       required:
       - aiProjection
       - leagueDraftSync
+      - restOfSeasonPreset
       - streamerPlanner
       - whosHotAvailableFilter
     CredentialStatusResponse:

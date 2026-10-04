@@ -40,6 +40,7 @@ import {
   nightsFactor,
   ofKind,
   PLANNER_POSITIONS,
+  PlannerPosition,
   PlannerPositionGroup,
   projectedStarts,
   RankedFreeAgent,
@@ -70,7 +71,6 @@ import {
   PLANNER_TODAY,
   PlannerDay,
   plannerDays,
-  PlannerPosition,
   PlannerPreset,
   presetStretch,
   rateTeams,
@@ -95,6 +95,32 @@ export interface LeadingDay {
 /** No category picked: the list is ranked by the league's whole set. */
 const NO_FOCUS: ReadonlySet<ScoringStatKey> = new Set();
 
+/** What the goalies' categories are filed under, beside the league's own key. */
+const GOALIE_FOCUS_SUFFIX = ':goalies';
+
+function keepOffered(
+  picked: ReadonlySet<ScoringStatKey>,
+  offered: readonly LineColumn[],
+): ReadonlySet<ScoringStatKey> {
+  const keys = new Set(offered.map((option) => option.key));
+  return new Set([...picked].filter((key) => keys.has(key)));
+}
+
+function toggled(picked: ReadonlySet<ScoringStatKey>, key: ScoringStatKey): Set<ScoringStatKey> {
+  const next = new Set(picked);
+  if (!next.delete(key)) {
+    next.add(key);
+  }
+  return next;
+}
+
+function pickedLabel(options: readonly LineColumn[], picked: ReadonlySet<ScoringStatKey>): string {
+  return options
+    .filter((option) => picked.has(option.key))
+    .map((option) => option.label)
+    .join(', ');
+}
+
 /** A preset with the stretch it names today, for the reader to pick by name. */
 export interface PresetOption {
   readonly key: PlannerPreset;
@@ -112,11 +138,11 @@ export interface PresetOption {
  * offered: a stretch starts no earlier than today. The league, which the free agents are read from,
  * sits beside the nights.
  *
- * <p>Skaters or goalies is asked once, over the two tables, and both follow it: the schedules are
- * rated for that kind of player and the free agents are that kind alone, in its own categories.
- * The two fill different roster slots and score different things, so a list of both had columns
- * that meant one thing on a skater's row and nothing on a goalie's. What concerns one table only
- * (which positions, which categories to rank by) sits on that table.
+ * <p>The schedules are rated once, for the whole page. Skaters or goalies is asked on the free
+ * agents alone, which are that kind only, in its own categories: the two fill different roster
+ * slots and score different things, so a list of both had columns that meant one thing on a
+ * skater's row and nothing on a goalie's. What concerns one table only (which kind, which
+ * positions, which categories to rank by) sits on that table.
  *
  * <p>The server rates the whole stretch; a night the reader leaves out is taken out here, by the
  * server's own rule (`planner-schedule.ts`), and a skater's line is scaled to the share of his
@@ -269,21 +295,9 @@ export class StreamerPlannerComponent {
     });
   }
 
-  /** Skaters or goalies: the kind of player both tables are about. */
-  readonly position = signal<PlannerPosition>('skaters');
-
-  setPosition(position: PlannerPosition): void {
-    this.position.set(position);
-  }
-
-  /** The teams over the nights counted, best first for the chosen kind of player. */
+  /** The teams over the nights counted, best first. */
   readonly teamRows = computed(() =>
-    rateTeams(
-      this.strength()?.teams ?? [],
-      this.position(),
-      this.counted(),
-      this.everyNightCounted(),
-    ),
+    rateTeams(this.strength()?.teams ?? [], this.counted(), this.everyNightCounted()),
   );
 
   readonly offNightMaxGames = computed(() => this.strength()?.offNightMaxGames);
@@ -308,6 +322,13 @@ export class StreamerPlannerComponent {
   readonly league = this.leagueService.league;
 
   readonly positionOptions = PLANNER_POSITIONS;
+
+  /** Skaters or goalies: the kind of player the free agents list. */
+  readonly position = signal<PlannerPosition>('skaters');
+
+  setPosition(position: PlannerPosition): void {
+    this.position.set(position);
+  }
 
   /** The positions the skaters are narrowed to. None is every position, as the page opens. */
   readonly positions = signal<ReadonlySet<PlannerPositionGroup>>(new Set());
@@ -394,68 +415,111 @@ export class StreamerPlannerComponent {
   });
 
   /**
-   * The skater categories a streamer can rank by: a category league's own. A points league has
-   * none, since a point is worth the same whichever category it came from.
+   * The categories a streamer can rank one kind of player by: a category league's own. A points
+   * league has none, since a point is worth the same whichever category it came from.
    */
-  readonly focusOptions = computed<readonly LineColumn[]>(() =>
-    this.scoringType() === 'category'
-      ? focusableCategories(this.categories()).map(categoryColumn)
-      : [],
-  );
+  private focusOptionsOf(kind: 'skater' | 'goalie'): readonly LineColumn[] {
+    return this.scoringType() === 'category'
+      ? focusableCategories(this.categories(), kind).map(categoryColumn)
+      : [];
+  }
 
-  /** The categories picked, as remembered for the league until this week is over. */
+  readonly focusOptions = computed(() => this.focusOptionsOf('skater'));
+  readonly goalieFocusOptions = computed(() => this.focusOptionsOf('goalie'));
+
+  /**
+   * The categories picked, as remembered for the league until this week is over. The goalies' are
+   * filed apart, since a category such as time on ice is both kinds'.
+   */
   private readonly focusPicked = linkedSignal<string | null, ReadonlySet<ScoringStatKey>>({
     source: this.leagueKey,
     computation: (league) => new Set(league ? readFocus(league, this.today) : []),
+  });
+  private readonly goalieFocusPicked = linkedSignal<string | null, ReadonlySet<ScoringStatKey>>({
+    source: this.leagueKey,
+    computation: (league) =>
+      new Set(league ? readFocus(`${league}${GOALIE_FOCUS_SUFFIX}`, this.today) : []),
   });
 
   /**
    * The categories the list is ranked by. None is the league's whole set, which is how the page
    * opens. A category the league no longer scores is dropped rather than ranked by.
    */
-  readonly focus = computed<ReadonlySet<ScoringStatKey>>(() => {
-    const offered = new Set(this.focusOptions().map((option) => option.key));
-    return new Set([...this.focusPicked()].filter((key) => offered.has(key)));
-  });
+  readonly focus = computed(() => keepOffered(this.focusPicked(), this.focusOptions()));
+  readonly goalieFocus = computed(() =>
+    keepOffered(this.goalieFocusPicked(), this.goalieFocusOptions()),
+  );
 
   toggleFocus(key: ScoringStatKey): void {
-    const next = new Set(this.focus());
-    if (next.has(key)) {
-      next.delete(key);
-    } else {
-      next.add(key);
-    }
-    this.setFocus(next);
+    this.setFocus('skater', toggled(this.focus(), key));
+  }
+
+  toggleGoalieFocus(key: ScoringStatKey): void {
+    this.setFocus('goalie', toggled(this.goalieFocus(), key));
   }
 
   clearFocus(): void {
-    this.setFocus(new Set());
+    this.setFocus('skater', new Set());
   }
 
-  private setFocus(focus: ReadonlySet<ScoringStatKey>): void {
-    this.focusPicked.set(focus);
+  clearGoalieFocus(): void {
+    this.setFocus('goalie', new Set());
+  }
+
+  private setFocus(kind: 'skater' | 'goalie', focus: ReadonlySet<ScoringStatKey>): void {
+    (kind === 'skater' ? this.focusPicked : this.goalieFocusPicked).set(focus);
     const league = this.leagueKey();
     const week = weekOf(this.weeks(), this.today);
     // Without the season's weeks there is no end to hold it to: it holds for this visit only.
     if (league && week) {
-      writeFocus(league, focus, week.end, this.today);
+      writeFocus(
+        kind === 'skater' ? league : `${league}${GOALIE_FOCUS_SUFFIX}`,
+        focus,
+        week.end,
+        this.today,
+      );
     }
   }
 
-  /** "PPP, SOG": the categories picked, as the score's tip names them. */
-  readonly focusLabel = computed(() =>
-    this.focusOptions()
-      .filter((option) => this.focus().has(option.key))
-      .map((option) => option.label)
-      .join(', '),
+  /** The categories to pick from for the kind on screen, and which of them are picked. */
+  readonly pickerOptions = computed(() =>
+    this.position() === 'skaters' ? this.focusOptions() : this.goalieFocusOptions(),
+  );
+  readonly pickerFocus = computed(() =>
+    this.position() === 'skaters' ? this.focus() : this.goalieFocus(),
+  );
+
+  togglePicker(key: ScoringStatKey): void {
+    if (this.position() === 'skaters') {
+      this.toggleFocus(key);
+    } else {
+      this.toggleGoalieFocus(key);
+    }
+  }
+
+  clearPicker(): void {
+    if (this.position() === 'skaters') {
+      this.clearFocus();
+    } else {
+      this.clearGoalieFocus();
+    }
+  }
+
+  /** "PPP, SOG": the skater categories picked, as the score's tip and the cards name them. */
+  readonly focusLabel = computed(() => pickedLabel(this.focusOptions(), this.focus()));
+  private readonly goalieFocusLabel = computed(() =>
+    pickedLabel(this.goalieFocusOptions(), this.goalieFocus()),
   );
 
   /**
    * Every available player with a projection, best first by the league's scoring. With categories
-   * picked, only skaters, scored in those alone: a goalie has nothing to give in a skater
-   * category, and his own z-score is not on the same scale as one category's.
+   * picked, only the kind they belong to, scored in those alone: a goalie has nothing to give in a
+   * skater category, and his own z-score is not on the same scale as one category's.
    */
-  private rankedBy(focus: ReadonlySet<ScoringStatKey>): RankedFreeAgent[] {
+  private rankedBy(
+    focus: ReadonlySet<ScoringStatKey>,
+    kind: 'skater' | 'goalie' = 'skater',
+  ): RankedFreeAgent[] {
     const week = this.freeAgentsResource.hasValue() ? this.freeAgentsResource.value() : null;
     if (!week) {
       return [];
@@ -470,7 +534,7 @@ export class StreamerPlannerComponent {
     const byPlayerId = new Map(week.players.map((player) => [player.projection.playerId, player]));
     const players =
       focus.size > 0
-        ? week.players.filter((player) => player.projection.type === 'skater')
+        ? week.players.filter((player) => player.projection.type === kind)
         : week.players;
     const projections = players.map((player) => {
       const factor = nightsFactor(player, teams, counted, everyNightCounted);
@@ -518,27 +582,32 @@ export class StreamerPlannerComponent {
   /** The best pickups of either kind, or the skaters in the categories picked: what the cards read. */
   readonly ranked = computed(() => this.rankedBy(this.focus()));
 
-  /** Everyone by the league's whole set of categories, which is what a goalie is always ranked by. */
+  /** Everyone by the league's whole set of categories, which is how the goalies open. */
   private readonly rankedByAll = computed(() =>
     this.focus().size === 0 ? this.ranked() : this.rankedBy(NO_FOCUS),
+  );
+
+  /** The goalies, by the categories picked for them, or by the league's whole set. */
+  private readonly rankedGoalies = computed(() =>
+    this.goalieFocus().size > 0 ? this.rankedBy(this.goalieFocus(), 'goalie') : this.rankedByAll(),
   );
 
   readonly topOptions = computed(() => this.ranked().slice(0, TOP_OPTIONS));
 
   /**
-   * The list on screen: the skaters, narrowed to the positions picked and ranked by the categories
-   * picked, or the goalies. Each is placed among his own kind.
+   * The list on screen: the skaters, narrowed to the positions picked, or the goalies, each ranked
+   * by the categories picked for that kind. Each is placed among his own kind.
    */
   readonly filtered = computed(() =>
     this.position() === 'skaters'
       ? filterByPositions(ofKind(this.ranked(), 'skater'), this.positions())
-      : ofKind(this.rankedByAll(), 'goalie'),
+      : ofKind(this.rankedGoalies(), 'goalie'),
   );
 
-  /** The categories the list on screen is ranked by: the picker is the skaters' alone. */
-  readonly listFocus = computed(() => (this.position() === 'skaters' ? this.focus() : NO_FOCUS));
+  /** The categories the list on screen is ranked by. */
+  readonly listFocus = computed(() => this.pickerFocus());
   readonly listFocusLabel = computed(() =>
-    this.position() === 'skaters' ? this.focusLabel() : '',
+    this.position() === 'skaters' ? this.focusLabel() : this.goalieFocusLabel(),
   );
 
   /** Why the list on screen has nobody in it, though the league has players available. */
@@ -563,7 +632,7 @@ export class StreamerPlannerComponent {
    * categories are another list, so it opens on its first page again.
    */
   private readonly page = linkedSignal<unknown, number>({
-    source: () => [this.position(), this.positions(), this.focus()],
+    source: () => [this.position(), this.positions(), this.focus(), this.goalieFocus()],
     computation: () => 0,
   });
 
@@ -654,10 +723,10 @@ export class StreamerPlannerComponent {
     return stretch ? stretchLabel(stretch.start, stretch.end) : '';
   });
 
-  /** "6 of 7 nights": the nights counted, of the nights with games. */
+  /** "6 of 7 game days": the days counted, of the days with games. */
   readonly nightsTitle = computed(() => {
     const nights = this.nightsWithGames();
-    return nights === 0 ? 'No games' : `${this.counted().size} of ${nights} nights`;
+    return nights === 0 ? 'No games' : `${this.counted().size} of ${nights} game days`;
   });
 
   /** What a night is worth, said once, in the tip beside the nights. */
@@ -666,15 +735,20 @@ export class StreamerPlannerComponent {
     const offNight = max
       ? `An off-night has ${max} games or fewer, when most lineups have an open slot, so a game on one counts 1.25.`
       : 'A game on an off-night, when most lineups have an open slot, counts 1.25.';
-    return `${offNight} Untick a night your lineup has no room on.`;
+    return `${offNight} Untick a game day your lineup has no room on.`;
   });
 
   dayName(day: PlannerDay): string {
     return dayName(day);
   }
 
+  /** "Oct" and "12" apart, so a phone's narrower cell can show the number alone. */
+  dayMonth(day: PlannerDay): string {
+    return formatDay(day.date).split(' ')[0];
+  }
+
   dayOfMonth(day: PlannerDay): string {
-    return formatDay(day.date);
+    return formatDay(day.date).split(' ')[1];
   }
 
   /** The dates of the week before the stretch starts, asked for only to say how many games they held. */

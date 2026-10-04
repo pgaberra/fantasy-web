@@ -264,7 +264,7 @@ describe('StreamerPlannerComponent', () => {
     expect(planner.activePreset()).toBe('this-week');
     expect(planner.weeksTitle()).toBe('Week 2');
     expect(planner.stretchTitle()).toBe('Oct 12 to Oct 18');
-    expect(planner.nightsTitle()).toBe('2 of 2 nights');
+    expect(planner.nightsTitle()).toBe('2 of 2 game days');
     expect(planner.leadingDays()).toEqual([]);
     // Monday has no days before it, so nothing is asked for them.
     expect(invoke.mock.calls.filter(([fn]) => fn === streamerPlannerTeams)).toHaveLength(1);
@@ -299,7 +299,12 @@ describe('StreamerPlannerComponent', () => {
     expect(past[0].nativeElement.textContent).toContain('No games');
     expect(past[1].nativeElement.querySelector('.day-count').textContent).toBe('3');
     expect(past[1].nativeElement.querySelector('input')).toBeNull();
-    expect(ngMocks.findAll(fixture, 'label.day').length).toBe(5);
+    const nights = ngMocks.findAll(fixture, 'label.day');
+    expect(nights.length).toBe(5);
+    // The month sits in an element of its own, which a phone hides to fit the cell.
+    const date = ngMocks.find(nights[0], '.day-date');
+    expect(ngMocks.formatText(date)).toBe('Oct 14');
+    expect(ngMocks.formatText(ngMocks.find(date, '.day-month'))).toBe('Oct');
   });
 
   it('moves to next week, or to both weeks, at a word', async () => {
@@ -352,25 +357,30 @@ describe('StreamerPlannerComponent', () => {
     expect(box.value).toBe('2026-11-11');
   });
 
-  it("ranks by the server's goalie rank when goalies are picked", async () => {
+  it("keeps one team ranking, the server's skater rank, whichever kind the free agents list", async () => {
     const fixture = await render();
     const planner = fixture.point.componentInstance;
     expect(planner.teamRows().map((row) => row.team)).toEqual(['EDM', 'TBL']);
 
+    // TBL has the better goalie rank, which the page no longer reads.
     planner.setPosition('goalies');
-    expect(planner.teamRows().map((row) => row.team)).toEqual(['TBL', 'EDM']);
+    expect(planner.teamRows().map((row) => row.team)).toEqual(['EDM', 'TBL']);
   });
 
-  it('asks skaters or goalies once, over both tables, and opens on skaters', async () => {
+  it('asks skaters or goalies on the free agents alone, and opens on skaters', async () => {
     const fixture = await render();
-    const buttons = ngMocks.findAll(fixture, '.kind .segmented button');
+    const switches = ngMocks.findAll(fixture, '.segmented');
+    const buttons = ngMocks.findAll(
+      fixture,
+      '[aria-labelledby="planner-free-agents-title"] .segmented button',
+    );
     const pressed = () =>
       buttons.map((button) => button.nativeElement.getAttribute('aria-pressed'));
 
+    // The one switch, on the free agents' card: the schedules have none of their own.
+    expect(switches).toHaveLength(1);
     expect(buttons.map((button) => ngMocks.formatText(button))).toEqual(['Skaters', 'Goalies']);
     expect(pressed()).toEqual(['true', 'false']);
-    // The one switch: neither card carries a second one of its own.
-    expect(ngMocks.findAll(fixture, '.card .segmented')).toHaveLength(0);
 
     ngMocks.click(buttons[1]);
     fixture.detectChanges();
@@ -384,7 +394,7 @@ describe('StreamerPlannerComponent', () => {
 
     planner.toggleDay(planner.days()[1]);
 
-    expect(planner.nightsTitle()).toBe('1 of 2 nights');
+    expect(planner.nightsTitle()).toBe('1 of 2 game days');
     // Only the Oct 15 game is left, a home game the server put at 0.9324, for both teams alike.
     expect(planner.teamRows().map((row) => [row.team, row.score, row.games])).toEqual([
       ['EDM', 0.93, 1],
@@ -773,7 +783,7 @@ describe('StreamerPlannerComponent', () => {
       expect(names(planner.ranked())[0]).toBe('Sniper');
     });
 
-    it("keeps the goalies ranked by the league's own categories while skater ones are picked", async () => {
+    it('keeps the goalies apart from the skater categories picked, and the other way round', async () => {
       const fixture = await render();
       const planner = fixture.point.componentInstance;
 
@@ -781,19 +791,47 @@ describe('StreamerPlannerComponent', () => {
       expect(names(planner.visible())).toEqual(['Power Play', 'Middle', 'Sniper']);
       expect([...planner.listFocus()]).toEqual(['ppp']);
 
+      // The goalies open on every category, with the categories a goalie has to pick from.
       planner.setPosition('goalies');
       fixture.detectChanges();
       expect(planner.visible().map((row) => [row.player.name, row.rank])).toEqual([
         ['Waiver Goalie', 1],
       ]);
-      // The picker is the skaters': it is not drawn over the goalies, and marks none of their columns.
+      expect(planner.pickerOptions().map((option) => option.key)).toEqual(['w']);
       expect(planner.listFocus().size).toBe(0);
       expect(planner.listFocusLabel()).toBe('');
-      expect(ngMocks.formatText(fixture)).not.toContain('All categories');
+      expect(ngMocks.formatText(fixture)).toContain('All categories');
 
       // Still picked when the skaters come back.
       planner.setPosition('skaters');
       expect(names(planner.visible())[0]).toBe('Power Play');
+    });
+
+    it('ranks the goalies by the categories picked for them', async () => {
+      freeAgents.mockReturnValue(
+        of<FreeAgentWeek>({
+          creases: [],
+          players: [
+            lineSkater('1', 'Sniper', { goals: 3, assists: 1, ppp: 0, sog: 12 }),
+            goalie('4', 'Waiver Goalie', 1),
+            goalie('5', 'Winning Goalie', 3),
+          ],
+        }),
+      );
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+
+      planner.setPosition('goalies');
+      planner.toggleGoalieFocus('w');
+      expect(names(planner.visible())).toEqual(['Winning Goalie', 'Waiver Goalie']);
+      expect([...planner.listFocus()]).toEqual(['w']);
+      expect(planner.listFocusLabel()).toBe('W');
+      // The skaters' cards and list are not ranked by a goalie category.
+      expect(planner.focusLabel()).toBe('');
+      expect(names(planner.ranked())).toContain('Sniper');
+
+      planner.clearGoalieFocus();
+      expect(planner.listFocus().size).toBe(0);
     });
 
     it('remembers the categories for the league until the week is over', async () => {

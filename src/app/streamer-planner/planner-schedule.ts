@@ -4,7 +4,6 @@ import { ScheduledGame } from '../api/models/scheduled-game';
 import { ScheduleStrengthResponse } from '../api/models/schedule-strength-response';
 import { TeamSchedule } from '../api/models/team-schedule';
 
-export type PlannerPosition = 'skaters' | 'goalies';
 export type Tier = 'good' | 'bad' | null;
 
 /** How far an opponent has to sit from the league average before its game is tinted. */
@@ -21,7 +20,7 @@ export interface PlannerDay {
   readonly offNight: boolean;
 }
 
-/** A team's schedule over the nights counted, rated for one kind of player. */
+/** A team's schedule over the nights counted. */
 export interface PlannerTeamRow {
   readonly team: string;
   readonly games: number;
@@ -29,7 +28,7 @@ export interface PlannerTeamRow {
   readonly awayGames: number;
   readonly offNightGames: number;
   readonly backToBacks: number;
-  /** Games against an opponent the tint calls good, and bad, for the chosen position. */
+  /** Games against an opponent the tint calls good, and bad. */
   readonly favourable: number;
   readonly unfavourable: number;
   readonly score: number;
@@ -53,6 +52,11 @@ export function plannerDays(strength: ScheduleStrengthResponse): PlannerDay[] {
 /**
  * Every team rated over the nights counted, best first.
  *
+ * <p>One rating serves the whole page, whichever kind of player the free agents beside it list: the
+ * server's skater rating, where an opponent that concedes more makes a better game. The server
+ * rates goalies too, by the goals an opponent scores, but a table that re-ranked when the list
+ * beside it turned to goalies read as two answers to one question.
+ *
  * <p>With every night counted the server's own score and rank are used as they came: the server is
  * the authority on the rating. Where the reader has left a night out, the page sums the worth the
  * server put on each game it keeps, so the rule (the night, the opponent and the venue) lives on
@@ -60,7 +64,6 @@ export function plannerDays(strength: ScheduleStrengthResponse): PlannerDay[] {
  */
 export function rateTeams(
   teams: readonly TeamSchedule[],
-  position: PlannerPosition,
   counted: ReadonlySet<string>,
   everyNightCounted: boolean,
 ): PlannerTeamRow[] {
@@ -76,29 +79,17 @@ export function rateTeams(
       awayGames: schedule.length - homeGames,
       offNightGames: schedule.filter((game) => game.offNight).length,
       backToBacks: schedule.filter((game) => game.backToBack).length,
-      favourable: schedule.filter((game) => matchupTier(game, position) === 'good').length,
-      unfavourable: schedule.filter((game) => matchupTier(game, position) === 'bad').length,
+      favourable: schedule.filter((game) => matchupTier(game) === 'good').length,
+      unfavourable: schedule.filter((game) => matchupTier(game) === 'bad').length,
       score: everyNightCounted
-        ? serverScore(team, position)
-        : round2(schedule.reduce((sum, game) => sum + gameWorth(game, position), 0)),
-      rank: everyNightCounted ? serverRank(team, position) : 0,
+        ? team.skaterScore
+        : round2(schedule.reduce((sum, game) => sum + game.skaterWorth, 0)),
+      rank: everyNightCounted ? team.skaterRank : 0,
       schedule,
     };
   });
   const rows = everyNightCounted ? rated : competitionRanked(rated);
   return [...rows].sort((a, b) => a.rank - b.rank || a.team.localeCompare(b.team));
-}
-
-function serverScore(team: TeamSchedule, position: PlannerPosition): number {
-  return position === 'skaters' ? team.skaterScore : team.goalieScore;
-}
-
-function serverRank(team: TeamSchedule, position: PlannerPosition): number {
-  return position === 'skaters' ? team.skaterRank : team.goalieRank;
-}
-
-function gameWorth(game: ScheduledGame, position: PlannerPosition): number {
-  return position === 'skaters' ? game.skaterWorth : game.goalieWorth;
 }
 
 /** Standard competition ranking: two teams level share a rank and the next one skips. */
@@ -126,29 +117,26 @@ export function rankTier(rank: number, teams: number): Tier {
   return rank > teams - RANK_TIER_SIZE ? 'bad' : null;
 }
 
-/** Good for a skater when the opponent concedes more than average; for a goalie, scores less. */
-export function matchupTier(game: ScheduledGame, position: PlannerPosition): Tier {
-  const allowed = game.opponentGoalsAgainst - 1;
-  const scored = 1 - game.opponentGoalsFor;
-  const lean = position === 'skaters' ? allowed : scored;
+/** Good when the opponent concedes more goals than average, bad when it concedes fewer. */
+export function matchupTier(game: ScheduledGame): Tier {
+  const lean = game.opponentGoalsAgainst - 1;
   if (lean >= MATCHUP_MARGIN) {
     return 'good';
   }
   return lean <= -MATCHUP_MARGIN ? 'bad' : null;
 }
 
-export function matchupLabel(game: ScheduledGame, position: PlannerPosition): string {
+export function matchupLabel(game: ScheduledGame): string {
   const where = game.home ? 'vs' : 'at';
-  const rate = position === 'skaters' ? game.opponentGoalsAgainst : game.opponentGoalsFor;
-  const verb = position === 'skaters' ? 'allows' : 'scores';
+  const rate = game.opponentGoalsAgainst;
   const percent = Math.round(Math.abs(rate - 1) * 100);
   const direction = rate > 1 ? 'more' : 'fewer';
   const opponent = game.opponent ?? 'TBD';
   const sentences = [
     `${where} ${opponent}`,
     percent === 0
-      ? `${opponent} ${verb} a league-average number of goals`
-      : `${opponent} ${verb} ${percent}% ${direction} goals than average`,
+      ? `${opponent} allows a league-average number of goals`
+      : `${opponent} allows ${percent}% ${direction} goals than average`,
   ];
   if (game.offNight) {
     sentences.push('Off-night');
@@ -175,19 +163,32 @@ export const PLANNER_PRESETS: readonly { readonly key: PlannerPreset; readonly l
 ];
 
 /**
- * Today where the reader sits, as the API spells a date. The reader's own clock, not the server's:
- * a night is over for a streamer once it has been played where he is, and the server only says
- * which week today falls in.
+ * Today as the NHL counts nights, as the API spells a date. A night is dated where it is played, in
+ * North America, so a reader in Europe is a calendar day ahead while that night's games are still to
+ * come: at 00:30 in Stockholm Thursday's games have not started. A night therefore stays open until
+ * 06:00 Eastern the next morning, hours after the latest West Coast overtime ends.
  */
 export const PLANNER_TODAY = new InjectionToken<() => string>('PLANNER_TODAY', {
   providedIn: 'root',
-  factory: () => () => localIsoDate(),
+  factory: () => () => hockeyNight(),
 });
 
-export function localIsoDate(now: Date = new Date()): string {
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${now.getFullYear()}-${month}-${day}`;
+/** The hour, Eastern time, at which the night before is over everywhere it was played. */
+const NIGHT_ENDS_AT_HOUR = 6;
+
+const EASTERN_DATE = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+export function hockeyNight(now: Date = new Date()): string {
+  const parts = EASTERN_DATE.formatToParts(
+    new Date(now.getTime() - NIGHT_ENDS_AT_HOUR * 3_600_000),
+  );
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value;
+  return `${part('year')}-${part('month')}-${part('day')}`;
 }
 
 /** The week today falls in: the first before opening night, the last after the season. */

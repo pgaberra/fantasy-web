@@ -16,12 +16,6 @@
   margin: 0;
 }
 
-.lede {
-  color: var(--color-text-muted);
-  margin: var(--space-1) 0 0;
-  max-width: 62ch;
-}
-
 /* --- Cards ------------------------------------------------------------------------------------ */
 
 .card {
@@ -97,6 +91,11 @@
   background: var(--color-primary);
   border-color: var(--color-primary);
   color: var(--color-primary-contrast);
+}
+
+/* The skater positions, under the card's title and its skaters-or-goalies switch. */
+.positions {
+  margin-bottom: var(--space-3);
 }
 
 /* The categories the free agents are ranked by: under the positions, since they change the order
@@ -345,10 +344,10 @@
   display: none;
 }
 
-/* What the mark in a cell means, said once where the nights are summed up. */
+/* What the mark in a cell means, said once where the nights are summed up. The words stay in
+   the summary's own colour so the mark reads as the key and the words as what it means. */
 .range-legend {
   align-items: center;
-  color: var(--color-accent);
   display: inline-flex;
   gap: var(--space-1);
   margin-left: auto;
@@ -371,15 +370,8 @@
 
 /* --- The two tables --------------------------------------------------------------------------- */
 
-/* Skaters or goalies, over both tables: a switch between two views, so it is drawn as the app's
-   segmented control and not as the pills, which narrow one list. */
-.kind {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-3);
-}
-
+/* Skaters or goalies, on the free agents alone: a switch between two lists, so it is drawn as the
+   app's segmented control and not as the pills, which narrow one list. */
 .segmented {
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
@@ -424,6 +416,18 @@
   display: grid;
   gap: var(--space-4);
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+/* The free agents come first in the page, so they lead once the cards stack; side by side the
+   schedules keep the left column. */
+.columns .teams {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.columns .free-agents {
+  grid-column: 2;
+  grid-row: 1;
 }
 
 /* Under the list: which places are on screen, the page size, and the way to the other pages. */
@@ -499,6 +503,12 @@
   .columns {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .columns .teams,
+  .columns .free-agents {
+    grid-column: auto;
+    grid-row: auto;
+  }
 }
 
 @media (max-width: 640px) {
@@ -524,6 +534,24 @@
     flex-basis: 100%;
   }
 
+  /* From and To side by side, label over field: read as one range, aligned whatever the
+     labels' widths, one row shorter than stacking them, and each half a thumb-sized target. */
+  .dates {
+    width: 100%;
+  }
+
+  .date-field {
+    flex: 1;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  .field-date {
+    min-height: 44px;
+    width: 100%;
+  }
+
   /* Three to a row on a phone, where seven would not hold a date; the week alignment is a
      desktop courtesy, and the days that only served it go with it. */
   .day-strip {
@@ -532,5 +560,22 @@
 
   .day--past {
     display: none;
+  }
+
+  /* A third of a phone holds the tick box, the weekday and a number, not the month as well; the
+     stretch's own title already names the month. */
+  .day-month {
+    display: none;
+  }
+
+  .day-mark {
+    padding: 0 var(--space-1);
+  }
+}
+
+/* The narrowest phones: a third of one cannot hold the games and the off-night mark on a line. */
+@media (max-width: 359px) {
+  .day-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

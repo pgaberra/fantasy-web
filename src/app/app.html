@@ -1,4 +1,4 @@
-<app-environment-banner [environmentName]="environmentName" [version]="appVersion" />
+<app-lazy-environment-banner [environmentName]="environmentName" [version]="appVersion" />
 @if (!isLandingRoute()) {
   <header class="app-header">
     <div class="app-header-inner">
@@ -201,7 +201,7 @@
     </button>
   </div>
 </ng-template>
-<app-unverified-banner />
+<app-lazy-unverified-banner />
 <main class="app-main">
   <router-outlet />
 </main>

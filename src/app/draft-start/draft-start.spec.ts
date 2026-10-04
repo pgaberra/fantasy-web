@@ -14,11 +14,13 @@ import { PopoverTriggerDirective } from '../shared/popover/popover-trigger.direc
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { environment } from '../../environments/environment';
 import { FeatureService } from '../services/feature.service';
-import { MODEL_PRESET_SOURCE } from '../models/ai-projection';
+import { RestOfSeasonService } from '../services/rest-of-season.service';
+import { MODEL_SOURCES } from '../models/ai-projection';
 
 describe('DraftStartComponent', () => {
   const LAST_SEASON = PRESETS.find((preset) => preset.id === 'last_season')!;
   const MODEL = PRESETS.find((preset) => preset.id === 'model')!;
+  const REST_OF_SEASON = PRESETS.find((preset) => preset.id === 'rest_of_season')!;
 
   const summary = (
     id: string,
@@ -80,11 +82,13 @@ describe('DraftStartComponent', () => {
   const notifyError = vi.fn();
   const premium = signal(false);
   const aiProjection = signal(true);
+  const restOfSeasonAvailable = signal(false);
   const loadState = signal<'idle' | 'loading' | 'loaded' | 'error'>('loaded');
 
   beforeEach(() => {
     premium.set(false);
     aiProjection.set(true);
+    restOfSeasonAvailable.set(false);
     loadState.set('loaded');
     navigate.mockClear();
     listAll.mockClear();
@@ -124,8 +128,9 @@ describe('DraftStartComponent', () => {
           offeredPresets: <T extends { readonly source?: string | null }>(presets: readonly T[]) =>
             aiProjection()
               ? presets
-              : presets.filter((preset) => preset.source !== MODEL_PRESET_SOURCE),
+              : presets.filter((preset) => !MODEL_SOURCES.includes(preset.source ?? '')),
         })
+        .mock(RestOfSeasonService, { available: restOfSeasonAvailable })
         .provide({ provide: Router, useValue: { navigate } })
         .provide({ provide: ActivatedRoute, useValue: { snapshot: { queryParams } } })
         // The component pulls in RouterLink, which has ng-mocks mock the router's location
@@ -419,6 +424,37 @@ describe('DraftStartComponent', () => {
     expect(component.presets().map((preset) => preset.id)).toEqual(['last_season']);
   });
 
+  it('offers the rest of the season beside the AI projection while a season is under way', async () => {
+    restOfSeasonAvailable.set(true);
+    const component = await render();
+
+    expect(component.presets().map((preset) => preset.id)).toEqual([
+      'last_season',
+      'model',
+      'rest_of_season',
+    ]);
+    component.selectPreset(REST_OF_SEASON);
+    component.start();
+    expect(navigate).toHaveBeenCalledWith(['/draft/new/preset', 'rest_of_season']);
+  });
+
+  it('leaves the rest of the season out between seasons', async () => {
+    const component = await render();
+
+    expect(component.presets().map((preset) => preset.id)).toEqual(['last_season', 'model']);
+  });
+
+  it('tells the two AI presets apart under their names', async () => {
+    restOfSeasonAvailable.set(true);
+    listAll.mockReturnValue(of([]));
+    const fixture = await renderFixture();
+
+    expect(texts(fixture, '.row-meta')).toEqual([
+      'The whole season',
+      'Only the games left to play',
+    ]);
+  });
+
   /**
    * Both presets and both boards can be drafted repeatedly, so what the page has to get right is
    * no longer which draft belongs to which preset — it is that a draft says what it was played
@@ -484,6 +520,7 @@ describe('DraftStartComponent', () => {
   // One card for every choice, whichever tile is open. The presets were cards and the boards a
   // ruled list for a release, and switching tiles then switched the control under them.
   it('draws every choice as the same card, whichever tile is open', async () => {
+    restOfSeasonAvailable.set(true);
     listAll.mockReturnValue(of([summary('p1', 'projection', 'none'), imported('i1', 'alex')]));
 
     const fixture = await renderFixture();
@@ -494,13 +531,13 @@ describe('DraftStartComponent', () => {
     component.sourceKind.set('preset');
     fixture.detectChanges();
 
-    // Presets: two cards, an icon on each, the checked one marked on the card itself.
+    // Presets: three cards, an icon on each, the checked one marked on the card itself.
     expect(cards()).toHaveLength(PRESETS.length);
     expect(root.querySelectorAll('.row-icon app-icon')).toHaveLength(PRESETS.length);
-    expect(selected()).toEqual([true, false]);
+    expect(selected()).toEqual([true, false, false]);
     component.selectPreset(MODEL);
     fixture.detectChanges();
-    expect(selected()).toEqual([false, true]);
+    expect(selected()).toEqual([false, true, false]);
 
     // The same card for a projection and for a shared board: radio, icon, outline and meta.
     for (const kind of ['projection', 'following'] as const) {

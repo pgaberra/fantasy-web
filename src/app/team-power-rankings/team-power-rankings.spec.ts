@@ -309,15 +309,15 @@ describe('TeamPowerRankingsComponent', () => {
     expect(draftCall).toHaveBeenLastCalledWith('d2', 'model');
   });
 
-  /** Mid-season the model's totals hold the season so far, and the line above the table says so. */
-  it('says when the model ranked the season with the games played so far', async () => {
+  /** Mid-season the model's totals cover the games left, and the line above the table says so. */
+  it('says when the model ranked the rest of the season', async () => {
     yahooLeague.mockReturnValue(of({ ...summary, inSeason: true }));
     const fixture = await render();
     const component = fixture.point.componentInstance;
     await choose(fixture, component, '465.l.1');
 
     expect(fixture.nativeElement.querySelector('.rankings-source')?.textContent).toContain(
-      'Ranked by the SlapStat AI projection, with the games played so far',
+      'Ranked by the SlapStat AI projection for the rest of the season',
     );
   });
 
