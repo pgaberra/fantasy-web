@@ -11,7 +11,7 @@ import {
   SKATER_UTILITY_STAT_KEYS,
 } from '../models/stat-key.model';
 import { Projection } from '../models/projection.model';
-import { PlannerPlatform } from './streamer-planner-league.service';
+import { LeaguePlatform } from './league-choice.service';
 
 /**
  * One available player, shaped as a {@link Projection} so the same fantasy-points and z-score
@@ -46,7 +46,7 @@ export class StreamerPlannerFreeAgentsService {
   private readonly api = inject(Api);
 
   freeAgents(
-    platform: PlannerPlatform,
+    platform: LeaguePlatform,
     leagueId: string,
     start: string,
     end: string,

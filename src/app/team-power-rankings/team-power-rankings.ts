@@ -5,6 +5,7 @@ import { environment } from '../../environments/environment';
 import { LeagueSummaryResponse } from '../api/models/league-summary-response';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { FeatureService } from '../services/feature.service';
+import { LeagueChoiceService } from '../services/league-choice.service';
 import { LeagueSummaryService } from '../services/league-summary.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
 import { LeagueProjectionTableComponent } from '../draft-mode/league-projection-table/league-projection-table';
@@ -61,6 +62,11 @@ import { RankBy, rankByBoard } from './rank-by';
  * <p>Neither dropdown has a button. Nothing here is saved or sent anywhere but to be read, so
  * there is nothing to confirm: what the two point at is what is on screen, and an account with
  * one league opens on its rankings.
+ *
+ * <p>The page opens on the league last chosen anywhere ({@link LeagueChoiceService}), on its own
+ * platform's tab, and a league chosen here is the one the next page opens on. A link naming a
+ * draft opens on the draft instead, and a draft picked here is not remembered: it is this page's
+ * alone, a league no other page reads.
  */
 @Component({
   selector: 'app-team-power-rankings',
@@ -83,6 +89,7 @@ export class TeamPowerRankingsComponent implements OnInit {
   private readonly features = inject(FeatureService);
   private readonly storage = inject(ProjectionStorageService);
   private readonly route = inject(ActivatedRoute);
+  private readonly choice = inject(LeagueChoiceService);
 
   /** The league picker every screen shares, so choosing a league means the same thing here. */
   readonly picker = inject(YahooLeaguePicker);
@@ -134,7 +141,12 @@ export class TeamPowerRankingsComponent implements OnInit {
     const draft = this.route.snapshot.queryParamMap.get('draft');
     this.draftId.set(draft);
     this.linkedDraft.set(draft);
-    this.picker.start();
+    this.picker.start(!draft);
+    const espn = this.choice.on('ESPN');
+    if (!draft && espn && this.espnOffered) {
+      this.platform.set('espn');
+      this.espnLeague.set({ id: espn.leagueId, name: espn.name });
+    }
   }
 
   /** Whether this environment serves the AI projection, which is then what ranks by default. */

@@ -1,5 +1,5 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { DisconnectCause, LeagueSyncComponent } from './league-sync';
 import { PlatformSwitchDialogComponent } from './platform-switch-dialog/platform-switch-dialog';
 import { YahooLeagueSyncComponent } from '../yahoo-league-sync/yahoo-league-sync';
@@ -12,6 +12,8 @@ import { environment } from '../../../../environments/environment';
 describe('LeagueSyncComponent', () => {
   const originalYahooDisabled = environment.yahooSyncDisabled;
   const originalEspnEnabled = environment.espnLeaguesEnabled;
+
+  beforeEach(() => localStorage.clear());
 
   afterEach(() => {
     environment.yahooSyncDisabled = originalYahooDisabled;
@@ -36,6 +38,17 @@ describe('LeagueSyncComponent', () => {
     // Nothing pre-selected — no sync widget until the user picks a platform.
     expect(fixture.nativeElement.querySelector('app-yahoo-league-sync')).toBeNull();
     expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeNull();
+  });
+
+  it('opens on the platform of the league last chosen anywhere', async () => {
+    localStorage.setItem(
+      'slapstat.league',
+      JSON.stringify({ platform: 'ESPN', leagueId: '777', name: 'Office League' }),
+    );
+    const fixture = await render(false, true);
+
+    expect(fixture.point.componentInstance.provider()).toBe('espn');
+    expect(fixture.nativeElement.querySelector('app-espn-league-sync')).toBeTruthy();
   });
 
   it('reveals the chosen platform sync once a tab is picked', async () => {

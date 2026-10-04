@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { from } from 'rxjs';
+import { environment } from '../../environments/environment';
 import { Api } from '../api/api';
 import { streamerPlannerMyTeam } from '../api/fn/streamer-planner/streamer-planner-my-team';
 import { streamerPlannerTeams } from '../api/fn/streamer-planner/streamer-planner-teams';
@@ -26,12 +27,14 @@ import { EspnService } from '../services/espn.service';
 import { FeatureService } from '../services/feature.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { StreamerPlannerFreeAgentsService } from '../services/streamer-planner-free-agents.service';
-import { StreamerPlannerLeagueService } from '../services/streamer-planner-league.service';
+import { ChosenLeague, LeagueChoiceService } from '../services/league-choice.service';
 import { YahooService } from '../services/yahoo.service';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
+import { Platform } from '../shared/platform-tabs/platform-tabs';
+import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { FreeAgentsTableComponent } from './free-agents-table/free-agents-table';
 import { LeagueFieldComponent } from './league-field/league-field';
@@ -140,7 +143,9 @@ export interface PresetOption {
  * week, both) or by two dates, and any night among them can be left out; the teams and the free
  * agents follow at once, with no button, as on Team Power Rankings. A night already played is not
  * offered: a stretch starts no earlier than today. The league, which the free agents are read from,
- * sits beside the nights.
+ * sits beside the nights, picked the way Team Power Rankings picks one: Yahoo / ESPN tabs, the
+ * account's Yahoo leagues under the one and ESPN's card under the other, opening on the league
+ * last chosen anywhere ({@link LeagueChoiceService}).
  *
  * <p>The schedules are rated once, for the whole page. Skaters or goalies is asked on the free
  * agents alone, which are that kind only, in its own categories: the two fill different roster
@@ -168,13 +173,14 @@ export interface PresetOption {
     TooltipDirective,
     TopOptionsComponent,
   ],
+  providers: [YahooLeaguePicker],
   templateUrl: './streamer-planner.html',
   styleUrl: './streamer-planner.css',
 })
 export class StreamerPlannerComponent {
   private readonly api = inject(Api);
   private readonly freeAgentsService = inject(StreamerPlannerFreeAgentsService);
-  private readonly leagueService = inject(StreamerPlannerLeagueService);
+  private readonly picker = inject(YahooLeaguePicker);
   private readonly ranking = inject(ProjectionRankingService);
   private readonly yahoo = inject(YahooService);
   private readonly espn = inject(EspnService);
@@ -183,6 +189,12 @@ export class StreamerPlannerComponent {
   private readonly today = inject(PLANNER_TODAY)();
   /** Phone or desktop: each keeps its own page size. */
   private readonly layout = inject(PLANNER_LAYOUT);
+
+  constructor() {
+    // At once rather than with the league field, which waits for the schedule: the remembered
+    // league's free agents are asked for alongside it.
+    this.picker.start();
+  }
 
   // --- The nights -------------------------------------------------------------------------------
 
@@ -324,7 +336,36 @@ export class StreamerPlannerComponent {
 
   // --- The league and its free agents -----------------------------------------------------------
 
-  readonly league = this.leagueService.league;
+  /** Whether ESPN leagues are offered at all: where Team Power Rankings offers them. */
+  private readonly espnOffered = environment.espnLeaguesEnabled;
+  private readonly remembered = inject(LeagueChoiceService).league();
+
+  /** Which platform's league the free agents come from: last time's, else Yahoo. */
+  readonly platform = signal<Platform>(
+    this.espnOffered && this.remembered?.platform === 'ESPN' ? 'espn' : 'yahoo',
+  );
+
+  /** The ESPN league ESPN last accepted for the card, kept while the reader looks at Yahoo's. */
+  readonly espnLeague = signal<ChosenLeague | null>(
+    this.espnOffered && this.remembered?.platform === 'ESPN' ? this.remembered : null,
+  );
+
+  /**
+   * The league the free agents are read from: the tab's. Equal by platform and id alone, so the
+   * name arriving with the Yahoo list does not read the league a second time.
+   */
+  readonly league = computed<ChosenLeague | null>(
+    () => {
+      if (this.platform() === 'espn') {
+        return this.espnLeague();
+      }
+      const key = this.picker.selectedKey();
+      return key
+        ? { platform: 'YAHOO', leagueId: key, name: this.picker.selectedLeague()?.name ?? key }
+        : null;
+    },
+    { equal: (a, b) => a?.platform === b?.platform && a?.leagueId === b?.leagueId },
+  );
 
   readonly positionOptions = PLANNER_POSITIONS;
 
