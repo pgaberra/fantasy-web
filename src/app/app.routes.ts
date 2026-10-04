@@ -5,6 +5,7 @@ import { adminGuard } from './guards/admin.guard';
 import { authGuard } from './guards/auth.guard';
 import { paymentsEnabledGuard } from './guards/payments-enabled.guard';
 import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
+import { draftAnalysisEnabledGuard } from './guards/draft-analysis-enabled.guard';
 import { streamerPlannerEnabledGuard } from './guards/streamer-planner-enabled.guard';
 import { faScoutEnabledGuard } from './guards/fa-scout-enabled.guard';
 import { roleChangesEnabledGuard } from './guards/role-changes-enabled.guard';
@@ -88,6 +89,13 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./team-power-rankings/team-power-rankings').then((m) => m.TeamPowerRankingsComponent),
     canActivate: [authGuard],
+  },
+  // A league's draft graded pick by pick. Served only where the BFF's DRAFT_ANALYSIS_ENABLED says so.
+  {
+    path: 'draft-analysis',
+    loadComponent: () =>
+      import('./draft-analysis/draft-analysis').then((m) => m.DraftAnalysisComponent),
+    canActivate: [authGuard, draftAnalysisEnabledGuard],
   },
   {
     path: 'projections',

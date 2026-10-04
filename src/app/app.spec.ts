@@ -31,6 +31,7 @@ describe('App', () => {
   const streamerPlanner = signal(false);
   const faScout = signal(false);
   const roleChanges = signal(false);
+  const draftAnalysis = signal(false);
 
   beforeEach(() => {
     isLoggedIn.set(true);
@@ -44,6 +45,7 @@ describe('App', () => {
     streamerPlanner.set(false);
     faScout.set(false);
     roleChanges.set(false);
+    draftAnalysis.set(false);
     logout.mockClear();
     return (
       MockBuilder(App)
@@ -62,7 +64,13 @@ describe('App', () => {
         .mock(AuthService, { isLoggedIn, isAdmin, isEmailVerified: signal(true), logout })
         .mock(AccountService, { username, email, avatarUrl })
         .mock(EntitlementService, { premium, loadState })
-        .mock(FeatureService, { leagueDraftSync, streamerPlanner, faScout, roleChanges } as never)
+        .mock(FeatureService, {
+          leagueDraftSync,
+          streamerPlanner,
+          faScout,
+          roleChanges,
+          draftAnalysis,
+        } as never)
         .provide({
           provide: Router,
           useValue: {
@@ -134,12 +142,13 @@ describe('App', () => {
     expect(openNavMenu(fixture).map((item) => item.textContent?.trim())).toContain('Role Changes');
   });
 
-  it('drops the power rankings where no league draft can be read', () => {
+  it('offers Draft Analysis where the environment serves it', () => {
+    draftAnalysis.set(true);
     const fixture = render();
 
     const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
 
-    expect(items).not.toContain('Team Power Rankings');
+    expect(items).toContain('Draft Analysis');
   });
 
   it('offers the FA scout from the header and the burger where the BFF serves it', () => {
@@ -155,13 +164,16 @@ describe('App', () => {
     expect(items).toContain('FA Scout');
   });
 
-  it('drops the FA scout where the BFF does not serve it', () => {
-    const fixture = render();
+  it.each(['Team Power Rankings', 'Draft Analysis', 'FA Scout'])(
+    'drops %s where the BFF does not serve it',
+    (label) => {
+      const fixture = render();
 
-    const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
+      const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
 
-    expect(items).not.toContain('FA Scout');
-  });
+      expect(items).not.toContain(label);
+    },
+  );
 
   it('leaves out the links the header itself leaves out', () => {
     isAdmin.set(false);

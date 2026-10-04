@@ -91,6 +91,17 @@
         Team Power Rankings
       </a>
     }
+    @if (features.draftAnalysis()) {
+      <a
+        class="nav-menu-item"
+        cdkMenuItem
+        routerLink="/draft-analysis"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+      >
+        Draft Analysis
+      </a>
+    }
     <a
       class="nav-menu-item"
       cdkMenuItem
