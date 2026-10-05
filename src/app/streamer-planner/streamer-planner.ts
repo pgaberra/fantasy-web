@@ -43,10 +43,8 @@ import {
   filterByPositions,
   LineColumn,
   nightsFactor,
-  ofKind,
-  PLANNER_POSITIONS,
-  PlannerPosition,
-  PlannerPositionGroup,
+  FREE_AGENT_POSITIONS,
+  FreeAgentPosition,
   projectedStarts,
   RankedFreeAgent,
   roomFactor,
@@ -56,7 +54,7 @@ import {
   TOP_OPTIONS,
   WEEK_DECIMALS,
 } from './planner-free-agents';
-import { focusableCategories, readFocus, writeFocus } from './planner-focus';
+import { focusableCategories, readFocus, scoresIn, writeFocus } from './planner-focus';
 import { NightRoom, nightRooms, roomLabel, roomTip } from './planner-lineup';
 import {
   isPageSize,
@@ -99,14 +97,8 @@ export interface LeadingDay {
   readonly games?: number;
 }
 
-/** No category picked: the list is ranked by the league's whole set. */
-const NO_FOCUS: ReadonlySet<ScoringStatKey> = new Set();
-
 /** The two tables, shown one at a time. */
 export type PlannerView = 'free-agents' | 'schedules';
-
-/** What the goalies' categories are filed under, beside the league's own key. */
-const GOALIE_FOCUS_SUFFIX = ':goalies';
 
 function keepOffered(
   picked: ReadonlySet<ScoringStatKey>,
@@ -153,11 +145,10 @@ export interface PresetOption {
  * <p>The free agents and the team schedules are shown one at a time, each the page's full width,
  * behind a switch that opens on the free agents.
  *
- * <p>The schedules are rated once, for the whole page. Skaters or goalies is asked on the free
- * agents alone, which are that kind only, in its own categories: the two fill different roster
- * slots and score different things, so a list of both had columns that meant one thing on a
- * skater's row and nothing on a goalie's. What concerns one table only (which kind, which
- * positions, which categories to rank by) sits on that table.
+ * <p>The schedules are rated once, for the whole page. The free agents are one list, skaters and
+ * goalies together, best first by the league's scoring: with the table the page's full width
+ * there is room for both kinds' categories side by side, each row blank under the other kind's.
+ * What concerns one table only (which positions, which categories to rank by) sits on that table.
  *
  * <p>The server rates the whole stretch; a night the reader leaves out is taken out here, by the
  * server's own rule (`planner-schedule.ts`), and a skater's line is scaled to the share of his
@@ -389,20 +380,13 @@ export class StreamerPlannerComponent {
     this.chosenView.set(view);
   }
 
-  readonly positionOptions = PLANNER_POSITIONS;
+  readonly positionOptions = FREE_AGENT_POSITIONS;
 
-  /** Skaters or goalies: the kind of player the free agents list. */
-  readonly position = signal<PlannerPosition>('skaters');
-
-  setPosition(position: PlannerPosition): void {
-    this.position.set(position);
-  }
-
-  /** The positions the skaters are narrowed to. None is every position, as the page opens. */
-  readonly positions = signal<ReadonlySet<PlannerPositionGroup>>(new Set());
+  /** The positions the free agents are narrowed to. None is every position, as the page opens. */
+  readonly positions = signal<ReadonlySet<FreeAgentPosition>>(new Set());
 
   /** One more position, or one fewer: any number can be on at once. */
-  togglePosition(position: PlannerPositionGroup): void {
+  togglePosition(position: FreeAgentPosition): void {
     this.positions.update((positions) => {
       const next = new Set(positions);
       if (next.has(position)) {
@@ -579,30 +563,20 @@ export class StreamerPlannerComponent {
   });
 
   /**
-   * The categories a streamer can rank one kind of player by: a category league's own. A points
-   * league has none, since a point is worth the same whichever category it came from.
+   * The categories a streamer can rank the list by: a category league's own, skaters' and goalies'
+   * alike. A points league has none, since a point is worth the same whichever category it came
+   * from.
    */
-  private focusOptionsOf(kind: 'skater' | 'goalie'): readonly LineColumn[] {
-    return this.scoringType() === 'category'
-      ? focusableCategories(this.categories(), kind).map(categoryColumn)
-      : [];
-  }
+  readonly focusOptions = computed<readonly LineColumn[]>(() =>
+    this.scoringType() === 'category'
+      ? focusableCategories(this.categories()).map(categoryColumn)
+      : [],
+  );
 
-  readonly focusOptions = computed(() => this.focusOptionsOf('skater'));
-  readonly goalieFocusOptions = computed(() => this.focusOptionsOf('goalie'));
-
-  /**
-   * The categories picked, as remembered for the league until this week is over. The goalies' are
-   * filed apart, since a category such as time on ice is both kinds'.
-   */
+  /** The categories picked, as remembered for the league until this week is over. */
   private readonly focusPicked = linkedSignal<string | null, ReadonlySet<ScoringStatKey>>({
     source: this.leagueKey,
     computation: (league) => new Set(league ? readFocus(league, this.today) : []),
-  });
-  private readonly goalieFocusPicked = linkedSignal<string | null, ReadonlySet<ScoringStatKey>>({
-    source: this.leagueKey,
-    computation: (league) =>
-      new Set(league ? readFocus(`${league}${GOALIE_FOCUS_SUFFIX}`, this.today) : []),
   });
 
   /**
@@ -610,80 +584,34 @@ export class StreamerPlannerComponent {
    * opens. A category the league no longer scores is dropped rather than ranked by.
    */
   readonly focus = computed(() => keepOffered(this.focusPicked(), this.focusOptions()));
-  readonly goalieFocus = computed(() =>
-    keepOffered(this.goalieFocusPicked(), this.goalieFocusOptions()),
-  );
 
   toggleFocus(key: ScoringStatKey): void {
-    this.setFocus('skater', toggled(this.focus(), key));
-  }
-
-  toggleGoalieFocus(key: ScoringStatKey): void {
-    this.setFocus('goalie', toggled(this.goalieFocus(), key));
+    this.setFocus(toggled(this.focus(), key));
   }
 
   clearFocus(): void {
-    this.setFocus('skater', new Set());
+    this.setFocus(new Set());
   }
 
-  clearGoalieFocus(): void {
-    this.setFocus('goalie', new Set());
-  }
-
-  private setFocus(kind: 'skater' | 'goalie', focus: ReadonlySet<ScoringStatKey>): void {
-    (kind === 'skater' ? this.focusPicked : this.goalieFocusPicked).set(focus);
+  private setFocus(focus: ReadonlySet<ScoringStatKey>): void {
+    this.focusPicked.set(focus);
     const league = this.leagueKey();
     const week = weekOf(this.weeks(), this.today);
     // Without the season's weeks there is no end to hold it to: it holds for this visit only.
     if (league && week) {
-      writeFocus(
-        kind === 'skater' ? league : `${league}${GOALIE_FOCUS_SUFFIX}`,
-        focus,
-        week.end,
-        this.today,
-      );
+      writeFocus(league, focus, week.end, this.today);
     }
   }
 
-  /** The categories to pick from for the kind on screen, and which of them are picked. */
-  readonly pickerOptions = computed(() =>
-    this.position() === 'skaters' ? this.focusOptions() : this.goalieFocusOptions(),
-  );
-  readonly pickerFocus = computed(() =>
-    this.position() === 'skaters' ? this.focus() : this.goalieFocus(),
-  );
-
-  togglePicker(key: ScoringStatKey): void {
-    if (this.position() === 'skaters') {
-      this.toggleFocus(key);
-    } else {
-      this.toggleGoalieFocus(key);
-    }
-  }
-
-  clearPicker(): void {
-    if (this.position() === 'skaters') {
-      this.clearFocus();
-    } else {
-      this.clearGoalieFocus();
-    }
-  }
-
-  /** "PPP, SOG": the skater categories picked, as the score's tip and the cards name them. */
+  /** "PPP, SOG": the categories picked, as the score's tip and the cards name them. */
   readonly focusLabel = computed(() => pickedLabel(this.focusOptions(), this.focus()));
-  private readonly goalieFocusLabel = computed(() =>
-    pickedLabel(this.goalieFocusOptions(), this.goalieFocus()),
-  );
 
   /**
    * Every available player with a projection, best first by the league's scoring. With categories
-   * picked, only the kind they belong to, scored in those alone: a goalie has nothing to give in a
-   * skater category, and his own z-score is not on the same scale as one category's.
+   * picked, only the kinds that score in them, ranked by those alone: a goalie has nothing to give
+   * in a skater category, nor a skater in a goalie one.
    */
-  private rankedBy(
-    focus: ReadonlySet<ScoringStatKey>,
-    kind: 'skater' | 'goalie' = 'skater',
-  ): RankedFreeAgent[] {
+  private rankedBy(focus: ReadonlySet<ScoringStatKey>): RankedFreeAgent[] {
     const week = this.freeAgentsResource.hasValue() ? this.freeAgentsResource.value() : null;
     if (!week) {
       return [];
@@ -702,10 +630,7 @@ export class StreamerPlannerComponent {
     const games = new Map<string, number>();
     const lines = new Map<string, Projection>();
     const byPlayerId = new Map(week.players.map((player) => [player.projection.playerId, player]));
-    const players =
-      focus.size > 0
-        ? week.players.filter((player) => player.projection.type === kind)
-        : week.players;
+    const players = week.players.filter((player) => scoresIn(player.projection.type, focus));
     const projections = players.map((player) => {
       const factor = rooms
         ? roomFactor(player, teams, counted, rooms)
@@ -751,46 +676,23 @@ export class StreamerPlannerComponent {
     return ranked;
   }
 
-  /** The best pickups of either kind, or the skaters in the categories picked: what the cards read. */
+  /** The best pickups, by the categories picked: what the cards and the list read. */
   readonly ranked = computed(() => this.rankedBy(this.focus()));
-
-  /** Everyone by the league's whole set of categories, which is how the goalies open. */
-  private readonly rankedByAll = computed(() =>
-    this.focus().size === 0 ? this.ranked() : this.rankedBy(NO_FOCUS),
-  );
-
-  /** The goalies, by the categories picked for them, or by the league's whole set. */
-  private readonly rankedGoalies = computed(() =>
-    this.goalieFocus().size > 0 ? this.rankedBy(this.goalieFocus(), 'goalie') : this.rankedByAll(),
-  );
 
   readonly topOptions = computed(() => this.ranked().slice(0, TOP_OPTIONS));
 
   /**
-   * The list on screen: the skaters, narrowed to the positions picked, or the goalies, each ranked
-   * by the categories picked for that kind. Each is placed among his own kind.
+   * The list on screen: skaters and goalies together, narrowed to the positions picked. Each keeps
+   * his place in the whole list, so one narrowed to a position still says how it compares.
    */
-  readonly filtered = computed(() =>
-    this.position() === 'skaters'
-      ? filterByPositions(ofKind(this.ranked(), 'skater'), this.positions())
-      : ofKind(this.rankedGoalies(), 'goalie'),
-  );
-
-  /** The categories the list on screen is ranked by. */
-  readonly listFocus = computed(() => this.pickerFocus());
-  readonly listFocusLabel = computed(() =>
-    this.position() === 'skaters' ? this.focusLabel() : this.goalieFocusLabel(),
-  );
+  readonly filtered = computed(() => filterByPositions(this.ranked(), this.positions()));
 
   /** Why the list on screen has nobody in it, though the league has players available. */
-  readonly emptyText = computed(() => {
-    if (this.position() === 'goalies') {
-      return 'No available goalie has a projection for these nights.';
-    }
-    return this.positions().size > 0
+  readonly emptyText = computed(() =>
+    this.positions().size > 0
       ? 'No available player at these positions has a projection.'
-      : 'No available skater has a projection for these nights.';
-  });
+      : 'No available player has a projection in these categories.',
+  );
 
   // --- The pages of the list --------------------------------------------------------------------
 
@@ -800,11 +702,11 @@ export class StreamerPlannerComponent {
   readonly pageSize = linkedSignal(() => readPageSize(this.layout()));
 
   /**
-   * The page asked for, counted from 0. The other kind of player, other positions or other
-   * categories are another list, so it opens on its first page again.
+   * The page asked for, counted from 0. Other positions or other categories are another list, so
+   * it opens on its first page again.
    */
   private readonly page = linkedSignal<unknown, number>({
-    source: () => [this.position(), this.positions(), this.focus(), this.goalieFocus()],
+    source: () => [this.positions(), this.focus()],
     computation: () => 0,
   });
 
@@ -869,7 +771,8 @@ export class StreamerPlannerComponent {
       !!this.league() &&
       !this.loadingFreeAgents() &&
       !this.freeAgentsFailure() &&
-      this.rankedByAll().length === 0,
+      this.freeAgentsResource.hasValue() &&
+      this.freeAgentsResource.value().players.length === 0,
   );
 
   retryFreeAgents(): void {

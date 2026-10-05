@@ -6,7 +6,7 @@ import {
 } from '../models/stat-key.model';
 
 /**
- * The categories a streamer is chasing this week, skaters' or goalies', remembered per league until
+ * The categories a streamer is chasing this week, skaters' and goalies' alike, remembered per league until
  * the week is over. A category matchup is usually settled in most categories by Friday, and the add that
  * matters is the one that swings the few still open; which those are is next week's question, so
  * the choice is let go of when the week ends rather than carried silently into it.
@@ -25,13 +25,21 @@ const SKATER_KEYS: ReadonlySet<string> = new Set(SKATER_SCORING_STAT_KEYS);
 const GOALIE_KEYS: ReadonlySet<string> = new Set(GOALIE_SCORING_STAT_KEYS);
 const SCORING_KEYS: ReadonlySet<string> = new Set(SCORING_STAT_KEYS);
 
-/** The categories among a league's, in the league's order, that a focus on one kind can pick. */
+/** The categories among a league's, in the league's order, that a focus can pick. */
 export function focusableCategories(
   categories: readonly ScoringStatKey[],
-  kind: 'skater' | 'goalie' = 'skater',
 ): readonly ScoringStatKey[] {
+  return categories.filter((key) => SCORING_KEYS.has(key));
+}
+
+/**
+ * Whether a kind of player is ranked by the categories picked: he scores in at least one of them.
+ * A goalie has nothing to give in a skater category, and ranked by one he would only fill the list
+ * with noughts. None picked is the league's whole set, which both kinds score in.
+ */
+export function scoresIn(kind: 'skater' | 'goalie', focus: ReadonlySet<ScoringStatKey>): boolean {
   const own = kind === 'skater' ? SKATER_KEYS : GOALIE_KEYS;
-  return categories.filter((key) => own.has(key));
+  return focus.size === 0 || [...focus].some((key) => own.has(key));
 }
 
 /** The categories remembered for a league, or none once the week they were picked in is over. */
