@@ -191,26 +191,52 @@
                   label="Players you would drop"
                   text="Each free agent's Swap is priced against the best of these: every game day is re-set with him in and the dropped player out, so the seat a drop frees counts, and each game is weighed by what a game of that player is worth. Until you pick, the three skaters whose games are worth least are suggested."
                 />
-                <div class="pills">
-                  @for (player of dropOptions(); track player.playerId) {
-                    <button
-                      type="button"
-                      class="pill"
-                      [class.pill--active]="dropIds().has(player.playerId)"
-                      [attr.aria-pressed]="dropIds().has(player.playerId)"
-                      (click)="toggleDrop(player.playerId)"
-                    >
-                      {{ player.name }}
-                    </button>
-                  }
-                </div>
+                <!-- The pick in one line, the whole squad behind it: seventeen names were a wall
+                     under the game days for a choice made once. -->
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm drops-trigger"
+                  [appPopover]="dropsMenu"
+                  popoverAlign="start"
+                >
+                  <span class="drops-picked">{{ dropsSummary() }}</span>
+                  <app-icon name="chevron-down" [size]="14" />
+                </button>
                 @if (dropsSuggested()) {
                   <span class="drops-note">Suggested</span>
-                } @else {
-                  <button type="button" class="btn btn-secondary btn-sm" (click)="suggestDrops()">
-                    Suggest
-                  </button>
                 }
+                <ng-template #dropsMenu>
+                  <div class="drops-menu">
+                    <div class="pills" role="group" aria-label="Players you would drop">
+                      @for (player of dropOptions(); track player.playerId) {
+                        <button
+                          type="button"
+                          class="pill"
+                          [class.pill--active]="dropIds().has(player.playerId)"
+                          [attr.aria-pressed]="dropIds().has(player.playerId)"
+                          (click)="toggleDrop(player.playerId)"
+                        >
+                          {{ player.name }}
+                        </button>
+                      }
+                    </div>
+                    <p class="drops-menu-foot">
+                      @if (dropsSuggested()) {
+                        <span class="drops-note"
+                          >Suggested: the three skaters whose games are worth least.</span
+                        >
+                      } @else {
+                        <button
+                          type="button"
+                          class="btn btn-secondary btn-sm"
+                          (click)="suggestDrops()"
+                        >
+                          Use suggestion
+                        </button>
+                      }
+                    </p>
+                  </div>
+                </ng-template>
               </div>
             }
           }
