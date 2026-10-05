@@ -924,6 +924,26 @@ describe('StreamerPlannerComponent', () => {
           expect(planner.shownSwap()).toBeNull();
         });
 
+        it('names the drops in one line and counts those past the third', async () => {
+          const fixture = await render();
+          const planner = fixture.point.componentInstance;
+
+          // The suggestion, cheapest game first, on the button that opens the whole squad.
+          expect(planner.dropsSummary()).toBe('Mine 13, Mine 10, Mine 12');
+          expect(ngMocks.formatText(ngMocks.find(fixture, '.drops-trigger'))).toBe(
+            'Mine 13, Mine 10, Mine 12',
+          );
+          expect(ngMocks.findAll(fixture, '.drops .pill')).toEqual([]);
+
+          planner.toggleDrop('14');
+          expect(planner.dropsSummary()).toMatch(/^Mine \d+, Mine \d+, Mine \d+ \+1 more$/);
+
+          for (const id of [...planner.dropIds()]) {
+            planner.toggleDrop(id);
+          }
+          expect(planner.dropsSummary()).toBe('Nobody');
+        });
+
         it("keeps the user's own pick of drops for the league", async () => {
           const fixture = await render();
           const planner = fixture.point.componentInstance;
