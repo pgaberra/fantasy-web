@@ -200,7 +200,12 @@
   background: var(--color-success);
 }
 
-.team-grade[data-grade='D'],
+/* D and F apart: a poor draft and a failed one are different answers, and in one red a column
+   of them read as a single block. The letter still carries it for anyone the hues don't reach. */
+.team-grade[data-grade='D'] {
+  background: var(--color-caution);
+}
+
 .team-grade[data-grade='F'] {
   background: var(--color-danger);
 }

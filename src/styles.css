@@ -116,6 +116,9 @@
   --color-warning-surface: #fff7e0;
   --color-warning-border: #f0dfa8;
   --color-warning-text: #5c4a12;
+  /* The step between fine and bad, for a filled chip with white text on it: 5.0:1. --color-warning
+     is a yellow that white text cannot sit on (1.9:1). */
+  --color-caution: #b45309;
   /* Darkened from #16a34a (2.9:1 on --color-bg) for the confirmations drawn in it. Its other
      job is the sync dots, which carry no text and only read better for it. */
   --color-success: #117e39;
