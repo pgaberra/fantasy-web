@@ -566,6 +566,43 @@ describe('StreamerPlannerComponent', () => {
       return { target: { value: String(value) } } as unknown as Event;
     }
 
+    it('sorts the whole list by a column before paging it, in a points league too', async () => {
+      // Goals rank them; the assists run the other way, so the most assists are at the bottom.
+      freeAgents.mockReturnValue(
+        of({
+          creases: [],
+          players: Array.from({ length: 30 }, (_, index) =>
+            skater(`${index + 1}`, `Skater ${index + 1}`, 30 - index, index),
+          ),
+        }),
+      );
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+      planner.goToPage(1);
+      expect(planner.topRows()).toBe(0);
+
+      planner.sortBy('assists');
+      fixture.detectChanges();
+
+      // The most assists of all thirty, not of the page on screen, and the list from its top.
+      expect(planner.currentPage()).toBe(0);
+      expect(planner.visible()[0].player.name).toBe('Skater 30');
+      expect(planner.visible()[0].rank).toBe(30);
+      // The head of a list sorted by assists is not the best picks.
+      expect(planner.topRows()).toBe(0);
+      expect(ngMocks.findInstance(FreeAgentsTableComponent).sort()).toEqual({
+        key: 'assists',
+        descending: true,
+      });
+
+      // Pressed again, the fewest first; the score heading brings the ranked list back.
+      planner.sortBy('assists');
+      expect(planner.visible()[0].player.name).toBe('Skater 1');
+      planner.sortBy('score');
+      expect(planner.visible()[0].rank).toBe(1);
+      expect(planner.topRows()).toBe(3);
+    });
+
     it('shows a long list a page at a time, and starts over on other positions', async () => {
       freeAgents.mockReturnValue(of(longList(60)));
       const fixture = await render();

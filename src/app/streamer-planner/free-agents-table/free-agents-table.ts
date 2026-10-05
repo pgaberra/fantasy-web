@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { ScoringType } from '../../models/projection.model';
 import {
   GOALIE_SCORING_STAT_KEYS,
@@ -12,11 +12,14 @@ import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import {
   formatGames,
   formatToi,
+  FreeAgentSort,
+  FreeAgentSortKey,
   lineColumns,
   lineStats,
   LineColumn,
   LineStat,
   NO_RATE,
+  RANKED_ORDER,
   RankedFreeAgent,
 } from '../planner-free-agents';
 
@@ -45,7 +48,8 @@ export interface FreeAgentRow {
  * The skaters' categories come first and the goalies' after, set off by a rule: a column means one
  * category on every row, a faint dash on a player of the kind that does not score in it. The first few
  * rows can be set off as the best picks, in the table's own columns rather than as cards over it.
- * Which positions, how many rows and how many of them are set off is the page's to say.
+ * Which positions, how many rows and how many of them are set off is the page's to say, and so is
+ * the order: a heading asks for it, and the page sorts the whole list before cutting it into pages.
  */
 @Component({
   selector: 'app-free-agents-table',
@@ -65,6 +69,10 @@ export class FreeAgentsTableComponent {
   readonly focusLabel = input('');
   /** How many rows at the head of the list are set off as the best picks; none unless the page says. */
   readonly top = input(0);
+  /** The order the list is in, which the headings show. */
+  readonly sort = input<FreeAgentSort>(RANKED_ORDER);
+  /** A heading pressed: the page sorts by that column, or turns it round. */
+  readonly sortBy = output<FreeAgentSortKey>();
 
   private readonly lines = computed(() => {
     const categories = this.categories();
@@ -124,6 +132,14 @@ export class FreeAgentsTableComponent {
       ? 'Projected points per game he plays'
       : 'Z-Score per game he plays',
   );
+
+  ariaSort(key: FreeAgentSortKey): 'ascending' | 'descending' | null {
+    const sort = this.sort();
+    if (sort.key !== key) {
+      return null;
+    }
+    return sort.descending ? 'descending' : 'ascending';
+  }
 
   /** Picked, while the list is ranked by some categories; null while it is ranked by all. */
   focused(key: ScoringStatKey): boolean | null {

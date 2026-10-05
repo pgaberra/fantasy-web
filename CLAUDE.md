@@ -370,8 +370,12 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   pills (All, C, LW, RW, D, G) narrow it to any number of positions at once, a player eligible at
   two is listed once, and the # column keeps his place in the whole list, so a list of goalies
   still says how they compare. The "Rank by" pills offer every category the league scores; picked,
-  only the kinds that score in one of them are ranked (`scoresIn`), by those alone. The list is
-  paged and starts from the top when the positions or the categories change. Until 2026-10-01 it
+  only the kinds that score in one of them are ranked (`scoresIn`), by those alone. Every heading
+  sorts the whole list, in points and category leagues alike (`sortFreeAgents`, held by the page
+  and applied before paging; best first by `defaultSortDirection`, a player the column says
+  nothing about last either way, ties in ranked order); the score heading is the ranked order, and
+  only in it are the first three set off. The list is paged and starts from the top when the
+  positions, the categories or the order change. Until 2026-10-01 it
   copied LineupExperts: three, five or ten a position. No buttons: what the nights point at is what is on screen.
   `planner-schedule.ts` re-rates the teams over the nights ticked, by projection-service's own
   rule (a game is 1, or 1.25 on an off-night, scaled by the opponent), and uses the server's
