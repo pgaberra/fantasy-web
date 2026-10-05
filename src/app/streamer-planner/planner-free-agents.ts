@@ -3,6 +3,7 @@ import { TeamSchedule } from '../api/models/team-schedule';
 import { DEFAULT_DECIMAL_SETTINGS } from '../draft-projection/projection-settings-section/model';
 import { nhlTeamKey } from '../models/nhl-team';
 import { Projection } from '../models/projection.model';
+import { compareStatValues, defaultSortDirection } from '../models/sorting';
 import {
   GOALIE_SCORING_STAT_KEYS,
   RATE_STAT_KEYS,
@@ -362,4 +363,94 @@ export function lineColumns(
     }
   }
   return categories.flatMap((key) => found.get(key) ?? []);
+}
+
+// --- Sorting the list ----------------------------------------------------------------------------
+
+/** A column the free agents can be sorted by: one about the player, or a category of his line. */
+export type FreeAgentSortKey = 'name' | 'score' | 'perGame' | 'games' | 'toi' | ScoringStatKey;
+
+export interface FreeAgentSort {
+  readonly key: FreeAgentSortKey;
+  readonly descending: boolean;
+}
+
+/** The list as ranked: best first by the score, which is what the # column counts. */
+export const RANKED_ORDER: FreeAgentSort = { key: 'score', descending: true };
+
+export function isRankedOrder(sort: FreeAgentSort): boolean {
+  return sort.key === RANKED_ORDER.key && sort.descending === RANKED_ORDER.descending;
+}
+
+/**
+ * Sorts by a column, best first, whichever end of the scale that is (`defaultSortDirection`: a
+ * name from A, GAA from the lowest, everything else from the highest); the same column again turns
+ * the order round.
+ */
+export function nextSort(current: FreeAgentSort, key: FreeAgentSortKey): FreeAgentSort {
+  if (current.key === key) {
+    return { key, descending: !current.descending };
+  }
+  const firstWay = key === 'score' || key === 'perGame' || key === 'games' || key === 'toi';
+  return { key, descending: firstWay || defaultSortDirection(key) === 'desc' };
+}
+
+/**
+ * The number a player sorts by in a column, or null where the column says nothing about him: a
+ * category of the other kind, one the model gave him no number in, a rate over no games, a
+ * goalie's ice time. Null is what the table leaves blank or writes as a dash.
+ */
+export function sortValue(
+  row: RankedFreeAgent,
+  key: Exclude<FreeAgentSortKey, 'name'>,
+): number | null {
+  switch (key) {
+    case 'score':
+      return row.score;
+    case 'perGame':
+      return row.games > 0 ? row.score / row.games : null;
+    case 'games':
+      return row.games;
+    case 'toi':
+      return row.player.projection.type === 'skater'
+        ? (row.player.projection.stats.utility.toiPerGame ?? null)
+        : null;
+    default: {
+      const own: readonly string[] =
+        row.line.type === 'skater' ? SKATER_SCORING_STAT_KEYS : GOALIE_SCORING_STAT_KEYS;
+      if (!own.includes(key) || !row.player.projected.has(key)) {
+        return null;
+      }
+      const rates: readonly string[] = RATE_STAT_KEYS;
+      if (row.games === 0 && rates.includes(key)) {
+        return null;
+      }
+      const value = (row.line.stats.scoring as Record<string, number>)[key];
+      return typeof value === 'number' ? value : null;
+    }
+  }
+}
+
+/**
+ * The list in the order asked for. A player the column says nothing about goes last whichever way
+ * it points, and players level on it keep their ranked order, so a sort is the ranking re-cut
+ * rather than reshuffled. The ranked order itself is the list as it came.
+ */
+export function sortFreeAgents(
+  rows: readonly RankedFreeAgent[],
+  sort: FreeAgentSort,
+): readonly RankedFreeAgent[] {
+  if (isRankedOrder(sort)) {
+    return rows;
+  }
+  const sign = sort.descending ? -1 : 1;
+  const { key } = sort;
+  if (key === 'name') {
+    return [...rows].sort(
+      (a, b) => sign * a.player.name.localeCompare(b.player.name) || a.rank - b.rank,
+    );
+  }
+  return [...rows].sort(
+    (a, b) => compareStatValues(sortValue(a, key), sortValue(b, key), sign) || a.rank - b.rank,
+  );
 }

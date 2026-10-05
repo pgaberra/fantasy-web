@@ -337,3 +337,39 @@ describe('FreeAgentsTableComponent', () => {
     expect(ngMocks.findAll(fixture, '.stat-col--focus, .stat-col--muted')).toHaveLength(0);
   });
 });
+
+describe('FreeAgentsTableComponent headings', () => {
+  beforeEach(() => MockBuilder(FreeAgentsTableComponent));
+
+  it('asks the page to sort by a heading pressed, and marks the column the list is sorted by', () => {
+    const asked: string[] = [];
+    const fixture = MockRender(FreeAgentsTableComponent, {
+      rows: [SKATER, SECOND_SKATER],
+      scoringType: 'points',
+      categories: ['goals', 'blocks'],
+      sort: { key: 'blocks', descending: true },
+      sortBy: (key: string) => asked.push(key),
+    });
+    fixture.detectChanges();
+
+    const sorted = ngMocks.findAll(fixture, 'thead th[aria-sort]');
+    expect(sorted.map((cell) => [ngMocks.formatText(cell), cell.attributes['aria-sort']])).toEqual([
+      ['BLK', 'descending'],
+    ]);
+
+    const buttons = ngMocks.findAll(fixture, 'thead button.sort');
+    expect(buttons.map((button) => ngMocks.formatText(button))).toEqual([
+      'Player',
+      'Proj. pts',
+      'Per gm',
+      'GP',
+      'TOI',
+      'G',
+      'BLK',
+    ]);
+    for (const button of buttons) {
+      (button.nativeElement as HTMLButtonElement).click();
+    }
+    expect(asked).toEqual(['name', 'score', 'perGame', 'games', 'toi', 'goals', 'blocks']);
+  });
+});

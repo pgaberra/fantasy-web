@@ -45,10 +45,16 @@ import {
   nightsFactor,
   FREE_AGENT_POSITIONS,
   FreeAgentPosition,
+  FreeAgentSort,
+  FreeAgentSortKey,
+  isRankedOrder,
+  nextSort,
   projectedStarts,
+  RANKED_ORDER,
   RankedFreeAgent,
   roomFactor,
   scaledProjection,
+  sortFreeAgents,
   startsProjection,
   teamsByKey,
   TOP_OPTIONS,
@@ -683,6 +689,31 @@ export class StreamerPlannerComponent {
    */
   readonly filtered = computed(() => filterByPositions(this.ranked(), this.positions()));
 
+  // --- The order of the list --------------------------------------------------------------------
+
+  /** The column the list was last sorted by; it opens ranked, best first by the score. */
+  private readonly sortPicked = signal<FreeAgentSort>(RANKED_ORDER);
+
+  /**
+   * The order on screen: the one picked, while its column is still in the table. A category the
+   * league picked next does not score falls back to the ranked order rather than sorting by blanks.
+   */
+  readonly sort = computed(() => {
+    const sort = this.sortPicked();
+    const about = ['name', 'score', 'perGame', 'games', 'toi'];
+    return about.includes(sort.key) || this.categories().includes(sort.key as ScoringStatKey)
+      ? sort
+      : RANKED_ORDER;
+  });
+
+  /** Sorts the whole list by a column, best first; the same column again turns it round. */
+  sortBy(key: FreeAgentSortKey): void {
+    this.sortPicked.set(nextSort(this.sort(), key));
+  }
+
+  /** The list in the order asked for, before it is cut into pages. */
+  readonly sorted = computed(() => sortFreeAgents(this.filtered(), this.sort()));
+
   /** Why the list on screen has nobody in it, though the league has players available. */
   readonly emptyText = computed(() =>
     this.positions().size > 0
@@ -698,11 +729,11 @@ export class StreamerPlannerComponent {
   readonly pageSize = linkedSignal(() => readPageSize(this.layout()));
 
   /**
-   * The page asked for, counted from 0. Other positions or other categories are another list, so
-   * it opens on its first page again.
+   * The page asked for, counted from 0. Other positions, other categories or another order are
+   * another list, so it opens on its first page again.
    */
   private readonly page = linkedSignal<unknown, number>({
-    source: () => [this.positions(), this.focus()],
+    source: () => [this.positions(), this.focus(), this.sort()],
     computation: () => 0,
   });
 
@@ -716,14 +747,18 @@ export class StreamerPlannerComponent {
   private readonly firstShown = computed(() => this.currentPage() * this.pageSize());
 
   readonly visible = computed(() =>
-    this.filtered().slice(this.firstShown(), this.firstShown() + this.pageSize()),
+    this.sorted().slice(this.firstShown(), this.firstShown() + this.pageSize()),
   );
 
   /**
    * How many rows at the head of the table are set off as the best picks: the first few of the
    * list as it is narrowed, and only on its first page, since nobody further down is one of them.
+   * Sorted by another column, the head of the list is the most blocks or the alphabet, not the
+   * best picks, so nothing is set off.
    */
-  readonly topRows = computed(() => (this.currentPage() === 0 ? TOP_OPTIONS : 0));
+  readonly topRows = computed(() =>
+    this.currentPage() === 0 && isRankedOrder(this.sort()) ? TOP_OPTIONS : 0,
+  );
 
   /** "26–50 of 212": the places on screen, of the whole list. */
   readonly rangeText = computed(() => {

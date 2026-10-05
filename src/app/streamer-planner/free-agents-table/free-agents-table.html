@@ -3,20 +3,71 @@
     <thead>
       <tr>
         <th scope="col" class="num rank-col" [appTooltip]="rankTip">#</th>
-        <th scope="col" class="player-col">Player</th>
+        <th scope="col" class="player-col" [attr.aria-sort]="ariaSort('name')">
+          <button type="button" class="sort" (click)="sortBy.emit('name')">
+            Player
+            @if (sort().key === 'name') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+          </button>
+        </th>
         <!-- Straight after the name, as on the team table beside it, and so that a phone shows
              who and how good before anything has to be scrolled. -->
-        <th scope="col" class="num" [appTooltip]="scoreTip()">
-          {{ scoreHeading() }}
+        <th scope="col" class="num" [attr.aria-sort]="ariaSort('score')">
+          <button
+            type="button"
+            class="sort"
+            [appTooltip]="scoreTip()"
+            (click)="sortBy.emit('score')"
+          >
+            @if (sort().key === 'score') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+            {{ scoreHeading() }}
+          </button>
         </th>
         <!-- A column of its own, so a three-game week is compared to a four down one line of
              figures, and no cell in the row needs a second line. -->
-        <th scope="col" class="num" [appTooltip]="perGameTip()">Per gm</th>
-        <th scope="col" class="num" appTooltip="Games he is expected to play on the nights counted">
-          GP
+        <th scope="col" class="num" [attr.aria-sort]="ariaSort('perGame')">
+          <button
+            type="button"
+            class="sort"
+            [appTooltip]="perGameTip()"
+            (click)="sortBy.emit('perGame')"
+          >
+            @if (sort().key === 'perGame') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+            Per gm
+          </button>
+        </th>
+        <th scope="col" class="num" [attr.aria-sort]="ariaSort('games')">
+          <button
+            type="button"
+            class="sort"
+            appTooltip="Games he is expected to play on the nights counted"
+            (click)="sortBy.emit('games')"
+          >
+            @if (sort().key === 'games') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+            GP
+          </button>
         </th>
         @if (hasSkaters()) {
-          <th scope="col" class="num toi-col" appTooltip="Ice time per game">TOI</th>
+          <th scope="col" class="num toi-col" [attr.aria-sort]="ariaSort('toi')">
+            <button
+              type="button"
+              class="sort"
+              appTooltip="Ice time per game"
+              (click)="sortBy.emit('toi')"
+            >
+              @if (sort().key === 'toi') {
+                <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+              }
+              TOI
+            </button>
+          </th>
         }
         <!-- What the score is made of: a column a category the league scores, named here once. -->
         @for (column of columns(); track column.key; let index = $index) {
@@ -26,9 +77,19 @@
             [class.stat-col--start]="groupStarts()[index]"
             [class.stat-col--focus]="focused(column.key) === true"
             [class.stat-col--muted]="focused(column.key) === false"
-            [appTooltip]="column.name"
+            [attr.aria-sort]="ariaSort(column.key)"
           >
-            {{ column.label }}
+            <button
+              type="button"
+              class="sort"
+              [appTooltip]="column.name"
+              (click)="sortBy.emit(column.key)"
+            >
+              @if (sort().key === column.key) {
+                <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+              }
+              {{ column.label }}
+            </button>
           </th>
         }
       </tr>
