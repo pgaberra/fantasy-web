@@ -34,6 +34,7 @@ import { ChosenLeague, LeagueChoiceService } from '../services/league-choice.ser
 import { YahooService } from '../services/yahoo.service';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
+import { PopoverTriggerDirective } from '../shared/popover/popover-trigger.directive';
 import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { Platform } from '../shared/platform-tabs/platform-tabs';
@@ -127,6 +128,9 @@ export interface LeadingDay {
   readonly games?: number;
 }
 
+/** How many of the players picked to drop the closed list names before it counts the rest. */
+const DROPS_NAMED = 3;
+
 /** The two tables, shown one at a time. */
 export type PlannerView = 'free-agents' | 'schedules';
 
@@ -196,6 +200,7 @@ export interface PresetOption {
     IconComponent,
     LeagueFieldComponent,
     LoadingIndicatorComponent,
+    PopoverTriggerDirective,
     TeamSchedulesComponent,
     TooltipDirective,
   ],
@@ -709,6 +714,19 @@ export class StreamerPlannerComponent {
     const lined = new Set((this.myTeam()?.lines ?? []).map((line) => line.playerId));
     const ids = this.dropsPicked() ?? suggestedDrops(team, (player) => lined.has(player.playerId));
     return new Set(ids.filter((id) => team.some((player) => player.playerId === id)));
+  });
+
+  /** The drops in one line, cheapest game first: the first three by name, the rest counted. */
+  readonly dropsSummary = computed(() => {
+    const ids = this.dropIds();
+    const names = this.dropOptions()
+      .filter((player) => ids.has(player.playerId))
+      .map((player) => player.name);
+    if (names.length === 0) {
+      return 'Nobody';
+    }
+    const more = names.length - DROPS_NAMED;
+    return more > 0 ? `${names.slice(0, DROPS_NAMED).join(', ')} +${more} more` : names.join(', ');
   });
 
   toggleDrop(playerId: string): void {
