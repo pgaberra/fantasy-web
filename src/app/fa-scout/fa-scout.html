@@ -104,7 +104,9 @@
         </h3>
         @switch (teamStatus()) {
           @case ('loading') {
-            <p class="drops-note">Loading your team…</p>
+            <p class="drops-note">
+              <app-loading-indicator variant="inline" label="Loading your team" />
+            </p>
           }
           @case ('error') {
             <p class="drops-note">
