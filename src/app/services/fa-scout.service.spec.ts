@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Api } from '../api/api';
 import { faScoutFreeAgents } from '../api/fn/fa-scout/fa-scout-free-agents';
+import { faScoutMyTeam } from '../api/fn/fa-scout/fa-scout-my-team';
 import { ScoutListResponse } from '../api/models/scout-list-response';
 import { Projection } from '../models/projection.model';
 import { FaScoutService } from './fa-scout.service';
@@ -92,5 +93,42 @@ describe('FaScoutService', () => {
 
     expect(list.inSeason).toBe(true);
     expect(list.preseasonAvailable).toBe(true);
+  });
+
+  it("reads the user's team, each player with his rest of the season as a line", async () => {
+    invoke.mockResolvedValue({
+      found: true,
+      teamName: 'Slapshots',
+      players: [
+        {
+          playerId: '6743',
+          name: 'Cale Makar',
+          type: 'skater',
+          positions: ['D'],
+          slot: 'D',
+          reserve: false,
+          out: false,
+          restOfSeason: { games: 74, stats: { points: 90 } },
+        },
+        {
+          playerId: '6744',
+          name: 'Unknown Prospect',
+          type: 'skater',
+          positions: ['LW'],
+          slot: 'NA',
+          reserve: true,
+          out: true,
+        },
+      ],
+    });
+
+    const team = await firstValueFrom(TestBed.inject(FaScoutService).myTeam('YAHOO', '465.l.9'));
+
+    expect(invoke).toHaveBeenCalledWith(faScoutMyTeam, { platform: 'YAHOO', leagueId: '465.l.9' });
+    expect(team.teamName).toBe('Slapshots');
+    expect(team.players[0].projection?.playerId).toBe(6743);
+    expect(team.players[0].projection?.stats.utility.gp).toBe(74);
+    expect(scoring(team.players[0].projection)?.['points']).toBe(90);
+    expect(team.players[1]).toMatchObject({ reserve: true, out: true, projection: null });
   });
 });

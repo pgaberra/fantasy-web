@@ -1,6 +1,7 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { Projection } from '../../models/projection.model';
+import { Swap } from '../drop-candidates';
 import { ScoutRow } from '../scout-ranking';
 import { ScoutTableComponent } from './scout-table';
 
@@ -50,11 +51,12 @@ function row(
 describe('ScoutTableComponent', () => {
   beforeEach(() => MockBuilder(ScoutTableComponent));
 
-  function render(rows: ScoutRow[]) {
+  function render(rows: ScoutRow[], swaps: ReadonlyMap<string, Swap | null> | null = null) {
     return MockRender(ScoutTableComponent, {
       rows,
       scoringType: 'points',
       categories: ['goals', 'assists'],
+      swaps,
     });
   }
 
@@ -101,5 +103,44 @@ describe('ScoutTableComponent', () => {
 
     const headings = ngMocks.findAll(fixture, 'th.stat-col').map((th) => ngMocks.formatText(th));
     expect(headings).toEqual(['G', 'A']);
+  });
+
+  it("has no Swap column without a team of the user's", () => {
+    const fixture = render([row(1, 'Brandon Montour', 1, 30, 1050)]);
+
+    expect(ngMocks.formatText(fixture)).not.toContain('Swap');
+  });
+
+  it('shows the gain of each swap and the player to drop for it', () => {
+    const drop = {
+      player: {
+        playerId: '7',
+        name: 'Jake Walman',
+        type: 'skater' as const,
+        positions: ['D'],
+        reserve: false,
+        out: false,
+        projection: null,
+      },
+      score: 60,
+    };
+    const fixture = render(
+      [
+        row(1, 'Brandon Montour', 1, 30, 1050),
+        row(2, 'Ryan Graves', 2, 3, 1200),
+        row(3, 'Nobody', 3, 4, 1200),
+      ],
+      new Map<string, Swap | null>([
+        ['1', { drop, gain: 25 }],
+        ['2', { drop, gain: -4.25 }],
+        ['3', null],
+      ]),
+    );
+
+    const text = (selector: string) =>
+      ngMocks.findAll(fixture, selector).map((cell) => ngMocks.formatText(cell));
+    expect(text('.swap-gain')).toEqual(['+25.0', '-4.3']);
+    expect(text('.swap-drop')).toEqual(['for Jake Walman', 'for Jake Walman']);
+    expect(text('.swap-none')).toEqual(['No room']);
   });
 });

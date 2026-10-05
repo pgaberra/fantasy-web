@@ -14,6 +14,7 @@ import {
   lineStats,
   NO_RATE,
 } from '../../streamer-planner/planner-free-agents';
+import { Swap } from '../drop-candidates';
 import { ScoutRow, toiPerGame } from '../scout-ranking';
 
 /** A player with his line in the league's categories, ready to draw. */
@@ -30,6 +31,7 @@ const MORE_ICE_SECONDS = 60;
  * the model's preseason line gave him among the same players. The planner's free-agent table with
  * two columns of its own: the rise since the preseason line, and for a skater the ice time, now and
  * then, since more ice is the commonest reason a player is worth more than he was drafted at.
+ * Given the user's team, a third: the player to drop for him and what the swap gains.
  */
 @Component({
   selector: 'app-scout-table',
@@ -46,6 +48,8 @@ export class ScoutTableComponent {
   readonly scoringType = input.required<ScoringType>();
   /** The categories the league scores, in the league's order. */
   readonly categories = input.required<readonly ScoringStatKey[]>();
+  /** Each player's best swap by platform id, or null for no Swap column: no team of the user's. */
+  readonly swaps = input<ReadonlyMap<string, Swap | null> | null>(null);
 
   private readonly lines = computed(() => {
     const categories = this.categories();
@@ -121,6 +125,26 @@ export class ScoutTableComponent {
     const now = toiPerGame(row.line);
     const then = toiPerGame(row.preseason);
     return now !== undefined && then !== undefined && now - then >= MORE_ICE_SECONDS;
+  }
+
+  swap(row: ScoutRow): Swap | null {
+    return this.swaps()?.get(row.player.playerId) ?? null;
+  }
+
+  /** "+12.4" for an upgrade, "-3.1" for none. */
+  gain(swap: Swap): string {
+    const digits = this.scoringType() === 'points' ? 1 : 2;
+    return swap.gain > 0 ? `+${swap.gain.toFixed(digits)}` : swap.gain.toFixed(digits);
+  }
+
+  swapTip(row: ScoutRow): string {
+    const swap = this.swap(row);
+    if (!swap) {
+      return 'Every player you could drop for him is needed to fill your lineup';
+    }
+    return swap.gain > 0
+      ? `Drop ${swap.drop.player.name} for him: your lowest-projected player whose spot he can fill`
+      : `Not an upgrade: he projects below ${swap.drop.player.name}, the player you would drop for him`;
   }
 
   onWaivers(row: ScoutRow): boolean {

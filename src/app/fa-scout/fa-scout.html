@@ -64,6 +64,18 @@
         >
           Rising only ({{ risingCount() }})
         </button>
+        @if (showSwaps()) {
+          <button
+            type="button"
+            class="pill pill--upgrade"
+            [class.pill--active]="upgradesOnly()"
+            [attr.aria-pressed]="upgradesOnly()"
+            appTooltip="Only players who beat the one you would drop for them"
+            (click)="toggleUpgradesOnly()"
+          >
+            Upgrades only ({{ upgradeCount() }})
+          </button>
+        }
       </div>
     }
 
@@ -81,6 +93,83 @@
     } @else if (noPlayers()) {
       <p class="empty">No available player in this league has a projection.</p>
     } @else {
+      <section class="drops" aria-labelledby="drops-title">
+        <h3 id="drops-title" class="drops-title">
+          <app-icon name="user-minus" [size]="16" />
+          {{ kind() === 'skater' ? 'Skaters' : 'Goalies' }} to drop from {{ teamName() }}
+          <app-help-tip
+            label="How drop candidates are picked"
+            text="Your players scored the same way as the available ones: the AI projection for the rest of the season, by your league's settings. The lowest come first. Players on injured reserve are left out, since dropping them frees no roster spot. If dropping a player would leave a slot in your lineup empty, he is only suggested for a pickup who plays that position."
+          />
+        </h3>
+        @switch (teamStatus()) {
+          @case ('loading') {
+            <p class="drops-note">Loading your team…</p>
+          }
+          @case ('error') {
+            <p class="drops-note">
+              Couldn't load your team in this league, so no drops are suggested.
+              <button type="button" class="btn btn-secondary btn-sm" (click)="retryTeam()">
+                Try again
+              </button>
+            </p>
+          }
+          @case ('not-found') {
+            <p class="drops-note">You have no team in this league, so no drops are suggested.</p>
+          }
+          @case ('ready') {
+            @if (candidates().length === 0) {
+              <p class="drops-note">
+                {{
+                  kind() === 'skater'
+                    ? 'None of your skaters can be weighed against a pickup.'
+                    : 'None of your goalies can be weighed against a pickup.'
+                }}
+              </p>
+            } @else {
+              <ol class="drops-list">
+                @for (candidate of candidates(); track candidate.row.player.playerId) {
+                  <li class="drop">
+                    <span class="drop-player">
+                      <app-team-logo
+                        class="drop-logo"
+                        [team]="candidate.row.player.teamAbbrev"
+                        [alt]="candidate.row.player.teamAbbrev ?? ''"
+                      />
+                      <span class="drop-name">{{ candidate.row.player.name }}</span>
+                      <app-position-chips [positions]="candidate.row.player.positions" />
+                      @if (candidate.row.player.out) {
+                        <span class="drop-tag drop-tag--out">{{
+                          candidate.row.player.injuryStatus ?? 'Out'
+                        }}</span>
+                      }
+                    </span>
+                    <span class="drop-score">{{ formatScore(candidate.row.score) }}</span>
+                    <span
+                      class="drop-needs"
+                      [class.drop-needs--any]="candidate.anyPickup || !lineupKnown()"
+                      tabindex="0"
+                      [appTooltip]="needsTip(candidate)"
+                      >{{ needsText(candidate) }}</span
+                    >
+                  </li>
+                }
+              </ol>
+              @if (keptOut().reserve > 0 || keptOut().unprojected > 0) {
+                <p class="drops-note">
+                  @if (keptOut().reserve > 0) {
+                    {{ keptOut().reserve }} on injured reserve left out.
+                  }
+                  @if (keptOut().unprojected > 0) {
+                    {{ keptOut().unprojected }} without a projection left out.
+                  }
+                </p>
+              }
+            }
+          }
+        }
+      </section>
+
       @if (noPreseason()) {
         <p class="note">
           The projection made before the season isn't stored, so nobody can be shown as rising yet.
@@ -93,6 +182,7 @@
           [rows]="visible()"
           [scoringType]="scoringType()"
           [categories]="categories()"
+          [swaps]="showSwaps() ? swaps() : null"
         />
         <div class="list-foot">
           <span class="list-count" aria-live="polite">{{ rangeText() }}</span>

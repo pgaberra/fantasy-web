@@ -47,6 +47,7 @@ import {
   lucideTrash,
   lucideTriangleAlert,
   lucideUndo2,
+  lucideUserMinus,
   lucideUserPlus,
   lucideX,
 } from '@ng-icons/lucide';
@@ -107,6 +108,7 @@ const ICONS = {
   trash: lucideTrash,
   undo: lucideUndo2,
   unfollow: lucideBellOff,
+  'user-minus': lucideUserMinus,
   'user-plus': lucideUserPlus,
 } satisfies Record<string, string>;
 

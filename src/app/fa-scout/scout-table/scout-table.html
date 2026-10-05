@@ -11,6 +11,15 @@
         >
           {{ scoreHeading() }}
         </th>
+        @if (swaps()) {
+          <th
+            scope="col"
+            class="swap-col"
+            appTooltip="The player on your team to drop for him, and what the swap gains"
+          >
+            Swap
+          </th>
+        }
         <th
           scope="col"
           class="num"
@@ -87,6 +96,18 @@
             <span class="score">{{ score(entry.row) }}</span>
             <span class="per-game">{{ perGame(entry.row) }}</span>
           </td>
+          @if (swaps()) {
+            <td class="swap-col" tabindex="0" [appTooltip]="swapTip(entry.row)">
+              @if (swap(entry.row); as swap) {
+                <span class="swap-gain" [class.swap-gain--up]="swap.gain > 0">{{
+                  gain(swap)
+                }}</span>
+                <span class="swap-drop">for {{ swap.drop.player.name }}</span>
+              } @else {
+                <span class="swap-none">No room</span>
+              }
+            </td>
+          }
           <td class="num" [appTooltip]="riseTip(entry.row)">
             @if (entry.row.preseasonRank !== null) {
               <span

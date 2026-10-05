@@ -5,7 +5,13 @@ import { LeagueProjectionSettingsResponse } from '../api/models/league-projectio
 import { Projection } from '../models/projection.model';
 import { GOALIE_SCORING_STAT_KEYS } from '../models/stat-key.model';
 import { EspnService } from '../services/espn.service';
-import { FaScoutService, ScoutList, ScoutPlayer } from '../services/fa-scout.service';
+import {
+  FaScoutService,
+  ScoutList,
+  ScoutPlayer,
+  ScoutTeam,
+  TeamPlayer,
+} from '../services/fa-scout.service';
 import { ChosenLeague, LeagueChoiceService } from '../services/league-choice.service';
 import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { YahooService } from '../services/yahoo.service';
@@ -91,15 +97,53 @@ function wire(): ScoutList {
   };
 }
 
+function teamPlayer(now: Projection, positions: string[], reserve = false): TeamPlayer {
+  return {
+    playerId: String(now.playerId),
+    name: `Mine ${now.playerId}`,
+    teamAbbrev: 'EDM',
+    type: now.type,
+    positions,
+    reserve,
+    out: reserve,
+    projection: now,
+  };
+}
+
+/**
+ * The user's team against the league's 2 C / 2 LW / 2 RW / 4 D / 2 G / 1 Util lineup: seven
+ * forwards for the seven forward and Util seats, the weakest C starting at Util, exactly four D (the
+ * worst of them only replaceable by a D), and a player on injured reserve who holds no roster spot.
+ */
+function team(): ScoutTeam {
+  return {
+    found: true,
+    teamName: 'Slapshots',
+    players: [
+      teamPlayer(skater(201, 40, 50), ['C']),
+      teamPlayer(skater(202, 1, 2), ['C']),
+      teamPlayer(skater(203, 1, 1), ['C']),
+      ...[204, 205, 206, 212].map((id) => teamPlayer(skater(id, 20, 20), ['LW', 'RW'])),
+      teamPlayer(skater(207, 10, 20), ['D']),
+      teamPlayer(skater(208, 10, 20), ['D']),
+      teamPlayer(skater(209, 10, 20), ['D']),
+      teamPlayer(skater(210, 1, 4), ['D']),
+      teamPlayer(skater(211, 0, 0), ['C'], true),
+    ],
+  };
+}
+
 describe('FaScoutComponent', () => {
   let chosen: ChosenLeague | null;
   let freeAgents: ReturnType<typeof vi.fn<() => Observable<ScoutList>>>;
+  let myTeam: ReturnType<typeof vi.fn<() => Observable<ScoutTeam>>>;
 
   beforeEach(() => {
     chosen = LEAGUE;
     freeAgents = vi.fn(() => of(wire()));
+    myTeam = vi.fn(() => of(team()));
     return MockBuilder(FaScoutComponent)
-      .mock(FaScoutService, { freeAgents })
+      .mock(FaScoutService, { freeAgents, myTeam })
       .keep(YahooLeaguePicker)
       .mock(YahooConnectReturnService)
       .mock(LeagueChoiceService, {
@@ -228,5 +272,92 @@ describe('FaScoutComponent', () => {
       .findAll(fixture, ErrorStateComponent)
       .find((element) => ngMocks.input(element, 'title') === "Couldn't load free agents");
     expect(error).toBeDefined();
+  });
+
+  it("reads the user's own team in the same league", async () => {
+    await render();
+
+    expect(myTeam).toHaveBeenCalledWith('YAHOO', '465.l.9');
+  });
+
+  it('suggests the lowest scorers to drop, leaving injured reserve out', async () => {
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    expect(page.candidates().map((candidate) => candidate.row.player.playerId)).toEqual([
+      '203',
+      '202',
+      '210',
+    ]);
+    expect(page.keptOut().reserve).toBe(1);
+    const text = ngMocks.formatText(fixture);
+    expect(text).toContain('Skaters to drop from Slapshots');
+    expect(text).toContain('1 on injured reserve left out.');
+  });
+
+  it('says which drops a pickup must play the same position to make', async () => {
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    const [utilC, , lastD] = page.candidates();
+    // The weakest C starts at Util, which any skater can fill.
+    expect(page.needsText(utilC)).toBe('Any pickup');
+    expect(page.needsText(lastD)).toBe('Only for a D');
+  });
+
+  it('pairs each pickup with the player to drop for him and what the swap gains', async () => {
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    // The risen defenceman (116) replaces the lowest scorer, the C at Util (5), whose seat he can
+    // fill: the same drop as for a forward.
+    const montour = page.swaps().get('99');
+    expect(montour?.drop.player.playerId).toBe('203');
+    expect(montour?.gain).toBe(116 - 5);
+    // A depth C beats the spare C too.
+    expect(page.swaps().get('1')?.drop.player.playerId).toBe('203');
+    const table = ngMocks.find(fixture, ScoutTableComponent);
+    expect(ngMocks.input(table, 'swaps')).toBe(page.swaps());
+  });
+
+  it('narrows to the pickups that beat the player they would replace', async () => {
+    myTeam.mockReturnValue(
+      of({
+        ...team(),
+        // Every player at 100: above any depth forward on the wire (70 at most), below the
+        // risen defenceman (116).
+        players: team().players.map((player) =>
+          teamPlayer(
+            skater(Number(player.playerId), 20, 20),
+            [...player.positions],
+            player.reserve,
+          ),
+        ),
+      }),
+    );
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    page.toggleUpgradesOnly();
+
+    expect(page.filtered().map((row) => row.player.playerId)).toEqual(['99']);
+  });
+
+  it('keeps the list without drops when the user has no team in the league', async () => {
+    myTeam.mockReturnValue(of({ found: false, teamName: null, players: [] }));
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    expect(ngMocks.formatText(fixture)).toContain('You have no team in this league');
+    expect(page.ranked()).toHaveLength(21);
+    expect(ngMocks.input(ngMocks.find(fixture, ScoutTableComponent), 'swaps')).toBeNull();
+  });
+
+  it('keeps the list when the team cannot be read, and offers to try again', async () => {
+    myTeam.mockReturnValue(throwError(() => new Error('502')));
+    const fixture = await render();
+
+    expect(ngMocks.formatText(fixture)).toContain("Couldn't load your team in this league");
+    expect(ngMocks.findAll(fixture, ScoutTableComponent)).toHaveLength(1);
   });
 });
