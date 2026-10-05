@@ -112,11 +112,13 @@ describe('FreeAgentsTableComponent', () => {
     scoringType: 'points' | 'category' = 'points',
     categories: ScoringStatKey[] = CATEGORIES,
     rows: RankedFreeAgent[] = ROWS,
+    top = 0,
   ) {
     const fixture = MockRender(FreeAgentsTableComponent, {
       rows,
       scoringType,
       categories,
+      top,
     });
     fixture.detectChanges();
     return fixture;
@@ -143,6 +145,20 @@ describe('FreeAgentsTableComponent', () => {
     ]);
     expect(ngMocks.formatText(rows[0])).toContain('Top Scorer');
     expect(ngMocks.formatText(rows[1])).toContain('Second Line');
+  });
+
+  it('sets off as many rows at the head of the list as the page asks for, and none unasked', () => {
+    const tops = (fixture: ReturnType<typeof render>) =>
+      ngMocks
+        .findAll(fixture, 'tbody tr.player-row')
+        .map((row) => row.nativeElement.classList.contains('player-row--top'));
+
+    expect(tops(render())).toEqual([false, false]);
+
+    const fixture = render('points', CATEGORIES, [SKATER, SECOND_SKATER, GOALIE], 2);
+    expect(tops(fixture)).toEqual([true, true, false]);
+    // Said, not only drawn: the badge is colour and shape alone.
+    expect(ngMocks.findAll(fixture, 'tbody .rank-col .sr-only')).toHaveLength(2);
   });
 
   it('says whose list the rank is a place in', () => {

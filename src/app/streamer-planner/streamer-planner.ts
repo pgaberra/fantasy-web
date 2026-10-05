@@ -87,7 +87,6 @@ import {
   weeksTitle,
 } from './planner-schedule';
 import { TeamSchedulesComponent } from './team-schedules/team-schedules';
-import { TopOptionsComponent } from './top-options/top-options';
 
 export type { Stretch } from './planner-schedule';
 
@@ -168,7 +167,6 @@ export interface PresetOption {
     LoadingIndicatorComponent,
     TeamSchedulesComponent,
     TooltipDirective,
-    TopOptionsComponent,
   ],
   providers: [YahooLeaguePicker],
   templateUrl: './streamer-planner.html',
@@ -676,10 +674,8 @@ export class StreamerPlannerComponent {
     return ranked;
   }
 
-  /** The best pickups, by the categories picked: what the cards and the list read. */
+  /** The best pickups, by the categories picked: what the list reads. */
   readonly ranked = computed(() => this.rankedBy(this.focus()));
-
-  readonly topOptions = computed(() => this.ranked().slice(0, TOP_OPTIONS));
 
   /**
    * The list on screen: skaters and goalies together, narrowed to the positions picked. Each keeps
@@ -723,6 +719,12 @@ export class StreamerPlannerComponent {
     this.filtered().slice(this.firstShown(), this.firstShown() + this.pageSize()),
   );
 
+  /**
+   * How many rows at the head of the table are set off as the best picks: the first few of the
+   * list as it is narrowed, and only on its first page, since nobody further down is one of them.
+   */
+  readonly topRows = computed(() => (this.currentPage() === 0 ? TOP_OPTIONS : 0));
+
   /** "26–50 of 212": the places on screen, of the whole list. */
   readonly rangeText = computed(() => {
     const total = this.filtered().length;
@@ -760,11 +762,6 @@ export class StreamerPlannerComponent {
     this.page.set(Math.floor(first / size));
     writePageSize(this.layout(), size);
   }
-
-  /** The cards have something to show, or will once the list lands. */
-  readonly showsTopOptions = computed(
-    () => !!this.league() && (this.loadingFreeAgents() || this.topOptions().length > 0),
-  );
 
   readonly noFreeAgents = computed(
     () =>

@@ -34,9 +34,14 @@
       </tr>
     </thead>
     <tbody>
-      @for (entry of entries(); track entry.row.player.playerId) {
-        <tr class="player-row">
-          <td class="num rank-col">{{ entry.row.rank }}</td>
+      @for (entry of entries(); track entry.row.player.playerId; let index = $index) {
+        <tr class="player-row" [class.player-row--top]="index < top()">
+          <td class="num rank-col">
+            <span class="rank">{{ entry.row.rank }}</span>
+            @if (index < top()) {
+              <span class="sr-only">, top streaming option</span>
+            }
+          </td>
           <th scope="row" class="player-col">
             <span class="player-cell">
               <!-- The crest is the club's only mention in the row, so it carries the name. -->
