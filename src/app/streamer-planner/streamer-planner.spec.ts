@@ -465,9 +465,46 @@ describe('StreamerPlannerComponent', () => {
     expect(ngMocks.formatText(fixture)).toContain("hasn't published this season's schedule");
   });
 
+  /** Which of the two tables is on screen: the cards not hidden. */
+  function shown(fixture: Awaited<ReturnType<typeof render>>): string[] {
+    return ['free-agents', 'teams'].filter(
+      (card) => !ngMocks.find(fixture, `section.${card}`).nativeElement.hidden,
+    );
+  }
+
+  it('shows the team schedules while no league is picked, since there are no free agents to list', async () => {
+    const fixture = await render();
+
+    expect(fixture.point.componentInstance.view()).toBe('schedules');
+    expect(shown(fixture)).toEqual(['teams']);
+  });
+
   describe('with a league chosen', () => {
     beforeEach(() => {
       chosen = LEAGUE;
+    });
+
+    it('shows one table at a time, opening on the free agents', async () => {
+      const fixture = await render();
+      const buttons = ngMocks.findAll(fixture, '.views button');
+      const pressed = () =>
+        buttons.map((button) => button.nativeElement.getAttribute('aria-pressed'));
+
+      expect(buttons.map((button) => ngMocks.formatText(button))).toEqual([
+        'Free agents',
+        'Team schedules',
+      ]);
+      expect(pressed()).toEqual(['true', 'false']);
+      expect(shown(fixture)).toEqual(['free-agents']);
+
+      ngMocks.click(buttons[1]);
+      fixture.detectChanges();
+      expect(pressed()).toEqual(['false', 'true']);
+      expect(shown(fixture)).toEqual(['teams']);
+
+      ngMocks.click(buttons[0]);
+      fixture.detectChanges();
+      expect(shown(fixture)).toEqual(['free-agents']);
     });
 
     it("ranks the free agents by the league's own scoring, not by the raw stat line", async () => {

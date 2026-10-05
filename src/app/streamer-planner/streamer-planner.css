@@ -493,23 +493,49 @@
   padding: calc(0.3rem - 1px) calc(0.9rem - 1px);
 }
 
-.columns {
-  align-items: start;
-  display: grid;
-  gap: var(--space-4);
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+/* Free agents or team schedules: the page's own switch, over the one card it shows. Filled where
+   the skaters-or-goalies switch inside the card is not, so the two do not read as one choice. */
+.views {
+  align-self: flex-start;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: 3px;
 }
 
-/* The free agents come first in the page, so they lead once the cards stack; side by side the
-   schedules keep the left column. */
-.columns .teams {
-  grid-column: 1;
-  grid-row: 1;
+.view {
+  align-items: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  gap: var(--space-2);
+  min-height: 2.25rem;
+  padding: 0 var(--space-4);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
 }
 
-.columns .free-agents {
-  grid-column: 2;
-  grid-row: 1;
+.view:hover:not([aria-pressed='true']) {
+  color: var(--color-primary);
+}
+
+.view:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.view[aria-pressed='true'] {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
 }
 
 /* Under the list: which places are on screen, the page size, and the way to the other pages. */
@@ -581,18 +607,6 @@
   margin: var(--space-4) 0;
 }
 
-@media (max-width: 1023px) {
-  .columns {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .columns .teams,
-  .columns .free-agents {
-    grid-column: auto;
-    grid-row: auto;
-  }
-}
-
 @media (max-width: 640px) {
   .streamer-planner {
     gap: var(--space-3);
@@ -614,6 +628,18 @@
 
   .league {
     flex-basis: 100%;
+  }
+
+  /* The switch spans the page, each half a thumb-sized target. */
+  .views {
+    align-self: stretch;
+  }
+
+  .view {
+    flex: 1;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 var(--space-2);
   }
 
   /* From and To side by side, label over field: read as one range, aligned whatever the

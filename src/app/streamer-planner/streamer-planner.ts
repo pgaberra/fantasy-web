@@ -102,6 +102,9 @@ export interface LeadingDay {
 /** No category picked: the list is ranked by the league's whole set. */
 const NO_FOCUS: ReadonlySet<ScoringStatKey> = new Set();
 
+/** The two tables, shown one at a time. */
+export type PlannerView = 'free-agents' | 'schedules';
+
 /** What the goalies' categories are filed under, beside the league's own key. */
 const GOALIE_FOCUS_SUFFIX = ':goalies';
 
@@ -146,6 +149,9 @@ export interface PresetOption {
  * sits beside the nights, picked the way Team Power Rankings picks one: Yahoo / ESPN tabs, the
  * account's Yahoo leagues under the one and ESPN's card under the other, opening on the league
  * last chosen anywhere ({@link LeagueChoiceService}).
+ *
+ * <p>The free agents and the team schedules are shown one at a time, each the page's full width,
+ * behind a switch that opens on the free agents.
  *
  * <p>The schedules are rated once, for the whole page. Skaters or goalies is asked on the free
  * agents alone, which are that kind only, in its own categories: the two fill different roster
@@ -366,6 +372,22 @@ export class StreamerPlannerComponent {
     },
     { equal: (a, b) => a?.platform === b?.platform && a?.leagueId === b?.leagueId },
   );
+
+  /** The table the reader asked for, or none while the page still chooses. */
+  private readonly chosenView = signal<PlannerView | null>(null);
+
+  /**
+   * The table on screen. The free agents are what the page is for, so it opens on them; with no
+   * league there are none to list, and the schedules are shown instead of a prompt over an empty
+   * card. Once the reader picks a table it stays, whatever happens to the league.
+   */
+  readonly view = computed<PlannerView>(
+    () => this.chosenView() ?? (this.league() ? 'free-agents' : 'schedules'),
+  );
+
+  setView(view: PlannerView): void {
+    this.chosenView.set(view);
+  }
 
   readonly positionOptions = PLANNER_POSITIONS;
 
