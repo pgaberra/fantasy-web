@@ -4,6 +4,7 @@ import {
   ScoringStatKey,
   SKATER_SCORING_STAT_KEYS,
 } from '../models/stat-key.model';
+import { FreeAgentPosition } from './planner-free-agents';
 
 /**
  * The categories a streamer is chasing this week, skaters' and goalies' alike, remembered per league until
@@ -25,11 +26,23 @@ const SKATER_KEYS: ReadonlySet<string> = new Set(SKATER_SCORING_STAT_KEYS);
 const GOALIE_KEYS: ReadonlySet<string> = new Set(GOALIE_SCORING_STAT_KEYS);
 const SCORING_KEYS: ReadonlySet<string> = new Set(SCORING_STAT_KEYS);
 
-/** The categories among a league's, in the league's order, that a focus can pick. */
+/**
+ * The categories among a league's, in the league's order, that a focus can pick: those a player on
+ * the list can score in. Narrowed to skaters' positions the list holds no goalie, so a goalie
+ * category would rank nobody on it, and narrowed to goalies the same holds for a skater one. No
+ * position picked is both kinds.
+ */
 export function focusableCategories(
   categories: readonly ScoringStatKey[],
+  positions: ReadonlySet<FreeAgentPosition> = new Set(),
 ): readonly ScoringStatKey[] {
-  return categories.filter((key) => SCORING_KEYS.has(key));
+  const goalies = positions.size === 0 || positions.has('G');
+  const skaters = positions.size === 0 || [...positions].some((position) => position !== 'G');
+  return categories.filter(
+    (key) =>
+      SCORING_KEYS.has(key) &&
+      ((skaters && SKATER_KEYS.has(key)) || (goalies && GOALIE_KEYS.has(key))),
+  );
 }
 
 /**
