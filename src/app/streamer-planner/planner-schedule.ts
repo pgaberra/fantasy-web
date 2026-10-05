@@ -166,15 +166,17 @@ export const PLANNER_PRESETS: readonly { readonly key: PlannerPreset; readonly l
  * Today as the NHL counts nights, as the API spells a date. A night is dated where it is played, in
  * North America, so a reader in Europe is a calendar day ahead while that night's games are still to
  * come: at 00:30 in Stockholm Thursday's games have not started. A night therefore stays open until
- * 06:00 Eastern the next morning, hours after the latest West Coast overtime ends.
+ * 01:00 Eastern the next morning (07:00 in Stockholm). Its games may still be running then, but the
+ * latest puck drop, 22:30 Eastern, is long past, and a lineup locks at puck drop: a
+ * night no one can stream for any more is not a night to plan.
  */
 export const PLANNER_TODAY = new InjectionToken<() => string>('PLANNER_TODAY', {
   providedIn: 'root',
   factory: () => () => hockeyNight(),
 });
 
-/** The hour, Eastern time, at which the night before is over everywhere it was played. */
-const NIGHT_ENDS_AT_HOUR = 6;
+/** The hour, Eastern time, by which the night before has started everywhere it is played. */
+const NIGHT_ENDS_AT_HOUR = 1;
 
 const EASTERN_DATE = new Intl.DateTimeFormat('en-US', {
   timeZone: 'America/New_York',

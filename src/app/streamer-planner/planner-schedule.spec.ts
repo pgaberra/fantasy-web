@@ -258,14 +258,16 @@ describe('presets', () => {
     expect(leadingDays('2026-10-12')).toEqual([]);
   });
 
-  it("dates today by the NHL's night, which runs until 06:00 Eastern the next morning", () => {
+  it("dates today by the NHL's night, which runs until 01:00 Eastern the next morning", () => {
     // 00:34 in Stockholm on 2 October is still Thursday's night: its games have not started.
     expect(hockeyNight(new Date('2026-10-01T22:34:00Z'))).toBe('2026-10-01');
-    // The last West Coast game is long over by 06:00 Eastern (EDT, UTC-4).
-    expect(hockeyNight(new Date('2026-10-02T09:59:00Z'))).toBe('2026-10-01');
-    expect(hockeyNight(new Date('2026-10-02T10:00:00Z'))).toBe('2026-10-02');
+    // By 01:00 Eastern (EDT, UTC-4; 07:00 in Stockholm) the last game of the night has started.
+    expect(hockeyNight(new Date('2026-10-02T04:59:00Z'))).toBe('2026-10-01');
+    expect(hockeyNight(new Date('2026-10-02T05:00:00Z'))).toBe('2026-10-02');
+    // 10:52 in Stockholm on a Monday is Monday: Sunday's games are all over.
+    expect(hockeyNight(new Date('2026-10-05T08:52:00Z'))).toBe('2026-10-05');
     // In winter Eastern is UTC-5.
-    expect(hockeyNight(new Date('2026-01-05T10:59:00Z'))).toBe('2026-01-04');
-    expect(hockeyNight(new Date('2026-01-05T11:00:00Z'))).toBe('2026-01-05');
+    expect(hockeyNight(new Date('2026-01-05T05:59:00Z'))).toBe('2026-01-04');
+    expect(hockeyNight(new Date('2026-01-05T06:00:00Z'))).toBe('2026-01-05');
   });
 });
