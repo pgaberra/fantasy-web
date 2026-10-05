@@ -429,3 +429,56 @@ describe('FreeAgentsTableComponent headings', () => {
     expect(asked).toEqual(['name', 'score', 'perGame', 'games', 'toi', 'goals', 'blocks']);
   });
 });
+
+describe('FreeAgentsTableComponent swaps', () => {
+  beforeEach(() => MockBuilder(FreeAgentsTableComponent));
+
+  const kakko = {
+    playerId: '5',
+    name: 'Kaapo Kakko',
+    positions: ['RW'],
+    nights: new Set<string>(),
+    value: 1,
+  };
+  const swapped: RankedFreeAgent = {
+    ...SKATER,
+    swap: {
+      pickup: { ...kakko, playerId: '1', name: 'Top Scorer' },
+      drop: kakko,
+      games: 1,
+      value: 3.24,
+      nights: [],
+    },
+  };
+  const unswappable: RankedFreeAgent = { ...SECOND_SKATER, swap: null };
+
+  it('shows each skater a swap and who it costs, a dash for one with none, and no column unasked', () => {
+    const fixture = MockRender(FreeAgentsTableComponent, {
+      rows: [swapped, unswappable, GOALIE],
+      scoringType: 'points',
+      categories: ['goals'],
+      swapsShown: true,
+      shownSwap: '1',
+    });
+    fixture.detectChanges();
+
+    expect(
+      ngMocks.findAll(fixture, 'tbody td.swap-col').map((cell) => ngMocks.formatText(cell)),
+    ).toEqual(['+3.2 for Kakko', '\u2014', '\u2014']);
+    const button = ngMocks.find(fixture, 'button.swap');
+    expect(button.attributes['aria-pressed']).toBe('true');
+
+    let shown: string | undefined;
+    fixture.point.componentInstance.showSwap.subscribe((id: string) => (shown = id));
+    button.nativeElement.click();
+    expect(shown).toBe('1');
+
+    const plain = MockRender(FreeAgentsTableComponent, {
+      rows: [swapped],
+      scoringType: 'points',
+      categories: ['goals'],
+    });
+    plain.detectChanges();
+    expect(ngMocks.findAll(plain, '.swap-col')).toHaveLength(0);
+  });
+});
