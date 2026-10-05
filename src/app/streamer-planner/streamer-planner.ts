@@ -37,6 +37,7 @@ import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { PopoverTriggerDirective } from '../shared/popover/popover-trigger.directive';
 import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
+import { isAllSkaters } from '../models/position.model';
 import { Platform } from '../shared/platform-tabs/platform-tabs';
 import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
@@ -48,6 +49,7 @@ import {
   LineColumn,
   nightsFactor,
   FREE_AGENT_POSITIONS,
+  PLANNER_POSITIONS,
   FreeAgentPosition,
   FreeAgentSort,
   FreeAgentSortKey,
@@ -428,6 +430,14 @@ export class StreamerPlannerComponent {
 
   clearPositions(): void {
     this.positions.set(new Set());
+  }
+
+  /** Every skater position picked, and nothing else: what the "All skaters" shortcut shows. */
+  readonly allSkaters = computed(() => isAllSkaters([...this.positions()]));
+
+  /** Picks the four skater positions at once; pressed again, goes back to everyone. */
+  toggleAllSkaters(): void {
+    this.positions.set(this.allSkaters() ? new Set() : new Set(PLANNER_POSITIONS));
   }
 
   private readonly settingsResource = rxResource({

@@ -306,7 +306,8 @@
         }
       </div>
       <!-- Skaters and goalies are one list, narrowed by any number of positions at once. "All" is
-           the list with none picked, and the way back to it. -->
+           the list with none picked, and the way back to it; "All skaters" picks the four skater
+           positions in one press. -->
       <div class="pills positions" role="group" aria-label="Positions to show">
         <button
           type="button"
@@ -316,6 +317,15 @@
           (click)="clearPositions()"
         >
           All
+        </button>
+        <button
+          type="button"
+          class="pill"
+          [class.pill--active]="allSkaters()"
+          [attr.aria-pressed]="allSkaters()"
+          (click)="toggleAllSkaters()"
+        >
+          All skaters
         </button>
         @for (option of positionOptions; track option) {
           <button

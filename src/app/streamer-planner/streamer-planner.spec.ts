@@ -528,6 +528,18 @@ describe('StreamerPlannerComponent', () => {
       expect(ngMocks.formatText(fixture)).toContain('No available player at these positions');
       planner.clearPositions();
       expect(names()).toHaveLength(3);
+
+      // "All skaters" picks the four skater positions, so the goalie leaves and LW can follow.
+      planner.toggleAllSkaters();
+      expect(planner.allSkaters()).toBe(true);
+      expect([...planner.positions()]).toEqual(['C', 'LW', 'RW', 'D']);
+      expect(names()).toEqual(['Top Scorer', 'Second Best']);
+      planner.togglePosition('LW');
+      expect(planner.allSkaters()).toBe(false);
+      planner.toggleAllSkaters();
+      expect(planner.allSkaters()).toBe(true);
+      planner.toggleAllSkaters();
+      expect(planner.positions().size).toBe(0);
     });
 
     it('narrows the list to the goalies, each keeping his place among everyone', async () => {
