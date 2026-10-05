@@ -29,8 +29,9 @@ export interface FreeAgentRow {
  * The best available players, skaters and goalies together, best first, with the model's line for
  * the nights counted in every category the league scores, and scored by the league's own settings.
  * The skaters' categories come first and the goalies' after, set off by a rule: a column means one
- * category on every row, blank on a player of the kind that does not score in it. Which positions
- * and how many rows is the page's to say.
+ * category on every row, blank on a player of the kind that does not score in it. The first few
+ * rows can be set off as the best picks, in the table's own columns rather than as cards over it.
+ * Which positions, how many rows and how many of them are set off is the page's to say.
  */
 @Component({
   selector: 'app-free-agents-table',
@@ -48,6 +49,8 @@ export class FreeAgentsTableComponent {
   readonly focus = input<ReadonlySet<ScoringStatKey>>(new Set());
   /** "PPP, SOG": the same categories, as the score's tip names them. */
   readonly focusLabel = input('');
+  /** How many rows at the head of the list are set off as the best picks; none unless the page says. */
+  readonly top = input(0);
 
   private readonly lines = computed(() => {
     const categories = this.categories();

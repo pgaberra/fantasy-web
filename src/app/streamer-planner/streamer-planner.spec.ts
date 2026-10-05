@@ -24,10 +24,10 @@ import { YahooConnectReturnService } from '../services/yahoo-connect-return.serv
 import { YahooService } from '../services/yahoo.service';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
+import { FreeAgentsTableComponent } from './free-agents-table/free-agents-table';
 import { PLANNER_LAYOUT, PlannerLayout } from './planner-page-size';
 import { PLANNER_TODAY } from './planner-schedule';
 import { StreamerPlannerComponent } from './streamer-planner';
-import { TopOptionsComponent } from './top-options/top-options';
 
 const WEEKS: PlannerWeeksResponse = {
   season: 2026,
@@ -438,7 +438,6 @@ describe('StreamerPlannerComponent', () => {
     expect(ngMocks.formatText(legend)).toContain('Off-night');
     expect(ngMocks.formatText(fixture)).toContain('Week 2');
     expect(ngMocks.formatText(fixture)).toContain('Pick a league above');
-    expect(fixture.point.componentInstance.showsTopOptions()).toBe(false);
   });
 
   it('says so when no schedule is published', async () => {
@@ -507,12 +506,12 @@ describe('StreamerPlannerComponent', () => {
       expect(planner.categories()).toEqual(['goals', 'assists']);
     });
 
-    it('cards the best three over one list of skaters and goalies that positions narrow', async () => {
+    it('sets off the best three in one list of skaters and goalies that positions narrow', async () => {
       const fixture = await render();
       const planner = fixture.point.componentInstance;
 
-      expect(planner.showsTopOptions()).toBe(true);
-      expect(planner.topOptions().map((row) => row.rank)).toEqual([1, 2, 3]);
+      expect(planner.topRows()).toBe(3);
+      expect(ngMocks.findInstance(FreeAgentsTableComponent).top()).toBe(3);
       const names = () => planner.visible().map((row) => row.player.name);
       expect(names()).toEqual(['Top Scorer', 'Second Best', 'Waiver Goalie']);
       expect(ngMocks.formatText(fixture)).toContain('1–3 of 3');
@@ -526,14 +525,6 @@ describe('StreamerPlannerComponent', () => {
       expect(ngMocks.formatText(fixture)).toContain('No available player at these positions');
       planner.clearPositions();
       expect(names()).toHaveLength(3);
-      fixture.detectChanges();
-      const cards = ngMocks.findInstance(TopOptionsComponent);
-      expect(cards.rows().map((row) => row.player.name)).toEqual([
-        'Top Scorer',
-        'Second Best',
-        'Waiver Goalie',
-      ]);
-      expect(cards.scoringType()).toBe('points');
     });
 
     it('narrows the list to the goalies, each keeping his place among everyone', async () => {
@@ -543,12 +534,12 @@ describe('StreamerPlannerComponent', () => {
       planner.togglePosition('G');
       fixture.detectChanges();
 
-      // Third of everyone available, and the cards still show all three.
+      // Third of everyone available, and at the head of this list, so set off all the same.
       expect(planner.visible().map((row) => [row.player.name, row.rank])).toEqual([
         ['Waiver Goalie', 3],
       ]);
       expect(ngMocks.formatText(fixture)).toContain('1 of 1');
-      expect(ngMocks.findInstance(TopOptionsComponent).rows()).toHaveLength(3);
+      expect(ngMocks.findInstance(FreeAgentsTableComponent).top()).toBe(3);
 
       planner.togglePosition('LW');
       expect(planner.visible().map((row) => row.player.name)).toEqual([
@@ -588,6 +579,8 @@ describe('StreamerPlannerComponent', () => {
         Array.from({ length: 25 }, (_, index) => index + 26),
       );
       expect(ngMocks.formatText(fixture)).toContain('26–50 of 60');
+      // Nobody on a later page is one of the best picks.
+      expect(planner.topRows()).toBe(0);
 
       // The last page holds what is left, and there is no page past it.
       planner.goToPage(2);
@@ -830,7 +823,6 @@ describe('StreamerPlannerComponent', () => {
         .find((element) => ngMocks.input(element, 'title') === "Couldn't load free agents");
       expect(errorState).toBeDefined();
       expect(fixture.point.componentInstance.ranked()).toHaveLength(0);
-      expect(fixture.point.componentInstance.showsTopOptions()).toBe(false);
     });
   });
   describe('in a category league', () => {
@@ -884,7 +876,6 @@ describe('StreamerPlannerComponent', () => {
 
       planner.toggleFocus('ppp');
       expect(names(planner.ranked())).toEqual(['Power Play', 'Middle', 'Sniper']);
-      expect(planner.topOptions()[0].player.name).toBe('Power Play');
       expect(planner.focusLabel()).toBe('PPP');
 
       planner.toggleFocus('sog');
@@ -913,8 +904,6 @@ describe('StreamerPlannerComponent', () => {
       planner.toggleFocus('w');
       expect(names(planner.visible())).toEqual(['Winning Goalie', 'Waiver Goalie']);
       expect(planner.focusLabel()).toBe('W');
-      // The cards read the same list.
-      expect(names(planner.topOptions())).toEqual(['Winning Goalie', 'Waiver Goalie']);
 
       planner.toggleFocus('goals');
       expect(names(planner.visible())).toHaveLength(3);
