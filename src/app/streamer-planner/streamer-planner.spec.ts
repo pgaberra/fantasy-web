@@ -476,8 +476,8 @@ describe('StreamerPlannerComponent', () => {
         buttons.map((button) => button.nativeElement.getAttribute('aria-pressed'));
 
       expect(buttons.map((button) => ngMocks.formatText(button))).toEqual([
-        'Free agents',
-        'Team schedules',
+        'Free Agents',
+        'Team Schedules',
       ]);
       expect(pressed()).toEqual(['true', 'false']);
       expect(shown(fixture)).toEqual(['free-agents']);
