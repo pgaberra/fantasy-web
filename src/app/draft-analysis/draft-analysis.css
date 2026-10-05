@@ -257,6 +257,11 @@
   font-weight: var(--weight-semibold);
 }
 
+.position-rank {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
 .pick-overall,
 .best-rank,
 .player-positions {

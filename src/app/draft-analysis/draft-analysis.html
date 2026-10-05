@@ -152,8 +152,11 @@
           </table>
         </div>
         <p class="analysis-help">
-          Value added is each pick's value in {{ valueUnit() }} less the value of the player our
-          projection ranks at that pick number, summed over the team's picks.
+          Players are ranked by their value over replacement: their projected {{ valueUnit() }} less
+          those of the best player at their position nobody in your league would start. A league
+          that starts four defencemen has to draft them, so they rank where the league needs them.
+          Value added sums each pick's value over replacement less that of the player our projection
+          ranks at that pick number.
         </p>
       </section>
 
@@ -211,6 +214,7 @@
                 <th scope="col">Player</th>
                 @if (graded()) {
                   <th scope="col" class="num">AI rank</th>
+                  <th scope="col">Pos. rank</th>
                   <th scope="col">Grade</th>
                   <th scope="col" class="num">Value vs. slot</th>
                   <th scope="col">Best available</th>
@@ -240,6 +244,7 @@
                   </th>
                   @if (graded()) {
                     <td class="num">{{ pick.aiRank ?? '' }}</td>
+                    <td class="position-rank">{{ pick.positionRank ?? '' }}</td>
                     <td>
                       @if (pick.grade) {
                         <span class="grade-badge" [attr.data-tone]="gradeTone(pick.grade)">{{
@@ -251,14 +256,17 @@
                     <td class="best-available">
                       @if (pick.bestAvailable; as best) {
                         {{ best.name }}
-                        <span class="best-rank">#{{ best.aiRank }}</span>
+                        <span class="best-rank"
+                          >#{{ best.aiRank
+                          }}{{ best.positionRank ? ', ' + best.positionRank : '' }}</span
+                        >
                       }
                     </td>
                   }
                 </tr>
               } @empty {
                 <tr>
-                  <td class="analysis-empty" [attr.colspan]="graded() ? 7 : 3">
+                  <td class="analysis-empty" [attr.colspan]="graded() ? 8 : 3">
                     No picks match these filters.
                   </td>
                 </tr>
