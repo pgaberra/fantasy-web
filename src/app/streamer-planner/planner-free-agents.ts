@@ -24,7 +24,7 @@ export type PlannerPositionGroup = (typeof PLANNER_POSITIONS)[number];
 export const FREE_AGENT_POSITIONS = [...PLANNER_POSITIONS, 'G'] as const;
 export type FreeAgentPosition = (typeof FREE_AGENT_POSITIONS)[number];
 
-/** How many players at the head of the list are set off as the best picks. */
+/** How many places among everyone available are set off as the best picks. */
 export const TOP_OPTIONS = 3;
 
 /**

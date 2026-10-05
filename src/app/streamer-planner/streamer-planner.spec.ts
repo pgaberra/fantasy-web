@@ -537,7 +537,7 @@ describe('StreamerPlannerComponent', () => {
       planner.togglePosition('G');
       fixture.detectChanges();
 
-      // Third of everyone available, and at the head of this list, so set off all the same.
+      // Third of everyone available: one of the best three, whatever the list is narrowed to.
       expect(planner.visible().map((row) => [row.player.name, row.rank])).toEqual([
         ['Waiver Goalie', 3],
       ]);
@@ -579,7 +579,8 @@ describe('StreamerPlannerComponent', () => {
       const fixture = await render();
       const planner = fixture.point.componentInstance;
       planner.goToPage(1);
-      expect(planner.topRows()).toBe(0);
+      fixture.detectChanges();
+      expect(planner.visible().some((row) => row.rank <= planner.topRows())).toBe(false);
 
       planner.sortBy('assists');
       fixture.detectChanges();
@@ -620,7 +621,7 @@ describe('StreamerPlannerComponent', () => {
       );
       expect(ngMocks.formatText(fixture)).toContain('26–50 of 60');
       // Nobody on a later page is one of the best picks.
-      expect(planner.topRows()).toBe(0);
+      expect(planner.visible().some((row) => row.rank <= planner.topRows())).toBe(false);
 
       // The last page holds what is left, and there is no page past it.
       planner.goToPage(2);

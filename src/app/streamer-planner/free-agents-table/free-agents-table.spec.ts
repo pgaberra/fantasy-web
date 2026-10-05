@@ -149,18 +149,40 @@ describe('FreeAgentsTableComponent', () => {
     expect(ngMocks.formatText(rows[1])).toContain('Second Line');
   });
 
-  it('sets off as many rows at the head of the list as the page asks for, and none unasked', () => {
-    const tops = (fixture: ReturnType<typeof render>) =>
-      ngMocks
-        .findAll(fixture, 'tbody tr.player-row')
-        .map((row) => row.nativeElement.classList.contains('player-row--top'));
+  /** Each row's medal, by its rank badge's class; null for a row that wears none. */
+  function medals(fixture: ReturnType<typeof render>): (string | null)[] {
+    return ngMocks.findAll(fixture, 'tbody tr.player-row').map((row) => {
+      const badge = ngMocks.find(row, '.rank').nativeElement as HTMLElement;
+      const medal = [...badge.classList].find((name) => name.startsWith('rank--'));
+      return medal ? medal.slice('rank--'.length) : null;
+    });
+  }
 
-    expect(tops(render())).toEqual([false, false]);
+  it('sets off as many places as the page asks for, and none unasked', () => {
+    expect(medals(render())).toEqual([null, null]);
 
     const fixture = render('points', CATEGORIES, [SKATER, SECOND_SKATER, GOALIE], 2);
-    expect(tops(fixture)).toEqual([true, true, false]);
+    expect(medals(fixture)).toEqual(['gold', 'silver', null]);
+    expect(
+      ngMocks
+        .findAll(fixture, 'tbody tr.player-row')
+        .map((row) => row.nativeElement.classList.contains('player-row--top')),
+    ).toEqual([true, true, false]);
     // Said, not only drawn: the badge is colour and shape alone.
     expect(ngMocks.findAll(fixture, 'tbody .rank-col .sr-only')).toHaveLength(2);
+  });
+
+  it('gives the medal for the rank shown, not for the row, in a list narrowed to some positions', () => {
+    // Second, fourth and sixth of everyone: only the second is one of the best three.
+    const at = (rank: number, playerId: string): RankedFreeAgent => ({
+      ...SKATER,
+      rank,
+      player: { ...SKATER_PLAYER, playerId },
+    });
+    const fixture = render('points', CATEGORIES, [at(2, '10'), at(4, '11'), at(6, '12')], 3);
+
+    expect(medals(fixture)).toEqual(['silver', null, null]);
+    expect(ngMocks.findAll(fixture, 'tbody .rank-col .sr-only')).toHaveLength(1);
   });
 
   it('says whose list the rank is a place in', () => {

@@ -24,6 +24,10 @@ import {
 } from '../planner-free-agents';
 
 const SKATER_KEYS: ReadonlySet<string> = new Set(SKATER_SCORING_STAT_KEYS);
+
+/** The medals for the first places, best first. */
+const MEDALS = ['gold', 'silver', 'bronze'] as const;
+export type Medal = (typeof MEDALS)[number];
 const GOALIE_KEYS: ReadonlySet<string> = new Set(GOALIE_SCORING_STAT_KEYS);
 
 /**
@@ -46,8 +50,9 @@ export interface FreeAgentRow {
  * The best available players, skaters and goalies together, best first, with the model's line for
  * the nights counted in every category the league scores, and scored by the league's own settings.
  * The skaters' categories come first and the goalies' after, set off by a rule: a column means one
- * category on every row, a faint dash on a player of the kind that does not score in it. The first few
- * rows can be set off as the best picks, in the table's own columns rather than as cards over it.
+ * category on every row, a faint dash on a player of the kind that does not score in it. The best few
+ * of everyone available can be set off as the best picks, in the table's own columns rather than as
+ * cards over it.
  * Which positions, how many rows and how many of them are set off is the page's to say, and so is
  * the order: a heading asks for it, and the page sorts the whole list before cutting it into pages.
  */
@@ -72,7 +77,11 @@ export class FreeAgentsTableComponent {
   readonly focus = input<ReadonlySet<ScoringStatKey>>(new Set());
   /** "PPP, SOG": the same categories, as the score's tip names them. */
   readonly focusLabel = input('');
-  /** How many rows at the head of the list are set off as the best picks; none unless the page says. */
+  /**
+   * How many places are set off as the best picks; none unless the page says. A place is the rank
+   * the row shows, among every available player, so a list narrowed to some positions sets off only
+   * the ones the whole list would: its own head may be fourth and sixth, and wear nothing.
+   */
   readonly top = input(0);
   /** The order the list is in, which the headings show. */
   readonly sort = input<FreeAgentSort>(RANKED_ORDER);
@@ -153,6 +162,11 @@ export class FreeAgentsTableComponent {
   focused(key: ScoringStatKey): boolean | null {
     const focus = this.focus();
     return focus.size === 0 ? null : focus.has(key);
+  }
+
+  /** The medal his place wins, if it is one of the places set off. */
+  medalOf(row: RankedFreeAgent): Medal | null {
+    return row.rank <= this.top() ? (MEDALS[row.rank - 1] ?? null) : null;
   }
 
   score(row: RankedFreeAgent): string {
