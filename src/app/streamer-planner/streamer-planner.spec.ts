@@ -821,7 +821,9 @@ describe('StreamerPlannerComponent', () => {
           ngMocks.findAll(fixture, '.day-room').map((cell) => ngMocks.formatText(cell)),
         ).toEqual(['RW, D, G', 'RW, D, G']);
         expect(planner.roomSummary()).toBe('Room on 2 of 2 game days');
-        expect(ngMocks.formatText(fixture)).toContain('Howe Hard has room for them');
+        expect(ngMocks.formatText(ngMocks.find(fixture, '.free-agents .fit-toggle'))).toBe(
+          'Rank based on your roster availability',
+        );
       });
 
       it('scores a free agent only on the game days he would start, until that is unticked', async () => {

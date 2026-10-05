@@ -176,14 +176,10 @@
           }
         </p>
         <!-- The user's own team, where this environment reads it: the cells above say which nights
-             it has room on, and the free agents are scored on those nights alone unless unticked. -->
+             it has room on. The switch that ranks the free agents by them is on their own card. -->
         @switch (myTeamStatus()) {
           @case ('ready') {
             <div class="my-team">
-              <label class="my-team-toggle">
-                <input type="checkbox" [checked]="fitMyTeam()" (change)="toggleFitMyTeam()" />
-                Rank free agents by the game days {{ myTeamName() }} has room for them
-              </label>
               <span class="my-team-summary">{{ roomSummary() }}</span>
             </div>
             @if (swapsShown() && dropOptions().length > 0) {
@@ -267,6 +263,13 @@
           <app-icon name="user-plus" />Top free agents
           <app-help-tip label="How these are ranked" [text]="rankingHelp()" />
         </h2>
+        <!-- Scored only on the nights the user's lineup has room for them, unless unticked. -->
+        @if (myTeamStatus() === 'ready') {
+          <label class="fit-toggle">
+            <input type="checkbox" [checked]="fitMyTeam()" (change)="toggleFitMyTeam()" />
+            Rank based on your roster availability
+          </label>
+        }
       </div>
       <!-- Skaters and goalies are one list, narrowed by any number of positions at once. "All" is
            the list with none picked, and the way back to it. -->
