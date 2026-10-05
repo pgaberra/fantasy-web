@@ -22,6 +22,14 @@ describe('PositionChipsComponent', () => {
     ).toEqual([true, true, true]);
   });
 
+  it('leaves out the Util flex, which every skater is eligible for', () => {
+    expect(chips(['C', 'LW', 'Util', 'IR+']).map((chip) => chip.textContent?.trim())).toEqual([
+      'C',
+      'LW',
+      'IR+',
+    ]);
+  });
+
   it('colours a goalie as a goalie', () => {
     expect(chips(['G'])[0].classList).toContain('pos--g');
   });
