@@ -368,20 +368,15 @@ export class StreamerPlannerComponent {
     { equal: (a, b) => a?.platform === b?.platform && a?.leagueId === b?.leagueId },
   );
 
-  /** The table the reader asked for, or none while the page still chooses. */
-  private readonly chosenView = signal<PlannerView | null>(null);
-
   /**
-   * The table on screen. The free agents are what the page is for, so it opens on them; with no
-   * league there are none to list, and the schedules are shown instead of a prompt over an empty
-   * card. Once the reader picks a table it stays, whatever happens to the league.
+   * The table on screen. The free agents are what the page is for, so it always opens on them,
+   * with no league picked too, where their card asks for one. Once the reader picks a table it
+   * stays, whatever happens to the league.
    */
-  readonly view = computed<PlannerView>(
-    () => this.chosenView() ?? (this.league() ? 'free-agents' : 'schedules'),
-  );
+  readonly view = signal<PlannerView>('free-agents');
 
   setView(view: PlannerView): void {
-    this.chosenView.set(view);
+    this.view.set(view);
   }
 
   readonly positionOptions = FREE_AGENT_POSITIONS;
