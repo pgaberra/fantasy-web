@@ -2,7 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { PlannerRosterPlayer } from '../api/models/planner-roster-player';
 import { RosterSlots } from '../api/models/roster-slots';
 import { TeamSchedule } from '../api/models/team-schedule';
-import { fitsRoom, lineupSeats, nightRooms, roomLabel, roomTip, seated } from './planner-lineup';
+import {
+  dropRoomLabel,
+  dropRooms,
+  dropRoomTip,
+  fitsRoom,
+  lineupSeats,
+  nightRooms,
+  roomLabel,
+  roomTip,
+  seated,
+} from './planner-lineup';
 
 const NONE: RosterSlots = { c: 0, lw: 0, rw: 0, w: 0, f: 0, d: 0, util: 0, bn: 0, g: 0 };
 
@@ -113,7 +123,8 @@ describe('nightRooms', () => {
 
   it('says a Util seat takes any skater, and a G seat a goalie', () => {
     const rooms = nightRooms([], slots({ util: 1, g: 1 }), teams, [MON]);
-    expect(roomLabel(rooms.get(MON)!)).toBe('Any skater, G');
+    // Every position named outright, rather than "Any skater" for the reader to unpack.
+    expect(roomLabel(rooms.get(MON)!)).toBe('C, LW, RW, D, G');
     expect(fitsRoom(['D'], rooms.get(MON))).toBe(true);
     expect(fitsRoom(['G'], rooms.get(MON))).toBe(true);
   });
@@ -132,5 +143,61 @@ describe('nightRooms', () => {
     const room = nightRooms(roster, slots({ c: 2, lw: 1 }), teams, [MON]).get(MON)!;
     expect(roomLabel(room)).toBe('C, LW');
     expect(roomTip(room)).toBe('1 of your players plays, 2 slots open. Room for: C, LW.');
+  });
+});
+
+describe('dropRooms', () => {
+  const teams = new Map([
+    ['EDM', club('EDM', [MON, TUE])],
+    ['TBL', club('TBL', [MON])],
+  ]);
+  /** A C, a LW and a RW seat, two D seats and a G seat. */
+  const SLOTS = slots({ c: 1, lw: 1, rw: 1, d: 2, g: 1 });
+
+  function named(playerId: string, name: string, team: string, positions: string[]) {
+    return { ...rostered(playerId, team, positions), name };
+  }
+
+  // Monday the forwards are full and one D seat and the G seat are open.
+  const roster = [
+    named('1', 'Benson', 'EDM', ['LW']),
+    named('2', 'Dual', 'EDM', ['C', 'LW']),
+    named('3', 'Wing', 'EDM', ['RW', 'C']),
+    named('4', 'Back', 'EDM', ['D']),
+  ];
+
+  it("opens the dropped player's seat, and what dual-position teammates moving about lets it take", () => {
+    const rooms = nightRooms(roster, SLOTS, teams, [MON, TUE]);
+    expect(roomLabel(rooms.get(MON)!)).toBe('D, G');
+
+    const opened = dropRooms(roster, SLOTS, teams, rooms, new Set(['1']));
+
+    // Without Benson, Dual can slide to LW and Wing to C, so any forward fills his seat; D and G
+    // were open already and are not his to open.
+    const monday = opened.get(MON)!;
+    expect(dropRoomLabel(monday)).toBe('C, LW, RW');
+    expect(dropRoomTip(monday)).toBe(
+      'Open only if you drop a player you picked: C, LW, RW if you drop Benson.',
+    );
+  });
+
+  it('opens nothing when a teammate on the bench takes the seat, or the drop sat anyway', () => {
+    const deeper = [...roster, named('5', 'Tampa C', 'TB', ['C'])];
+    const rooms = nightRooms(deeper, SLOTS, teams, [MON]);
+
+    // Tampa C sits Monday behind three forwards: Benson's seat is his, and dropping Tampa frees none.
+    expect(dropRooms(deeper, SLOTS, teams, rooms, new Set(['1'])).size).toBe(0);
+    expect(dropRooms(deeper, SLOTS, teams, rooms, new Set(['5'])).size).toBe(0);
+  });
+
+  it('names every drop that opens a position', () => {
+    const rooms = nightRooms(roster, SLOTS, teams, [MON]);
+
+    const monday = dropRooms(roster, SLOTS, teams, rooms, new Set(['1', '4'])).get(MON)!;
+
+    expect(monday.get('LW')).toEqual(['Benson']);
+    expect(dropRoomTip(monday)).toBe(
+      'Open only if you drop a player you picked: C, LW, RW if you drop Benson.',
+    );
   });
 });
