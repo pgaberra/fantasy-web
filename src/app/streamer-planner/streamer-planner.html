@@ -128,29 +128,34 @@
                   </span>
                 }
                 @if (day.offNight) {
-                  <span class="day-mark" appTooltip="Off-night">
+                  <span class="day-mark" [appTooltip]="offNightTip()">
                     <span aria-hidden="true">Off</span><span class="sr-only">Off-night</span>
                   </span>
                 }
               </span>
-              @if (room(day); as room) {
-                <!-- The user's own lineup that night: who would still start, or that it is full. -->
-                <span
-                  class="day-room"
-                  [class.day-room--full]="room.open === 0"
-                  [appTooltip]="roomTip(room)"
-                  [attr.aria-label]="roomTip(room)"
-                  >{{ roomLabel(room) }}</span
-                >
-              }
-              @if (dropRoom(day); as opened) {
-                <!-- Room that is there only if a player the user would drop goes: yellow, apart. -->
-                <span
-                  class="day-room day-room--drop"
-                  [appTooltip]="dropRoomTip(opened)"
-                  [attr.aria-label]="dropRoomTip(opened)"
-                  >{{ dropRoomLabel(opened) }}</span
-                >
+              @if (room(day) || dropRoom(day)) {
+                <span class="day-rooms">
+                  @if (room(day); as room) {
+                    <!-- The user's own lineup that night: who would still start, or that it is full. -->
+                    <span
+                      class="day-room"
+                      [class.day-room--full]="room.open === 0"
+                      [appTooltip]="roomTip(room)"
+                      [attr.aria-label]="roomTip(room)"
+                      >{{ roomLabel(room) }}</span
+                    >
+                  }
+                  @if (dropRoom(day); as opened) {
+                    <!-- Room that is there only if a player the user would drop goes: yellow, on
+                         the same line, starred to the key under the strip. -->
+                    <span
+                      class="day-room day-room--drop"
+                      [appTooltip]="dropRoomTip(opened)"
+                      [attr.aria-label]="dropRoomTip(opened)"
+                      >{{ dropRoomLabel(opened) }}*</span
+                    >
+                  }
+                </span>
               }
               @if (nightSwap(day); as night) {
                 <!-- The swap picked in the list, this night: the starts it gains or costs. -->
@@ -176,32 +181,20 @@
         }
         <p class="range-summary">
           <span>{{ weeksTitle() }}</span>
-          <span>{{ stretchTitle() }}</span>
           <span>{{ nightsTitle() }}</span>
-          @if (hasOffNight()) {
-            <span class="range-legend"
-              ><span class="day-mark" aria-hidden="true">Off</span>Off-night</span
-            >
-          }
           @if (hasDropRoom()) {
-            <span class="range-legend range-legend--drop"
-              ><span class="day-room day-room--drop" aria-hidden="true">LW</span>Open only if you
-              drop a player you picked below</span
-            >
+            <span class="range-legend">*Open only if you drop a player you picked below</span>
           }
         </p>
         <!-- The user's own team, where this environment reads it: the cells above say which nights
              it has room on. The switch that ranks the free agents by them is on their own card. -->
         @switch (myTeamStatus()) {
           @case ('ready') {
-            <div class="my-team">
-              <span class="my-team-summary">{{ roomSummary() }}</span>
-            </div>
             @if (swapsShown() && dropOptions().length > 0) {
               <!-- A pickup is made with a drop: the players the user would let go, which the
                    free agents' swaps are priced against. The page suggests the cheapest three. -->
               <div class="drops" role="group" aria-labelledby="planner-drops-label">
-                <span id="planner-drops-label" class="group-label">Willing to drop</span>
+                <span id="planner-drops-label" class="group-label">Droppable players</span>
                 <app-help-tip
                   label="Players you would drop"
                   text="Each free agent's Swap is priced against the best of these: every game day is re-set with him in and the dropped player out, so the seat a drop frees counts, and each game is weighed by what a game of that player is worth. Until you pick, the three skaters whose games are worth least are suggested."
