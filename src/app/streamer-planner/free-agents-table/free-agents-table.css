@@ -81,6 +81,13 @@
   width: 1%;
 }
 
+/* Centred, not set right like the other numbers: the first three are drawn in a medal wider than
+   a digit, and set right the digits in the medals stood to the left of the ones under them. */
+.free-agents-table .rank-col,
+.free-agents-table thead th.rank-col {
+  text-align: center;
+}
+
 /* The player stays put while the numbers scroll sideways, and takes whatever room the card has to
    spare: shared out among the numbers it would space them unevenly about the rule. */
 .free-agents-table .player-col {
