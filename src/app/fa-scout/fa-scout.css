@@ -163,6 +163,38 @@
   margin: var(--space-2) 0 0;
 }
 
+/* Room without a drop: said before the drops, since it is the better move. */
+.room-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+}
+
+.room {
+  align-items: flex-start;
+  display: flex;
+  font-size: var(--text-sm);
+  gap: var(--space-2);
+}
+
+/* Name, injury tag and the rest of the line apart: Angular drops the spaces between elements. */
+.room > span {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-1);
+}
+
+.room app-icon {
+  color: var(--color-success);
+  flex: none;
+  /* On the first line's middle when the line wraps on a phone. */
+  margin-top: 0.2rem;
+}
+
 .drops-list {
   display: flex;
   flex-direction: column;

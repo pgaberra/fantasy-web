@@ -120,6 +120,30 @@
             <p class="drops-note">You have no team in this league, so no drops are suggested.</p>
           }
           @case ('ready') {
+            @if (room().openSpots > 0 || room().toReserve.length > 0) {
+              <ul class="room-list">
+                @if (room().openSpots > 0) {
+                  <li class="room">
+                    <app-icon name="check-circle" [size]="14" />
+                    <span
+                      >{{ openSpotsText(room().openSpots) }}: pick up without dropping anyone.</span
+                    >
+                  </li>
+                }
+                @for (move of room().toReserve; track move.player.playerId) {
+                  <li class="room">
+                    <app-icon name="check-circle" [size]="14" />
+                    <span>
+                      Move <strong>{{ move.player.name }}</strong>
+                      @if (move.player.injuryStatus) {
+                        <span class="drop-tag drop-tag--out">{{ move.player.injuryStatus }}</span>
+                      }
+                      to {{ move.slot }}: his roster spot then takes a pickup, nobody dropped.
+                    </span>
+                  </li>
+                }
+              </ul>
+            }
             @if (candidates().length === 0) {
               <p class="drops-note">
                 {{

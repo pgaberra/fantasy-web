@@ -46,8 +46,12 @@ export interface TeamPlayer {
   readonly type: 'skater' | 'goalie';
   readonly positions: readonly string[];
   readonly injuryStatus?: string;
+  /** The slot he sits in today, in the platform's spelling (C, BN, IR, IR+, NA, ...). */
+  readonly slot?: string;
   /** On injured reserve or not-active: a slot that takes no roster spot, so dropping him makes none. */
   readonly reserve: boolean;
+  /** The injured-reserve slots the platform lets him be moved into today; empty when healthy. */
+  readonly reserveEligible: readonly string[];
   /** Fills no lineup slot now: on reserve, or out injured or suspended. Day-to-day is not out. */
   readonly out: boolean;
   /** His rest of the season; null when the model has no line for him. */
@@ -130,7 +134,9 @@ function toTeamPlayer(player: ScoutRosterPlayer): TeamPlayer {
     type,
     positions: player.positions,
     injuryStatus: player.injuryStatus,
+    slot: player.slot,
     reserve: player.reserve,
+    reserveEligible: player.reserveEligible,
     out: player.out,
     projection: player.restOfSeason
       ? projectionOf(type, rankingKey(player.playerId), player.restOfSeason)
