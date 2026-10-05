@@ -33,6 +33,8 @@ import {
   dropCandidates,
   scoreTeam,
   Swap,
+  TeamRoom,
+  teamRoom,
   TeamRow,
 } from './drop-candidates';
 import { rankScout, ScoutKind, ScoutRow } from './scout-ranking';
@@ -56,9 +58,10 @@ export const SCOUT_PAGE_SIZE = 25;
  * opens on the league last chosen anywhere ({@link LeagueChoiceService}): a reader scouting a
  * league for keepers is the one streaming in it.
  *
- * <p>A pickup needs a roster spot. The user's own team is scored in the same pool, so each pickup
- * is shown beside the player to drop for him and what the team gains (`bestSwap`): the lowest
- * scorer whose loss leaves the lineup as full, judged against the league's lineup slots.
+ * <p>A pickup needs a roster spot. An open one is taken first, then the spot of an injured player
+ * who can move to a free injured-reserve slot (`teamRoom`). Otherwise the user's own team, scored
+ * in the same pool, gives the player to drop for him and what the team gains (`bestSwap`): the
+ * lowest scorer whose loss leaves the lineup as full, judged against the league's lineup slots.
  */
 @Component({
   selector: 'app-fa-scout',
@@ -306,11 +309,21 @@ export class FaScoutComponent {
     return settings?.rosterSlots ? lineupSeats(settings.rosterSlots) : [];
   });
 
+  /** Room for a pickup with nobody dropped: open roster spots, injured players to move to IR. */
+  readonly room = computed<TeamRoom>(() => {
+    const team = this.team();
+    const settings = this.settingsResource.hasValue() ? this.settingsResource.value() : null;
+    if (!team) {
+      return { openSpots: 0, toReserve: [] };
+    }
+    return teamRoom(team, settings?.rosterSlots ?? null, settings?.reserveSlots ?? {});
+  });
+
   /** Whether the drops are judged against the league's lineup, or on score alone. */
   readonly lineupKnown = computed(() => this.seats().length > 0);
 
   readonly candidates = computed<readonly DropCandidate[]>(() =>
-    dropCandidates(this.teamRows(), this.seats()),
+    dropCandidates(this.teamRows(), this.seats(), this.room()),
   );
 
   /** The user's players of the kind left out of the drops: on injured reserve, or not projected. */
@@ -329,10 +342,11 @@ export class FaScoutComponent {
       return new Map();
     }
     const seats = this.seats();
+    const room = this.room();
     return new Map(
       this.ranked().map((row) => [
         row.player.playerId,
-        bestSwap({ positions: row.player.positions, score: row.score }, team, seats),
+        bestSwap({ positions: row.player.positions, score: row.score }, team, seats, room),
       ]),
     );
   });
@@ -426,6 +440,11 @@ export class FaScoutComponent {
   });
 
   // --- The drops -------------------------------------------------------------------------------
+
+  /** "1 open roster spot", "2 open roster spots". */
+  openSpotsText(count: number): string {
+    return count === 1 ? '1 open roster spot' : `${count} open roster spots`;
+  }
 
   formatScore(score: number | null): string {
     if (score === null) {

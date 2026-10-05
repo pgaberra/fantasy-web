@@ -137,10 +137,28 @@ export class ScoutTableComponent {
     return swap.gain > 0 ? `+${swap.gain.toFixed(digits)}` : swap.gain.toFixed(digits);
   }
 
+  /** Who makes room: "for Jake Walman", "Hronek to IR", "open spot". */
+  making(swap: Swap): string {
+    switch (swap.kind) {
+      case 'open':
+        return 'open spot';
+      case 'reserve':
+        return `${swap.move.player.name} to ${swap.move.slot}`;
+      case 'drop':
+        return `for ${swap.drop.player.name}`;
+    }
+  }
+
   swapTip(row: ScoutRow): string {
     const swap = this.swap(row);
     if (!swap) {
       return 'Every player you could drop for him is needed to fill your lineup';
+    }
+    if (swap.kind === 'open') {
+      return 'You have an open roster spot: pick him up without dropping anyone';
+    }
+    if (swap.kind === 'reserve') {
+      return `Move ${swap.move.player.name} to ${swap.move.slot} and his roster spot takes this pickup, with nobody dropped`;
     }
     return swap.gain > 0
       ? `Drop ${swap.drop.player.name} for him: your lowest-projected player whose spot he can fill`

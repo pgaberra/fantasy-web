@@ -120,6 +120,7 @@ describe('ScoutTableComponent', () => {
         positions: ['D'],
         reserve: false,
         out: false,
+        reserveEligible: [],
         projection: null,
       },
       score: 60,
@@ -129,18 +130,34 @@ describe('ScoutTableComponent', () => {
         row(1, 'Brandon Montour', 1, 30, 1050),
         row(2, 'Ryan Graves', 2, 3, 1200),
         row(3, 'Nobody', 3, 4, 1200),
+        row(4, 'Pavel Zacha', 4, 5, 1200),
+        row(5, 'Conor Garland', 5, 6, 1200),
       ],
       new Map<string, Swap | null>([
-        ['1', { drop, gain: 25 }],
-        ['2', { drop, gain: -4.25 }],
+        ['1', { kind: 'drop', drop, gain: 25 }],
+        ['2', { kind: 'drop', drop, gain: -4.25 }],
         ['3', null],
+        [
+          '4',
+          {
+            kind: 'reserve',
+            move: { player: { ...drop.player, name: 'Filip Hronek' }, slot: 'IR' },
+            gain: 80,
+          },
+        ],
+        ['5', { kind: 'open', gain: 70 }],
       ]),
     );
 
     const text = (selector: string) =>
       ngMocks.findAll(fixture, selector).map((cell) => ngMocks.formatText(cell));
-    expect(text('.swap-gain')).toEqual(['+25.0', '-4.3']);
-    expect(text('.swap-drop')).toEqual(['for Jake Walman', 'for Jake Walman']);
+    expect(text('.swap-gain')).toEqual(['+25.0', '-4.3', '+80.0', '+70.0']);
+    expect(text('.swap-drop')).toEqual([
+      'for Jake Walman',
+      'for Jake Walman',
+      'Filip Hronek to IR',
+      'open spot',
+    ]);
     expect(text('.swap-none')).toEqual(['No room']);
   });
 });
