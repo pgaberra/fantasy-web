@@ -190,3 +190,90 @@
 .free-agents-table .stat-col--muted {
   color: var(--color-text-subtle);
 }
+
+/* --- The best picks ---------------------------------------------------------------------------- */
+
+/* The first few rows are the page's answer, so they are drawn as one: tinted, a size up, the rank
+   a filled badge, and ruled off from the rest of the list. They stay rows of the table, so each
+   still has his whole line under the same headings as everyone below. */
+.free-agents-table .player-row--top > * {
+  background: var(--top-row-surface);
+  padding-block: var(--space-3);
+}
+
+.free-agents-table .player-row--top {
+  --player-logo-size: 36px;
+  --top-row-surface: color-mix(in srgb, var(--color-accent) 5%, var(--color-surface));
+}
+
+.free-agents-table .player-row--top:hover {
+  --top-row-surface: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface));
+}
+
+.free-agents-table .player-row--top:has(+ .player-row:not(.player-row--top)) > * {
+  border-bottom-color: var(--color-border-strong);
+}
+
+.free-agents-table .player-row--top .rank-col {
+  padding-left: var(--space-2);
+  vertical-align: middle;
+}
+
+.sr-only {
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.player-row--top .rank {
+  align-items: center;
+  background: var(--color-primary);
+  border-radius: 50%;
+  color: var(--color-primary-contrast);
+  display: inline-flex;
+  font-weight: var(--weight-bold);
+  height: 1.5rem;
+  justify-content: center;
+  width: 1.5rem;
+}
+
+/* The numbers keep to the line of the name, which is a size larger here. */
+.free-agents-table .player-row--top td {
+  line-height: calc(var(--text-base) * 1.25);
+}
+
+.player-row--top .player-name {
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+}
+
+.player-row--top .score {
+  color: var(--color-accent);
+  font-size: var(--text-base);
+}
+
+/* A phone has no room to give: there the best picks keep the list's own sizes, and the tint, the
+   badge and the rule set them off. */
+@container (max-width: 38rem) {
+  .free-agents-table .player-row--top {
+    --player-logo-size: 28px;
+  }
+
+  .free-agents-table .player-row--top > * {
+    padding-block: var(--space-2);
+  }
+
+  .free-agents-table .player-row--top td {
+    line-height: 1.25;
+  }
+
+  .player-row--top .player-name,
+  .player-row--top .score {
+    font-size: inherit;
+  }
+}
