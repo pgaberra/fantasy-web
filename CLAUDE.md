@@ -364,7 +364,7 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   columns and the goalies' after them behind a rule, each row blank under the other kind's. From
   2026-10-01 to 2026-10-05 a segmented Skaters | Goalies control showed one kind at a time
   (`ofKind`, since removed). The first three rows of the list's first page are set off as the best picks
-  (tint, filled rank badge, a size up: the table's `top` input); until 2026-10-05 they were
+  (the rank as a gold, silver or bronze medal, nothing else: the table's `top` input); until 2026-10-05 they were
   three cards over the tables, repeating those rows. What
   concerns one table only sits on that table: the positions and the categories to rank by. The
   pills (All, C, LW, RW, D, G) narrow it to any number of positions at once, a player eligible at
