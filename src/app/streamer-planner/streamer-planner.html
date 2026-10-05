@@ -143,9 +143,28 @@
                   >{{ roomLabel(room) }}</span
                 >
               }
+              @if (nightSwap(day); as night) {
+                <!-- The swap picked in the list, this night: the starts it gains or costs. -->
+                <span
+                  class="day-swap"
+                  [class.day-swap--up]="night.games > 0 || (night.games === 0 && night.value > 0)"
+                  [class.day-swap--down]="night.games < 0 || (night.games === 0 && night.value < 0)"
+                  [appTooltip]="nightSwapTip(night)"
+                  [attr.aria-label]="nightSwapTip(night)"
+                  >{{ nightSwapLabel(night) }}</span
+                >
+              }
             </label>
           }
         </div>
+        @if (shownSwap()) {
+          <p class="swap-shown" aria-live="polite">
+            <span>{{ shownSwapTitle() }}</span>
+            <button type="button" class="btn btn-secondary btn-sm" (click)="hideSwap()">
+              Hide
+            </button>
+          </p>
+        }
         <p class="range-summary">
           <span>{{ weeksTitle() }}</span>
           <span>{{ stretchTitle() }}</span>
@@ -167,6 +186,37 @@
               </label>
               <span class="my-team-summary">{{ roomSummary() }}</span>
             </div>
+            @if (swapsShown() && dropOptions().length > 0) {
+              <!-- A pickup is made with a drop: the players the user would let go, which the
+                   free agents' swaps are priced against. The page suggests the cheapest three. -->
+              <div class="drops" role="group" aria-labelledby="planner-drops-label">
+                <span id="planner-drops-label" class="group-label">Willing to drop</span>
+                <app-help-tip
+                  label="Players you would drop"
+                  text="Each free agent's Swap is priced against the best of these: every game day is re-set with him in and the dropped player out, so the seat a drop frees counts, and each game is weighed by what a game of that player is worth. Until you pick, the three skaters whose games are worth least are suggested."
+                />
+                <div class="pills">
+                  @for (player of dropOptions(); track player.playerId) {
+                    <button
+                      type="button"
+                      class="pill"
+                      [class.pill--active]="dropIds().has(player.playerId)"
+                      [attr.aria-pressed]="dropIds().has(player.playerId)"
+                      (click)="toggleDrop(player.playerId)"
+                    >
+                      {{ player.name }}
+                    </button>
+                  }
+                </div>
+                @if (dropsSuggested()) {
+                  <span class="drops-note">Suggested</span>
+                } @else {
+                  <button type="button" class="btn btn-secondary btn-sm" (click)="suggestDrops()">
+                    Suggest
+                  </button>
+                }
+              </div>
+            }
           }
           @case ('not-found') {
             <p class="my-team my-team--note">
@@ -303,7 +353,10 @@
           [focusLabel]="focusLabel()"
           [top]="topRows()"
           [sort]="sort()"
+          [swapsShown]="swapsShown()"
+          [shownSwap]="shownSwapPlayer()"
           (sortBy)="sortBy($event)"
+          (showSwap)="showSwap($event)"
         />
         <!-- A page at a time: most visits never leave the first, so the card stays the height
              of one page and the next is a press away. The page size is kept per layout. -->

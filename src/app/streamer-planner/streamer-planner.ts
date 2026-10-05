@@ -26,7 +26,10 @@ import { ScoringStatKey } from '../models/stat-key.model';
 import { EspnService } from '../services/espn.service';
 import { FeatureService } from '../services/feature.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
-import { StreamerPlannerFreeAgentsService } from '../services/streamer-planner-free-agents.service';
+import {
+  plannerProjection,
+  StreamerPlannerFreeAgentsService,
+} from '../services/streamer-planner-free-agents.service';
 import { ChosenLeague, LeagueChoiceService } from '../services/league-choice.service';
 import { YahooService } from '../services/yahoo.service';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
@@ -61,7 +64,19 @@ import {
   WEEK_DECIMALS,
 } from './planner-free-agents';
 import { focusableCategories, readFocus, scoresIn, writeFocus } from './planner-focus';
-import { NightRoom, nightRooms, roomLabel, roomTip } from './planner-lineup';
+import { lineupSeats, NightRoom, nightRooms, roomLabel, roomTip } from './planner-lineup';
+import { readDrops, writeDrops } from './planner-drops';
+import {
+  bestSwap,
+  NightSwap,
+  openRosterSpot,
+  parked,
+  skaterNights,
+  suggestedDrops,
+  Swap,
+  swapContext,
+  SwapSkater,
+} from './planner-swap';
 import {
   isPageSize,
   PAGE_SIZES,
@@ -469,13 +484,19 @@ export class StreamerPlannerComponent {
    * follow from it, the league's lineup slots and the club schedules already on the page.
    */
   private readonly myTeamResource = rxResource({
-    params: () =>
-      this.features.streamerPlannerMyTeam() ? (this.league() ?? undefined) : undefined,
+    params: () => {
+      const league = this.features.streamerPlannerMyTeam() ? this.league() : null;
+      const stretch = this.stretch();
+      // Over the stretch, so each player comes with his line over it: what a swap is priced by.
+      return league && stretch ? { league, ...stretch } : undefined;
+    },
     stream: ({ params }) =>
       from(
         this.api.invoke(streamerPlannerMyTeam, {
-          platform: params.platform,
-          leagueId: params.leagueId,
+          platform: params.league.platform,
+          leagueId: params.league.leagueId,
+          start: params.start,
+          end: params.end,
         }),
       ),
   });
@@ -553,13 +574,263 @@ export class StreamerPlannerComponent {
     this.myTeamResource.reload();
   }
 
-  // --- The categories the list is ranked by ----------------------------------------------------
-
-  /** The league, as the remembered focus is filed under. */
+  /** The league, as the remembered focus and drops are filed under. */
   private readonly leagueKey = computed(() => {
     const league = this.league();
     return league ? `${league.platform}:${league.leagueId}` : null;
   });
+
+  // --- Swaps: a pickup for a player dropped ------------------------------------------------------
+
+  /**
+   * What one of his club's games is worth to a team, for each of the user's skaters and each
+   * skater available: his line over the stretch scored on the list's own scale, less what no line
+   * at all scores, over his club's games. Measured from no line rather than from the pool's average,
+   * a game is worth what it adds to a team, so two games of a player are worth twice one. Keyed
+   * `own:` and `wire:` by the platform's id. Null while there is nothing to price, or the
+   * categories picked are goalies' alone.
+   */
+  private readonly gameValues = computed<ReadonlyMap<string, number> | null>(() => {
+    const team = this.myTeam();
+    const week = this.freeAgentsResource.hasValue() ? this.freeAgentsResource.value() : null;
+    const focus = this.focus();
+    if (this.myTeamStatus() !== 'ready' || !team || !week || !scoresIn('skater', focus)) {
+      return null;
+    }
+    const scoring = this.scoring();
+    const skaters = new Set(
+      team.players.filter((player) => player.type === 'skater').map((player) => player.playerId),
+    );
+    const own = team.lines
+      .filter((line) => skaters.has(line.playerId))
+      .map((line) => ({
+        key: `own:${line.playerId}`,
+        clubGames: line.clubGames,
+        line: { ...line, type: 'skater' },
+      }));
+    const wire = week.players
+      .filter((player) => player.projection.type === 'skater')
+      .map((player) => ({
+        key: `wire:${player.playerId}`,
+        clubGames: player.clubGames,
+        projection: player.projection,
+      }));
+    const nothing = plannerProjection({
+      playerId: '0',
+      type: 'skater',
+      expectedGames: 0,
+      stats: {},
+    });
+    const scores = this.ranking.scoreLines(
+      {
+        projections: week.players
+          .filter((player) => scoresIn(player.projection.type, focus))
+          .map((player) => player.projection),
+        scoringType: scoring.scoringType,
+        statWeights: scoring.statWeights,
+        activeScoringColumns: focus.size > 0 ? new Set(focus) : scoring.activeScoringColumns,
+        leagueSize: DEFAULT_LEAGUE_SIZE,
+        rosterSlots: DEFAULT_ROSTER_SLOTS,
+        minGoalieGames: 0,
+        decimalSettings: WEEK_DECIMALS,
+      },
+      [
+        ...own.map((entry) => plannerProjection(entry.line)),
+        ...wire.map((entry) => entry.projection),
+        nothing,
+      ],
+    );
+    const none = scores[scores.length - 1];
+    const values = new Map<string, number>();
+    [...own, ...wire].forEach((entry, index) => {
+      values.set(entry.key, entry.clubGames > 0 ? (scores[index] - none) / entry.clubGames : 0);
+    });
+    return values;
+  });
+
+  /** The nights counted, in order: the nights a swap is priced over. */
+  private readonly countedDates = computed(() =>
+    [...this.counted()].sort((a, b) => a.localeCompare(b)),
+  );
+
+  /**
+   * The user's skaters who hold a roster spot, each with the nights he plays and what a game of
+   * his is worth. One on injured reserve holds no spot, so dropping him makes no room, and he does
+   * not play: he is left out.
+   */
+  private readonly swapTeam = computed<readonly SwapSkater[]>(() => {
+    const team = this.myTeam();
+    const values = this.gameValues();
+    if (!team || !values) {
+      return [];
+    }
+    const teams = this.teamsByKey();
+    const counted = this.counted();
+    return team.players
+      .filter(
+        (player) => player.type === 'skater' && !parked(player) && player.positions.length > 0,
+      )
+      .map((player) => ({
+        playerId: player.playerId,
+        name: player.name,
+        positions: player.positions,
+        nights: skaterNights(player.teamAbbrev, player.out, teams, counted),
+        value: values.get(`own:${player.playerId}`) ?? 0,
+      }));
+  });
+
+  /** The user's skaters as the drop list offers them: the cheapest game first. */
+  readonly dropOptions = computed(() =>
+    [...this.swapTeam()].sort((a, b) => a.value - b.value || a.name.localeCompare(b.name)),
+  );
+
+  /** The drops the user picked in this league, or null while the page's suggestion stands. */
+  private readonly dropsPicked = linkedSignal<string | null, readonly string[] | null>({
+    source: this.leagueKey,
+    computation: (league) => (league ? readDrops(league) : null),
+  });
+
+  /** Whether the drops are the page's suggestion rather than the user's own pick. */
+  readonly dropsSuggested = computed(() => this.dropsPicked() === null);
+
+  /** The players the user would drop for a pickup: his pick, or the page's suggestion. */
+  readonly dropIds = computed<ReadonlySet<string>>(() => {
+    const team = this.swapTeam();
+    const lined = new Set((this.myTeam()?.lines ?? []).map((line) => line.playerId));
+    const ids = this.dropsPicked() ?? suggestedDrops(team, (player) => lined.has(player.playerId));
+    return new Set(ids.filter((id) => team.some((player) => player.playerId === id)));
+  });
+
+  toggleDrop(playerId: string): void {
+    const next = new Set(this.dropIds());
+    if (!next.delete(playerId)) {
+      next.add(playerId);
+    }
+    this.setDrops([...next]);
+  }
+
+  /** Back to the page's suggestion, which follows the roster as it changes. */
+  suggestDrops(): void {
+    this.setDrops(null);
+  }
+
+  private setDrops(playerIds: readonly string[] | null): void {
+    this.dropsPicked.set(playerIds);
+    const league = this.leagueKey();
+    if (league) {
+      writeDrops(league, playerIds);
+    }
+  }
+
+  /**
+   * Each available skater's best swap into the user's team over the nights counted, by his
+   * platform id: null for one with no open spot and nobody picked to drop. Null while swaps are
+   * not weighed at all.
+   */
+  private readonly swaps = computed<ReadonlyMap<string, Swap | null> | null>(() => {
+    const values = this.gameValues();
+    const team = this.myTeam();
+    const settings = this.settingsResource.hasValue() ? this.settingsResource.value() : null;
+    const week = this.freeAgentsResource.hasValue() ? this.freeAgentsResource.value() : null;
+    if (!values || !team || !week || !settings?.rosterSlots) {
+      return null;
+    }
+    const teams = this.teamsByKey();
+    const counted = this.counted();
+    const squad = this.swapTeam();
+    const context = swapContext(squad, lineupSeats(settings.rosterSlots), this.countedDates());
+    const dropIds = this.dropIds();
+    const drops = squad.filter((player) => dropIds.has(player.playerId));
+    const openSpot = openRosterSpot(team.players, settings.rosterSlots);
+    const swaps = new Map<string, Swap | null>();
+    for (const player of week.players) {
+      if (player.projection.type !== 'skater') {
+        continue;
+      }
+      const pickup: SwapSkater = {
+        playerId: player.playerId,
+        name: player.name,
+        positions: player.positions,
+        // One the model expects to play none of these games, injured, starts nowhere.
+        nights:
+          player.expectedGames > 0
+            ? skaterNights(player.teamAbbrev, false, teams, counted)
+            : new Set<string>(),
+        value: values.get(`wire:${player.playerId}`) ?? 0,
+      };
+      swaps.set(player.playerId, bestSwap(context, pickup, drops, openSpot));
+    }
+    return swaps;
+  });
+
+  /** Whether the list shows a swap column: the user's team is in and its skaters can be priced. */
+  readonly swapsShown = computed(() => this.swaps() !== null);
+
+  /** The free agent whose swap the game days show, by his platform id. */
+  private readonly shownSwapId = linkedSignal<string | null, string | null>({
+    source: this.leagueKey,
+    computation: () => null,
+  });
+
+  readonly shownSwapPlayer = computed(() => this.shownSwapId());
+
+  /** Shows a free agent's swap on the game days, or hides it when it is already shown. */
+  showSwap(playerId: string): void {
+    this.shownSwapId.update((shown) => (shown === playerId ? null : playerId));
+  }
+
+  hideSwap(): void {
+    this.shownSwapId.set(null);
+  }
+
+  /** The swap the game days show, while the free agent is still on the list and has one. */
+  readonly shownSwap = computed<Swap | null>(() => {
+    const id = this.shownSwapId();
+    return id ? (this.swaps()?.get(id) ?? null) : null;
+  });
+
+  /**
+   * What the shown swap does to a game day: nothing for a day not counted, nor for one where the
+   * same players start as before, so the days that change stand out.
+   */
+  nightSwap(day: PlannerDay): NightSwap | undefined {
+    const night = this.shownSwap()?.nights.find((candidate) => candidate.date === day.date);
+    return night && night.started.length + night.sat.length > 0 ? night : undefined;
+  }
+
+  /** "+1", "−1" or "±0": the starts a night gains. */
+  nightSwapLabel(night: NightSwap): string {
+    return signed(night.games, 0);
+  }
+
+  /** Who goes in and who comes out that night, in full, for the cell's tip. */
+  nightSwapTip(night: NightSwap): string {
+    const parts = [
+      ...night.started.map((name) => `${name} starts`),
+      ...night.sat.map((name) => `${name} sits`),
+    ];
+    const worth = `${signed(night.value, this.scoringType() === 'points' ? 1 : 2)} ${this.valueUnit()}`;
+    return parts.length === 0 ? 'No change to your lineup.' : `${parts.join(', ')}: ${worth}.`;
+  }
+
+  /** "pts" or "z": what a swap's worth is counted in. */
+  readonly valueUnit = computed(() => (this.scoringType() === 'points' ? 'pts' : 'z'));
+
+  /** "Jackson Blake for Kaapo Kakko: +1 game, +2.4 pts over the days counted". */
+  readonly shownSwapTitle = computed(() => {
+    const swap = this.shownSwap();
+    if (!swap) {
+      return '';
+    }
+    const who = swap.drop
+      ? `${swap.pickup.name} for ${swap.drop.name}`
+      : `${swap.pickup.name} into your open roster spot`;
+    const games = `${signed(swap.games, 0)} ${Math.abs(swap.games) === 1 ? 'game' : 'games'}`;
+    const worth = `${signed(swap.value, this.scoringType() === 'points' ? 1 : 2)} ${this.valueUnit()}`;
+    return `${who}: ${games}, ${worth} over the game days counted`;
+  });
+
+  // --- The categories the list is ranked by ----------------------------------------------------
 
   /**
    * The categories a streamer can rank the list by: a category league's own, skaters' and goalies'
@@ -677,8 +948,16 @@ export class StreamerPlannerComponent {
     return ranked;
   }
 
-  /** The best pickups, by the categories picked: what the list reads. */
-  readonly ranked = computed(() => this.rankedBy(this.focus()));
+  /** The best pickups, by the categories picked, each with his swap: what the list reads. */
+  readonly ranked = computed(() => {
+    const ranked = this.rankedBy(this.focus());
+    const swaps = this.swaps();
+    return swaps
+      ? ranked.map((row) =>
+          swaps.has(row.player.playerId) ? { ...row, swap: swaps.get(row.player.playerId) } : row,
+        )
+      : ranked;
+  });
 
   /**
    * The list on screen: skaters and goalies together, narrowed to the positions picked. Each keeps
@@ -697,7 +976,14 @@ export class StreamerPlannerComponent {
    */
   readonly sort = computed(() => {
     const sort = this.sortPicked();
-    const about = ['name', 'score', 'perGame', 'games', 'toi'];
+    const about = [
+      'name',
+      'score',
+      'perGame',
+      'games',
+      'toi',
+      ...(this.swapsShown() ? ['swap'] : []),
+    ];
     return about.includes(sort.key) || this.categories().includes(sort.key as ScoringStatKey)
       ? sort
       : RANKED_ORDER;
@@ -898,4 +1184,13 @@ export class StreamerPlannerComponent {
 
   /** Whether any night on screen carries the off-night mark, and so whether the line under them explains it. */
   readonly hasOffNight = computed(() => this.days().some((day) => day.offNight));
+}
+
+/** A number with its sign, a minus a true minus: "+1", "−0.4", "±0". */
+function signed(value: number, decimals: number): string {
+  const text = Math.abs(value).toFixed(decimals);
+  if (Number(text) === 0) {
+    return `±${text}`;
+  }
+  return `${value > 0 ? '+' : '\u2212'}${text}`;
 }

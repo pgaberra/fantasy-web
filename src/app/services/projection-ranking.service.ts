@@ -57,6 +57,38 @@ export class ProjectionRankingService {
   }
 
   /**
+   * Each of `lines` scored on the scale `input.projections` are ranked on, without joining them:
+   * fantasy points as they stand, or a z-score against the pool `input.projections` form. Rounded
+   * as the ranking rounds, so a line scored here and the same line ranked there agree.
+   */
+  scoreLines(input: RankingInput, lines: Projection[]): number[] {
+    const rounded = lines.map((projection) => this.round(projection, input.decimalSettings));
+    if (input.scoringType === 'points') {
+      return rounded.map((projection) =>
+        projection.type === 'skater'
+          ? this.calculation.computeSkaterTotalPoints(
+              projection.stats.scoring,
+              input.statWeights,
+              input.activeScoringColumns,
+            )
+          : this.calculation.computeGoalieTotalPoints(
+              projection.stats.scoring,
+              input.statWeights,
+              input.activeScoringColumns,
+            ),
+      );
+    }
+    const roster = input.rosterSlots;
+    return this.calculation.computeZScoresAgainst(
+      input.projections.map((projection) => this.round(projection, input.decimalSettings)),
+      rounded,
+      input.activeScoringColumns,
+      input.leagueSize * skaterSlotCount(roster),
+      input.leagueSize * roster.g,
+    );
+  }
+
+  /**
    * Per-player, per-category breakdown of the overall score, keyed by playerId. Each map's values
    * sum to that player's {@link ScoredProjection} score (fantasy points or z-score), so a league
    * table can attribute a team's total to individual categories. Points mode weights each category
