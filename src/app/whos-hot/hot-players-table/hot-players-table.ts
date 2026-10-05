@@ -401,6 +401,9 @@ export class HotPlayersTableComponent {
     });
   });
 
+  /** A stat the player cannot have: the dash the editor, the planner and Draft Mode draw too. */
+  readonly notApplicable = '—';
+
   readonly matchingCount = computed(() => this.filteredPlayers().length);
 
   /** Everyone on the leaderboard, which is who the search box offers to tick. */
