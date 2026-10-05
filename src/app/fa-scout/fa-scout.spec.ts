@@ -28,7 +28,8 @@ const SETTINGS: LeagueProjectionSettingsResponse = {
   statWeights: { goals: 3, assists: 2 },
   activeScoringColumns: ['goals', 'assists'],
   activeUtilityColumns: ['gp'],
-  rosterSlots: { c: 2, lw: 2, rw: 2, w: 0, f: 0, d: 4, g: 2, util: 1, bn: 4 },
+  // No goalie seats and no bench, so the team below fills the roster to the last spot.
+  rosterSlots: { c: 2, lw: 2, rw: 2, w: 0, f: 0, d: 4, g: 0, util: 1, bn: 0 },
   leagueSize: 12,
   unsupportedRosterCodes: [],
   unsupportedStats: [],
@@ -106,12 +107,13 @@ function teamPlayer(now: Projection, positions: string[], reserve = false): Team
     positions,
     reserve,
     out: reserve,
+    reserveEligible: [],
     projection: now,
   };
 }
 
 /**
- * The user's team against the league's 2 C / 2 LW / 2 RW / 4 D / 2 G / 1 Util lineup: seven
+ * The user's team against the league's 2 C / 2 LW / 2 RW / 4 D / 1 Util lineup, a full roster: seven
  * forwards for the seven forward and Util seats, the weakest C starting at Util, exactly four D (the
  * worst of them only replaceable by a D), and a player on injured reserve who holds no roster spot.
  */
@@ -137,9 +139,11 @@ describe('FaScoutComponent', () => {
   let chosen: ChosenLeague | null;
   let freeAgents: ReturnType<typeof vi.fn<() => Observable<ScoutList>>>;
   let myTeam: ReturnType<typeof vi.fn<() => Observable<ScoutTeam>>>;
+  let settings: LeagueProjectionSettingsResponse;
 
   beforeEach(() => {
     chosen = LEAGUE;
+    settings = SETTINGS;
     freeAgents = vi.fn(() => of(wire()));
     myTeam = vi.fn(() => of(team()));
     return MockBuilder(FaScoutComponent)
@@ -153,7 +157,7 @@ describe('FaScoutComponent', () => {
         on: (platform: string) => (chosen?.platform === platform ? chosen : null),
       } as never)
       .mock(YahooService, {
-        leagueProjectionSettings: () => of(SETTINGS),
+        leagueProjectionSettings: () => of(settings),
         connectionStatus: () => of({ connected: true }),
         // Two, so that neither is picked for the reader: only a remembered league is read.
         myLeagues: () =>
@@ -312,10 +316,11 @@ describe('FaScoutComponent', () => {
     // The risen defenceman (116) replaces the lowest scorer, the C at Util (5), whose seat he can
     // fill: the same drop as for a forward.
     const montour = page.swaps().get('99');
-    expect(montour?.drop.player.playerId).toBe('203');
+    expect(montour?.kind === 'drop' && montour.drop.player.playerId).toBe('203');
     expect(montour?.gain).toBe(116 - 5);
     // A depth C beats the spare C too.
-    expect(page.swaps().get('1')?.drop.player.playerId).toBe('203');
+    const depth = page.swaps().get('1');
+    expect(depth?.kind === 'drop' && depth.drop.player.playerId).toBe('203');
     const table = ngMocks.find(fixture, ScoutTableComponent);
     expect(ngMocks.input(table, 'swaps')).toBe(page.swaps());
   });
@@ -359,5 +364,53 @@ describe('FaScoutComponent', () => {
 
     expect(ngMocks.formatText(fixture)).toContain("Couldn't load your team in this league");
     expect(ngMocks.findAll(fixture, ScoutTableComponent)).toHaveLength(1);
+  });
+
+  it('moves an injured player to a free IR slot rather than drop anyone', async () => {
+    settings = { ...SETTINGS, reserveSlots: { IR: 2 } };
+    myTeam.mockReturnValue(
+      of({
+        ...team(),
+        players: [
+          ...team().players,
+          {
+            ...teamPlayer(skater(213, 1, 1, 30), ['D']),
+            name: 'Filip Hronek',
+            injuryStatus: 'O',
+            slot: 'BN',
+            out: true,
+            reserveEligible: ['IR'],
+          },
+        ],
+      }),
+    );
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    // One IR slot is taken by the reserve C, the other is free: Hronek goes there.
+    expect(page.room().toReserve.map((move) => move.player.name)).toEqual(['Filip Hronek']);
+    expect(page.swaps().get('99')).toMatchObject({ kind: 'reserve', gain: 116 });
+    expect(page.candidates().map((candidate) => candidate.row.player.name)).not.toContain(
+      'Filip Hronek',
+    );
+    const move = ngMocks.find(fixture, '.room');
+    expect(ngMocks.formatText(ngMocks.find(move, 'strong'))).toBe('Filip Hronek');
+    expect(ngMocks.formatText(ngMocks.find(move, '.drop-tag'))).toBe('O');
+    expect(ngMocks.formatText(move)).toContain('to IR: his roster spot then takes a pickup');
+  });
+
+  it('takes an open roster spot without dropping anyone', async () => {
+    myTeam.mockReturnValue(
+      of({ ...team(), players: team().players.filter((player) => player.playerId !== '203') }),
+    );
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    // Eleven roster spots against ten players off reserve.
+    expect(page.room().openSpots).toBe(1);
+    expect(page.swaps().get('99')).toEqual({ kind: 'open', gain: 116 });
+    expect(ngMocks.formatText(fixture)).toContain(
+      '1 open roster spot: pick up without dropping anyone',
+    );
   });
 });

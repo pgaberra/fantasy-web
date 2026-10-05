@@ -108,6 +108,7 @@ describe('FaScoutService', () => {
           slot: 'D',
           reserve: false,
           out: false,
+          reserveEligible: [],
           restOfSeason: { games: 74, stats: { points: 90 } },
         },
         {
@@ -118,6 +119,7 @@ describe('FaScoutService', () => {
           slot: 'NA',
           reserve: true,
           out: true,
+          reserveEligible: ['IR'],
         },
       ],
     });
@@ -129,6 +131,12 @@ describe('FaScoutService', () => {
     expect(team.players[0].projection?.playerId).toBe(6743);
     expect(team.players[0].projection?.stats.utility.gp).toBe(74);
     expect(scoring(team.players[0].projection)?.['points']).toBe(90);
-    expect(team.players[1]).toMatchObject({ reserve: true, out: true, projection: null });
+    expect(team.players[1]).toMatchObject({
+      slot: 'NA',
+      reserve: true,
+      out: true,
+      reserveEligible: ['IR'],
+      projection: null,
+    });
   });
 });

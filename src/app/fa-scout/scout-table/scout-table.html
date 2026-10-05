@@ -102,7 +102,7 @@
                 <span class="swap-gain" [class.swap-gain--up]="swap.gain > 0">{{
                   gain(swap)
                 }}</span>
-                <span class="swap-drop">for {{ swap.drop.player.name }}</span>
+                <span class="swap-drop">{{ making(swap) }}</span>
               } @else {
                 <span class="swap-none">No room</span>
               }
