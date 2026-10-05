@@ -201,180 +201,209 @@
       </section>
     }
 
-    <div class="columns">
-      <section class="card free-agents" aria-labelledby="planner-free-agents-title">
-        <div class="card-head">
-          <h2 id="planner-free-agents-title" class="card-title">
-            <app-icon name="user-plus" />Top free agents
-            <app-help-tip label="How these are ranked" [text]="rankingHelp()" />
-          </h2>
-          <!-- Skaters or goalies: a switch between two lists, so it is drawn as the app's segmented
-               control and not as the pills, which narrow one list. It is this card's alone: the
-               schedules beside it are rated once for the page, and the cards above are the best
-               pickups of either kind. -->
-          <div class="segmented" role="group" aria-label="Players to list">
-            <button
-              type="button"
-              [attr.aria-pressed]="position() === 'skaters'"
-              (click)="setPosition('skaters')"
-            >
-              Skaters
-            </button>
-            <button
-              type="button"
-              [attr.aria-pressed]="position() === 'goalies'"
-              (click)="setPosition('goalies')"
-            >
-              Goalies
-            </button>
-          </div>
+    <!-- One table at a time, each the page's full width: the free agents' columns are the league's
+         categories, which half a page cut off. The switch is the page's, so it is drawn filled,
+         apart from the quieter skaters-or-goalies switch inside the free agents' card. -->
+    <div class="views" role="group" aria-label="Table to show">
+      <button
+        type="button"
+        class="view"
+        [attr.aria-pressed]="view() === 'free-agents'"
+        (click)="setView('free-agents')"
+      >
+        <app-icon name="user-plus" [size]="16" />Free agents
+      </button>
+      <button
+        type="button"
+        class="view"
+        [attr.aria-pressed]="view() === 'schedules'"
+        (click)="setView('schedules')"
+      >
+        <app-icon name="table" [size]="16" />Team schedules
+      </button>
+    </div>
+
+    <!-- Hidden, not removed: the table out of sight keeps its page, its sort and its open team. -->
+    <section
+      class="card free-agents"
+      aria-labelledby="planner-free-agents-title"
+      [hidden]="view() !== 'free-agents'"
+    >
+      <div class="card-head">
+        <h2 id="planner-free-agents-title" class="card-title">
+          <app-icon name="user-plus" />Top free agents
+          <app-help-tip label="How these are ranked" [text]="rankingHelp()" />
+        </h2>
+        <!-- Skaters or goalies: a switch between two lists, so it is drawn as the app's segmented
+             control and not as the pills, which narrow one list. It is this card's alone: the
+             schedules beside it are rated once for the page, and the cards above are the best
+             pickups of either kind. -->
+        <div class="segmented" role="group" aria-label="Players to list">
+          <button
+            type="button"
+            [attr.aria-pressed]="position() === 'skaters'"
+            (click)="setPosition('skaters')"
+          >
+            Skaters
+          </button>
+          <button
+            type="button"
+            [attr.aria-pressed]="position() === 'goalies'"
+            (click)="setPosition('goalies')"
+          >
+            Goalies
+          </button>
         </div>
-        <!-- The skaters are one list, narrowed by any number of positions at once. "All" is the list
-             with none picked, and the way back to it. Goalies have the one position. -->
-        @if (position() === 'skaters') {
-          <div class="pills positions" role="group" aria-label="Positions to show">
+      </div>
+      <!-- The skaters are one list, narrowed by any number of positions at once. "All" is the list
+           with none picked, and the way back to it. Goalies have the one position. -->
+      @if (position() === 'skaters') {
+        <div class="pills positions" role="group" aria-label="Positions to show">
+          <button
+            type="button"
+            class="pill"
+            [class.pill--active]="positions().size === 0"
+            [attr.aria-pressed]="positions().size === 0"
+            (click)="clearPositions()"
+          >
+            All
+          </button>
+          @for (option of positionOptions; track option) {
             <button
               type="button"
               class="pill"
-              [class.pill--active]="positions().size === 0"
-              [attr.aria-pressed]="positions().size === 0"
-              (click)="clearPositions()"
+              [class.pill--active]="positions().has(option)"
+              [attr.aria-pressed]="positions().has(option)"
+              (click)="togglePosition(option)"
             >
-              All
+              {{ option }}
             </button>
-            @for (option of positionOptions; track option) {
+          }
+        </div>
+      }
+      <!-- A category matchup is mostly settled before the week is out: the add worth making is
+           the one that swings the categories still open. Picking them ranks the skaters by those
+           alone; none picked is the league's whole set. The goalies have their own. -->
+      @if (league() && pickerOptions().length > 0) {
+        <div class="focus" role="group" aria-labelledby="planner-focus-label">
+          <span id="planner-focus-label" class="group-label">Rank by</span>
+          <app-help-tip
+            label="Ranking by categories"
+            text="Pick the categories still open in your matchup, and players are ranked by those alone. The choice is kept for this league until the week ends."
+          />
+          <div class="pills">
+            <button
+              type="button"
+              class="pill"
+              [class.pill--active]="pickerFocus().size === 0"
+              [attr.aria-pressed]="pickerFocus().size === 0"
+              (click)="clearPicker()"
+            >
+              All categories
+            </button>
+            @for (option of pickerOptions(); track option.key) {
               <button
                 type="button"
                 class="pill"
-                [class.pill--active]="positions().has(option)"
-                [attr.aria-pressed]="positions().has(option)"
-                (click)="togglePosition(option)"
+                [class.pill--active]="pickerFocus().has(option.key)"
+                [attr.aria-pressed]="pickerFocus().has(option.key)"
+                [attr.aria-label]="option.name"
+                [appTooltip]="option.name"
+                (click)="togglePicker(option.key)"
               >
-                {{ option }}
+                {{ option.label }}
               </button>
             }
           </div>
-        }
-        <!-- A category matchup is mostly settled before the week is out: the add worth making is
-             the one that swings the categories still open. Picking them ranks the skaters by those
-             alone; none picked is the league's whole set. The goalies have their own. -->
-        @if (league() && pickerOptions().length > 0) {
-          <div class="focus" role="group" aria-labelledby="planner-focus-label">
-            <span id="planner-focus-label" class="group-label">Rank by</span>
-            <app-help-tip
-              label="Ranking by categories"
-              text="Pick the categories still open in your matchup, and players are ranked by those alone. The choice is kept for this league until the week ends."
-            />
-            <div class="pills">
-              <button
-                type="button"
-                class="pill"
-                [class.pill--active]="pickerFocus().size === 0"
-                [attr.aria-pressed]="pickerFocus().size === 0"
-                (click)="clearPicker()"
-              >
-                All categories
-              </button>
-              @for (option of pickerOptions(); track option.key) {
+        </div>
+      }
+      @if (!league()) {
+        <p class="prompt">Pick a league above to see who is available in it.</p>
+      } @else if (freeAgentsFailure()) {
+        <app-error-state
+          title="Couldn't load free agents"
+          [error]="freeAgentsFailure()"
+          (retry)="retryFreeAgents()"
+        />
+      } @else if (loadingFreeAgents()) {
+        <app-loading-indicator />
+      } @else if (noFreeAgents()) {
+        <p class="empty">No available player in this league has a projection for these nights.</p>
+      } @else if (filtered().length === 0) {
+        <p class="empty">{{ emptyText() }}</p>
+      } @else {
+        <app-free-agents-table
+          #listTop
+          [rows]="visible()"
+          [scoringType]="scoringType()"
+          [categories]="categories()"
+          [focus]="listFocus()"
+          [focusLabel]="listFocusLabel()"
+        />
+        <!-- A page at a time: most visits never leave the first, so the card stays the height
+             of one page and the next is a press away. The page size is kept per layout. -->
+        <div class="list-foot">
+          <span class="list-count" aria-live="polite">{{ rangeText() }}</span>
+          <span class="list-actions">
+            @if (filtered().length > pageSizes[0]) {
+              <label class="page-size">
+                <span>Per page</span>
+                <select class="page-size-select" (change)="setPageSize($event)">
+                  @for (size of pageSizes; track size) {
+                    <option [value]="size" [selected]="size === pageSize()">{{ size }}</option>
+                  }
+                </select>
+              </label>
+            }
+            @if (pageCount() > 1) {
+              <nav class="pager" aria-label="Pages of free agents">
                 <button
                   type="button"
-                  class="pill"
-                  [class.pill--active]="pickerFocus().has(option.key)"
-                  [attr.aria-pressed]="pickerFocus().has(option.key)"
-                  [attr.aria-label]="option.name"
-                  [appTooltip]="option.name"
-                  (click)="togglePicker(option.key)"
+                  class="btn btn-secondary btn-sm pager-button"
+                  aria-label="Previous page"
+                  appTooltip="Previous page"
+                  [disabled]="currentPage() === 0"
+                  (click)="goToPage(currentPage() - 1)"
                 >
-                  {{ option.label }}
+                  <app-icon name="arrow-left" [size]="16" />
                 </button>
-              }
-            </div>
-          </div>
-        }
-        @if (!league()) {
-          <p class="prompt">Pick a league above to see who is available in it.</p>
-        } @else if (freeAgentsFailure()) {
-          <app-error-state
-            title="Couldn't load free agents"
-            [error]="freeAgentsFailure()"
-            (retry)="retryFreeAgents()"
-          />
-        } @else if (loadingFreeAgents()) {
-          <app-loading-indicator />
-        } @else if (noFreeAgents()) {
-          <p class="empty">No available player in this league has a projection for these nights.</p>
-        } @else if (filtered().length === 0) {
-          <p class="empty">{{ emptyText() }}</p>
-        } @else {
-          <app-free-agents-table
-            #listTop
-            [rows]="visible()"
-            [scoringType]="scoringType()"
-            [categories]="categories()"
-            [focus]="listFocus()"
-            [focusLabel]="listFocusLabel()"
-          />
-          <!-- A page at a time: most visits never leave the first, so the card stays the height
-               of one page and the next is a press away. The page size is kept per layout. -->
-          <div class="list-foot">
-            <span class="list-count" aria-live="polite">{{ rangeText() }}</span>
-            <span class="list-actions">
-              @if (filtered().length > pageSizes[0]) {
-                <label class="page-size">
-                  <span>Per page</span>
-                  <select class="page-size-select" (change)="setPageSize($event)">
-                    @for (size of pageSizes; track size) {
-                      <option [value]="size" [selected]="size === pageSize()">{{ size }}</option>
-                    }
-                  </select>
-                </label>
-              }
-              @if (pageCount() > 1) {
-                <nav class="pager" aria-label="Pages of free agents">
-                  <button
-                    type="button"
-                    class="btn btn-secondary btn-sm pager-button"
-                    aria-label="Previous page"
-                    appTooltip="Previous page"
-                    [disabled]="currentPage() === 0"
-                    (click)="goToPage(currentPage() - 1)"
-                  >
-                    <app-icon name="arrow-left" [size]="16" />
-                  </button>
-                  <span class="pager-label">Page {{ currentPage() + 1 }} of {{ pageCount() }}</span>
-                  <button
-                    type="button"
-                    class="btn btn-secondary btn-sm pager-button"
-                    aria-label="Next page"
-                    appTooltip="Next page"
-                    [disabled]="currentPage() === pageCount() - 1"
-                    (click)="goToPage(currentPage() + 1)"
-                  >
-                    <app-icon name="arrow-right" [size]="16" />
-                  </button>
-                </nav>
-              }
-            </span>
-          </div>
-        }
-      </section>
-
-      <section class="card teams" aria-labelledby="planner-teams-title">
-        <div class="card-head">
-          <h2 id="planner-teams-title" class="card-title">
-            <app-icon name="table" />Team schedules
-            <app-help-tip
-              label="How teams are ranked"
-              text="Each game on a night you count is worth 1, or 1.25 on an off-night. A home game counts about 7% more than a road game, since teams score more at home, and a game against an opponent that allows more goals counts more."
-            />
-          </h2>
+                <span class="pager-label">Page {{ currentPage() + 1 }} of {{ pageCount() }}</span>
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm pager-button"
+                  aria-label="Next page"
+                  appTooltip="Next page"
+                  [disabled]="currentPage() === pageCount() - 1"
+                  (click)="goToPage(currentPage() + 1)"
+                >
+                  <app-icon name="arrow-right" [size]="16" />
+                </button>
+              </nav>
+            }
+          </span>
         </div>
-        @if (loadingSchedule()) {
-          <app-loading-indicator />
-        } @else {
-          <app-team-schedules [rows]="teamRows()" />
-        }
-      </section>
-    </div>
+      }
+    </section>
+
+    <section
+      class="card teams"
+      aria-labelledby="planner-teams-title"
+      [hidden]="view() !== 'schedules'"
+    >
+      <div class="card-head">
+        <h2 id="planner-teams-title" class="card-title">
+          <app-icon name="table" />Team schedules
+          <app-help-tip
+            label="How teams are ranked"
+            text="Each game on a night you count is worth 1, or 1.25 on an off-night. A home game counts about 7% more than a road game, since teams score more at home, and a game against an opponent that allows more goals counts more."
+          />
+        </h2>
+      </div>
+      @if (loadingSchedule()) {
+        <app-loading-indicator />
+      } @else {
+        <app-team-schedules [rows]="teamRows()" />
+      }
+    </section>
   }
 </div>
