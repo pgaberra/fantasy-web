@@ -74,7 +74,7 @@ const GOALIE_PLAYER: RankedFreeAgent['player'] = {
 };
 
 const GOALIE: RankedFreeAgent = {
-  rank: 1,
+  rank: 3,
   score: 4,
   games: 2,
   player: GOALIE_PLAYER,
@@ -88,7 +88,7 @@ const SECOND_SKATER: RankedFreeAgent = {
   player: { ...SKATER_PLAYER, playerId: '4', name: 'Second Line', teamAbbrev: 'TB' },
 };
 
-/** The table is handed one kind of player: these are the skaters. */
+/** Two skaters; the goalie joins them where a test says so. */
 const ROWS: RankedFreeAgent[] = [SKATER, SECOND_SKATER];
 
 /** A Yahoo categories league: seven for skaters, three for goalies, in the league's order. */
@@ -146,10 +146,7 @@ describe('FreeAgentsTableComponent', () => {
   });
 
   it('says whose list the rank is a place in', () => {
-    expect(render().point.componentInstance.rankTip()).toContain('every available skater');
-    expect(render('points', CATEGORIES, [GOALIE]).point.componentInstance.rankTip()).toContain(
-      'every available goalie',
-    );
+    expect(render().point.componentInstance.rankTip).toContain('every available player');
   });
 
   it("writes the score the way the league's scoring is written, with the rate a game", () => {
@@ -181,12 +178,40 @@ describe('FreeAgentsTableComponent', () => {
     expect(cells(fixture)[0]).toEqual(['2.1', '3.0', '11.2', '1.5', '0.8', '2.0', '6.4']);
   });
 
-  it("heads the columns with the goalies' categories when the list is the goalies", () => {
+  it("lists skaters and goalies together, each blank under the other kind's categories", () => {
+    const fixture = render('points', CATEGORIES, [SKATER, GOALIE]);
+
+    expect(headings(fixture)).toEqual([
+      'G',
+      'A',
+      'SOG',
+      'PIM',
+      'PPP',
+      'BLK',
+      'HIT',
+      'W',
+      'GAA',
+      'SV%',
+    ]);
+    expect(cells(fixture)).toEqual([
+      ['2.1', '3.0', '11.2', '1.5', '0.8', '2.0', '6.4', '', '', ''],
+      ['', '', '', '', '', '', '', '1.4', '2.61', '0.908'],
+    ]);
+    // A rule before the first category, and another before the goalies' first.
+    expect(
+      ngMocks.findAll(fixture, 'thead .stat-col--start').map((cell) => ngMocks.formatText(cell)),
+    ).toEqual(['G', 'W']);
+    // Ice time a game: the skater's, and a blank on the goalie's row.
+    expect(
+      ngMocks.findAll(fixture, 'tbody td.toi-col').map((cell) => ngMocks.formatText(cell)),
+    ).toEqual(['17:32', '']);
+  });
+
+  it('draws no ice-time column over goalies alone', () => {
     const fixture = render('points', CATEGORIES, [GOALIE]);
 
     expect(headings(fixture)).toEqual(['W', 'GAA', 'SV%']);
-    expect(cells(fixture)).toEqual([['1.4', '2.61', '0.908']]);
-    // Ice time is a skater's number: no column of blanks for a list of goalies.
+    expect(ngMocks.findAll(fixture, 'thead .stat-col--start')).toHaveLength(1);
     expect(ngMocks.findAll(fixture, '.toi-col').length).toBe(0);
   });
 

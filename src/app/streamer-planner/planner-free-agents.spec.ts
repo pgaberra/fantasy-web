@@ -14,7 +14,6 @@ import {
   lineColumns,
   lineStats,
   nightsFactor,
-  ofKind,
   projectedStarts,
   RankedFreeAgent,
   scaledProjection,
@@ -121,29 +120,16 @@ describe('filterByPositions', () => {
 
     expect(names).toEqual(['Two-way', 'Pivot', 'Blueliner']);
   });
-});
 
-describe('ofKind', () => {
-  const rows = [
-    ranked(skater('Winger', ['LW']), 1),
-    ranked(goalie({ w: 2 }), 2),
-    ranked(skater('Pivot', ['C']), 3),
-  ];
+  it('narrows a list of skaters and goalies to the goalies, or to them and a skater position', () => {
+    const mixed = [...rows, ranked(goalie({ w: 2 }), 5)];
 
-  it('keeps one kind of player, best first, each placed among his own kind', () => {
-    expect(ofKind(rows, 'skater').map((row) => [row.player.name, row.rank])).toEqual([
-      ['Winger', 1],
-      ['Pivot', 2],
-    ]);
-    expect(ofKind(rows, 'goalie').map((row) => [row.player.name, row.rank])).toEqual([
-      ['Goalie', 1],
-    ]);
-  });
-
-  it('leaves the ranking it was given as it was', () => {
-    ofKind(rows, 'goalie');
-
-    expect(rows.map((row) => row.rank)).toEqual([1, 2, 3]);
+    expect(filterByPositions(mixed, new Set(['G'] as const)).map((row) => row.player.name)).toEqual(
+      ['Goalie'],
+    );
+    expect(
+      filterByPositions(mixed, new Set(['D', 'G'] as const)).map((row) => row.player.name),
+    ).toEqual(['Blueliner', 'Goalie']);
   });
 });
 

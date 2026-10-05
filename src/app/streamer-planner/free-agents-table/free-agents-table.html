@@ -2,7 +2,7 @@
   <table class="free-agents-table">
     <thead>
       <tr>
-        <th scope="col" class="num rank-col" [appTooltip]="rankTip()">#</th>
+        <th scope="col" class="num rank-col" [appTooltip]="rankTip">#</th>
         <th scope="col" class="player-col">Player</th>
         <!-- Straight after the name, as on the team table beside it, and so that a phone shows
              who and how good before anything has to be scrolled. -->
@@ -12,15 +12,15 @@
         <th scope="col" class="num" appTooltip="Games he is expected to play on the nights counted">
           GP
         </th>
-        @if (kind() === 'skater') {
+        @if (hasSkaters()) {
           <th scope="col" class="num toi-col" appTooltip="Ice time per game">TOI</th>
         }
         <!-- What the score is made of: a column a category the league scores, named here once. -->
-        @for (column of columns(); track column.key; let first = $first) {
+        @for (column of columns(); track column.key; let index = $index) {
           <th
             scope="col"
             class="num stat-col"
-            [class.stat-col--first]="first"
+            [class.stat-col--start]="groupStarts()[index]"
             [class.stat-col--focus]="focused(column.key) === true"
             [class.stat-col--muted]="focused(column.key) === false"
             [appTooltip]="column.name"
@@ -70,13 +70,13 @@
             <span class="per-game">{{ perGame(entry.row) }}</span>
           </td>
           <td class="num">{{ games(entry.row) }}</td>
-          @if (kind() === 'skater') {
+          @if (hasSkaters()) {
             <td class="num toi-col">{{ toi(entry.row) }}</td>
           }
-          @for (cell of entry.cells; track $index; let first = $first) {
+          @for (cell of entry.cells; track $index) {
             <td
               class="num stat-col"
-              [class.stat-col--first]="first"
+              [class.stat-col--start]="groupStarts()[$index]"
               [class.stat-col--focus]="focused(columns()[$index].key) === true"
               [class.stat-col--muted]="focused(columns()[$index].key) === false"
               [class.nil]="cell && isNil(cell)"

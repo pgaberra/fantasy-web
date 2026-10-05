@@ -154,19 +154,20 @@
 }
 
 /* The categories, a column each: narrow, since a week's number is three or four characters, and
-   set off from the columns about the player by a rule down the first. */
+   set off from the columns about the player by a rule down the first, and the goalies' from the
+   skaters' by another. */
 .free-agents-table .stat-col {
   padding-inline: var(--space-2) 2px;
 }
 
-.free-agents-table .stat-col--first {
+.free-agents-table .stat-col--start {
   border-left: 1px solid var(--color-border);
   padding-left: var(--space-3);
 }
 
-/* The rule stands midway between the two groups: whichever column ends the first one keeps as
-   much room before the rule as the categories keep after it. */
-.free-agents-table :is(th, td):has(+ .stat-col--first) {
+/* The rule stands midway between two groups: whichever column ends the first one keeps as much
+   room before the rule as the next group keeps after it. */
+.free-agents-table :is(th, td):has(+ .stat-col--start) {
   padding-right: var(--space-3);
 }
 

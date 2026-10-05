@@ -15,12 +15,13 @@ import { STAT_FULL_NAMES } from '../pipes/stat-tooltip.pipe';
 import { FreeAgent } from '../services/streamer-planner-free-agents.service';
 import { fitsRoom, NightRoom } from './planner-lineup';
 
-/** Skaters or goalies: the kind of player the free agents list. */
-export type PlannerPosition = 'skaters' | 'goalies';
-
-/** The skater position groups, in the order a lineup lists them. Goalies are a list of their own. */
+/** The skater position groups, in the order a lineup lists them. */
 export const PLANNER_POSITIONS = ['C', 'LW', 'RW', 'D'] as const;
 export type PlannerPositionGroup = (typeof PLANNER_POSITIONS)[number];
+
+/** The positions the free agents can be narrowed to: the skaters', and the goalies' one. */
+export const FREE_AGENT_POSITIONS = [...PLANNER_POSITIONS, 'G'] as const;
+export type FreeAgentPosition = (typeof FREE_AGENT_POSITIONS)[number];
 
 /** How many players the cards over the tables show. */
 export const TOP_OPTIONS = 3;
@@ -46,33 +47,19 @@ export interface RankedFreeAgent {
 }
 
 /**
- * The skaters or the goalies of a ranking, in its order, each with his place among his own kind:
- * the two fill different roster slots and score different categories, so a place among both says
- * less than a place among the players he can be picked instead of.
- */
-export function ofKind(
-  ranked: readonly RankedFreeAgent[],
-  kind: Projection['type'],
-): readonly RankedFreeAgent[] {
-  return ranked
-    .filter((row) => row.line.type === kind)
-    .map((row, index) => ({ ...row, rank: index + 1 }));
-}
-
-/**
  * The ranked players eligible at any of the positions picked, in the order they were ranked. No
  * position picked is every player: the filter narrows the one list, it never empties it. A player
  * eligible at two positions is listed once, under either.
  */
 export function filterByPositions(
   ranked: readonly RankedFreeAgent[],
-  positions: ReadonlySet<PlannerPositionGroup>,
+  positions: ReadonlySet<FreeAgentPosition>,
 ): readonly RankedFreeAgent[] {
   if (positions.size === 0) {
     return ranked;
   }
   return ranked.filter((row) =>
-    row.player.positions.some((position) => positions.has(position as PlannerPositionGroup)),
+    row.player.positions.some((position) => positions.has(position as FreeAgentPosition)),
   );
 }
 
@@ -359,9 +346,10 @@ export const NO_RATE = '—';
 export type LineColumn = Pick<LineStat, 'key' | 'label' | 'name'>;
 
 /**
- * The columns the lines of one kind of player are read in: every category any of them has a
- * number for, in the league's order. A category none of them has is no column, rather than an
- * empty one.
+ * The columns the lines are read in: every category any of them has a number for, in the league's
+ * order. A category none of them has is no column, rather than an empty one. Skaters and goalies
+ * share the list, so a skater's row is blank under a goalie's category and a goalie's under a
+ * skater's: a column still means one category on every row that has it.
  */
 export function lineColumns(
   lines: readonly (readonly LineStat[])[],

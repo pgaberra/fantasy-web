@@ -202,8 +202,7 @@
     }
 
     <!-- One table at a time, each the page's full width: the free agents' columns are the league's
-         categories, which half a page cut off. The switch is the page's, so it is drawn filled,
-         apart from the quieter skaters-or-goalies switch inside the free agents' card. -->
+         categories, which half a page cut off. The switch is the page's, so it is drawn filled. -->
     <div class="views" role="group" aria-label="Table to show">
       <button
         type="button"
@@ -234,57 +233,35 @@
           <app-icon name="user-plus" />Top free agents
           <app-help-tip label="How these are ranked" [text]="rankingHelp()" />
         </h2>
-        <!-- Skaters or goalies: a switch between two lists, so it is drawn as the app's segmented
-             control and not as the pills, which narrow one list. It is this card's alone: the
-             schedules beside it are rated once for the page, and the cards above are the best
-             pickups of either kind. -->
-        <div class="segmented" role="group" aria-label="Players to list">
-          <button
-            type="button"
-            [attr.aria-pressed]="position() === 'skaters'"
-            (click)="setPosition('skaters')"
-          >
-            Skaters
-          </button>
-          <button
-            type="button"
-            [attr.aria-pressed]="position() === 'goalies'"
-            (click)="setPosition('goalies')"
-          >
-            Goalies
-          </button>
-        </div>
       </div>
-      <!-- The skaters are one list, narrowed by any number of positions at once. "All" is the list
-           with none picked, and the way back to it. Goalies have the one position. -->
-      @if (position() === 'skaters') {
-        <div class="pills positions" role="group" aria-label="Positions to show">
+      <!-- Skaters and goalies are one list, narrowed by any number of positions at once. "All" is
+           the list with none picked, and the way back to it. -->
+      <div class="pills positions" role="group" aria-label="Positions to show">
+        <button
+          type="button"
+          class="pill"
+          [class.pill--active]="positions().size === 0"
+          [attr.aria-pressed]="positions().size === 0"
+          (click)="clearPositions()"
+        >
+          All
+        </button>
+        @for (option of positionOptions; track option) {
           <button
             type="button"
             class="pill"
-            [class.pill--active]="positions().size === 0"
-            [attr.aria-pressed]="positions().size === 0"
-            (click)="clearPositions()"
+            [class.pill--active]="positions().has(option)"
+            [attr.aria-pressed]="positions().has(option)"
+            (click)="togglePosition(option)"
           >
-            All
+            {{ option }}
           </button>
-          @for (option of positionOptions; track option) {
-            <button
-              type="button"
-              class="pill"
-              [class.pill--active]="positions().has(option)"
-              [attr.aria-pressed]="positions().has(option)"
-              (click)="togglePosition(option)"
-            >
-              {{ option }}
-            </button>
-          }
-        </div>
-      }
+        }
+      </div>
       <!-- A category matchup is mostly settled before the week is out: the add worth making is
-           the one that swings the categories still open. Picking them ranks the skaters by those
-           alone; none picked is the league's whole set. The goalies have their own. -->
-      @if (league() && pickerOptions().length > 0) {
+           the one that swings the categories still open. Picking them ranks the players who score
+           in them by those alone; none picked is the league's whole set. -->
+      @if (league() && focusOptions().length > 0) {
         <div class="focus" role="group" aria-labelledby="planner-focus-label">
           <span id="planner-focus-label" class="group-label">Rank by</span>
           <app-help-tip
@@ -295,21 +272,21 @@
             <button
               type="button"
               class="pill"
-              [class.pill--active]="pickerFocus().size === 0"
-              [attr.aria-pressed]="pickerFocus().size === 0"
-              (click)="clearPicker()"
+              [class.pill--active]="focus().size === 0"
+              [attr.aria-pressed]="focus().size === 0"
+              (click)="clearFocus()"
             >
               All categories
             </button>
-            @for (option of pickerOptions(); track option.key) {
+            @for (option of focusOptions(); track option.key) {
               <button
                 type="button"
                 class="pill"
-                [class.pill--active]="pickerFocus().has(option.key)"
-                [attr.aria-pressed]="pickerFocus().has(option.key)"
+                [class.pill--active]="focus().has(option.key)"
+                [attr.aria-pressed]="focus().has(option.key)"
                 [attr.aria-label]="option.name"
                 [appTooltip]="option.name"
-                (click)="togglePicker(option.key)"
+                (click)="toggleFocus(option.key)"
               >
                 {{ option.label }}
               </button>
@@ -337,8 +314,8 @@
           [rows]="visible()"
           [scoringType]="scoringType()"
           [categories]="categories()"
-          [focus]="listFocus()"
-          [focusLabel]="listFocusLabel()"
+          [focus]="focus()"
+          [focusLabel]="focusLabel()"
         />
         <!-- A page at a time: most visits never leave the first, so the card stays the height
              of one page and the next is a press away. The page size is kept per layout. -->
