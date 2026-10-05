@@ -98,6 +98,12 @@ export class FreeAgentsTableComponent {
       : "The model's line for the nights counted, scored by your league's settings";
   });
 
+  readonly perGameTip = computed(() =>
+    this.scoringType() === 'points'
+      ? 'Projected points per game he plays'
+      : 'Z-Score per game he plays',
+  );
+
   /** Picked, while the list is ranked by some categories; null while it is ranked by all. */
   focused(key: ScoringStatKey): boolean | null {
     const focus = this.focus();
@@ -113,7 +119,7 @@ export class FreeAgentsTableComponent {
     if (row.games <= 0) {
       return '';
     }
-    return `${(row.score / row.games).toFixed(this.scoringType() === 'points' ? 1 : 2)}/gm`;
+    return (row.score / row.games).toFixed(this.scoringType() === 'points' ? 1 : 2);
   }
 
   games(row: RankedFreeAgent): string {

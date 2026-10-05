@@ -165,13 +165,21 @@ describe('FreeAgentsTableComponent', () => {
     expect(render().point.componentInstance.rankTip).toContain('every available player');
   });
 
+  it('gives the rate a game a column of its own, beside the score', () => {
+    const fixture = render();
+
+    const rates = ngMocks.findAll(fixture, 'tbody td.rate-col');
+    expect(rates.map((cell) => ngMocks.formatText(cell))).toEqual(['3.0', '1.6']);
+    expect(ngMocks.findAll(fixture, 'tbody td.score + td.rate-col').length).toBe(2);
+  });
+
   it("writes the score the way the league's scoring is written, with the rate a game", () => {
     const fixture = render();
     const table = fixture.point.componentInstance;
 
     expect(table.scoreHeading()).toBe('Proj. pts');
     expect(table.score(SKATER)).toBe('11.3');
-    expect(table.perGame(SKATER)).toBe('3.0/gm');
+    expect(table.perGame(SKATER)).toBe('3.0');
 
     const category = render('category');
     expect(category.point.componentInstance.scoreHeading()).toBe('Z-Score');
