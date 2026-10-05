@@ -58,10 +58,17 @@ const analysis: DraftAnalysisResponse = {
       club: 'TOR',
       positions: ['C'],
       aiRank: 30,
+      positionRank: 'C12',
       value: 100,
       valueOverSlot: -40,
       grade: 'BIG_REACH',
-      bestAvailable: { playerId: 1, name: 'Top Forward', positions: ['C'], aiRank: 1 },
+      bestAvailable: {
+        playerId: 1,
+        name: 'Top Forward',
+        positions: ['C'],
+        aiRank: 1,
+        positionRank: 'C1',
+      },
     },
     {
       overall: 2,
@@ -172,6 +179,8 @@ describe('DraftAnalysisComponent', () => {
     expect(picks[0].textContent).toContain('Big reach');
     expect(picks[0].textContent).toContain('Top Forward');
     expect(picks[0].textContent).toContain('-40.0');
+    expect(picks[0].querySelector('.position-rank')?.textContent).toBe('C12');
+    expect(picks[0].querySelector('.best-available')?.textContent).toContain('#1, C1');
     expect(picks[3].textContent).toContain('2.02');
     expect(picks[3].textContent).toContain('Steal');
   });
