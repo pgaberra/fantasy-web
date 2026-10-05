@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Observable, of, Subject, throwError } from 'rxjs';
@@ -18,7 +19,14 @@ import { UpdateProjectionRequest } from '../api/models/update-projection-request
 import { DraftState } from '../api/models/draft-state';
 import { DraftPlayerLookupService } from './draft-player-lookup.service';
 import { TierService } from '../services/tier.service';
+import { FeatureService } from '../services/feature.service';
 import { environment } from '../../environments/environment';
+
+/**
+ * The feature answers as the BFF gives them with the switches off, already in: none of these
+ * drafts follows a league's picks, which is `draft-mode-follow.spec.ts`.
+ */
+const noFeatures = () => ({ leagueDraftSync: signal(false), settled: signal(true) });
 
 /** Renders the page and hands back its component, which is all any of these tests wants. */
 const renderDraftMode = async () => {
@@ -130,6 +138,7 @@ describe('DraftModeComponent', () => {
       .keep(ProjectionCalculationService)
       .keep(PositionFilterService)
       .keep(DraftPlayerLookupService)
+      .mock(FeatureService, noFeatures())
       .keep(TierService)
       .mock(PlayerService, { getPlayers: () => of(players) })
       .mock(ProjectionStorageService, {
@@ -861,6 +870,7 @@ describe('DraftModeComponent — available pagination', () => {
       .keep(ProjectionCalculationService)
       .keep(PositionFilterService)
       .keep(DraftPlayerLookupService)
+      .mock(FeatureService, noFeatures())
       .mock(PlayerService, { getPlayers: () => of(manyPlayers) })
       .mock(ProjectionStorageService, {
         loadProjection: () => of(bigProjection),
@@ -1007,6 +1017,7 @@ describe('DraftModeComponent — finished draft', () => {
       .keep(ProjectionCalculationService)
       .keep(PositionFilterService)
       .keep(DraftPlayerLookupService)
+      .mock(FeatureService, noFeatures())
       .mock(PlayerService, { getPlayers: () => of(players) })
       .mock(ProjectionStorageService, {
         loadProjection: () => of(finishedProjection),
@@ -1094,6 +1105,7 @@ describe('DraftModeComponent — a preset draft not saved yet', () => {
       .keep(ProjectionCalculationService)
       .keep(PositionFilterService)
       .keep(DraftPlayerLookupService)
+      .mock(FeatureService, noFeatures())
       .keep(StatInfoService)
       .mock(PlayerService, { getPlayers: () => of(players) })
       .mock(ProjectionStorageService, {
@@ -1319,6 +1331,7 @@ describe('DraftModeComponent — a draft against a board, not saved yet', () => 
       .keep(ProjectionCalculationService)
       .keep(PositionFilterService)
       .keep(DraftPlayerLookupService)
+      .mock(FeatureService, noFeatures())
       .keep(StatInfoService)
       .mock(PlayerService, { getPlayers: () => of(players) })
       .mock(ProjectionStorageService, {
