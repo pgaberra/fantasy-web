@@ -65,7 +65,17 @@ import {
   WEEK_DECIMALS,
 } from './planner-free-agents';
 import { focusableCategories, readFocus, scoresIn, writeFocus } from './planner-focus';
-import { lineupSeats, NightRoom, nightRooms, roomLabel, roomTip } from './planner-lineup';
+import {
+  DropRoom,
+  dropRoomLabel,
+  dropRooms,
+  dropRoomTip,
+  lineupSeats,
+  NightRoom,
+  nightRooms,
+  roomLabel,
+  roomTip,
+} from './planner-lineup';
 import { readDrops, writeDrops } from './planner-drops';
 import {
   bestSwap,
@@ -780,6 +790,40 @@ export class StreamerPlannerComponent {
     }
     return swaps;
   });
+
+  /**
+   * Each game day's positions open only once a player the user would drop is gone: the seat a
+   * drop frees, and what moving his dual-position teammates about lets it take. Shown apart from
+   * the night's own room, since it holds only if the pickup comes with that drop.
+   */
+  private readonly dropRoomsByDate = computed<ReadonlyMap<string, DropRoom> | null>(() => {
+    const rooms = this.rooms();
+    const team = this.myTeam();
+    const settings = this.settingsResource.hasValue() ? this.settingsResource.value() : null;
+    const drops = this.dropIds();
+    if (!rooms || !team || !settings?.rosterSlots || drops.size === 0) {
+      return null;
+    }
+    return dropRooms(team.players, settings.rosterSlots, this.teamsByKey(), rooms, drops);
+  });
+
+  /** What dropping a picked player opens on a game day; nothing where it opens nothing. */
+  dropRoom(day: PlannerDay): DropRoom | undefined {
+    return day.games > 0 ? this.dropRoomsByDate()?.get(day.date) : undefined;
+  }
+
+  dropRoomLabel(room: DropRoom): string {
+    return dropRoomLabel(room);
+  }
+
+  dropRoomTip(room: DropRoom): string {
+    return dropRoomTip(room);
+  }
+
+  /** Whether any day on screen has room only through a drop, so the line under them says what yellow means. */
+  readonly hasDropRoom = computed(() =>
+    this.days().some((day) => this.dropRoom(day) !== undefined),
+  );
 
   /** Whether the list shows a swap column: the user's team is in and its skaters can be priced. */
   readonly swapsShown = computed(() => this.swaps() !== null);

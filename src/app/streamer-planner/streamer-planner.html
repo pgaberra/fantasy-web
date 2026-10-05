@@ -143,6 +143,15 @@
                   >{{ roomLabel(room) }}</span
                 >
               }
+              @if (dropRoom(day); as opened) {
+                <!-- Room that is there only if a player the user would drop goes: yellow, apart. -->
+                <span
+                  class="day-room day-room--drop"
+                  [appTooltip]="dropRoomTip(opened)"
+                  [attr.aria-label]="dropRoomTip(opened)"
+                  >{{ dropRoomLabel(opened) }}</span
+                >
+              }
               @if (nightSwap(day); as night) {
                 <!-- The swap picked in the list, this night: the starts it gains or costs. -->
                 <span
@@ -172,6 +181,12 @@
           @if (hasOffNight()) {
             <span class="range-legend"
               ><span class="day-mark" aria-hidden="true">Off</span>Off-night</span
+            >
+          }
+          @if (hasDropRoom()) {
+            <span class="range-legend range-legend--drop"
+              ><span class="day-room day-room--drop" aria-hidden="true">LW</span>Open only if you
+              drop a player you picked below</span
             >
           }
         </p>

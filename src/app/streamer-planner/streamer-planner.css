@@ -374,6 +374,16 @@
   font-weight: var(--weight-medium);
 }
 
+/* Room only through a drop: yellow, so it never reads as the night's own. */
+.day-room--drop {
+  align-self: flex-start;
+  background: var(--color-warning-surface);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-warning-text);
+  padding: 0 var(--space-1);
+}
+
 /* The user's own team under the summary: the switch that ranks by its room, and how much there is. */
 .my-team {
   align-items: center;
@@ -494,6 +504,16 @@
   display: inline-flex;
   gap: var(--space-1);
   margin-left: auto;
+}
+
+/* Beside the off-night key, not pushed apart from it. */
+.range-legend + .range-legend {
+  margin-left: 0;
+}
+
+.range-legend .day-room--drop {
+  flex: none;
+  white-space: nowrap;
 }
 
 /* --- The two tables --------------------------------------------------------------------------- */
