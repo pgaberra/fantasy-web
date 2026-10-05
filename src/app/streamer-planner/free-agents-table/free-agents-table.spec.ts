@@ -113,9 +113,11 @@ describe('FreeAgentsTableComponent', () => {
     categories: ScoringStatKey[] = CATEGORIES,
     rows: RankedFreeAgent[] = ROWS,
     top = 0,
+    listed?: RankedFreeAgent[],
   ) {
     const fixture = MockRender(FreeAgentsTableComponent, {
       rows,
+      listed,
       scoringType,
       categories,
       top,
@@ -239,6 +241,34 @@ describe('FreeAgentsTableComponent', () => {
     expect(headings(fixture)).toEqual(['W', 'GAA', 'SV%']);
     expect(ngMocks.findAll(fixture, 'thead .stat-col--start')).toHaveLength(1);
     expect(ngMocks.findAll(fixture, '.toi-col').length).toBe(0);
+  });
+
+  it("keeps the whole list's columns on a page that has none of its goalies", () => {
+    const fixture = render('points', CATEGORIES, ROWS, 0, [...ROWS, GOALIE]);
+
+    expect(headings(fixture)).toEqual([
+      'G',
+      'A',
+      'SOG',
+      'PIM',
+      'PPP',
+      'BLK',
+      'HIT',
+      'W',
+      'GAA',
+      'SV%',
+    ]);
+    // The skaters on the page have nothing of their own under the goalies' categories.
+    expect(cells(fixture)[0].slice(7)).toEqual(['—', '—', '—']);
+  });
+
+  it("keeps the whole list's ice-time column on a page of goalies alone", () => {
+    const fixture = render('points', CATEGORIES, [GOALIE], 0, [SKATER, GOALIE]);
+
+    expect(headings(fixture)).toHaveLength(10);
+    expect(
+      ngMocks.findAll(fixture, 'tbody td.toi-col').map((cell) => ngMocks.formatText(cell)),
+    ).toEqual(['—']);
   });
 
   it('follows the league: other categories, other columns', () => {

@@ -927,6 +927,37 @@ describe('StreamerPlannerComponent', () => {
       expect(names(planner.ranked())[0]).toBe('Sniper');
     });
 
+    it('draws the columns for the whole list, not the page: sorted by assists, the goalie stays', async () => {
+      freeAgents.mockReturnValue(
+        of<FreeAgentWeek>({
+          creases: [],
+          players: [
+            ...Array.from({ length: 30 }, (_, index) =>
+              lineSkater(`${index + 1}`, `Skater ${index + 1}`, { goals: 1, assists: 1, sog: 3 }),
+            ),
+            goalie('99', 'Waiver Goalie', 1),
+          ],
+        }),
+      );
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+
+      planner.sortBy('assists');
+      fixture.detectChanges();
+      const table = ngMocks.findInstance(FreeAgentsTableComponent);
+      // The goalie, with no assists, is on no page but the last; the columns are drawn for him all
+      // the same, so the table does not change shape as it is sorted or paged.
+      expect(names(table.rows())).not.toContain('Waiver Goalie');
+      expect(names(table.listed() ?? [])).toContain('Waiver Goalie');
+
+      // Narrowed to the skaters' positions, the list has no goalie, and so neither do the columns.
+      planner.togglePosition('C');
+      fixture.detectChanges();
+      expect(names(ngMocks.findInstance(FreeAgentsTableComponent).listed() ?? [])).not.toContain(
+        'Waiver Goalie',
+      );
+    });
+
     it('ranks the goalies alone by a goalie category, and both kinds by one of each', async () => {
       freeAgents.mockReturnValue(
         of<FreeAgentWeek>({
