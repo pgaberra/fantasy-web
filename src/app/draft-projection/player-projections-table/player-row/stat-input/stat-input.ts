@@ -25,7 +25,7 @@ import { parseDecimalInput, steppedDecimalInput } from '../../../../shared/decim
 export class StatInputComponent {
   private readonly statInfoService = inject(StatInfoService);
 
-  /** A stat that is not his kind: the dash the planner and Draft Mode draw too. */
+  /** A stat that is not his kind: the dash the planner, Draft Mode and Who's Hot draw too. */
   readonly notApplicable = '—';
 
   isStatApplicable = input.required<boolean>();

@@ -543,7 +543,7 @@ describe('HotPlayersTableComponent', () => {
 
       // The split fills every key so the ranking engine gets a complete line; a zero here
       // would claim this skater faced shots and stopped none of them.
-      expect(cellTexts()).toContain('-');
+      expect(cellTexts()).toContain('—');
       expect(ngMocks.findAll('tbody .stat-placeholder')).toHaveLength(1);
     });
 
@@ -571,7 +571,7 @@ describe('HotPlayersTableComponent', () => {
       // A player yet to play in the range has no shooting percentage; 0.0 would read as one
       // who shot and missed everything. Their goals are a real zero and stay one.
       expect(ngMocks.findAll('tbody .stat-placeholder')).toHaveLength(1);
-      expect(cellTexts()).toContain('-');
+      expect(cellTexts()).toContain('—');
     });
   });
 
