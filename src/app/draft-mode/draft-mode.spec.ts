@@ -549,6 +549,32 @@ describe('DraftModeComponent', () => {
     ).toEqual([1, 2]);
   });
 
+  it('picks every skater position with "All skaters", each of them removable after', async () => {
+    const fixture = MockRender(DraftModeComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+    component.applySetup(draft);
+
+    component.togglePositionFilter('SKATER');
+
+    expect(component.selectedPositions()).toEqual(['C', 'LW', 'RW', 'D']);
+    expect(component.available()).toHaveLength(2);
+
+    component.togglePositionFilter('C');
+
+    expect(component.selectedPositions()).toEqual(['LW', 'RW', 'D']);
+    expect(component.available().map((sp) => sp.projection.playerId)).toEqual([2]);
+
+    // Not every skater is picked any more, so the shortcut picks them all again.
+    component.togglePositionFilter('SKATER');
+
+    expect(component.selectedPositions()).toEqual(['C', 'LW', 'RW', 'D']);
+
+    component.togglePositionFilter('SKATER');
+
+    expect(component.selectedPositions()).toEqual(['ALL']);
+  });
+
   /**
    * The number beside a row is the player's place on the whole board. It used to be his place in
    * the list on screen, so Porter Martone read 1 when searched for and 157 when scrolled to.

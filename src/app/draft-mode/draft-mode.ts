@@ -53,6 +53,7 @@ import { ProjectionRankingService, RankingInput } from '../services/projection-r
 import { PositionFilterService } from '../services/position-filter.service';
 import { Player } from '../models/player.model';
 import { applyPositionOverrides } from '../models/position-override';
+import { isAllSkaters, SKATER_POSITIONS } from '../models/position.model';
 import {
   PositionFilter,
   Projection,
@@ -214,6 +215,7 @@ export class DraftModeComponent implements OnInit {
   ];
   readonly positionFilters: { value: PositionFilter; label: string }[] = [
     { value: 'ALL', label: 'All' },
+    { value: 'SKATER', label: 'All skaters' },
     { value: 'C', label: 'C' },
     { value: 'LW', label: 'LW' },
     { value: 'RW', label: 'RW' },
@@ -1663,6 +1665,13 @@ export class DraftModeComponent implements OnInit {
   togglePositionFilter(filter: PositionFilter): void {
     if (filter === 'ALL') {
       this.selectedPositions.set(['ALL']);
+      return;
+    }
+    // "All skaters" is a shortcut to the four skater chips, so any of them can be taken off after.
+    if (filter === 'SKATER') {
+      this.selectedPositions.set(
+        isAllSkaters(this.selectedPositions()) ? ['ALL'] : [...SKATER_POSITIONS],
+      );
       return;
     }
     const chosen = this.selectedPositions().filter((position) => position !== 'ALL');
