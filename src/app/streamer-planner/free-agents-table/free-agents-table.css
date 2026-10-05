@@ -51,6 +51,13 @@
   width: 1%;
 }
 
+/* Centred, not set right like the other numbers: the first three are drawn in a medal wider than
+   a digit, and set right the digits in the medals stood to the left of the ones under them. */
+.free-agents-table .rank-col,
+.free-agents-table thead th.rank-col {
+  text-align: center;
+}
+
 /* The player stays put while the numbers scroll sideways, and takes whatever room the card has to
    spare: shared out among the numbers it would space them unevenly about the rule. */
 .free-agents-table .player-col {
@@ -215,30 +222,42 @@ span.score {
 
 /* --- The best picks ---------------------------------------------------------------------------- */
 
-/* The first few rows are the page's answer, so they are drawn as one: tinted, a size up, the rank
-   a filled badge, and ruled off from the rest of the list. They stay rows of the table, so each
-   still has his whole line under the same headings as everyone below. */
-.free-agents-table .player-row--top > * {
-  background: var(--top-row-surface);
-  padding-block: var(--space-3);
-}
-
-.free-agents-table .player-row--top {
-  --player-logo-size: 36px;
-  --top-row-surface: color-mix(in srgb, var(--color-accent) 5%, var(--color-surface));
-}
-
-.free-agents-table .player-row--top:hover {
-  --top-row-surface: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface));
-}
-
-.free-agents-table .player-row--top:has(+ .player-row:not(.player-row--top)) > * {
-  border-bottom-color: var(--color-border-strong);
-}
-
+/* The first three of the list wear a medal for a rank, gold, silver and bronze, and are otherwise
+   rows like any other: a tint, a larger name and a coloured score on top of that read as a second
+   table over the first. The medals are this table's own colours, since the app's gold token means
+   Premium; the number is dark on each, as white does not carry 4.5:1 on any of the three. */
 .free-agents-table .player-row--top .rank-col {
-  padding-left: var(--space-2);
   vertical-align: middle;
+}
+
+.player-row--top .rank {
+  --medal: var(--color-primary);
+  --medal-text: var(--color-primary-contrast);
+  align-items: center;
+  background: var(--medal);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--medal-text) 25%, transparent);
+  color: var(--medal-text);
+  display: inline-flex;
+  font-weight: var(--weight-bold);
+  height: 1.5rem;
+  justify-content: center;
+  width: 1.5rem;
+}
+
+.player-row--top:nth-child(1) .rank {
+  --medal: #f0c64a;
+  --medal-text: #4d3800;
+}
+
+.player-row--top:nth-child(2) .rank {
+  --medal: #d3d9e2;
+  --medal-text: #323b4a;
+}
+
+.player-row--top:nth-child(3) .rank {
+  --medal: #dfa67c;
+  --medal-text: #4f2708;
 }
 
 .sr-only {
@@ -250,52 +269,4 @@ span.score {
   position: absolute;
   white-space: nowrap;
   width: 1px;
-}
-
-.player-row--top .rank {
-  align-items: center;
-  background: var(--color-primary);
-  border-radius: 50%;
-  color: var(--color-primary-contrast);
-  display: inline-flex;
-  font-weight: var(--weight-bold);
-  height: 1.5rem;
-  justify-content: center;
-  width: 1.5rem;
-}
-
-/* The numbers keep to the line of the name, which is a size larger here. */
-.free-agents-table .player-row--top td {
-  line-height: calc(var(--text-base) * 1.25);
-}
-
-.player-row--top .player-name {
-  font-size: var(--text-base);
-  font-weight: var(--weight-bold);
-}
-
-.player-row--top .score {
-  color: var(--color-accent);
-  font-size: var(--text-base);
-}
-
-/* A phone has no room to give: there the best picks keep the list's own sizes, and the tint, the
-   badge and the rule set them off. */
-@container (max-width: 38rem) {
-  .free-agents-table .player-row--top {
-    --player-logo-size: 28px;
-  }
-
-  .free-agents-table .player-row--top > * {
-    padding-block: var(--space-2);
-  }
-
-  .free-agents-table .player-row--top td {
-    line-height: 1.25;
-  }
-
-  .player-row--top .player-name,
-  .player-row--top .score {
-    font-size: inherit;
-  }
 }
