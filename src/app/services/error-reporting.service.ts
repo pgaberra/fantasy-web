@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import type { ErrorEvent, EventHint } from '@sentry/browser';
+import type { BrowserOptions, ErrorEvent, EventHint } from '@sentry/browser';
 import { environment } from '../../environments/environment';
 import { redactUrl } from '../shared/redact-url';
 import { isRecoveringFromStaleBuild } from '../shared/stale-build';
@@ -51,6 +51,28 @@ export function beforeSendEvent(event: ErrorEvent, hint?: EventHint): ErrorEvent
   return redactEvent(event);
 }
 
+/** Exported for tests: the two options that hold the SDK to what it sent before version 11. */
+export function sentryOptions(): BrowserOptions {
+  return {
+    dsn: environment.sentryDsn,
+    // Matches SENTRY_ENVIRONMENT on the Java services, so one project separates the two
+    // deployments the same way on both sides.
+    environment: environment.environmentName,
+    release: environment.version || undefined,
+    // Off for the same reason the backends keep their alerting narrow: a stream of
+    // performance spans would bury the faults this exists to surface.
+    tracesSampleRate: 0,
+    beforeSend: beforeSendEvent,
+    // Version 11 has Sentry record the visitor's IP address unless told not to. An event names
+    // the account by its UUID and nothing else, and an address is more than that.
+    dataCollection: { userInfo: false },
+    // Version 11 gives a message a stack trace too, and Sentry then groups by the trace. Every
+    // message is sent from `reportMessage`, so different faults reported from one caller would
+    // fold into one issue; without a trace they group by their text, as before.
+    attachStacktrace: false,
+  };
+}
+
 /**
  * The app's only entry point to Sentry — nothing else may import `@sentry/browser`.
  *
@@ -86,17 +108,7 @@ export class ErrorReportingService {
 
     const sentry = await import('@sentry/browser');
 
-    sentry.init({
-      dsn: environment.sentryDsn,
-      // Matches SENTRY_ENVIRONMENT on the Java services, so one project separates the two
-      // deployments the same way on both sides.
-      environment: environment.environmentName,
-      release: environment.version || undefined,
-      // Off for the same reason the backends keep their alerting narrow: a stream of
-      // performance spans would bury the faults this exists to surface.
-      tracesSampleRate: 0,
-      beforeSend: beforeSendEvent,
-    });
+    sentry.init(sentryOptions());
 
     this.sentry = sentry;
     if (this.userId) {
