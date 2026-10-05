@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { ScoringType } from '../../models/projection.model';
-import { ScoringStatKey } from '../../models/stat-key.model';
+import { ScoringStatKey, SKATER_SCORING_STAT_KEYS } from '../../models/stat-key.model';
 import { IconComponent } from '../../shared/icon/icon';
 import { PositionChipsComponent } from '../../shared/position-chips/position-chips';
 import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
@@ -16,7 +16,7 @@ import {
   RankedFreeAgent,
 } from '../planner-free-agents';
 
-type PlayerKind = RankedFreeAgent['line']['type'];
+const SKATER_KEYS: ReadonlySet<string> = new Set(SKATER_SCORING_STAT_KEYS);
 
 /** A player with his line in the league's categories, ready to draw. */
 export interface FreeAgentRow {
@@ -26,11 +26,11 @@ export interface FreeAgentRow {
 }
 
 /**
- * The best available skaters, or the best available goalies, as one list, best first, with the
- * model's line for the nights counted, in every category the league scores for that kind of
- * player, and scored by the league's own settings. The list is one kind or the other, never both:
- * the two score different categories, and a column has to mean the same thing on every row.
- * Which kind, which positions and how many rows is the page's to say.
+ * The best available players, skaters and goalies together, best first, with the model's line for
+ * the nights counted in every category the league scores, and scored by the league's own settings.
+ * The skaters' categories come first and the goalies' after, set off by a rule: a column means one
+ * category on every row, blank on a player of the kind that does not score in it. Which positions
+ * and how many rows is the page's to say.
  */
 @Component({
   selector: 'app-free-agents-table',
@@ -54,8 +54,8 @@ export class FreeAgentsTableComponent {
     return this.rows().map((row) => ({ row, stats: lineStats(row, categories) }));
   });
 
-  /** Whose list this is, and so whose categories head the columns: the page hands it one kind. */
-  readonly kind = computed<PlayerKind>(() => this.rows()[0]?.line.type ?? 'skater');
+  /** Ice time a game is a skater's number: no column of blanks over a list of goalies alone. */
+  readonly hasSkaters = computed(() => this.rows().some((row) => row.line.type === 'skater'));
 
   /** A column a category, named once in the heading instead of beside every number. */
   readonly columns = computed<readonly LineColumn[]>(() =>
@@ -65,6 +65,15 @@ export class FreeAgentsTableComponent {
     ),
   );
 
+  /**
+   * The columns a rule is drawn before: the first category, setting the line off from the columns
+   * about the player, and the first goalie category after a skater one, setting the two kinds apart.
+   */
+  readonly groupStarts = computed<readonly boolean[]>(() => {
+    const goalieOnly = this.columns().map((column) => !SKATER_KEYS.has(column.key));
+    return goalieOnly.map((goalie, index) => index === 0 || (goalie && !goalieOnly[index - 1]));
+  });
+
   readonly entries = computed<readonly FreeAgentRow[]>(() => {
     const columns = this.columns();
     return this.lines().map(({ row, stats }) => {
@@ -73,11 +82,7 @@ export class FreeAgentsTableComponent {
     });
   });
 
-  readonly rankTip = computed(() =>
-    this.kind() === 'skater'
-      ? 'His place among every available skater, whatever the positions shown'
-      : 'His place among every available goalie',
-  );
+  readonly rankTip = 'His place among every available player, whatever the positions shown';
 
   readonly scoreHeading = computed(() =>
     this.scoringType() === 'points' ? 'Proj. pts' : 'Z-Score',

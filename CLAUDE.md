@@ -358,20 +358,19 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   of the first week already behind are drawn faint). The league sits beside the nights.
   **The team schedules have one rating** for the whole page, the BFF's skater score and rank
   (`rateTeams`), with the Fav/Unfav tint read from the goals an opponent concedes; the BFF's
-  goalie score and rank are sent but not read (Alexander's call, 2026-10-02). **Skaters or
-  goalies is asked on the free agents alone**, by a segmented control in that card's head: the
-  list is that kind alone (`ofKind`). The two were rows of one table for a day, a goalie's line
-  written across the skaters' columns with its own labels; they fill different roster slots and
-  score different categories, so they are never one table again. The three cards over the tables
-  are the best pickups of either kind and do not follow it. What concerns one table only sits on
-  that table: the kind, the positions and the categories to rank by, the last two the skaters'
-  and gone while the goalies are shown. **The skaters are one list**, best first, not a block per
-  position: the pills over it (All, C, LW, RW, D) narrow it to any number of positions at
-  once, a player eligible at two is listed once, and the # column keeps his place among every
-  skater available so a list of defensemen still says how they compare; a goalie's is his place
-  among goalies. It opens on 25 rows
-  (`FREE_AGENTS_PAGE`) with "Show 25 more" and "Show all" under it, and starts from the top when
-  the kind, the positions or the categories change. Until 2026-10-01 it copied LineupExperts: three, five or ten a position. No buttons: what the nights point at is what is on screen.
+  goalie score and rank are sent but not read (Alexander's call, 2026-10-02). **The free agents
+  are one list, skaters and goalies together** (Alexander's call, 2026-10-05, once the free agents
+  had the page's full width): best first by the league's scoring, the skaters' categories as
+  columns and the goalies' after them behind a rule, each row blank under the other kind's. From
+  2026-10-01 to 2026-10-05 a segmented Skaters | Goalies control showed one kind at a time
+  (`ofKind`, since removed). The three cards over the tables are the top of that same list. What
+  concerns one table only sits on that table: the positions and the categories to rank by. The
+  pills (All, C, LW, RW, D, G) narrow it to any number of positions at once, a player eligible at
+  two is listed once, and the # column keeps his place in the whole list, so a list of goalies
+  still says how they compare. The "Rank by" pills offer every category the league scores; picked,
+  only the kinds that score in one of them are ranked (`scoresIn`), by those alone. The list is
+  paged and starts from the top when the positions or the categories change. Until 2026-10-01 it
+  copied LineupExperts: three, five or ten a position. No buttons: what the nights point at is what is on screen.
   `planner-schedule.ts` re-rates the teams over the nights ticked, by projection-service's own
   rule (a game is 1, or 1.25 on an off-night, scaled by the opponent), and uses the server's
   numbers untouched while every night is ticked; `planner-free-agents.ts` scales a free agent's
