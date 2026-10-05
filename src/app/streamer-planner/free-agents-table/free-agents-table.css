@@ -198,6 +198,13 @@ span.score {
   color: var(--color-text-subtle);
 }
 
+/* A category that is not his kind (a goalie's goals) is a faint dash, not a figure among figures,
+   and stays faint in a column the list is ranked by. */
+.free-agents-table td.not-his {
+  color: var(--color-border-strong);
+  font-weight: normal;
+}
+
 /* Ranked by a few categories, those columns are what the order is read from; the rest step back
    without going, since a streamer still wants to see what else comes with the add. */
 .free-agents-table .stat-col--focus {
