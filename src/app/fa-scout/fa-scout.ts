@@ -11,7 +11,7 @@ import { DEFAULT_DECIMAL_SETTINGS } from '../draft-projection/projection-setting
 import { Projection, ScoredProjection } from '../models/projection.model';
 import { ScoringStatKey } from '../models/stat-key.model';
 import { EspnService } from '../services/espn.service';
-import { FaScoutService } from '../services/fa-scout.service';
+import { FaScoutService, TeamPlayer } from '../services/fa-scout.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { ChosenLeague, LeagueChoiceService } from '../services/league-choice.service';
 import { YahooService } from '../services/yahoo.service';
@@ -20,10 +20,21 @@ import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { Platform } from '../shared/platform-tabs/platform-tabs';
+import { PositionChipsComponent } from '../shared/position-chips/position-chips';
+import { TeamLogoComponent } from '../shared/team-logo/team-logo';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
 import { LeagueFieldComponent } from '../streamer-planner/league-field/league-field';
 import { PLANNER_POSITIONS, PlannerPositionGroup } from '../streamer-planner/planner-free-agents';
+import { lineupSeats } from '../streamer-planner/planner-lineup';
+import {
+  bestSwap,
+  DropCandidate,
+  dropCandidates,
+  scoreTeam,
+  Swap,
+  TeamRow,
+} from './drop-candidates';
 import { rankScout, ScoutKind, ScoutRow } from './scout-ranking';
 import { ScoutTableComponent } from './scout-table/scout-table';
 
@@ -44,6 +55,10 @@ export const SCOUT_PAGE_SIZE = 25;
  * <p>The league is picked as the planner picks it, with the same field (Yahoo / ESPN tabs), and
  * opens on the league last chosen anywhere ({@link LeagueChoiceService}): a reader scouting a
  * league for keepers is the one streaming in it.
+ *
+ * <p>A pickup needs a roster spot. The user's own team is scored in the same pool, so each pickup
+ * is shown beside the player to drop for him and what the team gains (`bestSwap`): the lowest
+ * scorer whose loss leaves the lineup as full, judged against the league's lineup slots.
  */
 @Component({
   selector: 'app-fa-scout',
@@ -53,7 +68,9 @@ export const SCOUT_PAGE_SIZE = 25;
     IconComponent,
     LeagueFieldComponent,
     LoadingIndicatorComponent,
+    PositionChipsComponent,
     ScoutTableComponent,
+    TeamLogoComponent,
     TooltipDirective,
   ],
   templateUrl: './fa-scout.html',
@@ -114,10 +131,20 @@ export class FaScoutComponent {
         : this.espn.leagueProjectionSettings(params.leagueId),
   });
 
+  /** The user's own team, read beside the wire; its failure costs the drops, never the list. */
+  private readonly teamResource = rxResource({
+    params: () => this.league() ?? undefined,
+    stream: ({ params }) => this.scoutService.myTeam(params.platform, params.leagueId),
+  });
+
   readonly loading = computed(
     () => this.scoutResource.isLoading() || this.settingsResource.isLoading(),
   );
   readonly failure = computed(() => this.scoutResource.error() ?? this.settingsResource.error());
+
+  retryTeam(): void {
+    this.teamResource.reload();
+  }
 
   retry(): void {
     if (this.settingsResource.error()) {
@@ -196,12 +223,8 @@ export class FaScoutComponent {
     this.risingOnly.update((on) => !on);
   }
 
-  /** Every available player of the kind on screen, best first on the rest of the season. */
-  readonly ranked = computed<readonly ScoutRow[]>(() => {
-    const list = this.list();
-    if (!list) {
-      return [];
-    }
+  /** Ranks lines by the league's scoring, best first, and the score each is ranked by. */
+  private readonly ranker = computed(() => {
     const scoring = this.scoring();
     const rank = (projections: Projection[]): ScoredProjection[] =>
       this.ranking.rankOverall({
@@ -218,8 +241,116 @@ export class FaScoutComponent {
       });
     const scoreOf = (entry: ScoredProjection) =>
       scoring.scoringType === 'points' ? entry.score.fantasyPoints : entry.score.zScore;
-    return rankScout(list.players, this.kind(), rank, scoreOf);
+    return { rank, scoreOf };
   });
+
+  /** The user's team in this league, or null while it loads, fails or is not his. */
+  private readonly team = computed<readonly TeamPlayer[] | null>(() => {
+    const team = this.teamResource.hasValue() ? this.teamResource.value() : null;
+    return team?.found ? team.players : null;
+  });
+
+  readonly teamName = computed(() => {
+    const team = this.teamResource.hasValue() ? this.teamResource.value() : null;
+    return team?.teamName ?? 'Your team';
+  });
+
+  readonly teamStatus = computed<'loading' | 'error' | 'not-found' | 'ready'>(() => {
+    if (this.teamResource.error()) {
+      return 'error';
+    }
+    if (this.teamResource.isLoading()) {
+      return 'loading';
+    }
+    return this.team() ? 'ready' : 'not-found';
+  });
+
+  readonly teamFailure = computed(() => this.teamResource.error());
+
+  /** Every available player of the kind on screen, best first on the rest of the season. */
+  readonly ranked = computed<readonly ScoutRow[]>(() => {
+    const list = this.list();
+    if (!list) {
+      return [];
+    }
+    const { rank, scoreOf } = this.ranker();
+    const alongside = (this.team() ?? []).flatMap((player) =>
+      player.projection ? [player.projection] : [],
+    );
+    return rankScout(list.players, this.kind(), rank, scoreOf, alongside);
+  });
+
+  /** The user's players of the kind on screen, scored in the same pool as the wire. */
+  private readonly teamRows = computed<readonly TeamRow[]>(() => {
+    const team = this.team();
+    const list = this.list();
+    if (!team || !list) {
+      return [];
+    }
+    const { rank, scoreOf } = this.ranker();
+    return scoreTeam(
+      team,
+      list.players.map((player) => player.freeAgent.projection),
+      this.kind(),
+      rank,
+      scoreOf,
+    );
+  });
+
+  /**
+   * The league's lineup seats. Until its settings say, none: a drop is then judged on score alone,
+   * since a guessed lineup would forbid swaps the league allows.
+   */
+  private readonly seats = computed(() => {
+    const settings = this.settingsResource.hasValue() ? this.settingsResource.value() : null;
+    return settings?.rosterSlots ? lineupSeats(settings.rosterSlots) : [];
+  });
+
+  /** Whether the drops are judged against the league's lineup, or on score alone. */
+  readonly lineupKnown = computed(() => this.seats().length > 0);
+
+  readonly candidates = computed<readonly DropCandidate[]>(() =>
+    dropCandidates(this.teamRows(), this.seats()),
+  );
+
+  /** The user's players of the kind left out of the drops: on injured reserve, or not projected. */
+  readonly keptOut = computed(() => {
+    const rows = this.teamRows();
+    return {
+      reserve: rows.filter((row) => row.player.reserve).length,
+      unprojected: rows.filter((row) => !row.player.reserve && row.score === null).length,
+    };
+  });
+
+  /** Each available player's best swap, by his platform id; null when no drop keeps the lineup. */
+  readonly swaps = computed<ReadonlyMap<string, Swap | null>>(() => {
+    const team = this.teamRows();
+    if (team.length === 0) {
+      return new Map();
+    }
+    const seats = this.seats();
+    return new Map(
+      this.ranked().map((row) => [
+        row.player.playerId,
+        bestSwap({ positions: row.player.positions, score: row.score }, team, seats),
+      ]),
+    );
+  });
+
+  readonly showSwaps = computed(() => this.teamStatus() === 'ready' && this.teamRows().length > 0);
+
+  /** Only the pickups that beat a player the team could drop for them. */
+  readonly upgradesOnly = signal(false);
+
+  toggleUpgradesOnly(): void {
+    this.upgradesOnly.update((on) => !on);
+  }
+
+  private isUpgrade(row: ScoutRow): boolean {
+    return (this.swaps().get(row.player.playerId)?.gain ?? 0) > 0;
+  }
+
+  readonly upgradeCount = computed(() => this.ranked().filter((row) => this.isUpgrade(row)).length);
 
   readonly risingCount = computed(() => this.ranked().filter((row) => row.rising).length);
 
@@ -228,6 +359,7 @@ export class FaScoutComponent {
     return this.ranked().filter(
       (row) =>
         (!this.risingOnly() || row.rising) &&
+        (!this.upgradesOnly() || !this.showSwaps() || this.isUpgrade(row)) &&
         (this.kind() === 'goalie' ||
           positions.size === 0 ||
           row.player.positions.some((position) => positions.has(position as PlannerPositionGroup))),
@@ -235,6 +367,11 @@ export class FaScoutComponent {
   });
 
   readonly emptyText = computed(() => {
+    if (this.upgradesOnly() && this.showSwaps()) {
+      return this.kind() === 'skater'
+        ? 'No available skater here beats a player you could drop for him.'
+        : 'No available goalie beats a goalie you could drop for him.';
+    }
     if (this.risingOnly()) {
       return this.kind() === 'skater'
         ? 'No available skater here has risen far enough since the preseason projection.'
@@ -258,7 +395,13 @@ export class FaScoutComponent {
 
   /** Another kind, other positions or the rising switch is another list: back to its first page. */
   private readonly page = linkedSignal<unknown, number>({
-    source: () => [this.kind(), this.positions(), this.risingOnly(), this.league()],
+    source: () => [
+      this.kind(),
+      this.positions(),
+      this.risingOnly(),
+      this.upgradesOnly(),
+      this.league(),
+    ],
     computation: () => 0,
   });
 
@@ -281,6 +424,39 @@ export class FaScoutComponent {
     const last = first + this.visible().length - 1;
     return first === last ? `${first} of ${total}` : `${first}–${last} of ${total}`;
   });
+
+  // --- The drops -------------------------------------------------------------------------------
+
+  formatScore(score: number | null): string {
+    if (score === null) {
+      return '';
+    }
+    return score.toFixed(this.scoringType() === 'points' ? 1 : 2);
+  }
+
+  /** "Any pickup", "Only for a D", "Only for a C or LW", "Needed in your lineup". */
+  needsText(candidate: DropCandidate): string {
+    if (!this.lineupKnown() || candidate.anyPickup) {
+      return 'Any pickup';
+    }
+    if (candidate.needs.length === 0) {
+      return 'Needed in your lineup';
+    }
+    return `Only for a ${candidate.needs.join(' or ')}`;
+  }
+
+  needsTip(candidate: DropCandidate): string {
+    if (!this.lineupKnown()) {
+      return "Your league's lineup isn't known yet, so this is on the projection alone";
+    }
+    if (candidate.anyPickup) {
+      return 'Your lineup stays as full without him, whoever you pick up';
+    }
+    if (candidate.needs.length === 0) {
+      return 'Every player who could replace him leaves a slot in your lineup empty';
+    }
+    return `Without him a ${candidate.needs.join(' or ')} slot in your lineup goes empty, so drop him only for a player who plays there`;
+  }
 
   goToPage(page: number): void {
     this.page.set(Math.max(0, Math.min(page, this.pageCount() - 1)));

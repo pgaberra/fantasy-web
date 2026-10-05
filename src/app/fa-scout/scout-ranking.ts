@@ -45,6 +45,10 @@ export function isRising(rank: number, preseasonRank: number | null): boolean {
  * the same games left, so the order of the preseason lines is the order they would have had over
  * the games left, and it is the order that is compared.
  *
+ * <p>`alongside` are lines scored in the same pool without taking a place: the user's own players,
+ * so a pickup's score and the score of the player he would replace are on one scale. A category
+ * league scores against the pool, so the two must be scored together to be compared.
+ *
  * @param rank ranks lines by the league's scoring, best first, as the ranking engine does
  */
 export function rankScout(
@@ -52,6 +56,7 @@ export function rankScout(
   kind: ScoutKind,
   rank: (projections: Projection[]) => ScoredProjection[],
   scoreOf: (entry: ScoredProjection) => number,
+  alongside: readonly Projection[] = [],
 ): ScoutRow[] {
   const own = players.filter((player) => player.freeAgent.projection.type === kind);
   const byPlayerId = new Map(own.map((player) => [player.freeAgent.projection.playerId, player]));
@@ -62,7 +67,11 @@ export function rankScout(
   );
 
   const rows: ScoutRow[] = [];
-  for (const entry of rank(own.map((player) => player.freeAgent.projection))) {
+  const pool = [
+    ...own.map((player) => player.freeAgent.projection),
+    ...alongside.filter((line) => line.type === kind),
+  ];
+  for (const entry of rank(pool)) {
     const player = byPlayerId.get(entry.projection.playerId);
     if (!player) {
       continue;

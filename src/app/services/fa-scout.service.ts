@@ -2,8 +2,10 @@ import { inject, Injectable } from '@angular/core';
 import { from, map, Observable } from 'rxjs';
 import { Api } from '../api/api';
 import { faScoutFreeAgents } from '../api/fn/fa-scout/fa-scout-free-agents';
+import { faScoutMyTeam } from '../api/fn/fa-scout/fa-scout-my-team';
 import { ScoutLine } from '../api/models/scout-line';
 import { ScoutPlayerResponse } from '../api/models/scout-player-response';
+import { ScoutRosterPlayer } from '../api/models/scout-roster-player';
 import {
   GOALIE_SCORING_STAT_KEYS,
   GOALIE_UTILITY_STAT_KEYS,
@@ -33,9 +35,45 @@ export interface ScoutList {
   readonly players: readonly ScoutPlayer[];
 }
 
+/**
+ * A player on the user's own team, with the model's rest of the season on the line the available
+ * players carry, so a pickup can be weighed against him.
+ */
+export interface TeamPlayer {
+  readonly playerId: string;
+  readonly name: string;
+  readonly teamAbbrev?: string;
+  readonly type: 'skater' | 'goalie';
+  readonly positions: readonly string[];
+  readonly injuryStatus?: string;
+  /** On injured reserve or not-active: a slot that takes no roster spot, so dropping him makes none. */
+  readonly reserve: boolean;
+  /** Fills no lineup slot now: on reserve, or out injured or suspended. Day-to-day is not out. */
+  readonly out: boolean;
+  /** His rest of the season; null when the model has no line for him. */
+  readonly projection: Projection | null;
+}
+
+export interface ScoutTeam {
+  /** False when no team in the league is the user's: one they only follow, say. */
+  readonly found: boolean;
+  readonly teamName: string | null;
+  readonly players: readonly TeamPlayer[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class FaScoutService {
   private readonly api = inject(Api);
+
+  myTeam(platform: LeaguePlatform, leagueId: string): Observable<ScoutTeam> {
+    return from(this.api.invoke(faScoutMyTeam, { platform, leagueId })).pipe(
+      map((answer) => ({
+        found: answer.found,
+        teamName: answer.teamName ?? null,
+        players: answer.players.map(toTeamPlayer),
+      })),
+    );
+  }
 
   freeAgents(platform: LeaguePlatform, leagueId: string): Observable<ScoutList> {
     return from(this.api.invoke(faScoutFreeAgents, { platform, leagueId })).pipe(
@@ -74,12 +112,35 @@ function projectionOf(type: 'skater' | 'goalie', playerId: number, line: ScoutLi
   };
 }
 
+/**
+ * The ranking engine keys players by number, and the platforms number theirs. A player whose id is
+ * not a number is given a key that collides with nothing, as in the planner.
+ */
+function rankingKey(playerId: string): number {
+  const numeric = Number(playerId);
+  return Number.isFinite(numeric) ? numeric : -1;
+}
+
+function toTeamPlayer(player: ScoutRosterPlayer): TeamPlayer {
+  const type = player.type === 'goalie' ? 'goalie' : 'skater';
+  return {
+    playerId: player.playerId,
+    name: player.name,
+    teamAbbrev: player.teamAbbrev,
+    type,
+    positions: player.positions,
+    injuryStatus: player.injuryStatus,
+    reserve: player.reserve,
+    out: player.out,
+    projection: player.restOfSeason
+      ? projectionOf(type, rankingKey(player.playerId), player.restOfSeason)
+      : null,
+  };
+}
+
 function toScoutPlayer(player: ScoutPlayerResponse): ScoutPlayer {
   const type = player.type === 'goalie' ? 'goalie' : 'skater';
-  // The ranking engine keys players by number, and the platforms number theirs. A player whose id
-  // is not a number is given a key that collides with nothing, as in the planner.
-  const numeric = Number(player.playerId);
-  const playerId = Number.isFinite(numeric) ? numeric : -1;
+  const playerId = rankingKey(player.playerId);
   return {
     freeAgent: {
       playerId: player.playerId,
