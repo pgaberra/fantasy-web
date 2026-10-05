@@ -1093,6 +1093,42 @@ describe('StreamerPlannerComponent', () => {
       expect(names(planner.visible())).toHaveLength(3);
     });
 
+    it("offers only the categories the positions shown score in, and keeps a hidden pick for when they're back", async () => {
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+      const offered = () => planner.focusOptions().map((option) => option.key);
+
+      planner.toggleFocus('sog');
+      planner.toggleFocus('w');
+
+      // Wingers alone: no goalie on the list, so no goalie category to rank it by.
+      planner.togglePosition('LW');
+      planner.togglePosition('RW');
+      expect(offered()).toEqual(['goals', 'assists', 'ppp', 'sog']);
+      expect([...planner.focus()]).toEqual(['sog']);
+      expect(planner.focusLabel()).toBe('SOG');
+      fixture.detectChanges();
+      expect(ngMocks.findAll('.focus .pill').map((pill) => ngMocks.formatText(pill))).toEqual([
+        'All categories',
+        'G',
+        'A',
+        'PPP',
+        'SOG',
+      ]);
+
+      // Goalies alone: their categories only.
+      planner.clearPositions();
+      planner.togglePosition('G');
+      expect(offered()).toEqual(['w']);
+      expect([...planner.focus()]).toEqual(['w']);
+
+      // A skater beside the goalies, or every position again: both kinds, and both picks.
+      planner.togglePosition('C');
+      expect(offered()).toEqual(['goals', 'assists', 'ppp', 'sog', 'w']);
+      planner.clearPositions();
+      expect([...planner.focus()]).toEqual(['sog', 'w']);
+    });
+
     it('says so when nobody scores in the categories picked', async () => {
       freeAgents.mockReturnValue(
         of<FreeAgentWeek>({

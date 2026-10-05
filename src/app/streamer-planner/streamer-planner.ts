@@ -834,12 +834,12 @@ export class StreamerPlannerComponent {
 
   /**
    * The categories a streamer can rank the list by: a category league's own, skaters' and goalies'
-   * alike. A points league has none, since a point is worth the same whichever category it came
-   * from.
+   * alike, or only one kind's while the positions picked show only that kind. A points league has
+   * none, since a point is worth the same whichever category it came from.
    */
   readonly focusOptions = computed<readonly LineColumn[]>(() =>
     this.scoringType() === 'category'
-      ? focusableCategories(this.categories()).map(categoryColumn)
+      ? focusableCategories(this.categories(), this.positions()).map(categoryColumn)
       : [],
   );
 
@@ -851,7 +851,9 @@ export class StreamerPlannerComponent {
 
   /**
    * The categories the list is ranked by. None is the league's whole set, which is how the page
-   * opens. A category the league no longer scores is dropped rather than ranked by.
+   * opens. A category not offered, because the league no longer scores it or the positions picked
+   * show nobody who does, is dropped rather than ranked by; picking the positions back brings it
+   * back.
    */
   readonly focus = computed(() => keepOffered(this.focusPicked(), this.focusOptions()));
 
