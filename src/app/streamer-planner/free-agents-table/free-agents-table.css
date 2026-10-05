@@ -38,11 +38,10 @@
   background: var(--color-surface-hover);
 }
 
-/* Every number sits on the line of the name, so a row reads straight across: the score has its
-   per-game figure under it, and centred in the row it stood half a line above the rest. */
+/* A row is one line, read straight across its middle: the rank, the crest, the name and every
+   number share it, and the score stands about it with its per-game figure underneath. */
 .free-agents-table tbody td {
   line-height: 1.25;
-  vertical-align: top;
 }
 
 /* His place among all of them, so a list narrowed to one position still says how it compares. */
@@ -67,7 +66,8 @@
   padding-left: 0;
 }
 
-/* The crest, then the name over what he plays: the positions are his, not a column to compare. */
+/* The crest, then the name and what he plays beside it: the positions are his, not a column to
+   compare, and the card has the width to keep them off a line of their own. */
 .player-cell {
   align-items: center;
   display: flex;
@@ -80,9 +80,9 @@
 }
 
 .player-identity {
+  align-items: center;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2);
   min-width: 0;
 }
 
@@ -143,6 +143,19 @@
 /* Ice time is the one column the score is not made of, so it is the one to go where the card is
    too narrow for the rest: half a laptop's screen, or a phone. */
 @container (max-width: 38rem) {
+  /* Nor is there room beside the name there: the positions go back under it, where they cost a
+     line of height instead of the width the numbers need, and every number sits on the line of
+     the name, since centred against two lines it would stand half a line below it. */
+  .player-identity {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .free-agents-table tbody td {
+    vertical-align: top;
+  }
+
   .free-agents-table .toi-col {
     display: none;
   }
