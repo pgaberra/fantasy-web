@@ -384,7 +384,7 @@
   padding: 0 var(--space-1);
 }
 
-/* The user's own team under the summary: the switch that ranks by its room, and how much there is. */
+/* The user's own team under the summary: how much room it has, and who it would drop. */
 .my-team {
   align-items: center;
   color: var(--color-text-muted);
@@ -395,15 +395,17 @@
   margin: var(--space-3) 0 0;
 }
 
-.my-team-toggle {
+/* The switch that ranks the free agents by the user's room, across from their card's title. */
+.fit-toggle {
   align-items: center;
   color: var(--color-text);
   cursor: pointer;
   display: inline-flex;
+  font-size: var(--text-sm);
   gap: var(--space-2);
 }
 
-.my-team-toggle input {
+.fit-toggle input {
   accent-color: var(--color-accent);
   flex: none;
   height: 1rem;
