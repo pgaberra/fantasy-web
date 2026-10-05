@@ -295,11 +295,6 @@ export function weekColumn(iso: string): number {
   return ((parseDate(iso).getUTCDay() + 6) % 7) + 1;
 }
 
-/** "Oct 19 to Oct 25". */
-export function stretchLabel(start: string, end: string): string {
-  return `${formatDay(start)} to ${formatDay(end)}`;
-}
-
 export function dayName(day: PlannerDay): string {
   return weekdayName(day.date);
 }

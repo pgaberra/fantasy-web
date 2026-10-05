@@ -293,7 +293,6 @@ describe('StreamerPlannerComponent', () => {
     expect(planner.days()[1]).toEqual({ date: '2026-10-13', games: 3, offNight: true });
     expect(planner.activePreset()).toBe('this-week');
     expect(planner.weeksTitle()).toBe('Week 2');
-    expect(planner.stretchTitle()).toBe('Oct 12 to Oct 18');
     expect(planner.nightsTitle()).toBe('2 of 2 game days');
     expect(planner.leadingDays()).toEqual([]);
     // Monday has no days before it, so nothing is asked for them.
@@ -426,16 +425,17 @@ describe('StreamerPlannerComponent', () => {
     expect(nights.length).toBe(7);
     expect(ngMocks.formatText(nights[1])).toContain('3 games');
     expect(ngMocks.formatText(nights[0])).toContain('No games');
-    // The off-night is marked with the word on the night itself, read out in full, and the
-    // summary says what the short word stands for.
+    // The off-night is marked with the word on the night itself, read out in full; its tooltip
+    // says what the short word stands for, and nothing under the strip repeats it.
     const marks = ngMocks.findAll(nights[1], '.day-mark');
     expect(marks.length).toEqual(1);
     expect(ngMocks.find(marks[0], '[aria-hidden="true"]').nativeElement.textContent).toEqual('Off');
     expect(ngMocks.find(marks[0], '.sr-only').nativeElement.textContent).toEqual('Off-night');
+    expect(fixture.point.componentInstance.offNightTip()).toBe(
+      'Off-night: 7 games or fewer, so most lineups have an open slot',
+    );
     expect(ngMocks.findAll(nights[0], '.day-mark').length).toEqual(0);
-    const legend = ngMocks.find(fixture, '.range-legend');
-    expect(ngMocks.formatText(ngMocks.find(legend, '.day-mark'))).toEqual('Off');
-    expect(ngMocks.formatText(legend)).toContain('Off-night');
+    expect(ngMocks.findAll(fixture, '.range-legend')).toHaveLength(0);
     expect(ngMocks.formatText(fixture)).toContain('Week 2');
     expect(ngMocks.formatText(fixture)).toContain('Pick a league above');
   });
@@ -820,7 +820,6 @@ describe('StreamerPlannerComponent', () => {
         expect(
           ngMocks.findAll(fixture, '.day-room').map((cell) => ngMocks.formatText(cell)),
         ).toEqual(['RW, D, G', 'RW, D, G']);
-        expect(planner.roomSummary()).toBe('Room on 2 of 2 game days');
         expect(ngMocks.formatText(ngMocks.find(fixture, '.free-agents .fit-toggle'))).toBe(
           'Rank based on your roster availability',
         );
@@ -882,7 +881,7 @@ describe('StreamerPlannerComponent', () => {
             '13',
           ]);
           expect(planner.dropsSuggested()).toBe(true);
-          expect(ngMocks.formatText(fixture)).toContain('Willing to drop');
+          expect(ngMocks.formatText(fixture)).toContain('Droppable players');
         });
 
         it("prices each skater's best swap, the seat a drop frees included", async () => {
@@ -926,22 +925,25 @@ describe('StreamerPlannerComponent', () => {
           expect(planner.shownSwap()).toBeNull();
         });
 
-        it('marks in yellow the positions a drop would open, and says what yellow means', async () => {
+        it('stars in yellow, on the room line, the positions a drop would open', async () => {
           const fixture = await render();
           const planner = fixture.point.componentInstance;
 
           // Every forward seat is taken; dropping a C who starts at Util frees a seat any forward
-          // can take, and the D seat was open already.
+          // can take, and the D seat was open already. Both sit on the night's one room line.
           expect(
             ngMocks
-              .findAll(fixture, '.day .day-room--drop')
-              .map((cell) => ngMocks.formatText(cell)),
-          ).toEqual(['C, LW, RW', 'C, LW, RW']);
+              .findAll(fixture, '.day .day-rooms')
+              .map((line) => ngMocks.findAll(line, '.day-room').map((c) => ngMocks.formatText(c))),
+          ).toEqual([
+            ['D', 'C, LW, RW*'],
+            ['D', 'C, LW, RW*'],
+          ]);
           expect(planner.dropRoomTip(planner.dropRoom(planner.days()[1])!)).toBe(
             'Open only if you drop a player you picked: C, RW if you drop Mine 10 or Mine 12; LW if you drop Mine 10, Mine 12 or Mine 13.',
           );
-          expect(ngMocks.formatText(fixture)).toContain(
-            'Open only if you drop a player you picked below',
+          expect(ngMocks.formatText(ngMocks.find(fixture, '.range-legend'))).toBe(
+            '*Open only if you drop a player you picked below',
           );
 
           // With nobody picked to drop, nothing is yellow.

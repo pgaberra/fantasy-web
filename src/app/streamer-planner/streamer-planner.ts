@@ -113,7 +113,6 @@ import {
   rateTeams,
   sameStretch,
   Stretch,
-  stretchLabel,
   weekdayName,
   weekOf,
   weeksTitle,
@@ -573,17 +572,6 @@ export class StreamerPlannerComponent {
   roomTip(room: NightRoom): string {
     return roomTip(room);
   }
-
-  /** "Room on 4 of 6 game days": the counted nights with a seat open. */
-  readonly roomSummary = computed(() => {
-    const rooms = this.rooms();
-    if (!rooms) {
-      return '';
-    }
-    const counted = [...this.counted()];
-    const open = counted.filter((date) => (rooms.get(date)?.open ?? 0) > 0).length;
-    return `Room on ${open} of ${counted.length} game days`;
-  });
 
   retryMyTeam(): void {
     this.myTeamResource.reload();
@@ -1167,12 +1155,6 @@ export class StreamerPlannerComponent {
     return stretch ? weeksTitle(this.weeks(), stretch) : '';
   });
 
-  /** "Oct 19 to Oct 25". */
-  readonly stretchTitle = computed(() => {
-    const stretch = this.stretch();
-    return stretch ? stretchLabel(stretch.start, stretch.end) : '';
-  });
-
   /** "6 of 7 game days": the days counted, of the days with games. */
   readonly nightsTitle = computed(() => {
     const nights = this.nightsWithGames();
@@ -1185,6 +1167,14 @@ export class StreamerPlannerComponent {
       ? `The model's projection for the game days you count that have room for him in ${this.myTeamName()}, scored with your league's settings. A player is only worth what your league pays for what he does.`
       : "The model's projection for the nights you count, scored with your league's settings. A player is only worth what your league pays for what he does.",
   );
+
+  /** What the "Off" mark on a night stands for, in its tooltip: the only place it is said. */
+  readonly offNightTip = computed(() => {
+    const max = this.offNightMaxGames();
+    return max
+      ? `Off-night: ${max} games or fewer, so most lineups have an open slot`
+      : 'Off-night: few games, so most lineups have an open slot';
+  });
 
   /** What a night is worth, said once, in the tip beside the nights. */
   readonly nightsHelp = computed(() => {
@@ -1243,9 +1233,6 @@ export class StreamerPlannerComponent {
   formatDay(date: string): string {
     return formatDay(date);
   }
-
-  /** Whether any night on screen carries the off-night mark, and so whether the line under them explains it. */
-  readonly hasOffNight = computed(() => this.days().some((day) => day.offNight));
 }
 
 /** A number with its sign, a minus a true minus: "+1", "−0.4", "±0". */
