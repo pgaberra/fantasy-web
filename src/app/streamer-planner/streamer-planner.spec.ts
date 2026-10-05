@@ -926,6 +926,32 @@ describe('StreamerPlannerComponent', () => {
           expect(planner.shownSwap()).toBeNull();
         });
 
+        it('marks in yellow the positions a drop would open, and says what yellow means', async () => {
+          const fixture = await render();
+          const planner = fixture.point.componentInstance;
+
+          // Every forward seat is taken; dropping a C who starts at Util frees a seat any forward
+          // can take, and the D seat was open already.
+          expect(
+            ngMocks
+              .findAll(fixture, '.day .day-room--drop')
+              .map((cell) => ngMocks.formatText(cell)),
+          ).toEqual(['C, LW, RW', 'C, LW, RW']);
+          expect(planner.dropRoomTip(planner.dropRoom(planner.days()[1])!)).toBe(
+            'Open only if you drop a player you picked: C, RW if you drop Mine 10 or Mine 12; LW if you drop Mine 10, Mine 12 or Mine 13.',
+          );
+          expect(ngMocks.formatText(fixture)).toContain(
+            'Open only if you drop a player you picked below',
+          );
+
+          // With nobody picked to drop, nothing is yellow.
+          for (const id of [...planner.dropIds()]) {
+            planner.toggleDrop(id);
+          }
+          fixture.detectChanges();
+          expect(ngMocks.findAll(fixture, '.day-room--drop')).toHaveLength(0);
+        });
+
         it('names the drops in one line and counts those past the third', async () => {
           const fixture = await render();
           const planner = fixture.point.componentInstance;
