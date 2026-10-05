@@ -301,6 +301,8 @@
           [focus]="focus()"
           [focusLabel]="focusLabel()"
           [top]="topRows()"
+          [sort]="sort()"
+          (sortBy)="sortBy($event)"
         />
         <!-- A page at a time: most visits never leave the first, so the card stays the height
              of one page and the next is a press away. The page size is kept per layout. -->

@@ -33,6 +33,36 @@
   text-align: right;
 }
 
+/* The heading is the sort control, drawn as the heading it was, as on the team schedules. A number
+   column's arrow goes before its label, so the labels stay over their right-aligned figures. */
+.sort {
+  align-items: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: inherit;
+  gap: 2px;
+  /* The cell pads it already: a dozen narrow category columns would each grow by its own. */
+  padding: 0;
+}
+
+.sort:hover {
+  color: var(--color-primary);
+}
+
+.sort:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.free-agents-table th[aria-sort] .sort {
+  color: var(--color-primary);
+}
+
 /* A row is read across a dozen numbers; the one under the pointer is held together. */
 .free-agents-table tbody tr:hover > * {
   background: var(--color-surface-hover);

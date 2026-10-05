@@ -13,10 +13,13 @@ import {
   filterByPositions,
   lineColumns,
   lineStats,
+  nextSort,
   nightsFactor,
   projectedStarts,
+  RANKED_ORDER,
   RankedFreeAgent,
   scaledProjection,
+  sortFreeAgents,
   startsProjection,
   teamsByKey,
 } from './planner-free-agents';
@@ -455,5 +458,67 @@ describe('formatting', () => {
     expect(formatGames(2.97)).toBe('3');
     expect(formatGames(3.75)).toBe('4');
     expect(formatGames(2.49)).toBe('2');
+  });
+});
+
+describe('sorting the free agents', () => {
+  const blocker = ranked(skater('Blocker', ['D'], 'EDM', { goals: 0.2, blocks: 9 }), 3);
+  const scorer = ranked(skater('Ace', ['C'], 'EDM', { goals: 3, blocks: 1 }), 1);
+  const middle = ranked(skater('Middle', ['RW'], 'EDM', { goals: 1, blocks: 4 }), 2);
+  const netminder = ranked(goalie({ w: 1.2, gaa: 2.4 }), 4);
+  const list = [scorer, middle, blocker, netminder];
+  const names = (rows: readonly RankedFreeAgent[]) => rows.map((row) => row.player.name);
+
+  it('leaves the list as ranked until a column is picked', () => {
+    expect(sortFreeAgents(list, RANKED_ORDER)).toBe(list);
+  });
+
+  it('sorts by a category, most first, with the other kind last whichever way it points', () => {
+    const blocks = nextSort(RANKED_ORDER, 'blocks');
+    expect(blocks).toEqual({ key: 'blocks', descending: true });
+    expect(names(sortFreeAgents(list, blocks))).toEqual(['Blocker', 'Middle', 'Ace', 'Goalie']);
+
+    const fewest = nextSort(blocks, 'blocks');
+    expect(fewest).toEqual({ key: 'blocks', descending: false });
+    expect(names(sortFreeAgents(list, fewest))).toEqual(['Ace', 'Middle', 'Blocker', 'Goalie']);
+  });
+
+  it('opens a name from A and GAA from the lowest, which is best first for each', () => {
+    expect(nextSort(RANKED_ORDER, 'name')).toEqual({ key: 'name', descending: false });
+    expect(names(sortFreeAgents(list, nextSort(RANKED_ORDER, 'name')))).toEqual([
+      'Ace',
+      'Blocker',
+      'Goalie',
+      'Middle',
+    ]);
+    expect(nextSort(RANKED_ORDER, 'gaa')).toEqual({ key: 'gaa', descending: false });
+  });
+
+  it('turns the score round on a second press, and back to the ranked order on a third', () => {
+    const worst = nextSort(RANKED_ORDER, 'score');
+    expect(names(sortFreeAgents(list, worst))).toEqual(['Goalie', 'Blocker', 'Middle', 'Ace']);
+    expect(nextSort(worst, 'score')).toEqual(RANKED_ORDER);
+  });
+
+  it('keeps the ranked order among players level on the column', () => {
+    const level = [scorer, middle, blocker].map((row) => ({ ...row, games: 3 }));
+    expect(names(sortFreeAgents(level, nextSort(RANKED_ORDER, 'games')))).toEqual([
+      'Ace',
+      'Middle',
+      'Blocker',
+    ]);
+  });
+
+  it('puts a goalie with no starts last on a rate, and a goalie last on ice time', () => {
+    const benched = { ...ranked(goalie({ w: 0, gaa: 0 }), 5), games: 0 };
+    expect(names(sortFreeAgents([benched, netminder], nextSort(RANKED_ORDER, 'gaa')))).toEqual([
+      'Goalie',
+      'Goalie',
+    ]);
+    expect(sortFreeAgents([benched, netminder], nextSort(RANKED_ORDER, 'gaa'))[0]).toBe(netminder);
+    expect(names(sortFreeAgents([netminder, blocker], nextSort(RANKED_ORDER, 'toi')))).toEqual([
+      'Blocker',
+      'Goalie',
+    ]);
   });
 });
