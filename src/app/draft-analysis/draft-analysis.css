@@ -195,13 +195,17 @@
   background: var(--color-text-subtle);
 }
 
-.team-grade[data-grade='A'],
-.team-grade[data-grade='B'] {
+/* Every grade its own colour: a good draft and a great one, a poor one and a failed one, are
+   different answers, and sharing a green or a red made a column of them read as a single block.
+   The letter still carries it for anyone the hues don't reach. */
+.team-grade[data-grade='A'] {
   background: var(--color-success);
 }
 
-/* D and F apart: a poor draft and a failed one are different answers, and in one red a column
-   of them read as a single block. The letter still carries it for anyone the hues don't reach. */
+.team-grade[data-grade='B'] {
+  background: var(--color-success-soft);
+}
+
 .team-grade[data-grade='D'] {
   background: var(--color-caution);
 }
