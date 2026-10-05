@@ -2,6 +2,7 @@ import { DestroyRef, inject, Injectable, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { LeagueSummary } from '../api/models/league-summary';
+import { LeagueChoiceService } from '../services/league-choice.service';
 import { YahooService } from '../services/yahoo.service';
 import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { isYahooRefusal } from './yahoo-refused';
@@ -16,9 +17,10 @@ import { leaveFor } from './leave-for';
  * they are answered once here rather than copied per screen. What differs between screens is what
  * happens to the chosen league, and that stays theirs.
  *
- * <p>Not root-provided: each screen gets its own, because a league picked on one is not a league
- * picked on another, and the connection is re-checked when a screen opens rather than remembered
- * from whenever the app started.
+ * <p>Not root-provided: each screen gets its own, so the connection is re-checked when a screen
+ * opens rather than remembered from whenever the app started. The league itself is shared: a
+ * screen opens on the one last chosen anywhere ({@link LeagueChoiceService}), and a league picked
+ * here is the one the next screen opens on.
  */
 @Injectable()
 export class YahooLeaguePicker {
@@ -26,6 +28,7 @@ export class YahooLeaguePicker {
   private readonly router = inject(Router);
   private readonly connectReturn = inject(YahooConnectReturnService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly choice = inject(LeagueChoiceService);
 
   /** Whether the account is connected to Yahoo; null while that is still being asked. */
   readonly connected = signal<boolean | null>(null);
@@ -39,10 +42,11 @@ export class YahooLeaguePicker {
   /**
    * Checks the connection and, when there is one, loads the leagues behind it.
    *
-   * @param initialKey a league to start on, when the screen already knows which one it means.
+   * @param openOnRemembered whether to start on the Yahoo league last chosen anywhere. A screen
+   *     that already knows what it means (a link naming a draft) says no.
    */
-  start(initialKey: string | null = null): void {
-    this.selectedKey.set(initialKey);
+  start(openOnRemembered = true): void {
+    this.selectedKey.set(openOnRemembered ? (this.choice.on('YAHOO')?.leagueId ?? null) : null);
     this.yahoo
       .connectionStatus()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -77,10 +81,20 @@ export class YahooLeaguePicker {
       });
   }
 
-  /** Takes the league a `<select>` changed to, clearing whatever the last one said went wrong. */
+  /**
+   * Takes the league a `<select>` changed to, clearing whatever the last one said went wrong, and
+   * remembers it for the next screen. Going back to the placeholder is choosing no league.
+   */
   select(event: Event): void {
-    this.selectedKey.set((event.target as HTMLSelectElement).value || null);
+    const key = (event.target as HTMLSelectElement).value || null;
+    this.selectedKey.set(key);
     this.error.set(null);
+    const league = this.selectedLeague();
+    if (league) {
+      this.choice.choose({ platform: 'YAHOO', leagueId: league.leagueKey, name: league.name });
+    } else if (!key) {
+      this.choice.forget();
+    }
   }
 
   /** The chosen league, for its name — the key alone is not something to show anybody. */
@@ -102,9 +116,14 @@ export class YahooLeaguePicker {
       .subscribe({
         next: (response) => {
           this.leagues.set(response.leagues);
+          this.dropUnlisted(response.leagues);
           // One league is not a choice; picking it for them saves a step without taking one.
           if (!this.selectedKey() && response.leagues.length === 1) {
-            this.selectedKey.set(response.leagues[0].leagueKey);
+            const only = response.leagues[0];
+            this.selectedKey.set(only.leagueKey);
+            if (!this.choice.league()) {
+              this.choice.choose({ platform: 'YAHOO', leagueId: only.leagueKey, name: only.name });
+            }
           }
           this.loadingLeagues.set(false);
         },
@@ -117,5 +136,20 @@ export class YahooLeaguePicker {
           );
         },
       });
+  }
+
+  /**
+   * A remembered league the account no longer lists — last season's, or one the user has left —
+   * is not one to open on, nor to open on next time.
+   */
+  private dropUnlisted(leagues: readonly LeagueSummary[]): void {
+    const key = this.selectedKey();
+    if (!key || leagues.some((league) => league.leagueKey === key)) {
+      return;
+    }
+    this.selectedKey.set(null);
+    if (this.choice.on('YAHOO')?.leagueId === key) {
+      this.choice.forget();
+    }
   }
 }

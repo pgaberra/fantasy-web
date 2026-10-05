@@ -26,6 +26,12 @@
           @if (features.streamerPlanner()) {
             <a routerLink="/streamer-planner" routerLinkActive="active">Streamer Planner</a>
           }
+          @if (features.faScout()) {
+            <a routerLink="/fa-scout" routerLinkActive="active">FA Scout</a>
+          }
+          @if (features.roleChanges()) {
+            <a routerLink="/role-changes" routerLinkActive="active">Role Changes</a>
+          }
           <!-- The one link in the header that sells something, and only to an account that has
                not bought it. It used to be an "Account" link to the subscription page, beside an
                avatar that also opened an account menu: two doors marked the same, one of them
@@ -85,6 +91,17 @@
         Team Power Rankings
       </a>
     }
+    @if (features.draftAnalysis()) {
+      <a
+        class="nav-menu-item"
+        cdkMenuItem
+        routerLink="/draft-analysis"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+      >
+        Draft Analysis
+      </a>
+    }
     <a
       class="nav-menu-item"
       cdkMenuItem
@@ -114,6 +131,28 @@
         ariaCurrentWhenActive="page"
       >
         Streamer Planner
+      </a>
+    }
+    @if (features.faScout()) {
+      <a
+        class="nav-menu-item nav-menu-item--collapsed"
+        cdkMenuItem
+        routerLink="/fa-scout"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+      >
+        FA Scout
+      </a>
+    }
+    @if (features.roleChanges()) {
+      <a
+        class="nav-menu-item nav-menu-item--collapsed"
+        cdkMenuItem
+        routerLink="/role-changes"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+      >
+        Role Changes
       </a>
     }
     @if (showsPremiumLink()) {

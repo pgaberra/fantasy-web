@@ -26,6 +26,7 @@
       <app-espn-league-sync
         class="espn-league"
         purpose="rankings"
+        [lastLeagueId]="espnLeague()?.id ?? null"
         (synced)="rankEspnLeague($event)"
       />
     }

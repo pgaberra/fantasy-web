@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { MockBuilder, MockRender } from 'ng-mocks';
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { EspnLeagueSyncComponent, EspnSyncResult } from './espn-league-sync';
@@ -11,6 +11,8 @@ import { CredentialStatusResponse } from '../../../api/models/credential-status-
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
 
 describe('EspnLeagueSyncComponent', () => {
+  beforeEach(() => localStorage.clear());
+
   const settings: LeagueProjectionSettingsResponse = {
     scoringType: 'points',
     activeScoringColumns: ['goals', 'assists'],
@@ -451,5 +453,58 @@ describe('EspnLeagueSyncComponent', () => {
     expect(text).toContain('Show rankings');
     expect(text).not.toContain('Sync settings');
     expect(text).toContain('Not counted');
+  });
+
+  /** The Streamer Planner asks for its league with this card too. */
+  it('names the card and its button for the planner when asked for it', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent, { purpose: 'planner' });
+    await fixture.whenStable();
+
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('Plan from your ESPN league');
+    expect(text).toContain('Show free agents');
+    expect(text).not.toContain('Sync settings');
+  });
+
+  it('starts on the ESPN league last chosen anywhere, where none was synced here', async () => {
+    localStorage.setItem(
+      'slapstat.league',
+      JSON.stringify({ platform: 'ESPN', leagueId: '777', name: 'Office League' }),
+    );
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent);
+    await fixture.whenStable();
+
+    expect(fixture.point.componentInstance.leagueId()).toBe('777');
+  });
+
+  it('keeps the league synced here over the one last chosen elsewhere', async () => {
+    localStorage.setItem(
+      'slapstat.league',
+      JSON.stringify({ platform: 'ESPN', leagueId: '777', name: 'Office League' }),
+    );
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent, { lastLeagueId: '555' });
+    await fixture.whenStable();
+
+    expect(fixture.point.componentInstance.leagueId()).toBe('555');
+  });
+
+  it('remembers the league ESPN accepts, for the next page that picks one', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.leagueId.set('123456');
+    component.sync();
+    await fixture.whenStable();
+
+    expect(JSON.parse(localStorage.getItem('slapstat.league') ?? 'null')).toEqual({
+      platform: 'ESPN',
+      leagueId: '123456',
+      name: 'ESPN league 123456',
+    });
   });
 });

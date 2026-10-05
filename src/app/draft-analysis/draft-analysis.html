@@ -1,0 +1,282 @@
+<div class="draft-analysis">
+  <div class="analysis-head">
+    <a routerLink="/draft" class="back-link"
+      ><app-icon name="arrow-left" [size]="14" />Back to drafts</a
+    >
+    <h1>Draft Analysis</h1>
+    <p class="analysis-lede">
+      See which picks in your league's draft were good and which were reaches, graded against our AI
+      projection from before the season.
+    </p>
+  </div>
+
+  <div class="league-picker">
+    <div class="picker-field">
+      <span class="picker-label" id="analysis-league-label">League</span>
+      @if (picker.leagues().length > 0) {
+        <select
+          class="picker-select league-select"
+          aria-labelledby="analysis-league-label"
+          (change)="selectLeague($event)"
+        >
+          <option value="">Select a league…</option>
+          @for (league of picker.leagues(); track league.leagueKey) {
+            <option
+              [value]="league.leagueKey"
+              [selected]="league.leagueKey === picker.selectedKey()"
+            >
+              {{ league.name }}
+            </option>
+          }
+        </select>
+      }
+
+      @switch (picker.connected()) {
+        @case (null) {
+          <span class="picker-status"
+            ><app-loading-indicator variant="inline" label="Checking"
+          /></span>
+        }
+        @case (false) {
+          <button
+            type="button"
+            class="btn btn-primary btn-sm"
+            [disabled]="picker.connecting()"
+            (click)="picker.connect()"
+          >
+            @if (picker.connecting()) {
+              <app-loading-indicator variant="inline" label="Connecting" />
+            } @else {
+              Connect Yahoo account
+            }
+          </button>
+        }
+        @default {
+          @if (picker.loadingLeagues()) {
+            <span class="picker-status"
+              ><app-loading-indicator variant="inline" label="Loading your leagues"
+            /></span>
+          } @else if (picker.leagues().length === 0) {
+            <span class="picker-status">No NHL leagues found.</span>
+          }
+        }
+      }
+    </div>
+
+    @if (picker.error(); as message) {
+      <p class="analysis-error picker-wide" role="alert">
+        <app-icon name="alert-triangle" [size]="14" />{{ message }}
+      </p>
+    }
+  </div>
+
+  @if (loading()) {
+    <app-loading-indicator />
+  } @else if (error()) {
+    <app-error-state
+      title="Couldn't read that draft"
+      [message]="errorMessage() ?? ''"
+      [error]="error()"
+      [retryable]="errorRetryable()"
+      (retry)="retry()"
+    />
+  } @else if (analysis(); as data) {
+    <h2 class="analysis-league">{{ leagueName() }}</h2>
+    <p class="analysis-source">
+      @if (data.preseason) {
+        Graded against the SlapStat AI projection as it stood before the season, by your league's
+        scoring settings.
+      } @else {
+        Graded against the current SlapStat AI projection, by your league's scoring settings. The
+        projection from before the season isn't stored.
+      }
+    </p>
+
+    @if (notDrafted()) {
+      <p class="analysis-error" role="alert">
+        <app-icon name="alert-triangle" [size]="14" />This league hasn't drafted yet. Come back once
+        the picks are in.
+      </p>
+    } @else {
+      @if (inProgress()) {
+        <p class="analysis-note">
+          <app-icon name="info" [size]="14" />The draft is still running, so these are the picks so
+          far.
+        </p>
+      }
+      @if (data.auction) {
+        <p class="analysis-note">
+          <app-icon name="info" [size]="14" />This was an auction draft. Its order says nothing
+          about value, so its picks aren't graded.
+        </p>
+      }
+
+      <section class="analysis-section" aria-labelledby="analysis-teams-heading">
+        <h3 id="analysis-teams-heading">Teams</h3>
+        <div class="table-wrapper" appTableScroll="Teams">
+          <table class="analysis-table teams-table">
+            <thead>
+              <tr>
+                <th scope="col" class="num">#</th>
+                <th scope="col">Team</th>
+                <th scope="col">Grade</th>
+                <th scope="col" class="num">Good picks</th>
+                <th scope="col" class="num">Reaches</th>
+                <th scope="col" class="num">Value added</th>
+                <th scope="col"><span class="visually-hidden">Picks</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (team of teams(); track team.id; let index = $index) {
+                <tr [class.mine]="team.mine" [class.selected]="teamFilter() === team.id">
+                  <td class="num">{{ index + 1 }}</td>
+                  <th scope="row" class="team-name">{{ team.name }}</th>
+                  <td>
+                    @if (team.grade) {
+                      <span class="team-grade" [attr.data-grade]="team.grade">{{
+                        team.grade
+                      }}</span>
+                    }
+                  </td>
+                  <td class="num">{{ team.goodPicks }}</td>
+                  <td class="num">{{ team.badPicks }}</td>
+                  <td class="num value">{{ signedValue(team.valueAdded) }}</td>
+                  <td>
+                    <button type="button" class="show-picks" (click)="showTeam(team.id)">
+                      Show picks
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <p class="analysis-help">
+          Value added is each pick's value in {{ valueUnit() }} less the value of the player our
+          projection ranks at that pick number, summed over the team's picks.
+        </p>
+      </section>
+
+      <section class="analysis-section" aria-labelledby="analysis-picks-heading">
+        <h3 id="analysis-picks-heading">Picks</h3>
+        <div class="pick-filters">
+          <div class="picker-field">
+            <label class="picker-label" for="analysis-team">Team</label>
+            <select
+              id="analysis-team"
+              class="picker-select team-select"
+              (change)="selectTeam($event)"
+            >
+              <option value="" [selected]="teamFilter() === null">All teams</option>
+              @for (team of teams(); track team.id) {
+                <option [value]="team.id" [selected]="teamFilter() === team.id">
+                  {{ team.name }}{{ team.mine ? ' (you)' : '' }}
+                </option>
+              }
+            </select>
+          </div>
+          @if (graded()) {
+            <div class="segmented grade-filter" role="group" aria-label="Show picks">
+              <button
+                type="button"
+                [attr.aria-pressed]="gradeFilter() === 'all'"
+                (click)="setGradeFilter('all')"
+              >
+                All
+              </button>
+              <button
+                type="button"
+                [attr.aria-pressed]="gradeFilter() === 'good'"
+                (click)="setGradeFilter('good')"
+              >
+                Good picks
+              </button>
+              <button
+                type="button"
+                [attr.aria-pressed]="gradeFilter() === 'bad'"
+                (click)="setGradeFilter('bad')"
+              >
+                Reaches
+              </button>
+            </div>
+          }
+        </div>
+
+        <div class="table-wrapper" appTableScroll="Picks">
+          <table class="analysis-table picks-table">
+            <thead>
+              <tr>
+                <th scope="col">Pick</th>
+                <th scope="col">Team</th>
+                <th scope="col">Player</th>
+                @if (graded()) {
+                  <th scope="col" class="num">AI rank</th>
+                  <th scope="col">Grade</th>
+                  <th scope="col" class="num">Value vs. slot</th>
+                  <th scope="col">Best available</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (pick of picks(); track pick.overall) {
+                <tr [class.mine]="pick.teamId === myTeamId()">
+                  <td class="pick-number">
+                    {{ pickLabel(pick) }}
+                    <span class="pick-overall">#{{ pick.overall }}</span>
+                  </td>
+                  <td class="pick-team">{{ teamName(pick.teamId) }}</td>
+                  <th scope="row" class="player-col">
+                    <span class="player-cell">
+                      <app-team-logo
+                        class="player-logo"
+                        [team]="pick.club"
+                        [alt]="pick.club ?? ''"
+                      />
+                      <span class="player-identity">
+                        <span class="player-name">{{ pick.name ?? 'Unknown player' }}</span>
+                        <span class="player-positions">{{ pick.positions.join(', ') }}</span>
+                      </span>
+                    </span>
+                  </th>
+                  @if (graded()) {
+                    <td class="num">{{ pick.aiRank ?? '' }}</td>
+                    <td>
+                      @if (pick.grade) {
+                        <span class="grade-badge" [attr.data-tone]="gradeTone(pick.grade)">{{
+                          gradeLabel(pick.grade)
+                        }}</span>
+                      }
+                    </td>
+                    <td class="num value">{{ signedValue(pick.valueOverSlot) }}</td>
+                    <td class="best-available">
+                      @if (pick.bestAvailable; as best) {
+                        {{ best.name }}
+                        <span class="best-rank">#{{ best.aiRank }}</span>
+                      }
+                    </td>
+                  }
+                </tr>
+              } @empty {
+                <tr>
+                  <td class="analysis-empty" [attr.colspan]="graded() ? 7 : 3">
+                    No picks match these filters.
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (sellsPremium()) {
+          <p class="analysis-locked">
+            <app-icon name="lock" [size]="14" />
+            Premium grades every pick and shows the best player still on the board.
+            <a routerLink="/premium">See what's included</a>
+          </p>
+        }
+      </section>
+    }
+  } @else if (picker.leagues().length > 0 && !picker.selectedKey()) {
+    <p class="analysis-note">Select a league to see its draft.</p>
+  }
+</div>

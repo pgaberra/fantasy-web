@@ -1,11 +1,16 @@
+import { HttpErrorResponse } from '@angular/common/http';
+import { PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { MockBuilder } from 'ng-mocks';
 import { firstValueFrom } from 'rxjs';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthService } from './auth.service';
 import { AnalyticsService } from './analytics.service';
 import { Api } from '../api/api';
+import { logout as logoutRequest } from '../api/fn/authentication/logout';
+import { refresh as refreshRequest } from '../api/fn/authentication/refresh';
+import { signOutEverywhere as signOutEverywhereRequest } from '../api/fn/account/sign-out-everywhere';
 import { AuthResponse } from '../api/models';
 import { environment } from '../../environments/environment';
 
@@ -27,7 +32,6 @@ function jwtWith(claims: Record<string, string>): string {
 function authResponse(token: string, emailVerified = true): AuthResponse {
   return {
     token,
-    refreshToken: 'refresh-token',
     expiresInSeconds: 900,
     refreshExpiresInSeconds: 86400,
     admin: false,
@@ -40,15 +44,7 @@ describe('AuthService', () => {
   /** What the router would say the visitor is looking at when their session runs out. */
   let currentUrl = '/projections/abc123/draft';
 
-  beforeEach(async () => {
-    localStorage.clear();
-    sessionStorage.clear();
-    identify.mockClear();
-    reset.mockClear();
-    capture.mockClear();
-    invoke.mockReset();
-    currentUrl = '/projections/abc123/draft';
-
+  const buildService = async (platform: 'browser' | 'server' = 'browser') => {
     await MockBuilder(AuthService)
       .provide({ provide: Api, useValue: { invoke } })
       .provide({
@@ -62,9 +58,28 @@ describe('AuthService', () => {
           },
         },
       })
-      .provide({ provide: AnalyticsService, useValue: { identify, reset, capture } });
+      .provide({ provide: AnalyticsService, useValue: { identify, reset, capture } })
+      .provide({ provide: PLATFORM_ID, useValue: platform });
 
-    service = TestBed.inject(AuthService);
+    return TestBed.inject(AuthService);
+  };
+
+  beforeEach(async () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    identify.mockClear();
+    reset.mockClear();
+    capture.mockClear();
+    invoke.mockReset();
+    // Signing out fires its request and forgets it, so every call needs something to answer.
+    invoke.mockResolvedValue(undefined);
+    currentUrl = '/projections/abc123/draft';
+
+    service = await buildService();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   describe('where signing in lands', () => {
@@ -176,10 +191,11 @@ describe('AuthService', () => {
       invoke.mockReturnValueOnce(Promise.resolve(authResponse(jwtWith({ sub: 'a' }))));
 
       await expect(firstValueFrom(service.refresh())).rejects.toBeTruthy();
+      // A failed refresh says nothing about the token, so the second still has it to send.
+      expect(localStorage.getItem('refresh_token')).toEqual('refresh-token');
       await firstValueFrom(service.refresh());
 
       expect(invoke).toHaveBeenCalledTimes(2);
-      expect(localStorage.getItem('refresh_token')).toEqual('refresh-token');
     });
   });
 
@@ -292,6 +308,25 @@ describe('AuthService', () => {
       expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/login']);
     });
 
+    /** The cookie is out of script's reach; left set, the next page load would sign them in. */
+    it('asks the server to clear the refresh cookie when signing out', () => {
+      service.logout();
+
+      expect(invoke).toHaveBeenCalledWith(logoutRequest);
+    });
+
+    it('signs out here even when the server cannot be reached', async () => {
+      invoke.mockRejectedValue(new HttpErrorResponse({ status: 0 }));
+      localStorage.setItem('auth_token', 'a-token');
+
+      service.logout();
+      await Promise.resolve();
+
+      expect(localStorage.getItem('auth_token')).toEqual(null);
+      expect(service.isLoggedIn()).toEqual(false);
+      expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/login']);
+    });
+
     it('keeps the page a session ran out under', () => {
       service.endExpiredSession();
 
@@ -306,7 +341,10 @@ describe('AuthService', () => {
 
       await firstValueFrom(service.signOutEverywhere(), { defaultValue: undefined });
 
-      expect(invoke).toHaveBeenCalledTimes(1);
+      expect(invoke.mock.calls.map(([fn]) => fn)).toEqual([
+        signOutEverywhereRequest,
+        logoutRequest,
+      ]);
       expect(localStorage.getItem('auth_token')).toEqual(null);
       expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/login']);
     });
@@ -341,6 +379,183 @@ describe('AuthService', () => {
         expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/login']);
       },
     );
+  });
+
+  /**
+   * The refresh token lives in an HttpOnly cookie the BFF sets: Safari deletes localStorage after
+   * seven days without a visit, which made a 30-day session a 7-day one for weekly visitors.
+   */
+  describe('keeping the refresh token out of localStorage', () => {
+    it('does not store the refresh token a sign-in returns', async () => {
+      invoke.mockResolvedValue(authResponse(jwtWith({ sub: 'account-uuid' })));
+
+      await firstValueFrom(service.login({ email: 'a@example.test', password: 'secret' }));
+
+      expect(localStorage.getItem('refresh_token')).toEqual(null);
+      expect(localStorage.getItem('auth_token')).not.toEqual(null);
+    });
+
+    it('refreshes on the cookie alone, with no body', async () => {
+      invoke.mockResolvedValue(authResponse(jwtWith({ sub: 'account-uuid' })));
+
+      await firstValueFrom(service.refresh());
+
+      expect(invoke).toHaveBeenCalledWith(refreshRequest);
+    });
+
+    /** Whoever was signed in before the release must not be signed out by it. */
+    it('sends a token stored before the cookie once, then lets the cookie carry it', async () => {
+      localStorage.setItem('refresh_token', 'legacy-refresh');
+      invoke.mockResolvedValue(authResponse(jwtWith({ sub: 'account-uuid' })));
+
+      await firstValueFrom(service.refresh());
+      await firstValueFrom(service.refresh());
+
+      expect(invoke.mock.calls).toEqual([
+        [refreshRequest, { body: { refreshToken: 'legacy-refresh' } }],
+        [refreshRequest],
+      ]);
+      expect(localStorage.getItem('refresh_token')).toEqual(null);
+    });
+
+    it('drops a token stored before the cookie when signing in', async () => {
+      localStorage.setItem('refresh_token', 'legacy-refresh');
+      invoke.mockResolvedValue(authResponse(jwtWith({ sub: 'account-uuid' })));
+
+      await firstValueFrom(service.login({ email: 'a@example.test', password: 'secret' }));
+
+      expect(localStorage.getItem('refresh_token')).toEqual(null);
+    });
+
+    it('drops a token stored before the cookie when signing out', () => {
+      localStorage.setItem('refresh_token', 'legacy-refresh');
+
+      service.logout();
+
+      expect(localStorage.getItem('refresh_token')).toEqual(null);
+    });
+  });
+
+  /**
+   * A browser with no access token may still hold the refresh cookie, and one refresh as the page
+   * loads finds out. Every outcome but a session found must look exactly like signed out did.
+   */
+  describe('restoring the session as the page loads', () => {
+    it('signs the visitor back in from the cookie without going anywhere', async () => {
+      invoke.mockResolvedValue(authResponse(jwtWith({ sub: 'account-uuid' })));
+
+      await service.restoreSession();
+
+      expect(invoke).toHaveBeenCalledWith(refreshRequest);
+      expect(service.isLoggedIn()).toEqual(true);
+      expect(localStorage.getItem('auth_token')).not.toEqual(null);
+      expect(identify).toHaveBeenCalledWith('account-uuid');
+      const router = TestBed.inject(Router);
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it('treats a refused cookie as a visitor who is not signed in, and says nothing', async () => {
+      invoke.mockRejectedValue(new HttpErrorResponse({ status: 401 }));
+
+      await service.restoreSession();
+
+      expect(service.isLoggedIn()).toEqual(false);
+      expect(TestBed.inject(Router).navigate).not.toHaveBeenCalled();
+      expect(reset).not.toHaveBeenCalled();
+    });
+
+    it('drops a stored token the server refused, since it will be refused again', async () => {
+      localStorage.setItem('refresh_token', 'legacy-refresh');
+      invoke.mockRejectedValue(new HttpErrorResponse({ status: 401 }));
+
+      await service.restoreSession();
+
+      expect(invoke).toHaveBeenCalledWith(refreshRequest, {
+        body: { refreshToken: 'legacy-refresh' },
+      });
+      expect(localStorage.getItem('refresh_token')).toEqual(null);
+    });
+
+    /** A failed request says nothing about the session, so nothing stored is touched. */
+    it.each([0, 503])(
+      'reads a %i as signed out for this page load and keeps what is stored',
+      async (status) => {
+        localStorage.setItem('refresh_token', 'legacy-refresh');
+        invoke.mockRejectedValue(new HttpErrorResponse({ status }));
+
+        await service.restoreSession();
+
+        expect(service.isLoggedIn()).toEqual(false);
+        expect(localStorage.getItem('refresh_token')).toEqual('legacy-refresh');
+        expect(TestBed.inject(Router).navigate).not.toHaveBeenCalled();
+      },
+    );
+
+    it('asks once per page load', async () => {
+      invoke.mockRejectedValue(new HttpErrorResponse({ status: 401 }));
+
+      await service.restoreSession();
+      await service.restoreSession();
+
+      expect(invoke).toHaveBeenCalledTimes(1);
+    });
+
+    it('asks nothing of a browser that already holds an access token', async () => {
+      localStorage.setItem('auth_token', 'a-token');
+
+      await service.restoreSession();
+
+      expect(invoke).not.toHaveBeenCalled();
+    });
+
+    it('shares the refresh a 401 started rather than sending a second', async () => {
+      let answer!: (response: AuthResponse) => void;
+      invoke.mockReturnValue(
+        new Promise<AuthResponse>((resolve) => {
+          answer = resolve;
+        }),
+      );
+
+      const interceptorRefresh = firstValueFrom(service.refresh());
+      const restored = service.restoreSession();
+      answer(authResponse(jwtWith({ sub: 'account-uuid' })));
+      await Promise.all([interceptorRefresh, restored]);
+
+      expect(invoke).toHaveBeenCalledTimes(1);
+    });
+
+    /** A hung server must not hold the landing page for the 60 s write timeout. */
+    it('stops waiting on a server that never answers, and still signs in if it does', async () => {
+      vi.useFakeTimers();
+      let answer!: (response: AuthResponse) => void;
+      invoke.mockReturnValue(
+        new Promise<AuthResponse>((resolve) => {
+          answer = resolve;
+        }),
+      );
+
+      const restored = service.restoreSession();
+      await vi.advanceTimersByTimeAsync(5000);
+      await restored;
+
+      expect(service.isLoggedIn()).toEqual(false);
+
+      answer(authResponse(jwtWith({ sub: 'account-uuid' })));
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(service.isLoggedIn()).toEqual(true);
+    });
+
+    it('asks nothing while a page is prerendered, where there is no visitor', async () => {
+      TestBed.resetTestingModule();
+      const prerendering = await buildService('server');
+
+      await prerendering.restoreSession();
+
+      expect(invoke).not.toHaveBeenCalled();
+      expect(prerendering.isLoggedIn()).toEqual(false);
+    });
   });
 
   describe('Google OAuth redirect flow', () => {

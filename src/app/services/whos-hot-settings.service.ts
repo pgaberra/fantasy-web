@@ -45,6 +45,11 @@ export interface WhosHotSettings {
   espnSync: EspnSync | null;
   /** Survives an unsync: the stamp is the claim, this is the league they import from. */
   lastEspnLeagueId: string | null;
+  /**
+   * Only the players nobody in the synced league holds. Kept through an unsync, so syncing again
+   * picks up where the visitor left off; it filters nothing while there is no league.
+   */
+  availableOnly: boolean;
 }
 
 const STORAGE_KEY = 'slapstat.whosHot.settings';
@@ -115,6 +120,8 @@ export class WhosHotSettingsService {
         ...(stored.rosterSlots ? { rosterSlots: withFlexSlots(stored.rosterSlots) } : {}),
         espnSync: stored.espnSync ?? null,
         lastEspnLeagueId: stored.lastEspnLeagueId ?? null,
+        // Written before the board could be narrowed to a league's available players.
+        availableOnly: stored.availableOnly ?? false,
         // Defaults first, so a stat this page learns to score later arrives on its own.
         statWeights: { ...DEFAULT_STAT_WEIGHTS, ...customised },
       };
