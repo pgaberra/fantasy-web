@@ -746,14 +746,12 @@ export class StreamerPlannerComponent {
   );
 
   /**
-   * How many rows at the head of the table are set off as the best picks: the first few of the
-   * list as it is narrowed, and only on its first page, since nobody further down is one of them.
-   * Sorted by another column, the head of the list is the most blocks or the alphabet, not the
-   * best picks, so nothing is set off.
+   * How many places are set off as the best picks: the best few of everyone available, by the rank
+   * each row shows, so a list narrowed to some positions sets off only the ones among them. Sorted
+   * by another column, the head of the list is the most blocks or the alphabet, not the best picks,
+   * so nothing is set off.
    */
-  readonly topRows = computed(() =>
-    this.currentPage() === 0 && isRankedOrder(this.sort()) ? TOP_OPTIONS : 0,
-  );
+  readonly topRows = computed(() => (isRankedOrder(this.sort()) ? TOP_OPTIONS : 0));
 
   /** "26–50 of 212": the places on screen, of the whole list. */
   readonly rangeText = computed(() => {

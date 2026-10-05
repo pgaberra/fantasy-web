@@ -95,11 +95,12 @@
       </tr>
     </thead>
     <tbody>
-      @for (entry of entries(); track entry.row.player.playerId; let index = $index) {
-        <tr class="player-row" [class.player-row--top]="index < top()">
+      @for (entry of entries(); track entry.row.player.playerId) {
+        @let medal = medalOf(entry.row);
+        <tr class="player-row" [class.player-row--top]="medal">
           <td class="num rank-col">
-            <span class="rank">{{ entry.row.rank }}</span>
-            @if (index < top()) {
+            <span class="rank" [class]="medal ? 'rank--' + medal : ''">{{ entry.row.rank }}</span>
+            @if (medal) {
               <span class="sr-only">, top streaming option</span>
             }
           </td>

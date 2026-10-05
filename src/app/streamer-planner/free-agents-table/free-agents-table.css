@@ -262,9 +262,10 @@ span.score {
 
 /* --- The best picks ---------------------------------------------------------------------------- */
 
-/* The first three of the list wear a medal for a rank, gold, silver and bronze, and are otherwise
-   rows like any other: a tint, a larger name and a coloured score on top of that read as a second
-   table over the first. The medals are this table's own colours, since the app's gold token means
+/* The best three of everyone available wear a medal for a rank, gold, silver and bronze, and are
+   otherwise rows like any other: a tint, a larger name and a coloured score on top of that read as
+   a second table over the first. The medal goes with the number, not the row: a list narrowed to
+   some positions whose head is fourth gives him none. The medals are this table's own colours, since the app's gold token means
    Premium; the number is dark on each, as white does not carry 4.5:1 on any of the three. */
 .free-agents-table .player-row--top .rank-col {
   vertical-align: middle;
@@ -285,17 +286,17 @@ span.score {
   width: 1.5rem;
 }
 
-.player-row--top:nth-child(1) .rank {
+.player-row--top .rank--gold {
   --medal: #f0c64a;
   --medal-text: #4d3800;
 }
 
-.player-row--top:nth-child(2) .rank {
+.player-row--top .rank--silver {
   --medal: #d3d9e2;
   --medal-text: #323b4a;
 }
 
-.player-row--top:nth-child(3) .rank {
+.player-row--top .rank--bronze {
   --medal: #dfa67c;
   --medal-text: #4f2708;
 }
