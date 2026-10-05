@@ -1,12 +1,14 @@
 import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
-import { defer, from, Observable, throwError } from 'rxjs';
+import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
+import { defer, firstValueFrom, from, Observable, throwError } from 'rxjs';
 import { finalize, shareReplay, tap } from 'rxjs/operators';
 import { Api } from '../api/api';
 import { login } from '../api/fn/authentication/login';
 import { register } from '../api/fn/authentication/register';
 import { refresh } from '../api/fn/authentication/refresh';
+import { logout as logoutRequest } from '../api/fn/authentication/logout';
 import { googleCodeLogin } from '../api/fn/authentication/google-code-login';
 import { facebookLogin } from '../api/fn/authentication/facebook-login';
 import { forgotPassword } from '../api/fn/authentication/forgot-password';
@@ -14,7 +16,7 @@ import { resetPassword } from '../api/fn/authentication/reset-password';
 import { verifyEmail } from '../api/fn/authentication/verify-email';
 import { resendVerification } from '../api/fn/authentication/resend-verification';
 import { signOutEverywhere } from '../api/fn/account/sign-out-everywhere';
-import { AuthResponse, LoginRequest, RefreshRequest, RegisterRequest } from '../api/models';
+import { AuthResponse, LoginRequest, RegisterRequest } from '../api/models';
 import { AnalyticsService } from './analytics.service';
 import { environment } from '../../environments/environment';
 
@@ -38,7 +40,12 @@ export class AuthService {
     : null;
 
   private readonly tokenKey = 'auth_token';
-  private readonly refreshTokenKey = 'refresh_token';
+  /**
+   * Where the refresh token used to be kept. It lives in an HttpOnly cookie the BFF sets now, out
+   * of reach of script and of Safari's seven-day cap on script-writable storage; this key is only
+   * read to carry a session from before that move across once, and is then removed.
+   */
+  private readonly legacyRefreshTokenKey = 'refresh_token';
   private readonly adminKey = 'is_admin';
   private readonly emailVerifiedKey = 'email_verified';
   private readonly googleStateKey = 'google_oauth_state';
@@ -46,6 +53,7 @@ export class AuthService {
   private readonly googleCallbackPath = '/auth/google/callback';
   private readonly googleAuthEndpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
   private refreshInFlight: Observable<AuthResponse> | null = null;
+  private sessionRestore: Promise<void> | null = null;
 
   readonly isLoggedIn = signal<boolean>(!!this.storage?.getItem(this.tokenKey));
   readonly isAdmin = signal<boolean>(this.storage?.getItem(this.adminKey) === 'true');
@@ -128,8 +136,13 @@ export class AuthService {
    */
   refresh(): Observable<AuthResponse> {
     this.refreshInFlight ??= defer(() => {
-      const body: RefreshRequest = { refreshToken: this.getRefreshToken() ?? '' };
-      return this.api.invoke(refresh, { body });
+      // The refresh token travels as the HttpOnly cookie (the interceptor sends auth calls with
+      // credentials). A session from before the cookie still has its token in localStorage, and
+      // sends it here until a refresh succeeds and the cookie takes over.
+      const legacyToken = this.legacyRefreshToken();
+      return legacyToken
+        ? this.api.invoke(refresh, { body: { refreshToken: legacyToken } })
+        : this.api.invoke(refresh);
     }).pipe(
       // Stored but not followed by a navigation: a refresh happens silently behind whatever the
       // user is reading, and sending them to /home for it would yank the page away.
@@ -138,6 +151,45 @@ export class AuthService {
       shareReplay({ bufferSize: 1, refCount: false }),
     );
     return this.refreshInFlight;
+  }
+
+  /**
+   * The one attempt per page load to pick a session back up from the refresh cookie, for a
+   * browser that holds no access token. Safari deletes localStorage after seven days of use
+   * without a visit, so a weekly visitor arrives with nothing stored but the cookie the BFF set,
+   * and reading "no token" as "signed out" sent them to the form every time.
+   *
+   * <p>The guards wait for this before deciding, rather than the whole app bootstrap. It never
+   * rejects: a refused refresh (401/403) is simply a visitor who is not signed in, and a failed
+   * one (no connection, a 5xx) reads as signed out for this page load while leaving everything
+   * stored as it was. Neither navigates or shows anything, so an anonymous visitor sees the
+   * landing page exactly as before. A server that never answers is waited on for
+   * `RESTORE_WAIT_MS` at most; the refresh carries on behind the page and still signs the
+   * visitor in if it lands. Nothing to do while prerendering, where there is no visitor.
+   */
+  restoreSession(): Promise<void> {
+    this.sessionRestore ??= this.attemptRestore();
+    return this.sessionRestore;
+  }
+
+  private attemptRestore(): Promise<void> {
+    if (!this.storage || this.getToken()) {
+      return Promise.resolve();
+    }
+    let giveUp: ReturnType<typeof setTimeout> | undefined;
+    const attempt = firstValueFrom(this.refresh()).then(
+      () => undefined,
+      (error: unknown) => {
+        // A token the server refused will be refused on every load after this one too.
+        if (refreshRefused(error)) {
+          this.storage?.removeItem(this.legacyRefreshTokenKey);
+        }
+      },
+    );
+    const timeLimit = new Promise<void>((resolve) => {
+      giveUp = setTimeout(resolve, RESTORE_WAIT_MS);
+    });
+    return Promise.race([attempt, timeLimit]).finally(() => clearTimeout(giveUp));
   }
 
   forgotPassword(email: string): Observable<void> {
@@ -167,8 +219,16 @@ export class AuthService {
    * <p>Only this browser. The refresh token stays valid on the server, because the one way to
    * revoke it ends every session the account has, and signing out of a laptop should not also
    * sign someone out of their phone. {@link signOutEverywhere} is that choice, made deliberately.
+   *
+   * <p>The BFF is asked to clear the refresh cookie, which script cannot touch; left in place, the
+   * next page load would quietly sign this browser back in.
    */
   logout() {
+    this.api.invoke(logoutRequest).catch(() => {
+      // Deliberately unreported: signing out here goes ahead regardless, and there is nothing the
+      // visitor could do about a failed clear. The cookie then outlives this sign-out until it
+      // expires or a later sign-out reaches the server.
+    });
     this.endSession();
     void this.router.navigate(['/login']);
   }
@@ -201,7 +261,7 @@ export class AuthService {
 
   private endSession(): void {
     this.storage?.removeItem(this.tokenKey);
-    this.storage?.removeItem(this.refreshTokenKey);
+    this.storage?.removeItem(this.legacyRefreshTokenKey);
     this.storage?.removeItem(this.adminKey);
     this.storage?.removeItem(this.emailVerifiedKey);
     this.isLoggedIn.set(false);
@@ -215,8 +275,8 @@ export class AuthService {
     return this.storage?.getItem(this.tokenKey) ?? null;
   }
 
-  getRefreshToken(): string | null {
-    return this.storage?.getItem(this.refreshTokenKey) ?? null;
+  private legacyRefreshToken(): string | null {
+    return this.storage?.getItem(this.legacyRefreshTokenKey) ?? null;
   }
 
   /** The signed-in user's email, read from the JWT's `email` claim (null if absent/undecodable). */
@@ -284,7 +344,8 @@ export class AuthService {
 
   private storeTokens(response: AuthResponse, options = { thenNavigate: true }) {
     this.storage?.setItem(this.tokenKey, response.token);
-    this.storage?.setItem(this.refreshTokenKey, response.refreshToken);
+    // The cookie that came with this response is the refresh token from here on.
+    this.storage?.removeItem(this.legacyRefreshTokenKey);
     this.storage?.setItem(this.adminKey, String(response.admin));
     this.storage?.setItem(this.emailVerifiedKey, String(response.emailVerified));
     this.isLoggedIn.set(true);
@@ -303,10 +364,21 @@ export class AuthService {
 }
 
 /**
- * A path on this site, and nothing else. Rejects an absolute URL, and `//evil.example` with it —
- * the browser reads a protocol-relative URL as another origin, and it starts with a slash like
- * any local path does.
+ * How long the guards wait on `AuthService.restoreSession` before treating the visitor as signed
+ * out. A refresh normally answers in well under a second; a hung server (staging's BFF deadlocked
+ * on 2026-09-11) would otherwise hold every first page, the landing page included, until the 60 s
+ * write timeout.
  */
+const RESTORE_WAIT_MS = 5000;
+
+/** The refresh endpoint's own refusal: the refresh token, cookie or legacy, is no good. */
+function refreshRefused(error: unknown): boolean {
+  return (
+    error instanceof HttpErrorResponse &&
+    (error.status === HttpStatusCode.Unauthorized || error.status === HttpStatusCode.Forbidden)
+  );
+}
+
 /** The forms and the pages that only exist to get someone to one. */
 const AUTH_PATHS = [
   '/login',
@@ -322,6 +394,11 @@ function isAuthPage(url: string): boolean {
   return AUTH_PATHS.some((auth) => path === auth || path.startsWith(`${auth}/`));
 }
 
+/**
+ * A path on this site, and nothing else. Rejects an absolute URL, and `//evil.example` with it —
+ * the browser reads a protocol-relative URL as another origin, and it starts with a slash like
+ * any local path does.
+ */
 function isInternalPath(url: string): boolean {
   return url.startsWith('/') && !url.startsWith('//') && !url.startsWith('/\\');
 }

@@ -119,6 +119,7 @@ describe('TeamPowerRankingsComponent', () => {
   };
 
   beforeEach(() => {
+    localStorage.clear();
     environment.paymentsEnabled = true;
     yahooLeague.mockReset();
     yahooLeague.mockReturnValue(of(summary));
@@ -599,5 +600,76 @@ describe('TeamPowerRankingsComponent', () => {
     await espnCardReads(fixture, '123456');
 
     expect(component.rankingsMessage()).toContain('ESPN has no league');
+  });
+
+  /** What the next page opens on, as this device keeps it. */
+  const remembered = () => JSON.parse(localStorage.getItem('slapstat.league') ?? 'null');
+
+  const remember = (league: { platform: string; leagueId: string; name: string }) =>
+    localStorage.setItem('slapstat.league', JSON.stringify(league));
+
+  it('opens on the Yahoo league last chosen anywhere', async () => {
+    remember({ platform: 'YAHOO', leagueId: '465.l.2', name: 'Work League' });
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+
+    expect(yahooLeague).toHaveBeenCalledWith('465.l.2', 'model');
+    expect(component.leagueName()).toEqual('Work League');
+  });
+
+  it('remembers the league picked, for the next page that picks one', async () => {
+    const fixture = await render();
+    await choose(fixture, fixture.point.componentInstance, '465.l.1');
+
+    expect(remembered()).toEqual({ platform: 'YAHOO', leagueId: '465.l.1', name: 'Beer League' });
+  });
+
+  /** A draft is this page's alone: no other page reads one, so none opens on it. */
+  it('keeps the remembered league when a draft is picked', async () => {
+    remember({ platform: 'YAHOO', leagueId: '465.l.2', name: 'Work League' });
+    const fixture = await render();
+    await choose(fixture, fixture.point.componentInstance, 'draft:d1');
+
+    expect(remembered()).toEqual({ platform: 'YAHOO', leagueId: '465.l.2', name: 'Work League' });
+  });
+
+  it('lets go of a remembered league the account no longer lists', async () => {
+    remember({ platform: 'YAHOO', leagueId: '465.l.9', name: 'Old League' });
+    const fixture = await render();
+
+    expect(fixture.point.componentInstance.picker.selectedKey()).toBeNull();
+    expect(remembered()).toBeNull();
+  });
+
+  it('opens a draft link on the draft, whatever league was last chosen', async () => {
+    remember({ platform: 'ESPN', leagueId: '123456', name: 'Office League' });
+    linkedDraft = 'd1';
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+
+    expect(component.platform()).toBe('yahoo');
+    expect(espnCall).not.toHaveBeenCalled();
+    expect(component.leagueName()).toEqual('Mock #1');
+  });
+
+  it('opens on the ESPN tab for an ESPN league last chosen anywhere, and reads it', async () => {
+    remember({ platform: 'ESPN', leagueId: '123456', name: 'Office League' });
+    const fixture = await render();
+    fixture.detectChanges();
+    const component = fixture.point.componentInstance;
+
+    expect(component.platform()).toBe('espn');
+    expect(espnCall).toHaveBeenCalledWith('123456', 'model');
+    expect(component.leagueName()).toEqual('Office League');
+    expect(ngMocks.findInstance(EspnLeagueSyncComponent).lastLeagueId()).toBe('123456');
+  });
+
+  it('stays on Yahoo for a remembered ESPN league where ESPN leagues are not offered', async () => {
+    environment.espnLeaguesEnabled = false;
+    remember({ platform: 'ESPN', leagueId: '123456', name: 'Office League' });
+    const fixture = await render();
+
+    expect(fixture.point.componentInstance.platform()).toBe('yahoo');
+    expect(espnCall).not.toHaveBeenCalled();
   });
 });

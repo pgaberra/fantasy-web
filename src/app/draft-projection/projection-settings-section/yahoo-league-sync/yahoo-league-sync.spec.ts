@@ -1,5 +1,5 @@
 import { MockBuilder, MockRender } from 'ng-mocks';
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -14,6 +14,8 @@ import { SyncedLineComponent } from '../../../shared/synced-line/synced-line';
 import { environment } from '../../../../environments/environment';
 
 describe('YahooLeagueSyncComponent', () => {
+  beforeEach(() => localStorage.clear());
+
   const connected: ConnectionResponse = { connected: true };
   const disconnected: ConnectionResponse = { connected: false };
 
@@ -254,5 +256,58 @@ describe('YahooLeagueSyncComponent', () => {
     } finally {
       environment.yahooSyncDisabled = false;
     }
+  });
+
+  const twoLeagues: LeaguesResponse = {
+    leagues: [
+      { leagueKey: 'nhl.l.123', name: 'My League', numTeams: 12 },
+      { leagueKey: 'nhl.l.456', name: 'Work League', numTeams: 10 },
+    ],
+  };
+
+  const buildWithTwo = () =>
+    MockBuilder(YahooLeagueSyncComponent).mock(YahooService, {
+      connectionStatus: () => of(connected),
+      myLeagues: () => of(twoLeagues),
+      leagueProjectionSettings: () => of(settings),
+    });
+
+  it('starts on the league last chosen anywhere, where the account still lists it', async () => {
+    localStorage.setItem(
+      'slapstat.league',
+      JSON.stringify({ platform: 'YAHOO', leagueId: 'nhl.l.456', name: 'Work League' }),
+    );
+    await buildWithTwo();
+    const fixture = MockRender(YahooLeagueSyncComponent);
+    await fixture.whenStable();
+
+    expect(fixture.point.componentInstance.selectedKey()).toEqual('nhl.l.456');
+  });
+
+  it('starts on nothing when the league last chosen is not on the account', async () => {
+    localStorage.setItem(
+      'slapstat.league',
+      JSON.stringify({ platform: 'YAHOO', leagueId: 'nhl.l.999', name: 'Gone League' }),
+    );
+    await buildWithTwo();
+    const fixture = MockRender(YahooLeagueSyncComponent);
+    await fixture.whenStable();
+
+    expect(fixture.point.componentInstance.selectedKey()).toBeNull();
+  });
+
+  it('remembers the league it syncs, for the next page that picks one', async () => {
+    await buildConnected();
+    const fixture = MockRender(YahooLeagueSyncComponent);
+    await fixture.whenStable();
+
+    fixture.point.componentInstance.sync();
+    await fixture.whenStable();
+
+    expect(JSON.parse(localStorage.getItem('slapstat.league') ?? 'null')).toEqual({
+      platform: 'YAHOO',
+      leagueId: 'nhl.l.123',
+      name: 'My League',
+    });
   });
 });

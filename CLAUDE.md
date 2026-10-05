@@ -377,7 +377,14 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   numbers untouched while every night is ticked; `planner-free-agents.ts` scales a free agent's
   line to the share of his club's games on those nights, filters by position and keeps two
   decimals on every stat for the ranking engine, whose default rounds a
-  week's 0.4 goals to none. The free agents are ranked here, by the league's own scoring settings
+  week's 0.4 goals to none. **The user's own team** (where the BFF's `streamerPlannerMyTeam`
+  says so): `GET /streamer-planner/my-team` gives his roster live, and `planner-lineup.ts` seats
+  the players whose club plays each game day in the league's lineup slots (max matching over
+  their positions, so a C/LW goes wherever leaves room); a night's `fits` is the positions that
+  would fill one more seat. Each cell says who would still start ("D", "Any skater, G") or
+  "Full", and while "Rank free agents by the game days … has room" is ticked (the default) a
+  skater counts only the counted nights he fits (`roomFactor`) and the goalies' creases are split
+  over the nights with a G seat. The free agents are ranked here, by the league's own scoring settings
   through `ProjectionRankingService`; the league is remembered on the device by
   `StreamerPlannerLeagueService` and picked in `league-field` (a Yahoo league reads at once, an
   ESPN id waits for Use). Clubs are drawn with `<app-team-logo>` (`shared/team-logo`): the NHL's
@@ -393,6 +400,19 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   dropped by container query where the card is narrow. A
   category the BFF sent no number for is an empty cell, never written as the zero the ranking engine
   was handed (`FreeAgent.projected`).
+- `fa-scout/` — the **FA Scout** page (`/fa-scout`, signed in, served only where the BFF's
+  `faScout` feature says so): the players a league has available who are worth keeping for the
+  rest of the season, the planner's season-long sibling. The league is picked with the planner's
+  own field (`app-league-field`, `YahooLeaguePicker`) and opens on `LeagueChoiceService`'s league. Every
+  available player is ranked twice by the league's scoring through `ProjectionRankingService`:
+  on the model's served rest of the season, which is the list's order, and on its frozen preseason
+  line, among the same players (`scout-ranking.ts`: `rankScout`). The places gained are the
+  **Rise** column, and `isRising` (his place at least halved, and by at least 5 places, a first
+  guess) tags a row Rising; a player with no preseason line is New. For a skater the TOI column
+  shows the ice time now over the preseason one, picked out at a minute or more. Skaters or
+  goalies by a segmented control, positions by pills, and a "Rising only" pill; 25 rows a page.
+  The table (`scout-table/`) reuses the planner table's stylesheet and line helpers
+  (`lineStats`, `lineColumns`): a `ScoutRow` is a `RankedFreeAgent` plus its preseason rank.
 - `services/` — app services (auth, projections, etc.)
 - `interceptors/` — HTTP interceptors: `authInterceptor` attaches the JWT and refreshes
   once on 401 (all environments). **Only a 401/403 from `/auth/refresh` itself ends the

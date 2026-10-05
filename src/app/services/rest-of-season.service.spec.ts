@@ -9,14 +9,14 @@ import { restOfSeasonStatus } from '../api/fn/projection-model/rest-of-season-st
 
 describe('RestOfSeasonService', () => {
   const invoke = vi.fn();
-  const aiProjection = signal(true);
+  const restOfSeasonPreset = signal(true);
 
   beforeEach(() => {
     invoke.mockReset();
-    aiProjection.set(true);
+    restOfSeasonPreset.set(true);
     return MockBuilder(RestOfSeasonService)
       .mock(Api, { invoke })
-      .mock(FeatureService, { aiProjection });
+      .mock(FeatureService, { restOfSeasonPreset });
   });
 
   const answered = async () => {
@@ -41,8 +41,8 @@ describe('RestOfSeasonService', () => {
     expect((await answered()).available()).toBe(false);
   });
 
-  it('does not ask where the AI projection is not served, and is not available', async () => {
-    aiProjection.set(false);
+  it('does not ask where the preset is switched off, and is not available', async () => {
+    restOfSeasonPreset.set(false);
 
     const service = await answered();
 

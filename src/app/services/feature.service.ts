@@ -53,6 +53,45 @@ export class FeatureService {
   );
 
   /**
+   * Whether the streamer planner reads the user's own team, to show the nights it has room. False
+   * until the answer lands, like the others, and never without the planner.
+   */
+  readonly streamerPlannerMyTeam = computed(() =>
+    this.features.hasValue() ? this.features.value().streamerPlannerMyTeam : false,
+  );
+
+  /** Whether Draft Analysis is served here. False until the answer lands, like the others. */
+  readonly draftAnalysis = computed(() =>
+    this.features.hasValue() ? this.features.value().draftAnalysis : false,
+  );
+
+  /**
+   * Whether Who's hot may narrow its board to the players a linked league has available. False
+   * until the answer lands, like the others.
+   */
+  readonly whosHotAvailableFilter = computed(() =>
+    this.features.hasValue() ? this.features.value().whosHotAvailableFilter : false,
+  );
+
+  /**
+   * Whether a draft may be started from the rest of the season here. False until the answer
+   * lands, like the others; true still offers it only while a season is under way, which
+   * `RestOfSeasonService` asks.
+   */
+  readonly restOfSeasonPreset = computed(() =>
+    this.features.hasValue() ? this.features.value().restOfSeasonPreset : false,
+  );
+
+  /** Whether the FA scout is served here. False until the answer lands, like the others. */
+  readonly faScout = computed(() =>
+    this.features.hasValue() ? this.features.value().faScout : false,
+  );
+  /** Whether Role Changes is served here. False until the answer lands, like the others. */
+  readonly roleChanges = computed(() =>
+    this.features.hasValue() ? this.features.value().roleChanges : false,
+  );
+
+  /**
    * The presets this environment offers: every one of them where the AI projection is served,
    * and everything but the model-seeded ones where it is not. A starting point the server will not
    * fill in must not be offered, on any page that lists presets.

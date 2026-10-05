@@ -5,8 +5,9 @@ import { of, Subject } from 'rxjs';
 import { WhosHotComponent } from './whos-hot';
 import { environment } from '../../environments/environment';
 import { EntitlementService } from '../services/entitlement.service';
+import { FeatureService } from '../services/feature.service';
 import { PlayerService } from '../services/player.service';
-import { GameSpan, WhosHotService } from '../services/whos-hot.service';
+import { GameSpan, RosterLeague, WhosHotService } from '../services/whos-hot.service';
 import { WhosHotSettings, WhosHotSettingsService } from '../services/whos-hot-settings.service';
 import { SplitSeasonListResponse } from '../api/models/split-season-list-response';
 import { HotPlayersTableComponent } from './hot-players-table/hot-players-table';
@@ -80,6 +81,12 @@ describe('WhosHotComponent', () => {
   let seasonsAnswer: SplitSeasonListResponse = SUMMER;
   const seasons = vi.fn(() => of(seasonsAnswer));
   const save = vi.fn<(settings: WhosHotSettings) => void>();
+  const rosteredPlayerIds = vi.fn<
+    (league: RosterLeague) => ReturnType<WhosHotService['rosteredPlayerIds']>
+  >(() => of(new Set<number>()));
+
+  /** What the BFF says this environment serves, which the switch below follows. */
+  const features = { whosHotAvailableFilter: signal(true) };
 
   /** Stands in for the live entitlement read, which is a fetch the page does not wait for. */
   const entitlement = {
@@ -109,6 +116,9 @@ describe('WhosHotComponent', () => {
     splits.mockImplementation(() => of([]));
     seasons.mockClear();
     save.mockClear();
+    rosteredPlayerIds.mockClear();
+    rosteredPlayerIds.mockImplementation(() => of(new Set<number>()));
+    features.whosHotAvailableFilter.set(true);
     seasonsAnswer = SUMMER;
     stored = null;
     pool = [];
@@ -116,9 +126,10 @@ describe('WhosHotComponent', () => {
     entitlement.loadState.set('loaded');
     return MockBuilder(WhosHotComponent)
       .mock(PlayerService, { getPlayers: () => of(pool) })
-      .mock(WhosHotService, { splits, seasons })
+      .mock(WhosHotService, { splits, seasons, rosteredPlayerIds })
       .mock(WhosHotSettingsService, { load: () => stored, save })
-      .provide({ provide: EntitlementService, useValue: entitlement });
+      .provide({ provide: EntitlementService, useValue: entitlement })
+      .provide({ provide: FeatureService, useValue: features });
   });
 
   /** Rendered, with the seasons and the effects that follow them given their turn. */
@@ -690,5 +701,75 @@ describe('WhosHotComponent', () => {
 
     expect(ngMocks.findInstance(HotPlayersTableComponent)).toBe(before);
     expect(ngMocks.input(ngMocks.find('app-hot-players-table'), 'rowsPending')).toBe(false);
+  });
+
+  describe('available players only', () => {
+    const YAHOO = { leagueName: 'HHL', leagueKey: '465.l.9', syncedAt: 't' };
+    const ESPN = { leagueName: 'Puck Club', leagueId: '123', syncedAt: 't' };
+
+    const table = () => ngMocks.find('app-hot-players-table');
+
+    it('is not offered before a league is synced, since nobody can be taken yet', async () => {
+      stored = { fromGame: 1, toGame: 82, availableOnly: true } as WhosHotSettings;
+      await renderSettled();
+
+      expect(ngMocks.input(table(), 'availableFilter')).toBe(false);
+      expect(rosteredPlayerIds).not.toHaveBeenCalled();
+    });
+
+    it('is not offered where the environment does not serve it', async () => {
+      features.whosHotAvailableFilter.set(false);
+      stored = {
+        fromGame: 1,
+        toGame: 82,
+        yahooSync: YAHOO,
+        availableOnly: true,
+      } as WhosHotSettings;
+      await renderSettled();
+
+      expect(ngMocks.input(table(), 'availableFilter')).toBe(false);
+      expect(rosteredPlayerIds).not.toHaveBeenCalled();
+    });
+
+    it('asks nothing of the league while the switch is off', async () => {
+      stored = { fromGame: 1, toGame: 82, yahooSync: YAHOO } as WhosHotSettings;
+      await renderSettled();
+
+      expect(ngMocks.input(table(), 'availableFilter')).toBe(true);
+      expect(rosteredPlayerIds).not.toHaveBeenCalled();
+      expect(ngMocks.input(table(), 'rosteredPlayerIds')).toBeNull();
+    });
+
+    it("hands the table a Yahoo league's rostered players once the switch is on", async () => {
+      rosteredPlayerIds.mockImplementation(() => of(new Set([6743, 7109])));
+      stored = {
+        fromGame: 1,
+        toGame: 82,
+        yahooSync: YAHOO,
+        availableOnly: true,
+      } as WhosHotSettings;
+      await renderSettled();
+
+      expect(rosteredPlayerIds).toHaveBeenCalledWith({ platform: 'YAHOO', leagueId: '465.l.9' });
+      expect(ngMocks.input(table(), 'rosteredPlayerIds')).toEqual(new Set([6743, 7109]));
+    });
+
+    it('asks an ESPN league by its id', async () => {
+      stored = { fromGame: 1, toGame: 82, espnSync: ESPN, availableOnly: true } as WhosHotSettings;
+      await renderSettled();
+
+      expect(rosteredPlayerIds).toHaveBeenCalledWith({ platform: 'ESPN', leagueId: '123' });
+    });
+
+    it('remembers the switch between visits', async () => {
+      stored = { fromGame: 1, toGame: 82, yahooSync: YAHOO } as WhosHotSettings;
+      const fixture = await renderSettled();
+
+      fixture.point.componentInstance.availableOnly.set(true);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(save).toHaveBeenLastCalledWith(expect.objectContaining({ availableOnly: true }));
+    });
   });
 });

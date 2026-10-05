@@ -21,6 +21,7 @@ const settings: WhosHotSettings = {
   yahooSync: { leagueName: 'HHL', leagueKey: 'nhl.l.1', syncedAt: 't' },
   espnSync: null,
   lastEspnLeagueId: null,
+  availableOnly: false,
 };
 
 describe('WhosHotSettingsService', () => {
@@ -155,6 +156,18 @@ describe('WhosHotSettingsService', () => {
 
     expect(loaded?.espnSync).toEqual(null);
     expect(loaded?.lastEspnLeagueId).toEqual(null);
+  });
+
+  it('reads a blob written before the available-only switch as showing everyone', () => {
+    localStorage.setItem('slapstat.whosHot.settings', JSON.stringify({ fromGame: 1, toGame: 82 }));
+
+    expect(service.load()?.availableOnly).toBe(false);
+  });
+
+  it('remembers the available-only switch', () => {
+    service.save({ ...settings, availableOnly: true });
+
+    expect(service.load()?.availableOnly).toBe(true);
   });
 
   it('treats a blob missing its column arrays as having no columns rather than throwing', () => {

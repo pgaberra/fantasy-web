@@ -65,6 +65,13 @@ function initErrorReporting() {
   void reporting.init().catch(() => undefined);
 }
 
+// The page load's one attempt to pick a session back up from the refresh cookie starts here, so a
+// page no guard waits on (a share link, /premium) gets the session back too. Not returned:
+// bootstrap does not wait for it, only the guards that need the answer do.
+function initSessionRestore() {
+  void inject(AuthService).restoreSession();
+}
+
 // A navigation that completes means the tab is running against a build that still exists, so
 // the one-shot reload guard is spent and a later deploy may use it again.
 function initNavigationRecovery() {
@@ -91,6 +98,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withNavigationErrorHandler(handleNavigationError)),
     provideHttpClient(withInterceptors([retryInterceptor, timeoutInterceptor, authInterceptor])),
     provideApiConfiguration(environment.rootUrl),
+    provideAppInitializer(initSessionRestore),
     provideAppInitializer(initNavigationRecovery),
     provideAppInitializer(initCrawlTags),
     provideAppInitializer(initErrorReporting),
