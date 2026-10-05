@@ -296,6 +296,7 @@
         <app-free-agents-table
           #listTop
           [rows]="visible()"
+          [listed]="filtered()"
           [scoringType]="scoringType()"
           [categories]="categories()"
           [focus]="focus()"

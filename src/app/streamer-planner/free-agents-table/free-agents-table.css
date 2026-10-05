@@ -46,6 +46,9 @@
   font: inherit;
   font-weight: inherit;
   gap: 2px;
+  /* Set on the line by its foot, not its baseline: with the arrow first, the button's baseline is
+     the arrow's foot, which lifted the sorted heading above the rest. */
+  vertical-align: bottom;
   /* The cell pads it already: a dozen narrow category columns would each grow by its own. */
   padding: 0;
 }

@@ -41,6 +41,9 @@
   font: inherit;
   font-weight: inherit;
   gap: 2px;
+  /* Set on the line by its foot, not its baseline: with the arrow first, the button's baseline is
+     the arrow's foot, which lifted the sorted heading above the rest. */
+  vertical-align: bottom;
   padding: 2px var(--space-1);
 }
 

@@ -60,6 +60,11 @@ export interface FreeAgentRow {
 })
 export class FreeAgentsTableComponent {
   readonly rows = input.required<readonly RankedFreeAgent[]>();
+  /**
+   * The whole list the rows are a page of, which the columns are drawn for: sorted by assists or
+   * paged on, the goalies' columns stay while no goalie is on the page. The rows alone if not given.
+   */
+  readonly listed = input<readonly RankedFreeAgent[]>();
   readonly scoringType = input.required<ScoringType>();
   /** The categories the league scores, in the league's order. */
   readonly categories = input.required<readonly ScoringStatKey[]>();
@@ -79,16 +84,19 @@ export class FreeAgentsTableComponent {
     return this.rows().map((row) => ({ row, stats: lineStats(row, categories) }));
   });
 
+  private readonly list = computed(() => this.listed() ?? this.rows());
+
   /** Ice time a game is a skater's number: no column of blanks over a list of goalies alone. */
-  readonly hasSkaters = computed(() => this.rows().some((row) => row.line.type === 'skater'));
+  readonly hasSkaters = computed(() => this.list().some((row) => row.line.type === 'skater'));
 
   /** A column a category, named once in the heading instead of beside every number. */
-  readonly columns = computed<readonly LineColumn[]>(() =>
-    lineColumns(
-      this.lines().map((entry) => entry.stats),
-      this.categories(),
-    ),
-  );
+  readonly columns = computed<readonly LineColumn[]>(() => {
+    const categories = this.categories();
+    return lineColumns(
+      this.list().map((row) => lineStats(row, categories)),
+      categories,
+    );
+  });
 
   /**
    * The columns a rule is drawn before: the first category, setting the line off from the columns
