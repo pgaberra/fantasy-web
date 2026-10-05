@@ -9,6 +9,9 @@
         <th scope="col" class="num" [appTooltip]="scoreTip()">
           {{ scoreHeading() }}
         </th>
+        <!-- A column of its own, so a three-game week is compared to a four down one line of
+             figures, and no cell in the row needs a second line. -->
+        <th scope="col" class="num" [appTooltip]="perGameTip()">Per gm</th>
         <th scope="col" class="num" appTooltip="Games he is expected to play on the nights counted">
           GP
         </th>
@@ -65,10 +68,8 @@
               </span>
             </span>
           </th>
-          <td class="num score-col">
-            <span class="score">{{ score(entry.row) }}</span>
-            <span class="per-game">{{ perGame(entry.row) }}</span>
-          </td>
+          <td class="num score">{{ score(entry.row) }}</td>
+          <td class="num rate-col">{{ perGame(entry.row) }}</td>
           <td class="num">{{ games(entry.row) }}</td>
           @if (hasSkaters()) {
             <td class="num toi-col">{{ toi(entry.row) }}</td>

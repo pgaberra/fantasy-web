@@ -39,7 +39,7 @@
 }
 
 /* A row is one line, read straight across its middle: the rank, the crest, the name and every
-   number share it, and the score stands about it with its per-game figure underneath. */
+   number share it. */
 .free-agents-table tbody td {
   line-height: 1.25;
 }
@@ -124,16 +124,25 @@
   padding: 2px;
 }
 
+/* A cell of its own in the planner; FA Scout stacks a second figure under it in the same cell. */
 .score {
   color: var(--color-primary);
-  display: block;
   font-weight: var(--weight-bold);
+}
+
+span.score {
+  display: block;
 }
 
 .per-game {
   color: var(--color-text-subtle);
   display: block;
   font-size: var(--text-xs);
+}
+
+/* The rate a game as a column: the score's companion, a step quieter but a figure like the rest. */
+.free-agents-table td.rate-col {
+  color: var(--color-text-muted);
 }
 
 .free-agents-table td.toi-col {
