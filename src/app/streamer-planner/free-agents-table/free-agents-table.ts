@@ -1,6 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { ScoringType } from '../../models/projection.model';
-import { ScoringStatKey, SKATER_SCORING_STAT_KEYS } from '../../models/stat-key.model';
+import {
+  GOALIE_SCORING_STAT_KEYS,
+  ScoringStatKey,
+  SKATER_SCORING_STAT_KEYS,
+} from '../../models/stat-key.model';
 import { IconComponent } from '../../shared/icon/icon';
 import { PositionChipsComponent } from '../../shared/position-chips/position-chips';
 import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
@@ -17,19 +21,29 @@ import {
 } from '../planner-free-agents';
 
 const SKATER_KEYS: ReadonlySet<string> = new Set(SKATER_SCORING_STAT_KEYS);
+const GOALIE_KEYS: ReadonlySet<string> = new Set(GOALIE_SCORING_STAT_KEYS);
+
+/**
+ * What a cell under the other kind's category holds: a goalie's goals do not exist, so the cell
+ * says so as the editor and the other tables do, rather than sit blank like a number the model
+ * left out.
+ */
+export const NOT_HIS = '—';
 
 /** A player with his line in the league's categories, ready to draw. */
 export interface FreeAgentRow {
   readonly row: RankedFreeAgent;
   /** His line under the table's columns, a cell a column, null where the model gave him no number. */
   readonly cells: readonly (LineStat | null)[];
+  /** Per column, whether the category is the other kind's: a skater's under a goalie's, and back. */
+  readonly notHis: readonly boolean[];
 }
 
 /**
  * The best available players, skaters and goalies together, best first, with the model's line for
  * the nights counted in every category the league scores, and scored by the league's own settings.
  * The skaters' categories come first and the goalies' after, set off by a rule: a column means one
- * category on every row, blank on a player of the kind that does not score in it. The first few
+ * category on every row, a faint dash on a player of the kind that does not score in it. The first few
  * rows can be set off as the best picks, in the table's own columns rather than as cards over it.
  * Which positions, how many rows and how many of them are set off is the page's to say.
  */
@@ -81,9 +95,16 @@ export class FreeAgentsTableComponent {
     const columns = this.columns();
     return this.lines().map(({ row, stats }) => {
       const byKey = new Map(stats.map((stat) => [stat.key, stat]));
-      return { row, cells: columns.map((column) => byKey.get(column.key) ?? null) };
+      const own = row.line.type === 'skater' ? SKATER_KEYS : GOALIE_KEYS;
+      return {
+        row,
+        cells: columns.map((column) => byKey.get(column.key) ?? null),
+        notHis: columns.map((column) => !own.has(column.key)),
+      };
     });
   });
+
+  readonly notHis = NOT_HIS;
 
   readonly rankTip = 'His place among every available player, whatever the positions shown';
 
@@ -129,7 +150,7 @@ export class FreeAgentsTableComponent {
   /** Ice time a game, for a skater; a goalie's is the whole game or none of it. */
   toi(row: RankedFreeAgent): string {
     if (row.player.projection.type !== 'skater') {
-      return '';
+      return NOT_HIS;
     }
     return formatToi(row.player.projection.stats.utility.toiPerGame);
   }
