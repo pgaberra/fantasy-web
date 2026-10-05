@@ -454,11 +454,14 @@ describe('StreamerPlannerComponent', () => {
     );
   }
 
-  it('shows the team schedules while no league is picked, since there are no free agents to list', async () => {
+  it('opens on the free agents while no league is picked, their card asking for one', async () => {
     const fixture = await render();
 
-    expect(fixture.point.componentInstance.view()).toBe('schedules');
-    expect(shown(fixture)).toEqual(['teams']);
+    expect(fixture.point.componentInstance.view()).toBe('free-agents');
+    expect(shown(fixture)).toEqual(['free-agents']);
+    expect(ngMocks.formatText(ngMocks.find(fixture, 'section.free-agents'))).toContain(
+      'Pick a league above',
+    );
   });
 
   describe('with a league chosen', () => {
