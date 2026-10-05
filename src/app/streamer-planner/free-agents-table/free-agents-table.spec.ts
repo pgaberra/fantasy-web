@@ -186,12 +186,12 @@ describe('FreeAgentsTableComponent', () => {
     expect(category.point.componentInstance.score(SKATER)).toBe('11.25');
   });
 
-  it('gives a skater his ice time and his games, and a goalie no ice time', () => {
+  it('gives a skater his ice time and his games, and a goalie a dash for ice time', () => {
     const fixture = render();
     const table = fixture.point.componentInstance;
 
     expect(table.toi(SKATER)).toBe('17:32');
-    expect(table.toi(GOALIE)).toBe('');
+    expect(table.toi(GOALIE)).toBe('—');
     expect(table.games(SKATER)).toBe('4');
   });
 
@@ -202,7 +202,7 @@ describe('FreeAgentsTableComponent', () => {
     expect(cells(fixture)[0]).toEqual(['2.1', '3.0', '11.2', '1.5', '0.8', '2.0', '6.4']);
   });
 
-  it("lists skaters and goalies together, each blank under the other kind's categories", () => {
+  it("lists skaters and goalies together, each a faint dash under the other kind's categories", () => {
     const fixture = render('points', CATEGORIES, [SKATER, GOALIE]);
 
     expect(headings(fixture)).toEqual([
@@ -218,17 +218,19 @@ describe('FreeAgentsTableComponent', () => {
       'SV%',
     ]);
     expect(cells(fixture)).toEqual([
-      ['2.1', '3.0', '11.2', '1.5', '0.8', '2.0', '6.4', '', '', ''],
-      ['', '', '', '', '', '', '', '1.4', '2.61', '0.908'],
+      ['2.1', '3.0', '11.2', '1.5', '0.8', '2.0', '6.4', '—', '—', '—'],
+      ['—', '—', '—', '—', '—', '—', '—', '1.4', '2.61', '0.908'],
     ]);
+    // Seven skater categories on the goalie's row, three goalie ones on the skater's, and his ice time.
+    expect(ngMocks.findAll(fixture, 'tbody td.not-his')).toHaveLength(11);
     // A rule before the first category, and another before the goalies' first.
     expect(
       ngMocks.findAll(fixture, 'thead .stat-col--start').map((cell) => ngMocks.formatText(cell)),
     ).toEqual(['G', 'W']);
-    // Ice time a game: the skater's, and a blank on the goalie's row.
+    // Ice time a game: the skater's, and a dash on the goalie's row.
     expect(
       ngMocks.findAll(fixture, 'tbody td.toi-col').map((cell) => ngMocks.formatText(cell)),
-    ).toEqual(['17:32', '']);
+    ).toEqual(['17:32', '—']);
   });
 
   it('draws no ice-time column over goalies alone', () => {
@@ -261,6 +263,8 @@ describe('FreeAgentsTableComponent', () => {
       ['2.1', '3.0'],
       ['2.1', ''],
     ]);
+    // A number left out is not a category he cannot have: blank, not the dash.
+    expect(ngMocks.findAll(fixture, 'tbody td.not-his')).toHaveLength(0);
   });
 
   it('draws no stat cells where the league scores nothing for the players listed', () => {
