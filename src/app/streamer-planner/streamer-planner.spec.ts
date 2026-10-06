@@ -845,20 +845,17 @@ describe('StreamerPlannerComponent', () => {
         );
       });
 
-      it('counts a night in or out from its tick box alone, so a tap on its positions explains them', async () => {
+      it('counts a night in or out from its tick box alone, and gives its open positions no tip', async () => {
         const fixture = await render();
-        const room = ngMocks.findAll(fixture, '.day-room')[0];
+        const room = ngMocks.find(fixture, '.day-room--open');
         const cell = room.nativeElement.closest('.day') as HTMLElement;
         const tick = cell.querySelector('input') as HTMLInputElement;
-        const tip = ngMocks.findInstance(room, TooltipDirective);
-        const toggle = vi.spyOn(tip, 'toggle');
+        expect(ngMocks.findInstances(room, TooltipDirective)).toHaveLength(0);
         expect(tick.checked).toBe(true);
 
-        // The phone has no hover: the tap is what opens the explanation, and it leaves the night be.
+        // A tap on the positions leaves the night be.
         (room.nativeElement as HTMLElement).click();
         fixture.detectChanges();
-        expect(toggle).toHaveBeenCalledTimes(1);
-        expect(tip.dismissOnClick()).toBe(false);
         expect(tick.checked).toBe(true);
 
         tick.click();
@@ -905,8 +902,16 @@ describe('StreamerPlannerComponent', () => {
         expect(planner.roomRuns(planner.days()[1]).map((run) => run.tip)).toEqual([
           'Drop a C to free a C spot.',
           'Drop any forward to free a LW spot.',
-          expect.any(String),
+          null,
         ]);
+        // The phone has no hover: a tap on a yellow pill is what opens its tip.
+        const drop = ngMocks.find(fixture, '.day-room--drop');
+        const tip = ngMocks.findInstance(drop, TooltipDirective);
+        const toggle = vi.spyOn(tip, 'toggle');
+        expect(tip.appTooltip()).toBe('Drop a C to free a C spot.');
+        (drop.nativeElement as HTMLElement).click();
+        expect(toggle).toHaveBeenCalledTimes(1);
+        expect(tip.dismissOnClick()).toBe(false);
         expect(
           ngMocks.findAll(fixture, '.range-legend').map((key) => ngMocks.formatText(key)),
         ).toEqual([

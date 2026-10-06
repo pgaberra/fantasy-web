@@ -593,16 +593,16 @@ export class StreamerPlannerComponent {
 
   /**
    * The day's open positions as its cell shows them: in lineup order, each run green when the
-   * lineup has room as it stands and yellow when only a drop opens it. A green run's tip is the
-   * night's room; a yellow run's says which kinds of player have to go to open it.
+   * lineup has room as it stands and yellow when only a drop opens it. Only a yellow run has a
+   * tip, saying which kinds of player have to go to open it; a green one says all it needs to.
    */
-  roomRuns(day: PlannerDay): { drop: boolean; label: string; tip: string }[] {
+  roomRuns(day: PlannerDay): { drop: boolean; label: string; tip: string | null }[] {
     const room = this.room(day);
     const opened = this.dropRoom(day);
     return roomRuns(room, opened).map((run) => ({
       drop: run.drop,
       label: run.positions.join(', '),
-      tip: run.drop ? dropRoomTip(opened!, run.positions) : roomTip(room!),
+      tip: run.drop ? dropRoomTip(opened!, run.positions) : null,
     }));
   }
 

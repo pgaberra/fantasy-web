@@ -162,19 +162,21 @@
                   }
                   <!-- The open positions in lineup order, whatever opens them: green where the
                        lineup has room as it stands, yellow where only a drop opens it, its tip
-                       saying who would have to go. -->
+                       saying who would have to go. A green run has no tip: its positions are it. -->
                   @for (run of roomRuns(day); track $index) {
-                    <span
-                      #runTip="appTooltip"
-                      class="day-room"
-                      [class.day-room--open]="!run.drop"
-                      [class.day-room--drop]="run.drop"
-                      [appTooltip]="run.tip"
-                      [dismissOnClick]="false"
-                      (click)="runTip.toggle()"
-                      [attr.aria-label]="run.tip"
-                      >{{ run.label }}</span
-                    >
+                    @if (run.tip) {
+                      <span
+                        #runTip="appTooltip"
+                        class="day-room day-room--drop"
+                        [appTooltip]="run.tip"
+                        [dismissOnClick]="false"
+                        (click)="runTip.toggle()"
+                        [attr.aria-label]="run.tip"
+                        >{{ run.label }}</span
+                      >
+                    } @else {
+                      <span class="day-room day-room--open">{{ run.label }}</span>
+                    }
                   }
                 </span>
               }
