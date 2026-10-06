@@ -373,34 +373,3 @@ describe('ProjectionCalculationService ratio categories', () => {
     });
   });
 });
-
-describe('ProjectionCalculationService.computeZScoresAgainst', () => {
-  let service: ProjectionCalculationService;
-
-  beforeEach(() => {
-    service = new ProjectionCalculationService();
-  });
-
-  const pool = [skater(1, { goals: 10 }), skater(2, { goals: 20 }), skater(3, { goals: 30 })];
-
-  it('scores a line on the scale its pool ranks on', () => {
-    const ranked = service.computeZScores(pool, new Set(['goals']));
-    const asked = service.computeZScoresAgainst(pool, pool, new Set(['goals']));
-
-    asked.forEach((score, index) => expect(score).toBeCloseTo(ranked[index], 10));
-  });
-
-  it('leaves the pool as it is, however many lines are asked about', () => {
-    const outliers = Array.from({ length: 50 }, (_unused, index) =>
-      skater(100 + index, { goals: 0 }),
-    );
-    const [middle] = service.computeZScoresAgainst(
-      pool,
-      [skater(9, { goals: 20 }), ...outliers],
-      new Set(['goals']),
-    );
-
-    // Twenty goals is the pool's own mean: fifty scoreless lines asked about do not drag it down.
-    expect(middle).toBeCloseTo(0, 10);
-  });
-});

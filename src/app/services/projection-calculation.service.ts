@@ -24,8 +24,6 @@ const MAX_POOL_ITERATIONS = 10;
 interface PoolEntry<P extends Projection> {
   projection: P;
   index: number;
-  /** Scored against the pool but never part of it: a line asked about, not a player ranked. */
-  outside: boolean;
 }
 
 /**
@@ -143,33 +141,6 @@ export class ProjectionCalculationService {
   }
 
   /**
-   * Each of `lines` scored against the pool `pool` forms, without joining it: what the line would
-   * be worth on that pool's scale, however many such lines are asked about at once. The pool is
-   * derived from `pool` alone, exactly as {@link computeZScores} derives it, so a line scored here
-   * and a member of `pool` scored there are on one scale.
-   */
-  computeZScoresAgainst(
-    pool: Projection[],
-    lines: Projection[],
-    activeScoringColumns: Set<ScoringStatKey>,
-    skaterPoolSize: number = DEFAULT_SKATER_POOL_SIZE,
-    goaliePoolSize: number = DEFAULT_GOALIE_POOL_SIZE,
-  ): number[] {
-    const all = [...pool, ...lines];
-    const totalsByIndex: number[] = all.map(() => 0);
-    this.scorePools(
-      all,
-      activeScoringColumns,
-      skaterPoolSize,
-      goaliePoolSize,
-      totalsByIndex,
-      null,
-      pool.length,
-    );
-    return totalsByIndex.slice(pool.length);
-  }
-
-  /**
    * Per-category z-score breakdown: for each projection, a map of active category → its z-score
    * contribution (already sign-adjusted for lower-is-better stats). Summing a projection's map
    * yields the same total {@link computeZScores} returns, so callers can attribute a player's
@@ -197,8 +168,7 @@ export class ProjectionCalculationService {
    * Skaters and goalies are ranked against their own pool, so each is scored separately and the
    * results written back at the projection's own index. `contributionsByIndex` is filled in only
    * when a caller asked for the per-category breakdown — the ranking itself needs the totals, and
-   * building a record per player is the more expensive half of the job. Only the first
-   * `poolCount` projections may enter a pool; the rest are scored against it.
+   * building a record per player is the more expensive half of the job.
    */
   private scorePools(
     projections: Projection[],
@@ -207,16 +177,14 @@ export class ProjectionCalculationService {
     goaliePoolSize: number,
     totalsByIndex: number[],
     contributionsByIndex: Record<string, number>[] | null,
-    poolCount: number = projections.length,
   ): void {
     const skaters: PoolEntry<SkaterProjection>[] = [];
     const goalies: PoolEntry<GoalieProjection>[] = [];
     projections.forEach((projection, index) => {
-      const outside = index >= poolCount;
       if (projection.type === 'skater') {
-        skaters.push({ projection, index, outside });
+        skaters.push({ projection, index });
       } else {
-        goalies.push({ projection, index, outside });
+        goalies.push({ projection, index });
       }
     });
 
@@ -270,13 +238,13 @@ export class ProjectionCalculationService {
       return { values, volumes, direction };
     });
 
-    const members = entries.flatMap((entry, position) => (entry.outside ? [] : [position]));
-    let poolPositions = members;
+    let poolPositions = entries.map((_entry, position) => position);
     let zScores = this.zScoresForPool(categories, poolPositions, entries.length);
 
     for (let iteration = 0; iteration < MAX_POOL_ITERATIONS; iteration++) {
       const { totals } = zScores;
-      const nextPositions = [...members]
+      const nextPositions = entries
+        .map((_entry, position) => position)
         .sort((first, second) => totals[second] - totals[first])
         .slice(0, poolSize);
       if (this.samePositions(nextPositions, poolPositions)) {

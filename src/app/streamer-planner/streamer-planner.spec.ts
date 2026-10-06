@@ -820,18 +820,19 @@ describe('StreamerPlannerComponent', () => {
         const fixture = await render();
         const planner = fixture.point.componentInstance;
 
+        // The roster as it stands: no stretch, since no player's line over it is read.
         expect(invoke).toHaveBeenCalledWith(streamerPlannerMyTeam, {
           platform: 'YAHOO',
           leagueId: '465.l.9',
-          start: '2026-10-12',
-          end: '2026-10-18',
         });
         const night = planner.days().find((day) => day.date === '2026-10-13')!;
         expect(planner.roomLabel(planner.room(night)!)).toBe('RW, D, G');
         // A day without games has no lineup to fill.
         expect(planner.room(planner.days()[0])).toBeUndefined();
         expect(
-          ngMocks.findAll(fixture, '.day-room').map((cell) => ngMocks.formatText(cell)),
+          ngMocks
+            .findAll(fixture, '.day-room:not(.day-room--drop)')
+            .map((cell) => ngMocks.formatText(cell)),
         ).toEqual(['RW, D, G', 'RW, D, G']);
         expect(ngMocks.formatText(ngMocks.find(fixture, '.free-agents .fit-toggle'))).toBe(
           'Rank based on your roster availability',
@@ -876,161 +877,34 @@ describe('StreamerPlannerComponent', () => {
         expect(planner.ranked()[0].games).toBe(2);
       });
 
-      describe('priced as swaps', () => {
-        /** Points over the stretch's two games: 3 a goal, 2 an assist. */
-        const line = (playerId: string, goals: number, assists: number) => ({
-          playerId,
-          clubGames: 2,
-          expectedGames: 2,
-          stats: { goals, assists },
-        });
+      it('adds a yellow line for each kind of player the user could drop, and what it opens', async () => {
+        const fixture = await render();
+        const planner = fixture.point.componentInstance;
 
-        beforeEach(() => {
-          // A lineup of six and no bench: the six on the roster hold every spot, so a pickup
-          // needs a drop.
-          settings = {
-            ...SETTINGS,
-            rosterSlots: { c: 2, lw: 2, rw: 0, w: 0, f: 0, d: 1, g: 0, util: 1, bn: 0 },
-          };
-          // A game of each is worth 1.5, 3, 2.5, 1 and 4.5 points; the injured D has no line.
-          myTeam = {
-            ...myTeam,
-            lines: [
-              line('10', 1, 0),
-              line('11', 2, 0),
-              line('12', 1, 1),
-              line('13', 0, 1),
-              line('14', 3, 0),
-            ],
-          };
-        });
-
-        it('suggests the three skaters whose games are worth least as drops', async () => {
-          const fixture = await render();
-          const planner = fixture.point.componentInstance;
-
-          expect([...planner.dropIds()].sort((a, b) => a.localeCompare(b))).toEqual([
-            '10',
-            '12',
-            '13',
-          ]);
-          expect(planner.dropsSuggested()).toBe(true);
-          expect(ngMocks.formatText(fixture)).toContain('Droppable players');
-        });
-
-        it("prices each skater's best swap, the seat a drop frees included", async () => {
-          const fixture = await render();
-          const planner = fixture.point.componentInstance;
-          const swapOf = (name: string) =>
-            planner.ranked().find((row) => row.player.name === name)?.swap;
-
-          // Top Scorer (5.5 a game, C or LW) is worth most in place of the cheapest LW: every
-          // seat stays filled and each night gains 5.5 - 1.
-          const top = swapOf('Top Scorer')!;
-          expect(top.drop?.name).toBe('Mine 13');
-          expect(top.games).toBe(0);
-          expect(top.value).toBeCloseTo(9, 10);
-          // Second Best is a C alone: for the LW he would leave a seat empty, so he goes in
-          // for the cheapest C instead.
-          const second = swapOf('Second Best')!;
-          expect(second.drop?.name).toBe('Mine 10');
-          expect(second.value).toBeCloseTo(2, 10);
-          // A goalie is not priced as a swap.
-          expect(swapOf('Waiver Goalie')).toBeUndefined();
-        });
-
-        it('shows a swap night by night on the game days when picked from the list', async () => {
-          const fixture = await render();
-          const planner = fixture.point.componentInstance;
-
-          planner.showSwap('2');
-          fixture.detectChanges();
-
-          expect(
-            ngMocks.findAll(fixture, '.day-swap').map((cell) => ngMocks.formatText(cell)),
-          ).toEqual(['\u00b10', '\u00b10']);
-          const night = planner.nightSwap(planner.days()[1])!;
-          expect(planner.nightSwapTip(night)).toBe('Top Scorer starts, Mine 13 sits: +4.5 pts.');
-          expect(planner.shownSwapTitle()).toBe(
-            'Top Scorer for Mine 13: \u00b10 games, +9.0 pts over the game days counted',
-          );
-
-          planner.showSwap('2');
-          expect(planner.shownSwap()).toBeNull();
-        });
-
-        it('shows in yellow, in lineup order on the room line, the positions a drop would open', async () => {
-          const fixture = await render();
-          const planner = fixture.point.componentInstance;
-
-          // Every forward seat is taken; dropping a C who starts at Util frees a seat any forward
-          // can take, and the D seat was open already. Both sit on the night's one room line, the
-          // forwards first, as a lineup lists them.
-          expect(
-            ngMocks
-              .findAll(fixture, '.day .day-rooms')
-              .map((line) => ngMocks.findAll(line, '.day-room').map((c) => ngMocks.formatText(c))),
-          ).toEqual([
-            ['C, LW, RW', 'D'],
-            ['C, LW, RW', 'D'],
-          ]);
-          expect(
-            ngMocks.findAll(fixture, '.day-room--drop').map((cell) => ngMocks.formatText(cell)),
-          ).toEqual(['C, LW, RW', 'C, LW, RW']);
-          expect(planner.dropRoomTip(planner.dropRoom(planner.days()[1])!)).toBe(
-            'Open only if you drop a player you picked: C, RW if you drop Mine 10 or Mine 12; LW if you drop Mine 10, Mine 12 or Mine 13.',
-          );
-          expect(ngMocks.formatText(ngMocks.find(fixture, '.range-legend'))).toBe(
-            'Open only if you drop a player you picked below',
-          );
-
-          // With nobody picked to drop, nothing is yellow.
-          for (const id of [...planner.dropIds()]) {
-            planner.toggleDrop(id);
-          }
-          fixture.detectChanges();
-          expect(ngMocks.findAll(fixture, '.day-room--drop')).toHaveLength(0);
-        });
-
-        it('names the drops in one line and counts those past the third', async () => {
-          const fixture = await render();
-          const planner = fixture.point.componentInstance;
-
-          // The suggestion, cheapest game first, on the button that opens the whole squad.
-          expect(planner.dropsSummary()).toBe('Mine 13, Mine 10, Mine 12');
-          expect(ngMocks.formatText(ngMocks.find(fixture, '.drops-trigger'))).toBe(
-            'Mine 13, Mine 10, Mine 12',
-          );
-          expect(ngMocks.findAll(fixture, '.drops .pill')).toEqual([]);
-
-          planner.toggleDrop('14');
-          expect(planner.dropsSummary()).toMatch(/^Mine \d+, Mine \d+, Mine \d+ \+1 more$/);
-
-          for (const id of [...planner.dropIds()]) {
-            planner.toggleDrop(id);
-          }
-          expect(planner.dropsSummary()).toBe('Nobody');
-        });
-
-        it("keeps the user's own pick of drops for the league", async () => {
-          const fixture = await render();
-          const planner = fixture.point.componentInstance;
-
-          planner.toggleDrop('13');
-          planner.toggleDrop('14');
-          expect([...planner.dropIds()].sort((a, b) => a.localeCompare(b))).toEqual([
-            '10',
-            '12',
-            '14',
-          ]);
-          expect(planner.dropsSuggested()).toBe(false);
-
-          const again = await render();
-          expect(again.point.componentInstance.dropIds().has('14')).toBe(true);
-
-          again.point.componentInstance.suggestDrops();
-          expect(again.point.componentInstance.dropIds().has('13')).toBe(true);
-        });
+        // Three Cs and two LWs fill both C seats, both LW seats and the Util. Dropping a C empties
+        // a seat a C or a LW can take (the Util, or the C seat once the Util's C slides over);
+        // dropping a LW empties a LW seat only. RW, D and G were open already, so neither lists them.
+        expect(
+          ngMocks
+            .findAll(fixture, '.day .day-rooms')
+            .map((line) => ngMocks.findAll(line, '.day-room').map((c) => ngMocks.formatText(c))),
+        ).toEqual([
+          ['RW, D, G', 'C → C, LW', 'LW → LW'],
+          ['RW, D, G', 'C → C, LW', 'LW → LW'],
+        ]);
+        const [dropC, dropLw] = planner.dropRoom(planner.days()[1])!;
+        expect(planner.dropOpeningTip(dropC)).toBe(
+          'Drop Mine 10, Mine 11 or Mine 12 (C): room for C or LW.',
+        );
+        expect(planner.dropOpeningTip(dropLw)).toBe('Drop Mine 13 or Mine 14 (LW): room for LW.');
+        expect(ngMocks.formatText(ngMocks.find(fixture, '.range-legend'))).toBe(
+          'Room if you drop a player at that position',
+        );
+        // The injured D holds no seat, so dropping him opens nothing and has no line.
+        expect(ngMocks.formatText(fixture)).not.toContain('D →');
+        // Nothing asks who the user would drop, and the list has no swap to show.
+        expect(ngMocks.formatText(fixture)).not.toContain('Droppable players');
+        expect(ngMocks.findAll(fixture, '.swap-col')).toHaveLength(0);
       });
 
       it('says so when the league has no team of the user', async () => {

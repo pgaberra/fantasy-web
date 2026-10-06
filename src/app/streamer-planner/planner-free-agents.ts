@@ -15,7 +15,6 @@ import { STAT_LABELS } from '../pipes/stat-label.pipe';
 import { STAT_FULL_NAMES } from '../pipes/stat-tooltip.pipe';
 import { FreeAgent } from '../services/streamer-planner-free-agents.service';
 import { fitsRoom, NightRoom } from './planner-lineup';
-import { Swap } from './planner-swap';
 
 /** The skater position groups, in the order a lineup lists them. */
 export const PLANNER_POSITIONS = ['C', 'LW', 'RW', 'D'] as const;
@@ -46,11 +45,6 @@ export interface RankedFreeAgent {
   readonly rank: number;
   /** Games he is expected to play on the nights counted; for a goalie, the starts he is given. */
   readonly games: number;
-  /**
-   * His best swap into the user's team over the nights counted; null for a skater with no spot or
-   * drop to swap him in by, and absent where swaps are not weighed (a goalie, no team of the user's).
-   */
-  readonly swap?: Swap | null;
 }
 
 /**
@@ -374,8 +368,7 @@ export function lineColumns(
 // --- Sorting the list ----------------------------------------------------------------------------
 
 /** A column the free agents can be sorted by: one about the player, or a category of his line. */
-export type FreeAgentSortKey =
-  'name' | 'score' | 'perGame' | 'games' | 'toi' | 'swap' | ScoringStatKey;
+export type FreeAgentSortKey = 'name' | 'score' | 'perGame' | 'games' | 'toi' | ScoringStatKey;
 
 export interface FreeAgentSort {
   readonly key: FreeAgentSortKey;
@@ -398,8 +391,7 @@ export function nextSort(current: FreeAgentSort, key: FreeAgentSortKey): FreeAge
   if (current.key === key) {
     return { key, descending: !current.descending };
   }
-  const firstWay =
-    key === 'score' || key === 'perGame' || key === 'games' || key === 'toi' || key === 'swap';
+  const firstWay = key === 'score' || key === 'perGame' || key === 'games' || key === 'toi';
   return { key, descending: firstWay || defaultSortDirection(key) === 'desc' };
 }
 
@@ -419,8 +411,6 @@ export function sortValue(
       return row.games > 0 ? row.score / row.games : null;
     case 'games':
       return row.games;
-    case 'swap':
-      return row.swap?.value ?? null;
     case 'toi':
       return row.player.projection.type === 'skater'
         ? (row.player.projection.stats.utility.toiPerGame ?? null)

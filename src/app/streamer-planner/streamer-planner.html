@@ -147,132 +147,49 @@
               @if (room(day) || dropRoom(day)) {
                 <span class="day-rooms">
                   @if (room(day); as room) {
-                    @if (room.fits.size === 0) {
-                      <!-- The user's own lineup that night has no seat left. -->
-                      <span
-                        #fullTip="appTooltip"
-                        class="day-room day-room--full"
-                        [appTooltip]="roomTip(room)"
-                        [dismissOnClick]="false"
-                        (click)="fullTip.toggle()"
-                        [attr.aria-label]="roomTip(room)"
-                        >{{ roomLabel(room) }}</span
-                      >
-                    }
-                  }
-                  <!-- The open positions in lineup order, whatever opens them: green where the
-                       lineup has room as it stands, yellow where only a picked drop opens it. -->
-                  @for (run of roomRuns(day); track $index) {
+                    <!-- The user's own lineup that night: who would still start, or that it is full. -->
                     <span
-                      #runTip="appTooltip"
+                      #roomTipRef="appTooltip"
                       class="day-room"
-                      [class.day-room--drop]="run.drop"
-                      [appTooltip]="run.tip"
+                      [class.day-room--full]="room.open === 0"
+                      [appTooltip]="roomTip(room)"
                       [dismissOnClick]="false"
-                      (click)="runTip.toggle()"
-                      [attr.aria-label]="run.tip"
-                      >{{ run.label }}</span
+                      (click)="roomTipRef.toggle()"
+                      [attr.aria-label]="roomTip(room)"
+                      >{{ roomLabel(room) }}</span
+                    >
+                  }
+                  <!-- Then a yellow line for each kind of player the user could drop: what his
+                       drop would open that night, beyond the room the lineup already has. -->
+                  @for (opening of dropRoom(day) ?? []; track opening.kinds.join()) {
+                    <span
+                      #dropTip="appTooltip"
+                      class="day-room day-room--drop"
+                      [appTooltip]="dropOpeningTip(opening)"
+                      [dismissOnClick]="false"
+                      (click)="dropTip.toggle()"
+                      [attr.aria-label]="dropOpeningTip(opening)"
+                      >{{ dropOpeningLabel(opening) }}</span
                     >
                   }
                 </span>
               }
-              @if (nightSwap(day); as night) {
-                <!-- The swap picked in the list, this night: the starts it gains or costs. -->
-                <span
-                  #swapTip="appTooltip"
-                  class="day-swap"
-                  [class.day-swap--up]="night.games > 0 || (night.games === 0 && night.value > 0)"
-                  [class.day-swap--down]="night.games < 0 || (night.games === 0 && night.value < 0)"
-                  [appTooltip]="nightSwapTip(night)"
-                  [dismissOnClick]="false"
-                  (click)="swapTip.toggle()"
-                  [attr.aria-label]="nightSwapTip(night)"
-                  >{{ nightSwapLabel(night) }}</span
-                >
-              }
             </div>
           }
         </div>
-        @if (shownSwap()) {
-          <p class="swap-shown" aria-live="polite">
-            <span>{{ shownSwapTitle() }}</span>
-            <button type="button" class="btn btn-secondary btn-sm" (click)="hideSwap()">
-              Hide
-            </button>
-          </p>
-        }
         <p class="range-summary">
           <span>{{ weeksTitle() }}</span>
           <span>{{ nightsTitle() }}</span>
           @if (hasDropRoom()) {
             <span class="range-legend"
-              ><span class="legend-swatch" aria-hidden="true"></span>Open only if you drop a player
-              you picked below</span
+              ><span class="legend-swatch" aria-hidden="true"></span>Room if you drop a player at
+              that position</span
             >
           }
         </p>
         <!-- The user's own team, where this environment reads it: the cells above say which nights
              it has room on. The switch that ranks the free agents by them is on their own card. -->
         @switch (myTeamStatus()) {
-          @case ('ready') {
-            @if (swapsShown() && dropOptions().length > 0) {
-              <!-- A pickup is made with a drop: the players the user would let go, which the
-                   free agents' swaps are priced against. The page suggests the cheapest three. -->
-              <div class="drops" role="group" aria-labelledby="planner-drops-label">
-                <span id="planner-drops-label" class="group-label">Droppable players</span>
-                <app-help-tip
-                  label="Players you would drop"
-                  text="Each free agent's Swap is priced against the best of these: every game day is re-set with him in and the dropped player out, so the seat a drop frees counts, and each game is weighed by what a game of that player is worth. Until you pick, the three skaters whose games are worth least are suggested."
-                />
-                <!-- The pick in one line, the whole squad behind it: seventeen names were a wall
-                     under the game days for a choice made once. -->
-                <button
-                  type="button"
-                  class="btn btn-secondary btn-sm drops-trigger"
-                  [appPopover]="dropsMenu"
-                  popoverAlign="start"
-                >
-                  <span class="drops-picked">{{ dropsSummary() }}</span>
-                  <app-icon name="chevron-down" [size]="14" />
-                </button>
-                @if (dropsSuggested()) {
-                  <span class="drops-note">Suggested</span>
-                }
-                <ng-template #dropsMenu>
-                  <div class="drops-menu">
-                    <div class="pills" role="group" aria-label="Players you would drop">
-                      @for (player of dropOptions(); track player.playerId) {
-                        <button
-                          type="button"
-                          class="pill"
-                          [class.pill--active]="dropIds().has(player.playerId)"
-                          [attr.aria-pressed]="dropIds().has(player.playerId)"
-                          (click)="toggleDrop(player.playerId)"
-                        >
-                          {{ player.name }}
-                        </button>
-                      }
-                    </div>
-                    <p class="drops-menu-foot">
-                      @if (dropsSuggested()) {
-                        <span class="drops-note"
-                          >Suggested: the three skaters whose games are worth least.</span
-                        >
-                      } @else {
-                        <button
-                          type="button"
-                          class="btn btn-secondary btn-sm"
-                          (click)="suggestDrops()"
-                        >
-                          Use suggestion
-                        </button>
-                      }
-                    </p>
-                  </div>
-                </ng-template>
-              </div>
-            }
-          }
           @case ('not-found') {
             <p class="my-team my-team--note">
               Your team isn't in this league, so open lineup slots aren't shown.
@@ -425,10 +342,7 @@
           [focusLabel]="focusLabel()"
           [top]="topRows()"
           [sort]="sort()"
-          [swapsShown]="swapsShown()"
-          [shownSwap]="shownSwapPlayer()"
           (sortBy)="sortBy($event)"
-          (showSwap)="showSwap($event)"
         />
         <!-- A page at a time: most visits never leave the first, so the card stays the height
              of one page and the next is a press away. The page size is kept per layout. -->

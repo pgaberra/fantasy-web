@@ -54,21 +54,6 @@
             GP
           </button>
         </th>
-        @if (swapsShown()) {
-          <th scope="col" class="num swap-col" [attr.aria-sort]="ariaSort('swap')">
-            <button
-              type="button"
-              class="sort"
-              [appTooltip]="swapHeadingTip"
-              (click)="sortBy.emit('swap')"
-            >
-              @if (sort().key === 'swap') {
-                <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
-              }
-              Swap
-            </button>
-          </th>
-        }
         @if (hasSkaters()) {
           <th scope="col" class="num toi-col" [attr.aria-sort]="ariaSort('toi')">
             <button
@@ -153,28 +138,6 @@
           <td class="num score">{{ score(entry.row) }}</td>
           <td class="num rate-col">{{ perGame(entry.row) }}</td>
           <td class="num">{{ games(entry.row) }}</td>
-          @if (swapsShown()) {
-            <td class="num swap-col">
-              @if (entry.row.swap; as swap) {
-                <button
-                  type="button"
-                  class="swap"
-                  [class.swap--up]="swap.value > 0"
-                  [class.swap--down]="swap.value < 0"
-                  [attr.aria-pressed]="shownSwap() === entry.row.player.playerId"
-                  [appTooltip]="swapTip(swap)"
-                  (click)="showSwap.emit(entry.row.player.playerId)"
-                >
-                  <span class="swap-value">{{ swapValue(swap) }}&ngsp;</span>
-                  <span class="swap-for">{{ swapFor(swap) }}</span>
-                </button>
-              } @else if (entry.row.swap === null) {
-                <span class="not-his" [appTooltip]="noSwapTip">{{ notHis }}</span>
-              } @else {
-                <span class="not-his">{{ notHis }}</span>
-              }
-            </td>
-          }
           @if (hasSkaters()) {
             <td class="num toi-col" [class.not-his]="entry.row.player.projection.type !== 'skater'">
               {{ toi(entry.row) }}
