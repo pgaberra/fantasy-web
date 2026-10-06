@@ -876,10 +876,10 @@ export class StreamerPlannerComponent {
     return stretch ? weeksTitle(this.weeks(), stretch) : '';
   });
 
-  /** "6 of 7 days": the days counted, of the days with games. */
+  /** "6 of 7 days selected": the days counted, of the days with games. */
   readonly nightsTitle = computed(() => {
     const nights = this.nightsWithGames();
-    return nights === 0 ? 'No games' : `${this.counted().size} of ${nights} days`;
+    return nights === 0 ? 'No games' : `${this.counted().size} of ${nights} days selected`;
   });
 
   /** How the free agents are ranked, in the tip on their card. */
@@ -888,14 +888,6 @@ export class StreamerPlannerComponent {
       ? `The model's projection for the game days you count that have room for him in ${this.myTeamName()}, scored with your league's settings. A player is only worth what your league pays for what he does.`
       : "The model's projection for the nights you count, scored with your league's settings. A player is only worth what your league pays for what he does.",
   );
-
-  /** What the "Off" mark on a night stands for, in its tooltip: the only place it is said. */
-  readonly offNightTip = computed(() => {
-    const max = this.offNightMaxGames();
-    return max
-      ? `Off-night: ${max} games or fewer, so most lineups have an open slot`
-      : 'Off-night: few games, so most lineups have an open slot';
-  });
 
   /** What a night is worth, said once, in the tip beside the nights. */
   readonly nightsHelp = computed(() => {
