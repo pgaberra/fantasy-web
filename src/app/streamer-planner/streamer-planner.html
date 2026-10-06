@@ -27,7 +27,6 @@
         <div class="range" role="group" aria-labelledby="planner-nights-label">
           <div class="range-head">
             <span id="planner-nights-label" class="group-label">Game days</span>
-            <app-help-tip label="How game days count" [text]="nightsHelp()" />
           </div>
           <div class="range-controls">
             <div class="pills">
@@ -254,7 +253,7 @@
       <div class="card-head">
         <h2 id="planner-free-agents-title" class="card-title">
           <app-icon name="user-plus" />Top Free Agents
-          <app-help-tip label="How these are ranked" [text]="rankingHelp()" />
+          <app-help-tip label="How these are ranked" text="Based on our AI projection." />
         </h2>
         <!-- Scored only on the nights the user's lineup has room for them, unless unticked. -->
         @if (myTeamStatus() === 'ready') {
