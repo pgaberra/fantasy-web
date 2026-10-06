@@ -194,11 +194,11 @@ describe('dropRooms', () => {
       { drop: false, positions: ['D', 'G'] },
     ]);
     // Every LW frees the C spot, but not every C: Wing (C/RW) does not, so it is "a LW". Only
-    // Benson frees a LW spot and Dual is a LW too, so he is ruled out by name of his kind. Every
-    // forward frees the RW spot (Back, a D, does not), so it is "any forward".
-    expect(dropRoomTip(monday, ['C'])).toBe('Drop a LW to free a C spot.');
-    expect(dropRoomTip(monday, ['LW'])).toBe('Drop a LW (not C/LW) to free a LW spot.');
-    expect(dropRoomTip(monday, ['RW'])).toBe('Drop any forward to free a RW spot.');
+    // Benson frees a LW spot, and Dual is a LW too: he is the one exception, named. Every forward
+    // frees the RW spot (Back, a D, does not), so it is "any forward". The pill names the spot.
+    expect(dropRoomTip(monday, ['C'])).toBe('Drop a LW.');
+    expect(dropRoomTip(monday, ['LW'])).toBe('Drop a LW, except Dual.');
+    expect(dropRoomTip(monday, ['RW'])).toBe('Drop any forward.');
   });
 
   it("keeps lineup order however own room and a drop's alternate, and lists a full night's drop room alone", () => {
@@ -209,7 +209,7 @@ describe('dropRooms', () => {
       benched: 0,
       fits: new Set(['C', 'RW'] as const),
     };
-    const benson = [{ kind: 'LW', opens: ['LW', 'G'] as const }];
+    const benson = [{ kind: 'LW', names: ['Benson'], opens: ['LW', 'G'] as const }];
 
     expect(roomRuns(room, benson)).toEqual([
       { drop: false, positions: ['C'] },
@@ -218,44 +218,50 @@ describe('dropRooms', () => {
       { drop: true, positions: ['G'] },
     ]);
     const full = { ...room, open: 0, fits: new Set<never>() };
-    expect(roomRuns(full, [{ kind: 'D', opens: ['D'] }])).toEqual([
+    expect(roomRuns(full, [{ kind: 'D', names: ['Back'], opens: ['D'] }])).toEqual([
       { drop: true, positions: ['D'] },
     ]);
     expect(roomRuns(full, undefined)).toEqual([]);
     // Positions the same drops open share a run and its one rule.
-    const centre = [{ kind: 'C', opens: ['C', 'LW'] as const }];
+    const centre = [{ kind: 'C', names: ['Centre'], opens: ['C', 'LW'] as const }];
     expect(roomRuns(full, centre)).toEqual([{ drop: true, positions: ['C', 'LW'] }]);
-    expect(dropRoomTip(centre, ['C', 'LW'])).toBe('Drop a C to free a C or LW spot.');
-    // The screenshot's night: every C, C/LW, LW and LW/RW frees the C seat, and a plain RW does
-    // not, so "a C or LW" says it whole; the wing seats take a LW only, not a C.
+    // Every forward is a C: "a C" says it in fewer words than "any forward".
+    expect(dropRoomTip(centre, ['C', 'LW'])).toBe('Drop a C.');
+  });
+
+  it('says a drop as plainly as it holds, naming only the exceptions', () => {
+    // The 2026-10-06 screenshot's night: every C, C/LW, LW and LW/RW frees the C spot and a
+    // plain RW does not, so "a C or LW" says it whole. The wing spots take a LW, but not the
+    // C/LW: "a LW", with him the one exception, beats a list of kinds.
     const night = [
-      { kind: 'C', opens: ['C'] as const },
-      { kind: 'C/LW', opens: ['C'] as const },
-      { kind: 'LW', opens: ['C', 'LW', 'RW'] as const },
-      { kind: 'LW/RW', opens: ['C', 'LW', 'RW'] as const },
-      { kind: 'RW', opens: [] as const },
-      { kind: 'D', opens: [] as const },
+      { kind: 'C', names: ['Joel Eriksson Ek'], opens: ['C'] as const },
+      { kind: 'C/LW', names: ['Brady Tkachuk'], opens: ['C'] as const },
+      { kind: 'LW', names: ['Zach Benson', 'Filip Forsberg'], opens: ['C', 'LW', 'RW'] as const },
+      { kind: 'LW/RW', names: ['Will Cuylle'], opens: ['C', 'LW', 'RW'] as const },
+      { kind: 'RW', names: ['Plain Wing'], opens: [] as const },
+      { kind: 'D', names: ['Back'], opens: [] as const },
     ];
-    expect(dropRoomTip(night, ['C'])).toBe('Drop a C or LW to free a C spot.');
-    expect(dropRoomTip(night, ['LW', 'RW'])).toBe(
-      'Drop a LW (not C/LW) or LW/RW to free a LW or RW spot.',
-    );
+    expect(dropRoomTip(night, ['C'])).toBe('Drop a C or LW.');
+    expect(dropRoomTip(night, ['LW', 'RW'])).toBe('Drop a LW, except Brady Tkachuk.');
     // Every skater frees the Util: "any skater", a defenceman among them. Without one it is the
-    // same players as "any forward", and said so; a group and a position can share a rule.
+    // same players as "any forward", and said so.
     const util = [
-      { kind: 'C', opens: ['C'] as const },
-      { kind: 'LW', opens: ['C'] as const },
-      { kind: 'D', opens: ['C'] as const },
-      { kind: 'G', opens: [] as const },
+      { kind: 'C', names: ['Centre'], opens: ['C'] as const },
+      { kind: 'LW', names: ['Left'], opens: ['C'] as const },
+      { kind: 'D', names: ['Back'], opens: ['C'] as const },
+      { kind: 'G', names: ['Keeper'], opens: [] as const },
     ];
-    expect(dropRoomTip(util, ['C'])).toBe('Drop any skater to free a C spot.');
-    expect(dropRoomTip(util.slice(0, 2), ['C'])).toBe('Drop any forward to free a C spot.');
-    const andAD = [
-      ...util.slice(0, 2),
-      { kind: 'D', opens: ['C'] as const },
-      { kind: 'D/RW', opens: [] as const },
+    expect(dropRoomTip(util, ['C'])).toBe('Drop any skater.');
+    expect(dropRoomTip(util.slice(0, 2), ['C'])).toBe('Drop any forward.');
+    // No wording leaves out the RW/D who would not do: the fewest words, and him named.
+    const hybrid = [...util.slice(0, 3), { kind: 'RW/D', names: ['Hybrid'], opens: [] as const }];
+    expect(dropRoomTip(hybrid, ['C'])).toBe('Drop any skater, except Hybrid.');
+    // More than one exception: all named, joined with "and".
+    const two = [
+      { kind: 'LW', names: ['Left'], opens: ['LW'] as const },
+      { kind: 'C/LW', names: ['Dual', 'Other Dual'], opens: [] as const },
     ];
-    expect(dropRoomTip(andAD, ['C'])).toBe('Drop any forward or a D (not D/RW) to free a C spot.');
+    expect(dropRoomTip(two, ['LW'])).toBe('Drop a LW, except Dual and Other Dual.');
   });
 
   it('opens nothing when a teammate on the bench takes the seat', () => {
