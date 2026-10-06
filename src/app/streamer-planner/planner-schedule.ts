@@ -279,7 +279,7 @@ export function addDays(iso: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-/** "Week 3", or "Weeks 3 to 5": the weeks a stretch touches. */
+/** "Week 3", or "Weeks 3-5": the weeks a stretch touches. */
 export function weeksTitle(weeks: readonly PlannerWeek[], stretch: Stretch): string {
   const touched = weeks.filter((week) => week.end >= stretch.start && week.start <= stretch.end);
   if (touched.length === 0) {
@@ -287,7 +287,7 @@ export function weeksTitle(weeks: readonly PlannerWeek[], stretch: Stretch): str
   }
   const first = touched[0].week;
   const last = touched[touched.length - 1].week;
-  return first === last ? `Week ${first}` : `Weeks ${first} to ${last}`;
+  return first === last ? `Week ${first}` : `Weeks ${first}-${last}`;
 }
 
 /** The column of a Monday-first week a date falls in: 1 for a Monday, 7 for a Sunday. */

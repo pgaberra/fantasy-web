@@ -247,7 +247,7 @@ describe('presets', () => {
 
   it('names the weeks a stretch touches', () => {
     expect(weeksTitle(WEEKS, { start: '2026-10-19', end: '2026-10-25' })).toBe('Week 3');
-    expect(weeksTitle(WEEKS, { start: '2026-10-22', end: '2026-11-03' })).toBe('Weeks 3 to 5');
+    expect(weeksTitle(WEEKS, { start: '2026-10-22', end: '2026-11-03' })).toBe('Weeks 3-5');
     expect(weeksTitle(WEEKS, { start: '2027-01-01', end: '2027-01-02' })).toBe('');
   });
 

@@ -182,14 +182,14 @@ describe('dropRooms', () => {
     // dropping Back opens nothing new. In lineup order: C/LW, C/RW, LW.
     expect(opens(opened, MON)).toEqual(['C/LW: C, RW', 'C/RW: RW', 'LW: C, LW, RW']);
     // The cell lists the forwards before the night's own D and G, in lineup order, and the
-    // yellow run's tip says who has to go for each.
+    // yellow run's tip says which kind has to go for each.
     const monday = opened.get(MON)!;
     expect(roomRuns(rooms.get(MON), monday)).toEqual([
       { drop: true, positions: ['C', 'LW', 'RW'] },
       { drop: false, positions: ['D', 'G'] },
     ]);
     expect(dropRoomTip(monday, ['C', 'LW', 'RW'])).toBe(
-      'Open only with a drop: C if you drop Dual (C/LW), or Benson (LW); LW if you drop Benson (LW); RW if you drop Dual (C/LW), or Wing (C/RW), or Benson (LW).',
+      'C: drop a C/LW or LW. LW: drop a LW. RW: drop a C/LW, C/RW or LW.',
     );
   });
 
@@ -201,7 +201,7 @@ describe('dropRooms', () => {
       benched: 0,
       fits: new Set(['C', 'RW'] as const),
     };
-    const benson = [{ kind: 'LW', names: ['Benson'], opens: ['LW', 'G'] as const }];
+    const benson = [{ kind: 'LW', opens: ['LW', 'G'] as const }];
 
     expect(roomRuns(room, benson)).toEqual([
       { drop: false, positions: ['C'] },
@@ -210,17 +210,12 @@ describe('dropRooms', () => {
       { drop: true, positions: ['G'] },
     ]);
     const full = { ...room, open: 0, fits: new Set<never>() };
-    expect(roomRuns(full, [{ kind: 'D', names: ['Back'], opens: ['D'] }])).toEqual([
+    expect(roomRuns(full, [{ kind: 'D', opens: ['D'] }])).toEqual([
       { drop: true, positions: ['D'] },
     ]);
     expect(roomRuns(full, undefined)).toEqual([]);
-    // Positions the same drops open are said together, every player of a kind named.
-    expect(
-      dropRoomTip(
-        [{ kind: 'C', names: ['Centre', 'Other C', 'Third C'], opens: ['C', 'LW'] }],
-        ['C', 'LW'],
-      ),
-    ).toBe('Open only with a drop: C, LW if you drop Centre, Other C or Third C (C).');
+    // Positions the same drops open are said together.
+    expect(dropRoomTip([{ kind: 'C', opens: ['C', 'LW'] }], ['C', 'LW'])).toBe('C, LW: drop a C.');
   });
 
   it('opens nothing when a teammate on the bench takes the seat', () => {

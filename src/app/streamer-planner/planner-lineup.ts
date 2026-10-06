@@ -166,18 +166,15 @@ export function dropRooms(
   const opened = new Map<string, DropRoom>();
   for (const [date, room] of rooms) {
     const playing = active.filter((player) => player.nights.has(date));
-    const kinds = new Map<
-      string,
-      { order: number[]; drop: (typeof playing)[number]; names: string[] }
-    >();
+    const kinds = new Map<string, { order: number[]; drop: (typeof playing)[number] }>();
     for (const player of playing) {
       const positions = LINEUP_POSITIONS.filter((position) => player.positions.includes(position));
       const key = positions.join('/');
       if (key) {
         const order = positions.map((position) => LINEUP_POSITIONS.indexOf(position));
-        const kind = kinds.get(key) ?? { order, drop: player, names: [] };
-        kind.names.push(player.name);
-        kinds.set(key, kind);
+        if (!kinds.has(key)) {
+          kinds.set(key, { order, drop: player });
+        }
       }
     }
     const openings: DropOpening[] = [];
@@ -190,7 +187,7 @@ export function dropRooms(
         (position) => !room.fits.has(position) && seated([...rest, [position]], seats) > filled,
       );
       if (opens.length > 0) {
-        openings.push({ kind: key, names: kind.names, opens });
+        openings.push({ kind: key, opens });
       }
     }
     if (openings.length > 0) {
@@ -212,12 +209,10 @@ function lineupOrder(a: readonly number[], b: readonly number[]): number {
 
 /**
  * One kind of drop on a night: the positions the dropped player is eligible at ("LW", "C/LW"),
- * the user's players of that kind who play that night, and the positions a pickup would then
- * start at.
+ * and the positions a pickup would then start at.
  */
 export interface DropOpening {
   readonly kind: string;
-  readonly names: readonly string[];
   readonly opens: readonly LineupPosition[];
 }
 
@@ -225,29 +220,27 @@ export interface DropOpening {
 export type DropRoom = readonly DropOpening[];
 
 /**
- * Who has to go for these positions to open, for a yellow run's tooltip: positions that the same
- * drops open are said together, each drop named with the positions he is eligible at.
- * "Open only with a drop: C, RW if you drop Benson (LW) or Dual (C/LW); LW if you drop Benson (LW)."
+ * Which kinds of player have to go for these positions to open, for a yellow run's tooltip:
+ * positions that the same drops open are said together. "C: drop a C or C/LW. LW, RW: drop a LW."
  */
 export function dropRoomTip(room: DropRoom, positions: readonly LineupPosition[]): string {
   const byDrops = new Map<string, LineupPosition[]>();
   for (const position of positions) {
-    const drops = room
+    const kinds = room
       .filter((opening) => opening.opens.includes(position))
-      .map((opening) => `${joinNames(opening.names)} (${opening.kind})`)
-      .join(', or ');
-    if (drops) {
+      .map((opening) => opening.kind);
+    if (kinds.length > 0) {
+      const drops = joinOr(kinds);
       byDrops.set(drops, [...(byDrops.get(drops) ?? []), position]);
     }
   }
-  const parts = [...byDrops].map(([drops, opened]) => `${opened.join(', ')} if you drop ${drops}`);
-  return `Open only with a drop: ${parts.join('; ')}.`;
+  return [...byDrops].map(([drops, opened]) => `${opened.join(', ')}: drop a ${drops}.`).join(' ');
 }
 
-function joinNames(names: readonly string[]): string {
-  return names.length <= 1
-    ? (names[0] ?? '')
-    : `${names.slice(0, -1).join(', ')} or ${names[names.length - 1]}`;
+function joinOr(words: readonly string[]): string {
+  return words.length <= 1
+    ? (words[0] ?? '')
+    : `${words.slice(0, -1).join(', ')} or ${words[words.length - 1]}`;
 }
 
 /** A stretch of a night's positions side by side, all open as the lineup stands or all only through a drop. */

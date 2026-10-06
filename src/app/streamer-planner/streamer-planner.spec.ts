@@ -294,7 +294,7 @@ describe('StreamerPlannerComponent', () => {
     expect(planner.days()[1]).toEqual({ date: '2026-10-13', games: 3, offNight: true });
     expect(planner.activePreset()).toBe('this-week');
     expect(planner.weeksTitle()).toBe('Week 2');
-    expect(planner.nightsTitle()).toBe('2 of 2 game days');
+    expect(planner.nightsTitle()).toBe('2 of 2 days');
     expect(planner.leadingDays()).toEqual([]);
     // Monday has no days before it, so nothing is asked for them.
     expect(invoke.mock.calls.filter(([fn]) => fn === streamerPlannerTeams)).toHaveLength(1);
@@ -352,7 +352,7 @@ describe('StreamerPlannerComponent', () => {
 
     planner.applyPreset('two-weeks');
     await fixture.whenStable();
-    expect(planner.weeksTitle()).toBe('Weeks 2 to 3');
+    expect(planner.weeksTitle()).toBe('Weeks 2-3');
     expect(invoke).toHaveBeenCalledWith(streamerPlannerTeams, {
       start: '2026-10-12',
       end: '2026-10-25',
@@ -367,7 +367,7 @@ describe('StreamerPlannerComponent', () => {
     planner.setEnd(dateInput('2026-10-20'));
     expect(planner.stretch()).toEqual({ start: '2026-10-12', end: '2026-10-20' });
     expect(planner.activePreset()).toBeNull();
-    expect(planner.weeksTitle()).toBe('Weeks 2 to 3');
+    expect(planner.weeksTitle()).toBe('Weeks 2-3');
 
     // A start past the end takes the end with it.
     planner.setStart(dateInput('2026-10-21'));
@@ -407,7 +407,7 @@ describe('StreamerPlannerComponent', () => {
 
     planner.toggleDay(planner.days()[1]);
 
-    expect(planner.nightsTitle()).toBe('1 of 2 game days');
+    expect(planner.nightsTitle()).toBe('1 of 2 days');
     // Only the Oct 15 game is left, a home game the server put at 0.9324, for both teams alike.
     expect(planner.teamRows().map((row) => [row.team, row.score, row.games])).toEqual([
       ['EDM', 0.93, 1],
@@ -877,7 +877,7 @@ describe('StreamerPlannerComponent', () => {
         expect(planner.ranked()[0].games).toBe(2);
       });
 
-      it('shows in yellow, in lineup order, the positions a drop would open, and who it takes in the tip', async () => {
+      it('shows in yellow, in lineup order, the positions a drop would open, and which kind it takes in the tip', async () => {
         const fixture = await render();
         const planner = fixture.point.componentInstance;
 
@@ -895,9 +895,7 @@ describe('StreamerPlannerComponent', () => {
         expect(
           ngMocks.findAll(fixture, '.day-room--drop').map((cell) => ngMocks.formatText(cell)),
         ).toEqual(['C, LW', 'C, LW']);
-        expect(planner.roomRuns(planner.days()[1])[0].tip).toBe(
-          'Open only with a drop: C if you drop Mine 10, Mine 11 or Mine 12 (C); LW if you drop Mine 10, Mine 11 or Mine 12 (C), or Mine 13 or Mine 14 (LW).',
-        );
+        expect(planner.roomRuns(planner.days()[1])[0].tip).toBe('C: drop a C. LW: drop a C or LW.');
         expect(ngMocks.formatText(ngMocks.find(fixture, '.range-legend'))).toBe(
           'Open only if you drop one of your players',
         );

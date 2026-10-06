@@ -865,16 +865,16 @@ export class StreamerPlannerComponent {
 
   // --- Words for the page -----------------------------------------------------------------------
 
-  /** "Week 3", or "Weeks 3 to 5". */
+  /** "Week 3", or "Weeks 3-5". */
   readonly weeksTitle = computed(() => {
     const stretch = this.stretch();
     return stretch ? weeksTitle(this.weeks(), stretch) : '';
   });
 
-  /** "6 of 7 game days": the days counted, of the days with games. */
+  /** "6 of 7 days": the days counted, of the days with games. */
   readonly nightsTitle = computed(() => {
     const nights = this.nightsWithGames();
-    return nights === 0 ? 'No games' : `${this.counted().size} of ${nights} game days`;
+    return nights === 0 ? 'No games' : `${this.counted().size} of ${nights} days`;
   });
 
   /** How the free agents are ranked, in the tip on their card. */
