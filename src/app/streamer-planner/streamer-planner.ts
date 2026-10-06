@@ -594,7 +594,8 @@ export class StreamerPlannerComponent {
   /**
    * The day's open positions as its cell shows them: in lineup order, each run green when the
    * lineup has room as it stands and yellow when only a drop opens it. Only a yellow run has a
-   * tip, saying which kinds of player have to go to open it; a green one says all it needs to.
+   * tip, saying who has to go to open it, and the pill itself names the spot; a green one says
+   * all it needs to.
    */
   roomRuns(day: PlannerDay): { drop: boolean; label: string; tip: string | null }[] {
     const room = this.room(day);

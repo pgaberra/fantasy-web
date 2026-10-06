@@ -166,15 +166,18 @@ export function dropRooms(
   const opened = new Map<string, DropRoom>();
   for (const [date, room] of rooms) {
     const playing = active.filter((player) => player.nights.has(date));
-    const kinds = new Map<string, { order: number[]; drop: (typeof playing)[number] }>();
+    const kinds = new Map<
+      string,
+      { order: number[]; drop: (typeof playing)[number]; names: string[] }
+    >();
     for (const player of playing) {
       const positions = LINEUP_POSITIONS.filter((position) => player.positions.includes(position));
       const key = positions.join('/');
       if (key) {
         const order = positions.map((position) => LINEUP_POSITIONS.indexOf(position));
-        if (!kinds.has(key)) {
-          kinds.set(key, { order, drop: player });
-        }
+        const kind = kinds.get(key) ?? { order, drop: player, names: [] };
+        kind.names.push(player.name);
+        kinds.set(key, kind);
       }
     }
     const openings: DropOpening[] = [];
@@ -186,7 +189,7 @@ export function dropRooms(
       const opens = LINEUP_POSITIONS.filter(
         (position) => !room.fits.has(position) && seated([...rest, [position]], seats) > filled,
       );
-      openings.push({ kind: key, opens });
+      openings.push({ kind: key, names: kind.names, opens });
     }
     if (openings.some((opening) => opening.opens.length > 0)) {
       opened.set(date, openings);
@@ -207,10 +210,12 @@ function lineupOrder(a: readonly number[], b: readonly number[]): number {
 
 /**
  * One kind of drop on a night: the positions the dropped player is eligible at ("LW", "C/LW"),
- * and the positions a pickup would then start at, none if dropping him opens nothing.
+ * the user's players of that kind who play that night, and the positions a pickup would then
+ * start at, none if dropping him opens nothing.
  */
 export interface DropOpening {
   readonly kind: string;
+  readonly names: readonly string[];
   readonly opens: readonly LineupPosition[];
 }
 
@@ -229,75 +234,66 @@ function dropKinds(room: DropRoom | undefined, position: LineupPosition): string
 
 /**
  * Who has to go for a yellow run's positions to open, for its tooltip. Every position in a run is
- * opened by the same drops, so the tip is one rule, said as broadly as it holds for everyone it
- * takes in: "Drop any forward" when every forward playing that night would free the spot (or "any
- * skater"), else by position: "Drop a C or LW" when every C and every LW would. A kind
- * the positions cannot cover is named as it is, with the players it would seem to take in but
- * who would not do: "Drop a LW (not C/LW) to free a LW spot."
+ * opened by the same drops, so the tip is one rule, and the pill already names the spot, so the
+ * tip says only who: "Drop any forward.", "Drop a C or LW.", "Drop a LW, except Brady Tkachuk."
+ *
+ * <p>The players are named in groups ("any forward", "any skater") and positions ("a LW"), and
+ * the wording chosen covers everyone whose drop frees the spot while taking in as few players
+ * who would not as it can, those few named as exceptions; then the fewest words, then the
+ * shortest. "A C", not "any forward", when every forward is a C.
  */
 export function dropRoomTip(room: DropRoom, positions: readonly LineupPosition[]): string {
   const freeing = new Set(dropKinds(room, positions[0]));
   const at = (kind: string) => kind.split('/');
-  /** The kinds a phrase naming these positions takes in: every kind eligible at all of them. */
-  const takesIn = (named: readonly string[]) =>
-    room.filter((opening) => named.every((position) => at(opening.kind).includes(position)));
-  // Positions every player at which would free the spot, the widest first, until they cover
-  // every kind that frees it.
-  const clean = LINEUP_POSITIONS.filter((position) =>
-    takesIn([position]).every((opening) => freeing.has(opening.kind)),
-  );
-  const uncovered = new Set(freeing);
-  // Every skater, or every forward, playing that night would do: said as a group. "Any skater"
-  // only when a defenceman is among them; with none it is the same players as "any forward". A
-  // group of one position is said by that position: "a C", not "any forward", when all are Cs.
   const skaters = room.filter((opening) => !at(opening.kind).includes('G'));
   const forwards = skaters.filter((opening) => !at(opening.kind).includes('D'));
-  const group = [
-    { word: 'skater', kinds: skaters.length > forwards.length ? skaters : [] },
-    { word: 'forward', kinds: forwards },
-  ].find(
-    ({ kinds }) =>
-      new Set(kinds.flatMap((opening) => at(opening.kind))).size > 1 &&
-      kinds.every((opening) => freeing.has(opening.kind)),
-  );
-  group?.kinds.forEach((opening) => uncovered.delete(opening.kind));
-  const chosen: LineupPosition[] = [];
-  for (;;) {
-    const widest = clean
-      .map((position) => ({
-        position,
-        covers: takesIn([position]).filter((opening) => uncovered.has(opening.kind)),
-      }))
-      .reduce((best, next) => (next.covers.length > best.covers.length ? next : best), {
-        position: undefined as LineupPosition | undefined,
-        covers: [] as DropOpening[],
-      });
-    if (!widest.position) {
-      break;
+  /** Every way to name some of the night's players, those that name nobody who would do left out. */
+  const terms = [
+    ...(skaters.length > forwards.length ? [{ group: true, word: 'skater', takes: skaters }] : []),
+    { group: true, word: 'forward', takes: forwards },
+    ...LINEUP_POSITIONS.map((position) => ({
+      group: false,
+      word: position,
+      takes: room.filter((opening) => at(opening.kind).includes(position)),
+    })),
+  ].filter(({ takes }) => takes.some((opening) => freeing.has(opening.kind)));
+  let best: { misses: number; words: number; text: string } | undefined;
+  for (let mask = 1; mask < 1 << terms.length; mask++) {
+    const chosen = terms.filter((_, index) => mask & (1 << index));
+    const taken = new Set(chosen.flatMap(({ takes }) => takes));
+    if (![...freeing].every((kind) => [...taken].some((opening) => opening.kind === kind))) {
+      continue;
     }
-    chosen.push(widest.position);
-    widest.covers.forEach((opening) => uncovered.delete(opening.kind));
+    const misses = [...taken]
+      .filter((opening) => !freeing.has(opening.kind))
+      .flatMap((opening) => opening.names);
+    const named = chosen.filter(({ group }) => !group).map(({ word }) => word);
+    const drops = [
+      ...chosen.filter(({ group }) => group).map(({ word }) => `any ${word}`),
+      ...(named.length > 0 ? [`a ${join(named, 'or')}`] : []),
+    ];
+    const except = misses.length > 0 ? `, except ${join(misses, 'and')}` : '';
+    const candidate = {
+      misses: misses.length,
+      words: chosen.length,
+      text: `Drop ${drops.join(' or ')}${except}.`,
+    };
+    if (
+      !best ||
+      (candidate.misses - best.misses ||
+        candidate.words - best.words ||
+        candidate.text.length - best.text.length) < 0
+    ) {
+      best = candidate;
+    }
   }
-  const words = [
-    ...LINEUP_POSITIONS.filter((position) => chosen.includes(position)),
-    ...[...uncovered].map((kind) => {
-      const not = takesIn(at(kind))
-        .map((opening) => opening.kind)
-        .filter((other) => !freeing.has(other));
-      return not.length > 0 ? `${kind} (not ${joinOr(not)})` : kind;
-    }),
-  ];
-  const drops = [
-    ...(group ? [`any ${group.word}`] : []),
-    ...(words.length > 0 ? [`a ${joinOr(words)}`] : []),
-  ];
-  return `Drop ${drops.join(' or ')} to free a ${joinOr(positions)} spot.`;
+  return best?.text ?? '';
 }
 
-function joinOr(words: readonly string[]): string {
+function join(words: readonly string[], last: 'or' | 'and'): string {
   return words.length <= 1
     ? (words[0] ?? '')
-    : `${words.slice(0, -1).join(', ')} or ${words[words.length - 1]}`;
+    : `${words.slice(0, -1).join(', ')} ${last} ${words[words.length - 1]}`;
 }
 
 /** A stretch of a night's positions side by side, all open as the lineup stands or all only through a drop. */

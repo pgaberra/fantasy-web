@@ -900,15 +900,24 @@ describe('StreamerPlannerComponent', () => {
           ngMocks.findAll(fixture, '.day-room--drop').map((cell) => ngMocks.formatText(cell)),
         ).toEqual(['C', 'LW', 'C', 'LW']);
         expect(planner.roomRuns(planner.days()[1]).map((run) => run.tip)).toEqual([
-          'Drop a C to free a C spot.',
-          'Drop any forward to free a LW spot.',
+          'Drop a C.',
+          'Drop any forward.',
           null,
+        ]);
+        // The tip leaves the spot to the pill, so a screen reader hears both.
+        expect(
+          ngMocks.findAll(fixture, '.day-room--drop').map((cell) => cell.attributes['aria-label']),
+        ).toEqual([
+          'C: Drop a C.',
+          'LW: Drop any forward.',
+          'C: Drop a C.',
+          'LW: Drop any forward.',
         ]);
         // The phone has no hover: a tap on a yellow pill is what opens its tip.
         const drop = ngMocks.find(fixture, '.day-room--drop');
         const tip = ngMocks.findInstance(drop, TooltipDirective);
         const toggle = vi.spyOn(tip, 'toggle');
-        expect(tip.appTooltip()).toBe('Drop a C to free a C spot.');
+        expect(tip.appTooltip()).toBe('Drop a C.');
         (drop.nativeElement as HTMLElement).click();
         expect(toggle).toHaveBeenCalledTimes(1);
         expect(tip.dismissOnClick()).toBe(false);
