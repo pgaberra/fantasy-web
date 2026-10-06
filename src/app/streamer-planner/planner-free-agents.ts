@@ -51,6 +51,17 @@ export interface RankedFreeAgent {
    * they are neither in {@link games} nor scored. Absent while the list is not ranked by room.
    */
   readonly dropGames?: number;
+  /**
+   * His line and score with the {@link dropGames} played too: what he would give, not what the
+   * swap nets, since the dropped player's games go with him. Absent where a drop adds nothing.
+   */
+  readonly lifted?: LiftedLine;
+}
+
+/** A player's line over his own games and the ones a drop would add, and its score. */
+export interface LiftedLine {
+  readonly line: Projection;
+  readonly score: number;
 }
 
 /**
@@ -372,6 +383,36 @@ export function lineStats(
 
 /** What a rate over no games is written as. */
 export const NO_RATE = '—';
+
+/**
+ * What the games a drop would add put on his line, a category a stat, in the table's columns: the
+ * counts that grow by them, written as "+0.4". A rate is the season's own and stays, a count the
+ * games leave unmoved says nothing, and neither is listed. Empty where a drop adds nothing.
+ */
+export function liftStats(
+  row: RankedFreeAgent,
+  categories: readonly ScoringStatKey[],
+): readonly LineStat[] {
+  const lifted = row.lifted;
+  if (!lifted) {
+    return [];
+  }
+  const own: readonly string[] =
+    row.line.type === 'skater' ? SKATER_SCORING_STAT_KEYS : GOALIE_SCORING_STAT_KEYS;
+  const rates: readonly string[] = RATE_STAT_KEYS;
+  const before = row.line.stats.scoring as Record<string, number>;
+  const after = lifted.line.stats.scoring as Record<string, number>;
+  return categories
+    .filter((key) => own.includes(key) && row.player.projected.has(key) && !rates.includes(key))
+    .map((key) => ({ key, more: (after[key] ?? 0) - (before[key] ?? 0) }))
+    .filter(({ key, more }) => formatLineStat(key, more) !== formatLineStat(key, 0))
+    .map(({ key, more }) => {
+      const text = formatLineStat(key, more);
+      // Plus-minus signs itself; a count that fell is a sign of a line the model cut.
+      const signed = text.startsWith('+') || text.startsWith('-') ? text : `+${text}`;
+      return { ...categoryColumn(key), value: signed };
+    });
+}
 
 /** A category as the list heads a column with it. */
 export type LineColumn = Pick<LineStat, 'key' | 'label' | 'name'>;

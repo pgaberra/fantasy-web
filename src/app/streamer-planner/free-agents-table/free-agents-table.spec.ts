@@ -1,3 +1,4 @@
+import { By } from '@angular/platform-browser';
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
@@ -376,16 +377,75 @@ describe('FreeAgentsTableComponent', () => {
     const marks = ngMocks.findAll(fixture, '.drop-games');
 
     expect(marks.map((mark) => ngMocks.formatText(mark))).toEqual(['+2']);
-    // In the games cell, after his own four.
+    // In the games cell, raised after his own four.
     expect(ngMocks.formatText(marks[0].parent!)).toBe('4 +2');
     expect(marks[0].attributes['aria-label']).toBe(
-      '2 more games if you drop a player who plays those nights. He would play in place of that player, so they are not in his score.',
+      '2 more games if you drop a player who plays those nights. Not in his score: he would play in place of the player dropped. Press to see his line with them.',
     );
     expect(
       fixture.point.componentInstance
         .dropGamesTip({ ...SKATER, dropGames: 1 })
         .startsWith('1 more game if'),
     ).toBe(true);
+  });
+
+  // What the drop's games would give him is a line of its own, never read beside his: the mark
+  // turns the row to it and back, and the ranking stays the list's own.
+  describe('with the line a drop would give him', () => {
+    const liftedLine = {
+      ...SKATER_PLAYER.projection,
+      stats: {
+        scoring: scoringLine(SKATER_SCORING_STAT_KEYS, {
+          ...SKATER_STATS,
+          goals: 2.8,
+          assists: 4,
+          ppp: 0.8,
+        }),
+        utility: { gp: 5, toiPerGame: 1052 },
+      },
+    } as RankedFreeAgent['line'];
+    const liftable: RankedFreeAgent = {
+      ...SKATER,
+      dropGames: 1.25,
+      lifted: { line: liftedLine, score: 15 },
+    };
+
+    it('names in the tip what the games add, counts that move and the score, and nothing else', () => {
+      const fixture = render('points', ['goals', 'assists', 'ppp', 'shPct'], [liftable]);
+
+      expect(fixture.point.componentInstance.dropGamesTip(liftable)).toBe(
+        '1 more game if you drop a player who plays those nights, worth +0.7 G, +1.0 A, +3.8 pts. Not in his score: he would play in place of the player dropped. Press to see his line with them.',
+      );
+    });
+
+    it('turns the row to that line in yellow on a press, and back on another', () => {
+      const fixture = render('points', ['goals', 'assists', 'ppp'], [liftable, GOALIE]);
+      const mark = ngMocks.find(fixture, '.drop-games');
+      const figures = () =>
+        ngMocks
+          .findAll(fixture, 'tbody tr')[0]
+          .queryAll(By.css('td.num:not(.rank-col)'))
+          .map((cell) => ngMocks.formatText(cell));
+      const yellow = () => ngMocks.findAll(fixture, 'td.lifted').length;
+
+      expect(figures()).toEqual(['11.3', '3.0', '4 +1', '17:32', '2.1', '3.0', '0.8']);
+      expect(mark.attributes['aria-pressed']).toBe('false');
+      expect(yellow()).toBe(0);
+
+      ngMocks.click(mark);
+      fixture.detectChanges();
+      // The score, the rate, the games and every category: not the ice time, which is a game's.
+      expect(figures()).toEqual(['15.0', '3.0', '5 +1', '17:32', '2.8', '4.0', '0.8']);
+      expect(mark.attributes['aria-pressed']).toBe('true');
+      expect(yellow()).toBe(6);
+      // The goalie's row is his own still.
+      expect(ngMocks.findAll(fixture, 'tbody tr')[1].classes['lifted']).toBeUndefined();
+
+      ngMocks.click(mark);
+      fixture.detectChanges();
+      expect(figures()).toEqual(['11.3', '3.0', '4 +1', '17:32', '2.1', '3.0', '0.8']);
+      expect(yellow()).toBe(0);
+    });
   });
 
   // An add is what the list is a list of; only a claim changes what the reader does next.

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { nhlTeamKey } from '../../models/nhl-team';
 import { ScoringType } from '../../models/projection.model';
 import {
@@ -18,6 +18,7 @@ import {
   FreeAgentSortKey,
   lineColumns,
   lineStats,
+  liftStats,
   LineColumn,
   LineStat,
   NO_RATE,
@@ -46,6 +47,8 @@ export interface FreeAgentRow {
   readonly cells: readonly (LineStat | null)[];
   /** Per column, whether the category is the other kind's: a skater's under a goalie's, and back. */
   readonly notHis: readonly boolean[];
+  /** His line with the games a drop would add, under the same columns; null where a drop adds none. */
+  readonly liftedCells: readonly (LineStat | null)[] | null;
 }
 
 /**
@@ -98,8 +101,19 @@ export class FreeAgentsTableComponent {
 
   private readonly lines = computed(() => {
     const categories = this.categories();
-    return this.rows().map((row) => ({ row, stats: lineStats(row, categories) }));
+    return this.rows().map((row) => ({
+      row,
+      stats: lineStats(row, categories),
+      lifted: row.lifted ? lineStats({ ...row, line: row.lifted.line }, categories) : null,
+    }));
   });
+
+  /**
+   * The players whose row is turned to the line a drop would give them. A press on the yellow
+   * games turns it, and another turns it back: the two lines are never read side by side, and the
+   * ranking stays the list's own, since what the drop nets is the dropped player's loss too.
+   */
+  private readonly liftedIds = signal<ReadonlySet<string>>(new Set());
 
   private readonly list = computed(() => this.listed() ?? this.rows());
 
@@ -126,13 +140,17 @@ export class FreeAgentsTableComponent {
 
   readonly entries = computed<readonly FreeAgentRow[]>(() => {
     const columns = this.columns();
-    return this.lines().map(({ row, stats }) => {
+    return this.lines().map(({ row, stats, lifted }) => {
       const byKey = new Map(stats.map((stat) => [stat.key, stat]));
+      const liftedByKey = lifted ? new Map(lifted.map((stat) => [stat.key, stat])) : null;
       const own = row.line.type === 'skater' ? SKATER_KEYS : GOALIE_KEYS;
       return {
         row,
         cells: columns.map((column) => byKey.get(column.key) ?? null),
         notHis: columns.map((column) => !own.has(column.key)),
+        liftedCells: liftedByKey
+          ? columns.map((column) => liftedByKey.get(column.key) ?? null)
+          : null,
       };
     });
   });
@@ -177,20 +195,54 @@ export class FreeAgentsTableComponent {
     return row.rank <= this.top() ? (MEDALS[row.rank - 1] ?? null) : null;
   }
 
+  /** Turned to the line a drop would give him. */
+  isLifted(row: RankedFreeAgent): boolean {
+    return row.lifted !== undefined && this.liftedIds().has(row.player.playerId);
+  }
+
+  toggleLift(row: RankedFreeAgent): void {
+    if (!row.lifted) {
+      return;
+    }
+    this.liftedIds.update((ids) => {
+      const next = new Set(ids);
+      if (!next.delete(row.player.playerId)) {
+        next.add(row.player.playerId);
+      }
+      return next;
+    });
+  }
+
+  /** The cells the row reads: his own line, or the lifted one while it is turned to that. */
+  cells(entry: FreeAgentRow): readonly (LineStat | null)[] {
+    return this.isLifted(entry.row) && entry.liftedCells ? entry.liftedCells : entry.cells;
+  }
+
   score(row: RankedFreeAgent): string {
-    return row.score.toFixed(this.scoringType() === 'points' ? 1 : 2);
+    return this.scoreOf(row).toFixed(this.scoringType() === 'points' ? 1 : 2);
   }
 
   /** The score per game he plays, the way a streamer compares a three-game week to a four. */
   perGame(row: RankedFreeAgent): string {
-    if (row.games <= 0) {
+    const games = this.gamesOf(row);
+    if (games <= 0) {
       return '';
     }
-    return (row.score / row.games).toFixed(this.scoringType() === 'points' ? 1 : 2);
+    return (this.scoreOf(row) / games).toFixed(this.scoringType() === 'points' ? 1 : 2);
   }
 
   games(row: RankedFreeAgent): string {
-    return formatGames(row.games);
+    return formatGames(this.gamesOf(row));
+  }
+
+  /** His score, or the lifted line's while the row is turned to it. */
+  private scoreOf(row: RankedFreeAgent): number {
+    return this.isLifted(row) ? row.lifted!.score : row.score;
+  }
+
+  /** His games, and the drop's with them while the row is turned to the lifted line. */
+  private gamesOf(row: RankedFreeAgent): number {
+    return this.isLifted(row) ? row.games + (row.dropGames ?? 0) : row.games;
   }
 
   /** "+2", the games a drop would add beside his own, in yellow as on the game days; null for none. */
@@ -199,10 +251,31 @@ export class FreeAgentsTableComponent {
     return more > 0 ? `+${more}` : null;
   }
 
-  /** What the yellow games are, and why the score leaves them out. */
+  /**
+   * What the yellow games are, what they would add to his line, and that a press shows it. The
+   * score leaves them out: he would play each in place of the player dropped.
+   */
   dropGamesTip(row: RankedFreeAgent): string {
     const more = Math.round(row.dropGames ?? 0);
-    return `${more} more ${more === 1 ? 'game' : 'games'} if you drop a player who plays those nights. He would play in place of that player, so they are not in his score.`;
+    const games = `${more} more ${more === 1 ? 'game' : 'games'} if you drop a player who plays those nights`;
+    const lift = this.lift(row);
+    const adds = lift.length > 0 ? `, worth ${lift.join(', ')}` : '';
+    return `${games}${adds}. Not in his score: he would play in place of the player dropped. Press to see his line with them.`;
+  }
+
+  /** "+0.4 G", "+7.8 pts": what the drop's games add, the score last, for the tip. */
+  private lift(row: RankedFreeAgent): string[] {
+    if (!row.lifted) {
+      return [];
+    }
+    const stats = liftStats(row, this.categories()).map((stat) => `${stat.value} ${stat.label}`);
+    const more = row.lifted.score - row.score;
+    const points = this.scoringType() === 'points';
+    const decimals = points ? 1 : 2;
+    if (Math.abs(more) >= 0.5 / 10 ** decimals) {
+      stats.push(`${more > 0 ? '+' : ''}${more.toFixed(decimals)} ${points ? 'pts' : 'Z'}`);
+    }
+    return stats;
   }
 
   /** Ice time a game, for a skater; a goalie's is the whole game or none of it. */

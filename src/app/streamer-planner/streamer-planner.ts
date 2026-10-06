@@ -21,7 +21,7 @@ import {
   DEFAULT_SCORING_COLUMNS,
   DEFAULT_STAT_WEIGHTS,
 } from '../draft-projection/projection-defaults';
-import { Projection } from '../models/projection.model';
+import { Projection, ScoredProjection } from '../models/projection.model';
 import { ScoringStatKey } from '../models/stat-key.model';
 import { EspnService } from '../services/espn.service';
 import { FeatureService } from '../services/feature.service';
@@ -710,6 +710,8 @@ export class StreamerPlannerComponent {
     const games = new Map<string, number>();
     const dropGames = new Map<string, number>();
     const lines = new Map<string, Projection>();
+    // His line with the drop's games played too, for the one who asks what they would give him.
+    const liftedLines = new Map<string, Projection>();
     const byPlayerId = new Map(week.players.map((player) => [player.projection.playerId, player]));
     const players = week.players.filter((player) => scoresIn(player.projection.type, focus));
     const projections = players.map((player) => {
@@ -734,12 +736,19 @@ export class StreamerPlannerComponent {
       games.set(player.playerId, played);
       if (dropped) {
         dropGames.set(player.playerId, more);
+        if (more > 0) {
+          liftedLines.set(
+            player.playerId,
+            player.projection.type === 'goalie'
+              ? startsProjection(player.projection, player.expectedGames, played + more)
+              : scaledProjection(player.projection, (played + more) / player.expectedGames),
+          );
+        }
       }
       lines.set(player.playerId, line);
       return line;
     });
-    const scored = this.ranking.rankOverall({
-      projections,
+    const input = {
       scoringType: scoring.scoringType,
       statWeights: scoring.statWeights,
       activeScoringColumns: focus.size > 0 ? new Set(focus) : scoring.activeScoringColumns,
@@ -750,18 +759,40 @@ export class StreamerPlannerComponent {
       // every goalie on the page.
       minGoalieGames: 0,
       decimalSettings: WEEK_DECIMALS,
-    });
+    };
+    const scored = this.ranking.rankOverall({ ...input, projections });
+    const scoreOf = (entry: ScoredProjection) =>
+      scoring.scoringType === 'points' ? entry.score.fantasyPoints : entry.score.zScore;
+    // The lifted lines scored in one more run, each in place of its own: points are a line's own
+    // whoever else is listed, and a z-score is read against a pool every lifted line shifts a
+    // little, which the list bears rather than running the ranking once a player.
+    const liftedScores = new Map<number, number>();
+    if (liftedLines.size > 0) {
+      const lifted = this.ranking.rankOverall({
+        ...input,
+        projections: players.map(
+          (player) => liftedLines.get(player.playerId) ?? lines.get(player.playerId)!,
+        ),
+      });
+      for (const entry of lifted) {
+        liftedScores.set(entry.projection.playerId, scoreOf(entry));
+      }
+    }
     const ranked: RankedFreeAgent[] = [];
     for (const [index, entry] of scored.entries()) {
       const player = byPlayerId.get(entry.projection.playerId);
       if (player) {
+        const liftedLine = liftedLines.get(player.playerId);
         ranked.push({
           player,
           line: lines.get(player.playerId) ?? player.projection,
-          score: scoring.scoringType === 'points' ? entry.score.fantasyPoints : entry.score.zScore,
+          score: scoreOf(entry),
           rank: index + 1,
           games: games.get(player.playerId) ?? player.expectedGames,
           dropGames: dropGames.get(player.playerId),
+          lifted: liftedLine
+            ? { line: liftedLine, score: liftedScores.get(entry.projection.playerId) ?? 0 }
+            : undefined,
         });
       }
     }

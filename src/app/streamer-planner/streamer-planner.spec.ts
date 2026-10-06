@@ -897,8 +897,15 @@ describe('StreamerPlannerComponent', () => {
         const skaters = planner.ranked().filter((row) => row.line.type === 'skater');
         expect(skaters.map((row) => row.dropGames)).toEqual([2, 2]);
         expect(skaters.map((row) => row.score)).toEqual([0, 0]);
+        // What the two games would give him: his line over them, scored, beside the bare one.
+        for (const row of skaters) {
+          expect(row.lifted?.score).toBeGreaterThan(0);
+          expect(row.lifted?.line.stats.utility.gp).toBeGreaterThan(row.line.stats.utility.gp ?? 0);
+        }
         // The goalie's G seat is open as it stands: nothing for a drop to add.
-        expect(planner.ranked().find((row) => row.line.type === 'goalie')?.dropGames).toBe(0);
+        const goalie = planner.ranked().find((row) => row.line.type === 'goalie');
+        expect(goalie?.dropGames).toBe(0);
+        expect(goalie?.lifted).toBeUndefined();
 
         // Ranked over every night counted, there is no room to tell apart.
         planner.toggleFitMyTeam();
