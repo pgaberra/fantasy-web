@@ -64,14 +64,13 @@ import {
 } from './planner-free-agents';
 import { focusableCategories, readFocus, scoresIn, writeFocus } from './planner-focus';
 import {
-  DropOpening,
-  dropOpeningLabel,
-  dropOpeningTip,
   DropRoom,
   dropRooms,
+  dropRoomTip,
   NightRoom,
   nightRooms,
   roomLabel,
+  roomRuns,
   roomTip,
 } from './planner-lineup';
 import {
@@ -573,9 +572,9 @@ export class StreamerPlannerComponent {
   // --- What a drop would open ----------------------------------------------------------------
 
   /**
-   * Each game day's positions open only once one of the user's players is gone, one line per kind
-   * of player he could drop: the seat a drop frees, and what moving his dual-position teammates
-   * about lets it take. Shown apart from the night's own room, since it holds only with that drop.
+   * Each game day's positions open only once one of the user's players is gone, for each kind of
+   * player he could drop: the seat a drop frees, and what moving his dual-position teammates about
+   * lets it take. Told apart from the night's own room, since it holds only with that drop.
    */
   private readonly dropRoomsByDate = computed<ReadonlyMap<string, DropRoom> | null>(() => {
     const rooms = this.rooms();
@@ -592,12 +591,19 @@ export class StreamerPlannerComponent {
     return day.games > 0 ? this.dropRoomsByDate()?.get(day.date) : undefined;
   }
 
-  dropOpeningLabel(opening: DropOpening): string {
-    return dropOpeningLabel(opening);
-  }
-
-  dropOpeningTip(opening: DropOpening): string {
-    return dropOpeningTip(opening);
+  /**
+   * The day's open positions as its cell shows them: in lineup order, each run green when the
+   * lineup has room as it stands and yellow when only a drop opens it. A green run's tip is the
+   * night's room; a yellow run's says who has to go for each of its positions.
+   */
+  roomRuns(day: PlannerDay): { drop: boolean; label: string; tip: string }[] {
+    const room = this.room(day);
+    const opened = this.dropRoom(day);
+    return roomRuns(room, opened).map((run) => ({
+      drop: run.drop,
+      label: run.positions.join(', '),
+      tip: run.drop ? dropRoomTip(opened!, run.positions) : roomTip(room!),
+    }));
   }
 
   /** Whether any day on screen has room only through a drop, so the line under them says what yellow means. */

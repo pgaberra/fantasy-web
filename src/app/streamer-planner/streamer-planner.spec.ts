@@ -877,31 +877,30 @@ describe('StreamerPlannerComponent', () => {
         expect(planner.ranked()[0].games).toBe(2);
       });
 
-      it('adds a yellow line for each kind of player the user could drop, and what it opens', async () => {
+      it('shows in yellow, in lineup order, the positions a drop would open, and who it takes in the tip', async () => {
         const fixture = await render();
         const planner = fixture.point.componentInstance;
 
         // Three Cs and two LWs fill both C seats, both LW seats and the Util. Dropping a C empties
         // a seat a C or a LW can take (the Util, or the C seat once the Util's C slides over);
-        // dropping a LW empties a LW seat only. RW, D and G were open already, so neither lists them.
+        // dropping a LW empties a LW seat only. RW, D and G were open already.
         expect(
           ngMocks
             .findAll(fixture, '.day .day-rooms')
             .map((line) => ngMocks.findAll(line, '.day-room').map((c) => ngMocks.formatText(c))),
         ).toEqual([
-          ['RW, D, G', 'C → C, LW', 'LW → LW'],
-          ['RW, D, G', 'C → C, LW', 'LW → LW'],
+          ['C, LW', 'RW, D, G'],
+          ['C, LW', 'RW, D, G'],
         ]);
-        const [dropC, dropLw] = planner.dropRoom(planner.days()[1])!;
-        expect(planner.dropOpeningTip(dropC)).toBe(
-          'Drop Mine 10, Mine 11 or Mine 12 (C): room for C or LW.',
+        expect(
+          ngMocks.findAll(fixture, '.day-room--drop').map((cell) => ngMocks.formatText(cell)),
+        ).toEqual(['C, LW', 'C, LW']);
+        expect(planner.roomRuns(planner.days()[1])[0].tip).toBe(
+          'Open only with a drop: C if you drop Mine 10, Mine 11 or Mine 12 (C); LW if you drop Mine 10, Mine 11 or Mine 12 (C), or Mine 13 or Mine 14 (LW).',
         );
-        expect(planner.dropOpeningTip(dropLw)).toBe('Drop Mine 13 or Mine 14 (LW): room for LW.');
         expect(ngMocks.formatText(ngMocks.find(fixture, '.range-legend'))).toBe(
-          'Room if you drop a player at that position',
+          'Open only if you drop one of your players',
         );
-        // The injured D holds no seat, so dropping him opens nothing and has no line.
-        expect(ngMocks.formatText(fixture)).not.toContain('D →');
         // Nothing asks who the user would drop, and the list has no swap to show.
         expect(ngMocks.formatText(fixture)).not.toContain('Droppable players');
         expect(ngMocks.findAll(fixture, '.swap-col')).toHaveLength(0);
