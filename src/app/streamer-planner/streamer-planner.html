@@ -98,20 +98,25 @@
               }
             </span>
           }
+          <!-- Only the tick box counts a night in or out: the rest of the cell is for reading, so a
+               tap on a position or a mark opens its explanation instead, the phone having no hover. -->
           @for (day of days(); track day.date) {
-            <label
+            <div
               class="day"
               [class.day--off-night]="day.offNight"
               [class.day--out]="!isCounted(day)"
               [class.day--dark]="day.games === 0"
             >
               <span class="day-head">
-                <input
-                  type="checkbox"
-                  [checked]="isCounted(day)"
-                  [disabled]="day.games === 0"
-                  (change)="toggleDay(day)"
-                />
+                <label class="day-tick">
+                  <input
+                    type="checkbox"
+                    [checked]="isCounted(day)"
+                    [disabled]="day.games === 0"
+                    (change)="toggleDay(day)"
+                  />
+                  <span class="sr-only">Count {{ dayName(day) }} {{ dayOfMonth(day) }}</span>
+                </label>
                 <span class="day-name">{{ dayName(day) }}</span>
                 <span class="day-date"
                   ><span class="day-month">{{ dayMonth(day) }}&ngsp;</span
@@ -128,7 +133,13 @@
                   </span>
                 }
                 @if (day.offNight) {
-                  <span class="day-mark" [appTooltip]="offNightTip()">
+                  <span
+                    #offTip="appTooltip"
+                    class="day-mark"
+                    [appTooltip]="offNightTip()"
+                    [dismissOnClick]="false"
+                    (click)="offTip.toggle()"
+                  >
                     <span aria-hidden="true">Off</span><span class="sr-only">Off-night</span>
                   </span>
                 }
@@ -139,8 +150,11 @@
                     @if (room.fits.size === 0) {
                       <!-- The user's own lineup that night has no seat left. -->
                       <span
+                        #fullTip="appTooltip"
                         class="day-room day-room--full"
                         [appTooltip]="roomTip(room)"
+                        [dismissOnClick]="false"
+                        (click)="fullTip.toggle()"
                         [attr.aria-label]="roomTip(room)"
                         >{{ roomLabel(room) }}</span
                       >
@@ -150,9 +164,12 @@
                        lineup has room as it stands, yellow where only a picked drop opens it. -->
                   @for (run of roomRuns(day); track $index) {
                     <span
+                      #runTip="appTooltip"
                       class="day-room"
                       [class.day-room--drop]="run.drop"
                       [appTooltip]="run.tip"
+                      [dismissOnClick]="false"
+                      (click)="runTip.toggle()"
                       [attr.aria-label]="run.tip"
                       >{{ run.label }}</span
                     >
@@ -162,15 +179,18 @@
               @if (nightSwap(day); as night) {
                 <!-- The swap picked in the list, this night: the starts it gains or costs. -->
                 <span
+                  #swapTip="appTooltip"
                   class="day-swap"
                   [class.day-swap--up]="night.games > 0 || (night.games === 0 && night.value > 0)"
                   [class.day-swap--down]="night.games < 0 || (night.games === 0 && night.value < 0)"
                   [appTooltip]="nightSwapTip(night)"
+                  [dismissOnClick]="false"
+                  (click)="swapTip.toggle()"
                   [attr.aria-label]="nightSwapTip(night)"
                   >{{ nightSwapLabel(night) }}</span
                 >
               }
-            </label>
+            </div>
           }
         </div>
         @if (shownSwap()) {
