@@ -865,7 +865,7 @@ export class StreamerPlannerComponent {
 
   // --- Words for the page -----------------------------------------------------------------------
 
-  /** "Week 3", or "Weeks 3 to 5". */
+  /** "Week 3", or "Weeks 3-5". */
   readonly weeksTitle = computed(() => {
     const stretch = this.stretch();
     return stretch ? weeksTitle(this.weeks(), stretch) : '';

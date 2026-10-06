@@ -352,7 +352,7 @@ describe('StreamerPlannerComponent', () => {
 
     planner.applyPreset('two-weeks');
     await fixture.whenStable();
-    expect(planner.weeksTitle()).toBe('Weeks 2 to 3');
+    expect(planner.weeksTitle()).toBe('Weeks 2-3');
     expect(invoke).toHaveBeenCalledWith(streamerPlannerTeams, {
       start: '2026-10-12',
       end: '2026-10-25',
@@ -367,7 +367,7 @@ describe('StreamerPlannerComponent', () => {
     planner.setEnd(dateInput('2026-10-20'));
     expect(planner.stretch()).toEqual({ start: '2026-10-12', end: '2026-10-20' });
     expect(planner.activePreset()).toBeNull();
-    expect(planner.weeksTitle()).toBe('Weeks 2 to 3');
+    expect(planner.weeksTitle()).toBe('Weeks 2-3');
 
     // A start past the end takes the end with it.
     planner.setStart(dateInput('2026-10-21'));
