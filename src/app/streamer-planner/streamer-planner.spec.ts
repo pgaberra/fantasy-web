@@ -911,7 +911,7 @@ describe('StreamerPlannerComponent', () => {
           ngMocks.findAll(fixture, '.range-legend').map((key) => ngMocks.formatText(key)),
         ).toEqual([
           'Available in your roster',
-          'Available only if a player at a specific position is dropped. Hover to see which player positions can free up a spot',
+          'Available only if a player at a specific position is dropped. Hover or tap to see which player positions can free up a spot',
         ]);
         // Nothing asks who the user would drop, and the list has no swap to show.
         expect(ngMocks.formatText(fixture)).not.toContain('Droppable players');
