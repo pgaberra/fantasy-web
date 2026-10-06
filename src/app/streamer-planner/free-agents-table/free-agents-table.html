@@ -140,33 +140,38 @@
               </span>
             </span>
           </th>
-          <td class="num score">{{ score(entry.row) }}</td>
-          <td class="num rate-col">{{ perGame(entry.row) }}</td>
-          <td class="num">
-            {{ games(entry.row) }}
-            <!-- The games only a drop opens, yellow as on the game days: beside his own, never in
-                 them, since each would take the dropped player's place. A tap opens the tip. -->
-            @if (dropGames(entry.row); as more) {
-              <span
-                #dropTip="appTooltip"
-                class="drop-games"
-                tabindex="0"
-                [appTooltip]="dropGamesTip(entry.row)"
-                [dismissOnClick]="false"
-                (click)="dropTip.toggle()"
-                [attr.aria-label]="dropGamesTip(entry.row)"
-                >{{ more }}</span
-              >
-            }
+          @let lifted = isLifted(entry.row);
+          <td class="num score" [class.lifted]="lifted">{{ score(entry.row) }}</td>
+          <td class="num rate-col" [class.lifted]="lifted">{{ perGame(entry.row) }}</td>
+          <td class="num" [class.lifted]="lifted">
+            <span class="games">
+              {{ games(entry.row) }}
+              <!-- The games only a drop opens, yellow as on the game days and raised over his
+                   own: never in them, since each would take the dropped player's place. A press
+                   turns the row to the line he would have with them, in the same yellow. -->
+              @if (dropGames(entry.row); as more) {
+                <button
+                  type="button"
+                  class="drop-games"
+                  [appTooltip]="dropGamesTip(entry.row)"
+                  [attr.aria-pressed]="lifted"
+                  [attr.aria-label]="dropGamesTip(entry.row)"
+                  (click)="toggleLift(entry.row)"
+                >
+                  {{ more }}
+                </button>
+              }
+            </span>
           </td>
           @if (hasSkaters()) {
             <td class="num toi-col" [class.not-his]="entry.row.player.projection.type !== 'skater'">
               {{ toi(entry.row) }}
             </td>
           }
-          @for (cell of entry.cells; track $index) {
+          @for (cell of cells(entry); track $index) {
             <td
               class="num stat-col"
+              [class.lifted]="lifted"
               [class.stat-col--start]="groupStarts()[$index]"
               [class.stat-col--focus]="focused(columns()[$index].key) === true"
               [class.stat-col--muted]="focused(columns()[$index].key) === false"
