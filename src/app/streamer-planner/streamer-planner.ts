@@ -41,6 +41,7 @@ import { FreeAgentsTableComponent } from './free-agents-table/free-agents-table'
 import { LeagueFieldComponent } from './league-field/league-field';
 import {
   categoryColumn,
+  dropFactor,
   filterByPositions,
   LineColumn,
   nightsFactor,
@@ -67,6 +68,7 @@ import {
   DropRoom,
   dropRooms,
   dropRoomTip,
+  fitsDrop,
   LineupPosition,
   NightRoom,
   nightRooms,
@@ -689,7 +691,24 @@ export class StreamerPlannerComponent {
       ? new Set([...counted].filter((date) => rooms.get(date)?.fits.has('G')))
       : counted;
     const starts = projectedStarts(week.creases, goalieNights, everyNightCounted && !rooms);
+    // What a drop would add, shown beside the games and never scored: each would replace the
+    // dropped player's game. A goalie's are the starts the crease gives him once the nights only a
+    // drop opens a G seat on are counted too, less those he has already.
+    const dropped = rooms ? this.dropRoomsByDate() : null;
+    const dropStarts = dropped
+      ? projectedStarts(
+          week.creases,
+          new Set(
+            [...counted].filter(
+              (date) =>
+                goalieNights.has(date) || fitsDrop(['G'], rooms!.get(date), dropped.get(date)),
+            ),
+          ),
+          false,
+        )
+      : null;
     const games = new Map<string, number>();
+    const dropGames = new Map<string, number>();
     const lines = new Map<string, Projection>();
     const byPlayerId = new Map(week.players.map((player) => [player.projection.playerId, player]));
     const players = week.players.filter((player) => scoresIn(player.projection.type, focus));
@@ -699,13 +718,23 @@ export class StreamerPlannerComponent {
         : nightsFactor(player, teams, counted, everyNightCounted);
       let played = player.expectedGames * factor;
       let line = scaledProjection(player.projection, factor);
+      let more = dropped
+        ? player.expectedGames * dropFactor(player, teams, counted, rooms!, dropped)
+        : 0;
       if (player.projection.type === 'goalie') {
         // A game is one goalie's, so a goalie's are whole: the crease's split of the nights, or
         // for one in no crease his own expectation, rounded.
         played = starts.get(player.playerId) ?? Math.round(played);
         line = startsProjection(player.projection, player.expectedGames, played);
+        more = Math.max(
+          0,
+          (dropStarts?.get(player.playerId) ?? Math.round(played + more)) - played,
+        );
       }
       games.set(player.playerId, played);
+      if (dropped) {
+        dropGames.set(player.playerId, more);
+      }
       lines.set(player.playerId, line);
       return line;
     });
@@ -732,6 +761,7 @@ export class StreamerPlannerComponent {
           score: scoring.scoringType === 'points' ? entry.score.fantasyPoints : entry.score.zScore,
           rank: index + 1,
           games: games.get(player.playerId) ?? player.expectedGames,
+          dropGames: dropGames.get(player.playerId),
         });
       }
     }

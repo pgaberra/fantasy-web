@@ -332,6 +332,22 @@ export function fitsRoom(positions: readonly string[], room: NightRoom | undefin
   return !!room && positions.some((position) => room.fits.has(position as LineupPosition));
 }
 
+/**
+ * Whether a player at these positions would start on a night only once one of the user's players
+ * is dropped: no seat for him as the lineup stands, but a drop opens one of his positions. He would
+ * then play instead of the player dropped, so the night is not an extra game for the team.
+ */
+export function fitsDrop(
+  positions: readonly string[],
+  room: NightRoom | undefined,
+  dropRoom: DropRoom | undefined,
+): boolean {
+  return (
+    !fitsRoom(positions, room) &&
+    !!dropRoom?.some((opening) => opening.opens.some((position) => positions.includes(position)))
+  );
+}
+
 /** "D", "C, LW", "C, LW, RW, D, G": who would start that night, for the day's cell. */
 export function roomLabel(room: NightRoom): string {
   if (room.fits.size === 0) {

@@ -7,7 +7,9 @@ import {
   SKATER_SCORING_STAT_KEYS,
 } from '../models/stat-key.model';
 import { FreeAgent } from '../services/streamer-planner-free-agents.service';
+import { DropRoom, NightRoom } from './planner-lineup';
 import {
+  dropFactor,
   formatGames,
   formatToi,
   filterByPositions,
@@ -151,6 +153,38 @@ describe('nightsFactor', () => {
     expect(nightsFactor(skater('Lost', ['C'], 'XYZ'), teams, new Set(['2026-10-12']), false)).toBe(
       1,
     );
+  });
+});
+
+describe('dropFactor', () => {
+  const teams = teamsByKey(TEAMS);
+  const bolt = skater('Bolt', ['C'], 'TB');
+  const room = (date: string, fits: NightRoom['fits']): NightRoom => ({
+    date,
+    playing: 0,
+    open: fits.size,
+    benched: 0,
+    fits,
+  });
+  // The 12th has a C seat open, the 14th one only a drop opens, the 17th none at all.
+  const rooms = new Map([
+    ['2026-10-12', room('2026-10-12', new Set(['C']))],
+    ['2026-10-14', room('2026-10-14', new Set())],
+    ['2026-10-17', room('2026-10-17', new Set())],
+  ]);
+  const opensC: DropRoom = [{ kind: 'C', names: ['Mine'], opens: ['C'] }];
+  const dropped = new Map([['2026-10-14', opensC]]);
+  const all = new Set(['2026-10-12', '2026-10-14', '2026-10-17']);
+
+  it("keeps the share of his club's games counted that only a drop makes room for", () => {
+    expect(dropFactor(bolt, teams, all, rooms, dropped)).toBeCloseTo(1 / 3);
+    // The night's own room is his already, and a wing is not who a C's drop makes room for.
+    expect(dropFactor(skater('Wing', ['LW'], 'TB'), teams, all, rooms, dropped)).toBe(0);
+  });
+
+  it('is nothing for a night left uncounted, and for a club it cannot find', () => {
+    expect(dropFactor(bolt, teams, new Set(['2026-10-12']), rooms, dropped)).toBe(0);
+    expect(dropFactor(skater('Lost', ['C'], 'XYZ'), teams, all, rooms, dropped)).toBe(0);
   });
 });
 
