@@ -253,7 +253,7 @@ export function dropRoomTip(room: DropRoom, positions: readonly LineupPosition[]
     { group: true, word: 'forward', takes: forwards },
     ...LINEUP_POSITIONS.map((position) => ({
       group: false,
-      word: position as string,
+      word: position,
       takes: room.filter((opening) => at(opening.kind).includes(position)),
     })),
   ].filter(({ takes }) => takes.some((opening) => freeing.has(opening.kind)));
