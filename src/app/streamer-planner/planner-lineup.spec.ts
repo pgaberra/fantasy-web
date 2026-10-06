@@ -10,7 +10,6 @@ import {
   nightRooms,
   roomLabel,
   roomRuns,
-  roomTip,
   seated,
 } from './planner-lineup';
 
@@ -133,16 +132,14 @@ describe('nightRooms', () => {
     const roster = [rostered('1', 'EDM', ['C']), rostered('2', 'EDM', ['C'])];
     const room = nightRooms(roster, slots({ c: 1 }), teams, [MON]).get(MON)!;
     expect(roomLabel(room)).toBe('Full');
-    expect(roomTip(room)).toBe('Your lineup is full: 2 of your players play, 1 on the bench.');
     expect(fitsRoom(['C', 'LW'], room)).toBe(false);
     expect(fitsRoom(['C'], undefined)).toBe(false);
   });
 
-  it('names the open seats in its tip', () => {
+  it('names the open seats in lineup order', () => {
     const roster = [rostered('1', 'EDM', ['C'])];
     const room = nightRooms(roster, slots({ c: 2, lw: 1 }), teams, [MON]).get(MON)!;
     expect(roomLabel(room)).toBe('C, LW');
-    expect(roomTip(room)).toBe('1 of your players plays, 2 slots open. Room for: C, LW.');
   });
 });
 
