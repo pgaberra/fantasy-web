@@ -149,6 +149,19 @@ describe('FreeAgentsTableComponent', () => {
     expect(ngMocks.formatText(rows[1])).toContain('Second Line');
   });
 
+  it("writes the club in the NHL's letters under the positions, out of a screen reader's way", () => {
+    const fixture = render('points', CATEGORIES, [
+      SKATER,
+      { ...SECOND_SKATER, player: { ...SECOND_SKATER.player, teamAbbrev: undefined } },
+    ]);
+    const rows = ngMocks.findAll(fixture, 'tbody tr.player-row');
+
+    const club = ngMocks.find(rows[0], '.player-meta .player-club');
+    expect(ngMocks.formatText(club)).toEqual('EDM');
+    expect(club.attributes['aria-hidden']).toEqual('true');
+    expect(ngMocks.findAll(rows[1], '.player-club')).toEqual([]);
+  });
+
   /** Each row's medal, by its rank badge's class; null for a row that wears none. */
   function medals(fixture: ReturnType<typeof render>): (string | null)[] {
     return ngMocks.findAll(fixture, 'tbody tr.player-row').map((row) => {

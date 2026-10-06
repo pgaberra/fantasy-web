@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { nhlTeamKey } from '../../models/nhl-team';
 import { ScoringType } from '../../models/projection.model';
 import { ScoringStatKey } from '../../models/stat-key.model';
 import { IconComponent } from '../../shared/icon/icon';
 import { PositionChipsComponent } from '../../shared/position-chips/position-chips';
+import { ScrolledSidewaysDirective } from '../../shared/scrolled-sideways/scrolled-sideways.directive';
 import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import {
@@ -35,7 +37,13 @@ const MORE_ICE_SECONDS = 60;
  */
 @Component({
   selector: 'app-scout-table',
-  imports: [IconComponent, PositionChipsComponent, TeamLogoComponent, TooltipDirective],
+  imports: [
+    IconComponent,
+    PositionChipsComponent,
+    ScrolledSidewaysDirective,
+    TeamLogoComponent,
+    TooltipDirective,
+  ],
   templateUrl: './scout-table.html',
   styleUrls: [
     '../../streamer-planner/free-agents-table/free-agents-table.css',
@@ -163,6 +171,11 @@ export class ScoutTableComponent {
     return swap.gain > 0
       ? `Drop ${swap.drop.player.name} for him: your lowest-projected player whose spot he can fill`
       : `Not an upgrade: he projects below ${swap.drop.player.name}, the player you would drop for him`;
+  }
+
+  /** His club in the NHL's letters, as the crest's badge spells it; null for no club. */
+  club(row: ScoutRow): string | null {
+    return nhlTeamKey(row.player.teamAbbrev);
   }
 
   onWaivers(row: ScoutRow): boolean {
