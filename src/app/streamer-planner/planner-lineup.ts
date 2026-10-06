@@ -196,11 +196,6 @@ export function dropRooms(
 /** A night's positions open only through a drop, each with the players whose drop opens it. */
 export type DropRoom = ReadonlyMap<LineupPosition, readonly string[]>;
 
-/** "C, LW, RW": the positions a drop would open that night, for the day's cell. */
-export function dropRoomLabel(room: DropRoom): string {
-  return positionsLabel(new Set([...room.keys()]));
-}
-
 /** Which drop opens which positions, said in full, for the cell's tooltip. */
 export function dropRoomTip(room: DropRoom): string {
   const byDrops = new Map<string, LineupPosition[]>();
@@ -218,6 +213,34 @@ function joinNames(names: readonly string[]): string {
   return names.length <= 1
     ? (names[0] ?? '')
     : `${names.slice(0, -1).join(', ')} or ${names[names.length - 1]}`;
+}
+
+/** A stretch of a night's positions side by side, all open as the lineup stands or all only through a drop. */
+export interface RoomRun {
+  readonly drop: boolean;
+  readonly positions: readonly LineupPosition[];
+}
+
+/**
+ * A night's open positions, its own and a drop's together, always in lineup order (C, LW, RW, D,
+ * G) and cut into runs wherever they switch between the two, so the cell never reorders them by
+ * where the room comes from. A full night with nothing a drop opens has no runs.
+ */
+export function roomRuns(room: NightRoom | undefined, dropRoom: DropRoom | undefined): RoomRun[] {
+  const runs: { drop: boolean; positions: LineupPosition[] }[] = [];
+  for (const position of LINEUP_POSITIONS) {
+    const own = !!room?.fits.has(position);
+    if (!own && !dropRoom?.has(position)) {
+      continue;
+    }
+    const last = runs.at(-1);
+    if (last && last.drop === !own) {
+      last.positions.push(position);
+    } else {
+      runs.push({ drop: !own, positions: [position] });
+    }
+  }
+  return runs;
 }
 
 /** Whether a player at these positions would start on a night with this room. */
