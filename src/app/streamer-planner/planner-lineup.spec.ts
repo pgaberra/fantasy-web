@@ -166,9 +166,12 @@ describe('dropRooms', () => {
     named('4', 'Back', 'EDM', ['D']),
   ];
 
-  /** What each kind of drop opens, as "kind: positions". */
+  /** What each kind of drop opens, as "kind: positions", the kinds that open nothing left out. */
   const opens = (room: ReturnType<typeof dropRooms>, date: string) =>
-    room.get(date)!.map((opening) => `${opening.kind}: ${opening.opens.join(', ')}`);
+    room
+      .get(date)!
+      .filter((opening) => opening.opens.length > 0)
+      .map((opening) => `${opening.kind}: ${opening.opens.join(', ')}`);
 
   it('works out what each kind of drop opens, dual-position teammates moved about', () => {
     const rooms = nightRooms(roster, SLOTS, teams, [MON, TUE]);
@@ -190,9 +193,12 @@ describe('dropRooms', () => {
       { drop: true, positions: ['RW'] },
       { drop: false, positions: ['D', 'G'] },
     ]);
-    expect(dropRoomTip(monday, ['C'])).toBe('Drop a C/LW or LW to free a C seat.');
-    expect(dropRoomTip(monday, ['LW'])).toBe('Drop a LW to free a LW seat.');
-    expect(dropRoomTip(monday, ['RW'])).toBe('Drop a C/LW, C/RW or LW to free a RW seat.');
+    // Every LW frees the C seat, but not every C: Wing (C/RW) does not, so it is "a LW". Only
+    // Benson frees a LW seat and Dual is a LW too, so he is ruled out by name of his kind. Every
+    // C and every LW frees the RW seat, so two positions cover the three kinds.
+    expect(dropRoomTip(monday, ['C'])).toBe('Drop a LW to free a C seat.');
+    expect(dropRoomTip(monday, ['LW'])).toBe('Drop a LW (not C/LW) to free a LW seat.');
+    expect(dropRoomTip(monday, ['RW'])).toBe('Drop a C or LW to free a RW seat.');
   });
 
   it("keeps lineup order however own room and a drop's alternate, and lists a full night's drop room alone", () => {
@@ -220,6 +226,20 @@ describe('dropRooms', () => {
     const centre = [{ kind: 'C', opens: ['C', 'LW'] as const }];
     expect(roomRuns(full, centre)).toEqual([{ drop: true, positions: ['C', 'LW'] }]);
     expect(dropRoomTip(centre, ['C', 'LW'])).toBe('Drop a C to free a C or LW seat.');
+    // The screenshot's night: every C, C/LW, LW and LW/RW frees the C seat, and a plain RW does
+    // not, so "a C or LW" says it whole; the wing seats take a LW only, not a C.
+    const night = [
+      { kind: 'C', opens: ['C'] as const },
+      { kind: 'C/LW', opens: ['C'] as const },
+      { kind: 'LW', opens: ['C', 'LW', 'RW'] as const },
+      { kind: 'LW/RW', opens: ['C', 'LW', 'RW'] as const },
+      { kind: 'RW', opens: [] as const },
+      { kind: 'D', opens: [] as const },
+    ];
+    expect(dropRoomTip(night, ['C'])).toBe('Drop a C or LW to free a C seat.');
+    expect(dropRoomTip(night, ['LW', 'RW'])).toBe(
+      'Drop a LW (not C/LW) or LW/RW to free a LW or RW seat.',
+    );
   });
 
   it('opens nothing when a teammate on the bench takes the seat', () => {
