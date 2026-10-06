@@ -507,8 +507,6 @@ export class StreamerPlannerComponent {
     this.myTeamResource.hasValue() ? this.myTeamResource.value() : undefined,
   );
 
-  readonly myTeamName = computed(() => this.myTeam()?.teamName ?? 'Your team');
-
   /**
    * What the page can say about the user's own team: nothing where it is not read, and otherwise
    * whether it is still coming, failed, is not in this league, or is in hand.
@@ -945,22 +943,6 @@ export class StreamerPlannerComponent {
   readonly nightsTitle = computed(() => {
     const nights = this.nightsWithGames();
     return nights === 0 ? 'No games' : `${this.counted().size} of ${nights} days selected`;
-  });
-
-  /** How the free agents are ranked, in the tip on their card. */
-  readonly rankingHelp = computed(() =>
-    this.rankingRooms()
-      ? `The model's projection for the game days you count that have room for him in ${this.myTeamName()}, scored with your league's settings. A player is only worth what your league pays for what he does.`
-      : "The model's projection for the nights you count, scored with your league's settings. A player is only worth what your league pays for what he does.",
-  );
-
-  /** What a night is worth, said once, in the tip beside the nights. */
-  readonly nightsHelp = computed(() => {
-    const max = this.offNightMaxGames();
-    const offNight = max
-      ? `An off-night has ${max} games or fewer, when most lineups have an open slot, so a game on one counts 1.25.`
-      : 'A game on an off-night, when most lineups have an open slot, counts 1.25.';
-    return `${offNight} Untick a game day your lineup has no room on.`;
   });
 
   dayName(day: PlannerDay): string {
