@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { nhlTeamKey } from '../../models/nhl-team';
 import { ScoringType } from '../../models/projection.model';
 import {
   GOALIE_SCORING_STAT_KEYS,
@@ -7,6 +8,7 @@ import {
 } from '../../models/stat-key.model';
 import { IconComponent } from '../../shared/icon/icon';
 import { PositionChipsComponent } from '../../shared/position-chips/position-chips';
+import { ScrolledSidewaysDirective } from '../../shared/scrolled-sideways/scrolled-sideways.directive';
 import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import {
@@ -58,7 +60,13 @@ export interface FreeAgentRow {
  */
 @Component({
   selector: 'app-free-agents-table',
-  imports: [IconComponent, PositionChipsComponent, TeamLogoComponent, TooltipDirective],
+  imports: [
+    IconComponent,
+    PositionChipsComponent,
+    ScrolledSidewaysDirective,
+    TeamLogoComponent,
+    TooltipDirective,
+  ],
   templateUrl: './free-agents-table.html',
   styleUrl: './free-agents-table.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -191,6 +199,11 @@ export class FreeAgentsTableComponent {
       return NOT_HIS;
     }
     return formatToi(row.player.projection.stats.utility.toiPerGame);
+  }
+
+  /** His club in the NHL's letters, as the crest's badge spells it; null for no club. */
+  club(row: RankedFreeAgent): string | null {
+    return nhlTeamKey(row.player.teamAbbrev);
   }
 
   /** A claim rather than an add: the one status a streamer has to know before acting. */

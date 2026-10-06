@@ -117,6 +117,19 @@
 .player-logo {
   --team-logo-size: var(--player-logo-size);
   flex: none;
+  overflow: hidden;
+}
+
+/* The club in letters, beside the positions: drawn only where the crest can go (below). */
+.player-club {
+  color: var(--color-text-subtle);
+  display: none;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+
+.player-club::before {
+  content: '· ';
 }
 
 .player-identity {
@@ -207,6 +220,34 @@ span.score {
 
   .free-agents-table .toi-col {
     display: none;
+  }
+
+  /* The club is written under the name here, where the positions' line has the room, so the
+     crest can go without the club going with it. */
+  .player-club {
+    display: inline;
+  }
+
+  /* Scrolled to the numbers, the rank has gone under the player's cell, and the crest goes in the
+     same movement: a phone has a column more of numbers for its width. One transition, on the
+     crest alone, so the columns slide over rather than jump; the club stays in letters. */
+  .player-logo {
+    transition:
+      width 150ms ease,
+      margin-right 150ms ease,
+      opacity 150ms ease;
+  }
+
+  .scrolled-sideways .player-logo {
+    margin-right: calc(-1 * var(--space-2));
+    opacity: 0;
+    width: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .player-logo {
+      transition: none;
+    }
   }
 
   /* The games column now ends its group, and takes the room before the rule with it. */
