@@ -228,7 +228,6 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -238,10 +237,6 @@
     background var(--transition-fast),
     border-color var(--transition-fast),
     opacity var(--transition-fast);
-}
-
-.day:hover {
-  border-color: var(--color-border-strong);
 }
 
 .day:has(input:focus-visible) {
@@ -263,14 +258,12 @@
 }
 
 .day--dark {
-  cursor: default;
   opacity: 0.55;
 }
 
 /* A day of the week already behind the stretch: there, so the row reads as a week, and no more. */
 .day--past {
   border-style: dashed;
-  cursor: default;
   opacity: 0.4;
 }
 
@@ -280,6 +273,25 @@
   display: flex;
   gap: var(--space-1);
   min-width: 0;
+}
+
+/* The one control in the cell, given a little more room to land a thumb on than it draws. */
+.day-tick {
+  cursor: pointer;
+  display: inline-flex;
+  flex: none;
+  margin: calc(-1 * var(--space-1));
+  padding: var(--space-1);
+}
+
+.day--dark .day-tick {
+  cursor: default;
+}
+
+/* Tapped, not hovered, on a phone: each says it opens something. */
+.day-mark,
+.day-room {
+  cursor: help;
 }
 
 .day-head input {

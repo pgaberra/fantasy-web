@@ -23,6 +23,7 @@ import { ChosenLeague, LeagueChoiceService } from '../services/league-choice.ser
 import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { YahooService } from '../services/yahoo.service';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
+import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
 import { FreeAgentsTableComponent } from './free-agents-table/free-agents-table';
 import { PLANNER_LAYOUT, PlannerLayout } from './planner-page-size';
@@ -328,7 +329,7 @@ describe('StreamerPlannerComponent', () => {
     expect(past[0].nativeElement.textContent).toContain('No games');
     expect(past[1].nativeElement.querySelector('.day-count').textContent).toBe('3');
     expect(past[1].nativeElement.querySelector('input')).toBeNull();
-    const nights = ngMocks.findAll(fixture, 'label.day');
+    const nights = ngMocks.findAll(fixture, 'div.day');
     expect(nights.length).toBe(5);
     // The month sits in an element of its own, which a phone hides to fit the cell.
     const date = ngMocks.find(nights[0], '.day-date');
@@ -421,7 +422,7 @@ describe('StreamerPlannerComponent', () => {
   it('renders a night per day with its games, and a row per team', async () => {
     const fixture = await render();
 
-    const nights = ngMocks.findAll(fixture, 'label.day');
+    const nights = ngMocks.findAll(fixture, 'div.day');
     expect(nights.length).toBe(7);
     expect(ngMocks.formatText(nights[1])).toContain('3 games');
     expect(ngMocks.formatText(nights[0])).toContain('No games');
@@ -836,6 +837,27 @@ describe('StreamerPlannerComponent', () => {
         expect(ngMocks.formatText(ngMocks.find(fixture, '.free-agents .fit-toggle'))).toBe(
           'Rank based on your roster availability',
         );
+      });
+
+      it('counts a night in or out from its tick box alone, so a tap on its positions explains them', async () => {
+        const fixture = await render();
+        const room = ngMocks.findAll(fixture, '.day-room')[0];
+        const cell = room.nativeElement.closest('.day') as HTMLElement;
+        const tick = cell.querySelector('input') as HTMLInputElement;
+        const tip = ngMocks.findInstance(room, TooltipDirective);
+        const toggle = vi.spyOn(tip, 'toggle');
+        expect(tick.checked).toBe(true);
+
+        // The phone has no hover: the tap is what opens the explanation, and it leaves the night be.
+        (room.nativeElement as HTMLElement).click();
+        fixture.detectChanges();
+        expect(toggle).toHaveBeenCalledTimes(1);
+        expect(tip.dismissOnClick()).toBe(false);
+        expect(tick.checked).toBe(true);
+
+        tick.click();
+        fixture.detectChanges();
+        expect(tick.checked).toBe(false);
       });
 
       it('scores a free agent only on the game days he would start, until that is unticked', async () => {

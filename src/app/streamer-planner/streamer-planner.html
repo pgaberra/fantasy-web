@@ -98,20 +98,25 @@
               }
             </span>
           }
+          <!-- Only the tick box counts a night in or out: the rest of the cell is for reading, so a
+               tap on a position or a mark opens its explanation instead, the phone having no hover. -->
           @for (day of days(); track day.date) {
-            <label
+            <div
               class="day"
               [class.day--off-night]="day.offNight"
               [class.day--out]="!isCounted(day)"
               [class.day--dark]="day.games === 0"
             >
               <span class="day-head">
-                <input
-                  type="checkbox"
-                  [checked]="isCounted(day)"
-                  [disabled]="day.games === 0"
-                  (change)="toggleDay(day)"
-                />
+                <label class="day-tick">
+                  <input
+                    type="checkbox"
+                    [checked]="isCounted(day)"
+                    [disabled]="day.games === 0"
+                    (change)="toggleDay(day)"
+                  />
+                  <span class="sr-only">Count {{ dayName(day) }} {{ dayOfMonth(day) }}</span>
+                </label>
                 <span class="day-name">{{ dayName(day) }}</span>
                 <span class="day-date"
                   ><span class="day-month">{{ dayMonth(day) }}&ngsp;</span
@@ -128,7 +133,13 @@
                   </span>
                 }
                 @if (day.offNight) {
-                  <span class="day-mark" [appTooltip]="offNightTip()">
+                  <span
+                    #offTip="appTooltip"
+                    class="day-mark"
+                    [appTooltip]="offNightTip()"
+                    [dismissOnClick]="false"
+                    (click)="offTip.toggle()"
+                  >
                     <span aria-hidden="true">Off</span><span class="sr-only">Off-night</span>
                   </span>
                 }
@@ -138,9 +149,12 @@
                   @if (room(day); as room) {
                     <!-- The user's own lineup that night: who would still start, or that it is full. -->
                     <span
+                      #roomTipRef="appTooltip"
                       class="day-room"
                       [class.day-room--full]="room.open === 0"
                       [appTooltip]="roomTip(room)"
+                      [dismissOnClick]="false"
+                      (click)="roomTipRef.toggle()"
                       [attr.aria-label]="roomTip(room)"
                       >{{ roomLabel(room) }}</span
                     >
@@ -149,15 +163,18 @@
                        drop would open that night, beyond the room the lineup already has. -->
                   @for (opening of dropRoom(day) ?? []; track opening.kinds.join()) {
                     <span
+                      #dropTip="appTooltip"
                       class="day-room day-room--drop"
                       [appTooltip]="dropOpeningTip(opening)"
+                      [dismissOnClick]="false"
+                      (click)="dropTip.toggle()"
                       [attr.aria-label]="dropOpeningTip(opening)"
                       >{{ dropOpeningLabel(opening) }}</span
                     >
                   }
                 </span>
               }
-            </label>
+            </div>
           }
         </div>
         <p class="range-summary">
