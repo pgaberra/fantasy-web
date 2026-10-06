@@ -467,6 +467,12 @@
   display: none;
 }
 
+/* A dot between the week and the day count, only when there is a week to the left of it. */
+.range-summary > span:not(:empty) + .range-nights::before {
+  content: ' b7';
+  margin-right: var(--space-3);
+}
+
 /* What green and yellow in a cell mean, said once where the nights are summed up. */
 .range-legends {
   display: inline-flex;
@@ -475,18 +481,22 @@
   margin-left: auto;
 }
 
+/* Top-aligned, not centred: a legend's text wraps to three lines on a phone, and a centred
+   swatch then floats mid-sentence instead of marking where the key starts. */
 .range-legend {
-  align-items: center;
+  align-items: flex-start;
   display: inline-flex;
   gap: var(--space-1);
 }
 
-/* A cell's colour as a key: the same fill and edge as the position it stands for. */
+/* A cell's colour as a key: the same fill and edge as the position it stands for. The top
+   margin seats it in the middle of the first line's height, however many lines follow. */
 .legend-swatch {
   border: 1px solid;
   border-radius: var(--radius-sm);
   flex: none;
   height: 0.9em;
+  margin-top: calc((1lh - 0.9em) / 2);
   width: 0.9em;
 }
 

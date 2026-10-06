@@ -347,17 +347,3 @@ export function roomLabel(room: NightRoom): string {
 function positionsLabel(positions: ReadonlySet<LineupPosition>): string {
   return LINEUP_POSITIONS.filter((position) => positions.has(position)).join(', ');
 }
-
-function plural(count: number, one: string, many: string): string {
-  return `${count} ${count === 1 ? one : many}`;
-}
-
-/** The day's room said in full, for its tooltip. */
-export function roomTip(room: NightRoom): string {
-  const playing = `${plural(room.playing, 'of your players plays', 'of your players play')}`;
-  if (room.fits.size === 0) {
-    const bench = room.benched > 0 ? `, ${room.benched} on the bench` : '';
-    return `Your lineup is full: ${playing}${bench}.`;
-  }
-  return `${playing}, ${plural(room.open, 'slot', 'slots')} open. Room for: ${roomLabel(room)}.`;
-}

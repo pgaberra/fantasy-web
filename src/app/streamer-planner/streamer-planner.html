@@ -149,15 +149,7 @@
                   @if (room(day); as room) {
                     @if (room.fits.size === 0) {
                       <!-- The user's own lineup that night has no seat left. -->
-                      <span
-                        #fullTip="appTooltip"
-                        class="day-room day-room--full"
-                        [appTooltip]="roomTip(room)"
-                        [dismissOnClick]="false"
-                        (click)="fullTip.toggle()"
-                        [attr.aria-label]="roomTip(room)"
-                        >{{ roomLabel(room) }}</span
-                      >
+                      <span class="day-room day-room--full">{{ roomLabel(room) }}</span>
                     }
                   }
                   <!-- The open positions in lineup order, whatever opens them, one chip a
@@ -193,7 +185,7 @@
         </div>
         <p class="range-summary">
           <span>{{ weeksTitle() }}</span>
-          <span>{{ nightsTitle() }}</span>
+          <span class="range-nights">{{ nightsTitle() }}</span>
           @if (hasOpenRoom() || hasDropRoom()) {
             <span class="range-legends">
               @if (hasOpenRoom()) {
