@@ -125,6 +125,10 @@
   /* One step under success, for a filled chip with white text on it: 5.0:1. A yellower green, so
      it sits between --color-success and the neutral grey without being mistaken for either. */
   --color-success-soft: #4d7c0f;
+  /* The warning wash's green twin, for a chip that says "yes, this one": --color-success reads
+     4.7:1 on it, and the edge sits as far off the wash as the warning's does. */
+  --color-success-surface: #edf7f0;
+  --color-success-border: #bfe3cb;
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;

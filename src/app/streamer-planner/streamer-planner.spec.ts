@@ -829,11 +829,19 @@ describe('StreamerPlannerComponent', () => {
         expect(planner.roomLabel(planner.room(night)!)).toBe('RW, D, G');
         // A day without games has no lineup to fill.
         expect(planner.room(planner.days()[0])).toBeUndefined();
+        // The room as the lineup stands is a green pill, as the yellow a drop opens is, and the
+        // line under the nights says what green means.
         expect(
           ngMocks
             .findAll(fixture, '.day-room:not(.day-room--drop)')
             .map((cell) => ngMocks.formatText(cell)),
         ).toEqual(['RW, D, G', 'RW, D, G']);
+        expect(
+          ngMocks.findAll(fixture, '.day-room--open').map((cell) => ngMocks.formatText(cell)),
+        ).toEqual(['RW, D, G', 'RW, D, G']);
+        expect(ngMocks.formatText(ngMocks.find(fixture, '.range-legend--open'))).toBe(
+          'Open in your lineup',
+        );
         expect(ngMocks.formatText(ngMocks.find(fixture, '.free-agents .fit-toggle'))).toBe(
           'Rank based on your roster availability',
         );
@@ -910,9 +918,9 @@ describe('StreamerPlannerComponent', () => {
           'C: Drop a C.',
           'LW: Drop any forward.',
         ]);
-        expect(ngMocks.formatText(ngMocks.find(fixture, '.range-legend'))).toBe(
-          'Open only if you drop one of your players',
-        );
+        expect(
+          ngMocks.findAll(fixture, '.range-legend').map((key) => ngMocks.formatText(key)),
+        ).toEqual(['Open in your lineup', 'Open only if you drop one of your players']);
         // Nothing asks who the user would drop, and the list has no swap to show.
         expect(ngMocks.formatText(fixture)).not.toContain('Droppable players');
         expect(ngMocks.findAll(fixture, '.swap-col')).toHaveLength(0);

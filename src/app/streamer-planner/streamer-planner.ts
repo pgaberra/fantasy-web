@@ -606,6 +606,11 @@ export class StreamerPlannerComponent {
     }));
   }
 
+  /** Whether any day on screen has room as the lineup stands, so the line under them says what green means. */
+  readonly hasOpenRoom = computed(() =>
+    this.days().some((day) => (this.room(day)?.fits.size ?? 0) > 0),
+  );
+
   /** Whether any day on screen has room only through a drop, so the line under them says what yellow means. */
   readonly hasDropRoom = computed(() =>
     this.days().some((day) => this.dropRoom(day) !== undefined),
