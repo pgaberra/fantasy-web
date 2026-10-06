@@ -97,8 +97,8 @@
               Draft complete
             } @else if (awaitingLeagueDraft()) {
               Waiting for the Yahoo draft to start
-              @if (leagueFirstPick(); as seat) {
-                <span class="you-tag">· your first pick is #{{ seat }}</span>
+              @if (leagueFirstPick(); as firstPick) {
+                <span class="you-tag">· your first pick is #{{ firstPick }}</span>
               }
             } @else {
               @if (namesUpNextTeam()) {
@@ -164,8 +164,8 @@
             <span class="follow-live-line"
               ><span class="follow-live" aria-hidden="true"></span>Live from
               <strong>{{ followedLeague()?.name }}</strong> on Yahoo · {{ teams().length }} teams ·
-              @if (leagueFirstPick(); as seat) {
-                draft position {{ seat }} ·
+              @if (leagueFirstPick(); as firstPick) {
+                draft position {{ firstPick }} ·
               }
               {{ picks().length }} of {{ totalPicks() }} picks</span
             >

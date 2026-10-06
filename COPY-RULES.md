@@ -16,6 +16,7 @@ unless they refer to something genuinely different.
 | Everything else configured about the league | league settings | league config |
 | The live drafting feature | Draft Mode | draft board mode, live draft |
 | The paid membership | Premium | premium tier, premium plan, Pro plan |
+| A place in a roster or lineup | spot | seat, seats |
 
 ## Spelling and casing
 
