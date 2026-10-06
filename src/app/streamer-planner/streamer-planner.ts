@@ -871,10 +871,10 @@ export class StreamerPlannerComponent {
     return stretch ? weeksTitle(this.weeks(), stretch) : '';
   });
 
-  /** "6 of 7 game days": the days counted, of the days with games. */
+  /** "6 of 7 days": the days counted, of the days with games. */
   readonly nightsTitle = computed(() => {
     const nights = this.nightsWithGames();
-    return nights === 0 ? 'No games' : `${this.counted().size} of ${nights} game days`;
+    return nights === 0 ? 'No games' : `${this.counted().size} of ${nights} days`;
   });
 
   /** How the free agents are ranked, in the tip on their card. */

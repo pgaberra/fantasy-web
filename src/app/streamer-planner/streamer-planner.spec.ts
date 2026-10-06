@@ -294,7 +294,7 @@ describe('StreamerPlannerComponent', () => {
     expect(planner.days()[1]).toEqual({ date: '2026-10-13', games: 3, offNight: true });
     expect(planner.activePreset()).toBe('this-week');
     expect(planner.weeksTitle()).toBe('Week 2');
-    expect(planner.nightsTitle()).toBe('2 of 2 game days');
+    expect(planner.nightsTitle()).toBe('2 of 2 days');
     expect(planner.leadingDays()).toEqual([]);
     // Monday has no days before it, so nothing is asked for them.
     expect(invoke.mock.calls.filter(([fn]) => fn === streamerPlannerTeams)).toHaveLength(1);
@@ -407,7 +407,7 @@ describe('StreamerPlannerComponent', () => {
 
     planner.toggleDay(planner.days()[1]);
 
-    expect(planner.nightsTitle()).toBe('1 of 2 game days');
+    expect(planner.nightsTitle()).toBe('1 of 2 days');
     // Only the Oct 15 game is left, a home game the server put at 0.9324, for both teams alike.
     expect(planner.teamRows().map((row) => [row.team, row.score, row.games])).toEqual([
       ['EDM', 0.93, 1],
