@@ -230,9 +230,9 @@ function dropKinds(room: DropRoom | undefined, position: LineupPosition): string
 /**
  * Who has to go for a yellow run's positions to open, for its tooltip. Every position in a run is
  * opened by the same drops, so the tip is one rule, said by position where it holds for everyone
- * there: "Drop a C or LW" when every C and every LW playing that night would free the seat. A kind
+ * there: "Drop a C or LW" when every C and every LW playing that night would free the spot. A kind
  * the positions cannot cover is named as it is, with the players it would seem to take in but
- * who would not do: "Drop a LW (not C/LW) to free a LW seat."
+ * who would not do: "Drop a LW (not C/LW) to free a LW spot."
  */
 export function dropRoomTip(room: DropRoom, positions: readonly LineupPosition[]): string {
   const freeing = new Set(dropKinds(room, positions[0]));
@@ -272,7 +272,7 @@ export function dropRoomTip(room: DropRoom, positions: readonly LineupPosition[]
       return not.length > 0 ? `${kind} (not ${joinOr(not)})` : kind;
     }),
   ];
-  return `Drop a ${joinOr(words)} to free a ${joinOr(positions)} seat.`;
+  return `Drop a ${joinOr(words)} to free a ${joinOr(positions)} spot.`;
 }
 
 function joinOr(words: readonly string[]): string {

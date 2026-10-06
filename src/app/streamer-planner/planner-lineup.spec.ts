@@ -196,9 +196,9 @@ describe('dropRooms', () => {
     // Every LW frees the C seat, but not every C: Wing (C/RW) does not, so it is "a LW". Only
     // Benson frees a LW seat and Dual is a LW too, so he is ruled out by name of his kind. Every
     // C and every LW frees the RW seat, so two positions cover the three kinds.
-    expect(dropRoomTip(monday, ['C'])).toBe('Drop a LW to free a C seat.');
-    expect(dropRoomTip(monday, ['LW'])).toBe('Drop a LW (not C/LW) to free a LW seat.');
-    expect(dropRoomTip(monday, ['RW'])).toBe('Drop a C or LW to free a RW seat.');
+    expect(dropRoomTip(monday, ['C'])).toBe('Drop a LW to free a C spot.');
+    expect(dropRoomTip(monday, ['LW'])).toBe('Drop a LW (not C/LW) to free a LW spot.');
+    expect(dropRoomTip(monday, ['RW'])).toBe('Drop a C or LW to free a RW spot.');
   });
 
   it("keeps lineup order however own room and a drop's alternate, and lists a full night's drop room alone", () => {
@@ -225,7 +225,7 @@ describe('dropRooms', () => {
     // Positions the same drops open share a run and its one rule.
     const centre = [{ kind: 'C', opens: ['C', 'LW'] as const }];
     expect(roomRuns(full, centre)).toEqual([{ drop: true, positions: ['C', 'LW'] }]);
-    expect(dropRoomTip(centre, ['C', 'LW'])).toBe('Drop a C to free a C or LW seat.');
+    expect(dropRoomTip(centre, ['C', 'LW'])).toBe('Drop a C to free a C or LW spot.');
     // The screenshot's night: every C, C/LW, LW and LW/RW frees the C seat, and a plain RW does
     // not, so "a C or LW" says it whole; the wing seats take a LW only, not a C.
     const night = [
@@ -236,9 +236,9 @@ describe('dropRooms', () => {
       { kind: 'RW', opens: [] as const },
       { kind: 'D', opens: [] as const },
     ];
-    expect(dropRoomTip(night, ['C'])).toBe('Drop a C or LW to free a C seat.');
+    expect(dropRoomTip(night, ['C'])).toBe('Drop a C or LW to free a C spot.');
     expect(dropRoomTip(night, ['LW', 'RW'])).toBe(
-      'Drop a LW (not C/LW) or LW/RW to free a LW or RW seat.',
+      'Drop a LW (not C/LW) or LW/RW to free a LW or RW spot.',
     );
   });
 
