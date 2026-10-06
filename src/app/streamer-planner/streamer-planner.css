@@ -482,7 +482,7 @@
 
 /* A dot between the week and the day count, only when there is a week to the left of it. */
 .range-summary > span:not(:empty) + .range-nights::before {
-  content: ' b7';
+  content: '·';
   margin-right: var(--space-3);
 }
 

@@ -14,7 +14,7 @@ import {
 import { STAT_LABELS } from '../pipes/stat-label.pipe';
 import { STAT_FULL_NAMES } from '../pipes/stat-tooltip.pipe';
 import { FreeAgent } from '../services/streamer-planner-free-agents.service';
-import { fitsRoom, NightRoom } from './planner-lineup';
+import { DropRoom, fitsDrop, fitsRoom, NightRoom } from './planner-lineup';
 
 /** The skater position groups, in the order a lineup lists them. */
 export const PLANNER_POSITIONS = ['C', 'LW', 'RW', 'D'] as const;
@@ -45,6 +45,12 @@ export interface RankedFreeAgent {
   readonly rank: number;
   /** Games he is expected to play on the nights counted; for a goalie, the starts he is given. */
   readonly games: number;
+  /**
+   * Games more he would play on the nights counted where the user's lineup has room for him only
+   * once one of the user's players is dropped. Each would replace the dropped player's game, so
+   * they are neither in {@link games} nor scored. Absent while the list is not ranked by room.
+   */
+  readonly dropGames?: number;
 }
 
 /**
@@ -110,6 +116,30 @@ export function roomFactor(
     (game) => counted.has(game.date) && fitsRoom(player.positions, rooms.get(game.date)),
   );
   return started.length / club.schedule.length;
+}
+
+/**
+ * The share of a player's club games that fall on nights counted where only a drop makes room
+ * for him ({@link fitsDrop}): the games he would start if he came in for one of the user's
+ * players. None for a club the page cannot find a schedule for, since nothing says when it plays.
+ */
+export function dropFactor(
+  player: FreeAgent,
+  teams: ReadonlyMap<string, TeamSchedule>,
+  counted: ReadonlySet<string>,
+  rooms: ReadonlyMap<string, NightRoom>,
+  dropRooms: ReadonlyMap<string, DropRoom>,
+): number {
+  const club = teams.get(nhlTeamKey(player.teamAbbrev) ?? '');
+  if (!club || club.schedule.length === 0) {
+    return 0;
+  }
+  const opened = club.schedule.filter(
+    (game) =>
+      counted.has(game.date) &&
+      fitsDrop(player.positions, rooms.get(game.date), dropRooms.get(game.date)),
+  );
+  return opened.length / club.schedule.length;
 }
 
 /**

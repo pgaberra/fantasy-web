@@ -177,6 +177,19 @@
   padding: 2px;
 }
 
+/* The games a drop would add, beside his own: the game days' yellow, so it reads as theirs. */
+.drop-games {
+  background: var(--color-warning-surface);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-warning-text);
+  cursor: help;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  margin-left: var(--space-1);
+  padding: 0 var(--space-1);
+}
+
 /* A cell of its own in the planner; FA Scout stacks a second figure under it in the same cell. */
 .score {
   color: var(--color-primary);

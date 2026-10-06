@@ -193,6 +193,18 @@ export class FreeAgentsTableComponent {
     return formatGames(row.games);
   }
 
+  /** "+2", the games a drop would add beside his own, in yellow as on the game days; null for none. */
+  dropGames(row: RankedFreeAgent): string | null {
+    const more = Math.round(row.dropGames ?? 0);
+    return more > 0 ? `+${more}` : null;
+  }
+
+  /** What the yellow games are, and why the score leaves them out. */
+  dropGamesTip(row: RankedFreeAgent): string {
+    const more = Math.round(row.dropGames ?? 0);
+    return `${more} more ${more === 1 ? 'game' : 'games'} if you drop a player who plays those nights. He would play in place of that player, so they are not in his score.`;
+  }
+
   /** Ice time a game, for a skater; a goalie's is the whole game or none of it. */
   toi(row: RankedFreeAgent): string {
     if (row.player.projection.type !== 'skater') {

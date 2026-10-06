@@ -5,6 +5,7 @@ import { TeamSchedule } from '../api/models/team-schedule';
 import {
   dropRooms,
   dropRoomTip,
+  fitsDrop,
   fitsRoom,
   lineupSeats,
   nightRooms,
@@ -196,6 +197,20 @@ describe('dropRooms', () => {
     expect(dropRoomTip(monday, ['C'])).toBe('Drop a LW.');
     expect(dropRoomTip(monday, ['LW'])).toBe('Drop a LW, except Dual.');
     expect(dropRoomTip(monday, ['RW'])).toBe('Drop any forward.');
+  });
+
+  it("says a player fits a night through a drop only where the lineup's own room does not take him", () => {
+    const rooms = nightRooms(roster, SLOTS, teams, [MON]);
+    const monday = dropRooms(roster, SLOTS, teams, rooms).get(MON);
+
+    // The forwards are full, and a drop opens each of them.
+    expect(fitsDrop(['C'], rooms.get(MON), monday)).toBe(true);
+    expect(fitsDrop(['RW'], rooms.get(MON), monday)).toBe(true);
+    // A D seat is open as it stands: that is the night's own room, not a drop's.
+    expect(fitsDrop(['C', 'D'], rooms.get(MON), monday)).toBe(false);
+    expect(fitsDrop(['D'], rooms.get(MON), monday)).toBe(false);
+    // A night no drop opens anything on gives nobody a game.
+    expect(fitsDrop(['C'], rooms.get(MON), undefined)).toBe(false);
   });
 
   it("keeps lineup order however own room and a drop's alternate, and lists a full night's drop room alone", () => {

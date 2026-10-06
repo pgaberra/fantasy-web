@@ -888,6 +888,23 @@ describe('StreamerPlannerComponent', () => {
         expect(planner.ranked()[0].games).toBe(2);
       });
 
+      it('shows beside a free agent the games only a drop makes room for, and scores none of them', async () => {
+        const fixture = await render();
+        const planner = fixture.point.componentInstance;
+
+        // Both nights a drop opens a C and a LW, so each Oilers forward would play both, though
+        // in place of the player dropped: beside his games, not in them or in his score.
+        const skaters = planner.ranked().filter((row) => row.line.type === 'skater');
+        expect(skaters.map((row) => row.dropGames)).toEqual([2, 2]);
+        expect(skaters.map((row) => row.score)).toEqual([0, 0]);
+        // The goalie's G seat is open as it stands: nothing for a drop to add.
+        expect(planner.ranked().find((row) => row.line.type === 'goalie')?.dropGames).toBe(0);
+
+        // Ranked over every night counted, there is no room to tell apart.
+        planner.toggleFitMyTeam();
+        expect(planner.ranked().every((row) => row.dropGames === undefined)).toBe(true);
+      });
+
       it('shows in yellow, in lineup order, the positions a drop would open, one rule a run', async () => {
         const fixture = await render();
         const planner = fixture.point.componentInstance;
