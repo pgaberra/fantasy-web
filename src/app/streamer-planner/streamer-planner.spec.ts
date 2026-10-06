@@ -838,7 +838,7 @@ describe('StreamerPlannerComponent', () => {
           ngMocks.findAll(fixture, '.day-room--open').map((cell) => ngMocks.formatText(cell)),
         ).toEqual(['RW, D, G', 'RW, D, G']);
         expect(ngMocks.formatText(ngMocks.find(fixture, '.range-legend--open'))).toBe(
-          'Open in your lineup',
+          'Available in your roster',
         );
         expect(ngMocks.formatText(ngMocks.find(fixture, '.free-agents .fit-toggle'))).toBe(
           'Rank based on your roster availability',
@@ -909,7 +909,10 @@ describe('StreamerPlannerComponent', () => {
         ]);
         expect(
           ngMocks.findAll(fixture, '.range-legend').map((key) => ngMocks.formatText(key)),
-        ).toEqual(['Open in your lineup', 'Open only if you drop one of your players']);
+        ).toEqual([
+          'Available in your roster',
+          'Available only if a player at a specific position is dropped. Hover to see which player positions can free up a spot',
+        ]);
         // Nothing asks who the user would drop, and the list has no swap to show.
         expect(ngMocks.formatText(fixture)).not.toContain('Droppable players');
         expect(ngMocks.findAll(fixture, '.swap-col')).toHaveLength(0);

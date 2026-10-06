@@ -188,13 +188,15 @@
             <span class="range-legends">
               @if (hasOpenRoom()) {
                 <span class="range-legend range-legend--open"
-                  ><span class="legend-swatch" aria-hidden="true"></span>Open in your lineup</span
+                  ><span class="legend-swatch" aria-hidden="true"></span>Available in your
+                  roster</span
                 >
               }
               @if (hasDropRoom()) {
                 <span class="range-legend range-legend--drop"
-                  ><span class="legend-swatch" aria-hidden="true"></span>Open only if you drop one
-                  of your players</span
+                  ><span class="legend-swatch" aria-hidden="true"></span>Available only if a player
+                  at a specific position is dropped. Hover to see which player positions can free up
+                  a spot</span
                 >
               }
             </span>
