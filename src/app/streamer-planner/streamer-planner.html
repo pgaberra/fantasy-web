@@ -136,7 +136,7 @@
                   <span
                     #offTip="appTooltip"
                     class="day-mark"
-                    [appTooltip]="offNightTip()"
+                    appTooltip="Off-night"
                     [dismissOnClick]="false"
                     (click)="offTip.toggle()"
                   >
@@ -162,19 +162,21 @@
                   }
                   <!-- The open positions in lineup order, whatever opens them: green where the
                        lineup has room as it stands, yellow where only a drop opens it, its tip
-                       saying who would have to go. -->
+                       saying who would have to go. A green run has no tip: its positions are it. -->
                   @for (run of roomRuns(day); track $index) {
-                    <span
-                      #runTip="appTooltip"
-                      class="day-room"
-                      [class.day-room--open]="!run.drop"
-                      [class.day-room--drop]="run.drop"
-                      [appTooltip]="run.tip"
-                      [dismissOnClick]="false"
-                      (click)="runTip.toggle()"
-                      [attr.aria-label]="run.drop ? run.label + ': ' + run.tip : run.tip"
-                      >{{ run.label }}</span
-                    >
+                    @if (run.tip) {
+                      <span
+                        #runTip="appTooltip"
+                        class="day-room day-room--drop"
+                        [appTooltip]="run.tip"
+                        [dismissOnClick]="false"
+                        (click)="runTip.toggle()"
+                        [attr.aria-label]="run.label + ': ' + run.tip"
+                        >{{ run.label }}</span
+                      >
+                    } @else {
+                      <span class="day-room day-room--open">{{ run.label }}</span>
+                    }
                   }
                 </span>
               }
@@ -188,13 +190,15 @@
             <span class="range-legends">
               @if (hasOpenRoom()) {
                 <span class="range-legend range-legend--open"
-                  ><span class="legend-swatch" aria-hidden="true"></span>Open in your lineup</span
+                  ><span class="legend-swatch" aria-hidden="true"></span>Available in your
+                  roster</span
                 >
               }
               @if (hasDropRoom()) {
                 <span class="range-legend range-legend--drop"
-                  ><span class="legend-swatch" aria-hidden="true"></span>Open only if you drop one
-                  of your players</span
+                  ><span class="legend-swatch" aria-hidden="true"></span>Available only if a player
+                  at a specific position is dropped. Hover or tap to see which player positions can
+                  free up a spot</span
                 >
               }
             </span>

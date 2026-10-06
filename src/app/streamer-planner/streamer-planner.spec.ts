@@ -294,7 +294,7 @@ describe('StreamerPlannerComponent', () => {
     expect(planner.days()[1]).toEqual({ date: '2026-10-13', games: 3, offNight: true });
     expect(planner.activePreset()).toBe('this-week');
     expect(planner.weeksTitle()).toBe('Week 2');
-    expect(planner.nightsTitle()).toBe('2 of 2 days');
+    expect(planner.nightsTitle()).toBe('2 of 2 days selected');
     expect(planner.leadingDays()).toEqual([]);
     // Monday has no days before it, so nothing is asked for them.
     expect(invoke.mock.calls.filter(([fn]) => fn === streamerPlannerTeams)).toHaveLength(1);
@@ -407,7 +407,7 @@ describe('StreamerPlannerComponent', () => {
 
     planner.toggleDay(planner.days()[1]);
 
-    expect(planner.nightsTitle()).toBe('1 of 2 days');
+    expect(planner.nightsTitle()).toBe('1 of 2 days selected');
     // Only the Oct 15 game is left, a home game the server put at 0.9324, for both teams alike.
     expect(planner.teamRows().map((row) => [row.team, row.score, row.games])).toEqual([
       ['EDM', 0.93, 1],
@@ -432,9 +432,7 @@ describe('StreamerPlannerComponent', () => {
     expect(marks.length).toEqual(1);
     expect(ngMocks.find(marks[0], '[aria-hidden="true"]').nativeElement.textContent).toEqual('Off');
     expect(ngMocks.find(marks[0], '.sr-only').nativeElement.textContent).toEqual('Off-night');
-    expect(fixture.point.componentInstance.offNightTip()).toBe(
-      'Off-night: 7 games or fewer, so most lineups have an open slot',
-    );
+    expect(ngMocks.input(marks[0], 'appTooltip')).toEqual('Off-night');
     expect(ngMocks.findAll(nights[0], '.day-mark').length).toEqual(0);
     expect(ngMocks.findAll(fixture, '.range-legend')).toHaveLength(0);
     expect(ngMocks.formatText(fixture)).toContain('Week 2');
@@ -840,27 +838,24 @@ describe('StreamerPlannerComponent', () => {
           ngMocks.findAll(fixture, '.day-room--open').map((cell) => ngMocks.formatText(cell)),
         ).toEqual(['RW, D, G', 'RW, D, G']);
         expect(ngMocks.formatText(ngMocks.find(fixture, '.range-legend--open'))).toBe(
-          'Open in your lineup',
+          'Available in your roster',
         );
         expect(ngMocks.formatText(ngMocks.find(fixture, '.free-agents .fit-toggle'))).toBe(
           'Rank based on your roster availability',
         );
       });
 
-      it('counts a night in or out from its tick box alone, so a tap on its positions explains them', async () => {
+      it('counts a night in or out from its tick box alone, and gives its open positions no tip', async () => {
         const fixture = await render();
-        const room = ngMocks.findAll(fixture, '.day-room')[0];
+        const room = ngMocks.find(fixture, '.day-room--open');
         const cell = room.nativeElement.closest('.day') as HTMLElement;
         const tick = cell.querySelector('input') as HTMLInputElement;
-        const tip = ngMocks.findInstance(room, TooltipDirective);
-        const toggle = vi.spyOn(tip, 'toggle');
+        expect(ngMocks.findInstances(room, TooltipDirective)).toHaveLength(0);
         expect(tick.checked).toBe(true);
 
-        // The phone has no hover: the tap is what opens the explanation, and it leaves the night be.
+        // A tap on the positions leaves the night be.
         (room.nativeElement as HTMLElement).click();
         fixture.detectChanges();
-        expect(toggle).toHaveBeenCalledTimes(1);
-        expect(tip.dismissOnClick()).toBe(false);
         expect(tick.checked).toBe(true);
 
         tick.click();
@@ -907,7 +902,7 @@ describe('StreamerPlannerComponent', () => {
         expect(planner.roomRuns(planner.days()[1]).map((run) => run.tip)).toEqual([
           'Drop a C.',
           'Drop any forward.',
-          expect.any(String),
+          null,
         ]);
         // The tip leaves the spot to the pill, so a screen reader hears both.
         expect(
@@ -918,9 +913,20 @@ describe('StreamerPlannerComponent', () => {
           'C: Drop a C.',
           'LW: Drop any forward.',
         ]);
+        // The phone has no hover: a tap on a yellow pill is what opens its tip.
+        const drop = ngMocks.find(fixture, '.day-room--drop');
+        const tip = ngMocks.findInstance(drop, TooltipDirective);
+        const toggle = vi.spyOn(tip, 'toggle');
+        expect(tip.appTooltip()).toBe('Drop a C.');
+        (drop.nativeElement as HTMLElement).click();
+        expect(toggle).toHaveBeenCalledTimes(1);
+        expect(tip.dismissOnClick()).toBe(false);
         expect(
           ngMocks.findAll(fixture, '.range-legend').map((key) => ngMocks.formatText(key)),
-        ).toEqual(['Open in your lineup', 'Open only if you drop one of your players']);
+        ).toEqual([
+          'Available in your roster',
+          'Available only if a player at a specific position is dropped. Hover or tap to see which player positions can free up a spot',
+        ]);
         // Nothing asks who the user would drop, and the list has no swap to show.
         expect(ngMocks.formatText(fixture)).not.toContain('Droppable players');
         expect(ngMocks.findAll(fixture, '.swap-col')).toHaveLength(0);
