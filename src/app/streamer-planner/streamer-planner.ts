@@ -67,6 +67,7 @@ import {
   DropRoom,
   dropRooms,
   dropRoomTip,
+  LineupPosition,
   NightRoom,
   nightRooms,
   roomLabel,
@@ -593,15 +594,22 @@ export class StreamerPlannerComponent {
 
   /**
    * The day's open positions as its cell shows them: in lineup order, each run green when the
-   * lineup has room as it stands and yellow when only a drop opens it. Only a yellow run has a
-   * tip, saying who has to go to open it, and the pill itself names the spot; a green one says
-   * all it needs to.
+   * lineup has room as it stands and yellow when only a drop opens it. A run is drawn one chip a
+   * position, so a long run wraps chip by chip in a narrow cell instead of leaving half a pill
+   * empty after a line break. Only a yellow run has a tip, saying who has to go to open it, and
+   * the label names the run's spots for a screen reader; a green one says all it needs to.
    */
-  roomRuns(day: PlannerDay): { drop: boolean; label: string; tip: string | null }[] {
+  roomRuns(day: PlannerDay): {
+    drop: boolean;
+    positions: readonly LineupPosition[];
+    label: string;
+    tip: string | null;
+  }[] {
     const room = this.room(day);
     const opened = this.dropRoom(day);
     return roomRuns(room, opened).map((run) => ({
       drop: run.drop,
+      positions: run.positions,
       label: run.positions.join(', '),
       tip: run.drop ? dropRoomTip(opened!, run.positions) : null,
     }));

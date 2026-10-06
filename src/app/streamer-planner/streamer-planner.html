@@ -160,9 +160,10 @@
                       >
                     }
                   }
-                  <!-- The open positions in lineup order, whatever opens them: green where the
-                       lineup has room as it stands, yellow where only a drop opens it, its tip
-                       saying who would have to go. A green run has no tip: its positions are it. -->
+                  <!-- The open positions in lineup order, whatever opens them, one chip a
+                       position: green where the lineup has room as it stands, yellow where only
+                       a drop opens it, its tip saying who would have to go. A green run has no
+                       tip: its positions are it. -->
                   @for (run of roomRuns(day); track $index) {
                     @if (run.tip) {
                       <span
@@ -172,10 +173,17 @@
                         [dismissOnClick]="false"
                         (click)="runTip.toggle()"
                         [attr.aria-label]="run.label + ': ' + run.tip"
-                        >{{ run.label }}</span
                       >
+                        @for (position of run.positions; track position) {
+                          <span class="room-chip">{{ position }}</span>
+                        }
+                      </span>
                     } @else {
-                      <span class="day-room day-room--open">{{ run.label }}</span>
+                      <span class="day-room day-room--open">
+                        @for (position of run.positions; track position) {
+                          <span class="room-chip">{{ position }}</span>
+                        }
+                      </span>
                     }
                   }
                 </span>
