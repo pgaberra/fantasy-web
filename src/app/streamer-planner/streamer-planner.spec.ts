@@ -1,5 +1,5 @@
 import { signal } from '@angular/core';
-import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
+import { MockBuilder, MockedDebugElement, MockRender, ngMocks } from 'ng-mocks';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -827,16 +827,24 @@ describe('StreamerPlannerComponent', () => {
         expect(planner.roomLabel(planner.room(night)!)).toBe('RW, D, G');
         // A day without games has no lineup to fill.
         expect(planner.room(planner.days()[0])).toBeUndefined();
-        // The room as the lineup stands is a green pill, as the yellow a drop opens is, and the
-        // line under the nights says what green means.
+        // The room as the lineup stands is a run of green chips, one a position, as the yellow
+        // a drop opens is, and the line under the nights says what green means.
         expect(
           ngMocks
             .findAll(fixture, '.day-room:not(.day-room--drop)')
-            .map((cell) => ngMocks.formatText(cell)),
-        ).toEqual(['RW, D, G', 'RW, D, G']);
+            .map((run) => ngMocks.findAll(run, '.room-chip').map((c) => ngMocks.formatText(c))),
+        ).toEqual([
+          ['RW', 'D', 'G'],
+          ['RW', 'D', 'G'],
+        ]);
         expect(
-          ngMocks.findAll(fixture, '.day-room--open').map((cell) => ngMocks.formatText(cell)),
-        ).toEqual(['RW, D, G', 'RW, D, G']);
+          ngMocks
+            .findAll(fixture, '.day-room--open')
+            .map((run) => ngMocks.findAll(run, '.room-chip').map((c) => ngMocks.formatText(c))),
+        ).toEqual([
+          ['RW', 'D', 'G'],
+          ['RW', 'D', 'G'],
+        ]);
         expect(ngMocks.formatText(ngMocks.find(fixture, '.range-legend--open'))).toBe(
           'Available in your roster',
         );
@@ -880,7 +888,7 @@ describe('StreamerPlannerComponent', () => {
         expect(planner.ranked()[0].games).toBe(2);
       });
 
-      it('shows in yellow, in lineup order, the positions a drop would open, one rule a pill', async () => {
+      it('shows in yellow, in lineup order, the positions a drop would open, one rule a run', async () => {
         const fixture = await render();
         const planner = fixture.point.componentInstance;
 
@@ -888,17 +896,22 @@ describe('StreamerPlannerComponent', () => {
         // a seat a C or a LW can take (the Util, or the C seat once the Util's C slides over);
         // dropping a LW empties a LW seat only, so C and LW are yellow runs of their own, each
         // with one rule in its tip. RW, D and G were open already.
+        const chips = (run: MockedDebugElement) =>
+          ngMocks.findAll(run, '.room-chip').map((c) => ngMocks.formatText(c));
         expect(
           ngMocks
             .findAll(fixture, '.day .day-rooms')
-            .map((line) => ngMocks.findAll(line, '.day-room').map((c) => ngMocks.formatText(c))),
+            .map((line) => ngMocks.findAll(line, '.day-room').map(chips)),
         ).toEqual([
-          ['C', 'LW', 'RW, D, G'],
-          ['C', 'LW', 'RW, D, G'],
+          [['C'], ['LW'], ['RW', 'D', 'G']],
+          [['C'], ['LW'], ['RW', 'D', 'G']],
         ]);
-        expect(
-          ngMocks.findAll(fixture, '.day-room--drop').map((cell) => ngMocks.formatText(cell)),
-        ).toEqual(['C', 'LW', 'C', 'LW']);
+        expect(ngMocks.findAll(fixture, '.day-room--drop').map(chips)).toEqual([
+          ['C'],
+          ['LW'],
+          ['C'],
+          ['LW'],
+        ]);
         expect(planner.roomRuns(planner.days()[1]).map((run) => run.tip)).toEqual([
           'Drop a C.',
           'Drop any forward.',

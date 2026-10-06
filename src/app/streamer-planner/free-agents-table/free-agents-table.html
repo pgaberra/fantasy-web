@@ -1,4 +1,4 @@
-<div class="table-scroll">
+<div class="table-scroll" appScrolledSideways>
   <table class="free-agents-table">
     <thead>
       <tr>
@@ -131,6 +131,11 @@
                 </span>
                 <span class="player-meta">
                   <app-position-chips [positions]="entry.row.player.positions" />
+                  <!-- The club in letters, for the phone, where the crest goes once the numbers
+                       are scrolled to. Hidden from a screen reader: the crest's alt says it. -->
+                  @if (club(entry.row); as club) {
+                    <span class="player-club" aria-hidden="true">{{ club }}</span>
+                  }
                 </span>
               </span>
             </span>
