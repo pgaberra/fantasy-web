@@ -166,14 +166,27 @@
   font-size: var(--text-sm);
 }
 
+/* Drawn by us, not the platform: iOS Safari gives a native date field its own width and
+   ignores the one it is given, so on a phone From and To grew into each other and past the
+   card's edge. Without the native look the field takes the width the layout hands it. */
 .field-date {
+  appearance: none;
+  -webkit-appearance: none;
   background: var(--color-surface);
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-sm);
+  box-sizing: border-box;
   color: var(--color-text);
   font: inherit;
   font-size: var(--text-sm);
+  min-width: 0;
   padding: calc(var(--space-1) + 1px) var(--space-2);
+}
+
+/* iOS centres the date and lets it collapse to nothing when empty once the native look is off. */
+.field-date::-webkit-date-and-time-value {
+  min-height: 1.2em;
+  text-align: left;
 }
 
 .field-date:focus-visible {
