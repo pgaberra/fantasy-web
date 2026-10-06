@@ -898,7 +898,7 @@ describe('StreamerPlannerComponent', () => {
         ).toEqual(['C', 'LW', 'C', 'LW']);
         expect(planner.roomRuns(planner.days()[1]).map((run) => run.tip)).toEqual([
           'Drop a C to free a C spot.',
-          'Drop a C or LW to free a LW spot.',
+          'Drop any forward to free a LW spot.',
           expect.any(String),
         ]);
         expect(ngMocks.formatText(ngMocks.find(fixture, '.range-legend'))).toBe(
