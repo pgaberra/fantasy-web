@@ -181,16 +181,18 @@ describe('dropRooms', () => {
     // Wing, nobody else plays RW. D and G were open already and are nobody's to open, and
     // dropping Back opens nothing new. In lineup order: C/LW, C/RW, LW.
     expect(opens(opened, MON)).toEqual(['C/LW: C, RW', 'C/RW: RW', 'LW: C, LW, RW']);
-    // The cell lists the forwards before the night's own D and G, in lineup order, and the
-    // yellow run's tip says which kind has to go for each.
+    // The cell lists the forwards before the night's own D and G, in lineup order. Each forward
+    // is opened by different drops, so each is a yellow run of its own, its tip one rule.
     const monday = opened.get(MON)!;
     expect(roomRuns(rooms.get(MON), monday)).toEqual([
-      { drop: true, positions: ['C', 'LW', 'RW'] },
+      { drop: true, positions: ['C'] },
+      { drop: true, positions: ['LW'] },
+      { drop: true, positions: ['RW'] },
       { drop: false, positions: ['D', 'G'] },
     ]);
-    expect(dropRoomTip(monday, ['C', 'LW', 'RW'])).toBe(
-      'C: drop a C/LW or LW. LW: drop a LW. RW: drop a C/LW, C/RW or LW.',
-    );
+    expect(dropRoomTip(monday, ['C'])).toBe('Drop a C/LW or LW to free a C seat.');
+    expect(dropRoomTip(monday, ['LW'])).toBe('Drop a LW to free a LW seat.');
+    expect(dropRoomTip(monday, ['RW'])).toBe('Drop a C/LW, C/RW or LW to free a RW seat.');
   });
 
   it("keeps lineup order however own room and a drop's alternate, and lists a full night's drop room alone", () => {
@@ -214,8 +216,10 @@ describe('dropRooms', () => {
       { drop: true, positions: ['D'] },
     ]);
     expect(roomRuns(full, undefined)).toEqual([]);
-    // Positions the same drops open are said together.
-    expect(dropRoomTip([{ kind: 'C', opens: ['C', 'LW'] }], ['C', 'LW'])).toBe('C, LW: drop a C.');
+    // Positions the same drops open share a run and its one rule.
+    const centre = [{ kind: 'C', opens: ['C', 'LW'] as const }];
+    expect(roomRuns(full, centre)).toEqual([{ drop: true, positions: ['C', 'LW'] }]);
+    expect(dropRoomTip(centre, ['C', 'LW'])).toBe('Drop a C to free a C or LW seat.');
   });
 
   it('opens nothing when a teammate on the bench takes the seat', () => {

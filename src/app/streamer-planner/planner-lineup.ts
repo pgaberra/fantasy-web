@@ -219,22 +219,20 @@ export interface DropOpening {
 /** A night's positions open only through a drop, one entry per kind of player dropped. */
 export type DropRoom = readonly DropOpening[];
 
+/** The kinds of player whose drop opens a position, in lineup order: "C/LW, LW". */
+function dropKinds(room: DropRoom | undefined, position: LineupPosition): string[] {
+  return (room ?? [])
+    .filter((opening) => opening.opens.includes(position))
+    .map((opening) => opening.kind);
+}
+
 /**
- * Which kinds of player have to go for these positions to open, for a yellow run's tooltip:
- * positions that the same drops open are said together. "C: drop a C or C/LW. LW, RW: drop a LW."
+ * Which kinds of player have to go for a yellow run's positions to open, for its tooltip. Every
+ * position in a run is opened by the same drops, so the tip is one rule:
+ * "Drop a C/LW or LW to free a C seat."
  */
 export function dropRoomTip(room: DropRoom, positions: readonly LineupPosition[]): string {
-  const byDrops = new Map<string, LineupPosition[]>();
-  for (const position of positions) {
-    const kinds = room
-      .filter((opening) => opening.opens.includes(position))
-      .map((opening) => opening.kind);
-    if (kinds.length > 0) {
-      const drops = joinOr(kinds);
-      byDrops.set(drops, [...(byDrops.get(drops) ?? []), position]);
-    }
-  }
-  return [...byDrops].map(([drops, opened]) => `${opened.join(', ')}: drop a ${drops}.`).join(' ');
+  return `Drop a ${joinOr(dropKinds(room, positions[0]))} to free a ${joinOr(positions)} seat.`;
 }
 
 function joinOr(words: readonly string[]): string {
@@ -252,23 +250,26 @@ export interface RoomRun {
 /**
  * A night's open positions, its own and a drop's together, always in lineup order (C, LW, RW, D,
  * G) and cut into runs wherever they switch between the two, so the cell never reorders them by
- * where the room comes from. A full night with nothing a drop opens has no runs.
+ * where the room comes from. A drop's positions are cut again wherever different drops open
+ * them, so each yellow run has one rule to tell. A full night with nothing a drop opens has no
+ * runs.
  */
 export function roomRuns(room: NightRoom | undefined, dropRoom: DropRoom | undefined): RoomRun[] {
-  const runs: { drop: boolean; positions: LineupPosition[] }[] = [];
+  const runs: { drop: boolean; drops: string; positions: LineupPosition[] }[] = [];
   for (const position of LINEUP_POSITIONS) {
     const own = !!room?.fits.has(position);
-    if (!own && !dropRoom?.some((opening) => opening.opens.includes(position))) {
+    const drops = own ? '' : dropKinds(dropRoom, position).join(',');
+    if (!own && !drops) {
       continue;
     }
     const last = runs.at(-1);
-    if (last && last.drop === !own) {
+    if (last && last.drop === !own && last.drops === drops) {
       last.positions.push(position);
     } else {
-      runs.push({ drop: !own, positions: [position] });
+      runs.push({ drop: !own, drops, positions: [position] });
     }
   }
-  return runs;
+  return runs.map(({ drop, positions }) => ({ drop, positions }));
 }
 
 /** Whether a player at these positions would start on a night with this room. */
