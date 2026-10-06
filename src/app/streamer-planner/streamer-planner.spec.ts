@@ -905,9 +905,18 @@ describe('StreamerPlannerComponent', () => {
           ngMocks.findAll(fixture, '.day-room--drop').map((cell) => ngMocks.formatText(cell)),
         ).toEqual(['C', 'LW', 'C', 'LW']);
         expect(planner.roomRuns(planner.days()[1]).map((run) => run.tip)).toEqual([
-          'Drop a C to free a C spot.',
-          'Drop any forward to free a LW spot.',
+          'Drop a C.',
+          'Drop any forward.',
           expect.any(String),
+        ]);
+        // The tip leaves the spot to the pill, so a screen reader hears both.
+        expect(
+          ngMocks.findAll(fixture, '.day-room--drop').map((cell) => cell.attributes['aria-label']),
+        ).toEqual([
+          'C: Drop a C.',
+          'LW: Drop any forward.',
+          'C: Drop a C.',
+          'LW: Drop any forward.',
         ]);
         expect(
           ngMocks.findAll(fixture, '.range-legend').map((key) => ngMocks.formatText(key)),

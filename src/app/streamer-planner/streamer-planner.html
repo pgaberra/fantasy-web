@@ -172,7 +172,7 @@
                       [appTooltip]="run.tip"
                       [dismissOnClick]="false"
                       (click)="runTip.toggle()"
-                      [attr.aria-label]="run.tip"
+                      [attr.aria-label]="run.drop ? run.label + ': ' + run.tip : run.tip"
                       >{{ run.label }}</span
                     >
                   }
