@@ -229,10 +229,11 @@ function dropKinds(room: DropRoom | undefined, position: LineupPosition): string
 
 /**
  * Who has to go for a yellow run's positions to open, for its tooltip. Every position in a run is
- * opened by the same drops, so the tip is one rule, said by position where it holds for everyone
- * there: "Drop a C or LW" when every C and every LW playing that night would free the seat. A kind
+ * opened by the same drops, so the tip is one rule, said as broadly as it holds for everyone it
+ * takes in: "Drop any forward" when every forward playing that night would free the spot (or "any
+ * skater"), else by position: "Drop a C or LW" when every C and every LW would. A kind
  * the positions cannot cover is named as it is, with the players it would seem to take in but
- * who would not do: "Drop a LW (not C/LW) to free a LW seat."
+ * who would not do: "Drop a LW (not C/LW) to free a LW spot."
  */
 export function dropRoomTip(room: DropRoom, positions: readonly LineupPosition[]): string {
   const freeing = new Set(dropKinds(room, positions[0]));
@@ -240,12 +241,26 @@ export function dropRoomTip(room: DropRoom, positions: readonly LineupPosition[]
   /** The kinds a phrase naming these positions takes in: every kind eligible at all of them. */
   const takesIn = (named: readonly string[]) =>
     room.filter((opening) => named.every((position) => at(opening.kind).includes(position)));
-  // Positions every player at which would free the seat, the widest first, until they cover
+  // Positions every player at which would free the spot, the widest first, until they cover
   // every kind that frees it.
   const clean = LINEUP_POSITIONS.filter((position) =>
     takesIn([position]).every((opening) => freeing.has(opening.kind)),
   );
   const uncovered = new Set(freeing);
+  // Every skater, or every forward, playing that night would do: said as a group. "Any skater"
+  // only when a defenceman is among them; with none it is the same players as "any forward". A
+  // group of one position is said by that position: "a C", not "any forward", when all are Cs.
+  const skaters = room.filter((opening) => !at(opening.kind).includes('G'));
+  const forwards = skaters.filter((opening) => !at(opening.kind).includes('D'));
+  const group = [
+    { word: 'skater', kinds: skaters.length > forwards.length ? skaters : [] },
+    { word: 'forward', kinds: forwards },
+  ].find(
+    ({ kinds }) =>
+      new Set(kinds.flatMap((opening) => at(opening.kind))).size > 1 &&
+      kinds.every((opening) => freeing.has(opening.kind)),
+  );
+  group?.kinds.forEach((opening) => uncovered.delete(opening.kind));
   const chosen: LineupPosition[] = [];
   for (;;) {
     const widest = clean
@@ -272,7 +287,11 @@ export function dropRoomTip(room: DropRoom, positions: readonly LineupPosition[]
       return not.length > 0 ? `${kind} (not ${joinOr(not)})` : kind;
     }),
   ];
-  return `Drop a ${joinOr(words)} to free a ${joinOr(positions)} seat.`;
+  const drops = [
+    ...(group ? [`any ${group.word}`] : []),
+    ...(words.length > 0 ? [`a ${joinOr(words)}`] : []),
+  ];
+  return `Drop ${drops.join(' or ')} to free a ${joinOr(positions)} spot.`;
 }
 
 function joinOr(words: readonly string[]): string {

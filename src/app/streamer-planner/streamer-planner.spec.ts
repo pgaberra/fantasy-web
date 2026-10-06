@@ -905,8 +905,8 @@ describe('StreamerPlannerComponent', () => {
           ngMocks.findAll(fixture, '.day-room--drop').map((cell) => ngMocks.formatText(cell)),
         ).toEqual(['C', 'LW', 'C', 'LW']);
         expect(planner.roomRuns(planner.days()[1]).map((run) => run.tip)).toEqual([
-          'Drop a C to free a C seat.',
-          'Drop a C or LW to free a LW seat.',
+          'Drop a C to free a C spot.',
+          'Drop any forward to free a LW spot.',
           expect.any(String),
         ]);
         expect(
