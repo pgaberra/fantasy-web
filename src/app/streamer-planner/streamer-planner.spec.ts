@@ -877,25 +877,30 @@ describe('StreamerPlannerComponent', () => {
         expect(planner.ranked()[0].games).toBe(2);
       });
 
-      it('shows in yellow, in lineup order, the positions a drop would open, and which kind it takes in the tip', async () => {
+      it('shows in yellow, in lineup order, the positions a drop would open, one rule a pill', async () => {
         const fixture = await render();
         const planner = fixture.point.componentInstance;
 
         // Three Cs and two LWs fill both C seats, both LW seats and the Util. Dropping a C empties
         // a seat a C or a LW can take (the Util, or the C seat once the Util's C slides over);
-        // dropping a LW empties a LW seat only. RW, D and G were open already.
+        // dropping a LW empties a LW seat only, so C and LW are yellow runs of their own, each
+        // with one rule in its tip. RW, D and G were open already.
         expect(
           ngMocks
             .findAll(fixture, '.day .day-rooms')
             .map((line) => ngMocks.findAll(line, '.day-room').map((c) => ngMocks.formatText(c))),
         ).toEqual([
-          ['C, LW', 'RW, D, G'],
-          ['C, LW', 'RW, D, G'],
+          ['C', 'LW', 'RW, D, G'],
+          ['C', 'LW', 'RW, D, G'],
         ]);
         expect(
           ngMocks.findAll(fixture, '.day-room--drop').map((cell) => ngMocks.formatText(cell)),
-        ).toEqual(['C, LW', 'C, LW']);
-        expect(planner.roomRuns(planner.days()[1])[0].tip).toBe('C: drop a C. LW: drop a C or LW.');
+        ).toEqual(['C', 'LW', 'C', 'LW']);
+        expect(planner.roomRuns(planner.days()[1]).map((run) => run.tip)).toEqual([
+          'Drop a C to free a C seat.',
+          'Drop a C or LW to free a LW seat.',
+          expect.any(String),
+        ]);
         expect(ngMocks.formatText(ngMocks.find(fixture, '.range-legend'))).toBe(
           'Open only if you drop one of your players',
         );

@@ -594,7 +594,7 @@ export class StreamerPlannerComponent {
   /**
    * The day's open positions as its cell shows them: in lineup order, each run green when the
    * lineup has room as it stands and yellow when only a drop opens it. A green run's tip is the
-   * night's room; a yellow run's says who has to go for each of its positions.
+   * night's room; a yellow run's says which kinds of player have to go to open it.
    */
   roomRuns(day: PlannerDay): { drop: boolean; label: string; tip: string }[] {
     const room = this.room(day);
