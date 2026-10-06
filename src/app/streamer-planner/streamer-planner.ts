@@ -71,7 +71,6 @@ import {
   nightRooms,
   roomLabel,
   roomRuns,
-  roomTip,
 } from './planner-lineup';
 import {
   isPageSize,
@@ -553,10 +552,6 @@ export class StreamerPlannerComponent {
 
   roomLabel(room: NightRoom): string {
     return roomLabel(room);
-  }
-
-  roomTip(room: NightRoom): string {
-    return roomTip(room);
   }
 
   retryMyTeam(): void {
