@@ -371,14 +371,13 @@
   width: 1px;
 }
 
-/* The user's own lineup that night, under the games: who would still start, then a line for each
-   kind of drop and what it would open. Each wraps rather than clips on a phone's third. */
+/* The user's own lineup that night, a third line under the games: the open positions in lineup
+   order, green or yellow, on one line. Wraps rather than clips on a phone's third. */
 .day-rooms {
-  align-items: flex-start;
+  align-items: center;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+  flex-wrap: wrap;
+  gap: 2px var(--space-1);
 }
 
 /* Who would still start, in the success colour, or "Full" in the muted one. */
@@ -395,8 +394,7 @@
   font-weight: var(--weight-medium);
 }
 
-/* Room only through a drop, the kind dropped before the arrow: yellow, so it never reads as the
-   night's own. */
+/* Room only through a drop: yellow, so it never reads as the night's own; its tip says who. */
 .day-room--drop {
   background: var(--color-warning-surface);
   border: 1px solid var(--color-warning-border);

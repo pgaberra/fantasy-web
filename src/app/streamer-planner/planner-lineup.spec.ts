@@ -3,13 +3,13 @@ import { PlannerRosterPlayer } from '../api/models/planner-roster-player';
 import { RosterSlots } from '../api/models/roster-slots';
 import { TeamSchedule } from '../api/models/team-schedule';
 import {
-  dropOpeningLabel,
-  dropOpeningTip,
   dropRooms,
+  dropRoomTip,
   fitsRoom,
   lineupSeats,
   nightRooms,
   roomLabel,
+  roomRuns,
   roomTip,
   seated,
 } from './planner-lineup';
@@ -166,18 +166,61 @@ describe('dropRooms', () => {
     named('4', 'Back', 'EDM', ['D']),
   ];
 
-  it('lists each kind of drop with what it opens, dual-position teammates moved about', () => {
+  /** What each kind of drop opens, as "kind: positions". */
+  const opens = (room: ReturnType<typeof dropRooms>, date: string) =>
+    room.get(date)!.map((opening) => `${opening.kind}: ${opening.opens.join(', ')}`);
+
+  it('works out what each kind of drop opens, dual-position teammates moved about', () => {
     const rooms = nightRooms(roster, SLOTS, teams, [MON, TUE]);
     expect(roomLabel(rooms.get(MON)!)).toBe('D, G');
 
-    const monday = dropRooms(roster, SLOTS, teams, rooms).get(MON)!;
+    const opened = dropRooms(roster, SLOTS, teams, rooms);
 
     // Without Benson, Dual can slide to C and Wing to RW or C, so any forward fills his seat.
     // Without Dual, Benson cannot leave LW: only the C or the RW Wing leaves is open. Without
     // Wing, nobody else plays RW. D and G were open already and are nobody's to open, and
     // dropping Back opens nothing new. In lineup order: C/LW, C/RW, LW.
-    expect(monday.map(dropOpeningLabel)).toEqual(['C/LW → C, RW', 'C/RW → RW', 'LW → C, LW, RW']);
-    expect(dropOpeningTip(monday[2])).toBe('Drop Benson (LW): room for C, LW or RW.');
+    expect(opens(opened, MON)).toEqual(['C/LW: C, RW', 'C/RW: RW', 'LW: C, LW, RW']);
+    // The cell lists the forwards before the night's own D and G, in lineup order, and the
+    // yellow run's tip says who has to go for each.
+    const monday = opened.get(MON)!;
+    expect(roomRuns(rooms.get(MON), monday)).toEqual([
+      { drop: true, positions: ['C', 'LW', 'RW'] },
+      { drop: false, positions: ['D', 'G'] },
+    ]);
+    expect(dropRoomTip(monday, ['C', 'LW', 'RW'])).toBe(
+      'Open only with a drop: C if you drop Dual (C/LW), or Benson (LW); LW if you drop Benson (LW); RW if you drop Dual (C/LW), or Wing (C/RW), or Benson (LW).',
+    );
+  });
+
+  it("keeps lineup order however own room and a drop's alternate, and lists a full night's drop room alone", () => {
+    const room = {
+      date: MON,
+      playing: 10,
+      open: 2,
+      benched: 0,
+      fits: new Set(['C', 'RW'] as const),
+    };
+    const benson = [{ kind: 'LW', names: ['Benson'], opens: ['LW', 'G'] as const }];
+
+    expect(roomRuns(room, benson)).toEqual([
+      { drop: false, positions: ['C'] },
+      { drop: true, positions: ['LW'] },
+      { drop: false, positions: ['RW'] },
+      { drop: true, positions: ['G'] },
+    ]);
+    const full = { ...room, open: 0, fits: new Set<never>() };
+    expect(roomRuns(full, [{ kind: 'D', names: ['Back'], opens: ['D'] }])).toEqual([
+      { drop: true, positions: ['D'] },
+    ]);
+    expect(roomRuns(full, undefined)).toEqual([]);
+    // Positions the same drops open are said together, every player of a kind named.
+    expect(
+      dropRoomTip(
+        [{ kind: 'C', names: ['Centre', 'Other C', 'Third C'], opens: ['C', 'LW'] }],
+        ['C', 'LW'],
+      ),
+    ).toBe('Open only with a drop: C, LW if you drop Centre, Other C or Third C (C).');
   });
 
   it('opens nothing when a teammate on the bench takes the seat', () => {
@@ -186,26 +229,7 @@ describe('dropRooms', () => {
 
     // Tampa C sits Monday behind three forwards: Benson's seat or Dual's is his, and dropping
     // him frees none. Only Wing's RW is nobody else's.
-    expect(dropRooms(deeper, SLOTS, teams, rooms).get(MON)!.map(dropOpeningLabel)).toEqual([
-      'C/RW → RW',
-    ]);
-  });
-
-  it('lists together the kinds whose drop opens the same, every player of them named', () => {
-    const utility = [
-      named('1', 'Centre', 'EDM', ['C']),
-      named('2', 'Other C', 'EDM', ['C']),
-      named('3', 'Back', 'EDM', ['D']),
-    ];
-    const util = slots({ util: 3 });
-    const rooms = nightRooms(utility, util, teams, [MON]);
-
-    const monday = dropRooms(utility, util, teams, rooms).get(MON)!;
-
-    expect(monday.map(dropOpeningLabel)).toEqual(['C, D → C, LW, RW, D']);
-    expect(dropOpeningTip(monday[0])).toBe(
-      'Drop Centre, Other C or Back (C or D): room for C, LW, RW or D.',
-    );
+    expect(opens(dropRooms(deeper, SLOTS, teams, rooms), MON)).toEqual(['C/RW: RW']);
   });
 
   it('has nothing for a night no drop opens anything on', () => {

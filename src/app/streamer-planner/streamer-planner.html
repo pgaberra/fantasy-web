@@ -147,29 +147,32 @@
               @if (room(day) || dropRoom(day)) {
                 <span class="day-rooms">
                   @if (room(day); as room) {
-                    <!-- The user's own lineup that night: who would still start, or that it is full. -->
-                    <span
-                      #roomTipRef="appTooltip"
-                      class="day-room"
-                      [class.day-room--full]="room.open === 0"
-                      [appTooltip]="roomTip(room)"
-                      [dismissOnClick]="false"
-                      (click)="roomTipRef.toggle()"
-                      [attr.aria-label]="roomTip(room)"
-                      >{{ roomLabel(room) }}</span
-                    >
+                    @if (room.fits.size === 0) {
+                      <!-- The user's own lineup that night has no seat left. -->
+                      <span
+                        #fullTip="appTooltip"
+                        class="day-room day-room--full"
+                        [appTooltip]="roomTip(room)"
+                        [dismissOnClick]="false"
+                        (click)="fullTip.toggle()"
+                        [attr.aria-label]="roomTip(room)"
+                        >{{ roomLabel(room) }}</span
+                      >
+                    }
                   }
-                  <!-- Then a yellow line for each kind of player the user could drop: what his
-                       drop would open that night, beyond the room the lineup already has. -->
-                  @for (opening of dropRoom(day) ?? []; track opening.kinds.join()) {
+                  <!-- The open positions in lineup order, whatever opens them: green where the
+                       lineup has room as it stands, yellow where only a drop opens it, its tip
+                       saying who would have to go. -->
+                  @for (run of roomRuns(day); track $index) {
                     <span
-                      #dropTip="appTooltip"
-                      class="day-room day-room--drop"
-                      [appTooltip]="dropOpeningTip(opening)"
+                      #runTip="appTooltip"
+                      class="day-room"
+                      [class.day-room--drop]="run.drop"
+                      [appTooltip]="run.tip"
                       [dismissOnClick]="false"
-                      (click)="dropTip.toggle()"
-                      [attr.aria-label]="dropOpeningTip(opening)"
-                      >{{ dropOpeningLabel(opening) }}</span
+                      (click)="runTip.toggle()"
+                      [attr.aria-label]="run.tip"
+                      >{{ run.label }}</span
                     >
                   }
                 </span>
@@ -182,8 +185,8 @@
           <span>{{ nightsTitle() }}</span>
           @if (hasDropRoom()) {
             <span class="range-legend"
-              ><span class="legend-swatch" aria-hidden="true"></span>Room if you drop a player at
-              that position</span
+              ><span class="legend-swatch" aria-hidden="true"></span>Open only if you drop one of
+              your players</span
             >
           }
         </p>
