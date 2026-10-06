@@ -877,7 +877,7 @@ describe('StreamerPlannerComponent', () => {
         expect(planner.ranked()[0].games).toBe(2);
       });
 
-      it('shows in yellow, in lineup order, the positions a drop would open, and who it takes in the tip', async () => {
+      it('shows in yellow, in lineup order, the positions a drop would open, and which kind it takes in the tip', async () => {
         const fixture = await render();
         const planner = fixture.point.componentInstance;
 
@@ -895,9 +895,7 @@ describe('StreamerPlannerComponent', () => {
         expect(
           ngMocks.findAll(fixture, '.day-room--drop').map((cell) => ngMocks.formatText(cell)),
         ).toEqual(['C, LW', 'C, LW']);
-        expect(planner.roomRuns(planner.days()[1])[0].tip).toBe(
-          'Open only with a drop: C if you drop Mine 10, Mine 11 or Mine 12 (C); LW if you drop Mine 10, Mine 11 or Mine 12 (C), or Mine 13 or Mine 14 (LW).',
-        );
+        expect(planner.roomRuns(planner.days()[1])[0].tip).toBe('C: drop a C. LW: drop a C or LW.');
         expect(ngMocks.formatText(ngMocks.find(fixture, '.range-legend'))).toBe(
           'Open only if you drop one of your players',
         );
