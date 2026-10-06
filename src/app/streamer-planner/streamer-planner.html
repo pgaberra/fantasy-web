@@ -136,23 +136,25 @@
               @if (room(day) || dropRoom(day)) {
                 <span class="day-rooms">
                   @if (room(day); as room) {
-                    <!-- The user's own lineup that night: who would still start, or that it is full. -->
+                    @if (room.fits.size === 0) {
+                      <!-- The user's own lineup that night has no seat left. -->
+                      <span
+                        class="day-room day-room--full"
+                        [appTooltip]="roomTip(room)"
+                        [attr.aria-label]="roomTip(room)"
+                        >{{ roomLabel(room) }}</span
+                      >
+                    }
+                  }
+                  <!-- The open positions in lineup order, whatever opens them: green where the
+                       lineup has room as it stands, yellow where only a picked drop opens it. -->
+                  @for (run of roomRuns(day); track $index) {
                     <span
                       class="day-room"
-                      [class.day-room--full]="room.open === 0"
-                      [appTooltip]="roomTip(room)"
-                      [attr.aria-label]="roomTip(room)"
-                      >{{ roomLabel(room) }}</span
-                    >
-                  }
-                  @if (dropRoom(day); as opened) {
-                    <!-- Room that is there only if a player the user would drop goes: yellow, on
-                         the same line, starred to the key under the strip. -->
-                    <span
-                      class="day-room day-room--drop"
-                      [appTooltip]="dropRoomTip(opened)"
-                      [attr.aria-label]="dropRoomTip(opened)"
-                      >{{ dropRoomLabel(opened) }}*</span
+                      [class.day-room--drop]="run.drop"
+                      [appTooltip]="run.tip"
+                      [attr.aria-label]="run.tip"
+                      >{{ run.label }}</span
                     >
                   }
                 </span>
@@ -183,7 +185,10 @@
           <span>{{ weeksTitle() }}</span>
           <span>{{ nightsTitle() }}</span>
           @if (hasDropRoom()) {
-            <span class="range-legend">*Open only if you drop a player you picked below</span>
+            <span class="range-legend"
+              ><span class="legend-swatch" aria-hidden="true"></span>Open only if you drop a player
+              you picked below</span
+            >
           }
         </p>
         <!-- The user's own team, where this environment reads it: the cells above say which nights

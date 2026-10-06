@@ -69,13 +69,13 @@ import {
 import { focusableCategories, readFocus, scoresIn, writeFocus } from './planner-focus';
 import {
   DropRoom,
-  dropRoomLabel,
   dropRooms,
   dropRoomTip,
   lineupSeats,
   NightRoom,
   nightRooms,
   roomLabel,
+  roomRuns,
   roomTip,
 } from './planner-lineup';
 import { readDrops, writeDrops } from './planner-drops';
@@ -810,12 +810,22 @@ export class StreamerPlannerComponent {
     return day.games > 0 ? this.dropRoomsByDate()?.get(day.date) : undefined;
   }
 
-  dropRoomLabel(room: DropRoom): string {
-    return dropRoomLabel(room);
-  }
-
   dropRoomTip(room: DropRoom): string {
     return dropRoomTip(room);
+  }
+
+  /**
+   * The day's open positions as its cell shows them: in lineup order, each run green when the
+   * lineup has room as it stands and yellow when only a drop opens it, with the tooltip for either.
+   */
+  roomRuns(day: PlannerDay): { drop: boolean; label: string; tip: string }[] {
+    const room = this.room(day);
+    const opened = this.dropRoom(day);
+    return roomRuns(room, opened).map((run) => ({
+      drop: run.drop,
+      label: run.positions.join(', '),
+      tip: run.drop ? dropRoomTip(opened!) : roomTip(room!),
+    }));
   }
 
   /** Whether any day on screen has room only through a drop, so the line under them says what yellow means. */

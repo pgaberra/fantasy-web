@@ -937,25 +937,29 @@ describe('StreamerPlannerComponent', () => {
           expect(planner.shownSwap()).toBeNull();
         });
 
-        it('stars in yellow, on the room line, the positions a drop would open', async () => {
+        it('shows in yellow, in lineup order on the room line, the positions a drop would open', async () => {
           const fixture = await render();
           const planner = fixture.point.componentInstance;
 
           // Every forward seat is taken; dropping a C who starts at Util frees a seat any forward
-          // can take, and the D seat was open already. Both sit on the night's one room line.
+          // can take, and the D seat was open already. Both sit on the night's one room line, the
+          // forwards first, as a lineup lists them.
           expect(
             ngMocks
               .findAll(fixture, '.day .day-rooms')
               .map((line) => ngMocks.findAll(line, '.day-room').map((c) => ngMocks.formatText(c))),
           ).toEqual([
-            ['D', 'C, LW, RW*'],
-            ['D', 'C, LW, RW*'],
+            ['C, LW, RW', 'D'],
+            ['C, LW, RW', 'D'],
           ]);
+          expect(
+            ngMocks.findAll(fixture, '.day-room--drop').map((cell) => ngMocks.formatText(cell)),
+          ).toEqual(['C, LW, RW', 'C, LW, RW']);
           expect(planner.dropRoomTip(planner.dropRoom(planner.days()[1])!)).toBe(
             'Open only if you drop a player you picked: C, RW if you drop Mine 10 or Mine 12; LW if you drop Mine 10, Mine 12 or Mine 13.',
           );
           expect(ngMocks.formatText(ngMocks.find(fixture, '.range-legend'))).toBe(
-            '*Open only if you drop a player you picked below',
+            'Open only if you drop a player you picked below',
           );
 
           // With nobody picked to drop, nothing is yellow.

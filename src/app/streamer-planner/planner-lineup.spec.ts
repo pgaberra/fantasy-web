@@ -3,13 +3,13 @@ import { PlannerRosterPlayer } from '../api/models/planner-roster-player';
 import { RosterSlots } from '../api/models/roster-slots';
 import { TeamSchedule } from '../api/models/team-schedule';
 import {
-  dropRoomLabel,
   dropRooms,
   dropRoomTip,
   fitsRoom,
   lineupSeats,
   nightRooms,
   roomLabel,
+  roomRuns,
   roomTip,
   seated,
 } from './planner-lineup';
@@ -175,10 +175,39 @@ describe('dropRooms', () => {
     // Without Benson, Dual can slide to LW and Wing to C, so any forward fills his seat; D and G
     // were open already and are not his to open.
     const monday = opened.get(MON)!;
-    expect(dropRoomLabel(monday)).toBe('C, LW, RW');
+    // The cell lists them before the night's own D and G, in lineup order.
+    expect(roomRuns(rooms.get(MON), monday)).toEqual([
+      { drop: true, positions: ['C', 'LW', 'RW'] },
+      { drop: false, positions: ['D', 'G'] },
+    ]);
     expect(dropRoomTip(monday)).toBe(
       'Open only if you drop a player you picked: C, LW, RW if you drop Benson.',
     );
+  });
+
+  it("keeps lineup order however own room and a drop's alternate, and lists a full night's drop room alone", () => {
+    const room = {
+      date: MON,
+      playing: 10,
+      open: 2,
+      benched: 0,
+      fits: new Set(['C', 'RW'] as const),
+    };
+    const opened = new Map([
+      ['LW', ['Benson']],
+      ['G', ['Benson']],
+    ] as const);
+
+    expect(roomRuns(room, opened)).toEqual([
+      { drop: false, positions: ['C'] },
+      { drop: true, positions: ['LW'] },
+      { drop: false, positions: ['RW'] },
+      { drop: true, positions: ['G'] },
+    ]);
+    expect(roomRuns({ ...room, open: 0, fits: new Set() }, new Map([['D', ['Back']]]))).toEqual([
+      { drop: true, positions: ['D'] },
+    ]);
+    expect(roomRuns({ ...room, open: 0, fits: new Set() }, undefined)).toEqual([]);
   });
 
   it('opens nothing when a teammate on the bench takes the seat, or the drop sat anyway', () => {
