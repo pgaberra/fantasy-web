@@ -186,11 +186,9 @@ export function dropRooms(
       const opens = LINEUP_POSITIONS.filter(
         (position) => !room.fits.has(position) && seated([...rest, [position]], seats) > filled,
       );
-      if (opens.length > 0) {
-        openings.push({ kind: key, opens });
-      }
+      openings.push({ kind: key, opens });
     }
-    if (openings.length > 0) {
+    if (openings.some((opening) => opening.opens.length > 0)) {
       opened.set(date, openings);
     }
   }
@@ -209,14 +207,17 @@ function lineupOrder(a: readonly number[], b: readonly number[]): number {
 
 /**
  * One kind of drop on a night: the positions the dropped player is eligible at ("LW", "C/LW"),
- * and the positions a pickup would then start at.
+ * and the positions a pickup would then start at, none if dropping him opens nothing.
  */
 export interface DropOpening {
   readonly kind: string;
   readonly opens: readonly LineupPosition[];
 }
 
-/** A night's positions open only through a drop, one entry per kind of player dropped. */
+/**
+ * A night's positions open only through a drop, one entry per kind of the user's players who play
+ * that night, those whose drop opens nothing included, so a tip can tell who would not do.
+ */
 export type DropRoom = readonly DropOpening[];
 
 /** The kinds of player whose drop opens a position, in lineup order: "C/LW, LW". */
@@ -227,12 +228,51 @@ function dropKinds(room: DropRoom | undefined, position: LineupPosition): string
 }
 
 /**
- * Which kinds of player have to go for a yellow run's positions to open, for its tooltip. Every
- * position in a run is opened by the same drops, so the tip is one rule:
- * "Drop a C/LW or LW to free a C seat."
+ * Who has to go for a yellow run's positions to open, for its tooltip. Every position in a run is
+ * opened by the same drops, so the tip is one rule, said by position where it holds for everyone
+ * there: "Drop a C or LW" when every C and every LW playing that night would free the seat. A kind
+ * the positions cannot cover is named as it is, with the players it would seem to take in but
+ * who would not do: "Drop a LW (not C/LW) to free a LW seat."
  */
 export function dropRoomTip(room: DropRoom, positions: readonly LineupPosition[]): string {
-  return `Drop a ${joinOr(dropKinds(room, positions[0]))} to free a ${joinOr(positions)} seat.`;
+  const freeing = new Set(dropKinds(room, positions[0]));
+  const at = (kind: string) => kind.split('/');
+  /** The kinds a phrase naming these positions takes in: every kind eligible at all of them. */
+  const takesIn = (named: readonly string[]) =>
+    room.filter((opening) => named.every((position) => at(opening.kind).includes(position)));
+  // Positions every player at which would free the seat, the widest first, until they cover
+  // every kind that frees it.
+  const clean = LINEUP_POSITIONS.filter((position) =>
+    takesIn([position]).every((opening) => freeing.has(opening.kind)),
+  );
+  const uncovered = new Set(freeing);
+  const chosen: LineupPosition[] = [];
+  for (;;) {
+    const widest = clean
+      .map((position) => ({
+        position,
+        covers: takesIn([position]).filter((opening) => uncovered.has(opening.kind)),
+      }))
+      .reduce((best, next) => (next.covers.length > best.covers.length ? next : best), {
+        position: undefined as LineupPosition | undefined,
+        covers: [] as DropOpening[],
+      });
+    if (!widest.position) {
+      break;
+    }
+    chosen.push(widest.position);
+    widest.covers.forEach((opening) => uncovered.delete(opening.kind));
+  }
+  const words = [
+    ...LINEUP_POSITIONS.filter((position) => chosen.includes(position)),
+    ...[...uncovered].map((kind) => {
+      const not = takesIn(at(kind))
+        .map((opening) => opening.kind)
+        .filter((other) => !freeing.has(other));
+      return not.length > 0 ? `${kind} (not ${joinOr(not)})` : kind;
+    }),
+  ];
+  return `Drop a ${joinOr(words)} to free a ${joinOr(positions)} seat.`;
 }
 
 function joinOr(words: readonly string[]): string {
