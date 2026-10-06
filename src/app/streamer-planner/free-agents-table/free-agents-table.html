@@ -142,7 +142,23 @@
           </th>
           <td class="num score">{{ score(entry.row) }}</td>
           <td class="num rate-col">{{ perGame(entry.row) }}</td>
-          <td class="num">{{ games(entry.row) }}</td>
+          <td class="num">
+            {{ games(entry.row) }}
+            <!-- The games only a drop opens, yellow as on the game days: beside his own, never in
+                 them, since each would take the dropped player's place. A tap opens the tip. -->
+            @if (dropGames(entry.row); as more) {
+              <span
+                #dropTip="appTooltip"
+                class="drop-games"
+                tabindex="0"
+                [appTooltip]="dropGamesTip(entry.row)"
+                [dismissOnClick]="false"
+                (click)="dropTip.toggle()"
+                [attr.aria-label]="dropGamesTip(entry.row)"
+                >{{ more }}</span
+              >
+            }
+          </td>
           @if (hasSkaters()) {
             <td class="num toi-col" [class.not-his]="entry.row.player.projection.type !== 'skater'">
               {{ toi(entry.row) }}

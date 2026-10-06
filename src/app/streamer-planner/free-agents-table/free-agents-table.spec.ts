@@ -366,6 +366,28 @@ describe('FreeAgentsTableComponent', () => {
     expect(ngMocks.formatText(ngMocks.findAll(fixture, '.player-name')[0])).toBe('Top Scorer');
   });
 
+  // A game only a drop opens takes the dropped player's place, so it sits beside the games.
+  it('marks beside his games, in whole games, those only a drop makes room for', () => {
+    const fixture = render('points', CATEGORIES, [
+      { ...SKATER, dropGames: 1.6 },
+      { ...SECOND_SKATER, dropGames: 0.4 },
+      GOALIE,
+    ]);
+    const marks = ngMocks.findAll(fixture, '.drop-games');
+
+    expect(marks.map((mark) => ngMocks.formatText(mark))).toEqual(['+2']);
+    // In the games cell, after his own four.
+    expect(ngMocks.formatText(marks[0].parent!)).toBe('4 +2');
+    expect(marks[0].attributes['aria-label']).toBe(
+      '2 more games if you drop a player who plays those nights. He would play in place of that player, so they are not in his score.',
+    );
+    expect(
+      fixture.point.componentInstance
+        .dropGamesTip({ ...SKATER, dropGames: 1 })
+        .startsWith('1 more game if'),
+    ).toBe(true);
+  });
+
   // An add is what the list is a list of; only a claim changes what the reader does next.
   it('tags a player on waivers and nobody else', () => {
     const claim: RankedFreeAgent = {
