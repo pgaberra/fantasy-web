@@ -144,103 +144,110 @@ function activePlayers(
 }
 
 /**
- * The positions a pickup would start at on a night only once a player the user would drop is
- * gone, each with the players whose drop opens it. A drop frees his seat the nights he plays and
- * starts, and with players eligible at two positions moved about, that seat can take more than his
- * own position: dropping a LW whose C/LW teammate can slide over makes room for a C as well. A
- * night he does not play, or sits on the bench anyway, opens nothing. Positions already open
- * without a drop are left out: they are the night's own room.
+ * What a drop would open on each night: for every kind of player the user could drop, by the
+ * positions he is eligible at, the positions a pickup would then start at. A drop frees his seat
+ * the nights he plays and starts, and with players eligible at two positions moved about, that
+ * seat can take more than his own position: dropping a LW whose C/LW teammate can slide over makes
+ * room for a C as well, while dropping that C/LW may open only the C. Players eligible at the same
+ * positions who play the same night are interchangeable, so each kind is worked out once; kinds
+ * that open the same positions are listed together. A drop who does not play that night, or sits
+ * on the bench anyway, opens nothing, and positions already open without a drop are left out:
+ * they are the night's own room.
  *
  * @param rooms each date's room as the roster stands ({@link nightRooms})
- * @param drops the player ids the user would drop
  */
 export function dropRooms(
   roster: readonly PlannerRosterPlayer[],
   slots: RosterSlots,
   teams: ReadonlyMap<string, TeamSchedule>,
   rooms: ReadonlyMap<string, NightRoom>,
-  drops: ReadonlySet<string>,
 ): ReadonlyMap<string, DropRoom> {
   const seats = lineupSeats(slots);
   const active = activePlayers(roster, teams);
   const opened = new Map<string, DropRoom>();
   for (const [date, room] of rooms) {
     const playing = active.filter((player) => player.nights.has(date));
-    const fits = new Map<LineupPosition, string[]>();
-    // Only a drop who plays that night has a seat to free.
-    for (const drop of playing.filter((player) => drops.has(player.playerId))) {
-      const rest = playing.filter((player) => player !== drop).map((player) => player.positions);
+    const kinds = new Map<
+      string,
+      { order: number[]; drop: (typeof playing)[number]; names: string[] }
+    >();
+    for (const player of playing) {
+      const positions = LINEUP_POSITIONS.filter((position) => player.positions.includes(position));
+      const key = positions.join('/');
+      if (key) {
+        const order = positions.map((position) => LINEUP_POSITIONS.indexOf(position));
+        const kind = kinds.get(key) ?? { order, drop: player, names: [] };
+        kind.names.push(player.name);
+        kinds.set(key, kind);
+      }
+    }
+    // Kinds that open the same positions, keyed by those positions, in the order first found.
+    const byOpens = new Map<
+      string,
+      { kinds: string[]; names: string[]; opens: LineupPosition[] }
+    >();
+    for (const [key, kind] of [...kinds].sort(([, a], [, b]) => lineupOrder(a.order, b.order))) {
+      const rest = playing
+        .filter((player) => player !== kind.drop)
+        .map((player) => player.positions);
       const filled = seated(rest, seats);
-      for (const position of LINEUP_POSITIONS) {
-        if (!room.fits.has(position) && seated([...rest, [position]], seats) > filled) {
-          fits.set(position, [...(fits.get(position) ?? []), drop.name]);
+      const opens = LINEUP_POSITIONS.filter(
+        (position) => !room.fits.has(position) && seated([...rest, [position]], seats) > filled,
+      );
+      if (opens.length > 0) {
+        const same = byOpens.get(opens.join(','));
+        if (same) {
+          same.kinds.push(key);
+          same.names.push(...kind.names);
+        } else {
+          byOpens.set(opens.join(','), { kinds: [key], names: [...kind.names], opens });
         }
       }
     }
-    if (fits.size > 0) {
-      // In lineup order, whichever drop found it first.
-      opened.set(
-        date,
-        new Map(
-          LINEUP_POSITIONS.flatMap((position) => {
-            const names = fits.get(position);
-            return names ? [[position, names] as const] : [];
-          }),
-        ),
-      );
+    if (byOpens.size > 0) {
+      opened.set(date, [...byOpens.values()]);
     }
   }
   return opened;
 }
 
-/** A night's positions open only through a drop, each with the players whose drop opens it. */
-export type DropRoom = ReadonlyMap<LineupPosition, readonly string[]>;
-
-/** Which drop opens which positions, said in full, for the cell's tooltip. */
-export function dropRoomTip(room: DropRoom): string {
-  const byDrops = new Map<string, LineupPosition[]>();
-  for (const [position, names] of room) {
-    const key = joinNames(names);
-    byDrops.set(key, [...(byDrops.get(key) ?? []), position]);
+/** Kinds of drop in lineup order, by their positions' places in it: C, then C/LW, then LW. */
+function lineupOrder(a: readonly number[], b: readonly number[]): number {
+  for (let index = 0; index < Math.min(a.length, b.length); index++) {
+    if (a[index] !== b[index]) {
+      return a[index] - b[index];
+    }
   }
-  const parts = [...byDrops].map(
-    ([names, positions]) => `${positions.join(', ')} if you drop ${names}`,
-  );
-  return `Open only if you drop a player you picked: ${parts.join('; ')}.`;
+  return a.length - b.length;
+}
+
+/**
+ * One line of a night's drop room: the kinds of player whose drop opens it ("LW", "C/LW"), the
+ * players of those kinds who play that night, and the positions a pickup would then start at.
+ */
+export interface DropOpening {
+  readonly kinds: readonly string[];
+  readonly names: readonly string[];
+  readonly opens: readonly LineupPosition[];
+}
+
+/** A night's positions open only through a drop, one line per kind of drop. */
+export type DropRoom = readonly DropOpening[];
+
+/** "LW → C, LW, RW": a drop line as the day's cell shows it. */
+export function dropOpeningLabel(opening: DropOpening): string {
+  return `${opening.kinds.join(', ')} \u2192 ${opening.opens.join(', ')}`;
+}
+
+/** Who that drop is and what it opens, said in full, for the line's tooltip. */
+export function dropOpeningTip(opening: DropOpening): string {
+  return `Drop ${joinNames(opening.names)} (${opening.kinds.join(' or ')}): room for ${joinNames(opening.opens)}.`;
 }
 
 function joinNames(names: readonly string[]): string {
   return names.length <= 1
     ? (names[0] ?? '')
     : `${names.slice(0, -1).join(', ')} or ${names[names.length - 1]}`;
-}
-
-/** A stretch of a night's positions side by side, all open as the lineup stands or all only through a drop. */
-export interface RoomRun {
-  readonly drop: boolean;
-  readonly positions: readonly LineupPosition[];
-}
-
-/**
- * A night's open positions, its own and a drop's together, always in lineup order (C, LW, RW, D,
- * G) and cut into runs wherever they switch between the two, so the cell never reorders them by
- * where the room comes from. A full night with nothing a drop opens has no runs.
- */
-export function roomRuns(room: NightRoom | undefined, dropRoom: DropRoom | undefined): RoomRun[] {
-  const runs: { drop: boolean; positions: LineupPosition[] }[] = [];
-  for (const position of LINEUP_POSITIONS) {
-    const own = !!room?.fits.has(position);
-    if (!own && !dropRoom?.has(position)) {
-      continue;
-    }
-    const last = runs.at(-1);
-    if (last && last.drop === !own) {
-      last.positions.push(position);
-    } else {
-      runs.push({ drop: !own, positions: [position] });
-    }
-  }
-  return runs;
 }
 
 /** Whether a player at these positions would start on a night with this room. */

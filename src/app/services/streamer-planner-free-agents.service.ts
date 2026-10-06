@@ -72,6 +72,11 @@ function statsFrom<K extends string>(
 }
 
 function toFreeAgent(player: FreeAgentResponse): FreeAgent {
+  const skater = player.type === 'skater';
+  // The ranking engine keys players by number, and the platforms number theirs. A player whose id
+  // is not a number cannot be ranked against the rest, so he is given a stable negative key that
+  // collides with nothing.
+  const playerId = Number(player.playerId);
   return {
     playerId: player.playerId,
     name: player.name,
@@ -81,33 +86,18 @@ function toFreeAgent(player: FreeAgentResponse): FreeAgent {
     clubGames: player.clubGames,
     expectedGames: player.expectedGames,
     projected: new Set(Object.keys(player.stats)),
-    projection: plannerProjection(player),
-  };
-}
-
-/**
- * A line over the stretch as the ranking engine reads it: a free agent's, or one of the user's own
- * players' on the same scale.
- */
-export function plannerProjection(line: {
-  readonly playerId: string;
-  readonly type: string;
-  readonly expectedGames: number;
-  readonly stats: Record<string, number>;
-}): Projection {
-  const skater = line.type === 'skater';
-  // The ranking engine keys players by number, and the platforms number theirs. A player whose id
-  // is not a number cannot be ranked against the rest, so he is given a stable negative key that
-  // collides with nothing.
-  const playerId = Number(line.playerId);
-  return {
-    type: skater ? 'skater' : 'goalie',
-    playerId: Number.isFinite(playerId) ? playerId : -1,
-    stats: {
-      scoring: statsFrom(skater ? SKATER_SCORING_STAT_KEYS : GOALIE_SCORING_STAT_KEYS, line.stats),
-      utility: {
-        ...statsFrom(skater ? SKATER_UTILITY_STAT_KEYS : GOALIE_UTILITY_STAT_KEYS, line.stats),
-        gp: line.expectedGames,
+    projection: {
+      type: skater ? 'skater' : 'goalie',
+      playerId: Number.isFinite(playerId) ? playerId : -1,
+      stats: {
+        scoring: statsFrom(
+          skater ? SKATER_SCORING_STAT_KEYS : GOALIE_SCORING_STAT_KEYS,
+          player.stats,
+        ),
+        utility: {
+          ...statsFrom(skater ? SKATER_UTILITY_STAT_KEYS : GOALIE_UTILITY_STAT_KEYS, player.stats),
+          gp: player.expectedGames,
+        },
       },
     },
   };

@@ -9,7 +9,6 @@ import { IconComponent } from '../../shared/icon/icon';
 import { PositionChipsComponent } from '../../shared/position-chips/position-chips';
 import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
-import { Swap } from '../planner-swap';
 import {
   formatGames,
   formatToi,
@@ -88,12 +87,6 @@ export class FreeAgentsTableComponent {
   readonly sort = input<FreeAgentSort>(RANKED_ORDER);
   /** A heading pressed: the page sorts by that column, or turns it round. */
   readonly sortBy = output<FreeAgentSortKey>();
-  /** Whether the user's team is in, so each skater's best swap into it is a column. */
-  readonly swapsShown = input(false);
-  /** The free agent whose swap the game days show, by his platform id. */
-  readonly shownSwap = input<string | null>(null);
-  /** A swap pressed: the page shows it on the game days, or hides it when it is shown. */
-  readonly showSwap = output<string>();
 
   private readonly lines = computed(() => {
     const categories = this.categories();
@@ -191,36 +184,6 @@ export class FreeAgentsTableComponent {
   games(row: RankedFreeAgent): string {
     return formatGames(row.games);
   }
-
-  /** "+2.4": what his best swap gains the team over the nights counted. */
-  swapValue(swap: Swap): string {
-    const text = Math.abs(swap.value).toFixed(this.scoringType() === 'points' ? 1 : 2);
-    if (Number(text) === 0) {
-      return `\u00b1${text}`;
-    }
-    return `${swap.value > 0 ? '+' : '\u2212'}${text}`;
-  }
-
-  /** "for Kakko", or "open spot": who the swap costs, by surname so a phone's cell holds it. */
-  swapFor(swap: Swap): string {
-    if (!swap.drop) {
-      return 'open spot';
-    }
-    const name = swap.drop.name.trim();
-    const space = name.indexOf(' ');
-    return `for ${space > 0 ? name.slice(space + 1) : name}`;
-  }
-
-  swapTip(swap: Swap): string {
-    const games = `${swap.games > 0 ? '+' : ''}${swap.games} ${Math.abs(swap.games) === 1 ? 'game' : 'games'}`;
-    const who = swap.drop ? `Dropping ${swap.drop.name}` : 'Into your open roster spot';
-    return `${who}: ${games} started over the game days counted. Show it on the game days.`;
-  }
-
-  readonly swapHeadingTip =
-    'What he adds to your team over the game days counted, swapped for the best of the players you would drop: every night re-set with him in, each game weighed by what a game of that player is worth';
-
-  readonly noSwapTip = 'Pick a player you would drop above to see a swap';
 
   /** Ice time a game, for a skater; a goalie's is the whole game or none of it. */
   toi(row: RankedFreeAgent): string {
