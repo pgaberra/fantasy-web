@@ -133,13 +133,6 @@ function toggled(picked: ReadonlySet<ScoringStatKey>, key: ScoringStatKey): Set<
   return next;
 }
 
-function pickedLabel(options: readonly LineColumn[], picked: ReadonlySet<ScoringStatKey>): string {
-  return options
-    .filter((option) => picked.has(option.key))
-    .map((option) => option.label)
-    .join(', ');
-}
-
 /** A preset with the stretch it names today, for the reader to pick by name. */
 export interface PresetOption {
   readonly key: PlannerPreset;
@@ -680,9 +673,6 @@ export class StreamerPlannerComponent {
       writeFocus(league, focus, week.end, this.today);
     }
   }
-
-  /** "PPP, SOG": the categories picked, as the score's tip and the cards name them. */
-  readonly focusLabel = computed(() => pickedLabel(this.focusOptions(), this.focus()));
 
   /**
    * Every available player with a projection, best first by the league's scoring. With categories

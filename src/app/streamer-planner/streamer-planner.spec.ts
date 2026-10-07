@@ -1100,7 +1100,7 @@ describe('StreamerPlannerComponent', () => {
 
       planner.toggleFocus('ppp');
       expect(names(planner.ranked())).toEqual(['Power Play', 'Middle', 'Sniper']);
-      expect(planner.focusLabel()).toBe('PPP');
+      expect([...planner.focus()]).toEqual(['ppp']);
 
       planner.toggleFocus('sog');
       expect(names(planner.ranked())[0]).not.toBe('Waiver Goalie');
@@ -1158,11 +1158,11 @@ describe('StreamerPlannerComponent', () => {
 
       planner.toggleFocus('w');
       expect(names(planner.visible())).toEqual(['Winning Goalie', 'Waiver Goalie']);
-      expect(planner.focusLabel()).toBe('W');
+      expect([...planner.focus()]).toEqual(['w']);
 
       planner.toggleFocus('goals');
       expect(names(planner.visible())).toHaveLength(3);
-      expect(planner.focusLabel()).toBe('G, W');
+      expect(planner.focus()).toEqual(new Set(['goals', 'w']));
 
       planner.clearFocus();
       expect(planner.focus().size).toBe(0);
@@ -1182,7 +1182,6 @@ describe('StreamerPlannerComponent', () => {
       planner.togglePosition('RW');
       expect(offered()).toEqual(['goals', 'assists', 'ppp', 'sog']);
       expect([...planner.focus()]).toEqual(['sog']);
-      expect(planner.focusLabel()).toBe('SOG');
       fixture.detectChanges();
       expect(ngMocks.findAll('.focus .pill').map((pill) => ngMocks.formatText(pill))).toEqual([
         'All categories',
