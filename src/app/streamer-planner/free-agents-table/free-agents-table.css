@@ -211,12 +211,11 @@
   outline-offset: 1px;
 }
 
-/* Pressed, the mark fills, and the row's figures take its colour: the line with the drop's games,
-   never read as his own. The fill is the strong gold rather than the warning text's olive brown,
-   which sat so close to the figures' usual slate that a pressed row looked like any other. */
+/* Pressed, the mark fills, and the row's figures take its yellow: the line with the drop's games,
+   never read as his own. */
 .drop-games[aria-pressed='true'] {
-  background: var(--color-gold-strong);
-  border-color: var(--color-gold-strong);
+  background: var(--color-warning-text);
+  border-color: var(--color-warning-text);
   color: var(--color-warning-surface);
 }
 
@@ -225,7 +224,7 @@
 .free-agents-table td.lifted.rate-col,
 .free-agents-table td.lifted.stat-col--focus,
 .free-agents-table td.lifted.stat-col--muted {
-  color: var(--color-gold-strong);
+  color: var(--color-warning-text);
 }
 
 /* A cell of its own in the planner; FA Scout stacks a second figure under it in the same cell. */
