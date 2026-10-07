@@ -187,7 +187,8 @@
    on each number and the score. The game days' yellow, so it reads as theirs, and raised and
    small, a mark on the figure rather than a second figure beside it. The games are boxed as a
    count of their own; a stat's mark is bare, since a dozen boxes down a row would be a second
-   table. */
+   table, and in the strong gold rather than the warning text's olive brown, which on white beside
+   the figures' slate was too close to them to catch the eye (#1079). */
 .drop-games,
 .lift {
   color: var(--color-warning-text);
@@ -204,6 +205,10 @@
   border: 1px solid var(--color-warning-border);
   border-radius: var(--radius-sm);
   padding: 0 3px;
+}
+
+.lift {
+  color: var(--color-gold-strong);
 }
 
 .drop-games:focus-visible {
