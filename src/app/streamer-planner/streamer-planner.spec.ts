@@ -912,6 +912,27 @@ describe('StreamerPlannerComponent', () => {
         expect(planner.ranked().every((row) => row.dropGames === undefined)).toBe(true);
       });
 
+      // Scored all together, every lifted line shifted the z-score pool for the others, and a
+      // player given one game more read as losing a point while the rest were given two.
+      it('scores what a drop would add to a z-score against the list as it stands', async () => {
+        settings = {
+          ...SETTINGS,
+          scoringType: 'category',
+          statWeights: {},
+          activeScoringColumns: ['goals', 'assists'],
+        };
+        const fixture = await render();
+        const skaters = fixture.point.componentInstance
+          .ranked()
+          .filter((row) => row.line.type === 'skater');
+
+        expect(skaters).toHaveLength(2);
+        for (const row of skaters) {
+          // Games added to a line never cost it against a pool the line does not move.
+          expect(row.lifted!.score).toBeGreaterThan(row.score);
+        }
+      });
+
       it('counts the games a drop makes room for, for everyone at once, from a second tick box', async () => {
         const fixture = await render();
         const planner = fixture.point.componentInstance;

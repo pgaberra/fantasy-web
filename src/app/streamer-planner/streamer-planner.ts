@@ -783,19 +783,35 @@ export class StreamerPlannerComponent {
     const scored = this.ranking.rankOverall({ ...input, projections });
     const scoreOf = (entry: ScoredProjection) =>
       scoring.scoringType === 'points' ? entry.score.fantasyPoints : entry.score.zScore;
-    // The lifted lines scored in one more run, each in place of its own: points are a line's own
-    // whoever else is listed, and a z-score is read against a pool every lifted line shifts a
-    // little, which the list bears rather than running the ranking once a player.
+    // Each lifted line scored in place of its own, the rest of the list as it stands: what the
+    // games would add to his score as the list reads it. In a points league a line's score is
+    // its own whoever else is listed, so one run scores them all; in a category league a z-score
+    // is read against the pool, and scored all together, each lifted line shifted it for the
+    // others, so a player given one game more read as losing a point while everyone else was
+    // given two. A run a player keeps the pool his own, a line of three hundred apart.
     const liftedScores = new Map<number, number>();
-    if (liftedLines.size > 0) {
+    const liftedRuns =
+      scoring.scoringType === 'points'
+        ? [[...liftedLines.keys()]]
+        : [...liftedLines.keys()].map((id) => [id]);
+    for (const ids of liftedRuns) {
+      if (ids.length === 0) {
+        continue;
+      }
+      const swapped = new Set(ids);
       const lifted = this.ranking.rankOverall({
         ...input,
-        projections: players.map(
-          (player) => liftedLines.get(player.playerId) ?? lines.get(player.playerId)!,
+        projections: players.map((player) =>
+          swapped.has(player.playerId)
+            ? liftedLines.get(player.playerId)!
+            : lines.get(player.playerId)!,
         ),
       });
       for (const entry of lifted) {
-        liftedScores.set(entry.projection.playerId, scoreOf(entry));
+        const owner = byPlayerId.get(entry.projection.playerId);
+        if (owner && swapped.has(owner.playerId)) {
+          liftedScores.set(entry.projection.playerId, scoreOf(entry));
+        }
       }
     }
     const ranked: RankedFreeAgent[] = [];
