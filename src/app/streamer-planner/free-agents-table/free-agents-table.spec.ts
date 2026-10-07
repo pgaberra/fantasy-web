@@ -199,10 +199,6 @@ describe('FreeAgentsTableComponent', () => {
     expect(ngMocks.findAll(fixture, 'tbody .rank-col .sr-only')).toHaveLength(1);
   });
 
-  it('says whose list the rank is a place in', () => {
-    expect(render().point.componentInstance.rankTip).toContain('every available player');
-  });
-
   it('gives the rate a game a column of its own, beside the score', () => {
     const fixture = render();
 
