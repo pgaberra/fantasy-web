@@ -89,8 +89,6 @@ export class FreeAgentsTableComponent {
   readonly categories = input.required<readonly ScoringStatKey[]>();
   /** The categories the list is ranked by, if narrowed to some: those columns are the ones read. */
   readonly focus = input<ReadonlySet<ScoringStatKey>>(new Set());
-  /** "PPP, SOG": the same categories, as the score's tip names them. */
-  readonly focusLabel = input('');
   /**
    * How many places are set off as the best picks; none unless the page says. A place is the rank
    * the row shows, among every available player, so a list narrowed to some positions sets off only
@@ -160,17 +158,14 @@ export class FreeAgentsTableComponent {
     this.scoringType() === 'points' ? 'Proj. pts' : 'Z-Score',
   );
 
-  readonly scoreTip = computed(() => {
-    const label = this.focusLabel();
-    return label
-      ? `The model's line for the nights counted, scored in ${label} alone`
-      : "The model's line for the nights counted, scored by your league's settings";
-  });
+  readonly scoreTip = computed(() =>
+    this.scoringType() === 'points'
+      ? 'Projected Points'
+      : "Ranks players based on their relative value across your league's scoring categories.",
+  );
 
   readonly perGameTip = computed(() =>
-    this.scoringType() === 'points'
-      ? 'Projected points per game he plays'
-      : 'Z-Score per game he plays',
+    this.scoringType() === 'points' ? 'Projected points per game' : 'Z-Score per game',
   );
 
   ariaSort(key: FreeAgentSortKey): 'ascending' | 'descending' | null {

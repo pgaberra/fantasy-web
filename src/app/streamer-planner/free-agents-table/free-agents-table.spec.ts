@@ -472,7 +472,6 @@ describe('FreeAgentsTableComponent', () => {
       scoringType: 'category',
       categories: ['goals', 'ppp', 'sog'],
       focus: new Set<ScoringStatKey>(['ppp']),
-      focusLabel: 'PPP',
     });
     fixture.detectChanges();
 
@@ -481,7 +480,18 @@ describe('FreeAgentsTableComponent', () => {
     expect(text('thead .stat-col--focus')).toEqual(['PPP']);
     expect(text('thead .stat-col--muted')).toEqual(['G', 'SOG']);
     expect(text('tbody .stat-col--focus')).toEqual(['0.8']);
-    expect(fixture.point.componentInstance.scoreTip()).toContain('scored in PPP alone');
+  });
+
+  it('names the score and the rate a game by how the league scores', () => {
+    const points = render('points').point.componentInstance;
+    expect(points.scoreTip()).toBe('Projected Points');
+    expect(points.perGameTip()).toBe('Projected points per game');
+
+    const categories = render('category').point.componentInstance;
+    expect(categories.scoreTip()).toBe(
+      "Ranks players based on their relative value across your league's scoring categories.",
+    );
+    expect(categories.perGameTip()).toBe('Z-Score per game');
   });
 
   it('marks no column while the list is ranked by every category', () => {
