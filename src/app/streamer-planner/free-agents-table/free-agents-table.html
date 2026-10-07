@@ -140,26 +140,32 @@
               </span>
             </span>
           </th>
-          @let lifted = isLifted(entry.row);
-          <td class="num score" [class.lifted]="lifted">{{ score(entry.row) }}</td>
-          <td class="num rate-col" [class.lifted]="lifted">{{ perGame(entry.row) }}</td>
-          <td class="num" [class.lifted]="lifted">
-            <span class="games">
+          <td class="num score">
+            <span class="figure">
+              {{ score(entry.row) }}
+              <!-- What the drop's games would put on the score, raised at its top right as the
+                   games are, and in their yellow: it is theirs, and no part of the figure. -->
+              @if (scoreLift(entry.row); as more) {
+                <span class="lift" [attr.aria-label]="'would add ' + more">{{ more }}</span>
+              }
+            </span>
+          </td>
+          <td class="num rate-col">{{ perGame(entry.row) }}</td>
+          <td class="num">
+            <span class="figure">
               {{ games(entry.row) }}
               <!-- The games only a drop opens, yellow as on the game days and raised over his
-                   own: never in them, since each would take the dropped player's place. A press
-                   turns the row to the line he would have with them, in the same yellow. -->
+                   own. A mark, not a control: whether they count is the list's switch to say. -->
               @if (dropGames(entry.row); as more) {
-                <button
-                  type="button"
+                <span
                   class="drop-games"
+                  role="img"
+                  tabindex="0"
                   [appTooltip]="dropGamesTip(entry.row)"
-                  [attr.aria-pressed]="lifted"
                   [attr.aria-label]="dropGamesTip(entry.row)"
-                  (click)="toggleLift(entry.row)"
                 >
                   {{ more }}
-                </button>
+                </span>
               }
             </span>
           </td>
@@ -168,17 +174,25 @@
               {{ toi(entry.row) }}
             </td>
           }
-          @for (cell of cells(entry); track $index) {
+          @for (cell of entry.cells; track $index) {
             <td
               class="num stat-col"
-              [class.lifted]="lifted"
               [class.stat-col--start]="groupStarts()[$index]"
               [class.stat-col--focus]="focused(columns()[$index].key) === true"
               [class.stat-col--muted]="focused(columns()[$index].key) === false"
               [class.nil]="cell && isNil(cell)"
               [class.not-his]="entry.notHis[$index]"
             >
-              {{ entry.notHis[$index] ? notHis : cell?.value }}
+              @if (entry.notHis[$index]) {
+                <span>{{ notHis }}</span>
+              } @else {
+                <span class="figure">
+                  {{ cell?.value }}
+                  @if (entry.lifts[$index]; as more) {
+                    <span class="lift" [attr.aria-label]="'would add ' + more">{{ more }}</span>
+                  }
+                </span>
+              }
             </td>
           }
         </tr>

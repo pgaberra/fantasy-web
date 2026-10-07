@@ -442,7 +442,15 @@
   margin: var(--space-3) 0 0;
 }
 
-/* The switch that ranks the free agents by the user's room, across from their card's title. */
+/* The switches that rank the free agents by the user's room, and count a drop's games, across
+   from their card's title and one under the other, the second stepped in as the first's own. */
+.fit-toggles {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
 .fit-toggle {
   align-items: center;
   color: var(--color-text);
