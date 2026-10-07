@@ -156,8 +156,6 @@ export class FreeAgentsTableComponent {
 
   readonly notHis = NOT_HIS;
 
-  readonly rankTip = 'His place among every available player, whatever the positions shown';
-
   readonly scoreHeading = computed(() =>
     this.scoringType() === 'points' ? 'Proj. pts' : 'Z-Score',
   );
