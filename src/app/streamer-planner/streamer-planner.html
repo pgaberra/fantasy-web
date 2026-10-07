@@ -257,10 +257,24 @@
         </h2>
         <!-- Scored only on the nights the user's lineup has room for them, unless unticked. -->
         @if (myTeamStatus() === 'ready') {
-          <label class="fit-toggle">
-            <input type="checkbox" [checked]="fitMyTeam()" (change)="toggleFitMyTeam()" />
-            Rank based on your roster availability
-          </label>
+          <div class="fit-toggles">
+            <label class="fit-toggle">
+              <input type="checkbox" [checked]="fitMyTeam()" (change)="toggleFitMyTeam()" />
+              Rank based on your roster availability
+            </label>
+            <!-- The games only a drop opens, counted for everyone at once rather than a row at a
+                 time, so the order and the figures always say the same thing. -->
+            @if (fitMyTeam()) {
+              <label class="fit-toggle fit-toggle--drops">
+                <input type="checkbox" [checked]="countDrops()" (change)="toggleCountDrops()" />
+                Count games a drop would open
+                <app-help-tip
+                  label="About counting a drop's games"
+                  text="Ranks everyone as if you drop a player for him: the games marked +1 in yellow go into his games and his score. Off, they are only marked, with what they would add beside each number, since he would play them in place of the player dropped."
+                />
+              </label>
+            }
+          </div>
         }
       </div>
       <!-- Skaters and goalies are one list, narrowed by any number of positions at once. "All" is
@@ -358,6 +372,7 @@
           [focusLabel]="focusLabel()"
           [top]="topRows()"
           [sort]="sort()"
+          [dropsCounted]="dropsCounted()"
           (sortBy)="sortBy($event)"
         />
         <!-- A page at a time: most visits never leave the first, so the card stays the height

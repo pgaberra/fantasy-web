@@ -547,6 +547,22 @@ export class StreamerPlannerComponent {
   /** The rooms the ranking follows: none when the reader asks for every counted night. */
   private readonly rankingRooms = computed(() => (this.fitMyTeam() ? this.rooms() : null));
 
+  /**
+   * Whether the games only a drop makes room for are counted too: every free agent given the
+   * games he would play if the user dropped a player for him, and ranked on them. Off, they are
+   * marked beside his games and what they would add is marked beside each number, since such a
+   * night adds no game to the team. On, the list is ranked as if the reader will drop someone,
+   * the same assumption for everyone, so no row moves on its own.
+   */
+  readonly countDrops = signal(false);
+
+  toggleCountDrops(): void {
+    this.countDrops.update((count) => !count);
+  }
+
+  /** Counted, and only while the ranking follows the room: without it there is nothing to open. */
+  readonly dropsCounted = computed(() => this.fitMyTeam() && this.countDrops());
+
   room(day: PlannerDay): NightRoom | undefined {
     return day.games > 0 ? this.rooms()?.get(day.date) : undefined;
   }
@@ -693,6 +709,7 @@ export class StreamerPlannerComponent {
     // dropped player's game. A goalie's are the starts the crease gives him once the nights only a
     // drop opens a G seat on are counted too, less those he has already.
     const dropped = rooms ? this.dropRoomsByDate() : null;
+    const counting = dropped !== null && this.countDrops();
     const dropStarts = dropped
       ? projectedStarts(
           week.creases,
@@ -731,18 +748,23 @@ export class StreamerPlannerComponent {
           (dropStarts?.get(player.playerId) ?? Math.round(played + more)) - played,
         );
       }
-      games.set(player.playerId, played);
       if (dropped) {
         dropGames.set(player.playerId, more);
         if (more > 0) {
-          liftedLines.set(
-            player.playerId,
+          const lifted =
             player.projection.type === 'goalie'
               ? startsProjection(player.projection, player.expectedGames, played + more)
-              : scaledProjection(player.projection, (played + more) / player.expectedGames),
-          );
+              : scaledProjection(player.projection, (played + more) / player.expectedGames);
+          // Counted, the lifted line is his line: there is nothing left for a drop to add.
+          if (counting) {
+            played += more;
+            line = lifted;
+          } else {
+            liftedLines.set(player.playerId, lifted);
+          }
         }
       }
+      games.set(player.playerId, played);
       lines.set(player.playerId, line);
       return line;
     });

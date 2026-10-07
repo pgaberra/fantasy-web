@@ -177,54 +177,38 @@
   padding: 2px;
 }
 
-/* His games, with the drop's raised at their top right, where a footnote's mark goes. */
-.games {
+/* A figure with what a drop would add raised at its top right, where a footnote's mark goes. */
+.figure {
   display: inline-block;
   white-space: nowrap;
 }
 
-/* The games a drop would add: the game days' yellow, so it reads as theirs, and a button, since a
-   press turns the row to the line he would have with them. Raised and small, a mark on the number
-   rather than a second one beside it. */
-.drop-games {
-  background: var(--color-warning-surface);
-  border: 1px solid var(--color-warning-border);
-  border-radius: var(--radius-sm);
+/* What the games only a drop opens would add: the games themselves beside his, and what they put
+   on each number and the score. The game days' yellow, so it reads as theirs, and raised and
+   small, a mark on the figure rather than a second figure beside it. The games are boxed as a
+   count of their own; a stat's mark is bare, since a dozen boxes down a row would be a second
+   table. */
+.drop-games,
+.lift {
   color: var(--color-warning-text);
-  cursor: pointer;
-  font: inherit;
   font-size: 0.625rem;
   font-weight: var(--weight-semibold);
   line-height: 1.2;
   margin-left: 2px;
-  padding: 0 3px;
   position: relative;
   top: -0.45em;
 }
 
-.drop-games:hover {
-  border-color: var(--color-warning-text);
+.drop-games {
+  background: var(--color-warning-surface);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-sm);
+  padding: 0 3px;
 }
 
 .drop-games:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 1px;
-}
-
-/* Pressed, the mark fills, and the row's figures take its yellow: the line with the drop's games,
-   never read as his own. */
-.drop-games[aria-pressed='true'] {
-  background: var(--color-warning-text);
-  border-color: var(--color-warning-text);
-  color: var(--color-warning-surface);
-}
-
-.free-agents-table td.lifted,
-.free-agents-table td.lifted.score,
-.free-agents-table td.lifted.rate-col,
-.free-agents-table td.lifted.stat-col--focus,
-.free-agents-table td.lifted.stat-col--muted {
-  color: var(--color-warning-text);
 }
 
 /* A cell of its own in the planner; FA Scout stacks a second figure under it in the same cell. */

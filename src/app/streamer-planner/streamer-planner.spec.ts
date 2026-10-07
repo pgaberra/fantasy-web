@@ -912,6 +912,37 @@ describe('StreamerPlannerComponent', () => {
         expect(planner.ranked().every((row) => row.dropGames === undefined)).toBe(true);
       });
 
+      it('counts the games a drop makes room for, for everyone at once, from a second tick box', async () => {
+        const fixture = await render();
+        const planner = fixture.point.componentInstance;
+        const toggles = () =>
+          ngMocks.findAll(fixture, '.free-agents .fit-toggle').map((t) => ngMocks.formatText(t));
+        expect(toggles()).toEqual([
+          'Rank based on your roster availability',
+          'Count games a drop would open',
+        ]);
+        expect(planner.dropsCounted()).toBe(false);
+
+        (ngMocks.find(fixture, '.fit-toggle--drops input').nativeElement as HTMLElement).click();
+        fixture.detectChanges();
+        expect(planner.dropsCounted()).toBe(true);
+        // The two games each Oilers forward would play with a drop are his games now, and his
+        // score is the line over them, with nothing left for a drop to add; the mark stays.
+        const skaters = planner.ranked().filter((row) => row.line.type === 'skater');
+        expect(skaters.map((row) => row.games)).toEqual([2, 2]);
+        expect(skaters.map((row) => row.dropGames)).toEqual([2, 2]);
+        expect(skaters.every((row) => row.score > 0)).toBe(true);
+        expect(skaters.every((row) => row.lifted === undefined)).toBe(true);
+        // Ranked on them: the best Oiler leads the list again.
+        expect(planner.ranked()[0].player.name).toBe('Top Scorer');
+
+        // Without the room there is nothing to open, so the second box goes with the first.
+        planner.toggleFitMyTeam();
+        fixture.detectChanges();
+        expect(toggles()).toEqual(['Rank based on your roster availability']);
+        expect(planner.dropsCounted()).toBe(false);
+      });
+
       it('shows in yellow, in lineup order, the positions a drop would open, one rule a run', async () => {
         const fixture = await render();
         const planner = fixture.point.componentInstance;
