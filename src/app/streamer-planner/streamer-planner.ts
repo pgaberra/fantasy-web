@@ -306,6 +306,18 @@ export class StreamerPlannerComponent {
     return !this.excluded().has(day.date);
   }
 
+  /**
+   * A click anywhere in a night's cell counts it in or out, except on the tick box itself, whose
+   * own change event already did; a dark night has nothing to count. The parts that open an
+   * explanation stop the click before it gets here.
+   */
+  toggleDayFromCell(day: PlannerDay, event: Event): void {
+    if (day.games === 0 || (event.target as Element).closest('.day-tick')) {
+      return;
+    }
+    this.toggleDay(day);
+  }
+
   toggleDay(day: PlannerDay): void {
     this.excluded.update((excluded) => {
       const next = new Set(excluded);

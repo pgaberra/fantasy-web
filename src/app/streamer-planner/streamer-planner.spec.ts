@@ -853,7 +853,7 @@ describe('StreamerPlannerComponent', () => {
         );
       });
 
-      it('counts a night in or out from its tick box alone, and gives its open positions no tip', async () => {
+      it('counts a night in or out from anywhere in its cell, its open positions having no tip', async () => {
         const fixture = await render();
         const room = ngMocks.find(fixture, '.day-room--open');
         const cell = room.nativeElement.closest('.day') as HTMLElement;
@@ -861,14 +861,34 @@ describe('StreamerPlannerComponent', () => {
         expect(ngMocks.findInstances(room, TooltipDirective)).toHaveLength(0);
         expect(tick.checked).toBe(true);
 
-        // A tap on the positions leaves the night be.
+        // The green positions explain nothing, so a tap on them counts like the rest of the cell.
         (room.nativeElement as HTMLElement).click();
+        fixture.detectChanges();
+        expect(tick.checked).toBe(false);
+
+        (cell.querySelector('.day-games') as HTMLElement).click();
         fixture.detectChanges();
         expect(tick.checked).toBe(true);
 
+        // The tick box counts once, not once for itself and once for the cell around it.
         tick.click();
         fixture.detectChanges();
         expect(tick.checked).toBe(false);
+        (cell.querySelector('.day-tick') as HTMLElement).click();
+        fixture.detectChanges();
+        expect(tick.checked).toBe(true);
+      });
+
+      it('leaves a dark night be, however it is tapped', async () => {
+        const fixture = await render();
+        const cell = ngMocks.find(fixture, '.day--dark').nativeElement as HTMLElement;
+        const planner = fixture.point.componentInstance;
+        const dark = planner.days().find((day) => day.games === 0)!;
+        expect(planner.isCounted(dark)).toBe(true);
+        cell.click();
+        fixture.detectChanges();
+        expect(planner.isCounted(dark)).toBe(true);
+        expect(cell.classList.contains('day--out')).toBe(false);
       });
 
       it('scores a free agent only on the game days he would start, until that is unticked', async () => {
@@ -940,7 +960,7 @@ describe('StreamerPlannerComponent', () => {
           ngMocks.findAll(fixture, '.free-agents .fit-toggle').map((t) => ngMocks.formatText(t));
         expect(toggles()).toEqual([
           'Rank based on your roster availability',
-          'Count games a drop would open',
+          'Count games opened by a drop',
         ]);
         expect(planner.dropsCounted()).toBe(false);
 
@@ -1002,14 +1022,19 @@ describe('StreamerPlannerComponent', () => {
           'C: Drop a C to free up this spot.',
           'LW: Drop any forward to free up this spot.',
         ]);
-        // The phone has no hover: a tap on a yellow pill is what opens its tip.
+        // The phone has no hover: a tap on a yellow pill is what opens its tip, and it leaves the
+        // night counted, though the cell around it would have unticked it.
         const drop = ngMocks.find(fixture, '.day-room--drop');
         const tip = ngMocks.findInstance(drop, TooltipDirective);
         const toggle = vi.spyOn(tip, 'toggle');
         expect(tip.appTooltip()).toBe('Drop a C to free up this spot.');
+        const tick = (drop.nativeElement as HTMLElement).closest('.day')!.querySelector('input')!;
+        expect(tick.checked).toBe(true);
         (drop.nativeElement as HTMLElement).click();
+        fixture.detectChanges();
         expect(toggle).toHaveBeenCalledTimes(1);
         expect(tip.dismissOnClick()).toBe(false);
+        expect(tick.checked).toBe(true);
         expect(
           ngMocks.findAll(fixture, '.range-legend').map((key) => ngMocks.formatText(key)),
         ).toEqual([
