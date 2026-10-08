@@ -444,9 +444,10 @@
 }
 
 /* The switches that rank the free agents by the user's room, and count a drop's games, across
-   from their card's title and one under the other, the second stepped in as the first's own. */
+   from their card's title and one under the other. Left-aligned as a column, not right-aligned:
+   the second is stepped in by its own rule below, so the nesting holds whatever the labels say. */
 .fit-toggles {
-  align-items: flex-end;
+  align-items: flex-start;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -467,6 +468,12 @@
   height: 1rem;
   margin: 0;
   width: 1rem;
+}
+
+/* The drop switch is the fit switch's own: stepped in by one box and one gap, so its tick box
+   sits under the first label's text, not under its box. */
+.fit-toggle--drops {
+  padding-left: calc(1rem + var(--space-2));
 }
 
 .my-team--note .btn {
