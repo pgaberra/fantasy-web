@@ -100,8 +100,9 @@ export class FreeAgentsTableComponent {
   /** A heading pressed: the page sorts by that column, or turns it round. */
   readonly sortBy = output<FreeAgentSortKey>();
   /**
-   * Whether the games only a drop opens are in the games and the score already: the yellow mark
-   * then says which of his games they are, and nothing is left to add beside the numbers.
+   * Whether the games only a drop opens are in the games and the score already: his figures are
+   * then drawn in the game days' yellow, since each holds games he plays only with a drop, and
+   * nothing is left to add beside them.
    */
   readonly dropsCounted = input(false);
 
@@ -230,15 +231,23 @@ export class FreeAgentsTableComponent {
   }
 
   /**
-   * What the yellow games are: counted, which of his games are his only with a drop; not counted,
-   * that they are beside his games and score rather than in them, since he would play each in
-   * place of the player dropped.
+   * Whether his figures hold games only a drop opens: counted by the page, and at least one of
+   * them his. The score, the games and each count are then yellow, as the game days are.
+   */
+  inDrop(row: RankedFreeAgent): boolean {
+    return this.dropsCounted() && Math.round(row.dropGames ?? 0) > 0;
+  }
+
+  /**
+   * What the yellow is: counted, how many of his games are his only with a drop, and that the
+   * yellow figures hold them; not counted, that the marked games are beside his games and score
+   * rather than in them, since he would play each in place of the player dropped.
    */
   dropGamesTip(row: RankedFreeAgent): string {
     const more = Math.round(row.dropGames ?? 0);
     const games = more === 1 ? 'game' : 'games';
     if (this.dropsCounted()) {
-      return `${more} of his ${games} only if you drop a player who plays those nights. Counted in his games and his score.`;
+      return `${more} of his ${formatGames(row.games)} games only if you drop a player who plays those nights. Counted in his games, his score and each number in yellow.`;
     }
     return `${more} more ${games} if you drop a player who plays those nights. Not in his games or his score: he would play in place of the player dropped. What they would add is marked beside each number.`;
   }
