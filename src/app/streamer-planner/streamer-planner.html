@@ -262,14 +262,14 @@
           <div class="fit-toggles">
             <label class="fit-toggle">
               <input type="checkbox" [checked]="fitMyTeam()" (change)="toggleFitMyTeam()" />
-              Rank based on your roster availability
+              Fit to my roster
             </label>
             <!-- The games only a drop opens, counted for everyone at once rather than a row at a
                  time, so the order and the figures always say the same thing. -->
             @if (fitMyTeam()) {
               <label class="fit-toggle fit-toggle--drops">
                 <input type="checkbox" [checked]="countDrops()" (change)="toggleCountDrops()" />
-                Count games opened by a drop
+                Include games a drop would open
                 <app-help-tip
                   label="About counting a drop's games"
                   text="Counts games that could be added by dropping a player from your roster."
