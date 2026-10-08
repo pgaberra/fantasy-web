@@ -386,19 +386,37 @@ describe('FreeAgentsTableComponent', () => {
     ).toBe(true);
   });
 
-  // Counted by the page, the games are his already: the mark says which they are, nothing more.
-  it('says, once the page counts the games, which of his they are', () => {
+  // Counted by the page, the games are his already: no mark, but his score, his games and each
+  // count in yellow, the games figure saying how many of them are his only with a drop.
+  it('draws, once the page counts the games, his figures in yellow instead of marking them', () => {
     const fixture = MockRender(FreeAgentsTableComponent, {
-      rows: [{ ...SKATER, dropGames: 1.6 }],
+      rows: [{ ...SKATER, dropGames: 1.6 }, GOALIE],
       scoringType: 'points',
       categories: CATEGORIES,
       dropsCounted: true,
     });
     fixture.detectChanges();
+    const rows = ngMocks.findAll(fixture, 'tbody tr');
 
-    expect(ngMocks.find(fixture, '.drop-games').attributes['aria-label']).toBe(
-      '2 of his games only if you drop a player who plays those nights. Counted in his games and his score.',
+    expect(ngMocks.findAll(fixture, '.drop-games')).toHaveLength(0);
+    expect(ngMocks.findAll(fixture, '.lift')).toHaveLength(0);
+    // The score, the games and the categories he scores in; not the rate a game or the ice time.
+    expect(ngMocks.findAll(rows[0], 'td.score .figure--drop')).toHaveLength(1);
+    const his = ngMocks.findAll(rows[0], 'td.stat-col:not(.not-his)');
+    expect(his.length).toBeGreaterThan(0);
+    expect(ngMocks.findAll(rows[0], 'td.stat-col:not(.not-his) .figure--drop')).toHaveLength(
+      his.length,
     );
+    expect(ngMocks.findAll(rows[0], 'td.not-his .figure--drop')).toHaveLength(0);
+    expect(ngMocks.findAll(rows[0], 'td.rate-col .figure--drop')).toHaveLength(0);
+    expect(ngMocks.findAll(rows[0], 'td.toi-col .figure--drop')).toHaveLength(0);
+    const games = ngMocks.find(rows[0], '.games-in-drop');
+    expect(ngMocks.formatText(games)).toBe('4');
+    expect(games.attributes['aria-label']).toBe(
+      '2 of his 4 games only if you drop a player who plays those nights. Counted in his games, his score and each number in yellow.',
+    );
+    // The goalie, who has no such game, keeps his figures as they were.
+    expect(ngMocks.findAll(rows[1], '.figure--drop')).toHaveLength(0);
   });
 
   // What the drop's games would give him is marked beside each number they move, and the score,
