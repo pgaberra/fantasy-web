@@ -97,14 +97,16 @@
               }
             </span>
           }
-          <!-- Only the tick box counts a night in or out: the rest of the cell is for reading, so a
-               tap on a position or a mark opens its explanation instead, the phone having no hover. -->
+          <!-- The whole cell counts a night in or out, the tick box being too small a target for a
+               thumb. Only what opens an explanation (a drop position, the Off mark) is exempt: a
+               tap there opens the tip instead, the phone having no hover. -->
           @for (day of days(); track day.date) {
             <div
               class="day"
               [class.day--off-night]="day.offNight"
               [class.day--out]="!isCounted(day)"
               [class.day--dark]="day.games === 0"
+              (click)="toggleDayFromCell(day, $event)"
             >
               <span class="day-head">
                 <label class="day-tick">
@@ -137,7 +139,7 @@
                     class="day-mark"
                     appTooltip="Off-night"
                     [dismissOnClick]="false"
-                    (click)="offTip.toggle()"
+                    (click)="$event.stopPropagation(); offTip.toggle()"
                   >
                     <span aria-hidden="true">Off</span><span class="sr-only">Off-night</span>
                   </span>
@@ -162,7 +164,7 @@
                         class="day-room day-room--drop"
                         [appTooltip]="run.tip"
                         [dismissOnClick]="false"
-                        (click)="runTip.toggle()"
+                        (click)="$event.stopPropagation(); runTip.toggle()"
                         [attr.aria-label]="run.label + ': ' + run.tip"
                       >
                         @for (position of run.positions; track position) {
