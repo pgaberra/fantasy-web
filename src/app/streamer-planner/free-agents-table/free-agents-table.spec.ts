@@ -415,6 +415,10 @@ describe('FreeAgentsTableComponent', () => {
     expect(games.attributes['aria-label']).toBe(
       '2 of his 4 games only if you drop a player who plays those nights. Counted in his games, his score and each number in yellow.',
     );
+    // One game of one is "game", not "games".
+    expect(
+      fixture.point.componentInstance.dropGamesTip({ ...SKATER, games: 1, dropGames: 1 }),
+    ).toMatch(/^1 of his 1 game only if/);
     // The goalie, who has no such game, keeps his figures as they were.
     expect(ngMocks.findAll(rows[1], '.figure--drop')).toHaveLength(0);
   });
@@ -502,7 +506,7 @@ describe('FreeAgentsTableComponent', () => {
 
   it('names the score and the rate a game by how the league scores', () => {
     const points = render('points').point.componentInstance;
-    expect(points.scoreTip()).toBe('Projected Points');
+    expect(points.scoreTip()).toBe('Projected points');
     expect(points.perGameTip()).toBe('Projected points per game');
 
     const categories = render('category').point.componentInstance;
