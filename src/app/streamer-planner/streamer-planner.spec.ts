@@ -849,7 +849,7 @@ describe('StreamerPlannerComponent', () => {
           'Available in your roster',
         );
         expect(ngMocks.formatText(ngMocks.find(fixture, '.free-agents .fit-toggle'))).toBe(
-          'Rank based on your roster availability',
+          'Fit to my roster',
         );
       });
 
@@ -958,10 +958,7 @@ describe('StreamerPlannerComponent', () => {
         const planner = fixture.point.componentInstance;
         const toggles = () =>
           ngMocks.findAll(fixture, '.free-agents .fit-toggle').map((t) => ngMocks.formatText(t));
-        expect(toggles()).toEqual([
-          'Rank based on your roster availability',
-          'Count games opened by a drop',
-        ]);
+        expect(toggles()).toEqual(['Fit to my roster', 'Include games a drop would open']);
         expect(planner.dropsCounted()).toBe(false);
 
         (ngMocks.find(fixture, '.fit-toggle--drops input').nativeElement as HTMLElement).click();
@@ -980,7 +977,7 @@ describe('StreamerPlannerComponent', () => {
         // Without the room there is nothing to open, so the second box goes with the first.
         planner.toggleFitMyTeam();
         fixture.detectChanges();
-        expect(toggles()).toEqual(['Rank based on your roster availability']);
+        expect(toggles()).toEqual(['Fit to my roster']);
         expect(planner.dropsCounted()).toBe(false);
       });
 
