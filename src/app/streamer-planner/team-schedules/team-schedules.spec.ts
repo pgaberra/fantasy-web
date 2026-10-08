@@ -70,7 +70,15 @@ describe('TeamSchedulesComponent', () => {
     expect(table.sorted().map((entry) => entry.team)).toEqual(['BOS', 'CGY', 'EDM']);
   });
 
-  it('opens a team to its games, described once through the tooltip', () => {
+  it('keys the colours of the games over the table', () => {
+    const fixture = render();
+
+    expect(
+      ngMocks.findAll(fixture, '.legend-item').map((item) => ngMocks.formatText(item)),
+    ).toEqual(['Favourable opponent', 'Unfavourable opponent']);
+  });
+
+  it('opens a team to its games, the colour said in words to a screen reader', () => {
     const fixture = render();
     const table = fixture.point.componentInstance;
 
@@ -79,10 +87,8 @@ describe('TeamSchedulesComponent', () => {
 
     const game = ngMocks.find(fixture, '.game');
     expect(ngMocks.formatText(game)).toContain('at SJS');
-    expect(ngMocks.input(game, 'appTooltip')).toBe(
-      'at SJS. SJS allows 12% more goals than average. Off-night. Back-to-back.',
-    );
-    expect(game.nativeElement.getAttribute('aria-label')).toBeNull();
+    expect(game.attributes['data-tier']).toBe('good');
+    expect(ngMocks.formatText(ngMocks.find(game, '.sr-only'))).toBe(', favourable opponent');
     expect(ngMocks.findAll(game, '.game-tag').map((tag) => ngMocks.formatText(tag))).toEqual([
       'B2B',
       'Off',

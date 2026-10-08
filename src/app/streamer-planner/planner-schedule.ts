@@ -126,27 +126,6 @@ export function matchupTier(game: ScheduledGame): Tier {
   return lean <= -MATCHUP_MARGIN ? 'bad' : null;
 }
 
-export function matchupLabel(game: ScheduledGame): string {
-  const where = game.home ? 'vs' : 'at';
-  const rate = game.opponentGoalsAgainst;
-  const percent = Math.round(Math.abs(rate - 1) * 100);
-  const direction = rate > 1 ? 'more' : 'fewer';
-  const opponent = game.opponent ?? 'TBD';
-  const sentences = [
-    `${where} ${opponent}`,
-    percent === 0
-      ? `${opponent} allows a league-average number of goals`
-      : `${opponent} allows ${percent}% ${direction} goals than average`,
-  ];
-  if (game.offNight) {
-    sentences.push('Off-night');
-  }
-  if (game.backToBack) {
-    sentences.push('Back-to-back');
-  }
-  return `${sentences.join('. ')}.`;
-}
-
 /** The dates a report covers, both included. */
 export interface Stretch {
   readonly start: string;

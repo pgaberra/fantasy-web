@@ -6,7 +6,6 @@ import {
   clampStretch,
   leadingDays,
   hockeyNight,
-  matchupLabel,
   matchupTier,
   plannerDays,
   presetStretch,
@@ -180,15 +179,6 @@ describe('matchups', () => {
       matchupTier(game('2026-10-13', { opponentGoalsAgainst: 0.9, opponentGoalsFor: 0.9 })),
     ).toBe('bad');
     expect(matchupTier(game('2026-10-13'))).toBeNull();
-  });
-
-  it('says what the tint means', () => {
-    expect(matchupLabel(scored)).toBe(
-      'at SJS. SJS allows 12% more goals than average. Off-night. Back-to-back.',
-    );
-    expect(matchupLabel(game('2026-10-13', { home: true }))).toBe(
-      'vs SJS. SJS allows a league-average number of goals.',
-    );
   });
 
   it('tints the top and bottom quarter of the ranks', () => {
