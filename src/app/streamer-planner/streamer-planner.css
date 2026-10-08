@@ -656,6 +656,38 @@
   margin: var(--space-4) 0;
 }
 
+/* No league yet: drawn like a failure's state, minus the alarm, so the one thing to do stands out. */
+.league-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  color: var(--color-text-muted);
+}
+
+.league-prompt-icon {
+  color: var(--color-primary);
+}
+
+.league-prompt-title {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.league-prompt-text {
+  margin: 0;
+  font-size: var(--text-sm);
+  max-width: 44ch;
+}
+
+.league-prompt .btn {
+  margin-top: var(--space-2);
+}
+
 @media (max-width: 640px) {
   .streamer-planner {
     gap: var(--space-3);
