@@ -65,6 +65,8 @@ function team(name: string, skaterRank: number, goalieRank: number): TeamSchedul
         opponentGoalsFor: 1.08,
         skaterWorth: 1.351,
         goalieWorth: 1.1172,
+        statWorth: {},
+        plusMinusPerMinute: 0,
       },
       {
         date: '2026-10-15',
@@ -76,6 +78,8 @@ function team(name: string, skaterRank: number, goalieRank: number): TeamSchedul
         opponentGoalsFor: 1.0,
         skaterWorth: 0.9324,
         goalieWorth: 1.0363,
+        statWorth: {},
+        plusMinusPerMinute: 0,
       },
     ],
   };

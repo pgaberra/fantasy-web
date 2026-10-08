@@ -26,6 +26,8 @@ function row(team: string, rank: number, score: number, games: number): PlannerT
         opponentGoalsFor: 1.08,
         skaterWorth: 1.351,
         goalieWorth: 1.1172,
+        statWorth: {},
+        plusMinusPerMinute: 0,
       },
     ],
   };

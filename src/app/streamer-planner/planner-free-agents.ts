@@ -1,4 +1,5 @@
 import { PlannerCrease } from '../api/models/planner-crease';
+import { ScheduledGame } from '../api/models/scheduled-game';
 import { TeamSchedule } from '../api/models/team-schedule';
 import { DEFAULT_DECIMAL_SETTINGS } from '../draft-projection/projection-settings-section/model';
 import { nhlTeamKey } from '../models/nhl-team';
@@ -87,94 +88,194 @@ export function teamsByKey(teams: readonly TeamSchedule[]): Map<string, TeamSche
 }
 
 /**
- * The share of a player's club games that fall on the nights counted, which is what his projected
- * line over the stretch is scaled by. One while every night is counted, and for a club the page
- * cannot find a schedule for, so an unmatched spelling costs nothing but the scaling.
+ * How much of a player's line over the stretch a set of his club's games holds, stat by stat.
+ *
+ * The server allocated the line over every game of the stretch, each weighed by what it is worth
+ * to the stat (the opponent's allowance of it and the venue, `statWorth`). The games kept hold
+ * their own worth's share of it, so leaving out the night in Carolina takes Carolina's night out
+ * of his goals, not an average night's. Plus-minus moves by an amount, not a share, so what the
+ * kept games add to it is carried apart.
  */
-export function nightsFactor(
+export interface LineShare {
+  /** The share of the club's games kept: what his games scale by. */
+  readonly games: number;
+  /** The share of his line in one stat the kept games hold. */
+  readonly of: (key: string) => number;
+  /**
+   * What the kept games add to his plus-minus per minute of his ice, beyond their count's share
+   * of the whole stretch's, at the share of his club's games he is expected to dress for.
+   */
+  readonly plusMinusPerMinute: number;
+}
+
+/** Every game of the stretch: the line as the server sent it. */
+export const WHOLE_LINE: LineShare = { games: 1, of: () => 1, plusMinusPerMinute: 0 };
+/** No game at all. */
+export const NO_LINE: LineShare = { games: 0, of: () => 0, plusMinusPerMinute: 0 };
+
+/**
+ * The share of a player's line the games of his club's stretch that `keep` picks hold. `dresses`
+ * is the share of the club's games he is expected to dress for, which his plus-minus amount is
+ * taken at; a game whose worth to a stat is not given is an average night for it.
+ */
+export function lineShare(
+  club: TeamSchedule,
+  keep: (game: ScheduledGame) => boolean,
+  dresses: number,
+): LineShare {
+  const all = club.schedule;
+  const kept = all.filter(keep);
+  if (kept.length === all.length) {
+    return WHOLE_LINE;
+  }
+  if (kept.length === 0) {
+    return NO_LINE;
+  }
+  const games = kept.length / all.length;
+  const worth = (of: readonly ScheduledGame[], key: string) =>
+    of.reduce((sum, game) => sum + (game.statWorth?.[key] ?? 1), 0);
+  const amount = (of: readonly ScheduledGame[]) =>
+    of.reduce((sum, game) => sum + (game.plusMinusPerMinute ?? 0), 0);
+  const shares = new Map<string, number>();
+  return {
+    games,
+    of: (key) => {
+      let share = shares.get(key);
+      if (share === undefined) {
+        const whole = worth(all, key);
+        share = whole > 0 ? worth(kept, key) / whole : games;
+        shares.set(key, share);
+      }
+      return share;
+    },
+    plusMinusPerMinute: dresses * (amount(kept) - games * amount(all)),
+  };
+}
+
+/** Two shares of one stretch over games that do not overlap, taken together. */
+export function addShares(a: LineShare, b: LineShare): LineShare {
+  if (b === NO_LINE) {
+    return a;
+  }
+  if (a === NO_LINE) {
+    return b;
+  }
+  return {
+    games: a.games + b.games,
+    of: (key) => a.of(key) + b.of(key),
+    plusMinusPerMinute: a.plusMinusPerMinute + b.plusMinusPerMinute,
+  };
+}
+
+function clubOf(
+  player: FreeAgent,
+  teams: ReadonlyMap<string, TeamSchedule>,
+): TeamSchedule | undefined {
+  const club = teams.get(nhlTeamKey(player.teamAbbrev) ?? '');
+  return club && club.schedule.length > 0 ? club : undefined;
+}
+
+function dressShare(player: FreeAgent): number {
+  return player.clubGames > 0 ? player.expectedGames / player.clubGames : 0;
+}
+
+/**
+ * The share of a player's line his club's games on the nights counted hold. The whole line while
+ * every night is counted, and for a club the page cannot find a schedule for, so an unmatched
+ * spelling costs nothing but the weighing.
+ */
+export function nightsShare(
   player: FreeAgent,
   teams: ReadonlyMap<string, TeamSchedule>,
   counted: ReadonlySet<string>,
   everyNightCounted: boolean,
-): number {
-  if (everyNightCounted) {
-    return 1;
+): LineShare {
+  const club = everyNightCounted ? undefined : clubOf(player, teams);
+  if (!club) {
+    return WHOLE_LINE;
   }
-  const club = teams.get(nhlTeamKey(player.teamAbbrev) ?? '');
-  if (!club || club.schedule.length === 0) {
-    return 1;
-  }
-  return club.schedule.filter((game) => counted.has(game.date)).length / club.schedule.length;
+  return lineShare(club, (game) => counted.has(game.date), dressShare(player));
 }
 
 /**
- * The share of a player's club games that fall on nights counted and with room for him in the
+ * The share of a player's line his club's games hold on nights counted with room for him in the
  * user's own lineup: the games he would actually start if picked up. A night his club plays with
- * every seat he could take already filled scores him nothing, however few games are on it. One
- * for a club the page cannot find a schedule for, as in {@link nightsFactor}.
+ * every seat he could take already filled scores him nothing, however few games are on it. The
+ * whole line for a club the page cannot find a schedule for, as in {@link nightsShare}.
  */
-export function roomFactor(
+export function roomShare(
   player: FreeAgent,
   teams: ReadonlyMap<string, TeamSchedule>,
   counted: ReadonlySet<string>,
   rooms: ReadonlyMap<string, NightRoom>,
-): number {
-  const club = teams.get(nhlTeamKey(player.teamAbbrev) ?? '');
-  if (!club || club.schedule.length === 0) {
-    return 1;
+): LineShare {
+  const club = clubOf(player, teams);
+  if (!club) {
+    return WHOLE_LINE;
   }
-  const started = club.schedule.filter(
+  return lineShare(
+    club,
     (game) => counted.has(game.date) && fitsRoom(player.positions, rooms.get(game.date)),
+    dressShare(player),
   );
-  return started.length / club.schedule.length;
 }
 
 /**
- * The share of a player's club games that fall on nights counted where only a drop makes room
- * for him ({@link fitsDrop}): the games he would start if he came in for one of the user's
+ * The share of a player's line his club's games hold on nights counted where only a drop makes
+ * room for him ({@link fitsDrop}): the games he would start if he came in for one of the user's
  * players. None for a club the page cannot find a schedule for, since nothing says when it plays.
  */
-export function dropFactor(
+export function dropShare(
   player: FreeAgent,
   teams: ReadonlyMap<string, TeamSchedule>,
   counted: ReadonlySet<string>,
   rooms: ReadonlyMap<string, NightRoom>,
   dropRooms: ReadonlyMap<string, DropRoom>,
-): number {
-  const club = teams.get(nhlTeamKey(player.teamAbbrev) ?? '');
-  if (!club || club.schedule.length === 0) {
-    return 0;
+): LineShare {
+  const club = clubOf(player, teams);
+  if (!club) {
+    return NO_LINE;
   }
-  const opened = club.schedule.filter(
+  return lineShare(
+    club,
     (game) =>
       counted.has(game.date) &&
       fitsDrop(player.positions, rooms.get(game.date), dropRooms.get(game.date)),
+    dressShare(player),
   );
-  return opened.length / club.schedule.length;
 }
 
 /**
- * The projection with its counting stats scaled to the nights counted. A rate (shooting or save
- * percentage, goals-against average) and the ice time per game are the season's own and stay.
+ * The projection over the games a share holds: each counting stat at the share of it those games
+ * hold, plus-minus at their count's share and what their opponents add to it, and the games at
+ * their count's share. A rate (shooting or save percentage, goals-against average) and the ice
+ * time per game are the season's own and stay.
  */
-export function scaledProjection(projection: Projection, factor: number): Projection {
-  if (factor === 1) {
+export function scaledProjection(projection: Projection, share: LineShare): Projection {
+  if (share === WHOLE_LINE) {
     return projection;
   }
   const rates: ReadonlySet<string> = new Set(RATE_STAT_KEYS);
+  const utility = projection.stats.utility as Record<string, number>;
+  const minutes = (utility['toiPerGame'] ?? 0) / 60;
   const scoring = Object.fromEntries(
-    Object.entries(projection.stats.scoring).map(([key, value]) => [
+    Object.entries(projection.stats.scoring).map(([key, value]) => {
+      if (rates.has(key)) {
+        return [key, value];
+      }
+      if (key === 'plusMinus') {
+        return [key, value * share.games + minutes * share.plusMinusPerMinute];
+      }
+      return [key, value * share.of(key)];
+    }),
+  );
+  const scaledUtility = Object.fromEntries(
+    Object.entries(utility).map(([key, value]) => [
       key,
-      rates.has(key) ? value : value * factor,
+      key === 'toiPerGame' ? value : value * share.games,
     ]),
   );
-  const utility = Object.fromEntries(
-    Object.entries(projection.stats.utility).map(([key, value]) => [
-      key,
-      key === 'toiPerGame' ? value : value * factor,
-    ]),
-  );
-  return { ...projection, stats: { scoring, utility } } as Projection;
+  return { ...projection, stats: { scoring, utility: scaledUtility } } as Projection;
 }
 
 /**
@@ -275,18 +376,30 @@ function likelier(split: Split, than: Split): boolean {
 
 /**
  * A goalie's projection over the starts he is given: his line over the stretch, which was
- * projected over `expectedStarts`, a start at a time, times them. Given none, every number is
- * nought, his rates too: a goalie who does not play has no save percentage or goals-against
- * average to help or hurt a team's, and left in, the ranking would weigh them at an average
- * goalie's minutes.
+ * projected over `expectedStarts`, a start at a time, times them, each start worth what the nights
+ * `share` keeps make it against the stretch's average. Given none, every number is nought, his
+ * rates too: a goalie who does not play has no save percentage or goals-against average to help
+ * or hurt a team's, and left in, the ranking would weigh them at an average goalie's minutes.
  */
 export function startsProjection(
   projection: Projection,
   expectedStarts: number,
   starts: number,
+  share: LineShare = WHOLE_LINE,
 ): Projection {
   if (starts > 0 && expectedStarts > 0) {
-    return scaledProjection(projection, starts / expectedStarts);
+    const scale = starts / expectedStarts;
+    if (scale === 1 && share === WHOLE_LINE) {
+      return projection;
+    }
+    // A start on the nights kept is worth what their opponents and venues make it, against the
+    // whole stretch's average start.
+    const tilt = (key: string) => (share.games > 0 ? share.of(key) / share.games : 1);
+    return scaledProjection(projection, {
+      games: scale,
+      of: (key) => scale * tilt(key),
+      plusMinusPerMinute: 0,
+    });
   }
   const nought = (stats: Record<string, number>) =>
     Object.fromEntries(Object.keys(stats).map((key) => [key, 0]));
