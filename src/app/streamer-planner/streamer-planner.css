@@ -495,12 +495,14 @@
   margin-right: var(--space-3);
 }
 
-/* What green and yellow in a cell mean, said once where the nights are summed up. */
+/* What green and yellow in a cell mean, said once where the nights are summed up. A row of
+   its own, flush left under the day count: the drop key's sentence wraps at almost any width,
+   and pushed right it read as detached from the summary it explains. */
 .range-legends {
-  display: inline-flex;
+  display: flex;
+  flex-basis: 100%;
   flex-wrap: wrap;
   gap: var(--space-1) var(--space-3);
-  margin-left: auto;
 }
 
 /* Top-aligned, not centred: a legend's text wraps to three lines on a phone, and a centred
