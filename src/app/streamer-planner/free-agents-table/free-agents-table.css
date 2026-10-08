@@ -177,10 +177,20 @@
   padding: 2px;
 }
 
-/* A figure with what a drop would add raised at its top right, where a footnote's mark goes. */
+/* A figure with what a drop would add raised at its top right, where a footnote's mark goes. The
+   mark hangs outside the figure's box, so it is no part of the cell's width: a column is as wide
+   for the one player a drop lifts as for the rest, and the figures stand on one line down it. */
 .figure {
   display: inline-block;
+  position: relative;
   white-space: nowrap;
+}
+
+/* With a drop picked, every number column keeps a margin for the marks hanging off its figures,
+   the boxed games count being the widest: the table widens once, with the pick, and never by the
+   row. The heading's padding grows with it, so the labels stay over their figures. */
+.free-agents-table--marked .num {
+  padding-right: calc(var(--space-1) + 1.75rem);
 }
 
 /* A figure holding games only a drop opens, once the page counts them: the game days' yellow, in
@@ -201,9 +211,10 @@
   color: var(--color-warning-text);
   font-size: 0.625rem;
   font-weight: var(--weight-semibold);
+  left: 100%;
   line-height: 1.2;
   margin-left: 2px;
-  position: relative;
+  position: absolute;
   top: -0.45em;
 }
 
