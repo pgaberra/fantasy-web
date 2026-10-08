@@ -960,7 +960,7 @@ describe('StreamerPlannerComponent', () => {
           ngMocks.findAll(fixture, '.free-agents .fit-toggle').map((t) => ngMocks.formatText(t));
         expect(toggles()).toEqual([
           'Rank based on your roster availability',
-          'Count games a drop would open',
+          'Count games opened by a drop',
         ]);
         expect(planner.dropsCounted()).toBe(false);
 
