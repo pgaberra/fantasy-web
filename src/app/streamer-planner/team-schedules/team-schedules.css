@@ -220,3 +220,48 @@ tr.open .chevron {
   font-size: var(--text-sm);
   margin: 0;
 }
+
+/* The key to the games' colours, over the table: a swatch each in the games' own fill and edge. */
+.legend {
+  color: var(--color-text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--text-xs);
+  gap: var(--space-1) var(--space-3);
+  margin: 0 0 var(--space-2);
+}
+
+.legend-item {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-1);
+}
+
+.legend-swatch {
+  border: 1px solid;
+  border-radius: var(--radius-sm);
+  flex: none;
+  height: 0.9em;
+  width: 0.9em;
+}
+
+.legend-item--good .legend-swatch {
+  background: color-mix(in srgb, var(--color-success) 14%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-success) 30%, var(--color-border));
+}
+
+.legend-item--bad .legend-swatch {
+  background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-danger) 25%, var(--color-border));
+}
+
+.sr-only {
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
