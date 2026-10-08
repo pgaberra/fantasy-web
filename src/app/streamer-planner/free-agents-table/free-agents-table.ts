@@ -117,6 +117,16 @@ export class FreeAgentsTableComponent {
 
   private readonly list = computed(() => this.listed() ?? this.rows());
 
+  /**
+   * Whether any row wears a mark beside a figure, games or a lift: the number columns then keep
+   * room for the marks to hang in, all of them at once, rather than widen one row's column.
+   */
+  readonly marked = computed(
+    () =>
+      !this.dropsCounted() &&
+      this.rows().some((row) => Math.round(row.dropGames ?? 0) > 0 || row.lifted !== undefined),
+  );
+
   /** Ice time a game is a skater's number: no column of blanks over a list of goalies alone. */
   readonly hasSkaters = computed(() => this.list().some((row) => row.line.type === 'skater'));
 

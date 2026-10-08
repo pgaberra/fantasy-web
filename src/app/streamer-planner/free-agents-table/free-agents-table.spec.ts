@@ -459,6 +459,29 @@ describe('FreeAgentsTableComponent', () => {
       expect(ngMocks.findAll(ngMocks.findAll(fixture, 'tbody tr')[1], '.lift')).toHaveLength(0);
     });
 
+    // The marks hang off the figures, outside the cell's width; the table makes room for them in
+    // every number column at once, so the one lifted row never widens a column on its own.
+    it('keeps room for the marks in every number column while any row wears one', () => {
+      const fixture = render('points', CATEGORIES, [liftable, GOALIE]);
+      const table = ngMocks.find(fixture, 'table');
+
+      expect(table.classes['free-agents-table--marked']).toBe(true);
+    });
+
+    it('keeps no room for marks once the games are counted, or where no row has any', () => {
+      const counted = MockRender(FreeAgentsTableComponent, {
+        rows: [liftable, GOALIE],
+        scoringType: 'points',
+        categories: CATEGORIES,
+        dropsCounted: true,
+      });
+      counted.detectChanges();
+      expect(ngMocks.find(counted, 'table').classes['free-agents-table--marked']).toBeFalsy();
+
+      const bare = render('points', CATEGORIES, [SKATER, GOALIE]);
+      expect(ngMocks.find(bare, 'table').classes['free-agents-table--marked']).toBeFalsy();
+    });
+
     it('marks nothing beside a score the games leave as it was', () => {
       const fixture = render('points', CATEGORIES, [
         { ...liftable, lifted: { line: liftedLine, score: SKATER.score + 0.04 } },
