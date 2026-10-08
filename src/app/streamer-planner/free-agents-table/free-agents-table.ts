@@ -238,17 +238,9 @@ export class FreeAgentsTableComponent {
     return this.dropsCounted() && Math.round(row.dropGames ?? 0) > 0;
   }
 
-  /**
-   * What the yellow is: counted, how many of his games are his only with a drop, and that the
-   * yellow figures hold them; not counted, that the marked games are beside his games and score
-   * rather than in them, since he would play each in place of the player dropped.
-   */
+  /** What a "+N" mark is: games beside his own, there only if a player at a position is dropped. */
   dropGamesTip(row: RankedFreeAgent): string {
     const more = Math.round(row.dropGames ?? 0);
-    if (this.dropsCounted()) {
-      const total = formatGames(row.games);
-      return `${more} of his ${total} ${gamesWord(Number(total))} only if you drop a player who plays those nights. Counted in his games, his score and each number in yellow.`;
-    }
     return `${more} additional ${gamesWord(more)} from a position drop.`;
   }
 

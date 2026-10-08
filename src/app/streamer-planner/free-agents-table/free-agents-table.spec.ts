@@ -410,13 +410,9 @@ describe('FreeAgentsTableComponent', () => {
     expect(ngMocks.findAll(rows[0], 'td.toi-col .figure--drop')).toHaveLength(0);
     const games = ngMocks.find(rows[0], '.games-in-drop');
     expect(ngMocks.formatText(games)).toBe('4');
-    expect(games.attributes['aria-label']).toBe(
-      '2 of his 4 games only if you drop a player who plays those nights. Counted in his games, his score and each number in yellow.',
-    );
-    // One game of one is "game", not "games".
-    expect(
-      fixture.point.componentInstance.dropGamesTip({ ...SKATER, games: 1, dropGames: 1 }),
-    ).toMatch(/^1 of his 1 game only if/);
+    // No tip of its own: the tick box's help says what the yellow means.
+    expect(games.attributes['role']).toBeUndefined();
+    expect(games.attributes['aria-label']).toBeUndefined();
     // The goalie, who has no such game, keeps his figures as they were.
     expect(ngMocks.findAll(rows[1], '.figure--drop')).toHaveLength(0);
   });
