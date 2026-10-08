@@ -267,10 +267,10 @@
             @if (fitMyTeam()) {
               <label class="fit-toggle fit-toggle--drops">
                 <input type="checkbox" [checked]="countDrops()" (change)="toggleCountDrops()" />
-                Count games a drop would open
+                Count games opened by a drop
                 <app-help-tip
                   label="About counting a drop's games"
-                  text="Ranks everyone as if you drop a player for him: the games only a drop opens go into his games and his score, and his figures turn yellow, as the game days are. Off, they are only marked +1 in yellow, with what they would add beside each number, since he would play them in place of the player dropped."
+                  text="Counts games that could be added by dropping a player from your roster."
                 />
               </label>
             }
