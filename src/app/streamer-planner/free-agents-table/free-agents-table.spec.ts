@@ -376,13 +376,11 @@ describe('FreeAgentsTableComponent', () => {
     // In the games cell, raised after his own four, and a mark rather than a control.
     expect(ngMocks.formatText(marks[0].parent!)).toBe('4 +2');
     expect(marks[0].nativeElement.tagName).toBe('SPAN');
-    expect(marks[0].attributes['aria-label']).toBe(
-      '2 more games if you drop a player who plays those nights. Not in his games or his score: he would play in place of the player dropped. What they would add is marked beside each number.',
-    );
+    expect(marks[0].attributes['aria-label']).toBe('2 additional games from a position drop.');
     expect(
       fixture.point.componentInstance
         .dropGamesTip({ ...SKATER, dropGames: 1 })
-        .startsWith('1 more game if'),
+        .startsWith('1 additional game from'),
     ).toBe(true);
   });
 

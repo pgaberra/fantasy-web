@@ -249,7 +249,7 @@ export class FreeAgentsTableComponent {
       const total = formatGames(row.games);
       return `${more} of his ${total} ${gamesWord(Number(total))} only if you drop a player who plays those nights. Counted in his games, his score and each number in yellow.`;
     }
-    return `${more} more ${gamesWord(more)} if you drop a player who plays those nights. Not in his games or his score: he would play in place of the player dropped. What they would add is marked beside each number.`;
+    return `${more} additional ${gamesWord(more)} from a position drop.`;
   }
 
   /** Ice time a game, for a skater; a goalie's is the whole game or none of it. */
