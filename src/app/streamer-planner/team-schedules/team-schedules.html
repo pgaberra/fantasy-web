@@ -1,3 +1,13 @@
+<!-- What a green or red game, and the Fav and Unfav columns, mean: the colour alone, with no
+     figure behind it, since how many goals an opponent allows is more than a streamer needs. -->
+<p class="legend">
+  <span class="legend-item legend-item--good"
+    ><span class="legend-swatch" aria-hidden="true"></span>Favourable opponent</span
+  >
+  <span class="legend-item legend-item--bad"
+    ><span class="legend-swatch" aria-hidden="true"></span>Unfavourable opponent</span
+  >
+</p>
 <div class="table-scroll">
   <table class="team-table">
     <thead>
@@ -64,13 +74,20 @@
                       class="game"
                       [class.off-night]="game.offNight"
                       [attr.data-tier]="matchupTier(game)"
-                      [appTooltip]="matchupLabel(game)"
                     >
                       <span class="game-day">{{ gameDay(game) }}</span>
                       <app-team-logo class="game-logo" [team]="game.opponent" />
                       <span class="game-opponent"
                         >{{ game.home ? 'vs' : 'at' }} {{ game.opponent ?? 'TBD' }}</span
                       >
+                      @switch (matchupTier(game)) {
+                        @case ('good') {
+                          <span class="sr-only">, favourable opponent</span>
+                        }
+                        @case ('bad') {
+                          <span class="sr-only">, unfavourable opponent</span>
+                        }
+                      }
                       @if (game.backToBack) {
                         <span class="game-tag">B2B</span>
                       }
