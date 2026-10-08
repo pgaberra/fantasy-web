@@ -545,7 +545,7 @@ export class StreamerPlannerComponent {
    * games he would play if the user dropped a player for him, and ranked on them. Off, they are
    * marked beside his games and what they would add is marked beside each number, since such a
    * night adds no game to the team. On, the list is ranked as if the reader will drop someone,
-   * the same assumption for everyone, so no row moves on its own.
+   * the same assumption for everyone, so no row moves on its own, and his figures go yellow.
    */
   readonly countDrops = signal(false);
 

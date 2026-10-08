@@ -141,7 +141,9 @@
             </span>
           </th>
           <td class="num score">
-            <span class="figure">
+            <!-- Counted, the games only a drop opens are in the figure: it goes yellow, as the
+                 game days are, the whole of it, since no part of it is his without the drop. -->
+            <span class="figure" [class.figure--drop]="inDrop(entry.row)">
               {{ score(entry.row) }}
               <!-- What the drop's games would put on the score, raised at its top right as the
                    games are, and in their yellow: it is theirs, and no part of the figure. -->
@@ -152,22 +154,36 @@
           </td>
           <td class="num rate-col">{{ perGame(entry.row) }}</td>
           <td class="num">
-            <span class="figure">
-              {{ games(entry.row) }}
-              <!-- The games only a drop opens, yellow as on the game days and raised over his
-                   own. A mark, not a control: whether they count is the list's switch to say. -->
-              @if (dropGames(entry.row); as more) {
-                <span
-                  class="drop-games"
-                  role="img"
-                  tabindex="0"
-                  [appTooltip]="dropGamesTip(entry.row)"
-                  [attr.aria-label]="dropGamesTip(entry.row)"
-                >
-                  {{ more }}
-                </span>
-              }
-            </span>
+            @if (inDrop(entry.row)) {
+              <!-- Counted, they are among his games: the figure is yellow, and says on a hover or
+                   a tap how many of them are his only with a drop. -->
+              <span
+                class="figure figure--drop games-in-drop"
+                role="img"
+                tabindex="0"
+                [appTooltip]="dropGamesTip(entry.row)"
+                [attr.aria-label]="dropGamesTip(entry.row)"
+              >
+                {{ games(entry.row) }}
+              </span>
+            } @else {
+              <span class="figure">
+                {{ games(entry.row) }}
+                <!-- The games only a drop opens, yellow as on the game days and raised over his
+                     own. A mark, not a control: whether they count is the list's switch to say. -->
+                @if (dropGames(entry.row); as more) {
+                  <span
+                    class="drop-games"
+                    role="img"
+                    tabindex="0"
+                    [appTooltip]="dropGamesTip(entry.row)"
+                    [attr.aria-label]="dropGamesTip(entry.row)"
+                  >
+                    {{ more }}
+                  </span>
+                }
+              </span>
+            }
           </td>
           @if (hasSkaters()) {
             <td class="num toi-col" [class.not-his]="entry.row.player.projection.type !== 'skater'">
@@ -186,7 +202,7 @@
               @if (entry.notHis[$index]) {
                 <span>{{ notHis }}</span>
               } @else {
-                <span class="figure">
+                <span class="figure" [class.figure--drop]="inDrop(entry.row)">
                   {{ cell?.value }}
                   @if (entry.lifts[$index]; as more) {
                     <span class="lift" [attr.aria-label]="'would add ' + more">{{ more }}</span>
