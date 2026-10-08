@@ -40,13 +40,17 @@ export class YahooLeaguePicker {
   readonly error = signal<string | null>(null);
 
   /**
-   * Checks the connection and, when there is one, loads the leagues behind it.
+   * Checks the connection and, when there is one, opens on the remembered league and loads the
+   * leagues behind it. A league is only this account's once the account is connected: a league
+   * remembered on this device but read before Yahoo has said so is one Yahoo may refuse, and the
+   * refusal reads as a failure where nothing has gone wrong. The memory itself is kept, so it is
+   * the account's again the moment it connects.
    *
    * @param openOnRemembered whether to start on the Yahoo league last chosen anywhere. A screen
    *     that already knows what it means (a link naming a draft) says no.
    */
   start(openOnRemembered = true): void {
-    this.selectedKey.set(openOnRemembered ? (this.choice.on('YAHOO')?.leagueId ?? null) : null);
+    this.selectedKey.set(null);
     this.yahoo
       .connectionStatus()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -54,6 +58,9 @@ export class YahooLeaguePicker {
         next: (status) => {
           this.connected.set(status.connected);
           if (status.connected) {
+            this.selectedKey.set(
+              openOnRemembered ? (this.choice.on('YAHOO')?.leagueId ?? null) : null,
+            );
             this.loadLeagues();
           }
         },
