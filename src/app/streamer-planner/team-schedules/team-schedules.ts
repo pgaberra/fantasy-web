@@ -31,7 +31,7 @@ export interface TeamColumn {
 }
 
 export const TEAM_COLUMNS: readonly TeamColumn[] = [
-  { key: 'score', label: 'Score', tooltip: 'Streaming score: higher is a better schedule' },
+  { key: 'score', label: 'Score', tooltip: 'Streaming score (higher is a better schedule)' },
   { key: 'games', label: 'GP', tooltip: 'Games on the nights counted' },
   { key: 'homeGames', label: 'Home', tooltip: 'Home games' },
   { key: 'awayGames', label: 'Away', tooltip: 'Away games' },

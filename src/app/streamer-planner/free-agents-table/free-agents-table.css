@@ -185,15 +185,9 @@
 
 /* A figure holding games only a drop opens, once the page counts them: the game days' yellow, in
    the strong gold the marks use, which on white reads at 5.2:1, and otherwise the figure as it
-   was, so a yellow row reads as the rest do, only as his with a drop. The games figure tells the
-   screen reader how many, so the yellow is never the only word. */
+   was, so a yellow row reads as the rest do, only as his with a drop. */
 .figure--drop {
   color: var(--color-gold-strong);
-}
-
-.games-in-drop:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 1px;
 }
 
 /* What the games only a drop opens would add: the games themselves beside his, and what they put

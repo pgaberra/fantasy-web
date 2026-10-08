@@ -235,7 +235,8 @@ function dropKinds(room: DropRoom | undefined, position: LineupPosition): string
 /**
  * Who has to go for a yellow run's positions to open, for its tooltip. Every position in a run is
  * opened by the same drops, so the tip is one rule, and the pill already names the spot, so the
- * tip says only who: "Drop any forward.", "Drop a C or LW.", "Drop a LW, except Brady Tkachuk."
+ * tip says only who: "Drop any forward to free up this spot.", "Drop a C or LW to free up this
+ * spot.", "Drop a LW, except Brady Tkachuk, to free up this spot."
  *
  * <p>The players are named in groups ("any forward", "any skater") and positions ("a LW"), and
  * the wording chosen covers everyone whose drop frees the spot while taking in as few players
@@ -272,11 +273,11 @@ export function dropRoomTip(room: DropRoom, positions: readonly LineupPosition[]
       ...chosen.filter(({ group }) => group).map(({ word }) => `any ${word}`),
       ...(named.length > 0 ? [`a ${join(named, 'or')}`] : []),
     ];
-    const except = misses.length > 0 ? `, except ${join(misses, 'and')}` : '';
+    const except = misses.length > 0 ? `, except ${join(misses, 'and')},` : '';
     const candidate = {
       misses: misses.length,
       words: chosen.length,
-      text: `Drop ${drops.join(' or ')}${except}.`,
+      text: `Drop ${drops.join(' or ')}${except} to free up this spot.`,
     };
     if (
       !best ||

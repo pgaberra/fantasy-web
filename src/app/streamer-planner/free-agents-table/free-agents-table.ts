@@ -161,7 +161,7 @@ export class FreeAgentsTableComponent {
 
   readonly scoreTip = computed(() =>
     this.scoringType() === 'points'
-      ? 'Projected Points'
+      ? 'Projected points'
       : "Ranks players based on their relative value across your league's scoring categories.",
   );
 
@@ -238,18 +238,10 @@ export class FreeAgentsTableComponent {
     return this.dropsCounted() && Math.round(row.dropGames ?? 0) > 0;
   }
 
-  /**
-   * What the yellow is: counted, how many of his games are his only with a drop, and that the
-   * yellow figures hold them; not counted, that the marked games are beside his games and score
-   * rather than in them, since he would play each in place of the player dropped.
-   */
+  /** What a "+N" mark is: games beside his own, there only if a player at a position is dropped. */
   dropGamesTip(row: RankedFreeAgent): string {
     const more = Math.round(row.dropGames ?? 0);
-    const games = more === 1 ? 'game' : 'games';
-    if (this.dropsCounted()) {
-      return `${more} of his ${formatGames(row.games)} games only if you drop a player who plays those nights. Counted in his games, his score and each number in yellow.`;
-    }
-    return `${more} more ${games} if you drop a player who plays those nights. Not in his games or his score: he would play in place of the player dropped. What they would add is marked beside each number.`;
+    return `${more} additional ${gamesWord(more)} from a position drop.`;
   }
 
   /** Ice time a game, for a skater; a goalie's is the whole game or none of it. */
@@ -274,4 +266,9 @@ export class FreeAgentsTableComponent {
   isNil(stat: LineStat): boolean {
     return stat.value === NO_RATE || Number(stat.value) === 0;
   }
+}
+
+/** "game" for one, "games" for any other count. */
+function gamesWord(count: number): string {
+  return count === 1 ? 'game' : 'games';
 }
