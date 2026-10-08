@@ -968,7 +968,7 @@ describe('StreamerPlannerComponent', () => {
         fixture.detectChanges();
         expect(planner.dropsCounted()).toBe(true);
         // The two games each Oilers forward would play with a drop are his games now, and his
-        // score is the line over them, with nothing left for a drop to add; the mark stays.
+        // score is the line over them, with nothing left for a drop to add; his figures are yellow.
         const skaters = planner.ranked().filter((row) => row.line.type === 'skater');
         expect(skaters.map((row) => row.games)).toEqual([2, 2]);
         expect(skaters.map((row) => row.dropGames)).toEqual([2, 2]);
