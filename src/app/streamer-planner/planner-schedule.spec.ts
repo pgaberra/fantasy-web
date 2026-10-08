@@ -26,6 +26,8 @@ function game(date: string, overrides: Partial<ScheduledGame> = {}): ScheduledGa
     opponentGoalsFor: 1,
     skaterWorth: 1,
     goalieWorth: 1,
+    statWorth: {},
+    plusMinusPerMinute: 0,
     ...overrides,
   };
 }
@@ -88,6 +90,8 @@ describe('rateTeams', () => {
         opponentGoalsFor: 1.08,
         skaterWorth: 1.16,
         goalieWorth: 0.96,
+        statWorth: {},
+        plusMinusPerMinute: 0,
       }),
       game('2026-10-13', {
         offNight: true,
@@ -95,6 +99,8 @@ describe('rateTeams', () => {
         opponentGoalsAgainst: 0.9,
         skaterWorth: 1.09,
         goalieWorth: 1.3,
+        statWorth: {},
+        plusMinusPerMinute: 0,
       }),
     ],
     2,

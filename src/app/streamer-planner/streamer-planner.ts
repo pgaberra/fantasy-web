@@ -41,10 +41,12 @@ import { FreeAgentsTableComponent } from './free-agents-table/free-agents-table'
 import { LeagueFieldComponent } from './league-field/league-field';
 import {
   categoryColumn,
-  dropFactor,
+  addShares,
+  dropShare,
   filterByPositions,
   LineColumn,
-  nightsFactor,
+  nightsShare,
+  NO_LINE,
   FREE_AGENT_POSITIONS,
   PLANNER_POSITIONS,
   FreeAgentPosition,
@@ -55,7 +57,7 @@ import {
   projectedStarts,
   RANKED_ORDER,
   RankedFreeAgent,
-  roomFactor,
+  roomShare,
   scaledProjection,
   sortFreeAgents,
   startsProjection,
@@ -764,19 +766,20 @@ export class StreamerPlannerComponent {
     const byPlayerId = new Map(week.players.map((player) => [player.projection.playerId, player]));
     const players = week.players.filter((player) => scoresIn(player.projection.type, focus));
     const projections = players.map((player) => {
-      const factor = rooms
-        ? roomFactor(player, teams, counted, rooms)
-        : nightsFactor(player, teams, counted, everyNightCounted);
-      let played = player.expectedGames * factor;
-      let line = scaledProjection(player.projection, factor);
-      let more = dropped
-        ? player.expectedGames * dropFactor(player, teams, counted, rooms!, dropped)
-        : 0;
+      // Each night kept holds its own worth's share of his line, stat by stat: the night in
+      // Carolina left out takes Carolina's night out of his goals, not an average night's.
+      const share = rooms
+        ? roomShare(player, teams, counted, rooms)
+        : nightsShare(player, teams, counted, everyNightCounted);
+      const opened = dropped ? dropShare(player, teams, counted, rooms!, dropped) : NO_LINE;
+      let played = player.expectedGames * share.games;
+      let line = scaledProjection(player.projection, share);
+      let more = player.expectedGames * opened.games;
       if (player.projection.type === 'goalie') {
         // A game is one goalie's, so a goalie's are whole: the crease's split of the nights, or
         // for one in no crease his own expectation, rounded.
         played = starts.get(player.playerId) ?? Math.round(played);
-        line = startsProjection(player.projection, player.expectedGames, played);
+        line = startsProjection(player.projection, player.expectedGames, played, share);
         more = Math.max(
           0,
           (dropStarts?.get(player.playerId) ?? Math.round(played + more)) - played,
@@ -785,10 +788,11 @@ export class StreamerPlannerComponent {
       if (dropped) {
         dropGames.set(player.playerId, more);
         if (more > 0) {
+          const both = addShares(share, opened);
           const lifted =
             player.projection.type === 'goalie'
-              ? startsProjection(player.projection, player.expectedGames, played + more)
-              : scaledProjection(player.projection, (played + more) / player.expectedGames);
+              ? startsProjection(player.projection, player.expectedGames, played + more, both)
+              : scaledProjection(player.projection, both);
           // Counted, the lifted line is his line: there is nothing left for a drop to add.
           if (counting) {
             played += more;

@@ -9,21 +9,26 @@ import {
 import { FreeAgent } from '../services/streamer-planner-free-agents.service';
 import { DropRoom, NightRoom } from './planner-lineup';
 import {
-  dropFactor,
+  addShares,
+  dropShare,
   formatGames,
   formatToi,
   filterByPositions,
   lineColumns,
   lineStats,
   nextSort,
-  nightsFactor,
+  LineShare,
+  nightsShare,
+  NO_LINE,
   projectedStarts,
   RANKED_ORDER,
   RankedFreeAgent,
+  roomShare,
   scaledProjection,
   sortFreeAgents,
   startsProjection,
   teamsByKey,
+  WHOLE_LINE,
 } from './planner-free-agents';
 
 function scoringLine<K extends string>(keys: readonly K[], set: Record<string, number>) {
@@ -102,6 +107,8 @@ const TEAMS: TeamSchedule[] = [
       opponentGoalsFor: 1,
       skaterWorth: 1.036,
       goalieWorth: 1.0363,
+      statWorth: {},
+      plusMinusPerMinute: 0,
     })),
   },
 ];
@@ -138,25 +145,61 @@ describe('filterByPositions', () => {
   });
 });
 
-describe('nightsFactor', () => {
+/** A share of a stretch with every stat at its count's share but those named. */
+function share(games: number, of: Record<string, number> = {}, plusMinusPerMinute = 0): LineShare {
+  return { games, of: (key) => of[key] ?? games, plusMinusPerMinute };
+}
+
+/** TB's three games again, each now worth something different to goals, hits and plus-minus. */
+const WEIGHED: TeamSchedule[] = [
+  {
+    ...TEAMS[0],
+    schedule: TEAMS[0].schedule.map((game, index) => ({
+      ...game,
+      statWorth: { goals: [0.8, 1, 1.2][index], hits: [1.2, 1, 0.8][index] },
+      plusMinusPerMinute: [-0.01, 0, 0.01][index],
+    })),
+  },
+];
+
+describe('nightsShare', () => {
   const teams = teamsByKey(TEAMS);
   const bolt = skater('Bolt', ['C'], 'TB');
 
   it("finds the club under the platform's spelling and keeps the share of its games counted", () => {
-    expect(nightsFactor(bolt, teams, new Set(['2026-10-12', '2026-10-14']), false)).toBeCloseTo(
-      2 / 3,
+    const kept = nightsShare(bolt, teams, new Set(['2026-10-12', '2026-10-14']), false);
+    expect(kept.games).toBeCloseTo(2 / 3);
+    // Every night is an average one here, so every stat is at the games' share.
+    expect(kept.of('goals')).toBeCloseTo(2 / 3);
+  });
+
+  it('is the whole line while every night is counted, and for a club it cannot find', () => {
+    expect(nightsShare(bolt, teams, new Set(), true)).toBe(WHOLE_LINE);
+    expect(nightsShare(skater('Lost', ['C'], 'XYZ'), teams, new Set(['2026-10-12']), false)).toBe(
+      WHOLE_LINE,
     );
   });
 
-  it('is one while every night is counted, and for a club it cannot find', () => {
-    expect(nightsFactor(bolt, teams, new Set(), true)).toBe(1);
-    expect(nightsFactor(skater('Lost', ['C'], 'XYZ'), teams, new Set(['2026-10-12']), false)).toBe(
-      1,
+  it('weighs each night kept by its worth to the stat, not by its count', () => {
+    // The hard night for goals (0.8) left out: the two kept hold 2.2 of the stretch's 3.0 goals,
+    // and the same two nights are the softer ones for hits.
+    const kept = nightsShare(
+      bolt,
+      teamsByKey(WEIGHED),
+      new Set(['2026-10-14', '2026-10-17']),
+      false,
     );
+    expect(kept.games).toBeCloseTo(2 / 3);
+    expect(kept.of('goals')).toBeCloseTo(2.2 / 3);
+    expect(kept.of('hits')).toBeCloseTo(1.8 / 3);
+    expect(kept.of('assists')).toBeCloseTo(2 / 3);
+    // Plus-minus: the kept nights add 0.01 a minute over their count's share of the stretch's
+    // nought, at the 3.8 of 4 games he dresses for.
+    expect(kept.plusMinusPerMinute).toBeCloseTo((3.8 / 4) * 0.01);
   });
 });
 
-describe('dropFactor', () => {
+describe('dropShare', () => {
   const teams = teamsByKey(TEAMS);
   const bolt = skater('Bolt', ['C'], 'TB');
   const room = (date: string, fits: NightRoom['fits']): NightRoom => ({
@@ -177,28 +220,46 @@ describe('dropFactor', () => {
   const all = new Set(['2026-10-12', '2026-10-14', '2026-10-17']);
 
   it("keeps the share of his club's games counted that only a drop makes room for", () => {
-    expect(dropFactor(bolt, teams, all, rooms, dropped)).toBeCloseTo(1 / 3);
+    expect(dropShare(bolt, teams, all, rooms, dropped).games).toBeCloseTo(1 / 3);
     // The night's own room is his already, and a wing is not who a C's drop makes room for.
-    expect(dropFactor(skater('Wing', ['LW'], 'TB'), teams, all, rooms, dropped)).toBe(0);
+    expect(dropShare(skater('Wing', ['LW'], 'TB'), teams, all, rooms, dropped)).toBe(NO_LINE);
   });
 
   it('is nothing for a night left uncounted, and for a club it cannot find', () => {
-    expect(dropFactor(bolt, teams, new Set(['2026-10-12']), rooms, dropped)).toBe(0);
-    expect(dropFactor(skater('Lost', ['C'], 'XYZ'), teams, all, rooms, dropped)).toBe(0);
+    expect(dropShare(bolt, teams, new Set(['2026-10-12']), rooms, dropped)).toBe(NO_LINE);
+    expect(dropShare(skater('Lost', ['C'], 'XYZ'), teams, all, rooms, dropped)).toBe(NO_LINE);
+  });
+
+  it('weighs the night a drop opens by its worth, and adds to the nights with room', () => {
+    const weighed = teamsByKey(WEIGHED);
+    const opened = dropShare(bolt, weighed, all, rooms, dropped);
+    const own = roomShare(bolt, weighed, all, rooms);
+    expect(opened.of('goals')).toBeCloseTo(1 / 3);
+    expect(own.of('goals')).toBeCloseTo(0.8 / 3);
+    const both = addShares(own, opened);
+    expect(both.games).toBeCloseTo(2 / 3);
+    expect(both.of('goals')).toBeCloseTo(1.8 / 3);
+    expect(addShares(own, NO_LINE)).toBe(own);
   });
 });
 
 describe('scaledProjection', () => {
-  it('scales the counting stats and the games, and leaves a rate and the ice time alone', () => {
-    const scaled = scaledProjection(skater('Bolt', ['C']).projection, 0.5);
+  it('scales each counting stat by its own share, and leaves a rate and the ice time alone', () => {
+    const scaled = scaledProjection(skater('Bolt', ['C']).projection, share(0.5, { goals: 0.4 }));
 
-    expect(scaled.stats.scoring).toMatchObject({ goals: 1, assists: 1.5, shPct: 0.12 });
+    expect(scaled.stats.scoring).toMatchObject({ goals: 0.8, assists: 1.5, shPct: 0.12 });
     expect(scaled.stats.utility).toMatchObject({ gp: 1.9, toiPerGame: 1052 });
   });
 
-  it('returns the projection itself when there is nothing to scale', () => {
+  it('moves plus-minus by its share of the games and what their opponents add a minute', () => {
+    const line = skater('Bolt', ['C'], 'EDM', { plusMinus: 2 }).projection;
+    const scaled = scaledProjection(line, share(0.5, {}, 0.01));
+    expect(scaled.stats.scoring).toMatchObject({ plusMinus: 1 + (1052 / 60) * 0.01 });
+  });
+
+  it('returns the projection itself for the whole line', () => {
     const projection = skater('Bolt', ['C']).projection;
-    expect(scaledProjection(projection, 1)).toBe(projection);
+    expect(scaledProjection(projection, WHOLE_LINE)).toBe(projection);
   });
 
   it('scales a goalie line the same way', () => {
@@ -210,7 +271,7 @@ describe('scaledProjection', () => {
         utility: { gp: 2 },
       },
     };
-    const scaled = scaledProjection(goalie, 0.5);
+    const scaled = scaledProjection(goalie, share(0.5));
     expect(scaled.stats.scoring).toMatchObject({ w: 1, sv: 30, svPct: 0.91, gaa: 2.5 });
   });
 });
@@ -355,6 +416,13 @@ describe('startsProjection', () => {
     expect(Object.values(none.stats.scoring).every((value) => value === 0)).toBe(true);
     expect(none.stats.utility.gp).toBe(0);
   });
+
+  it('weighs a start by the nights kept against the stretch average start', () => {
+    // Half the nights kept, holding 0.4 of his wins: a start on them is worth 0.8 of an average one.
+    const one = startsProjection(line.projection, 2, 1, share(0.5, { w: 0.4 }));
+
+    expect(one.stats.scoring).toMatchObject({ gs: 1, w: 0.48, sv: 28, svPct: 0.918 });
+  });
 });
 
 describe('lineStats', () => {
@@ -422,7 +490,7 @@ describe('lineStats', () => {
 
   it('reads the line over the nights counted, not the whole stretch', () => {
     const player = skater('Winger', ['LW'], 'EDM', { goals: 2, assists: 3 });
-    const row = ranked(player, 1, scaledProjection(player.projection, 0.5));
+    const row = ranked(player, 1, scaledProjection(player.projection, share(0.5)));
 
     expect(written(row, ['goals', 'assists'])).toEqual(['1.0 G', '1.5 A']);
   });

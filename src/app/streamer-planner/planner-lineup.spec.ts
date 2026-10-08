@@ -41,6 +41,8 @@ function club(team: string, dates: readonly string[]): TeamSchedule {
       opponentGoalsFor: 1,
       skaterWorth: 1,
       goalieWorth: 1,
+      statWorth: {},
+      plusMinusPerMinute: 0,
     })),
   };
 }
