@@ -350,7 +350,45 @@
         </div>
       }
       @if (!league()) {
-        <p class="prompt">Pick a league above to see who is available in it.</p>
+        <!-- No league is no fault: the card says what to do, not what went wrong. -->
+        @switch (leaguePrompt()) {
+          @case ('checking') {
+            <app-loading-indicator />
+          }
+          @case ('connect') {
+            <div class="league-prompt">
+              <app-icon name="link" [size]="48" class="league-prompt-icon" />
+              <p class="league-prompt-title">Connect your Yahoo account</p>
+              <p class="league-prompt-text">
+                The free agents are the players available in one of your Yahoo leagues. Connect your
+                account, then pick the league to plan for.
+              </p>
+              <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="connectingYahoo()"
+                (click)="connectYahoo()"
+              >
+                @if (connectingYahoo()) {
+                  <app-loading-indicator variant="inline" label="Connecting" />
+                } @else {
+                  Connect Yahoo account
+                }
+              </button>
+            </div>
+          }
+          @case ('no-leagues') {
+            <p class="prompt">
+              Your Yahoo account has no NHL league this season, so there is no one to show.
+            </p>
+          }
+          @case ('enter-espn') {
+            <p class="prompt">Enter your ESPN league above to see who is available in it.</p>
+          }
+          @default {
+            <p class="prompt">Pick a league above to see who is available in it.</p>
+          }
+        }
       } @else if (freeAgentsFailure()) {
         <app-error-state
           title="Couldn't load free agents"

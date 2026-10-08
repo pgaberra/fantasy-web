@@ -200,6 +200,12 @@ describe('StreamerPlannerComponent', () => {
   /** Whether the BFF reads the user's own team, and the team it answers with. */
   let myTeamOn = false;
   let myTeam: PlannerMyTeamResponse = { found: false, players: [], lines: [] };
+  /** Whether the account is connected to Yahoo, and the leagues it lists. */
+  let connected = true;
+  let leagues = [
+    { leagueKey: LEAGUE.leagueId, name: LEAGUE.name },
+    { leagueKey: '465.l.2', name: 'Work League' },
+  ];
   const layout = signal<PlannerLayout>('desktop');
 
   beforeEach(() => {
@@ -209,6 +215,11 @@ describe('StreamerPlannerComponent', () => {
     settings = SETTINGS;
     myTeamOn = false;
     myTeam = { found: false, players: [], lines: [] };
+    connected = true;
+    leagues = [
+      { leagueKey: LEAGUE.leagueId, name: LEAGUE.name },
+      { leagueKey: '465.l.2', name: 'Work League' },
+    ];
     localStorage.clear();
     invoke.mockReset();
     freeAgents.mockReset();
@@ -249,15 +260,9 @@ describe('StreamerPlannerComponent', () => {
       } as never)
       .mock(YahooService, {
         leagueProjectionSettings: () => of(settings),
-        connectionStatus: () => of({ connected: true }),
+        connectionStatus: () => of({ connected }),
         // Two, so that neither is picked for the reader: only a remembered league is read.
-        myLeagues: () =>
-          of({
-            leagues: [
-              { leagueKey: LEAGUE.leagueId, name: LEAGUE.name },
-              { leagueKey: '465.l.2', name: 'Work League' },
-            ],
-          }),
+        myLeagues: () => of({ leagues }),
       } as never)
       .mock(EspnService, { leagueProjectionSettings: () => of(settings) })
       .mock(FeatureService, {
@@ -1071,6 +1076,49 @@ describe('StreamerPlannerComponent', () => {
       expect(fixture.point.componentInstance.ranked()).toHaveLength(0);
     });
   });
+  /**
+   * A league remembered on this device is not this account's until the account is connected:
+   * reading it would only have Yahoo refuse, and the refusal would read as a failure where
+   * nothing has gone wrong. The card says what to do instead.
+   */
+  describe('with an account not connected to Yahoo', () => {
+    beforeEach(() => {
+      chosen = LEAGUE;
+      connected = false;
+      myTeamOn = true;
+    });
+
+    it('reads no league and asks the reader to connect, from the card itself', async () => {
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+      const card = ngMocks.find(fixture, 'section.free-agents');
+
+      expect(planner.league()).toBeNull();
+      expect(planner.leaguePrompt()).toBe('connect');
+      expect(freeAgents).not.toHaveBeenCalled();
+      expect(invoke).not.toHaveBeenCalledWith(streamerPlannerMyTeam, expect.anything());
+      expect(ngMocks.findAll(fixture, ErrorStateComponent)).toHaveLength(0);
+      expect(ngMocks.formatText(fixture)).not.toContain("Couldn't load");
+      expect(ngMocks.formatText(card)).toContain('Connect your Yahoo account');
+
+      const connect = vi.spyOn(planner, 'connectYahoo').mockImplementation(() => undefined);
+      ngMocks.click(ngMocks.find(card, '.league-prompt .btn'));
+      expect(connect).toHaveBeenCalled();
+    });
+
+    it('says when a connected account lists no league at all', async () => {
+      connected = true;
+      leagues = [];
+      const fixture = await render();
+
+      expect(fixture.point.componentInstance.leaguePrompt()).toBe('no-leagues');
+      expect(ngMocks.formatText(ngMocks.find(fixture, 'section.free-agents'))).toContain(
+        'no NHL league this season',
+      );
+      expect(freeAgents).not.toHaveBeenCalled();
+    });
+  });
+
   describe('in a category league', () => {
     /** Goals, assists, power-play points and shots, with goalie wins. */
     const CATEGORY_SETTINGS: LeagueProjectionSettingsResponse = {

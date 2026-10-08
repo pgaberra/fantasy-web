@@ -117,6 +117,9 @@ export interface LeadingDay {
 /** The two tables, shown one at a time. */
 export type PlannerView = 'free-agents' | 'schedules';
 
+/** Why the free agents card has no league to read yet. */
+type LeaguePrompt = 'checking' | 'connect' | 'no-leagues' | 'pick-yahoo' | 'enter-espn';
+
 function keepOffered(
   picked: ReadonlySet<ScoringStatKey>,
   offered: readonly LineColumn[],
@@ -198,7 +201,7 @@ export class StreamerPlannerComponent {
 
   constructor() {
     // At once rather than with the league field, which waits for the schedule: the remembered
-    // league's free agents are asked for alongside it.
+    // league's free agents are asked for as soon as the account is known to be connected.
     this.picker.start();
   }
 
@@ -384,6 +387,35 @@ export class StreamerPlannerComponent {
     },
     { equal: (a, b) => a?.platform === b?.platform && a?.leagueId === b?.leagueId },
   );
+
+  /**
+   * Why there is no league to read free agents from, while there is none: the account is still
+   * being asked about, is not connected to Yahoo, lists no league, or has one yet to be picked;
+   * or the ESPN card is waiting for an id. Nothing here has gone wrong, and the card says so.
+   */
+  readonly leaguePrompt = computed<LeaguePrompt>(() => {
+    if (this.platform() === 'espn') {
+      return 'enter-espn';
+    }
+    switch (this.picker.connected()) {
+      case null:
+        return 'checking';
+      case false:
+        return 'connect';
+      default:
+        if (this.picker.loadingLeagues()) {
+          return 'checking';
+        }
+        return this.picker.leagues().length === 0 ? 'no-leagues' : 'pick-yahoo';
+    }
+  });
+
+  readonly connectingYahoo = computed(() => this.picker.connecting());
+
+  /** Sends the reader to Yahoo's consent, as the league field's button does. */
+  connectYahoo(): void {
+    this.picker.connect();
+  }
 
   /**
    * The table on screen. The free agents are what the page is for, so it always opens on them,
