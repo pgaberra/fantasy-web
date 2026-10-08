@@ -194,9 +194,9 @@ describe('dropRooms', () => {
     // Every LW frees the C spot, but not every C: Wing (C/RW) does not, so it is "a LW". Only
     // Benson frees a LW spot, and Dual is a LW too: he is the one exception, named. Every forward
     // frees the RW spot (Back, a D, does not), so it is "any forward". The pill names the spot.
-    expect(dropRoomTip(monday, ['C'])).toBe('Drop a LW.');
-    expect(dropRoomTip(monday, ['LW'])).toBe('Drop a LW, except Dual.');
-    expect(dropRoomTip(monday, ['RW'])).toBe('Drop any forward.');
+    expect(dropRoomTip(monday, ['C'])).toBe('Drop a LW to free up this spot.');
+    expect(dropRoomTip(monday, ['LW'])).toBe('Drop a LW, except Dual, to free up this spot.');
+    expect(dropRoomTip(monday, ['RW'])).toBe('Drop any forward to free up this spot.');
   });
 
   it("says a player fits a night through a drop only where the lineup's own room does not take him", () => {
@@ -238,7 +238,7 @@ describe('dropRooms', () => {
     const centre = [{ kind: 'C', names: ['Centre'], opens: ['C', 'LW'] as const }];
     expect(roomRuns(full, centre)).toEqual([{ drop: true, positions: ['C', 'LW'] }]);
     // Every forward is a C: "a C" says it in fewer words than "any forward".
-    expect(dropRoomTip(centre, ['C', 'LW'])).toBe('Drop a C.');
+    expect(dropRoomTip(centre, ['C', 'LW'])).toBe('Drop a C to free up this spot.');
   });
 
   it('says a drop as plainly as it holds, naming only the exceptions', () => {
@@ -253,8 +253,10 @@ describe('dropRooms', () => {
       { kind: 'RW', names: ['Plain Wing'], opens: [] as const },
       { kind: 'D', names: ['Back'], opens: [] as const },
     ];
-    expect(dropRoomTip(night, ['C'])).toBe('Drop a C or LW.');
-    expect(dropRoomTip(night, ['LW', 'RW'])).toBe('Drop a LW, except Brady Tkachuk.');
+    expect(dropRoomTip(night, ['C'])).toBe('Drop a C or LW to free up this spot.');
+    expect(dropRoomTip(night, ['LW', 'RW'])).toBe(
+      'Drop a LW, except Brady Tkachuk, to free up this spot.',
+    );
     // Every skater frees the Util: "any skater", a defenceman among them. Without one it is the
     // same players as "any forward", and said so.
     const util = [
@@ -263,17 +265,21 @@ describe('dropRooms', () => {
       { kind: 'D', names: ['Back'], opens: ['C'] as const },
       { kind: 'G', names: ['Keeper'], opens: [] as const },
     ];
-    expect(dropRoomTip(util, ['C'])).toBe('Drop any skater.');
-    expect(dropRoomTip(util.slice(0, 2), ['C'])).toBe('Drop any forward.');
+    expect(dropRoomTip(util, ['C'])).toBe('Drop any skater to free up this spot.');
+    expect(dropRoomTip(util.slice(0, 2), ['C'])).toBe('Drop any forward to free up this spot.');
     // No wording leaves out the RW/D who would not do: the fewest words, and him named.
     const hybrid = [...util.slice(0, 3), { kind: 'RW/D', names: ['Hybrid'], opens: [] as const }];
-    expect(dropRoomTip(hybrid, ['C'])).toBe('Drop any skater, except Hybrid.');
+    expect(dropRoomTip(hybrid, ['C'])).toBe(
+      'Drop any skater, except Hybrid, to free up this spot.',
+    );
     // More than one exception: all named, joined with "and".
     const two = [
       { kind: 'LW', names: ['Left'], opens: ['LW'] as const },
       { kind: 'C/LW', names: ['Dual', 'Other Dual'], opens: [] as const },
     ];
-    expect(dropRoomTip(two, ['LW'])).toBe('Drop a LW, except Dual and Other Dual.');
+    expect(dropRoomTip(two, ['LW'])).toBe(
+      'Drop a LW, except Dual and Other Dual, to free up this spot.',
+    );
   });
 
   it('opens nothing when a teammate on the bench takes the seat', () => {

@@ -155,17 +155,9 @@
           <td class="num rate-col">{{ perGame(entry.row) }}</td>
           <td class="num">
             @if (inDrop(entry.row)) {
-              <!-- Counted, they are among his games: the figure is yellow, and says on a hover or
-                   a tap how many of them are his only with a drop. -->
-              <span
-                class="figure figure--drop games-in-drop"
-                role="img"
-                tabindex="0"
-                [appTooltip]="dropGamesTip(entry.row)"
-                [attr.aria-label]="dropGamesTip(entry.row)"
-              >
-                {{ games(entry.row) }}
-              </span>
+              <!-- Counted, they are among his games: the figure is yellow, and the tick box's
+                   help says what the yellow means, rather than a tip on every row. -->
+              <span class="figure figure--drop games-in-drop">{{ games(entry.row) }}</span>
             } @else {
               <span class="figure">
                 {{ games(entry.row) }}

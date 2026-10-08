@@ -376,13 +376,11 @@ describe('FreeAgentsTableComponent', () => {
     // In the games cell, raised after his own four, and a mark rather than a control.
     expect(ngMocks.formatText(marks[0].parent!)).toBe('4 +2');
     expect(marks[0].nativeElement.tagName).toBe('SPAN');
-    expect(marks[0].attributes['aria-label']).toBe(
-      '2 more games if you drop a player who plays those nights. Not in his games or his score: he would play in place of the player dropped. What they would add is marked beside each number.',
-    );
+    expect(marks[0].attributes['aria-label']).toBe('2 additional games from a position drop.');
     expect(
       fixture.point.componentInstance
         .dropGamesTip({ ...SKATER, dropGames: 1 })
-        .startsWith('1 more game if'),
+        .startsWith('1 additional game from'),
     ).toBe(true);
   });
 
@@ -412,9 +410,9 @@ describe('FreeAgentsTableComponent', () => {
     expect(ngMocks.findAll(rows[0], 'td.toi-col .figure--drop')).toHaveLength(0);
     const games = ngMocks.find(rows[0], '.games-in-drop');
     expect(ngMocks.formatText(games)).toBe('4');
-    expect(games.attributes['aria-label']).toBe(
-      '2 of his 4 games only if you drop a player who plays those nights. Counted in his games, his score and each number in yellow.',
-    );
+    // No tip of its own: the tick box's help says what the yellow means.
+    expect(games.attributes['role']).toBeUndefined();
+    expect(games.attributes['aria-label']).toBeUndefined();
     // The goalie, who has no such game, keeps his figures as they were.
     expect(ngMocks.findAll(rows[1], '.figure--drop')).toHaveLength(0);
   });
@@ -525,7 +523,7 @@ describe('FreeAgentsTableComponent', () => {
 
   it('names the score and the rate a game by how the league scores', () => {
     const points = render('points').point.componentInstance;
-    expect(points.scoreTip()).toBe('Projected Points');
+    expect(points.scoreTip()).toBe('Projected points');
     expect(points.perGameTip()).toBe('Projected points per game');
 
     const categories = render('category').point.componentInstance;
