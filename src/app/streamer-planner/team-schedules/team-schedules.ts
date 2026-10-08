@@ -5,7 +5,6 @@ import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import {
   formatDay,
-  matchupLabel,
   matchupTier,
   parseDate,
   PlannerTeamRow,
@@ -99,10 +98,6 @@ export class TeamSchedulesComponent {
 
   matchupTier(game: ScheduledGame): Tier {
     return matchupTier(game);
-  }
-
-  matchupLabel(game: ScheduledGame): string {
-    return matchupLabel(game);
   }
 
   /** "Mon, Oct 12". */
