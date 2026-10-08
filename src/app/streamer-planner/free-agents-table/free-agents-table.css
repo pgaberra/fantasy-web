@@ -188,7 +188,8 @@
 
 /* With a drop picked, every number column keeps a margin for the marks hanging off its figures,
    the boxed games count being the widest: the table widens once, with the pick, and never by the
-   row. The heading's padding grows with it, so the labels stay over their figures. */
+   row. The heading's padding grows with it, so the labels stay over their figures. The category
+   columns, padded by rules of their own further down, take their room there. */
 .free-agents-table--marked .num {
   padding-right: calc(var(--space-1) + 1.75rem);
 }
@@ -329,6 +330,20 @@ span.score {
    room before the rule as the next group keeps after it. */
 .free-agents-table :is(th, td):has(+ .stat-col--start) {
   padding-right: var(--space-3);
+}
+
+/* With a drop picked, a category column keeps room on its right for the bare mark its figure
+   wears, "+0.0" at the mark's size: less than the player columns keep, since the boxed games
+   count never stands here. After the rules above, which set the categories' own padding and
+   would otherwise win back the 2px that left the marks running into the next column (#1092).
+   A column that ends a group keeps its room before the rule as well, and enough for the
+   boxed count, since the games column ends a group where there is no ice time to follow it. */
+.free-agents-table--marked .stat-col {
+  padding-right: calc(2px + 1.3rem);
+}
+
+.free-agents-table--marked :is(th, td):is(:has(+ .stat-col--start), :has(+ .toi-col)) {
+  padding-right: calc(var(--space-3) + 1.75rem);
 }
 
 /* A category he is projected nothing in steps back, so the ones he is picked up for stand out. */
