@@ -89,11 +89,17 @@
                     <span class="day-games day-games--none">No games</span>
                   } @else {
                     <span class="day-games">
-                      <span class="day-count">{{ day.games }}</span>
-                      {{ day.games === 1 ? 'game' : 'games' }}
+                      <span class="day-count">{{ day.games }}</span
+                      >&ngsp;
+                      <span class="day-unit">{{ day.games === 1 ? 'game' : 'games' }}</span>
                     </span>
                   }
                 </span>
+                @if (day.games > 0) {
+                  <span class="day-meter" aria-hidden="true">
+                    <span class="day-meter-fill" [style.width.%]="meter(day.games)"></span>
+                  </span>
+                }
               }
             </span>
           }
@@ -109,6 +115,13 @@
               (click)="toggleDayFromCell(day, $event)"
             >
               <span class="day-head">
+                <span class="day-name">{{ dayName(day) }}</span>
+                <span class="day-date"
+                  ><span class="day-month">{{ dayMonth(day) }}&ngsp;</span
+                  >{{ dayOfMonth(day) }}</span
+                >
+                <!-- The tick is a round mark drawn by the cell; the box itself is a real checkbox
+                     laid over it, unseen, so the keyboard and a screen reader still get one. -->
                 <label class="day-tick">
                   <input
                     type="checkbox"
@@ -116,21 +129,18 @@
                     [disabled]="day.games === 0"
                     (change)="toggleDay(day)"
                   />
+                  <app-icon name="check" [size]="14" />
                   <span class="sr-only">Count {{ dayName(day) }} {{ dayOfMonth(day) }}</span>
                 </label>
-                <span class="day-name">{{ dayName(day) }}</span>
-                <span class="day-date"
-                  ><span class="day-month">{{ dayMonth(day) }}&ngsp;</span
-                  >{{ dayOfMonth(day) }}</span
-                >
               </span>
               <span class="day-body">
                 @if (day.games === 0) {
                   <span class="day-games day-games--none">No games</span>
                 } @else {
                   <span class="day-games">
-                    <span class="day-count">{{ day.games }}</span>
-                    {{ day.games === 1 ? 'game' : 'games' }}
+                    <span class="day-count">{{ day.games }}</span
+                    >&ngsp;
+                    <span class="day-unit">{{ day.games === 1 ? 'game' : 'games' }}</span>
                   </span>
                 }
                 @if (day.offNight) {
@@ -145,6 +155,13 @@
                   </span>
                 }
               </span>
+              @if (day.games > 0) {
+                <!-- How full the league's night is, against the fullest of the stretch: the
+                     off-nights are the short bars, readable across a row before any number is. -->
+                <span class="day-meter" aria-hidden="true">
+                  <span class="day-meter-fill" [style.width.%]="meter(day.games)"></span>
+                </span>
+              }
               @if (room(day) || dropRoom(day)) {
                 <span class="day-rooms">
                   @if (room(day); as room) {
