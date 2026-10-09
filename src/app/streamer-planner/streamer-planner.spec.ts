@@ -454,7 +454,7 @@ describe('StreamerPlannerComponent', () => {
     expect(ngMocks.findAll(nights[0], '.day-mark').length).toEqual(0);
     expect(ngMocks.findAll(fixture, '.range-legend')).toHaveLength(0);
     expect(ngMocks.formatText(fixture)).toContain('Week 2');
-    expect(ngMocks.formatText(fixture)).toContain('Pick a league above');
+    expect(ngMocks.formatText(fixture)).toContain('Select a league above');
   });
 
   it('says so when no schedule is published', async () => {
@@ -477,7 +477,7 @@ describe('StreamerPlannerComponent', () => {
     expect(fixture.point.componentInstance.view()).toBe('free-agents');
     expect(shown(fixture)).toEqual(['free-agents']);
     expect(ngMocks.formatText(ngMocks.find(fixture, 'section.free-agents'))).toContain(
-      'Pick a league above',
+      'Select a league above',
     );
   });
 

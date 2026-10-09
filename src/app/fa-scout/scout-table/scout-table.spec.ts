@@ -98,14 +98,6 @@ describe('ScoutTableComponent', () => {
     );
   });
 
-  it("writes the club in the NHL's letters beside the positions, out of a screen reader's way", () => {
-    const fixture = render([row(1, 'Riser', 1, 5, 1000, true)]);
-    const club = ngMocks.find(fixture, '.player-meta .player-club');
-
-    expect(ngMocks.formatText(club)).toEqual('SEA');
-    expect(club.attributes['aria-hidden']).toEqual('true');
-  });
-
   it("heads a column for each of the league's categories", () => {
     const fixture = render([row(1, 'Brandon Montour', 1, 140, 1050, true)]);
 

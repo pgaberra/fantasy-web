@@ -80,7 +80,7 @@
     }
 
     @if (!league()) {
-      <p class="prompt">Pick a league above to see who is available in it.</p>
+      <p class="prompt">Select a league above to see its available free agents.</p>
     } @else if (failure()) {
       <app-error-state title="Couldn't load free agents" [error]="failure()" (retry)="retry()" />
     } @else if (loading()) {
