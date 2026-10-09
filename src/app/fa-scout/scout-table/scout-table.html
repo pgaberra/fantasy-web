@@ -1,4 +1,4 @@
-<div class="table-scroll" appScrolledSideways>
+<div class="table-scroll">
   <table class="free-agents-table scout-table">
     <thead>
       <tr>
@@ -83,9 +83,6 @@
                 </span>
                 <span class="player-meta">
                   <app-position-chips [positions]="entry.row.player.positions" />
-                  @if (club(entry.row); as club) {
-                    <span class="player-club" aria-hidden="true">{{ club }}</span>
-                  }
                   @if (entry.row.rising) {
                     <span class="scout-tag scout-tag--rising">Rising</span>
                   } @else if (entry.row.preseasonRank === null) {
