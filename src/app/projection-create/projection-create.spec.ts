@@ -25,7 +25,6 @@ import { Goalie, Skater } from '../models/player.model';
 import { SkaterPosition } from '../models/position.model';
 import { GoalieScoringStats, SkaterScoringStats } from '../models/projection.model';
 import { GOALIE_SCORING_STAT_KEYS, SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
-import { environment } from '../../environments/environment';
 import { FeatureService } from '../services/feature.service';
 import { MODEL_PRESET_SOURCE } from '../models/ai-projection';
 
@@ -205,7 +204,8 @@ describe('ProjectionCreateComponent', () => {
   const notifyError = vi.fn();
   /** The query string the page opened with; the same object is handed to every render. */
   const queryParams: Record<string, string> = {};
-  const premium = signal(false);
+  /** A subscriber unless a test says otherwise, so the AI projection is open to the page. */
+  const premium = signal(true);
   const aiProjection = signal(true);
   const entitlementLoadState = signal<'idle' | 'loading' | 'loaded' | 'error'>('loaded');
   const createProjection = vi.fn<
@@ -213,7 +213,7 @@ describe('ProjectionCreateComponent', () => {
   >(() => of(created));
 
   beforeEach(() => {
-    premium.set(false);
+    premium.set(true);
     aiProjection.set(true);
     entitlementLoadState.set('loaded');
     navigate.mockClear();
@@ -1312,22 +1312,20 @@ describe('ProjectionCreateComponent', () => {
    * one button becomes the way to Premium.
    */
   describe('when the AI projection is behind a subscription', () => {
-    const withPayments = async (
+    beforeEach(() => {
+      premium.set(false);
+    });
+
+    const withRendered = async (
       test: (fixture: MockedComponentFixture<ProjectionCreateComponent>) => void | Promise<void>,
     ) => {
-      const original = environment.paymentsEnabled;
-      environment.paymentsEnabled = true;
-      try {
-        const fixture = MockRender(ProjectionCreateComponent);
-        await fixture.whenStable();
-        await test(fixture);
-      } finally {
-        environment.paymentsEnabled = original;
-      }
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      await test(fixture);
     };
 
     it('marks the card locked but leaves it on the page and pickable', async () => {
-      await withPayments(async (fixture) => {
+      await withRendered(async (fixture) => {
         const component = fixture.point.componentInstance;
         component.selectPreset('model');
         await fixture.whenStable();
@@ -1344,7 +1342,7 @@ describe('ProjectionCreateComponent', () => {
      * account sees the model's own top skaters rather than a description of them.
      */
     it('previews the top of the model even while it is locked', async () => {
-      await withPayments(async (fixture) => {
+      await withRendered(async (fixture) => {
         const component = fixture.point.componentInstance;
         component.selectPreset('model');
         await fixture.whenStable();
@@ -1358,7 +1356,7 @@ describe('ProjectionCreateComponent', () => {
     });
 
     it('offers the way to Premium where the Create button would be', async () => {
-      await withPayments(async (fixture) => {
+      await withRendered(async (fixture) => {
         fixture.point.componentInstance.selectPreset('model');
         await fixture.whenStable();
         fixture.detectChanges();
@@ -1372,7 +1370,7 @@ describe('ProjectionCreateComponent', () => {
 
     /** A Create button that can only be refused is worse than one that is plainly not offered. */
     it('stands the Create button down while the locked starting point is picked', async () => {
-      await withPayments(async (fixture) => {
+      await withRendered(async (fixture) => {
         const component = fixture.point.componentInstance;
         component.selectPreset('model');
         await fixture.whenStable();
@@ -1393,7 +1391,7 @@ describe('ProjectionCreateComponent', () => {
 
     it('previews the board Create would write for a subscriber', async () => {
       premium.set(true);
-      await withPayments(async (fixture) => {
+      await withRendered(async (fixture) => {
         fixture.point.componentInstance.selectPreset('model');
         await fixture.whenStable();
         fixture.detectChanges();

@@ -34,7 +34,6 @@ import { ProjectionStorageService } from '../services/projection-storage.service
 import { freeNameFrom } from '../services/projection-name';
 import { NotificationService } from '../services/notification.service';
 import { isNotFound } from '../shared/http-error';
-import { FeatureService } from '../services/feature.service';
 import {
   PositionTiers,
   TierBadge,
@@ -155,7 +154,6 @@ export class DraftModeComponent implements OnInit {
   private readonly tierService = inject(TierService);
   private readonly statInfoService = inject(StatInfoService);
   readonly lookup = inject(DraftPlayerLookupService);
-  private readonly features = inject(FeatureService);
   private readonly yahoo = inject(YahooService);
   private readonly connectReturn = inject(YahooConnectReturnService);
 
@@ -314,12 +312,9 @@ export class DraftModeComponent implements OnInit {
   /**
    * Whether a new draft is being started from its league's own draft, which it is wherever it has
    * a league to follow: the league sets the teams and the order, so there is nothing to set up.
-   * Waits for the features, which say whether the league can be followed here at all.
    */
   readonly startingFromLeague = computed(
-    () =>
-      this.isNewDraft() &&
-      (!this.features.settled() || (this.followedLeague() !== null && !this.leagueStartFailed())),
+    () => this.isNewDraft() && this.followedLeague() !== null && !this.leagueStartFailed(),
   );
 
   private readonly teamById = computed(() => new Map(this.teams().map((team) => [team.id, team])));
@@ -584,15 +579,12 @@ export class DraftModeComponent implements OnInit {
   });
   readonly canUndo = computed(() => this.picks().length > 0 && !this.following());
   /**
-   * The league the sync switch follows: the linked Yahoo league, where this environment follows
-   * Yahoo drafts. An ESPN league is never followed: ESPN shares a draft's picks only once it is
+   * The league the sync switch follows: the linked Yahoo league. An ESPN league is never followed: ESPN shares a draft's picks only once it is
    * over, so there is nothing to sync while it runs.
    */
   readonly followedLeague = computed<FollowedLeague | null>(() => {
     const yahoo = this.yahooSync();
-    return yahoo && this.features.leagueDraftSync()
-      ? { platform: 'Yahoo', id: yahoo.leagueKey, name: yahoo.leagueName }
-      : null;
+    return yahoo ? { platform: 'Yahoo', id: yahoo.leagueKey, name: yahoo.leagueName } : null;
   });
   readonly canFollow = computed(() => this.followedLeague() !== null && !this.finished());
   /**
@@ -604,13 +596,13 @@ export class DraftModeComponent implements OnInit {
    */
   readonly rankingsParams = computed<{ draft: string } | null>(() => {
     const id = this.draftId();
-    return this.finished() && id && this.features.leagueDraftSync() ? { draft: id } : null;
+    return this.finished() && id ? { draft: id } : null;
   });
   /**
-   * Whether this environment follows Yahoo drafts, which is where the settings offer syncing
-   * picks. Not for a finished draft: there is nothing left to follow.
+   * Whether the settings offer syncing picks. Not for a finished draft: there is nothing left to
+   * follow.
    */
-  readonly syncAvailable = computed(() => !this.finished() && this.features.leagueDraftSync());
+  readonly syncAvailable = computed(() => !this.finished());
   /** The draft's own league settings. */
   readonly leagueSettings = computed(() => this.league());
   readonly finished = computed(() => !!this.draft()?.finishedAt);
@@ -745,8 +737,7 @@ export class DraftModeComponent implements OnInit {
     effect(() => {
       this.setupDialog()?.nativeElement.focus();
     });
-    // A board left following picks the league's draft back up once following is offered here,
-    // which waits on the features the BFF reports as well as on the board itself.
+    // A board left following picks the league's draft back up once the board can follow again.
     effect(() => {
       if (this.resumeFollowing() && this.canFollow()) {
         untracked(() => {

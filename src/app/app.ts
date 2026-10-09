@@ -46,7 +46,6 @@ export class App {
   private readonly router = inject(Router);
   protected readonly environmentName = environment.environmentName;
   protected readonly appVersion = environment.version;
-  protected readonly paymentsEnabled = environment.paymentsEnabled;
   protected readonly whosHotEnabled = environment.whosHotEnabled;
   protected readonly features = inject(FeatureService);
 
@@ -84,13 +83,9 @@ export class App {
   /**
    * The plan as the nav may state it. Null until it is known: "Free plan" said of a subscriber
    * whose entitlement has not landed yet is wrong, not merely early, and the header link that
-   * sells Premium to a free account would be selling it to someone who already pays. Null too
-   * wherever payments are off, since without them there is no plan to have.
+   * sells Premium to a free account would be selling it to someone who already pays.
    */
   protected readonly plan = computed<'premium' | 'free' | null>(() => {
-    if (!this.paymentsEnabled) {
-      return null;
-    }
     if (this.entitlement.premium()) {
       return 'premium';
     }
@@ -104,6 +99,6 @@ export class App {
    * the price sits behind a session or on the landing page.
    */
   protected readonly showsPremiumLink = computed(
-    () => this.paymentsEnabled && (!this.authService.isLoggedIn() || this.plan() === 'free'),
+    () => !this.authService.isLoggedIn() || this.plan() === 'free',
   );
 }

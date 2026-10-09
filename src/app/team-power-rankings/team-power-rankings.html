@@ -10,221 +10,214 @@
     </p>
   </div>
 
-  @if (!offered()) {
-    <p class="rankings-note">Reading a Yahoo league's draft isn't available here yet.</p>
-  } @else {
-    <!-- The platform is chosen the way the league settings' import chooses it: the same tabs, and
-         under ESPN the same card. -->
-    @if (espnOffered) {
-      <app-platform-tabs
-        label="Fantasy platform to rank a league from"
-        [platforms]="platforms"
-        [(selected)]="platform"
-      />
-    }
-    @if (platform() === 'espn') {
-      <app-espn-league-sync
-        class="espn-league"
-        purpose="rankings"
-        [lastLeagueId]="espnLeague()?.id ?? null"
-        (synced)="rankEspnLeague($event)"
-      />
-    }
+  <!-- The platform is chosen the way the league settings' import chooses it: the same tabs, and
+       under ESPN the same card. -->
+  @if (espnOffered) {
+    <app-platform-tabs
+      label="Fantasy platform to rank a league from"
+      [platforms]="platforms"
+      [(selected)]="platform"
+    />
+  }
+  @if (platform() === 'espn') {
+    <app-espn-league-sync
+      class="espn-league"
+      purpose="rankings"
+      [lastLeagueId]="espnLeague()?.id ?? null"
+      (synced)="rankEspnLeague($event)"
+    />
+  }
 
-    <!-- Two choices side by side, each under its own name, and no button: what they point at is
-         what is on screen. They stay put above the rankings, so a second league is one choice
-         away. Under ESPN the league is the card's, and only the second choice is here. -->
-    <div class="league-picker">
-      @if (platform() !== 'espn') {
-        <div class="picker-field">
-          <span class="picker-label" id="rankings-league-label">League</span>
+  <!-- Two choices side by side, each under its own name, and no button: what they point at is
+       what is on screen. They stay put above the rankings, so a second league is one choice
+       away. Under ESPN the league is the card's, and only the second choice is here. -->
+  <div class="league-picker">
+    @if (platform() !== 'espn') {
+      <div class="picker-field">
+        <span class="picker-label" id="rankings-league-label">League</span>
 
-          <!-- The Yahoo leagues and the user's own finished drafts, in one list: both are a league
-             to rank. The drafts need no Yahoo account, so they are offered without one. -->
-          @if (hasChoices()) {
-            <select
-              class="picker-select league-select"
-              aria-labelledby="rankings-league-label"
-              (change)="selectLeague($event)"
-            >
-              <option value="">Select a league…</option>
-              @if (picker.leagues().length > 0) {
-                <optgroup label="Yahoo">
-                  @for (league of picker.leagues(); track league.leagueKey) {
-                    <option
-                      [value]="league.leagueKey"
-                      [selected]="league.leagueKey === selectedValue()"
-                    >
-                      {{ league.name }}
-                    </option>
-                  }
-                </optgroup>
-              }
-              @if (drafts().length > 0) {
-                <optgroup label="My Drafts">
-                  @for (draft of drafts(); track draft.id) {
-                    <option
-                      [value]="draftOption(draft.id)"
-                      [selected]="draftOption(draft.id) === selectedValue()"
-                    >
-                      {{ draft.name }}
-                    </option>
-                  }
-                </optgroup>
-              }
-            </select>
-          }
-
-          @switch (picker.connected()) {
-            @case (null) {
-              <span class="picker-status"
-                ><app-loading-indicator variant="inline" label="Checking"
-              /></span>
-            }
-            @case (false) {
-              <button
-                type="button"
-                class="btn btn-primary btn-sm"
-                [disabled]="picker.connecting()"
-                (click)="picker.connect()"
-              >
-                @if (picker.connecting()) {
-                  <app-loading-indicator variant="inline" label="Connecting" />
-                } @else {
-                  Connect Yahoo account
-                }
-              </button>
-            }
-            @default {
-              @if (picker.loadingLeagues()) {
-                <span class="picker-status"
-                  ><app-loading-indicator variant="inline" label="Loading your leagues"
-                /></span>
-              } @else if (!hasChoices()) {
-                <span class="picker-status">No NHL leagues found.</span>
-              }
-            }
-          }
-        </div>
-      }
-
-      @if (offersRankBy()) {
-        <!-- What the league is ranked against. Offered with or without a league on screen;
-             changing it re-reads the one that is. Nothing to rank without Yahoo or a draft. -->
-        <div class="picker-field">
-          <label class="picker-label" for="rank-by">Rank by</label>
-          <select id="rank-by" class="picker-select rank-by-select" (change)="selectRankBy($event)">
-            <!-- Named for whose numbers they are, like the two groups under it. -->
-            <optgroup label="SlapStat">
-              @if (modelOffered()) {
-                <option value="model" [selected]="isRankedBy('model')">AI projection</option>
-              }
-              <option value="last_season" [selected]="isRankedBy('last_season')">
-                Last season
-              </option>
-            </optgroup>
-            <!-- Always listed, even empty: the group is how a reader learns the league can be
-                 ranked by their own numbers. Left out only while the list is loading or failed,
-                 when "none" would be a guess. -->
-            @if (ownBoards().length > 0) {
-              <optgroup label="My Projections">
-                @for (board of ownBoards(); track board.id) {
+        <!-- The Yahoo leagues and the user's own finished drafts, in one list: both are a league
+           to rank. The drafts need no Yahoo account, so they are offered without one. -->
+        @if (hasChoices()) {
+          <select
+            class="picker-select league-select"
+            aria-labelledby="rankings-league-label"
+            (change)="selectLeague($event)"
+          >
+            <option value="">Select a league…</option>
+            @if (picker.leagues().length > 0) {
+              <optgroup label="Yahoo">
+                @for (league of picker.leagues(); track league.leagueKey) {
                   <option
-                    [value]="boardOption(board.id)"
-                    [selected]="isRankedBy(boardOption(board.id))"
+                    [value]="league.leagueKey"
+                    [selected]="league.leagueKey === selectedValue()"
                   >
-                    {{ board.name }}
+                    {{ league.name }}
                   </option>
                 }
               </optgroup>
-            } @else if (ownBoardsEmpty()) {
-              <!-- Choosing this opens the editor; the menu springs back to what ranks the league. -->
-              <optgroup label="My Projections">
-                <option [value]="createOption">No projections yet. Create one.</option>
-              </optgroup>
             }
-            @if (followedBoards().length > 0) {
-              <optgroup label="Following">
-                @for (board of followedBoards(); track board.id) {
+            @if (drafts().length > 0) {
+              <optgroup label="My Drafts">
+                @for (draft of drafts(); track draft.id) {
                   <option
-                    [value]="boardOption(board.id)"
-                    [selected]="isRankedBy(boardOption(board.id))"
+                    [value]="draftOption(draft.id)"
+                    [selected]="draftOption(draft.id) === selectedValue()"
                   >
-                    {{ board.name }}
+                    {{ draft.name }}
                   </option>
                 }
               </optgroup>
             }
           </select>
-        </div>
-
-        @if (boardsFailed()) {
-          <p class="picker-status picker-wide" role="status">
-            Couldn't load your projections, so only ours are offered. Reload the page to try again.
-          </p>
-        }
-      }
-
-      @if (platform() !== 'espn' && picker.error(); as message) {
-        @if (sharedNotice) {
-          <app-notice class="picker-wide" tone="error" variant="inline" role="alert">{{
-            message
-          }}</app-notice>
-        } @else {
-          <p class="picker-error picker-wide" role="alert">
-            <app-icon name="alert-triangle" [size]="14" />{{ message }}
-          </p>
-        }
-      }
-    </div>
-
-    @if (loadingRankings()) {
-      <app-loading-indicator />
-    } @else if (rankingsError()) {
-      <app-error-state
-        title="Couldn't read that league"
-        [message]="rankingsMessage() ?? ''"
-        [error]="rankingsError()"
-        [retryable]="rankingsRetryable()"
-        (retry)="retryRankings()"
-      />
-    } @else if (rankingsData()) {
-      <h2 class="rankings-league">{{ leagueName() }}</h2>
-
-      @if (notDrafted()) {
-        @if (sharedNotice) {
-          <app-notice tone="error" variant="inline" role="alert">
-            This league hasn't drafted yet. Come back once the picks are in.
-          </app-notice>
-        } @else {
-          <p class="rankings-error" role="alert">
-            <app-icon name="alert-triangle" [size]="14" />This league hasn't drafted yet. Come back
-            once the picks are in.
-          </p>
-        }
-      } @else if (leagueProjection(); as projection) {
-        @if (unprojectedPlayers() > 0) {
-          <p class="rankings-note rankings-gap">
-            <app-icon name="info" [size]="14" />
-            {{ unprojectedPlayers() }}
-            {{
-              unprojectedPlayers() === 1
-                ? "player on this league's teams isn't"
-                : "players on this league's teams aren't"
-            }}
-            on this projection and {{ unprojectedPlayers() === 1 ? 'counts' : 'count' }} for
-            nothing.
-          </p>
         }
 
-        <app-league-projection-table
-          [data]="projection"
-          [scoringType]="scoringType()"
-          [scoreHeading]="scoreHeading()"
-        />
-      }
-    } @else if (awaitingLeague()) {
-      <p class="rankings-note">Select a league to see its rankings.</p>
+        @switch (picker.connected()) {
+          @case (null) {
+            <span class="picker-status"
+              ><app-loading-indicator variant="inline" label="Checking"
+            /></span>
+          }
+          @case (false) {
+            <button
+              type="button"
+              class="btn btn-primary btn-sm"
+              [disabled]="picker.connecting()"
+              (click)="picker.connect()"
+            >
+              @if (picker.connecting()) {
+                <app-loading-indicator variant="inline" label="Connecting" />
+              } @else {
+                Connect Yahoo account
+              }
+            </button>
+          }
+          @default {
+            @if (picker.loadingLeagues()) {
+              <span class="picker-status"
+                ><app-loading-indicator variant="inline" label="Loading your leagues"
+              /></span>
+            } @else if (!hasChoices()) {
+              <span class="picker-status">No NHL leagues found.</span>
+            }
+          }
+        }
+      </div>
     }
+
+    @if (offersRankBy()) {
+      <!-- What the league is ranked against. Offered with or without a league on screen;
+           changing it re-reads the one that is. Nothing to rank without Yahoo or a draft. -->
+      <div class="picker-field">
+        <label class="picker-label" for="rank-by">Rank by</label>
+        <select id="rank-by" class="picker-select rank-by-select" (change)="selectRankBy($event)">
+          <!-- Named for whose numbers they are, like the two groups under it. -->
+          <optgroup label="SlapStat">
+            @if (modelOffered()) {
+              <option value="model" [selected]="isRankedBy('model')">AI projection</option>
+            }
+            <option value="last_season" [selected]="isRankedBy('last_season')">Last season</option>
+          </optgroup>
+          <!-- Always listed, even empty: the group is how a reader learns the league can be
+               ranked by their own numbers. Left out only while the list is loading or failed,
+               when "none" would be a guess. -->
+          @if (ownBoards().length > 0) {
+            <optgroup label="My Projections">
+              @for (board of ownBoards(); track board.id) {
+                <option
+                  [value]="boardOption(board.id)"
+                  [selected]="isRankedBy(boardOption(board.id))"
+                >
+                  {{ board.name }}
+                </option>
+              }
+            </optgroup>
+          } @else if (ownBoardsEmpty()) {
+            <!-- Choosing this opens the editor; the menu springs back to what ranks the league. -->
+            <optgroup label="My Projections">
+              <option [value]="createOption">No projections yet. Create one.</option>
+            </optgroup>
+          }
+          @if (followedBoards().length > 0) {
+            <optgroup label="Following">
+              @for (board of followedBoards(); track board.id) {
+                <option
+                  [value]="boardOption(board.id)"
+                  [selected]="isRankedBy(boardOption(board.id))"
+                >
+                  {{ board.name }}
+                </option>
+              }
+            </optgroup>
+          }
+        </select>
+      </div>
+
+      @if (boardsFailed()) {
+        <p class="picker-status picker-wide" role="status">
+          Couldn't load your projections, so only ours are offered. Reload the page to try again.
+        </p>
+      }
+    }
+
+    @if (platform() !== 'espn' && picker.error(); as message) {
+      @if (sharedNotice) {
+        <app-notice class="picker-wide" tone="error" variant="inline" role="alert">{{
+          message
+        }}</app-notice>
+      } @else {
+        <p class="picker-error picker-wide" role="alert">
+          <app-icon name="alert-triangle" [size]="14" />{{ message }}
+        </p>
+      }
+    }
+  </div>
+
+  @if (loadingRankings()) {
+    <app-loading-indicator />
+  } @else if (rankingsError()) {
+    <app-error-state
+      title="Couldn't read that league"
+      [message]="rankingsMessage() ?? ''"
+      [error]="rankingsError()"
+      [retryable]="rankingsRetryable()"
+      (retry)="retryRankings()"
+    />
+  } @else if (rankingsData()) {
+    <h2 class="rankings-league">{{ leagueName() }}</h2>
+
+    @if (notDrafted()) {
+      @if (sharedNotice) {
+        <app-notice tone="error" variant="inline" role="alert">
+          This league hasn't drafted yet. Come back once the picks are in.
+        </app-notice>
+      } @else {
+        <p class="rankings-error" role="alert">
+          <app-icon name="alert-triangle" [size]="14" />This league hasn't drafted yet. Come back
+          once the picks are in.
+        </p>
+      }
+    } @else if (leagueProjection(); as projection) {
+      @if (unprojectedPlayers() > 0) {
+        <p class="rankings-note rankings-gap">
+          <app-icon name="info" [size]="14" />
+          {{ unprojectedPlayers() }}
+          {{
+            unprojectedPlayers() === 1
+              ? "player on this league's teams isn't"
+              : "players on this league's teams aren't"
+          }}
+          on this projection and {{ unprojectedPlayers() === 1 ? 'counts' : 'count' }} for nothing.
+        </p>
+      }
+
+      <app-league-projection-table
+        [data]="projection"
+        [scoringType]="scoringType()"
+        [scoreHeading]="scoreHeading()"
+      />
+    }
+  } @else if (awaitingLeague()) {
+    <p class="rankings-note">Select a league to see its rankings.</p>
   }
 </div>

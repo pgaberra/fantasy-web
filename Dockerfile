@@ -32,9 +32,6 @@ ARG SENTRY_DSN=
 # YAHOO_SYNC_DISABLED=true flips the Yahoo league-sync UI into its off-season note (between
 # NHL seasons there are no leagues to sync); anything else leaves sync enabled.
 ARG YAHOO_SYNC_DISABLED=
-# PAYMENTS_ENABLED=true turns on the subscription billing UI; empty/anything else keeps the
-# whole payments feature dark (default).
-ARG PAYMENTS_ENABLED=
 # Premium's price in US dollars ("4.99"), which /premium quotes. Must match the price the BFF's
 # STRIPE_PRICE_ID charges.
 ARG PREMIUM_BASE_PRICE_USD=
@@ -60,7 +57,7 @@ ARG TIERS_ENABLED=
 # component; empty/anything else leaves each of them exactly as it shipped (default).
 ARG SHARED_NOTICE_ENABLED=
 # PREMIUM_COMING_SOON=true keeps the Premium page and badges but disables Subscribe with a note;
-# empty/anything else sells Premium as usual (default). Needs PAYMENTS_ENABLED.
+# empty/anything else sells Premium as usual (default).
 ARG PREMIUM_COMING_SOON=
 
 # Inject the values into environment.prod.ts (replaces the committed placeholders).
@@ -74,7 +71,6 @@ RUN sed -i \
   -e "s|__POSTHOG_KEY__|${POSTHOG_KEY}|g" \
   -e "s|__SENTRY_DSN__|${SENTRY_DSN}|g" \
   -e "s|__YAHOO_SYNC_DISABLED__|${YAHOO_SYNC_DISABLED}|g" \
-  -e "s|__PAYMENTS_ENABLED__|${PAYMENTS_ENABLED}|g" \
   -e "s|__PREMIUM_COMING_SOON__|${PREMIUM_COMING_SOON}|g" \
   -e "s|__PREMIUM_BASE_PRICE_USD__|${PREMIUM_BASE_PRICE_USD}|g" \
   -e "s|__ESPN_LEAGUES_ENABLED__|${ESPN_LEAGUES_ENABLED}|g" \
@@ -88,20 +84,17 @@ RUN sed -i \
 
 RUN npm run build
 
-# A build with payments on must prerender /premium with its price: a payment provider's review
-# refuses a paid plan with no price, and the page would otherwise quote none in the browser either.
-# CI's prerender check builds without payments.
-RUN if [ "$PAYMENTS_ENABLED" = "true" ]; then \
-  if ! printf '%s' "$PREMIUM_BASE_PRICE_USD" | grep -qE '^[0-9]+\.[0-9]{2}$'; then \
-    echo "PREMIUM_BASE_PRICE_USD must be the Premium price in US dollars, like 4.99, in a build with payments on." >&2; \
+# Every image must prerender /premium with its price: a payment provider's review refuses a paid
+# plan with no price, and the page would otherwise quote none in the browser either.
+RUN if ! printf '%s' "$PREMIUM_BASE_PRICE_USD" | grep -qE '^[0-9]+\.[0-9]{2}$'; then \
+    echo "PREMIUM_BASE_PRICE_USD must be the Premium price in US dollars, like 4.99." >&2; \
     exit 1; \
   fi; \
   if ! sed -e 's/<[^>]*>/ /g' dist/fantasy-web/browser/premium/index.html | tr -s ' \n' ' ' \
     | grep -qF "\$${PREMIUM_BASE_PRICE_USD} per month"; then \
     echo "premium/index.html was prerendered without its price." >&2; \
     exit 1; \
-  fi; \
-fi
+  fi
 
 # ---- Serve stage ----
 FROM nginx:alpine

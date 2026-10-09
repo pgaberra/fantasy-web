@@ -3,7 +3,6 @@ import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { of, Subject } from 'rxjs';
 import { WhosHotComponent } from './whos-hot';
-import { environment } from '../../environments/environment';
 import { EntitlementService } from '../services/entitlement.service';
 import { FeatureService } from '../services/feature.service';
 import { PlayerService } from '../services/player.service';
@@ -103,10 +102,7 @@ describe('WhosHotComponent', () => {
   /** The player pool, which the board is filled out from when a range reaches before game 1. */
   let pool: Player[] = [];
 
-  const paymentsWereEnabled = environment.paymentsEnabled;
-
   afterEach(() => {
-    environment.paymentsEnabled = paymentsWereEnabled;
     vi.useRealTimers();
   });
 
@@ -163,21 +159,7 @@ describe('WhosHotComponent', () => {
     /** A range someone picked for themselves, which is the thing premium buys. */
     const customRange = () => ({ fromGame: 1, toGame: 82, lastGames: null }) as WhosHotSettings;
 
-    it('leaves the range open to everyone while payments are switched off', async () => {
-      environment.paymentsEnabled = false;
-      stored = customRange();
-
-      const component = (await renderSettled()).point.componentInstance;
-
-      // Nobody can buy premium with the flag off, and /premium redirects home, so locking the
-      // control would make the range unbuyable rather than unbought.
-      expect(component.canPickRange()).toEqual(true);
-      expect(component.fromGame()).toEqual(1);
-    });
-
     it('opens on the last 5 games, which is the range a free account is held to', async () => {
-      environment.paymentsEnabled = true;
-
       const component = (await renderSettled()).point.componentInstance;
 
       expect(component.canPickRange()).toEqual(false);
@@ -187,7 +169,6 @@ describe('WhosHotComponent', () => {
     });
 
     it('puts a lapsed account back on the free range, rather than stranding it on a custom one', async () => {
-      environment.paymentsEnabled = true;
       stored = customRange();
 
       const component = (await renderSettled()).point.componentInstance;
@@ -201,7 +182,6 @@ describe('WhosHotComponent', () => {
     });
 
     it('keeps a premium account on the range it stored', async () => {
-      environment.paymentsEnabled = true;
       entitlement.premium.set(true);
       stored = customRange();
 
@@ -214,7 +194,6 @@ describe('WhosHotComponent', () => {
     });
 
     it('waits for the entitlement to land before taking a stored range away', async () => {
-      environment.paymentsEnabled = true;
       entitlement.loadState.set('loading');
       stored = customRange();
 
@@ -233,7 +212,6 @@ describe('WhosHotComponent', () => {
     });
 
     it('falls back once a failed entitlement read settles, rather than staying open on the error', async () => {
-      environment.paymentsEnabled = true;
       entitlement.loadState.set('loading');
       stored = customRange();
 
@@ -248,8 +226,6 @@ describe('WhosHotComponent', () => {
     });
 
     it('tells the range bar it is locked, rather than each of them asking separately', async () => {
-      environment.paymentsEnabled = true;
-
       await renderSettled();
 
       const selector = ngMocks.find('app-game-range-selector');
@@ -311,7 +287,7 @@ describe('WhosHotComponent', () => {
     });
 
     it('pulls a range kept from an 84-game season back inside an 82-game one', async () => {
-      environment.paymentsEnabled = false;
+      entitlement.premium.set(true);
       stored = { season: 2025, fromGame: 80, toGame: 84, lastGames: null } as WhosHotSettings;
 
       const component = (await renderSettled()).point.componentInstance;
@@ -323,7 +299,7 @@ describe('WhosHotComponent', () => {
   describe('a range carried into another season', () => {
     /** A premium account, so the range is the test's to set. */
     beforeEach(() => {
-      environment.paymentsEnabled = false;
+      entitlement.premium.set(true);
     });
 
     const switchTo = (fixture: ReturnType<typeof MockRender<WhosHotComponent>>, year: number) => {
@@ -452,7 +428,7 @@ describe('WhosHotComponent', () => {
     });
 
     it('lets go of the season pill when a lapsed account is put back on the last 5', async () => {
-      environment.paymentsEnabled = true;
+      entitlement.premium.set(false);
       stored = {
         fromGame: 0,
         toGame: 82,
@@ -510,7 +486,7 @@ describe('WhosHotComponent', () => {
     });
 
     it('asks the server from game 1 for a range the visitor starts before it', async () => {
-      environment.paymentsEnabled = false;
+      entitlement.premium.set(true);
       seasonsAnswer = OPENING_NIGHT;
       stored = { fromGame: 0, toGame: 1, lastGames: null } as WhosHotSettings;
 
@@ -522,7 +498,7 @@ describe('WhosHotComponent', () => {
     });
 
     it('still says a season has not started, rather than listing the pool at zero', async () => {
-      environment.paymentsEnabled = false;
+      entitlement.premium.set(true);
       splits.mockImplementation(() => of([]));
       stored = { season: 2026, fromGame: 0, toGame: 10, lastGames: null } as WhosHotSettings;
 
@@ -536,7 +512,7 @@ describe('WhosHotComponent', () => {
   describe('the minimum-games filter against a range that moved under it', () => {
     /** A premium account, so the range is the test's to move. */
     beforeEach(() => {
-      environment.paymentsEnabled = false;
+      entitlement.premium.set(true);
     });
 
     it('never asks for more games than the range holds', async () => {
@@ -642,7 +618,7 @@ describe('WhosHotComponent', () => {
   });
 
   it('spends one request on the range a drag lands on, not on every game it passes', async () => {
-    environment.paymentsEnabled = false;
+    entitlement.premium.set(true);
     const fixture = await renderOnFakeTimers();
     const component = fixture.point.componentInstance;
     // A handle moving is what turns "the last 5" into an explicit range.
@@ -663,7 +639,7 @@ describe('WhosHotComponent', () => {
   });
 
   it('asks for nothing at all when a drag ends back where it started', async () => {
-    environment.paymentsEnabled = false;
+    entitlement.premium.set(true);
     const fixture = await renderOnFakeTimers();
     const component = fixture.point.componentInstance;
     component.lastGames.set(null);
@@ -680,7 +656,7 @@ describe('WhosHotComponent', () => {
     expect(splits).not.toHaveBeenCalled();
   });
   it('keeps the table, and the filters it holds, while a new range loads', async () => {
-    environment.paymentsEnabled = false;
+    entitlement.premium.set(true);
     const fixture = await renderOnFakeTimers();
     const component = fixture.point.componentInstance;
     const before = ngMocks.findInstance(HotPlayersTableComponent);

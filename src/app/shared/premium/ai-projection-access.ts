@@ -1,6 +1,5 @@
 import { computed, inject, Injectable } from '@angular/core';
 import { EntitlementService } from '../../services/entitlement.service';
-import { environment } from '../../../environments/environment';
 
 /**
  * Whether this account still has to buy the AI projection.
@@ -29,9 +28,7 @@ export class AiProjectionAccess {
     () => this.entitlement.loadState() === 'loaded' || this.entitlement.loadState() === 'error',
   );
 
-  readonly locked = computed(
-    () => environment.paymentsEnabled && !this.entitlement.premium() && this.settled(),
-  );
+  readonly locked = computed(() => !this.entitlement.premium() && this.settled());
 
   /**
    * Whether the BFF serves this account the model's whole board, and not only the free teaser.
@@ -40,7 +37,7 @@ export class AiProjectionAccess {
    * teaser is what the BFF would serve on the same doubt.
    */
   readonly readsWholeBoard = computed<boolean | null>(() => {
-    if (!environment.paymentsEnabled || this.entitlement.premium()) {
+    if (this.entitlement.premium()) {
       return true;
     }
     return this.settled() ? false : null;

@@ -8,8 +8,8 @@
 # page, or a route that falls back to client rendering, breaks nothing a browser would notice, so
 # this reads the built files the way that reader does.
 #
-# Run after `npm run build`. /premium is not checked here: CI builds with PAYMENTS_ENABLED unset, and
-# the page then prerenders as a redirect home, which is what it should be in that build.
+# Run after `npm run build`. /premium is not checked here: CI builds without PREMIUM_BASE_PRICE_USD,
+# so the page has no price to quote; the Dockerfile checks it, price and all, in every image build.
 set -euo pipefail
 
 out=dist/fantasy-web/browser
