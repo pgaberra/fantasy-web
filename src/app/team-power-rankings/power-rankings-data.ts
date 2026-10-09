@@ -18,13 +18,12 @@ export function scoreHeadingFor(summary: LeagueSummaryResponse): string {
 /**
  * A league the BFF totalled, in the shape the league table already draws.
  *
- * <p>The numbers arrive done: they are computed on the server so that an account without premium
- * can be shown the totals without being handed the lines behind them. What comes back is bare
+ * <p>The numbers arrive done, computed on the server from the league's own rosters. What comes back is bare
  * keys and values, because how a column is labelled, and to how many decimals, is the web's
  * business — the same answer here as for a draft board, from the same two functions.
  *
- * <p>A team without premium carries no roster and no lineup, so its rows are empty rather than
- * absent: the table renders a team with nothing to expand, and the page is what says why.
+ * <p>A team that comes back without a roster or a lineup gets empty rows rather than absent ones,
+ * so the table still renders it.
  */
 export function leagueProjectionFrom(summary: LeagueSummaryResponse): LeagueProjectionData {
   const scoringType: ScoringType = summary.scoringType === 'category' ? 'category' : 'points';

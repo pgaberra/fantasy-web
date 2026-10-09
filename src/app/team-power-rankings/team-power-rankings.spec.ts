@@ -337,38 +337,14 @@ describe('TeamPowerRankingsComponent', () => {
     );
   });
 
-  /**
-   * The point of the whole exercise: the totals are shown to everyone, and the players behind
-   * them are not in the response at all without premium — so the table is told not to offer them.
-   */
-  it('shows the totals without the players, and sells the rest', async () => {
+  /** The players behind every total are everyone's: no padlock, even where Premium is sold. */
+  it('shows the totals with nothing locked behind them', async () => {
     const fixture = await render();
     const component = fixture.point.componentInstance;
     await choose(fixture, component, '465.l.1');
 
-    expect(component.hasPlayers()).toBe(false);
-    expect(component.sellsPremium()).toBe(true);
     expect(component.leagueProjection()?.teams[0].total).toEqual(90);
-  });
-
-  it('offers the players when they came back', async () => {
-    yahooLeague.mockReturnValue(of({ ...summary, premium: true }));
-    const fixture = await render();
-    const component = fixture.point.componentInstance;
-    await choose(fixture, component, '465.l.1');
-
-    expect(component.hasPlayers()).toBe(true);
-    expect(component.sellsPremium()).toBe(false);
-  });
-
-  /** Nothing is sold in a build with no way to buy it. */
-  it('keeps quiet about premium where nothing can be bought', async () => {
-    environment.paymentsEnabled = false;
-    const fixture = await render();
-    const component = fixture.point.componentInstance;
-    await choose(fixture, component, '465.l.1');
-
-    expect(component.sellsPremium()).toBe(false);
+    expect(fixture.nativeElement.textContent).not.toContain('Premium');
   });
 
   it('says a league has not drafted yet rather than showing every team at nothing', async () => {
@@ -468,7 +444,6 @@ describe('TeamPowerRankingsComponent', () => {
     fixture.detectChanges();
 
     expect(yahooLeague).toHaveBeenLastCalledWith('465.l.1', 'board:b1');
-    expect(component.hasPlayers()).toBe(true);
   });
 
   it("says how many of the league's players a board leaves out", async () => {

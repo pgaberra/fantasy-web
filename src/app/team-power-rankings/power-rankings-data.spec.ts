@@ -64,8 +64,8 @@ describe('power rankings data', () => {
   });
 
   /**
-   * Without premium the response carries no players at all. The table has to render the team
-   * anyway — the totals are the page — so the halves become empty rather than missing.
+   * A response without players still has to render the team — the totals are the page — so the
+   * halves become empty rather than missing.
    */
   it('renders a team whose players were withheld, with nothing to expand', () => {
     const withheld: LeagueSummaryResponse = {
