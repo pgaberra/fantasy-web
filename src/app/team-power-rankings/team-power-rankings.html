@@ -123,6 +123,9 @@
                 Last season
               </option>
             </optgroup>
+            <!-- Always listed, even empty: the group is how a reader learns the league can be
+                 ranked by their own numbers. Left out only while the list is loading or failed,
+                 when "none" would be a guess. -->
             @if (ownBoards().length > 0) {
               <optgroup label="My Projections">
                 @for (board of ownBoards(); track board.id) {
@@ -133,6 +136,10 @@
                     {{ board.name }}
                   </option>
                 }
+              </optgroup>
+            } @else if (ownBoardsEmpty()) {
+              <optgroup label="My Projections">
+                <option disabled>None yet</option>
               </optgroup>
             }
             @if (followedBoards().length > 0) {
@@ -153,6 +160,12 @@
         @if (boardsFailed()) {
           <p class="picker-status picker-wide" role="status">
             Couldn't load your projections, so only ours are offered. Reload the page to try again.
+          </p>
+        } @else if (ownBoardsEmpty()) {
+          <!-- The dropdown can show that the group is empty but cannot hold a link; this can. -->
+          <p class="picker-status picker-wide own-boards-empty">
+            No projections of your own yet.
+            <a routerLink="/projections/new">Create one</a> to rank the league by your own numbers.
           </p>
         }
       }

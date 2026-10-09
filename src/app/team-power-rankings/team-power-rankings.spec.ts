@@ -484,6 +484,37 @@ describe('TeamPowerRankingsComponent', () => {
     expect(component.boardsFailed()).toBe(true);
     const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
     expect(select.options).toHaveLength(2);
+    // A failed list says nothing about what the user has, so no invitation to make a first one.
+    expect(component.ownBoardsEmpty()).toBe(false);
+    expect(fixture.nativeElement.querySelector('.own-boards-empty')).toBeNull();
+  });
+
+  /** The group stays on the menu with nothing in it, so the reader learns their own numbers count. */
+  it('keeps My Projections on the menu and offers to make one when the user has none', async () => {
+    listAll.mockReturnValue(of([boards[1], ...drafts]));
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+
+    expect(component.ownBoardsEmpty()).toBe(true);
+    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
+    const groups = Array.from(select.querySelectorAll('optgroup')).map((group) => group.label);
+    expect(groups).toEqual(['SlapStat', 'My Projections', 'Following']);
+    const placeholder = select.querySelector('optgroup[label="My Projections"] option');
+    expect(placeholder?.textContent?.trim()).toEqual('None yet');
+    expect((placeholder as HTMLOptionElement).disabled).toBe(true);
+    expect(select.value).toEqual('model');
+
+    const invitation = fixture.nativeElement.querySelector('.own-boards-empty') as HTMLElement;
+    expect(invitation.textContent).toContain('No projections of your own yet.');
+    const link = ngMocks.find(fixture, '.own-boards-empty a');
+    expect(link.nativeElement.textContent).toEqual('Create one');
+    expect(ngMocks.input(link, 'routerLink')).toEqual('/projections/new');
+  });
+
+  it('says nothing about missing projections where the user has one', async () => {
+    const fixture = await render();
+    expect(fixture.point.componentInstance.ownBoardsEmpty()).toBe(false);
+    expect(fixture.nativeElement.querySelector('.own-boards-empty')).toBeNull();
   });
 
   /** Picking a platform's tab, as a reader would. */
