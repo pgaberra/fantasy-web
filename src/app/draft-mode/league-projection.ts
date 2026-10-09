@@ -50,10 +50,11 @@ export interface LeagueProjectionRosterRow {
    */
   contributions: Record<string, number | null>;
   /**
-   * Parked today in an injured-reserve or not-active slot, which holds a player without taking a
-   * roster spot. Absent where the source has no such slots (a draft).
+   * The injured-reserve or not-active slot he is parked in today (IR, IR+, IR-LT, IR-NR or NA),
+   * which holds a player without taking a roster spot. Absent for a player in neither, and where
+   * the source has no such slots (a draft).
    */
-  reserve?: boolean;
+  reserveSlot?: string | null;
   /**
    * False for a player outside the team's best, as many as its roster holds, whom its lineups are
    * not picked from and who so counts for nothing. Absent where everyone counts (a draft).

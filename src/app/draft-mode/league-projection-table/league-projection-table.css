@@ -352,6 +352,11 @@
   cursor: help;
 }
 
+/* Not active is a prospect kept off the club, not an injury: grey rather than a warning. */
+.lp-reserve-badge.na {
+  background: var(--color-text-muted);
+}
+
 /* Outside the team's best, as many as its roster holds: listed so the roster is whole, but faded,
    since none of his figures reach the team's. */
 .lp-table tbody tr.not-counted td:not(.col-rank) {
