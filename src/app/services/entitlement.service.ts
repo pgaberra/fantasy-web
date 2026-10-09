@@ -2,7 +2,6 @@ import { computed, effect, inject, Injectable, signal, untracked } from '@angula
 import { AuthService } from './auth.service';
 import { BillingService } from './billing.service';
 import { EntitlementsResponse } from '../api/models';
-import { environment } from '../../environments/environment';
 
 /**
  * Live premium-entitlement store. Holds the current entitlement as signals so guards, the nav and
@@ -16,7 +15,6 @@ import { environment } from '../../environments/environment';
  * bootstrap instead, which missed anyone who signed in *during* the session (sign-in is a router
  * navigation, not a reload), so a subscriber arriving through the login page was treated as free
  * until they reloaded the page, and Who's hot snapped their stored range back to the free one.
- * Only where payments exist: without them nothing is entitled and there is nothing to fetch.
  */
 @Injectable({ providedIn: 'root' })
 export class EntitlementService {
@@ -42,9 +40,6 @@ export class EntitlementService {
     effect(() => {
       const signedIn = this.auth.isLoggedIn();
       untracked(() => {
-        if (!environment.paymentsEnabled) {
-          return;
-        }
         if (signedIn) {
           this.refresh();
         } else {

@@ -132,10 +132,7 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   release (#514); switching tiles then switched the grammar of the control under them,
   which read as inconsistent, so the card won. The two presets side by side are peers: the
   AI projection is what we mean to sell, and second in a vertical list it read as a
-  footnote. It carries a gold **Premium** badge, and `showsPremiumBadge` holds that badge
-  back wherever `paymentsEnabled` is off — without payments the preset is free and
-  ungated, and a badge naming a subscription the build cannot sell promises something
-  nobody can act on. **It is also locked**, and the two are different
+  footnote. It carries a gold **Premium** badge. **It is also locked**, and the two are different
   questions: the badge says which plan it belongs to, the padlock says this account has not
   bought it. `shared/premium/ai-projection-access.ts` answers the second for both pages so
   they cannot lock the same starting point on different terms, and holds off until the
@@ -236,8 +233,7 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   the seat on "Select" and no Cancel, and the switch stays saved on until a seat is chosen, so a
   reload never opens a board drafted on a seat read off the team list.
   A draft whose league came from Yahoo can **follow that league's live draft** ("Follow Yahoo
-  draft"), offered only where `FeatureService.leagueDraftSync` (the BFF's `GET /api/v1/features`)
-  says so. Following makes the league the source of the board: its teams, keyed by Yahoo's team
+  draft"). Following makes the league the source of the board: its teams, keyed by Yahoo's team
   key, in draft order, and its picks, polled every 5 s while the tab is visible and at once when
   it comes back into view (`league-draft-follow.ts` holds the pure mapping). Until the league's
   order is known (the BFF's `orderKnown`: Yahoo lists a live draft's slots only once it runs) the
@@ -348,8 +344,7 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   themselves, so reaching one means a subscription lapsed mid-session or the entitlement read
   failed. `shared/premium/premium-refused.ts` is the one message for it, and it deliberately
   does not say "try again".
-- `streamer-planner/` — the **Streamer Planner** page (`/streamer-planner`, signed in, served only
-  where the BFF's `streamerPlanner` feature says so): every NHL team rated by its schedule over the
+- `streamer-planner/` — the **Streamer Planner** page (`/streamer-planner`, signed in): every NHL team rated by its schedule over the
   nights ahead, and the best players a league has available for them. The nights are the page's
   one setting: presets (the rest of this week, next week, both) or two dates, held to today, the
   season and the BFF's 31-day cap (`planner-schedule.ts`: `presetStretch`, `clampStretch`;
@@ -382,8 +377,7 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   numbers untouched while every night is ticked; `planner-free-agents.ts` scales a free agent's
   line to the share of his club's games on those nights, filters by position and keeps two
   decimals on every stat for the ranking engine, whose default rounds a
-  week's 0.4 goals to none. **The user's own team** (where the BFF's `streamerPlannerMyTeam`
-  says so): `GET /streamer-planner/my-team` gives his roster live, and `planner-lineup.ts` seats
+  week's 0.4 goals to none. **The user's own team**: `GET /streamer-planner/my-team` gives his roster live, and `planner-lineup.ts` seats
   the players whose club plays each game day in the league's lineup slots (max matching over
   their positions, so a C/LW goes wherever leaves room); a night's `fits` is the positions that
   would fill one more seat. Each cell says who would still start ("D", "Any skater, G") or

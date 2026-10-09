@@ -1,8 +1,7 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Observable, of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import { environment } from '../../environments/environment';
 import { DraftAnalysisComponent } from './draft-analysis';
 import { DraftAnalysisResponse } from '../api/models/draft-analysis-response';
 import { LeaguesResponse } from '../api/models/leagues-response';
@@ -113,7 +112,6 @@ const analysis: DraftAnalysisResponse = {
 describe('DraftAnalysisComponent', () => {
   const yahoo = vi.fn<(key: string) => Observable<DraftAnalysisResponse>>(() => of(analysis));
   const myLeagues = vi.fn<() => Observable<LeaguesResponse>>(() => of(leagues));
-  const originalPayments = environment.paymentsEnabled;
 
   const render = async () => {
     const fixture = MockRender(DraftAnalysisComponent);
@@ -136,7 +134,6 @@ describe('DraftAnalysisComponent', () => {
     );
 
   beforeEach(() => {
-    environment.paymentsEnabled = true;
     yahoo.mockReset();
     yahoo.mockReturnValue(of(analysis));
     myLeagues.mockReset();
@@ -150,10 +147,6 @@ describe('DraftAnalysisComponent', () => {
       } as never)
       .mock(YahooConnectReturnService)
       .mock(DraftAnalysisService, { yahoo });
-  });
-
-  afterEach(() => {
-    environment.paymentsEnabled = originalPayments;
   });
 
   it('reads nothing until a league is picked, then grades that league', async () => {

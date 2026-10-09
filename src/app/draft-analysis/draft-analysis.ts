@@ -1,7 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { environment } from '../../environments/environment';
 import { DraftAnalysisPick } from '../api/models/draft-analysis-pick';
 import { DraftAnalysisResponse } from '../api/models/draft-analysis-response';
 import { DraftAnalysisTeam } from '../api/models/draft-analysis-team';
@@ -101,10 +100,8 @@ export class DraftAnalysisComponent implements OnInit {
   /** Whether each pick's rank and grade came back, which is what Premium pays for. */
   readonly graded = computed(() => !!this.analysis()?.premium && !this.analysis()?.auction);
 
-  /** Whether to sell Premium here at all: not in a build with no way to buy anything. */
-  readonly sellsPremium = computed(
-    () => environment.paymentsEnabled && !!this.analysis() && !this.analysis()?.premium,
-  );
+  /** Whether to sell Premium here: wherever the grades did not come back. */
+  readonly sellsPremium = computed(() => !!this.analysis() && !this.analysis()?.premium);
 
   /** What a value is in, which the league's scoring decides. */
   readonly valueUnit = computed(() =>

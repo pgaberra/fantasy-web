@@ -23,9 +23,7 @@
           @if (whosHotEnabled) {
             <a routerLink="/whos-hot" routerLinkActive="active">Who's Hot</a>
           }
-          @if (features.streamerPlanner()) {
-            <a routerLink="/streamer-planner" routerLinkActive="active">Streamer Planner</a>
-          }
+          <a routerLink="/streamer-planner" routerLinkActive="active">Streamer Planner</a>
           @if (features.faScout()) {
             <a routerLink="/fa-scout" routerLinkActive="active">FA Scout</a>
           }
@@ -80,17 +78,15 @@
       ariaCurrentWhenActive="page"
       >Draft Mode</a
     >
-    @if (features.leagueDraftSync()) {
-      <a
-        class="nav-menu-item"
-        cdkMenuItem
-        routerLink="/team-power-rankings"
-        routerLinkActive="active"
-        ariaCurrentWhenActive="page"
-      >
-        Team Power Rankings
-      </a>
-    }
+    <a
+      class="nav-menu-item"
+      cdkMenuItem
+      routerLink="/team-power-rankings"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+    >
+      Team Power Rankings
+    </a>
     @if (features.draftAnalysis()) {
       <a
         class="nav-menu-item"
@@ -122,17 +118,15 @@
         Who's Hot
       </a>
     }
-    @if (features.streamerPlanner()) {
-      <a
-        class="nav-menu-item nav-menu-item--collapsed"
-        cdkMenuItem
-        routerLink="/streamer-planner"
-        routerLinkActive="active"
-        ariaCurrentWhenActive="page"
-      >
-        Streamer Planner
-      </a>
-    }
+    <a
+      class="nav-menu-item nav-menu-item--collapsed"
+      cdkMenuItem
+      routerLink="/streamer-planner"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+    >
+      Streamer Planner
+    </a>
     @if (features.faScout()) {
       <a
         class="nav-menu-item nav-menu-item--collapsed"
@@ -219,17 +213,15 @@
     <!-- One Premium item, to the one page: it sells to an account that has not bought Premium
          and manages the subscription of one that has, so there is nothing here to choose
          between, and nothing to get wrong while the plan is still loading. -->
-    @if (paymentsEnabled) {
-      <a
-        class="nav-menu-item"
-        cdkMenuItem
-        routerLink="/premium"
-        routerLinkActive="active"
-        ariaCurrentWhenActive="page"
-      >
-        Premium
-      </a>
-    }
+    <a
+      class="nav-menu-item"
+      cdkMenuItem
+      routerLink="/premium"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+    >
+      Premium
+    </a>
     <button
       type="button"
       class="nav-menu-item nav-menu-item--signout"

@@ -2,7 +2,6 @@ import { Component, computed, effect, inject, signal, untracked } from '@angular
 import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, filter, merge, skip, skipWhile, take } from 'rxjs';
 import { Router } from '@angular/router';
-import { environment } from '../../environments/environment';
 import { EntitlementService } from '../services/entitlement.service';
 import { FeatureService } from '../services/feature.service';
 import { PlayerService } from '../services/player.service';
@@ -271,15 +270,8 @@ export class WhosHotComponent {
       : null,
   );
 
-  /**
-   * Whether this account may pick its own range. Premium buys it; with payments switched off
-   * nobody can, so nobody is held to the free range either. /premium redirects home while the
-   * flag is off, so locking the control then would point at a page that does not exist and
-   * leave the range unbuyable rather than unbought.
-   */
-  readonly canPickRange = computed(
-    () => !environment.paymentsEnabled || this.entitlement.premium(),
-  );
+  /** Whether this account may pick its own range, which Premium buys. */
+  readonly canPickRange = computed(() => this.entitlement.premium());
 
   /**
    * The entitlement is a live fetch, and it reads as non-premium until it lands. Holding the
@@ -287,10 +279,7 @@ export class WhosHotComponent {
    * snapped back to the last 5 in the moment before their subscription is known.
    */
   private readonly entitlementSettled = computed(
-    () =>
-      !environment.paymentsEnabled ||
-      this.entitlement.loadState() === 'loaded' ||
-      this.entitlement.loadState() === 'error',
+    () => this.entitlement.loadState() === 'loaded' || this.entitlement.loadState() === 'error',
   );
 
   readonly activeColumns = computed<ActiveColumns>(() => ({
