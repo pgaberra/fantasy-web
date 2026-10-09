@@ -195,7 +195,11 @@
                   </td>
                 }
                 <td class="col-total" [class.sorted]="sortKey() === 'total'">
-                  {{ formatTotal(player.total) }}
+                  @if (shownAsUncounted(player)) {
+                    {{ formatTotal(player.fullValue!) }}<span class="lp-uncounted-mark">*</span>
+                  } @else {
+                    {{ formatTotal(player.total) }}
+                  }
                 </td>
               </tr>
             }
@@ -229,4 +233,10 @@
       </tbody>
     </table>
   </div>
+  @if (showsUncountedNote()) {
+    <p class="lp-footnote">
+      * Not in the team's total: a team counts its best players, as many as its roster holds. The
+      figure is what he would add if the team started him every game.
+    </p>
+  }
 }

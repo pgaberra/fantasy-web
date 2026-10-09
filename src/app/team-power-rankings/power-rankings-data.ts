@@ -67,5 +67,6 @@ function rosterRow(
     contributions,
     reserveSlot: row.reserveSlot ?? null,
     counted: row.counted,
+    fullValue: row.fullValue,
   };
 }
