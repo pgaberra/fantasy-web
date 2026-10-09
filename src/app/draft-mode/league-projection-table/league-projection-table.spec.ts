@@ -173,7 +173,8 @@ describe('LeagueProjectionTableComponent', () => {
     ]);
     const expandedText = fixture.nativeElement.textContent as string;
     expect(expandedText).toContain('McDavid');
-    expect(expandedText).toContain('Show all 6 players');
+    const toggle = fixture.nativeElement.querySelector('.lp-showall') as HTMLElement;
+    expect(toggle.textContent?.trim()).toBe('Show all');
     expect(expandedText).not.toContain('Oettinger');
 
     component.toggleShowAll('a');
@@ -192,6 +193,31 @@ describe('LeagueProjectionTableComponent', () => {
     component.toggleExpand('a');
     expect(component.isExpanded('a')).toBe(false);
     expect(component.isShowingAll('a')).toBe(false);
+  });
+
+  it('marks a parked player IR and fades one the team does not count', () => {
+    const roster = data.teams[0].roster.map((row) =>
+      row.name === 'Oettinger'
+        ? { ...row, total: 0, reserve: true, counted: false }
+        : { ...row, reserve: false, counted: true },
+    );
+    const fixture = MockRender(LeagueProjectionTableComponent, {
+      data: { ...data, teams: [{ ...data.teams[0], roster }] },
+      scoringType: 'category',
+      scoreHeading: 'Z-Score',
+    });
+    const component = fixture.point.componentInstance;
+    component.toggleExpand('a');
+    component.toggleShowAll('a');
+    fixture.detectChanges();
+
+    const rows = [...fixture.nativeElement.querySelectorAll('tr.lp-player-row')] as HTMLElement[];
+    const rowOf = (name: string) =>
+      rows.find((row) => row.querySelector('.lp-player-name')?.textContent?.trim() === name)!;
+    expect(rowOf('Oettinger').querySelector('.lp-reserve-badge')?.textContent?.trim()).toBe('IR');
+    expect(rowOf('Oettinger').classList).toContain('not-counted');
+    expect(rowOf('McDavid').querySelector('.lp-reserve-badge')).toBeNull();
+    expect(rowOf('McDavid').classList).not.toContain('not-counted');
   });
 
   it("orders each team's player rows by the column the table is sorted on", () => {

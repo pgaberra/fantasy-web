@@ -65,5 +65,7 @@ function rosterRow(
     total: row.total,
     values,
     contributions,
+    reserve: row.reserve,
+    counted: row.counted,
   };
 }
