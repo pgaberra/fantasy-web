@@ -1,6 +1,7 @@
 import { RedirectFunction, Router, Routes } from '@angular/router';
 import { inject } from '@angular/core';
 import { landingRedirectGuard } from './guards/landing-redirect.guard';
+import { environment } from '../environments/environment';
 import { adminGuard } from './guards/admin.guard';
 import { authGuard } from './guards/auth.guard';
 import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
@@ -37,7 +38,14 @@ const toRefundTerms: RedirectFunction = () =>
 export const routes: Routes = [
   {
     path: '',
-    loadComponent: () => import('./landing/landing').then((m) => m.LandingComponent),
+    // The in-season landing page sits behind NEW_LANDING_ENABLED until Alexander has looked at it
+    // in staging; off, the page is served as it shipped.
+    loadComponent: () =>
+      environment.newLandingEnabled
+        ? import('./landing/in-season-landing/in-season-landing').then(
+            (m) => m.InSeasonLandingComponent,
+          )
+        : import('./landing/landing').then((m) => m.LandingComponent),
     canActivate: [landingRedirectGuard],
     data: { [INDEXABLE]: true },
   },
