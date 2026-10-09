@@ -310,20 +310,6 @@ export class StreamerPlannerComponent {
     return !this.excluded().has(day.date);
   }
 
-  /** The fullest night of the stretch, the one every night's meter is drawn against. */
-  readonly busiestNight = computed(() =>
-    Math.max(
-      1,
-      ...this.days().map((day) => day.games),
-      ...this.leadingDays().map((day) => day.games ?? 0),
-    ),
-  );
-
-  /** A night's share of the fullest night, in percent, for the bar under its games. */
-  meter(games: number): number {
-    return Math.round((100 * games) / this.busiestNight());
-  }
-
   /**
    * A click anywhere in a night's cell counts it in or out, except on the tick box itself, whose
    * own change event already did; a dark night has nothing to count. The parts that open an

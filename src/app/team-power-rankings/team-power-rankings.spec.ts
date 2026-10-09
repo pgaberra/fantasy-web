@@ -2,7 +2,7 @@ import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Observable, of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { environment } from '../../environments/environment';
 import { TeamPowerRankingsComponent } from './team-power-rankings';
 import { LeagueSummaryResponse } from '../api/models/league-summary-response';
@@ -84,6 +84,7 @@ describe('TeamPowerRankingsComponent', () => {
   const draftCall = vi.fn<(id: string, rankBy?: RankBy) => Observable<LeagueSummaryResponse>>(() =>
     of(summary),
   );
+  const navigate = vi.fn();
   const listAll = vi.fn<() => Observable<ProjectionSummaryResponse[]>>(() =>
     of([...boards, ...drafts]),
   );
@@ -131,6 +132,7 @@ describe('TeamPowerRankingsComponent', () => {
     espnCall.mockReturnValue(of(summary));
     environment.espnLeaguesEnabled = true;
     listAll.mockReset();
+    navigate.mockClear();
     listAll.mockReturnValue(of([...boards, ...drafts]));
     linkedDraft = null;
     return MockBuilder(TeamPowerRankingsComponent)
@@ -145,6 +147,7 @@ describe('TeamPowerRankingsComponent', () => {
       .mock(LeagueSummaryService, { yahooLeague, draft: draftCall, espnLeague: espnCall })
       .mock(ProjectionStorageService, { listAll })
       .mock(FeatureService, { aiProjection } as never)
+      .provide({ provide: Router, useValue: { navigate } })
       .provide({
         provide: ActivatedRoute,
         useValue: {
@@ -305,18 +308,6 @@ describe('TeamPowerRankingsComponent', () => {
     expect(draftCall).toHaveBeenLastCalledWith('d2', 'model');
   });
 
-  /** Mid-season the model's totals cover the games left, and the line above the table says so. */
-  it('says when the model ranked the rest of the season', async () => {
-    yahooLeague.mockReturnValue(of({ ...summary, inSeason: true }));
-    const fixture = await render();
-    const component = fixture.point.componentInstance;
-    await choose(fixture, component, '465.l.1');
-
-    expect(fixture.nativeElement.querySelector('.rankings-source')?.textContent).toContain(
-      'Ranked by the SlapStat AI projection for the rest of the season',
-    );
-  });
-
   /** Back to the placeholder is back to nothing on screen, not the last league left standing. */
   it('clears the rankings when the league is unpicked', async () => {
     const fixture = await render();
@@ -344,28 +335,14 @@ describe('TeamPowerRankingsComponent', () => {
     );
   });
 
-  /**
-   * The point of the whole exercise: the totals are shown to everyone, and the players behind
-   * them are not in the response at all without premium — so the table is told not to offer them.
-   */
-  it('shows the totals without the players, and sells the rest', async () => {
+  /** The players behind every total are everyone's: no padlock, even where Premium is sold. */
+  it('shows the totals with nothing locked behind them', async () => {
     const fixture = await render();
     const component = fixture.point.componentInstance;
     await choose(fixture, component, '465.l.1');
 
-    expect(component.hasPlayers()).toBe(false);
-    expect(component.sellsPremium()).toBe(true);
     expect(component.leagueProjection()?.teams[0].total).toEqual(90);
-  });
-
-  it('offers the players when they came back', async () => {
-    yahooLeague.mockReturnValue(of({ ...summary, premium: true }));
-    const fixture = await render();
-    const component = fixture.point.componentInstance;
-    await choose(fixture, component, '465.l.1');
-
-    expect(component.hasPlayers()).toBe(true);
-    expect(component.sellsPremium()).toBe(false);
+    expect(fixture.nativeElement.textContent).not.toContain('Premium');
   });
 
   it('says a league has not drafted yet rather than showing every team at nothing', async () => {
@@ -457,11 +434,6 @@ describe('TeamPowerRankingsComponent', () => {
     fixture.detectChanges();
 
     expect(yahooLeague).toHaveBeenLastCalledWith('465.l.1', 'board:b1');
-    expect(component.rankedByLabel()).toEqual('My board');
-    expect(component.hasPlayers()).toBe(true);
-    expect(fixture.nativeElement.querySelector('.rankings-source')?.textContent).toContain(
-      'Ranked by My board',
-    );
   });
 
   it("says how many of the league's players a board leaves out", async () => {
@@ -486,6 +458,51 @@ describe('TeamPowerRankingsComponent', () => {
     expect(component.boardsFailed()).toBe(true);
     const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
     expect(select.options).toHaveLength(2);
+    // A failed list says nothing about what the user has, so no invitation to make a first one.
+    expect(component.ownBoardsEmpty()).toBe(false);
+  });
+
+  /** The group stays on the menu with nothing in it, so the reader learns their own numbers count. */
+  it('keeps My Projections on the menu and offers to make one when the user has none', async () => {
+    listAll.mockReturnValue(of([boards[1], ...drafts]));
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+
+    expect(component.ownBoardsEmpty()).toBe(true);
+    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
+    const groups = Array.from(select.querySelectorAll('optgroup')).map((group) => group.label);
+    expect(groups).toEqual(['SlapStat', 'My Projections', 'Following']);
+    const placeholder = select.querySelector(
+      'optgroup[label="My Projections"] option',
+    ) as HTMLOptionElement;
+    expect(placeholder.textContent?.trim()).toEqual('No projections yet. Create one.');
+    expect(select.value).toEqual('model');
+  });
+
+  /** The entry is a door, not a ranking: it opens the editor and leaves the league as it was. */
+  it('opens the editor when the empty My Projections entry is chosen', async () => {
+    listAll.mockReturnValue(of([boards[1], ...drafts]));
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    await choose(fixture, component, '465.l.1');
+    yahooLeague.mockClear();
+
+    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
+    select.value = component.createOption;
+    select.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+
+    expect(navigate).toHaveBeenCalledWith(['/projections/new']);
+    expect(component.rankBy()).toEqual('model');
+    expect(select.value).toEqual('model');
+    expect(yahooLeague).not.toHaveBeenCalled();
+  });
+
+  it('offers no create entry where the user has a projection', async () => {
+    const fixture = await render();
+    expect(fixture.point.componentInstance.ownBoardsEmpty()).toBe(false);
+    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
+    expect(Array.from(select.options).map((option) => option.value)).not.toContain('create');
   });
 
   /** Picking a platform's tab, as a reader would. */

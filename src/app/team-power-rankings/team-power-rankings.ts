@@ -1,5 +1,5 @@
 import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { environment } from '../../environments/environment';
 import { LeagueSummaryResponse } from '../api/models/league-summary-response';
@@ -32,8 +32,9 @@ import { RankBy, rankByBoard } from './rank-by';
  * whole of what this page sends, and the BFF reads the rosters from Yahoo, or the picks from the
  * stored draft, itself.
  *
- * <p>The totals are everyone's; the players behind them are Premium's. Which is why the numbers
- * are computed on the server and this page only draws them.
+ * <p>The totals and the players behind them are everyone's (Alexander's call, 2026-10-09; until
+ * then the players were Premium's). The numbers are computed on the server and this page only
+ * draws them.
  *
  * <p>The league is picked the way every other screen picks one — the shared
  * {@link YahooLeaguePicker} behind a dropdown — so that choosing a league means the same thing
@@ -89,6 +90,7 @@ export class TeamPowerRankingsComponent implements OnInit {
   private readonly features = inject(FeatureService);
   private readonly storage = inject(ProjectionStorageService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly choice = inject(LeagueChoiceService);
 
   /** The league picker every screen shares, so choosing a league means the same thing here. */
@@ -173,6 +175,14 @@ export class TeamPowerRankingsComponent implements OnInit {
 
   readonly boardsFailed = computed(() => !!this.listResource.error());
 
+  /**
+   * Whether the list came back and holds no board of the user's own: the moment to say one can be
+   * made. False while loading or failed, when nothing is known about what they have.
+   */
+  readonly ownBoardsEmpty = computed(
+    () => this.listResource.hasValue() && !this.boardsFailed() && this.ownBoards().length === 0,
+  );
+
   /** Whether there is anything to pick in the first dropdown: a Yahoo league or a draft. */
   readonly hasChoices = computed(
     () => this.picker.leagues().length > 0 || this.drafts().length > 0,
@@ -195,26 +205,6 @@ export class TeamPowerRankingsComponent implements OnInit {
   );
 
   readonly boardOption = rankByBoard;
-
-  /** What the table on screen was ranked against, in words, for the line above it. */
-  readonly rankedByLabel = computed(() => {
-    const data = this.rankingsData();
-    if (!data) {
-      return '';
-    }
-    if (data.source === 'projection') {
-      const board = this.boards().find((candidate) => candidate.id === data.projectionId);
-      return board ? board.name : 'your projection';
-    }
-    if (data.source === 'last_season') {
-      return "last season's stats";
-    }
-    // Once the season is under way a team is ranked on what its players will do over the games
-    // left, so the totals are that much smaller than a whole season's; the line says so.
-    return data.inSeason
-      ? 'the SlapStat AI projection for the rest of the season'
-      : 'the SlapStat AI projection';
-  });
 
   private readonly rankingsResource = rxResource({
     params: () => {
@@ -296,12 +286,6 @@ export class TeamPowerRankingsComponent implements OnInit {
     return rankings ? scoreHeadingFor(rankings) : 'Total Points';
   });
 
-  /** Whether the players behind each total came back, which is what Premium pays for. */
-  readonly hasPlayers = computed(() => !!this.rankingsData()?.premium);
-
-  /** Whether to sell Premium here: wherever the players did not come back. */
-  readonly sellsPremium = computed(() => !this.hasPlayers());
-
   /**
    * How many of the teams' players the chosen board has no line for, and so counts as nothing.
    * Only a board's gap is the reader's to know about; the model's pool is the whole league.
@@ -374,8 +358,19 @@ export class TeamPowerRankingsComponent implements OnInit {
 
   /** Ranks by what the second dropdown points at, re-reading the league on screen if there is one. */
   selectRankBy(event: Event): void {
-    this.chosenRankBy.set((event.target as HTMLSelectElement).value as RankBy);
+    const select = event.target as HTMLSelectElement;
+    if (select.value === this.createOption) {
+      // Not a ranking but a door: the menu is put back before the page is left, so the reader
+      // who comes back by the browser's history finds the league ranked as it was.
+      select.value = this.rankBy();
+      void this.router.navigate(['/projections/new']);
+      return;
+    }
+    this.chosenRankBy.set(select.value as RankBy);
   }
+
+  /** The one entry under "My Projections" when there is none: picking it opens the editor. */
+  readonly createOption = 'create';
 
   /** Whether an option in the second dropdown is the one ranking the league, for `selected`. */
   isRankedBy(option: RankBy): boolean {

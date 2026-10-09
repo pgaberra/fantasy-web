@@ -115,13 +115,6 @@
   color: var(--color-text-muted);
 }
 
-/* Under the league's name, so a table never reads without what it was ranked against. */
-.rankings-source {
-  margin: var(--space-1) 0 var(--space-3);
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
 /* A board that leaves some of the league out: said once, over the table it shapes. */
 .rankings-gap {
   display: flex;
@@ -133,12 +126,3 @@
 
 /* Under the table rather than over it: the totals are the page, and the offer is what the reader
    meets once they have read them. */
-.rankings-locked {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-  margin: var(--space-3) 0 0;
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}

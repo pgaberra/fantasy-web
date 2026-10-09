@@ -118,6 +118,9 @@
             }
             <option value="last_season" [selected]="isRankedBy('last_season')">Last season</option>
           </optgroup>
+          <!-- Always listed, even empty: the group is how a reader learns the league can be
+               ranked by their own numbers. Left out only while the list is loading or failed,
+               when "none" would be a guess. -->
           @if (ownBoards().length > 0) {
             <optgroup label="My Projections">
               @for (board of ownBoards(); track board.id) {
@@ -128,6 +131,11 @@
                   {{ board.name }}
                 </option>
               }
+            </optgroup>
+          } @else if (ownBoardsEmpty()) {
+            <!-- Choosing this opens the editor; the menu springs back to what ranks the league. -->
+            <optgroup label="My Projections">
+              <option [value]="createOption">No projections yet. Create one.</option>
             </optgroup>
           }
           @if (followedBoards().length > 0) {
@@ -177,7 +185,6 @@
     />
   } @else if (rankingsData()) {
     <h2 class="rankings-league">{{ leagueName() }}</h2>
-    <p class="rankings-source">Ranked by {{ rankedByLabel() }}</p>
 
     @if (notDrafted()) {
       @if (sharedNotice) {
@@ -208,16 +215,7 @@
         [data]="projection"
         [scoringType]="scoringType()"
         [scoreHeading]="scoreHeading()"
-        [expandable]="hasPlayers()"
       />
-
-      @if (sellsPremium()) {
-        <p class="rankings-locked">
-          <app-icon name="lock" [size]="14" />
-          Premium shows the players behind every total.
-          <a routerLink="/premium">See what's included</a>
-        </p>
-      }
     }
   } @else if (awaitingLeague()) {
     <p class="rankings-note">Select a league to see its rankings.</p>
