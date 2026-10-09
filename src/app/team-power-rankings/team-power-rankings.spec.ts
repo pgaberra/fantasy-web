@@ -321,7 +321,7 @@ describe('TeamPowerRankingsComponent', () => {
     await choose(fixture, component, '465.l.1');
 
     expect(fixture.nativeElement.querySelector('.rankings-source')?.textContent).toContain(
-      '*Based on projected performance for the rest of the season.',
+      'Based on projected performance for the rest of the season.',
     );
   });
 
