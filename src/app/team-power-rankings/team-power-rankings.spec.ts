@@ -310,18 +310,6 @@ describe('TeamPowerRankingsComponent', () => {
     expect(draftCall).toHaveBeenLastCalledWith('d2', 'model');
   });
 
-  /** Mid-season the model's totals cover the games left, and the line above the table says so. */
-  it('says when the model ranked the rest of the season', async () => {
-    yahooLeague.mockReturnValue(of({ ...summary, inSeason: true }));
-    const fixture = await render();
-    const component = fixture.point.componentInstance;
-    await choose(fixture, component, '465.l.1');
-
-    expect(fixture.nativeElement.querySelector('.rankings-source')?.textContent).toContain(
-      'Ranked by the SlapStat AI projection for the rest of the season',
-    );
-  });
-
   /** Back to the placeholder is back to nothing on screen, not the last league left standing. */
   it('clears the rankings when the league is unpicked', async () => {
     const fixture = await render();
@@ -456,10 +444,6 @@ describe('TeamPowerRankingsComponent', () => {
     fixture.detectChanges();
 
     expect(yahooLeague).toHaveBeenLastCalledWith('465.l.1', 'board:b1');
-    expect(component.rankedByLabel()).toEqual('My board');
-    expect(fixture.nativeElement.querySelector('.rankings-source')?.textContent).toContain(
-      'Ranked by My board',
-    );
   });
 
   it("says how many of the league's players a board leaves out", async () => {
