@@ -28,7 +28,7 @@ const base: LeagueSummaryResponse = {
           total: 90,
           values: { goals: 45 },
           contributions: { goals: 90 },
-          reserve: true,
+          reserveSlot: 'NA',
           counted: true,
         },
       ],
@@ -102,7 +102,7 @@ describe('power rankings data', () => {
   it('keeps whether a roster row is parked on IR and whether it counts', () => {
     const row = leagueProjectionFrom(base).teams[0].roster[0];
 
-    expect(row.reserve).toBe(true);
+    expect(row.reserveSlot).toBe('NA');
     expect(row.counted).toBe(true);
   });
 });
