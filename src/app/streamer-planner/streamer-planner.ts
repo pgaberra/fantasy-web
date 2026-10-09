@@ -64,6 +64,7 @@ import {
   teamsByKey,
   TOP_OPTIONS,
   WEEK_DECIMALS,
+  wholeGamesShare,
 } from './planner-free-agents';
 import { focusableCategories, readFocus, scoresIn, writeFocus } from './planner-focus';
 import {
@@ -773,9 +774,16 @@ export class StreamerPlannerComponent {
         : nightsShare(player, teams, counted, everyNightCounted);
       const opened = dropped ? dropShare(player, teams, counted, rooms!, dropped) : NO_LINE;
       let played = player.expectedGames * share.games;
-      let line = scaledProjection(player.projection, share);
+      let line: Projection;
       let more = player.expectedGames * opened.games;
-      if (player.projection.type === 'goalie') {
+      if (player.projection.type !== 'goalie') {
+        // A skater plays a game or does not, so his games are whole too: rounded, as the list
+        // writes them, and his line moved with them, so the 3 beside 2.85's worth is 3's worth.
+        const whole = Math.round(played);
+        line = scaledProjection(player.projection, wholeGamesShare(share, player.expectedGames));
+        more = Math.round(played + more) - whole;
+        played = whole;
+      } else {
         // A game is one goalie's, so a goalie's are whole: the crease's split of the nights, or
         // for one in no crease his own expectation, rounded.
         played = starts.get(player.playerId) ?? Math.round(played);
@@ -792,7 +800,7 @@ export class StreamerPlannerComponent {
           const lifted =
             player.projection.type === 'goalie'
               ? startsProjection(player.projection, player.expectedGames, played + more, both)
-              : scaledProjection(player.projection, both);
+              : scaledProjection(player.projection, wholeGamesShare(both, player.expectedGames));
           // Counted, the lifted line is his line: there is nothing left for a drop to add.
           if (counting) {
             played += more;

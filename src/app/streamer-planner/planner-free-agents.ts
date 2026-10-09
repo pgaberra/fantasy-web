@@ -167,6 +167,25 @@ export function addShares(a: LineShare, b: LineShare): LineShare {
   };
 }
 
+/**
+ * A share over whole games: the games it holds of a player's `expectedGames`, rounded the way a
+ * schedule counts them, with every stat moved by the same factor. A player is either in a game or
+ * not, so a skater shown on 3 games is given the line of 3, not of the 2.85 they round from.
+ */
+export function wholeGamesShare(share: LineShare, expectedGames: number): LineShare {
+  const games = expectedGames * share.games;
+  const whole = Math.round(games);
+  if (whole === games || games <= 0) {
+    return share;
+  }
+  const scale = whole / games;
+  return {
+    games: share.games * scale,
+    of: (key) => share.of(key) * scale,
+    plusMinusPerMinute: share.plusMinusPerMinute * scale,
+  };
+}
+
 function clubOf(
   player: FreeAgent,
   teams: ReadonlyMap<string, TeamSchedule>,
@@ -423,7 +442,8 @@ export function formatToi(seconds: number | undefined): string {
 /**
  * Games as a whole number, the way a schedule counts them. The expectation is fractional, and to
  * one decimal it read as two kinds of number: 2.97 came out "3.0" beside a "3" the arithmetic
- * happened to land on. The fraction still scales the line and the per-game score.
+ * happened to land on. The planner's games are whole already ({@link wholeGamesShare}); FA Scout's
+ * are not, and its line is still the fraction's.
  */
 export function formatGames(games: number): string {
   return Math.round(games).toString();

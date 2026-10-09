@@ -29,6 +29,7 @@ import {
   startsProjection,
   teamsByKey,
   WHOLE_LINE,
+  wholeGamesShare,
 } from './planner-free-agents';
 
 function scoringLine<K extends string>(keys: readonly K[], set: Record<string, number>) {
@@ -240,6 +241,31 @@ describe('dropShare', () => {
     expect(both.games).toBeCloseTo(2 / 3);
     expect(both.of('goals')).toBeCloseTo(1.8 / 3);
     expect(addShares(own, NO_LINE)).toBe(own);
+  });
+});
+
+describe('wholeGamesShare', () => {
+  it('rounds the games a share holds and moves every stat with them', () => {
+    // Half of 5.7 expected games is 2.85: three games, each stat at three games' worth.
+    const whole = wholeGamesShare(share(0.5, { goals: 0.4 }, 0.01), 5.7);
+    const scale = 3 / 2.85;
+    expect(whole.games * 5.7).toBeCloseTo(3);
+    expect(whole.of('goals')).toBeCloseTo(0.4 * scale);
+    expect(whole.of('assists')).toBeCloseTo(0.5 * scale);
+    expect(whole.plusMinusPerMinute).toBeCloseTo(0.01 * scale);
+  });
+
+  it('rounds down as well, to no game and no line', () => {
+    const none = wholeGamesShare(share(0.1), 2);
+    expect(none.games).toBe(0);
+    expect(none.of('goals')).toBe(0);
+  });
+
+  it('returns the share itself when its games are whole already', () => {
+    expect(wholeGamesShare(WHOLE_LINE, 3)).toBe(WHOLE_LINE);
+    expect(wholeGamesShare(NO_LINE, 2.6)).toBe(NO_LINE);
+    const half = share(0.5);
+    expect(wholeGamesShare(half, 4)).toBe(half);
   });
 });
 

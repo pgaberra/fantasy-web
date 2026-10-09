@@ -749,6 +749,33 @@ describe('StreamerPlannerComponent', () => {
       expect(waiver?.games).toBe(1);
     });
 
+    it('gives a skater the line of the whole games he is shown on, not of the fraction', async () => {
+      freeAgents.mockReturnValue(
+        of<FreeAgentWeek>({
+          creases: [],
+          players: [{ ...skater('2', 'Top Scorer', 3, 1), expectedGames: 1.8 }],
+        }),
+      );
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+
+      const scoring = () => planner.ranked()[0].line.stats.scoring as Record<string, number>;
+
+      // Every night counted: 1.8 games is two, and his 3 goals over 1.8 games become two games'.
+      let top = planner.ranked()[0];
+      expect(top.games).toBe(2);
+      expect(scoring()['goals']).toBeCloseTo((3 * 2) / 1.8);
+
+      // Oct 13 left out: 0.9 games is one, and the line one game's, not 0.9's.
+      planner.toggleDay(planner.days()[1]);
+      top = planner.ranked()[0];
+      expect(top.games).toBe(1);
+      expect(scoring()['goals']).toBeCloseTo(1.5 / 0.9);
+      expect(scoring()['assists']).toBeCloseTo(0.5 / 0.9);
+      // Scored on the engine's two decimals: 1.67 goals at 3 and 0.56 assists at 2.
+      expect(top.score).toBeCloseTo(6.13, 5);
+    });
+
     it("gives a club's one counted game to its likelier starter, and the other no line", async () => {
       settings = {
         ...SETTINGS,
