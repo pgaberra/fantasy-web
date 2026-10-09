@@ -39,4 +39,8 @@ export const environment = {
   manualRankingEnabled: false,
   // Off for local staging runs; the deployed builds set it via the TIERS_ENABLED build arg.
   tiersEnabled: false,
+  // Off for local staging runs; the deployed builds set it via the SHARED_NOTICE_ENABLED build arg.
+  sharedNoticeEnabled: false,
+  // Off for local staging runs; the deployed builds set it via the NEW_LANDING_ENABLED build arg.
+  newLandingEnabled: false,
 };

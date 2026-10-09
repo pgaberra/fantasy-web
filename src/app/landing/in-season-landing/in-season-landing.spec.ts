@@ -2,12 +2,12 @@ import { MockBuilder, MockRender } from 'ng-mocks';
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { signal } from '@angular/core';
 import { provideLocationMocks } from '@angular/common/testing';
-import { LandingComponent } from './landing';
-import { LandingDemoComponent } from './landing-demo/landing-demo';
-import { FeatureService } from '../services/feature.service';
-import { environment } from '../../environments/environment';
+import { InSeasonLandingComponent } from './in-season-landing';
+import { LandingDemoComponent } from '../landing-demo/landing-demo';
+import { FeatureService } from '../../services/feature.service';
+import { environment } from '../../../environments/environment';
 
-describe('LandingComponent', () => {
+describe('InSeasonLandingComponent', () => {
   const originalOffseason = environment.offseasonEnabled;
   const originalWhosHot = environment.whosHotEnabled;
 
@@ -18,11 +18,11 @@ describe('LandingComponent', () => {
   });
 
   async function render(aiProjection = true) {
-    await MockBuilder(LandingComponent)
+    await MockBuilder(InSeasonLandingComponent)
       .mock(LandingDemoComponent)
       .mock(FeatureService, { aiProjection: signal(aiProjection) })
       .provide(provideLocationMocks());
-    const fixture = MockRender(LandingComponent);
+    const fixture = MockRender(InSeasonLandingComponent);
     return fixture.nativeElement as HTMLElement;
   }
 

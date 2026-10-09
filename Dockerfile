@@ -56,6 +56,9 @@ ARG TIERS_ENABLED=
 # SHARED_NOTICE_ENABLED=true draws the adopting pages' notices through the shared app-notice
 # component; empty/anything else leaves each of them exactly as it shipped (default).
 ARG SHARED_NOTICE_ENABLED=
+# NEW_LANDING_ENABLED=true serves the in-season landing page at /; empty/anything else serves the
+# landing page as it shipped (default).
+ARG NEW_LANDING_ENABLED=
 # PREMIUM_COMING_SOON=true keeps the Premium page and badges but disables Subscribe with a note;
 # empty/anything else sells Premium as usual (default).
 ARG PREMIUM_COMING_SOON=
@@ -79,7 +82,7 @@ RUN sed -i \
   -e "s|__SPREADSHEET_IMPORT_ENABLED__|${SPREADSHEET_IMPORT_ENABLED}|g" \
   -e "s|__MANUAL_RANKING_ENABLED__|${MANUAL_RANKING_ENABLED}|g" \
   -e "s|__TIERS_ENABLED__|${TIERS_ENABLED}|g" \
-  -e "s|__SHARED_NOTICE_ENABLED__|${SHARED_NOTICE_ENABLED}|g" \
+  -e "s|__SHARED_NOTICE_ENABLED__|${SHARED_NOTICE_ENABLED}|g"   -e "s|__NEW_LANDING_ENABLED__|${NEW_LANDING_ENABLED}|g" \
   src/environments/environment.prod.ts
 
 RUN npm run build

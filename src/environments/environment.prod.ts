@@ -69,6 +69,11 @@ const manualRankingEnabledFlag: string = '__MANUAL_RANKING_ENABLED__';
 // leaves every one of them exactly as it shipped.
 const sharedNoticeEnabledFlag: string = '__SHARED_NOTICE_ENABLED__';
 
+// New landing page toggle. Only the literal "true" (via the NEW_LANDING_ENABLED build arg) serves
+// the in-season landing page at /; untouched or empty resolves to false, which serves the page as
+// it shipped.
+const newLandingEnabledFlag: string = '__NEW_LANDING_ENABLED__';
+
 export const environment = {
   production: true,
   environmentName: appEnvFlag.startsWith('__APP_ENV') ? 'production' : appEnvFlag,
@@ -92,4 +97,5 @@ export const environment = {
   manualRankingEnabled: manualRankingEnabledFlag === 'true',
   tiersEnabled: tiersEnabledFlag === 'true',
   sharedNoticeEnabled: sharedNoticeEnabledFlag === 'true',
+  newLandingEnabled: newLandingEnabledFlag === 'true',
 };
