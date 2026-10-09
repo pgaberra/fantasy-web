@@ -28,7 +28,6 @@ import { FeatureService } from '../services/feature.service';
 import { RestOfSeasonService } from '../services/rest-of-season.service';
 import { AiProjectionAccess } from '../shared/premium/ai-projection-access';
 import { isFollowedBoard, isOwnBoard, SOURCE_KINDS, SourceKind } from '../models/source-kind';
-import { environment } from '../../environments/environment';
 import { IconComponent } from '../shared/icon/icon';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 
@@ -272,14 +271,9 @@ export class DraftStartComponent {
     return draft.draftStatus === 'finished' ? 'finished' : 'last pick';
   }
 
-  /**
-   * Whether to mark a preset as Premium. Only where payments exist: without them the AI
-   * projection is free and ungated, and a badge advertising a subscription the build cannot
-   * sell is a promise nobody can act on. Gated on the same flag as the Premium and checkout
-   * routes, so the payments story appears and disappears in one piece.
-   */
+  /** Whether to mark a preset as Premium. */
   showsPremiumBadge(preset: Preset): boolean {
-    return !!preset.premium && environment.paymentsEnabled;
+    return !!preset.premium;
   }
 
   /**

@@ -92,10 +92,8 @@ describe('TeamPowerRankingsComponent', () => {
   const connectionStatus = vi.fn<() => Observable<{ connected: boolean }>>(() =>
     of({ connected: true }),
   );
-  const leagueDraftSync = vi.fn(() => true);
   /** The `?draft=` the page was opened with, as a finished draft's link carries it. */
   let linkedDraft: string | null = null;
-  const originalPayments = environment.paymentsEnabled;
   const originalSharedNotice = environment.sharedNoticeEnabled;
   const originalEspnLeagues = environment.espnLeaguesEnabled;
 
@@ -120,14 +118,12 @@ describe('TeamPowerRankingsComponent', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    environment.paymentsEnabled = true;
     yahooLeague.mockReset();
     yahooLeague.mockReturnValue(of(summary));
     myLeagues.mockReset();
     myLeagues.mockReturnValue(of(leagues));
     connectionStatus.mockReset();
     connectionStatus.mockReturnValue(of({ connected: true }));
-    leagueDraftSync.mockReturnValue(true);
     aiProjection.mockReturnValue(true);
     draftCall.mockReset();
     draftCall.mockReturnValue(of(summary));
@@ -148,7 +144,7 @@ describe('TeamPowerRankingsComponent', () => {
       .keep(PlatformTabsComponent)
       .mock(LeagueSummaryService, { yahooLeague, draft: draftCall, espnLeague: espnCall })
       .mock(ProjectionStorageService, { listAll })
-      .mock(FeatureService, { leagueDraftSync, aiProjection } as never)
+      .mock(FeatureService, { aiProjection } as never)
       .provide({
         provide: ActivatedRoute,
         useValue: {
@@ -162,7 +158,6 @@ describe('TeamPowerRankingsComponent', () => {
   });
 
   afterEach(() => {
-    environment.paymentsEnabled = originalPayments;
     environment.sharedNoticeEnabled = originalSharedNotice;
     environment.espnLeaguesEnabled = originalEspnLeagues;
   });
@@ -373,16 +368,6 @@ describe('TeamPowerRankingsComponent', () => {
     expect(component.sellsPremium()).toBe(false);
   });
 
-  /** Nothing is sold in a build with no way to buy it. */
-  it('keeps quiet about premium where nothing can be bought', async () => {
-    environment.paymentsEnabled = false;
-    const fixture = await render();
-    const component = fixture.point.componentInstance;
-    await choose(fixture, component, '465.l.1');
-
-    expect(component.sellsPremium()).toBe(false);
-  });
-
   it('says a league has not drafted yet rather than showing every team at nothing', async () => {
     yahooLeague.mockReturnValue(of({ ...summary, picks: 0, status: 'PRE_DRAFT' as const }));
     const fixture = await render();
@@ -430,14 +415,6 @@ describe('TeamPowerRankingsComponent', () => {
 
     expect(component.rankingsMessage()).toContain('technical problems');
     expect(component.rankingsRetryable()).toBe(false);
-  });
-
-  it('is not offered where the environment does not read a league draft', async () => {
-    leagueDraftSync.mockReturnValue(false);
-    const fixture = await render();
-
-    expect(fixture.point.componentInstance.offered()).toBe(false);
-    expect(connectionStatus).not.toHaveBeenCalled();
   });
 
   /** The second dropdown: ours first, then the reader's own boards, then the ones they follow. */

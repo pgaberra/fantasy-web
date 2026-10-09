@@ -12,7 +12,6 @@ import { EntitlementService } from '../services/entitlement.service';
 import { NotificationService } from '../services/notification.service';
 import { PopoverTriggerDirective } from '../shared/popover/popover-trigger.directive';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
-import { environment } from '../../environments/environment';
 import { FeatureService } from '../services/feature.service';
 import { RestOfSeasonService } from '../services/rest-of-season.service';
 import { MODEL_SOURCES } from '../models/ai-projection';
@@ -554,39 +553,15 @@ describe('DraftStartComponent', () => {
   // The badge says the AI projection is sold. Rendered once per state rather than twice in one
   // test: two live fixtures over a flipped flag re-check the first against the new value, which
   // Angular reports as ExpressionChangedAfterItHasBeenChecked.
-  it('marks the AI projection as Premium where payments are on', async () => {
-    const original = environment.paymentsEnabled;
-    environment.paymentsEnabled = true;
+  it('marks the AI projection as Premium', async () => {
     listAll.mockReturnValue(of([]));
-    try {
-      const fixture = await renderFixture();
-      const component = fixture.point.componentInstance;
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
 
-      expect(component.showsPremiumBadge(MODEL)).toBe(true);
-      // Only the one that is sold: last season's stats is in every build.
-      expect(component.showsPremiumBadge(LAST_SEASON)).toBe(false);
-      expect(texts(fixture, '.row-badge')).toEqual(['Premium']);
-    } finally {
-      environment.paymentsEnabled = original;
-    }
-  });
-
-  // Without payments the AI projection is free and ungated, and a badge naming a subscription
-  // this build cannot sell promises something nobody can act on.
-  it('leaves the badge off where there is no way to buy anything', async () => {
-    const original = environment.paymentsEnabled;
-    environment.paymentsEnabled = false;
-    listAll.mockReturnValue(of([]));
-    try {
-      const fixture = await renderFixture();
-
-      expect(fixture.point.componentInstance.showsPremiumBadge(MODEL)).toBe(false);
-      expect(fixture.nativeElement.querySelector('.row-badge')).toBeNull();
-      // The preset itself is still on offer; only the mark on it is held back.
-      expect(texts(fixture, '.row-name')).toEqual([LAST_SEASON_PRESET_NAME, MODEL_PRESET_NAME]);
-    } finally {
-      environment.paymentsEnabled = original;
-    }
+    expect(component.showsPremiumBadge(MODEL)).toBe(true);
+    // Only the one that is sold: last season's stats is in every build.
+    expect(component.showsPremiumBadge(LAST_SEASON)).toBe(false);
+    expect(texts(fixture, '.row-badge')).toEqual(['Premium']);
   });
 
   // A kind with nothing in it still has its segment, with a 0 on it: the count is what keeps the
@@ -1064,21 +1039,15 @@ describe('DraftStartComponent', () => {
    * the card keeps its place among the presets and the padlock and the button say the rest.
    */
   describe('when the AI projection is behind a subscription', () => {
-    const withPayments = async (
+    const withRendered = async (
       test: (fixture: Awaited<ReturnType<typeof renderFixture>>) => void,
     ) => {
-      const original = environment.paymentsEnabled;
-      environment.paymentsEnabled = true;
       listAll.mockReturnValue(of([]));
-      try {
-        test(await renderFixture());
-      } finally {
-        environment.paymentsEnabled = original;
-      }
+      test(await renderFixture());
     };
 
     it('keeps the card on the page, marked and locked', async () => {
-      await withPayments((fixture) => {
+      await withRendered((fixture) => {
         const component = fixture.point.componentInstance;
 
         expect(component.isPresetLocked(MODEL)).toBe(true);
@@ -1094,7 +1063,7 @@ describe('DraftStartComponent', () => {
      * produce a refusal, so it becomes the thing that can actually be done next.
      */
     it('turns the Start button into the way to Premium once the locked card is picked', async () => {
-      await withPayments((fixture) => {
+      await withRendered((fixture) => {
         const component = fixture.point.componentInstance;
         component.selectPreset(MODEL);
         fixture.detectChanges();
@@ -1108,7 +1077,7 @@ describe('DraftStartComponent', () => {
     });
 
     it('leaves the free preset able to start a draft as it always could', async () => {
-      await withPayments((fixture) => {
+      await withRendered((fixture) => {
         const component = fixture.point.componentInstance;
         component.selectPreset(LAST_SEASON);
         fixture.detectChanges();
@@ -1122,7 +1091,7 @@ describe('DraftStartComponent', () => {
 
     it('unlocks the card for a subscriber, badge and all', async () => {
       premium.set(true);
-      await withPayments((fixture) => {
+      await withRendered((fixture) => {
         expect(fixture.point.componentInstance.isPresetLocked(MODEL)).toBe(false);
         expect(fixture.nativeElement.querySelector('.row--locked')).toBeNull();
         // The badge stays: it names the plan the starting point belongs to.

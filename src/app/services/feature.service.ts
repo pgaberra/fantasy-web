@@ -39,27 +39,6 @@ export class FeatureService {
     this.features.hasValue() ? this.features.value().aiProjection : false,
   );
 
-  /**
-   * Whether Draft Mode may follow a linked league's live draft. False until the answer lands, like
-   * the AI projection, so the control never appears and then disappears.
-   */
-  readonly leagueDraftSync = computed(() =>
-    this.features.hasValue() ? this.features.value().leagueDraftSync : false,
-  );
-
-  /** Whether the streamer planner is served here. False until the answer lands, like the others. */
-  readonly streamerPlanner = computed(() =>
-    this.features.hasValue() ? this.features.value().streamerPlanner : false,
-  );
-
-  /**
-   * Whether the streamer planner reads the user's own team, to show the nights it has room. False
-   * until the answer lands, like the others, and never without the planner.
-   */
-  readonly streamerPlannerMyTeam = computed(() =>
-    this.features.hasValue() ? this.features.value().streamerPlannerMyTeam : false,
-  );
-
   /** Whether Draft Analysis is served here. False until the answer lands, like the others. */
   readonly draftAnalysis = computed(() =>
     this.features.hasValue() ? this.features.value().draftAnalysis : false,

@@ -35,9 +35,8 @@ disagree. A missing arg fails silently: the build succeeds and the feature is si
 | `POSTHOG_KEY` | Public PostHog project key (not a secret). Empty → analytics is off entirely and `posthog-js` is never even fetched. **Staging and production must use different keys**: they're separate PostHog projects, so our own testing never lands in the production numbers | `phc_…` |
 | `SENTRY_DSN` | Sentry DSN for browser error reporting. Public by design (it only permits sending events), but per environment. Empty → the build reports **no errors at all** and `@sentry/browser` is never fetched | `https://…@….ingest.de.sentry.io/…` |
 | `YAHOO_SYNC_DISABLED` | Manual **off-season switch**. `true` makes the Yahoo league-sync UI show an "available when the new season begins" note instead of its connect/sync controls (between NHL seasons Yahoo has no leagues to sync). Empty/anything-else → sync enabled. Flip it together with the yahoo-service `SYNC_YAHOO_DISABLED` runtime flag | `true` |
-| `PAYMENTS_ENABLED` | Turns on the subscription billing UI (the Premium page, badges and checkout). `true` shows it; empty/anything-else keeps the whole payments feature dark (default) | `true` |
-| `PREMIUM_COMING_SOON` | Premium **shown but not yet sold**. `true` keeps the Premium page, its prices and the Premium badges, but disables Subscribe with a note; the BFF still gates Premium features, so nobody gets them except through an admin grant. Empty/anything-else → Premium is sold as usual (default). Only meaningful with `PAYMENTS_ENABLED=true` | `true` |
-| `PREMIUM_BASE_PRICE_USD` | Premium's price in US dollars, a plain number with two decimals. `/premium` quotes it ("$4.99 per month"), prerendered and in the browser alike; Stripe's checkout may show the buyer the same price converted. **Required** in a build with `PAYMENTS_ENABLED=true`: the build fails without it. **Must match** the price of the BFF's `STRIPE_PRICE_ID`, and changes with it | `4.99` |
+| `PREMIUM_COMING_SOON` | Premium **shown but not yet sold**. `true` keeps the Premium page, its prices and the Premium badges, but disables Subscribe with a note; the BFF still gates Premium features, so nobody gets them except through an admin grant. Empty/anything-else → Premium is sold as usual (default). | `true` |
+| `PREMIUM_BASE_PRICE_USD` | Premium's price in US dollars, a plain number with two decimals. `/premium` quotes it ("$4.99 per month"), prerendered and in the browser alike; Stripe's checkout may show the buyer the same price converted. **Required**: the build fails without it. **Must match** the price of the BFF's `STRIPE_PRICE_ID`, and changes with it | `4.99` |
 | `ESPN_LEAGUES_ENABLED` | Shows the ESPN provider in the projection's league-sync UI. `true` shows it; empty/anything-else keeps it hidden (default) | `true` |
 | `WHOS_HOT_ENABLED` | The one flag with an **inverted default**. `false` hides the Who's hot page (both nav links and the route); empty/anything-else leaves it visible, since the page already ships. A deploy that forgets the arg keeps the page | `false` |
 | `SPREADSHEET_IMPORT_ENABLED` | Shows **Import spreadsheet** in the projection editor (a projection read from an .xlsx/.csv file or pasted cells, in the browser). `true` shows it; empty/anything-else keeps it hidden (default) | `true` |
@@ -78,8 +77,8 @@ cookieless (declining) visitor hashes to the same "person".
 2. Create an application from this repo (GitHub App source, **Dockerfile** build pack),
    set the **Domains** (e.g. `https://staging.slapstat.com`) and the build-time env vars
    from the table above that this environment needs: at least `API_URL`, `GOOGLE_CLIENT_ID`,
-   `SENTRY_DSN` and `POSTHOG_KEY` (that environment's own DSN and PostHog project), plus
-   `PAYMENTS_ENABLED` and `PREMIUM_BASE_PRICE_USD` where it sells Premium. On
+   `SENTRY_DSN`, `POSTHOG_KEY` (that environment's own DSN and PostHog project) and
+   `PREMIUM_BASE_PRICE_USD`. On
    the **staging** app also set `APP_ENV=staging` so the env banner renders and search engines
    stay out. Leave `APP_VERSION` alone: after the first deploy, deploys come from the release
    workflows below rather than from Coolify's own auto-deploy.

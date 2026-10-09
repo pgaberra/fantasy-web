@@ -112,8 +112,6 @@ export class TeamPowerRankingsComponent implements OnInit {
   /** The Yahoo league being read: whichever one the dropdown points at, where it is not a draft. */
   readonly leagueKey = computed(() => (this.draftId() ? null : this.picker.selectedKey()));
 
-  readonly offered = computed(() => this.features.leagueDraftSync());
-
   /**
    * The draft a link named, whose projection is still to be looked up before anything is read —
    * reading at once would read by the default and then again by the draft's own.
@@ -135,9 +133,6 @@ export class TeamPowerRankingsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (!this.offered()) {
-      return;
-    }
     const draft = this.route.snapshot.queryParamMap.get('draft');
     this.draftId.set(draft);
     this.linkedDraft.set(draft);
@@ -154,7 +149,7 @@ export class TeamPowerRankingsComponent implements OnInit {
 
   /** Everything the user has: the boards a league is ranked against, and the drafts to rank. */
   private readonly listResource = rxResource({
-    params: () => (this.offered() ? true : undefined),
+    params: () => true,
     stream: () => this.storage.listAll(),
   });
 
@@ -304,8 +299,8 @@ export class TeamPowerRankingsComponent implements OnInit {
   /** Whether the players behind each total came back, which is what Premium pays for. */
   readonly hasPlayers = computed(() => !!this.rankingsData()?.premium);
 
-  /** Whether to sell Premium here at all: not in a build with no way to buy anything. */
-  readonly sellsPremium = computed(() => environment.paymentsEnabled && !this.hasPlayers());
+  /** Whether to sell Premium here: wherever the players did not come back. */
+  readonly sellsPremium = computed(() => !this.hasPlayers());
 
   /**
    * How many of the teams' players the chosen board has no line for, and so counts as nothing.

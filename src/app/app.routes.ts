@@ -3,10 +3,8 @@ import { inject } from '@angular/core';
 import { landingRedirectGuard } from './guards/landing-redirect.guard';
 import { adminGuard } from './guards/admin.guard';
 import { authGuard } from './guards/auth.guard';
-import { paymentsEnabledGuard } from './guards/payments-enabled.guard';
 import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
 import { draftAnalysisEnabledGuard } from './guards/draft-analysis-enabled.guard';
-import { streamerPlannerEnabledGuard } from './guards/streamer-planner-enabled.guard';
 import { faScoutEnabledGuard } from './guards/fa-scout-enabled.guard';
 import { roleChangesEnabledGuard } from './guards/role-changes-enabled.guard';
 import { demoRedemptionGuard } from './guards/demo-redemption.guard';
@@ -142,12 +140,12 @@ export const routes: Routes = [
     loadComponent: () => import('./whos-hot/whos-hot').then((m) => m.WhosHotComponent),
     canActivate: [whosHotEnabledGuard, authGuard],
   },
-  // Served only where the BFF's STREAMER_PLANNER_ENABLED says so, and signed in like Who's Hot.
+  // Signed in, like Who's Hot.
   {
     path: 'streamer-planner',
     loadComponent: () =>
       import('./streamer-planner/streamer-planner').then((m) => m.StreamerPlannerComponent),
-    canActivate: [authGuard, streamerPlannerEnabledGuard],
+    canActivate: [authGuard],
   },
   // Served only where the BFF's FA_SCOUT_ENABLED says so, and signed in like the planner.
   {
@@ -198,9 +196,6 @@ export const routes: Routes = [
     pathMatch: 'full',
     redirectTo: toRefundTerms,
   },
-  // Payments UI stays dark until the PAYMENTS_ENABLED build flag is on — the guard redirects
-  // these routes home otherwise.
-  //
   // One page for the plans and for the subscription on them, so /pricing and /account are kept
   // only as the way here: a checkout that already redirected there, a bookmark, a link posted
   // somewhere we cannot edit. The redirect carries the query string, since ?checkout=success is
@@ -208,7 +203,6 @@ export const routes: Routes = [
   {
     path: 'premium',
     loadComponent: () => import('./premium/premium').then((m) => m.PremiumComponent),
-    canActivate: [paymentsEnabledGuard],
   },
   {
     path: 'pricing',

@@ -14,7 +14,6 @@ import { ScheduleStrengthResponse } from '../api/models/schedule-strength-respon
 import { TeamSchedule } from '../api/models/team-schedule';
 import { GOALIE_SCORING_STAT_KEYS, SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
 import { EspnService } from '../services/espn.service';
-import { FeatureService } from '../services/feature.service';
 import {
   FreeAgentWeek,
   StreamerPlannerFreeAgentsService,
@@ -201,8 +200,7 @@ describe('StreamerPlannerComponent', () => {
   /** The Monday of week 2 unless a test says otherwise. */
   let today = '2026-10-12';
   let settings = SETTINGS;
-  /** Whether the BFF reads the user's own team, and the team it answers with. */
-  let myTeamOn = false;
+  /** The user's own team, as the BFF answers with it. */
   let myTeam: PlannerMyTeamResponse = { found: false, players: [], lines: [] };
   /** Whether the account is connected to Yahoo, and the leagues it lists. */
   let connected = true;
@@ -217,7 +215,6 @@ describe('StreamerPlannerComponent', () => {
     chosen = null;
     today = '2026-10-12';
     settings = SETTINGS;
-    myTeamOn = false;
     myTeam = { found: false, players: [], lines: [] };
     connected = true;
     leagues = [
@@ -268,12 +265,7 @@ describe('StreamerPlannerComponent', () => {
         // Two, so that neither is picked for the reader: only a remembered league is read.
         myLeagues: () => of({ leagues }),
       } as never)
-      .mock(EspnService, { leagueProjectionSettings: () => of(settings) })
-      .mock(FeatureService, {
-        get streamerPlannerMyTeam() {
-          return () => myTeamOn;
-        },
-      } as never);
+      .mock(EspnService, { leagueProjectionSettings: () => of(settings) });
   });
 
   async function render() {
@@ -842,7 +834,6 @@ describe('StreamerPlannerComponent', () => {
       });
 
       beforeEach(() => {
-        myTeamOn = true;
         // Two Cs, a Util and two LWs taken every night; the RWs, the Ds and the Gs are open.
         myTeam = {
           found: true,
@@ -1100,11 +1091,6 @@ describe('StreamerPlannerComponent', () => {
       });
     });
 
-    it('asks for no team where the environment does not read it', async () => {
-      await render();
-      expect(invoke).not.toHaveBeenCalledWith(streamerPlannerMyTeam, expect.anything());
-    });
-
     it('surfaces a failed read instead of an empty table', async () => {
       freeAgents.mockReturnValue(throwError(() => new Error('offline')));
       const fixture = await render();
@@ -1125,7 +1111,6 @@ describe('StreamerPlannerComponent', () => {
     beforeEach(() => {
       chosen = LEAGUE;
       connected = false;
-      myTeamOn = true;
     });
 
     it('reads no league and asks the reader to connect, from the card itself', async () => {

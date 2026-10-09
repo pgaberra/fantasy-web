@@ -2,11 +2,10 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MockBuilder } from 'ng-mocks';
 import { of, throwError } from 'rxjs';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EntitlementService } from './entitlement.service';
 import { AuthService } from './auth.service';
 import { BillingService } from './billing.service';
-import { environment } from '../../environments/environment';
 
 const getEntitlements = vi.fn();
 const isLoggedIn = signal(false);
@@ -20,7 +19,6 @@ const PREMIUM = {
 
 describe('EntitlementService', () => {
   let service: EntitlementService;
-  const originalPaymentsEnabled = environment.paymentsEnabled;
 
   beforeEach(async () => {
     getEntitlements.mockReset();
@@ -30,10 +28,6 @@ describe('EntitlementService', () => {
       .mock(BillingService, { getEntitlements })
       .mock(AuthService, { isLoggedIn });
     service = TestBed.inject(EntitlementService);
-  });
-
-  afterEach(() => {
-    environment.paymentsEnabled = originalPaymentsEnabled;
   });
 
   it('applies a premium entitlement on refresh', () => {
@@ -79,8 +73,6 @@ describe('EntitlementService', () => {
    */
   describe('following the session', () => {
     it('loads the entitlement when a session starts', () => {
-      environment.paymentsEnabled = true;
-
       isLoggedIn.set(true);
       TestBed.tick();
 
@@ -91,7 +83,6 @@ describe('EntitlementService', () => {
 
     // The next account to sign in on this browser must not inherit the last one's plan.
     it('forgets the entitlement when the session ends', () => {
-      environment.paymentsEnabled = true;
       isLoggedIn.set(true);
       TestBed.tick();
 
@@ -100,16 +91,6 @@ describe('EntitlementService', () => {
 
       expect(service.premium()).toEqual(false);
       expect(service.status()).toEqual('none');
-      expect(service.loadState()).toEqual('idle');
-    });
-
-    it('fetches nothing where payments are off, since nothing is for sale', () => {
-      environment.paymentsEnabled = false;
-
-      isLoggedIn.set(true);
-      TestBed.tick();
-
-      expect(getEntitlements).not.toHaveBeenCalled();
       expect(service.loadState()).toEqual('idle');
     });
   });

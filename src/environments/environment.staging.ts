@@ -22,8 +22,6 @@ export const environment = {
   sentryDsn: '',
   // Off for local staging runs; the deployed builds set it via the YAHOO_SYNC_DISABLED build arg.
   yahooSyncDisabled: false,
-  // Off for local staging runs; the deployed builds set it via the PAYMENTS_ENABLED build arg.
-  paymentsEnabled: false,
   // Off for local staging runs; the deployed builds set it via the PREMIUM_COMING_SOON build arg.
   premiumComingSoon: false,
   // Off for local staging runs; the deployed builds set it via the ESPN_LEAGUES_ENABLED build arg.

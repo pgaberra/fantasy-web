@@ -24,7 +24,6 @@ import {
 import { Projection, ScoredProjection } from '../models/projection.model';
 import { ScoringStatKey } from '../models/stat-key.model';
 import { EspnService } from '../services/espn.service';
-import { FeatureService } from '../services/feature.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { StreamerPlannerFreeAgentsService } from '../services/streamer-planner-free-agents.service';
 import { ChosenLeague, LeagueChoiceService } from '../services/league-choice.service';
@@ -196,7 +195,6 @@ export class StreamerPlannerComponent {
   private readonly ranking = inject(ProjectionRankingService);
   private readonly yahoo = inject(YahooService);
   private readonly espn = inject(EspnService);
-  private readonly features = inject(FeatureService);
   /** Read once, when the page opens: the nights are counted from this day. */
   private readonly today = inject(PLANNER_TODAY)();
   /** Phone or desktop: each keeps its own page size. */
@@ -544,7 +542,7 @@ export class StreamerPlannerComponent {
    */
   private readonly myTeamResource = rxResource({
     params: () => {
-      const league = this.features.streamerPlannerMyTeam() ? this.league() : null;
+      const league = this.league();
       // The roster as it stands: no stretch, so no lines, which nothing on the page reads.
       return league ? { league } : undefined;
     },
@@ -566,7 +564,7 @@ export class StreamerPlannerComponent {
    * whether it is still coming, failed, is not in this league, or is in hand.
    */
   readonly myTeamStatus = computed<'off' | 'loading' | 'error' | 'not-found' | 'ready'>(() => {
-    if (!this.features.streamerPlannerMyTeam() || !this.league()) {
+    if (!this.league()) {
       return 'off';
     }
     if (this.myTeamResource.error()) {

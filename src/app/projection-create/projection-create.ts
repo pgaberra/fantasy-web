@@ -39,7 +39,6 @@ import { FeatureService } from '../services/feature.service';
 import { AiProjectionAccess } from '../shared/premium/ai-projection-access';
 import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/premium-refused';
 import { isFollowedBoard, isOwnBoard, SOURCE_KINDS, SourceKind } from '../models/source-kind';
-import { environment } from '../../environments/environment';
 import { IconComponent } from '../shared/icon/icon';
 import { LeagueSettingsControlsComponent } from '../shared/league-settings-controls/league-settings-controls';
 import {
@@ -369,13 +368,9 @@ export class ProjectionCreateComponent {
     return this.optionsOf(kind).length;
   }
 
-  /**
-   * Whether to mark a preset as Premium. Only where payments exist, for the reason the draft
-   * picker gives (draft-start.ts): without them the AI projection is free and ungated, and a
-   * badge naming a subscription the build cannot sell promises something nobody can act on.
-   */
+  /** Whether to mark a preset as Premium. */
   showsPremiumBadge(preset: CreatePreset): boolean {
-    return !!preset.premium && environment.paymentsEnabled;
+    return !!preset.premium;
   }
 
   /**
