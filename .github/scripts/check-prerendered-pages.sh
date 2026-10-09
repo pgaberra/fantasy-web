@@ -16,7 +16,7 @@ out=dist/fantasy-web/browser
 
 # path|text that only that page's own content contains
 checks=(
-  "index.html|Prepare for the upcoming"
+  "index.html|Try the projection editor"
   "terms/index.html|Charges we always refund"
   "privacy/index.html|Privacy policy"
   "register/index.html|Already have an account?"
