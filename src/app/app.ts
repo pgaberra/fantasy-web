@@ -60,14 +60,11 @@ export class App {
 
   protected readonly isLandingRoute = computed(() => this.path() === '/');
 
-  // The Draft menu covers the draft-source picker, the projections behind it and the power rankings of
-  // a league drafted elsewhere, so it stays highlighted anywhere under any of them — a trigger
-  // button gets no routerLinkActive.
+  // The Draft menu covers the draft-source picker and the projections behind it, so it stays
+  // highlighted anywhere under either — a trigger button gets no routerLinkActive. The power
+  // rankings are read all season, so they are a header link of their own, not part of it.
   protected readonly isDraftSection = computed(
-    () =>
-      this.path().startsWith('/draft') ||
-      this.path().startsWith('/projections') ||
-      this.path().startsWith('/team-power-rankings'),
+    () => this.path().startsWith('/draft') || this.path().startsWith('/projections'),
   );
 
   // Everything behind the avatar: the profile. Premium is in the menu too, but it is also a

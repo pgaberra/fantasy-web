@@ -106,7 +106,7 @@ describe('App', () => {
     expect(items).toEqual([
       'Home',
       'Draft Mode',
-      'Team Power Rankings',
+      'Power Rankings',
       'My Projections',
       "Who's Hot",
       'Streamer Planner',
@@ -125,7 +125,25 @@ describe('App', () => {
 
     const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
 
-    expect(items).toContain('Team Power Rankings');
+    expect(items).toContain('Power Rankings');
+  });
+
+  /**
+   * The page reads a league all season, not just after its draft, so it sits in the header
+   * beside the in-season tools; the menu carries it only where the header links collapse.
+   */
+  it('links the power rankings from the header rather than the Draft menu', () => {
+    const fixture = render();
+
+    const header = Array.from(
+      fixture.nativeElement.querySelectorAll('.app-nav a') as NodeListOf<HTMLElement>,
+    ).map((link) => link.textContent?.trim());
+    const item = openNavMenu(fixture).find(
+      (menuItem) => menuItem.textContent?.trim() === 'Power Rankings',
+    );
+
+    expect(header).toContain('Power Rankings');
+    expect(item?.classList).toContain('nav-menu-item--collapsed');
   });
 
   /** Role Changes is a BFF switch: linked in the header and the burger only where it is on. */
