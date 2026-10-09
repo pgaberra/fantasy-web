@@ -60,6 +60,12 @@ export interface LeagueProjectionRosterRow {
    * not picked from and who so counts for nothing. Absent where everyone counts (a draft).
    */
   counted?: boolean;
+  /**
+   * What he would be worth had his lineup started him in every game he plays, where `total` is
+   * only the games it does. Shown for a player the team does not count, whose total is nothing.
+   * Absent where everyone counts (a draft).
+   */
+  fullValue?: number;
 }
 
 export interface LeagueProjectionTeamRow {
