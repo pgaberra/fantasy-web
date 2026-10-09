@@ -2,7 +2,7 @@ import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Observable, of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { environment } from '../../environments/environment';
 import { TeamPowerRankingsComponent } from './team-power-rankings';
 import { LeagueSummaryResponse } from '../api/models/league-summary-response';
@@ -84,6 +84,7 @@ describe('TeamPowerRankingsComponent', () => {
   const draftCall = vi.fn<(id: string, rankBy?: RankBy) => Observable<LeagueSummaryResponse>>(() =>
     of(summary),
   );
+  const navigate = vi.fn();
   const listAll = vi.fn<() => Observable<ProjectionSummaryResponse[]>>(() =>
     of([...boards, ...drafts]),
   );
@@ -135,6 +136,7 @@ describe('TeamPowerRankingsComponent', () => {
     espnCall.mockReturnValue(of(summary));
     environment.espnLeaguesEnabled = true;
     listAll.mockReset();
+    navigate.mockClear();
     listAll.mockReturnValue(of([...boards, ...drafts]));
     linkedDraft = null;
     return MockBuilder(TeamPowerRankingsComponent)
@@ -149,6 +151,7 @@ describe('TeamPowerRankingsComponent', () => {
       .mock(LeagueSummaryService, { yahooLeague, draft: draftCall, espnLeague: espnCall })
       .mock(ProjectionStorageService, { listAll })
       .mock(FeatureService, { leagueDraftSync, aiProjection } as never)
+      .provide({ provide: Router, useValue: { navigate } })
       .provide({
         provide: ActivatedRoute,
         useValue: {
@@ -492,7 +495,6 @@ describe('TeamPowerRankingsComponent', () => {
     expect(select.options).toHaveLength(2);
     // A failed list says nothing about what the user has, so no invitation to make a first one.
     expect(component.ownBoardsEmpty()).toBe(false);
-    expect(fixture.nativeElement.querySelector('.own-boards-empty')).toBeNull();
   });
 
   /** The group stays on the menu with nothing in it, so the reader learns their own numbers count. */
@@ -505,22 +507,37 @@ describe('TeamPowerRankingsComponent', () => {
     const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
     const groups = Array.from(select.querySelectorAll('optgroup')).map((group) => group.label);
     expect(groups).toEqual(['SlapStat', 'My Projections', 'Following']);
-    const placeholder = select.querySelector('optgroup[label="My Projections"] option');
-    expect(placeholder?.textContent?.trim()).toEqual('None yet');
-    expect((placeholder as HTMLOptionElement).disabled).toBe(true);
+    const placeholder = select.querySelector(
+      'optgroup[label="My Projections"] option',
+    ) as HTMLOptionElement;
+    expect(placeholder.textContent?.trim()).toEqual('No projections yet. Create one.');
     expect(select.value).toEqual('model');
-
-    const invitation = fixture.nativeElement.querySelector('.own-boards-empty') as HTMLElement;
-    expect(invitation.textContent).toContain('No projections of your own yet.');
-    const link = ngMocks.find(fixture, '.own-boards-empty a');
-    expect(link.nativeElement.textContent).toEqual('Create one');
-    expect(ngMocks.input(link, 'routerLink')).toEqual('/projections/new');
   });
 
-  it('says nothing about missing projections where the user has one', async () => {
+  /** The entry is a door, not a ranking: it opens the editor and leaves the league as it was. */
+  it('opens the editor when the empty My Projections entry is chosen', async () => {
+    listAll.mockReturnValue(of([boards[1], ...drafts]));
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    await choose(fixture, component, '465.l.1');
+    yahooLeague.mockClear();
+
+    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
+    select.value = component.createOption;
+    select.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+
+    expect(navigate).toHaveBeenCalledWith(['/projections/new']);
+    expect(component.rankBy()).toEqual('model');
+    expect(select.value).toEqual('model');
+    expect(yahooLeague).not.toHaveBeenCalled();
+  });
+
+  it('offers no create entry where the user has a projection', async () => {
     const fixture = await render();
     expect(fixture.point.componentInstance.ownBoardsEmpty()).toBe(false);
-    expect(fixture.nativeElement.querySelector('.own-boards-empty')).toBeNull();
+    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
+    expect(Array.from(select.options).map((option) => option.value)).not.toContain('create');
   });
 
   /** Picking a platform's tab, as a reader would. */

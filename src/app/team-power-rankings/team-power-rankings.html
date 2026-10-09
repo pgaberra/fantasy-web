@@ -138,8 +138,9 @@
                 }
               </optgroup>
             } @else if (ownBoardsEmpty()) {
+              <!-- Choosing this opens the editor; the menu springs back to what ranks the league. -->
               <optgroup label="My Projections">
-                <option disabled>None yet</option>
+                <option [value]="createOption">No projections yet. Create one.</option>
               </optgroup>
             }
             @if (followedBoards().length > 0) {
@@ -160,12 +161,6 @@
         @if (boardsFailed()) {
           <p class="picker-status picker-wide" role="status">
             Couldn't load your projections, so only ours are offered. Reload the page to try again.
-          </p>
-        } @else if (ownBoardsEmpty()) {
-          <!-- The dropdown can show that the group is empty but cannot hold a link; this can. -->
-          <p class="picker-status picker-wide own-boards-empty">
-            No projections of your own yet.
-            <a routerLink="/projections/new">Create one</a> to rank the league by your own numbers.
           </p>
         }
       }
