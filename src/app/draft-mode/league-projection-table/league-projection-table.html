@@ -150,7 +150,11 @@
 
           @if (isExpanded(team.teamId) && showsRosterRows()) {
             @for (player of rosterRows(team); track player.name + $index; let last = $last) {
-              <tr class="lp-player-row" [class.group-end]="last && !hasHiddenPlayers(team)">
+              <tr
+                class="lp-player-row"
+                [class.group-end]="last && !hasHiddenPlayers(team)"
+                [class.not-counted]="player.counted === false"
+              >
                 <td class="col-rank"></td>
                 <td class="col-team">
                   <div class="lp-player">
@@ -161,9 +165,16 @@
                         [alt]="player.team ?? ''"
                       />
                     }
-                    <span class="lp-player-name">{{ player.name }}</span>
+                    <span
+                      class="lp-player-name"
+                      [appTooltip]="player.counted === false ? notCountedTooltip : null"
+                      >{{ player.name }}</span
+                    >
                     @if (player.positions?.length) {
                       <app-position-chips class="lp-player-pos" [positions]="player.positions!" />
+                    }
+                    @if (player.reserve) {
+                      <span class="lp-reserve-badge" [appTooltip]="reserveTooltip">IR</span>
                     }
                   </div>
                 </td>
@@ -196,11 +207,7 @@
                     (click)="toggleShowAll(team.teamId)"
                   >
                     <app-icon name="chevron-down" [size]="14" />
-                    {{
-                      isShowingAll(team.teamId)
-                        ? 'Show top 5'
-                        : 'Show all ' + team.roster.length + ' players'
-                    }}
+                    {{ isShowingAll(team.teamId) ? 'Show top 5' : 'Show all' }}
                   </button>
                 </td>
                 @for (column of columns(); track column.key) {
