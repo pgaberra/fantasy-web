@@ -28,6 +28,8 @@ const base: LeagueSummaryResponse = {
           total: 90,
           values: { goals: 45 },
           contributions: { goals: 90 },
+          reserve: true,
+          counted: true,
         },
       ],
       positionPlayers: { C: [{ name: 'A Skater', value: 90 }], G: [], BN: [] },
@@ -95,5 +97,12 @@ describe('power rankings data', () => {
 
     expect(row.team).toEqual('EDM');
     expect(row.positions).toEqual(['C', 'LW']);
+  });
+
+  it('keeps whether a roster row is parked on IR and whether it counts', () => {
+    const row = leagueProjectionFrom(base).teams[0].roster[0];
+
+    expect(row.reserve).toBe(true);
+    expect(row.counted).toBe(true);
   });
 });

@@ -49,6 +49,16 @@ export interface LeagueProjectionRosterRow {
    * category column. Null where the stat doesn't apply, so those players sort to the bottom.
    */
   contributions: Record<string, number | null>;
+  /**
+   * Parked today in an injured-reserve or not-active slot, which holds a player without taking a
+   * roster spot. Absent where the source has no such slots (a draft).
+   */
+  reserve?: boolean;
+  /**
+   * False for a player outside the team's best, as many as its roster holds, whom its lineups are
+   * not picked from and who so counts for nothing. Absent where everyone counts (a draft).
+   */
+  counted?: boolean;
 }
 
 export interface LeagueProjectionTeamRow {

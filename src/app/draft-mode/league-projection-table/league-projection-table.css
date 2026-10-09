@@ -338,6 +338,26 @@
   --team-logo-size: 24px;
 }
 
+/* A player parked on injured reserve or not-active. Built as the projections table's injury
+   badge is, red as a warning, since it answers the same question about him. */
+.lp-reserve-badge {
+  flex: none;
+  padding: 0 0.3rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-danger);
+  color: var(--color-text-on-dark);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  line-height: 1.35;
+  cursor: help;
+}
+
+/* Outside the team's best, as many as its roster holds: listed so the roster is whole, but faded,
+   since none of his figures reach the team's. */
+.lp-table tbody tr.not-counted td:not(.col-rank) {
+  opacity: 0.55;
+}
+
 .lp-player-name {
   overflow: hidden;
   text-overflow: ellipsis;
