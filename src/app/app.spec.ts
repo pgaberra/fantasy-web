@@ -106,7 +106,7 @@ describe('App', () => {
     expect(items).toEqual([
       'Home',
       'Draft Mode',
-      'Team Power Rankings',
+      'Power Rankings',
       'My Projections',
       "Who's Hot",
       'Streamer Planner',
@@ -125,7 +125,7 @@ describe('App', () => {
 
     const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
 
-    expect(items).toContain('Team Power Rankings');
+    expect(items).toContain('Power Rankings');
   });
 
   /**
@@ -139,10 +139,10 @@ describe('App', () => {
       fixture.nativeElement.querySelectorAll('.app-nav a') as NodeListOf<HTMLElement>,
     ).map((link) => link.textContent?.trim());
     const item = openNavMenu(fixture).find(
-      (menuItem) => menuItem.textContent?.trim() === 'Team Power Rankings',
+      (menuItem) => menuItem.textContent?.trim() === 'Power Rankings',
     );
 
-    expect(header).toContain('Team Power Rankings');
+    expect(header).toContain('Power Rankings');
     expect(item?.classList).toContain('nav-menu-item--collapsed');
   });
 

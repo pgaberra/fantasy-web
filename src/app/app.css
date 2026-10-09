@@ -291,10 +291,10 @@
 }
 
 /* The header's links fold into the burger as soon as they would wrap onto two lines, which is
-   well above phone width: the logo, Home, Draft, Team Power Rankings, Who's Hot, Streamer
-   Planner, Premium and the avatar need about 875px side by side, so a tablet held upright gets
-   the burger too. A link added to the header moves this number. */
-@media (max-width: 880px) {
+   above phone width: the logo, Home, Draft, Power Rankings, Who's Hot, Streamer Planner, Premium
+   and the avatar need about 831px side by side, so this leaves a little room for fonts that render
+   wider. A link added to the header moves this number. */
+@media (max-width: 840px) {
   .nav-burger {
     display: grid;
   }

@@ -20,7 +20,7 @@
             Draft
             <app-icon name="chevron-down" [size]="14" />
           </button>
-          <a routerLink="/team-power-rankings" routerLinkActive="active">Team Power Rankings</a>
+          <a routerLink="/team-power-rankings" routerLinkActive="active">Power Rankings</a>
           @if (whosHotEnabled) {
             <a routerLink="/whos-hot" routerLinkActive="active">Who's Hot</a>
           }
@@ -86,7 +86,7 @@
       routerLinkActive="active"
       ariaCurrentWhenActive="page"
     >
-      Team Power Rankings
+      Power Rankings
     </a>
     @if (features.draftAnalysis()) {
       <a
