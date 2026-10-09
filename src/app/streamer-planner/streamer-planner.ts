@@ -187,7 +187,7 @@ export interface PresetOption {
   ],
   providers: [YahooLeaguePicker],
   templateUrl: './streamer-planner.html',
-  styleUrl: './streamer-planner.css',
+  styleUrls: ['./streamer-planner.css', './streamer-planner-days.css'],
 })
 export class StreamerPlannerComponent {
   private readonly api = inject(Api);
@@ -310,6 +310,20 @@ export class StreamerPlannerComponent {
 
   isCounted(day: PlannerDay): boolean {
     return !this.excluded().has(day.date);
+  }
+
+  /** The fullest night of the stretch, the one every night's meter is drawn against. */
+  readonly busiestNight = computed(() =>
+    Math.max(
+      1,
+      ...this.days().map((day) => day.games),
+      ...this.leadingDays().map((day) => day.games ?? 0),
+    ),
+  );
+
+  /** A night's share of the fullest night, in percent, for the bar under its games. */
+  meter(games: number): number {
+    return Math.round((100 * games) / this.busiestNight());
   }
 
   /**
