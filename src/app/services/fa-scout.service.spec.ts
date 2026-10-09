@@ -74,6 +74,32 @@ describe('FaScoutService', () => {
     expect(montour.freeAgent.availability).toBe('WAIVERS');
   });
 
+  it('gives each line the whole games its own round to, every count moved with them', async () => {
+    invoke.mockResolvedValue({
+      ...ANSWER,
+      players: [
+        {
+          ...ANSWER.players[0],
+          restOfSeason: { games: 57.6, stats: { points: 28.8, toiPerGame: 1380, shPct: 9.5 } },
+        },
+        {
+          ...ANSWER.players[1],
+          restOfSeason: { games: 0.4, stats: { gs: 0.4, w: 0.2, svPct: 0.905 } },
+        },
+      ],
+    });
+    const [montour, knight] = (await read()).players;
+
+    // 57.6 games is 58, and 28.8 points over 57.6 games is 29 over 58; a rate and the ice stay.
+    expect(montour.freeAgent.expectedGames).toBe(58);
+    expect(scoring(montour.freeAgent.projection)?.['points']).toBeCloseTo(29);
+    expect(scoring(montour.freeAgent.projection)?.['shPct']).toBe(9.5);
+    expect(montour.freeAgent.projection.stats.utility).toMatchObject({ gp: 58, toiPerGame: 1380 });
+    // A goalie rounded to no start has no line at all, his save percentage too.
+    expect(knight.freeAgent.expectedGames).toBe(0);
+    expect(scoring(knight.freeAgent.projection)).toMatchObject({ w: 0, svPct: 0 });
+  });
+
   it('keeps the preseason line over its own games', async () => {
     const montour = (await read()).players[0];
 
@@ -109,7 +135,7 @@ describe('FaScoutService', () => {
           reserve: false,
           out: false,
           reserveEligible: [],
-          restOfSeason: { games: 74, stats: { points: 90 } },
+          restOfSeason: { games: 73.6, stats: { points: 92 } },
         },
         {
           playerId: '6744',
@@ -129,8 +155,9 @@ describe('FaScoutService', () => {
     expect(invoke).toHaveBeenCalledWith(faScoutMyTeam, { platform: 'YAHOO', leagueId: '465.l.9' });
     expect(team.teamName).toBe('Slapshots');
     expect(team.players[0].projection?.playerId).toBe(6743);
+    // His own line is on whole games too, so a pickup is weighed against him on one footing.
     expect(team.players[0].projection?.stats.utility.gp).toBe(74);
-    expect(scoring(team.players[0].projection)?.['points']).toBe(90);
+    expect(scoring(team.players[0].projection)?.['points']).toBeCloseTo((92 * 74) / 73.6);
     expect(team.players[1]).toMatchObject({
       slot: 'NA',
       reserve: true,

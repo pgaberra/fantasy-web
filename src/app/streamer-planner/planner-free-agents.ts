@@ -186,6 +186,17 @@ export function wholeGamesShare(share: LineShare, expectedGames: number): LineSh
   };
 }
 
+/**
+ * A line over the whole games its fractional `expectedGames` round to, each counting stat moved
+ * with them: a skater's by {@link wholeGamesShare}, a goalie's as whole starts by
+ * {@link startsProjection}, so one rounded to none has no rates either.
+ */
+export function wholeGamesLine(projection: Projection, expectedGames: number): Projection {
+  return projection.type === 'goalie'
+    ? startsProjection(projection, expectedGames, Math.round(expectedGames))
+    : scaledProjection(projection, wholeGamesShare(WHOLE_LINE, expectedGames));
+}
+
 function clubOf(
   player: FreeAgent,
   teams: ReadonlyMap<string, TeamSchedule>,
@@ -442,8 +453,8 @@ export function formatToi(seconds: number | undefined): string {
 /**
  * Games as a whole number, the way a schedule counts them. The expectation is fractional, and to
  * one decimal it read as two kinds of number: 2.97 came out "3.0" beside a "3" the arithmetic
- * happened to land on. The planner's games are whole already ({@link wholeGamesShare}); FA Scout's
- * are not, and its line is still the fraction's.
+ * happened to land on. The planner's and FA Scout's games are whole already, their lines with them
+ * ({@link wholeGamesShare}, {@link wholeGamesLine}); this rounds whatever else passes a fraction.
  */
 export function formatGames(games: number): string {
   return Math.round(games).toString();
