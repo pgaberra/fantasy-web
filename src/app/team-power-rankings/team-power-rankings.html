@@ -214,16 +214,7 @@
           [data]="projection"
           [scoringType]="scoringType()"
           [scoreHeading]="scoreHeading()"
-          [expandable]="hasPlayers()"
         />
-
-        @if (sellsPremium()) {
-          <p class="rankings-locked">
-            <app-icon name="lock" [size]="14" />
-            Premium shows the players behind every total.
-            <a routerLink="/premium">See what's included</a>
-          </p>
-        }
       }
     } @else if (awaitingLeague()) {
       <p class="rankings-note">Select a league to see its rankings.</p>
