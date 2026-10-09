@@ -195,11 +195,12 @@ describe('LeagueProjectionTableComponent', () => {
     expect(component.isShowingAll('a')).toBe(false);
   });
 
-  it('marks a parked player IR and fades one the team does not count', () => {
+  it('tags a parked player by his slot and fades one the team does not count', () => {
+    const slots: Record<string, string> = { Oettinger: 'IR+', Makar: 'NA' };
     const roster = data.teams[0].roster.map((row) =>
       row.name === 'Oettinger'
-        ? { ...row, total: 0, fullValue: 1.5, reserve: true, counted: false }
-        : { ...row, reserve: false, counted: true },
+        ? { ...row, total: 0, fullValue: 1.5, reserveSlot: slots[row.name], counted: false }
+        : { ...row, reserveSlot: slots[row.name] ?? null, counted: true },
     );
     const fixture = MockRender(LeagueProjectionTableComponent, {
       data: { ...data, teams: [{ ...data.teams[0], roster }] },
@@ -215,6 +216,7 @@ describe('LeagueProjectionTableComponent', () => {
     const rowOf = (name: string) =>
       rows.find((row) => row.querySelector('.lp-player-name')?.textContent?.trim() === name)!;
     expect(rowOf('Oettinger').querySelector('.lp-reserve-badge')?.textContent?.trim()).toBe('IR');
+    expect(rowOf('Makar').querySelector('.lp-reserve-badge')?.textContent?.trim()).toBe('NA');
     expect(rowOf('Oettinger').classList).toContain('not-counted');
     expect(rowOf('McDavid').querySelector('.lp-reserve-badge')).toBeNull();
     expect(rowOf('McDavid').classList).not.toContain('not-counted');

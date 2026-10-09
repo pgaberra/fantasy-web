@@ -173,8 +173,13 @@
                     @if (player.positions?.length) {
                       <app-position-chips class="lp-player-pos" [positions]="player.positions!" />
                     }
-                    @if (player.reserve) {
-                      <span class="lp-reserve-badge" [appTooltip]="reserveTooltip">IR</span>
+                    @if (player.reserveSlot; as slot) {
+                      <span
+                        class="lp-reserve-badge"
+                        [class.na]="slot === 'NA'"
+                        [appTooltip]="slot === 'NA' ? notActiveTooltip : injuredReserveTooltip"
+                        >{{ slot === 'NA' ? 'NA' : 'IR' }}</span
+                      >
                     }
                   </div>
                 </td>
