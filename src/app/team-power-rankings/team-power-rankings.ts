@@ -210,6 +210,13 @@ export class TeamPowerRankingsComponent implements OnInit {
 
   readonly boardOption = rankByBoard;
 
+  /**
+   * Once the season is under way the model ranks what each player does over the games left, so
+   * the totals are that much smaller than a whole season's. Only the model's in-season lines set
+   * the flag: a board, last season's stats and the preseason model are whole seasons.
+   */
+  readonly restOfSeason = computed(() => !!this.rankingsData()?.inSeason);
+
   private readonly rankingsResource = rxResource({
     params: () => {
       if (this.linkedDraft()) {

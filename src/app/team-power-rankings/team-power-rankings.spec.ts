@@ -310,6 +310,28 @@ describe('TeamPowerRankingsComponent', () => {
     expect(draftCall).toHaveBeenLastCalledWith('d2', 'model');
   });
 
+  /** Mid-season the model's totals cover the games left, and the line under the name says so. */
+  it('says the ranking covers the rest of the season once it is under way', async () => {
+    yahooLeague.mockReturnValue(of({ ...summary, inSeason: true }));
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    await choose(fixture, component, '465.l.1');
+
+    expect(fixture.nativeElement.querySelector('.rankings-source')?.textContent).toContain(
+      '*Based on projected performance for the rest of the season.',
+    );
+  });
+
+  /** Before the first game the totals are a whole season's, so there is nothing to explain. */
+  it('says nothing about the rest of the season before it starts', async () => {
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    await choose(fixture, component, '465.l.1');
+
+    expect(fixture.nativeElement.querySelector('app-league-projection-table')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.rankings-source')).toBeNull();
+  });
+
   /** Back to the placeholder is back to nothing on screen, not the last league left standing. */
   it('clears the rankings when the league is unpicked', async () => {
     const fixture = await render();
