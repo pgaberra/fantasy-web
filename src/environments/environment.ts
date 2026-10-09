@@ -59,6 +59,10 @@ export const environment = {
   // pages that adopted it keeps the markup and the look it shipped with, so the flag is the one
   // place the unified treatment is switched on or taken back.
   sharedNoticeEnabled: false,
+  // Feature toggle for the new signed-out landing page (the in-season one, with the tools listed
+  // above and below the live editor). Off by default, which serves the page as it shipped; deployed
+  // builds turn it on with the NEW_LANDING_ENABLED=true build arg.
+  newLandingEnabled: false,
   // Premium's price in US dollars, which the Premium page quotes. Empty locally, where the mock
   // provider is in use and there is no price to quote.
   premiumBasePriceUsd: '',
