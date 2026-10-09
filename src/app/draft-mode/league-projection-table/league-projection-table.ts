@@ -54,8 +54,7 @@ export class LeagueProjectionTableComponent {
    */
   readonly expandable = input<boolean>(true);
 
-  readonly injuredReserveTooltip =
-    "On injured reserve: holds no roster spot, and counts only if he is among the team's best";
+  readonly injuredReserveTooltip = 'Player is currently on IR.';
   readonly notActiveTooltip =
     "Not active: holds no roster spot, and counts only if he is among the team's best";
   readonly notCountedTooltip =
