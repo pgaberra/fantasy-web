@@ -91,6 +91,16 @@
   color: var(--color-text-muted);
 }
 
+/* The one way to the editor from here: a link in the aside, where the dropdown cannot hold one. */
+.create-link {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.create-link:hover {
+  color: var(--color-primary-hover);
+}
+
 /* The page's error voice, shared by the league picker and by a league that has no draft to rank:
    both say the table the reader came for is not coming, which is more than a muted aside. */
 .picker-error,

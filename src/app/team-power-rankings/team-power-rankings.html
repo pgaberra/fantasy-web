@@ -133,9 +133,10 @@
               }
             </optgroup>
           } @else if (ownBoardsEmpty()) {
-            <!-- Choosing this opens the editor; the menu springs back to what ranks the league. -->
+            <!-- A note, not a choice: a native select cannot hold a link, so the entry is greyed
+                 and unselectable, and the way to the editor is the line under the menu. -->
             <optgroup label="My Projections">
-              <option [value]="createOption">No projections yet. Create one.</option>
+              <option value="" disabled>No projections yet.</option>
             </optgroup>
           }
           @if (followedBoards().length > 0) {
@@ -152,6 +153,12 @@
           }
         </select>
       </div>
+
+      @if (ownBoardsEmpty()) {
+        <p class="picker-status picker-wide create-hint">
+          No projections yet. <a routerLink="/projections/new" class="create-link">Create one</a>.
+        </p>
+      }
 
       @if (boardsFailed()) {
         <p class="picker-status picker-wide" role="status">
