@@ -179,6 +179,23 @@ export class LeagueProjectionTableComponent {
    */
   readonly showsRosterRows = computed(() => this.mode() === 'category');
 
+  /**
+   * Whether a player row on screen is one the team does not count. Such a row shows what he would
+   * be worth, marked, rather than the nothing he adds, and the table then says why under it.
+   */
+  readonly showsUncountedNote = computed(() =>
+    this.sortedTeams().some(
+      (team) =>
+        this.isExpanded(team.teamId) &&
+        this.showsRosterRows() &&
+        this.rosterRows(team).some((player) => this.shownAsUncounted(player)),
+    ),
+  );
+
+  shownAsUncounted(player: LeagueProjectionRosterRow): boolean {
+    return player.counted === false && player.fullValue !== undefined;
+  }
+
   isExpanded(teamId: string): boolean {
     return this.expandedTeamIds().has(teamId);
   }

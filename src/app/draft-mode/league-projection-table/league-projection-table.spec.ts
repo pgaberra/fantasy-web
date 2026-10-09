@@ -198,7 +198,7 @@ describe('LeagueProjectionTableComponent', () => {
   it('marks a parked player IR and fades one the team does not count', () => {
     const roster = data.teams[0].roster.map((row) =>
       row.name === 'Oettinger'
-        ? { ...row, total: 0, reserve: true, counted: false }
+        ? { ...row, total: 0, fullValue: 1.5, reserve: true, counted: false }
         : { ...row, reserve: false, counted: true },
     );
     const fixture = MockRender(LeagueProjectionTableComponent, {
@@ -218,6 +218,38 @@ describe('LeagueProjectionTableComponent', () => {
     expect(rowOf('Oettinger').classList).toContain('not-counted');
     expect(rowOf('McDavid').querySelector('.lp-reserve-badge')).toBeNull();
     expect(rowOf('McDavid').classList).not.toContain('not-counted');
+  });
+
+  it('shows what an uncounted player would add, starred, and says why under the table', () => {
+    const roster = data.teams[0].roster.map((row) =>
+      row.name === 'Oettinger'
+        ? { ...row, total: 0, fullValue: 1.5, counted: false }
+        : { ...row, fullValue: row.total, counted: true },
+    );
+    const fixture = MockRender(LeagueProjectionTableComponent, {
+      data: { ...data, teams: [{ ...data.teams[0], roster }] },
+      scoringType: 'category',
+      scoreHeading: 'Z-Score',
+    });
+    const component = fixture.point.componentInstance;
+    const footnote = () =>
+      fixture.nativeElement.querySelector('.lp-footnote') as HTMLElement | null;
+    component.toggleExpand('a');
+    fixture.detectChanges();
+    expect(footnote(), 'no uncounted player among the top five').toBeNull();
+
+    component.toggleShowAll('a');
+    fixture.detectChanges();
+
+    const rows = [...fixture.nativeElement.querySelectorAll('tr.lp-player-row')] as HTMLElement[];
+    const totalOf = (name: string) =>
+      rows
+        .find((row) => row.querySelector('.lp-player-name')?.textContent?.trim() === name)!
+        .querySelector('.col-total')!
+        .textContent.replace(/\s+/g, '');
+    expect(totalOf('Oettinger')).toBe('1.50*');
+    expect(totalOf('McDavid')).not.toContain('*');
+    expect(footnote()?.textContent).toContain("Not in the team's total");
   });
 
   it("orders each team's player rows by the column the table is sorted on", () => {
