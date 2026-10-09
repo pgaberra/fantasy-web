@@ -20,6 +20,7 @@
             Draft
             <app-icon name="chevron-down" [size]="14" />
           </button>
+          <a routerLink="/team-power-rankings" routerLinkActive="active">Power Rankings</a>
           @if (whosHotEnabled) {
             <a routerLink="/whos-hot" routerLinkActive="active">Who's Hot</a>
           }
@@ -79,13 +80,13 @@
       >Draft Mode</a
     >
     <a
-      class="nav-menu-item"
+      class="nav-menu-item nav-menu-item--collapsed"
       cdkMenuItem
       routerLink="/team-power-rankings"
       routerLinkActive="active"
       ariaCurrentWhenActive="page"
     >
-      Team Power Rankings
+      Power Rankings
     </a>
     @if (features.draftAnalysis()) {
       <a
