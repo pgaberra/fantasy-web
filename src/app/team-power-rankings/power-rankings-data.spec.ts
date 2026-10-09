@@ -26,6 +26,7 @@ const base: LeagueSummaryResponse = {
           team: 'EDM',
           positions: ['C', 'LW'],
           total: 90,
+          fullValue: 120,
           values: { goals: 45 },
           contributions: { goals: 90 },
           reserveSlot: 'NA',
@@ -104,5 +105,12 @@ describe('power rankings data', () => {
 
     expect(row.reserveSlot).toBe('NA');
     expect(row.counted).toBe(true);
+  });
+
+  it('keeps what a roster row would add if started every game, beside what it does add', () => {
+    const row = leagueProjectionFrom(base).teams[0].roster[0];
+
+    expect(row.total).toBe(90);
+    expect(row.fullValue).toBe(120);
   });
 });
