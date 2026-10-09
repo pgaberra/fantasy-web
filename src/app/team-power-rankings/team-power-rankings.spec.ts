@@ -322,6 +322,18 @@ describe('TeamPowerRankingsComponent', () => {
     );
   });
 
+  /** The totals are what each lineup starts, not the roster added up, and the page says so. */
+  it('says a team counts what its lineup starts', async () => {
+    yahooLeague.mockReturnValue(of(summary));
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    await choose(fixture, component, '465.l.1');
+
+    expect(fixture.nativeElement.querySelector('.rankings-method')?.textContent).toContain(
+      'Players on the bench score nothing',
+    );
+  });
+
   /** Back to the placeholder is back to nothing on screen, not the last league left standing. */
   it('clears the rankings when the league is unpicked', async () => {
     const fixture = await render();

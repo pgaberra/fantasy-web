@@ -183,6 +183,12 @@
     } @else if (rankingsData()) {
       <h2 class="rankings-league">{{ leagueName() }}</h2>
       <p class="rankings-source">Ranked by {{ rankedByLabel() }}</p>
+      <!-- The totals are lineups, not rosters (fantasy-bff#363): said once, beside the source,
+           since a team of forwards reads lower here than its players added up. -->
+      <p class="rankings-method">
+        Each team counts what its best lineup starts, night by night over the schedule. Players on
+        the bench score nothing.
+      </p>
 
       @if (notDrafted()) {
         @if (sharedNotice) {
