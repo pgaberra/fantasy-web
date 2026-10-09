@@ -178,6 +178,14 @@ export class TeamPowerRankingsComponent implements OnInit {
 
   readonly boardsFailed = computed(() => !!this.listResource.error());
 
+  /**
+   * Whether the list came back and holds no board of the user's own: the moment to say one can be
+   * made. False while loading or failed, when nothing is known about what they have.
+   */
+  readonly ownBoardsEmpty = computed(
+    () => this.listResource.hasValue() && !this.boardsFailed() && this.ownBoards().length === 0,
+  );
+
   /** Whether there is anything to pick in the first dropdown: a Yahoo league or a draft. */
   readonly hasChoices = computed(
     () => this.picker.leagues().length > 0 || this.drafts().length > 0,
