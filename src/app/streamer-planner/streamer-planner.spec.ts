@@ -437,15 +437,6 @@ describe('StreamerPlannerComponent', () => {
     expect(ngMocks.formatText(nights[0])).toContain('No games');
     // The off-night is marked with the word on the night itself, read out in full; its tooltip
     // says what the short word stands for, and nothing under the strip repeats it.
-    // The bar under each night's games is its share of the fullest night on show, the days
-    // ahead of the stretch included, so one scale runs along the whole row.
-    const planner = fixture.point.componentInstance;
-    expect(planner.busiestNight()).toBe(9);
-    expect(planner.meter(9)).toBe(100);
-    expect(planner.meter(3)).toBe(33);
-    const fills = ngMocks.findAll(fixture, 'div.day .day-meter-fill');
-    expect(fills.length).toBe(2);
-    expect((fills[0].nativeElement as HTMLElement).style.width).toBe('33%');
     const marks = ngMocks.findAll(nights[1], '.day-mark');
     expect(marks.length).toEqual(1);
     expect(ngMocks.find(marks[0], '[aria-hidden="true"]').nativeElement.textContent).toEqual('Off');

@@ -95,11 +95,6 @@
                     </span>
                   }
                 </span>
-                @if (day.games > 0) {
-                  <span class="day-meter" aria-hidden="true">
-                    <span class="day-meter-fill" [style.width.%]="meter(day.games)"></span>
-                  </span>
-                }
               }
             </span>
           }
@@ -155,13 +150,6 @@
                   </span>
                 }
               </span>
-              @if (day.games > 0) {
-                <!-- How full the league's night is, against the fullest of the stretch: the
-                     off-nights are the short bars, readable across a row before any number is. -->
-                <span class="day-meter" aria-hidden="true">
-                  <span class="day-meter-fill" [style.width.%]="meter(day.games)"></span>
-                </span>
-              }
               @if (room(day) || dropRoom(day)) {
                 <span class="day-rooms">
                   @if (room(day); as room) {
