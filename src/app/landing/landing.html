@@ -13,29 +13,40 @@
 
   <section class="lp-hero">
     <div class="lp-container lp-hero-inner">
-      <h1 class="lp-title">
-        Prepare for the upcoming <span class="lp-accent">2026-27</span> NHL fantasy season.
-      </h1>
+      <p class="lp-eyebrow">Top-shelf tools for fantasy hockey managers</p>
+      @if (offseason) {
+        <h1 class="lp-title">
+          Get ready for the next <span class="lp-accent">NHL</span> fantasy season.
+        </h1>
+      } @else {
+        <h1 class="lp-title">
+          The NHL season is on. <span class="lp-accent">Get ahead</span> of your league.
+        </h1>
+      }
       <p class="lp-subtitle">
-        Build a projection for your league and rank every player to your scoring settings. Try the
-        editor, no account required.
+        Rank every player to your league's scoring, plan the week's pickups and see who's hot right
+        now. Try the editor below, no account required.
       </p>
       <div class="lp-cta-row">
         <a routerLink="/register" class="btn btn-primary btn-lg">Get started, it's free</a>
-        <a routerLink="/login" class="btn btn-secondary btn-lg">Sign in</a>
+        <a href="#editor" class="btn btn-secondary btn-lg">Try the editor</a>
       </div>
-    </div>
-
-    <div class="lp-container lp-demo-wrap">
-      <app-landing-demo />
     </div>
   </section>
 
-  <section class="lp-features">
+  <section class="lp-section lp-section-alt" aria-labelledby="in-season-heading">
     <div class="lp-container">
+      <div class="lp-section-head">
+        <h2 id="in-season-heading" class="lp-section-title">Built for the season that's on</h2>
+        <p class="lp-section-sub">
+          The draft is done. The weeks that decide your league are not. Three tools for the one
+          ahead.
+        </p>
+      </div>
       <div class="lp-feature-grid">
-        @for (feature of features; track feature.title) {
+        @for (feature of inSeason; track feature.title) {
           <article class="lp-feature">
+            <span class="lp-feature-icon"><app-icon [name]="feature.icon" [size]="20" /></span>
             <h3 class="lp-feature-title">{{ feature.title }}</h3>
             <p class="lp-feature-desc">{{ feature.description }}</p>
           </article>
@@ -44,13 +55,68 @@
     </div>
   </section>
 
+  <section id="editor" class="lp-section lp-editor" aria-labelledby="editor-heading">
+    <div class="lp-container">
+      <div class="lp-section-head">
+        <h2 id="editor-heading" class="lp-section-title">Try the projection editor</h2>
+        <p class="lp-section-sub">
+          This is the real editor with this season's player pool. Set your scoring, switch between
+          points and categories, and watch the ranking change. Save it with a free account.
+        </p>
+      </div>
+    </div>
+    <div class="lp-container lp-demo-wrap">
+      <app-landing-demo />
+    </div>
+  </section>
+
+  <section class="lp-section lp-section-alt" aria-labelledby="draft-heading">
+    <div class="lp-container">
+      <div class="lp-section-head">
+        <h2 id="draft-heading" class="lp-section-title">Draft day, covered</h2>
+        <p class="lp-section-sub">
+          From your league's settings to the last pick, and the projection travels with you.
+        </p>
+      </div>
+      <div class="lp-feature-grid">
+        @for (feature of draftDay; track feature.title) {
+          <article class="lp-feature">
+            <span class="lp-feature-icon"><app-icon [name]="feature.icon" [size]="20" /></span>
+            <h3 class="lp-feature-title">{{ feature.title }}</h3>
+            <p class="lp-feature-desc">{{ feature.description }}</p>
+          </article>
+        }
+      </div>
+    </div>
+  </section>
+
+  @if (aiProjectionServed()) {
+    <section class="lp-section lp-premium" aria-labelledby="premium-heading">
+      <div class="lp-container lp-premium-inner">
+        <p class="lp-premium-badge">
+          <app-icon name="sparkles" [size]="14" />
+          Premium
+        </p>
+        <h2 id="premium-heading" class="lp-premium-title">
+          Every player projected for the whole season
+        </h2>
+        <p class="lp-premium-text">
+          Our AI projection covers every skater and goalie and keeps pace with the season: ice time,
+          line changes and the games already played. Open it in the editor, draft with it, or let it
+          rank your pickups.
+        </p>
+        <a routerLink="/premium" class="btn btn-lg lp-btn-gold">See Premium</a>
+      </div>
+    </section>
+  }
+
   <section class="lp-final">
     <div class="lp-container lp-final-inner">
-      <h2 class="lp-final-title">Build your rankings.</h2>
+      <h2 class="lp-final-title">Your league. Your scoring. Your edge.</h2>
       <p class="lp-final-sub">
-        Create a free account to save your projections and use them on draft day.
+        Create a free account to save your projections and open every tool above.
       </p>
-      <a routerLink="/register" class="btn btn-lg lp-btn-invert">Get started</a>
+      <a routerLink="/register" class="btn btn-lg lp-btn-invert">Get started, it's free</a>
     </div>
   </section>
 </div>

@@ -5,6 +5,9 @@
   --pinned-header-inset: calc(var(--lp-nav-bar-height) + 1px);
   background: var(--color-bg);
   color: var(--color-text);
+  /* The "Try the editor" button jumps to the demo; a jump that lands under the floating nav
+     hides the section's own heading, so anchored sections stop short of it. */
+  scroll-padding-top: var(--lp-nav-bar-height);
 }
 
 .lp-container {
@@ -55,23 +58,33 @@
 
 /* Hero */
 .lp-hero {
-  padding: clamp(3rem, 8vw, 5rem) 0 clamp(2.5rem, 6vw, 4rem);
+  padding: clamp(3.5rem, 9vw, 6rem) 0 clamp(3rem, 7vw, 4.5rem);
   text-align: center;
   background:
-    radial-gradient(60% 60% at 50% 0%, rgba(30, 107, 255, 0.1), transparent 70%), var(--color-bg);
+    radial-gradient(60% 60% at 50% 0%, rgba(30, 107, 255, 0.12), transparent 70%), var(--color-bg);
 }
 
 .lp-hero-inner {
-  max-width: 720px;
+  max-width: 760px;
+}
+
+.lp-eyebrow {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-gold-strong);
 }
 
 .lp-title {
   margin: 0 0 var(--space-4);
-  font-size: clamp(2.2rem, 6vw, 3.4rem);
+  font-size: clamp(2.2rem, 6vw, 3.6rem);
   font-weight: var(--weight-bold);
   line-height: 1.08;
   letter-spacing: -0.02em;
   color: var(--color-primary);
+  text-wrap: balance;
 }
 
 .lp-accent {
@@ -81,10 +94,11 @@
 
 .lp-subtitle {
   margin: 0 auto var(--space-5);
-  max-width: 560px;
+  max-width: 580px;
   font-size: clamp(1rem, 2.2vw, 1.15rem);
   line-height: 1.6;
   color: var(--color-text-muted);
+  text-wrap: pretty;
 }
 
 .lp-cta-row {
@@ -94,35 +108,55 @@
   justify-content: center;
 }
 
-/* Live demo */
-.lp-demo-wrap {
-  /* Wider than the rest of the landing page (which is capped at a comfortable reading
-     width): this is the real editor, so give it the same wide page width the signed-in page
-     uses. At the 1080px container the default columns overflowed by ~114px, forcing a
-     sideways scroll before the visitor had touched anything. */
-  max-width: var(--page-width-wide);
-  margin-top: clamp(2rem, 5vw, 3.25rem);
-}
-
-/* Features */
-.lp-features {
+/* Sections */
+.lp-section {
   padding: clamp(3.5rem, 8vw, 5.5rem) 0;
-  background: var(--color-surface);
 }
 
+.lp-section-alt {
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.lp-section-head {
+  max-width: 640px;
+  margin: 0 auto clamp(2rem, 5vw, 3rem);
+  text-align: center;
+}
+
+.lp-section-title {
+  margin: 0 0 var(--space-3);
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+  color: var(--color-primary);
+  text-wrap: balance;
+}
+
+.lp-section-sub {
+  margin: 0;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  text-wrap: pretty;
+}
+
+/* Feature cards */
 .lp-feature-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  grid-template-rows: auto auto;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-rows: auto auto auto;
   gap: var(--space-4);
 }
 
 .lp-feature {
   display: grid;
-  grid-row: span 2;
+  grid-row: span 3;
   grid-template-rows: subgrid;
   align-content: start;
-  gap: var(--space-2);
+  gap: var(--space-3);
   padding: var(--space-5);
   background: var(--color-bg);
   border: 1px solid var(--color-border);
@@ -139,6 +173,17 @@
   transform: translateY(-2px);
 }
 
+.lp-feature-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--color-surface-hover);
+  color: var(--color-primary);
+}
+
 .lp-feature-title {
   margin: 0;
   font-size: var(--text-lg);
@@ -151,6 +196,74 @@
   font-size: var(--text-sm);
   line-height: 1.6;
   color: var(--color-text-muted);
+}
+
+/* Live demo */
+.lp-demo-wrap {
+  /* Wider than the rest of the landing page (which is capped at a comfortable reading
+     width): this is the real editor, so give it the same wide page width the signed-in page
+     uses. At the 1080px container the default columns overflowed by ~114px, forcing a
+     sideways scroll before the visitor had touched anything. */
+  max-width: var(--page-width-wide);
+}
+
+/* Premium */
+.lp-premium {
+  background:
+    radial-gradient(70% 90% at 80% 20%, rgba(230, 184, 74, 0.18), transparent 70%),
+    var(--color-surface-dark);
+  color: var(--color-text-on-dark);
+}
+
+.lp-premium-inner {
+  max-width: 720px;
+  text-align: center;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+}
+
+.lp-premium-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-pill);
+  background: rgba(230, 184, 74, 0.16);
+  border: 1px solid rgba(230, 184, 74, 0.4);
+  color: var(--color-gold);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.lp-premium-title {
+  margin: 0;
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.lp-premium-text {
+  margin: 0;
+  max-width: 600px;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--color-text-on-dark-muted);
+  text-wrap: pretty;
+}
+
+.lp-btn-gold {
+  background: var(--color-gold);
+  color: var(--color-text);
+}
+
+.lp-btn-gold:hover {
+  background: #f0c65c;
 }
 
 /* Final CTA */
@@ -168,6 +281,7 @@
   font-size: clamp(1.7rem, 4vw, 2.4rem);
   font-weight: var(--weight-bold);
   color: var(--color-text-on-dark);
+  text-wrap: balance;
 }
 
 .lp-final-sub {
