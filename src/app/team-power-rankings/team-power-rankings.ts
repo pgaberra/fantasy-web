@@ -201,26 +201,6 @@ export class TeamPowerRankingsComponent implements OnInit {
 
   readonly boardOption = rankByBoard;
 
-  /** What the table on screen was ranked against, in words, for the line above it. */
-  readonly rankedByLabel = computed(() => {
-    const data = this.rankingsData();
-    if (!data) {
-      return '';
-    }
-    if (data.source === 'projection') {
-      const board = this.boards().find((candidate) => candidate.id === data.projectionId);
-      return board ? board.name : 'your projection';
-    }
-    if (data.source === 'last_season') {
-      return "last season's stats";
-    }
-    // Once the season is under way a team is ranked on what its players will do over the games
-    // left, so the totals are that much smaller than a whole season's; the line says so.
-    return data.inSeason
-      ? 'the SlapStat AI projection for the rest of the season'
-      : 'the SlapStat AI projection';
-  });
-
   private readonly rankingsResource = rxResource({
     params: () => {
       if (this.linkedDraft()) {
