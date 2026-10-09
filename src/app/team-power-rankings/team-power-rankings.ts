@@ -32,8 +32,9 @@ import { RankBy, rankByBoard } from './rank-by';
  * whole of what this page sends, and the BFF reads the rosters from Yahoo, or the picks from the
  * stored draft, itself.
  *
- * <p>The totals are everyone's; the players behind them are Premium's. Which is why the numbers
- * are computed on the server and this page only draws them.
+ * <p>The totals and the players behind them are everyone's (Alexander's call, 2026-10-09; until
+ * then the players were Premium's). The numbers are computed on the server and this page only
+ * draws them.
  *
  * <p>The league is picked the way every other screen picks one — the shared
  * {@link YahooLeaguePicker} behind a dropdown — so that choosing a league means the same thing
@@ -308,12 +309,6 @@ export class TeamPowerRankingsComponent implements OnInit {
     const rankings = this.rankingsData();
     return rankings ? scoreHeadingFor(rankings) : 'Total Points';
   });
-
-  /** Whether the players behind each total came back, which is what Premium pays for. */
-  readonly hasPlayers = computed(() => !!this.rankingsData()?.premium);
-
-  /** Whether to sell Premium here at all: not in a build with no way to buy anything. */
-  readonly sellsPremium = computed(() => environment.paymentsEnabled && !this.hasPlayers());
 
   /**
    * How many of the teams' players the chosen board has no line for, and so counts as nothing.
