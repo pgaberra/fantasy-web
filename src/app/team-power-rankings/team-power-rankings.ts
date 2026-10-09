@@ -1,5 +1,5 @@
 import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { environment } from '../../environments/environment';
 import { LeagueSummaryResponse } from '../api/models/league-summary-response';
@@ -90,7 +90,6 @@ export class TeamPowerRankingsComponent implements OnInit {
   private readonly features = inject(FeatureService);
   private readonly storage = inject(ProjectionStorageService);
   private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
   private readonly choice = inject(LeagueChoiceService);
 
   /** The league picker every screen shares, so choosing a league means the same thing here. */
@@ -366,18 +365,8 @@ export class TeamPowerRankingsComponent implements OnInit {
   /** Ranks by what the second dropdown points at, re-reading the league on screen if there is one. */
   selectRankBy(event: Event): void {
     const select = event.target as HTMLSelectElement;
-    if (select.value === this.createOption) {
-      // Not a ranking but a door: the menu is put back before the page is left, so the reader
-      // who comes back by the browser's history finds the league ranked as it was.
-      select.value = this.rankBy();
-      void this.router.navigate(['/projections/new']);
-      return;
-    }
     this.chosenRankBy.set(select.value as RankBy);
   }
-
-  /** The one entry under "My Projections" when there is none: picking it opens the editor. */
-  readonly createOption = 'create';
 
   /** Whether an option in the second dropdown is the one ranking the league, for `selected`. */
   isRankedBy(option: RankBy): boolean {
