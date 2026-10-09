@@ -182,7 +182,7 @@ describe('FaScoutComponent', () => {
     chosen = null;
     const fixture = await render();
 
-    expect(ngMocks.formatText(fixture)).toContain('Pick a league above');
+    expect(ngMocks.formatText(fixture)).toContain('Select a league above');
     expect(freeAgents).not.toHaveBeenCalled();
   });
 
