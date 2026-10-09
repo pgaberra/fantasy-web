@@ -52,6 +52,14 @@ jobs:
       - name: Verify every build placeholder is substituted
         run: bash .github/scripts/check-build-placeholders.sh
 
+      # Docker Hub's own image, pulled through Google's mirror of it: unauthenticated pulls from
+      # registry-1.docker.io on shared runner IPs get refused (2026-10-09 every web PR went red on
+      # it, three reruns running), and the mirror serves the same image without that limit.
+      - name: Pull nginx:alpine
+        run: |
+          docker pull mirror.gcr.io/library/nginx:alpine
+          docker tag mirror.gcr.io/library/nginx:alpine nginx:alpine
+
       # A config nginx refuses to load fails the deploy on Coolify, far from the change that caused it.
       - name: Verify nginx.conf loads
         run: docker run --rm -v "$PWD/nginx.conf:/etc/nginx/conf.d/default.conf:ro" nginx:alpine nginx -t
