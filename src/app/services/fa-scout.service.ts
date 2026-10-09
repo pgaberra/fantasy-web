@@ -13,6 +13,7 @@ import {
   SKATER_UTILITY_STAT_KEYS,
 } from '../models/stat-key.model';
 import { Projection } from '../models/projection.model';
+import { wholeGamesLine } from '../streamer-planner/planner-free-agents';
 import { FreeAgent } from './streamer-planner-free-agents.service';
 import { LeaguePlatform } from './league-choice.service';
 
@@ -101,9 +102,13 @@ function statsFrom<K extends string>(
   return keys.reduce((line, key) => ({ ...line, [key]: stats[key] ?? 0 }), {} as Record<K, number>);
 }
 
+/**
+ * The line over the whole games its own round to: a player plays a game or does not, so the GP
+ * column's 58 is given 58 games' worth, not the 57.6 it rounds from.
+ */
 function projectionOf(type: 'skater' | 'goalie', playerId: number, line: ScoutLine): Projection {
   const skater = type === 'skater';
-  return {
+  const projection: Projection = {
     type,
     playerId,
     stats: {
@@ -114,6 +119,7 @@ function projectionOf(type: 'skater' | 'goalie', playerId: number, line: ScoutLi
       },
     },
   };
+  return wholeGamesLine(projection, line.games);
 }
 
 /**
@@ -147,6 +153,7 @@ function toTeamPlayer(player: ScoutRosterPlayer): TeamPlayer {
 function toScoutPlayer(player: ScoutPlayerResponse): ScoutPlayer {
   const type = player.type === 'goalie' ? 'goalie' : 'skater';
   const playerId = rankingKey(player.playerId);
+  const games = Math.round(player.restOfSeason.games);
   return {
     freeAgent: {
       playerId: player.playerId,
@@ -154,8 +161,8 @@ function toScoutPlayer(player: ScoutPlayerResponse): ScoutPlayer {
       teamAbbrev: player.teamAbbrev,
       positions: player.positions,
       availability: player.availability,
-      clubGames: player.restOfSeason.games,
-      expectedGames: player.restOfSeason.games,
+      clubGames: games,
+      expectedGames: games,
       projected: new Set(Object.keys(player.restOfSeason.stats)),
       projection: projectionOf(type, playerId, player.restOfSeason),
     },
