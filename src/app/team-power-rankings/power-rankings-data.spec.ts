@@ -19,6 +19,8 @@ const base: LeagueSummaryResponse = {
       mine: true,
       total: 120.5,
       values: { goals: 90, svPct: 30.5, C: 90, G: 30.5, BN: 0 },
+      fullTotal: 150.5,
+      fullValues: { goals: 120, svPct: 30.5 },
       roster: [
         {
           playerId: 1,
@@ -29,6 +31,7 @@ const base: LeagueSummaryResponse = {
           fullValue: 120,
           values: { goals: 45 },
           contributions: { goals: 90 },
+          fullContributions: { goals: 120 },
           reserveSlot: 'NA',
           counted: true,
         },
@@ -112,5 +115,13 @@ describe('power rankings data', () => {
 
     expect(row.total).toBe(90);
     expect(row.fullValue).toBe(120);
+    expect(row.fullContributions).toEqual({ goals: 120, svPct: null });
+  });
+
+  it('keeps what a team would score were every player started every game', () => {
+    const team = leagueProjectionFrom(base).teams[0];
+
+    expect(team.fullTotal).toBe(150.5);
+    expect(team.fullValues).toEqual({ goals: 120, svPct: 30.5 });
   });
 });

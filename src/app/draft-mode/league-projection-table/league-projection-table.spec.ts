@@ -222,15 +222,20 @@ describe('LeagueProjectionTableComponent', () => {
     expect(rowOf('McDavid').classList).not.toContain('not-counted');
   });
 
-  it("shows each player's share of his team, or switched, what every game would make him worth", () => {
+  it('counts what each lineup starts, or switched, every player in every game, teams included', () => {
     // Every player starts only part of his games, and Oettinger none: the team does not count him.
+    // Started in every game, Alpha (20 counted) outscores Bravo (30 counted).
     const roster = data.teams[0].roster.map((row) =>
       row.name === 'Oettinger'
         ? { ...row, total: 0, fullValue: 1.5, counted: false }
         : { ...row, fullValue: row.total + 1, counted: true },
     );
+    const teams = [
+      { ...data.teams[0], roster, fullTotal: 40, fullValues: { goals: 12, gaa: -1 } },
+      { ...data.teams[1], fullTotal: 35, fullValues: { goals: 9, gaa: -1 } },
+    ];
     const fixture = MockRender(LeagueProjectionTableComponent, {
-      data: { ...data, teams: [{ ...data.teams[0], roster }] },
+      data: { ...data, teams },
       scoringType: 'category',
       scoreHeading: 'Z-Score',
     });
@@ -244,9 +249,13 @@ describe('LeagueProjectionTableComponent', () => {
         .find((row) => row.querySelector('.lp-player-name')?.textContent?.trim() === name)!
         .querySelector('.col-total')!
         .textContent.trim();
+    const teamRows = () =>
+      ([...fixture.nativeElement.querySelectorAll('tr.lp-row')] as HTMLElement[]).map((row) =>
+        [...row.querySelectorAll('td')].map((cell) => cell.textContent?.trim()).slice(1),
+      );
     const switchTo = (label: string) => {
       const tabs = [
-        ...fixture.nativeElement.querySelectorAll('[aria-label="Player points"] button'),
+        ...fixture.nativeElement.querySelectorAll('[aria-label="Points basis"] button'),
       ] as HTMLButtonElement[];
       tabs.find((tab) => tab.textContent?.trim() === label)!.click();
       fixture.detectChanges();
@@ -254,20 +263,38 @@ describe('LeagueProjectionTableComponent', () => {
 
     expect(totalOf('Oettinger'), 'the team does not count him').toBe('0.00');
     expect(totalOf('McDavid')).toBe('9.00');
+    expect(teamRows()).toEqual([
+      ['Bravo', '8.00', '-1.00', '30.00'],
+      ['AlphaYou', '6.00', '-2.00', '20.00'],
+    ]);
 
     switchTo('All games');
     expect(totalOf('Oettinger')).toBe('1.50');
     expect(totalOf('McDavid')).toBe('10.00');
+    expect(teamRows(), 'ranked on every game').toEqual([
+      ['AlphaYou', '12.00', '-1.00', '40.00'],
+      ['Bravo', '9.00', '-1.00', '35.00'],
+    ]);
 
     switchTo('Team share');
     expect(totalOf('Oettinger')).toBe('0.00');
+    expect(teamRows()[0][3]).toBe('30.00');
+
+    switchTo('All games');
+    component.setMode('position');
+    fixture.detectChanges();
+    expect(
+      fixture.nativeElement.querySelector('[aria-label="Points basis"]'),
+      'a lineup slot is what starting decides',
+    ).toBeNull();
+    expect(teamRows()[0][3], 'back on what the lineups start').toBe('30.00');
   });
 
   it('offers no points switch where every player counts in full, as in a draft', () => {
     const fixture = render();
     fixture.point.componentInstance.toggleExpand('a');
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('[aria-label="Player points"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[aria-label="Points basis"]')).toBeNull();
   });
 
   it("orders each team's player rows by the column the table is sorted on", () => {

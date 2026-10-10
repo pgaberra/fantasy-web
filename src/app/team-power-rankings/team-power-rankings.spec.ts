@@ -36,8 +36,24 @@ const summary: LeagueSummaryResponse = {
   categoryKeys: ['goals'],
   positionKeys: ['C', 'BN'],
   teams: [
-    { teamId: 't1', name: 'Mine', mine: true, total: 90, values: { goals: 90, C: 90, BN: 0 } },
-    { teamId: 't2', name: 'Theirs', mine: false, total: 70, values: { goals: 70, C: 70, BN: 0 } },
+    {
+      teamId: 't1',
+      name: 'Mine',
+      mine: true,
+      total: 90,
+      values: { goals: 90, C: 90, BN: 0 },
+      fullTotal: 90,
+      fullValues: { goals: 90 },
+    },
+    {
+      teamId: 't2',
+      name: 'Theirs',
+      mine: false,
+      total: 70,
+      values: { goals: 70, C: 70, BN: 0 },
+      fullTotal: 70,
+      fullValues: { goals: 70 },
+    },
   ],
 };
 
