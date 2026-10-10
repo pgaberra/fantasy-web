@@ -57,8 +57,7 @@ export class LeagueProjectionTableComponent {
   readonly injuredReserveTooltip = 'Player is currently on IR.';
   readonly notActiveTooltip =
     "Not active: holds no roster spot, and counts only if he is among the team's best";
-  readonly notCountedTooltip =
-    'Not counted: a team counts its best players, as many as its roster holds, and he is not among them';
+  readonly notCountedTooltip = "Player not included in the team's total.";
 
   readonly mode = signal<BreakdownMode>('category');
   readonly sortKey = signal<string>('total');
