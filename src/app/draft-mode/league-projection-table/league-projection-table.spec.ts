@@ -251,7 +251,7 @@ describe('LeagueProjectionTableComponent', () => {
         .textContent.replace(/\s+/g, '');
     expect(totalOf('Oettinger')).toBe('1.50*');
     expect(totalOf('McDavid')).not.toContain('*');
-    expect(footnote()?.textContent).toContain("Not in the team's total");
+    expect(footnote()?.textContent).toContain("Player not included in the team's total.");
   });
 
   it("orders each team's player rows by the column the table is sorted on", () => {
