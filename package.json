@@ -4,7 +4,7 @@
     "ng": "ng",
     "start": "ng serve",
     "start:staging": "ng serve --configuration staging",
-    "build": "ng build",
+    "build": "ng build && node scripts/write-link-previews.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:coverage": "ng test --coverage",
