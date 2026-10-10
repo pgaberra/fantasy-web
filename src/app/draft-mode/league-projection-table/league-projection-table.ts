@@ -63,12 +63,9 @@ export class LeagueProjectionTableComponent {
   readonly injuredReserveTooltip = 'Player is currently on IR.';
   readonly notActiveTooltip =
     "Not active: holds no roster spot, and counts only if he is among the team's best";
-  readonly notCountedTooltip =
-    'Not counted: a team counts its best players, as many as its roster holds, and he is not among them';
-  readonly teamShareTooltip =
-    "What each player adds to his team: the games its lineup starts him in, and nothing for one it doesn't count";
-  readonly allGamesTooltip =
-    'What each player would be worth if his team started him in every game he plays';
+  readonly notCountedTooltip = "Player not included in the team's total.";
+  readonly teamShareTooltip = "Points each player adds to the team's total.";
+  readonly allGamesTooltip = 'Points each player would score if started every game.';
 
   readonly mode = signal<BreakdownMode>('category');
   readonly pointsBasis = signal<PointsBasis>('team');
