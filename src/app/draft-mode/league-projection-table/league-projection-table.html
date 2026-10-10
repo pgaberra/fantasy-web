@@ -33,7 +33,6 @@
             class="lp-mode"
             [class.active]="pointsBasis() === 'team'"
             [attr.aria-selected]="pointsBasis() === 'team'"
-            [appTooltip]="teamShareTooltip"
             (click)="pointsBasis.set('team')"
           >
             Team share
@@ -44,7 +43,6 @@
             class="lp-mode"
             [class.active]="pointsBasis() === 'all'"
             [attr.aria-selected]="pointsBasis() === 'all'"
-            [appTooltip]="allGamesTooltip"
             (click)="pointsBasis.set('all')"
           >
             All games
@@ -56,6 +54,9 @@
       <span class="lp-hint">Tap a team to expand its players</span>
     }
   </div>
+  @if (offersPointsBasis()) {
+    <p class="lp-basis-note">{{ basisNote() }}</p>
+  }
 
   <div class="lp-wrap" #scrollWrap [class.has-more]="canScrollRight()" (scroll)="onScroll()">
     <table class="lp-table">
