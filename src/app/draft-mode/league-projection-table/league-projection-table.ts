@@ -215,6 +215,20 @@ export class LeagueProjectionTableComponent {
     return this.basis() === 'all' ? (player.fullValue ?? player.total) : player.total;
   }
 
+  /**
+   * Whether a player row adds nothing on the basis shown: outside the team's best on its share,
+   * though not on every game, where everyone it holds counts. Such a row reads "—" for a score,
+   * since its 0 would rank above every player below zero in a category league, and sits last.
+   */
+  countsForNothing(player: LeagueProjectionRosterRow): boolean {
+    return player.counted === false && this.basis() === 'team';
+  }
+
+  /** A player row's score as the table prints it. */
+  formatPlayerTotal(player: LeagueProjectionRosterRow): string {
+    return this.countsForNothing(player) ? '—' : this.formatTotal(this.playerTotal(player));
+  }
+
   private contributionsOf(player: LeagueProjectionRosterRow): Record<string, number | null> {
     return this.basis() === 'all'
       ? (player.fullContributions ?? player.contributions)
@@ -253,6 +267,11 @@ export class LeagueProjectionTableComponent {
     const rankOf = (row: LeagueProjectionRosterRow) =>
       key === 'total' ? this.playerTotal(row) : this.contributionsOf(row)[key];
     return [...roster].sort((first, second) => {
+      // Whoever the team does not count sits under everyone it does, whatever the column.
+      const firstIdle = this.countsForNothing(first);
+      if (firstIdle !== this.countsForNothing(second)) {
+        return firstIdle ? 1 : -1;
+      }
       const firstRank = rankOf(first);
       const secondRank = rankOf(second);
       // Players the sorted stat doesn't apply to (a goalie has no goals) sink to the bottom either way.
