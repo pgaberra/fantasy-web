@@ -4,6 +4,7 @@ import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import { IconComponent, type IconName } from '../../shared/icon/icon';
 import { PositionChipsComponent } from '../../shared/position-chips/position-chips';
 import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
+import { HelpTipComponent } from '../../shared/help-tip/help-tip';
 import { shortNames } from '../../shared/short-name';
 import { SKATER_SCORING_STAT_KEYS } from '../../models/stat-key.model';
 import {
@@ -46,7 +47,13 @@ const SKATER_STAT_KEYS: ReadonlySet<string> = new Set(SKATER_SCORING_STAT_KEYS);
 
 @Component({
   selector: 'app-league-projection-table',
-  imports: [TooltipDirective, IconComponent, PositionChipsComponent, TeamLogoComponent],
+  imports: [
+    TooltipDirective,
+    IconComponent,
+    PositionChipsComponent,
+    TeamLogoComponent,
+    HelpTipComponent,
+  ],
   templateUrl: './league-projection-table.html',
   styleUrl: './league-projection-table.css',
 })
@@ -67,6 +74,12 @@ export class LeagueProjectionTableComponent {
   readonly notCountedTooltip = "Player not included in the team's total.";
   readonly teamShareTooltip = 'Points from the games each lineup actually starts its players.';
   readonly allGamesTooltip = 'Points if every player on the roster started every game.';
+  /**
+   * Both bases in one tip beside the switch. The buttons' own tooltips need a hover, and a tap on
+   * either switches the basis instead, so on a phone this icon is the only way to the explanation.
+   */
+  readonly pointsBasisHelp =
+    'Team share counts each player only for the games his lineup starts him in, so a bench player adds nothing. All games counts every player on the roster for every game, as if each one started them all.';
 
   readonly mode = signal<BreakdownMode>('category');
   readonly pointsBasis = signal<PointsBasis>('team');
