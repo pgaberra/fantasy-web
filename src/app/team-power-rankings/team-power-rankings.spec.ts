@@ -495,33 +495,28 @@ describe('TeamPowerRankingsComponent', () => {
     const placeholder = select.querySelector(
       'optgroup[label="My Projections"] option',
     ) as HTMLOptionElement;
-    expect(placeholder.textContent?.trim()).toEqual('No projections yet.');
+    expect(placeholder.textContent?.trim()).toEqual(
+      'None yet. Make one under Projections to rank by it.',
+    );
     expect(placeholder.disabled).toBe(true);
     expect(select.value).toEqual('model');
   });
 
-  /** The way to the editor is a link under the menu, where a native select cannot hold one. */
-  it('links to the editor under the menu when the user has no projection', async () => {
-    listAll.mockReturnValue(of([boards[1], ...drafts]));
-    const fixture = await render();
-
-    const hint = fixture.nativeElement.querySelector('.create-hint') as HTMLElement;
-    expect(hint.textContent?.replace(/\s+/g, ' ').trim()).toEqual(
-      'No projections yet. Create one.',
-    );
-    const link = hint.querySelector('a.create-link') as HTMLAnchorElement;
-    expect(link.textContent?.trim()).toEqual('Create one');
-    expect(ngMocks.input(ngMocks.find(fixture, 'a.create-link'), 'routerLink')).toEqual(
-      '/projections/new',
-    );
-  });
-
-  it('offers neither note nor link where the user has a projection', async () => {
+  it('offers no hint where the user has a projection', async () => {
     const fixture = await render();
     expect(fixture.point.componentInstance.ownBoardsEmpty()).toBe(false);
     const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
     expect(Array.from(select.options).map((option) => option.disabled)).not.toContain(true);
-    expect(fixture.nativeElement.querySelector('.create-hint')).toBeNull();
+  });
+
+  /** Most readers rank by our numbers; nothing outside the menu asks them to make their own. */
+  it('says nothing under the menu when the user has no projection', async () => {
+    listAll.mockReturnValue(of([boards[1], ...drafts]));
+    const fixture = await render();
+    const statuses = Array.from(
+      fixture.nativeElement.querySelectorAll('.picker-wide') as NodeListOf<HTMLElement>,
+    ).map((line) => line.textContent ?? '');
+    expect(statuses.join(' ')).not.toContain('projection');
   });
 
   /** Picking a platform's tab, as a reader would. */
