@@ -261,14 +261,18 @@ describe('LeagueProjectionTableComponent', () => {
       fixture.detectChanges();
     };
 
+    const note = () => fixture.nativeElement.querySelector('.lp-basis-note')?.textContent?.trim();
+
     expect(totalOf('Oettinger'), 'the team does not count him').toBe('—');
     expect(totalOf('McDavid')).toBe('9.00');
+    expect(note()).toMatch(/^Team share: /);
     expect(teamRows()).toEqual([
       ['Bravo', '8.00', '-1.00', '30.00'],
       ['AlphaYou', '6.00', '-2.00', '20.00'],
     ]);
 
     switchTo('All games');
+    expect(note()).toMatch(/^All games: /);
     expect(totalOf('Oettinger')).toBe('1.50');
     expect(totalOf('McDavid')).toBe('10.00');
     expect(teamRows(), 'ranked on every game').toEqual([
@@ -287,6 +291,7 @@ describe('LeagueProjectionTableComponent', () => {
       fixture.nativeElement.querySelector('[aria-label="Points basis"]'),
       'a lineup slot is what starting decides',
     ).toBeNull();
+    expect(note(), 'nothing to explain without the switch').toBeUndefined();
     expect(teamRows()[0][3], 'back on what the lineups start').toBe('30.00');
   });
 
