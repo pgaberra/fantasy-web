@@ -225,7 +225,7 @@
                   </td>
                 }
                 <td class="col-total" [class.sorted]="sortKey() === 'total'">
-                  {{ formatTotal(playerTotal(player)) }}
+                  <span class="lp-player-total">{{ formatTotal(playerTotal(player)) }}</span>
                 </td>
               </tr>
             }
