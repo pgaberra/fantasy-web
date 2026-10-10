@@ -6,6 +6,18 @@ import { YahooLeague$Params } from '../api/fn/league-summaries/yahoo-league';
  */
 export type RankBy = 'model' | 'last_season' | `board:${string}`;
 
+/**
+ * Whose numbers a choice is: ours, one of the reader's own boards, or one they follow. The page
+ * asks this first, with the one control Draft Mode's start page asks it with, and then which.
+ */
+export type RankByKind = 'slapstat' | 'own' | 'following';
+
+export const RANK_BY_KINDS: readonly { kind: RankByKind; name: string }[] = [
+  { kind: 'slapstat', name: 'SlapStat' },
+  { kind: 'own', name: 'My Projections' },
+  { kind: 'following', name: 'Following' },
+];
+
 export function rankByBoard(projectionId: string): RankBy {
   return `board:${projectionId}`;
 }

@@ -192,7 +192,7 @@ describe('TeamPowerRankingsComponent', () => {
     expect(fixture.nativeElement.querySelector('.rankings-note')?.textContent).toContain(
       'Select a league',
     );
-    expect(fixture.nativeElement.querySelector('.league-picker button')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.league-picker .btn')).toBeNull();
 
     await choose(fixture, component, '465.l.1');
 
@@ -307,14 +307,14 @@ describe('TeamPowerRankingsComponent', () => {
     const fixture = await render();
     const component = fixture.point.componentInstance;
 
-    expect(fixture.nativeElement.querySelector('.league-picker button')?.textContent).toContain(
+    expect(fixture.nativeElement.querySelector('.league-picker .btn')?.textContent).toContain(
       'Connect Yahoo account',
     );
     const groups = Array.from(
       fixture.nativeElement.querySelectorAll('.league-select optgroup') as NodeListOf<HTMLElement>,
     ).map((group) => group.getAttribute('label'));
     expect(groups).toEqual(['My Drafts']);
-    expect(fixture.nativeElement.querySelector('#rank-by')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('#rank-by-label')).not.toBeNull();
 
     await choose(fixture, component, 'draft:d2');
 
@@ -429,16 +429,67 @@ describe('TeamPowerRankingsComponent', () => {
     expect(component.rankingsRetryable()).toBe(false);
   });
 
-  /** The second dropdown: ours first, then the reader's own boards, then the ones they follow. */
-  it('offers the model, last season, and the boards the user owns and follows', async () => {
-    const fixture = await render();
-    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
+  /** The names of the three kinds, each with how many the reader has of it. */
+  const kinds = (fixture: Awaited<ReturnType<typeof render>>) =>
+    Array.from(fixture.nativeElement.querySelectorAll('.kind') as NodeListOf<HTMLElement>).map(
+      (kind) =>
+        Array.from(kind.querySelectorAll('span'))
+          .map((part) => part.textContent?.trim())
+          .join(' '),
+    );
 
+  /** Pressing one of the kinds, as a reader would. */
+  const openKind = async (fixture: Awaited<ReturnType<typeof render>>, name: string) => {
+    const kind = Array.from(
+      fixture.nativeElement.querySelectorAll('.kind') as NodeListOf<HTMLButtonElement>,
+    ).find((button) => button.textContent?.includes(name));
+    kind?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+
+  /** Whose numbers first, then which: ours open by default, the other two counted beside it. */
+  it('offers the model and last season under SlapStat, with the other kinds counted', async () => {
+    const fixture = await render();
+
+    expect(kinds(fixture)).toEqual(['SlapStat', 'My Projections 1', 'Following 1']);
+    expect(fixture.point.componentInstance.rankByKind()).toEqual('slapstat');
+    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
     const options = Array.from(select.options).map((option) => option.textContent?.trim());
-    expect(options).toEqual(['AI projection', 'Last season', 'My board', 'Their board']);
-    const groups = Array.from(select.querySelectorAll('optgroup')).map((group) => group.label);
-    expect(groups).toEqual(['SlapStat', 'My Projections', 'Following']);
+    expect(options).toEqual(['AI projection', 'Last season']);
     expect(select.value).toEqual('model');
+  });
+
+  /** There is no button after the kind, so opening one with a board in it ranks by that board. */
+  it('ranks by the first board of a kind as soon as it is opened', async () => {
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    await choose(fixture, component, '465.l.1');
+
+    await openKind(fixture, 'Following');
+
+    expect(component.rankByKind()).toEqual('following');
+    expect(yahooLeague).toHaveBeenLastCalledWith('465.l.1', 'board:b2');
+    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
+    expect(Array.from(select.options).map((option) => option.textContent?.trim())).toEqual([
+      'Their board',
+    ]);
+    expect(select.value).toEqual('board:b2');
+
+    await openKind(fixture, 'SlapStat');
+
+    expect(component.rankByKind()).toEqual('slapstat');
+    expect(yahooLeague).toHaveBeenLastCalledWith('465.l.1', 'model');
+  });
+
+  /** A draft played against the reader's own board opens My Projections with that board. */
+  it('opens the kind a draft was played against', async () => {
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    await choose(fixture, component, 'draft:d1');
+
+    expect(component.rankBy()).toEqual('board:b1');
+    expect(component.rankByKind()).toEqual('own');
   });
 
   it('ranks by last season by default where the AI projection is not served', async () => {
@@ -455,6 +506,7 @@ describe('TeamPowerRankingsComponent', () => {
 
   /** Comparing one league under two projections is the point: no second button press. */
   it('re-reads the league on screen when another projection is chosen', async () => {
+    listAll.mockReturnValue(of([...boards, boardSummary('b3', 'Second board', false), ...drafts]));
     const fixture = await render();
     const component = fixture.point.componentInstance;
     await choose(fixture, component, '465.l.1');
@@ -462,13 +514,16 @@ describe('TeamPowerRankingsComponent', () => {
       of({ ...summary, source: 'projection' as const, projectionId: 'b1', premium: true }),
     );
 
+    await openKind(fixture, 'My Projections');
+    expect(yahooLeague).toHaveBeenLastCalledWith('465.l.1', 'board:b1');
+
     const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
-    select.value = 'board:b1';
+    select.value = 'board:b3';
     select.dispatchEvent(new Event('change'));
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(yahooLeague).toHaveBeenLastCalledWith('465.l.1', 'board:b1');
+    expect(yahooLeague).toHaveBeenLastCalledWith('465.l.1', 'board:b3');
   });
 
   it("says how many of the league's players a board leaves out", async () => {
@@ -491,44 +546,60 @@ describe('TeamPowerRankingsComponent', () => {
     const component = fixture.point.componentInstance;
 
     expect(component.boardsFailed()).toBe(true);
+    expect(fixture.nativeElement.querySelector('.segmented')).toBeNull();
     const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
     expect(select.options).toHaveLength(2);
     // A failed list says nothing about what the user has, so no invitation to make a first one.
     expect(component.ownBoardsEmpty()).toBe(false);
   });
 
-  /** The group stays on the menu with nothing in it, so the reader learns their own numbers count. */
-  it('keeps My Projections on the menu and offers to make one when the user has none', async () => {
+  /**
+   * The kind stays on offer with nothing in it, counted as 0, so the reader learns their own
+   * numbers count; opened, it says where a first one is made, with the link, and ranks nothing.
+   */
+  it('offers to make a first projection when My Projections is opened empty', async () => {
     listAll.mockReturnValue(of([boards[1], ...drafts]));
     const fixture = await render();
     const component = fixture.point.componentInstance;
+    await choose(fixture, component, '465.l.1');
 
     expect(component.ownBoardsEmpty()).toBe(true);
-    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
-    const groups = Array.from(select.querySelectorAll('optgroup')).map((group) => group.label);
-    expect(groups).toEqual(['SlapStat', 'My Projections', 'Following']);
-    // A note in the menu, not a choice: greyed and unselectable, so it never ranks the league.
-    const placeholder = select.querySelector(
-      'optgroup[label="My Projections"] option',
-    ) as HTMLOptionElement;
-    expect(placeholder.textContent?.trim()).toEqual(
-      'None yet. Make one under Projections to rank by it.',
-    );
-    expect(placeholder.disabled).toBe(true);
-    expect(select.value).toEqual('model');
+    expect(kinds(fixture)).toEqual(['SlapStat', 'My Projections 0', 'Following 1']);
+
+    await openKind(fixture, 'My Projections');
+
+    expect(component.rankByKind()).toEqual('own');
+    expect(fixture.nativeElement.querySelector('.rank-by-select')).toBeNull();
+    const empty = fixture.nativeElement.querySelector('.kind-empty') as HTMLElement;
+    expect(empty.textContent?.replace(/\s+/g, ' ')).toContain('None yet. Create one to rank');
+    const link = ngMocks.find(fixture.debugElement, '.kind-empty a');
+    expect(ngMocks.input(link, 'routerLink')).toEqual('/projections/new');
+    // Nothing in the kind ranks the league, so what ranked it goes on doing so.
+    expect(component.rankBy()).toEqual('model');
+    expect(yahooLeague).toHaveBeenLastCalledWith('465.l.1', 'model');
+
+    await openKind(fixture, 'SlapStat');
+    expect(fixture.nativeElement.querySelector('.kind-empty')).toBeNull();
   });
 
-  it('offers no hint where the user has a projection', async () => {
+  it('says so when Following is opened with nothing followed', async () => {
+    listAll.mockReturnValue(of([boards[0], ...drafts]));
     const fixture = await render();
-    expect(fixture.point.componentInstance.ownBoardsEmpty()).toBe(false);
-    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
-    expect(Array.from(select.options).map((option) => option.disabled)).not.toContain(true);
+
+    await openKind(fixture, 'Following');
+
+    expect(fixture.point.componentInstance.rankByKind()).toEqual('following');
+    expect(fixture.nativeElement.querySelector('.kind-empty')?.textContent).toContain(
+      "You're not following any projections yet.",
+    );
+    expect(fixture.point.componentInstance.rankBy()).toEqual('model');
   });
 
-  /** Most readers rank by our numbers; nothing outside the menu asks them to make their own. */
-  it('says nothing under the menu when the user has no projection', async () => {
+  /** Most readers rank by our numbers; nothing outside the open kind asks them to make their own. */
+  it('says nothing about making a projection while SlapStat is open', async () => {
     listAll.mockReturnValue(of([boards[1], ...drafts]));
     const fixture = await render();
+    expect(fixture.nativeElement.querySelector('.kind-empty')).toBeNull();
     const statuses = Array.from(
       fixture.nativeElement.querySelectorAll('.picker-wide') as NodeListOf<HTMLElement>,
     ).map((line) => line.textContent ?? '');

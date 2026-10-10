@@ -21,7 +21,7 @@ import {
 } from '../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
 import { leagueProjectionFrom, scoreHeadingFor } from './power-rankings-data';
 import { powerRankingsMessage, powerRankingsRetryable } from './power-rankings-error';
-import { RankBy, rankByBoard } from './rank-by';
+import { RANK_BY_KINDS, RankBy, RankByKind, boardIdOf, rankByBoard } from './rank-by';
 
 /**
  * How a league's teams stack up today: a Yahoo league, an ESPN league, or a draft made here.
@@ -195,7 +195,7 @@ export class TeamPowerRankingsComponent implements OnInit {
 
   readonly draftOption = (id: string): string => `draft:${id}`;
 
-  /** What the reader picked in the second dropdown, if anything yet. */
+  /** What the reader picked under Rank by, if anything yet. */
   private readonly chosenRankBy = signal<RankBy | null>(null);
 
   /** What the league is ranked against: the reader's pick, else the model where it is served. */
@@ -204,6 +204,40 @@ export class TeamPowerRankingsComponent implements OnInit {
   );
 
   readonly boardOption = rankByBoard;
+
+  readonly rankByKinds = RANK_BY_KINDS;
+
+  /**
+   * A kind the reader opened that holds nothing to rank by. The ranking cannot say it, since
+   * nothing in it ranks the league; it is where the page says there is nothing there and where
+   * more comes from. Cleared by any choice that does rank.
+   */
+  private readonly emptyKind = signal<RankByKind | null>(null);
+
+  /**
+   * Whose numbers are open: read off what ranks the league rather than remembered, so a draft
+   * played against the reader's own board opens My Projections with it.
+   */
+  readonly rankByKind = computed<RankByKind>(() => this.emptyKind() ?? this.kindOf(this.rankBy()));
+
+  private kindOf(rankBy: RankBy): RankByKind {
+    const id = boardIdOf(rankBy);
+    if (!id) {
+      return 'slapstat';
+    }
+    return this.followedBoards().some((board) => board.id === id) ? 'following' : 'own';
+  }
+
+  /**
+   * How many the reader has of a kind, once the list is in: "Following 0" says there is nothing
+   * there before anyone presses it. Null for ours, which are not counted, and while unknown.
+   */
+  kindCount(kind: RankByKind): number | null {
+    if (kind === 'slapstat' || !this.listResource.hasValue()) {
+      return null;
+    }
+    return kind === 'own' ? this.ownBoards().length : this.followedBoards().length;
+  }
 
   /**
    * Once the season is under way the model ranks what each player does over the games left, so
@@ -346,11 +380,38 @@ export class TeamPowerRankingsComponent implements OnInit {
   private rankByDraftSource(draft: ProjectionSummaryResponse): void {
     const board = draft.sourceProjectionId;
     if (draft.preset === 'model' && this.modelOffered()) {
-      this.chosenRankBy.set('model');
+      this.rankByChoice('model');
     } else if (draft.preset === 'last_season') {
-      this.chosenRankBy.set('last_season');
+      this.rankByChoice('last_season');
     } else if (board && this.boards().some((candidate) => candidate.id === board)) {
-      this.chosenRankBy.set(rankByBoard(board));
+      this.rankByChoice(rankByBoard(board));
+    }
+  }
+
+  /** A choice that ranks the league, which also closes any empty kind that was open. */
+  private rankByChoice(rankBy: RankBy): void {
+    this.chosenRankBy.set(rankBy);
+    this.emptyKind.set(null);
+  }
+
+  /**
+   * Opens a kind. One with something in it ranks the league by its first board at once: there is
+   * no button after this, the table is the choice, and a control saying My Projections over a
+   * table ranked by ours would lie. Ours go back to the default. An empty kind only opens.
+   */
+  selectRankByKind(kind: RankByKind): void {
+    if (kind === this.rankByKind()) {
+      return;
+    }
+    if (kind === 'slapstat') {
+      this.rankByChoice(this.modelOffered() ? 'model' : 'last_season');
+      return;
+    }
+    const first = (kind === 'own' ? this.ownBoards() : this.followedBoards())[0];
+    if (first) {
+      this.rankByChoice(rankByBoard(first.id));
+    } else {
+      this.emptyKind.set(kind);
     }
   }
 
@@ -365,7 +426,7 @@ export class TeamPowerRankingsComponent implements OnInit {
   /** Ranks by what the second dropdown points at, re-reading the league on screen if there is one. */
   selectRankBy(event: Event): void {
     const select = event.target as HTMLSelectElement;
-    this.chosenRankBy.set(select.value as RankBy);
+    this.rankByChoice(select.value as RankBy);
   }
 
   /** Whether an option in the second dropdown is the one ranking the league, for `selected`. */
