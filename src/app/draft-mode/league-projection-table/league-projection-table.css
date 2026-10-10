@@ -514,13 +514,6 @@
   color: var(--color-text-subtle);
 }
 
-/* What the basis switch counts, under the toolbar so it reads on a phone too. */
-.lp-basis-note {
-  margin: calc(-1 * var(--space-2)) 0 var(--space-3);
-  font-size: var(--text-sm);
-  color: var(--color-text-subtle);
-}
-
 /* Marks a player the team does not count: his figure is what he would add, not what he does. */
 /* On a phone the two pinned edges are most of the screen, and the columns between them are what
    the table is for. So the edges give way: the team's name wraps inside a narrower column rather
