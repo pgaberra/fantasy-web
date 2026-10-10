@@ -458,6 +458,11 @@ describe('TeamPowerRankingsComponent', () => {
     const options = Array.from(select.options).map((option) => option.textContent?.trim());
     expect(options).toEqual(['AI projection', 'Last season']);
     expect(select.value).toEqual('model');
+    // Whose and which are two fields on the league's row, each under its own name.
+    expect(fixture.nativeElement.querySelector('.rank-by-group .rank-by-field')).not.toBeNull();
+    expect(
+      fixture.nativeElement.querySelector('.projection-field .picker-label')?.textContent?.trim(),
+    ).toEqual('Projection');
   });
 
   /** There is no button after the kind, so opening one with a board in it ranks by that board. */
@@ -547,6 +552,11 @@ describe('TeamPowerRankingsComponent', () => {
 
     expect(component.boardsFailed()).toBe(true);
     expect(fixture.nativeElement.querySelector('.segmented')).toBeNull();
+    // With no kinds to pick from, the dropdown alone carries the name.
+    expect(fixture.nativeElement.querySelector('#rank-by-label')?.textContent?.trim()).toEqual(
+      'Rank by',
+    );
+    expect(fixture.nativeElement.querySelector('.rank-by-field')).toBeNull();
     const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
     expect(select.options).toHaveLength(2);
     // A failed list says nothing about what the user has, so no invitation to make a first one.

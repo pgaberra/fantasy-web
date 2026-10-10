@@ -35,8 +35,10 @@
 }
 
 /* The same card the draft setup's Yahoo sync sits in. The choices run left to right in the order
-   they are read, each under its own name, and wrap to a column where there is no room. */
+   they are read, each under its own name, and every control stands at one height on one row, so
+   the three line up at the top and at the bottom. They wrap to a column where there is no room. */
 .league-picker {
+  --control-height: 2.25rem;
   display: flex;
   align-items: flex-start;
   flex-wrap: wrap;
@@ -58,7 +60,8 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-1);
-  flex: 0 1 16rem;
+  flex: 1 1 14rem;
+  max-width: 20rem;
   min-width: 0;
 }
 
@@ -73,28 +76,43 @@
 
 .picker-select {
   width: 100%;
+  height: var(--control-height);
   font-size: var(--text-sm);
-  padding: var(--space-2);
+  padding: 0 var(--space-2);
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-primary);
 }
 
-/* Three segments and a dropdown want more room than one dropdown; the row wraps sooner. */
-.rank-by-field {
-  flex: 1 1 22rem;
+/* Whose numbers and which belong together: where the row is too narrow for all three, the pair
+   moves under the league as one, side by side on a row of their own, rather than the dropdown
+   alone sliding under the league and leaving the segments on the right. */
+.rank-by-group {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3) var(--space-4);
+  flex: 1 1 auto;
 }
 
-/* The field grows for the segments; the dropdown under them stays a dropdown's width. */
-.rank-by-field .picker-select {
-  max-width: 20rem;
+/* Wide enough for a name, and never narrower: the pair wraps as one before this squeezes. */
+.projection-field {
+  min-width: 14rem;
+}
+
+/* The segments take the width their names need, no more; the dropdowns around them grow. */
+.rank-by-field {
+  flex: 0 0 auto;
+  max-width: none;
 }
 
 /* The segmented control Draft Mode's start page and the projection list put over the same
-   kinds. Component styles are scoped, so it is repeated rather than imported. */
+   kinds, at the dropdowns' height so it reads as one row with them. Component styles are
+   scoped, so it is repeated rather than imported. */
 .segmented {
   display: inline-flex;
+  box-sizing: border-box;
+  height: var(--control-height);
   padding: 2px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -104,14 +122,16 @@
 .kind {
   display: inline-flex;
   align-items: baseline;
+  align-self: stretch;
   gap: 0.35rem;
   background: none;
   border: none;
   border-radius: var(--radius-pill);
-  padding: 0.3rem 0.9rem;
+  padding: 0 0.9rem;
   font: inherit;
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
+  line-height: calc(var(--control-height) - 6px);
   color: var(--color-text-muted);
   cursor: pointer;
   transition:
@@ -129,7 +149,8 @@
 .kind[aria-pressed='true'] {
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border-control);
-  padding: calc(0.3rem - 1px) calc(0.9rem - 1px);
+  padding: 0 calc(0.9rem - 1px);
+  line-height: calc(var(--control-height) - 8px);
   color: var(--color-primary);
   font-weight: var(--weight-semibold);
   box-shadow: var(--shadow-sm);
@@ -141,11 +162,13 @@
   color: var(--color-text-subtle);
 }
 
-/* What an open kind with nothing in it says, in the dropdown's place and at its height. */
+/* What an open kind with nothing in it says, in the dropdown's place and no lower than its top. */
 .kind-empty {
   margin: 0;
-  padding: var(--space-2) 0;
+  min-height: var(--control-height);
+  padding: calc((var(--control-height) - 1.5em) / 2) 0;
   font-size: var(--text-sm);
+  line-height: 1.5;
   color: var(--color-text-muted);
 }
 
@@ -154,23 +177,49 @@
   font-weight: var(--weight-medium);
 }
 
+/* A status in a control's place sits where the control's text would. */
+.picker-field > .picker-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
+}
+
 @media (max-width: 640px) {
+  .rank-by-group {
+    flex-wrap: wrap;
+  }
+
+  .picker-field,
+  .rank-by-field {
+    flex: 1 1 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
   .segmented {
     display: flex;
     width: 100%;
   }
 
+  /* Three names across a phone: each on one line, its count under it, inside the same height. */
   .kind {
     flex: 1;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 0;
-    padding: 0.35rem 0.3rem;
+    padding: 0 0.3rem;
     font-size: var(--text-xs);
+    line-height: 1.15;
+  }
+
+  .kind-name {
+    white-space: nowrap;
   }
 
   .kind[aria-pressed='true'] {
-    padding: calc(0.35rem - 1px) calc(0.3rem - 1px);
+    padding: 0 calc(0.3rem - 1px);
+    line-height: 1.15;
   }
 }
 

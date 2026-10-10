@@ -106,97 +106,108 @@
     }
 
     @if (offersRankBy()) {
-      <!-- What the league is ranked against. Offered with or without a league on screen;
-           changing it re-reads the one that is. Nothing to rank without Yahoo or a draft. -->
-      <div class="picker-field rank-by-field">
-        <span class="picker-label" id="rank-by-label">Rank by</span>
+      <!-- What the league is ranked against, as two fields on the same row as the league: whose
+           numbers, then which. Each sits under its own name at the dropdown's height, so the three
+           controls share one baseline instead of the dropdown hanging under the segments. Offered
+           with or without a league on screen; changing it re-reads the one that is. Nothing to rank
+           without Yahoo or a draft. -->
 
-        <!-- Whose numbers first, then which: the segmented control Draft Mode's start page puts
-             over the same three kinds. A kind the reader has nothing in says so in its own
-             place, with the door to more, instead of a greyed line in a menu most readers never
-             open past our own numbers. Left out while the list failed, when "none" would be a
-             guess: ours are then the only ones offered. -->
+      <!-- Whose numbers first: the segmented control Draft Mode's start page puts over the same
+           three kinds. A kind the reader has nothing in says so in its own place, with the door to
+           more, instead of a greyed line in a menu most readers never open past our own numbers.
+           Left out while the list failed, when "none" would be a guess: ours are then the only
+           ones offered, and the dropdown alone carries the name. -->
+      <div class="rank-by-group">
         @if (!boardsFailed()) {
-          <div class="segmented" role="group" aria-labelledby="rank-by-label">
-            @for (option of rankByKinds; track option.kind) {
-              <button
-                type="button"
-                class="kind"
-                [attr.aria-pressed]="rankByKind() === option.kind"
-                (click)="selectRankByKind(option.kind)"
-              >
-                <span class="kind-name">{{ option.name }}</span>
-                @if (kindCount(option.kind) !== null) {
-                  <span class="kind-count">{{ kindCount(option.kind) }}</span>
-                }
-              </button>
-            }
+          <div class="picker-field rank-by-field">
+            <span class="picker-label" id="rank-by-label">Rank by</span>
+            <div class="segmented" role="group" aria-labelledby="rank-by-label">
+              @for (option of rankByKinds; track option.kind) {
+                <button
+                  type="button"
+                  class="kind"
+                  [attr.aria-pressed]="rankByKind() === option.kind"
+                  (click)="selectRankByKind(option.kind)"
+                >
+                  <span class="kind-name">{{ option.name }}</span>
+                  @if (kindCount(option.kind) !== null) {
+                    <span class="kind-count">{{ kindCount(option.kind) }}</span>
+                  }
+                </button>
+              }
+            </div>
           </div>
         }
 
-        @switch (rankByKind()) {
-          @case ('own') {
-            @if (ownBoards().length > 0) {
-              <select
-                class="picker-select rank-by-select"
-                aria-label="Which of your projections to rank by"
-                (change)="selectRankBy($event)"
-              >
-                @for (board of ownBoards(); track board.id) {
-                  <option
-                    [value]="boardOption(board.id)"
-                    [selected]="isRankedBy(boardOption(board.id))"
-                  >
-                    {{ board.name }}
-                  </option>
-                }
-              </select>
-            } @else if (ownBoardsEmpty()) {
-              <p class="kind-empty">
-                None yet. <a routerLink="/projections/new">Create one</a> to rank the league by your
-                own numbers.
-              </p>
-            } @else {
-              <span class="picker-status"
-                ><app-loading-indicator variant="inline" label="Loading your projections"
-              /></span>
-            }
-          }
-          @case ('following') {
-            @if (followedBoards().length > 0) {
-              <select
-                class="picker-select rank-by-select"
-                aria-label="Which followed projection to rank by"
-                (change)="selectRankBy($event)"
-              >
-                @for (board of followedBoards(); track board.id) {
-                  <option
-                    [value]="boardOption(board.id)"
-                    [selected]="isRankedBy(boardOption(board.id))"
-                  >
-                    {{ board.name }}
-                  </option>
-                }
-              </select>
-            } @else {
-              <p class="kind-empty">You're not following any projections yet.</p>
-            }
-          }
-          @default {
-            <select
-              class="picker-select rank-by-select"
-              aria-label="Which of our projections to rank by"
-              (change)="selectRankBy($event)"
-            >
-              @if (modelOffered()) {
-                <option value="model" [selected]="isRankedBy('model')">AI projection</option>
+        <div class="picker-field projection-field">
+          <span class="picker-label" [id]="boardsFailed() ? 'rank-by-label' : 'projection-label'">{{
+            boardsFailed() ? 'Rank by' : 'Projection'
+          }}</span>
+
+          @switch (rankByKind()) {
+            @case ('own') {
+              @if (ownBoards().length > 0) {
+                <select
+                  class="picker-select rank-by-select"
+                  aria-label="Which of your projections to rank by"
+                  (change)="selectRankBy($event)"
+                >
+                  @for (board of ownBoards(); track board.id) {
+                    <option
+                      [value]="boardOption(board.id)"
+                      [selected]="isRankedBy(boardOption(board.id))"
+                    >
+                      {{ board.name }}
+                    </option>
+                  }
+                </select>
+              } @else if (ownBoardsEmpty()) {
+                <p class="kind-empty">
+                  None yet. <a routerLink="/projections/new">Create one</a> to rank the league by
+                  your own numbers.
+                </p>
+              } @else {
+                <span class="picker-status"
+                  ><app-loading-indicator variant="inline" label="Loading your projections"
+                /></span>
               }
-              <option value="last_season" [selected]="isRankedBy('last_season')">
-                Last season
-              </option>
-            </select>
+            }
+            @case ('following') {
+              @if (followedBoards().length > 0) {
+                <select
+                  class="picker-select rank-by-select"
+                  aria-label="Which followed projection to rank by"
+                  (change)="selectRankBy($event)"
+                >
+                  @for (board of followedBoards(); track board.id) {
+                    <option
+                      [value]="boardOption(board.id)"
+                      [selected]="isRankedBy(boardOption(board.id))"
+                    >
+                      {{ board.name }}
+                    </option>
+                  }
+                </select>
+              } @else {
+                <p class="kind-empty">You're not following any projections yet.</p>
+              }
+            }
+            @default {
+              <select
+                class="picker-select rank-by-select"
+                aria-label="Which of our projections to rank by"
+                (change)="selectRankBy($event)"
+              >
+                @if (modelOffered()) {
+                  <option value="model" [selected]="isRankedBy('model')">AI projection</option>
+                }
+                <option value="last_season" [selected]="isRankedBy('last_season')">
+                  Last season
+                </option>
+              </select>
+            }
           }
-        }
+        </div>
       </div>
 
       @if (boardsFailed()) {
