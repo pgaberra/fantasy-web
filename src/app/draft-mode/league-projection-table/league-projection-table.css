@@ -7,6 +7,12 @@
   margin-bottom: var(--space-3);
 }
 
+.lp-switches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 .lp-modes {
   display: inline-flex;
   background: var(--color-surface-alt);
@@ -506,16 +512,6 @@
 }
 
 /* Marks a player the team does not count: his figure is what he would add, not what he does. */
-.lp-uncounted-mark {
-  margin-left: 1px;
-}
-
-.lp-footnote {
-  margin: var(--space-2) 0 0;
-  font-size: var(--text-xs);
-  color: var(--color-text-subtle);
-}
-
 /* On a phone the two pinned edges are most of the screen, and the columns between them are what
    the table is for. So the edges give way: the team's name wraps inside a narrower column rather
    than holding its line, and the score's heading breaks in two. The name column's width has to

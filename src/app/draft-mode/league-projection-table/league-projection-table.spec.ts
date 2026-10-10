@@ -222,11 +222,12 @@ describe('LeagueProjectionTableComponent', () => {
     expect(rowOf('McDavid').classList).not.toContain('not-counted');
   });
 
-  it('shows what an uncounted player would add, starred, and says why under the table', () => {
+  it("shows each player's share of his team, or switched, what every game would make him worth", () => {
+    // Every player starts only part of his games, and Oettinger none: the team does not count him.
     const roster = data.teams[0].roster.map((row) =>
       row.name === 'Oettinger'
         ? { ...row, total: 0, fullValue: 1.5, counted: false }
-        : { ...row, fullValue: row.total, counted: true },
+        : { ...row, fullValue: row.total + 1, counted: true },
     );
     const fixture = MockRender(LeagueProjectionTableComponent, {
       data: { ...data, teams: [{ ...data.teams[0], roster }] },
@@ -234,24 +235,39 @@ describe('LeagueProjectionTableComponent', () => {
       scoreHeading: 'Z-Score',
     });
     const component = fixture.point.componentInstance;
-    const footnote = () =>
-      fixture.nativeElement.querySelector('.lp-footnote') as HTMLElement | null;
     component.toggleExpand('a');
-    fixture.detectChanges();
-    expect(footnote(), 'no uncounted player among the top five').toBeNull();
-
     component.toggleShowAll('a');
     fixture.detectChanges();
 
-    const rows = [...fixture.nativeElement.querySelectorAll('tr.lp-player-row')] as HTMLElement[];
     const totalOf = (name: string) =>
-      rows
+      ([...fixture.nativeElement.querySelectorAll('tr.lp-player-row')] as HTMLElement[])
         .find((row) => row.querySelector('.lp-player-name')?.textContent?.trim() === name)!
         .querySelector('.col-total')!
-        .textContent.replace(/\s+/g, '');
-    expect(totalOf('Oettinger')).toBe('1.50*');
-    expect(totalOf('McDavid')).not.toContain('*');
-    expect(footnote()?.textContent).toContain("Player not included in the team's total.");
+        .textContent.trim();
+    const switchTo = (label: string) => {
+      const tabs = [
+        ...fixture.nativeElement.querySelectorAll('[aria-label="Player points"] button'),
+      ] as HTMLButtonElement[];
+      tabs.find((tab) => tab.textContent?.trim() === label)!.click();
+      fixture.detectChanges();
+    };
+
+    expect(totalOf('Oettinger'), 'the team does not count him').toBe('0.00');
+    expect(totalOf('McDavid')).toBe('9.00');
+
+    switchTo('All games');
+    expect(totalOf('Oettinger')).toBe('1.50');
+    expect(totalOf('McDavid')).toBe('10.00');
+
+    switchTo('Team share');
+    expect(totalOf('Oettinger')).toBe('0.00');
+  });
+
+  it('offers no points switch where every player counts in full, as in a draft', () => {
+    const fixture = render();
+    fixture.point.componentInstance.toggleExpand('a');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[aria-label="Player points"]')).toBeNull();
   });
 
   it("orders each team's player rows by the column the table is sorted on", () => {

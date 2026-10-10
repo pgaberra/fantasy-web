@@ -16,6 +16,12 @@ import {
 
 type BreakdownMode = 'category' | 'position';
 
+/**
+ * What a player row's score shows: what he adds to his team — the games its lineups start him in,
+ * nothing for a player it does not count — or what he would be worth started in every game.
+ */
+type PointsBasis = 'team' | 'all';
+
 /** How many of a team's players an expanded category row shows before the "show all" toggle. */
 const TOP_ROSTER_ROWS = 5;
 
@@ -58,8 +64,11 @@ export class LeagueProjectionTableComponent {
   readonly notActiveTooltip =
     "Not active: holds no roster spot, and counts only if he is among the team's best";
   readonly notCountedTooltip = "Player not included in the team's total.";
+  readonly teamShareTooltip = "Points each player adds to the team's total.";
+  readonly allGamesTooltip = 'Points each player would score if started every game.';
 
   readonly mode = signal<BreakdownMode>('category');
+  readonly pointsBasis = signal<PointsBasis>('team');
   readonly sortKey = signal<string>('total');
   readonly sortDir = signal<'asc' | 'desc'>('desc');
 
@@ -180,20 +189,20 @@ export class LeagueProjectionTableComponent {
   readonly showsRosterRows = computed(() => this.mode() === 'category');
 
   /**
-   * Whether a player row on screen is one the team does not count. Such a row shows what he would
-   * be worth, marked, rather than the nothing he adds, and the table then says why under it.
+   * Whether the player rows can switch to every game's worth: only where the numbers came with it
+   * (a league's lineups, not a draft, where every player counts in full anyway) and the players
+   * are on screen to show it.
    */
-  readonly showsUncountedNote = computed(() =>
-    this.sortedTeams().some(
-      (team) =>
-        this.isExpanded(team.teamId) &&
-        this.showsRosterRows() &&
-        this.rosterRows(team).some((player) => this.shownAsUncounted(player)),
-    ),
+  readonly offersPointsBasis = computed(
+    () =>
+      this.expandable() &&
+      this.showsRosterRows() &&
+      this.data().teams.some((team) => team.roster.some((row) => row.fullValue !== undefined)),
   );
 
-  shownAsUncounted(player: LeagueProjectionRosterRow): boolean {
-    return player.counted === false && player.fullValue !== undefined;
+  /** A player row's score, on the basis the switch is set to. */
+  playerTotal(player: LeagueProjectionRosterRow): number {
+    return this.pointsBasis() === 'all' ? (player.fullValue ?? player.total) : player.total;
   }
 
   isExpanded(teamId: string): boolean {
@@ -226,7 +235,7 @@ export class LeagueProjectionTableComponent {
     // direction-adjusted contribution for a category column (so lower-is-better stats still order
     // best-first, matching the team ordering).
     const rankOf = (row: LeagueProjectionRosterRow) =>
-      key === 'total' ? row.total : row.contributions[key];
+      key === 'total' ? this.playerTotal(row) : row.contributions[key];
     return [...roster].sort((first, second) => {
       const firstRank = rankOf(first);
       const secondRank = rankOf(second);
