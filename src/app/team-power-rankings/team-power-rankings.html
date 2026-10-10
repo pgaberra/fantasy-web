@@ -133,10 +133,11 @@
               }
             </optgroup>
           } @else if (ownBoardsEmpty()) {
-            <!-- A note, not a choice: a native select cannot hold a link, so the entry is greyed
-                 and unselectable, and the way to the editor is the line under the menu. -->
+            <!-- A hint seen only with the menu open, not a choice: greyed and unselectable. Most
+                 readers rank by our numbers, so nothing outside the menu asks them to make
+                 their own; a native select cannot hold a link, so the hint names the page. -->
             <optgroup label="My Projections">
-              <option value="" disabled>No projections yet.</option>
+              <option value="" disabled>None yet. Make one under Projections to rank by it.</option>
             </optgroup>
           }
           @if (followedBoards().length > 0) {
@@ -153,12 +154,6 @@
           }
         </select>
       </div>
-
-      @if (ownBoardsEmpty()) {
-        <p class="picker-status picker-wide create-hint">
-          No projections yet. <a routerLink="/projections/new" class="create-link">Create one</a>.
-        </p>
-      }
 
       @if (boardsFailed()) {
         <p class="picker-status picker-wide" role="status">
