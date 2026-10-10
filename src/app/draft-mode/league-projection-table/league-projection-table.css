@@ -364,8 +364,11 @@
 }
 
 /* Outside the team's best, as many as its roster holds: listed so the roster is whole, but faded,
-   since none of his figures reach the team's. */
-.lp-table tbody tr.not-counted td:not(.col-rank) {
+   since none of his figures reach the team's. The pinned name and score fade their contents, not
+   the cell: a translucent pinned cell let the columns scrolling under it show through. */
+.lp-table tbody tr.not-counted td:not(.col-rank, .col-team, .col-total),
+.lp-table tbody tr.not-counted .lp-player,
+.lp-table tbody tr.not-counted .lp-player-total {
   opacity: 0.55;
 }
 
