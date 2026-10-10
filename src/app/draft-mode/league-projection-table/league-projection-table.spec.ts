@@ -280,6 +280,9 @@ describe('LeagueProjectionTableComponent', () => {
     expect(totalOf('Oettinger')).toBe('—');
     expect(teamRows()[0][3]).toBe('30.00');
 
+    const helpTip = () => fixture.nativeElement.querySelector('.lp-switches app-help-tip');
+    expect(helpTip(), 'the switch comes with its explanation').not.toBeNull();
+
     switchTo('All games');
     component.setMode('position');
     fixture.detectChanges();
@@ -287,6 +290,7 @@ describe('LeagueProjectionTableComponent', () => {
       fixture.nativeElement.querySelector('[aria-label="Points basis"]'),
       'a lineup slot is what starting decides',
     ).toBeNull();
+    expect(helpTip(), 'nothing to explain without the switch').toBeNull();
     expect(teamRows()[0][3], 'back on what the lineups start').toBe('30.00');
   });
 
