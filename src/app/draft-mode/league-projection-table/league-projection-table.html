@@ -2,27 +2,55 @@
   <p class="lp-empty">No teams yet.</p>
 } @else {
   <div class="lp-toolbar">
-    <div class="lp-modes" role="tablist" aria-label="Breakdown">
-      <button
-        type="button"
-        role="tab"
-        class="lp-mode"
-        [class.active]="mode() === 'category'"
-        [attr.aria-selected]="mode() === 'category'"
-        (click)="setMode('category')"
-      >
-        By category
-      </button>
-      <button
-        type="button"
-        role="tab"
-        class="lp-mode"
-        [class.active]="mode() === 'position'"
-        [attr.aria-selected]="mode() === 'position'"
-        (click)="setMode('position')"
-      >
-        By position
-      </button>
+    <div class="lp-switches">
+      <div class="lp-modes" role="tablist" aria-label="Breakdown">
+        <button
+          type="button"
+          role="tab"
+          class="lp-mode"
+          [class.active]="mode() === 'category'"
+          [attr.aria-selected]="mode() === 'category'"
+          (click)="setMode('category')"
+        >
+          By category
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="lp-mode"
+          [class.active]="mode() === 'position'"
+          [attr.aria-selected]="mode() === 'position'"
+          (click)="setMode('position')"
+        >
+          By position
+        </button>
+      </div>
+      @if (offersPointsBasis()) {
+        <div class="lp-modes" role="tablist" aria-label="Player points">
+          <button
+            type="button"
+            role="tab"
+            class="lp-mode"
+            [class.active]="pointsBasis() === 'team'"
+            [attr.aria-selected]="pointsBasis() === 'team'"
+            [appTooltip]="teamShareTooltip"
+            (click)="pointsBasis.set('team')"
+          >
+            Team share
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="lp-mode"
+            [class.active]="pointsBasis() === 'all'"
+            [attr.aria-selected]="pointsBasis() === 'all'"
+            [appTooltip]="allGamesTooltip"
+            (click)="pointsBasis.set('all')"
+          >
+            All games
+          </button>
+        </div>
+      }
     </div>
     @if (expandable()) {
       <span class="lp-hint">Tap a team to expand its players</span>
@@ -195,11 +223,7 @@
                   </td>
                 }
                 <td class="col-total" [class.sorted]="sortKey() === 'total'">
-                  @if (shownAsUncounted(player)) {
-                    {{ formatTotal(player.fullValue!) }}<span class="lp-uncounted-mark">*</span>
-                  } @else {
-                    {{ formatTotal(player.total) }}
-                  }
+                  {{ formatTotal(playerTotal(player)) }}
                 </td>
               </tr>
             }
@@ -233,10 +257,4 @@
       </tbody>
     </table>
   </div>
-  @if (showsUncountedNote()) {
-    <p class="lp-footnote">
-      * Not in the team's total: a team counts its best players, as many as its roster holds. The
-      figure is what he would add if the team started him every game.
-    </p>
-  }
 }
