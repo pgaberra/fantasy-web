@@ -17,8 +17,9 @@ import {
 type BreakdownMode = 'category' | 'position';
 
 /**
- * What a player row's score shows: what he adds to his team — the games its lineups start him in,
- * nothing for a player it does not count — or what he would be worth started in every game.
+ * What the table counts: what each player adds to his team — the games its lineups start him in,
+ * nothing for a player it does not count — or what he would be worth started in every game, and
+ * the team the sum of all of them.
  */
 type PointsBasis = 'team' | 'all';
 
@@ -64,8 +65,8 @@ export class LeagueProjectionTableComponent {
   readonly notActiveTooltip =
     "Not active: holds no roster spot, and counts only if he is among the team's best";
   readonly notCountedTooltip = "Player not included in the team's total.";
-  readonly teamShareTooltip = "Points each player adds to the team's total.";
-  readonly allGamesTooltip = 'Points each player would score if started every game.';
+  readonly teamShareTooltip = 'Points from the games each lineup actually starts its players.';
+  readonly allGamesTooltip = 'Points if every player on the roster started every game.';
 
   readonly mode = signal<BreakdownMode>('category');
   readonly pointsBasis = signal<PointsBasis>('team');
@@ -148,7 +149,7 @@ export class LeagueProjectionTableComponent {
     for (const team of this.data().teams) {
       const best: Record<string, number> = {};
       for (const player of team.roster) {
-        for (const [key, contribution] of Object.entries(player.contributions)) {
+        for (const [key, contribution] of Object.entries(this.contributionsOf(player))) {
           if (contribution !== null && (best[key] === undefined || contribution > best[key])) {
             best[key] = contribution;
           }
@@ -163,7 +164,7 @@ export class LeagueProjectionTableComponent {
     const teams = this.data().teams;
     const ranges = new Map<string, { min: number; max: number }>();
     for (const key of [...this.columns().map((column) => column.key), 'total']) {
-      const values = teams.map((team) => (key === 'total' ? team.total : team.values[key]));
+      const values = teams.map((team) => this.teamValue(team, key));
       if (values.length > 0) {
         ranges.set(key, { min: Math.min(...values), max: Math.max(...values) });
       }
@@ -174,8 +175,7 @@ export class LeagueProjectionTableComponent {
   readonly sortedTeams = computed(() => {
     const key = this.sortKey();
     const descending = this.sortDir() === 'desc';
-    const valueOf = (team: LeagueProjectionTeamRow) =>
-      key === 'total' ? team.total : team.values[key];
+    const valueOf = (team: LeagueProjectionTeamRow) => this.teamValue(team, key);
     return [...this.data().teams].sort((first, second) =>
       descending ? valueOf(second) - valueOf(first) : valueOf(first) - valueOf(second),
     );
@@ -189,20 +189,36 @@ export class LeagueProjectionTableComponent {
   readonly showsRosterRows = computed(() => this.mode() === 'category');
 
   /**
-   * Whether the player rows can switch to every game's worth: only where the numbers came with it
-   * (a league's lineups, not a draft, where every player counts in full anyway) and the players
-   * are on screen to show it.
+   * Whether the table can switch to every game's worth: only where the numbers came with it (a
+   * league's lineups, not a draft, where every player counts in full anyway), and in the category
+   * breakdown, since a lineup slot is what starting decides.
    */
   readonly offersPointsBasis = computed(
-    () =>
-      this.expandable() &&
-      this.showsRosterRows() &&
-      this.data().teams.some((team) => team.roster.some((row) => row.fullValue !== undefined)),
+    () => this.showsRosterRows() && this.data().teams.every((team) => team.fullTotal !== undefined),
   );
 
-  /** A player row's score, on the basis the switch is set to. */
+  /** The basis the numbers are on: the switch's, where the table offers it. */
+  private readonly basis = computed<PointsBasis>(() =>
+    this.offersPointsBasis() ? this.pointsBasis() : 'team',
+  );
+
+  /** A team's cell for a column key, or its total for 'total', on the basis shown. */
+  teamValue(team: LeagueProjectionTeamRow, key: string): number {
+    if (this.basis() === 'all') {
+      return key === 'total' ? team.fullTotal! : (team.fullValues?.[key] ?? 0);
+    }
+    return key === 'total' ? team.total : team.values[key];
+  }
+
+  /** A player row's score, on the basis shown. */
   playerTotal(player: LeagueProjectionRosterRow): number {
-    return this.pointsBasis() === 'all' ? (player.fullValue ?? player.total) : player.total;
+    return this.basis() === 'all' ? (player.fullValue ?? player.total) : player.total;
+  }
+
+  private contributionsOf(player: LeagueProjectionRosterRow): Record<string, number | null> {
+    return this.basis() === 'all'
+      ? (player.fullContributions ?? player.contributions)
+      : player.contributions;
   }
 
   isExpanded(teamId: string): boolean {
@@ -235,7 +251,7 @@ export class LeagueProjectionTableComponent {
     // direction-adjusted contribution for a category column (so lower-is-better stats still order
     // best-first, matching the team ordering).
     const rankOf = (row: LeagueProjectionRosterRow) =>
-      key === 'total' ? this.playerTotal(row) : row.contributions[key];
+      key === 'total' ? this.playerTotal(row) : this.contributionsOf(row)[key];
     return [...roster].sort((first, second) => {
       const firstRank = rankOf(first);
       const secondRank = rankOf(second);
@@ -262,7 +278,7 @@ export class LeagueProjectionTableComponent {
     player: LeagueProjectionRosterRow,
     key: string,
   ): boolean {
-    const contribution = player.contributions[key];
+    const contribution = this.contributionsOf(player)[key];
     return (
       contribution !== null &&
       team.roster.length > 1 &&

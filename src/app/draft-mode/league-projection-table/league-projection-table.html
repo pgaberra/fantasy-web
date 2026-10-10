@@ -26,7 +26,7 @@
         </button>
       </div>
       @if (offersPointsBasis()) {
-        <div class="lp-modes" role="tablist" aria-label="Player points">
+        <div class="lp-modes" role="tablist" aria-label="Points basis">
           <button
             type="button"
             role="tab"
@@ -131,14 +131,16 @@
                 [class.sorted]="sortKey() === column.key"
                 [class.group-start]="column.key === groupStartKey()"
               >
-                <span class="lp-heat" [style.--heat]="shade(column.key, team.values[column.key])">{{
-                  format(team.values[column.key], column.decimals)
-                }}</span>
+                <span
+                  class="lp-heat"
+                  [style.--heat]="shade(column.key, teamValue(team, column.key))"
+                  >{{ format(teamValue(team, column.key), column.decimals) }}</span
+                >
               </td>
             }
             <td class="col-total" [class.sorted]="sortKey() === 'total'">
-              <span class="lp-heat" [style.--heat]="shade('total', team.total)">{{
-                formatTotal(team.total)
+              <span class="lp-heat" [style.--heat]="shade('total', teamValue(team, 'total'))">{{
+                formatTotal(teamValue(team, 'total'))
               }}</span>
             </td>
           </tr>

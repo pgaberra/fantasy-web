@@ -50,6 +50,11 @@ export interface LeagueProjectionRosterRow {
    */
   contributions: Record<string, number | null>;
   /**
+   * His contribution per category key over every game he plays, as `contributions` is over the
+   * games his lineup starts him in. Absent where everyone counts in full (a draft).
+   */
+  fullContributions?: Record<string, number | null>;
+  /**
    * The injured-reserve or not-active slot he is parked in today (IR, IR+, IR-LT, IR-NR or NA),
    * which holds a player without taking a roster spot. Absent for a player in neither, and where
    * the source has no such slots (a draft).
@@ -62,8 +67,7 @@ export interface LeagueProjectionRosterRow {
   counted?: boolean;
   /**
    * What he would be worth had his lineup started him in every game he plays, where `total` is
-   * only the games it does. Shown for a player the team does not count, whose total is nothing.
-   * Absent where everyone counts (a draft).
+   * only the games it does. Absent where everyone counts (a draft).
    */
   fullValue?: number;
 }
@@ -75,6 +79,13 @@ export interface LeagueProjectionTeamRow {
   total: number;
   /** Aggregated value per column key (weighted/z contribution for categories, summed score for positions). */
   values: Record<string, number>;
+  /**
+   * What the team would score were every player it holds started in every game he plays, the ones
+   * it does not count included. Absent where everyone counts in full (a draft).
+   */
+  fullTotal?: number;
+  /** The category cells on the `fullTotal` footing; no position cells. Absent likewise. */
+  fullValues?: Record<string, number>;
   /** The team's drafted players, best first — the rows shown when a category-mode team is expanded. */
   roster: LeagueProjectionRosterRow[];
   /** Per position column key (incl. BN): the players assigned to that slot, sorted by projected value. */

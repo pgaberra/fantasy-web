@@ -43,6 +43,8 @@ function teamRow(team: LeagueSummaryTeam, categoryKeys: string[]): LeagueProject
     mine: team.mine,
     total: team.total,
     values: team.values,
+    fullTotal: team.fullTotal,
+    fullValues: team.fullValues,
     roster: (team.roster ?? []).map((row) => rosterRow(row, categoryKeys)),
     positionPlayers: team.positionPlayers ?? {},
   };
@@ -54,9 +56,11 @@ function rosterRow(
 ): LeagueProjectionRosterRow {
   const values: Record<string, number | null> = {};
   const contributions: Record<string, number | null> = {};
+  const fullContributions: Record<string, number | null> = {};
   for (const key of categoryKeys) {
     values[key] = row.values?.[key] ?? null;
     contributions[key] = row.contributions?.[key] ?? null;
+    fullContributions[key] = row.fullContributions?.[key] ?? null;
   }
   return {
     name: row.name,
@@ -65,6 +69,7 @@ function rosterRow(
     total: row.total,
     values,
     contributions,
+    fullContributions,
     reserveSlot: row.reserveSlot ?? null,
     counted: row.counted,
     fullValue: row.fullValue,
