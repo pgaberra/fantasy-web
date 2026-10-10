@@ -261,7 +261,7 @@ describe('LeagueProjectionTableComponent', () => {
       fixture.detectChanges();
     };
 
-    expect(totalOf('Oettinger'), 'the team does not count him').toBe('0.00');
+    expect(totalOf('Oettinger'), 'the team does not count him').toBe('—');
     expect(totalOf('McDavid')).toBe('9.00');
     expect(teamRows()).toEqual([
       ['Bravo', '8.00', '-1.00', '30.00'],
@@ -277,7 +277,7 @@ describe('LeagueProjectionTableComponent', () => {
     ]);
 
     switchTo('Team share');
-    expect(totalOf('Oettinger')).toBe('0.00');
+    expect(totalOf('Oettinger')).toBe('—');
     expect(teamRows()[0][3]).toBe('30.00');
 
     switchTo('All games');
@@ -288,6 +288,57 @@ describe('LeagueProjectionTableComponent', () => {
       'a lineup slot is what starting decides',
     ).toBeNull();
     expect(teamRows()[0][3], 'back on what the lineups start').toBe('30.00');
+  });
+
+  it('puts a player the team does not count last on its share, under players below zero', () => {
+    // Category scores run below zero, so an uncounted player's 0 would rank him mid-roster.
+    const changes: Record<string, object> = {
+      Nylander: { total: 0, fullValue: 4, counted: false },
+      Makar: { total: -3, fullValue: -3 },
+    };
+    const roster = data.teams[0].roster.map((row) => ({
+      ...row,
+      fullValue: row.total,
+      counted: true,
+      ...changes[row.name],
+    }));
+    const teams = [
+      { ...data.teams[0], roster, fullTotal: 40, fullValues: { goals: 12, gaa: -1 } },
+      { ...data.teams[1], fullTotal: 35, fullValues: { goals: 9, gaa: -1 } },
+    ];
+    const component = MockRender(LeagueProjectionTableComponent, {
+      data: { ...data, teams },
+      scoringType: 'category',
+      scoreHeading: 'Z-Score',
+    }).point.componentInstance;
+    const alpha = component.data().teams[0];
+    const names = () => component.rosterRows(alpha).map((row) => row.name);
+    component.toggleExpand('a');
+    component.toggleShowAll('a');
+
+    expect(names()).toEqual(['McDavid', 'Point', 'Zacha', 'Oettinger', 'Makar', 'Nylander']);
+    component.sortBy('total');
+    expect(names(), 'ascending too').toEqual([
+      'Makar',
+      'Oettinger',
+      'Zacha',
+      'Point',
+      'McDavid',
+      'Nylander',
+    ]);
+    component.sortBy('goals');
+    expect(names().at(-1), 'on a stat column too').toBe('Nylander');
+
+    component.pointsBasis.set('all');
+    component.sortBy('total');
+    expect(names(), 'on every game he counts, and ranks by it').toEqual([
+      'McDavid',
+      'Point',
+      'Zacha',
+      'Nylander',
+      'Oettinger',
+      'Makar',
+    ]);
   });
 
   it('offers no points switch where every player counts in full, as in a draft', () => {
