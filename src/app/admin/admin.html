@@ -52,6 +52,7 @@
         [disabled]="connecting()"
         (click)="connectYahoo()"
       >
+        <app-yahoo-mark tone="inherit" />
         {{ connected() ? 'Reconnect Yahoo account' : 'Connect Yahoo account' }}
       </button>
     </div>

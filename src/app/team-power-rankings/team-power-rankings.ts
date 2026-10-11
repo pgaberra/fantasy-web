@@ -14,6 +14,7 @@ import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
+import { YahooMarkComponent } from '../shared/yahoo-mark/yahoo-mark';
 import { NoticeComponent } from '../shared/notice/notice';
 import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
 import { Platform, PlatformTabsComponent } from '../shared/platform-tabs/platform-tabs';
@@ -83,6 +84,7 @@ import { RANK_BY_KINDS, RankBy, RankByKind, boardIdOf, rankByBoard } from './ran
     NoticeComponent,
     PlatformTabsComponent,
     EspnLeagueSyncComponent,
+    YahooMarkComponent,
   ],
   providers: [YahooLeaguePicker],
   templateUrl: './team-power-rankings.html',

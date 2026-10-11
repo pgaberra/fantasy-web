@@ -6,6 +6,7 @@ import { YahooConnectReturnService } from '../services/yahoo-connect-return.serv
 import { AdminPremiumComponent } from './premium/admin-premium';
 import { LeagueSummary, SyncRunResponse, YahooProbeResponse } from '../api/models';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
+import { YahooMarkComponent } from '../shared/yahoo-mark/yahoo-mark';
 import { yahooRefusalMessage } from '../shared/yahoo-refused';
 import { leaveFor } from '../shared/leave-for';
 
@@ -51,7 +52,7 @@ const YAHOO_ERRORS: Record<string, string> = {
 
 @Component({
   selector: 'app-admin',
-  imports: [RelativeTimePipe, AdminPremiumComponent, LoadingIndicatorComponent],
+  imports: [RelativeTimePipe, AdminPremiumComponent, LoadingIndicatorComponent, YahooMarkComponent],
   templateUrl: './admin.html',
   styleUrl: './admin.css',
 })

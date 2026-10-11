@@ -375,6 +375,7 @@
                 [disabled]="connectingYahoo()"
                 (click)="connectYahoo()"
               >
+                <app-yahoo-mark tone="inherit" />
                 @if (connectingYahoo()) {
                   <app-loading-indicator variant="inline" label="Connecting" />
                 } @else {
