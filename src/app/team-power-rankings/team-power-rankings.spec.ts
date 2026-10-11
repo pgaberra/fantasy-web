@@ -1,6 +1,6 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
 import { environment } from '../../environments/environment';
@@ -104,6 +104,8 @@ describe('TeamPowerRankingsComponent', () => {
     of([...boards, ...drafts]),
   );
   const aiProjection = vi.fn(() => true);
+  /** Whether the BFF has said what it serves; true but for the test that holds the answer back. */
+  const settled = vi.fn(() => true);
   const myLeagues = vi.fn<() => Observable<LeaguesResponse>>(() => of(leagues));
   const connectionStatus = vi.fn<() => Observable<{ connected: boolean }>>(() =>
     of({ connected: true }),
@@ -141,6 +143,7 @@ describe('TeamPowerRankingsComponent', () => {
     connectionStatus.mockReset();
     connectionStatus.mockReturnValue(of({ connected: true }));
     aiProjection.mockReturnValue(true);
+    settled.mockReturnValue(true);
     draftCall.mockReset();
     draftCall.mockReturnValue(of(summary));
     espnCall.mockReset();
@@ -160,7 +163,7 @@ describe('TeamPowerRankingsComponent', () => {
       .keep(PlatformTabsComponent)
       .mock(LeagueSummaryService, { yahooLeague, draft: draftCall, espnLeague: espnCall })
       .mock(ProjectionStorageService, { listAll })
-      .mock(FeatureService, { aiProjection } as never)
+      .mock(FeatureService, { aiProjection, settled } as never)
       .provide({
         provide: ActivatedRoute,
         useValue: {
@@ -321,8 +324,11 @@ describe('TeamPowerRankingsComponent', () => {
     expect(draftCall).toHaveBeenLastCalledWith('d2', 'model');
   });
 
-  /** Mid-season the model's totals cover the games left, and the option itself says so. */
-  it('names the rest of the season in the AI projection option once it is under way', async () => {
+  /**
+   * Mid-season the model's totals cover the games left, which a line over the table says. The
+   * option keeps its name: it is on screen before the answer is in, and must not rename itself.
+   */
+  it('says over the table that the model ranks the rest of the season once it is under way', async () => {
     yahooLeague.mockReturnValue(of({ ...summary, inSeason: true }));
     const fixture = await render();
     const component = fixture.point.componentInstance;
@@ -330,7 +336,10 @@ describe('TeamPowerRankingsComponent', () => {
 
     const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
     const options = Array.from(select.options).map((option) => option.textContent?.trim());
-    expect(options).toEqual(['AI Projection (Rest of Season)', 'Last Season']);
+    expect(options).toEqual(['AI Projection', 'Last Season']);
+    expect(fixture.nativeElement.querySelector('.rankings-rest-of-season')?.textContent).toContain(
+      'Rest of season',
+    );
     expect(fixture.nativeElement.querySelector('.rank-by-choice p')).toBeNull();
   });
 
@@ -341,8 +350,42 @@ describe('TeamPowerRankingsComponent', () => {
     await choose(fixture, component, '465.l.1');
 
     expect(fixture.nativeElement.querySelector('app-league-projection-table')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.rankings-rest-of-season')).toBeNull();
     const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
     expect(select.options[0].textContent?.trim()).toEqual('AI Projection');
+  });
+
+  /**
+   * Until the BFF says whether it serves the model the default is not known. Reading by last
+   * season and then by the model would show Rank by changing its own mind and read twice.
+   */
+  it('reads nothing and offers no Rank by until the features are in', async () => {
+    settled.mockReturnValue(false);
+    aiProjection.mockReturnValue(false);
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    await choose(fixture, component, '465.l.1');
+
+    expect(yahooLeague).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('#rank-by-label')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-league-projection-table')).toBeNull();
+  });
+
+  /** The league's name is known before its rankings are, so it stands over the spinner. */
+  it('names the league over the loading indicator', async () => {
+    const pending = new Subject<LeagueSummaryResponse>();
+    yahooLeague.mockReturnValue(pending);
+    const fixture = await render();
+    const select = fixture.nativeElement.querySelector('.league-select') as HTMLSelectElement;
+    select.value = '465.l.1';
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('app-loading-indicator')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.rankings-league')?.textContent).toContain(
+      'Beer League',
+    );
+    pending.complete();
   });
 
   /** Back to the placeholder is back to nothing on screen, not the last league left standing. */

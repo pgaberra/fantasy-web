@@ -124,7 +124,7 @@ export class TeamPowerRankingsComponent implements OnInit {
   constructor() {
     effect(() => {
       const linked = this.linkedDraft();
-      if (!linked || this.listResource.isLoading()) {
+      if (!linked || this.listResource.isLoading() || !this.featuresSettled()) {
         return;
       }
       const draft = this.drafts().find((candidate) => candidate.id === linked);
@@ -149,6 +149,13 @@ export class TeamPowerRankingsComponent implements OnInit {
 
   /** Whether this environment serves the AI projection, which is then what ranks by default. */
   readonly modelOffered = computed(() => this.features.aiProjection());
+
+  /**
+   * Whether the BFF has said what it serves. Until then the default under Rank by is not known,
+   * so nothing is read and no dropdown is shown: a page that ranked by last season and then
+   * switched to the model would show a choice that changes itself, and read the league twice.
+   */
+  private readonly featuresSettled = computed(() => this.features.settled());
 
   /** Everything the user has: the boards a league is ranked against, and the drafts to rank. */
   private readonly listResource = rxResource({
@@ -243,15 +250,16 @@ export class TeamPowerRankingsComponent implements OnInit {
 
   /**
    * Once the season is under way the model ranks what each player does over the games left, so
-   * the totals are that much smaller than a whole season's, and the dropdown's option says so.
+   * the totals are that much smaller than a whole season's, and a line over the table says so.
    * Only the model's in-season lines set the flag: a board, last season's stats and the preseason
-   * model are whole seasons.
+   * model are whole seasons. The dropdown's option keeps its name: a control that renames itself
+   * once the answer is in reads as the page changing its mind.
    */
   readonly restOfSeason = computed(() => !!this.rankingsData()?.inSeason);
 
   private readonly rankingsResource = rxResource({
     params: () => {
-      if (this.linkedDraft()) {
+      if (this.linkedDraft() || !this.featuresSettled()) {
         return undefined;
       }
       const rankBy = this.rankBy();
@@ -294,9 +302,14 @@ export class TeamPowerRankingsComponent implements OnInit {
       !this.draftId(),
   );
 
-  /** Whether there is something to rank, and so something to rank it by. */
+  /**
+   * Whether there is something to rank, and so something to rank it by, and the default is known.
+   * Shown once with what is offered rather than with last season and then with the model.
+   */
   readonly offersRankBy = computed(
-    () => this.platform() === 'espn' || !!this.picker.connected() || this.drafts().length > 0,
+    () =>
+      this.featuresSettled() &&
+      (this.platform() === 'espn' || !!this.picker.connected() || this.drafts().length > 0),
   );
 
   readonly leagueName = computed(() => {
