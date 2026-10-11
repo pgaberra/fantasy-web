@@ -1,10 +1,12 @@
-<div class="espn-sync">
-  <div class="espn-sync-row">
-    <span class="espn-sync-brand">
-      <img class="espn-logo" src="espn-logo.png" alt="" aria-hidden="true" />
-      {{ title() }}
-    </span>
-  </div>
+<div class="espn-sync" [class.espn-sync--embedded]="embedded()">
+  @if (!embedded()) {
+    <div class="espn-sync-row">
+      <span class="espn-sync-brand">
+        <img class="espn-logo" src="espn-logo.png" alt="" aria-hidden="true" />
+        {{ title() }}
+      </span>
+    </div>
+  }
 
   @if (lastSyncedAt(); as syncedAt) {
     <app-synced-line

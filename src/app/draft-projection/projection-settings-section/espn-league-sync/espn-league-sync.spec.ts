@@ -455,6 +455,19 @@ describe('EspnLeagueSyncComponent', () => {
     expect(text).toContain('Not counted');
   });
 
+  /** Inside Team Power Rankings' league card, under its pressed ESPN tab: no frame, no title. */
+  it('drops its own frame and title when embedded in a host card', async () => {
+    await buildDefault();
+    const fixture = MockRender(EspnLeagueSyncComponent, { purpose: 'rankings', embedded: true });
+    await fixture.whenStable();
+
+    const root: HTMLElement = fixture.nativeElement;
+    expect(root.querySelector('.espn-sync--embedded')).not.toBeNull();
+    expect(root.textContent).not.toContain('Rank your ESPN league');
+    expect(root.querySelector('.espn-input')).not.toBeNull();
+    expect(root.textContent).toContain('Show rankings');
+  });
+
   /** The Streamer Planner asks for its league with this card too. */
   it('names the card and its button for the planner when asked for it', async () => {
     await buildDefault();

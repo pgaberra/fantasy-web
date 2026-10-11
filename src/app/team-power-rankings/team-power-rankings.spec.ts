@@ -192,7 +192,7 @@ describe('TeamPowerRankingsComponent', () => {
     expect(fixture.nativeElement.querySelector('.rankings-note')?.textContent).toContain(
       'Select a league',
     );
-    expect(fixture.nativeElement.querySelector('.league-picker .btn')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.league-card .btn')).toBeNull();
 
     await choose(fixture, component, '465.l.1');
 
@@ -307,7 +307,7 @@ describe('TeamPowerRankingsComponent', () => {
     const fixture = await render();
     const component = fixture.point.componentInstance;
 
-    expect(fixture.nativeElement.querySelector('.league-picker .btn')?.textContent).toContain(
+    expect(fixture.nativeElement.querySelector('.league-card .btn')?.textContent).toContain(
       'Connect Yahoo account',
     );
     const groups = Array.from(
@@ -365,7 +365,7 @@ describe('TeamPowerRankingsComponent', () => {
     expect(component.picker.connected()).toBe(false);
     expect(myLeagues).not.toHaveBeenCalled();
     expect(fixture.nativeElement.querySelector('.picker-select')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.league-picker button')?.textContent).toContain(
+    expect(fixture.nativeElement.querySelector('.league-card .btn')?.textContent).toContain(
       'Connect Yahoo account',
     );
   });
@@ -617,7 +617,7 @@ describe('TeamPowerRankingsComponent', () => {
     expect(fixture.nativeElement.querySelector('.kind-empty')).toBeNull();
     const statuses = Array.from(
       fixture.nativeElement.querySelectorAll(
-        '.league-picker > :not(.picker-field)',
+        '.picker-card > :not(.picker-field)',
       ) as NodeListOf<HTMLElement>,
     ).map((line) => line.textContent ?? '');
     expect(statuses.join(' ')).not.toContain('projection');
@@ -655,6 +655,31 @@ describe('TeamPowerRankingsComponent', () => {
     fixture = await render();
     expect(fixture.nativeElement.querySelector('.provider-tab')).toBeNull();
     expect(fixture.nativeElement.querySelector('.league-select')).not.toBeNull();
+  });
+
+  /**
+   * Which league, then what to rank it by: two cards under either platform, the platform's tabs in
+   * the league's, and the rank-by card the same whichever tab is open.
+   */
+  it('keeps the league and the rank-by choice in two cards, the tabs in the league card', async () => {
+    const fixture = await render();
+    const root: HTMLElement = fixture.nativeElement;
+    const cards = () => ({
+      league: root.querySelector('.league-card') as HTMLElement,
+      rankBy: root.querySelector('.rank-by-card') as HTMLElement,
+    });
+
+    expect(cards().league.querySelectorAll('.provider-tab')).toHaveLength(2);
+    expect(cards().league.querySelector('.league-select')).not.toBeNull();
+    expect(cards().league.querySelector('.rank-by-select')).toBeNull();
+    expect(cards().rankBy.querySelector('.rank-by-select')).not.toBeNull();
+
+    await chooseEspn(fixture);
+
+    expect(cards().league.querySelectorAll('.provider-tab')).toHaveLength(2);
+    expect(cards().league.querySelector('app-espn-league-sync')).not.toBeNull();
+    expect(cards().league.querySelector('.rank-by-select')).toBeNull();
+    expect(cards().rankBy.querySelector('.rank-by-select')).not.toBeNull();
   });
 
   /**
