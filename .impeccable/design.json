@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-11T16:46:07+00:00",
+  "generatedAt": "2026-10-11T19:30:00+00:00",
   "title": "Design System: SlapStat",
   "extensions": {
     "colorMeta": {
@@ -198,6 +198,16 @@
         "purpose": "Buttons, links and badges changing colour or border."
       },
       {
+        "name": "slot-changed",
+        "value": "1600ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "The lineup card's highlight hold: a slot whose player changed washes in Warning Edge for 55% of the run, then lets go. Never on the first filling."
+      },
+      {
+        "name": "lp-rise",
+        "value": "600ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "The lineup card rising 12px into place once on first paint; nothing else on the landing page moves on its own."
+      },
+      {
         "name": "reduced-motion",
         "value": "0.01ms",
         "purpose": "Every animation and transition under prefers-reduced-motion, except the pinned table header."
@@ -213,12 +223,20 @@
         "value": "840px"
       },
       {
+        "name": "landing-stack",
+        "value": "960px"
+      },
+      {
         "name": "pin-total-column",
         "value": "1024px"
       },
       {
         "name": "page-narrow",
         "value": "1100px"
+      },
+      {
+        "name": "landing-container",
+        "value": "1180px"
       },
       {
         "name": "page-wide",
@@ -366,7 +384,8 @@
       "**Don't** use the browser's native `title` tooltip.",
       "**Don't** introduce a second blue for anything but links, the active place and focus.",
       "**Don't** set app body text at 16px or headings in a second typeface.",
-      "**Don't** let a value the app does not know render as a zero or a default; a dash or no marker says \"unknown\"."
+      "**Don't** let a value the app does not know render as a zero or a default; a dash or no marker says \"unknown\".",
+      "**Don't** name a season or a point in the calendar on a public page; describe what the tool does. The landing page once named the season in its headline and went stale two weeks into it, and `landing.spec.ts` now fails on a season string."
     ]
   }
 }

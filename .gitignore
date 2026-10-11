@@ -56,3 +56,8 @@ Thumbs.db
 
 # Local test output artifact
 test-output.txt
+
+# Impeccable session artifacts (the surface briefs under .impeccable/surfaces are committed)
+.impeccable/mocks/
+.impeccable/questions/
+.impeccable/review/

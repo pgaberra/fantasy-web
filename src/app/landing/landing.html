@@ -4,53 +4,236 @@
       <a routerLink="/" class="lp-logo" aria-label="SlapStat home">
         <img src="slapstat-logo.png" alt="SlapStat" />
       </a>
-      <nav class="lp-nav-actions">
-        <a routerLink="/login" class="lp-signin">Sign In</a>
+      <nav class="lp-nav-actions" aria-label="Account">
+        <a routerLink="/premium" class="lp-nav-link lp-nav-premium">Premium</a>
+        <a routerLink="/login" class="lp-nav-link">Sign In</a>
         <a routerLink="/register" class="btn btn-primary">Get Started</a>
       </nav>
     </div>
   </header>
 
-  <section class="lp-hero">
-    <div class="lp-container lp-hero-inner">
-      <h1 class="lp-title">
-        Prepare for the upcoming <span class="lp-accent">2026-27</span> NHL fantasy season.
-      </h1>
-      <p class="lp-subtitle">
-        Build a projection for your league and rank every player to your scoring settings. Try the
-        editor, no account required.
-      </p>
-      <div class="lp-cta-row">
-        <a routerLink="/register" class="btn btn-primary btn-lg">Get started, it's free</a>
-        <a routerLink="/login" class="btn btn-secondary btn-lg">Sign in</a>
+  <section class="lp-hero" aria-labelledby="hero-heading">
+    <div class="lp-container lp-hero-grid">
+      <div class="lp-hero-copy">
+        <h1 id="hero-heading" class="lp-title">
+          Your league's scoring. <span class="lp-accent">Your</span> best lineup.
+        </h1>
+        <p class="lp-lede">
+          Type in your league's point values, or import them from {{ platforms }}, and every NHL
+          player is ranked to them. The lineup on this page is filled from that ranking, and it
+          changes the moment a value does.
+        </p>
+        <div class="lp-cta-row">
+          <a routerLink="/register" class="btn btn-primary btn-lg">Get started, it's free</a>
+          <a href="#editor" class="btn btn-secondary btn-lg">Rank every player</a>
+        </div>
       </div>
+      <app-landing-lineup class="lp-hero-card" />
     </div>
 
+    <nav class="lp-container lp-jump" aria-label="Tools on this page">
+      <span class="lp-jump-label">Also on this page</span>
+      @for (tool of tools; track tool.id) {
+        <a class="lp-jump-link" [href]="'#' + tool.id">
+          <app-icon [name]="tool.icon" />
+          {{ tool.name }}
+        </a>
+      }
+    </nav>
+  </section>
+
+  <section id="editor" class="lp-section lp-editor" aria-labelledby="editor-heading">
     <div class="lp-container lp-demo-wrap">
+      <div class="lp-section-head">
+        <h2 id="editor-heading" class="lp-section-title">Every player, ranked to your scoring</h2>
+        <p class="lp-section-sub">
+          This is the real projection editor over the live player pool. Set your scoring settings,
+          switch between points and categories, add or drop columns, and save it with a free
+          account.
+        </p>
+      </div>
       <app-landing-demo />
     </div>
   </section>
 
-  <section class="lp-features">
+  <section class="lp-section lp-tools" aria-labelledby="tools-heading">
     <div class="lp-container">
-      <div class="lp-feature-grid">
-        @for (feature of features; track feature.title) {
-          <article class="lp-feature">
-            <h3 class="lp-feature-title">{{ feature.title }}</h3>
-            <p class="lp-feature-desc">{{ feature.description }}</p>
-          </article>
-        }
+      <div class="lp-section-head">
+        <h2 id="tools-heading" class="lp-section-title">For the weeks that decide your league</h2>
+        <p class="lp-section-sub">
+          The same scoring settings, read against your own roster, your league's free agents and the
+          other teams.
+        </p>
       </div>
+
+      <article id="streamer-planner" class="lp-stage" aria-labelledby="planner-heading">
+        <div class="lp-stage-copy">
+          <h3 id="planner-heading" class="lp-stage-title">Streamer Planner</h3>
+          <p class="lp-stage-text">
+            Pick the nights, and see which free agents play the most of them on the positions your
+            own lineup still has a spot for, ranked to your league's scoring settings. Weigh a
+            pickup against the player you would drop before you make the move.
+          </p>
+        </div>
+        <div class="lp-panel" aria-label="Streamer Planner, example">
+          <div class="lp-panel-head">
+            <span class="lp-panel-title">Game days</span>
+            <span class="lp-example">Example</span>
+          </div>
+          <div class="lp-nights">
+            @for (night of exampleWeek; track night.day) {
+              <div class="lp-night" [class.lp-night--off]="night.offNight">
+                <span class="lp-night-day">{{ night.day }}</span>
+                <span class="lp-night-games">{{ night.games }} games</span>
+                @if (night.room.length > 0) {
+                  <span class="lp-night-room">
+                    @for (position of night.room; track position) {
+                      <span class="lp-room-chip">{{ position }}</span>
+                    }
+                  </span>
+                } @else {
+                  <span class="lp-night-full">Full</span>
+                }
+              </div>
+            }
+          </div>
+          <ol class="lp-list">
+            @for (pickup of examplePickups; track pickup.name; let i = $index) {
+              <li class="lp-list-row">
+                <span class="lp-medal" [class.lp-medal--gold]="i === 0">{{ i + 1 }}</span>
+                <app-team-logo class="lp-crest" [team]="pickup.club" />
+                <span class="lp-list-name">
+                  {{ pickup.name }}
+                  <span class="lp-list-meta">{{ pickup.positions }} · {{ pickup.club }}</span>
+                </span>
+                <span class="lp-list-num">{{ pickup.games }} GP</span>
+                <span class="lp-list-score">{{ pickup.score }}</span>
+              </li>
+            }
+          </ol>
+        </div>
+      </article>
+
+      @if (whosHotEnabled) {
+        <article id="whos-hot" class="lp-stage lp-stage--flip" aria-labelledby="hot-heading">
+          <div class="lp-stage-copy">
+            <h3 id="hot-heading" class="lp-stage-title">Who's Hot</h3>
+            <p class="lp-stage-text">
+              Who has produced the most over the last five, ten or twenty games, in your scoring.
+              Catch a streak before the rest of your league does, and see the slump before it costs
+              you a week.
+            </p>
+          </div>
+          <div class="lp-panel" aria-label="Who's Hot, example">
+            <div class="lp-panel-head">
+              <span class="lp-ranges" aria-hidden="true">
+                <span class="lp-range">Last 5</span>
+                <span class="lp-range lp-range--on">Last 10</span>
+                <span class="lp-range">Last 20</span>
+              </span>
+              <span class="lp-example">Example</span>
+            </div>
+            <ol class="lp-list">
+              @for (player of exampleHot; track player.name; let i = $index) {
+                <li class="lp-list-row">
+                  <span class="lp-rank">{{ i + 1 }}</span>
+                  <app-team-logo class="lp-crest" [team]="player.club" />
+                  <span class="lp-list-name">
+                    {{ player.name }}
+                    <span class="lp-list-meta">{{ player.positions }} · {{ player.club }}</span>
+                  </span>
+                  <span class="lp-list-num">{{ player.games }} GP</span>
+                  <span class="lp-list-score">{{ player.score }}</span>
+                </li>
+              }
+            </ol>
+          </div>
+        </article>
+      }
+
+      <article id="team-power-rankings" class="lp-stage" aria-labelledby="rankings-heading">
+        <div class="lp-stage-copy">
+          <h3 id="rankings-heading" class="lp-stage-title">Team Power Rankings</h3>
+          <p class="lp-stage-text">
+            Every team in your league ranked on projected performance for the rest of the way,
+            category by category, with your own projection or ours. Know where you really stand
+            before the standings tell you.
+          </p>
+        </div>
+        <div class="lp-panel" aria-label="Team Power Rankings, example">
+          <div class="lp-panel-head">
+            <span class="lp-panel-title">Rank by: AI projection</span>
+            <span class="lp-example">Example</span>
+          </div>
+          <ol class="lp-list lp-list--teams">
+            @for (team of exampleTeams; track team.name; let i = $index) {
+              <li class="lp-list-row">
+                <span class="lp-rank">{{ i + 1 }}</span>
+                <span class="lp-list-name">
+                  {{ team.name }}
+                  @if (team.you) {
+                    <span class="lp-you">You</span>
+                  }
+                </span>
+                <span class="lp-list-score">{{ team.score }}</span>
+              </li>
+            }
+          </ol>
+        </div>
+      </article>
     </div>
   </section>
 
-  <section class="lp-final">
+  <section id="draft-day" class="lp-section lp-draft" aria-labelledby="draft-heading">
+    <div class="lp-container">
+      <div class="lp-section-head">
+        <h2 id="draft-heading" class="lp-section-title">Draft day, covered</h2>
+        <p class="lp-section-sub">
+          From your league's settings to the last pick, and the projection travels with you.
+        </p>
+      </div>
+      <dl class="lp-draft-list">
+        @for (tool of draftTools; track tool.title) {
+          <div class="lp-draft-item">
+            <dt class="lp-draft-title">
+              <app-icon [name]="tool.icon" [size]="20" />
+              {{ tool.title }}
+            </dt>
+            <dd class="lp-draft-desc">{{ tool.description }}</dd>
+          </div>
+        }
+      </dl>
+    </div>
+  </section>
+
+  @if (aiProjectionServed()) {
+    <section class="lp-section lp-premium" aria-labelledby="premium-heading">
+      <div class="lp-container lp-premium-inner">
+        <div class="lp-premium-copy">
+          <h2 id="premium-heading" class="lp-premium-title">
+            Every player projected for the whole season
+            <span class="premium-badge">
+              <app-icon name="sparkles" size="0.85em" />
+              Premium
+            </span>
+          </h2>
+          <p class="lp-premium-text">
+            Our AI projection covers every skater and goalie and is updated as ice time and line
+            assignments change. Open it in the editor, draft with it, or let it rank your pickups.
+          </p>
+        </div>
+        <a routerLink="/premium" class="btn btn-lg lp-btn-gold">See Premium</a>
+      </div>
+    </section>
+  }
+
+  <section class="lp-final" aria-labelledby="final-heading">
     <div class="lp-container lp-final-inner">
-      <h2 class="lp-final-title">Build your rankings.</h2>
+      <h2 id="final-heading" class="lp-final-title">Your league. Your scoring. Your edge.</h2>
       <p class="lp-final-sub">
-        Create a free account to save your projections and use them on draft day.
+        Create a free account to save your projection and open every tool above.
       </p>
-      <a routerLink="/register" class="btn btn-lg lp-btn-invert">Get started</a>
+      <a routerLink="/register" class="btn btn-lg lp-btn-invert">Get started, it's free</a>
     </div>
   </section>
 </div>

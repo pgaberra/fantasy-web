@@ -1,0 +1,102 @@
+<section class="lineup" aria-labelledby="lineup-heading">
+  <div class="lineup-head">
+    <h2 id="lineup-heading" class="lineup-title">Best lineup by your scoring</h2>
+    <div class="segmented" role="group" aria-label="League type">
+      <button
+        type="button"
+        [attr.aria-pressed]="scoringType() === 'points'"
+        (click)="selectScoringType('points')"
+      >
+        Points
+      </button>
+      <button
+        type="button"
+        [attr.aria-pressed]="scoringType() === 'category'"
+        (click)="selectScoringType('category')"
+      >
+        Category
+      </button>
+    </div>
+  </div>
+
+  <!-- Text fields rather than number fields, as the editor's weight row: Chromium prints a number
+       field in the machine's locale, and 4.5 came out as 4,5 beside a table that prints 4.5. -->
+  <div class="lineup-weights" role="group" aria-label="Point values">
+    @for (key of weightKeys; track key) {
+      <label class="weight">
+        <span class="weight-label">{{ key | statLabel }}</span>
+        <input
+          class="weight-input"
+          type="text"
+          inputmode="decimal"
+          autocomplete="off"
+          [value]="weight(key)"
+          (input)="setWeight(key, $event)"
+        />
+      </label>
+    }
+  </div>
+
+  @if (error(); as failure) {
+    <app-error-state
+      title="Couldn't load the player pool"
+      message="We couldn't load the players. Check your connection and try again."
+      [error]="failure"
+      (retry)="retry()"
+    />
+  } @else {
+    <table class="lineup-table" [class.lineup-table--pending]="pending()">
+      <thead>
+        <tr>
+          <th class="col-slot" scope="col">Slot</th>
+          <th class="col-player" scope="col">Player</th>
+          <th class="col-num" scope="col">GP</th>
+          <th class="col-score" scope="col">{{ scoreHeading() }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of lineup(); track $index; let index = $index) {
+          <tr class="lineup-row" [class.lineup-row--changed]="changed().has(index)">
+            <td class="col-slot">
+              <span [class]="'slot-chip pos--' + row.slot.toLowerCase()">{{ row.slot }}</span>
+            </td>
+            @if (row.player; as player) {
+              <td class="col-player">
+                <span class="player-name">{{ player.name }}</span>
+                <span class="player-meta">
+                  <app-position-chips [positions]="positionsOf(player)" />
+                  @if (player.teamAbbrev) {
+                    <span class="player-club">{{ player.teamAbbrev }}</span>
+                  }
+                  <span class="player-line">{{ lineOf(player) }}</span>
+                </span>
+              </td>
+              <td class="col-num">{{ row.gp }}</td>
+              <td class="col-score">{{ formatScore(row) }}</td>
+            } @else {
+              <td class="col-player">
+                <span class="pending-bar pending-bar--name" aria-hidden="true"></span>
+                <span class="pending-bar pending-bar--meta" aria-hidden="true"></span>
+                @if (loading()) {
+                  <span class="sr-only">Loading the player pool</span>
+                }
+              </td>
+              <td class="col-num">
+                <span class="pending-bar pending-bar--num" aria-hidden="true"></span>
+              </td>
+              <td class="col-score">
+                <span class="pending-bar pending-bar--num" aria-hidden="true"></span>
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+
+  <p class="lineup-foot">
+    Filled from the real player pool, every player's own line. Edit a value above and watch the
+    slots change.
+    <noscript>The slots fill once the page runs; this reader does not run it.</noscript>
+  </p>
+</section>

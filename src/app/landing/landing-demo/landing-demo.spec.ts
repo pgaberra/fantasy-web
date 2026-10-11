@@ -6,6 +6,7 @@ import { LandingDemoComponent } from './landing-demo';
 import { FullSeasonDialogComponent } from '../../draft-projection/full-season-dialog/full-season-dialog';
 import { PlayerProjectionsTableComponent } from '../../draft-projection/player-projections-table/player-projections-table';
 import { PlayerService } from '../../services/player.service';
+import { LandingPlayersService } from '../landing-players.service';
 import { StatInfoService } from '../../services/stat-info.service';
 import { PendingProjectionService } from '../../services/pending-projection.service';
 import { ProjectionSerializerService } from '../../services/projection-serializer.service';
@@ -40,6 +41,7 @@ describe('LandingDemoComponent', () => {
       .mock(PlayerProjectionsTableComponent)
       .mock(FullSeasonDialogComponent)
       .mock(PlayerService, { getPlayers })
+      .keep(LandingPlayersService)
       .mock(PendingProjectionService, { stash })
       .keep(StatInfoService)
       .keep(ProjectionSerializerService)
