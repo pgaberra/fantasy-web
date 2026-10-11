@@ -198,7 +198,7 @@ describe('StartingPointPreviewComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(seed).toHaveBeenCalledWith({ skaterLimit: 25, goalieLimit: 1 });
+    expect(seed).toHaveBeenCalledWith({ skaterLimit: 25, goalieLimit: 1, source: 'model' });
     // The model's order, which is the reverse of last season's.
     expect(
       previewOf(fixture)
@@ -466,6 +466,34 @@ describe('StartingPointPreviewComponent', () => {
         ).toEqual(editorOrder('category'));
       });
 
+      /** The rest of the season is the same board at another length, so it is previewed the same way. */
+      it("ranks the rest of the season's own board under that preset", async () => {
+        const fixture = render({ source: { kind: 'preset', preset: 'rest_of_season' } });
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(modelBoard).toHaveBeenCalledWith('rest_of_season');
+        expect(
+          previewOf(fixture)
+            .previewRows()
+            .map((row) => row.player.name),
+        ).toEqual(editorOrder('points'));
+        expect(fixture.nativeElement.querySelector('.preview-note').textContent).toContain(
+          'Data © MoneyPuck.com',
+        );
+        expect(seed).not.toHaveBeenCalled();
+      });
+
+      it('asks for the other board when the pick moves between the two AI presets', async () => {
+        const fixture = render({ source: { kind: 'preset', preset: 'model' } });
+        await fixture.whenStable();
+        fixture.componentInstance.source = { kind: 'preset', preset: 'rest_of_season' };
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        expect(modelBoard.mock.calls).toEqual([['model'], ['rest_of_season']]);
+      });
+
       it('asks for the board afresh each time the preset is picked, never from a copy', async () => {
         const fixture = render({ source: { kind: 'preset', preset: 'model' } });
         await fixture.whenStable();
@@ -516,6 +544,20 @@ describe('StartingPointPreviewComponent', () => {
           'Third Player',
           'Second Player',
         ]);
+        expect(modelBoard).not.toHaveBeenCalled();
+      });
+
+      it("asks for the rest of the season's top under that preset, as narrowly", async () => {
+        const fixture = render({ source: { kind: 'preset', preset: 'rest_of_season' } });
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(seed).toHaveBeenCalledWith({
+          skaterLimit: 25,
+          goalieLimit: 1,
+          source: 'rest_of_season',
+        });
+        expect(previewOf(fixture).previewRows()).toHaveLength(5);
         expect(modelBoard).not.toHaveBeenCalled();
       });
 

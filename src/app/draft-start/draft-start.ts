@@ -17,14 +17,12 @@ import { ProjectionStorageService } from '../services/projection-storage.service
 import { NotificationService } from '../services/notification.service';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
 import { Preset, presetById, PRESETS } from '../models/preset';
-import { REST_OF_SEASON_PRESET_SOURCE } from '../models/ai-projection';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { RelativeTimePipe } from '../pipes/relative-time.pipe';
 import { PopoverTriggerDirective } from '../shared/popover/popover-trigger.directive';
 import { OpenPopovers } from '../shared/popover/open-popovers';
 import { ShareImportComponent } from '../shared/share-import/share-import';
-import { FeatureService } from '../services/feature.service';
 import { RestOfSeasonService } from '../services/rest-of-season.service';
 import { AiProjectionAccess } from '../shared/premium/ai-projection-access';
 import { isFollowedBoard, isOwnBoard, SOURCE_KINDS, SourceKind } from '../models/source-kind';
@@ -79,7 +77,6 @@ export class DraftStartComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly aiAccess = inject(AiProjectionAccess);
-  private readonly features = inject(FeatureService);
   private readonly restOfSeason = inject(RestOfSeasonService);
   private readonly openPopovers = inject(OpenPopovers);
 
@@ -92,13 +89,7 @@ export class DraftStartComponent {
    * it serves the AI projection, and a row that starts a draft the server will not seed is worse
    * than no row. The rest of the season is there only while a season is under way.
    */
-  readonly presets = computed(() =>
-    this.features
-      .offeredPresets(PRESETS)
-      .filter(
-        (preset) => preset.source !== REST_OF_SEASON_PRESET_SOURCE || this.restOfSeason.available(),
-      ),
-  );
+  readonly presets = computed(() => this.restOfSeason.offeredPresets(PRESETS));
 
   readonly sourcesResource = rxResource({
     stream: () => this.storage.listAll(),
