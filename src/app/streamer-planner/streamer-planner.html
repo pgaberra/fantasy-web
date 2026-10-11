@@ -266,8 +266,9 @@
               Fit to my roster
             </label>
             <!-- The games only a drop opens, counted for everyone at once rather than a row at a
-                 time, so the order and the figures always say the same thing. -->
-            @if (fitMyTeam()) {
+                 time, so the order and the figures always say the same thing. Offered only when a
+                 counted night has something a drop opens, since otherwise it would change nothing. -->
+            @if (fitMyTeam() && dropOpensCountedNight()) {
               <label class="fit-toggle fit-toggle--drops">
                 <input type="checkbox" [checked]="countDrops()" (change)="toggleCountDrops()" />
                 Include games a drop would open

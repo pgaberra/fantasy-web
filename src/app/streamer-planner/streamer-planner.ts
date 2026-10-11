@@ -595,8 +595,13 @@ export class StreamerPlannerComponent {
     this.countDrops.update((count) => !count);
   }
 
-  /** Counted, and only while the ranking follows the room: without it there is nothing to open. */
-  readonly dropsCounted = computed(() => this.fitMyTeam() && this.countDrops());
+  /**
+   * Counted, and only while the ranking follows the room and a counted night has something a drop
+   * opens: without either there is nothing to open.
+   */
+  readonly dropsCounted = computed(
+    () => this.fitMyTeam() && this.dropOpensCountedNight() && this.countDrops(),
+  );
 
   room(day: PlannerDay): NightRoom | undefined {
     return day.games > 0 ? this.rooms()?.get(day.date) : undefined;
@@ -665,6 +670,16 @@ export class StreamerPlannerComponent {
   readonly hasOpenRoom = computed(() =>
     this.days().some((day) => (this.room(day)?.fits.size ?? 0) > 0),
   );
+
+  /**
+   * Whether a drop opens anything on a night that is counted. Without one, counting a drop's games
+   * would change nothing in the list, so the box that does it is not offered. Hidden, not reset:
+   * counting a night a drop opens brings it back as the reader left it.
+   */
+  readonly dropOpensCountedNight = computed(() => {
+    const counted = this.counted();
+    return this.days().some((day) => counted.has(day.date) && this.dropRoom(day) !== undefined);
+  });
 
   /** Whether any day on screen has room only through a drop, so the line under them says what yellow means. */
   readonly hasDropRoom = computed(() =>
