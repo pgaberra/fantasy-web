@@ -53,9 +53,6 @@
         </div>
       }
     </div>
-    @if (expandable()) {
-      <span class="lp-hint">Tap a team to expand its players</span>
-    }
   </div>
 
   <div class="lp-wrap" #scrollWrap [class.has-more]="canScrollRight()" (scroll)="onScroll()">
