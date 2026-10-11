@@ -2,7 +2,7 @@
   {
     "path": "team-power-rankings",
     "title": "Team Power Rankings - SlapStat",
-    "description": "Every team in your fantasy hockey league ranked on projected stats, category by category and position by position.",
+    "description": "See how the teams in your league stack up against each other using our AI projection or a projection of your own.",
     "image": "og/team-power-rankings.png",
     "imageAlt": "SlapStat Team Power Rankings: a league's teams ranked by projected category scores"
   }
