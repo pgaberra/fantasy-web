@@ -68,6 +68,7 @@
                   @if (player.teamAbbrev) {
                     <span class="player-club">{{ player.teamAbbrev }}</span>
                   }
+                  <span class="player-line">{{ lineOf(player) }}</span>
                 </span>
               </td>
               <td class="col-num">{{ row.gp }}</td>
@@ -96,5 +97,6 @@
   <p class="lineup-foot">
     Filled from the real player pool, every player's own line. Edit a value above and watch the
     slots change.
+    <noscript>The slots fill once the page runs; this reader does not run it.</noscript>
   </p>
 </section>

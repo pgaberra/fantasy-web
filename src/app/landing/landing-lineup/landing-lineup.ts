@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { LandingPlayersService } from '../landing-players.service';
 import { ProjectionRankingService } from '../../services/projection-ranking.service';
-import { StatLabelPipe } from '../../pipes/stat-label.pipe';
+import { STAT_LABELS, StatLabelPipe } from '../../pipes/stat-label.pipe';
 import { ScoringType } from '../../models/projection.model';
 import { ScoringStatKey } from '../../models/stat-key.model';
 import { Player } from '../../models/player.model';
@@ -142,6 +142,18 @@ export class LandingLineupComponent {
       return '';
     }
     return this.scoringType() === 'points' ? row.score.toFixed(1) : row.score.toFixed(2);
+  }
+
+  /**
+   * The figures the row's total is made of, in the weights row's order, so a changed weight has a
+   * visible cause: set goals to nothing and the 48 G beside the name is what stopped counting.
+   */
+  protected lineOf(player: Player): string {
+    const scoring = player.stats.scoring as Record<string, number | undefined>;
+    return LINEUP_WEIGHT_KEYS.flatMap((key) => {
+      const value = scoring[key];
+      return value === undefined ? [] : [`${Math.round(value)} ${STAT_LABELS[key]}`];
+    }).join(' · ');
   }
 
   protected positionsOf(player: Player): readonly string[] {

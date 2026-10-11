@@ -60,7 +60,7 @@ describe('LandingComponent', () => {
     const jumps = Array.from(el.querySelectorAll('.lp-jump-link')).map((a) =>
       a.getAttribute('href'),
     );
-    expect(jumps).toEqual(['#streamer-planner', '#whos-hot', '#team-power-rankings', '#draft-day']);
+    expect(jumps).toEqual(['#streamer-planner', '#whos-hot', '#team-power-rankings']);
   });
 
   it("drops Who's Hot when the build switches the page off", async () => {

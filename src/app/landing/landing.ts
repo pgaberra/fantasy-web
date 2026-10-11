@@ -7,7 +7,7 @@ import { IconComponent, IconName } from '../shared/icon/icon';
 import { TeamLogoComponent } from '../shared/team-logo/team-logo';
 import { environment } from '../../environments/environment';
 
-/** A tool named in the jump strip under the hero and headed further down the page. */
+/** A tool named in the jump strip under the hero, each with a working panel further down. */
 interface ToolLink {
   readonly id: string;
   readonly icon: IconName;
@@ -86,7 +86,6 @@ export class LandingComponent {
     { id: 'streamer-planner', icon: 'calendar-days', name: 'Streamer Planner' },
     ...(this.whosHotEnabled ? [{ id: 'whos-hot', icon: 'flame' as const, name: "Who's Hot" }] : []),
     { id: 'team-power-rankings', icon: 'trophy', name: 'Team Power Rankings' },
-    { id: 'draft-day', icon: 'clipboard-list', name: 'Draft Mode' },
   ];
 
   /*

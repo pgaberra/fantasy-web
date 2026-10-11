@@ -240,7 +240,8 @@
   color: var(--color-primary-contrast);
 }
 
-/* Who's Hot's range pills, as the page draws them. */
+/* Who's Hot's range presets, as that page draws them (game-range-selector.css: the active preset
+   is a filled navy pill, not the segmented control's white one). */
 .lp-ranges {
   display: inline-flex;
   gap: var(--space-1);
