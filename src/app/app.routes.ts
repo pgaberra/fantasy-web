@@ -1,6 +1,7 @@
 import { RedirectFunction, Router, Routes } from '@angular/router';
 import { inject } from '@angular/core';
 import { landingRedirectGuard } from './guards/landing-redirect.guard';
+import { environment } from '../environments/environment';
 import { adminGuard } from './guards/admin.guard';
 import { authGuard } from './guards/auth.guard';
 import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
@@ -37,7 +38,14 @@ const toRefundTerms: RedirectFunction = () =>
 export const routes: Routes = [
   {
     path: '',
-    loadComponent: () => import('./landing/landing').then((m) => m.LandingComponent),
+    // The rewritten landing page (The Lineup Card) sits behind NEW_LANDING_ENABLED so an
+    // environment can switch it off; off, the page as it shipped before the rewrite is served.
+    loadComponent: () =>
+      environment.newLandingEnabled
+        ? import('./landing/landing').then((m) => m.LandingComponent)
+        : import('./landing/classic-landing/classic-landing').then(
+            (m) => m.ClassicLandingComponent,
+          ),
     canActivate: [landingRedirectGuard],
     data: { [INDEXABLE]: true },
   },
