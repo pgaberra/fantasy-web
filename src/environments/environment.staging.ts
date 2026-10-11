@@ -41,4 +41,7 @@ export const environment = {
   tiersEnabled: false,
   // Off for local staging runs; the deployed builds set it via the SHARED_NOTICE_ENABLED build arg.
   sharedNoticeEnabled: false,
+  // The rewritten landing page (The Lineup Card). Off by default; deployed builds turn it on with
+  // the NEW_LANDING_ENABLED=true build arg.
+  newLandingEnabled: false,
 };
