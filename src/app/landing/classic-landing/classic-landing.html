@@ -1,0 +1,56 @@
+<div class="landing">
+  <header class="lp-nav">
+    <div class="lp-container lp-nav-inner">
+      <a routerLink="/" class="lp-logo" aria-label="SlapStat home">
+        <img src="slapstat-logo.png" alt="SlapStat" />
+      </a>
+      <nav class="lp-nav-actions">
+        <a routerLink="/login" class="lp-signin">Sign In</a>
+        <a routerLink="/register" class="btn btn-primary">Get Started</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="lp-hero">
+    <div class="lp-container lp-hero-inner">
+      <h1 class="lp-title">
+        Prepare for the upcoming <span class="lp-accent">2026-27</span> NHL fantasy season.
+      </h1>
+      <p class="lp-subtitle">
+        Build a projection for your league and rank every player to your scoring settings. Try the
+        editor, no account required.
+      </p>
+      <div class="lp-cta-row">
+        <a routerLink="/register" class="btn btn-primary btn-lg">Get started, it's free</a>
+        <a routerLink="/login" class="btn btn-secondary btn-lg">Sign in</a>
+      </div>
+    </div>
+
+    <div class="lp-container lp-demo-wrap">
+      <app-landing-demo />
+    </div>
+  </section>
+
+  <section class="lp-features">
+    <div class="lp-container">
+      <div class="lp-feature-grid">
+        @for (feature of features; track feature.title) {
+          <article class="lp-feature">
+            <h3 class="lp-feature-title">{{ feature.title }}</h3>
+            <p class="lp-feature-desc">{{ feature.description }}</p>
+          </article>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="lp-final">
+    <div class="lp-container lp-final-inner">
+      <h2 class="lp-final-title">Build your rankings.</h2>
+      <p class="lp-final-sub">
+        Create a free account to save your projections and use them on draft day.
+      </p>
+      <a routerLink="/register" class="btn btn-lg lp-btn-invert">Get started</a>
+    </div>
+  </section>
+</div>
