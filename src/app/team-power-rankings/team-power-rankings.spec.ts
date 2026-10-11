@@ -614,7 +614,9 @@ describe('TeamPowerRankingsComponent', () => {
     const fixture = await render();
     expect(fixture.nativeElement.querySelector('.kind-empty')).toBeNull();
     const statuses = Array.from(
-      fixture.nativeElement.querySelectorAll('.picker-wide') as NodeListOf<HTMLElement>,
+      fixture.nativeElement.querySelectorAll(
+        '.league-picker > :not(.picker-field)',
+      ) as NodeListOf<HTMLElement>,
     ).map((line) => line.textContent ?? '');
     expect(statuses.join(' ')).not.toContain('projection');
   });

@@ -207,7 +207,7 @@
       </div>
 
       @if (boardsFailed()) {
-        <p class="picker-status picker-wide" role="status">
+        <p class="picker-status" role="status">
           Couldn't load your projections, so only ours are offered. Reload the page to try again.
         </p>
       }
@@ -215,11 +215,9 @@
 
     @if (platform() !== 'espn' && picker.error(); as message) {
       @if (sharedNotice) {
-        <app-notice class="picker-wide" tone="error" variant="inline" role="alert">{{
-          message
-        }}</app-notice>
+        <app-notice tone="error" variant="inline" role="alert">{{ message }}</app-notice>
       } @else {
-        <p class="picker-error picker-wide" role="alert">
+        <p class="picker-error" role="alert">
           <app-icon name="alert-triangle" [size]="14" />{{ message }}
         </p>
       }
