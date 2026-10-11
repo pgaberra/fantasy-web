@@ -44,11 +44,11 @@
         @case (false) {
           <button
             type="button"
-            class="btn btn-primary btn-sm"
+            class="btn btn-secondary btn-sm"
             [disabled]="picker.connecting()"
             (click)="picker.connect()"
           >
-            <app-yahoo-mark tone="inherit" />
+            <app-yahoo-mark />
             @if (picker.connecting()) {
               <app-loading-indicator variant="inline" label="Connecting" />
             } @else {

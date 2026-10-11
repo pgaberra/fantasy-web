@@ -132,7 +132,11 @@ describe('AdminComponent', () => {
   it('triggers a sync when the sync button is clicked', () => {
     const fixture = MockRender(AdminComponent);
 
-    ngMocks.find<HTMLButtonElement>('.btn-secondary').nativeElement.click();
+    const syncButton = ngMocks
+      .findAll<HTMLButtonElement>('button')
+      .map((b) => b.nativeElement)
+      .find((b) => b.textContent?.includes('Run sync now'));
+    syncButton?.click();
     fixture.detectChanges();
 
     expect(triggerSync).toHaveBeenCalled();
