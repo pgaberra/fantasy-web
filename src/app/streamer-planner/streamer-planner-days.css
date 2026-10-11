@@ -145,9 +145,10 @@
   visibility: hidden;
 }
 
-/* Tapped, not hovered, on a phone: each says it opens something. */
+/* Tapped, not hovered, on a phone: each says it opens something. Only the chips that carry a
+   tip: a green run and a full night have none, so a help cursor there promised nothing. */
 .day-mark,
-.day-room {
+.day-room--drop {
   cursor: help;
 }
 
