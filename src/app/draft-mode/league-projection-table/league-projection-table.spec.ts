@@ -280,8 +280,8 @@ describe('LeagueProjectionTableComponent', () => {
     expect(totalOf('Oettinger')).toBe('—');
     expect(teamRows()[0][3]).toBe('30.00');
 
-    const helpTip = () => fixture.nativeElement.querySelector('.lp-switches app-help-tip');
-    expect(helpTip(), 'the switch comes with its explanation').not.toBeNull();
+    const helpTip = () => fixture.nativeElement.querySelector('.lp-basis app-help-tip');
+    expect(helpTip(), 'the explanation sits with its own switch').not.toBeNull();
 
     switchTo('All games');
     component.setMode('position');
