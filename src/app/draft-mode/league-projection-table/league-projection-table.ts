@@ -72,14 +72,12 @@ export class LeagueProjectionTableComponent {
   readonly notActiveTooltip =
     "Not active: holds no roster spot, and counts only if he is among the team's best";
   readonly notCountedTooltip = "Player not included in the team's total.";
-  readonly teamShareTooltip = 'Points from the games each lineup actually starts its players.';
-  readonly allGamesTooltip = 'Points if every player on the roster started every game.';
   /**
-   * Both bases in one tip beside the switch. The buttons' own tooltips need a hover, and a tap on
-   * either switches the basis instead, so on a phone this icon is the only way to the explanation.
+   * One tip for both bases, beside the switch rather than on its buttons: a tap on a button
+   * switches the basis, so on a phone a per-button tooltip could never be read.
    */
   readonly pointsBasisHelp =
-    'Team share counts each player only for the games his lineup starts him in, so a bench player adds nothing. All games counts every player on the roster for every game, as if each one started them all.';
+    'Team share: only games a player is in the starting lineup. All games: every player, every game.';
 
   readonly mode = signal<BreakdownMode>('category');
   readonly pointsBasis = signal<PointsBasis>('team');

@@ -14,6 +14,14 @@
   gap: var(--space-2);
 }
 
+/* The help tip sits tight against the switch it explains, a wider gap away from the breakdown
+   switch, so it reads as Team share / All games' own and wraps with them on a phone. */
+.lp-basis {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
 .lp-modes {
   display: inline-flex;
   background: var(--color-surface-alt);
