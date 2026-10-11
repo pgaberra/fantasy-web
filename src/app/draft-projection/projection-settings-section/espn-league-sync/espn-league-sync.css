@@ -12,6 +12,19 @@
   background: var(--color-surface-alt);
 }
 
+/* The host's card is the frame. */
+.espn-sync--embedded {
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+/* At the height of the host's other controls, where the host sets one. */
+.espn-sync--embedded .espn-input {
+  box-sizing: border-box;
+  height: var(--control-height, auto);
+}
+
 .espn-sync-row {
   display: flex;
   align-items: center;
