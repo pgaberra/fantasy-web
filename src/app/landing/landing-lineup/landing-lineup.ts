@@ -27,6 +27,9 @@ import {
 import { DEFAULT_DECIMAL_SETTINGS } from '../../draft-projection/projection-settings-section/model';
 import { changedSlots, fillLineup, LINEUP_SLOTS, LINEUP_WEIGHT_KEYS, LineupRow } from './lineup';
 
+/** How many of the weighted figures a skater's line names: what fits beside the name. */
+const LINE_FIGURES = 4;
+
 /** How long a slot whose player changed keeps its highlight: long enough to be noticed, not read. */
 export const HIGHLIGHT_HOLD_MS = 1600;
 
@@ -146,14 +149,18 @@ export class LandingLineupComponent {
 
   /**
    * The figures the row's total is made of, in the weights row's order, so a changed weight has a
-   * visible cause: set goals to nothing and the 48 G beside the name is what stopped counting.
+   * visible cause: set goals to nothing and the 48 Goals beside the name is what stopped counting.
+   * A skater's line stops after four: that is what fits beside the name at the card's width, and
+   * a fifth figure cut mid-number read as a wrong number rather than a dropped one.
    */
   protected lineOf(player: Player): string {
     const scoring = player.stats.scoring as Record<string, number | undefined>;
-    return LINEUP_WEIGHT_KEYS.flatMap((key) => {
-      const value = scoring[key];
-      return value === undefined ? [] : [`${Math.round(value)} ${STAT_LABELS[key]}`];
-    }).join(' · ');
+    return LINEUP_WEIGHT_KEYS.slice(0, LINE_FIGURES)
+      .flatMap((key) => {
+        const value = scoring[key];
+        return value === undefined ? [] : [`${Math.round(value)} ${STAT_LABELS[key]}`];
+      })
+      .join(' · ');
   }
 
   protected positionsOf(player: Player): readonly string[] {
