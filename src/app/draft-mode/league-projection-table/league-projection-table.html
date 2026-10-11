@@ -26,31 +26,31 @@
         </button>
       </div>
       @if (offersPointsBasis()) {
-        <div class="lp-modes" role="tablist" aria-label="Points basis">
-          <button
-            type="button"
-            role="tab"
-            class="lp-mode"
-            [class.active]="pointsBasis() === 'team'"
-            [attr.aria-selected]="pointsBasis() === 'team'"
-            [appTooltip]="teamShareTooltip"
-            (click)="pointsBasis.set('team')"
-          >
-            Team share
-          </button>
-          <button
-            type="button"
-            role="tab"
-            class="lp-mode"
-            [class.active]="pointsBasis() === 'all'"
-            [attr.aria-selected]="pointsBasis() === 'all'"
-            [appTooltip]="allGamesTooltip"
-            (click)="pointsBasis.set('all')"
-          >
-            All games
-          </button>
+        <div class="lp-basis">
+          <div class="lp-modes" role="tablist" aria-label="Points basis">
+            <button
+              type="button"
+              role="tab"
+              class="lp-mode"
+              [class.active]="pointsBasis() === 'team'"
+              [attr.aria-selected]="pointsBasis() === 'team'"
+              (click)="pointsBasis.set('team')"
+            >
+              Team share
+            </button>
+            <button
+              type="button"
+              role="tab"
+              class="lp-mode"
+              [class.active]="pointsBasis() === 'all'"
+              [attr.aria-selected]="pointsBasis() === 'all'"
+              (click)="pointsBasis.set('all')"
+            >
+              All games
+            </button>
+          </div>
+          <app-help-tip label="What Team share and All games count" [text]="pointsBasisHelp" />
         </div>
-        <app-help-tip label="What Team share and All games count" [text]="pointsBasisHelp" />
       }
     </div>
     @if (expandable()) {
