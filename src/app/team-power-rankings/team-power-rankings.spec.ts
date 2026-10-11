@@ -330,7 +330,7 @@ describe('TeamPowerRankingsComponent', () => {
 
     const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
     const options = Array.from(select.options).map((option) => option.textContent?.trim());
-    expect(options).toEqual(['AI projection (rest of season)', 'Last season']);
+    expect(options).toEqual(['AI Projection (Rest of Season)', 'Last Season']);
     expect(fixture.nativeElement.querySelector('.rank-by-choice p')).toBeNull();
   });
 
@@ -342,7 +342,7 @@ describe('TeamPowerRankingsComponent', () => {
 
     expect(fixture.nativeElement.querySelector('app-league-projection-table')).not.toBeNull();
     const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
-    expect(select.options[0].textContent?.trim()).toEqual('AI projection');
+    expect(select.options[0].textContent?.trim()).toEqual('AI Projection');
   });
 
   /** Back to the placeholder is back to nothing on screen, not the last league left standing. */
@@ -458,7 +458,7 @@ describe('TeamPowerRankingsComponent', () => {
     expect(fixture.point.componentInstance.rankByKind()).toEqual('slapstat');
     const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
     const options = Array.from(select.options).map((option) => option.textContent?.trim());
-    expect(options).toEqual(['AI projection', 'Last season']);
+    expect(options).toEqual(['AI Projection', 'Last Season']);
     expect(select.value).toEqual('model');
     // Whose and which are one field: both controls under the one name, and no second label.
     const field = fixture.nativeElement.querySelector('.rank-by-field') as HTMLElement;
