@@ -34,15 +34,17 @@
   color: var(--color-text-muted);
 }
 
-/* The same card the draft setup's Yahoo sync sits in. The choices run left to right in the order
-   they are read, each under its own name, and every control stands at one height on one row, so
-   the three line up at the top and at the bottom. They wrap to a column where there is no room. */
+/* The same card the draft setup's Yahoo sync sits in. The two choices run left to right in the
+   order they are read, each under its own name, and every control stands at one height on one row,
+   so they line up at the top and at the bottom. The league and the rank-by pair stand 2rem apart,
+   four times the room between the pair's own two controls, so the row reads as two choices, not
+   three. They wrap to a column where there is no room. */
 .league-picker {
   --control-height: 2.25rem;
   display: flex;
   align-items: flex-start;
   flex-wrap: wrap;
-  gap: var(--space-3) var(--space-4);
+  gap: var(--space-3) var(--space-6);
   margin-bottom: var(--space-4);
   padding: var(--space-3);
   border: 1px solid var(--color-border);
@@ -85,25 +87,31 @@
   color: var(--color-primary);
 }
 
-/* Whose numbers and which belong together: where the row is too narrow for all three, the pair
-   moves under the league as one, side by side on a row of their own, rather than the dropdown
+/* Whose numbers and which are one choice under one name. Where the row is too narrow for both
+   choices, the pair moves under the league as one, still side by side, rather than the dropdown
    alone sliding under the league and leaving the segments on the right. */
-.rank-by-group {
+.rank-by-field {
+  flex: 1 1 auto;
+  max-width: none;
+}
+
+.rank-by-controls {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-3) var(--space-4);
-  flex: 1 1 auto;
+  gap: var(--space-2);
+  width: 100%;
 }
 
-/* Wide enough for a name, and never narrower: the pair wraps as one before this squeezes. */
-.projection-field {
-  min-width: 14rem;
-}
-
-/* The segments take the width their names need, no more; the dropdowns around them grow. */
-.rank-by-field {
+/* The segments take the width their names need, no more; the dropdown beside them grows, wide
+   enough for a name and never narrower: the pair wraps as one before this squeezes. */
+.rank-by-controls > .segmented {
   flex: 0 0 auto;
-  max-width: none;
+}
+
+.rank-by-choice {
+  flex: 1 1 14rem;
+  min-width: 14rem;
+  max-width: 20rem;
 }
 
 /* The segmented control Draft Mode's start page and the projection list put over the same
@@ -178,19 +186,21 @@
 }
 
 /* A status in a control's place sits where the control's text would. */
-.picker-field > .picker-status {
+.picker-field > .picker-status,
+.rank-by-choice > .picker-status {
   display: inline-flex;
   align-items: center;
   min-height: var(--control-height);
 }
 
 @media (max-width: 640px) {
-  .rank-by-group {
+  .rank-by-controls {
     flex-wrap: wrap;
   }
 
   .picker-field,
-  .rank-by-field {
+  .rank-by-field,
+  .rank-by-choice {
     flex: 1 1 100%;
     max-width: none;
     min-width: 0;

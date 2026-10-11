@@ -458,11 +458,14 @@ describe('TeamPowerRankingsComponent', () => {
     const options = Array.from(select.options).map((option) => option.textContent?.trim());
     expect(options).toEqual(['AI projection', 'Last season']);
     expect(select.value).toEqual('model');
-    // Whose and which are two fields on the league's row, each under its own name.
-    expect(fixture.nativeElement.querySelector('.rank-by-group .rank-by-field')).not.toBeNull();
-    expect(
-      fixture.nativeElement.querySelector('.projection-field .picker-label')?.textContent?.trim(),
-    ).toEqual('Projection');
+    // Whose and which are one field: both controls under the one name, and no second label.
+    const field = fixture.nativeElement.querySelector('.rank-by-field') as HTMLElement;
+    expect(field.querySelector('.segmented')).not.toBeNull();
+    expect(field.querySelector('.rank-by-select')).not.toBeNull();
+    const labels = Array.from(field.querySelectorAll('.picker-label')).map((label) =>
+      label.textContent?.trim(),
+    );
+    expect(labels).toEqual(['Rank by']);
   });
 
   /** There is no button after the kind, so opening one with a board in it ranks by that board. */
@@ -552,11 +555,11 @@ describe('TeamPowerRankingsComponent', () => {
 
     expect(component.boardsFailed()).toBe(true);
     expect(fixture.nativeElement.querySelector('.segmented')).toBeNull();
-    // With no kinds to pick from, the dropdown alone carries the name.
+    // With no kinds to pick from, the dropdown stands alone under the same name.
     expect(fixture.nativeElement.querySelector('#rank-by-label')?.textContent?.trim()).toEqual(
       'Rank by',
     );
-    expect(fixture.nativeElement.querySelector('.rank-by-field')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.rank-by-field .rank-by-select')).not.toBeNull();
     const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
     expect(select.options).toHaveLength(2);
     // A failed list says nothing about what the user has, so no invitation to make a first one.

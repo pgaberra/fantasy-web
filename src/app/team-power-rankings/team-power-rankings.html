@@ -106,21 +106,21 @@
     }
 
     @if (offersRankBy()) {
-      <!-- What the league is ranked against, as two fields on the same row as the league: whose
-           numbers, then which. Each sits under its own name at the dropdown's height, so the three
-           controls share one baseline instead of the dropdown hanging under the segments. Offered
-           with or without a league on screen; changing it re-reads the one that is. Nothing to rank
-           without Yahoo or a draft. -->
-
-      <!-- Whose numbers first: the segmented control Draft Mode's start page puts over the same
-           three kinds. A kind the reader has nothing in says so in its own place, with the door to
-           more, instead of a greyed line in a menu most readers never open past our own numbers.
-           Left out while the list failed, when "none" would be a guess: ours are then the only
-           ones offered, and the dropdown alone carries the name. -->
-      <div class="rank-by-group">
-        @if (!boardsFailed()) {
-          <div class="picker-field rank-by-field">
-            <span class="picker-label" id="rank-by-label">Rank by</span>
+      <!-- What the league is ranked against: one question, answered in two steps — whose numbers,
+           then which of theirs — so one name over both, and the two controls side by side, close
+           enough to read as a pair and set further from the league than from each other. They
+           stand at the dropdown's height on the league's row, so all three share one baseline.
+           Offered with or without a league on screen; changing it re-reads the one that is.
+           Nothing to rank without Yahoo or a draft. -->
+      <div class="picker-field rank-by-field">
+        <span class="picker-label" id="rank-by-label">Rank by</span>
+        <div class="rank-by-controls">
+          <!-- Whose numbers first: the segmented control Draft Mode's start page puts over the
+               same three kinds. A kind the reader has nothing in says so in the dropdown's place,
+               with the door to more, instead of a greyed line in a menu most readers never open
+               past our own numbers. Left out while the list failed, when "none" would be a guess:
+               ours are then the only ones offered. -->
+          @if (!boardsFailed()) {
             <div class="segmented" role="group" aria-labelledby="rank-by-label">
               @for (option of rankByKinds; track option.kind) {
                 <button
@@ -136,77 +136,73 @@
                 </button>
               }
             </div>
-          </div>
-        }
-
-        <div class="picker-field projection-field">
-          <span class="picker-label" [id]="boardsFailed() ? 'rank-by-label' : 'projection-label'">{{
-            boardsFailed() ? 'Rank by' : 'Projection'
-          }}</span>
-
-          @switch (rankByKind()) {
-            @case ('own') {
-              @if (ownBoards().length > 0) {
-                <select
-                  class="picker-select rank-by-select"
-                  aria-label="Which of your projections to rank by"
-                  (change)="selectRankBy($event)"
-                >
-                  @for (board of ownBoards(); track board.id) {
-                    <option
-                      [value]="boardOption(board.id)"
-                      [selected]="isRankedBy(boardOption(board.id))"
-                    >
-                      {{ board.name }}
-                    </option>
-                  }
-                </select>
-              } @else if (ownBoardsEmpty()) {
-                <p class="kind-empty">
-                  None yet. <a routerLink="/projections/new">Create one</a> to rank the league by
-                  your own numbers.
-                </p>
-              } @else {
-                <span class="picker-status"
-                  ><app-loading-indicator variant="inline" label="Loading your projections"
-                /></span>
-              }
-            }
-            @case ('following') {
-              @if (followedBoards().length > 0) {
-                <select
-                  class="picker-select rank-by-select"
-                  aria-label="Which followed projection to rank by"
-                  (change)="selectRankBy($event)"
-                >
-                  @for (board of followedBoards(); track board.id) {
-                    <option
-                      [value]="boardOption(board.id)"
-                      [selected]="isRankedBy(boardOption(board.id))"
-                    >
-                      {{ board.name }}
-                    </option>
-                  }
-                </select>
-              } @else {
-                <p class="kind-empty">You're not following any projections yet.</p>
-              }
-            }
-            @default {
-              <select
-                class="picker-select rank-by-select"
-                aria-label="Which of our projections to rank by"
-                (change)="selectRankBy($event)"
-              >
-                @if (modelOffered()) {
-                  <option value="model" [selected]="isRankedBy('model')">AI projection</option>
-                }
-                <option value="last_season" [selected]="isRankedBy('last_season')">
-                  Last season
-                </option>
-              </select>
-            }
           }
+
+          <div class="rank-by-choice">
+            @switch (rankByKind()) {
+              @case ('own') {
+                @if (ownBoards().length > 0) {
+                  <select
+                    class="picker-select rank-by-select"
+                    aria-label="Which of your projections to rank by"
+                    (change)="selectRankBy($event)"
+                  >
+                    @for (board of ownBoards(); track board.id) {
+                      <option
+                        [value]="boardOption(board.id)"
+                        [selected]="isRankedBy(boardOption(board.id))"
+                      >
+                        {{ board.name }}
+                      </option>
+                    }
+                  </select>
+                } @else if (ownBoardsEmpty()) {
+                  <p class="kind-empty">
+                    None yet. <a routerLink="/projections/new">Create one</a> to rank the league by
+                    your own numbers.
+                  </p>
+                } @else {
+                  <span class="picker-status"
+                    ><app-loading-indicator variant="inline" label="Loading your projections"
+                  /></span>
+                }
+              }
+              @case ('following') {
+                @if (followedBoards().length > 0) {
+                  <select
+                    class="picker-select rank-by-select"
+                    aria-label="Which followed projection to rank by"
+                    (change)="selectRankBy($event)"
+                  >
+                    @for (board of followedBoards(); track board.id) {
+                      <option
+                        [value]="boardOption(board.id)"
+                        [selected]="isRankedBy(boardOption(board.id))"
+                      >
+                        {{ board.name }}
+                      </option>
+                    }
+                  </select>
+                } @else {
+                  <p class="kind-empty">You're not following any projections yet.</p>
+                }
+              }
+              @default {
+                <select
+                  class="picker-select rank-by-select"
+                  aria-label="Which of our projections to rank by"
+                  (change)="selectRankBy($event)"
+                >
+                  @if (modelOffered()) {
+                    <option value="model" [selected]="isRankedBy('model')">AI projection</option>
+                  }
+                  <option value="last_season" [selected]="isRankedBy('last_season')">
+                    Last season
+                  </option>
+                </select>
+              }
+            }
+          </div>
         </div>
       </div>
 
