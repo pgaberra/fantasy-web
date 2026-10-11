@@ -87,15 +87,15 @@ export interface CreatePreset {
  * each says which under its name, as the draft picker's cards do.
  */
 export const CREATE_PRESETS: readonly CreatePreset[] = [
-  { name: "Last season's stats", source: 'default' },
-  { name: 'AI projection', source: 'model', premium: true, meta: 'The whole season' },
+  { name: "Last Season's Stats", source: 'default' },
+  { name: 'AI Projection', source: 'model', premium: true, meta: 'The whole season' },
   {
-    name: 'AI rest of season',
+    name: 'AI Rest of Season',
     source: 'rest_of_season',
     premium: true,
     meta: 'Only the games left to play',
   },
-  { name: 'From scratch', source: 'blank' },
+  { name: 'From Scratch', source: 'blank' },
 ];
 
 /**
