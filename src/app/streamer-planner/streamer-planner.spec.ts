@@ -1008,6 +1008,33 @@ describe('StreamerPlannerComponent', () => {
         expect(planner.dropsCounted()).toBe(false);
       });
 
+      // A box that changes nothing in the list only confuses: with no counted night a drop opens
+      // anything on, it is not offered, and a tick left in it counts nothing.
+      it('offers the drop box only while a counted night has something a drop opens', async () => {
+        const fixture = await render();
+        const planner = fixture.point.componentInstance;
+        const toggles = () =>
+          ngMocks.findAll(fixture, '.free-agents .fit-toggle').map((t) => ngMocks.formatText(t));
+        planner.toggleCountDrops();
+        fixture.detectChanges();
+        expect(planner.dropsCounted()).toBe(true);
+
+        // Both game nights have yellow positions; with neither counted, nothing is left to open.
+        const [first, second] = planner.days().filter((day) => day.games > 0);
+        planner.toggleDay(first);
+        planner.toggleDay(second);
+        fixture.detectChanges();
+        expect(planner.dropOpensCountedNight()).toBe(false);
+        expect(toggles()).toEqual(['Fit to my roster']);
+        expect(planner.dropsCounted()).toBe(false);
+
+        // One of them counted again brings the box back, ticked as it was left.
+        planner.toggleDay(second);
+        fixture.detectChanges();
+        expect(toggles()).toEqual(['Fit to my roster', 'Include games a drop would open']);
+        expect(planner.dropsCounted()).toBe(true);
+      });
+
       it('shows in yellow, in lineup order, the positions a drop would open, one rule a run', async () => {
         const fixture = await render();
         const planner = fixture.point.componentInstance;
