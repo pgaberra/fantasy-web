@@ -207,9 +207,7 @@
                   (change)="selectRankBy($event)"
                 >
                   @if (modelOffered()) {
-                    <option value="model" [selected]="isRankedBy('model')">
-                      {{ restOfSeason() ? 'AI Projection (Rest of Season)' : 'AI Projection' }}
-                    </option>
+                    <option value="model" [selected]="isRankedBy('model')">AI Projection</option>
                   }
                   <option value="last_season" [selected]="isRankedBy('last_season')">
                     Last Season
@@ -230,6 +228,9 @@
   }
 
   @if (loadingRankings()) {
+    @if (leagueName(); as name) {
+      <h2 class="rankings-league">{{ name }}</h2>
+    }
     <app-loading-indicator />
   } @else if (rankingsError()) {
     <app-error-state
@@ -254,6 +255,13 @@
         </p>
       }
     } @else if (leagueProjection(); as projection) {
+      @if (restOfSeason()) {
+        <p class="rankings-note rankings-gap rankings-rest-of-season">
+          <app-icon name="info" [size]="14" />
+          Rest of season: each player counts for what the AI projects over the games left, not a
+          whole season.
+        </p>
+      }
       @if (unprojectedPlayers() > 0) {
         <p class="rankings-note rankings-gap">
           <app-icon name="info" [size]="14" />
