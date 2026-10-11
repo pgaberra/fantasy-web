@@ -85,6 +85,7 @@
                 [disabled]="picker.connecting()"
                 (click)="picker.connect()"
               >
+                <app-yahoo-mark tone="inherit" />
                 @if (picker.connecting()) {
                   <app-loading-indicator variant="inline" label="Connecting" />
                 } @else {

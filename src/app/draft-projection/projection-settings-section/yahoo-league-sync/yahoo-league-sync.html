@@ -30,6 +30,7 @@
             [disabled]="connecting()"
             (click)="connect()"
           >
+            <app-yahoo-mark />
             @if (connecting()) {
               <app-loading-indicator variant="inline" label="Connecting" />
             } @else {

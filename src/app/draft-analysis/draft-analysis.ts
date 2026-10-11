@@ -8,6 +8,7 @@ import { DraftAnalysisService } from '../services/draft-analysis.service';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
+import { YahooMarkComponent } from '../shared/yahoo-mark/yahoo-mark';
 import { TableScrollDirective } from '../shared/table-scroll/table-scroll.directive';
 import { TeamLogoComponent } from '../shared/team-logo/team-logo';
 import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
@@ -42,6 +43,7 @@ import {
     LoadingIndicatorComponent,
     TableScrollDirective,
     TeamLogoComponent,
+    YahooMarkComponent,
   ],
   providers: [YahooLeaguePicker],
   templateUrl: './draft-analysis.html',

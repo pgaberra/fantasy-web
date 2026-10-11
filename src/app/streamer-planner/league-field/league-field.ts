@@ -6,6 +6,7 @@ import {
 } from '../../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
 import { ChosenLeague } from '../../services/league-choice.service';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
+import { YahooMarkComponent } from '../../shared/yahoo-mark/yahoo-mark';
 import { Platform, PlatformTabsComponent } from '../../shared/platform-tabs/platform-tabs';
 import { YahooLeaguePicker } from '../../shared/yahoo-league-picker';
 
@@ -24,7 +25,12 @@ import { YahooLeaguePicker } from '../../shared/yahoo-league-picker';
  */
 @Component({
   selector: 'app-league-field',
-  imports: [EspnLeagueSyncComponent, LoadingIndicatorComponent, PlatformTabsComponent],
+  imports: [
+    EspnLeagueSyncComponent,
+    LoadingIndicatorComponent,
+    PlatformTabsComponent,
+    YahooMarkComponent,
+  ],
   templateUrl: './league-field.html',
   styleUrl: './league-field.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

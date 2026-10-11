@@ -7,3 +7,8 @@
 .mark {
   color: #6001d2;
 }
+
+/* Yahoo's reverse mark, for a dark surface: the text colour of the control around it. */
+.mark--inherit {
+  color: currentColor;
+}

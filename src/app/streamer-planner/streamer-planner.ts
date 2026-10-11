@@ -32,6 +32,7 @@ import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { IconComponent } from '../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
+import { YahooMarkComponent } from '../shared/yahoo-mark/yahoo-mark';
 import { isAllSkaters } from '../models/position.model';
 import { Platform } from '../shared/platform-tabs/platform-tabs';
 import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
@@ -182,6 +183,7 @@ export interface PresetOption {
     LoadingIndicatorComponent,
     TeamSchedulesComponent,
     TooltipDirective,
+    YahooMarkComponent,
   ],
   providers: [YahooLeaguePicker],
   templateUrl: './streamer-planner.html',

@@ -8,6 +8,14 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 export type YahooMarkSize = '0.85rem' | '1.15rem';
 
 /**
+ * Yahoo's purple on a light surface, or the colour of the text around it on a dark one. Yahoo
+ * publishes its mark in both — the purple, and a white reverse for dark backgrounds — and the
+ * purple on the app's navy primary button reaches about 1.5:1, so there the mark takes the
+ * button's own white and follows its hover and disabled states as the label does.
+ */
+export type YahooMarkTone = 'brand' | 'inherit';
+
+/**
  * Yahoo's mark, wherever the app says a league comes from Yahoo.
  *
  * <p>Not an `<app-icon>`: brand marks are their owners' drawings at their owners' colours, and
@@ -26,4 +34,5 @@ export type YahooMarkSize = '0.85rem' | '1.15rem';
 })
 export class YahooMarkComponent {
   readonly size = input<YahooMarkSize>('0.85rem');
+  readonly tone = input<YahooMarkTone>('brand');
 }
