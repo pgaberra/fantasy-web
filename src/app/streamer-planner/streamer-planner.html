@@ -264,6 +264,10 @@
             <label class="fit-toggle">
               <input type="checkbox" [checked]="fitMyTeam()" (change)="toggleFitMyTeam()" />
               Fit to my roster
+              <app-help-tip
+                label="About fitting to my roster"
+                text="Only count games where you have room in your lineup."
+              />
             </label>
             <!-- The games only a drop opens, counted for everyone at once rather than a row at a
                  time, so the order and the figures always say the same thing. Offered only when a
