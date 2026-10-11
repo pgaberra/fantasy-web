@@ -192,7 +192,7 @@ describe('TeamPowerRankingsComponent', () => {
     expect(fixture.nativeElement.querySelector('.rankings-note')?.textContent).toContain(
       'Select a league',
     );
-    expect(fixture.nativeElement.querySelector('.league-picker .btn')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.league-card .btn')).toBeNull();
 
     await choose(fixture, component, '465.l.1');
 
@@ -307,7 +307,7 @@ describe('TeamPowerRankingsComponent', () => {
     const fixture = await render();
     const component = fixture.point.componentInstance;
 
-    expect(fixture.nativeElement.querySelector('.league-picker .btn')?.textContent).toContain(
+    expect(fixture.nativeElement.querySelector('.league-card .btn')?.textContent).toContain(
       'Connect Yahoo account',
     );
     const groups = Array.from(
@@ -321,16 +321,17 @@ describe('TeamPowerRankingsComponent', () => {
     expect(draftCall).toHaveBeenLastCalledWith('d2', 'model');
   });
 
-  /** Mid-season the model's totals cover the games left, and the line under the name says so. */
-  it('says the ranking covers the rest of the season once it is under way', async () => {
+  /** Mid-season the model's totals cover the games left, and the option itself says so. */
+  it('names the rest of the season in the AI projection option once it is under way', async () => {
     yahooLeague.mockReturnValue(of({ ...summary, inSeason: true }));
     const fixture = await render();
     const component = fixture.point.componentInstance;
     await choose(fixture, component, '465.l.1');
 
-    expect(fixture.nativeElement.querySelector('.rankings-source')?.textContent).toContain(
-      'Based on projected performance for the rest of the season.',
-    );
+    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
+    const options = Array.from(select.options).map((option) => option.textContent?.trim());
+    expect(options).toEqual(['AI Projection (Rest of Season)', 'Last Season']);
+    expect(fixture.nativeElement.querySelector('.rank-by-choice p')).toBeNull();
   });
 
   /** Before the first game the totals are a whole season's, so there is nothing to explain. */
@@ -340,7 +341,8 @@ describe('TeamPowerRankingsComponent', () => {
     await choose(fixture, component, '465.l.1');
 
     expect(fixture.nativeElement.querySelector('app-league-projection-table')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('.rankings-source')).toBeNull();
+    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
+    expect(select.options[0].textContent?.trim()).toEqual('AI Projection');
   });
 
   /** Back to the placeholder is back to nothing on screen, not the last league left standing. */
@@ -365,7 +367,7 @@ describe('TeamPowerRankingsComponent', () => {
     expect(component.picker.connected()).toBe(false);
     expect(myLeagues).not.toHaveBeenCalled();
     expect(fixture.nativeElement.querySelector('.picker-select')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.league-picker button')?.textContent).toContain(
+    expect(fixture.nativeElement.querySelector('.league-card .btn')?.textContent).toContain(
       'Connect Yahoo account',
     );
   });
@@ -456,7 +458,7 @@ describe('TeamPowerRankingsComponent', () => {
     expect(fixture.point.componentInstance.rankByKind()).toEqual('slapstat');
     const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
     const options = Array.from(select.options).map((option) => option.textContent?.trim());
-    expect(options).toEqual(['AI projection', 'Last season']);
+    expect(options).toEqual(['AI Projection', 'Last Season']);
     expect(select.value).toEqual('model');
     // Whose and which are one field: both controls under the one name, and no second label.
     const field = fixture.nativeElement.querySelector('.rank-by-field') as HTMLElement;
@@ -617,7 +619,7 @@ describe('TeamPowerRankingsComponent', () => {
     expect(fixture.nativeElement.querySelector('.kind-empty')).toBeNull();
     const statuses = Array.from(
       fixture.nativeElement.querySelectorAll(
-        '.league-picker > :not(.picker-field)',
+        '.picker-card > :not(.picker-field)',
       ) as NodeListOf<HTMLElement>,
     ).map((line) => line.textContent ?? '');
     expect(statuses.join(' ')).not.toContain('projection');
@@ -655,6 +657,31 @@ describe('TeamPowerRankingsComponent', () => {
     fixture = await render();
     expect(fixture.nativeElement.querySelector('.provider-tab')).toBeNull();
     expect(fixture.nativeElement.querySelector('.league-select')).not.toBeNull();
+  });
+
+  /**
+   * Which league, then what to rank it by: two cards under either platform, the platform's tabs in
+   * the league's, and the rank-by card the same whichever tab is open.
+   */
+  it('keeps the league and the rank-by choice in two cards, the tabs in the league card', async () => {
+    const fixture = await render();
+    const root: HTMLElement = fixture.nativeElement;
+    const cards = () => ({
+      league: root.querySelector('.league-card') as HTMLElement,
+      rankBy: root.querySelector('.rank-by-card') as HTMLElement,
+    });
+
+    expect(cards().league.querySelectorAll('.provider-tab')).toHaveLength(2);
+    expect(cards().league.querySelector('.league-select')).not.toBeNull();
+    expect(cards().league.querySelector('.rank-by-select')).toBeNull();
+    expect(cards().rankBy.querySelector('.rank-by-select')).not.toBeNull();
+
+    await chooseEspn(fixture);
+
+    expect(cards().league.querySelectorAll('.provider-tab')).toHaveLength(2);
+    expect(cards().league.querySelector('app-espn-league-sync')).not.toBeNull();
+    expect(cards().league.querySelector('.rank-by-select')).toBeNull();
+    expect(cards().rankBy.querySelector('.rank-by-select')).not.toBeNull();
   });
 
   /**

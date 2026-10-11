@@ -23,22 +23,20 @@
   color: var(--color-primary);
 }
 
+/* The page's one line of explanation sits in a help tip beside the title, not under it. */
 .rankings-head h1 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   margin: 0;
   color: var(--color-primary);
 }
 
-.rankings-lede {
-  margin: var(--space-2) 0 0;
-  max-width: 60ch;
-  color: var(--color-text-muted);
-}
-
-/* The same card the draft setup's Yahoo sync sits in. The two choices stand one under the other in
-   the order they are read, each under its own name and on its own line, at every width: the league
-   is what is ranked, and "Rank by" is how, so they are not three boxes in a row. Every control
-   stands at one height and one width, so the card is a single column with two shared edges. */
-.league-picker {
+/* The same card the draft setup's Yahoo sync sits in, once per question: the league, then what it
+   is ranked by. Both cards have one anatomy, a name over a pill switch over the control it opens, so
+   the rank-by card does not move or change shape when the platform does. Every control stands at
+   one height and one width, so each card is a single column with the other's edges. */
+.picker-card {
   --control-height: 2.25rem;
   display: flex;
   flex-direction: column;
@@ -50,9 +48,23 @@
   background: var(--color-surface-alt);
 }
 
-/* The ESPN card sits over the rank-by choice the way the league dropdown does. */
-.espn-league {
+/* Two answers to one setup sit closer to each other than to the rankings under them. */
+.league-card:has(+ .rank-by-card) {
   margin-bottom: var(--space-3);
+}
+
+/* The platform, then the league on it: as close to each other as the rank-by kinds and their
+   dropdown. The tabs keep their own width; the dropdown and the ESPN form take the column's. */
+.league-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.league-controls > app-espn-league-sync {
+  align-self: stretch;
 }
 
 /* Wide enough for the three kinds' names and counts side by side, so the dropdowns take the
@@ -181,7 +193,7 @@
 }
 
 /* A status in a control's place sits where the control's text would. */
-.picker-field > .picker-status,
+.league-controls > .picker-status,
 .rank-by-choice > .picker-status {
   display: inline-flex;
   align-items: center;
@@ -250,13 +262,6 @@
 
 .rankings-note {
   margin: 0;
-  color: var(--color-text-muted);
-}
-
-/* Under the league's name once the season is under way: the totals cover the games left. */
-.rankings-source {
-  margin: var(--space-1) 0 var(--space-3);
-  font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
 

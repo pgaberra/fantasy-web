@@ -76,8 +76,10 @@ export class LeagueProjectionTableComponent {
    * One tip for both bases, beside the switch rather than on its buttons: a tap on a button
    * switches the basis, so on a phone a per-button tooltip could never be read.
    */
-  readonly pointsBasisHelp =
-    'Team share: only games a player is in the starting lineup. All games: every player, every game.';
+  readonly pointsBasisHelp = [
+    'Team share: Only count games where a player fits in your starting lineup.',
+    'All games: Count all games for each player.',
+  ];
 
   readonly mode = signal<BreakdownMode>('category');
   readonly pointsBasis = signal<PointsBasis>('team');
