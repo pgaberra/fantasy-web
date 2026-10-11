@@ -3,7 +3,8 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { Observable, of, tap } from 'rxjs';
 import { PlayerService } from '../../services/player.service';
 import { ProjectionRankingService } from '../../services/projection-ranking.service';
-import { ProjectionModelService } from '../../services/projection-model.service';
+import { ModelLines, ProjectionModelService } from '../../services/projection-model.service';
+import { MODEL_SOURCES } from '../../models/ai-projection';
 import { ProjectionSerializerService } from '../../services/projection-serializer.service';
 import { ProjectionBoardCache } from '../../services/projection-board-cache';
 import { ProjectionState } from '../../services/projection-serializer';
@@ -205,13 +206,26 @@ export class StartingPointPreviewComponent {
   /** Whether a board is what is picked, which is what the preview downloads a whole pool for. */
   private readonly isBoard = computed(() => this.source()?.kind === 'board');
 
-  /** Whether the AI preset is picked, which is what the model fetch and the note follow. */
-  readonly isModelPreset = computed(() => this.isPreset('model'));
+  /**
+   * Which of the model's lines the picked preset is seeded from — the whole season or the rest
+   * of the one under way — or null under any other starting point. What the model fetches and
+   * the note follow: the two AI presets are the same board at two lengths.
+   */
+  private readonly modelLines = computed<ModelLines | null>(() => {
+    const source = this.source();
+    if (source?.kind !== 'preset' || !MODEL_SOURCES.includes(source.preset)) {
+      return null;
+    }
+    return source.preset as ModelLines;
+  });
+
+  /** Whether one of the AI presets is picked, which is what the model fetch and the note follow. */
+  readonly isModelPreset = computed(() => this.modelLines() !== null);
 
   /**
-   * How the AI preset is previewed for this account: from the whole board Create would write
+   * How an AI preset is previewed for this account: from the whole board Create would write
    * ('board'), from the free teaser ('teaser'), or not yet, while the entitlement is on its way.
-   * Undefined when the AI preset is not picked.
+   * Undefined when no AI preset is picked.
    */
   private readonly modelPreview = computed<'board' | 'teaser' | 'pending' | undefined>(() => {
     if (!this.isModelPreset()) {
@@ -278,8 +292,9 @@ export class StartingPointPreviewComponent {
    * widening it here would take the preview away from everyone who has not paid.
    */
   private readonly modelSeedResource = rxResource({
-    params: () => (this.modelPreview() === 'teaser' ? {} : undefined),
-    stream: () => this.projectionModel.seed(FREE_MODEL_SEED_LIMITS),
+    // Keyed by which lines, so flipping between the two AI presets asks for the other's rows.
+    params: () => this.modelFetch('teaser'),
+    stream: ({ params }) => this.projectionModel.seed({ ...FREE_MODEL_SEED_LIMITS, ...params }),
     defaultValue: undefined as SeededProjectionResponse | undefined,
   });
 
@@ -289,10 +304,16 @@ export class StartingPointPreviewComponent {
    * Create reads the model and the pool afresh too.
    */
   private readonly modelBoardResource = rxResource({
-    params: () => (this.modelPreview() === 'board' ? {} : undefined),
-    stream: () => this.projectionModel.board(),
+    params: () => this.modelFetch('board'),
+    stream: ({ params }) => this.projectionModel.board(params.source),
     defaultValue: undefined as ModelBoardResponse | undefined,
   });
+
+  /** What a model fetch of one kind asks for, or undefined while it is not the kind to make. */
+  private modelFetch(kind: 'board' | 'teaser'): { source: ModelLines } | undefined {
+    const source = this.modelLines();
+    return source !== null && this.modelPreview() === kind ? { source } : undefined;
+  }
 
   /** The picked board as the editor would open it. Null while a preset is picked, or on its way. */
   private readonly boardState = computed<ProjectionState | null>(() => {
@@ -316,6 +337,11 @@ export class StartingPointPreviewComponent {
   }));
   readonly previewScoringType = computed(() => this.previewSettings().scoringType);
   readonly previewStatWeights = computed(() => this.previewSettings().statWeights);
+  /** The league the weights were imported from, which holds them in the weight row. */
+  readonly lockedBy = computed(() => {
+    const league = this.leagueSettings();
+    return league?.yahooSync?.leagueName ?? league?.espnSync?.leagueName ?? null;
+  });
   /**
    * The model's lines are fractional, and at the defaults every one of them would be printed as
    * a whole number — the preview of the AI projection would look exactly like the preview of last

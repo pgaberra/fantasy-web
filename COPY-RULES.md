@@ -16,6 +16,7 @@ unless they refer to something genuinely different.
 | Everything else configured about the league | league settings | league config |
 | The live drafting feature | Draft Mode | draft board mode, live draft |
 | The paid membership | Premium | premium tier, premium plan, Pro plan |
+| A place in a roster or lineup | spot | seat, seats |
 
 ## Spelling and casing
 
@@ -32,9 +33,10 @@ matched case-insensitively.
 | Draft mode | Draft Mode |
 | draft mode | Draft Mode |
 | My projections | My Projections |
+| My drafts | My Drafts |
 
 Navigation and footer links are title case (*Send Feedback*, *Sign In*), and so are the
-names Draft Mode, My Projections and Who's Hot wherever they appear. Buttons, headings and
+names Draft Mode, My Projections, My Drafts and Who's Hot wherever they appear. Buttons, headings and
 labels elsewhere stay sentence case.
 
 ## Phrases to avoid

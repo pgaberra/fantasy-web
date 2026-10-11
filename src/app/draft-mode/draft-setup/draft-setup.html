@@ -1,87 +1,320 @@
 <div class="draft-setup">
-  <h2>Draft setup</h2>
-  <p class="setup-hint">Set the league size and your draft position. You can change these later.</p>
+  <h2 id="draft-setup-title">Draft Settings</h2>
+  @if (leagueOrderPending()) {
+    <p class="setup-hint">
+      Your league hasn't set its draft order yet. Set it below to draft by hand.
+    </p>
+  }
 
-  <app-league-sync
-    class="setup-yahoo"
-    [lastSync]="lastSync()"
-    [lastEspnLeagueId]="lastEspnSync()?.leagueId ?? null"
-    [lastEspnSyncedAt]="lastEspnSync()?.syncedAt ?? null"
-    [lastEspnLeagueName]="lastEspnSync()?.leagueName ?? null"
-    [openOnYahoo]="openOnYahoo()"
-    (yahooSynced)="onYahooSynced($event)"
-    (espnSynced)="onEspnSynced($event)"
-  />
-
-  @if (loadingTeams()) {
-    <app-loading-indicator />
-  } @else {
+  @if (draftName() !== null) {
     <div class="setup-field">
-      <span class="setup-label">Number of teams</span>
-      <div class="stepper">
-        <button
-          type="button"
-          class="stepper-btn"
-          [disabled]="!canRemove()"
-          (click)="removeTeam()"
-          aria-label="Remove a team"
-        >
-          −
-        </button>
-        <span class="stepper-value">{{ numTeams() }}</span>
-        <button
-          type="button"
-          class="stepper-btn"
-          [disabled]="!canAdd()"
-          (click)="addTeam()"
-          aria-label="Add a team"
-        >
-          +
-        </button>
-      </div>
-    </div>
-
-    <div class="setup-field">
-      <label class="setup-label" for="draft-position">Your draft position</label>
-      <select
-        #positionSelect
-        id="draft-position"
-        class="position-select"
-        [class.invalid]="positionMissing()"
-        [attr.aria-invalid]="positionMissing()"
-        [attr.aria-describedby]="positionMissing() ? 'draft-position-error' : null"
-        (change)="onPositionChange($event)"
-      >
-        @if (!draftPositionKnown()) {
-          <option value="" selected disabled>Select</option>
-        }
-        @for (position of positions(); track position) {
-          <option [value]="position" [selected]="draftPositionKnown() && position === myPosition()">
-            {{ position }}
-          </option>
-        }
-      </select>
-      @if (positionMissing()) {
-        <p id="draft-position-error" class="field-error">
-          Choose your draft position to start the draft.
-        </p>
-      } @else if (leagueLoaded() && !draftPositionKnown()) {
-        <p class="field-hint">Unable to fetch your draft position. Please select it manually.</p>
-      }
+      <label class="setup-label" for="draft-name">Draft name</label>
+      <input
+        id="draft-name"
+        class="name-input"
+        type="text"
+        maxlength="100"
+        [value]="nameValue()"
+        (input)="onNameInput($event)"
+      />
     </div>
   }
 
-  <div class="setup-field">
-    <span class="setup-label">Roster slots</span>
-    <app-roster-slots-editor [(rosterSlots)]="editableRosterSlots" />
-  </div>
+  <!-- The league comes first: importing it fills in everything below it, and says how much of
+       that is left to set by hand. -->
+  <section class="setup-section" aria-labelledby="setup-league-heading">
+    <h3 id="setup-league-heading" class="setup-label">League</h3>
+    <!-- The import itself, not a button that opens it: choosing the platform is the first thing
+         the settings ask. -->
+    <app-league-sync
+      [lastSync]="editableLeague().yahooSync"
+      [openOnYahoo]="openImport()"
+      [lastEspnLeagueId]="editableLeague().lastEspnLeagueId"
+      [lastEspnSyncedAt]="editableLeague().espnSync?.syncedAt ?? null"
+      [lastEspnLeagueName]="editableLeague().espnSync?.leagueName ?? null"
+      (yahooSynced)="applyYahoo($event)"
+      (espnSynced)="applyEspn($event)"
+      (disconnected)="disconnect()"
+    />
+
+    @if (linked(); as league) {
+      @if (syncOffered()) {
+        <div class="sync-row" [class.sync-row--on]="syncOn()">
+          <app-toggle-switch
+            [on]="syncOn()"
+            [ariaLabel]="'Sync picks from the ' + league.platform + ' draft'"
+            (toggled)="toggleSync()"
+          />
+          <span class="sync-text">
+            <span class="sync-title" aria-hidden="true">Autosync draft picks</span>
+            <app-help-tip
+              label="What autosync does"
+              text="Automatically update this page with picks from your draft."
+            />
+          </span>
+        </div>
+        @if (syncChecking()) {
+          <p class="sync-status" role="status">
+            <app-loading-indicator
+              variant="inline"
+              [label]="'Checking the ' + league.platform + ' draft'"
+            />
+          </p>
+        } @else if (syncNotice(); as notice) {
+          <p class="sync-status sync-status--warn" role="status">
+            <app-icon name="alert-triangle" [size]="14" />
+            <span>{{ notice }} Name the teams and set the draft order yourself.</span>
+          </p>
+        }
+      } @else if (league.platform === 'ESPN') {
+        <!-- ESPN holds a draft's picks back until it ends, so they can't be synced as they're made:
+             the switch stays, greyed out, and says why beside its name. -->
+        <div class="sync-row sync-row--unavailable">
+          <app-toggle-switch
+            [on]="false"
+            [disabled]="true"
+            ariaLabel="Sync picks from the ESPN draft, not available on ESPN"
+          />
+          <span class="sync-text">
+            <span class="sync-title" aria-hidden="true">Autosync draft picks</span>
+            <span class="sync-unavailable" aria-hidden="true">Not available on ESPN</span>
+          </span>
+        </div>
+      }
+      <!-- A Yahoo league whose draft is not followed here (a finished draft, or the switch off in
+           this environment) shows no switch and no note: there is nothing to sync. -->
+    }
+  </section>
+
+  <section class="setup-section" aria-labelledby="setup-scoring-heading">
+    <h3 id="setup-scoring-heading" class="setup-label">Scoring</h3>
+    <app-league-settings-controls
+      [settings]="editableLeague()"
+      [sizing]="false"
+      [importing]="false"
+      (settingsChange)="setLeague($event)"
+    />
+    @if (scoresByPoints()) {
+      <div class="setup-weights">
+        <app-stat-weights-editor
+          [statWeights]="editableLeague().statWeights"
+          [activeScoringColumns]="editableLeague().activeScoringColumns"
+          [lockedBy]="lockedBy()"
+          (statWeightsChange)="setStatWeights($event)"
+        />
+      </div>
+    } @else {
+      <div class="setup-goalie-min">
+        <span class="setup-sublabel">
+          <label for="min-goalie-games-input">Minimum goalie games</label>
+          <app-help-tip
+            label="What the goalie minimum does"
+            text="Goalies projected below this minimum are ranked last."
+          />
+        </span>
+        <input
+          id="min-goalie-games-input"
+          class="games-input"
+          type="number"
+          min="0"
+          [max]="FULL_SEASON_GAMES"
+          [value]="editableLeague().minGoalieGames"
+          (input)="onMinGoalieGamesInput($event)"
+        />
+      </div>
+    }
+  </section>
+
+  <section class="setup-section setup-section--last" aria-labelledby="setup-teams-heading">
+    <h3 id="setup-teams-heading" class="setup-label">Teams and roster</h3>
+    @if (locked()) {
+      <p id="setup-locked-note" class="locked-note">
+        <app-icon name="lock" [size]="14" />
+        <span
+          >Autosync is active. Team and roster settings from
+          <strong>{{ linked()?.name }}</strong> will be applied.</span
+        >
+      </p>
+    } @else if (lockedBy(); as leagueName) {
+      <p id="setup-locked-note" class="locked-note">
+        <app-icon name="lock" [size]="14" />
+        <span
+          >The number of teams and the roster slots come from <strong>{{ leagueName }}</strong
+          >.</span
+        >
+      </p>
+    }
+
+    <div class="setup-pair">
+      <div class="setup-field">
+        <label class="setup-sublabel" for="draft-teams">Number of teams</label>
+        @if (teamsLocked()) {
+          <select
+            id="draft-teams"
+            class="setup-select"
+            disabled
+            aria-describedby="setup-locked-note"
+          >
+            <option selected>{{ numTeams() }}</option>
+          </select>
+        } @else {
+          <select
+            #teamsSelect
+            id="draft-teams"
+            class="setup-select"
+            [class.invalid]="teamsMissing()"
+            [attr.aria-invalid]="teamsMissing()"
+            [attr.aria-describedby]="teamsMissing() ? 'draft-teams-error' : null"
+            (change)="onTeamsChange($event)"
+          >
+            @if (!teamCountKnown()) {
+              <option value="" selected disabled>Select</option>
+            }
+            @for (count of teamCounts(); track count) {
+              <option [value]="count" [selected]="count === numTeams()">{{ count }}</option>
+            }
+          </select>
+        }
+      </div>
+    </div>
+    @if (locked() && leaguePosition() === null) {
+      <app-notice class="order-notice" role="note">
+        Your draft position will be available when the draft starts.
+      </app-notice>
+    }
+    @if (teamsMissing()) {
+      <p id="draft-teams-error" class="field-error">
+        Choose the number of teams in your league to start the draft.
+      </p>
+    }
+
+    <!-- Every team by name, in its draft order, drawn once the size is chosen. The user's seat is
+         the team marked "You", which no team is until the user presses it: a seat nobody chose is
+         never shown as theirs. The handle drags a team, and moves it by keyboard (arrows, Home,
+         End) where dragging is not an option. -->
+    @if (orderShown()) {
+      <div class="setup-field">
+        <span class="setup-sublabel setup-sublabel--tip">
+          <span id="draft-order-label">Draft order</span>
+          <app-help-tip
+            label="How to set the draft order"
+            text="Press You at your draft position. Drag a team by its handle, or focus the handle and use the arrow keys."
+          />
+        </span>
+        <!-- The error takes the hint's place, over the list and beside the first button, which
+             is where Start sends the focus. -->
+        @if (positionMissing()) {
+          <p id="draft-position-error" class="field-error order-hint">
+            Press You at your draft position to start the draft.
+          </p>
+        } @else if (!draftPositionKnown()) {
+          <p class="setup-note order-hint">Press <strong>You</strong> at your draft position.</p>
+        }
+        <ol
+          class="team-list"
+          [class.team-list--marked]="draftPositionKnown()"
+          cdkDropList
+          cdkDropListLockAxis="y"
+          aria-labelledby="draft-order-label"
+          [attr.aria-describedby]="positionMissing() ? 'draft-position-error' : null"
+          (cdkDropListDropped)="drop($event)"
+        >
+          @for (row of rows(); track row.id; let i = $index) {
+            @let mine = row.id === markedId();
+            <li class="team-row" cdkDrag [class.team-row--mine]="mine">
+              <span class="team-pos" aria-hidden="true">{{ i + 1 }}</span>
+              <input
+                type="text"
+                class="team-name"
+                maxlength="64"
+                [value]="row.name"
+                [placeholder]="defaultNames()[i]"
+                [attr.aria-label]="
+                  (mine ? 'Your team, draft position ' : 'Team at draft position ') + (i + 1)
+                "
+                (input)="onTeamNameInput(i, $event)"
+              />
+              @if (teamHasPicks(row.id)) {
+                <span class="team-badge">Drafted</span>
+              }
+              <button
+                type="button"
+                class="team-you"
+                [class.team-you--on]="mine"
+                [attr.aria-pressed]="mine"
+                [attr.aria-label]="'You draft at position ' + (i + 1)"
+                (click)="setMyPosition(i + 1)"
+              >
+                You
+              </button>
+              <button
+                type="button"
+                class="drag-handle"
+                cdkDragHandle
+                [attr.data-team-id]="row.id"
+                [attr.aria-label]="
+                  'Move ' + nameAt(i) + ', position ' + (i + 1) + ' of ' + rows().length
+                "
+                aria-describedby="draft-order-keys"
+                (keydown)="onHandleKeydown($event, row.id)"
+              >
+                <app-icon name="grip-vertical" [size]="16" />
+              </button>
+            </li>
+          }
+        </ol>
+        <p id="draft-order-keys" class="sr-only">
+          Use the arrow keys to move the team up or down the order.
+        </p>
+        <p class="sr-only" aria-live="polite">{{ moveAnnouncement() }}</p>
+      </div>
+    } @else if (leagueOrder(); as teams) {
+      <div class="setup-field">
+        <span class="setup-sublabel" id="draft-order-label">Draft order</span>
+        <ol
+          class="team-list"
+          aria-labelledby="draft-order-label"
+          aria-describedby="setup-locked-note"
+        >
+          @for (team of teams; track team.id; let i = $index) {
+            <li class="team-row" [class.team-row--mine]="team.mine">
+              <span class="team-pos" aria-hidden="true">{{ i + 1 }}</span>
+              <span class="team-name team-name--locked">{{ team.name }}</span>
+              @if (team.mine) {
+                <span class="team-badge team-badge--mine">You</span>
+              }
+            </li>
+          }
+        </ol>
+      </div>
+    }
+
+    <div class="setup-field">
+      <span class="setup-sublabel">Roster slots</span>
+      <app-roster-slots-editor
+        [rosterSlots]="editableLeague().rosterSlots"
+        [disabled]="lockedBy() !== null"
+        (rosterSlotsChange)="setRosterSlots($event)"
+      />
+    </div>
+  </section>
 
   <div class="setup-actions">
-    @if (canCancel()) {
-      <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">Cancel</button>
-    }
-    <button type="button" class="btn btn-primary" (click)="submit()">
-      {{ canCancel() ? 'Save setup' : 'Start draft' }}
+    <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">Cancel</button>
+    <button type="button" class="btn btn-primary" [disabled]="syncChecking()" (click)="submit()">
+      {{ initial() ? 'Save settings' : 'Start draft' }}
     </button>
   </div>
+
+  @if (syncWarning(); as league) {
+    <app-sync-warning-dialog
+      [leagueName]="league.name"
+      subject="draft"
+      change="the draft order"
+      cancelLabel="Go back to the settings"
+      confirmLabel="Save anyway"
+      (confirm)="confirmSyncBreak()"
+      (cancelled)="cancelSyncBreak()"
+    />
+  }
 </div>

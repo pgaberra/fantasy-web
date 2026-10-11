@@ -310,7 +310,7 @@ describe('PlayerRowComponent', () => {
     expect(fanPtsCell.textContent).toContain('500');
   });
 
-  it('should display skater stats and "-" for goalie stats', () => {
+  it('should display skater stats and "—" for goalie stats', () => {
     setInputs();
     const tds = fixture.nativeElement.querySelectorAll('td');
 
@@ -318,11 +318,11 @@ describe('PlayerRowComponent', () => {
     expect(tds[3].querySelector('input')?.value).toEqual('22:00'); // toi
     expect(tds[4].querySelector('input')?.value).toEqual('64'); // goals
     expect(tds[5].querySelector('input')?.value).toEqual('89'); // assists
-    expect(tds[6].textContent.trim()).toEqual('-'); // w
-    expect(tds[7].textContent.trim()).toEqual('-'); // svPct
+    expect(tds[6].textContent.trim()).toEqual('—'); // w
+    expect(tds[7].textContent.trim()).toEqual('—'); // svPct
   });
 
-  it('should display goalie stats and "-" for skater stats', () => {
+  it('should display goalie stats and "—" for skater stats', () => {
     setInputs({
       projection: mockGoalieProjection,
       player: mockGoalie,
@@ -330,9 +330,9 @@ describe('PlayerRowComponent', () => {
     const tds = fixture.nativeElement.querySelectorAll('td');
 
     expect(tds[2].querySelector('input')?.value).toEqual('58'); // gp
-    expect(tds[3].textContent.trim()).toEqual('-'); // toi
-    expect(tds[4].textContent.trim()).toEqual('-'); // goals
-    expect(tds[5].textContent.trim()).toEqual('-'); // assists
+    expect(tds[3].textContent.trim()).toEqual('—'); // toi
+    expect(tds[4].textContent.trim()).toEqual('—'); // goals
+    expect(tds[5].textContent.trim()).toEqual('—'); // assists
     expect(tds[6].querySelector('input')?.value).toEqual('36'); // w
     expect(tds[7].querySelector('input')?.value).toEqual('0.910'); // svPct, set to 3 decimals
   });
@@ -413,7 +413,7 @@ describe('PlayerRowComponent', () => {
     };
 
     setInputs({ activeColumns: defenceColumns });
-    expect(fixture.nativeElement.querySelectorAll('td')[3].textContent.trim()).toEqual('-');
+    expect(fixture.nativeElement.querySelectorAll('td')[3].textContent.trim()).toEqual('—');
 
     setInputs({
       activeColumns: defenceColumns,

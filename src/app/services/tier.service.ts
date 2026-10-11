@@ -226,16 +226,21 @@ export class TierService {
 
   /**
    * How deep to tier: the position's draftable pool with slack. Flex and bench slots are shared
-   * out across the four skater positions, since any of them can fill one.
+   * out across the positions that can fill them: Util and the bench across all four skater
+   * positions, the forward flex (F) across C, LW and RW, and the wing flex (W) across LW and RW.
    */
   private depthFor(position: TierPosition, input: TierInput): number {
-    const roster = input.rosterSlots;
-    const slots =
-      position === 'G'
-        ? roster.g
-        : roster[position.toLowerCase() as 'c' | 'lw' | 'rw' | 'd'] + (roster.util + roster.bn) / 4;
+    const slots = position === 'G' ? input.rosterSlots.g : this.skaterSlotsFor(position, input);
     const pool = input.leagueSize * slots * DEPTH_SLACK;
     return Math.max(MIN_DEPTH, Math.min(MAX_DEPTH, Math.round(pool)));
+  }
+
+  private skaterSlotsFor(position: Exclude<TierPosition, 'G'>, input: TierInput): number {
+    const roster = input.rosterSlots;
+    const own = roster[position.toLowerCase() as 'c' | 'lw' | 'rw' | 'd'];
+    const forwardFlex = position === 'D' ? 0 : roster.f / 3;
+    const wingFlex = position === 'LW' || position === 'RW' ? roster.w / 2 : 0;
+    return own + (roster.util + roster.bn) / 4 + forwardFlex + wingFlex;
   }
 
   /**

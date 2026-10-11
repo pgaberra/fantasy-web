@@ -1,7 +1,11 @@
 import { ProjectionState } from '../../services/projection-serializer';
 import { DraftSettings } from '../../api/models/draft-settings';
 import { ProjectionSettings } from '../../api/models/projection-settings';
-import { DEFAULT_ROSTER_SLOTS } from '../../draft-projection/projection-defaults';
+import {
+  DEFAULT_LEAGUE_SIZE,
+  DEFAULT_MIN_GOALIE_GAMES,
+  DEFAULT_ROSTER_SLOTS,
+} from '../../draft-projection/projection-defaults';
 import { LeagueProjectionSettingsResponse } from '../../api/models/league-projection-settings-response';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../../models/stat-key.model';
 import { YahooSyncResult } from '../../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
@@ -25,20 +29,6 @@ export type LeagueSettings = Pick<
   | 'espnSync'
   | 'lastEspnLeagueId'
 >;
-
-/**
- * Where the draft picker puts the league it set, as `DraftSettings`, in the navigation's history
- * state. Nothing is saved on the picker: the league belongs to the draft, and the draft only
- * exists once the draft page's setup is confirmed. History state rather than a service, so a
- * reload of that setup still has it.
- */
-export const DRAFT_LEAGUE_STATE_KEY = 'draftLeagueSettings';
-
-/** The league set on the draft picker, if the navigation to this page carried one. */
-export function draftLeagueFromHistory(state: unknown = history.state): DraftSettings | null {
-  const league = (state as Record<string, unknown> | null)?.[DRAFT_LEAGUE_STATE_KEY];
-  return league && typeof league === 'object' ? (league as DraftSettings) : null;
-}
 
 /** The league half of a projection's stored settings: what a draft ranks by when it has none. */
 export function draftSettingsFromProjection(settings: ProjectionSettings): DraftSettings {
@@ -69,6 +59,25 @@ export function draftSettingsOf(league: LeagueSettings): DraftSettings {
     ...(league.yahooSync ? { yahooSync: league.yahooSync } : {}),
     ...(league.espnSync ? { espnSync: league.espnSync } : {}),
     ...(league.lastEspnLeagueId ? { lastEspnLeagueId: league.lastEspnLeagueId } : {}),
+  };
+}
+
+/**
+ * A draft's stored league as the league controls edit it: the draft setup is where a draft's
+ * league is set, and it edits with the same controls a board's toolbar uses.
+ */
+export function leagueSettingsFromDraft(settings: DraftSettings): LeagueSettings {
+  return {
+    scoringType: settings.scoringType,
+    statWeights: { ...settings.statWeights } as Record<ScoringStatKey, number>,
+    activeScoringColumns: new Set(settings.activeScoringColumns as ScoringStatKey[]),
+    activeUtilityColumns: new Set(settings.activeUtilityColumns as SkaterUtilityStatKey[]),
+    leagueSize: settings.leagueSize ?? DEFAULT_LEAGUE_SIZE,
+    rosterSlots: { ...settings.rosterSlots },
+    minGoalieGames: settings.minGoalieGames ?? DEFAULT_MIN_GOALIE_GAMES,
+    yahooSync: settings.yahooSync ?? null,
+    espnSync: settings.espnSync ?? null,
+    lastEspnLeagueId: settings.lastEspnLeagueId ?? null,
   };
 }
 

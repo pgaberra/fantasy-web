@@ -1,4 +1,4 @@
-<app-environment-banner [environmentName]="environmentName" [version]="appVersion" />
+<app-lazy-environment-banner [environmentName]="environmentName" [version]="appVersion" />
 @if (!isLandingRoute()) {
   <header class="app-header">
     <div class="app-header-inner">
@@ -20,11 +20,16 @@
             Draft
             <app-icon name="chevron-down" [size]="14" />
           </button>
+          <a routerLink="/team-power-rankings" routerLinkActive="active">Power Rankings</a>
           @if (whosHotEnabled) {
             <a routerLink="/whos-hot" routerLinkActive="active">Who's Hot</a>
           }
-          @if (features.streamerPlanner()) {
-            <a routerLink="/streamer-planner" routerLinkActive="active">Streamer Planner</a>
+          <a routerLink="/streamer-planner" routerLinkActive="active">Streamer Planner</a>
+          @if (features.faScout()) {
+            <a routerLink="/fa-scout" routerLinkActive="active">FA Scout</a>
+          }
+          @if (features.roleChanges()) {
+            <a routerLink="/role-changes" routerLinkActive="active">Role Changes</a>
           }
           <!-- The one link in the header that sells something, and only to an account that has
                not bought it. It used to be an "Account" link to the subscription page, beside an
@@ -74,15 +79,24 @@
       ariaCurrentWhenActive="page"
       >Draft Mode</a
     >
-    @if (features.leagueDraftSync()) {
+    <a
+      class="nav-menu-item nav-menu-item--collapsed"
+      cdkMenuItem
+      routerLink="/team-power-rankings"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+    >
+      Power Rankings
+    </a>
+    @if (features.draftAnalysis()) {
       <a
         class="nav-menu-item"
         cdkMenuItem
-        routerLink="/team-power-rankings"
+        routerLink="/draft-analysis"
         routerLinkActive="active"
         ariaCurrentWhenActive="page"
       >
-        Team Power Rankings
+        Draft Analysis
       </a>
     }
     <a
@@ -105,15 +119,35 @@
         Who's Hot
       </a>
     }
-    @if (features.streamerPlanner()) {
+    <a
+      class="nav-menu-item nav-menu-item--collapsed"
+      cdkMenuItem
+      routerLink="/streamer-planner"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+    >
+      Streamer Planner
+    </a>
+    @if (features.faScout()) {
       <a
         class="nav-menu-item nav-menu-item--collapsed"
         cdkMenuItem
-        routerLink="/streamer-planner"
+        routerLink="/fa-scout"
         routerLinkActive="active"
         ariaCurrentWhenActive="page"
       >
-        Streamer Planner
+        FA Scout
+      </a>
+    }
+    @if (features.roleChanges()) {
+      <a
+        class="nav-menu-item nav-menu-item--collapsed"
+        cdkMenuItem
+        routerLink="/role-changes"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
+      >
+        Role Changes
       </a>
     }
     @if (showsPremiumLink()) {
@@ -180,17 +214,15 @@
     <!-- One Premium item, to the one page: it sells to an account that has not bought Premium
          and manages the subscription of one that has, so there is nothing here to choose
          between, and nothing to get wrong while the plan is still loading. -->
-    @if (paymentsEnabled) {
-      <a
-        class="nav-menu-item"
-        cdkMenuItem
-        routerLink="/premium"
-        routerLinkActive="active"
-        ariaCurrentWhenActive="page"
-      >
-        Premium
-      </a>
-    }
+    <a
+      class="nav-menu-item"
+      cdkMenuItem
+      routerLink="/premium"
+      routerLinkActive="active"
+      ariaCurrentWhenActive="page"
+    >
+      Premium
+    </a>
     <button
       type="button"
       class="nav-menu-item nav-menu-item--signout"
@@ -201,7 +233,7 @@
     </button>
   </div>
 </ng-template>
-<app-unverified-banner />
+<app-lazy-unverified-banner />
 <main class="app-main">
   <router-outlet />
 </main>

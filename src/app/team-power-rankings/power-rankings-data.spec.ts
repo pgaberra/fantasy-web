@@ -8,6 +8,8 @@ const base: LeagueSummaryResponse = {
   scoringType: 'points',
   status: 'FINISHED',
   picks: 2,
+  unprojectedPlayers: 0,
+  inSeason: false,
   categoryKeys: ['goals', 'svPct'],
   positionKeys: ['C', 'G', 'BN'],
   teams: [
@@ -17,13 +19,21 @@ const base: LeagueSummaryResponse = {
       mine: true,
       total: 120.5,
       values: { goals: 90, svPct: 30.5, C: 90, G: 30.5, BN: 0 },
+      fullTotal: 150.5,
+      fullValues: { goals: 120, svPct: 30.5 },
       roster: [
         {
           playerId: 1,
           name: 'A Skater',
+          team: 'EDM',
+          positions: ['C', 'LW'],
           total: 90,
+          fullValue: 120,
           values: { goals: 45 },
           contributions: { goals: 90 },
+          fullContributions: { goals: 120 },
+          reserveSlot: 'NA',
+          counted: true,
         },
       ],
       positionPlayers: { C: [{ name: 'A Skater', value: 90 }], G: [], BN: [] },
@@ -60,8 +70,8 @@ describe('power rankings data', () => {
   });
 
   /**
-   * Without premium the response carries no players at all. The table has to render the team
-   * anyway — the totals are the page — so the halves become empty rather than missing.
+   * A response without players still has to render the team — the totals are the page — so the
+   * halves become empty rather than missing.
    */
   it('renders a team whose players were withheld, with nothing to expand', () => {
     const withheld: LeagueSummaryResponse = {
@@ -84,5 +94,34 @@ describe('power rankings data', () => {
     expect(team.roster[0].values['goals']).toEqual(45);
     expect(team.roster[0].values['svPct']).toBeNull();
     expect(team.roster[0].contributions['svPct']).toBeNull();
+  });
+
+  it('keeps the club and the positions a roster row came with, for the crest and the chips', () => {
+    const row = leagueProjectionFrom(base).teams[0].roster[0];
+
+    expect(row.team).toEqual('EDM');
+    expect(row.positions).toEqual(['C', 'LW']);
+  });
+
+  it('keeps whether a roster row is parked on IR and whether it counts', () => {
+    const row = leagueProjectionFrom(base).teams[0].roster[0];
+
+    expect(row.reserveSlot).toBe('NA');
+    expect(row.counted).toBe(true);
+  });
+
+  it('keeps what a roster row would add if started every game, beside what it does add', () => {
+    const row = leagueProjectionFrom(base).teams[0].roster[0];
+
+    expect(row.total).toBe(90);
+    expect(row.fullValue).toBe(120);
+    expect(row.fullContributions).toEqual({ goals: 120, svPct: null });
+  });
+
+  it('keeps what a team would score were every player started every game', () => {
+    const team = leagueProjectionFrom(base).teams[0];
+
+    expect(team.fullTotal).toBe(150.5);
+    expect(team.fullValues).toEqual({ goals: 120, svPct: 30.5 });
   });
 });

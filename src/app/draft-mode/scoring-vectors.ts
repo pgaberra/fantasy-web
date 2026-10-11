@@ -200,7 +200,36 @@ function picksFor(pool: ScoringVectorPlayer[], teamCount: number, rounds: number
   return teams;
 }
 
-const ROSTER_SLOTS: RosterSlots = { c: 1, lw: 1, rw: 1, d: 1, util: 1, bn: 1, g: 1 };
+const ROSTER_SLOTS: RosterSlots = { c: 1, lw: 1, rw: 1, w: 0, f: 0, d: 1, util: 1, bn: 1, g: 1 };
+
+/** A Yahoo-style lineup with both forward flex slots, where a wing has to take W before F. */
+const FLEX_ROSTER_SLOTS: RosterSlots = {
+  c: 1,
+  lw: 1,
+  rw: 0,
+  w: 1,
+  f: 1,
+  d: 1,
+  util: 0,
+  bn: 1,
+  g: 1,
+};
+
+/**
+ * An ESPN-style lineup with no centre or wing slots at all: forwards start in F, and a defenceman
+ * who misses the D slot may start in Util but never in F.
+ */
+const FORWARDS_ONLY_ROSTER_SLOTS: RosterSlots = {
+  c: 0,
+  lw: 0,
+  rw: 0,
+  w: 0,
+  f: 2,
+  d: 1,
+  util: 1,
+  bn: 1,
+  g: 1,
+};
 
 /** The cases both engines are held to. */
 export function scoringVectorCases(): ScoringVectorCase[] {
@@ -256,6 +285,32 @@ export function scoringVectorCases(): ScoringVectorCase[] {
           'svPct',
         ],
         rosterSlots: ROSTER_SLOTS,
+        leagueSize: 4,
+        minGoalieGames: 25,
+      },
+      pool,
+      teams,
+    },
+    {
+      name: 'wing and forward flex league',
+      league: {
+        scoringType: 'points',
+        statWeights: { goals: 3, assists: 2, sog: 0.4, hits: 0.5, w: 4, ga: -1 },
+        activeScoringColumns: ['goals', 'assists', 'sog', 'hits', 'w', 'ga'],
+        rosterSlots: FLEX_ROSTER_SLOTS,
+        leagueSize: 4,
+        minGoalieGames: 25,
+      },
+      pool,
+      teams,
+    },
+    {
+      name: 'forwards-only category league',
+      league: {
+        scoringType: 'category',
+        statWeights: { goals: 1, assists: 1, hits: 1, blocks: 1, w: 1, svPct: 1 },
+        activeScoringColumns: ['goals', 'assists', 'hits', 'blocks', 'w', 'svPct'],
+        rosterSlots: FORWARDS_ONLY_ROSTER_SLOTS,
         leagueSize: 4,
         minGoalieGames: 25,
       },

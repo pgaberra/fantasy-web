@@ -34,12 +34,15 @@
   color: var(--color-text-muted);
 }
 
-/* The same card the draft setup's Yahoo sync sits in, so the two read as one control in two
-   places rather than two controls. */
-.league-picker {
+/* The same card the draft setup's Yahoo sync sits in, once per question: the league, then what it
+   is ranked by. Both cards have one anatomy, a name over a pill switch over the control it opens, so
+   the rank-by card does not move or change shape when the platform does. Every control stands at
+   one height and one width, so each card is a single column with the other's edges. */
+.picker-card {
+  --control-height: 2.25rem;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-4);
   margin-bottom: var(--space-4);
   padding: var(--space-3);
   border: 1px solid var(--color-border);
@@ -47,15 +50,38 @@
   background: var(--color-surface-alt);
 }
 
-.picker-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-3);
+/* Two answers to one setup sit closer to each other than to the rankings under them. */
+.league-card:has(+ .rank-by-card) {
+  margin-bottom: var(--space-3);
 }
 
-.picker-brand {
+/* The platform, then the league on it: as close to each other as the rank-by kinds and their
+   dropdown. The tabs keep their own width; the dropdown and the ESPN form take the column's. */
+.league-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.league-controls > app-espn-league-sync {
+  align-self: stretch;
+}
+
+/* Wide enough for the three kinds' names and counts side by side, so the dropdowns take the
+   segments' width rather than the segments sticking out past them. */
+.picker-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  width: 22rem;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.picker-label {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -64,22 +90,152 @@
   color: var(--color-primary);
 }
 
-.picker-action,
-.picker-controls {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
 .picker-select {
+  width: 100%;
+  height: var(--control-height);
   font-size: var(--text-sm);
-  padding: var(--space-1) var(--space-2);
+  padding: 0 var(--space-2);
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-primary);
-  max-width: 14rem;
+}
+
+/* Whose numbers and which are one choice under one name: the kinds, then the projection under
+   them, closer to each other than the field is to the league. The kinds' names never wrap, so a
+   count that outgrows the width widens the field rather than squeezing a name; the line an empty
+   kind shows wraps instead. */
+.rank-by-field {
+  min-width: min-content;
+}
+
+.rank-by-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.rank-by-controls > .segmented {
+  display: flex;
+}
+
+/* The segmented control Draft Mode's start page and the projection list put over the same
+   kinds, at the dropdowns' height so it reads as one row with them. Component styles are
+   scoped, so it is repeated rather than imported. */
+.segmented {
+  display: inline-flex;
+  box-sizing: border-box;
+  height: var(--control-height);
+  padding: 2px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.kind {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: baseline;
+  justify-content: center;
+  align-self: stretch;
+  white-space: nowrap;
+  gap: 0.35rem;
+  background: none;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 0 0.9rem;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  line-height: calc(var(--control-height) - 6px);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.kind:focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
+/* The track sits on the picker's grey card, so the picked pill is the alt surface here, with
+   the border and the heavier weight doing the work as on the start page. */
+.kind[aria-pressed='true'] {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border-control);
+  padding: 0 calc(0.9rem - 1px);
+  line-height: calc(var(--control-height) - 8px);
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+  box-shadow: var(--shadow-sm);
+}
+
+.kind-count {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-subtle);
+}
+
+/* What an open kind with nothing in it says, in the dropdown's place and no lower than its top. */
+.kind-empty {
+  margin: 0;
+  min-height: var(--control-height);
+  padding: calc((var(--control-height) - 1.5em) / 2) 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.kind-empty a {
+  color: var(--color-primary);
+  font-weight: var(--weight-medium);
+}
+
+/* A status in a control's place sits where the control's text would. */
+.league-controls > .picker-status,
+.rank-by-choice > .picker-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
+}
+
+@media (max-width: 640px) {
+  .picker-field {
+    width: 100%;
+  }
+
+  .rank-by-field {
+    min-width: 0;
+  }
+
+  .segmented {
+    display: flex;
+    width: 100%;
+  }
+
+  /* Three names across a phone: each on one line, its count under it, inside the same height. */
+  .kind {
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 0 0.3rem;
+    font-size: var(--text-xs);
+    line-height: 1.15;
+  }
+
+  .kind-name {
+    white-space: nowrap;
+  }
+
+  .kind[aria-pressed='true'] {
+    padding: 0 calc(0.3rem - 1px);
+    line-height: 1.15;
+  }
 }
 
 .picker-status {
@@ -100,7 +256,7 @@
 }
 
 .rankings-league {
-  margin: 0 0 var(--space-3);
+  margin: 0;
   font-size: 1.3rem;
   font-weight: var(--weight-semibold);
   color: var(--color-primary);
@@ -111,14 +267,21 @@
   color: var(--color-text-muted);
 }
 
-/* Under the table rather than over it: the totals are the page, and the offer is what the reader
-   meets once they have read them. */
-.rankings-locked {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-  margin: var(--space-3) 0 0;
+/* Under the projection dropdown once the season is under way: what "AI projection" covers now. */
+.rankings-source {
+  margin: var(--space-1) 0 0;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
+
+/* A board that leaves some of the league out: said once, over the table it shapes. */
+.rankings-gap {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+/* Under the table rather than over it: the totals are the page, and the offer is what the reader
+   meets once they have read them. */

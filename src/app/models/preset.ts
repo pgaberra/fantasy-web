@@ -11,6 +11,13 @@ export const LAST_SEASON_PRESET_NAME = "Last Season's Stats";
 export const MODEL_PRESET_NAME = 'AI Projection';
 
 /**
+ * The model's line for what is left of a season under way, offered only while one is. Beside the
+ * AI projection, which is the whole season, so a draft started mid-season can be drafted on
+ * either.
+ */
+export const REST_OF_SEASON_PRESET_NAME = 'AI Rest of Season';
+
+/**
  * A starting point everyone shares, as opposed to a projection someone owns.
  *
  * <p>`id` is what a draft started from a preset carries, so the page can name what it was
@@ -26,12 +33,27 @@ export interface Preset {
    * why the mark is not shown in a build that has no way to charge for it.
    */
   readonly premium?: boolean;
+  /** A line under the name, where the name alone does not tell two presets apart. */
+  readonly meta?: string;
 }
 
 /** Every preset the picker knows of. What the draft start page offers is its `availablePresets`. */
 export const PRESETS: readonly Preset[] = [
   { id: 'last_season', name: LAST_SEASON_PRESET_NAME, source: 'default' },
-  { id: 'model', name: MODEL_PRESET_NAME, source: 'model', premium: true },
+  {
+    id: 'model',
+    name: MODEL_PRESET_NAME,
+    source: 'model',
+    premium: true,
+    meta: 'The whole season',
+  },
+  {
+    id: 'rest_of_season',
+    name: REST_OF_SEASON_PRESET_NAME,
+    source: 'rest_of_season',
+    premium: true,
+    meta: 'Only the games left to play',
+  },
 ];
 
 /** The preset a stored id names, or null for one this build does not know. */

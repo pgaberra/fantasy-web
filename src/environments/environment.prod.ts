@@ -28,10 +28,6 @@ const appVersionFlag: string = '__APP_VERSION__';
 // controls. Untouched or empty resolves to false, so sync stays enabled by default.
 const yahooSyncDisabledFlag: string = '__YAHOO_SYNC_DISABLED__';
 
-// Subscription billing toggle. Only the literal "true" (via the PAYMENTS_ENABLED build arg)
-// turns it on; untouched or empty resolves to false, keeping payments dark by default.
-const paymentsEnabledFlag: string = '__PAYMENTS_ENABLED__';
-
 // Premium shown but not yet sold. Only the literal "true" (via the PREMIUM_COMING_SOON build arg)
 // disables Subscribe; untouched or empty resolves to false, so a build that sells
 // Premium keeps selling it.
@@ -73,6 +69,11 @@ const manualRankingEnabledFlag: string = '__MANUAL_RANKING_ENABLED__';
 // leaves every one of them exactly as it shipped.
 const sharedNoticeEnabledFlag: string = '__SHARED_NOTICE_ENABLED__';
 
+// New landing page toggle. Only the literal "true" (via the NEW_LANDING_ENABLED build arg) serves
+// the in-season landing page at /; untouched or empty resolves to false, which serves the page as
+// it shipped.
+const newLandingEnabledFlag: string = '__NEW_LANDING_ENABLED__';
+
 export const environment = {
   production: true,
   environmentName: appEnvFlag.startsWith('__APP_ENV') ? 'production' : appEnvFlag,
@@ -85,7 +86,6 @@ export const environment = {
   posthogKey: posthogKeyFlag.startsWith('__POSTHOG') ? '' : posthogKeyFlag,
   sentryDsn: sentryDsnFlag.startsWith('__SENTRY') ? '' : sentryDsnFlag,
   yahooSyncDisabled: yahooSyncDisabledFlag === 'true',
-  paymentsEnabled: paymentsEnabledFlag === 'true',
   premiumComingSoon: premiumComingSoonFlag === 'true',
   espnLeaguesEnabled: espnLeaguesEnabledFlag === 'true',
   whosHotEnabled: whosHotEnabledFlag !== 'false',
@@ -97,4 +97,5 @@ export const environment = {
   manualRankingEnabled: manualRankingEnabledFlag === 'true',
   tiersEnabled: tiersEnabledFlag === 'true',
   sharedNoticeEnabled: sharedNoticeEnabledFlag === 'true',
+  newLandingEnabled: newLandingEnabledFlag === 'true',
 };

@@ -32,6 +32,8 @@ describe('LeagueProjectionTableComponent', () => {
         roster: [
           {
             name: 'McDavid',
+            team: 'EDM',
+            positions: ['C'],
             total: 9,
             values: { goals: 40, gaa: null },
             contributions: { goals: 40, gaa: null },
@@ -171,7 +173,8 @@ describe('LeagueProjectionTableComponent', () => {
     ]);
     const expandedText = fixture.nativeElement.textContent as string;
     expect(expandedText).toContain('McDavid');
-    expect(expandedText).toContain('Show all 6 players');
+    const toggle = fixture.nativeElement.querySelector('.lp-showall') as HTMLElement;
+    expect(toggle.textContent?.trim()).toBe('Show all');
     expect(expandedText).not.toContain('Oettinger');
 
     component.toggleShowAll('a');
@@ -190,6 +193,163 @@ describe('LeagueProjectionTableComponent', () => {
     component.toggleExpand('a');
     expect(component.isExpanded('a')).toBe(false);
     expect(component.isShowingAll('a')).toBe(false);
+  });
+
+  it('tags a parked player by his slot and fades one the team does not count', () => {
+    const slots: Record<string, string> = { Oettinger: 'IR+', Makar: 'NA' };
+    const roster = data.teams[0].roster.map((row) =>
+      row.name === 'Oettinger'
+        ? { ...row, total: 0, fullValue: 1.5, reserveSlot: slots[row.name], counted: false }
+        : { ...row, reserveSlot: slots[row.name] ?? null, counted: true },
+    );
+    const fixture = MockRender(LeagueProjectionTableComponent, {
+      data: { ...data, teams: [{ ...data.teams[0], roster }] },
+      scoringType: 'category',
+      scoreHeading: 'Z-Score',
+    });
+    const component = fixture.point.componentInstance;
+    component.toggleExpand('a');
+    component.toggleShowAll('a');
+    fixture.detectChanges();
+
+    const rows = [...fixture.nativeElement.querySelectorAll('tr.lp-player-row')] as HTMLElement[];
+    const rowOf = (name: string) =>
+      rows.find((row) => row.querySelector('.lp-player-name')?.textContent?.trim() === name)!;
+    expect(rowOf('Oettinger').querySelector('.lp-reserve-badge')?.textContent?.trim()).toBe('IR');
+    expect(rowOf('Makar').querySelector('.lp-reserve-badge')?.textContent?.trim()).toBe('NA');
+    expect(rowOf('Oettinger').classList).toContain('not-counted');
+    expect(rowOf('McDavid').querySelector('.lp-reserve-badge')).toBeNull();
+    expect(rowOf('McDavid').classList).not.toContain('not-counted');
+  });
+
+  it('counts what each lineup starts, or switched, every player in every game, teams included', () => {
+    // Every player starts only part of his games, and Oettinger none: the team does not count him.
+    // Started in every game, Alpha (20 counted) outscores Bravo (30 counted).
+    const roster = data.teams[0].roster.map((row) =>
+      row.name === 'Oettinger'
+        ? { ...row, total: 0, fullValue: 1.5, counted: false }
+        : { ...row, fullValue: row.total + 1, counted: true },
+    );
+    const teams = [
+      { ...data.teams[0], roster, fullTotal: 40, fullValues: { goals: 12, gaa: -1 } },
+      { ...data.teams[1], fullTotal: 35, fullValues: { goals: 9, gaa: -1 } },
+    ];
+    const fixture = MockRender(LeagueProjectionTableComponent, {
+      data: { ...data, teams },
+      scoringType: 'category',
+      scoreHeading: 'Z-Score',
+    });
+    const component = fixture.point.componentInstance;
+    component.toggleExpand('a');
+    component.toggleShowAll('a');
+    fixture.detectChanges();
+
+    const totalOf = (name: string) =>
+      ([...fixture.nativeElement.querySelectorAll('tr.lp-player-row')] as HTMLElement[])
+        .find((row) => row.querySelector('.lp-player-name')?.textContent?.trim() === name)!
+        .querySelector('.col-total')!
+        .textContent.trim();
+    const teamRows = () =>
+      ([...fixture.nativeElement.querySelectorAll('tr.lp-row')] as HTMLElement[]).map((row) =>
+        [...row.querySelectorAll('td')].map((cell) => cell.textContent?.trim()).slice(1),
+      );
+    const switchTo = (label: string) => {
+      const tabs = [
+        ...fixture.nativeElement.querySelectorAll('[aria-label="Points basis"] button'),
+      ] as HTMLButtonElement[];
+      tabs.find((tab) => tab.textContent?.trim() === label)!.click();
+      fixture.detectChanges();
+    };
+
+    expect(totalOf('Oettinger'), 'the team does not count him').toBe('—');
+    expect(totalOf('McDavid')).toBe('9.00');
+    expect(teamRows()).toEqual([
+      ['Bravo', '8.00', '-1.00', '30.00'],
+      ['AlphaYou', '6.00', '-2.00', '20.00'],
+    ]);
+
+    switchTo('All games');
+    expect(totalOf('Oettinger')).toBe('1.50');
+    expect(totalOf('McDavid')).toBe('10.00');
+    expect(teamRows(), 'ranked on every game').toEqual([
+      ['AlphaYou', '12.00', '-1.00', '40.00'],
+      ['Bravo', '9.00', '-1.00', '35.00'],
+    ]);
+
+    switchTo('Team share');
+    expect(totalOf('Oettinger')).toBe('—');
+    expect(teamRows()[0][3]).toBe('30.00');
+
+    const helpTip = () => fixture.nativeElement.querySelector('.lp-basis app-help-tip');
+    expect(helpTip(), 'the explanation sits with its own switch').not.toBeNull();
+
+    switchTo('All games');
+    component.setMode('position');
+    fixture.detectChanges();
+    expect(
+      fixture.nativeElement.querySelector('[aria-label="Points basis"]'),
+      'a lineup slot is what starting decides',
+    ).toBeNull();
+    expect(helpTip(), 'nothing to explain without the switch').toBeNull();
+    expect(teamRows()[0][3], 'back on what the lineups start').toBe('30.00');
+  });
+
+  it('puts a player the team does not count last on its share, under players below zero', () => {
+    // Category scores run below zero, so an uncounted player's 0 would rank him mid-roster.
+    const changes: Record<string, object> = {
+      Nylander: { total: 0, fullValue: 4, counted: false },
+      Makar: { total: -3, fullValue: -3 },
+    };
+    const roster = data.teams[0].roster.map((row) => ({
+      ...row,
+      fullValue: row.total,
+      counted: true,
+      ...changes[row.name],
+    }));
+    const teams = [
+      { ...data.teams[0], roster, fullTotal: 40, fullValues: { goals: 12, gaa: -1 } },
+      { ...data.teams[1], fullTotal: 35, fullValues: { goals: 9, gaa: -1 } },
+    ];
+    const component = MockRender(LeagueProjectionTableComponent, {
+      data: { ...data, teams },
+      scoringType: 'category',
+      scoreHeading: 'Z-Score',
+    }).point.componentInstance;
+    const alpha = component.data().teams[0];
+    const names = () => component.rosterRows(alpha).map((row) => row.name);
+    component.toggleExpand('a');
+    component.toggleShowAll('a');
+
+    expect(names()).toEqual(['McDavid', 'Point', 'Zacha', 'Oettinger', 'Makar', 'Nylander']);
+    component.sortBy('total');
+    expect(names(), 'ascending too').toEqual([
+      'Makar',
+      'Oettinger',
+      'Zacha',
+      'Point',
+      'McDavid',
+      'Nylander',
+    ]);
+    component.sortBy('goals');
+    expect(names().at(-1), 'on a stat column too').toBe('Nylander');
+
+    component.pointsBasis.set('all');
+    component.sortBy('total');
+    expect(names(), 'on every game he counts, and ranks by it').toEqual([
+      'McDavid',
+      'Point',
+      'Zacha',
+      'Nylander',
+      'Oettinger',
+      'Makar',
+    ]);
+  });
+
+  it('offers no points switch where every player counts in full, as in a draft', () => {
+    const fixture = render();
+    fixture.point.componentInstance.toggleExpand('a');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[aria-label="Points basis"]')).toBeNull();
   });
 
   it("orders each team's player rows by the column the table is sorted on", () => {
@@ -267,6 +427,57 @@ describe('LeagueProjectionTableComponent', () => {
     ).toEqual(['McDavid', 'Point']);
   });
 
+  it('opens a team in the position breakdown into one lineup row under it, on its own cells', () => {
+    const fixture = render();
+    const component = fixture.point.componentInstance;
+    const alpha = data.teams[0];
+
+    component.setMode('position');
+    component.toggleExpand('a');
+    fixture.detectChanges();
+
+    // The team's own cells hold the totals and nothing else; the players are the row beneath.
+    expect(fixture.nativeElement.querySelector('tr.lp-row ul')).toBeNull();
+    const lineup = fixture.nativeElement.querySelectorAll('tr.lp-lineup-row');
+    expect(lineup).toHaveLength(1);
+    expect(lineup[0].querySelectorAll('td')).toHaveLength(
+      fixture.nativeElement.querySelectorAll('thead th').length,
+    );
+    expect(lineup[0].textContent).toContain('McDavid');
+    expect(lineup[0].textContent).toContain('Makar');
+
+    // The club comes from the team's roster, by name; a player it does not name has none.
+    expect(component.clubOf(alpha, 'McDavid')).toBe('EDM');
+    expect(component.clubOf(alpha, 'Makar')).toBeNull();
+  });
+
+  it("shortens a lineup player's first name to its initial, to fit his slot's column", () => {
+    const component = MockRender(LeagueProjectionTableComponent, {
+      data: {
+        ...data,
+        teams: [
+          {
+            ...data.teams[0],
+            positionPlayers: {
+              C: [
+                { name: 'Connor McDavid', value: 6 },
+                { name: 'Jordan Staal', value: 2 },
+                { name: 'Jared Staal', value: 1 },
+              ],
+            },
+          },
+        ],
+      },
+      scoringType: 'category',
+      scoreHeading: 'Z-Score',
+    }).point.componentInstance;
+    const alpha = component.data().teams[0];
+
+    expect(component.slotName(alpha, 'Connor McDavid')).toBe('C. McDavid');
+    // Two names one short form would stand for keep their full names.
+    expect(component.slotName(alpha, 'Jordan Staal')).toBe('Jordan Staal');
+  });
+
   it('shows each stat weight under the column header in a points league, and never elsewhere', () => {
     const pointsData: LeagueProjectionData = {
       ...data,
@@ -297,28 +508,100 @@ describe('LeagueProjectionTableComponent', () => {
     expect(render().nativeElement.textContent as string).not.toContain('×');
   });
 
-  it('shades cells on a diverging green-red scale, including the total column', () => {
+  it('shades cells on a diverging teal-orange scale, including the total column', () => {
     const component = render().point.componentInstance;
 
-    // Column leader trends green, laggard red (goals: a=6 is the min, b=8 the max).
-    expect(component.shade('goals', 8)).toContain('rgba(22, 163, 74');
-    expect(component.shade('goals', 6)).toContain('rgba(233, 69, 96');
+    // Column leader trends teal, laggard orange (goals: a=6 is the min, b=8 the max).
+    expect(component.shade('goals', 8)).toContain('rgba(13, 148, 136');
+    expect(component.shade('goals', 6)).toContain('rgba(234, 88, 12');
 
-    // The total column now carries the same heat (a.total=20 min, b.total=30 max).
-    expect(component.shade('total', 30)).toContain('rgba(22, 163, 74');
-    expect(component.shade('total', 20)).toContain('rgba(233, 69, 96');
+    // The total column carries the same heat (a.total=20 min, b.total=30 max).
+    expect(component.shade('total', 30)).toContain('rgba(13, 148, 136');
+    expect(component.shade('total', 20)).toContain('rgba(234, 88, 12');
 
     // Missing values stay clear.
     expect(component.shade('goals', null)).toEqual('transparent');
   });
 
-  it("lays the pinned total column's heat over an opaque fill, as a background image", () => {
-    const component = render().point.componentInstance;
+  it('draws the heat as a chip inside each team cell, the pinned total included', () => {
+    const fixture = render();
+    const bravo = fixture.nativeElement.querySelector('tr.lp-row') as HTMLElement;
 
-    // The score column is pinned while the stats scroll beneath it, so its tint rides on a
-    // background image and leaves the stylesheet's opaque background colour in place.
-    expect(component.totalShade(30)).toMatch(/^linear-gradient\(rgba\(22, 163, 74/);
-    expect(component.totalShade(20)).toMatch(/^linear-gradient\(rgba\(233, 69, 96/);
+    // Bravo leads on total and on goals: both chips carry the leader's tint, and the cells
+    // themselves stay the row's own opaque colour for the pinned columns to scroll over.
+    const chips = Array.from(bravo.querySelectorAll<HTMLElement>('.lp-heat'));
+    expect(chips).toHaveLength(data.categoryColumns.length + 1);
+    expect(chips[0].style.getPropertyValue('--heat')).toContain('rgba(13, 148, 136');
+    expect(chips.at(-1)?.style.getPropertyValue('--heat')).toContain('rgba(13, 148, 136');
+    expect((bravo.querySelector('td.col-total') as HTMLElement).style.background).toBe('');
+  });
+
+  // The row once spanned the stat columns and the score with one cell, which cut the score
+  // column's divider and the sorted column's marking in two at exactly that row.
+  it('gives the show-all row a cell under every column, so no column breaks at it', () => {
+    const fixture = render();
+    fixture.point.componentInstance.toggleExpand('a');
+    fixture.point.componentInstance.sortBy('goals');
+    fixture.detectChanges();
+
+    const row = fixture.nativeElement.querySelector('tr.lp-showall-row') as HTMLElement;
+    const headers = fixture.nativeElement.querySelectorAll('thead th');
+    expect(row.querySelectorAll('td')).toHaveLength(headers.length);
+    expect(row.querySelector('td[colspan]')).toBeNull();
+    expect(row.querySelector('td.col-total')).not.toBeNull();
+    expect(row.querySelectorAll('td.sorted')).toHaveLength(1);
+  });
+
+  it("stresses the team's best figure in each column of its player rows", () => {
+    const component = render().point.componentInstance;
+    const alpha = data.teams[0];
+    const named = (name: string) => alpha.roster.find((row) => row.name === name)!;
+
+    // Zacha gives Alpha the most goals; McDavid, for all his total, does not.
+    expect(component.isTeamBest(alpha, named('Zacha'), 'goals')).toBe(true);
+    expect(component.isTeamBest(alpha, named('McDavid'), 'goals')).toBe(false);
+    // A stat that is not his kind is never his best.
+    expect(component.isTeamBest(alpha, named('Oettinger'), 'goals')).toBe(false);
+    expect(component.isTeamBest(alpha, named('Oettinger'), 'gaa')).toBe(true);
+  });
+
+  it('rules off the goalie stats from the skater stats, in the category breakdown only', () => {
+    const fixture = render();
+    const component = fixture.point.componentInstance;
+
+    expect(component.groupStartKey()).toBe('gaa');
+    expect(fixture.nativeElement.querySelectorAll('thead th.group-start')).toHaveLength(1);
+
+    component.setMode('position');
+    expect(component.groupStartKey()).toBeNull();
+  });
+
+  it('leads each player with his club crest only where the rows came with clubs', () => {
+    const fixture = render();
+    fixture.point.componentInstance.toggleExpand('a');
+    fixture.detectChanges();
+
+    // One row names a club, so every row keeps the slot and the names stay in line.
+    expect(fixture.point.componentInstance.showsClubs()).toBe(true);
+    expect(fixture.nativeElement.querySelectorAll('tr.lp-player-row app-team-logo')).toHaveLength(
+      5,
+    );
+    expect(fixture.nativeElement.querySelectorAll('app-position-chips')).toHaveLength(1);
+
+    const bare = MockRender(LeagueProjectionTableComponent, {
+      data: {
+        ...data,
+        teams: data.teams.map((team) => ({
+          ...team,
+          roster: team.roster.map((row) => ({ ...row, team: null })),
+        })),
+      },
+      scoringType: 'category',
+      scoreHeading: 'Z-Score',
+    });
+    bare.point.componentInstance.toggleExpand('a');
+    bare.detectChanges();
+    expect(bare.nativeElement.querySelector('app-team-logo')).toBeNull();
   });
 
   it('pins the total column and casts its edge shadow only while columns sit beneath it', () => {

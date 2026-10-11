@@ -35,6 +35,7 @@ import { ActiveColumnsService } from '../../services/active-columns.service';
 import { StatInfoService } from '../../services/stat-info.service';
 import { HotPlayer } from '../../services/whos-hot.service';
 import { RosterSlots } from '../../api/models/roster-slots';
+import { skaterSlotCount } from '../../models/roster-slots';
 import {
   DecimalStatKey,
   DEFAULT_DECIMAL_SETTINGS,
@@ -67,6 +68,8 @@ import { FormatToiPipe } from '../../pipes/format-toi.pipe';
 import { DecimalPipe } from '@angular/common';
 import { shortNames } from '../../shared/short-name';
 import { IconComponent } from '../../shared/icon/icon';
+import { ToggleSwitchComponent } from '../../draft-projection/projection-settings-section/toggle-switch/toggle-switch';
+import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
 
 const PLAYERS_PER_PAGE = 100;
 
@@ -109,6 +112,8 @@ interface RankedPlayer extends ScoredProjection {
     FormatToiPipe,
     DecimalPipe,
     IconComponent,
+    ToggleSwitchComponent,
+    TeamLogoComponent,
   ],
   templateUrl: './hot-players-table.html',
   styleUrl: './hot-players-table.css',
@@ -154,6 +159,18 @@ export class HotPlayersTableComponent {
   /** The league these settings were imported from, once there is one. */
   readonly syncedLeagueName = input<string | null>(null);
   readonly manageSyncRequested = output<void>();
+
+  /** Whether to offer the switch below at all: the page decides, by environment and league. */
+  readonly availableFilter = input(false);
+  /** Only the players nobody in the synced league holds. */
+  readonly availableOnly = model(false);
+  /**
+   * Who the synced league's teams hold, or null while the board shows everyone. Applied as a
+   * filter, after the ranking: the z-scores are measured against the whole league, as they are
+   * under every other filter, so a player ranks the same whether or not the rostered players
+   * are shown beside him.
+   */
+  readonly rosteredPlayerIds = input<ReadonlySet<number> | null>(null);
 
   /**
    * The League setup menu holds the category ranking inputs and, once a league has been imported,
@@ -310,8 +327,7 @@ export class HotPlayersTableComponent {
     );
 
     const roster = this.rosterSlots();
-    const skaterPoolSize =
-      this.leagueSize() * (roster.c + roster.lw + roster.rw + roster.d + roster.util + roster.bn);
+    const skaterPoolSize = this.leagueSize() * skaterSlotCount(roster);
     const goaliePoolSize = this.leagueSize() * roster.g;
     const zScores = this.projectionCalculationService.computeZScores(
       projections,
@@ -357,8 +373,18 @@ export class HotPlayersTableComponent {
     });
   });
 
-  private readonly filteredPlayers = computed<RankedPlayer[]>(() => {
+  /**
+   * The board less the league's rostered players, where it is narrowed to them. The search box
+   * offers from this too: ticking a player the board then cannot show would read as broken.
+   */
+  private readonly availablePlayers = computed<RankedPlayer[]>(() => {
     const sorted = this.sortedPlayers();
+    const rostered = this.rosteredPlayerIds();
+    return rostered ? sorted.filter((ranked) => !rostered.has(ranked.projection.playerId)) : sorted;
+  });
+
+  private readonly filteredPlayers = computed<RankedPlayer[]>(() => {
+    const sorted = this.availablePlayers();
     const filter = this.positionFilter();
     const team = this.teamFilter();
     const term = this.searchTerm();
@@ -375,11 +401,14 @@ export class HotPlayersTableComponent {
     });
   });
 
+  /** A stat the player cannot have: the dash the editor, the planner and Draft Mode draw too. */
+  readonly notApplicable = '—';
+
   readonly matchingCount = computed(() => this.filteredPlayers().length);
 
   /** Everyone on the leaderboard, which is who the search box offers to tick. */
   readonly pickablePlayers = computed<PickablePlayer[]>(() =>
-    this.sortedPlayers().map((ranked) => ({
+    this.availablePlayers().map((ranked) => ({
       id: ranked.projection.playerId,
       name: ranked.hot.name,
       teamAbbrev: ranked.hot.teamAbbrev,
@@ -395,6 +424,7 @@ export class HotPlayersTableComponent {
       sortColumn: this.sortColumn(),
       sortDirection: this.sortDirection(),
       perGame: this.perGame(),
+      rostered: this.rosteredPlayerIds(),
     }),
     computation: () => PLAYERS_PER_PAGE,
   });
@@ -405,8 +435,15 @@ export class HotPlayersTableComponent {
 
   readonly hasMore = computed(() => this.visibleCount() < this.matchingCount());
 
+  /** An imported league's type is its own; see `syncedLeagueName`. */
   selectScoringType(type: ScoringType): void {
-    this.scoringType.set(type);
+    if (this.syncedLeagueName() === null) {
+      this.scoringType.set(type);
+    }
+  }
+
+  toggleAvailableOnly(): void {
+    this.availableOnly.update((on) => !on);
   }
 
   toggleScoringColumn(key: ScoringStatKey): void {
@@ -456,8 +493,15 @@ export class HotPlayersTableComponent {
    * A stat the player cannot have shows a dash rather than a zero. The split fills every key
    * for every player because the ranking engine works on complete lines, so without this a
    * skater's save percentage and a forward's defencemen points read as measured zeroes.
+   *
+   * A rate over no games is not one either: a goalie yet to play in the range has no save
+   * percentage, and 0.000 would read as the worst in the league. `statValueOf` already leaves
+   * it out of the sort for that reason, so the cell follows it.
    */
   isApplicable(ranked: RankedPlayer, key: StatKey): boolean {
+    if (statValueOf(ranked.projection, key) === null) {
+      return false;
+    }
     const player = this.playerMap().get(ranked.projection.playerId);
     // Without the player we don't know their positions, and showing the number beats hiding
     // a defenceman's points behind a dash.

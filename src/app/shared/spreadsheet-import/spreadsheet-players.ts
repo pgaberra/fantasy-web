@@ -1,3 +1,4 @@
+import { nhlTeamKey } from '../../models/nhl-team';
 import { Player } from '../../models/player.model';
 import { SkaterPosition } from '../../models/position.model';
 import { editDistance, spellingKey } from './spreadsheet-spellings';
@@ -52,31 +53,8 @@ export type MatchResult =
   | { kind: 'ambiguous'; candidates: Player[] }
   | { kind: 'not-found' };
 
-/** Clubs whose abbreviation differs between sources, folded to one spelling. */
-const TEAM_ALIASES: Record<string, string> = {
-  LA: 'LAK',
-  TB: 'TBL',
-  NJ: 'NJD',
-  SJ: 'SJS',
-  MON: 'MTL',
-  CLB: 'CBJ',
-  NAS: 'NSH',
-  WAS: 'WSH',
-  CAL: 'CGY',
-  WIN: 'WPG',
-  UTAH: 'UTA',
-  UHC: 'UTA',
-};
-
 export function teamKey(team: Cell | undefined): string | null {
-  if (team === null || team === undefined) {
-    return null;
-  }
-  const upper = String(team).trim().toUpperCase();
-  if (!upper) {
-    return null;
-  }
-  return TEAM_ALIASES[upper] ?? upper;
+  return team === null || team === undefined ? null : nhlTeamKey(String(team));
 }
 
 /**

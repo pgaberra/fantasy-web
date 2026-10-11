@@ -4,7 +4,7 @@ import { from } from 'rxjs';
 import { Api } from '../api/api';
 import { getFeatures } from '../api/fn/features/get-features';
 import { CreateProjectionRequest } from '../api/models/create-projection-request';
-import { MODEL_PRESET_SOURCE } from '../models/ai-projection';
+import { MODEL_SOURCES } from '../models/ai-projection';
 
 /**
  * What the BFF says this environment serves, read once per page load.
@@ -25,6 +25,12 @@ export class FeatureService {
   });
 
   /**
+   * Whether the answer is in, or has failed. A page that takes one of two paths by a feature waits
+   * for this, rather than take the path the default points at and then switch.
+   */
+  readonly settled = computed(() => !this.features.isLoading());
+
+  /**
    * Whether the AI projection is served here at all. False until the answer lands, so a preset
    * the environment turns out not to serve is never shown and then taken away. Nothing to do
    * with this account's plan: a locked AI projection is still served.
@@ -33,27 +39,40 @@ export class FeatureService {
     this.features.hasValue() ? this.features.value().aiProjection : false,
   );
 
+  /** Whether Draft Analysis is served here. False until the answer lands, like the others. */
+  readonly draftAnalysis = computed(() =>
+    this.features.hasValue() ? this.features.value().draftAnalysis : false,
+  );
+
   /**
-   * Whether Draft Mode may follow a linked league's live draft. False until the answer lands, like
-   * the AI projection, so the control never appears and then disappears.
+   * Whether Who's hot may narrow its board to the players a linked league has available. False
+   * until the answer lands, like the others.
    */
-  readonly leagueDraftSync = computed(() =>
-    this.features.hasValue() ? this.features.value().leagueDraftSync : false,
+  readonly whosHotAvailableFilter = computed(() =>
+    this.features.hasValue() ? this.features.value().whosHotAvailableFilter : false,
   );
 
-  /** The same for a linked ESPN league, which has a switch of its own. */
-  readonly espnLeagueDraftSync = computed(() =>
-    this.features.hasValue() ? this.features.value().espnLeagueDraftSync : false,
+  /**
+   * Whether a draft may be started from the rest of the season here. False until the answer
+   * lands, like the others; true still offers it only while a season is under way, which
+   * `RestOfSeasonService` asks.
+   */
+  readonly restOfSeasonPreset = computed(() =>
+    this.features.hasValue() ? this.features.value().restOfSeasonPreset : false,
   );
 
-  /** Whether the streamer planner is served here. False until the answer lands, like the others. */
-  readonly streamerPlanner = computed(() =>
-    this.features.hasValue() ? this.features.value().streamerPlanner : false,
+  /** Whether the FA scout is served here. False until the answer lands, like the others. */
+  readonly faScout = computed(() =>
+    this.features.hasValue() ? this.features.value().faScout : false,
+  );
+  /** Whether Role Changes is served here. False until the answer lands, like the others. */
+  readonly roleChanges = computed(() =>
+    this.features.hasValue() ? this.features.value().roleChanges : false,
   );
 
   /**
    * The presets this environment offers: every one of them where the AI projection is served,
-   * and everything but the model-seeded one where it is not. A starting point the server will not
+   * and everything but the model-seeded ones where it is not. A starting point the server will not
    * fill in must not be offered, on any page that lists presets.
    */
   offeredPresets<T extends { readonly source: CreateProjectionRequest['source'] }>(
@@ -62,6 +81,6 @@ export class FeatureService {
     if (this.aiProjection()) {
       return presets;
     }
-    return presets.filter((preset) => preset.source !== MODEL_PRESET_SOURCE);
+    return presets.filter((preset) => !MODEL_SOURCES.includes(preset.source ?? ''));
   }
 }

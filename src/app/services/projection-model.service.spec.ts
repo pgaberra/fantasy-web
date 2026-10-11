@@ -85,6 +85,33 @@ describe('ProjectionModelService', () => {
     expect(await retried).toEqual(SEEDED);
   });
 
+  /** The two AI presets are two boards: an answer for one is not an answer for the other. */
+  it('keeps the rest of the season apart from the whole season', async () => {
+    const whole = firstValueFrom(service.seed({ skaterLimit: 25, source: 'model' }));
+    const rest = firstValueFrom(service.seed({ skaterLimit: 25, source: 'rest_of_season' }));
+    const asked = httpTesting.match((request) => request.url.endsWith('/projection-model/seed'));
+    expect(asked.map((request) => request.request.params.get('source'))).toEqual([
+      'model',
+      'rest_of_season',
+    ]);
+    asked[0].flush(SEEDED);
+    asked[1].flush({ ...SEEDED, modelVersion: 'marcel-v115' });
+
+    expect((await whole).modelVersion).toBe('marcel-v3');
+    expect((await rest).modelVersion).toBe('marcel-v115');
+  });
+
+  it("asks for the rest of the season's board by name", async () => {
+    const board = { players: [] };
+    const rest = firstValueFrom(service.board('rest_of_season'));
+    const asked = httpTesting.expectOne((request) =>
+      request.url.endsWith('/projection-model/board'),
+    );
+    expect(asked.request.params.get('source')).toBe('rest_of_season');
+    asked.flush(board);
+    expect(await rest).toEqual(board);
+  });
+
   /** A preview of what Create writes must be as fresh as Create, which asks the server each time. */
   it('asks for the board Create would write afresh every time', async () => {
     const board = {

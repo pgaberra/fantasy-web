@@ -11,6 +11,7 @@ describe('FeatureService', () => {
   const presets = [
     { source: 'default' as const },
     { source: 'model' as const },
+    { source: 'rest_of_season' as const },
     { source: 'blank' as const },
   ];
 
@@ -59,6 +60,47 @@ describe('FeatureService', () => {
       'default',
       'blank',
     ]);
+  });
+
+  it('reports the rest-of-season preset as the BFF does, and off until it answers', async () => {
+    invoke.mockResolvedValue({ aiProjection: true, restOfSeasonPreset: false });
+    expect(TestBed.inject(FeatureService).restOfSeasonPreset()).toEqual(false);
+
+    expect((await answered()).restOfSeasonPreset()).toEqual(false);
+  });
+
+  it('offers the rest-of-season preset where the BFF switches it on', async () => {
+    invoke.mockResolvedValue({ aiProjection: true, restOfSeasonPreset: true });
+
+    expect((await answered()).restOfSeasonPreset()).toEqual(true);
+  });
+
+  it('reports the FA scout as the BFF does, and off until it answers', async () => {
+    invoke.mockResolvedValue({ aiProjection: true, faScout: true });
+    expect(TestBed.inject(FeatureService).faScout()).toEqual(false);
+
+    expect((await answered()).faScout()).toEqual(true);
+  });
+
+  it('is not settled while the BFF has yet to answer', () => {
+    invoke.mockReturnValue(new Promise(() => undefined));
+
+    const service = TestBed.inject(FeatureService);
+
+    expect(service.settled()).toEqual(false);
+  });
+
+  it('is settled once the BFF has answered', async () => {
+    invoke.mockResolvedValue({ aiProjection: true });
+
+    expect((await answered()).settled()).toEqual(true);
+  });
+
+  // A page that waits for the answer must not wait forever when it fails.
+  it('is settled when the answer fails', async () => {
+    invoke.mockRejectedValue(new Error('offline'));
+
+    expect((await answered()).settled()).toEqual(true);
   });
 
   // Offering a preset the server may not serve is the failure this service exists to prevent, so

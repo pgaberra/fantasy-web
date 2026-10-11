@@ -1,0 +1,33 @@
+:host {
+  display: block;
+}
+
+/* Text and button: two columns, not a wrapping row. The text column shrinks and wraps within
+   itself, so Disconnect stays at the end of the line however long the league's name runs. */
+.synced-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+}
+
+/* The dot sits in the text's first line, and a hanging indent lines the lines a long name wraps
+   onto up under the words rather than under the dot. */
+.synced-line-text {
+  --dot-run: calc(0.5rem + var(--space-2));
+  padding-left: var(--dot-run);
+  text-indent: calc(-1 * var(--dot-run));
+  overflow-wrap: anywhere;
+}
+
+.synced-line-text .sync-dot {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: var(--space-2);
+}
+
+.synced-line-time {
+  color: var(--color-text-muted);
+}

@@ -3,6 +3,7 @@ import { from, map, Observable } from 'rxjs';
 import { Api } from '../api/api';
 import { streamerPlannerFreeAgents } from '../api/fn/streamer-planner/streamer-planner-free-agents';
 import { FreeAgentResponse } from '../api/models/free-agent-response';
+import { PlannerCrease } from '../api/models/planner-crease';
 import {
   GOALIE_SCORING_STAT_KEYS,
   GOALIE_UTILITY_STAT_KEYS,
@@ -10,7 +11,7 @@ import {
   SKATER_UTILITY_STAT_KEYS,
 } from '../models/stat-key.model';
 import { Projection } from '../models/projection.model';
-import { PlannerPlatform } from './streamer-planner-league.service';
+import { LeaguePlatform } from './league-choice.service';
 
 /**
  * One available player, shaped as a {@link Projection} so the same fantasy-points and z-score
@@ -27,12 +28,17 @@ export interface FreeAgent {
   /** Games the player's club plays in the week, and the ones he is expected to dress for. */
   clubGames: number;
   expectedGames: number;
+  /**
+   * The stats the model gave a number for. The projection holds a zero for every other one, for
+   * the ranking engine's sake, and a zero nobody projected must not be shown as his line.
+   */
+  projected: ReadonlySet<string>;
 }
 
 export interface FreeAgentWeek {
   players: FreeAgent[];
-  /** Available players the model has no projection for; they are counted, not listed. */
-  unprojected: number;
+  /** Every club with a goalie among the players, its whole crease night by night. */
+  creases: readonly PlannerCrease[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -40,7 +46,7 @@ export class StreamerPlannerFreeAgentsService {
   private readonly api = inject(Api);
 
   freeAgents(
-    platform: PlannerPlatform,
+    platform: LeaguePlatform,
     leagueId: string,
     start: string,
     end: string,
@@ -48,10 +54,7 @@ export class StreamerPlannerFreeAgentsService {
     return from(
       this.api.invoke(streamerPlannerFreeAgents, { platform, leagueId, start, end }),
     ).pipe(
-      map((answer) => ({
-        players: answer.players.map(toFreeAgent),
-        unprojected: answer.unprojected,
-      })),
+      map((answer) => ({ players: answer.players.map(toFreeAgent), creases: answer.creases })),
     );
   }
 }
@@ -82,6 +85,7 @@ function toFreeAgent(player: FreeAgentResponse): FreeAgent {
     availability: player.availability,
     clubGames: player.clubGames,
     expectedGames: player.expectedGames,
+    projected: new Set(Object.keys(player.stats)),
     projection: {
       type: skater ? 'skater' : 'goalie',
       playerId: Number.isFinite(playerId) ? playerId : -1,

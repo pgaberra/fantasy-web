@@ -2,10 +2,10 @@
   <button
     type="button"
     class="btn btn-secondary btn-sm synced-league"
-    [appTooltip]="'Imported from ' + leagueName + ' · click to re-sync or change league'"
+    [appTooltip]="'Imported from ' + leagueName + ' · click to re-sync, change or disconnect'"
     (click)="pressed.emit()"
   >
-    <span class="synced-dot" aria-hidden="true"></span>
+    <span class="sync-dot" aria-hidden="true"></span>
     @switch (provider()) {
       @case ('espn') {
         <img class="synced-mark synced-mark--espn" src="espn-logo.png" alt="" />

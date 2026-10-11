@@ -62,12 +62,6 @@
   line-height: 1.5;
 }
 
-.dialog-error {
-  margin: 0 0 var(--space-3);
-  font-size: var(--text-sm);
-  color: var(--color-danger);
-}
-
 .dialog-actions {
   display: flex;
   justify-content: flex-end;

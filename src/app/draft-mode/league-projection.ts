@@ -35,6 +35,10 @@ export interface LeagueProjectionContributor {
  */
 export interface LeagueProjectionRosterRow {
   name: string;
+  /** The NHL club he plays for, for the crest beside his name; absent where the source has none. */
+  team?: string | null;
+  /** The positions he is eligible at, in lineup order; absent where the source does not say. */
+  positions?: readonly string[];
   /** The player's overall projected value (fantasy points or z-score), matching the team total's basis. */
   total: number;
   /** Raw stat value per category key; null where the stat doesn't apply to this player (a goalie has no hits). */
@@ -45,6 +49,27 @@ export interface LeagueProjectionRosterRow {
    * category column. Null where the stat doesn't apply, so those players sort to the bottom.
    */
   contributions: Record<string, number | null>;
+  /**
+   * His contribution per category key over every game he plays, as `contributions` is over the
+   * games his lineup starts him in. Absent where everyone counts in full (a draft).
+   */
+  fullContributions?: Record<string, number | null>;
+  /**
+   * The injured-reserve or not-active slot he is parked in today (IR, IR+, IR-LT, IR-NR or NA),
+   * which holds a player without taking a roster spot. Absent for a player in neither, and where
+   * the source has no such slots (a draft).
+   */
+  reserveSlot?: string | null;
+  /**
+   * False for a player outside the team's best, as many as its roster holds, whom its lineups are
+   * not picked from and who so counts for nothing. Absent where everyone counts (a draft).
+   */
+  counted?: boolean;
+  /**
+   * What he would be worth had his lineup started him in every game he plays, where `total` is
+   * only the games it does. Absent where everyone counts (a draft).
+   */
+  fullValue?: number;
 }
 
 export interface LeagueProjectionTeamRow {
@@ -54,6 +79,13 @@ export interface LeagueProjectionTeamRow {
   total: number;
   /** Aggregated value per column key (weighted/z contribution for categories, summed score for positions). */
   values: Record<string, number>;
+  /**
+   * What the team would score were every player it holds started in every game he plays, the ones
+   * it does not count included. Absent where everyone counts in full (a draft).
+   */
+  fullTotal?: number;
+  /** The category cells on the `fullTotal` footing; no position cells. Absent likewise. */
+  fullValues?: Record<string, number>;
   /** The team's drafted players, best first — the rows shown when a category-mode team is expanded. */
   roster: LeagueProjectionRosterRow[];
   /** Per position column key (incl. BN): the players assigned to that slot, sorted by projected value. */
@@ -103,14 +135,17 @@ const BENCH_COL = 'BN';
 
 /**
  * Starting (counting) lineup slots, in display and placement-priority order. Forwards read
- * left-to-right as they line up on the ice — LW, C, RW — then D, Util, G (named positions before
- * Util). Reordering only shifts which slot a dual-eligible player is shown under; the
- * maximum-matching in {@link assignRosterSlots} still starts the same set of players.
+ * left-to-right as they line up on the ice — LW, C, RW — then the forward flex slots, narrowest
+ * first (W, F), then D, Util, G (named positions before Util). Reordering only shifts which slot a
+ * dual-eligible player is shown under; the maximum-matching in {@link assignRosterSlots} still
+ * starts the same set of players.
  */
 const STARTING_SLOT_DEFS: SlotDef[] = [
   { key: 'lw', col: 'LW', label: 'LW', full: 'Left Wing' },
   { key: 'c', col: 'C', label: 'C', full: 'Center' },
   { key: 'rw', col: 'RW', label: 'RW', full: 'Right Wing' },
+  { key: 'w', col: 'W', label: 'W', full: 'Wing' },
+  { key: 'f', col: 'F', label: 'F', full: 'Forward' },
   { key: 'd', col: 'D', label: 'D', full: 'Defense' },
   { key: 'util', col: 'UTIL', label: 'Util', full: 'Utility' },
   { key: 'g', col: 'G', label: 'G', full: 'Goalie' },
@@ -124,6 +159,13 @@ function slotEligible(def: SlotDef, player: AssignablePlayer): boolean {
       return !player.isGoalie && player.positions.has('LW');
     case 'rw':
       return !player.isGoalie && player.positions.has('RW');
+    case 'w':
+      return !player.isGoalie && (player.positions.has('LW') || player.positions.has('RW'));
+    case 'f':
+      return (
+        !player.isGoalie &&
+        (player.positions.has('C') || player.positions.has('LW') || player.positions.has('RW'))
+      );
     case 'd':
       return !player.isGoalie && player.positions.has('D');
     case 'util':
@@ -135,14 +177,20 @@ function slotEligible(def: SlotDef, player: AssignablePlayer): boolean {
   }
 }
 
+function isFlexSlot(def: SlotDef): boolean {
+  return def.key === 'w' || def.key === 'f';
+}
+
 /**
  * Places a team's drafted players into its league roster slots so each player counts once and the
  * weakest players end up on the bench.
  *
- * Two phases. First, players are matched best-first to the *named* starting slots (C/LW/RW/D/G) as a
- * maximum-weight bipartite matching with augmenting reassignment — so a dual-position player yields a
- * named slot to a single-position player when that lets more of the roster start, and the best
- * eligible player fills each named slot. Whoever is left over (couldn't claim a named slot) fills the
+ * Two phases. First, players are matched best-first to the *named* starting slots (C/LW/RW/D/G) and
+ * the forward flex slots (W, then F) as a maximum-weight bipartite matching with augmenting
+ * reassignment — so a dual-position player yields a named slot to a single-position player when that
+ * lets more of the roster start, a wing takes W before F, and the best eligible player fills each
+ * named slot. A forward flex slot holding a better player than a named slot he could fill swaps the
+ * two, so the flex keeps the marginal starter. Whoever is left over (couldn't claim a slot) fills the
  * Util flex best-first (skaters only); the rest fall to the bench. Filling Util from the leftovers,
  * rather than folding it into the matching, keeps the strongest players in their named slots and
  * leaves the marginal starter in Util — which is how a manager reads the lineup.
@@ -189,6 +237,36 @@ function assignRosterSlots(
       namedSlots.map(() => false),
     );
   });
+
+  // Ranks are indices into `ordered`, best first, so a lower index is the better player.
+  let swapped = true;
+  while (swapped) {
+    swapped = false;
+    for (let flexSlot = 0; flexSlot < namedSlots.length; flexSlot++) {
+      const flexPlayer = slotToPlayer[flexSlot];
+      if (!isFlexSlot(namedSlots[flexSlot]) || flexPlayer === null) {
+        continue;
+      }
+      for (let namedSlot = 0; namedSlot < namedSlots.length; namedSlot++) {
+        const namedPlayer = slotToPlayer[namedSlot];
+        if (
+          isFlexSlot(namedSlots[namedSlot]) ||
+          namedPlayer === null ||
+          namedPlayer < flexPlayer ||
+          !slotEligible(namedSlots[namedSlot], ordered[flexPlayer]) ||
+          !slotEligible(namedSlots[flexSlot], ordered[namedPlayer])
+        ) {
+          continue;
+        }
+        slotToPlayer[namedSlot] = flexPlayer;
+        slotToPlayer[flexSlot] = namedPlayer;
+        playerToSlot[flexPlayer] = namedSlot;
+        playerToSlot[namedPlayer] = flexSlot;
+        swapped = true;
+        break;
+      }
+    }
+  }
 
   const byCol = new Map<string, AssignablePlayer[]>();
   const leftover: AssignablePlayer[] = [];
@@ -255,7 +333,7 @@ function categoryColumnsFor(
 }
 
 /**
- * One lineup column, by its slot key (`LW`, `C`, `RW`, `D`, `UTIL`, `G`, `BN`). Exported for the
+ * One lineup column, by its slot key (`LW`, `C`, `RW`, `W`, `F`, `D`, `UTIL`, `G`, `BN`). Exported for the
  * same reason as {@link categoryColumnFor}: the BFF names the slots, the web names the columns.
  */
 export function positionColumnFor(key: string): LeagueProjectionColumn {

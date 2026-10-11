@@ -8,5 +8,6 @@ import { Component, input, output } from '@angular/core';
 export class ToggleSwitchComponent {
   on = input<boolean>(false);
   ariaLabel = input<string>('');
+  disabled = input<boolean>(false);
   toggled = output<void>();
 }

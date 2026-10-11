@@ -92,7 +92,11 @@ function copyIn(html) {
     .replace(/<svg\b[\s\S]*?<\/svg>/g, ' ')
     .replace(/<!--[\s\S]*?-->/g, ' ')
     .replace(/<[^>]*>/g, ' ');
-  const attrs = [...html.matchAll(/(?:appTooltip|aria-label|placeholder|title|alt)="([^"]*)"/g)]
+  // `label` covers <optgroup>/<option> and the components' own label inputs; "My projections"
+  // shipped in an <optgroup label> while the rule banning it was already in force.
+  const attrs = [
+    ...html.matchAll(/(?<![\w-])(?:appTooltip|aria-label|placeholder|title|alt|label)="([^"]*)"/g),
+  ]
     .map((match) => match[1])
     .join(' ');
   // The entity renders as the character, so it is the character as far as a reader is concerned.

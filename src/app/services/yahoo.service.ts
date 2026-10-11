@@ -7,14 +7,12 @@ import { connection } from '../api/fn/yahoo/connection';
 import { draft } from '../api/fn/yahoo/draft';
 import { leagues } from '../api/fn/yahoo/leagues';
 import { projectionSettings } from '../api/fn/yahoo/projection-settings';
-import { teams } from '../api/fn/yahoo/teams';
 import {
   AuthorizeUrlResponse,
   ConnectionResponse,
   LeagueDraftResponse,
   LeagueProjectionSettingsResponse,
   LeaguesResponse,
-  LeagueTeamsResponse,
 } from '../api/models';
 
 /** User-facing Yahoo integration: connect your own account + read your leagues/settings. */
@@ -43,10 +41,6 @@ export class YahooService {
 
   leagueProjectionSettings(leagueKey: string): Observable<LeagueProjectionSettingsResponse> {
     return from(this.api.invoke(projectionSettings, { leagueKey }));
-  }
-
-  leagueTeams(leagueKey: string): Observable<LeagueTeamsResponse> {
-    return from(this.api.invoke(teams, { leagueKey }));
   }
 
   leagueDraft(leagueKey: string): Observable<LeagueDraftResponse> {

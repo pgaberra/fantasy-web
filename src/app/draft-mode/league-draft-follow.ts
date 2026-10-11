@@ -1,6 +1,34 @@
 import { DraftState } from '../api/models/draft-state';
 import { LeagueDraftResponse } from '../api/models/league-draft-response';
 
+/**
+ * A league whose draft a board can follow: a Yahoo league, by its league key. An ESPN league's
+ * draft is not followed, since ESPN shares a draft's picks only once it is over.
+ */
+export interface FollowedLeague {
+  readonly platform: 'Yahoo';
+  readonly id: string;
+  readonly name: string;
+}
+
+/**
+ * The league a draft's settings were imported from: a Yahoo league, which can be followed, or an
+ * ESPN league (by its league id), which the draft is only scored from.
+ */
+export type LinkedLeague =
+  FollowedLeague | { readonly platform: 'ESPN'; readonly id: string; readonly name: string };
+
+/**
+ * Whether the league linked in the draft's settings can be followed, as far as the settings have
+ * been able to find out: asked only once the sync switch is on, and `ok` holds what the league
+ * answered, which is where the teams and the user's seat are read from while it is followed.
+ */
+export type DraftSyncCheck =
+  | { readonly state: 'idle' }
+  | { readonly state: 'checking' }
+  | { readonly state: 'ok'; readonly league: LeagueDraftResponse }
+  | { readonly state: 'failed'; readonly notice: string };
+
 /** Why a league's draft cannot be followed, or null when it can. */
 export type UnfollowableReason = 'auction' | 'no-team' | 'too-few-teams';
 
@@ -22,16 +50,14 @@ export function unfollowableReason(league: LeagueDraftResponse): UnfollowableRea
  * there. Whatever else the draft holds (its league settings, whether it was finished) is kept.
  *
  * A league whose order is not known yet (`orderKnown`: Yahoo lists a live draft's slots only once
- * it runs) lists its teams in an order that says nothing about who picks when, so until its first
- * pick the board keeps its own teams and order rather than saving that order as the draft's.
+ * it runs) lists its teams in an order that says nothing about who picks when. The board still
+ * takes them, since the league owns the teams while it is followed, and `seatIsGuess` is what keeps
+ * that order from being played by hand.
  */
 export function boardFromLeagueDraft(
   current: DraftState | null,
   league: LeagueDraftResponse,
 ): DraftState {
-  if (current && !league.orderKnown && league.picks.length === 0) {
-    return { ...current, picks: [] };
-  }
   return {
     ...current,
     teams: league.teams.map((team) => ({ id: team.id, name: team.name, mine: team.mine })),
@@ -63,10 +89,34 @@ export function sameBoard(a: DraftState | null, b: DraftState): boolean {
   );
 }
 
+/**
+ * Whether the board is the league's draft as the league has it now: the same teams, in the same
+ * order, and the same picks, none more and none fewer. A pick changed by hand since makes it the
+ * user's own board again.
+ */
+export function isLeagueDraft(board: DraftState | null, league: LeagueDraftResponse): boolean {
+  return sameBoard(board, boardFromLeagueDraft(board, league));
+}
+
 /** Whether the board's teams are this league's, as a board that has followed it has. */
 export function hasLeagueTeams(current: DraftState | null, league: LeagueDraftResponse): boolean {
   const leagueTeamIds = new Set(league.teams.map((team) => team.id));
   return !!current && current.teams.every((team) => leagueTeamIds.has(team.id));
+}
+
+/**
+ * Whether the user's seat on this board is only the place the league lists their team: the board
+ * is the league's, taken before the league set its draft order, and nothing has been picked since.
+ * A board like that cannot be drafted by hand until the user says where they pick.
+ */
+export function seatIsGuess(board: DraftState | null, league: LeagueDraftResponse | null): boolean {
+  return (
+    !!board &&
+    !!league &&
+    !league.orderKnown &&
+    board.picks.length === 0 &&
+    hasLeagueTeams(board, league)
+  );
 }
 
 /**

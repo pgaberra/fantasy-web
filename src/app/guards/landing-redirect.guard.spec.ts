@@ -16,7 +16,13 @@ function runGuard(
   fragment: string | null = null,
   claimResult: Observable<unknown> = of({ connected: true }),
   startedFrom: string | null = null,
+  restored = false,
 ) {
+  let signedIn = loggedIn;
+  const restoreSession = vi.fn().mockImplementation(() => {
+    signedIn ||= restored;
+    return Promise.resolve();
+  });
   const createUrlTree = vi.fn().mockImplementation((commands, extras) => ({ commands, extras }));
   const parseUrl = vi.fn().mockImplementation((url: string) => ({ parsed: url }));
   const take = vi.fn().mockReturnValue(startedFrom);
@@ -26,7 +32,7 @@ function runGuard(
     providers: [
       {
         provide: AuthService,
-        useValue: { isLoggedIn: () => loggedIn, isAdmin: () => admin },
+        useValue: { isLoggedIn: () => signedIn, isAdmin: () => admin, restoreSession },
       },
       { provide: Router, useValue: { createUrlTree, parseUrl } },
       { provide: YahooConnectReturnService, useValue: { take } },
@@ -40,7 +46,15 @@ function runGuard(
       {} as never,
     ),
   );
-  return { result, createUrlTree, parseUrl, take, completeConnect, completeYahooConnect };
+  return {
+    result,
+    createUrlTree,
+    parseUrl,
+    take,
+    completeConnect,
+    completeYahooConnect,
+    restoreSession,
+  };
 }
 
 async function landing(result: unknown) {
@@ -48,12 +62,26 @@ async function landing(result: unknown) {
 }
 
 describe('landingRedirectGuard', () => {
-  it('shows the landing page to a visitor who is not signed in', () => {
-    expect(runGuard({}, false).result).toEqual(true);
+  /** The restore is refused for them, and the page they see is the one they always saw. */
+  it('shows the landing page to a visitor who is not signed in', async () => {
+    const run = runGuard({}, false);
+
+    expect(await landing(run.result)).toEqual(true);
+    expect(run.restoreSession).toHaveBeenCalledTimes(1);
   });
 
   it('sends a signed-in user home', () => {
-    expect(runGuard({}).createUrlTree).toHaveBeenCalledWith(['/home']);
+    const run = runGuard({});
+
+    expect(run.createUrlTree).toHaveBeenCalledWith(['/home']);
+    expect(run.restoreSession).not.toHaveBeenCalled();
+  });
+
+  /** Safari wiped their stored token, not the refresh cookie the BFF set. */
+  it('sends a user whose session was restored from the cookie home', async () => {
+    const run = runGuard({}, false, false, null, of({ connected: true }), null, true);
+
+    expect(await landing(run.result)).toEqual({ commands: ['/home'], extras: undefined });
   });
 
   it('sends an admin back to admin after a successful connect', () => {
@@ -163,11 +191,29 @@ describe('landingRedirectGuard', () => {
       expect(run.completeConnect).not.toHaveBeenCalled();
     });
 
-    it('claims nothing for a visitor who is not signed in, and drops the code from the URL', () => {
+    it('claims nothing for a visitor who is not signed in, and drops the code from the URL', async () => {
       const run = runGuard({ yahoo: 'confirm', account: 'user' }, false, false, 'link=the-code');
 
-      expect(run.createUrlTree).toHaveBeenCalledWith(['/']);
+      expect(await landing(run.result)).toEqual({ commands: ['/'], extras: undefined });
       expect(run.completeConnect).not.toHaveBeenCalled();
+    });
+
+    it('claims for a user whose session was restored as the page loaded', async () => {
+      const run = runGuard(
+        { yahoo: 'confirm', account: 'user' },
+        false,
+        false,
+        'link=the-code',
+        of({ connected: true }),
+        null,
+        true,
+      );
+
+      expect(await landing(run.result)).toEqual({
+        commands: ['/home'],
+        extras: { queryParams: { yahoo: 'connected' } },
+      });
+      expect(run.completeConnect).toHaveBeenCalledWith('the-code');
     });
   });
 

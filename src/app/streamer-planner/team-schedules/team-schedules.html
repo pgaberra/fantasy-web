@@ -1,0 +1,107 @@
+<!-- What a green or red game, and the Fav and Unfav columns, mean: the colour alone, with no
+     figure behind it, since how many goals an opponent allows is more than a streamer needs. -->
+<p class="legend">
+  <span class="legend-item legend-item--good"
+    ><span class="legend-swatch" aria-hidden="true"></span>Favourable opponent</span
+  >
+  <span class="legend-item legend-item--bad"
+    ><span class="legend-swatch" aria-hidden="true"></span>Unfavourable opponent</span
+  >
+</p>
+<div class="table-scroll">
+  <table class="team-table">
+    <thead>
+      <tr>
+        <th scope="col" class="team-col" [attr.aria-sort]="ariaSort('team')">
+          <button type="button" class="sort" (click)="sort('team')">
+            Team
+            @if (sortKey() === 'team') {
+              <app-icon [name]="descending() ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+          </button>
+        </th>
+        @for (column of columns; track column.key) {
+          <th scope="col" class="num" [attr.aria-sort]="ariaSort(column.key)">
+            <button
+              type="button"
+              class="sort"
+              [appTooltip]="column.tooltip"
+              (click)="sort(column.key)"
+            >
+              @if (sortKey() === column.key) {
+                <app-icon [name]="descending() ? 'arrow-down' : 'arrow-up'" [size]="14" />
+              }
+              {{ column.label }}
+            </button>
+          </th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of sorted(); track row.team) {
+        <tr [class.open]="expanded() === row.team">
+          <th scope="row" class="team-col">
+            <button
+              type="button"
+              class="team-toggle"
+              [attr.aria-expanded]="expanded() === row.team"
+              (click)="toggle(row.team)"
+            >
+              <span class="rank" [attr.data-tier]="tier(row)">{{ row.rank }}</span>
+              <app-team-logo class="team-logo" [team]="row.team" />
+              <span class="team-name">{{ row.team }}</span>
+              <app-icon class="chevron" name="chevron-down" [size]="14" />
+            </button>
+          </th>
+          <td class="num score">{{ row.score.toFixed(2) }}</td>
+          <td class="num">{{ row.games }}</td>
+          <td class="num">{{ row.homeGames }}</td>
+          <td class="num">{{ row.awayGames }}</td>
+          <td class="num">{{ row.offNightGames }}</td>
+          <td class="num">{{ row.backToBacks }}</td>
+          <td class="num fav" [class.nil]="row.favourable === 0">{{ row.favourable }}</td>
+          <td class="num unfav" [class.nil]="row.unfavourable === 0">{{ row.unfavourable }}</td>
+        </tr>
+        @if (expanded() === row.team) {
+          <tr class="games-row">
+            <td colspan="9">
+              @if (row.schedule.length === 0) {
+                <p class="no-games">No games on the nights counted.</p>
+              } @else {
+                <ul class="games">
+                  @for (game of row.schedule; track game.date) {
+                    <li
+                      class="game"
+                      [class.off-night]="game.offNight"
+                      [attr.data-tier]="matchupTier(game)"
+                    >
+                      <span class="game-day">{{ gameDay(game) }}</span>
+                      <app-team-logo class="game-logo" [team]="game.opponent" />
+                      <span class="game-opponent"
+                        >{{ game.home ? 'vs' : 'at' }} {{ game.opponent ?? 'TBD' }}</span
+                      >
+                      @switch (matchupTier(game)) {
+                        @case ('good') {
+                          <span class="sr-only">, favourable opponent</span>
+                        }
+                        @case ('bad') {
+                          <span class="sr-only">, unfavourable opponent</span>
+                        }
+                      }
+                      @if (game.backToBack) {
+                        <span class="game-tag">B2B</span>
+                      }
+                      @if (game.offNight) {
+                        <span class="game-tag">Off</span>
+                      }
+                    </li>
+                  }
+                </ul>
+              }
+            </td>
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+</div>

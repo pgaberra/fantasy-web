@@ -21,6 +21,7 @@ import { messageForError } from '../../shared/http-error';
 import { OpenPopovers } from '../../shared/popover/open-popovers';
 import { LoadingIndicatorComponent } from '../../shared/loading-indicator/loading-indicator';
 import { IconComponent } from '../../shared/icon/icon';
+import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 
 const COPIED_FEEDBACK_MS = 2000;
 
@@ -35,7 +36,7 @@ const COPIED_FEEDBACK_MS = 2000;
  */
 @Component({
   selector: 'app-share-dialog',
-  imports: [IconComponent, LoadingIndicatorComponent],
+  imports: [TooltipDirective, IconComponent, LoadingIndicatorComponent],
   templateUrl: './share-dialog.html',
   styleUrl: './share-dialog.css',
 })

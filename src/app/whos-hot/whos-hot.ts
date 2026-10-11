@@ -1,13 +1,18 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, filter, merge, skip, skipWhile, take } from 'rxjs';
 import { Router } from '@angular/router';
-import { environment } from '../../environments/environment';
 import { EntitlementService } from '../services/entitlement.service';
+import { FeatureService } from '../services/feature.service';
 import { PlayerService } from '../services/player.service';
 import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { Player } from '../models/player.model';
-import { GameSpan, WhosHotService } from '../services/whos-hot.service';
+import {
+  GameSpan,
+  RosterLeague,
+  WhosHotService,
+  withPlayersYetToPlay,
+} from '../services/whos-hot.service';
 import { WhosHotSettingsService } from '../services/whos-hot-settings.service';
 import { ActiveColumns, ScoringType } from '../models/projection.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
@@ -15,7 +20,10 @@ import { RosterSlots } from '../api/models/roster-slots';
 import { YahooSync } from '../api/models/yahoo-sync';
 import { EspnSync } from '../api/models/espn-sync';
 import { LeagueProjectionSettingsResponse } from '../api/models/league-projection-settings-response';
-import { LeagueSyncComponent } from '../draft-projection/projection-settings-section/league-sync/league-sync';
+import {
+  LeagueSyncComponent,
+  DisconnectCause,
+} from '../draft-projection/projection-settings-section/league-sync/league-sync';
 import { LeagueSyncDialogComponent } from '../draft-projection/league-sync-dialog/league-sync-dialog';
 import { YahooSyncResult } from '../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
 import { EspnSyncResult } from '../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
@@ -31,7 +39,16 @@ import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-i
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { LeagueImportButtonComponent } from '../shared/league-import-button/league-import-button';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
-import { FREE_PRESET, GameRangeSelectorComponent } from './game-range-selector/game-range-selector';
+import {
+  BEFORE_FIRST_GAME,
+  FIRST_GAME,
+  FREE_PRESET,
+  GameRangeSelectorComponent,
+  gamesIn,
+  lastGamesRange,
+  SeasonSpan,
+  seasonSpanRange,
+} from './game-range-selector/game-range-selector';
 import { SEASONS, seasonLabelOf } from './season.model';
 import { HotPlayersTableComponent } from './hot-players-table/hot-players-table';
 
@@ -77,6 +94,7 @@ export class WhosHotComponent {
   private readonly whosHot = inject(WhosHotService);
   private readonly settingsStore = inject(WhosHotSettingsService);
   private readonly entitlement = inject(EntitlementService);
+  private readonly features = inject(FeatureService);
 
   protected readonly seasons = SEASONS;
 
@@ -141,6 +159,8 @@ export class WhosHotComponent {
   readonly lastGames = signal<number | null>(
     this.stored ? (this.stored.lastGames ?? null) : FREE_PRESET.lastGames,
   );
+  /** First half, second half or full season, kept by name so it follows the season shown. */
+  readonly seasonSpan = signal<SeasonSpan | null>(this.stored?.seasonSpan ?? null);
   readonly fromGame = signal(this.stored?.fromGame ?? 1);
   readonly toGame = signal(this.stored?.toGame ?? 1);
   readonly perGame = signal(this.stored?.perGame ?? false);
@@ -159,7 +179,18 @@ export class WhosHotComponent {
    * that changes on its own whenever the range moves reads as the page overriding the user.
    */
   readonly appliedMinGames = computed(() =>
-    Math.min(this.minGames(), Math.max(1, this.toGame() - this.fromGame() + 1)),
+    Math.min(this.minGames(), Math.max(1, gamesIn(this.fromGame(), this.toGame()))),
+  );
+
+  /**
+   * Whether the board also lists the players the range has no game for: when it reaches back
+   * before the first game, in a season that has one. Early in a season "the last 5" does that
+   * by itself — five nights in it is games 0-4 — and a team that has not played yet is on the
+   * board at zero rather than missing from it. A season with no game at all keeps saying so,
+   * rather than listing the whole pool at zero.
+   */
+  readonly includesPlayersYetToPlay = computed(
+    () => this.fromGame() === BEFORE_FIRST_GAME && (this.seasonProgress()?.gamesPlayed ?? 0) > 0,
   );
 
   readonly scoringType = signal<ScoringType>(this.stored?.scoringType ?? 'points');
@@ -196,15 +227,51 @@ export class WhosHotComponent {
     () => this.yahooSync()?.leagueName ?? this.espnSync()?.leagueName ?? null,
   );
 
+  /** The synced league as the rostered-players endpoint names it, whichever platform it is on. */
+  private readonly rosterLeague = computed<RosterLeague | null>(() => {
+    const yahoo = this.yahooSync();
+    if (yahoo) {
+      return { platform: 'YAHOO', leagueId: yahoo.leagueKey };
+    }
+    const espn = this.espnSync();
+    return espn ? { platform: 'ESPN', leagueId: espn.leagueId } : null;
+  });
+
+  /** Only the players nobody in the synced league holds; see `canShowAvailableOnly`. */
+  readonly availableOnly = signal(this.stored?.availableOnly ?? false);
+
   /**
-   * Whether this account may pick its own range. Premium buys it; with payments switched off
-   * nobody can, so nobody is held to the free range either. /premium redirects home while the
-   * flag is off, so locking the control then would point at a page that does not exist and
-   * leave the range unbuyable rather than unbought.
+   * Whether the board offers to hide the league's rostered players: where this environment serves
+   * it, and once there is a league to ask. Without one there is nobody to hide, so the switch is
+   * not shown rather than shown doing nothing.
    */
-  readonly canPickRange = computed(
-    () => !environment.paymentsEnabled || this.entitlement.premium(),
+  readonly canShowAvailableOnly = computed(
+    () => this.features.whosHotAvailableFilter() && this.rosterLeague() !== null,
   );
+
+  private readonly filtersAvailable = computed(
+    () => this.canShowAvailableOnly() && this.availableOnly(),
+  );
+
+  /**
+   * Who the league's teams hold, asked only while the switch is on. Fetched fresh on each visit
+   * and each re-sync: a roster moves with every pickup, and a stale one would offer a player
+   * somebody claimed this morning.
+   */
+  private readonly rosteredResource = rxResource({
+    params: () => (this.filtersAvailable() ? (this.rosterLeague() ?? undefined) : undefined),
+    stream: ({ params }) => this.whosHot.rosteredPlayerIds(params),
+  });
+
+  /** The players to leave off the board, or null while it shows everyone. */
+  readonly rosteredPlayerIds = computed<ReadonlySet<number> | null>(() =>
+    this.filtersAvailable() && this.rosteredResource.hasValue()
+      ? this.rosteredResource.value()
+      : null,
+  );
+
+  /** Whether this account may pick its own range, which Premium buys. */
+  readonly canPickRange = computed(() => this.entitlement.premium());
 
   /**
    * The entitlement is a live fetch, and it reads as non-premium until it lands. Holding the
@@ -212,10 +279,7 @@ export class WhosHotComponent {
    * snapped back to the last 5 in the moment before their subscription is known.
    */
   private readonly entitlementSettled = computed(
-    () =>
-      !environment.paymentsEnabled ||
-      this.entitlement.loadState() === 'loaded' ||
-      this.entitlement.loadState() === 'error',
+    () => this.entitlement.loadState() === 'loaded' || this.entitlement.loadState() === 'error',
   );
 
   readonly activeColumns = computed<ActiveColumns>(() => ({
@@ -223,16 +287,32 @@ export class WhosHotComponent {
     utility: this.activeUtilityColumns(),
   }));
 
-  /** Nothing to ask until the season, and its length, are known. */
+  /**
+   * The season the range was last checked against (see the constructor), so the page never asks
+   * about a range it is about to give up. The first span is fetched the moment it appears; asked
+   * before the check, a range the season had not reached spent that request, and a quarter second
+   * on an empty board, before the last 5 it fell back to was asked for at all.
+   */
+  private readonly rangeCheckedFor = signal<number | undefined>(undefined);
+
+  /**
+   * Nothing to ask until the season, and its length, are known, and the range has been checked
+   * against it. The server only measures games, so a range reaching back before the first one
+   * asks from the first; the players it has no game for are the page's to add.
+   */
   private readonly span = computed<GameSpan | undefined>(() => {
     const season = this.season();
-    if (season === undefined || this.scheduleLength() === null) {
+    if (
+      season === undefined ||
+      this.scheduleLength() === null ||
+      this.rangeCheckedFor() !== season
+    ) {
       return undefined;
     }
     const lastGames = this.lastGames();
     return lastGames !== null
       ? { season, lastGames }
-      : { season, fromGame: this.fromGame(), toGame: this.toGame() };
+      : { season, fromGame: Math.max(FIRST_GAME, this.fromGame()), toGame: this.toGame() };
   });
 
   /**
@@ -279,16 +359,25 @@ export class WhosHotComponent {
   });
 
   readonly players = computed(() => this.playersResource.value());
-  readonly hotPlayers = computed(() => this.splitsResource.value());
+  readonly hotPlayers = computed(() => {
+    const measured = this.splitsResource.value();
+    return this.includesPlayersYetToPlay()
+      ? withPlayersYetToPlay(measured, this.players())
+      : measured;
+  });
   readonly isLoading = computed(
     () =>
       this.seasonsResource.isLoading() ||
       this.playersResource.isLoading() ||
-      this.splitsResource.isLoading(),
+      this.splitsResource.isLoading() ||
+      this.rosteredResource.isLoading(),
   );
   readonly loadFailure = computed(
     () =>
-      this.seasonsResource.error() ?? this.playersResource.error() ?? this.splitsResource.error(),
+      this.seasonsResource.error() ??
+      this.playersResource.error() ??
+      this.splitsResource.error() ??
+      this.rosteredResource.error(),
   );
   readonly hasError = computed(() => !!this.loadFailure());
 
@@ -303,13 +392,41 @@ export class WhosHotComponent {
       if (!this.entitlementSettled() || this.canPickRange()) {
         return;
       }
-      this.lastGames.set(FREE_PRESET.lastGames);
+      this.fallBackToFreeRange();
+    });
+
+    /**
+     * Game numbers only mean a stretch of the season they were picked in. Games 38-59 picked in
+     * 2025-26 and kept into 2026-27's first week asked about games nobody had played, and the
+     * board sat empty for a reason nothing on it explained. A range the season under it has not
+     * reached goes back to the last 5, which every season with a game can answer.
+     *
+     * Checked when the season under the range changes — a pick, or, between visits, the season
+     * the page follows moving on — and not as the range moves within one, where a handle dragged
+     * past the latest game must not be snatched back. A season yet to start has reached no range
+     * and says so on the board itself, so it is no reason to give one up.
+     */
+    effect(() => {
+      const progress = this.seasonProgress();
+      if (!progress) {
+        return;
+      }
+      untracked(() => {
+        if (
+          progress.gamesPlayed > 0 &&
+          this.lastGames() === null &&
+          this.rangeStartIn(progress.scheduleGames) > progress.gamesPlayed
+        ) {
+          this.fallBackToFreeRange();
+        }
+        this.rangeCheckedFor.set(progress.season);
+      });
     });
 
     /**
      * "The last N" is resolved per team by the server, so the rail only shows where it falls:
-     * back from the latest game the season has reached. Moving either handle leaves it for the
-     * explicit range it was showing.
+     * back from the latest game the season has reached, as far as its start. Moving either
+     * handle leaves it for the explicit range it was showing.
      */
     effect(() => {
       const lastGames = this.lastGames();
@@ -317,8 +434,21 @@ export class WhosHotComponent {
       if (lastGames === null || latest === null) {
         return;
       }
-      this.fromGame.set(Math.max(1, latest - lastGames + 1));
-      this.toGame.set(latest);
+      const { from, to } = lastGamesRange(latest, lastGames);
+      this.fromGame.set(from);
+      this.toGame.set(to);
+    });
+
+    /** A season pill is drawn against the season shown: the full season is 84 games in 2026-27. */
+    effect(() => {
+      const seasonSpan = this.seasonSpan();
+      const length = this.scheduleLength();
+      if (seasonSpan === null || length === null) {
+        return;
+      }
+      const { from, to } = seasonSpanRange(seasonSpan, length);
+      this.fromGame.set(from);
+      this.toGame.set(to);
     });
 
     /** A range kept from an 84-game season must not point past the end of an 82-game one. */
@@ -341,6 +471,7 @@ export class WhosHotComponent {
         fromGame: this.fromGame(),
         toGame: this.toGame(),
         lastGames: this.lastGames(),
+        seasonSpan: this.seasonSpan(),
         perGame: this.perGame(),
         minGames: this.minGames(),
         scoringType: this.scoringType(),
@@ -353,6 +484,7 @@ export class WhosHotComponent {
         yahooSync: this.yahooSync(),
         espnSync: this.espnSync(),
         lastEspnLeagueId: this.lastEspnLeagueId(),
+        availableOnly: this.availableOnly(),
       });
     });
   }
@@ -374,6 +506,9 @@ export class WhosHotComponent {
     }
     if (this.splitsResource.error()) {
       this.splitsResource.reload();
+    }
+    if (this.rosteredResource.error()) {
+      this.rosteredResource.reload();
     }
   }
 
@@ -404,6 +539,19 @@ export class WhosHotComponent {
   }
 
   /**
+   * Disconnect league: the settings stay as they are and become the user's to change. The ESPN
+   * league's id stays, so the next import starts from it.
+   */
+  disconnectLeague(cause: DisconnectCause = 'button'): void {
+    this.yahooSync.set(null);
+    this.espnSync.set(null);
+    // A switch to the other platform lets go of the league to sync one there: the dialog stays.
+    if (cause === 'button') {
+      this.showSyncDialog.set(false);
+    }
+  }
+
+  /**
    * A sync that had nothing to report is finished the moment it lands, so the dialog gets out of
    * the way and the toolbar states the league it came from. One that could not map every stat
    * keeps the dialog open: that list is the only place the user is told their league scores
@@ -426,5 +574,24 @@ export class WhosHotComponent {
     if (settings.statWeights) {
       this.statWeights.set(settings.statWeights as Record<ScoringStatKey, number>);
     }
+  }
+
+  /** The last 5, with the season pill let go: the rail follows it from the effects above. */
+  private fallBackToFreeRange(): void {
+    this.seasonSpan.set(null);
+    this.lastGames.set(FREE_PRESET.lastGames);
+  }
+
+  /**
+   * The first game an explicit range or a season pill asks about, in a season of this length.
+   * Worked out here rather than read off the rail, which may not have been redrawn for this
+   * season yet: a pill is drawn against it, and a range past its end is pulled back inside.
+   */
+  private rangeStartIn(scheduleLength: number): number {
+    const seasonSpan = this.seasonSpan();
+    const from = seasonSpan
+      ? seasonSpanRange(seasonSpan, scheduleLength).from
+      : Math.min(this.fromGame(), scheduleLength);
+    return Math.max(FIRST_GAME, from);
   }
 }

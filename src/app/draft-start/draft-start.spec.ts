@@ -1,7 +1,7 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ApplicationRef, signal } from '@angular/core';
-import { of, throwError } from 'rxjs';
+import { signal } from '@angular/core';
+import { of, Subject, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { provideLocationMocks } from '@angular/common/testing';
@@ -12,17 +12,14 @@ import { EntitlementService } from '../services/entitlement.service';
 import { NotificationService } from '../services/notification.service';
 import { PopoverTriggerDirective } from '../shared/popover/popover-trigger.directive';
 import { ProjectionSummaryResponse } from '../api/models/projection-summary-response';
-import { environment } from '../../environments/environment';
 import { FeatureService } from '../services/feature.service';
-import { MODEL_PRESET_SOURCE } from '../models/ai-projection';
-import { ProjectionBoardCache } from '../services/projection-board-cache';
-import { ProjectionSerializerService } from '../services/projection-serializer.service';
-import { createDefaultProjectionState } from '../draft-projection/projection-defaults';
-import { ProjectionResponse } from '../api/models/projection-response';
+import { RestOfSeasonService } from '../services/rest-of-season.service';
+import { MODEL_SOURCES } from '../models/ai-projection';
 
 describe('DraftStartComponent', () => {
   const LAST_SEASON = PRESETS.find((preset) => preset.id === 'last_season')!;
   const MODEL = PRESETS.find((preset) => preset.id === 'model')!;
+  const REST_OF_SEASON = PRESETS.find((preset) => preset.id === 'rest_of_season')!;
 
   const summary = (
     id: string,
@@ -84,11 +81,13 @@ describe('DraftStartComponent', () => {
   const notifyError = vi.fn();
   const premium = signal(false);
   const aiProjection = signal(true);
+  const restOfSeasonAvailable = signal(false);
   const loadState = signal<'idle' | 'loading' | 'loaded' | 'error'>('loaded');
 
   beforeEach(() => {
     premium.set(false);
     aiProjection.set(true);
+    restOfSeasonAvailable.set(false);
     loadState.set('loaded');
     navigate.mockClear();
     listAll.mockClear();
@@ -121,8 +120,6 @@ describe('DraftStartComponent', () => {
           loadProjection,
           updateProjection,
         })
-        // Real, so the league a board is drafted with is read from the board it loads.
-        .keep(ProjectionBoardCache)
         .mock(NotificationService, { error: notifyError })
         .mock(EntitlementService, { premium, loadState })
         .mock(FeatureService, {
@@ -130,7 +127,17 @@ describe('DraftStartComponent', () => {
           offeredPresets: <T extends { readonly source?: string | null }>(presets: readonly T[]) =>
             aiProjection()
               ? presets
-              : presets.filter((preset) => preset.source !== MODEL_PRESET_SOURCE),
+              : presets.filter((preset) => !MODEL_SOURCES.includes(preset.source ?? '')),
+        })
+        .mock(RestOfSeasonService, {
+          available: restOfSeasonAvailable,
+          // What the real one does, out of the two answers above: see rest-of-season.service.spec.ts.
+          offeredPresets: <T extends { readonly source?: string | null }>(presets: readonly T[]) =>
+            presets.filter(
+              (preset) =>
+                (aiProjection() || !MODEL_SOURCES.includes(preset.source ?? '')) &&
+                (preset.source !== 'rest_of_season' || restOfSeasonAvailable()),
+            ),
         })
         .provide({ provide: Router, useValue: { navigate } })
         .provide({ provide: ActivatedRoute, useValue: { snapshot: { queryParams } } })
@@ -175,39 +182,6 @@ describe('DraftStartComponent', () => {
     expect(component.drafts().map((draft) => draft.id)).toEqual(['preset1']);
   });
 
-  /**
-   * The pick is made against the board it would draft, the same way the new-projection page
-   * previews a starting point. What the preview does with it is its own spec's business; what
-   * matters here is that it is told what is picked.
-   */
-  it('previews whatever is picked', async () => {
-    listAll.mockReturnValue(of([summary('p1', 'projection')]));
-
-    const component = await render();
-    component.sourceKind.set('preset');
-
-    expect(component.previewSource()).toEqual({ kind: 'preset', preset: 'default' });
-
-    component.selectPreset(MODEL);
-    expect(component.previewSource()).toEqual({ kind: 'preset', preset: 'model' });
-
-    component.sourceKind.set('projection');
-    expect(component.previewSource()).toEqual({ kind: 'board', id: 'p1' });
-    expect(component.previewFallbackNote()).toEqual(
-      'Drafts against Projection p1, using its saved numbers.',
-    );
-  });
-
-  it('previews nothing when the open kind holds nothing', async () => {
-    listAll.mockReturnValue(of([]));
-
-    const component = await render();
-    component.sourceKind.set('following');
-
-    expect(component.selection()).toBeNull();
-    expect(component.previewSource()).toBeNull();
-  });
-
   it('opens a draft at its own address, which is not the board it was played against', async () => {
     const component = await render();
 
@@ -216,12 +190,12 @@ describe('DraftStartComponent', () => {
     expect(navigate).toHaveBeenCalledWith(['/drafts', 'd1']);
   });
 
-  it('opens a finished draft on its summary, which is what there is to see of it', async () => {
+  it('opens a finished draft on its board too', async () => {
     const component = await render();
 
     component.openDraft({ id: 'd1', draftStatus: 'finished' } as never);
 
-    expect(navigate).toHaveBeenCalledWith(['/drafts', 'd1', 'summary']);
+    expect(navigate).toHaveBeenCalledWith(['/drafts', 'd1']);
   });
 
   // The draft is created by the draft page once its setup is confirmed. Saving it here, before
@@ -280,163 +254,28 @@ describe('DraftStartComponent', () => {
     expect(component.drafts().map((draft) => draft.id)).toEqual(['d1', 'd2']);
   });
 
-  describe('the league a draft is ranked by', () => {
-    /** A board as the server returns it, scored as a 10-team category league. */
-    const board = (id: string): ProjectionResponse => {
-      const serializer = ngMocks.findInstance(ProjectionSerializerService);
-      return {
-        id,
-        name: `Projection ${id}`,
-        kind: 'projection',
-        season: '20262027',
-        autoNamed: false,
-        createdAt: '2026-06-01T00:00:00Z',
-        updatedAt: '2026-06-01T00:00:00Z',
-        data: serializer.toProjectionData({
-          ...createDefaultProjectionState(() => false),
-          scoringType: 'category',
-          leagueSize: 10,
-        }),
-      };
-    };
-
-    /** Opens the projections and lets the picked board's league arrive. */
-    const pickProjections = async () => {
-      ngMocks.findInstance(DraftStartComponent).sourceKind.set('projection');
-      const app = ngMocks.find(DraftStartComponent).injector.get(ApplicationRef);
-      app.tick();
-      await app.whenStable();
-    };
-
-    it('drafts a preset against the league set on the page', async () => {
+  // The league is the draft setup's to ask for now, so Start carries nothing but what the draft
+  // is played against — and reads nothing either: no board is downloaded to show its league.
+  describe('starting a draft', () => {
+    it('opens the setup for a preset with nothing but the preset', async () => {
       listAll.mockReturnValue(of([]));
       const component = await render();
-      const league = component.leagueSettings()!;
 
-      expect(league.scoringType).toEqual('points');
-      component.setLeagueSettings({ ...league, scoringType: 'category', leagueSize: 8 });
-      component.setStatWeights({ ...component.leagueSettings()!.statWeights, goals: 6 });
       component.start();
 
-      // Nothing is saved from here: the league travels to the setup that creates the board.
       expect(createProjection).not.toHaveBeenCalled();
-      const [path, extras] = navigate.mock.calls[0];
-      expect(path).toEqual(['/draft/new/preset', 'last_season']);
-      const settings = extras.state.draftLeagueSettings;
-      expect(settings.scoringType).toEqual('category');
-      expect(settings.leagueSize).toEqual(8);
-      expect(settings.statWeights.goals).toEqual(6);
-    });
-
-    it('sends nothing along with a preset whose league was left alone', async () => {
-      listAll.mockReturnValue(of([]));
-      const component = await render();
-
-      component.start();
-
       expect(navigate).toHaveBeenCalledWith(['/draft/new/preset', 'last_season']);
     });
 
-    it('shows a board with its own league, not the defaults', async () => {
-      loadProjection.mockReturnValue(of(board('p1')));
+    it('opens the setup for a board without reading or writing it', async () => {
       const component = await render();
-
-      await pickProjections();
-
-      expect(component.leagueSettings()?.scoringType).toEqual('category');
-      expect(component.leagueSettings()?.leagueSize).toEqual(10);
-    });
-
-    // Alexander's call: the league belongs to the draft, and the board is never written to.
-    it('takes a league changed for a board to its draft, leaving the board alone', async () => {
-      loadProjection.mockReturnValue(of(board('p1')));
-      const component = await render();
-      await pickProjections();
-
-      expect(component.leagueSettings()?.scoringType).toEqual('category');
-      component.setLeagueSettings({ ...component.leagueSettings()!, scoringType: 'points' });
-      component.start();
-
-      expect(updateProjection).not.toHaveBeenCalled();
-      const [path, extras] = navigate.mock.calls[0];
-      expect(path).toEqual(['/draft/new/board', 'p1']);
-      expect(extras.state.draftLeagueSettings.scoringType).toEqual('points');
-    });
-
-    it('opens a board without writing to it when its league was left alone', async () => {
-      loadProjection.mockReturnValue(of(board('p1')));
-      const component = await render();
-      await pickProjections();
+      component.sourceKind.set('projection');
 
       component.start();
 
+      expect(loadProjection).not.toHaveBeenCalled();
       expect(updateProjection).not.toHaveBeenCalled();
       expect(navigate).toHaveBeenCalledWith(['/draft/new/board', 'p1']);
-    });
-
-    it('keeps the league set for a preset while a board is looked at', async () => {
-      loadProjection.mockReturnValue(of(board('p1')));
-      const component = await render();
-      component.sourceKind.set('preset');
-      component.setLeagueSettings({ ...component.leagueSettings()!, scoringType: 'category' });
-
-      await pickProjections();
-      expect(component.leagueSettings()?.leagueSize).toEqual(10);
-
-      component.sourceKind.set('preset');
-      expect(component.leagueSettings()?.scoringType).toEqual('category');
-    });
-
-    // The presets differ only in their numbers, so a league imported with one picked stays with
-    // the other rather than falling back to the defaults.
-    it('keeps the league set for one preset when another is picked', async () => {
-      listAll.mockReturnValue(of([]));
-      const component = await render();
-      component.setLeagueSettings({ ...component.leagueSettings()!, leagueSize: 14 });
-
-      component.selectPreset(MODEL);
-
-      expect(component.leagueSettings()?.leagueSize).toEqual(14);
-    });
-
-    // An import says which league the user plays in, so a board is drafted against it too.
-    it('drafts a board against the league imported while a preset was picked', async () => {
-      loadProjection.mockReturnValue(of(board('p1')));
-      const component = await render();
-      component.setLeagueSettings({
-        ...component.leagueSettings()!,
-        leagueSize: 14,
-        yahooSync: {
-          leagueName: 'My league',
-          leagueKey: '465.l.1',
-          syncedAt: '2026-09-17T00:00:00Z',
-        },
-      });
-
-      await pickProjections();
-      expect(component.leagueSettings()?.leagueSize).toEqual(14);
-      component.start();
-
-      expect(updateProjection).not.toHaveBeenCalled();
-      const [path, extras] = navigate.mock.calls[0];
-      expect(path).toEqual(['/draft/new/board', 'p1']);
-      expect(extras.state.draftLeagueSettings.yahooSync.leagueName).toEqual('My league');
-    });
-
-    // A preset is never "occupied" by a draft any more: Start always begins a new one, and the
-    // league set on the page goes with it.
-    it('takes the league to a second draft against a preset that already has one', async () => {
-      listAll.mockReturnValue(of([summary('preset1', 'draft', 'in_progress')]));
-      const component = await render();
-
-      component.setLeagueSettings({ ...component.leagueSettings()!, leagueSize: 14 });
-      component.start();
-
-      expect(createProjection).not.toHaveBeenCalled();
-      expect(updateProjection).not.toHaveBeenCalled();
-      const [path, extras] = navigate.mock.calls[0];
-      expect(path).toEqual(['/draft/new/preset', 'last_season']);
-      expect(extras.state.draftLeagueSettings.leagueSize).toEqual(14);
     });
   });
 
@@ -542,8 +381,10 @@ describe('DraftStartComponent', () => {
     expect(new Set(ids).size).toEqual(ids.length);
   });
 
-  /** The door to a spreadsheet stands in the group the upload lands in, not beside the link. */
-  it('puts the upload with the boards the user owns and the follow field with the followed', async () => {
+  // A file becomes a projection, and projections are made on the new-projection page, which the
+  // user's own group links to. Only the follow field, under the followed boards, makes a source
+  // here.
+  it('offers no upload, and the follow field only with the followed', async () => {
     listAll.mockReturnValue(of([summary('p1', 'projection'), imported('i1', 'alex')]));
 
     const fixture = MockRender(DraftStartComponent);
@@ -553,25 +394,14 @@ describe('DraftStartComponent', () => {
 
     component.sourceKind.set('projection');
     fixture.detectChanges();
-    expect(root.querySelector('app-spreadsheet-import-button')).not.toBeNull();
+    expect(root.querySelector('app-spreadsheet-import-button')).toBeNull();
     expect(root.querySelector('app-share-import')).toBeNull();
+    expect(root.querySelector('.create-projection')).not.toBeNull();
 
     component.sourceKind.set('following');
     fixture.detectChanges();
     expect(root.querySelector('app-share-import')).not.toBeNull();
     expect(root.querySelector('app-spreadsheet-import-button')).toBeNull();
-  });
-
-  it('picks a spreadsheet upload among the boards the user owns', async () => {
-    const fixture = MockRender(DraftStartComponent);
-    await fixture.whenStable();
-
-    fixture.point.componentInstance.onUploaded('s9');
-    await fixture.whenStable();
-
-    expect(fixture.point.componentInstance.sourceKind()).toEqual('projection');
-    expect(fixture.point.componentInstance.selection()).toEqual({ kind: 'board', id: 's9' });
-    expect(listAll).toHaveBeenCalledTimes(2);
   });
 
   it('re-reads the sources when a board is followed, so it joins the list', async () => {
@@ -602,6 +432,37 @@ describe('DraftStartComponent', () => {
     expect(component.presets().map((preset) => preset.id)).toEqual(['last_season']);
   });
 
+  it('offers the rest of the season beside the AI projection while a season is under way', async () => {
+    restOfSeasonAvailable.set(true);
+    const component = await render();
+
+    expect(component.presets().map((preset) => preset.id)).toEqual([
+      'last_season',
+      'model',
+      'rest_of_season',
+    ]);
+    component.selectPreset(REST_OF_SEASON);
+    component.start();
+    expect(navigate).toHaveBeenCalledWith(['/draft/new/preset', 'rest_of_season']);
+  });
+
+  it('leaves the rest of the season out between seasons', async () => {
+    const component = await render();
+
+    expect(component.presets().map((preset) => preset.id)).toEqual(['last_season', 'model']);
+  });
+
+  it('tells the two AI presets apart under their names', async () => {
+    restOfSeasonAvailable.set(true);
+    listAll.mockReturnValue(of([]));
+    const fixture = await renderFixture();
+
+    expect(texts(fixture, '.row-meta')).toEqual([
+      'The whole season',
+      'Only the games left to play',
+    ]);
+  });
+
   /**
    * Both presets and both boards can be drafted repeatedly, so what the page has to get right is
    * no longer which draft belongs to which preset — it is that a draft says what it was played
@@ -629,7 +490,7 @@ describe('DraftStartComponent', () => {
     expect(labelOf('d1')).toEqual('From Projection p1');
     expect(labelOf('d2')).toEqual('Projection deleted');
     expect(component.draftLabel('in_progress')).toEqual('Resume draft');
-    expect(component.draftLabel('finished')).toEqual('View summary');
+    expect(component.draftLabel('finished')).toEqual('View draft');
   });
 
   // The choice is made in steps: the kind first, and the page opens on the user's own boards when
@@ -656,13 +517,10 @@ describe('DraftStartComponent', () => {
     component.sourceKind.set('preset');
     fixture.detectChanges();
     expect(pressed()).toEqual(['true', 'false', 'false']);
-    // Its steps are headings under it. The import's label under the cards is deliberately not
-    // one: it is a way into the first step, not a step.
-    expect(texts(fixture, 'h3')).toEqual([
-      'What do you want to draft against?',
-      'League settings',
-      'Preview',
-    ]);
+    // One step, a heading over it: the league is the draft setup's to ask, and there is no
+    // preview. The import's label under the cards is deliberately not one: it is a way into the
+    // step, not a step.
+    expect(texts(fixture, 'h3')).toEqual(['What do you want to draft against?']);
     expect(texts(fixture, '.row-name')).toEqual([LAST_SEASON_PRESET_NAME, MODEL_PRESET_NAME]);
     expect(fixture.nativeElement.querySelector('app-projection-import')).toBeNull();
   });
@@ -670,6 +528,7 @@ describe('DraftStartComponent', () => {
   // One card for every choice, whichever tile is open. The presets were cards and the boards a
   // ruled list for a release, and switching tiles then switched the control under them.
   it('draws every choice as the same card, whichever tile is open', async () => {
+    restOfSeasonAvailable.set(true);
     listAll.mockReturnValue(of([summary('p1', 'projection', 'none'), imported('i1', 'alex')]));
 
     const fixture = await renderFixture();
@@ -680,13 +539,13 @@ describe('DraftStartComponent', () => {
     component.sourceKind.set('preset');
     fixture.detectChanges();
 
-    // Presets: two cards, an icon on each, the checked one marked on the card itself.
+    // Presets: three cards, an icon on each, the checked one marked on the card itself.
     expect(cards()).toHaveLength(PRESETS.length);
     expect(root.querySelectorAll('.row-icon app-icon')).toHaveLength(PRESETS.length);
-    expect(selected()).toEqual([true, false]);
+    expect(selected()).toEqual([true, false, false]);
     component.selectPreset(MODEL);
     fixture.detectChanges();
-    expect(selected()).toEqual([false, true]);
+    expect(selected()).toEqual([false, true, false]);
 
     // The same card for a projection and for a shared board: radio, icon, outline and meta.
     for (const kind of ['projection', 'following'] as const) {
@@ -703,39 +562,15 @@ describe('DraftStartComponent', () => {
   // The badge says the AI projection is sold. Rendered once per state rather than twice in one
   // test: two live fixtures over a flipped flag re-check the first against the new value, which
   // Angular reports as ExpressionChangedAfterItHasBeenChecked.
-  it('marks the AI projection as Premium where payments are on', async () => {
-    const original = environment.paymentsEnabled;
-    environment.paymentsEnabled = true;
+  it('marks the AI projection as Premium', async () => {
     listAll.mockReturnValue(of([]));
-    try {
-      const fixture = await renderFixture();
-      const component = fixture.point.componentInstance;
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
 
-      expect(component.showsPremiumBadge(MODEL)).toBe(true);
-      // Only the one that is sold: last season's stats is in every build.
-      expect(component.showsPremiumBadge(LAST_SEASON)).toBe(false);
-      expect(texts(fixture, '.row-badge')).toEqual(['Premium']);
-    } finally {
-      environment.paymentsEnabled = original;
-    }
-  });
-
-  // Without payments the AI projection is free and ungated, and a badge naming a subscription
-  // this build cannot sell promises something nobody can act on.
-  it('leaves the badge off where there is no way to buy anything', async () => {
-    const original = environment.paymentsEnabled;
-    environment.paymentsEnabled = false;
-    listAll.mockReturnValue(of([]));
-    try {
-      const fixture = await renderFixture();
-
-      expect(fixture.point.componentInstance.showsPremiumBadge(MODEL)).toBe(false);
-      expect(fixture.nativeElement.querySelector('.row-badge')).toBeNull();
-      // The preset itself is still on offer; only the mark on it is held back.
-      expect(texts(fixture, '.row-name')).toEqual([LAST_SEASON_PRESET_NAME, MODEL_PRESET_NAME]);
-    } finally {
-      environment.paymentsEnabled = original;
-    }
+    expect(component.showsPremiumBadge(MODEL)).toBe(true);
+    // Only the one that is sold: last season's stats is in every build.
+    expect(component.showsPremiumBadge(LAST_SEASON)).toBe(false);
+    expect(texts(fixture, '.row-badge')).toEqual(['Premium']);
   });
 
   // A kind with nothing in it still has its segment, with a 0 on it: the count is what keeps the
@@ -801,7 +636,7 @@ describe('DraftStartComponent', () => {
   });
 
   // A card's name is one line, cut with an ellipsis; the full name must still be reachable.
-  it('carries the whole name in the title, so a cut name can be read on hover', async () => {
+  it('carries the whole name in a tooltip, so a cut name can be read on hover', async () => {
     const name = 'Kopia av Apples & Ginos 2024-25 NHL Skater Projections_';
     listAll.mockReturnValue(of([{ ...summary('p1', 'projection'), name }]));
 
@@ -809,9 +644,9 @@ describe('DraftStartComponent', () => {
     fixture.point.componentInstance.sourceKind.set('projection');
     fixture.detectChanges();
 
-    const rowName: HTMLElement | null = fixture.nativeElement.querySelector('.row-name');
-    expect(rowName?.textContent?.trim()).toBe(name);
-    expect(rowName?.title).toBe(name);
+    const rowName = ngMocks.find(fixture, '.row-name');
+    expect(rowName.nativeElement.textContent?.trim()).toEqual(name);
+    expect(ngMocks.input(rowName, 'appTooltip')).toEqual(name);
   });
 
   // What the user built is what they came to draft against, so their own boards come first,
@@ -935,7 +770,7 @@ describe('DraftStartComponent', () => {
     );
     expect(cards.map((card) => card.getAttribute('aria-label'))).toEqual([
       'Resume draft: Beer League',
-      'View summary: Mock #2',
+      'View draft: Mock #2',
     ]);
     expect(texts(fixture, '.draft-status')).toEqual(['In progress', 'Complete']);
     expect(fixture.nativeElement.querySelectorAll('.draft .btn')).toHaveLength(0);
@@ -943,8 +778,7 @@ describe('DraftStartComponent', () => {
 
     cards[1].click();
 
-    // The card says "View summary", and that is where it goes.
-    expect(navigate).toHaveBeenCalledWith(['/drafts', 'd2', 'summary']);
+    expect(navigate).toHaveBeenCalledWith(['/drafts', 'd2']);
   });
 
   it('keeps the discard behind the card menu rather than on the card', async () => {
@@ -981,7 +815,7 @@ describe('DraftStartComponent', () => {
 
     expect(menuPanel()).toBeNull();
     const prompt = fixture.nativeElement.querySelector('.confirm-text') as HTMLElement;
-    expect(prompt.textContent?.trim()).toEqual('Discard this draft? Your picks will be lost.');
+    expect(prompt.textContent?.trim()).toEqual('Discard this draft?');
     expect(document.activeElement).toBe(prompt);
   });
 
@@ -1026,19 +860,69 @@ describe('DraftStartComponent', () => {
     expect(component.isDiscarding(draft)).toEqual(false);
   });
 
-  it('reloads the sources once a draft is discarded, so its row goes away', async () => {
-    const draft = summary('d1', 'draft', 'in_progress');
-    listAll.mockReturnValue(of([draft]));
+  // Nothing in the list changes but the one row, so the page takes it out where it stands rather
+  // than reading everything again behind a spinner.
+  it('takes a discarded draft out of the list without reading the list again', async () => {
+    listAll.mockReturnValue(
+      of([summary('p1', 'projection'), boardDraft('d1', 'p1'), boardDraft('d2', 'p1')]),
+    );
+
+    const fixture = await renderFixture();
+    const component = fixture.point.componentInstance;
+    component.confirmDiscard(component.drafts()[0]);
+    fixture.detectChanges();
+
+    expect(component.drafts().map((draft) => draft.id)).toEqual(['d2']);
+    expect(component.projections().map((board) => board.id)).toEqual(['p1']);
+    expect(texts(fixture, '.draft-name')).toEqual(['Projection p1']);
+    expect(listAll).toHaveBeenCalledTimes(1);
+  });
+
+  // A rename or a follow still re-reads the list, and the page it re-reads under stays put: it
+  // used to be swapped for a spinner until the list came back.
+  it('keeps the page on screen while the list is read again', async () => {
+    listAll.mockReturnValue(of([summary('p1', 'projection'), boardDraft('d1', 'p1')]));
+    const fixture = await renderFixture();
+    const pending = new Subject<ProjectionSummaryResponse[]>();
+    listAll.mockReturnValue(pending);
+
+    fixture.point.componentInstance.retry();
+    fixture.detectChanges();
+
+    expect(fixture.point.componentInstance.sourcesResource.isLoading()).toBe(true);
+    expect(fixture.nativeElement.querySelector('app-loading-indicator')).toBeNull();
+    expect(texts(fixture, '.section-title')).toEqual(['Your drafts', 'Start a new draft']);
+
+    pending.next([summary('p1', 'projection')]);
+    pending.complete();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(texts(fixture, '.section-title')).toEqual(['Start a new draft']);
+  });
+
+  it('shows the spinner while there is nothing to show yet', async () => {
+    listAll.mockReturnValue(new Subject<ProjectionSummaryResponse[]>());
 
     const fixture = MockRender(DraftStartComponent);
-    await fixture.whenStable();
-    const component = fixture.point.componentInstance;
-    listAll.mockReturnValue(of([]));
+    fixture.detectChanges();
 
-    component.confirmDiscard(draft);
-    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('app-loading-indicator')).not.toBeNull();
+    expect(texts(fixture, '.section-title')).toEqual([]);
+  });
 
-    expect(component.drafts()).toEqual([]);
+  // After a failed load there is no list to keep, only the error, so Try again shows the spinner.
+  it('shows the spinner, not an empty page, while a failed load is tried again', async () => {
+    listAll.mockReturnValue(throwError(() => new Error('boom')));
+    const fixture = await renderFixture();
+    listAll.mockReturnValue(new Subject<ProjectionSummaryResponse[]>());
+
+    fixture.point.componentInstance.retry();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('app-loading-indicator')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('app-error-state')).toBeNull();
+    expect(texts(fixture, '.section-title')).toEqual([]);
   });
 
   it('surfaces a failed discard and leaves the row where it was', async () => {
@@ -1075,7 +959,7 @@ describe('DraftStartComponent', () => {
       'Discard this draft? The picks go, the projection stays.',
     );
     expect(component.discardPrompt(summary('preset1', 'draft', 'in_progress'))).toEqual(
-      'Discard this draft? Your picks will be lost.',
+      'Discard this draft?',
     );
   });
 
@@ -1088,9 +972,7 @@ describe('DraftStartComponent', () => {
     fixture.detectChanges();
 
     expect(texts(fixture, '.draft-actions button')).toEqual(['Yes, discard', 'Cancel']);
-    expect(texts(fixture, '.confirm-text')).toEqual([
-      'Discard this draft? Your picks will be lost.',
-    ]);
+    expect(texts(fixture, '.confirm-text')).toEqual(['Discard this draft?']);
   });
 
   /**
@@ -1166,21 +1048,15 @@ describe('DraftStartComponent', () => {
    * the card keeps its place among the presets and the padlock and the button say the rest.
    */
   describe('when the AI projection is behind a subscription', () => {
-    const withPayments = async (
+    const withRendered = async (
       test: (fixture: Awaited<ReturnType<typeof renderFixture>>) => void,
     ) => {
-      const original = environment.paymentsEnabled;
-      environment.paymentsEnabled = true;
       listAll.mockReturnValue(of([]));
-      try {
-        test(await renderFixture());
-      } finally {
-        environment.paymentsEnabled = original;
-      }
+      test(await renderFixture());
     };
 
     it('keeps the card on the page, marked and locked', async () => {
-      await withPayments((fixture) => {
+      await withRendered((fixture) => {
         const component = fixture.point.componentInstance;
 
         expect(component.isPresetLocked(MODEL)).toBe(true);
@@ -1196,7 +1072,7 @@ describe('DraftStartComponent', () => {
      * produce a refusal, so it becomes the thing that can actually be done next.
      */
     it('turns the Start button into the way to Premium once the locked card is picked', async () => {
-      await withPayments((fixture) => {
+      await withRendered((fixture) => {
         const component = fixture.point.componentInstance;
         component.selectPreset(MODEL);
         fixture.detectChanges();
@@ -1210,7 +1086,7 @@ describe('DraftStartComponent', () => {
     });
 
     it('leaves the free preset able to start a draft as it always could', async () => {
-      await withPayments((fixture) => {
+      await withRendered((fixture) => {
         const component = fixture.point.componentInstance;
         component.selectPreset(LAST_SEASON);
         fixture.detectChanges();
@@ -1224,7 +1100,7 @@ describe('DraftStartComponent', () => {
 
     it('unlocks the card for a subscriber, badge and all', async () => {
       premium.set(true);
-      await withPayments((fixture) => {
+      await withRendered((fixture) => {
         expect(fixture.point.componentInstance.isPresetLocked(MODEL)).toBe(false);
         expect(fixture.nativeElement.querySelector('.row--locked')).toBeNull();
         // The badge stays: it names the plan the starting point belongs to.

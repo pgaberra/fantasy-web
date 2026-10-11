@@ -1,23 +1,20 @@
-<div class="espn-sync">
-  <div class="espn-sync-row">
-    <span class="espn-sync-brand">
-      <img class="espn-logo" src="espn-logo.png" alt="" aria-hidden="true" />
-      Sync from your ESPN league
-    </span>
-  </div>
+<div class="espn-sync" [class.espn-sync--embedded]="embedded()">
+  @if (!embedded()) {
+    <div class="espn-sync-row">
+      <span class="espn-sync-brand">
+        <img class="espn-logo" src="espn-logo.png" alt="" aria-hidden="true" />
+        {{ title() }}
+      </span>
+    </div>
+  }
 
   @if (lastSyncedAt(); as syncedAt) {
-    <p class="espn-synced-status">
-      <span class="espn-synced-dot" aria-hidden="true"></span>
-      <span>
-        @if (lastLeagueName(); as leagueName) {
-          Synced with <strong>{{ leagueName }}</strong>
-        } @else {
-          Synced
-        }
-        · {{ syncedAt | date: 'd MMM y, HH:mm' }}
-      </span>
-    </p>
+    <app-synced-line
+      [leagueName]="lastLeagueName()"
+      [syncedAt]="syncedAt"
+      [disconnectable]="disconnectable()"
+      (disconnected)="disconnected.emit()"
+    />
   }
 
   <div class="espn-sync-form">
@@ -46,8 +43,7 @@
         <span class="espn-field-label">espn_s2</span>
         <input
           class="espn-input"
-          type="password"
-          autocomplete="off"
+          appCookieField
           aria-label="espn_s2 cookie"
           [value]="espnS2()"
           (input)="onEspnS2Input($event)"
@@ -57,8 +53,7 @@
         <span class="espn-field-label">SWID</span>
         <input
           class="espn-input"
-          type="password"
-          autocomplete="off"
+          appCookieField
           placeholder="{...}"
           aria-label="SWID cookie"
           [value]="swid()"
@@ -75,12 +70,16 @@
   <div class="espn-sync-row">
     <button
       type="button"
-      class="btn btn-secondary btn-sm"
+      class="btn btn-sm"
+      [class.btn-primary]="syncPending()"
+      [class.btn-secondary]="!syncPending()"
       [disabled]="!leagueId().trim() || syncing()"
       (click)="sync()"
     >
       @if (syncing()) {
-        <app-loading-indicator variant="inline" label="Syncing" />
+        <app-loading-indicator variant="inline" [label]="readButton() ? 'Reading' : 'Syncing'" />
+      } @else if (readButton(); as label) {
+        {{ label }}
       } @else {
         {{ syncedLeagueId() ? 'Re-sync settings' : 'Sync settings' }}
       }
@@ -90,15 +89,10 @@
   @if (error()) {
     <p class="espn-sync-error" role="alert">{{ error() }}</p>
   }
-  @if (syncedLeagueId(); as id) {
-    <p class="espn-sync-synced" role="status">
-      <app-icon name="check-circle" class="espn-sync-check" />
-      <span
-        >Synced from <strong>{{ syncedLeagueName() ?? id }}</strong></span
-      >
-    </p>
-  }
   @if (unsupportedStats().length) {
-    <p class="espn-sync-muted">Not synced: {{ unsupportedStats().join(', ') }}</p>
+    <p class="espn-sync-muted">
+      {{ readButton() ? 'Not counted' : 'Not synced' }}:
+      {{ unsupportedStats().join(', ') }}
+    </p>
   }
 </div>

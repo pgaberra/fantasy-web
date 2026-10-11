@@ -1,0 +1,52 @@
+/* The same field as the others in the report settings: a small label over the control. The
+   platform tabs sit between the two, as they sit over the league on Team Power Rankings. */
+.league-field {
+  display: flex;
+  flex: 1 1 16rem;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.field-label {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.field-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.field-select {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  flex: 1 1 12rem;
+  font: inherit;
+  font-size: var(--text-sm);
+  min-width: 0;
+  padding: var(--space-2);
+}
+
+.field-select:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.field-note {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.field-error {
+  color: var(--color-danger);
+  font-size: var(--text-xs);
+  margin: 0;
+}

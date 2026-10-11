@@ -25,6 +25,11 @@
   background: var(--toggle-on-color, #0f3460);
 }
 
+.toggle-switch:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .toggle-thumb {
   position: absolute;
   top: 3px;

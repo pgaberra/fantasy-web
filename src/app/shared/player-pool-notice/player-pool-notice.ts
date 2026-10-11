@@ -54,6 +54,8 @@ export class PlayerPoolNoticeComponent {
         return 'New players start at zero.';
       case 'model':
         return "New players start with the AI projection, or last season's stats if it has no numbers for them.";
+      case 'rest_of_season':
+        return "New players start with the AI projection for the rest of the season, or last season's stats if it has no numbers for them.";
       default:
         return "New players start with last season's stats, or zero for projections built from scratch.";
     }

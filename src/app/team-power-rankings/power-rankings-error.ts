@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { FAILURE_ON_OUR_SIDE_MESSAGE, SERVER_UNREACHABLE_MESSAGE } from '../shared/http-error';
+import { Platform } from '../shared/platform-tabs/platform-tabs';
 
 /**
  * What a failed read of a league says to the reader.
@@ -9,7 +10,10 @@ import { FAILURE_ON_OUR_SIDE_MESSAGE, SERVER_UNREACHABLE_MESSAGE } from '../shar
  * reader to check their connection. A refusal we caused is ours to own, and an answer the reader
  * can do something about has to say what.
  */
-export function powerRankingsMessage(error: unknown): string {
+export function powerRankingsMessage(
+  error: unknown,
+  platform: Platform | 'none' = 'yahoo',
+): string {
   if (!(error instanceof HttpErrorResponse)) {
     // A request that got no answer at all: the timeout interceptor's, and ours.
     return FAILURE_ON_OUR_SIDE_MESSAGE;
@@ -21,8 +25,18 @@ export function powerRankingsMessage(error: unknown): string {
       return SERVER_UNREACHABLE_MESSAGE;
     case 401:
       return 'Your session has ended. Sign in again to read this league.';
+    case 400:
+      // Only ESPN answers 400 for a league: its refusal of a private league's cookies. A Yahoo
+      // league's 400 is a request we built wrong, which is ours.
+      return platform === 'espn'
+        ? 'ESPN refused this league. Check your espn_s2 and SWID cookies and try again.'
+        : FAILURE_ON_OUR_SIDE_MESSAGE;
     case 404:
-      return "This league can't be read here. Check that your Yahoo account is still connected.";
+      // ESPN's settings fall back to last season but its rosters do not, so a league the card
+      // accepted can still have no teams this season.
+      return platform === 'espn'
+        ? 'ESPN has no league with that ID this season.'
+        : "This league can't be read here. Check that your Yahoo account is still connected.";
     case 424:
       return 'Yahoo refused access to this league. Reconnect your Yahoo account and try again.';
     case 429:

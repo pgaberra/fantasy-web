@@ -96,6 +96,8 @@ export const DEFAULT_ROSTER_SLOTS: RosterSlots = {
   c: 2,
   lw: 2,
   rw: 2,
+  w: 0,
+  f: 0,
   d: 4,
   util: 0,
   bn: 4,

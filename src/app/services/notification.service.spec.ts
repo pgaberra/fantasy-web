@@ -78,6 +78,17 @@ describe('NotificationService', () => {
     expect(service.notifications()[0].message).toEqual("Couldn't open that page");
   });
 
+  // Asking for something that is not there is an answer, not a fault, and a feed full of
+  // answers is one where the faults go unread.
+  it('shows a notice like a failure, and reports nothing', () => {
+    service.notice("That draft isn't in this account.");
+
+    expect(service.notifications()).toEqual([
+      { id: expect.any(Number), message: "That draft isn't in this account.", type: 'error' },
+    ]);
+    expect(reportMessage).not.toHaveBeenCalled();
+  });
+
   it('adds a success notification, and reports nothing', () => {
     service.success('Added to My Projections.');
 

@@ -43,6 +43,20 @@
   flex-wrap: wrap;
 }
 
+.available-only {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+
+/* Set as the search box's label beside it is, so the toolbar reads as one row of controls. */
+.available-only-label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+}
+
 .league-controls .btn app-icon {
   flex: none;
   margin-right: 0.35rem;
@@ -86,6 +100,11 @@
   color: var(--color-primary);
   font-weight: var(--weight-semibold);
   box-shadow: var(--shadow-sm);
+}
+
+.segmented button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 /* The stat columns are the point of the table, so the horizontal scroll lives here rather
@@ -136,6 +155,14 @@ td.col-name {
   text-align: left;
 }
 
+/* The headings come from the projection editor's header, which right-aligns every stat label
+   and ends it --stat-value-inset short of the column's edge (styles.css). A value centred under
+   such a label sat half a column to its left, so the values end on that same line instead. */
+td.stat-cell {
+  text-align: right;
+  padding-right: var(--stat-value-inset);
+}
+
 .player-name {
   font-weight: var(--weight-semibold);
   white-space: nowrap;
@@ -160,10 +187,10 @@ td.col-name {
   flex-shrink: 0;
 }
 
+/* The club's crest, as tall as the position chips beside it: the NHL's drawings carry their own
+   margin, so a smaller box reads as a speck. */
 .player-team {
-  color: var(--color-text-subtle);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
+  --team-logo-size: 22px;
 }
 
 /* A stat this player cannot have. Muted so the column reads as "not theirs" at a glance
@@ -191,6 +218,9 @@ td.col-name {
    read as the total having stray digits appended to it. The row's own striping sits on the
    `tr`, which a sticky cell does not inherit, so each state is repeated here. */
 tbody td.fan-pts-col {
+  /* Right-aligned at th.summary-pts-col's own padding, so the total ends under its heading. */
+  text-align: right;
+  padding-right: 0.5rem;
   background: #fff8e6;
   color: #5a3a00;
   font-weight: var(--weight-bold);

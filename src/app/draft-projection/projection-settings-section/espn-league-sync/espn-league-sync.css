@@ -12,6 +12,19 @@
   background: var(--color-surface-alt);
 }
 
+/* The host's card is the frame. */
+.espn-sync--embedded {
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+/* At the height of the host's other controls, where the host sets one. */
+.espn-sync--embedded .espn-input {
+  box-sizing: border-box;
+  height: var(--control-height, auto);
+}
+
 .espn-sync-row {
   display: flex;
   align-items: center;
@@ -101,43 +114,8 @@
   color: var(--color-danger);
 }
 
-.espn-sync-synced {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--color-primary);
-}
-
-.espn-sync-check {
-  flex-shrink: 0;
-  color: var(--color-success);
-}
-
 .espn-sync-muted {
   margin: 0;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
-}
-
-/* The dialog's answer to the toolbar button that opened it, so it wears the same green dot:
-   a connection that exists, named, with the date that says whether it is still worth trusting. */
-.espn-synced-status {
-  display: flex;
-  align-items: baseline;
-  gap: 0.4rem;
-  margin: 0.15rem 0 0.1rem;
-  font-size: var(--text-sm);
-  color: var(--color-text);
-}
-
-.espn-synced-dot {
-  flex: none;
-  align-self: center;
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: var(--color-success);
 }

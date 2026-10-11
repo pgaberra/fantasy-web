@@ -1,0 +1,34 @@
+:host {
+  align-items: center;
+  display: inline-flex;
+  flex-shrink: 0;
+  /* Sized by the caller, so the same crest serves a table row and a card. */
+  height: var(--team-logo-size, 24px);
+  justify-content: center;
+  width: var(--team-logo-size, 24px);
+}
+
+:host img {
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
+}
+
+/* The abbreviation where there is no crest: a small badge rather than a hole. */
+.badge {
+  align-items: center;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+  color: var(--color-text-muted);
+  display: inline-flex;
+  font-size: max(0.6rem, calc(var(--team-logo-size, 24px) * 0.34));
+  font-weight: var(--weight-bold);
+  height: 100%;
+  justify-content: center;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  overflow: hidden;
+  width: 100%;
+}

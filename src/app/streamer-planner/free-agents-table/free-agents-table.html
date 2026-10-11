@@ -1,0 +1,205 @@
+<div class="table-scroll">
+  <table class="free-agents-table" [class.free-agents-table--marked]="marked()">
+    <thead>
+      <tr>
+        <th scope="col" class="num rank-col">#</th>
+        <th scope="col" class="player-col" [attr.aria-sort]="ariaSort('name')">
+          <button type="button" class="sort" (click)="sortBy.emit('name')">
+            Player
+            @if (sort().key === 'name') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+          </button>
+        </th>
+        <!-- Straight after the name, as on the team table beside it, and so that a phone shows
+             who and how good before anything has to be scrolled. -->
+        <th scope="col" class="num" [attr.aria-sort]="ariaSort('score')">
+          <button
+            type="button"
+            class="sort"
+            [appTooltip]="scoreTip()"
+            (click)="sortBy.emit('score')"
+          >
+            @if (sort().key === 'score') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+            {{ scoreHeading() }}
+          </button>
+        </th>
+        <!-- A column of its own, so a three-game week is compared to a four down one line of
+             figures, and no cell in the row needs a second line. -->
+        <th scope="col" class="num" [attr.aria-sort]="ariaSort('perGame')">
+          <button
+            type="button"
+            class="sort"
+            [appTooltip]="perGameTip()"
+            (click)="sortBy.emit('perGame')"
+          >
+            @if (sort().key === 'perGame') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+            Per gm
+          </button>
+        </th>
+        <th scope="col" class="num" [attr.aria-sort]="ariaSort('games')">
+          <button
+            type="button"
+            class="sort"
+            appTooltip="Projected games"
+            (click)="sortBy.emit('games')"
+          >
+            @if (sort().key === 'games') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+            GP
+          </button>
+        </th>
+        @if (hasSkaters()) {
+          <th scope="col" class="num toi-col" [attr.aria-sort]="ariaSort('toi')">
+            <button
+              type="button"
+              class="sort"
+              appTooltip="Ice time per game"
+              (click)="sortBy.emit('toi')"
+            >
+              @if (sort().key === 'toi') {
+                <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+              }
+              TOI
+            </button>
+          </th>
+        }
+        <!-- What the score is made of: a column a category the league scores, named here once. -->
+        @for (column of columns(); track column.key; let index = $index) {
+          <th
+            scope="col"
+            class="num stat-col"
+            [class.stat-col--start]="groupStarts()[index]"
+            [class.stat-col--focus]="focused(column.key) === true"
+            [class.stat-col--muted]="focused(column.key) === false"
+            [attr.aria-sort]="ariaSort(column.key)"
+          >
+            <button
+              type="button"
+              class="sort"
+              [appTooltip]="column.name"
+              (click)="sortBy.emit(column.key)"
+            >
+              @if (sort().key === column.key) {
+                <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+              }
+              {{ column.label }}
+            </button>
+          </th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (entry of entries(); track entry.row.player.playerId) {
+        @let medal = medalOf(entry.row);
+        <tr class="player-row" [class.player-row--top]="medal">
+          <td class="num rank-col">
+            <span class="rank" [class]="medal ? 'rank--' + medal : ''">{{ entry.row.rank }}</span>
+            @if (medal) {
+              <span class="sr-only">, top streaming option</span>
+            }
+          </td>
+          <th scope="row" class="player-col">
+            <span class="player-cell">
+              <!-- The crest is the club's only mention in the row, so it carries the name. -->
+              <app-team-logo
+                class="player-logo"
+                [team]="entry.row.player.teamAbbrev"
+                [alt]="entry.row.player.teamAbbrev ?? ''"
+              />
+              <span class="player-identity">
+                <!-- Waivers is his status, not a position, so it sits by the name. Only a claim is
+                     marked: an add is what the list is a list of. -->
+                <span class="player-name-line">
+                  <span class="player-name">{{ entry.row.player.name }}</span>
+                  @if (onWaivers(entry.row)) {
+                    <span
+                      class="player-status"
+                      role="img"
+                      aria-label="On waivers"
+                      tabindex="0"
+                      appTooltip="On waivers"
+                    >
+                      <app-icon name="hourglass" [size]="14" />
+                    </span>
+                  }
+                </span>
+                <span class="player-meta">
+                  <app-position-chips [positions]="entry.row.player.positions" />
+                </span>
+              </span>
+            </span>
+          </th>
+          <td class="num score">
+            <!-- Counted, the games only a drop opens are in the figure: it goes yellow, as the
+                 game days are, the whole of it, since no part of it is his without the drop. -->
+            <span class="figure" [class.figure--drop]="inDrop(entry.row)">
+              {{ score(entry.row) }}
+              <!-- What the drop's games would put on the score, raised at its top right as the
+                   games are, and in their yellow: it is theirs, and no part of the figure. -->
+              @if (scoreLift(entry.row); as more) {
+                <span class="lift" [attr.aria-label]="'would add ' + more">{{ more }}</span>
+              }
+            </span>
+          </td>
+          <td class="num rate-col">{{ perGame(entry.row) }}</td>
+          <td class="num">
+            @if (inDrop(entry.row)) {
+              <!-- Counted, they are among his games: the figure is yellow, and the tick box's
+                   help says what the yellow means, rather than a tip on every row. -->
+              <span class="figure figure--drop games-in-drop">{{ games(entry.row) }}</span>
+            } @else {
+              <span class="figure">
+                {{ games(entry.row) }}
+                <!-- The games only a drop opens, yellow as on the game days and raised over his
+                     own. A mark, not a control: whether they count is the list's switch to say. -->
+                @if (dropGames(entry.row); as more) {
+                  <span
+                    class="drop-games"
+                    role="img"
+                    tabindex="0"
+                    [appTooltip]="dropGamesTip(entry.row)"
+                    [attr.aria-label]="dropGamesTip(entry.row)"
+                  >
+                    {{ more }}
+                  </span>
+                }
+              </span>
+            }
+          </td>
+          @if (hasSkaters()) {
+            <td class="num toi-col" [class.not-his]="entry.row.player.projection.type !== 'skater'">
+              {{ toi(entry.row) }}
+            </td>
+          }
+          @for (cell of entry.cells; track $index) {
+            <td
+              class="num stat-col"
+              [class.stat-col--start]="groupStarts()[$index]"
+              [class.stat-col--focus]="focused(columns()[$index].key) === true"
+              [class.stat-col--muted]="focused(columns()[$index].key) === false"
+              [class.nil]="cell && isNil(cell)"
+              [class.not-his]="entry.notHis[$index]"
+            >
+              @if (entry.notHis[$index]) {
+                <span>{{ notHis }}</span>
+              } @else {
+                <span class="figure" [class.figure--drop]="inDrop(entry.row)">
+                  {{ cell?.value }}
+                  @if (entry.lifts[$index]; as more) {
+                    <span class="lift" [attr.aria-label]="'would add ' + more">{{ more }}</span>
+                  }
+                </span>
+              }
+            </td>
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

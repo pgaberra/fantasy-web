@@ -86,19 +86,21 @@ describe('DraftAvailablePanelComponent', () => {
       });
 
     const button = (fixture: ReturnType<typeof render>): HTMLButtonElement =>
-      fixture.nativeElement.querySelector('.row-actions button');
+      fixture.nativeElement.querySelector('.available-row .row-draft');
     const buttonDebug = (fixture: ReturnType<typeof render>) =>
-      ngMocks.find(fixture, '.row-actions button');
+      ngMocks.find(fixture, '.available-row .row-draft');
 
     /**
-     * The stylesheet lifts the button to the row's first line on a wide screen and leaves it
-     * under the stats on a phone, which works only while it is the row's last element.
+     * The stylesheet lays the row out as a grid and puts the score and the button in its rail
+     * column on lines of their own, which works only while each is a grid item: a child of the
+     * row, not of a wrapper.
      */
-    it('puts the button last in the row, after the score', () => {
+    it('puts the score and the button in the row itself', () => {
       const fixture = render(false);
 
-      const rowEl: HTMLElement = fixture.nativeElement.querySelector('.available-row');
-      expect(rowEl.lastElementChild?.classList.contains('row-actions')).toBe(true);
+      const row: HTMLElement = fixture.nativeElement.querySelector('.available-row');
+      expect(row.querySelector(':scope > .row-score')).not.toBeNull();
+      expect(row.querySelector(':scope > .row-draft')).not.toBeNull();
     });
 
     it('keeps a column for the button while there is one', () => {

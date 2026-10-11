@@ -1,11 +1,13 @@
 import { RedirectFunction, Router, Routes } from '@angular/router';
 import { inject } from '@angular/core';
 import { landingRedirectGuard } from './guards/landing-redirect.guard';
+import { environment } from '../environments/environment';
 import { adminGuard } from './guards/admin.guard';
 import { authGuard } from './guards/auth.guard';
-import { paymentsEnabledGuard } from './guards/payments-enabled.guard';
 import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
-import { streamerPlannerEnabledGuard } from './guards/streamer-planner-enabled.guard';
+import { draftAnalysisEnabledGuard } from './guards/draft-analysis-enabled.guard';
+import { faScoutEnabledGuard } from './guards/fa-scout-enabled.guard';
+import { roleChangesEnabledGuard } from './guards/role-changes-enabled.guard';
 import { demoRedemptionGuard } from './guards/demo-redemption.guard';
 import { DESCRIPTION, INDEXABLE } from './shared/crawl-tags';
 
@@ -36,7 +38,14 @@ const toRefundTerms: RedirectFunction = () =>
 export const routes: Routes = [
   {
     path: '',
-    loadComponent: () => import('./landing/landing').then((m) => m.LandingComponent),
+    // The in-season landing page sits behind NEW_LANDING_ENABLED until Alexander has looked at it
+    // in staging; off, the page is served as it shipped.
+    loadComponent: () =>
+      environment.newLandingEnabled
+        ? import('./landing/in-season-landing/in-season-landing').then(
+            (m) => m.InSeasonLandingComponent,
+          )
+        : import('./landing/landing').then((m) => m.LandingComponent),
     canActivate: [landingRedirectGuard],
     data: { [INDEXABLE]: true },
   },
@@ -73,15 +82,11 @@ export const routes: Routes = [
     loadComponent: () => import('./draft-mode/draft-mode').then((m) => m.DraftModeComponent),
     canActivate: [authGuard],
   },
-  // What the draft came to: a page of its own, so the summary survives a reload and can be
-  // linked to. The board is where picks are made; reading the totals needs none of it.
+  // A draft's summary had an address of its own until the power rankings took its place; a link
+  // saved to it opens the draft instead of the not-found page.
   {
     path: 'drafts/:id/summary',
-    loadComponent: () =>
-      import('./draft-mode/draft-summary/draft-summary-page').then(
-        (m) => m.DraftSummaryPageComponent,
-      ),
-    canActivate: [authGuard],
+    redirectTo: 'drafts/:id',
   },
   // A league drafted somewhere else, read rather than played: nothing is saved for it, so it has
   // no id of its own and a reload reads the league again.
@@ -90,6 +95,13 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./team-power-rankings/team-power-rankings').then((m) => m.TeamPowerRankingsComponent),
     canActivate: [authGuard],
+  },
+  // A league's draft graded pick by pick. Served only where the BFF's DRAFT_ANALYSIS_ENABLED says so.
+  {
+    path: 'draft-analysis',
+    loadComponent: () =>
+      import('./draft-analysis/draft-analysis').then((m) => m.DraftAnalysisComponent),
+    canActivate: [authGuard, draftAnalysisEnabledGuard],
   },
   {
     path: 'projections',
@@ -136,12 +148,24 @@ export const routes: Routes = [
     loadComponent: () => import('./whos-hot/whos-hot').then((m) => m.WhosHotComponent),
     canActivate: [whosHotEnabledGuard, authGuard],
   },
-  // Served only where the BFF's STREAMER_PLANNER_ENABLED says so, and signed in like Who's Hot.
+  // Signed in, like Who's Hot.
   {
     path: 'streamer-planner',
     loadComponent: () =>
       import('./streamer-planner/streamer-planner').then((m) => m.StreamerPlannerComponent),
-    canActivate: [authGuard, streamerPlannerEnabledGuard],
+    canActivate: [authGuard],
+  },
+  // Served only where the BFF's FA_SCOUT_ENABLED says so, and signed in like the planner.
+  {
+    path: 'fa-scout',
+    loadComponent: () => import('./fa-scout/fa-scout').then((m) => m.FaScoutComponent),
+    canActivate: [authGuard, faScoutEnabledGuard],
+  },
+  // Served only where the BFF's ROLE_CHANGES_ENABLED says so, and signed in like Who's Hot.
+  {
+    path: 'role-changes',
+    loadComponent: () => import('./role-changes/role-changes').then((m) => m.RoleChangesComponent),
+    canActivate: [authGuard, roleChangesEnabledGuard],
   },
   {
     path: 'admin',
@@ -180,9 +204,6 @@ export const routes: Routes = [
     pathMatch: 'full',
     redirectTo: toRefundTerms,
   },
-  // Payments UI stays dark until the PAYMENTS_ENABLED build flag is on — the guard redirects
-  // these routes home otherwise.
-  //
   // One page for the plans and for the subscription on them, so /pricing and /account are kept
   // only as the way here: a checkout that already redirected there, a bookmark, a link posted
   // somewhere we cannot edit. The redirect carries the query string, since ?checkout=success is
@@ -190,7 +211,6 @@ export const routes: Routes = [
   {
     path: 'premium',
     loadComponent: () => import('./premium/premium').then((m) => m.PremiumComponent),
-    canActivate: [paymentsEnabledGuard],
   },
   {
     path: 'pricing',

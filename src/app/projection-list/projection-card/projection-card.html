@@ -5,15 +5,12 @@
     <app-icon [name]="iconName()" [size]="20" />
   </span>
   <div class="card-main">
-    <span class="card-name">{{ projection().name }}</span>
-    <span class="card-meta">
-      @if (origin(); as from) {
-        Following {{ from.authorUsername }} ·
-      } @else if (isFromSpreadsheet()) {
-        From a spreadsheet ·
-      }
-      Updated {{ projection().updatedAt | relativeTime }}
-    </span>
+    <span class="card-name" [appTooltip]="projection().name">{{ projection().name }}</span>
+    @let metaLine =
+      (sourceLabel() ? sourceLabel() + ' · ' : '') +
+      'Updated ' +
+      (projection().updatedAt | relativeTime);
+    <span class="card-meta" [appTooltip]="metaLine">{{ metaLine }}</span>
   </div>
   @if (!confirmingDelete()) {
     <button

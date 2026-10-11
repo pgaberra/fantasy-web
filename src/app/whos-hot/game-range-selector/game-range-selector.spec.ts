@@ -1,6 +1,11 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { describe, it, expect, beforeEach } from 'vitest';
-import { FREE_PRESET, GameRangeSelectorComponent } from './game-range-selector';
+import {
+  FREE_PRESET,
+  GameRangeSelectorComponent,
+  isSeasonSpan,
+  SeasonSpan,
+} from './game-range-selector';
 
 describe('GameRangeSelectorComponent', () => {
   beforeEach(() => MockBuilder(GameRangeSelectorComponent));
@@ -9,7 +14,12 @@ describe('GameRangeSelectorComponent', () => {
     fromGame = 63,
     toGame = 82,
     locked = false,
-    season: { scheduleLength: number; latestGame: number; lastGames: number | null } = {
+    season: {
+      scheduleLength: number;
+      latestGame: number;
+      lastGames: number | null;
+      seasonSpan?: SeasonSpan | null;
+    } = {
       scheduleLength: 82,
       latestGame: 82,
       lastGames: null,
@@ -17,6 +27,7 @@ describe('GameRangeSelectorComponent', () => {
   ) =>
     MockRender(GameRangeSelectorComponent, {
       ...season,
+      seasonSpan: season.seasonSpan ?? null,
       fromGame,
       toGame,
       perGame: false,
@@ -90,6 +101,47 @@ describe('GameRangeSelectorComponent', () => {
     expect(component.toGame()).toEqual(12);
   });
 
+  describe('a few nights into a season, before any team has played the last N', () => {
+    /** 2026-27 with the furthest team on its game `latestGame`, opened on the free range. */
+    const renderEarly = (latestGame: number) =>
+      render(1, latestGame, false, { scheduleLength: 84, latestGame, lastGames: 5 });
+
+    it('draws the last 5 after one night as games 0-1, reaching back before the first game', () => {
+      const component = renderEarly(1);
+
+      component.applyPreset(FREE_PRESET);
+
+      // 1-1 asked only about players who had dressed, and every team yet to play was missing.
+      expect(component.fromGame()).toEqual(0);
+      expect(component.toGame()).toEqual(1);
+      expect(component.summary()).toEqual('1 game');
+    });
+
+    it('keeps reaching back until the season has five games in it', () => {
+      const component = renderEarly(4);
+
+      component.applyPreset(FREE_PRESET);
+      expect([component.fromGame(), component.toGame()]).toEqual([0, 4]);
+
+      const fifthNight = renderEarly(5);
+      fifthNight.applyPreset(FREE_PRESET);
+      expect([fifthNight.fromGame(), fifthNight.toGame()]).toEqual([1, 5]);
+    });
+
+    it('does the same for the longer last-N presets', () => {
+      const component = renderEarly(7);
+
+      component.applyPreset(preset(component, 'Last 10'));
+
+      expect([component.fromGame(), component.toGame()]).toEqual([0, 7]);
+      expect(component.summary()).toEqual('7 games');
+    });
+
+    it('says a start before the first game is not a game of its own', () => {
+      expect(render(0, 3).spanLength()).toEqual(3);
+    });
+  });
+
   it('splits the season into halves that meet without overlapping', () => {
     const component = render();
 
@@ -109,15 +161,58 @@ describe('GameRangeSelectorComponent', () => {
     expect(component.toGame()).toEqual(42);
 
     component.applyPreset(preset(component, 'Full season'));
-    expect(component.fromGame()).toEqual(1);
+    expect(component.fromGame()).toEqual(0);
     expect(component.toGame()).toEqual(84);
+    expect(component.summary()).toEqual('84 games');
   });
 
-  it('marks the preset that matches the current range', () => {
-    const component = render(1, 82);
+  it('starts the first half and the full season before the first game, like the season does', () => {
+    const component = renderMidSeason();
+
+    // Both run from the season's start, so both take in the players yet to play: on the second
+    // night "Full season" listed only the ones who had dressed.
+    component.applyPreset(preset(component, 'First half'));
+    expect([component.fromGame(), component.toGame()]).toEqual([0, 42]);
+
+    component.applyPreset(preset(component, 'Full season'));
+    expect([component.fromGame(), component.toGame()]).toEqual([0, 84]);
+
+    // The second half starts where the first ended, and asks only who dressed in it.
+    component.applyPreset(preset(component, 'Second half'));
+    expect(component.fromGame()).toEqual(43);
+  });
+
+  it('marks the season pill that is kept', () => {
+    const component = render(0, 82, false, {
+      scheduleLength: 82,
+      latestGame: 82,
+      lastGames: null,
+      seasonSpan: 'fullSeason',
+    });
 
     expect(component.isPresetActive()(preset(component, 'Full season'))).toEqual(true);
     expect(component.isPresetActive()(preset(component, 'Last 10'))).toEqual(false);
+  });
+
+  it('keeps a season pill by name, so the page can draw it against another season', () => {
+    const component = render();
+
+    component.applyPreset(preset(component, 'Second half'));
+    expect(component.seasonSpan()).toEqual('secondHalf');
+    expect(component.lastGames()).toEqual(null);
+
+    // A last-N pill lets it go: at most one of the two is ever kept.
+    component.applyPreset(preset(component, 'Last 10'));
+    expect(component.seasonSpan()).toEqual(null);
+    expect(component.lastGames()).toEqual(10);
+  });
+
+  it('does not light a season pill for a range dragged onto the same games', () => {
+    const component = render(0, 82);
+
+    // Games 0-82 by hand stay 0-82 in an 84-game season; a lit "Full season" would say they
+    // follow the season, and they don't.
+    expect(component.isPresetActive()(preset(component, 'Full season'))).toEqual(false);
   });
 
   it('marks a last-N preset by its count, not by the games it happens to show', () => {
@@ -135,6 +230,27 @@ describe('GameRangeSelectorComponent', () => {
     expect(component.lastGames()).toEqual(null);
     expect(component.fromGame()).toEqual(70);
     expect(component.toGame()).toEqual(82);
+  });
+
+  it('turns a season pill into the range it showed once either handle moves', () => {
+    const secondHalf = { scheduleLength: 82, latestGame: 82, lastGames: null };
+    const fromMoved = render(42, 82, false, { ...secondHalf, seasonSpan: 'secondHalf' });
+    fromMoved.onFromInput(inputEvent(50));
+    expect(fromMoved.seasonSpan()).toEqual(null);
+    expect([fromMoved.fromGame(), fromMoved.toGame()]).toEqual([50, 82]);
+
+    const toMoved = render(42, 82, false, { ...secondHalf, seasonSpan: 'secondHalf' });
+    toMoved.onToInput(inputEvent(70));
+    expect(toMoved.seasonSpan()).toEqual(null);
+    expect([toMoved.fromGame(), toMoved.toGame()]).toEqual([42, 70]);
+  });
+
+  it('knows the season pills it can draw, and nothing else', () => {
+    expect(isSeasonSpan('fullSeason')).toEqual(true);
+    // A value stored by some other build, or typed into localStorage by hand.
+    expect(isSeasonSpan('lastWeek')).toEqual(false);
+    expect(isSeasonSpan('toString')).toEqual(false);
+    expect(isSeasonSpan(null)).toEqual(false);
   });
 
   it('pushes the upper bound along when the lower one passes it', () => {
@@ -161,8 +277,18 @@ describe('GameRangeSelectorComponent', () => {
     component.onToInput(inputEvent(500));
     expect(component.toGame()).toEqual(82);
 
+    // The start may reach back before the first game, and no further.
     component.onFromInput(inputEvent(-5));
-    expect(component.fromGame()).toEqual(1);
+    expect(component.fromGame()).toEqual(0);
+  });
+
+  it('holds the end at the first game or later, since a range has to hold a game', () => {
+    const component = render(0, 10);
+
+    component.onToInput(inputEvent(0));
+
+    expect(component.toGame()).toEqual(1);
+    expect(component.fromGame()).toEqual(0);
   });
 
   it('clamps to the season it is showing, which is 84 games from 2026-27', () => {
@@ -199,6 +325,7 @@ describe('GameRangeSelectorComponent', () => {
       scheduleLength: 82,
       latestGame: 82,
       lastGames: null,
+      seasonSpan: null,
       fromGame: 63,
       toGame: 82,
       perGame: false,
@@ -222,15 +349,15 @@ describe('GameRangeSelectorComponent', () => {
   });
 
   it('draws the band between the two handles', () => {
-    const component = render(42, 82);
+    const component = render(41, 82);
 
-    // 41 of the 81 steps in, and all the way to the end.
-    expect(component.fillStyle().left).toContain('50.617%');
+    // 41 of the 82 steps in from before the first game, and all the way to the end.
+    expect(component.fillStyle().left).toContain('50.000%');
     expect(component.fillStyle().right).toContain('0.000%');
   });
 
   it('insets the band by half a handle so it stays under them at the ends', () => {
-    const full = render(1, 82).fillStyle();
+    const full = render(0, 82).fillStyle();
 
     // Both ends sit at 0%, yet the handle centres are half a handle inside the track — so the
     // band has to be pushed in by the same amount rather than reaching the edges.

@@ -1,49 +1,54 @@
 @if (anyAvailable) {
   <p class="league-sync-hint">{{ hint }}</p>
-  <div class="provider-picker" role="tablist" aria-label="Fantasy platform to import from">
-    @if (yahooAvailable) {
-      <button
-        type="button"
-        role="tab"
-        class="provider-tab"
-        [class.provider-tab--active]="provider() === 'yahoo'"
-        [attr.aria-selected]="provider() === 'yahoo'"
-        (click)="provider.set('yahoo')"
-      >
-        <app-yahoo-mark />
-        Yahoo
-      </button>
-    }
-    @if (espnAvailable) {
-      <button
-        type="button"
-        role="tab"
-        class="provider-tab"
-        [class.provider-tab--active]="provider() === 'espn'"
-        [attr.aria-selected]="provider() === 'espn'"
-        (click)="provider.set('espn')"
-      >
-        <img
-          class="provider-mark provider-mark--espn"
-          src="espn-logo.png"
-          alt=""
-          aria-hidden="true"
-        />
-        ESPN
-      </button>
-    }
-  </div>
+  <app-platform-tabs
+    label="Fantasy platform to import from"
+    [platforms]="platforms"
+    [selected]="provider()"
+    (selectedChange)="choose($event)"
+  />
+  @if (pendingSwitch(); as ask) {
+    <app-platform-switch-dialog
+      [linkedPlatform]="ask.linkedPlatform"
+      [leagueName]="ask.leagueName"
+      [targetPlatform]="ask.targetPlatform"
+      (confirm)="switchAndDisconnect(ask.target)"
+      (cancelled)="pendingTarget.set(null)"
+    />
+  }
+  <!-- The league's own tab is not on offer (Yahoo between seasons), so no panel names the link. -->
+  @if (linkedOffTab(); as leagueName) {
+    <app-synced-line
+      [leagueName]="leagueName"
+      [disconnectable]="true"
+      (disconnected)="disconnected.emit('button')"
+    />
+  }
   @switch (provider()) {
     @case ('yahoo') {
-      <app-yahoo-league-sync [lastSync]="lastSync()" (synced)="yahooSynced.emit($event)" />
+      <app-yahoo-league-sync
+        [lastSync]="lastSync()"
+        [disconnectable]="linkedPlatform() === 'yahoo'"
+        (synced)="yahooSynced.emit($event)"
+        (disconnected)="disconnected.emit('button')"
+      />
     }
     @case ('espn') {
       <app-espn-league-sync
         [lastLeagueId]="lastEspnLeagueId()"
         [lastSyncedAt]="lastEspnSyncedAt()"
         [lastLeagueName]="lastEspnLeagueName()"
+        [disconnectable]="linkedPlatform() === 'espn'"
         (synced)="espnSynced.emit($event)"
+        (disconnected)="disconnected.emit('button')"
       />
     }
   }
+} @else if (linkedLeagueName(); as leagueName) {
+  <!-- No platform can be synced (Yahoo between seasons, ESPN off), yet a league imported while
+       one could still owns the settings, and disconnecting is how they come back. -->
+  <app-synced-line
+    [leagueName]="leagueName"
+    [disconnectable]="true"
+    (disconnected)="disconnected.emit('button')"
+  />
 }

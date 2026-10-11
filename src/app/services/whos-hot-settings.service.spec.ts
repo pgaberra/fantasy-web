@@ -8,6 +8,7 @@ const settings: WhosHotSettings = {
   fromGame: 50,
   toGame: 82,
   lastGames: null,
+  seasonSpan: null,
   perGame: true,
   minGames: 5,
   scoringType: 'category',
@@ -15,11 +16,12 @@ const settings: WhosHotSettings = {
   activeScoringColumns: new Set<ScoringStatKey>(['goals', 'hits']),
   activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
   leagueSize: 12,
-  rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
+  rosterSlots: { c: 2, lw: 2, rw: 2, w: 0, f: 0, d: 4, util: 1, bn: 4, g: 2 },
   minGoalieGames: 30,
   yahooSync: { leagueName: 'HHL', leagueKey: 'nhl.l.1', syncedAt: 't' },
   espnSync: null,
   lastEspnLeagueId: null,
+  availableOnly: false,
 };
 
 describe('WhosHotSettingsService', () => {
@@ -47,6 +49,30 @@ describe('WhosHotSettingsService', () => {
     expect(loaded).toEqual(settings);
     expect(loaded?.activeScoringColumns.has('hits')).toEqual(true);
     expect(loaded?.activeUtilityColumns).toBeInstanceOf(Set);
+  });
+
+  it('reads a roster saved before the wing and forward flex slots as having none', () => {
+    localStorage.setItem(
+      'slapstat.whosHot.settings',
+      JSON.stringify({
+        version: 3,
+        fromGame: 1,
+        toGame: 82,
+        rosterSlots: { c: 2, lw: 2, rw: 2, d: 4, util: 1, bn: 4, g: 2 },
+      }),
+    );
+
+    expect(service.load()?.rosterSlots).toEqual({
+      c: 2,
+      lw: 2,
+      rw: 2,
+      w: 0,
+      f: 0,
+      d: 4,
+      util: 1,
+      bn: 4,
+      g: 2,
+    });
   });
 
   it('falls back to no settings when what is stored no longer parses', () => {
@@ -101,6 +127,25 @@ describe('WhosHotSettingsService', () => {
     expect(service.load()?.lastGames).toEqual(null);
   });
 
+  it('keeps a season pill by name, and reads a blob from before it as the bounds it saved', () => {
+    service.save({ ...settings, fromGame: 0, toGame: 82, seasonSpan: 'fullSeason' });
+    expect(service.load()?.seasonSpan).toEqual('fullSeason');
+
+    localStorage.setItem('slapstat.whosHot.settings', JSON.stringify({ fromGame: 0, toGame: 82 }));
+    const beforeIt = service.load();
+    expect(beforeIt?.seasonSpan).toEqual(null);
+    expect([beforeIt?.fromGame, beforeIt?.toGame]).toEqual([0, 82]);
+  });
+
+  it('reads a season pill this build cannot draw as none, rather than failing the page on it', () => {
+    localStorage.setItem(
+      'slapstat.whosHot.settings',
+      JSON.stringify({ fromGame: 0, toGame: 82, seasonSpan: 'lastWeek' }),
+    );
+
+    expect(service.load()?.seasonSpan).toEqual(null);
+  });
+
   it('reads a blob written before ESPN was remembered as having no ESPN league', () => {
     localStorage.setItem(
       'slapstat.whosHot.settings',
@@ -111,6 +156,18 @@ describe('WhosHotSettingsService', () => {
 
     expect(loaded?.espnSync).toEqual(null);
     expect(loaded?.lastEspnLeagueId).toEqual(null);
+  });
+
+  it('reads a blob written before the available-only switch as showing everyone', () => {
+    localStorage.setItem('slapstat.whosHot.settings', JSON.stringify({ fromGame: 1, toGame: 82 }));
+
+    expect(service.load()?.availableOnly).toBe(false);
+  });
+
+  it('remembers the available-only switch', () => {
+    service.save({ ...settings, availableOnly: true });
+
+    expect(service.load()?.availableOnly).toBe(true);
   });
 
   it('treats a blob missing its column arrays as having no columns rather than throwing', () => {

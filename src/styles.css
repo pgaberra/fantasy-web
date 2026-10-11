@@ -116,9 +116,19 @@
   --color-warning-surface: #fff7e0;
   --color-warning-border: #f0dfa8;
   --color-warning-text: #5c4a12;
+  /* The step between fine and bad, for a filled chip with white text on it: 5.0:1. --color-warning
+     is a yellow that white text cannot sit on (1.9:1). */
+  --color-caution: #b45309;
   /* Darkened from #16a34a (2.9:1 on --color-bg) for the confirmations drawn in it. Its other
      job is the sync dots, which carry no text and only read better for it. */
   --color-success: #117e39;
+  /* One step under success, for a filled chip with white text on it: 5.0:1. A yellower green, so
+     it sits between --color-success and the neutral grey without being mistaken for either. */
+  --color-success-soft: #4d7c0f;
+  /* The warning wash's green twin, for a chip that says "yes, this one": --color-success reads
+     4.7:1 on it, and the edge sits as far off the wash as the warning's does. */
+  --color-success-surface: #edf7f0;
+  --color-success-border: #bfe3cb;
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -327,6 +337,20 @@ summary:focus-visible,
   flex: none;
 }
 
+/*
+ * The mark a league connection wears wherever it is shown: the toolbar's "Synced with" button,
+ * League setup's "Imported from", the ESPN dialog's status, a synced Draft Mode board. Green
+ * because the connection holds; a dot rather than an icon so it reads as a state, not an action.
+ * It was four copies in two sizes before it was one class.
+ */
+.sync-dot {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-success);
+}
+
 /* A badge that is also the way to the pricing page: it darkens under the pointer, as a link
    should, and nothing else about it changes. */
 a.premium-badge:hover,
@@ -357,6 +381,8 @@ a.premium-badge:focus-visible {
   --pos: #b45309;
   --pos-bg: #fdf6ec;
 }
+.pos--w,
+.pos--f,
 .pos--util,
 .pos--bn {
   --pos: #64748b;

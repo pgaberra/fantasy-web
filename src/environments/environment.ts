@@ -26,9 +26,6 @@ export const environment = {
   // instead of its controls (see YahooLeagueSyncComponent). Off in local dev; the deployed
   // builds inject it via the YAHOO_SYNC_DISABLED build arg.
   yahooSyncDisabled: false,
-  // Subscription billing. Off by default; deployed builds drive it via the PAYMENTS_ENABLED
-  // build arg. When false the /premium route redirects away and no entitlement is fetched.
-  paymentsEnabled: false,
   // Feature toggle for ESPN league sync (the ESPN option in the projection's league-sync UI).
   // Off by default; deployed builds drive it via the ESPN_LEAGUES_ENABLED build arg. Mirrors the
   // facebookLoginEnabled pattern — the ESPN provider stays hidden until this is true.
@@ -51,7 +48,7 @@ export const environment = {
   // the TIERS_ENABLED=true build arg.
   tiersEnabled: false,
   // Premium is shown but not yet sold: the Premium page keeps its plans and badges but its
-  // Subscribe button is disabled with a note. Only means anything with paymentsEnabled. Deployed builds turn it on with PREMIUM_COMING_SOON=true.
+  // Subscribe button is disabled with a note. Deployed builds turn it on with PREMIUM_COMING_SOON=true.
   premiumComingSoon: false,
   // Feature toggle for ranking a player type by hand instead of by its projected stats (the
   // Ranking control in the projection editor). Off by default; deployed builds turn it on with
@@ -62,6 +59,10 @@ export const environment = {
   // pages that adopted it keeps the markup and the look it shipped with, so the flag is the one
   // place the unified treatment is switched on or taken back.
   sharedNoticeEnabled: false,
+  // Feature toggle for the new signed-out landing page (the in-season one, with the tools listed
+  // above and below the live editor). Off by default, which serves the page as it shipped; deployed
+  // builds turn it on with the NEW_LANDING_ENABLED=true build arg.
+  newLandingEnabled: false,
   // Premium's price in US dollars, which the Premium page quotes. Empty locally, where the mock
   // provider is in use and there is no price to quote.
   premiumBasePriceUsd: '',

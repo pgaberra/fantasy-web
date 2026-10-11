@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DraftPicksPanelComponent, DraftPickRound } from './draft-picks-panel';
@@ -15,11 +16,15 @@ describe('DraftPicksPanelComponent', () => {
     },
   ];
 
-  beforeEach(() =>
-    MockBuilder(DraftPicksPanelComponent).mock(DraftPlayerLookupService, {
+  const showAvatars = signal(false);
+
+  beforeEach(() => {
+    showAvatars.set(false);
+    return MockBuilder(DraftPicksPanelComponent).mock(DraftPlayerLookupService, {
       name: (playerId: number) => `Player ${playerId}`,
-    }),
-  );
+      showAvatars,
+    });
+  });
 
   // The avatar's colour used to be the only sign of a pick's position here, and the avatar is
   // hidden while no player has a picture.
@@ -36,5 +41,32 @@ describe('DraftPicksPanelComponent', () => {
     expect(
       chips.map((chip) => chip.nativeElement.parentElement?.classList.contains('feed-sub')),
     ).toEqual([true, true]);
+  });
+
+  // The row is a grid with a track for the avatar. While the avatars are hidden the track goes
+  // too, or the name would start a gap's width late in every row.
+  it('drops the avatar track while no player has a picture', () => {
+    const fixture = MockRender(DraftPicksPanelComponent, {
+      pickRounds,
+      editingPick: null,
+      picksCount: 2,
+    });
+
+    const list = ngMocks.find(fixture, '.feed-list');
+
+    expect(list.nativeElement.classList.contains('feed-list--no-avatars')).toBe(true);
+  });
+
+  it('keeps the avatar track while the players have pictures', () => {
+    showAvatars.set(true);
+    const fixture = MockRender(DraftPicksPanelComponent, {
+      pickRounds,
+      editingPick: null,
+      picksCount: 2,
+    });
+
+    const list = ngMocks.find(fixture, '.feed-list');
+
+    expect(list.nativeElement.classList.contains('feed-list--no-avatars')).toBe(false);
   });
 });

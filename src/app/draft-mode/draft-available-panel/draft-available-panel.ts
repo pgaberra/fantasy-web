@@ -5,6 +5,7 @@ import {
   ScoredProjection,
   ScoringType,
 } from '../../models/projection.model';
+import { isAllSkaters } from '../../models/position.model';
 import { GOALIE_STAT_KEYS, ScoringStatKey, SKATER_STAT_KEYS } from '../../models/stat-key.model';
 import { DEFAULT_DECIMAL_SETTINGS } from '../../draft-projection/projection-settings-section/model';
 import { StatInfoService } from '../../services/stat-info.service';
@@ -75,7 +76,8 @@ export class DraftAvailablePanelComponent {
   readonly cancelEdit = output<void>();
 
   isPositionSelected(filter: PositionFilter): boolean {
-    return this.selectedPositions().includes(filter);
+    const selected = this.selectedPositions();
+    return filter === 'SKATER' ? isAllSkaters(selected) : selected.includes(filter);
   }
 
   onSearchInput(event: Event): void {

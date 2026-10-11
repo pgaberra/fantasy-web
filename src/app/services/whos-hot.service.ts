@@ -5,6 +5,7 @@ import { ApiConfiguration } from '../api/api-configuration';
 import { skaterSplits } from '../api/fn/projection-model/skater-splits';
 import { goalieSplits } from '../api/fn/projection-model/goalie-splits';
 import { splitSeasons } from '../api/fn/projection-model/split-seasons';
+import { leagueRosteredPlayers } from '../api/fn/leagues/league-rostered-players';
 import { PlayerSplitResponse } from '../api/models/player-split-response';
 import { SplitSeasonListResponse } from '../api/models/split-season-list-response';
 import {
@@ -14,6 +15,7 @@ import {
   SKATER_UTILITY_STAT_KEYS,
 } from '../models/stat-key.model';
 import { Projection } from '../models/projection.model';
+import { Player } from '../models/player.model';
 
 /**
  * A stretch of a season's schedule, in team game numbers: both bounds, inclusive, or `lastGames`,
@@ -36,6 +38,13 @@ export interface HotPlayer {
   games: number;
   firstTeamGame?: number;
   lastTeamGame?: number;
+}
+
+/** A league the board can be narrowed to the available players of: the platform and its id. */
+export interface RosterLeague {
+  platform: 'YAHOO' | 'ESPN';
+  /** The Yahoo league key or the ESPN league id. */
+  leagueId: string;
 }
 
 /**
@@ -67,6 +76,16 @@ export class WhosHotService {
     return splitSeasons(this.http, this.rootUrl).pipe(map((sent) => sent.body));
   }
 
+  /**
+   * Every player a team in the league holds today, by the pool's id — which is what a board row
+   * is keyed by, so "available" is simply every row not in here.
+   */
+  rosteredPlayerIds(league: RosterLeague): Observable<ReadonlySet<number>> {
+    return leagueRosteredPlayers(this.http, this.rootUrl, league).pipe(
+      map((sent) => new Set(sent.body.playerIds)),
+    );
+  }
+
   splits(span: GameSpan): Observable<HotPlayer[]> {
     const params = {
       season: span.season,
@@ -80,6 +99,35 @@ export class WhosHotService {
       goalies: goalieSplits(this.http, this.rootUrl, params).pipe(map((sent) => sent.body)),
     }).pipe(map(({ skaters, goalies }) => [...skaters.map(toSkater), ...goalies.map(toGoalie)]));
   }
+}
+
+/**
+ * The board with every pool player it has no game for added beneath the measured ones: on it at
+ * zero games, rather than off it. The server measures game logs, so a player with none in the
+ * range — their team has not played yet — is not in its answer at all, and a board built from
+ * that answer alone reads as though it hid them.
+ *
+ * Only for a range that reaches back before the first game (see `BEFORE_FIRST_GAME`): one that
+ * starts later asks who dressed in it, and a player who did not has no place on it. The pool's
+ * own order — highest scoring first — is kept, so the unplayed rows tie at zero in an order that
+ * still means something.
+ */
+export function withPlayersYetToPlay(measured: HotPlayer[], pool: Player[]): HotPlayer[] {
+  const onBoard = new Set(measured.map((hot) => hot.projection.playerId));
+  const yetToPlay = pool.filter((player) => !onBoard.has(player.id)).map(unmeasured);
+  return [...measured, ...yetToPlay];
+}
+
+function unmeasured(player: Player): HotPlayer {
+  const split: PlayerSplitResponse = {
+    playerId: player.id,
+    name: player.name,
+    teamAbbrev: player.teamAbbrev,
+    type: player.type,
+    games: 0,
+    stats: {},
+  };
+  return player.type === 'skater' ? toSkater(split) : toGoalie(split);
 }
 
 /**

@@ -38,6 +38,7 @@
         [(fromGame)]="fromGame"
         [(toGame)]="toGame"
         [(lastGames)]="lastGames"
+        [(seasonSpan)]="seasonSpan"
         [(perGame)]="perGame"
         [(minGames)]="minGames"
       />
@@ -59,6 +60,9 @@
       [syncedLeagueName]="syncedLeagueName()"
       [perGame]="perGame()"
       [minGames]="appliedMinGames()"
+      [availableFilter]="canShowAvailableOnly()"
+      [(availableOnly)]="availableOnly"
+      [rosteredPlayerIds]="rosteredPlayerIds()"
       (manageSyncRequested)="showSyncDialog.set(true)"
     >
       <!-- The same slot says two different things. With no league yet, importing one is the
@@ -98,6 +102,7 @@
         [lastEspnLeagueName]="espnSync()?.leagueName ?? null"
         (yahooSynced)="applyYahooSettings($event)"
         (espnSynced)="applyEspnSettings($event)"
+        (disconnected)="disconnectLeague($event)"
       />
     </app-league-sync-dialog>
   }

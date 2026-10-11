@@ -25,9 +25,9 @@ import { Goalie, Skater } from '../models/player.model';
 import { SkaterPosition } from '../models/position.model';
 import { GoalieScoringStats, SkaterScoringStats } from '../models/projection.model';
 import { GOALIE_SCORING_STAT_KEYS, SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
-import { environment } from '../../environments/environment';
 import { FeatureService } from '../services/feature.service';
-import { MODEL_PRESET_SOURCE } from '../models/ai-projection';
+import { MODEL_SOURCES } from '../models/ai-projection';
+import { RestOfSeasonService } from '../services/rest-of-season.service';
 
 describe('ProjectionCreateComponent', () => {
   MockInstance.scope();
@@ -65,7 +65,7 @@ describe('ProjectionCreateComponent', () => {
         decimalSettings: { goals: 0 },
         useDefaultDecimals: false,
         leagueSize: 10,
-        rosterSlots: { c: 1, lw: 1, rw: 1, d: 2, util: 1, bn: 2, g: 2 },
+        rosterSlots: { c: 1, lw: 1, rw: 1, w: 0, f: 0, d: 2, util: 1, bn: 2, g: 2 },
         minGoalieGames: 25,
       },
       players: [
@@ -205,16 +205,20 @@ describe('ProjectionCreateComponent', () => {
   const notifyError = vi.fn();
   /** The query string the page opened with; the same object is handed to every render. */
   const queryParams: Record<string, string> = {};
-  const premium = signal(false);
+  /** A subscriber unless a test says otherwise, so the AI projection is open to the page. */
+  const premium = signal(true);
   const aiProjection = signal(true);
+  /** A season under way unless a test says otherwise, so the rest of it is on the page. */
+  const restOfSeasonAvailable = signal(true);
   const entitlementLoadState = signal<'idle' | 'loading' | 'loaded' | 'error'>('loaded');
   const createProjection = vi.fn<
     (request: CreateProjectionRequest) => Observable<ProjectionResponse>
   >(() => of(created));
 
   beforeEach(() => {
-    premium.set(false);
+    premium.set(true);
     aiProjection.set(true);
+    restOfSeasonAvailable.set(true);
     entitlementLoadState.set('loaded');
     navigate.mockClear();
     notifyError.mockClear();
@@ -247,12 +251,16 @@ describe('ProjectionCreateComponent', () => {
         })
         .mock(NotificationService, { error: notifyError })
         .mock(EntitlementService, { premium, loadState: entitlementLoadState })
-        .mock(FeatureService, {
-          aiProjection,
+        .mock(FeatureService, { aiProjection })
+        .mock(RestOfSeasonService, {
+          available: restOfSeasonAvailable,
+          // What the real one does, out of the two answers above: see rest-of-season.service.spec.ts.
           offeredPresets: <T extends { readonly source?: string | null }>(presets: readonly T[]) =>
-            aiProjection()
-              ? presets
-              : presets.filter((preset) => preset.source !== MODEL_PRESET_SOURCE),
+            presets.filter(
+              (preset) =>
+                (aiProjection() || !MODEL_SOURCES.includes(preset.source ?? '')) &&
+                (preset.source !== 'rest_of_season' || restOfSeasonAvailable()),
+            ),
         })
         .provide({ provide: Router, useValue: { navigate } })
         .provide({ provide: ActivatedRoute, useValue: { snapshot: { queryParams } } })
@@ -260,14 +268,17 @@ describe('ProjectionCreateComponent', () => {
   });
 
   describe('the preset a link asks for', () => {
-    it('opens on the AI projection when the link says so', async () => {
-      queryParams['start'] = 'model';
+    it.each([
+      ['the AI projection', 'model'],
+      ['the rest of the season', 'rest_of_season'],
+    ])('opens on %s when the link says so', async (_name, source) => {
+      queryParams['start'] = source;
       const fixture = MockRender(ProjectionCreateComponent);
       await fixture.whenStable();
 
       expect(fixture.point.componentInstance.startingPoint()).toEqual({
         kind: 'preset',
-        source: 'model',
+        source,
       });
     });
 
@@ -1172,9 +1183,49 @@ describe('ProjectionCreateComponent', () => {
     expect(component.presets().map((preset) => preset.source)).toEqual([
       'default',
       'model',
+      'rest_of_season',
       'blank',
     ]);
     expect(component.isPreset('default')).toBe(true);
+  });
+
+  it('leaves the rest of the season out between seasons', async () => {
+    restOfSeasonAvailable.set(false);
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+
+    expect(fixture.point.componentInstance.presets().map((preset) => preset.source)).toEqual([
+      'default',
+      'model',
+      'blank',
+    ]);
+  });
+
+  it('creates from the rest of the season, filled in by the server like the AI projection', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    const component = fixture.point.componentInstance;
+
+    component.name.set('From here on');
+    component.selectPreset('rest_of_season');
+    await fixture.whenStable();
+    component.create();
+
+    expect(createProjection.mock.calls[0][0].source).toEqual('rest_of_season');
+    expect(createProjection.mock.calls[0][0].data.players).toEqual([]);
+    expect(navigate).toHaveBeenCalledWith(['/projections', created.id]);
+  });
+
+  /** The two AI presets share a name's worth of words, so each says which season it covers. */
+  it('says under each AI preset which part of the season it is', async () => {
+    const fixture = MockRender(ProjectionCreateComponent);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const metas = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('.row-meta'),
+    ).map((element) => element.textContent?.trim());
+    expect(metas).toEqual(['The whole season', 'Only the games left to play']);
   });
 
   it("asks the server for the model's lines when the AI preset is picked", async () => {
@@ -1312,22 +1363,20 @@ describe('ProjectionCreateComponent', () => {
    * one button becomes the way to Premium.
    */
   describe('when the AI projection is behind a subscription', () => {
-    const withPayments = async (
+    beforeEach(() => {
+      premium.set(false);
+    });
+
+    const withRendered = async (
       test: (fixture: MockedComponentFixture<ProjectionCreateComponent>) => void | Promise<void>,
     ) => {
-      const original = environment.paymentsEnabled;
-      environment.paymentsEnabled = true;
-      try {
-        const fixture = MockRender(ProjectionCreateComponent);
-        await fixture.whenStable();
-        await test(fixture);
-      } finally {
-        environment.paymentsEnabled = original;
-      }
+      const fixture = MockRender(ProjectionCreateComponent);
+      await fixture.whenStable();
+      await test(fixture);
     };
 
     it('marks the card locked but leaves it on the page and pickable', async () => {
-      await withPayments(async (fixture) => {
+      await withRendered(async (fixture) => {
         const component = fixture.point.componentInstance;
         component.selectPreset('model');
         await fixture.whenStable();
@@ -1335,7 +1384,23 @@ describe('ProjectionCreateComponent', () => {
 
         expect(component.aiProjectionLocked()).toBe(true);
         expect(component.isPreset('model')).toBe(true);
-        expect(fixture.nativeElement.querySelectorAll('.row--locked').length).toEqual(1);
+        expect(fixture.nativeElement.querySelectorAll('.row--locked').length).toEqual(2);
+      });
+    });
+
+    /** The rest of the season is the model's lines too: locked with them, never a way around them. */
+    it('locks the rest of the season with the AI projection', async () => {
+      await withRendered(async (fixture) => {
+        const component = fixture.point.componentInstance;
+        component.name.set('From here on');
+        component.selectPreset('rest_of_season');
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(component.aiProjectionLocked()).toBe(true);
+        expect(component.canCreate()).toBe(false);
+        component.create();
+        expect(createProjection).not.toHaveBeenCalled();
       });
     });
 
@@ -1344,13 +1409,13 @@ describe('ProjectionCreateComponent', () => {
      * account sees the model's own top skaters rather than a description of them.
      */
     it('previews the top of the model even while it is locked', async () => {
-      await withPayments(async (fixture) => {
+      await withRendered(async (fixture) => {
         const component = fixture.point.componentInstance;
         component.selectPreset('model');
         await fixture.whenStable();
         fixture.detectChanges();
 
-        expect(seed).toHaveBeenCalledWith({ skaterLimit: 25, goalieLimit: 1 });
+        expect(seed).toHaveBeenCalledWith({ skaterLimit: 25, goalieLimit: 1, source: 'model' });
         expect(board).not.toHaveBeenCalled();
         expect(previewOf(fixture).previewRows().length).toBeGreaterThan(0);
         expect(fixture.nativeElement.querySelector('.preview-card')).not.toBeNull();
@@ -1358,7 +1423,7 @@ describe('ProjectionCreateComponent', () => {
     });
 
     it('offers the way to Premium where the Create button would be', async () => {
-      await withPayments(async (fixture) => {
+      await withRendered(async (fixture) => {
         fixture.point.componentInstance.selectPreset('model');
         await fixture.whenStable();
         fixture.detectChanges();
@@ -1372,7 +1437,7 @@ describe('ProjectionCreateComponent', () => {
 
     /** A Create button that can only be refused is worse than one that is plainly not offered. */
     it('stands the Create button down while the locked starting point is picked', async () => {
-      await withPayments(async (fixture) => {
+      await withRendered(async (fixture) => {
         const component = fixture.point.componentInstance;
         component.selectPreset('model');
         await fixture.whenStable();
@@ -1393,7 +1458,7 @@ describe('ProjectionCreateComponent', () => {
 
     it('previews the board Create would write for a subscriber', async () => {
       premium.set(true);
-      await withPayments(async (fixture) => {
+      await withRendered(async (fixture) => {
         fixture.point.componentInstance.selectPreset('model');
         await fixture.whenStable();
         fixture.detectChanges();

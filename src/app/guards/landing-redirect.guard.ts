@@ -1,7 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { ActivatedRouteSnapshot, CanActivateFn, Router, UrlTree } from '@angular/router';
-import { catchError, map, Observable, of } from 'rxjs';
+import { EnvironmentInjector, inject, runInInjectionContext } from '@angular/core';
+import {
+  ActivatedRouteSnapshot,
+  CanActivateFn,
+  GuardResult,
+  Router,
+  UrlTree,
+} from '@angular/router';
+import { catchError, from, isObservable, map, Observable, of, switchMap } from 'rxjs';
 import { AdminService } from '../services/admin.service';
 import { AuthService } from '../services/auth.service';
 import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
@@ -9,7 +15,27 @@ import { YahooService } from '../services/yahoo.service';
 
 const MAX_LINK_CODE_LENGTH = 128;
 
+/**
+ * A signed-in visitor never sees the landing page. One who looks signed out may only have lost
+ * their stored token (Safari wipes localStorage, not the BFF's refresh cookie), so the answer waits
+ * for the page load's one attempt to restore the session; for a visitor who really is signed out
+ * that attempt is refused and the landing page shows as before.
+ */
 export const landingRedirectGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
+  const authService = inject(AuthService);
+  if (authService.isLoggedIn()) {
+    return landingDestination(route);
+  }
+  const injector = inject(EnvironmentInjector);
+  return from(authService.restoreSession()).pipe(
+    switchMap(() => {
+      const destination = runInInjectionContext(injector, () => landingDestination(route));
+      return isObservable(destination) ? destination : of(destination);
+    }),
+  );
+};
+
+function landingDestination(route: ActivatedRouteSnapshot): GuardResult | Observable<GuardResult> {
   const authService = inject(AuthService);
   const router = inject(Router);
   // Params are typed `any` by the router; narrow once here rather than at every use.
@@ -60,7 +86,7 @@ export const landingRedirectGuard: CanActivateFn = (route: ActivatedRouteSnapsho
     return router.createUrlTree(['/admin'], { queryParams: { ...params } });
   }
   return router.createUrlTree(['/home']);
-};
+}
 
 /**
  * Where a user's own connect ends: the page it started from, exactly as it was (path and query,

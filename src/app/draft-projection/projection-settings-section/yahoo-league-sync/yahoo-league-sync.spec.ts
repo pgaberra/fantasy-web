@@ -1,5 +1,5 @@
 import { MockBuilder, MockRender } from 'ng-mocks';
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -10,9 +10,12 @@ import { ConnectionResponse } from '../../../api/models/connection-response';
 import { LeaguesResponse } from '../../../api/models/leagues-response';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
 import { YahooSync } from '../../../api/models/yahoo-sync';
+import { SyncedLineComponent } from '../../../shared/synced-line/synced-line';
 import { environment } from '../../../../environments/environment';
 
 describe('YahooLeagueSyncComponent', () => {
+  beforeEach(() => localStorage.clear());
+
   const connected: ConnectionResponse = { connected: true };
   const disconnected: ConnectionResponse = { connected: false };
 
@@ -25,19 +28,22 @@ describe('YahooLeagueSyncComponent', () => {
     activeScoringColumns: ['goals', 'assists'],
     activeUtilityColumns: ['gp'],
     statWeights: { goals: 2, assists: 1 },
-    rosterSlots: { c: 2, lw: 0, rw: 0, d: 4, util: 0, bn: 4, g: 2 },
+    rosterSlots: { c: 2, lw: 0, rw: 0, w: 0, f: 0, d: 4, util: 0, bn: 4, g: 2 },
     leagueSize: 12,
     unsupportedStats: ['Game-Tying Goals'],
     unsupportedRosterCodes: ['IR'],
   };
 
   const buildConnected = () =>
-    MockBuilder(YahooLeagueSyncComponent).mock(YahooService, {
-      connectionStatus: () => of(connected),
-      myLeagues: () => of(oneLeague),
-      leagueProjectionSettings: () => of(settings),
-      startConnect: () => of({ authorizeUrl: 'https://example.test/auth' }),
-    });
+    MockBuilder(YahooLeagueSyncComponent)
+      .mock(YahooService, {
+        connectionStatus: () => of(connected),
+        myLeagues: () => of(oneLeague),
+        leagueProjectionSettings: () => of(settings),
+        startConnect: () => of({ authorizeUrl: 'https://example.test/auth' }),
+      })
+      // The synced line is where Disconnect lives, so it has to render for real.
+      .keep(SyncedLineComponent);
 
   it('loads leagues and auto-selects the only one when connected', async () => {
     await buildConnected();
@@ -55,7 +61,7 @@ describe('YahooLeagueSyncComponent', () => {
     const synced: YahooSync | null = {
       leagueName: 'My League',
       leagueKey: 'nhl.l.123',
-      syncedAt: 't',
+      syncedAt: '2026-09-30T20:43:00.000Z',
     };
     const fixture = MockRender(YahooLeagueSyncComponent, { lastSync: synced });
     await fixture.whenStable();
@@ -66,6 +72,74 @@ describe('YahooLeagueSyncComponent', () => {
     (fixture.componentInstance as { lastSync: YahooSync | null }).lastSync = null;
     fixture.detectChanges();
     expect(component.selectedKey()).toBeNull();
+  });
+
+  it('makes syncing the primary action once a league is chosen, not before', async () => {
+    await MockBuilder(YahooLeagueSyncComponent).mock(YahooService, {
+      connectionStatus: () => of(connected),
+      myLeagues: () =>
+        of({
+          leagues: [
+            { leagueKey: 'nhl.l.123', name: 'My League', numTeams: 12 },
+            { leagueKey: 'nhl.l.456', name: 'Other League', numTeams: 10 },
+          ],
+        }),
+      leagueProjectionSettings: () => of(settings),
+      startConnect: () => of({ authorizeUrl: 'https://example.test/auth' }),
+    });
+    const fixture = MockRender(YahooLeagueSyncComponent);
+    await fixture.whenStable();
+    const button = () => fixture.nativeElement.querySelector('.yahoo-sync-controls button');
+
+    expect(button().classList).toContain('btn-secondary');
+    expect(button().classList).not.toContain('btn-primary');
+
+    fixture.point.componentInstance.selectedKey.set('nhl.l.456');
+    fixture.detectChanges();
+    expect(button().classList).toContain('btn-primary');
+    expect(button().classList).not.toContain('btn-secondary');
+  });
+
+  it('keeps a re-sync of the league already synced secondary', async () => {
+    await buildConnected();
+    const synced: YahooSync = {
+      leagueName: 'My League',
+      leagueKey: 'nhl.l.123',
+      syncedAt: '2026-09-30T20:43:00.000Z',
+    };
+    const fixture = MockRender(YahooLeagueSyncComponent, { lastSync: synced });
+    await fixture.whenStable();
+
+    expect(fixture.point.componentInstance.syncPending()).toBe(false);
+    expect(fixture.nativeElement.querySelector('.yahoo-sync-controls button').classList).toContain(
+      'btn-secondary',
+    );
+  });
+
+  it('offers Disconnect on the synced line only when the host says the link is its own', async () => {
+    await buildConnected();
+    const synced: YahooSync = {
+      leagueName: 'My League',
+      leagueKey: 'nhl.l.123',
+      syncedAt: '2026-09-30T20:43:00.000Z',
+    };
+    const fixture = MockRender(YahooLeagueSyncComponent, {
+      lastSync: synced,
+      disconnectable: false,
+    });
+    await fixture.whenStable();
+    const line = () => fixture.nativeElement.querySelector('app-synced-line') as HTMLElement;
+    expect(line().querySelector('button')).toBeNull();
+
+    fixture.componentInstance.disconnectable = true;
+    fixture.detectChanges();
+    const onDisconnect = vi.fn();
+    fixture.point.componentInstance.disconnected.subscribe(onDisconnect);
+    const button = line().querySelector('button') as HTMLButtonElement;
+    expect(button.textContent?.trim()).toEqual('Disconnect');
+    button.click();
+
+    expect(onDisconnect).toHaveBeenCalled();
   });
 
   it('shows the disconnected state when not connected', async () => {
@@ -182,5 +256,58 @@ describe('YahooLeagueSyncComponent', () => {
     } finally {
       environment.yahooSyncDisabled = false;
     }
+  });
+
+  const twoLeagues: LeaguesResponse = {
+    leagues: [
+      { leagueKey: 'nhl.l.123', name: 'My League', numTeams: 12 },
+      { leagueKey: 'nhl.l.456', name: 'Work League', numTeams: 10 },
+    ],
+  };
+
+  const buildWithTwo = () =>
+    MockBuilder(YahooLeagueSyncComponent).mock(YahooService, {
+      connectionStatus: () => of(connected),
+      myLeagues: () => of(twoLeagues),
+      leagueProjectionSettings: () => of(settings),
+    });
+
+  it('starts on the league last chosen anywhere, where the account still lists it', async () => {
+    localStorage.setItem(
+      'slapstat.league',
+      JSON.stringify({ platform: 'YAHOO', leagueId: 'nhl.l.456', name: 'Work League' }),
+    );
+    await buildWithTwo();
+    const fixture = MockRender(YahooLeagueSyncComponent);
+    await fixture.whenStable();
+
+    expect(fixture.point.componentInstance.selectedKey()).toEqual('nhl.l.456');
+  });
+
+  it('starts on nothing when the league last chosen is not on the account', async () => {
+    localStorage.setItem(
+      'slapstat.league',
+      JSON.stringify({ platform: 'YAHOO', leagueId: 'nhl.l.999', name: 'Gone League' }),
+    );
+    await buildWithTwo();
+    const fixture = MockRender(YahooLeagueSyncComponent);
+    await fixture.whenStable();
+
+    expect(fixture.point.componentInstance.selectedKey()).toBeNull();
+  });
+
+  it('remembers the league it syncs, for the next page that picks one', async () => {
+    await buildConnected();
+    const fixture = MockRender(YahooLeagueSyncComponent);
+    await fixture.whenStable();
+
+    fixture.point.componentInstance.sync();
+    await fixture.whenStable();
+
+    expect(JSON.parse(localStorage.getItem('slapstat.league') ?? 'null')).toEqual({
+      platform: 'YAHOO',
+      leagueId: 'nhl.l.123',
+      name: 'My League',
+    });
   });
 });

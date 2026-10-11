@@ -1,7 +1,12 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import type { ErrorEvent } from '@sentry/browser';
-import { beforeSendEvent, ErrorReportingService, redactEvent } from './error-reporting.service';
+import {
+  beforeSendEvent,
+  ErrorReportingService,
+  redactEvent,
+  sentryOptions,
+} from './error-reporting.service';
 import { RELOADED_KEY } from '../shared/stale-build';
 
 describe('redactEvent', () => {
@@ -100,6 +105,20 @@ describe('beforeSendEvent', () => {
     expect(beforeSendEvent(event)?.request?.url).toEqual(
       'https://slapstat.com/reset-password?token=redacted',
     );
+  });
+});
+
+describe('sentryOptions', () => {
+  it('keeps the visitor IP address out of every event, which Sentry 11 records unless told not to', () => {
+    expect(sentryOptions().dataCollection?.userInfo).toBe(false);
+  });
+
+  it('sends a message without a stack trace, so messages from one caller stay separate issues', () => {
+    expect(sentryOptions().attachStacktrace).toBe(false);
+  });
+
+  it('passes every event through the gate that redacts and drops', () => {
+    expect(sentryOptions().beforeSend).toBe(beforeSendEvent);
   });
 });
 

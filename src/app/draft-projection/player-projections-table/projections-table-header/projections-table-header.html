@@ -127,11 +127,14 @@
     }
     @for (col of activeColumns().scoring; track col) {
       <th [class.group-start]="$first && hasUtilityColumns()">
-        @if (readonly() && !editableWeights()) {
+        @if (!weightsEditable()) {
           <!-- The same number in the same place, without the box that says it can be changed. -->
-          <span class="weight-value" [attr.aria-label]="'Points per ' + (col | statLabel)">{{
-            statWeights()[col]
-          }}</span>
+          <span
+            class="weight-value"
+            [attr.aria-label]="'Points per ' + (col | statLabel)"
+            [appTooltip]="lockedBy() ? 'Set by ' + lockedBy() : null"
+            >{{ statWeights()[col] }}</span
+          >
         } @else {
           <!-- A text field, not a number field: the browser would print a weight of 4.5 in the
                machine's locale, which on a Swedish one is `4,5` beside a table full of points. -->
@@ -230,10 +233,12 @@
       }
     }
 
-    <div class="menu-separator"></div>
-    <button type="button" class="menu-item menu-item--danger" (click)="removeColumn(col)">
-      <app-icon name="trash" />
-      Remove column
-    </button>
+    @if (canRemoveColumn(col)) {
+      <div class="menu-separator"></div>
+      <button type="button" class="menu-item menu-item--danger" (click)="removeColumn(col)">
+        <app-icon name="trash" />
+        Remove column
+      </button>
+    }
   </div>
 </ng-template>

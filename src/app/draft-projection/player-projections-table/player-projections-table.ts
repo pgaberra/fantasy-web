@@ -57,6 +57,7 @@ import {
   DEFAULT_ROSTER_SLOTS,
 } from '../projection-defaults';
 import { RosterSlots } from '../../api/models/roster-slots';
+import { skaterSlotCount } from '../../models/roster-slots';
 import { ProjectionsTableHeaderComponent } from './projections-table-header/projections-table-header';
 import { PlayerRowComponent } from './player-row/player-row';
 import { PositionFilterComponent } from './position-filter/position-filter';
@@ -447,8 +448,7 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
     const roster = this.rosterSlots();
     const teams = this.leagueSize();
-    const skaterPoolSize =
-      teams * (roster.c + roster.lw + roster.rw + roster.d + roster.util + roster.bn);
+    const skaterPoolSize = teams * skaterSlotCount(roster);
     const goaliePoolSize = teams * roster.g;
     const zScores = this.projectionCalculationService.computeZScores(
       roundedProjections,
@@ -1006,7 +1006,10 @@ export class PlayerProjectionsTableComponent implements OnInit {
 
   private restore(snapshot: TableSnapshot): void {
     this.playerProjections.set(snapshot.playerProjections);
-    this.activeScoringColumns.set(snapshot.activeScoringColumns);
+    // A step taken before a league was imported must not undo what the league set.
+    if (this.syncedLeagueName() === null) {
+      this.activeScoringColumns.set(snapshot.activeScoringColumns);
+    }
     this.activeUtilityColumns.set(snapshot.activeUtilityColumns);
   }
 
@@ -1100,8 +1103,11 @@ export class PlayerProjectionsTableComponent implements OnInit {
     }));
   }
 
+  /** An imported league's type is its own; see `syncedLeagueName`. */
   selectScoringType(type: ScoringType): void {
-    this.scoringType.set(type);
+    if (this.syncedLeagueName() === null) {
+      this.scoringType.set(type);
+    }
   }
 
   undo(): void {

@@ -1,4 +1,4 @@
-import { Component, computed, inject, model, signal } from '@angular/core';
+import { Component, computed, inject, input, model, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ScoringType } from '../../models/projection.model';
 import { ScoringStatKey, UtilityStatKey } from '../../models/stat-key.model';
@@ -10,28 +10,36 @@ import {
 } from '../league-settings/league-settings';
 import { PopoverTriggerDirective } from '../popover/popover-trigger.directive';
 import { IconComponent } from '../icon/icon';
+import { TooltipDirective } from '../tooltip/tooltip.directive';
 import { LeagueImportButtonComponent } from '../league-import-button/league-import-button';
 import { ColumnsMenuComponent } from '../../draft-projection/player-projections-table/columns-menu/columns-menu';
 import { YahooConnectReturnService } from '../../services/yahoo-connect-return.service';
 import { LeagueSettingsMenuComponent } from '../../draft-projection/player-projections-table/league-settings-menu/league-settings-menu';
 import { LeagueSyncDialogComponent } from '../../draft-projection/league-sync-dialog/league-sync-dialog';
-import { LeagueSyncComponent } from '../../draft-projection/projection-settings-section/league-sync/league-sync';
+import {
+  LeagueSyncComponent,
+  DisconnectCause,
+} from '../../draft-projection/projection-settings-section/league-sync/league-sync';
 import { YahooSyncResult } from '../../draft-projection/projection-settings-section/yahoo-league-sync/yahoo-league-sync';
 import { EspnSyncResult } from '../../draft-projection/projection-settings-section/espn-league-sync/espn-league-sync';
 
 /**
  * The league a board is ranked by, set before it exists: the editor's league toolbar, over the
- * preview on the draft picker and on the new-projection page. Same controls in the same order —
- * how the league scores, its size and
- * roster, which stats count, and the import that fills all of it in from Yahoo or ESPN. The
- * points weights are not here, for the same reason they are not in the editor's toolbar: they are
- * the preview's weight row, under the columns they weight.
+ * preview on the new-projection page, and in the draft setup. Same controls in the same order —
+ * how the league scores, its size and roster, which stats count, and the import that fills all of
+ * it in from Yahoo or ESPN. The points weights are not here, for the same reason they are not in
+ * the editor's toolbar: they belong beside the stats they weight — the preview's weight row, or
+ * the draft setup's list of them.
+ *
+ * An imported league holds what it set, here as everywhere: the league type and the scoring stats
+ * stay as they came (`lockedBy`) until the league is disconnected in the import.
  */
 @Component({
   selector: 'app-league-settings-controls',
   imports: [
     PopoverTriggerDirective,
     IconComponent,
+    TooltipDirective,
     LeagueImportButtonComponent,
     ColumnsMenuComponent,
     LeagueSettingsMenuComponent,
@@ -43,6 +51,10 @@ import { EspnSyncResult } from '../../draft-projection/projection-settings-secti
 })
 export class LeagueSettingsControlsComponent {
   readonly settings = model.required<LeagueSettings>();
+  /** Whether League setup sets the size and roster; the draft setup asks for those itself, and the goalie minimum with them. */
+  readonly sizing = input<boolean>(true);
+  /** Whether the import is offered here; the draft settings give the league a section of its own. */
+  readonly importing = input<boolean>(true);
 
   /**
    * The import dialog, open from the start when this page is where a Yahoo connect started in it
@@ -53,17 +65,31 @@ export class LeagueSettingsControlsComponent {
   );
   readonly showSyncDialog = signal(this.backFromYahoo);
 
-  readonly syncedLeagueName = computed(
+  readonly syncedLeagueName = computed(() =>
+    this.importing()
+      ? (this.settings().yahooSync?.leagueName ?? this.settings().espnSync?.leagueName ?? null)
+      : null,
+  );
+
+  /** The league these settings were imported from, which holds them; wherever it is imported. */
+  readonly lockedBy = computed(
     () => this.settings().yahooSync?.leagueName ?? this.settings().espnSync?.leagueName ?? null,
   );
 
-  /** A points league with nothing imported has nothing behind League setup — see the editor's. */
+  /**
+   * A points league with nothing imported has nothing behind League setup — see the editor's. Nor
+   * does a category league that neither sizes nor imports: the goalie minimum is all the menu
+   * would hold, and the draft setup asks for that beside the scoring instead.
+   */
   readonly hasLeagueSetup = computed(
-    () => this.settings().scoringType === 'category' || !!this.syncedLeagueName(),
+    () =>
+      (this.settings().scoringType === 'category' && this.sizing()) || !!this.syncedLeagueName(),
   );
 
   selectScoringType(scoringType: ScoringType): void {
-    this.patch({ scoringType });
+    if (this.lockedBy() === null) {
+      this.patch({ scoringType });
+    }
   }
 
   setLeagueSize(leagueSize: number): void {
@@ -76,6 +102,15 @@ export class LeagueSettingsControlsComponent {
 
   setMinGoalieGames(minGoalieGames: number): void {
     this.patch({ minGoalieGames });
+  }
+
+  /** Lets go of the league; the settings stay as they are, the user's now. */
+  disconnect(cause: DisconnectCause = 'button'): void {
+    this.patch({ yahooSync: null, espnSync: null });
+    // A switch to the other platform lets go of the league to sync one there: the dialog stays.
+    if (cause === 'button') {
+      this.showSyncDialog.set(false);
+    }
   }
 
   toggleScoringColumn(statKey: ScoringStatKey): void {

@@ -2,10 +2,11 @@ import { Component, computed, inject, input, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { VersionService } from '../../services/version.service';
 import { LoadingIndicatorComponent } from '../loading-indicator/loading-indicator';
+import { TooltipDirective } from '../tooltip/tooltip.directive';
 
 @Component({
   selector: 'app-environment-banner',
-  imports: [LoadingIndicatorComponent],
+  imports: [TooltipDirective, LoadingIndicatorComponent],
   standalone: true,
   templateUrl: './environment-banner.html',
   styleUrl: './environment-banner.css',

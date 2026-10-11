@@ -1,5 +1,6 @@
-import { Component, output } from '@angular/core';
+import { Component, inject, output } from '@angular/core';
 import { IconComponent } from '../../shared/icon/icon';
+import { OpenPopovers } from '../../shared/popover/open-popovers';
 
 /**
  * Importing a league is a short flow with real consequences — it overwrites the scoring type,
@@ -16,5 +17,13 @@ import { IconComponent } from '../../shared/icon/icon';
   },
 })
 export class LeagueSyncDialogComponent {
+  /**
+   * The League setup menu opens this ("Re-sync, change or disconnect") and has no reason of its
+   * own to close, so it would hang over the dialog, as the sync warning's menus would over it.
+   */
+  constructor() {
+    inject(OpenPopovers).closeAll();
+  }
+
   readonly closed = output<void>();
 }

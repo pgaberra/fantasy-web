@@ -52,15 +52,22 @@
   min-width: 0;
 }
 
-/* An uploaded file lends the board its file name, which can be one unbroken word longer than
-   the card. */
+/* One name line over one meta line, whatever the name, as on the Draft Mode page's cards
+   (draft-start.css). An uploaded file lends the board its file name ("Kopia av Apples & Ginos
+   2024-25 NHL Skater Projections_"), and wrapped it made its whole row of the grid taller than
+   the rows around it. Cut with an ellipsis instead; the title carries the rest on hover. */
 .card-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-weight: var(--weight-semibold);
   color: var(--color-primary);
-  overflow-wrap: anywhere;
 }
 
 .card-meta {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-size: var(--text-xs);
   color: var(--color-text-subtle);
 }

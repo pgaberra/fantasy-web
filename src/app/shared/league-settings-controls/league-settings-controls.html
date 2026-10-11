@@ -1,8 +1,14 @@
 <div class="league-controls">
-  <div class="segmented" role="group" aria-label="League type">
+  <div
+    class="segmented"
+    role="group"
+    aria-label="League type"
+    [appTooltip]="lockedBy() ? 'Set by ' + lockedBy() : null"
+  >
     <button
       type="button"
       [attr.aria-pressed]="settings().scoringType === 'points'"
+      [disabled]="lockedBy() !== null && settings().scoringType !== 'points'"
       (click)="selectScoringType('points')"
     >
       Points
@@ -10,6 +16,7 @@
     <button
       type="button"
       [attr.aria-pressed]="settings().scoringType === 'category'"
+      [disabled]="lockedBy() !== null && settings().scoringType !== 'category'"
       (click)="selectScoringType('category')"
     >
       Category
@@ -28,16 +35,19 @@
     Stats
   </button>
 
-  <app-league-import-button
-    [yahooSync]="settings().yahooSync"
-    [espnSync]="settings().espnSync"
-    (pressed)="showSyncDialog.set(true)"
-  />
+  @if (importing()) {
+    <app-league-import-button
+      [yahooSync]="settings().yahooSync"
+      [espnSync]="settings().espnSync"
+      (pressed)="showSyncDialog.set(true)"
+    />
+  }
 </div>
 
 <ng-template #leagueMenu>
   <app-league-settings-menu
     [scoringType]="settings().scoringType"
+    [sizing]="sizing()"
     [syncedLeagueName]="syncedLeagueName()"
     (manageSync)="showSyncDialog.set(true)"
     [leagueSize]="settings().leagueSize"
@@ -53,12 +63,13 @@
   <app-columns-menu
     [activeScoringColumns]="settings().activeScoringColumns"
     [activeUtilityColumns]="settings().activeUtilityColumns"
+    [lockedBy]="lockedBy()"
     (scoringToggled)="toggleScoringColumn($event)"
     (utilityToggled)="toggleUtilityColumn($event)"
   />
 </ng-template>
 
-@if (showSyncDialog()) {
+@if (importing() && showSyncDialog()) {
   <app-league-sync-dialog (closed)="showSyncDialog.set(false)">
     <app-league-sync
       [lastSync]="settings().yahooSync"
@@ -68,6 +79,7 @@
       [lastEspnLeagueName]="settings().espnSync?.leagueName ?? null"
       (yahooSynced)="applyYahoo($event)"
       (espnSynced)="applyEspn($event)"
+      (disconnected)="disconnect($event)"
     />
   </app-league-sync-dialog>
 }

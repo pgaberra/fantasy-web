@@ -18,13 +18,12 @@ export function scoreHeadingFor(summary: LeagueSummaryResponse): string {
 /**
  * A league the BFF totalled, in the shape the league table already draws.
  *
- * <p>The numbers arrive done: they are computed on the server so that an account without premium
- * can be shown the totals without being handed the lines behind them. What comes back is bare
+ * <p>The numbers arrive done, computed on the server from the league's own rosters. What comes back is bare
  * keys and values, because how a column is labelled, and to how many decimals, is the web's
  * business — the same answer here as for a draft board, from the same two functions.
  *
- * <p>A team without premium carries no roster and no lineup, so its rows are empty rather than
- * absent: the table renders a team with nothing to expand, and the page is what says why.
+ * <p>A team that comes back without a roster or a lineup gets empty rows rather than absent ones,
+ * so the table still renders it.
  */
 export function leagueProjectionFrom(summary: LeagueSummaryResponse): LeagueProjectionData {
   const scoringType: ScoringType = summary.scoringType === 'category' ? 'category' : 'points';
@@ -44,6 +43,8 @@ function teamRow(team: LeagueSummaryTeam, categoryKeys: string[]): LeagueProject
     mine: team.mine,
     total: team.total,
     values: team.values,
+    fullTotal: team.fullTotal,
+    fullValues: team.fullValues,
     roster: (team.roster ?? []).map((row) => rosterRow(row, categoryKeys)),
     positionPlayers: team.positionPlayers ?? {},
   };
@@ -55,9 +56,22 @@ function rosterRow(
 ): LeagueProjectionRosterRow {
   const values: Record<string, number | null> = {};
   const contributions: Record<string, number | null> = {};
+  const fullContributions: Record<string, number | null> = {};
   for (const key of categoryKeys) {
     values[key] = row.values?.[key] ?? null;
     contributions[key] = row.contributions?.[key] ?? null;
+    fullContributions[key] = row.fullContributions?.[key] ?? null;
   }
-  return { name: row.name, total: row.total, values, contributions };
+  return {
+    name: row.name,
+    team: row.team ?? null,
+    positions: row.positions ?? [],
+    total: row.total,
+    values,
+    contributions,
+    fullContributions,
+    reserveSlot: row.reserveSlot ?? null,
+    counted: row.counted,
+    fullValue: row.fullValue,
+  };
 }

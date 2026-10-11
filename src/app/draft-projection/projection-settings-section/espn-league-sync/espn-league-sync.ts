@@ -1,12 +1,41 @@
-import { Component, inject, input, linkedSignal, OnInit, output, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import {
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  OnInit,
+  output,
+  signal,
+} from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { of, switchMap } from 'rxjs';
 import { EspnService } from '../../../services/espn.service';
+import { LeagueChoiceService } from '../../../services/league-choice.service';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
-import { IconComponent } from '../../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../../shared/loading-indicator/loading-indicator';
+import { SyncedLineComponent } from '../../../shared/synced-line/synced-line';
 import { EspnCookieHelpComponent } from '../../../shared/espn-cookie-help/espn-cookie-help';
+import { CookieFieldDirective } from '../../../shared/cookie-field/cookie-field';
+
+/**
+ * What the league is read for: its settings, imported into a board; its teams, ranked by Team
+ * Power Rankings; or its free agents, planned by the Streamer Planner. The form, the cookies and
+ * the errors are the same every way; only what the card is called and what its button says differ.
+ */
+export type EspnLeaguePurpose = 'settings' | 'rankings' | 'planner';
+
+const TITLES: Record<EspnLeaguePurpose, string> = {
+  settings: 'Sync from your ESPN league',
+  rankings: 'Rank your ESPN league',
+  planner: 'Plan from your ESPN league',
+};
+
+/** What the button says on a page that reads the league rather than importing its settings. */
+const READ_BUTTONS: Record<Exclude<EspnLeaguePurpose, 'settings'>, string> = {
+  rankings: 'Show rankings',
+  planner: 'Show free agents',
+};
 
 export interface EspnSyncResult {
   settings: LeagueProjectionSettingsResponse;
@@ -21,24 +50,38 @@ export interface EspnSyncResult {
  * their espn_s2 + SWID cookies (stored server-side so they aren't re-entered). Emits the mapped
  * settings; the parent applies them.
  *
- * The private-league checkbox starts unticked for a user the app knows nothing about. Reading two
- * cookies out of the browser's dev tools is the heaviest thing this flow asks for, and a public
- * league needs none of it. It ticks itself on evidence: cookies already on file, or a league ESPN
- * has just refused.
+ * The private-league checkbox starts unticked. Reading two cookies out of the browser's dev tools
+ * is the heaviest thing this flow asks for, and a public league needs none of it. It ticks itself
+ * only on evidence about this league: ESPN has just refused it. Cookies on file are no such
+ * evidence — they belong to the account, not a league, and following a public league's draft
+ * stored them too while Draft Mode followed ESPN drafts — and the box does not change the sync
+ * anyway: the server uses the stored pair whether it is ticked or not, so all it gates is the
+ * fields for pasting a new one.
  *
- * A returning user finds the form as they left it: the league id they synced last time, and the
- * stored cookies read back from the server. That read is what makes the prefill possible and is
- * also its cost — the pair is a session credential for the whole ESPN account, and from the
- * moment it is displayed it lives in the page rather than only on the server.
+ * A returning user finds the league id they synced last time, or, where nothing has been synced
+ * here, the ESPN league they last chose anywhere ({@link LeagueChoiceService}) — and a league ESPN
+ * accepts here is the one the next page opens on. The stored cookies are never read back: the
+ * pair is a session credential for the whole ESPN account, and it stays on the server.
+ *
+ * Team Power Rankings and the Streamer Planner ask for their ESPN league with this same card
+ * (`purpose="rankings"`, `"planner"`), so an ESPN league is picked the same way wherever it is
+ * picked. The settings read is then only the proof that ESPN takes the league and the cookies;
+ * what the page reads next is the league's teams, or its free agents.
  */
 @Component({
   selector: 'app-espn-league-sync',
-  imports: [DatePipe, IconComponent, LoadingIndicatorComponent, EspnCookieHelpComponent],
+  imports: [
+    LoadingIndicatorComponent,
+    SyncedLineComponent,
+    EspnCookieHelpComponent,
+    CookieFieldDirective,
+  ],
   templateUrl: './espn-league-sync.html',
   styleUrl: './espn-league-sync.css',
 })
 export class EspnLeagueSyncComponent implements OnInit {
   private readonly espn = inject(EspnService);
+  private readonly choice = inject(LeagueChoiceService);
 
   /** The league this projection was last synced from, so a re-sync isn't retyped from memory. */
   readonly lastLeagueId = input<string | null>(null);
@@ -46,32 +89,57 @@ export class EspnLeagueSyncComponent implements OnInit {
   readonly lastSyncedAt = input<string | null>(null);
   /** ESPN's name for that league, so the status line names it rather than its id. */
   readonly lastLeagueName = input<string | null>(null);
+  readonly purpose = input<EspnLeaguePurpose>('settings');
+  /**
+   * The settings are held to this league, so its status line offers to let go of it. The host
+   * owns the link and says so; the card only puts the button where the link is named.
+   */
+  readonly disconnectable = input(false);
+  /**
+   * Inside a card that already names the league under a Yahoo / ESPN switch, as on Team Power
+   * Rankings: no frame of its own, since a card in a card is a second box around one question, and
+   * no title, since the pressed ESPN tab above already says whose league this is.
+   */
+  readonly embedded = input(false);
   readonly synced = output<EspnSyncResult>();
+  readonly disconnected = output<void>();
 
-  readonly leagueId = linkedSignal<string>(() => this.lastLeagueId() ?? '');
+  readonly leagueId = linkedSignal<string>(
+    () => this.lastLeagueId() ?? this.choice.on('ESPN')?.leagueId ?? '',
+  );
   readonly isPrivate = signal<boolean>(false);
   readonly espnS2 = signal<string>('');
   readonly swid = signal<string>('');
   readonly hasStoredCredentials = signal<boolean>(false);
   readonly syncing = signal<boolean>(false);
   readonly error = signal<string | null>(null);
-  readonly syncedLeagueId = signal<string | null>(null);
-  readonly syncedLeagueName = signal<string | null>(null);
+  // Follow the page's stamp, not the remembered id: a league synced on an earlier visit is still
+  // linked (the button says Re-sync), and one disconnected since is not (it says Sync again).
+  readonly syncedLeagueId = linkedSignal<string | null>(() =>
+    this.lastSyncedAt() ? this.lastLeagueId() : null,
+  );
   readonly unsupportedStats = signal<string[]>([]);
+  /**
+   * A league id is entered that isn't the one these settings came from, so syncing is the step
+   * the user is here for: the button turns primary. A re-sync of the same league stays secondary.
+   */
+  readonly syncPending = computed(() => {
+    const id = this.leagueId().trim();
+    return id !== '' && id !== (this.syncedLeagueId() ?? this.lastLeagueId());
+  });
+
+  readonly title = computed(() => TITLES[this.purpose()]);
+  /** The button's words where the league is read rather than imported; null on the import. */
+  readonly readButton = computed(() => {
+    const purpose = this.purpose();
+    return purpose === 'settings' ? null : READ_BUTTONS[purpose];
+  });
 
   ngOnInit(): void {
     this.espn.credentialStatus().subscribe({
-      next: (status) => {
-        this.hasStoredCredentials.set(status.hasCredentials);
-        // Cookies on file mean the last sync was of a private league, so open the section the
-        // way the user left it. The fields stay empty: the cookies are never read back, and a
-        // sync with the fields empty uses the stored pair.
-        if (status.hasCredentials) {
-          this.isPrivate.set(true);
-        }
-      },
-      // Best-effort: if the status probe fails we just show the cookie inputs (the safe default —
-      // the user can always re-enter them), so there's nothing to surface to the user here.
+      next: (status) => this.hasStoredCredentials.set(status.hasCredentials),
+      // Best-effort: if the status probe fails the saved note just stays hidden (the user can
+      // always re-enter the cookies), so there's nothing to surface to the user here.
       error: () => this.hasStoredCredentials.set(false),
     });
   }
@@ -113,11 +181,15 @@ export class EspnLeagueSyncComponent implements OnInit {
       next: (settings) => {
         this.syncing.set(false);
         this.syncedLeagueId.set(leagueId);
-        this.syncedLeagueName.set(settings.leagueName ?? null);
         this.unsupportedStats.set(settings.unsupportedStats);
         if (savingCookies) {
           this.hasStoredCredentials.set(true);
         }
+        this.choice.choose({
+          platform: 'ESPN',
+          leagueId,
+          name: settings.leagueName ?? `ESPN league ${leagueId}`,
+        });
         this.synced.emit({ settings, leagueId, leagueName: settings.leagueName });
       },
       error: (err: unknown) => {

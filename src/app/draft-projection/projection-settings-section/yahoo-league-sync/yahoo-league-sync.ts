@@ -1,14 +1,23 @@
-import { Component, inject, input, linkedSignal, OnInit, output, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import {
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  OnInit,
+  output,
+  signal,
+} from '@angular/core';
 import { Router } from '@angular/router';
+import { LeagueChoiceService } from '../../../services/league-choice.service';
 import { YahooService } from '../../../services/yahoo.service';
 import { YahooConnectReturnService } from '../../../services/yahoo-connect-return.service';
 import { environment } from '../../../../environments/environment';
 import { LeagueSummary } from '../../../api/models/league-summary';
 import { LeagueProjectionSettingsResponse } from '../../../api/models/league-projection-settings-response';
 import { YahooSync } from '../../../api/models/yahoo-sync';
-import { IconComponent } from '../../../shared/icon/icon';
 import { LoadingIndicatorComponent } from '../../../shared/loading-indicator/loading-indicator';
+import { SyncedLineComponent } from '../../../shared/synced-line/synced-line';
 import { isYahooRefusal } from '../../../shared/yahoo-refused';
 import { leaveFor } from '../../../shared/leave-for';
 import { YahooMarkComponent } from '../../../shared/yahoo-mark/yahoo-mark';
@@ -23,10 +32,14 @@ export interface YahooSyncResult {
  * Connect a user's own Yahoo account and copy a chosen league's scoring + roster settings
  * into the projection. Emits the mapped settings plus the league identity; the parent
  * applies them and persists which league was synced (and when) via the lastSync input.
+ *
+ * Nothing synced yet, the dropdown starts on the league last chosen anywhere
+ * ({@link LeagueChoiceService}) where the account still lists it — a starting point, since syncing
+ * still waits for the button — and a league synced here is the one the next page opens on.
  */
 @Component({
   selector: 'app-yahoo-league-sync',
-  imports: [DatePipe, IconComponent, LoadingIndicatorComponent, YahooMarkComponent],
+  imports: [LoadingIndicatorComponent, SyncedLineComponent, YahooMarkComponent],
   templateUrl: './yahoo-league-sync.html',
   styleUrl: './yahoo-league-sync.css',
 })
@@ -34,6 +47,7 @@ export class YahooLeagueSyncComponent implements OnInit {
   private readonly yahoo = inject(YahooService);
   private readonly router = inject(Router);
   private readonly connectReturn = inject(YahooConnectReturnService);
+  private readonly choice = inject(LeagueChoiceService);
 
   /**
    * Manual off-season switch (build-time `YAHOO_SYNC_DISABLED`). Between NHL seasons Yahoo has
@@ -43,13 +57,24 @@ export class YahooLeagueSyncComponent implements OnInit {
   protected readonly syncDisabled = environment.yahooSyncDisabled;
 
   readonly lastSync = input<YahooSync | null>(null);
+  /** The settings are held to that league, so its synced line offers to let go of it. */
+  readonly disconnectable = input(false);
   readonly synced = output<YahooSyncResult>();
+  readonly disconnected = output<void>();
 
   readonly connected = signal<boolean | null>(null);
   readonly connecting = signal(false);
   readonly leagues = signal<LeagueSummary[]>([]);
   readonly loadingLeagues = signal(false);
   readonly selectedKey = linkedSignal<string | null>(() => this.lastSync()?.leagueKey ?? null);
+  /**
+   * A league is chosen that isn't the one these settings came from, so syncing is the step the
+   * user is here for: the button turns primary. A re-sync of the same league stays secondary.
+   */
+  readonly syncPending = computed(() => {
+    const key = this.selectedKey();
+    return key !== null && key !== this.lastSync()?.leagueKey;
+  });
   readonly syncing = signal(false);
   readonly error = signal<string | null>(null);
   readonly unsupportedStats = signal<string[]>([]);
@@ -103,11 +128,9 @@ export class YahooLeagueSyncComponent implements OnInit {
     this.yahoo.leagueProjectionSettings(key).subscribe({
       next: (settings) => {
         this.syncing.set(false);
-        this.synced.emit({
-          settings,
-          leagueName: league?.name ?? 'your league',
-          leagueKey: key,
-        });
+        const leagueName = league?.name ?? 'your league';
+        this.choice.choose({ platform: 'YAHOO', leagueId: key, name: leagueName });
+        this.synced.emit({ settings, leagueName, leagueKey: key });
         this.unsupportedStats.set(settings.unsupportedStats);
       },
       error: (err: unknown) => {
@@ -126,8 +149,13 @@ export class YahooLeagueSyncComponent implements OnInit {
     this.yahoo.myLeagues().subscribe({
       next: (response) => {
         this.leagues.set(response.leagues);
-        if (!this.lastSync() && response.leagues.length === 1) {
-          this.selectedKey.set(response.leagues[0].leagueKey);
+        if (!this.lastSync()) {
+          const remembered = this.choice.on('YAHOO')?.leagueId;
+          if (response.leagues.some((league) => league.leagueKey === remembered)) {
+            this.selectedKey.set(remembered ?? null);
+          } else if (response.leagues.length === 1) {
+            this.selectedKey.set(response.leagues[0].leagueKey);
+          }
         }
         this.loadingLeagues.set(false);
       },

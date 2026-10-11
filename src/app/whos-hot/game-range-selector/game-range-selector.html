@@ -39,7 +39,7 @@
       <input
         class="game-number"
         type="number"
-        min="1"
+        [min]="railStart"
         [max]="scheduleLength()"
         step="1"
         [value]="fromGame()"
@@ -47,6 +47,8 @@
         [disabled]="locked()"
         (input)="onFromInput($event)"
       />
+      <!-- Both handles share one scale, so both run from before the first game; the end handle
+           is held at game 1 or later by its handler, since a range has to hold a game. -->
       <div class="track" [class.track--locked]="locked()" (pointermove)="onTrackHover($event)">
         <div class="track-rail" aria-hidden="true"></div>
         <div class="track-fill" aria-hidden="true" [style]="fillStyle()"></div>
@@ -54,12 +56,14 @@
           class="thumb"
           [class.thumb--on-top]="activeThumb() === 'from'"
           type="range"
-          min="1"
+          [min]="railStart"
           [max]="scheduleLength()"
           step="1"
           [value]="fromGame()"
           aria-label="Drag to set the first game in the range"
-          [attr.aria-valuetext]="'Game ' + fromGame()"
+          [attr.aria-valuetext]="
+            fromGame() === railStart ? 'Before the first game' : 'Game ' + fromGame()
+          "
           [disabled]="locked()"
           (input)="onFromInput($event)"
         />
@@ -67,7 +71,7 @@
           class="thumb"
           [class.thumb--on-top]="activeThumb() === 'to'"
           type="range"
-          min="1"
+          [min]="railStart"
           [max]="scheduleLength()"
           step="1"
           [value]="toGame()"
@@ -80,7 +84,7 @@
       <input
         class="game-number"
         type="number"
-        min="1"
+        [min]="firstGame"
         [max]="scheduleLength()"
         step="1"
         [value]="toGame()"

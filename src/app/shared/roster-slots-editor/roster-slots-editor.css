@@ -36,3 +36,8 @@
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15);
 }
+
+.roster-slot input:disabled {
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+}

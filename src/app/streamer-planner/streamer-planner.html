@@ -1,142 +1,485 @@
 <div class="streamer-planner">
-  <div class="page-header">
+  <header class="hero">
     <h1>Streamer Planner</h1>
-    <app-help-tip
-      label="How teams are ranked"
-      text="Each game counts once, or 1.25 times on an off-night, when most lineups have an open slot. Games against opponents that allow more goals count more for skaters. For goalies, games against opponents that score less count more."
-    />
-  </div>
+  </header>
 
-  <div class="planner-card">
-    @if (loadFailure()) {
+  @if (loadFailure()) {
+    <div class="card">
       <app-error-state
         title="Couldn't load the schedule"
         [error]="loadFailure()"
         (retry)="retry()"
       />
-    } @else if (noSchedule()) {
+    </div>
+  } @else if (noSchedule()) {
+    <div class="card">
       <p class="empty">The NHL hasn't published this season's schedule yet.</p>
-    } @else {
-      <div class="toolbar">
-        @if (week(); as week) {
-          <div class="week-picker">
-            <button
-              type="button"
-              class="step"
-              aria-label="Previous week"
-              [disabled]="!canGoBack()"
-              (click)="step(-1)"
-            >
-              ‹
-            </button>
-            <label class="visually-hidden" for="planner-week">Week</label>
-            <select id="planner-week" class="week-select" (change)="selectWeek($event)">
-              @for (option of weeks(); track option.week) {
-                <option [value]="option.week" [selected]="option.week === week.week">
-                  {{ weekLabel(option) }}
-                </option>
-              }
-            </select>
-            <button
-              type="button"
-              class="step"
-              aria-label="Next week"
-              [disabled]="!canGoForward()"
-              (click)="step(1)"
-            >
-              ›
-            </button>
+    </div>
+  } @else {
+    <!-- The page's one setting, with the league beside it. No button: what the nights point at is
+         what is on screen. A night is picked by name or by date, and any night can be left out. -->
+    <section
+      class="card nights"
+      [class.nights--beside]="platform() === 'espn'"
+      aria-label="Game days and league"
+    >
+      <div class="settings">
+        <div class="range" role="group" aria-labelledby="planner-nights-label">
+          <div class="range-head">
+            <span id="planner-nights-label" class="group-label">Game days</span>
           </div>
-        }
-
-        <div class="segmented" role="group" aria-label="Rank for">
-          <button
-            type="button"
-            [attr.aria-pressed]="position() === 'skaters'"
-            (click)="position.set('skaters')"
-          >
-            Skaters
-          </button>
-          <button
-            type="button"
-            [attr.aria-pressed]="position() === 'goalies'"
-            (click)="position.set('goalies')"
-          >
-            Goalies
-          </button>
+          <div class="range-controls">
+            <div class="pills">
+              @for (preset of presets(); track preset.key) {
+                <button
+                  type="button"
+                  class="pill"
+                  [class.pill--active]="activePreset() === preset.key"
+                  [attr.aria-pressed]="activePreset() === preset.key"
+                  (click)="applyPreset(preset.key)"
+                >
+                  {{ preset.label }}
+                </button>
+              }
+            </div>
+            <div class="dates">
+              <label class="date-field">
+                <span class="date-label">From</span>
+                <input
+                  class="field-date"
+                  type="date"
+                  [min]="earliestStart()"
+                  [max]="seasonEnd()"
+                  [value]="stretch()?.start ?? ''"
+                  (change)="setStart($event)"
+                />
+              </label>
+              <label class="date-field">
+                <span class="date-label">To</span>
+                <input
+                  class="field-date"
+                  type="date"
+                  [min]="stretch()?.start ?? earliestStart()"
+                  [max]="latestEnd()"
+                  [value]="stretch()?.end ?? ''"
+                  (change)="setEnd($event)"
+                />
+              </label>
+            </div>
+          </div>
         </div>
-
-        @if (offNightMaxGames(); as max) {
-          <p class="legend">
-            <span class="legend-swatch legend-swatch--off-night"></span>
-            Off-night: {{ max }} games or fewer
-          </p>
-        }
+        <app-league-field class="league" [(platform)]="platform" [(espnLeague)]="espnLeague" />
       </div>
 
-      @if (isLoading()) {
+      @if (loadingSchedule()) {
         <app-loading-indicator />
       } @else {
-        <div class="table-scroll">
-          <table class="planner-table">
-            <thead>
-              <tr>
-                <th scope="col" class="num rank-cell">Rank</th>
-                <th scope="col" class="team">Team</th>
-                <th scope="col" class="num">Games</th>
-                <th scope="col" class="num">Off-nights</th>
-                <th scope="col" class="num" title="Back-to-backs">B2B</th>
-                @for (day of days(); track day.date) {
-                  <th scope="col" class="day" [class.off-night]="day.offNight">
-                    <span class="day-name">{{ dayName(day) }}</span>
-                    <span class="day-date">{{ dayOfMonth(day) }}</span>
-                    <span class="day-games"
-                      >{{ day.games }} {{ day.games === 1 ? 'game' : 'games' }}</span
-                    >
-                  </th>
+        <!-- One cell a night, each row a Monday-to-Sunday week, so a stretch across two weeks reads
+             as two weeks. The tick box sits in the cell's first line, level with every other. -->
+        <div class="day-strip" role="group" aria-label="Game days to count">
+          @for (day of leadingDays(); track day.date) {
+            <span class="day day--past" aria-hidden="true">
+              <span class="day-head">
+                <span class="day-name">{{ weekdayName(day.date) }}</span>
+                <span class="day-date">{{ formatDay(day.date) }}</span>
+              </span>
+              @if (day.games !== undefined) {
+                <span class="day-body">
+                  @if (day.games === 0) {
+                    <span class="day-games day-games--none">No games</span>
+                  } @else {
+                    <span class="day-games">
+                      <span class="day-count">{{ day.games }}</span
+                      >&ngsp;
+                      <span class="day-unit">{{ day.games === 1 ? 'game' : 'games' }}</span>
+                    </span>
+                  }
+                </span>
+              }
+            </span>
+          }
+          <!-- The whole cell counts a night in or out, the tick box being too small a target for a
+               thumb. Only what opens an explanation (a drop position, the Off mark) is exempt: a
+               tap there opens the tip instead, the phone having no hover. -->
+          @for (day of days(); track day.date) {
+            <div
+              class="day"
+              [class.day--off-night]="day.offNight"
+              [class.day--out]="!isCounted(day)"
+              [class.day--dark]="day.games === 0"
+              (click)="toggleDayFromCell(day, $event)"
+            >
+              <span class="day-head">
+                <span class="day-name">{{ dayName(day) }}</span>
+                <span class="day-date"
+                  ><span class="day-month">{{ dayMonth(day) }}&ngsp;</span
+                  >{{ dayOfMonth(day) }}</span
+                >
+                <!-- The tick is a round mark drawn by the cell; the box itself is a real checkbox
+                     laid over it, unseen, so the keyboard and a screen reader still get one. -->
+                <label class="day-tick">
+                  <input
+                    type="checkbox"
+                    [checked]="isCounted(day)"
+                    [disabled]="day.games === 0"
+                    (change)="toggleDay(day)"
+                  />
+                  <app-icon name="check" [size]="14" />
+                  <span class="sr-only">Count {{ dayName(day) }} {{ dayOfMonth(day) }}</span>
+                </label>
+              </span>
+              <span class="day-body">
+                @if (day.games === 0) {
+                  <span class="day-games day-games--none">No games</span>
+                } @else {
+                  <span class="day-games">
+                    <span class="day-count">{{ day.games }}</span
+                    >&ngsp;
+                    <span class="day-unit">{{ day.games === 1 ? 'game' : 'games' }}</span>
+                  </span>
                 }
-                <th scope="col" class="num">Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (team of teams(); track team.team) {
-                <tr>
-                  <td class="num rank-cell">
-                    <span class="rank" [attr.data-tier]="rankTier(team)">{{ rank(team) }}</span>
-                  </td>
-                  <th scope="row" class="team">{{ team.team }}</th>
-                  <td class="num strong">{{ team.games }}</td>
-                  <td class="num">{{ team.offNightGames }}</td>
-                  <td class="num">{{ team.backToBacks }}</td>
-                  @for (day of days(); track day.date) {
-                    @if (gameOn(team, day); as game) {
-                      <td
-                        class="game"
-                        [class.off-night]="day.offNight"
-                        [attr.data-tier]="matchupTier(game)"
-                        [attr.title]="matchupLabel(game)"
-                        [attr.aria-label]="matchupLabel(game)"
-                      >
-                        {{ game.home ? '' : '@' }}{{ game.opponent }}
-                        @if (game.backToBack) {
-                          <span class="b2b" aria-hidden="true">B2B</span>
-                        }
-                      </td>
-                    } @else {
-                      <td class="game game--none" [class.off-night]="day.offNight"></td>
+                @if (day.offNight) {
+                  <span
+                    #offTip="appTooltip"
+                    class="day-mark"
+                    appTooltip="Off-night"
+                    [dismissOnClick]="false"
+                    (click)="$event.stopPropagation(); offTip.toggle()"
+                  >
+                    <span aria-hidden="true">Off</span><span class="sr-only">Off-night</span>
+                  </span>
+                }
+              </span>
+              @if (room(day) || dropRoom(day)) {
+                <span class="day-rooms">
+                  @if (room(day); as room) {
+                    @if (room.fits.size === 0) {
+                      <!-- The user's own lineup that night has no seat left. -->
+                      <span class="day-room day-room--full">{{ roomLabel(room) }}</span>
                     }
                   }
-                  <td class="num strong">{{ score(team).toFixed(2) }}</td>
-                </tr>
+                  <!-- The open positions in lineup order, whatever opens them, one chip a
+                       position: green where the lineup has room as it stands, yellow where only
+                       a drop opens it, its tip saying who would have to go. A green run has no
+                       tip: its positions are it. -->
+                  @for (run of roomRuns(day); track $index) {
+                    @if (run.tip) {
+                      <span
+                        #runTip="appTooltip"
+                        class="day-room day-room--drop"
+                        [appTooltip]="run.tip"
+                        [dismissOnClick]="false"
+                        (click)="$event.stopPropagation(); runTip.toggle()"
+                        [attr.aria-label]="run.label + ': ' + run.tip"
+                      >
+                        @for (position of run.positions; track position) {
+                          <span class="room-chip">{{ position }}</span>
+                        }
+                      </span>
+                    } @else {
+                      <span class="day-room day-room--open">
+                        @for (position of run.positions; track position) {
+                          <span class="room-chip">{{ position }}</span>
+                        }
+                      </span>
+                    }
+                  }
+                </span>
               }
-            </tbody>
-          </table>
+            </div>
+          }
+        </div>
+        @if (hasOpenRoom() || hasDropRoom()) {
+          <p class="range-legends">
+            @if (hasOpenRoom()) {
+              <span class="range-legend range-legend--open"
+                ><span class="legend-swatch" aria-hidden="true"></span>Available in your
+                roster</span
+              >
+            }
+            @if (hasDropRoom()) {
+              <span class="range-legend range-legend--drop"
+                ><span class="legend-swatch" aria-hidden="true"></span>Available only if a player at
+                a specific position is dropped. Hover or tap to see which player positions can free
+                up a spot</span
+              >
+            }
+          </p>
+        }
+        <!-- The user's own team, where this environment reads it: the cells above say which nights
+             it has room on. The switch that ranks the free agents by them is on their own card. -->
+        @switch (myTeamStatus()) {
+          @case ('not-found') {
+            <p class="my-team my-team--note">
+              Your team isn't in this league, so open lineup slots aren't shown.
+            </p>
+          }
+          @case ('error') {
+            <p class="my-team my-team--note">
+              Couldn't load your team in this league.
+              <button type="button" class="btn btn-secondary btn-sm" (click)="retryMyTeam()">
+                Try again
+              </button>
+            </p>
+          }
+        }
+      }
+    </section>
+
+    <!-- One table at a time, each the page's full width: the free agents' columns are the league's
+         categories, which half a page cut off. The switch is the page's, so it is drawn filled. -->
+    <div class="views" role="group" aria-label="Table to show">
+      <button
+        type="button"
+        class="view"
+        [attr.aria-pressed]="view() === 'free-agents'"
+        (click)="setView('free-agents')"
+      >
+        <app-icon name="user-plus" [size]="16" />Free Agents
+      </button>
+      <button
+        type="button"
+        class="view"
+        [attr.aria-pressed]="view() === 'schedules'"
+        (click)="setView('schedules')"
+      >
+        <app-icon name="table" [size]="16" />Team Schedules
+      </button>
+    </div>
+
+    <!-- Hidden, not removed: the table out of sight keeps its page, its sort and its open team. -->
+    <section
+      class="card free-agents"
+      aria-labelledby="planner-free-agents-title"
+      [hidden]="view() !== 'free-agents'"
+    >
+      <div class="card-head">
+        <h2 id="planner-free-agents-title" class="card-title">
+          <app-icon name="user-plus" />Top Free Agents
+          <app-help-tip label="How these are ranked" text="Based on our AI projections." />
+        </h2>
+        <!-- Scored only on the nights the user's lineup has room for them, unless unticked. -->
+        @if (myTeamStatus() === 'ready') {
+          <div class="fit-toggles">
+            <label class="fit-toggle">
+              <input type="checkbox" [checked]="fitMyTeam()" (change)="toggleFitMyTeam()" />
+              Fit to my roster
+            </label>
+            <!-- The games only a drop opens, counted for everyone at once rather than a row at a
+                 time, so the order and the figures always say the same thing. Offered only when a
+                 counted night has something a drop opens, since otherwise it would change nothing. -->
+            @if (fitMyTeam() && dropOpensCountedNight()) {
+              <label class="fit-toggle fit-toggle--drops">
+                <input type="checkbox" [checked]="countDrops()" (change)="toggleCountDrops()" />
+                Include games a drop would open
+                <app-help-tip
+                  label="About counting a drop's games"
+                  text="Counts games that could be added by dropping a player from your roster."
+                />
+              </label>
+            }
+          </div>
+        }
+      </div>
+      <!-- Skaters and goalies are one list, narrowed by any number of positions at once. "All" is
+           the list with none picked, and the way back to it; "All skaters" picks the four skater
+           positions in one press. -->
+      <div class="pills positions" role="group" aria-label="Positions to show">
+        <button
+          type="button"
+          class="pill"
+          [class.pill--active]="positions().size === 0"
+          [attr.aria-pressed]="positions().size === 0"
+          (click)="clearPositions()"
+        >
+          All
+        </button>
+        <button
+          type="button"
+          class="pill"
+          [class.pill--active]="allSkaters()"
+          [attr.aria-pressed]="allSkaters()"
+          (click)="toggleAllSkaters()"
+        >
+          All skaters
+        </button>
+        @for (option of positionOptions; track option) {
+          <button
+            type="button"
+            class="pill"
+            [class.pill--active]="positions().has(option)"
+            [attr.aria-pressed]="positions().has(option)"
+            (click)="togglePosition(option)"
+          >
+            {{ option }}
+          </button>
+        }
+      </div>
+      <!-- A category matchup is mostly settled before the week is out: the add worth making is
+           the one that swings the categories still open. Picking them ranks the players who score
+           in them by those alone; none picked is the league's whole set. -->
+      @if (league() && focusOptions().length > 0) {
+        <div class="focus" role="group" aria-labelledby="planner-focus-label">
+          <span id="planner-focus-label" class="group-label">Rank by</span>
+          <app-help-tip
+            label="Ranking by categories"
+            text="Select the categories to rank players by."
+          />
+          <div class="pills">
+            <button
+              type="button"
+              class="pill"
+              [class.pill--active]="focus().size === 0"
+              [attr.aria-pressed]="focus().size === 0"
+              (click)="clearFocus()"
+            >
+              All categories
+            </button>
+            @for (option of focusOptions(); track option.key) {
+              <button
+                type="button"
+                class="pill"
+                [class.pill--active]="focus().has(option.key)"
+                [attr.aria-pressed]="focus().has(option.key)"
+                [attr.aria-label]="option.name"
+                [appTooltip]="option.name"
+                (click)="toggleFocus(option.key)"
+              >
+                {{ option.label }}
+              </button>
+            }
+          </div>
         </div>
       }
-    }
-  </div>
+      @if (!league()) {
+        <!-- No league is no fault: the card says what to do, not what went wrong. -->
+        @switch (leaguePrompt()) {
+          @case ('checking') {
+            <app-loading-indicator />
+          }
+          @case ('connect') {
+            <div class="league-prompt">
+              <app-icon name="link" [size]="48" class="league-prompt-icon" />
+              <p class="league-prompt-title">Connect your Yahoo account</p>
+              <p class="league-prompt-text">
+                Free agents are based on the players available in your Yahoo league. Connect your
+                Yahoo account and select a league to get started.
+              </p>
+              <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="connectingYahoo()"
+                (click)="connectYahoo()"
+              >
+                @if (connectingYahoo()) {
+                  <app-loading-indicator variant="inline" label="Connecting" />
+                } @else {
+                  Connect Yahoo account
+                }
+              </button>
+            </div>
+          }
+          @case ('no-leagues') {
+            <p class="prompt">
+              Your Yahoo account has no NHL league this season, so there is no one to show.
+            </p>
+          }
+          @case ('enter-espn') {
+            <p class="prompt">Enter your ESPN league above to see its available free agents.</p>
+          }
+          @default {
+            <p class="prompt">Select a league above to see its available free agents.</p>
+          }
+        }
+      } @else if (freeAgentsFailure()) {
+        <app-error-state
+          title="Couldn't load free agents"
+          [error]="freeAgentsFailure()"
+          (retry)="retryFreeAgents()"
+        />
+      } @else if (loadingFreeAgents()) {
+        <app-loading-indicator />
+      } @else if (noFreeAgents()) {
+        <p class="empty">No available player in this league has a projection for these nights.</p>
+      } @else if (filtered().length === 0) {
+        <p class="empty">{{ emptyText() }}</p>
+      } @else {
+        <app-free-agents-table
+          #listTop
+          [rows]="visible()"
+          [listed]="filtered()"
+          [scoringType]="scoringType()"
+          [categories]="categories()"
+          [focus]="focus()"
+          [top]="topRows()"
+          [sort]="sort()"
+          [dropsCounted]="dropsCounted()"
+          (sortBy)="sortBy($event)"
+        />
+        <!-- A page at a time: most visits never leave the first, so the card stays the height
+             of one page and the next is a press away. The page size is kept per layout. -->
+        <div class="list-foot">
+          <span class="list-count" aria-live="polite">{{ rangeText() }}</span>
+          <span class="list-actions">
+            @if (filtered().length > pageSizes[0]) {
+              <label class="page-size">
+                <span>Per page</span>
+                <select class="page-size-select" (change)="setPageSize($event)">
+                  @for (size of pageSizes; track size) {
+                    <option [value]="size" [selected]="size === pageSize()">{{ size }}</option>
+                  }
+                </select>
+              </label>
+            }
+            @if (pageCount() > 1) {
+              <nav class="pager" aria-label="Pages of free agents">
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm pager-button"
+                  aria-label="Previous page"
+                  appTooltip="Previous page"
+                  [disabled]="currentPage() === 0"
+                  (click)="goToPage(currentPage() - 1)"
+                >
+                  <app-icon name="arrow-left" [size]="16" />
+                </button>
+                <span class="pager-label">Page {{ currentPage() + 1 }} of {{ pageCount() }}</span>
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm pager-button"
+                  aria-label="Next page"
+                  appTooltip="Next page"
+                  [disabled]="currentPage() === pageCount() - 1"
+                  (click)="goToPage(currentPage() + 1)"
+                >
+                  <app-icon name="arrow-right" [size]="16" />
+                </button>
+              </nav>
+            }
+          </span>
+        </div>
+      }
+    </section>
 
-  @if (week(); as week) {
-    <app-free-agents [start]="week.start" [end]="week.end" />
+    <section
+      class="card teams"
+      aria-labelledby="planner-teams-title"
+      [hidden]="view() !== 'schedules'"
+    >
+      <div class="card-head">
+        <h2 id="planner-teams-title" class="card-title">
+          <app-icon name="table" />Team Schedules
+          <app-help-tip
+            label="How teams are ranked"
+            text="Teams are ranked based on off-nights, home vs. road games, and the strength of opposing teams."
+          />
+        </h2>
+      </div>
+      @if (loadingSchedule()) {
+        <app-loading-indicator />
+      } @else {
+        <app-team-schedules [rows]="teamRows()" />
+      }
+    </section>
   }
 </div>

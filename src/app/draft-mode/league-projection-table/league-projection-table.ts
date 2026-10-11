@@ -2,6 +2,11 @@ import { Component, computed, effect, ElementRef, input, signal, viewChild } fro
 import { ScoringType } from '../../models/projection.model';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import { IconComponent, type IconName } from '../../shared/icon/icon';
+import { PositionChipsComponent } from '../../shared/position-chips/position-chips';
+import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
+import { HelpTipComponent } from '../../shared/help-tip/help-tip';
+import { shortNames } from '../../shared/short-name';
+import { SKATER_SCORING_STAT_KEYS } from '../../models/stat-key.model';
 import {
   LeagueProjectionColumn,
   LeagueProjectionContributor,
@@ -12,24 +17,43 @@ import {
 
 type BreakdownMode = 'category' | 'position';
 
+/**
+ * What the table counts: what each player adds to his team — the games its lineups start him in,
+ * nothing for a player it does not count — or what he would be worth started in every game, and
+ * the team the sum of all of them.
+ */
+type PointsBasis = 'team' | 'all';
+
 /** How many of a team's players an expanded category row shows before the "show all" toggle. */
 const TOP_ROSTER_ROWS = 5;
 
 /**
- * Diverging heat scale for the stat and total cells: the column leader trends green, the laggard
- * red, and the mid-pack stays clear — so a glance down any column shows who's strongest there.
- * Every value is already "higher is better" (weighted-points / z-score contributions, direction
- * included), so one direction works for every column. The RGB triples mirror --color-success /
- * --color-error in styles.css; they're inlined because the per-cell alpha is computed, not static.
+ * Diverging heat scale for the stat and total cells: the column leader trends teal, the laggard
+ * a warm orange, and the mid-pack stays clear — so a glance down any column shows who's strongest
+ * there. Every value is already "higher is better" (weighted-points / z-score contributions,
+ * direction included), so one direction works for every column.
+ *
+ * The pair is teal and orange rather than the success green and error red it started as: thinned
+ * to a wash those two came out mint and pink, which read as decoration, and they are the pair a
+ * red-green colour-blind reader cannot tell apart. Teal and orange keep "good is the green side"
+ * and differ in blue as well as in red. Inlined because the per-cell alpha is computed.
  */
-const HEAT_LEADER_RGB = '22, 163, 74';
-const HEAT_LAGGARD_RGB = '233, 69, 96';
-const HEAT_LEADER_MAX_ALPHA = 0.22;
-const HEAT_LAGGARD_MAX_ALPHA = 0.2;
+const HEAT_LEADER_RGB = '13, 148, 136';
+const HEAT_LAGGARD_RGB = '234, 88, 12';
+const HEAT_LEADER_MAX_ALPHA = 0.3;
+const HEAT_LAGGARD_MAX_ALPHA = 0.26;
+
+const SKATER_STAT_KEYS: ReadonlySet<string> = new Set(SKATER_SCORING_STAT_KEYS);
 
 @Component({
   selector: 'app-league-projection-table',
-  imports: [TooltipDirective, IconComponent],
+  imports: [
+    TooltipDirective,
+    IconComponent,
+    PositionChipsComponent,
+    TeamLogoComponent,
+    HelpTipComponent,
+  ],
   templateUrl: './league-projection-table.html',
   styleUrl: './league-projection-table.css',
 })
@@ -44,7 +68,21 @@ export class LeagueProjectionTableComponent {
    */
   readonly expandable = input<boolean>(true);
 
+  readonly injuredReserveTooltip = 'Player is currently on IR.';
+  readonly notActiveTooltip =
+    "Not active: holds no roster spot, and counts only if he is among the team's best";
+  readonly notCountedTooltip = "Player not included in the team's total.";
+  /**
+   * One tip for both bases, beside the switch rather than on its buttons: a tap on a button
+   * switches the basis, so on a phone a per-button tooltip could never be read.
+   */
+  readonly pointsBasisHelp = [
+    'Team share: Only count games where a player fits in your starting lineup.',
+    'All games: Count all games for each player.',
+  ];
+
   readonly mode = signal<BreakdownMode>('category');
+  readonly pointsBasis = signal<PointsBasis>('team');
   readonly sortKey = signal<string>('total');
   readonly sortDir = signal<'asc' | 'desc'>('desc');
 
@@ -96,11 +134,50 @@ export class LeagueProjectionTableComponent {
     this.mode() === 'category' ? this.data().categoryColumns : this.data().positionColumns,
   );
 
+  /**
+   * The first goalie stat after the skaters', which a rule is drawn in front of: the two halves of
+   * the table are different players' columns, and a goalie's row is empty under one of them.
+   * Null where the league counts only one kind, and in the position breakdown.
+   */
+  readonly groupStartKey = computed(() => {
+    if (this.mode() !== 'category') {
+      return null;
+    }
+    const keys = this.columns().map((column) => column.key);
+    const firstGoalie = keys.findIndex((key) => !SKATER_STAT_KEYS.has(key));
+    return firstGoalie > 0 ? keys[firstGoalie] : null;
+  });
+
+  /**
+   * Whether the rows came with the players' clubs, and so whether a crest leads each name. All
+   * or nothing: a crest on some rows and a gap on others would misalign the names.
+   */
+  readonly showsClubs = computed(() =>
+    this.data().teams.some((team) => team.roster.some((player) => !!player.team)),
+  );
+
+  /** Each team's best contribution per column, which is the one figure a player row stresses. */
+  private readonly teamBests = computed(() => {
+    const bests = new Map<string, Record<string, number>>();
+    for (const team of this.data().teams) {
+      const best: Record<string, number> = {};
+      for (const player of team.roster) {
+        for (const [key, contribution] of Object.entries(this.contributionsOf(player))) {
+          if (contribution !== null && (best[key] === undefined || contribution > best[key])) {
+            best[key] = contribution;
+          }
+        }
+      }
+      bests.set(team.teamId, best);
+    }
+    return bests;
+  });
+
   private readonly ranges = computed(() => {
     const teams = this.data().teams;
     const ranges = new Map<string, { min: number; max: number }>();
     for (const key of [...this.columns().map((column) => column.key), 'total']) {
-      const values = teams.map((team) => (key === 'total' ? team.total : team.values[key]));
+      const values = teams.map((team) => this.teamValue(team, key));
       if (values.length > 0) {
         ranges.set(key, { min: Math.min(...values), max: Math.max(...values) });
       }
@@ -111,8 +188,7 @@ export class LeagueProjectionTableComponent {
   readonly sortedTeams = computed(() => {
     const key = this.sortKey();
     const descending = this.sortDir() === 'desc';
-    const valueOf = (team: LeagueProjectionTeamRow) =>
-      key === 'total' ? team.total : team.values[key];
+    const valueOf = (team: LeagueProjectionTeamRow) => this.teamValue(team, key);
     return [...this.data().teams].sort((first, second) =>
       descending ? valueOf(second) - valueOf(first) : valueOf(first) - valueOf(second),
     );
@@ -124,6 +200,53 @@ export class LeagueProjectionTableComponent {
    * already appears only once.
    */
   readonly showsRosterRows = computed(() => this.mode() === 'category');
+
+  /**
+   * Whether the table can switch to every game's worth: only where the numbers came with it (a
+   * league's lineups, not a draft, where every player counts in full anyway), and in the category
+   * breakdown, since a lineup slot is what starting decides.
+   */
+  readonly offersPointsBasis = computed(
+    () => this.showsRosterRows() && this.data().teams.every((team) => team.fullTotal !== undefined),
+  );
+
+  /** The basis the numbers are on: the switch's, where the table offers it. */
+  private readonly basis = computed<PointsBasis>(() =>
+    this.offersPointsBasis() ? this.pointsBasis() : 'team',
+  );
+
+  /** A team's cell for a column key, or its total for 'total', on the basis shown. */
+  teamValue(team: LeagueProjectionTeamRow, key: string): number {
+    if (this.basis() === 'all') {
+      return key === 'total' ? team.fullTotal! : (team.fullValues?.[key] ?? 0);
+    }
+    return key === 'total' ? team.total : team.values[key];
+  }
+
+  /** A player row's score, on the basis shown. */
+  playerTotal(player: LeagueProjectionRosterRow): number {
+    return this.basis() === 'all' ? (player.fullValue ?? player.total) : player.total;
+  }
+
+  /**
+   * Whether a player row adds nothing on the basis shown: outside the team's best on its share,
+   * though not on every game, where everyone it holds counts. Such a row reads "—" for a score,
+   * since its 0 would rank above every player below zero in a category league, and sits last.
+   */
+  countsForNothing(player: LeagueProjectionRosterRow): boolean {
+    return player.counted === false && this.basis() === 'team';
+  }
+
+  /** A player row's score as the table prints it. */
+  formatPlayerTotal(player: LeagueProjectionRosterRow): string {
+    return this.countsForNothing(player) ? '—' : this.formatTotal(this.playerTotal(player));
+  }
+
+  private contributionsOf(player: LeagueProjectionRosterRow): Record<string, number | null> {
+    return this.basis() === 'all'
+      ? (player.fullContributions ?? player.contributions)
+      : player.contributions;
+  }
 
   isExpanded(teamId: string): boolean {
     return this.expandedTeamIds().has(teamId);
@@ -155,8 +278,13 @@ export class LeagueProjectionTableComponent {
     // direction-adjusted contribution for a category column (so lower-is-better stats still order
     // best-first, matching the team ordering).
     const rankOf = (row: LeagueProjectionRosterRow) =>
-      key === 'total' ? row.total : row.contributions[key];
+      key === 'total' ? this.playerTotal(row) : this.contributionsOf(row)[key];
     return [...roster].sort((first, second) => {
+      // Whoever the team does not count sits under everyone it does, whatever the column.
+      const firstIdle = this.countsForNothing(first);
+      if (firstIdle !== this.countsForNothing(second)) {
+        return firstIdle ? 1 : -1;
+      }
       const firstRank = rankOf(first);
       const secondRank = rankOf(second);
       // Players the sorted stat doesn't apply to (a goalie has no goals) sink to the bottom either way.
@@ -173,7 +301,57 @@ export class LeagueProjectionTableComponent {
     });
   }
 
-  /** Players listed inside a position cell when its row is expanded. */
+  /**
+   * Whether nobody on the team gives it more in this column than this player. A roster is sixteen
+   * rows of ten numbers, and what a reader looks for in it is who carries each column.
+   */
+  isTeamBest(
+    team: LeagueProjectionTeamRow,
+    player: LeagueProjectionRosterRow,
+    key: string,
+  ): boolean {
+    const contribution = this.contributionsOf(player)[key];
+    return (
+      contribution !== null &&
+      team.roster.length > 1 &&
+      contribution === this.teamBests().get(team.teamId)?.[key]
+    );
+  }
+
+  /**
+   * What the lineup row needs to know about a team's players besides the slot each fills: his
+   * club, and his name short enough for a slot's column ("M. Samuelsson"). A slot's players come
+   * as a name and a value, so both are looked up by name in the team's own roster; two players
+   * of one name on one team would share a crest, which is the worst it can do.
+   */
+  private readonly lineupDetails = computed(() => {
+    const details = new Map<
+      string,
+      { clubs: Map<string, string | null>; short: Map<string, string> }
+    >();
+    for (const team of this.data().teams) {
+      const names = Object.values(team.positionPlayers).flatMap((players) =>
+        players.map((player) => player.name),
+      );
+      details.set(team.teamId, {
+        clubs: new Map(team.roster.map((row) => [row.name, row.team ?? null])),
+        short: shortNames(names),
+      });
+    }
+    return details;
+  });
+
+  /** The club of a player in the team's lineup, for the crest beside his name. */
+  clubOf(team: LeagueProjectionTeamRow, name: string): string | null {
+    return this.lineupDetails().get(team.teamId)?.clubs.get(name) ?? null;
+  }
+
+  /** A lineup player's name as his slot's column has room for it. */
+  slotName(team: LeagueProjectionTeamRow, name: string): string {
+    return this.lineupDetails().get(team.teamId)?.short.get(name) ?? name;
+  }
+
+  /** Players listed under a position column when its team is expanded. */
   cellPlayers(
     team: LeagueProjectionTeamRow,
     column: LeagueProjectionColumn,
@@ -251,16 +429,6 @@ export class LeagueProjectionTableComponent {
     }
     const alpha = (0.5 - intensity) * 2 * HEAT_LAGGARD_MAX_ALPHA;
     return `rgba(${HEAT_LAGGARD_RGB}, ${alpha.toFixed(3)})`;
-  }
-
-  /**
-   * The score column's heat as a background image: it is pinned to the right edge while the table
-   * scrolls, so its own background has to stay opaque (the stylesheet's white) with the
-   * translucent tint laid over it — the stat columns would otherwise show through.
-   */
-  totalShade(value: number): string {
-    const tint = this.shade('total', value);
-    return tint === 'transparent' ? 'none' : `linear-gradient(${tint}, ${tint})`;
   }
 
   /** The points-per-unit multiplier under a points-league column header (3, 0.5, -1, …). */

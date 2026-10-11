@@ -30,7 +30,8 @@ npm run check:copy     # hold user-facing copy to COPY-RULES.md (CI uses this)
 
 CI runs (and must pass): `generate:api`, `lint`, `format:check`, `check:copy`, `test`, `build`, and the
 guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deployment-args.sh`,
-`check-inline-icons.sh`, `check-pending-states.sh`).
+`check-inline-icons.sh`, `check-native-tooltips.sh`, `check-password-fields.sh`,
+`check-pending-states.sh`, `check-backdrop-clicks.sh`).
 
 > **After cloning, run `npm run generate:api` once** — `src/app/api` is generated,
 > not committed, so lint/test/build will fail until it exists.
@@ -44,6 +45,18 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
 - `draft-projection/` — main feature: `projection-settings-section`,
   `scoring-type-section`, `scoring-stats-section`, `player-projections-table`,
   `share-dialog` (publishing the projection as a public link).
+  **League settings are locked to an imported league**, on every page that imports one (the
+  editor, Who's Hot, New projection, Draft Settings): the league type, which stats score, the
+  points weights, the league size and the roster slots show as the league set them and cannot be
+  changed; the goalie minimum, the utility columns (GP, TOI) and everything about display stay
+  the user's. The way out is **Disconnect league** in `app-league-sync` (the import dialog, or the
+  League section of Draft Settings), which drops `yahooSync`/`espnSync` and keeps the values,
+  now editable, and `lastEspnLeagueId`; in a draft it also ends following the league's picks.
+  Opening the other platform's tab while linked asks first (`platform-switch-dialog`), and
+  going on disconnects the same way but leaves the import dialog open for the new sync.
+  Each shared control takes the league's name as `lockedBy` (null = the user's). Until
+  2026-09-29 the settings stayed editable and a "No longer in sync" dialog broke the link after
+  the edit; that dialog now only guards Draft Mode's picks and a league board's order.
   The table's toolbar is two groups: the **league settings** (Points/Category, League setup, Stats,
   Ranking, Import league), which change the numbers, and the **filters** (search, position, team,
   rookies), which change which rows show. On a phone the first group folds behind one
@@ -84,7 +97,7 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   against, across three kinds of source — the presets, the user's own projections, and
   boards copied from someone's share link. Drafts left mid-way lead the page as cards,
   since resuming one is what most visits are for; **the card itself is the button** (a
-  chevron and a "Resume draft" / "View summary" label at its edge), with discard and
+  chevron and a "Resume draft" / "View draft" label at its edge), with discard and
   open-the-projection behind a kebab. Below it, starting a draft is **one choice made in
   steps**: a segmented control for the kind of source (the table toolbar's "Points |
   Category" pill, each segment carrying its count so the two kinds not open are still
@@ -99,13 +112,17 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   calling one group two things; everything else is repeated per page, since component
   styles are scoped. That page went via four cards with the boards folded into a `<select>`
   (#508, #514), which was its own invention and made the reader learn the question twice.
-  Both pages also set the **league** above the preview, with the one
+  The new-projection page also sets the **league** above a preview, with the one
   `shared/league-settings-controls` component (the editor's toolbar: points/category, League
-  setup, Stats, Import league) and the preview's editable weight row. Each page keeps the
-  changed league per starting point. The draft picker hands it to the draft in history state;
-  the new-projection page lays it over the settings it creates with (a copy stays byte-exact
-  when the league was left alone). A preview scored by defaults read as "not my league" and
-  put people off creating at all.
+  setup, Stats, Import league) and the preview's editable weight row, kept per starting point
+  and laid over the settings it creates with (a copy stays byte-exact when the league was left
+  alone). A preview scored by defaults read as "not my league" and put people off creating at
+  all. **The draft picker does neither any more**: it is the source and Start. A draft's league
+  is set in the draft page's setup (`draft-mode/draft-setup`, a popup over the board: open by
+  itself on a new draft, and the Settings button once the draft runs) — the same controls with `[sizing]="false"`, since the league's size there is the teams
+  it seats, plus `shared/stat-weights-editor` for the points. Alexander's call (2026-09-28): the
+  picker's preview was not the board the draft shows, and a league set before Start had to
+  travel in history state and could not be changed once the draft ran.
   The first row of the open kind is
   checked from the start (`selection`, a
   `linkedSignal` that keeps a pick whose row survives a reload), so a preset draft is
@@ -115,10 +132,7 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   release (#514); switching tiles then switched the grammar of the control under them,
   which read as inconsistent, so the card won. The two presets side by side are peers: the
   AI projection is what we mean to sell, and second in a vertical list it read as a
-  footnote. It carries a gold **Premium** badge, and `showsPremiumBadge` holds that badge
-  back wherever `paymentsEnabled` is off — without payments the preset is free and
-  ungated, and a badge naming a subscription the build cannot sell promises something
-  nobody can act on. **It is also locked**, and the two are different
+  footnote. It carries a gold **Premium** badge. **It is also locked**, and the two are different
   questions: the badge says which plan it belongs to, the padlock says this account has not
   bought it. `shared/premium/ai-projection-access.ts` answers the second for both pages so
   they cannot lock the same starting point on different terms, and holds off until the
@@ -137,8 +151,10 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   clash (409) asks for a name rather than reporting a failure the user cannot act on — which
   is now a rare path, since db-service numbers a taken name rather than refusing unless the
   caller chose it.
-  Beside the paste field sits **Import a spreadsheet** (`shared/spreadsheet-import`, on the home
-  page's import panel too): an .xlsx or .csv file read in the browser becomes an imported board like a share
+  **Import a spreadsheet** (`shared/spreadsheet-import`) sits on the new-projection page and the
+  home page's import panel, **not on the draft picker**: Alexander took it off there (2026-09-28),
+  since a file becomes a projection and the picker's own group already links to where
+  projections are made. An .xlsx or .csv file read in the browser becomes an imported board like a share
   link's, created with `kind: imported` and its own rows (every pool player: empty unless the sheet
   names him, and a named player's own line under the sheet's stats, so a sheet without a SOG
   column does not leave 50 goals on no shots) and no origin, which is how the lists tell it apart ("From a spreadsheet", a green
@@ -155,7 +171,7 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   owner likes**, and editing or deleting that board leaves a draft under way exactly as it was.
   Start never saves anything: it opens `/draft/new/preset/:preset` or `/draft/new/board/:id`,
   and the draft page creates the draft once its setup is confirmed (`POST
-  /api/v1/projections/{id}/drafts` for a board, which copies the rows server-side; a plain
+/api/v1/projections/{id}/drafts` for a board, which copies the rows server-side; a plain
   create with `kind: draft` and `source` for a preset, whose rows the server seeds). The draft
   then lives at `/drafts/:id`. Before this a draft was a field on the board, so "one draft per
   projection" was a property of the storage rather than anyone's decision, and a preset could be
@@ -183,38 +199,59 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   is not one. An imported card says whose board it is and offers no Share, since a share
   credits the account that publishes it.
   Both sources then run the same board in `draft-mode/`.
-  The draft **setup asks only the league size and the user's own draft position** (plus roster
-  slots); a Yahoo or ESPN sync fills both, and the user's team takes its league name. The other
-  teams are "Team 1", "Team 2"…, because Yahoo tells only the signed-in manager's seat before
-  its draft starts; following the league's draft brings in the real teams and order.
+  **Every draft setting has one owner.** While a board follows its league, the league owns the
+  teams and the order: the board shows them read-only on its live line ("12 teams · draft
+  position 6", the position only once the league has set its order), and the settings show
+  them locked. With sync off the user owns the order and the seat and edits them in the settings;
+  the number of teams stays the imported league's (below). **A new draft
+  against a board that already has a league to follow has no setup**
+  (`startingFromLeague`): the page reads the league's draft and creates the draft from its board,
+  following it (the league's teams, its order where set, any picks already made), and falls back
+  to the settings, with the reason on them, only where that draft can't be read or followed.
+  The **settings** ("Draft Settings", `draft-mode/draft-setup`) hold everything else, in three
+  sections. _League_: the import itself (`app-league-sync`, the Yahoo/ESPN picker, drawn in the section rather than behind an "Import league" button; Alexander's call), which sets the scoring; where the league's
+  draft can be followed (`syncAvailable`: a Yahoo league, where the BFF's feature switch is on)
+  the import turns on **Autosync draft picks**, the only place that switch lives (the board's toolbar has
+  none). The switch asks the page for the league's draft before anything is saved
+  (`checkSetupSync` → `DraftSyncCheck`), and only a league that answered locks anything.
+  _Scoring_: editable until a league is imported, then locked to it like everywhere else (see
+  "League settings are locked" under `draft-projection/`). _Teams and roster_: the league size, the user's draft position
+  (on "Select" until chosen), the teams in their draft order and the roster slots, set by hand,
+  or shown locked from the league's answer while picks are synced (the seat reads "–" and no
+  order is drawn until the league has set its order). Once the size and the seat are chosen by
+  hand, **Draft order** lists every team: a name field each (blank saves as "Team N", numbered
+  down the order without the user's, shown as the placeholder), the user's team marked "You",
+  a team with picks marked "Drafted", and a grip handle that drags the team (CDK drag-drop; the
+  popup is a `cdkScrollable` so a drag scrolls it) and, being a button, moves it with the arrow
+  keys, Home and End, announced in a live region. The seat select and the list are one order:
+  moving the user's team changes the seat. Alexander brought the list back on 2026-09-28 after
+  #816 had dropped it, since it now only serves drafts without a league (see DECISIONS.md). An
+  ESPN league, a league that refused, a switch turned off and no league at all all leave these
+  by hand. Saving with the switch on follows the league (`follow: true`);
+  saving with it off stops following. Sync switched off (or stopped) before the league has set its order
+  (`seatIsGuess`: the board is the league's team list and nothing is picked) opens the setup with
+  the seat on "Select" and no Cancel, and the switch stays saved on until a seat is chosen, so a
+  reload never opens a board drafted on a seat read off the team list.
   A draft whose league came from Yahoo can **follow that league's live draft** ("Follow Yahoo
-  draft"), offered only where `FeatureService.leagueDraftSync` (the BFF's `GET /api/v1/features`)
-  says so. Following makes the league the source of the board: its teams, keyed by Yahoo's team
+  draft"). Following makes the league the source of the board: its teams, keyed by Yahoo's team
   key, in draft order, and its picks, polled every 5 s while the tab is visible and at once when
   it comes back into view (`league-draft-follow.ts` holds the pure mapping). Until the league's
   order is known (the BFF's `orderKnown`: Yahoo lists a live draft's slots only once it runs) the
-  board keeps its own teams and order and says only that it is waiting, never a seat read off
-  Yahoo's team list. Every pick edit is locked meanwhile, a board with a pick that is not the
+  board holds the league's teams in the league's list order and says only that it is waiting,
+  never a seat read off that list. Every pick edit is locked meanwhile, a board with a pick that is not the
   league's pick in that place asks before it is replaced, and following stops on an auction draft,
   a league without the user's team, a finished draft, or a 400/404/424. A dropped connection keeps
   polling. The switch is saved with the board as `draft.following` (only while on), so opening the
   board again, on any device, picks the league's draft back up once the BFF's features say
   following is offered; leaving the page is not switching it off. "Finish draft" is not offered
   while following: the board finishes when the league's draft does.
-  A board whose league came from **ESPN** (`espnSync`) follows it the same way, through
-  `EspnService.leagueDraft`, behind its own switch `FeatureService.espnLeagueDraftSync`;
-  `followedLeague` picks the linked platform and the copy names it. ESPN's refusal (private
-  league, missing or stale cookies) is a 400. Its team ids are `espn.l.{leagueId}.t.{teamId}`, and
-  a drafted player the pool has no counterpart for arrives as a negative id and shows no name.
-  A board with no league linked gets the switch too: it opens `DraftFollowConnectComponent`, with
-  a Yahoo/ESPN tab for each platform this environment follows (`linkPlatforms`: the BFF feature
-  plus the build's `yahooSyncDisabled` / `espnLeaguesEnabled`). ESPN's tab takes the league id
-  and the cookies, stored as the settings import stores them (always shown: following needs the
-  SWID to find the user's team even in a public league; required only when none are stored); a
-  400 or 404 there is not followable, so only a failed settings read offers "Follow picks anyway".
-  When an ESPN follow stops on "no team is yours" or a 400, the same dialog opens in repair mode
-  (`cookieRepair`): ESPN tab only, league id filled in, cookies required, and on success it just
-  follows again without touching the board's league, settings or name.
+  **An ESPN league's draft is never followed** (removed 2026-09-30, see DECISIONS.md): ESPN's
+  league API publishes a draft's picks only once it is over, all at once (seen 2026-09-29), so
+  there is nothing to sync while it runs. An ESPN league still sets the draft's scoring, size and
+  roster through the import, and Draft Settings shows its switch greyed out with "Not available
+  on ESPN". A board saved following an ESPN league before then (`draft.following`) opens drafted
+  by hand, and the flag is left as it lies.
+  A league is linked in one place only: the league import inside Draft Settings (`draft-setup/`).
 - `shared-projection/` — the page behind a share link (`/s/:token`), public and unguarded: a
   share link has to open for someone who has never signed in. Its byline carries the author's
   profile picture, or the initial of their username where they have none. A signed-in visitor is offered
@@ -307,6 +344,76 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   themselves, so reaching one means a subscription lapsed mid-session or the entitlement read
   failed. `shared/premium/premium-refused.ts` is the one message for it, and it deliberately
   does not say "try again".
+- `streamer-planner/` — the **Streamer Planner** page (`/streamer-planner`, signed in): every NHL team rated by its schedule over the
+  nights ahead, and the best players a league has available for them. The nights are the page's
+  one setting: presets (the rest of this week, next week, both) or two dates, held to today, the
+  season and the BFF's 31-day cap (`planner-schedule.ts`: `presetStretch`, `clampStretch`;
+  `PLANNER_TODAY` is the reader's own clock, so a night already played is never offered), then a
+  strip of tick boxes, one a night, seven to a row so each row is a Monday-to-Sunday week (the days
+  of the first week already behind are drawn faint). The league sits beside the nights.
+  **The team schedules have one rating** for the whole page, the BFF's skater score and rank
+  (`rateTeams`), with the Fav/Unfav tint read from the goals an opponent concedes; the BFF's
+  goalie score and rank are sent but not read (Alexander's call, 2026-10-02). **The free agents
+  are one list, skaters and goalies together** (Alexander's call, 2026-10-05, once the free agents
+  had the page's full width): best first by the league's scoring, the skaters' categories as
+  columns and the goalies' after them behind a rule, each row blank under the other kind's. From
+  2026-10-01 to 2026-10-05 a segmented Skaters | Goalies control showed one kind at a time
+  (`ofKind`, since removed). The first three rows of the list's first page are set off as the best picks
+  (the rank as a gold, silver or bronze medal, nothing else: the table's `top` input); until 2026-10-05 they were
+  three cards over the tables, repeating those rows. What
+  concerns one table only sits on that table: the positions and the categories to rank by. The
+  pills (All, C, LW, RW, D, G) narrow it to any number of positions at once, a player eligible at
+  two is listed once, and the # column keeps his place in the whole list, so a list of goalies
+  still says how they compare. The "Rank by" pills offer every category the league scores; picked,
+  only the kinds that score in one of them are ranked (`scoresIn`), by those alone. Every heading
+  sorts the whole list, in points and category leagues alike (`sortFreeAgents`, held by the page
+  and applied before paging; best first by `defaultSortDirection`, a player the column says
+  nothing about last either way, ties in ranked order); the score heading is the ranked order, and
+  only in it are the first three set off. The list is paged and starts from the top when the
+  positions, the categories or the order change. Until 2026-10-01 it
+  copied LineupExperts: three, five or ten a position. No buttons: what the nights point at is what is on screen.
+  `planner-schedule.ts` re-rates the teams over the nights ticked, by projection-service's own
+  rule (a game is 1, or 1.25 on an off-night, scaled by the opponent), and uses the server's
+  numbers untouched while every night is ticked; `planner-free-agents.ts` scales a free agent's
+  line to the share of his club's games on those nights, filters by position and keeps two
+  decimals on every stat for the ranking engine, whose default rounds a
+  week's 0.4 goals to none. **The user's own team**: `GET /streamer-planner/my-team` gives his roster live, and `planner-lineup.ts` seats
+  the players whose club plays each game day in the league's lineup slots (max matching over
+  their positions, so a C/LW goes wherever leaves room); a night's `fits` is the positions that
+  would fill one more seat. Each cell says who would still start ("D", "Any skater, G") or
+  "Full", and while "Rank free agents by the game days … has room" is ticked (the default) a
+  skater counts only the counted nights he fits (`roomFactor`) and the goalies' creases are split
+  over the nights with a G seat. The nights only a drop makes room on (`fitsDrop`, `dropFactor`) are shown
+  beside his GP as a yellow "+N" and never counted or scored, since each takes the dropped
+  player's game. The free agents are ranked here, by the league's own scoring settings
+  through `ProjectionRankingService`; the league is remembered on the device by
+  `StreamerPlannerLeagueService` and picked in `league-field` (a Yahoo league reads at once, an
+  ESPN id waits for Use). Clubs are drawn with `<app-team-logo>` (`shared/team-logo`): the NHL's
+  own crest read from `assets.nhle.com`, an abbreviation badge where it fails; only a player on
+  waivers gets a tag, since an add is what the list is a list of. Each free agent's line over the
+  nights counted is drawn **in every category the league scores**, in the league's order
+  (`lineStats`), as real table columns named once in the heading (`lineColumns`), after the
+  score, GP and TOI; his positions sit under his name, not in a column. The columns are the
+  skaters' categories over the skaters and the goalies' over the goalies, who have no TOI column.
+  Picking categories to rank by re-ranks the skaters only: the goalies stay ranked by the league's
+  whole set. More
+  categories than the card is wide scroll sideways with the name held in place, and TOI is
+  dropped by container query where the card is narrow. A
+  category the BFF sent no number for is an empty cell, never written as the zero the ranking engine
+  was handed (`FreeAgent.projected`).
+- `fa-scout/` — the **FA Scout** page (`/fa-scout`, signed in, served only where the BFF's
+  `faScout` feature says so): the players a league has available who are worth keeping for the
+  rest of the season, the planner's season-long sibling. The league is picked with the planner's
+  own field (`app-league-field`, `YahooLeaguePicker`) and opens on `LeagueChoiceService`'s league. Every
+  available player is ranked twice by the league's scoring through `ProjectionRankingService`:
+  on the model's served rest of the season, which is the list's order, and on its frozen preseason
+  line, among the same players (`scout-ranking.ts`: `rankScout`). The places gained are the
+  **Rise** column, and `isRising` (his place at least halved, and by at least 5 places, a first
+  guess) tags a row Rising; a player with no preseason line is New. For a skater the TOI column
+  shows the ice time now over the preseason one, picked out at a minute or more. Skaters or
+  goalies by a segmented control, positions by pills, and a "Rising only" pill; 25 rows a page.
+  The table (`scout-table/`) reuses the planner table's stylesheet and line helpers
+  (`lineStats`, `lineColumns`): a `ScoutRow` is a `RankedFreeAgent` plus its preseason rank.
 - `services/` — app services (auth, projections, etc.)
 - `interceptors/` — HTTP interceptors: `authInterceptor` attaches the JWT and refreshes
   once on 401 (all environments). **Only a 401/403 from `/auth/refresh` itself ends the

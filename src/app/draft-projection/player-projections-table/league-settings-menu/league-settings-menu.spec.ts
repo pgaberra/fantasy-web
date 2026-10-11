@@ -78,4 +78,23 @@ describe('LeagueSettingsMenuComponent', () => {
     component.onMinGoalieGamesInput(inputEvent('-5'));
     expect(component.minGoalieGames()).toEqual(0);
   });
+
+  it("holds the league's size and roster once it is imported, and leaves the goalie minimum", () => {
+    getFixture({ syncedLeagueName: 'HHL' });
+
+    expect(ngMocks.find('#league-size-input').nativeElement.disabled).toBe(true);
+    expect(ngMocks.input(ngMocks.find('app-roster-slots-editor'), 'disabled')).toBe(true);
+    expect(ngMocks.find('#min-goalie-games-input').nativeElement.disabled).toBe(false);
+    expect(ngMocks.find('.menu-note').nativeElement.textContent).toContain('come from HHL');
+  });
+
+  it('ignores a size typed while the league holds it', () => {
+    const fixture = getFixture({ syncedLeagueName: 'HHL' });
+    const component = fixture.point.componentInstance;
+    const before = component.leagueSize();
+
+    component.onLeagueSizeInput({ target: { value: '20' } } as unknown as Event);
+
+    expect(component.leagueSize()).toEqual(before);
+  });
 });

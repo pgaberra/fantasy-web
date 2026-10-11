@@ -1,0 +1,385 @@
+/* Only the table scrolls sideways, where a league scores more categories than the card is wide;
+   the page itself never does. */
+.table-scroll {
+  container-type: inline-size;
+  overflow-x: auto;
+}
+
+.free-agents-table {
+  --player-logo-size: 28px;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  width: 100%;
+}
+
+.free-agents-table th,
+.free-agents-table td {
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-2) var(--space-1);
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.free-agents-table thead th {
+  color: var(--color-text-muted);
+  font-weight: var(--weight-semibold);
+  vertical-align: bottom;
+}
+
+.free-agents-table .num,
+.free-agents-table thead th.num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* The heading is the sort control, drawn as the heading it was, as on the team schedules. A number
+   column's arrow goes before its label, so the labels stay over their right-aligned figures. */
+.sort {
+  align-items: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: inherit;
+  gap: 2px;
+  /* Set on the line by its foot, not its baseline: with the arrow first, the button's baseline is
+     the arrow's foot, which lifted the sorted heading above the rest. */
+  vertical-align: bottom;
+  /* The cell pads it already: a dozen narrow category columns would each grow by its own. */
+  padding: 0;
+}
+
+.sort:hover {
+  color: var(--color-primary);
+}
+
+.sort:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.free-agents-table th[aria-sort] .sort {
+  color: var(--color-primary);
+}
+
+/* A row is read across a dozen numbers; the one under the pointer is held together. */
+.free-agents-table tbody tr:hover > * {
+  background: var(--color-surface-hover);
+}
+
+/* A row is one line, read straight across its middle: the rank, the crest, the name and every
+   number share it. */
+.free-agents-table tbody td {
+  line-height: 1.25;
+}
+
+/* His place among all of them, so a list narrowed to one position still says how it compares. */
+.free-agents-table .rank-col {
+  color: var(--color-text-subtle);
+  padding-right: var(--space-2);
+  width: 1%;
+}
+
+/* Centred, not set right like the other numbers: the first three are drawn in a medal wider than
+   a digit, and set right the digits in the medals stood to the left of the ones under them. */
+.free-agents-table .rank-col,
+.free-agents-table thead th.rank-col {
+  text-align: center;
+}
+
+/* The player stays put while the numbers scroll sideways, and takes whatever room the card has to
+   spare: shared out among the numbers it would space them unevenly about the rule. */
+.free-agents-table .player-col {
+  background: var(--color-surface);
+  left: 0;
+  position: sticky;
+  width: 100%;
+  z-index: 1;
+}
+
+.free-agents-table tbody th.player-col {
+  font-weight: var(--weight-medium);
+  padding-left: 0;
+}
+
+/* The crest, then the name and what he plays beside it: the positions are his, not a column to
+   compare, and the card has the width to keep them off a line of their own. */
+.player-cell {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.player-logo {
+  --team-logo-size: var(--player-logo-size);
+  flex: none;
+}
+
+.player-identity {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.player-name {
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+  line-height: 1.25;
+}
+
+.player-meta {
+  align-items: center;
+  display: flex;
+  gap: var(--space-1);
+}
+
+/* Side by side: stacked, a second position would make the row a chip taller for nothing. */
+.free-agents-table app-position-chips {
+  flex-wrap: nowrap;
+}
+
+.player-name-line {
+  align-items: center;
+  display: flex;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+/* Waivers only: a claim is the one status that changes what the reader does next. Amber and
+   round, so it never reads as one more position chip; the dark gold carries the contrast. */
+.player-status {
+  align-items: center;
+  background: var(--color-warning-surface);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-warning-text);
+  display: inline-flex;
+  flex: none;
+  justify-content: center;
+  padding: 2px;
+}
+
+/* A figure with what a drop would add raised at its top right, where a footnote's mark goes. The
+   mark hangs outside the figure's box, so it is no part of the cell's width: a column is as wide
+   for the one player a drop lifts as for the rest, and the figures stand on one line down it. */
+.figure {
+  display: inline-block;
+  position: relative;
+  white-space: nowrap;
+}
+
+/* With a drop picked, every number column keeps a margin for the marks hanging off its figures,
+   the boxed games count being the widest: the table widens once, with the pick, and never by the
+   row. The heading's padding grows with it, so the labels stay over their figures. The category
+   columns, padded by rules of their own further down, take their room there. */
+.free-agents-table--marked .num {
+  padding-right: calc(var(--space-1) + 1.75rem);
+}
+
+/* A figure holding games only a drop opens, once the page counts them: the game days' yellow, in
+   the strong gold the marks use, which on white reads at 5.2:1, and otherwise the figure as it
+   was, so a yellow row reads as the rest do, only as his with a drop. */
+.figure--drop {
+  color: var(--color-gold-strong);
+}
+
+/* What the games only a drop opens would add: the games themselves beside his, and what they put
+   on each number and the score. The game days' yellow, so it reads as theirs, and raised and
+   small, a mark on the figure rather than a second figure beside it. The games are boxed as a
+   count of their own; a stat's mark is bare, since a dozen boxes down a row would be a second
+   table, and in the strong gold rather than the warning text's olive brown, which on white beside
+   the figures' slate was too close to them to catch the eye (#1079). */
+.drop-games,
+.lift {
+  color: var(--color-warning-text);
+  font-size: 0.625rem;
+  font-weight: var(--weight-semibold);
+  left: 100%;
+  line-height: 1.2;
+  margin-left: 2px;
+  position: absolute;
+  top: -0.45em;
+}
+
+.drop-games {
+  background: var(--color-warning-surface);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-sm);
+  padding: 0 3px;
+}
+
+.lift {
+  color: var(--color-gold-strong);
+}
+
+.drop-games:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* A cell of its own in the planner; FA Scout stacks a second figure under it in the same cell. */
+.score {
+  color: var(--color-primary);
+  font-weight: var(--weight-bold);
+}
+
+span.score {
+  display: block;
+}
+
+.per-game {
+  color: var(--color-text-subtle);
+  display: block;
+  font-size: var(--text-xs);
+}
+
+/* The rate a game as a column: the score's companion, a step quieter but a figure like the rest. */
+.free-agents-table td.rate-col {
+  color: var(--color-text-muted);
+}
+
+.free-agents-table td.toi-col {
+  color: var(--color-text-muted);
+}
+
+/* Ice time is the one column the score is not made of, so it is the one to go where the card is
+   too narrow for the rest: half a laptop's screen, or a phone. */
+@container (max-width: 38rem) {
+  /* Nor is there room beside the name there: the positions go back under it, where they cost a
+     line of height instead of the width the numbers need, and every number sits on the line of
+     the name, since centred against two lines it would stand half a line below it. */
+  .player-identity {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .free-agents-table tbody td {
+    vertical-align: top;
+  }
+
+  .free-agents-table .toi-col {
+    display: none;
+  }
+
+  /* The games column now ends its group, and takes the room before the rule with it. */
+  .free-agents-table :is(th, td):has(+ .toi-col) {
+    padding-right: var(--space-3);
+  }
+}
+
+/* The categories, a column each: narrow, since a week's number is three or four characters, and
+   set off from the columns about the player by a rule down the first, and the goalies' from the
+   skaters' by another. */
+.free-agents-table .stat-col {
+  padding-inline: var(--space-2) 2px;
+}
+
+.free-agents-table .stat-col--start {
+  border-left: 1px solid var(--color-border);
+  padding-left: var(--space-3);
+}
+
+/* The rule stands midway between two groups: whichever column ends the first one keeps as much
+   room before the rule as the next group keeps after it. */
+.free-agents-table :is(th, td):has(+ .stat-col--start) {
+  padding-right: var(--space-3);
+}
+
+/* With a drop picked, a category column keeps room on its right for the bare mark its figure
+   wears, "+0.0" at the mark's size: less than the player columns keep, since the boxed games
+   count never stands here. After the rules above, which set the categories' own padding and
+   would otherwise win back the 2px that left the marks running into the next column (#1092).
+   A column that ends a group keeps its room before the rule as well, and enough for the
+   boxed count, since the games column ends a group where there is no ice time to follow it. */
+.free-agents-table--marked .stat-col {
+  padding-right: calc(2px + 1.3rem);
+}
+
+.free-agents-table--marked :is(th, td):is(:has(+ .stat-col--start), :has(+ .toi-col)) {
+  padding-right: calc(var(--space-3) + 1.75rem);
+}
+
+/* A category he is projected nothing in steps back, so the ones he is picked up for stand out. */
+.free-agents-table td.nil {
+  color: var(--color-text-subtle);
+}
+
+/* A category that is not his kind (a goalie's goals) is a faint dash, not a figure among figures,
+   and stays faint in a column the list is ranked by. */
+.free-agents-table td.not-his {
+  color: var(--color-border-strong);
+  font-weight: normal;
+}
+
+/* Ranked by a few categories, those columns are what the order is read from; the rest step back
+   without going, since a streamer still wants to see what else comes with the add. */
+.free-agents-table .stat-col--focus {
+  color: var(--color-text);
+  font-weight: var(--weight-semibold);
+}
+
+.free-agents-table thead th.stat-col--focus {
+  color: var(--color-primary);
+}
+
+.free-agents-table .stat-col--muted {
+  color: var(--color-text-subtle);
+}
+
+/* --- The best picks ---------------------------------------------------------------------------- */
+
+/* The best three of everyone available wear a medal for a rank, gold, silver and bronze, and are
+   otherwise rows like any other: a tint, a larger name and a coloured score on top of that read as
+   a second table over the first. The medal goes with the number, not the row: a list narrowed to
+   some positions whose head is fourth gives him none. The medals are this table's own colours, since the app's gold token means
+   Premium; the number is dark on each, as white does not carry 4.5:1 on any of the three. */
+.free-agents-table .player-row--top .rank-col {
+  vertical-align: middle;
+}
+
+.player-row--top .rank {
+  --medal: var(--color-primary);
+  --medal-text: var(--color-primary-contrast);
+  align-items: center;
+  background: var(--medal);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--medal-text) 25%, transparent);
+  color: var(--medal-text);
+  display: inline-flex;
+  font-weight: var(--weight-bold);
+  height: 1.5rem;
+  justify-content: center;
+  width: 1.5rem;
+}
+
+.player-row--top .rank--gold {
+  --medal: #f0c64a;
+  --medal-text: #4d3800;
+}
+
+.player-row--top .rank--silver {
+  --medal: #d3d9e2;
+  --medal-text: #323b4a;
+}
+
+.player-row--top .rank--bronze {
+  --medal: #dfa67c;
+  --medal-text: #4f2708;
+}
+
+.sr-only {
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}

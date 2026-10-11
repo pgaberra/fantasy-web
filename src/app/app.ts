@@ -8,11 +8,11 @@ import { AuthService } from './services/auth.service';
 import { FeatureService } from './services/feature.service';
 import { EntitlementService } from './services/entitlement.service';
 import { ConsentBannerComponent } from './shared/consent-banner/consent-banner';
-import { EnvironmentBannerComponent } from './shared/environment-banner/environment-banner';
+import { LazyEnvironmentBannerComponent } from './shared/environment-banner/lazy-environment-banner';
 import { PlayerHeadshotComponent } from './shared/player-headshot/player-headshot';
 import { SiteFooterComponent } from './shared/site-footer/site-footer';
 import { ToastComponent } from './shared/toast/toast';
-import { UnverifiedBannerComponent } from './shared/unverified-banner/unverified-banner';
+import { LazyUnverifiedBannerComponent } from './shared/unverified-banner/lazy-unverified-banner';
 import { environment } from '../environments/environment';
 import { IconComponent } from './shared/icon/icon';
 
@@ -26,11 +26,11 @@ import { IconComponent } from './shared/icon/icon';
     CdkMenuItem,
     CdkMenuTrigger,
     ConsentBannerComponent,
-    EnvironmentBannerComponent,
+    LazyEnvironmentBannerComponent,
     PlayerHeadshotComponent,
     SiteFooterComponent,
     ToastComponent,
-    UnverifiedBannerComponent,
+    LazyUnverifiedBannerComponent,
     IconComponent,
   ],
   templateUrl: './app.html',
@@ -46,7 +46,6 @@ export class App {
   private readonly router = inject(Router);
   protected readonly environmentName = environment.environmentName;
   protected readonly appVersion = environment.version;
-  protected readonly paymentsEnabled = environment.paymentsEnabled;
   protected readonly whosHotEnabled = environment.whosHotEnabled;
   protected readonly features = inject(FeatureService);
 
@@ -61,14 +60,11 @@ export class App {
 
   protected readonly isLandingRoute = computed(() => this.path() === '/');
 
-  // The Draft menu covers the draft-source picker, the projections behind it and the power rankings of
-  // a league drafted elsewhere, so it stays highlighted anywhere under any of them — a trigger
-  // button gets no routerLinkActive.
+  // The Draft menu covers the draft-source picker and the projections behind it, so it stays
+  // highlighted anywhere under either — a trigger button gets no routerLinkActive. The power
+  // rankings are read all season, so they are a header link of their own, not part of it.
   protected readonly isDraftSection = computed(
-    () =>
-      this.path().startsWith('/draft') ||
-      this.path().startsWith('/projections') ||
-      this.path().startsWith('/team-power-rankings'),
+    () => this.path().startsWith('/draft') || this.path().startsWith('/projections'),
   );
 
   // Everything behind the avatar: the profile. Premium is in the menu too, but it is also a
@@ -84,13 +80,9 @@ export class App {
   /**
    * The plan as the nav may state it. Null until it is known: "Free plan" said of a subscriber
    * whose entitlement has not landed yet is wrong, not merely early, and the header link that
-   * sells Premium to a free account would be selling it to someone who already pays. Null too
-   * wherever payments are off, since without them there is no plan to have.
+   * sells Premium to a free account would be selling it to someone who already pays.
    */
   protected readonly plan = computed<'premium' | 'free' | null>(() => {
-    if (!this.paymentsEnabled) {
-      return null;
-    }
     if (this.entitlement.premium()) {
       return 'premium';
     }
@@ -104,6 +96,6 @@ export class App {
    * the price sits behind a session or on the landing page.
    */
   protected readonly showsPremiumLink = computed(
-    () => this.paymentsEnabled && (!this.authService.isLoggedIn() || this.plan() === 'free'),
+    () => !this.authService.isLoggedIn() || this.plan() === 'free',
   );
 }

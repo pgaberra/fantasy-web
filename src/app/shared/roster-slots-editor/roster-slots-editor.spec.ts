@@ -4,7 +4,7 @@ import { RosterSlotsEditorComponent } from './roster-slots-editor';
 import { RosterSlots } from '../../api/models/roster-slots';
 
 describe('RosterSlotsEditorComponent', () => {
-  const DEFAULT_SLOTS: RosterSlots = { c: 2, lw: 2, rw: 2, d: 4, util: 0, bn: 4, g: 2 };
+  const DEFAULT_SLOTS: RosterSlots = { c: 2, lw: 2, rw: 2, w: 0, f: 0, d: 4, util: 0, bn: 4, g: 2 };
 
   beforeEach(() => MockBuilder(RosterSlotsEditorComponent));
 
@@ -31,9 +31,21 @@ describe('RosterSlotsEditorComponent', () => {
     expect(component.rosterSlots().c).toEqual(2);
   });
 
-  it('renders a slot input per position', () => {
+  it('renders a slot input per position, the wing and forward flex after the named forwards', () => {
     getComponent();
 
-    expect(ngMocks.findAll('.roster-slot')).toHaveLength(7);
+    expect(
+      ngMocks.findAll('.roster-slot-label').map((label) => label.nativeElement.textContent.trim()),
+    ).toEqual(['C', 'LW', 'RW', 'W', 'F', 'D', 'Util', 'BN', 'G']);
+  });
+
+  it('edits the forward flex slots like any other', () => {
+    const component = getComponent();
+
+    component.onRosterSlotInput('f', inputEvent('9'));
+    component.onRosterSlotInput('w', inputEvent('-3'));
+
+    expect(component.rosterSlots().f).toEqual(9);
+    expect(component.rosterSlots().w).toEqual(0);
   });
 });

@@ -2,16 +2,23 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { catchError, map, Observable, shareReplay, throwError } from 'rxjs';
 import { ApiConfiguration } from '../api/api-configuration';
-import { modelBoard } from '../api/fn/projection-model/model-board';
+import { modelBoard, ModelBoard$Params } from '../api/fn/projection-model/model-board';
 import { seed } from '../api/fn/projection-model/seed';
 import { ModelBoardResponse } from '../api/models/model-board-response';
 import { SeededProjectionResponse } from '../api/models/seeded-projection-response';
+
+/**
+ * Which of the model's lines: the whole season (`model`, the default) or what is left of the one
+ * under way (`rest_of_season`), as `POST /api/v1/projections` names them.
+ */
+export type ModelLines = NonNullable<ModelBoard$Params['source']>;
 
 /** What to ask the model for. Everything it has, unless narrowed. */
 export interface SeedParams {
   season?: number;
   skaterLimit?: number;
   goalieLimit?: number;
+  source?: ModelLines;
 }
 
 /**
@@ -67,15 +74,17 @@ export class ProjectionModelService {
 
   /**
    * The rows a projection created from the model would start with — the model's lines plus last
-   * season's for every player it does not reach — as the server would write them now. Premium
-   * only.
+   * season's for every player it does not reach — as the server would write them now, for the
+   * whole season unless the rest of the one under way is asked for. Premium only.
    *
    * <p>Deliberately not held like {@link seed}: this is what a preview promises Create will write,
    * and Create reads the model and the pool fresh, so an answer kept across the nightly sync
    * would preview a board that Create no longer makes.
    */
-  board(): Observable<ModelBoardResponse> {
-    return modelBoard(this.http, this.config.rootUrl).pipe(map((response) => response.body));
+  board(source: ModelLines = 'model'): Observable<ModelBoardResponse> {
+    return modelBoard(this.http, this.config.rootUrl, { source }).pipe(
+      map((response) => response.body),
+    );
   }
 }
 
@@ -84,5 +93,5 @@ export class ProjectionModelService {
  * wrote the properties in.
  */
 function keyOf(params: SeedParams): string {
-  return `${params.season ?? ''}/${params.skaterLimit ?? ''}/${params.goalieLimit ?? ''}`;
+  return `${params.source ?? ''}/${params.season ?? ''}/${params.skaterLimit ?? ''}/${params.goalieLimit ?? ''}`;
 }
