@@ -294,8 +294,7 @@ describe('StreamerPlannerComponent', () => {
     ]);
     expect(planner.days()[1]).toEqual({ date: '2026-10-13', games: 3, offNight: true });
     expect(planner.activePreset()).toBe('this-week');
-    expect(planner.weeksTitle()).toBe('Week 2');
-    expect(planner.nightsTitle()).toBe('2 of 2 days selected');
+    expect(planner.counted().size).toBe(2);
     expect(planner.leadingDays()).toEqual([]);
     // Monday has no days before it, so nothing is asked for them.
     expect(invoke.mock.calls.filter(([fn]) => fn === streamerPlannerTeams)).toHaveLength(1);
@@ -345,7 +344,6 @@ describe('StreamerPlannerComponent', () => {
     planner.applyPreset('next-week');
     await fixture.whenStable();
     expect(planner.activePreset()).toBe('next-week');
-    expect(planner.weeksTitle()).toBe('Week 3');
     expect(invoke).toHaveBeenCalledWith(streamerPlannerTeams, {
       start: '2026-10-19',
       end: '2026-10-25',
@@ -353,7 +351,6 @@ describe('StreamerPlannerComponent', () => {
 
     planner.applyPreset('two-weeks');
     await fixture.whenStable();
-    expect(planner.weeksTitle()).toBe('Weeks 2-3');
     expect(invoke).toHaveBeenCalledWith(streamerPlannerTeams, {
       start: '2026-10-12',
       end: '2026-10-25',
@@ -368,7 +365,6 @@ describe('StreamerPlannerComponent', () => {
     planner.setEnd(dateInput('2026-10-20'));
     expect(planner.stretch()).toEqual({ start: '2026-10-12', end: '2026-10-20' });
     expect(planner.activePreset()).toBeNull();
-    expect(planner.weeksTitle()).toBe('Weeks 2-3');
 
     // A start past the end takes the end with it.
     planner.setStart(dateInput('2026-10-21'));
@@ -408,7 +404,7 @@ describe('StreamerPlannerComponent', () => {
 
     planner.toggleDay(planner.days()[1]);
 
-    expect(planner.nightsTitle()).toBe('1 of 2 days selected');
+    expect(planner.counted().size).toBe(1);
     // Only the Oct 15 game is left, a home game the server put at 0.9324, for both teams alike.
     expect(planner.teamRows().map((row) => [row.team, row.score, row.games])).toEqual([
       ['EDM', 0.93, 1],
@@ -436,7 +432,9 @@ describe('StreamerPlannerComponent', () => {
     expect(ngMocks.input(marks[0], 'appTooltip')).toEqual('Off-night');
     expect(ngMocks.findAll(nights[0], '.day-mark').length).toEqual(0);
     expect(ngMocks.findAll(fixture, '.range-legend')).toHaveLength(0);
-    expect(ngMocks.formatText(fixture)).toContain('Week 2');
+    // Nothing under the strip names the week or counts the days kept: the strip itself says both.
+    expect(ngMocks.formatText(fixture)).not.toContain('Week 2');
+    expect(ngMocks.formatText(fixture)).not.toContain('days selected');
     expect(ngMocks.formatText(fixture)).toContain('Select a league above');
   });
 

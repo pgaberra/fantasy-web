@@ -12,7 +12,6 @@ import {
   rankTier,
   rateTeams,
   weekColumn,
-  weeksTitle,
 } from './planner-schedule';
 
 function game(date: string, overrides: Partial<ScheduledGame> = {}): ScheduledGame {
@@ -239,12 +238,6 @@ describe('presets', () => {
       end: '2026-11-15',
     });
     expect(clampStretch({ start: '2026-10-14', end: '2026-10-20' }, [], TODAY)).toBeUndefined();
-  });
-
-  it('names the weeks a stretch touches', () => {
-    expect(weeksTitle(WEEKS, { start: '2026-10-19', end: '2026-10-25' })).toBe('Week 3');
-    expect(weeksTitle(WEEKS, { start: '2026-10-22', end: '2026-11-03' })).toBe('Weeks 3-5');
-    expect(weeksTitle(WEEKS, { start: '2027-01-01', end: '2027-01-02' })).toBe('');
   });
 
   it('places a date in its Monday-first week, and lists the days of the week before a start', () => {
