@@ -189,27 +189,23 @@
             </div>
           }
         </div>
-        <p class="range-summary">
-          <span>{{ weeksTitle() }}</span>
-          <span class="range-nights">{{ nightsTitle() }}</span>
-          @if (hasOpenRoom() || hasDropRoom()) {
-            <span class="range-legends">
-              @if (hasOpenRoom()) {
-                <span class="range-legend range-legend--open"
-                  ><span class="legend-swatch" aria-hidden="true"></span>Available in your
-                  roster</span
-                >
-              }
-              @if (hasDropRoom()) {
-                <span class="range-legend range-legend--drop"
-                  ><span class="legend-swatch" aria-hidden="true"></span>Available only if a player
-                  at a specific position is dropped. Hover or tap to see which player positions can
-                  free up a spot</span
-                >
-              }
-            </span>
-          }
-        </p>
+        @if (hasOpenRoom() || hasDropRoom()) {
+          <p class="range-legends">
+            @if (hasOpenRoom()) {
+              <span class="range-legend range-legend--open"
+                ><span class="legend-swatch" aria-hidden="true"></span>Available in your
+                roster</span
+              >
+            }
+            @if (hasDropRoom()) {
+              <span class="range-legend range-legend--drop"
+                ><span class="legend-swatch" aria-hidden="true"></span>Available only if a player at
+                a specific position is dropped. Hover or tap to see which player positions can free
+                up a spot</span
+              >
+            }
+          </p>
+        }
         <!-- The user's own team, where this environment reads it: the cells above say which nights
              it has room on. The switch that ranks the free agents by them is on their own card. -->
         @switch (myTeamStatus()) {

@@ -104,7 +104,6 @@ import {
   Stretch,
   weekdayName,
   weekOf,
-  weeksTitle,
 } from './planner-schedule';
 import { TeamSchedulesComponent } from './team-schedules/team-schedules';
 
@@ -303,8 +302,6 @@ export class StreamerPlannerComponent {
   });
 
   readonly everyNightCounted = computed(() => this.excluded().size === 0);
-
-  readonly nightsWithGames = computed(() => this.days().filter((day) => day.games > 0).length);
 
   isCounted(day: PlannerDay): boolean {
     return !this.excluded().has(day.date);
@@ -1029,18 +1026,6 @@ export class StreamerPlannerComponent {
   }
 
   // --- Words for the page -----------------------------------------------------------------------
-
-  /** "Week 3", or "Weeks 3-5". */
-  readonly weeksTitle = computed(() => {
-    const stretch = this.stretch();
-    return stretch ? weeksTitle(this.weeks(), stretch) : '';
-  });
-
-  /** "6 of 7 days selected": the days counted, of the days with games. */
-  readonly nightsTitle = computed(() => {
-    const nights = this.nightsWithGames();
-    return nights === 0 ? 'No games' : `${this.counted().size} of ${nights} days selected`;
-  });
 
   dayName(day: PlannerDay): string {
     return dayName(day);
