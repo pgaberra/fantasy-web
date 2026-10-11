@@ -107,10 +107,11 @@
 
     @if (offersRankBy()) {
       <!-- What the league is ranked against: one question, answered in two steps — whose numbers,
-           then which of theirs — so one name over both, and the two controls side by side, close
-           enough to read as a pair and set further from the league than from each other. They
-           stand at the dropdown's height on the league's row, so all three share one baseline.
-           Offered with or without a league on screen; changing it re-reads the one that is.
+           then which of theirs — so one name over both, and the dropdown under the kinds, in the
+           order they are answered, close enough to read as a pair and set further from the league
+           than from each other. Every control is the league dropdown's width and height, so the
+           card is one column. Offered with or without a league on screen; changing it re-reads
+           the one that is.
            Nothing to rank without Yahoo or a draft. -->
       <div class="picker-field rank-by-field">
         <span class="picker-label" id="rank-by-label">Rank by</span>
