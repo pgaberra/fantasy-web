@@ -1,0 +1,372 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-11T16:46:07+00:00",
+  "title": "Design System: SlapStat",
+  "extensions": {
+    "colorMeta": {
+      "rink-navy": {
+        "role": "primary",
+        "displayName": "Rink Navy",
+        "canonical": "oklch(32.5% 0.088 255.1)",
+        "tonalRamp": [
+          "#000b20",
+          "#00244e",
+          "#1e4270",
+          "#3d6393",
+          "#5e85b7",
+          "#7fa8dc",
+          "#a5ccff",
+          "#e5f0fe"
+        ]
+      },
+      "blue-line": {
+        "role": "primary",
+        "displayName": "Blue Line",
+        "canonical": "oklch(54.2% 0.218 262.0)",
+        "tonalRamp": [
+          "#000729",
+          "#001d5f",
+          "#00359c",
+          "#0952da",
+          "#3478ff",
+          "#72a3ff",
+          "#adcafe",
+          "#e7effe"
+        ]
+      },
+      "banner-gold": {
+        "role": "secondary",
+        "displayName": "Banner Gold",
+        "canonical": "oklch(80.4% 0.136 85.8)",
+        "tonalRamp": [
+          "#110a00",
+          "#312300",
+          "#543e03",
+          "#7a5c03",
+          "#a37c02",
+          "#cb9e29",
+          "#f1c255",
+          "#ffedc6"
+        ]
+      },
+      "banner-gold-deep": {
+        "role": "secondary",
+        "displayName": "Banner Gold Deep",
+        "canonical": "oklch(53.9% 0.112 74.5)",
+        "tonalRamp": [
+          "#130900",
+          "#352000",
+          "#5b3a00",
+          "#835701",
+          "#a97728",
+          "#ce9a4f",
+          "#f4be73",
+          "#ffebd2"
+        ]
+      },
+      "ice-grey": {
+        "role": "neutral",
+        "displayName": "Ice Grey",
+        "canonical": "oklch(96.1% 0.008 271.3)",
+        "tonalRamp": [
+          "#0a0b0f",
+          "#232529",
+          "#404247",
+          "#5f6166",
+          "#808287",
+          "#a3a5aa",
+          "#c7c9cf",
+          "#eceef4"
+        ]
+      },
+      "scoreboard-ink": {
+        "role": "neutral",
+        "displayName": "Scoreboard Ink",
+        "canonical": "oklch(22.8% 0.038 282.9)",
+        "tonalRamp": [
+          "#09081b",
+          "#222337",
+          "#3f4056",
+          "#5e5f77",
+          "#7f8099",
+          "#a1a2bd",
+          "#c5c7e2",
+          "#ecedff"
+        ]
+      },
+      "danger-red": {
+        "role": "status",
+        "displayName": "Danger Red",
+        "canonical": "oklch(50.1% 0.178 28.7)",
+        "tonalRamp": [
+          "#1f0000",
+          "#4d0001",
+          "#810103",
+          "#b0221b",
+          "#d84c3f",
+          "#ff7464",
+          "#ffb3a8",
+          "#ffe9e5"
+        ]
+      },
+      "success-green": {
+        "role": "status",
+        "displayName": "Success Green",
+        "canonical": "oklch(52.0% 0.139 149.4)",
+        "tonalRamp": [
+          "#001003",
+          "#012e10",
+          "#015120",
+          "#017532",
+          "#379952",
+          "#5ebd74",
+          "#83e297",
+          "#c8ffd1"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The landing headline only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "A page's h1 in the app."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card and section titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "The 14px working size: tables, menus, forms."
+      },
+      "body-lg": {
+        "displayName": "Body Large",
+        "purpose": "Reading copy on public pages."
+      },
+      "control": {
+        "displayName": "Control",
+        "purpose": "Buttons and table headings."
+      },
+      "data": {
+        "displayName": "Data",
+        "purpose": "Every figure in a column, right-aligned in tabular numerals."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Badges, chips, tooltips, eyebrows (uppercase, 0.06em)."
+      }
+    },
+    "shadows": [
+      {
+        "name": "shadow-sm",
+        "value": "0 1px 2px rgba(15, 52, 96, 0.06)",
+        "purpose": "Resting: panels and the active segment."
+      },
+      {
+        "name": "shadow-md",
+        "value": "0 2px 8px rgba(15, 52, 96, 0.08)",
+        "purpose": "Card: content cards."
+      },
+      {
+        "name": "shadow-lg",
+        "value": "0 8px 24px rgba(15, 52, 96, 0.12)",
+        "purpose": "Floating: menus, popovers, tooltips, toasts, dialogs."
+      },
+      {
+        "name": "frozen-edge",
+        "value": "6px 0 6px -5px rgba(15, 52, 96, 0.18)",
+        "purpose": "The edge of a frozen table column, over the columns that scroll under it."
+      },
+      {
+        "name": "focus-glow",
+        "value": "0 0 0 3px rgba(30, 107, 255, 0.15)",
+        "purpose": "A focused text or number field, with its border turned Blue Line."
+      }
+    ],
+    "motion": [
+      {
+        "name": "transition-fast",
+        "value": "150ms ease",
+        "purpose": "Small controls: segments, menu triggers, tooltips fading in."
+      },
+      {
+        "name": "transition",
+        "value": "200ms ease",
+        "purpose": "Buttons, links and badges changing colour or border."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms",
+        "purpose": "Every animation and transition under prefers-reduced-motion, except the pinned table header."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone",
+        "value": "640px"
+      },
+      {
+        "name": "nav-collapse",
+        "value": "840px"
+      },
+      {
+        "name": "pin-total-column",
+        "value": "1024px"
+      },
+      {
+        "name": "page-narrow",
+        "value": "1100px"
+      },
+      {
+        "name": "page-wide",
+        "value": "1400px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one filled action a view is for.",
+      "html": "<button class=\"ds-btn-primary\">Save projection</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; font-family: var(--font-sans, Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif); font-size: 0.875rem; font-weight: 600; line-height: 1.2; padding: 0.55rem 1.1rem; border: 1px solid transparent; border-radius: var(--radius-sm, 6px); cursor: pointer; text-decoration: none; transition: background 200ms ease, border-color 200ms ease, color 200ms ease; background: var(--color-primary, #0f3460); color: var(--color-surface, #ffffff); } .ds-btn-primary:hover { background: var(--color-primary-hover, #1a4a80); } .ds-btn-primary:focus-visible { outline: 2px solid var(--focus-ring-color, #1e6bff); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Every other action beside the primary one.",
+      "html": "<button class=\"ds-btn-secondary\">Sign in</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; font-family: var(--font-sans, Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif); font-size: 0.875rem; font-weight: 600; line-height: 1.2; padding: 0.55rem 1.1rem; border: 1px solid transparent; border-radius: var(--radius-sm, 6px); cursor: pointer; text-decoration: none; transition: background 200ms ease, border-color 200ms ease, color 200ms ease; background: var(--color-surface, #ffffff); color: var(--color-primary, #0f3460); border-color: var(--color-border-strong, #cbd5e1); } .ds-btn-secondary:hover { border-color: var(--color-primary, #0f3460); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--focus-ring-color, #1e6bff); outline-offset: 2px; }"
+    },
+    {
+      "name": "Gold Button",
+      "kind": "button",
+      "refersTo": "button-gold",
+      "description": "The Premium action on a navy surface, such as the AI card on Home.",
+      "html": "<div class=\"ds-on-navy\"><button class=\"ds-btn-gold\">Create projection</button></div>",
+      "css": ".ds-on-navy { background: var(--color-primary, #0f3460); padding: 1rem; border-radius: var(--radius-lg, 12px); display: inline-block; } .ds-btn-gold { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; font-family: var(--font-sans, Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif); font-size: 0.875rem; font-weight: 600; line-height: 1.2; padding: 0.55rem 1.1rem; border: 1px solid transparent; border-radius: var(--radius-sm, 6px); cursor: pointer; text-decoration: none; transition: background 200ms ease, border-color 200ms ease, color 200ms ease; background: var(--color-gold, #e6b84a); color: var(--color-primary, #0f3460); border-color: var(--color-gold, #e6b84a); } .ds-btn-gold:hover { background: #f0c65c; border-color: #f0c65c; } .ds-btn-gold:focus-visible { outline: 2px solid var(--focus-ring-color, #1e6bff); outline-offset: 2px; }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "custom",
+      "refersTo": "segmented",
+      "description": "Points | Category, and the source-kind picker: one choice from a few.",
+      "html": "<div class=\"ds-seg\" role=\"group\" aria-label=\"League type\"><button aria-pressed=\"true\">Points</button><button aria-pressed=\"false\">Category</button></div>",
+      "css": ".ds-seg { display: inline-flex; padding: 2px; background: var(--color-surface-alt, #f4f6fb); border: 1px solid var(--color-border, #e0e4ef); border-radius: 999px; } .ds-seg button { background: none; border: none; border-radius: 999px; padding: 0.3rem 0.9rem; font-family: var(--font-sans, Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif); font-size: 0.875rem; font-weight: 500; color: var(--color-text-muted, #4c586a); cursor: pointer; transition: background 150ms ease, color 150ms ease; } .ds-seg button:hover { color: var(--color-primary, #0f3460); } .ds-seg button[aria-pressed='true'] { background: var(--color-surface, #ffffff); border: 1px solid var(--color-border-control, #7b89a0); padding: calc(0.3rem - 1px) calc(0.9rem - 1px); color: var(--color-primary, #0f3460); font-weight: 600; box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 52, 96, 0.06)); } .ds-seg button:focus-visible { outline: 2px solid var(--focus-ring-color, #1e6bff); outline-offset: 2px; }"
+    },
+    {
+      "name": "Number Input",
+      "kind": "input",
+      "refersTo": "input-number",
+      "description": "A stat weight or setting: right-aligned, tabular figures.",
+      "html": "<label class=\"ds-field\">Goals <input class=\"ds-input\" type=\"number\" value=\"4.5\" /></label>",
+      "css": ".ds-field { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-sans, Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif); font-size: 0.875rem; color: var(--color-text, #1a1a2e); } .ds-input { width: 4.5rem; font-family: inherit; font-size: 0.875rem; text-align: right; padding: 0.3rem 0.45rem; border: 1px solid var(--color-border-control, #7b89a0); border-radius: var(--radius-sm, 6px); background: var(--color-surface, #ffffff); color: var(--color-text, #1a1a2e); font-variant-numeric: tabular-nums; } .ds-input:focus { outline: none; border-color: var(--color-accent, #1c62eb); box-shadow: 0 0 0 3px rgba(30, 107, 255, 0.15); }"
+    },
+    {
+      "name": "Position Chips",
+      "kind": "chip",
+      "refersTo": "position-chip",
+      "description": "A player's eligible positions, coloured per position, letters always shown.",
+      "html": "<span class=\"ds-chips\"><span class=\"ds-chip ds-c\">C</span><span class=\"ds-chip ds-lw\">LW</span><span class=\"ds-chip ds-rw\">RW</span><span class=\"ds-chip ds-d\">D</span><span class=\"ds-chip ds-g\">G</span><span class=\"ds-chip ds-flex\">Util</span></span>",
+      "css": ".ds-chips { display: inline-flex; gap: 0.15rem; font-family: var(--font-sans, Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif); } .ds-chip { display: inline-flex; align-items: center; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.02em; border-radius: var(--radius-sm, 6px); padding: 0.1rem 0.35rem; } .ds-c { color: #1d4ed8; background: #eef2ff; } .ds-lw { color: #15803d; background: #ecfdf3; } .ds-rw { color: #c2410c; background: #fff5ed; } .ds-d { color: #6d28d9; background: #f3effe; } .ds-g { color: #b45309; background: #fdf6ec; } .ds-flex { color: #64748b; background: #f1f5f9; }"
+    },
+    {
+      "name": "Premium Badge",
+      "kind": "chip",
+      "refersTo": "premium-badge",
+      "description": "The one mark Premium wears wherever it is named.",
+      "html": "<a class=\"ds-premium\" href=\"#\"><svg viewBox=\"0 0 24 24\" width=\"12\" height=\"12\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z\"></path><path d=\"M20 2v4\"></path><path d=\"M22 4h-4\"></path><circle cx=\"4\" cy=\"20\" r=\"2\"></circle></svg>Premium</a>",
+      "css": ".ds-premium { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: rgba(230, 184, 74, 0.2); color: var(--color-gold-strong, #946307); font-family: var(--font-sans, Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif); font-size: 0.75rem; font-weight: 600; line-height: 1.4; white-space: nowrap; text-decoration: none; transition: background 200ms ease, color 200ms ease; } .ds-premium:hover, .ds-premium:focus-visible { background: rgba(230, 184, 74, 0.38); color: #6b4705; } .ds-premium:focus-visible { outline: 2px solid var(--focus-ring-color, #1e6bff); outline-offset: 2px; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "A white panel on the ice-grey ground: hairline edge, resting shadow.",
+      "html": "<div class=\"ds-ground\"><section class=\"ds-card\"><p class=\"ds-eyebrow\">Last updated</p><h3 class=\"ds-card-title\">My league</h3><p class=\"ds-card-meta\">Points · 12 teams · Yahoo</p></section></div>",
+      "css": ".ds-ground { background: var(--color-bg, #f0f2f8); padding: 1.5rem; } .ds-card { background: var(--color-surface, #ffffff); border: 1px solid var(--color-border, #e0e4ef); border-radius: var(--radius-lg, 12px); box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 52, 96, 0.06)); padding: 1rem 1.5rem; font-family: var(--font-sans, Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif); } .ds-eyebrow { margin: 0; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-subtle, #5f6c85); } .ds-card-title { margin: 0.25rem 0; font-size: 1.25rem; font-weight: 600; color: var(--color-text, #1a1a2e); } .ds-card-meta { margin: 0; font-size: 0.875rem; color: var(--color-text-subtle, #5f6c85); }"
+    },
+    {
+      "name": "Header Navigation",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "The app header's links: navy at 65%, full navy with a Blue Line underline when active; Premium in gold.",
+      "html": "<nav class=\"ds-nav\"><a href=\"#\" class=\"active\">Draft Mode</a><a href=\"#\">Who's Hot</a><a href=\"#\">Streamer Planner</a><a href=\"#\" class=\"ds-nav-premium\">Premium</a></nav>",
+      "css": ".ds-nav { display: flex; align-items: center; gap: 1.5rem; height: 56px; padding: 0 1rem; background: var(--color-surface, #ffffff); border-bottom: 1px solid var(--color-border-header, #e2e8f0); font-family: var(--font-sans, Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif); } .ds-nav a { color: rgba(15, 52, 96, 0.65); text-decoration: none; font-size: 0.875rem; font-weight: 500; padding: 0.25rem 0; border-bottom: 2px solid transparent; transition: color 200ms ease, border-color 200ms ease; } .ds-nav a:hover, .ds-nav a.active { color: var(--color-primary, #0f3460); border-bottom-color: var(--color-accent, #1c62eb); } .ds-nav a.ds-nav-premium { color: var(--color-gold-strong, #946307); } .ds-nav a.ds-nav-premium:hover { border-bottom-color: var(--color-gold, #e6b84a); } .ds-nav a:focus-visible { outline: 2px solid var(--focus-ring-color, #1e6bff); outline-offset: 2px; border-radius: 6px; }"
+    },
+    {
+      "name": "Projection Table",
+      "kind": "custom",
+      "refersTo": "table-header",
+      "description": "The signature object: navy header band, zebra rows, tabular figures, the gold total band.",
+      "html": "<table class=\"ds-table\"><thead><tr><th class=\"ds-rank\">#</th><th class=\"ds-name\">Player</th><th>Goals</th><th>Assists</th><th class=\"ds-total\">Total Points</th></tr></thead><tbody><tr><td class=\"ds-rank\">1</td><td class=\"ds-name\">Connor McDavid</td><td>48</td><td>90</td><td class=\"ds-total\">541.2</td></tr><tr><td class=\"ds-rank\">2</td><td class=\"ds-name\">Nathan MacKinnon</td><td>53</td><td>74</td><td class=\"ds-total\">514.12</td></tr><tr><td class=\"ds-rank\">3</td><td class=\"ds-name\">Nikita Kucherov</td><td>44</td><td>86</td><td class=\"ds-total\">500.88</td></tr></tbody></table>",
+      "css": ".ds-table { border-collapse: collapse; font-family: var(--font-sans, Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif); font-size: 0.875rem; color: var(--color-text, #1a1a2e); background: var(--color-surface, #ffffff); } .ds-table th { background: var(--color-primary, #0f3460); color: var(--color-surface, #ffffff); font-weight: 600; text-align: right; padding: 0.6rem 0.5rem; } .ds-table th:hover { background: var(--color-primary-hover, #1a4a80); } .ds-table td { padding: 0.35rem 0.5rem; text-align: right; font-variant-numeric: tabular-nums; border-bottom: 1px solid var(--color-border, #e0e4ef); } .ds-table tbody tr:nth-child(even) td { background: var(--color-surface-alt, #f4f6fb); } .ds-table tbody tr:hover td { background: var(--color-surface-hover, #e8edf7); } .ds-table .ds-rank { color: var(--color-text-subtle, #5f6c85); text-align: center; } .ds-table th.ds-rank { color: var(--color-surface, #ffffff); } .ds-table .ds-name { text-align: left; font-weight: 600; color: var(--color-primary, #0f3460); } .ds-table th.ds-name { color: var(--color-surface, #ffffff); } .ds-table th.ds-total { background: var(--color-gold-strong, #946307); box-shadow: inset 3px 0 0 0 #a06800; } .ds-table td.ds-total { background: #fff8e6; color: #5a3a00; font-weight: 700; box-shadow: inset 3px 0 0 0 var(--color-gold, #e6b84a); } .ds-table tbody tr:nth-child(even) td.ds-total { background: #fef0c7; } .ds-table tbody tr:hover td.ds-total { background: #fde68a; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Front Office",
+    "overview": "SlapStat looks like the room where a general manager makes the call: a desk of numbers, read under good light by someone who knows the game. The screen belongs to the data. Navy frames it (the header band of every table, the one filled button, the titles) and gold marks the figure that decides (the total a player is ranked by, the Premium edge, the medal on the best pickup). Everything else stays cool, white and grey so the numbers carry the page.\n\nThe mood is **focused, exact and sure of itself**. Confidence comes from figures that line up, columns that stay put while the page scrolls, and controls that answer at once, not from decoration. Pages are dense where the job is comparison (tables run the full 1400px and the page scrolls, not the table) and calm where the job is a decision (forms and lists sit at 1100px). Interfaces are light only.\n\nWhat SlapStat is not: **generic SaaS**. No purple gradients, no glassmorphism, no illustrated blobs, no stock \"dashboard\" cards repeated for their own sake.",
+    "keyCharacteristics": [
+      "Navy structure, gold value, one blue for links and focus; everything else cool neutral.",
+      "Inter throughout, at a 14px working size, with tabular figures in every column of numbers.",
+      "Wide tables as the signature object: navy header band, frozen rank and name, a gold total column pinned to the right on wide screens.",
+      "Flat at rest: white surfaces on a cool grey ground, hairline edges, shadows only on what floats.",
+      "Every colour that carries text is checked against WCAG 4.5:1 on the darkest surface it can land on, and the ratio is written beside the token."
+    ],
+    "rules": [
+      {
+        "name": "The Gold Means Value Rule",
+        "body": "Gold marks what counts: the ranking total, Premium, the AI projection, the top three picks. It is never decoration, never a background for text, and never on two competing things in one view.",
+        "section": "colors"
+      },
+      {
+        "name": "The Ratio Beside the Token Rule",
+        "body": "Every colour that carries text is checked against the darkest surface it can land on, and the ratio is written in the comment beside it in `styles.css`. Lightening a text colour means rechecking that number first.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Blue Rule",
+        "body": "Blue Line is for links, the active place in navigation and focus. A second blue for anything else (a chart, a badge, a highlight) blurs what is clickable.",
+        "section": "colors"
+      },
+      {
+        "name": "The Fourteen-Pixel Rule",
+        "body": "The app works at 14px (0.875rem). 16px is for reading copy on public pages, 12px for labels and chips. A new screen that sets its body at 16px is the odd one out.",
+        "section": "typography"
+      },
+      {
+        "name": "The Straight Column Rule",
+        "body": "Figures use tabular numerals and right-align, and a column's heading ends on the same vertical line as its values (`--stat-value-inset`, shared by header, cell and input). A heading that drifts off its numbers is a bug.",
+        "section": "typography"
+      },
+      {
+        "name": "The Floating-Only Rule",
+        "body": "A strong shadow means \"this is above the page\". Cards and panels stay at Resting or Card; a card that lifts itself to Floating competes with every menu.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** use the `:root` custom properties for every colour, space, radius and shadow; a hex in a component stylesheet is a leftover, not a precedent.",
+      "**Do** keep one filled Rink Navy button per view; everything else is secondary, quiet or a link.",
+      "**Do** spend gold only on value: the ranking total, Premium, the AI projection, the best picks.",
+      "**Do** set every column of numbers in tabular figures, right-aligned, with the heading ending on the values' line.",
+      "**Do** give every control a visible answer to hover and focus (the 2px Focus Blue ring, 2px out), and give new controls a pressed state too.",
+      "**Do** check a new text colour against the darkest surface it can land on and write the ratio beside the token.",
+      "**Do** check every screen at 375px; the breakpoint is 640px."
+    ],
+    "donts": [
+      "**Don't** use purple gradients, glassmorphism, illustrated blobs or other generic SaaS dressing.",
+      "**Don't** put a strong shadow on anything that does not float over the page.",
+      "**Don't** draw an icon by hand, type a character where an icon belongs, or add a second icon set.",
+      "**Don't** use the browser's native `title` tooltip.",
+      "**Don't** introduce a second blue for anything but links, the active place and focus.",
+      "**Don't** set app body text at 16px or headings in a second typeface.",
+      "**Don't** let a value the app does not know render as a zero or a default; a dash or no marker says \"unknown\"."
+    ]
+  }
+}
