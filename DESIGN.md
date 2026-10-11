@@ -52,9 +52,9 @@ colors:
 typography:
   display:
     fontFamily: "Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
-    fontSize: "clamp(2.2rem, 6vw, 3.4rem)"
+    fontSize: "clamp(2.3rem, 4.6vw, 3.4rem)"
     fontWeight: 700
-    lineHeight: 1.08
+    lineHeight: 1.06
     letterSpacing: "-0.02em"
   headline:
     fontFamily: "Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
@@ -249,7 +249,7 @@ a single bright blue reserved for links, the active tab and focus.
   sort arrows in the navy header, the gold button on the AI card, the Premium card's top edge,
   the warning-tone fills. Never carries text: white text on it reads 1.9:1.
 - **Banner Gold Deep** (`banner-gold-deep`): gold that has to be read. Premium text and badges,
-  the total column's heading, the gold year in the landing headline. 5.2:1 either way round.
+  the total column's heading, the italic "Your" in the landing headline. 5.2:1 either way round.
 - **The Gold Washes** (`banner-gold-wash`, `-alt`, `-hover`, with `banner-gold-ink`): the total
   column's cells, zebra-striped and darkening on row hover, so the number a player is ranked by
   reads as its own band down the table.
@@ -314,8 +314,9 @@ hierarchy comes from size and weight and the numbers keep a straight edge.
 
 ### Hierarchy
 
-- **Display** (700, `clamp(2.2rem, 6vw, 3.4rem)`, 1.08, -0.02em): the landing headline only, in
-  Rink Navy, with one phrase set in italic Banner Gold Deep (the season, "2026-27").
+- **Display** (700, `clamp(2.3rem, 4.6vw, 3.4rem)`, 1.06, -0.02em): the landing headline only
+  ("Your league's scoring. Your best lineup."), in Rink Navy, with one word set in italic Banner
+  Gold Deep (the second "Your"). It names what the tool does, never a season or a date.
 - **Headline** (700, 1.6rem, 1.2): a page's h1 in the app (Streamer Planner, FA Scout, Team Power
   Rankings), in Rink Navy. The editor's projection name runs larger at 2rem.
 - **Title** (600, 1.25rem, 1.3): card and section titles, the resumed projection's name. Smaller
@@ -340,6 +341,12 @@ cell and input). A heading that drifts off its numbers is a bug.
 Two page widths, set once on `:root` so no page drifts between them: **wide** (1400px) for pages
 whose job is a table (the editor, a shared projection, Who's Hot, the in-season tools) and the header that
 frames them; **narrow** (1100px) for forms and lists, where more room only strands the fields.
+
+The signed-out landing page sits between the two tiers at its own 1180px (`.lp-container`, a
+1.5rem gutter), reading as a sheet rather than a dashboard: a two-column hero (5fr copy beside 7fr
+lineup card), then each tool as a stage of copy beside a working panel (2fr : 3fr, sides swapping
+from one stage to the next). The one section that takes the wide 1400px tier is the editor,
+because it is the real table. The hero and the stages stack to one column at 960px.
 
 Spacing follows a six-step scale (0.25, 0.5, 0.75, 1, 1.5 and 2rem); 0.5rem and 0.75rem do most of
 the work inside components, 1rem and 1.5rem between them.
@@ -452,6 +459,12 @@ shadow, active item marked by a 3px Blue Line left edge). Below 840px the links 
 menu button, since the full set needs about 831px; a link added to the header moves that number.
 Footer and nav links are title case.
 
+The signed-out landing page draws its own bar, sticky and 60px tall on the same white and Ice Line
+Header rule: the wordmark at 30px, then Premium in Banner Gold Deep (underlined in gold on hover),
+Sign In in navy semibold (Blue Line on hover), and the one filled Rink Navy button, Get Started.
+Below 640px Sign In is hidden; Premium and Get Started stay. The demo table's pinned header comes
+to rest under this bar (`--pinned-header-inset`), not behind it.
+
 ### The Projection Table (signature component)
 
 The object SlapStat is built around, shared in spirit by the editor, a shared projection, Who's
@@ -461,6 +474,38 @@ that wash to Ice Hover on hover; rank and name frozen on the left with the froze
 positions as chips beside the name and the club as a small grey code; figures right-aligned in
 tabular numerals; and the total in its own gold band at the right edge, its heading in Banner
 Gold Deep. An edited row is outlined in 2px navy. Missing values are a dash, never a zero.
+
+### The Lineup Card (`app-landing-lineup`)
+
+The landing page's proof, and the projection table's grammar at card size: a white sheet (12px,
+Ice Line edge, Card shadow) that sits beside the headline and refills from the live pool the moment
+a weight or the league type changes. Top to bottom: a title bar ("Best lineup by your scoring")
+with the Points | Category segmented control; a weights row of eight labelled text fields (G, A,
+PPP, SOG, HIT, BLK, W, SV) on Ice Mist, in the editor's weight-row voice, four across below 640px;
+the slot table, a Rink Navy header band in sentence case (Slot, Player, GP, and the total's name),
+white and Ice Mist zebra rows, a position chip per slot in the slot's own colour, the player's name
+over club and stat line, GP in Bench Grey, and the total in the gold band (Banner Gold Deep
+heading, Warning wash cells in Warning Ink, a 3px Banner Gold inset left edge); then a foot line
+in Boards Grey saying where the numbers come from. While the pool loads (and on the prerendered
+page) the rows keep their shape with pulsing Ice Line bars where the figures will be.
+
+Its one authored motion: a slot whose player changed washes its player and GP cells in Warning Edge
+and holds it (`slot-changed`, 1600ms, `cubic-bezier(0.16, 1, 0.3, 1)`: the colour stays for 55% of
+the run, then lets go), long enough to be noticed, not read. Rows never blink out and back, the
+total column keeps its own band, and the first filling never highlights: the wash is for a change
+the visitor caused to a card already full. The card itself rises 12px into place once on first
+paint (`lp-rise`, 600ms, the same ease). Nothing else on the page moves on its own.
+
+### Example panels (landing)
+
+Each in-season tool is sold beside a working panel in that tool's own grammar (`.lp-panel`): a
+white sheet (12px, Ice Line edge, Card shadow) with a head bar whose right end carries an
+"Example" pill, 0.75rem semibold Bench Grey on Ice Hover, so a sample never passes for live data.
+The planner's panel draws the week as the planner does (one cell a night on Ice Mist, an off-night
+wearing a 3px Blue Line bar along its top) over a ranked list with a medal per pick, only the first
+gold. Who's Hot's panel carries that page's range presets (Last 5 | 10 | 20), the active one a
+filled navy pill rather than the segmented control's white one. Scores in every list sit in the
+total column's Warning Ink, tabular and right-aligned.
 
 ### Tooltips, toasts and notices
 
@@ -505,3 +550,6 @@ multi-coloured logos.
 - **Don't** set app body text at 16px or headings in a second typeface.
 - **Don't** let a value the app does not know render as a zero or a default; a dash or no marker
   says "unknown".
+- **Don't** name a season or a point in the calendar on a public page; describe what the tool does.
+  The landing page once named the season in its headline and went stale two weeks into it, and
+  `landing.spec.ts` now fails on a season string.

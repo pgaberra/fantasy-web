@@ -234,7 +234,7 @@
   padding: 0.05rem 0.45rem;
   border-radius: var(--radius-pill);
   background: var(--color-primary);
-  font-size: 0.65rem;
+  font-size: var(--text-xs);
   font-weight: var(--weight-bold);
   letter-spacing: 0.02em;
   color: var(--color-primary-contrast);
