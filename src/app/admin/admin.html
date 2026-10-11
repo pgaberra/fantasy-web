@@ -48,11 +48,11 @@
     <div class="admin-actions">
       <button
         type="button"
-        class="btn btn-primary"
+        class="btn btn-secondary"
         [disabled]="connecting()"
         (click)="connectYahoo()"
       >
-        <app-yahoo-mark tone="inherit" />
+        <app-yahoo-mark />
         {{ connected() ? 'Reconnect Yahoo account' : 'Connect Yahoo account' }}
       </button>
     </div>
