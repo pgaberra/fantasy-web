@@ -324,11 +324,8 @@ describe('TeamPowerRankingsComponent', () => {
     expect(draftCall).toHaveBeenLastCalledWith('d2', 'model');
   });
 
-  /**
-   * Mid-season the model's totals cover the games left, which a line over the table says. The
-   * option keeps its name: it is on screen before the answer is in, and must not rename itself.
-   */
-  it('says over the table that the model ranks the rest of the season once it is under way', async () => {
+  /** Mid-season the model's totals cover the games left, and the option itself says so. */
+  it('names the rest of the season in the AI projection option once it is under way', async () => {
     yahooLeague.mockReturnValue(of({ ...summary, inSeason: true }));
     const fixture = await render();
     const component = fixture.point.componentInstance;
@@ -336,10 +333,8 @@ describe('TeamPowerRankingsComponent', () => {
 
     const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
     const options = Array.from(select.options).map((option) => option.textContent?.trim());
-    expect(options).toEqual(['AI Projection', 'Last Season']);
-    expect(fixture.nativeElement.querySelector('.rankings-rest-of-season')?.textContent).toContain(
-      'Rest of season',
-    );
+    expect(options).toEqual(['AI Projection (Rest of Season)', 'Last Season']);
+    expect(fixture.nativeElement.querySelector('.rankings-rest-of-season')).toBeNull();
     expect(fixture.nativeElement.querySelector('.rank-by-choice p')).toBeNull();
   });
 

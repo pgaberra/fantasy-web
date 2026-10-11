@@ -250,10 +250,11 @@ export class TeamPowerRankingsComponent implements OnInit {
 
   /**
    * Once the season is under way the model ranks what each player does over the games left, so
-   * the totals are that much smaller than a whole season's, and a line over the table says so.
+   * the totals are that much smaller than a whole season's, and the dropdown's option says so.
    * Only the model's in-season lines set the flag: a board, last season's stats and the preseason
-   * model are whole seasons. The dropdown's option keeps its name: a control that renames itself
-   * once the answer is in reads as the page changing its mind.
+   * model are whole seasons. The option takes its name from the rankings response, so it reads
+   * "AI Projection" until the first table is in: Alexander's call (2026-10-11) over a line above
+   * the table, which he found worse than the rename.
    */
   readonly restOfSeason = computed(() => !!this.rankingsData()?.inSeason);
 
