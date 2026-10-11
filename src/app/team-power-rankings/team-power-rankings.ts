@@ -8,6 +8,7 @@ import { FeatureService } from '../services/feature.service';
 import { LeagueChoiceService } from '../services/league-choice.service';
 import { LeagueSummaryService } from '../services/league-summary.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
+import { RestOfSeasonService } from '../services/rest-of-season.service';
 import { LeagueProjectionTableComponent } from '../draft-mode/league-projection-table/league-projection-table';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
@@ -92,6 +93,7 @@ import { RANK_BY_KINDS, RankBy, RankByKind, boardIdOf, rankByBoard } from './ran
 export class TeamPowerRankingsComponent implements OnInit {
   private readonly rankings = inject(LeagueSummaryService);
   private readonly features = inject(FeatureService);
+  private readonly season = inject(RestOfSeasonService);
   private readonly storage = inject(ProjectionStorageService);
   private readonly route = inject(ActivatedRoute);
   private readonly choice = inject(LeagueChoiceService);
@@ -153,11 +155,14 @@ export class TeamPowerRankingsComponent implements OnInit {
   readonly modelOffered = computed(() => this.features.aiProjection());
 
   /**
-   * Whether the BFF has said what it serves. Until then the default under Rank by is not known,
-   * so nothing is read and no dropdown is shown: a page that ranked by last season and then
-   * switched to the model would show a choice that changes itself, and read the league twice.
+   * Whether the BFF has said what it serves, and whether a season is under way for the model.
+   * Until then neither the default under Rank by nor the model option's name is known, so nothing
+   * is read and no dropdown is shown: a page that ranked by last season and then switched to the
+   * model, or named its option and then renamed it, would show a choice that changes itself.
    */
-  private readonly featuresSettled = computed(() => this.features.settled());
+  private readonly featuresSettled = computed(
+    () => this.features.settled() && this.season.settled(),
+  );
 
   /** Everything the user has: the boards a league is ranked against, and the drafts to rank. */
   private readonly listResource = rxResource({
@@ -253,12 +258,12 @@ export class TeamPowerRankingsComponent implements OnInit {
   /**
    * Once the season is under way the model ranks what each player does over the games left, so
    * the totals are that much smaller than a whole season's, and the dropdown's option says so.
-   * Only the model's in-season lines set the flag: a board, last season's stats and the preseason
-   * model are whole seasons. The option takes its name from the rankings response, so it reads
-   * "AI Projection" until the first table is in: Alexander's call (2026-10-11) over a line above
-   * the table, which he found worse than the rename.
+   * Read from the BFF's season status before the dropdown is shown, never from the rankings that
+   * follow: an option that renamed itself once the table landed was the fault (Alexander,
+   * 2026-10-11). A board and last season's stats are whole seasons whatever the date, so the
+   * option is the model's alone.
    */
-  readonly restOfSeason = computed(() => !!this.rankingsData()?.inSeason);
+  readonly restOfSeason = computed(() => this.season.available());
 
   private readonly rankingsResource = rxResource({
     params: () => {

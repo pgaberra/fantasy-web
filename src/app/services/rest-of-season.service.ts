@@ -8,13 +8,14 @@ import { CreateProjectionRequest } from '../api/models/create-projection-request
 import { REST_OF_SEASON_PRESET_SOURCE } from '../models/ai-projection';
 
 /**
- * Whether a projection or a draft can be started from the rest of the season right now: only where
- * the BFF offers the preset at all, and then only while a season is under way, when the model has a
- * line for what is left of it.
+ * Whether a season is under way for the model right now: when its served lines cover what is left
+ * of the season rather than a whole one. That is when a projection or a draft can be started from
+ * the rest of the season (where the BFF offers that preset at all), and when the AI projection
+ * ranks a league on the rest of the season, which Team Power Rankings says in its option.
  *
- * <p>Asked of the BFF only where `/features` reports the preset on, since elsewhere the question
- * is answered already and the endpoint is a 404. A failed read leaves the preset unoffered, like the
- * features it rides on: the server refuses the draft then anyway.
+ * <p>Asked of the BFF only where `/features` reports the AI projection served, since elsewhere
+ * the endpoint is a 404 and nothing offers the model anyway. A failed read leaves the preset
+ * unoffered, like the features it rides on: the server refuses the draft then anyway.
  */
 @Injectable({ providedIn: 'root' })
 export class RestOfSeasonService {
@@ -22,13 +23,24 @@ export class RestOfSeasonService {
   private readonly features = inject(FeatureService);
 
   private readonly status = rxResource({
-    params: () => (this.features.restOfSeasonPreset() ? true : undefined),
+    params: () => (this.features.aiProjection() ? true : undefined),
     stream: () => from(this.api.invoke(restOfSeasonStatus)),
   });
 
   /** False until the answer lands, so the preset is never shown and then taken away. */
   readonly available = computed(() =>
     this.status.hasValue() ? this.status.value().available : false,
+  );
+
+  /**
+   * Whether the answer is in, or has failed, or was never needed because the AI projection is not
+   * served. A page that names something by the season waits for this, rather than name it one way
+   * and then the other.
+   */
+  readonly settled = computed(
+    () =>
+      this.features.settled() &&
+      (!this.features.aiProjection() || this.status.hasValue() || !!this.status.error()),
   );
 
   /**
