@@ -129,7 +129,16 @@ describe('DraftStartComponent', () => {
               ? presets
               : presets.filter((preset) => !MODEL_SOURCES.includes(preset.source ?? '')),
         })
-        .mock(RestOfSeasonService, { available: restOfSeasonAvailable })
+        .mock(RestOfSeasonService, {
+          available: restOfSeasonAvailable,
+          // What the real one does, out of the two answers above: see rest-of-season.service.spec.ts.
+          offeredPresets: <T extends { readonly source?: string | null }>(presets: readonly T[]) =>
+            presets.filter(
+              (preset) =>
+                (aiProjection() || !MODEL_SOURCES.includes(preset.source ?? '')) &&
+                (preset.source !== 'rest_of_season' || restOfSeasonAvailable()),
+            ),
+        })
         .provide({ provide: Router, useValue: { navigate } })
         .provide({ provide: ActivatedRoute, useValue: { snapshot: { queryParams } } })
         // The component pulls in RouterLink, which has ng-mocks mock the router's location

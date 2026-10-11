@@ -35,7 +35,8 @@ import { createDefaultProjectionState } from '../draft-projection/projection-def
 import { ProjectionSerializerService } from '../services/projection-serializer.service';
 import { ProjectionModelService } from '../services/projection-model.service';
 import { freeProjectionName } from '../services/projection-name';
-import { FeatureService } from '../services/feature.service';
+import { RestOfSeasonService } from '../services/rest-of-season.service';
+import { MODEL_SOURCES } from '../models/ai-projection';
 import { AiProjectionAccess } from '../shared/premium/ai-projection-access';
 import { isPremiumRefusal, PREMIUM_REFUSED_MESSAGE } from '../shared/premium/premium-refused';
 import { isFollowedBoard, isOwnBoard, SOURCE_KINDS, SourceKind } from '../models/source-kind';
@@ -76,12 +77,24 @@ export interface CreatePreset {
    * mark out of a build that has no way to charge for it.
    */
   readonly premium?: boolean;
+  /** A line under the name, where the name alone does not tell two presets apart. */
+  readonly meta?: string;
 }
 
-/** Every preset this page knows of. What it offers is `offeredPresets` of these — see below. */
+/**
+ * Every preset this page knows of, in the order its cards are drawn. What it offers is
+ * `offeredPresets` of these — see below. The two AI presets are the same model at two lengths, so
+ * each says which under its name, as the draft picker's cards do.
+ */
 export const CREATE_PRESETS: readonly CreatePreset[] = [
   { name: "Last season's stats", source: 'default' },
-  { name: 'AI projection', source: 'model', premium: true },
+  { name: 'AI projection', source: 'model', premium: true, meta: 'The whole season' },
+  {
+    name: 'AI rest of season',
+    source: 'rest_of_season',
+    premium: true,
+    meta: 'Only the games left to play',
+  },
   { name: 'From scratch', source: 'blank' },
 ];
 
@@ -127,7 +140,7 @@ export class ProjectionCreateComponent {
   private readonly playerService = inject(PlayerService);
   private readonly projectionModel = inject(ProjectionModelService);
   private readonly aiAccess = inject(AiProjectionAccess);
-  private readonly features = inject(FeatureService);
+  private readonly restOfSeason = inject(RestOfSeasonService);
   private readonly boardCache = inject(ProjectionBoardCache);
 
   private readonly preview = viewChild(StartingPointPreviewComponent);
@@ -144,9 +157,9 @@ export class ProjectionCreateComponent {
   /**
    * The presets this environment offers. Filtered rather than constant: the BFF decides whether
    * it serves the AI projection, and a row that seeds a projection the server will not fill in
-   * is worse than no row.
+   * is worse than no row. The rest of the season is there only while a season is under way.
    */
-  readonly presets = computed(() => this.features.offeredPresets(CREATE_PRESETS));
+  readonly presets = computed(() => this.restOfSeason.offeredPresets(CREATE_PRESETS));
 
   readonly sourceKinds = SOURCE_KINDS;
 
@@ -181,8 +194,11 @@ export class ProjectionCreateComponent {
   readonly followedBoards = computed(() => this.boardsMatching(isFollowedBoard));
   /** Whether a copy is what is picked, board or not — the preview draws only once one is. */
   readonly isCopy = computed(() => this.startingPoint().kind === 'copy');
-  /** Whether the AI preset is what the page is showing, which is what its extra fetch follows. */
-  readonly isModelPreset = computed(() => this.isPreset('model'));
+  /** Whether one of the AI presets is what the page is showing: the ones Premium is for. */
+  readonly isModelPreset = computed(() => {
+    const point = this.startingPoint();
+    return point.kind === 'preset' && MODEL_SOURCES.includes(point.source);
+  });
   /**
    * The board a copy would be made of, as the list has it, or null when a preset is picked or
    * there is no board to copy yet. Its name is what the preview falls back to when the board

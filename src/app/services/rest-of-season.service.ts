@@ -4,11 +4,13 @@ import { from } from 'rxjs';
 import { Api } from '../api/api';
 import { restOfSeasonStatus } from '../api/fn/projection-model/rest-of-season-status';
 import { FeatureService } from './feature.service';
+import { CreateProjectionRequest } from '../api/models/create-projection-request';
+import { REST_OF_SEASON_PRESET_SOURCE } from '../models/ai-projection';
 
 /**
- * Whether a draft can be started from the rest of the season right now: only where the BFF offers
- * the preset at all, and then only while a season is under way, when the model has a line for what
- * is left of it.
+ * Whether a projection or a draft can be started from the rest of the season right now: only where
+ * the BFF offers the preset at all, and then only while a season is under way, when the model has a
+ * line for what is left of it.
  *
  * <p>Asked of the BFF only where `/features` reports the preset on, since elsewhere the question
  * is answered already and the endpoint is a 404. A failed read leaves the preset unoffered, like the
@@ -28,4 +30,17 @@ export class RestOfSeasonService {
   readonly available = computed(() =>
     this.status.hasValue() ? this.status.value().available : false,
   );
+
+  /**
+   * The presets this environment offers right now: `FeatureService.offeredPresets`, less the rest
+   * of the season while there is none. One answer for every page that lists presets — the draft
+   * picker and the new-projection page — so the two cannot offer different starting points.
+   */
+  offeredPresets<T extends { readonly source: CreateProjectionRequest['source'] }>(
+    presets: readonly T[],
+  ): readonly T[] {
+    return this.features
+      .offeredPresets(presets)
+      .filter((preset) => preset.source !== REST_OF_SEASON_PRESET_SOURCE || this.available());
+  }
 }
