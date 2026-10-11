@@ -118,6 +118,9 @@
 /* The slots. */
 .lineup-table {
   width: 100%;
+  /* Fixed, so the slot, GP and total columns keep their widths and the player cell takes the
+     rest: left to size itself, a long stat line pushed the total column past the card's edge. */
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: var(--text-sm);
 }
@@ -164,8 +167,13 @@ th.col-score {
   background: var(--color-gold-strong);
 }
 
+/* The width sits on the column, header included: a fixed table reads its widths off the first
+   row, and a width on the cells alone handed the total column the whole remainder. */
+.col-score {
+  width: 6rem;
+}
+
 td.col-score {
-  width: 5.5rem;
   font-weight: var(--weight-semibold);
   color: var(--color-warning-text);
   background: var(--color-warning-surface) !important;
@@ -200,9 +208,10 @@ td.col-score {
 }
 
 .player-meta {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: var(--space-2);
+  min-width: 0;
   margin-top: 0.1rem;
 }
 
@@ -218,6 +227,9 @@ td.col-score {
   font-variant-numeric: tabular-nums;
   color: var(--color-text-subtle);
   white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* A slot whose player just changed: a gold wash that holds, then lets go. Only the player cells
