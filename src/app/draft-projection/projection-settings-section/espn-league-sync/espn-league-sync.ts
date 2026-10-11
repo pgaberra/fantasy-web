@@ -95,6 +95,12 @@ export class EspnLeagueSyncComponent implements OnInit {
    * owns the link and says so; the card only puts the button where the link is named.
    */
   readonly disconnectable = input(false);
+  /**
+   * Inside a card that already names the league under a Yahoo / ESPN switch, as on Team Power
+   * Rankings: no frame of its own, since a card in a card is a second box around one question, and
+   * no title, since the pressed ESPN tab above already says whose league this is.
+   */
+  readonly embedded = input(false);
   readonly synced = output<EspnSyncResult>();
   readonly disconnected = output<void>();
 
