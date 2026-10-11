@@ -15,7 +15,7 @@ import {
   OverlayRef,
 } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
-import { TooltipComponent } from './tooltip';
+import { TooltipComponent, TooltipText } from './tooltip';
 
 const TOOLTIP_POSITIONS: ConnectedPosition[] = [
   { originX: 'center', originY: 'top', overlayX: 'center', overlayY: 'bottom', offsetY: -8 },
@@ -41,7 +41,7 @@ export class TooltipDirective {
   private readonly ariaDescriber = inject(AriaDescriber);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  readonly appTooltip = input<string | null>(null);
+  readonly appTooltip = input<TooltipText | null>(null);
   /**
    * Whether activating the trigger dismisses the bubble. It should: a tap synthesises
    * `mouseenter` but never a `mouseleave`, so on a phone a tooltip opened by tapping a button
@@ -64,7 +64,7 @@ export class TooltipDirective {
 
   show(): void {
     const text = this.appTooltip();
-    if (!text || this.overlayRef) {
+    if (!plainText(text) || this.overlayRef) {
       return;
     }
     this.overlayRef = this.overlay.create({
@@ -102,9 +102,9 @@ export class TooltipDirective {
     }
   }
 
-  private syncTo(text: string | null): void {
-    this.setDescription(text);
-    if (!text) {
+  private syncTo(text: TooltipText | null): void {
+    this.setDescription(plainText(text));
+    if (!plainText(text)) {
       this.hide();
     } else {
       this.bubbleRef?.setInput('text', text);
@@ -124,4 +124,10 @@ export class TooltipDirective {
     }
     this.describedText = text;
   }
+}
+
+/** The tip as one line — what a screen reader announces, and empty when there is nothing to show. */
+function plainText(text: TooltipText | null): string | null {
+  const flat = typeof text === 'string' ? text : (text ?? []).join(' ');
+  return flat || null;
 }

@@ -1,5 +1,6 @@
 import { Component, input } from '@angular/core';
 import { TooltipDirective } from '../tooltip/tooltip.directive';
+import { TooltipText } from '../tooltip/tooltip';
 import { IconComponent } from '../icon/icon';
 
 /**
@@ -17,7 +18,7 @@ import { IconComponent } from '../icon/icon';
   styleUrl: './help-tip.css',
 })
 export class HelpTipComponent {
-  readonly text = input.required<string>();
+  readonly text = input.required<TooltipText>();
   /** Names what the tip explains — the trigger itself is an icon with nothing to read. */
   readonly label = input.required<string>();
 }
