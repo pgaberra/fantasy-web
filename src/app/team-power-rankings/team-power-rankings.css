@@ -23,15 +23,13 @@
   color: var(--color-primary);
 }
 
+/* The page's one line of explanation sits in a help tip beside the title, not under it. */
 .rankings-head h1 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   margin: 0;
   color: var(--color-primary);
-}
-
-.rankings-lede {
-  margin: var(--space-2) 0 0;
-  max-width: 60ch;
-  color: var(--color-text-muted);
 }
 
 /* The same card the draft setup's Yahoo sync sits in, once per question: the league, then what it

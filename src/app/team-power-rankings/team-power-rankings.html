@@ -3,11 +3,13 @@
     <a routerLink="/draft" class="back-link"
       ><app-icon name="arrow-left" [size]="14" />Back to drafts</a
     >
-    <h1>Team Power Rankings</h1>
-    <p class="rankings-lede">
-      See how the teams in your league stack up against each other using our AI projection or a
-      projection of your own.
-    </p>
+    <h1>
+      Team Power Rankings
+      <app-help-tip
+        label="What Team Power Rankings show"
+        text="See how the teams in your league stack up against each other using our AI projection or a projection of your own."
+      />
+    </h1>
   </div>
 
   <!-- Two cards, one question each, in the order they are answered: which league, then what to
