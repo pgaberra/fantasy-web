@@ -24,3 +24,13 @@
     transform: translateY(0);
   }
 }
+
+/* A list tip: each item hangs off its bullet, so a wrapped line lines up under its own text. */
+ul {
+  margin: 0;
+  padding-left: 0.9rem;
+}
+
+li + li {
+  margin-top: 0.25rem;
+}

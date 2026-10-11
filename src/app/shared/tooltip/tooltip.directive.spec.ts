@@ -2,13 +2,14 @@ import { ApplicationRef, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { TooltipDirective } from './tooltip.directive';
+import { TooltipText } from './tooltip';
 
 @Component({
   imports: [TooltipDirective],
   template: `<button [appTooltip]="text()">host</button>`,
 })
 class HostComponent {
-  readonly text = signal<string | null>(null);
+  readonly text = signal<TooltipText | null>(null);
 }
 
 function overlayText(): string {
@@ -19,7 +20,7 @@ function overlayText(): string {
 describe('TooltipDirective', () => {
   beforeEach(() => TestBed.configureTestingModule({ imports: [HostComponent] }));
 
-  function setup(initial: string | null) {
+  function setup(initial: TooltipText | null) {
     const fixture = TestBed.createComponent(HostComponent);
     fixture.componentInstance.text.set(initial);
     fixture.detectChanges();
@@ -71,5 +72,18 @@ describe('TooltipDirective', () => {
     fixture.componentInstance.text.set(null);
     fixture.detectChanges();
     expect(overlayText()).not.toContain('Over 100%');
+  });
+
+  it('shows a list tip as one bullet per item, and describes it as one line', () => {
+    const { button } = setup(['Team share: starters only.', 'All games: every game.']);
+    const description = document.getElementById(button.getAttribute('aria-describedby') ?? '');
+    expect(description?.textContent).toEqual('Team share: starters only. All games: every game.');
+
+    button.dispatchEvent(new MouseEvent('mouseenter'));
+    TestBed.inject(ApplicationRef).tick();
+    const items = [...document.querySelectorAll('.cdk-overlay-container li')].map((li) =>
+      li.textContent?.trim(),
+    );
+    expect(items).toEqual(['Team share: starters only.', 'All games: every game.']);
   });
 });
