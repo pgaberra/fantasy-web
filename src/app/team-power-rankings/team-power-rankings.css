@@ -253,9 +253,9 @@
   color: var(--color-text-muted);
 }
 
-/* Under the league's name once the season is under way: the totals cover the games left. */
+/* Under the projection dropdown once the season is under way: what "AI projection" covers now. */
 .rankings-source {
-  margin: var(--space-1) 0 var(--space-3);
+  margin: var(--space-1) 0 0;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
 }
