@@ -9,18 +9,24 @@ import { restOfSeasonStatus } from '../api/fn/projection-model/rest-of-season-st
 
 describe('RestOfSeasonService', () => {
   const invoke = vi.fn();
+  const aiProjection = signal(true);
   const restOfSeasonPreset = signal(true);
+  const settled = signal(true);
   /** Stands in for FeatureService's own filtering: drops whatever a test says the BFF does not serve. */
   const unserved = signal<readonly string[]>([]);
 
   beforeEach(() => {
     invoke.mockReset();
+    aiProjection.set(true);
     restOfSeasonPreset.set(true);
+    settled.set(true);
     unserved.set([]);
     return MockBuilder(RestOfSeasonService)
       .mock(Api, { invoke })
       .mock(FeatureService, {
+        aiProjection,
         restOfSeasonPreset,
+        settled,
         offeredPresets: <T extends { readonly source?: string | null }>(presets: readonly T[]) =>
           presets.filter((preset) => !unserved().includes(preset.source ?? '')),
       });
@@ -54,25 +60,48 @@ describe('RestOfSeasonService', () => {
     expect((await answered()).available()).toBe(false);
   });
 
-  it('does not ask where the preset is switched off, and is not available', async () => {
-    restOfSeasonPreset.set(false);
+  it('does not ask where the AI projection is switched off, and is not available', async () => {
+    aiProjection.set(false);
 
     const service = await answered();
 
     expect(invoke).not.toHaveBeenCalled();
     expect(service.available()).toBe(false);
+    expect(service.settled()).toBe(true);
   });
 
-  it('is not available while the BFF has yet to answer', () => {
+  /** Whether a season is under way is the AI projection's to say; the preset only rides on it. */
+  it('still asks where only the preset is switched off', async () => {
+    restOfSeasonPreset.set(false);
+    invoke.mockResolvedValue({ available: true });
+
+    const service = await answered();
+
+    expect(invoke).toHaveBeenCalledWith(restOfSeasonStatus);
+    expect(service.available()).toBe(true);
+  });
+
+  it('is not available nor settled while the BFF has yet to answer', () => {
     invoke.mockReturnValue(new Promise(() => undefined));
 
-    expect(TestBed.inject(RestOfSeasonService).available()).toBe(false);
+    const service = TestBed.inject(RestOfSeasonService);
+    expect(service.available()).toBe(false);
+    expect(service.settled()).toBe(false);
   });
 
-  it('is not available when the read fails', async () => {
+  it('is not settled until the features are', () => {
+    settled.set(false);
+    aiProjection.set(false);
+
+    expect(TestBed.inject(RestOfSeasonService).settled()).toBe(false);
+  });
+
+  it('is not available when the read fails, and is settled', async () => {
     invoke.mockRejectedValue(new Error('down'));
 
-    expect((await answered()).available()).toBe(false);
+    const service = await answered();
+    expect(service.available()).toBe(false);
+    expect(service.settled()).toBe(true);
   });
 
   describe('the presets it offers', () => {

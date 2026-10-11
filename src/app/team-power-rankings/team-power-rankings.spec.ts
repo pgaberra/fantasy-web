@@ -11,6 +11,7 @@ import { ProjectionSummaryResponse } from '../api/models/projection-summary-resp
 import { FeatureService } from '../services/feature.service';
 import { LeagueSummaryService } from '../services/league-summary.service';
 import { ProjectionStorageService } from '../services/projection-storage.service';
+import { RestOfSeasonService } from '../services/rest-of-season.service';
 import { YahooService } from '../services/yahoo.service';
 import { YahooConnectReturnService } from '../services/yahoo-connect-return.service';
 import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
@@ -106,6 +107,9 @@ describe('TeamPowerRankingsComponent', () => {
   const aiProjection = vi.fn(() => true);
   /** Whether the BFF has said what it serves; true but for the test that holds the answer back. */
   const settled = vi.fn(() => true);
+  /** Whether a season is under way for the model, and whether the BFF has said so yet. */
+  const seasonAvailable = vi.fn(() => false);
+  const seasonSettled = vi.fn(() => true);
   const myLeagues = vi.fn<() => Observable<LeaguesResponse>>(() => of(leagues));
   const connectionStatus = vi.fn<() => Observable<{ connected: boolean }>>(() =>
     of({ connected: true }),
@@ -144,6 +148,8 @@ describe('TeamPowerRankingsComponent', () => {
     connectionStatus.mockReturnValue(of({ connected: true }));
     aiProjection.mockReturnValue(true);
     settled.mockReturnValue(true);
+    seasonAvailable.mockReturnValue(false);
+    seasonSettled.mockReturnValue(true);
     draftCall.mockReset();
     draftCall.mockReturnValue(of(summary));
     espnCall.mockReset();
@@ -164,6 +170,7 @@ describe('TeamPowerRankingsComponent', () => {
       .mock(LeagueSummaryService, { yahooLeague, draft: draftCall, espnLeague: espnCall })
       .mock(ProjectionStorageService, { listAll })
       .mock(FeatureService, { aiProjection, settled } as never)
+      .mock(RestOfSeasonService, { available: seasonAvailable, settled: seasonSettled } as never)
       .provide({
         provide: ActivatedRoute,
         useValue: {
@@ -324,28 +331,40 @@ describe('TeamPowerRankingsComponent', () => {
     expect(draftCall).toHaveBeenLastCalledWith('d2', 'model');
   });
 
-  /** Mid-season the model's totals cover the games left, and the option itself says so. */
+  /**
+   * Mid-season the model's totals cover the games left, and the option itself says so, named
+   * from the BFF's season status before any league is chosen: never from the ranking's answer.
+   */
   it('names the rest of the season in the AI projection option once it is under way', async () => {
+    seasonAvailable.mockReturnValue(true);
+    const fixture = await render();
+
+    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
+    const options = Array.from(select.options).map((option) => option.textContent?.trim());
+    expect(options).toEqual(['AI Projection (Rest of Season)', 'Last Season']);
+    expect(yahooLeague).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('.rank-by-choice p')).toBeNull();
+  });
+
+  /** Until the season status is in, the option cannot be named, so no Rank by is shown. */
+  it('offers no Rank by until the BFF has said whether a season is under way', async () => {
+    seasonSettled.mockReturnValue(false);
+    const fixture = await render();
+    const component = fixture.point.componentInstance;
+    await choose(fixture, component, '465.l.1');
+
+    expect(fixture.nativeElement.querySelector('#rank-by-label')).toBeNull();
+    expect(yahooLeague).not.toHaveBeenCalled();
+  });
+
+  /** Before the first game the totals are a whole season's, so there is nothing to explain. */
+  it('says nothing about the rest of the season before it starts', async () => {
     yahooLeague.mockReturnValue(of({ ...summary, inSeason: true }));
     const fixture = await render();
     const component = fixture.point.componentInstance;
     await choose(fixture, component, '465.l.1');
 
-    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
-    const options = Array.from(select.options).map((option) => option.textContent?.trim());
-    expect(options).toEqual(['AI Projection (Rest of Season)', 'Last Season']);
-    expect(fixture.nativeElement.querySelector('.rankings-rest-of-season')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.rank-by-choice p')).toBeNull();
-  });
-
-  /** Before the first game the totals are a whole season's, so there is nothing to explain. */
-  it('says nothing about the rest of the season before it starts', async () => {
-    const fixture = await render();
-    const component = fixture.point.componentInstance;
-    await choose(fixture, component, '465.l.1');
-
     expect(fixture.nativeElement.querySelector('app-league-projection-table')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('.rankings-rest-of-season')).toBeNull();
     const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
     expect(select.options[0].textContent?.trim()).toEqual('AI Projection');
   });
