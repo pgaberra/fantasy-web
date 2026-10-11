@@ -321,18 +321,17 @@ describe('TeamPowerRankingsComponent', () => {
     expect(draftCall).toHaveBeenLastCalledWith('d2', 'model');
   });
 
-  /** Mid-season the model's totals cover the games left, and a line under the dropdown says so. */
-  it('says the ranking covers the rest of the season once it is under way', async () => {
+  /** Mid-season the model's totals cover the games left, and the option itself says so. */
+  it('names the rest of the season in the AI projection option once it is under way', async () => {
     yahooLeague.mockReturnValue(of({ ...summary, inSeason: true }));
     const fixture = await render();
     const component = fixture.point.componentInstance;
     await choose(fixture, component, '465.l.1');
 
-    const source = fixture.nativeElement.querySelector('.rankings-source');
-    expect(source?.textContent).toContain(
-      'Based on projected performance for the rest of the season.',
-    );
-    expect(source?.previousElementSibling?.classList.contains('rank-by-select')).toBe(true);
+    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
+    const options = Array.from(select.options).map((option) => option.textContent?.trim());
+    expect(options).toEqual(['AI projection (rest of season)', 'Last season']);
+    expect(fixture.nativeElement.querySelector('.rank-by-choice p')).toBeNull();
   });
 
   /** Before the first game the totals are a whole season's, so there is nothing to explain. */
@@ -342,7 +341,8 @@ describe('TeamPowerRankingsComponent', () => {
     await choose(fixture, component, '465.l.1');
 
     expect(fixture.nativeElement.querySelector('app-league-projection-table')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('.rankings-source')).toBeNull();
+    const select = fixture.nativeElement.querySelector('.rank-by-select') as HTMLSelectElement;
+    expect(select.options[0].textContent?.trim()).toEqual('AI projection');
   });
 
   /** Back to the placeholder is back to nothing on screen, not the last league left standing. */
