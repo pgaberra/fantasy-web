@@ -1,13 +1,11 @@
-import { Component, computed, inject, PLATFORM_ID, signal, viewChild } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { Component, computed, inject, signal, viewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { rxResource } from '@angular/core/rxjs-interop';
 import { PlayerProjectionsTableComponent } from '../../draft-projection/player-projections-table/player-projections-table';
 import {
   FullSeasonConfig,
   FullSeasonDialogComponent,
 } from '../../draft-projection/full-season-dialog/full-season-dialog';
-import { PlayerService } from '../../services/player.service';
+import { LandingPlayersService } from '../landing-players.service';
 import { StatInfoService } from '../../services/stat-info.service';
 import { PendingProjectionService } from '../../services/pending-projection.service';
 import { ProjectionSerializerService } from '../../services/projection-serializer.service';
@@ -17,7 +15,6 @@ import { ErrorStateComponent } from '../../shared/error-state/error-state';
 import { OffseasonDataNoticeComponent } from '../../shared/offseason-data-notice/offseason-data-notice';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import { ScoringType } from '../../models/projection.model';
-import { Player } from '../../models/player.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../../models/stat-key.model';
 import { RosterSlots } from '../../api/models/roster-slots';
 import {
@@ -61,7 +58,7 @@ const DEMO_VISIBLE_PLAYERS = 50;
   styleUrl: './landing-demo.css',
 })
 export class LandingDemoComponent {
-  private readonly playerService = inject(PlayerService);
+  private readonly pool = inject(LandingPlayersService);
   private readonly statInfoService = inject(StatInfoService);
   private readonly serializer = inject(ProjectionSerializerService);
   private readonly pendingProjection = inject(PendingProjectionService);
@@ -86,15 +83,8 @@ export class LandingDemoComponent {
 
   private readonly table = viewChild(PlayerProjectionsTableComponent);
 
-  // Only in the browser: prerendered at build time, the demo would bake a player table that goes
-  // stale with the next sync, or an error for the API it was refused.
-  private readonly inBrowser = isPlatformBrowser(inject(PLATFORM_ID));
-
-  readonly playersResource = rxResource({
-    params: () => (this.inBrowser ? true : undefined),
-    stream: () => this.playerService.getPlayers(),
-    defaultValue: [] as Player[],
-  });
+  // The pool is the landing page's, shared with the lineup card above: one request for both.
+  readonly playersResource = this.pool.players;
   readonly players = computed(() => this.playersResource.value());
 
   // Same editable state as the signed-in editor (draft-projection), so the demo IS the
@@ -134,7 +124,7 @@ export class LandingDemoComponent {
   }
 
   retryLoad(): void {
-    this.playersResource.reload();
+    this.pool.reload();
   }
 
   /**
