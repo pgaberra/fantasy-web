@@ -284,19 +284,22 @@ describe('FaScoutComponent', () => {
     expect(myTeam).toHaveBeenCalledWith('YAHOO', '465.l.9');
   });
 
-  it('lists every skater on the team, lowest first, leaving injured reserve out', async () => {
+  it('lists every skater on the team, lowest first, injured reserve marked', async () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
-    const listed = page.candidates().map((candidate) => candidate.row.player.playerId);
-    expect(listed.slice(0, 3)).toEqual(['203', '202', '210']);
-    expect(listed).toHaveLength(11);
+    const listed = page.roster().map((row) => row.player.playerId);
+    // The C on injured reserve projects nothing, so he leads the list.
+    expect(listed.slice(0, 4)).toEqual(['211', '203', '202', '210']);
+    expect(listed).toHaveLength(12);
     expect(listed.at(-1)).toBe('201');
-    expect(ngMocks.findAll(fixture, '.drop')).toHaveLength(11);
-    expect(page.keptOut().reserve).toBe(1);
+    const rows = ngMocks.findAll(fixture, '.drop');
+    expect(rows).toHaveLength(12);
+    expect(ngMocks.formatText(ngMocks.find(rows[0], '.drop-tag'))).toBe('IR');
+    expect(ngMocks.findAll(rows[1], '.drop-tag')).toHaveLength(0);
     const text = ngMocks.formatText(fixture);
     expect(text).toContain('Your skaters on Slapshots');
-    expect(text).toContain('1 on injured reserve left out.');
+    expect(text).not.toContain('left out');
     // Which pickup each drop needs is held back for now.
     expect(text).not.toContain('Any pickup');
     expect(text).not.toContain('Only for a');
@@ -349,9 +352,7 @@ describe('FaScoutComponent', () => {
 
     // One IR slot is taken by the reserve C, the other is free: Hronek goes there.
     expect(page.room().toReserve.map((move) => move.player.name)).toEqual(['Filip Hronek']);
-    expect(page.candidates().map((candidate) => candidate.row.player.name)).not.toContain(
-      'Filip Hronek',
-    );
+    expect(page.roster().map((row) => row.player.name)).toContain('Filip Hronek');
     const move = ngMocks.find(fixture, '.room');
     expect(ngMocks.formatText(ngMocks.find(move, 'strong'))).toBe('Filip Hronek');
     expect(ngMocks.formatText(ngMocks.find(move, '.drop-tag'))).toBe('O');
