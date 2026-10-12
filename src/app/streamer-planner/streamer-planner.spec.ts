@@ -1095,6 +1095,44 @@ describe('StreamerPlannerComponent', () => {
         expect(ngMocks.findAll(fixture, '.swap-col')).toHaveLength(0);
       });
 
+      describe('on a night with every seat taken', () => {
+        const roster = (counts: Record<string, number>) =>
+          Object.entries(counts).flatMap(([position, count]) =>
+            Array.from({ length: count }, (_, index) => mine(`${position}${index}`, [position])),
+          );
+        /** Each game night's runs: "Full" as it reads, else whether the run is green or yellow. */
+        const nights = async () => {
+          const fixture = await render();
+          return ngMocks.findAll(fixture, '.day .day-rooms').map((line) =>
+            ngMocks.findAll(line, '.day-room').map((run) => {
+              if (run.classes['day-room--full']) {
+                return ngMocks.formatText(run);
+              }
+              return run.classes['day-room--drop'] ? 'drop' : 'open';
+            }),
+          );
+        };
+
+        // "Full" beside a yellow chip only confused: the chip already says there is no seat as
+        // the lineup stands. The word is left for a night nothing opens.
+        it('shows only the yellow positions when a drop opens one', async () => {
+          // Each seat held by the only player who could take it: any drop opens his seat.
+          myTeam = { found: true, players: roster({ C: 3, LW: 2, RW: 2, D: 4, G: 2 }), lines: [] };
+          const runs = await nights();
+          expect(runs).toHaveLength(2);
+          for (const night of runs) {
+            expect(night.length).toBeGreaterThan(0);
+            expect(night.every((run) => run === 'drop')).toBe(true);
+          }
+        });
+
+        it('says "Full" when no drop opens anything', async () => {
+          // One more at every position: whoever goes, the bench fills his seat.
+          myTeam = { found: true, players: roster({ C: 4, LW: 3, RW: 3, D: 5, G: 3 }), lines: [] };
+          expect(await nights()).toEqual([['Full'], ['Full']]);
+        });
+      });
+
       it('says so when the league has no team of the user', async () => {
         myTeam = { found: false, players: [], lines: [] };
         const fixture = await render();

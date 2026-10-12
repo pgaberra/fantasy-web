@@ -151,10 +151,13 @@
                 }
               </span>
               @if (room(day) || dropRoom(day)) {
+                @let runs = roomRuns(day);
                 <span class="day-rooms">
                   @if (room(day); as room) {
-                    @if (room.fits.size === 0) {
-                      <!-- The user's own lineup that night has no seat left. -->
+                    @if (runs.length === 0) {
+                      <!-- No seat left that night, and no drop opens one. A yellow chip beside
+                           "Full" read as a contradiction: the chip already says the lineup has no
+                           seat as it stands. -->
                       <span class="day-room day-room--full">{{ roomLabel(room) }}</span>
                     }
                   }
@@ -162,7 +165,7 @@
                        position: green where the lineup has room as it stands, yellow where only
                        a drop opens it, its tip saying who would have to go. A green run has no
                        tip: its positions are it. -->
-                  @for (run of roomRuns(day); track $index) {
+                  @for (run of runs; track $index) {
                     @if (run.tip) {
                       <span
                         #runTip="appTooltip"
