@@ -1,54 +1,9 @@
 <section class="table-section" aria-label="Leaderboard">
   <div class="table-header">
     <div class="table-controls">
+      <!-- The league the board is scored by. Its scoring, size and stats come from the sync and
+           nowhere else, so this is the league's name and the way back into the sync dialog. -->
       <div class="league-controls">
-        <div
-          class="segmented"
-          role="group"
-          aria-label="League type"
-          [appTooltip]="syncedLeagueName() ? 'Set by ' + syncedLeagueName() : null"
-        >
-          <button
-            type="button"
-            [attr.aria-pressed]="scoringType() === 'points'"
-            [disabled]="syncedLeagueName() !== null && scoringType() !== 'points'"
-            (click)="selectScoringType('points')"
-          >
-            Points
-          </button>
-          <button
-            type="button"
-            [attr.aria-pressed]="scoringType() === 'category'"
-            [disabled]="syncedLeagueName() !== null && scoringType() !== 'category'"
-            (click)="selectScoringType('category')"
-          >
-            Category
-          </button>
-        </div>
-
-        <!-- A points league sets its scoring in the weight row under the column headings, so
-             there is nothing behind this button unless the leaderboard ranks by category or has
-             a league to re-sync. An affordance with an empty menu behind it is worse than none. -->
-        @if (hasLeagueSetup()) {
-          <button
-            type="button"
-            class="btn btn-secondary btn-sm league-setup-btn"
-            [appPopover]="leagueMenu"
-          >
-            <app-icon name="sliders" />
-            League setup
-          </button>
-        }
-
-        <button type="button" class="btn btn-secondary btn-sm" [appPopover]="columnsMenu">
-          <app-icon name="columns" />
-          Stats
-        </button>
-
-        <!-- Last in the group, and deliberately: this slot is a call to action while no league
-             has been imported and the league's name afterwards, so it is the one item here whose
-             width changes. Ahead of the buttons it would shove them sideways the moment a league
-             was connected or renamed. -->
         <ng-content select="[table-toolbar-actions]" />
       </div>
 
@@ -200,28 +155,3 @@
     }
   }
 </section>
-
-<ng-template #leagueMenu>
-  <app-league-settings-menu
-    [scoringType]="scoringType()"
-    [syncedLeagueName]="syncedLeagueName()"
-    (manageSync)="manageSyncRequested.emit()"
-    [(leagueSize)]="leagueSize"
-    [(rosterSlots)]="rosterSlots"
-    [(minGoalieGames)]="minGoalieGames"
-  />
-</ng-template>
-
-<!-- Utility stats are offered here like any other: over a game range both of them are measured
-     numbers, and games played in particular is one the leaderboard is read through — a 12-point
-     week means something different over four games than over seven. What the group cannot do on
-     this page is drive a projection's scaling — there is no projection here to scale. -->
-<ng-template #columnsMenu>
-  <app-columns-menu
-    [activeScoringColumns]="activeScoringColumns()"
-    [activeUtilityColumns]="activeUtilityColumns()"
-    [lockedBy]="syncedLeagueName()"
-    (scoringToggled)="toggleScoringColumn($event)"
-    (utilityToggled)="toggleUtilityColumn($event)"
-  />
-</ng-template>

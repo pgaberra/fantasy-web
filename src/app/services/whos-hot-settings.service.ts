@@ -39,7 +39,6 @@ export interface WhosHotSettings {
   activeUtilityColumns: Set<SkaterUtilityStatKey>;
   leagueSize: number;
   rosterSlots: RosterSlots;
-  minGoalieGames: number;
   /** At most one of these is set: a leaderboard is scored by one league, on one platform. */
   yahooSync: YahooSync | null;
   espnSync: EspnSync | null;

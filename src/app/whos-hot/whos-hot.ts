@@ -34,11 +34,13 @@ import {
   DEFAULT_SCORING_COLUMNS,
   DEFAULT_STAT_WEIGHTS,
   DEFAULT_UTILITY_COLUMNS,
+  FULL_SEASON_GAMES,
 } from '../draft-projection/projection-defaults';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { LeagueImportButtonComponent } from '../shared/league-import-button/league-import-button';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
+import { IconComponent } from '../shared/icon/icon';
 import {
   BEFORE_FIRST_GAME,
   FIRST_GAME,
@@ -70,9 +72,10 @@ function isSameSpan(a: GameSpan | undefined, b: GameSpan | undefined): boolean {
 /**
  * Who's hot: which players actually produced best over a stretch of the schedule.
  *
- * These are measured totals, not projections, and the page reuses the projection editor's
- * league toolbar and sync on purpose — "best" only means anything relative to how your league
- * scores, so the same controls decide it here, in the same place: on the table they act on.
+ * These are measured totals, not projections, ranked the way the user's league scores them —
+ * "best" only means anything relative to that. So the league is the page's one input: nothing is
+ * drawn until one is synced, and its scoring, size and stats are taken from the sync rather than
+ * set by hand here.
  */
 @Component({
   selector: 'app-whos-hot',
@@ -85,6 +88,7 @@ function isSameSpan(a: GameSpan | undefined, b: GameSpan | undefined): boolean {
     ErrorStateComponent,
     LeagueImportButtonComponent,
     HelpTipComponent,
+    IconComponent,
   ],
   templateUrl: './whos-hot.html',
   styleUrl: './whos-hot.css',
@@ -205,7 +209,6 @@ export class WhosHotComponent {
   );
   readonly leagueSize = signal(this.stored?.leagueSize ?? DEFAULT_LEAGUE_SIZE);
   readonly rosterSlots = signal<RosterSlots>(this.stored?.rosterSlots ?? DEFAULT_ROSTER_SLOTS);
-  readonly minGoalieGames = signal(this.stored?.minGoalieGames ?? DEFAULT_MIN_GOALIE_GAMES);
   readonly yahooSync = signal<YahooSync | null>(this.stored?.yahooSync ?? null);
   readonly espnSync = signal<EspnSync | null>(this.stored?.espnSync ?? null);
   /** Kept past an import from elsewhere, so returning to ESPN doesn't ask for the id again. */
@@ -270,6 +273,19 @@ export class WhosHotComponent {
       : null,
   );
 
+  /**
+   * The goalie minimum a category league ranks by, as a share of the range rather than a season's
+   * count. The default is 30 of a season's 84 games; held against the last 5 it put every goalie
+   * below the minimum and the whole crease at the foot of the board. The same share of the range
+   * keeps the starter in and the backup with one start of five out.
+   */
+  readonly minGoalieGames = computed(() =>
+    Math.ceil(
+      (DEFAULT_MIN_GOALIE_GAMES / FULL_SEASON_GAMES) *
+        Math.max(1, gamesIn(this.fromGame(), this.toGame())),
+    ),
+  );
+
   /** Whether this account may pick its own range, which Premium buys. */
   readonly canPickRange = computed(() => this.entitlement.premium());
 
@@ -305,7 +321,8 @@ export class WhosHotComponent {
     if (
       season === undefined ||
       this.scheduleLength() === null ||
-      this.rangeCheckedFor() !== season
+      this.rangeCheckedFor() !== season ||
+      this.syncedLeagueName() === null
     ) {
       return undefined;
     }
@@ -480,7 +497,6 @@ export class WhosHotComponent {
         activeUtilityColumns: this.activeUtilityColumns(),
         leagueSize: this.leagueSize(),
         rosterSlots: this.rosterSlots(),
-        minGoalieGames: this.minGoalieGames(),
         yahooSync: this.yahooSync(),
         espnSync: this.espnSync(),
         lastEspnLeagueId: this.lastEspnLeagueId(),
@@ -539,8 +555,8 @@ export class WhosHotComponent {
   }
 
   /**
-   * Disconnect league: the settings stay as they are and become the user's to change. The ESPN
-   * league's id stays, so the next import starts from it.
+   * Disconnect league: the page goes back to asking for one. The ESPN league's id stays, so the
+   * next import starts from it.
    */
   disconnectLeague(cause: DisconnectCause = 'button'): void {
     this.yahooSync.set(null);
