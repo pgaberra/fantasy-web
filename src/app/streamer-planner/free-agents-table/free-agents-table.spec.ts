@@ -323,7 +323,8 @@ describe('FreeAgentsTableComponent', () => {
     expect(cells(fixture)).toEqual([[], []]);
   });
 
-  it('steps a category he is projected nothing in back from the rest', () => {
+  // A 0.0 in grey read as another font beside the figures around it.
+  it('shows a category he is projected nothing in like any other figure', () => {
     const idle: RankedFreeAgent = {
       ...SKATER,
       line: {
@@ -336,9 +337,11 @@ describe('FreeAgentsTableComponent', () => {
     };
     const fixture = render('points', ['goals', 'ppp'], [idle]);
 
-    expect(ngMocks.findAll(fixture, 'td.nil').map((cell) => ngMocks.formatText(cell))).toEqual([
-      '0.0',
-    ]);
+    const zero = ngMocks
+      .findAll(fixture, 'td.stat-col')
+      .find((cell) => ngMocks.formatText(cell) === '0.0');
+    expect(zero).toBeDefined();
+    expect(zero?.nativeElement.classList.contains('nil')).toBe(false);
   });
 
   // The crest already says which club; the abbreviation beside it said it twice.
