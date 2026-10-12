@@ -1135,15 +1135,6 @@ export class StreamerPlannerComponent {
     return team.players.filter((player) => !lined.has(player.playerId)).length;
   });
 
-  /**
-   * How many of the user's players have games on the nights but no start among them: benched
-   * behind better players, not out, since a player who is out has no lineup to sit in.
-   */
-  readonly benchedAll = computed(
-    () =>
-      this.roster().filter((row) => row.games === 0 && row.clubGames > 0 && !row.player.out).length,
-  );
-
   /** The column the roster was last sorted by; it opens with the player who gives the least first. */
   private readonly rosterSortPicked = signal<RosterSort>(LOWEST_FIRST);
 
