@@ -141,7 +141,7 @@ describe('bestSwap', () => {
 });
 
 describe('dropCandidates', () => {
-  it('lists the lowest three, each with the positions a pickup must play to replace him', () => {
+  it('lists every scored player, lowest first, each with the positions a pickup must play', () => {
     const team = rows([
       player(1, ['C'], 30),
       player(2, ['C'], 4),
@@ -152,7 +152,12 @@ describe('dropCandidates', () => {
 
     const candidates = dropCandidates(team, SEATS);
 
-    expect(candidates.map((candidate) => candidate.row.player.playerId)).toEqual(['2', '4', '3']);
+    expect(candidates.map((candidate) => candidate.row.player.playerId)).toEqual([
+      '2',
+      '4',
+      '3',
+      '1',
+    ]);
     // The spare C goes for anyone; either D only for another D.
     expect(candidates[0]).toMatchObject({ anyPickup: true, needs: [] });
     expect(candidates[1]).toMatchObject({ anyPickup: false, needs: ['D'] });
