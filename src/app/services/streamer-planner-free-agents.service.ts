@@ -2,6 +2,8 @@ import { inject, Injectable } from '@angular/core';
 import { from, map, Observable } from 'rxjs';
 import { Api } from '../api/api';
 import { streamerPlannerFreeAgents } from '../api/fn/streamer-planner/streamer-planner-free-agents';
+import { streamerPlannerPoolFreeAgents } from '../api/fn/streamer-planner/streamer-planner-pool-free-agents';
+import { FreeAgentListResponse } from '../api/models/free-agent-list-response';
 import { FreeAgentResponse } from '../api/models/free-agent-response';
 import { PlannerCrease } from '../api/models/planner-crease';
 import {
@@ -33,6 +35,8 @@ export interface FreeAgent {
    * the ranking engine's sake, and a zero nobody projected must not be shown as his line.
    */
   projected: ReadonlySet<string>;
+  /** Share of all Yahoo leagues that roster him, 0-100: on the admins' demo list only. */
+  percentRostered?: number;
 }
 
 export interface FreeAgentWeek {
@@ -53,10 +57,26 @@ export class StreamerPlannerFreeAgentsService {
   ): Observable<FreeAgentWeek> {
     return from(
       this.api.invoke(streamerPlannerFreeAgents, { platform, leagueId, start, end }),
-    ).pipe(
-      map((answer) => ({ players: answer.players.map(toFreeAgent), creases: answer.creases })),
-    );
+    ).pipe(map(toWeek));
   }
+
+  /**
+   * The admins' demo: no league, every player Yahoo rosters in at most `maxPercentRostered` of
+   * its leagues standing in for a league's free agents.
+   */
+  poolFreeAgents(
+    start: string,
+    end: string,
+    maxPercentRostered: number,
+  ): Observable<FreeAgentWeek> {
+    return from(
+      this.api.invoke(streamerPlannerPoolFreeAgents, { start, end, maxPercentRostered }),
+    ).pipe(map(toWeek));
+  }
+}
+
+function toWeek(answer: FreeAgentListResponse): FreeAgentWeek {
+  return { players: answer.players.map(toFreeAgent), creases: answer.creases };
 }
 
 /**
@@ -86,6 +106,7 @@ function toFreeAgent(player: FreeAgentResponse): FreeAgent {
     clubGames: player.clubGames,
     expectedGames: player.expectedGames,
     projected: new Set(Object.keys(player.stats)),
+    percentRostered: player.percentRostered ?? undefined,
     projection: {
       type: skater ? 'skater' : 'goalie',
       playerId: Number.isFinite(playerId) ? playerId : -1,

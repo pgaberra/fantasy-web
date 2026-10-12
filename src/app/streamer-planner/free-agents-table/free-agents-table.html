@@ -131,6 +131,12 @@
                 </span>
                 <span class="player-meta">
                   <app-position-chips [positions]="entry.row.player.positions" />
+                  <!-- Only the admins' demo list carries it, and it is what that list is cut by. -->
+                  @if (entry.row.player.percentRostered !== undefined) {
+                    <span class="player-rostered"
+                      >{{ entry.row.player.percentRostered }}% rostered</span
+                    >
+                  }
                 </span>
               </span>
             </span>

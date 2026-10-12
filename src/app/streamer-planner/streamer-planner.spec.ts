@@ -13,6 +13,7 @@ import { PlannerWeeksResponse } from '../api/models/planner-weeks-response';
 import { ScheduleStrengthResponse } from '../api/models/schedule-strength-response';
 import { TeamSchedule } from '../api/models/team-schedule';
 import { GOALIE_SCORING_STAT_KEYS, SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
+import { AuthService } from '../services/auth.service';
 import { EspnService } from '../services/espn.service';
 import {
   FreeAgentWeek,
@@ -196,6 +197,8 @@ function dateInput(value: string): Event {
 describe('StreamerPlannerComponent', () => {
   const invoke = vi.fn();
   const freeAgents = vi.fn();
+  const poolFreeAgents = vi.fn();
+  const admin = signal(false);
   let chosen: ChosenLeague | null = null;
   /** The Monday of week 2 unless a test says otherwise. */
   let today = '2026-10-12';
@@ -224,6 +227,8 @@ describe('StreamerPlannerComponent', () => {
     localStorage.clear();
     invoke.mockReset();
     freeAgents.mockReset();
+    poolFreeAgents.mockReset();
+    admin.set(false);
     invoke.mockImplementation((fn: unknown, params?: { start: string; end: string }) => {
       if (fn === streamerPlannerWeeks) {
         return Promise.resolve(WEEKS);
@@ -250,7 +255,8 @@ describe('StreamerPlannerComponent', () => {
       .provide({ provide: Api, useValue: { invoke } })
       .provide({ provide: PLANNER_TODAY, useValue: () => today })
       .provide({ provide: PLANNER_LAYOUT, useValue: layout.asReadonly() })
-      .mock(StreamerPlannerFreeAgentsService, { freeAgents })
+      .mock(StreamerPlannerFreeAgentsService, { freeAgents, poolFreeAgents })
+      .mock(AuthService, { isAdmin: admin.asReadonly() } as never)
       .keep(YahooLeaguePicker)
       .mock(YahooConnectReturnService)
       .mock(LeagueChoiceService, {
@@ -1453,6 +1459,91 @@ describe('StreamerPlannerComponent', () => {
       expect(planner.platform()).toBe('yahoo');
       expect(planner.league()).toBeNull();
       expect(freeAgents).not.toHaveBeenCalled();
+    });
+  });
+  describe('demo mode', () => {
+    beforeEach(() => {
+      poolFreeAgents.mockReturnValue(
+        of<FreeAgentWeek>({
+          creases: [],
+          players: [
+            { ...skater('7', 'Deep Sleeper', 2, 2), availability: 'UNKNOWN', percentRostered: 12 },
+            { ...skater('8', 'Bench Body', 0, 1), availability: 'UNKNOWN', percentRostered: 3 },
+          ],
+        }),
+      );
+    });
+
+    it('is not offered to someone who is not an admin, Premium or not', async () => {
+      const fixture = await render();
+
+      expect(ngMocks.findAll(fixture, '.demo-toggle')).toHaveLength(0);
+      expect(fixture.point.componentInstance.demo()).toBe(false);
+    });
+
+    it('reads no league and lists the Yahoo pool under 50% rostered', async () => {
+      admin.set(true);
+      chosen = LEAGUE;
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+      freeAgents.mockClear();
+      invoke.mockClear();
+
+      planner.toggleDemo();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(planner.league()).toBeNull();
+      expect(poolFreeAgents).toHaveBeenCalledWith('2026-10-12', '2026-10-18', 50);
+      expect(freeAgents).not.toHaveBeenCalled();
+      expect(invoke.mock.calls.filter(([fn]) => fn === streamerPlannerMyTeam)).toHaveLength(0);
+      expect(planner.ranked().map((row) => row.player.name)).toEqual([
+        'Deep Sleeper',
+        'Bench Body',
+      ]);
+      expect(ngMocks.findAll(fixture, 'app-league-field')).toHaveLength(0);
+      expect(ngMocks.find(fixture, '.demo-input').nativeElement.value).toBe('50');
+    });
+
+    it('asks again with the threshold typed, held to a whole percent from 0 to 100', async () => {
+      admin.set(true);
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+      planner.toggleDemo();
+      await fixture.whenStable();
+
+      const typed = { value: '30' };
+      planner.setMaxRostered({ target: typed } as unknown as Event);
+      await fixture.whenStable();
+      expect(poolFreeAgents).toHaveBeenLastCalledWith('2026-10-12', '2026-10-18', 30);
+
+      const over = { value: '250' };
+      planner.setMaxRostered({ target: over } as unknown as Event);
+      expect(planner.maxRostered()).toBe(100);
+      expect(over.value).toBe('100');
+
+      const blank = { value: '' };
+      planner.setMaxRostered({ target: blank } as unknown as Event);
+      expect(planner.maxRostered()).toBe(100);
+    });
+
+    it('goes back to the league when switched off', async () => {
+      admin.set(true);
+      chosen = LEAGUE;
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+      planner.toggleDemo();
+      await fixture.whenStable();
+      planner.toggleDemo();
+      await fixture.whenStable();
+
+      expect(planner.league()?.leagueId).toBe(LEAGUE.leagueId);
+      expect(freeAgents).toHaveBeenLastCalledWith(
+        'YAHOO',
+        LEAGUE.leagueId,
+        '2026-10-12',
+        '2026-10-18',
+      );
     });
   });
 });

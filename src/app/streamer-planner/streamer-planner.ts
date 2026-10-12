@@ -23,6 +23,7 @@ import {
 } from '../draft-projection/projection-defaults';
 import { Projection, ScoredProjection } from '../models/projection.model';
 import { ScoringStatKey } from '../models/stat-key.model';
+import { AuthService } from '../services/auth.service';
 import { EspnService } from '../services/espn.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { StreamerPlannerFreeAgentsService } from '../services/streamer-planner-free-agents.service';
@@ -118,6 +119,9 @@ export interface LeadingDay {
 
 /** The two tables, shown one at a time. */
 export type PlannerView = 'free-agents' | 'schedules';
+
+/** Where the admins' demo opens: about the share of Yahoo leagues a streamer is found under. */
+export const DEMO_MAX_ROSTERED = 50;
 
 /** Why the free agents card has no league to read yet. */
 type LeaguePrompt = 'checking' | 'connect' | 'no-leagues' | 'pick-yahoo' | 'enter-espn';
@@ -357,6 +361,36 @@ export class StreamerPlannerComponent {
 
   // --- The league and its free agents -----------------------------------------------------------
 
+  // --- The admins' demo -------------------------------------------------------------------------
+
+  /** Only the admins configured on the server see the demo; Premium does not open it. */
+  readonly isAdmin = inject(AuthService).isAdmin;
+
+  private readonly demoPicked = signal(false);
+
+  /**
+   * The demo: no league is read at all, and the free agents are every player Yahoo rosters in at
+   * most the share below of its leagues, ranked by the app's default scoring.
+   */
+  readonly demo = computed(() => this.isAdmin() && this.demoPicked());
+
+  toggleDemo(): void {
+    this.demoPicked.update((on) => !on);
+  }
+
+  /** The highest Yahoo percent rostered the demo lists. */
+  readonly maxRostered = signal(DEMO_MAX_ROSTERED);
+
+  /** A whole percent from 0 to 100, typed; anything else leaves the threshold as it was. */
+  setMaxRostered(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const typed = Number(input.value);
+    if (input.value.trim() !== '' && Number.isFinite(typed)) {
+      this.maxRostered.set(Math.min(100, Math.max(0, Math.round(typed))));
+    }
+    input.value = String(this.maxRostered());
+  }
+
   /** Whether ESPN leagues are offered at all: where Team Power Rankings offers them. */
   private readonly espnOffered = environment.espnLeaguesEnabled;
   private readonly remembered = inject(LeagueChoiceService).league();
@@ -377,6 +411,9 @@ export class StreamerPlannerComponent {
    */
   readonly league = computed<ChosenLeague | null>(
     () => {
+      if (this.demo()) {
+        return null;
+      }
       if (this.platform() === 'espn') {
         return this.espnLeague();
       }
@@ -468,17 +505,25 @@ export class StreamerPlannerComponent {
 
   private readonly freeAgentsResource = rxResource({
     params: () => {
-      const league = this.league();
       const stretch = this.stretch();
-      return league && stretch ? { league, ...stretch } : undefined;
+      if (!stretch) {
+        return undefined;
+      }
+      if (this.demo()) {
+        return { league: null, maxRostered: this.maxRostered(), ...stretch };
+      }
+      const league = this.league();
+      return league ? { league, maxRostered: null, ...stretch } : undefined;
     },
     stream: ({ params }) =>
-      this.freeAgentsService.freeAgents(
-        params.league.platform,
-        params.league.leagueId,
-        params.start,
-        params.end,
-      ),
+      params.league
+        ? this.freeAgentsService.freeAgents(
+            params.league.platform,
+            params.league.leagueId,
+            params.start,
+            params.end,
+          )
+        : this.freeAgentsService.poolFreeAgents(params.start, params.end, params.maxRostered),
   });
 
   readonly loadingFreeAgents = computed(
@@ -1011,7 +1056,7 @@ export class StreamerPlannerComponent {
 
   readonly noFreeAgents = computed(
     () =>
-      !!this.league() &&
+      (!!this.league() || this.demo()) &&
       !this.loadingFreeAgents() &&
       !this.freeAgentsFailure() &&
       this.freeAgentsResource.hasValue() &&
