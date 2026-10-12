@@ -26,6 +26,7 @@ import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
 import { FreeAgentsTableComponent } from './free-agents-table/free-agents-table';
+import { RosterTableComponent } from './roster-table/roster-table';
 import { PLANNER_LAYOUT, PlannerLayout } from './planner-page-size';
 import { PLANNER_TODAY } from './planner-schedule';
 import { StreamerPlannerComponent } from './streamer-planner';
@@ -453,7 +454,7 @@ describe('StreamerPlannerComponent', () => {
 
   /** Which of the two tables is on screen: the cards not hidden. */
   function shown(fixture: Awaited<ReturnType<typeof render>>): string[] {
-    return ['free-agents', 'teams'].filter(
+    return ['free-agents', 'roster', 'teams'].filter(
       (card) => !ngMocks.find(fixture, `section.${card}`).nativeElement.hidden,
     );
   }
@@ -481,15 +482,20 @@ describe('StreamerPlannerComponent', () => {
 
       expect(buttons.map((button) => ngMocks.formatText(button))).toEqual([
         'Free Agents',
+        'My Roster',
         'Team Schedules',
       ]);
-      expect(pressed()).toEqual(['true', 'false']);
+      expect(pressed()).toEqual(['true', 'false', 'false']);
       expect(shown(fixture)).toEqual(['free-agents']);
+
+      ngMocks.click(buttons[2]);
+      fixture.detectChanges();
+      expect(pressed()).toEqual(['false', 'false', 'true']);
+      expect(shown(fixture)).toEqual(['teams']);
 
       ngMocks.click(buttons[1]);
       fixture.detectChanges();
-      expect(pressed()).toEqual(['false', 'true']);
-      expect(shown(fixture)).toEqual(['teams']);
+      expect(shown(fixture)).toEqual(['roster']);
 
       ngMocks.click(buttons[0]);
       fixture.detectChanges();
@@ -849,10 +855,12 @@ describe('StreamerPlannerComponent', () => {
         const fixture = await render();
         const planner = fixture.point.componentInstance;
 
-        // The roster as it stands: no stretch, since no player's line over it is read.
+        // With the stretch, so each player's line over it comes with the roster.
         expect(invoke).toHaveBeenCalledWith(streamerPlannerMyTeam, {
           platform: 'YAHOO',
           leagueId: '465.l.9',
+          start: '2026-10-12',
+          end: '2026-10-18',
         });
         const night = planner.days().find((day) => day.date === '2026-10-13')!;
         expect(planner.roomLabel(planner.room(night)!)).toBe('RW, D, G');
@@ -1099,6 +1107,107 @@ describe('StreamerPlannerComponent', () => {
         // Nothing asks who the user would drop, and the list has no swap to show.
         expect(ngMocks.formatText(fixture)).not.toContain('Droppable players');
         expect(ngMocks.findAll(fixture, '.swap-col')).toHaveLength(0);
+      });
+
+      describe('the roster, lowest first', () => {
+        /** A line over the stretch's two games: so many goals, dressed for both. */
+        const line = (playerId: string, goals: number) => ({
+          playerId,
+          clubGames: 2,
+          expectedGames: 2,
+          stats: { goals, assists: 0, toiPerGame: 1000 },
+        });
+
+        beforeEach(() => {
+          // Four Cs for two C spots and the Util: the least valuable C sits both nights,
+          // however good his week looks on the schedule. The D is out.
+          myTeam = {
+            found: true,
+            teamName: 'Howe Hard',
+            players: [...myTeam.players, mine('16', ['C'])],
+            lines: [
+              line('10', 3),
+              line('11', 2),
+              line('12', 1),
+              line('13', 1),
+              line('14', 1.5),
+              line('15', 2),
+              line('16', 0.5),
+            ],
+          };
+        });
+
+        it('lists the player benched every night first, with his games and no start', async () => {
+          const fixture = await render();
+          const planner = fixture.point.componentInstance;
+          const roster = planner.roster();
+
+          expect(roster.map((row) => row.player.name)).toEqual([
+            'Mine 16',
+            'Mine 15',
+            'Mine 12',
+            'Mine 13',
+            'Mine 14',
+            'Mine 11',
+            'Mine 10',
+          ]);
+          const [benched, out, lowestStarter] = roster;
+          expect(benched).toMatchObject({ rank: 1, score: 0, games: 0, clubGames: 2 });
+          expect(benched.nights.map((night) => night.status)).toEqual(['bench', 'bench']);
+          // Out: no night to sit, and no start, but his games are still on the schedule.
+          expect(out).toMatchObject({ score: 0, games: 0, clubGames: 2 });
+          expect(out.nights.map((night) => night.status)).toEqual(['none', 'none']);
+          // The third C starts both nights, in the Util spot: a goal at 3 apiece.
+          expect(lowestStarter).toMatchObject({ score: 3, games: 2, clubGames: 2 });
+          expect(lowestStarter.nights.map((night) => night.status)).toEqual(['start', 'start']);
+          expect(planner.benchedAll()).toBe(1);
+          expect(planner.unprojected()).toBe(0);
+
+          planner.setView('roster');
+          fixture.detectChanges();
+          expect(ngMocks.formatText(ngMocks.find(fixture, '.roster-note--bench'))).toContain(
+            '1 of your players has games on these game days but no start',
+          );
+          const table = ngMocks.findInstance(RosterTableComponent);
+          expect(table.rows().map((row) => row.player.name)[0]).toBe('Mine 16');
+          expect(table.nights().map((day) => day.date)).toEqual(['2026-10-13', '2026-10-15']);
+        });
+
+        it('follows the nights counted: with a night unticked, the bench shrinks to the other', async () => {
+          const fixture = await render();
+          const planner = fixture.point.componentInstance;
+          planner.toggleDay(planner.days()[1]);
+
+          const benched = planner.roster()[0];
+          expect(benched.player.name).toBe('Mine 16');
+          expect(benched.nights.map((night) => night.date)).toEqual(['2026-10-15']);
+          expect(benched.clubGames).toBe(1);
+        });
+
+        it('sorts the roster by a column, and turns it round', async () => {
+          const fixture = await render();
+          const planner = fixture.point.componentInstance;
+
+          planner.sortRosterBy('score');
+          expect(planner.rosterSort()).toEqual({ key: 'score', descending: true });
+          expect(planner.sortedRoster()[0].player.name).toBe('Mine 10');
+          planner.sortRosterBy('clubGames');
+          expect(planner.sortedRoster().map((row) => row.player.name)[0]).toBe('Mine 16');
+        });
+
+        it("says how many of the user's players the model has no line for", async () => {
+          myTeam = { ...myTeam, lines: myTeam.lines.slice(1) };
+          const fixture = await render();
+          const planner = fixture.point.componentInstance;
+
+          expect(planner.unprojected()).toBe(1);
+          expect(planner.roster().map((row) => row.player.name)).not.toContain('Mine 10');
+          planner.setView('roster');
+          fixture.detectChanges();
+          expect(ngMocks.formatText(fixture)).toContain(
+            '1 of your players without a projection left out.',
+          );
+        });
       });
 
       describe('on a night with every seat taken', () => {

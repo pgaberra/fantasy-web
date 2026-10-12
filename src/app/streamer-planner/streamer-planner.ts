@@ -25,6 +25,7 @@ import {
 } from '../draft-projection/projection-defaults';
 import { Projection, ScoredProjection } from '../models/projection.model';
 import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
+import { RankingInput } from '../services/projection-ranking.service';
 import { AuthService } from '../services/auth.service';
 import { EspnService } from '../services/espn.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
@@ -45,6 +46,7 @@ import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { FreeAgentsTableComponent } from './free-agents-table/free-agents-table';
 import { LeagueFieldComponent } from './league-field/league-field';
+import { RosterTableComponent } from './roster-table/roster-table';
 import {
   categoryColumn,
   addShares,
@@ -85,6 +87,17 @@ import {
   roomRuns,
 } from './planner-lineup';
 import {
+  lineupStarts,
+  LOWEST_FIRST,
+  nextRosterSort,
+  rosterPlayers,
+  RosterRow,
+  rosterRows,
+  RosterSort,
+  RosterSortKey,
+  sortRoster,
+} from './planner-roster';
+import {
   isPageSize,
   PAGE_SIZES,
   PLANNER_LAYOUT,
@@ -122,8 +135,8 @@ export interface LeadingDay {
   readonly games?: number;
 }
 
-/** The two tables, shown one at a time. */
-export type PlannerView = 'free-agents' | 'schedules';
+/** The three tables, shown one at a time. */
+export type PlannerView = 'free-agents' | 'roster' | 'schedules';
 
 /** Where the admins' demo opens: about the share of Yahoo leagues a streamer is found under. */
 export const DEMO_MAX_ROSTERED = 50;
@@ -215,6 +228,7 @@ export interface PresetOption {
     LeagueFieldComponent,
     LeagueSettingsControlsComponent,
     LoadingIndicatorComponent,
+    RosterTableComponent,
     StatWeightsEditorComponent,
     TeamSchedulesComponent,
     TooltipDirective,
@@ -630,20 +644,23 @@ export class StreamerPlannerComponent {
   // --- The user's own team ----------------------------------------------------------------------
 
   /**
-   * The user's own team in the league, where this environment reads it. The nights it has room on
-   * follow from it, the league's lineup slots and the club schedules already on the page.
+   * The user's own team in the league, where this environment reads it, with each player's line
+   * over the stretch. The nights it has room on follow from it, the league's lineup slots and
+   * the club schedules already on the page; the lines are what the roster table scores.
    */
   private readonly myTeamResource = rxResource({
     params: () => {
       const league = this.league();
-      // The roster as it stands: no stretch, so no lines, which nothing on the page reads.
-      return league ? { league } : undefined;
+      const stretch = this.stretch();
+      return league && stretch ? { league, ...stretch } : undefined;
     },
     stream: ({ params }) =>
       from(
         this.api.invoke(streamerPlannerMyTeam, {
           platform: params.league.platform,
           leagueId: params.league.leagueId,
+          start: params.start,
+          end: params.end,
         }),
       ),
   });
@@ -720,6 +737,8 @@ export class StreamerPlannerComponent {
   roomLabel(room: NightRoom): string {
     return roomLabel(room);
   }
+
+  readonly myTeamError = computed(() => this.myTeamResource.error());
 
   retryMyTeam(): void {
     this.myTeamResource.reload();
@@ -937,21 +956,9 @@ export class StreamerPlannerComponent {
       lines.set(player.playerId, line);
       return line;
     });
-    const input = {
-      scoringType: scoring.scoringType,
-      statWeights: scoring.statWeights,
-      activeScoringColumns: focus.size > 0 ? new Set(focus) : scoring.activeScoringColumns,
-      leagueSize: DEFAULT_LEAGUE_SIZE,
-      rosterSlots: DEFAULT_ROSTER_SLOTS,
-      // A goalie streamed for a week has nothing like a season's starts behind him, and the
-      // minimum is there to keep a backup off a season table. Applied here it would disqualify
-      // every goalie on the page.
-      minGoalieGames: 0,
-      decimalSettings: WEEK_DECIMALS,
-    };
+    const input = this.rankingInput(focus);
     const scored = this.ranking.rankOverall({ ...input, projections });
-    const scoreOf = (entry: ScoredProjection) =>
-      scoring.scoringType === 'points' ? entry.score.fantasyPoints : entry.score.zScore;
+    const scoreOf = this.scoreOf();
     // Each lifted line scored in place of its own, the rest of the list as it stands: what the
     // games would add to his score as the list reads it. In a points league a line's score is
     // its own whoever else is listed, so one run scores them all; in a category league a z-score
@@ -1006,6 +1013,149 @@ export class StreamerPlannerComponent {
 
   /** The best pickups, by the categories picked: what the list reads. */
   readonly ranked = computed(() => this.rankedBy(this.focus()));
+
+  /** What the engine scores a week's line by: the league's scoring, over the categories picked. */
+  private rankingInput(focus: ReadonlySet<ScoringStatKey>): Omit<RankingInput, 'projections'> {
+    const scoring = this.scoring();
+    return {
+      scoringType: scoring.scoringType,
+      statWeights: scoring.statWeights,
+      activeScoringColumns: focus.size > 0 ? new Set(focus) : scoring.activeScoringColumns,
+      leagueSize: DEFAULT_LEAGUE_SIZE,
+      rosterSlots: DEFAULT_ROSTER_SLOTS,
+      // A goalie streamed for a week has nothing like a season's starts behind him, and the
+      // minimum is there to keep a backup off a season table. Applied here it would disqualify
+      // every goalie on the page.
+      minGoalieGames: 0,
+      decimalSettings: WEEK_DECIMALS,
+    };
+  }
+
+  private scoreOf(): (entry: ScoredProjection) => number {
+    return this.scoring().scoringType === 'points'
+      ? (entry) => entry.score.fantasyPoints
+      : (entry) => entry.score.zScore;
+  }
+
+  // --- The user's own players, lowest first -----------------------------------------------------
+
+  /**
+   * Some lines scored in one pool with the free agents' lines on screen, in the order given. A
+   * category league scores a line against the pool it is ranked in, so the user's players are
+   * scored among the pickups they are weighed against; a points league's score is the line's
+   * own whoever else is listed.
+   */
+  private scoreInPool(lines: readonly Projection[]): number[] {
+    const scoreOf = this.scoreOf();
+    const pool = this.ranked().map((row) => row.line);
+    const scored = new Map<number, number>();
+    for (const entry of this.ranking.rankOverall({
+      ...this.rankingInput(this.focus()),
+      projections: [...pool, ...lines],
+    })) {
+      scored.set(entry.projection.playerId, scoreOf(entry));
+    }
+    return lines.map((line) => scored.get(line.playerId) ?? 0);
+  }
+
+  /** The user's players the model has a line for, of the kinds that score in the categories picked. */
+  private readonly rosterPlayers = computed(() => {
+    const team = this.myTeam();
+    const focus = this.focus();
+    return team ? rosterPlayers(team).filter((player) => scoresIn(player.type, focus)) : [];
+  });
+
+  /**
+   * What a game of each of the user's players is worth: his line over the whole stretch scored
+   * in the pool, a game at a time. The order the lineup is set in each night, and what parts
+   * two players who give the same over the nights.
+   */
+  private readonly gameValues = computed<ReadonlyMap<string, number>>(() => {
+    const players = this.rosterPlayers();
+    const scores = this.scoreInPool(players.map((player) => player.projection));
+    return new Map(
+      players.map((player, index) => [
+        player.playerId,
+        player.expectedGames > 0 ? scores[index] / player.expectedGames : 0,
+      ]),
+    );
+  });
+
+  /** The counted game days, in order: the roster table's night columns. */
+  readonly countedDays = computed(() => {
+    const counted = this.counted();
+    return this.days().filter((day) => counted.has(day.date));
+  });
+
+  /**
+   * The user's players over the nights counted, the one who gives the least first: each with
+   * the games he would start with the best lineup set each night, since a game spent on the
+   * bench behind better players at his positions gives nothing ({@link rosterRows}). Empty
+   * while there is no team, or no slots to seat it in.
+   */
+  readonly roster = computed<readonly RosterRow[]>(() => {
+    const team = this.myTeam();
+    const settings = this.settingsResource.hasValue() ? this.settingsResource.value() : null;
+    if (this.myTeamStatus() !== 'ready' || !team || !settings?.rosterSlots) {
+      return [];
+    }
+    const values = this.gameValues();
+    const value = (playerId: string) => values.get(playerId) ?? 0;
+    const dates = this.countedDays().map((day) => day.date);
+    const starts = lineupStarts(
+      team.players,
+      settings.rosterSlots,
+      this.teamsByKey(),
+      dates,
+      value,
+    );
+    return rosterRows(
+      this.rosterPlayers(),
+      starts,
+      this.teamsByKey(),
+      this.counted(),
+      dates,
+      (lines) => this.scoreInPool(lines),
+      value,
+    );
+  });
+
+  /** The user's players the model has no line for: left out of the roster, and said so. */
+  readonly unprojected = computed(() => {
+    const team = this.myTeam();
+    if (!team) {
+      return 0;
+    }
+    const lined = new Set(team.lines.map((line) => line.playerId));
+    return team.players.filter((player) => !lined.has(player.playerId)).length;
+  });
+
+  /**
+   * How many of the user's players have games on the nights but no start among them: benched
+   * behind better players, not out, since a player who is out has no lineup to sit in.
+   */
+  readonly benchedAll = computed(
+    () =>
+      this.roster().filter((row) => row.games === 0 && row.clubGames > 0 && !row.player.out).length,
+  );
+
+  /** The column the roster was last sorted by; it opens with the player who gives the least first. */
+  private readonly rosterSortPicked = signal<RosterSort>(LOWEST_FIRST);
+
+  /** The roster's order on screen: the one picked, while its column is still in the table. */
+  readonly rosterSort = computed(() => {
+    const sort = this.rosterSortPicked();
+    const about = ['name', 'score', 'perGame', 'games', 'clubGames', 'toi'];
+    return about.includes(sort.key) || this.categories().includes(sort.key as ScoringStatKey)
+      ? sort
+      : LOWEST_FIRST;
+  });
+
+  sortRosterBy(key: RosterSortKey): void {
+    this.rosterSortPicked.set(nextRosterSort(this.rosterSort(), key));
+  }
+
+  readonly sortedRoster = computed(() => sortRoster(this.roster(), this.rosterSort()));
 
   /**
    * The list on screen: skaters and goalies together, narrowed to the positions picked. Each keeps

@@ -252,6 +252,14 @@
       <button
         type="button"
         class="view"
+        [attr.aria-pressed]="view() === 'roster'"
+        (click)="setView('roster')"
+      >
+        <app-icon name="user-minus" [size]="16" />My Roster
+      </button>
+      <button
+        type="button"
+        class="view"
         [attr.aria-pressed]="view() === 'schedules'"
         (click)="setView('schedules')"
       >
@@ -520,6 +528,97 @@
             }
           </span>
         </div>
+      }
+    </section>
+
+    <!-- The user's own players over the same nights, the one who gives the least first: the
+         other half of a streamer's question, who to drop. Scored as the free agents are, and
+         with the games each would start once the best lineup is set each night, since a game
+         on the bench gives nothing however many his club has. -->
+    <section
+      class="card roster"
+      aria-labelledby="planner-roster-title"
+      [hidden]="view() !== 'roster'"
+    >
+      <div class="card-head">
+        <h2 id="planner-roster-title" class="card-title">
+          <app-icon name="user-minus" />Lowest Contributors
+          <app-help-tip
+            label="How your players are ranked"
+            text="Your players scored the same way as the free agents, over the selected game days, lowest first. Starts counts the games each would play with your best lineup set every night: a player with games but no starts sits behind better players at his positions, and adds nothing this week."
+          />
+        </h2>
+      </div>
+      @if (demo()) {
+        <p class="prompt">Demo mode reads no league, so there is no roster to show.</p>
+      } @else if (!league()) {
+        @switch (leaguePrompt()) {
+          @case ('checking') {
+            <app-loading-indicator />
+          }
+          @case ('connect') {
+            <p class="prompt">Connect your Yahoo account to see your roster.</p>
+          }
+          @case ('no-leagues') {
+            <p class="prompt">
+              Your Yahoo account has no NHL league this season, so there is no roster to show.
+            </p>
+          }
+          @case ('enter-espn') {
+            <p class="prompt">Enter your ESPN league above to see your roster.</p>
+          }
+          @default {
+            <p class="prompt">Select a league above to see your roster.</p>
+          }
+        }
+      } @else {
+        @switch (myTeamStatus()) {
+          @case ('loading') {
+            <app-loading-indicator />
+          }
+          @case ('error') {
+            <app-error-state
+              title="Couldn't load your team"
+              [error]="myTeamError()"
+              (retry)="retryMyTeam()"
+            />
+          }
+          @case ('not-found') {
+            <p class="empty">Your team isn't in this league, so there is no roster to show.</p>
+          }
+          @case ('ready') {
+            @if (loadingFreeAgents()) {
+              <app-loading-indicator />
+            } @else if (roster().length === 0) {
+              <p class="empty">None of your players has a projection for these game days.</p>
+            } @else {
+              <!-- The finding, said once over the table: how many sit the whole stretch. -->
+              @if (benchedAll() > 0) {
+                <p class="roster-note roster-note--bench">
+                  <app-icon name="alert-triangle" [size]="16" />
+                  <span>
+                    {{ benchedAll() }} of your players
+                    {{ benchedAll() === 1 ? 'has' : 'have' }} games on these game days but no start
+                    in your best lineup.
+                  </span>
+                </p>
+              }
+              <app-roster-table
+                [rows]="sortedRoster()"
+                [nights]="countedDays()"
+                [scoringType]="scoringType()"
+                [categories]="categories()"
+                [sort]="rosterSort()"
+                (sortBy)="sortRosterBy($event)"
+              />
+              @if (unprojected() > 0) {
+                <p class="roster-note">
+                  {{ unprojected() }} of your players without a projection left out.
+                </p>
+              }
+            }
+          }
+        }
       }
     </section>
 

@@ -4,6 +4,7 @@ import { RosterSlots } from '../api/models/roster-slots';
 import { TeamSchedule } from '../api/models/team-schedule';
 import {
   dropRooms,
+  seating,
   dropRoomTip,
   fitsDrop,
   fitsRoom,
@@ -85,6 +86,20 @@ describe('seated', () => {
   it('fills the flex seats only with the positions they take', () => {
     const seats = lineupSeats(slots({ w: 1, f: 1 }));
     expect(seated([['D'], ['C'], ['RW']], seats)).toBe(2);
+  });
+});
+
+describe('seating', () => {
+  it('seats the players listed first, and leaves the later ones of a kind standing', () => {
+    // Three Cs for two C seats: the third listed is the one without a seat.
+    const seats = lineupSeats(slots({ c: 2 }));
+    expect(seating([['C'], ['C'], ['C']], seats)).toEqual([true, true, false]);
+  });
+
+  it('never unseats a player to seat a later one, but moves him over where he may sit', () => {
+    // The C/LW listed first takes the C seat, and is moved to LW for the pure C behind him.
+    const seats = lineupSeats(slots({ c: 1, lw: 1 }));
+    expect(seating([['C', 'LW'], ['C'], ['C']], seats)).toEqual([true, true, false]);
   });
 });
 

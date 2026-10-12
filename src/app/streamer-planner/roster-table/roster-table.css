@@ -1,0 +1,289 @@
+/* Drawn as the free agents table beside it is, rule for rule where the two share a column, so a
+   player here reads against a pickup there. Only the table scrolls sideways; the page never does. */
+.table-scroll {
+  container-type: inline-size;
+  overflow-x: auto;
+}
+
+.roster-table {
+  --player-logo-size: 28px;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  width: 100%;
+}
+
+.roster-table th,
+.roster-table td {
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-2) var(--space-1);
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.roster-table thead th {
+  color: var(--color-text-muted);
+  font-weight: var(--weight-semibold);
+  vertical-align: bottom;
+}
+
+.roster-table .num,
+.roster-table thead th.num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.sort {
+  align-items: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: inherit;
+  gap: 2px;
+  padding: 0;
+  vertical-align: bottom;
+}
+
+.sort:hover {
+  color: var(--color-primary);
+}
+
+.sort:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.roster-table th[aria-sort] .sort {
+  color: var(--color-primary);
+}
+
+.roster-table tbody tr:hover > * {
+  background: var(--color-surface-hover);
+}
+
+.roster-table tbody td {
+  line-height: 1.25;
+}
+
+/* The player stays put while the numbers scroll sideways, and takes the room to spare. */
+.roster-table .player-col {
+  background: var(--color-surface);
+  left: 0;
+  position: sticky;
+  width: 100%;
+  z-index: 1;
+}
+
+.roster-table tbody th.player-col {
+  font-weight: var(--weight-medium);
+  padding-left: 0;
+}
+
+.player-cell {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.player-logo {
+  --team-logo-size: var(--player-logo-size);
+  flex: none;
+}
+
+.player-identity {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.player-name-line {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.player-name {
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+  line-height: 1.25;
+}
+
+/* Out: the FA scout's tag, so an injured player wears the same mark on both pages. */
+.player-out {
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-pill);
+  color: var(--color-danger);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  line-height: 1.4;
+  padding: 0 var(--space-2);
+}
+
+.roster-table app-position-chips {
+  flex-wrap: nowrap;
+}
+
+.score {
+  color: var(--color-primary);
+  font-weight: var(--weight-bold);
+}
+
+.roster-table td.rate-col,
+.roster-table td.games-col,
+.roster-table td.toi-col {
+  color: var(--color-text-muted);
+}
+
+/* The starts: the table's own figure, bold like the score. Fewer than his games is the finding,
+   so it is set off: the warning's ink for some starts lost, the danger red for none at all, each
+   on its own wash so the colour is not the only thing that marks the cell out from the games
+   beside it. Both read past 4.5:1 on their wash. */
+.roster-table td.starts-col {
+  font-weight: var(--weight-bold);
+}
+
+.starts {
+  border-radius: var(--radius-sm);
+  display: inline-block;
+  min-width: 1.5rem;
+  padding: 1px var(--space-1);
+  text-align: right;
+}
+
+.starts--some {
+  background: var(--color-warning-surface);
+  color: var(--color-warning-text);
+}
+
+.starts--none {
+  background: var(--color-danger-surface);
+  color: var(--color-danger-hover);
+}
+
+/* A player who starts nowhere this stretch: his whole row steps back, the name with it, so the
+   bench reads down the table before a single number is. */
+.player-row--benched .player-name,
+.player-row--benched td.score {
+  color: var(--color-text-muted);
+}
+
+/* --- The nights ------------------------------------------------------------------------------- */
+
+/* A column a counted night, narrow, set off from the counts by a rule down the first. */
+.roster-table .night-col {
+  padding-inline: 2px;
+  text-align: center;
+}
+
+.roster-table .night-col--first {
+  border-left: 1px solid var(--color-border);
+  padding-left: var(--space-2);
+}
+
+.roster-table :is(th, td):has(+ .night-col--first) {
+  padding-right: var(--space-2);
+}
+
+.night-head {
+  display: inline-flex;
+  flex-direction: column;
+  font-size: var(--text-xs);
+  line-height: 1.2;
+  min-width: 1.75rem;
+  text-align: center;
+}
+
+.night-date {
+  color: var(--color-text-subtle);
+  font-weight: var(--weight-medium);
+}
+
+/* The mark: a tick in the green of a spot the lineup has, "BN" in the warning's ink for a game
+   spent on the bench, and a faint dot for a night with no game. A square the size of a chip, so
+   a row of them reads as a strip like the game days above. */
+.night {
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+  display: inline-flex;
+  font-size: 0.625rem;
+  font-weight: var(--weight-semibold);
+  height: 1.375rem;
+  justify-content: center;
+  line-height: 1;
+  width: 1.75rem;
+}
+
+.night--start {
+  background: var(--color-success-surface);
+  border-color: var(--color-success-border);
+  color: var(--color-success);
+}
+
+.night--bench {
+  background: var(--color-warning-surface);
+  border-color: var(--color-warning-border);
+  color: var(--color-warning-text);
+}
+
+.night--none::before {
+  background: var(--color-border-strong);
+  border-radius: 50%;
+  content: '';
+  height: 4px;
+  width: 4px;
+}
+
+.night:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* --- The categories --------------------------------------------------------------------------- */
+
+.roster-table .stat-col {
+  padding-inline: var(--space-2) 2px;
+}
+
+.roster-table .stat-col--start {
+  border-left: 1px solid var(--color-border);
+  padding-left: var(--space-3);
+}
+
+.roster-table :is(th, td):has(+ .stat-col--start) {
+  padding-right: var(--space-3);
+}
+
+.roster-table td.nil {
+  color: var(--color-text-subtle);
+}
+
+.roster-table td.not-his {
+  color: var(--color-border-strong);
+  font-weight: normal;
+}
+
+/* Half a laptop's screen, or a phone: the positions go under the name, and the ice time goes,
+   as on the free agents. The nights stay: they are what the table is for. */
+@container (max-width: 38rem) {
+  .player-identity {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .roster-table tbody td {
+    vertical-align: top;
+  }
+
+  .roster-table .toi-col {
+    display: none;
+  }
+}
