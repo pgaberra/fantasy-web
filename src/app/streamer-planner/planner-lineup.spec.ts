@@ -308,6 +308,31 @@ describe('dropRooms', () => {
     expect(opens(dropRooms(deeper, SLOTS, teams, rooms), MON)).toEqual(['C/RW: RW']);
   });
 
+  it('names the players who do not play that night as exceptions, since their drop frees nothing', () => {
+    // Tuesday the two EDM defencemen fill both D seats. Idle's club has no game, Hurt is out:
+    // dropping either frees no seat that night, and "Drop a D" alone would say it does.
+    const backs = [
+      named('1', 'Back', 'EDM', ['D']),
+      named('2', 'Other Back', 'EDM', ['D']),
+      named('3', 'Idle', 'TBL', ['D']),
+      { ...named('4', 'Hurt', 'EDM', ['D']), out: true },
+    ];
+    const two = slots({ d: 2 });
+    const rooms = nightRooms(backs, two, teams, [MON, TUE]);
+    const opened = dropRooms(backs, two, teams, rooms);
+
+    expect(opens(opened, TUE)).toEqual(['D: D']);
+    expect(opened.get(TUE)).toEqual([
+      { kind: 'D', names: ['Back', 'Other Back'], opens: ['D'] },
+      { kind: 'D', names: ['Idle', 'Hurt'], opens: [] },
+    ]);
+    expect(dropRoomTip(opened.get(TUE)!, ['D'])).toBe(
+      'Drop a D, except Idle and Hurt, to free up this spot.',
+    );
+    // Monday Idle plays too, a third D for two seats: whoever goes, the other two fill them.
+    expect(opened.get(MON)).toBeUndefined();
+  });
+
   it('has nothing for a night no drop opens anything on', () => {
     // One LW seat, two LWs: whichever goes, the other takes the seat.
     const wings = [named('1', 'Benson', 'EDM', ['LW']), named('2', 'Kane', 'EDM', ['LW'])];

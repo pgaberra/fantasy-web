@@ -5,11 +5,7 @@
     @if (isAdmin()) {
       <label class="fit-toggle demo-toggle">
         <input type="checkbox" [checked]="demo()" (change)="toggleDemo()" />
-        Demo mode
-        <app-help-tip
-          label="About demo mode"
-          text="Admins only. No league is synced: the free agents are every player at or under the Yahoo % rostered you set, ranked with default points scoring."
-        />
+        Demo Mode
       </label>
     }
   </header>
@@ -79,21 +75,7 @@
             </div>
           </div>
         </div>
-        @if (demo()) {
-          <label class="league date-field demo-threshold">
-            <span class="date-label">Max % rostered in Yahoo</span>
-            <input
-              class="field-date demo-input"
-              type="number"
-              inputmode="numeric"
-              min="0"
-              max="100"
-              step="1"
-              [value]="maxRostered()"
-              (change)="setMaxRostered($event)"
-            />
-          </label>
-        } @else {
+        @if (!demo()) {
           <app-league-field class="league" [(platform)]="platform" [(espnLeague)]="espnLeague" />
         }
       </div>
@@ -323,6 +305,45 @@
           </div>
         }
       </div>
+      <!-- The demo has no league to take its scoring or its players from, so both are set here:
+           the threshold the pool is cut at, and the league the list is ranked by. -->
+      @if (demo()) {
+        <div class="demo-controls">
+          <div class="demo-threshold" role="group" aria-labelledby="planner-rostered-label">
+            <span id="planner-rostered-label" class="group-label"
+              >Max % rostered in Yahoo:
+              <span class="demo-threshold-value">{{ rosteredShown() }}%</span></span
+            >
+            <input
+              class="demo-slider"
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              [value]="maxRostered()"
+              aria-labelledby="planner-rostered-label"
+              (input)="dragMaxRostered($event)"
+              (change)="setMaxRostered($event)"
+            />
+          </div>
+          <div class="demo-league" role="group" aria-labelledby="planner-demo-league-label">
+            <span id="planner-demo-league-label" class="group-label">Scoring</span>
+            <app-league-settings-controls
+              [settings]="demoLeague()"
+              [sizing]="false"
+              [importing]="false"
+              (settingsChange)="setDemoLeague($event)"
+            />
+            @if (demoLeague().scoringType === 'points') {
+              <app-stat-weights-editor
+                [statWeights]="demoLeague().statWeights"
+                [activeScoringColumns]="demoLeague().activeScoringColumns"
+                (statWeightsChange)="setDemoWeights($event)"
+              />
+            }
+          </div>
+        </div>
+      }
       <!-- Skaters and goalies are one list, narrowed by any number of positions at once. "All" is
            the list with none picked, and the way back to it; "All skaters" picks the four skater
            positions in one press. -->
@@ -360,7 +381,7 @@
       <!-- A category matchup is mostly settled before the week is out: the add worth making is
            the one that swings the categories still open. Picking them ranks the players who score
            in them by those alone; none picked is the league's whole set. -->
-      @if (league() && focusOptions().length > 0) {
+      @if ((league() || demo()) && focusOptions().length > 0) {
         <div class="focus" role="group" aria-labelledby="planner-focus-label">
           <span id="planner-focus-label" class="group-label">Rank by</span>
           <app-help-tip

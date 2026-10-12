@@ -1611,29 +1611,82 @@ describe('StreamerPlannerComponent', () => {
         'Bench Body',
       ]);
       expect(ngMocks.findAll(fixture, 'app-league-field')).toHaveLength(0);
-      expect(ngMocks.find(fixture, '.demo-input').nativeElement.value).toBe('50');
+      expect(ngMocks.find(fixture, '.demo-slider').nativeElement.value).toBe('50');
+      expect(ngMocks.formatText(ngMocks.find(fixture, '.demo-threshold-value'))).toBe('50%');
+      expect(ngMocks.findAll(fixture, 'app-league-settings-controls')).toHaveLength(1);
+      expect(ngMocks.findAll(fixture, 'app-stat-weights-editor')).toHaveLength(1);
     });
 
-    it('asks again with the threshold typed, held to a whole percent from 0 to 100', async () => {
+    it('follows the thumb in the label and asks again only once the slider is let go', async () => {
+      admin.set(true);
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+      planner.toggleDemo();
+      await fixture.whenStable();
+      poolFreeAgents.mockClear();
+
+      planner.dragMaxRostered({ target: { value: '30' } } as unknown as Event);
+      await fixture.whenStable();
+      expect(planner.rosteredShown()).toBe(30);
+      expect(planner.maxRostered()).toBe(50);
+      expect(poolFreeAgents).not.toHaveBeenCalled();
+
+      planner.setMaxRostered({ target: { value: '30' } } as unknown as Event);
+      await fixture.whenStable();
+      expect(planner.maxRostered()).toBe(30);
+      expect(poolFreeAgents).toHaveBeenLastCalledWith('2026-10-12', '2026-10-18', 30);
+
+      planner.setMaxRostered({ target: { value: '' } } as unknown as Event);
+      expect(planner.maxRostered()).toBe(30);
+    });
+
+    it('ranks by the league an admin sets, categories included', async () => {
+      admin.set(true);
+      const fixture = await render();
+      const planner = fixture.point.componentInstance;
+      planner.toggleDemo();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(planner.scoringType()).toBe('points');
+      expect(planner.focusOptions()).toEqual([]);
+
+      planner.setDemoLeague({
+        ...planner.demoLeague(),
+        scoringType: 'category',
+        activeScoringColumns: new Set(['goals', 'assists']),
+      });
+      fixture.detectChanges();
+
+      expect(planner.scoringType()).toBe('category');
+      expect(planner.categories()).toEqual(['goals', 'assists']);
+      expect(planner.focusOptions().map((option) => option.key)).toEqual(['goals', 'assists']);
+      expect(ngMocks.findAll(fixture, 'app-stat-weights-editor')).toHaveLength(0);
+      // Bench Body has the one assist and no goal: last on goals, level on nothing.
+      expect(planner.ranked().map((row) => row.player.name)).toEqual([
+        'Deep Sleeper',
+        'Bench Body',
+      ]);
+    });
+
+    it('weighs the points as the admin sets them', async () => {
       admin.set(true);
       const fixture = await render();
       const planner = fixture.point.componentInstance;
       planner.toggleDemo();
       await fixture.whenStable();
 
-      const typed = { value: '30' };
-      planner.setMaxRostered({ target: typed } as unknown as Event);
-      await fixture.whenStable();
-      expect(poolFreeAgents).toHaveBeenLastCalledWith('2026-10-12', '2026-10-18', 30);
+      // Only assists count: Bench Body's one assist against Deep Sleeper's two is not enough.
+      planner.setDemoLeague({
+        ...planner.demoLeague(),
+        activeScoringColumns: new Set(['assists']),
+      });
+      planner.setDemoWeights({ ...planner.demoLeague().statWeights, assists: 10 });
 
-      const over = { value: '250' };
-      planner.setMaxRostered({ target: over } as unknown as Event);
-      expect(planner.maxRostered()).toBe(100);
-      expect(over.value).toBe('100');
-
-      const blank = { value: '' };
-      planner.setMaxRostered({ target: blank } as unknown as Event);
-      expect(planner.maxRostered()).toBe(100);
+      expect(planner.ranked().map((row) => [row.player.name, row.score])).toEqual([
+        ['Deep Sleeper', 20],
+        ['Bench Body', 10],
+      ]);
     });
 
     it('goes back to the league when switched off', async () => {

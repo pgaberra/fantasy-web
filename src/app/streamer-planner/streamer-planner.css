@@ -206,8 +206,39 @@
   flex: 0 1 20rem;
 }
 
-.demo-input {
-  width: 5rem;
+/* --- The admins' demo ------------------------------------------------------------------------- */
+
+.demo-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.demo-threshold {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 28rem;
+}
+
+.demo-threshold-value {
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.demo-slider {
+  accent-color: var(--color-primary);
+  margin: 0;
+  width: 100%;
+}
+
+.demo-league {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 /* ESPN's league is a form, several times the height of the dates beside it: with the strip under

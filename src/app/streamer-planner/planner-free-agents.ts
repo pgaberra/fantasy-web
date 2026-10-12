@@ -48,6 +48,8 @@ export interface LineRow {
     readonly projection: Projection;
     /** The stats the model gave a number for; a zero in any other is the engine's, not his. */
     readonly projected: ReadonlySet<string>;
+    /** Share of all Yahoo leagues that roster him: the demo list's own column. */
+    readonly percentRostered?: number;
   };
   /** His projection over the games counted: the one the score was reached from. */
   readonly line: Projection;
@@ -598,7 +600,8 @@ export function lineColumns(
 // --- Sorting the list ----------------------------------------------------------------------------
 
 /** A column the free agents can be sorted by: one about the player, or a category of his line. */
-export type FreeAgentSortKey = 'name' | 'score' | 'perGame' | 'games' | 'toi' | ScoringStatKey;
+export type FreeAgentSortKey =
+  'name' | 'score' | 'perGame' | 'games' | 'toi' | 'rostered' | ScoringStatKey;
 
 export interface FreeAgentSort {
   readonly key: FreeAgentSortKey;
@@ -621,7 +624,8 @@ export function nextSort(current: FreeAgentSort, key: FreeAgentSortKey): FreeAge
   if (current.key === key) {
     return { key, descending: !current.descending };
   }
-  const firstWay = key === 'score' || key === 'perGame' || key === 'games' || key === 'toi';
+  const firstWay =
+    key === 'score' || key === 'perGame' || key === 'games' || key === 'toi' || key === 'rostered';
   return { key, descending: firstWay || defaultSortDirection(key) === 'desc' };
 }
 
@@ -642,6 +646,8 @@ export function sortValue(row: LineRow, key: Exclude<FreeAgentSortKey, 'name'>):
       return row.player.projection.type === 'skater'
         ? (row.player.projection.stats.utility.toiPerGame ?? null)
         : null;
+    case 'rostered':
+      return row.player.percentRostered ?? null;
     default: {
       const own: readonly string[] =
         row.line.type === 'skater' ? SKATER_SCORING_STAT_KEYS : GOALIE_SCORING_STAT_KEYS;

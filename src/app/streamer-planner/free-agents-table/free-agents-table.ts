@@ -119,6 +119,16 @@ export class FreeAgentsTableComponent {
       this.rows().some((row) => Math.round(row.dropGames ?? 0) > 0 || row.lifted !== undefined),
   );
 
+  /** Percent rostered comes only with the admins' demo list; a league's list has no such column. */
+  readonly hasRostered = computed(() =>
+    this.list().some((row) => row.player.percentRostered !== undefined),
+  );
+
+  rostered(row: RankedFreeAgent): string {
+    const percent = row.player.percentRostered;
+    return percent === undefined ? NOT_HIS : `${percent}%`;
+  }
+
   /** Ice time a game is a skater's number: no column of blanks over a list of goalies alone. */
   readonly hasSkaters = computed(() => this.list().some((row) => row.line.type === 'skater'));
 

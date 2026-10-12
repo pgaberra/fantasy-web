@@ -54,6 +54,23 @@
             GP
           </button>
         </th>
+        <!-- Only the admins' demo list carries it, and it is what that list is cut by: a column
+             of its own, beside the games, where it can be read down and sorted on. -->
+        @if (hasRostered()) {
+          <th scope="col" class="num rostered-col" [attr.aria-sort]="ariaSort('rostered')">
+            <button
+              type="button"
+              class="sort"
+              appTooltip="Share of Yahoo leagues the player is rostered in"
+              (click)="sortBy.emit('rostered')"
+            >
+              @if (sort().key === 'rostered') {
+                <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+              }
+              % Rost.
+            </button>
+          </th>
+        }
         @if (hasSkaters()) {
           <th scope="col" class="num toi-col" [attr.aria-sort]="ariaSort('toi')">
             <button
@@ -131,12 +148,6 @@
                 </span>
                 <span class="player-meta">
                   <app-position-chips [positions]="entry.row.player.positions" />
-                  <!-- Only the admins' demo list carries it, and it is what that list is cut by. -->
-                  @if (entry.row.player.percentRostered !== undefined) {
-                    <span class="player-rostered"
-                      >{{ entry.row.player.percentRostered }}% rostered</span
-                    >
-                  }
                 </span>
               </span>
             </span>
@@ -178,6 +189,9 @@
               </span>
             }
           </td>
+          @if (hasRostered()) {
+            <td class="num rostered-col">{{ rostered(entry.row) }}</td>
+          }
           @if (hasSkaters()) {
             <td class="num toi-col" [class.not-his]="entry.row.player.projection.type !== 'skater'">
               {{ toi(entry.row) }}

@@ -17,13 +17,15 @@ import { streamerPlannerWeeks } from '../api/fn/streamer-planner/streamer-planne
 import { PlannerWeek } from '../api/models/planner-week';
 import {
   DEFAULT_LEAGUE_SIZE,
+  DEFAULT_MIN_GOALIE_GAMES,
   DEFAULT_ROSTER_SLOTS,
   DEFAULT_SCORING_COLUMNS,
   DEFAULT_STAT_WEIGHTS,
+  DEFAULT_UTILITY_COLUMNS,
 } from '../draft-projection/projection-defaults';
 import { Projection, ScoredProjection } from '../models/projection.model';
+import { ScoringStatKey, SkaterUtilityStatKey } from '../models/stat-key.model';
 import { RankingInput } from '../services/projection-ranking.service';
-import { ScoringStatKey } from '../models/stat-key.model';
 import { AuthService } from '../services/auth.service';
 import { EspnService } from '../services/espn.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
@@ -33,6 +35,9 @@ import { YahooService } from '../services/yahoo.service';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { HelpTipComponent } from '../shared/help-tip/help-tip';
 import { IconComponent } from '../shared/icon/icon';
+import { LeagueSettings } from '../shared/league-settings/league-settings';
+import { LeagueSettingsControlsComponent } from '../shared/league-settings-controls/league-settings-controls';
+import { StatWeightsEditorComponent } from '../shared/stat-weights-editor/stat-weights-editor';
 import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-indicator';
 import { YahooMarkComponent } from '../shared/yahoo-mark/yahoo-mark';
 import { isAllSkaters } from '../models/position.model';
@@ -136,8 +141,32 @@ export type PlannerView = 'free-agents' | 'roster' | 'schedules';
 /** Where the admins' demo opens: about the share of Yahoo leagues a streamer is found under. */
 export const DEMO_MAX_ROSTERED = 50;
 
+/** The league the demo scores by until an admin changes it: the app's defaults, nothing imported. */
+export function defaultDemoLeague(): LeagueSettings {
+  return {
+    scoringType: 'points',
+    statWeights: { ...DEFAULT_STAT_WEIGHTS },
+    activeScoringColumns: new Set<ScoringStatKey>(DEFAULT_SCORING_COLUMNS),
+    activeUtilityColumns: new Set<SkaterUtilityStatKey>(DEFAULT_UTILITY_COLUMNS),
+    leagueSize: DEFAULT_LEAGUE_SIZE,
+    rosterSlots: DEFAULT_ROSTER_SLOTS,
+    minGoalieGames: DEFAULT_MIN_GOALIE_GAMES,
+    yahooSync: null,
+    espnSync: null,
+    lastEspnLeagueId: null,
+  };
+}
+
 /** Why the free agents card has no league to read yet. */
 type LeaguePrompt = 'checking' | 'connect' | 'no-leagues' | 'pick-yahoo' | 'enter-espn';
+
+/** A slider's value as a whole percent, or null for anything that is not one. */
+function wholePercent(value: string): number | null {
+  const number = Number(value);
+  return value.trim() !== '' && Number.isFinite(number)
+    ? Math.min(100, Math.max(0, Math.round(number)))
+    : null;
+}
 
 function keepOffered(
   picked: ReadonlySet<ScoringStatKey>,
@@ -197,8 +226,10 @@ export interface PresetOption {
     HelpTipComponent,
     IconComponent,
     LeagueFieldComponent,
+    LeagueSettingsControlsComponent,
     LoadingIndicatorComponent,
     RosterTableComponent,
+    StatWeightsEditorComponent,
     TeamSchedulesComponent,
     TooltipDirective,
     YahooMarkComponent,
@@ -392,17 +423,41 @@ export class StreamerPlannerComponent {
     this.demoPicked.update((on) => !on);
   }
 
-  /** The highest Yahoo percent rostered the demo lists. */
+  /** The highest Yahoo percent rostered the demo lists: the slider's value once it is let go. */
   readonly maxRostered = signal(DEMO_MAX_ROSTERED);
 
-  /** A whole percent from 0 to 100, typed; anything else leaves the threshold as it was. */
+  /** The slider's value while it is being dragged, so the label follows the thumb; null at rest. */
+  private readonly dragged = signal<number | null>(null);
+
+  /** The percent the slider's label reads: the thumb while dragging, else the threshold in force. */
+  readonly rosteredShown = computed(() => this.dragged() ?? this.maxRostered());
+
+  dragMaxRostered(event: Event): void {
+    this.dragged.set(wholePercent((event.target as HTMLInputElement).value));
+  }
+
+  /** Let go: one request for the new threshold, not one for every pixel the thumb crossed. */
   setMaxRostered(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const typed = Number(input.value);
-    if (input.value.trim() !== '' && Number.isFinite(typed)) {
-      this.maxRostered.set(Math.min(100, Math.max(0, Math.round(typed))));
+    const percent = wholePercent((event.target as HTMLInputElement).value);
+    this.dragged.set(null);
+    if (percent !== null) {
+      this.maxRostered.set(percent);
     }
-    input.value = String(this.maxRostered());
+  }
+
+  /**
+   * The league the demo scores by. There is none to read settings from, so an admin sets them
+   * here, with the controls a board's toolbar uses: points or categories, which stats count, and
+   * for points what each is worth.
+   */
+  readonly demoLeague = signal<LeagueSettings>(defaultDemoLeague());
+
+  setDemoLeague(league: LeagueSettings): void {
+    this.demoLeague.set(league);
+  }
+
+  setDemoWeights(statWeights: Record<ScoringStatKey, number>): void {
+    this.demoLeague.update((league) => ({ ...league, statWeights }));
   }
 
   /** Whether ESPN leagues are offered at all: where Team Power Rankings offers them. */
@@ -552,8 +607,16 @@ export class StreamerPlannerComponent {
     () => this.freeAgentsResource.error() ?? this.settingsResource.error(),
   );
 
-  /** The league's own scoring, or the app's defaults until its settings land. */
+  /** The league's own scoring, or the app's defaults until its settings land; the demo's its own. */
   private readonly scoring = computed(() => {
+    if (this.demo()) {
+      const league = this.demoLeague();
+      return {
+        scoringType: league.scoringType,
+        statWeights: league.statWeights,
+        activeScoringColumns: league.activeScoringColumns,
+      };
+    }
     const settings = this.settingsResource.hasValue() ? this.settingsResource.value() : null;
     return {
       scoringType: settings?.scoringType ?? 'points',
@@ -683,6 +746,9 @@ export class StreamerPlannerComponent {
 
   /** The league, as the remembered focus and drops are filed under. */
   private readonly leagueKey = computed(() => {
+    if (this.demo()) {
+      return 'DEMO';
+    }
     const league = this.league();
     return league ? `${league.platform}:${league.leagueId}` : null;
   });
@@ -1108,7 +1174,7 @@ export class StreamerPlannerComponent {
    */
   readonly sort = computed(() => {
     const sort = this.sortPicked();
-    const about = ['name', 'score', 'perGame', 'games', 'toi'];
+    const about = ['name', 'score', 'perGame', 'games', 'toi', 'rostered'];
     return about.includes(sort.key) || this.categories().includes(sort.key as ScoringStatKey)
       ? sort
       : RANKED_ORDER;
