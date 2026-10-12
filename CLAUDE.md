@@ -659,7 +659,12 @@ doesn't replace them.
 
 - `.github/workflows/pr-checks.yml`: Node 22, generates the API client then runs every check
   listed under [Common commands](#common-commands) on PRs to `master`, and on each merge-queue
-  group (`merge_group`), which fires only once the repo belongs to an organization.
+  group (`merge_group`): master plus every PR queued ahead plus this one.
+- **`master` takes PRs through GitHub's merge queue** (since 2026-10-12, when the repo moved to
+  the `slapstat` organization). A PR no longer has to be up to date with `master`: once its
+  checks are green, auto-merge (or *Merge when ready*) puts it in the queue, which tests it on
+  top of everything ahead of it and squash-merges it. Never `gh pr update-branch` it for the
+  merge's sake.
 - **Copy is checked, not merely guided.** `npm run check:copy` reads `COPY-RULES.md` and fails
   on a new terminology, vocabulary or punctuation violation, ratcheted against `.github/copy-baseline.json`.
   It settles only what a script can settle: naming the same thing the same way, the banned
@@ -676,9 +681,10 @@ doesn't replace them.
 
 The full set lives in the monorepo root `CLAUDE.md`: input validation at every boundary,
 secrets only from env, one worktree per agent, and the merge procedure. In short — the web
-talks only to the BFF. Branch → push → PR → checks pass → **squash merge** to `master` (the
-PR title becomes the commit message; make it a proper `feat:`/`fix:` message and merge with
-an explicit `--subject`). No attribution trailers. Never merge a PR titled "wip"/"draft".
+talks only to the BFF. Branch → push → PR → checks pass → merge queue → **squash merge** to
+`master` (the PR title becomes the commit message, and the queue takes no `--subject`, so make
+the title a proper `feat:`/`fix:` message). No attribution trailers. Never queue a PR titled
+"wip"/"draft".
 
 Two that land differently on this side: the web's form validation (`maxLength` on the auth
 fields, mirroring the BFF's `@Size` caps) is a **UX convenience, not a security boundary** —
