@@ -4,8 +4,10 @@ name: Tag & release on merge to master
 # Conventional-Commit message (the squash commit is the PR title):
 #   feat: -> minor, fix:/chore:/others -> patch, a "BREAKING CHANGE:" footer -> major.
 # A "!" in the title (feat!:) does NOT bump major: the action parses with the default Angular
-# preset, which ignores it. The squash body carries the branch's commit messages, so a footer
-# there counts too.
+# preset, which ignores it. The squash body is the PR description (the repo's squash setting is
+# PR_BODY), so a footer counts there, not in the branch's own commit messages.
+# A merge-queue group that lands several PRs is one push: the action reads every commit since
+# the last tag, so one version covers them all.
 # The matching GitHub Release is created as a DRAFT with the generated changelog. Publishing
 # that draft is what promotes the version to production (see promote-to-prod.yml), so merging
 # only ever reaches staging — production never moves by itself.
