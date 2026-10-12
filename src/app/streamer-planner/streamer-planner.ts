@@ -157,6 +157,19 @@ export function defaultDemoLeague(): LeagueSettings {
   };
 }
 
+/**
+ * The free agents ranked, and what is needed to score a drop's games for a row once it is shown:
+ * each line the list was scored on, in the order scored, and the lines with those games played.
+ */
+interface RankedWeek {
+  readonly rows: RankedFreeAgent[];
+  readonly lines: ReadonlyMap<string, Projection>;
+  readonly liftedLines: ReadonlyMap<string, Projection>;
+  readonly input: Omit<RankingInput, 'projections'>;
+  /** The lifts scored so far, kept for the ranking they were scored against. */
+  readonly liftedScores: Map<string, number>;
+}
+
 /** Why the free agents card has no league to read yet. */
 type LeaguePrompt = 'checking' | 'connect' | 'no-leagues' | 'pick-yahoo' | 'enter-espn';
 
@@ -868,12 +881,12 @@ export class StreamerPlannerComponent {
    * picked, only the kinds that score in them, ranked by those alone: a goalie has nothing to give
    * in a skater category, nor a skater in a goalie one.
    */
-  private rankedBy(focus: ReadonlySet<ScoringStatKey>): RankedFreeAgent[] {
+  private rankedBy(focus: ReadonlySet<ScoringStatKey>): RankedWeek {
     const week = this.freeAgentsResource.hasValue() ? this.freeAgentsResource.value() : null;
+    const input = this.rankingInput(focus);
     if (!week) {
-      return [];
+      return { rows: [], lines: new Map(), liftedLines: new Map(), input, liftedScores: new Map() };
     }
-    const scoring = this.scoring();
     const teams = this.teamsByKey();
     const counted = this.counted();
     const everyNightCounted = this.everyNightCounted();
@@ -956,45 +969,12 @@ export class StreamerPlannerComponent {
       lines.set(player.playerId, line);
       return line;
     });
-    const input = this.rankingInput(focus);
     const scored = this.ranking.rankOverall({ ...input, projections });
     const scoreOf = this.scoreOf();
-    // Each lifted line scored in place of its own, the rest of the list as it stands: what the
-    // games would add to his score as the list reads it. In a points league a line's score is
-    // its own whoever else is listed, so one run scores them all; in a category league a z-score
-    // is read against the pool, and scored all together, each lifted line shifted it for the
-    // others, so a player given one game more read as losing a point while everyone else was
-    // given two. A run a player keeps the pool his own, a line of three hundred apart.
-    const liftedScores = new Map<number, number>();
-    const liftedRuns =
-      scoring.scoringType === 'points'
-        ? [[...liftedLines.keys()]]
-        : [...liftedLines.keys()].map((id) => [id]);
-    for (const ids of liftedRuns) {
-      if (ids.length === 0) {
-        continue;
-      }
-      const swapped = new Set(ids);
-      const lifted = this.ranking.rankOverall({
-        ...input,
-        projections: players.map((player) =>
-          swapped.has(player.playerId)
-            ? liftedLines.get(player.playerId)!
-            : lines.get(player.playerId)!,
-        ),
-      });
-      for (const entry of lifted) {
-        const owner = byPlayerId.get(entry.projection.playerId);
-        if (owner && swapped.has(owner.playerId)) {
-          liftedScores.set(entry.projection.playerId, scoreOf(entry));
-        }
-      }
-    }
     const ranked: RankedFreeAgent[] = [];
     for (const [index, entry] of scored.entries()) {
       const player = byPlayerId.get(entry.projection.playerId);
       if (player) {
-        const liftedLine = liftedLines.get(player.playerId);
         ranked.push({
           player,
           line: lines.get(player.playerId) ?? player.projection,
@@ -1002,17 +982,61 @@ export class StreamerPlannerComponent {
           rank: index + 1,
           games: games.get(player.playerId) ?? player.expectedGames,
           dropGames: dropGames.get(player.playerId),
-          lifted: liftedLine
-            ? { line: liftedLine, score: liftedScores.get(entry.projection.playerId) ?? 0 }
-            : undefined,
         });
       }
     }
-    return ranked;
+    return { rows: ranked, lines, liftedLines, input, liftedScores: new Map() };
   }
 
+  private readonly rankedWeek = computed(() => this.rankedBy(this.focus()));
+
   /** The best pickups, by the categories picked: what the list reads. */
-  readonly ranked = computed(() => this.rankedBy(this.focus()));
+  readonly ranked = computed(() => this.rankedWeek().rows);
+
+  /**
+   * The rows given, each with what a drop's games would put on his score, where they add any.
+   * Scored only for the rows on screen: in a category league each is a ranking of the whole list
+   * of its own, a few milliseconds each, and scored for every player at once they held up every
+   * tick, pill and box on the page by a second.
+   *
+   * Each lifted line is scored in place of its own, the rest of the list as it stands: what the
+   * games would add to his score as the list reads it. In a points league a line's score is its
+   * own whoever else is listed, so one run scores them all; in a category league a z-score is read
+   * against the pool, and scored all together, each lifted line shifted it for the others, so a
+   * player given one game more read as losing a point while everyone else was given two. A run a
+   * player keeps the pool his own.
+   */
+  private withLifts(rows: readonly RankedFreeAgent[]): RankedFreeAgent[] {
+    const { lines, liftedLines, input, liftedScores } = this.rankedWeek();
+    const unscored = rows
+      .map((row) => row.player.playerId)
+      .filter((id) => liftedLines.has(id) && !liftedScores.has(id));
+    const scoreOf = this.scoreOf();
+    const runs = input.scoringType === 'points' ? [unscored] : unscored.map((id) => [id]);
+    for (const ids of runs) {
+      if (ids.length === 0) {
+        continue;
+      }
+      const owners = new Map(ids.map((id) => [liftedLines.get(id)!, id]));
+      const swapped = new Map(ids.map((id) => [id, liftedLines.get(id)!]));
+      const lifted = this.ranking.rankOverall({
+        ...input,
+        projections: [...lines].map(([id, line]) => swapped.get(id) ?? line),
+      });
+      for (const entry of lifted) {
+        const owner = owners.get(entry.projection);
+        if (owner !== undefined) {
+          liftedScores.set(owner, scoreOf(entry));
+        }
+      }
+    }
+    return rows.map((row) => {
+      const line = liftedLines.get(row.player.playerId);
+      return line
+        ? { ...row, lifted: { line, score: liftedScores.get(row.player.playerId) ?? 0 } }
+        : row;
+    });
+  }
 
   /** What the engine scores a week's line by: the league's scoring, over the categories picked. */
   private rankingInput(focus: ReadonlySet<ScoringStatKey>): Omit<RankingInput, 'projections'> {
@@ -1217,7 +1241,7 @@ export class StreamerPlannerComponent {
   private readonly firstShown = computed(() => this.currentPage() * this.pageSize());
 
   readonly visible = computed(() =>
-    this.sorted().slice(this.firstShown(), this.firstShown() + this.pageSize()),
+    this.withLifts(this.sorted().slice(this.firstShown(), this.firstShown() + this.pageSize())),
   );
 
   /**

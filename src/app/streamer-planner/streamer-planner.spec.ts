@@ -14,6 +14,7 @@ import { ScheduleStrengthResponse } from '../api/models/schedule-strength-respon
 import { TeamSchedule } from '../api/models/team-schedule';
 import { GOALIE_SCORING_STAT_KEYS, SKATER_SCORING_STAT_KEYS } from '../models/stat-key.model';
 import { AuthService } from '../services/auth.service';
+import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { EspnService } from '../services/espn.service';
 import {
   FreeAgentWeek,
@@ -956,13 +957,15 @@ describe('StreamerPlannerComponent', () => {
         const skaters = planner.ranked().filter((row) => row.line.type === 'skater');
         expect(skaters.map((row) => row.dropGames)).toEqual([2, 2]);
         expect(skaters.map((row) => row.score)).toEqual([0, 0]);
-        // What the two games would give him: his line over them, scored, beside the bare one.
-        for (const row of skaters) {
+        // What the two games would give him: his line over them, scored, beside the bare one. Only
+        // for a row on screen, since each is a ranking of the whole list of its own.
+        expect(skaters.every((row) => row.lifted === undefined)).toBe(true);
+        for (const row of planner.visible().filter((shown) => shown.line.type === 'skater')) {
           expect(row.lifted?.score).toBeGreaterThan(0);
           expect(row.lifted?.line.stats.utility.gp).toBeGreaterThan(row.line.stats.utility.gp ?? 0);
         }
         // The goalie's G seat is open as it stands: nothing for a drop to add.
-        const goalie = planner.ranked().find((row) => row.line.type === 'goalie');
+        const goalie = planner.visible().find((row) => row.line.type === 'goalie');
         expect(goalie?.dropGames).toBe(0);
         expect(goalie?.lifted).toBeUndefined();
 
@@ -982,7 +985,7 @@ describe('StreamerPlannerComponent', () => {
         };
         const fixture = await render();
         const skaters = fixture.point.componentInstance
-          .ranked()
+          .visible()
           .filter((row) => row.line.type === 'skater');
 
         expect(skaters).toHaveLength(2);
@@ -990,6 +993,40 @@ describe('StreamerPlannerComponent', () => {
           // Games added to a line never cost it against a pool the line does not move.
           expect(row.lifted!.score).toBeGreaterThan(row.score);
         }
+      });
+
+      // A z-score lift is a ranking of the whole list of its own; scored for everyone at once
+      // they held up every tick on the page by a second.
+      it('scores what a drop would add only for the rows on screen, and once each', async () => {
+        settings = {
+          ...SETTINGS,
+          scoringType: 'category',
+          statWeights: {},
+          activeScoringColumns: ['goals', 'assists'],
+        };
+        const fixture = await render();
+        const planner = fixture.point.componentInstance;
+        const rankOverall = vi.spyOn(
+          fixture.point.injector.get(ProjectionRankingService),
+          'rankOverall',
+        );
+        planner.pageSize.set(1);
+        // Ranked afresh, with nothing scored yet: the first render scored a page of 25.
+        planner.toggleCountDrops();
+        planner.toggleCountDrops();
+
+        expect(planner.ranked().every((row) => row.lifted === undefined)).toBe(true);
+        expect(rankOverall).toHaveBeenCalledTimes(1);
+        rankOverall.mockClear();
+        expect(planner.visible()).toHaveLength(1);
+        expect(planner.visible()[0].lifted).toBeDefined();
+        expect(rankOverall).toHaveBeenCalledTimes(1);
+
+        planner.goToPage(1);
+        planner.visible();
+        planner.goToPage(0);
+        expect(planner.visible()[0].lifted).toBeDefined();
+        expect(rankOverall).toHaveBeenCalledTimes(2);
       });
 
       it('counts the games a drop makes room for, for everyone at once, from a second tick box', async () => {
@@ -1009,7 +1046,7 @@ describe('StreamerPlannerComponent', () => {
         expect(skaters.map((row) => row.games)).toEqual([2, 2]);
         expect(skaters.map((row) => row.dropGames)).toEqual([2, 2]);
         expect(skaters.every((row) => row.score > 0)).toBe(true);
-        expect(skaters.every((row) => row.lifted === undefined)).toBe(true);
+        expect(planner.visible().every((row) => row.lifted === undefined)).toBe(true);
         // Ranked on them: the best Oiler leads the list again.
         expect(planner.ranked()[0].player.name).toBe('Top Scorer');
 
