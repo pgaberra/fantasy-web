@@ -83,6 +83,52 @@
   }
 }
 
+/* Side by side, the two groups no longer share columns, so each wraps its own fields; the rule
+   between them turns upright. Only where both fit: narrower, they stack as above. */
+:host {
+  display: block;
+}
+
+:host(.side-by-side) {
+  container: weights / inline-size;
+}
+
+@container weights (min-width: 36rem) {
+  .weight-groups {
+    flex-direction: row;
+    gap: var(--space-5);
+  }
+
+  .weight-group {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .weight-group + .weight-group {
+    padding-top: 0;
+    padding-left: var(--space-5);
+    border-top: none;
+    border-left: 1px solid var(--color-border);
+  }
+
+  .weights {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .weight {
+    width: 3.5rem;
+  }
+}
+
+@media (pointer: coarse) {
+  @container weights (min-width: 36rem) {
+    .weight {
+      width: 4rem;
+    }
+  }
+}
+
 .weights-empty {
   margin: 0;
   font-size: var(--text-sm);
