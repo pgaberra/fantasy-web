@@ -270,6 +270,27 @@ span.score {
   .free-agents-table :is(th, td):has(+ .toi-col) {
     padding-right: var(--space-3);
   }
+
+  /* On a phone the player, pinned, took half the screen at the longest name's width and hid the
+     score under its edge once the stats were scrolled in. Capped at a third instead: a smaller
+     crest, and a name that will not fit goes on two lines. The room goes to the numbers. */
+  .free-agents-table {
+    --player-logo-size: 20px;
+  }
+
+  .player-cell {
+    max-width: 8.5rem;
+  }
+
+  .player-name {
+    overflow-wrap: break-word;
+    white-space: normal;
+  }
+
+  /* The injury tag drops under a name it has no room beside, rather than squeezing it. */
+  .player-name-line {
+    flex-wrap: wrap;
+  }
 }
 
 /* The categories, a column each: narrow, since a week's number is three or four characters, and
