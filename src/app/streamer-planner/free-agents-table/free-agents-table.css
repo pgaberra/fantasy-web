@@ -143,12 +143,6 @@
   flex-wrap: nowrap;
 }
 
-.player-rostered {
-  color: var(--color-text-muted);
-  font-size: var(--text-xs);
-  white-space: nowrap;
-}
-
 .player-name-line {
   align-items: center;
   display: flex;
@@ -249,7 +243,8 @@ span.score {
   color: var(--color-text-muted);
 }
 
-.free-agents-table td.toi-col {
+.free-agents-table td.toi-col,
+.free-agents-table td.rostered-col {
   color: var(--color-text-muted);
 }
 

@@ -525,6 +525,28 @@ describe('FreeAgentsTableComponent', () => {
 
     expect(ngMocks.findAll(fixture, '.stat-col--focus, .stat-col--muted')).toHaveLength(0);
   });
+
+  describe('percent rostered', () => {
+    it("has no such column on a league's list", () => {
+      const fixture = render();
+
+      expect(ngMocks.findAll(fixture, '.rostered-col')).toHaveLength(0);
+    });
+
+    it('is a column of its own beside the games on the demo list', () => {
+      const rows: RankedFreeAgent[] = [
+        { ...SKATER, player: { ...SKATER_PLAYER, percentRostered: 41 } },
+        { ...SECOND_SKATER, player: { ...SECOND_SKATER.player, percentRostered: 3 } },
+      ];
+      const fixture = render('points', CATEGORIES, rows);
+
+      const heads = ngMocks.findAll(fixture, 'thead th').map((cell) => ngMocks.formatText(cell));
+      expect(heads.indexOf('% Rost.')).toBe(heads.indexOf('GP') + 1);
+      expect(
+        ngMocks.findAll(fixture, 'td.rostered-col').map((cell) => ngMocks.formatText(cell)),
+      ).toEqual(['41%', '3%']);
+    });
+  });
 });
 
 describe('FreeAgentsTableComponent headings', () => {

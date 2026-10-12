@@ -583,7 +583,8 @@ export function lineColumns(
 // --- Sorting the list ----------------------------------------------------------------------------
 
 /** A column the free agents can be sorted by: one about the player, or a category of his line. */
-export type FreeAgentSortKey = 'name' | 'score' | 'perGame' | 'games' | 'toi' | ScoringStatKey;
+export type FreeAgentSortKey =
+  'name' | 'score' | 'perGame' | 'games' | 'toi' | 'rostered' | ScoringStatKey;
 
 export interface FreeAgentSort {
   readonly key: FreeAgentSortKey;
@@ -606,7 +607,8 @@ export function nextSort(current: FreeAgentSort, key: FreeAgentSortKey): FreeAge
   if (current.key === key) {
     return { key, descending: !current.descending };
   }
-  const firstWay = key === 'score' || key === 'perGame' || key === 'games' || key === 'toi';
+  const firstWay =
+    key === 'score' || key === 'perGame' || key === 'games' || key === 'toi' || key === 'rostered';
   return { key, descending: firstWay || defaultSortDirection(key) === 'desc' };
 }
 
@@ -630,6 +632,8 @@ export function sortValue(
       return row.player.projection.type === 'skater'
         ? (row.player.projection.stats.utility.toiPerGame ?? null)
         : null;
+    case 'rostered':
+      return row.player.percentRostered ?? null;
     default: {
       const own: readonly string[] =
         row.line.type === 'skater' ? SKATER_SCORING_STAT_KEYS : GOALIE_SCORING_STAT_KEYS;
