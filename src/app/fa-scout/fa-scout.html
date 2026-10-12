@@ -91,7 +91,7 @@
           }
           <app-help-tip
             label="How your players are ranked"
-            text="Your players scored the same way as the available ones: the AI projection for the rest of the season, by your league's settings. Every player on your team, the lowest first. Players on injured reserve are left out, since dropping them frees no roster spot."
+            text="Your players scored the same way as the available ones: the AI projection for the rest of the season, by your league's settings. Every player on your team, the lowest first. Players on injured reserve are marked, since dropping them frees no roster spot."
           />
         </h3>
         @switch (teamStatus()) {
@@ -136,39 +136,34 @@
                 }
               </ul>
             }
-            @if (candidates().length === 0) {
-              <p class="drops-note">None of your {{ shown() }} can be weighed against a pickup.</p>
+            @if (roster().length === 0) {
+              <p class="drops-note">None of your {{ shown() }} has a projection.</p>
             } @else {
               <ol class="drops-list">
-                @for (candidate of candidates(); track candidate.row.player.playerId) {
+                @for (row of roster(); track row.player.playerId) {
                   <li class="drop">
                     <span class="drop-player">
                       <app-team-logo
                         class="drop-logo"
-                        [team]="candidate.row.player.teamAbbrev"
-                        [alt]="candidate.row.player.teamAbbrev ?? ''"
+                        [team]="row.player.teamAbbrev"
+                        [alt]="row.player.teamAbbrev ?? ''"
                       />
-                      <span class="drop-name">{{ candidate.row.player.name }}</span>
-                      <app-position-chips [positions]="candidate.row.player.positions" />
-                      @if (candidate.row.player.out) {
+                      <span class="drop-name">{{ row.player.name }}</span>
+                      <app-position-chips [positions]="row.player.positions" />
+                      @if (row.player.reserve) {
+                        <span class="drop-tag drop-tag--out">{{ row.player.slot ?? 'IR' }}</span>
+                      } @else if (row.player.out) {
                         <span class="drop-tag drop-tag--out">{{
-                          candidate.row.player.injuryStatus ?? 'Out'
+                          row.player.injuryStatus ?? 'Out'
                         }}</span>
                       }
                     </span>
-                    <span class="drop-score">{{ formatScore(candidate.row.score) }}</span>
+                    <span class="drop-score">{{ formatScore(row.score) }}</span>
                   </li>
                 }
               </ol>
-              @if (keptOut().reserve > 0 || keptOut().unprojected > 0) {
-                <p class="drops-note">
-                  @if (keptOut().reserve > 0) {
-                    {{ keptOut().reserve }} on injured reserve left out.
-                  }
-                  @if (keptOut().unprojected > 0) {
-                    {{ keptOut().unprojected }} without a projection left out.
-                  }
-                </p>
+              @if (unprojected() > 0) {
+                <p class="drops-note">{{ unprojected() }} without a projection left out.</p>
               }
             }
           }
