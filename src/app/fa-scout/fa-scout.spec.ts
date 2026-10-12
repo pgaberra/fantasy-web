@@ -284,29 +284,22 @@ describe('FaScoutComponent', () => {
     expect(myTeam).toHaveBeenCalledWith('YAHOO', '465.l.9');
   });
 
-  it('suggests the lowest scorers to drop, leaving injured reserve out', async () => {
+  it('lists every skater on the team, lowest first, leaving injured reserve out', async () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
-    expect(page.candidates().map((candidate) => candidate.row.player.playerId)).toEqual([
-      '203',
-      '202',
-      '210',
-    ]);
+    const listed = page.candidates().map((candidate) => candidate.row.player.playerId);
+    expect(listed.slice(0, 3)).toEqual(['203', '202', '210']);
+    expect(listed).toHaveLength(11);
+    expect(listed.at(-1)).toBe('201');
+    expect(ngMocks.findAll(fixture, '.drop')).toHaveLength(11);
     expect(page.keptOut().reserve).toBe(1);
     const text = ngMocks.formatText(fixture);
     expect(text).toContain('Skaters to drop from Slapshots');
     expect(text).toContain('1 on injured reserve left out.');
-  });
-
-  it('says which drops a pickup must play the same position to make', async () => {
-    const fixture = await render();
-    const page = fixture.point.componentInstance;
-
-    const [utilC, , lastD] = page.candidates();
-    // The weakest C starts at Util, which any skater can fill.
-    expect(page.needsText(utilC)).toBe('Any pickup');
-    expect(page.needsText(lastD)).toBe('Only for a D');
+    // Which pickup each drop needs is held back for now.
+    expect(text).not.toContain('Any pickup');
+    expect(text).not.toContain('Only for a');
   });
 
   it('pairs each pickup with the player to drop for him and what the swap gains', async () => {
@@ -321,8 +314,9 @@ describe('FaScoutComponent', () => {
     // A depth C beats the spare C too.
     const depth = page.swaps().get('1');
     expect(depth?.kind === 'drop' && depth.drop.player.playerId).toBe('203');
+    // The Swap column is off for now: the swaps only drive "Upgrades only".
     const table = ngMocks.find(fixture, ScoutTableComponent);
-    expect(ngMocks.input(table, 'swaps')).toBe(page.swaps());
+    expect(ngMocks.input(table, 'swaps')).toBeUndefined();
   });
 
   it('narrows to the pickups that beat the player they would replace', async () => {
@@ -355,7 +349,6 @@ describe('FaScoutComponent', () => {
 
     expect(ngMocks.formatText(fixture)).toContain('You have no team in this league');
     expect(page.ranked()).toHaveLength(21);
-    expect(ngMocks.input(ngMocks.find(fixture, ScoutTableComponent), 'swaps')).toBeNull();
   });
 
   it('keeps the list when the team cannot be read, and offers to try again', async () => {

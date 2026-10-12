@@ -319,9 +319,6 @@ export class FaScoutComponent {
     return teamRoom(team, settings?.rosterSlots ?? null, settings?.reserveSlots ?? {});
   });
 
-  /** Whether the drops are judged against the league's lineup, or on score alone. */
-  readonly lineupKnown = computed(() => this.seats().length > 0);
-
   readonly candidates = computed<readonly DropCandidate[]>(() =>
     dropCandidates(this.teamRows(), this.seats(), this.room()),
   );
@@ -451,30 +448,6 @@ export class FaScoutComponent {
       return '';
     }
     return score.toFixed(this.scoringType() === 'points' ? 1 : 2);
-  }
-
-  /** "Any pickup", "Only for a D", "Only for a C or LW", "Needed in your lineup". */
-  needsText(candidate: DropCandidate): string {
-    if (!this.lineupKnown() || candidate.anyPickup) {
-      return 'Any pickup';
-    }
-    if (candidate.needs.length === 0) {
-      return 'Needed in your lineup';
-    }
-    return `Only for a ${candidate.needs.join(' or ')}`;
-  }
-
-  needsTip(candidate: DropCandidate): string {
-    if (!this.lineupKnown()) {
-      return "Your league's lineup isn't known yet, so this is on the projection alone";
-    }
-    if (candidate.anyPickup) {
-      return 'Your lineup stays as full without him, whoever you pick up';
-    }
-    if (candidate.needs.length === 0) {
-      return 'Every player who could replace him leaves a slot in your lineup empty';
-    }
-    return `Without him a ${candidate.needs.join(' or ')} slot in your lineup goes empty, so drop him only for a player who plays there`;
   }
 
   goToPage(page: number): void {
