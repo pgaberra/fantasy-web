@@ -592,17 +592,6 @@
             } @else if (roster().length === 0) {
               <p class="empty">None of your players has a projection for these game days.</p>
             } @else {
-              <!-- The finding, said once over the table: how many sit the whole stretch. -->
-              @if (benchedAll() > 0) {
-                <p class="roster-note roster-note--bench">
-                  <app-icon name="alert-triangle" [size]="16" />
-                  <span>
-                    {{ benchedAll() }} of your players
-                    {{ benchedAll() === 1 ? 'has' : 'have' }} games on these game days but no start
-                    in your best lineup.
-                  </span>
-                </p>
-              }
               <app-roster-table
                 [rows]="sortedRoster()"
                 [nights]="countedDays()"
