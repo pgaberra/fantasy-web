@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { ProjectionCalculationService } from './projection-calculation.service';
+import { ProjectionCalculationService, ZScoreOrigin } from './projection-calculation.service';
 import { Projection, ScoredProjection, ScoringType, StatWeights } from '../models/projection.model';
 import {
   GOALIE_SCORING_STAT_KEYS,
@@ -27,6 +27,11 @@ export interface RankingInput {
    * which is what every caller wanted before a projection could carry a hand ranking.
    */
   manualRanking?: ManualRanking;
+  /**
+   * Where a category league's nought sits (see {@link ZScoreOrigin}). Left out, at the pool's
+   * average, which is what a season board ranks by.
+   */
+  zScoreOrigin?: ZScoreOrigin;
 }
 
 /**
@@ -94,6 +99,7 @@ export class ProjectionRankingService {
       input.activeScoringColumns,
       skaterPoolSize,
       goaliePoolSize,
+      input.zScoreOrigin,
     );
     rounded.forEach((projection, index) => {
       byPlayerId.set(projection.playerId, zContributions[index]);
@@ -126,6 +132,7 @@ export class ProjectionRankingService {
       input.activeScoringColumns,
       skaterPoolSize,
       goaliePoolSize,
+      input.zScoreOrigin,
     );
 
     const isCategory = input.scoringType === 'category';

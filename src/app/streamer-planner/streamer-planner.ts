@@ -1028,6 +1028,11 @@ export class StreamerPlannerComponent {
       // every goalie on the page.
       minGoalieGames: 0,
       decimalSettings: WEEK_DECIMALS,
+      // Nought is a week with nothing in it, not the pool's average week: measured from the
+      // average, a defenceman with one start read as hurting the team he starts for, a player
+      // with none scored lower still, and a score a game moved with how many games it was
+      // divided by.
+      zScoreOrigin: 'empty',
     };
   }
 

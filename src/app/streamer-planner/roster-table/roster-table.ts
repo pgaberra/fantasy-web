@@ -115,8 +115,8 @@ export class RosterTableComponent {
 
   /**
    * A player who is out (on injured reserve, hurt or suspended) has no week to score: a dash in
-   * every figure, not the score of an empty line, which in categories reads as the worst of the
-   * roster. The nights keep their no-game dots, which already say he plays none of them.
+   * every figure, not the nought of an empty line, which would read as a player who starts but
+   * adds nothing. The nights keep their no-game dots, which already say he plays none of them.
    */
   score(row: RosterRow): string {
     if (row.player.out) {
