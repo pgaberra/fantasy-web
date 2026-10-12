@@ -112,7 +112,14 @@
     </thead>
     <tbody>
       @for (entry of entries(); track entry.row.player.playerId) {
-        <tr class="player-row" [class.player-row--benched]="benchedAll(entry.row)">
+        <!-- A player on injured reserve, or out, fills no slot this stretch: his row steps back
+             and every figure is a dash, as the Power Rankings fade a player outside the count,
+             rather than a score that reads as the week's worst. -->
+        <tr
+          class="player-row"
+          [class.player-row--benched]="benchedAll(entry.row)"
+          [class.player-row--out]="entry.row.player.out"
+        >
           <th scope="row" class="player-col">
             <span class="player-cell">
               <app-team-logo
@@ -137,13 +144,18 @@
           <td class="num rate-col">{{ perGame(entry.row) }}</td>
           <td class="num starts-col">
             <!-- Fewer starts than games is the finding: set off in the warning's ink, and none
-                 at all in red, since he gives nothing this week whatever his line says. -->
-            <span
-              class="starts"
-              [class.starts--some]="benchedSome(entry.row)"
-              [class.starts--none]="benchedAll(entry.row)"
-              >{{ starts(entry.row) }}</span
-            >
+                 at all in red, since he gives nothing this week whatever his line says. A player
+                 who is out has no starts to lose: a dash, like the rest of his row. -->
+            @if (entry.row.player.out) {
+              {{ notHis }}
+            } @else {
+              <span
+                class="starts"
+                [class.starts--some]="benchedSome(entry.row)"
+                [class.starts--none]="benchedAll(entry.row)"
+                >{{ starts(entry.row) }}</span
+              >
+            }
           </td>
           <td class="num games-col">{{ games(entry.row) }}</td>
           @for (night of entry.row.nights; track night.date; let first = $first) {
@@ -183,7 +195,7 @@
               [class.nil]="cell && isNil(cell)"
               [class.not-his]="entry.notHis[$index]"
             >
-              @if (entry.notHis[$index]) {
+              @if (entry.row.player.out || entry.notHis[$index]) {
                 <span>{{ notHis }}</span>
               } @else {
                 {{ cell?.value }}
