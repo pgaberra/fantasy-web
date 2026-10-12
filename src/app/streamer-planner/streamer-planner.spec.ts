@@ -1197,14 +1197,11 @@ describe('StreamerPlannerComponent', () => {
           // The third C starts both nights, in the Util spot: a goal at 3 apiece.
           expect(lowestStarter).toMatchObject({ score: 3, games: 2, clubGames: 2 });
           expect(lowestStarter.nights.map((night) => night.status)).toEqual(['start', 'start']);
-          expect(planner.benchedAll()).toBe(1);
           expect(planner.unprojected()).toBe(0);
 
           planner.setView('roster');
           fixture.detectChanges();
-          expect(ngMocks.formatText(ngMocks.find(fixture, '.roster-note--bench'))).toContain(
-            '1 of your players has games on these game days but no start',
-          );
+          expect(ngMocks.findAll(fixture, '.roster-note')).toHaveLength(0);
           const table = ngMocks.findInstance(RosterTableComponent);
           expect(table.rows().map((row) => row.player.name)[0]).toBe('Mine 16');
           expect(table.nights().map((day) => day.date)).toEqual(['2026-10-13', '2026-10-15']);

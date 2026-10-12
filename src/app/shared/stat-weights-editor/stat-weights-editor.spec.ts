@@ -43,6 +43,18 @@ describe('StatWeightsEditorComponent', () => {
     expect(headings).toEqual(['Skaters']);
   });
 
+  it('puts the goalies beside the skaters only where it is asked to', () => {
+    const stacked: HTMLElement = render(['goals', 'w']).point.nativeElement;
+    const beside: HTMLElement = MockRender(StatWeightsEditorComponent, {
+      statWeights: { ...DEFAULT_STAT_WEIGHTS },
+      activeScoringColumns: new Set<ScoringStatKey>(['goals', 'w']),
+      sideBySide: true,
+    }).point.nativeElement;
+
+    expect(stacked.classList.contains('side-by-side')).toBe(false);
+    expect(beside.classList.contains('side-by-side')).toBe(true);
+  });
+
   it('selects the weight in a field that takes focus, so typing replaces it', () => {
     const component = render(['goals']).point.componentInstance;
     const field = document.createElement('input');

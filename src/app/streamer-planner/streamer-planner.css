@@ -208,10 +208,14 @@
 
 /* --- The admins' demo ------------------------------------------------------------------------- */
 
-.demo-controls {
+.demo-controls,
+.demo-settings {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+}
+
+.demo-controls {
   margin-bottom: var(--space-4);
 }
 
@@ -239,6 +243,28 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+/* Stacked, the slider, the scoring switch and two rows of weights made a tall narrow column with
+   the card's right half empty. Wide enough, the weights take that half: the slider sets the
+   settings column's width, and a rule parts the two. */
+@media (min-width: 900px) {
+  .demo-controls {
+    align-items: flex-start;
+    flex-direction: row;
+    gap: var(--space-6);
+  }
+
+  .demo-settings {
+    flex: 0 0 22rem;
+  }
+
+  .demo-weights {
+    border-left: 1px solid var(--color-border);
+    flex: 1 1 0;
+    min-width: 0;
+    padding-left: var(--space-6);
+  }
 }
 
 /* ESPN's league is a form, several times the height of the dates beside it: with the strip under
@@ -418,8 +444,7 @@
   color: var(--color-primary-contrast);
 }
 
-/* A line over or under the roster: the count who sit the whole stretch, in the warning's ink
-   with its mark, and the count the model has no line for, in the muted grey of a footnote. */
+/* A line under the roster: the count the model has no line for, in the muted grey of a footnote. */
 .roster-note {
   align-items: flex-start;
   color: var(--color-text-muted);
@@ -427,16 +452,6 @@
   font-size: var(--text-sm);
   gap: var(--space-2);
   margin: var(--space-3) 0 0;
-}
-
-.roster-note--bench {
-  color: var(--color-warning-text);
-  margin: 0 0 var(--space-3);
-}
-
-.roster-note--bench app-icon {
-  flex: none;
-  margin-top: 0.1rem;
 }
 
 /* Under the list: which places are on screen, the page size, and the way to the other pages. */

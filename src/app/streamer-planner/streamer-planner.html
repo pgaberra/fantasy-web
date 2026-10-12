@@ -306,42 +306,48 @@
         }
       </div>
       <!-- The demo has no league to take its scoring or its players from, so both are set here:
-           the threshold the pool is cut at, and the league the list is ranked by. -->
+           the threshold the pool is cut at, and the league the list is ranked by. On a wide
+           screen the points per stat stand beside the two, not under them. -->
       @if (demo()) {
         <div class="demo-controls">
-          <div class="demo-threshold" role="group" aria-labelledby="planner-rostered-label">
-            <span id="planner-rostered-label" class="group-label"
-              >Max % rostered in Yahoo:
-              <span class="demo-threshold-value">{{ rosteredShown() }}%</span></span
-            >
-            <input
-              class="demo-slider"
-              type="range"
-              min="0"
-              max="100"
-              step="1"
-              [value]="maxRostered()"
-              aria-labelledby="planner-rostered-label"
-              (input)="dragMaxRostered($event)"
-              (change)="setMaxRostered($event)"
-            />
+          <div class="demo-settings">
+            <div class="demo-threshold" role="group" aria-labelledby="planner-rostered-label">
+              <span id="planner-rostered-label" class="group-label"
+                >Max % rostered in Yahoo:
+                <span class="demo-threshold-value">{{ rosteredShown() }}%</span></span
+              >
+              <input
+                class="demo-slider"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                [value]="maxRostered()"
+                aria-labelledby="planner-rostered-label"
+                (input)="dragMaxRostered($event)"
+                (change)="setMaxRostered($event)"
+              />
+            </div>
+            <div class="demo-league" role="group" aria-labelledby="planner-demo-league-label">
+              <span id="planner-demo-league-label" class="group-label">Scoring</span>
+              <app-league-settings-controls
+                [settings]="demoLeague()"
+                [sizing]="false"
+                [importing]="false"
+                (settingsChange)="setDemoLeague($event)"
+              />
+            </div>
           </div>
-          <div class="demo-league" role="group" aria-labelledby="planner-demo-league-label">
-            <span id="planner-demo-league-label" class="group-label">Scoring</span>
-            <app-league-settings-controls
-              [settings]="demoLeague()"
-              [sizing]="false"
-              [importing]="false"
-              (settingsChange)="setDemoLeague($event)"
-            />
-            @if (demoLeague().scoringType === 'points') {
+          @if (demoLeague().scoringType === 'points') {
+            <div class="demo-weights" role="group" aria-label="Points per stat">
               <app-stat-weights-editor
                 [statWeights]="demoLeague().statWeights"
                 [activeScoringColumns]="demoLeague().activeScoringColumns"
+                [sideBySide]="true"
                 (statWeightsChange)="setDemoWeights($event)"
               />
-            }
-          </div>
+            </div>
+          }
         </div>
       }
       <!-- Skaters and goalies are one list, narrowed by any number of positions at once. "All" is
@@ -545,7 +551,7 @@
           <app-icon name="user-minus" />Lowest Contributors
           <app-help-tip
             label="How your players are ranked"
-            text="Your players scored the same way as the free agents, over the selected game days, lowest first. Starts counts the games each would play with your best lineup set every night: a player with games but no starts sits behind better players at his positions, and adds nothing this week."
+            text="Your players ranked by how much they’re expected to contribute to your team over the selected period."
           />
         </h2>
       </div>
@@ -592,17 +598,6 @@
             } @else if (roster().length === 0) {
               <p class="empty">None of your players has a projection for these game days.</p>
             } @else {
-              <!-- The finding, said once over the table: how many sit the whole stretch. -->
-              @if (benchedAll() > 0) {
-                <p class="roster-note roster-note--bench">
-                  <app-icon name="alert-triangle" [size]="16" />
-                  <span>
-                    {{ benchedAll() }} of your players
-                    {{ benchedAll() === 1 ? 'has' : 'have' }} games on these game days but no start
-                    in your best lineup.
-                  </span>
-                </p>
-              }
               <app-roster-table
                 [rows]="sortedRoster()"
                 [nights]="countedDays()"
