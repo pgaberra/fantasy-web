@@ -13,6 +13,10 @@ import { HotPlayersTableComponent } from './hot-players-table/hot-players-table'
 import { HotPlayer } from '../services/whos-hot.service';
 import { Player } from '../models/player.model';
 import { GoalieStats } from '../models/projection.model';
+import { FREE_PRESET } from './game-range-selector/game-range-selector';
+
+/** The league a visit has synced, which the board waits for before it draws anything. */
+const LEAGUE = { leagueName: 'HHL', leagueKey: '465.l.9', syncedAt: 't' };
 
 /** Longer than the component's settle delay, so a settled range has had its chance to fetch. */
 const AFTER_THE_DRAG_MS = 400;
@@ -99,6 +103,21 @@ describe('WhosHotComponent', () => {
   /** What the last visit left in this browser, or nothing on a first visit. */
   let stored: WhosHotSettings | null = null;
 
+  /**
+   * Whether that visit had synced a league. Most tests are about the board, which is only drawn
+   * for one, so they get a league unless they say otherwise: a first visit as the page saves it
+   * the moment the sync lands, or the stored settings with `LEAGUE` beside them.
+   */
+  let synced = true;
+
+  const load = (): WhosHotSettings | null => {
+    if (!synced) {
+      return stored;
+    }
+    const visit = stored ?? ({ lastGames: FREE_PRESET.lastGames } as WhosHotSettings);
+    return visit.yahooSync || visit.espnSync ? visit : { ...visit, yahooSync: LEAGUE };
+  };
+
   /** The player pool, which the board is filled out from when a range reaches before game 1. */
   let pool: Player[] = [];
 
@@ -117,13 +136,14 @@ describe('WhosHotComponent', () => {
     features.whosHotAvailableFilter.set(true);
     seasonsAnswer = SUMMER;
     stored = null;
+    synced = true;
     pool = [];
     entitlement.premium.set(false);
     entitlement.loadState.set('loaded');
     return MockBuilder(WhosHotComponent)
       .mock(PlayerService, { getPlayers: () => of(pool) })
       .mock(WhosHotService, { splits, seasons, rosteredPlayerIds })
-      .mock(WhosHotSettingsService, { load: () => stored, save })
+      .mock(WhosHotSettingsService, { load, save })
       .provide({ provide: EntitlementService, useValue: entitlement })
       .provide({ provide: FeatureService, useValue: features });
   });
@@ -679,17 +699,91 @@ describe('WhosHotComponent', () => {
     expect(ngMocks.input(ngMocks.find('app-hot-players-table'), 'rowsPending')).toBe(false);
   });
 
+  describe('before a league is synced', () => {
+    beforeEach(() => {
+      synced = false;
+    });
+
+    it('asks for a league in place of the range and the board', async () => {
+      await renderSettled();
+
+      expect(ngMocks.find('.league-prompt', null)).not.toBeNull();
+      expect(ngMocks.find('app-game-range-selector', null)).toBeNull();
+      expect(ngMocks.find('app-hot-players-table', null)).toBeNull();
+    });
+
+    it('measures nothing until there is a league to rank by', async () => {
+      await renderSettled();
+
+      expect(splits).not.toHaveBeenCalled();
+    });
+
+    it('opens the sync dialog from the prompt', async () => {
+      const fixture = await renderSettled();
+
+      ngMocks.click('.league-prompt button');
+      fixture.detectChanges();
+
+      expect(fixture.point.componentInstance.showSyncDialog()).toBe(true);
+      expect(ngMocks.find('app-league-sync-dialog', null)).not.toBeNull();
+    });
+
+    it('draws the board once a league lands, and measures the range', async () => {
+      const fixture = await renderSettled();
+
+      fixture.point.componentInstance.yahooSync.set(LEAGUE);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(ngMocks.find('.league-prompt', null)).toBeNull();
+      expect(ngMocks.find('app-hot-players-table', null)).not.toBeNull();
+      expect(splits).toHaveBeenCalled();
+    });
+
+    it('goes back to asking once the league is disconnected', async () => {
+      synced = true;
+      const fixture = await renderSettled();
+
+      fixture.point.componentInstance.disconnectLeague();
+      fixture.detectChanges();
+
+      expect(ngMocks.find('.league-prompt', null)).not.toBeNull();
+      expect(ngMocks.find('app-hot-players-table', null)).toBeNull();
+    });
+  });
+
+  describe("a category league's goalie minimum", () => {
+    it('is the same share of the last 5 as 30 is of a season, so a starter qualifies', async () => {
+      const component = (await renderSettled()).point.componentInstance;
+
+      expect(component.lastGames()).toEqual(5);
+      expect(component.minGoalieGames()).toEqual(2);
+      expect(ngMocks.input(ngMocks.find('app-hot-players-table'), 'minGoalieGames')).toEqual(2);
+    });
+
+    it('is the season-long 30 over a whole season', async () => {
+      entitlement.premium.set(true);
+      stored = { season: 2026, fromGame: 1, toGame: 84, lastGames: null } as WhosHotSettings;
+      seasonsAnswer = NOVEMBER;
+
+      const component = (await renderSettled()).point.componentInstance;
+
+      expect(component.minGoalieGames()).toEqual(30);
+    });
+  });
+
   describe('available players only', () => {
     const YAHOO = { leagueName: 'HHL', leagueKey: '465.l.9', syncedAt: 't' };
     const ESPN = { leagueName: 'Puck Club', leagueId: '123', syncedAt: 't' };
 
     const table = () => ngMocks.find('app-hot-players-table');
 
-    it('is not offered before a league is synced, since nobody can be taken yet', async () => {
+    it('asks nothing of a league before one is synced', async () => {
+      synced = false;
       stored = { fromGame: 1, toGame: 82, availableOnly: true } as WhosHotSettings;
       await renderSettled();
 
-      expect(ngMocks.input(table(), 'availableFilter')).toBe(false);
       expect(rosteredPlayerIds).not.toHaveBeenCalled();
     });
 

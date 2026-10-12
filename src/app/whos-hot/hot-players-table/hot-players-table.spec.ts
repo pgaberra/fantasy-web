@@ -248,45 +248,29 @@ describe('HotPlayersTableComponent', () => {
     expect(ngMocks.findAll(fixture, '.player-meta span.player-team')).toEqual([]);
   });
 
-  it('offers no League setup in a points league that has imported nothing — the menu would be empty', () => {
-    const component = render([skater(1, 20)]);
+  it('draws no league controls of its own: scoring, size and stats come from the sync', () => {
+    const fixture = MockRender(HotPlayersTableComponent, {
+      hotPlayers: [skater(1, 20)],
+      players: [player(1)],
+      activeColumns,
+      scoringType: 'points',
+      statWeights: DEFAULT_STAT_WEIGHTS,
+      syncedLeagueName: 'My league',
+      seasonLabel: '2025-26',
+    });
 
-    expect(component.hasLeagueSetup()).toBe(false);
+    const buttons = ngMocks
+      .findAll(fixture, '.league-controls button')
+      .map((button) => button.nativeElement.textContent.trim());
+    expect(buttons).toEqual([]);
   });
 
-  it('offers League setup once the ranking is by category, or once a league has been imported', () => {
-    expect(render([skater(1, 20)], { scoringType: 'category' }).hasLeagueSetup()).toBe(true);
-    expect(render([skater(1, 20)], { syncedLeagueName: 'My league' }).hasLeagueSetup()).toBe(true);
-  });
-
-  it('re-ranks by z-score when the toolbar switches the league to categories', () => {
-    const component = render([skater(1, 20)]);
-
-    component.selectScoringType('category');
+  it('ranks by z-score in a category league', () => {
+    const component = render([skater(1, 20)], { scoringType: 'category' });
 
     expect(component.summaryValue(component.visiblePlayers()[0])).toEqual(
       component.visiblePlayers()[0].score.zScore,
     );
-  });
-
-  it('adds and removes a scoring column from the Stats menu', () => {
-    const component = render([skater(1, 20)]);
-
-    component.toggleScoringColumn('pim');
-    expect(component.activeScoringColumns().has('pim')).toBe(true);
-
-    component.toggleScoringColumn('pim');
-    expect(component.activeScoringColumns().has('pim')).toBe(false);
-  });
-
-  it('adds and removes a utility column from the same menu', () => {
-    const component = render([skater(1, 20)]);
-
-    component.toggleUtilityColumn('toiPerGame');
-    expect(component.activeUtilityColumns().has('toiPerGame')).toBe(true);
-
-    component.toggleUtilityColumn('toiPerGame');
-    expect(component.activeUtilityColumns().has('toiPerGame')).toBe(false);
   });
 
   it('ranks by total fantasy points by default', () => {

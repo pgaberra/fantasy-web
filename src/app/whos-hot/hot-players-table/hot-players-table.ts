@@ -6,7 +6,6 @@ import {
   input,
   linkedSignal,
   model,
-  output,
   Signal,
   signal,
   untracked,
@@ -27,7 +26,6 @@ import {
   ScoringStatKey,
   SKATER_SCORING_STAT_KEYS,
   StatKey,
-  UtilityStatKey,
 } from '../../models/stat-key.model';
 import { ProjectionCalculationService } from '../../services/projection-calculation.service';
 import { PositionFilterService } from '../../services/position-filter.service';
@@ -53,9 +51,6 @@ import { PositionChipsComponent } from '../../shared/position-chips/position-chi
 import { ProjectionsTableHeaderComponent } from '../../draft-projection/player-projections-table/projections-table-header/projections-table-header';
 import { PositionFilterComponent } from '../../draft-projection/player-projections-table/position-filter/position-filter';
 import { TeamFilterComponent } from '../../draft-projection/player-projections-table/team-filter/team-filter';
-import { ColumnsMenuComponent } from '../../draft-projection/player-projections-table/columns-menu/columns-menu';
-import { LeagueSettingsMenuComponent } from '../../draft-projection/player-projections-table/league-settings-menu/league-settings-menu';
-import { PopoverTriggerDirective } from '../../shared/popover/popover-trigger.directive';
 import { TooltipDirective } from '../../shared/tooltip/tooltip.directive';
 import {
   PickablePlayer,
@@ -67,19 +62,10 @@ import { TableScrollDirective } from '../../shared/table-scroll/table-scroll.dir
 import { FormatToiPipe } from '../../pipes/format-toi.pipe';
 import { DecimalPipe } from '@angular/common';
 import { shortNames } from '../../shared/short-name';
-import { IconComponent } from '../../shared/icon/icon';
 import { ToggleSwitchComponent } from '../../draft-projection/projection-settings-section/toggle-switch/toggle-switch';
 import { TeamLogoComponent } from '../../shared/team-logo/team-logo';
 
 const PLAYERS_PER_PAGE = 100;
-
-function toggledSet<T>(members: ReadonlySet<T>, member: T): Set<T> {
-  const next = new Set(members);
-  if (!next.delete(member)) {
-    next.add(member);
-  }
-  return next;
-}
 
 interface RankedPlayer extends ScoredProjection {
   hot: HotPlayer;
@@ -90,9 +76,9 @@ interface RankedPlayer extends ScoredProjection {
  * league scores it.
  *
  * Read-only by design. These are numbers that already happened — unlike a projection there is
- * nothing here to edit, so the table shows values rather than inputs. What stays editable is the
- * league: the stat weights in the header, and the toolbar above it, because those decide how the
- * measurement is scored rather than what it measured.
+ * nothing here to edit, so the table shows values rather than inputs. The league is not edited
+ * here either: its scoring, size and stats all come from the synced league, which the page asks
+ * for before it draws this table at all.
  */
 @Component({
   selector: 'app-hot-players-table',
@@ -103,15 +89,11 @@ interface RankedPlayer extends ScoredProjection {
     PositionFilterComponent,
     TeamFilterComponent,
     PlayerPickerComponent,
-    PopoverTriggerDirective,
     TooltipDirective,
     PinnedTableHeaderDirective,
     TableScrollDirective,
-    LeagueSettingsMenuComponent,
-    ColumnsMenuComponent,
     FormatToiPipe,
     DecimalPipe,
-    IconComponent,
     ToggleSwitchComponent,
     TeamLogoComponent,
   ],
@@ -147,18 +129,16 @@ export class HotPlayersTableComponent {
    */
   readonly seasonNotPlayed = computed(() => this.hotPlayers().length === 0);
 
-  // Everything the settings panel above the table used to own. Two-way, so the page keeps the
-  // state it persists while the toolbar is the thing that changes it.
-  readonly scoringType = model.required<ScoringType>();
-  readonly activeScoringColumns = model<Set<ScoringStatKey>>(new Set<ScoringStatKey>());
-  readonly activeUtilityColumns = model<Set<UtilityStatKey>>(new Set<UtilityStatKey>());
-  readonly leagueSize = model<number>(DEFAULT_LEAGUE_SIZE);
-  readonly rosterSlots = model<RosterSlots>(DEFAULT_ROSTER_SLOTS);
-  readonly minGoalieGames = model<number>(DEFAULT_MIN_GOALIE_GAMES);
+  // How the synced league scores, as its sync left it. Read here, never set: the league is
+  // changed by syncing another one.
+  readonly scoringType = input.required<ScoringType>();
+  readonly leagueSize = input<number>(DEFAULT_LEAGUE_SIZE);
+  readonly rosterSlots = input<RosterSlots>(DEFAULT_ROSTER_SLOTS);
+  /** Games a goalie needs in the range to be ranked with the rest in a category league. */
+  readonly minGoalieGames = input<number>(DEFAULT_MIN_GOALIE_GAMES);
 
-  /** The league these settings were imported from, once there is one. */
+  /** The league these settings were imported from. */
   readonly syncedLeagueName = input<string | null>(null);
-  readonly manageSyncRequested = output<void>();
 
   /** Whether to offer the switch below at all: the page decides, by environment and league. */
   readonly availableFilter = input(false);
@@ -171,15 +151,6 @@ export class HotPlayersTableComponent {
    * are shown beside him.
    */
   readonly rosteredPlayerIds = input<ReadonlySet<number> | null>(null);
-
-  /**
-   * The League setup menu holds the category ranking inputs and, once a league has been imported,
-   * where it came from. A points league that has imported nothing leaves it empty — its scoring is
-   * the weight row in the table header — so the button is not offered at all.
-   */
-  readonly hasLeagueSetup = computed(
-    () => this.scoringType() === 'category' || !!this.syncedLeagueName(),
-  );
 
   readonly sortColumn = signal<SortColumn>('summary');
   readonly sortDirection = signal<SortDirection>('desc');
@@ -435,23 +406,8 @@ export class HotPlayersTableComponent {
 
   readonly hasMore = computed(() => this.visibleCount() < this.matchingCount());
 
-  /** An imported league's type is its own; see `syncedLeagueName`. */
-  selectScoringType(type: ScoringType): void {
-    if (this.syncedLeagueName() === null) {
-      this.scoringType.set(type);
-    }
-  }
-
   toggleAvailableOnly(): void {
     this.availableOnly.update((on) => !on);
-  }
-
-  toggleScoringColumn(key: ScoringStatKey): void {
-    this.activeScoringColumns.update((columns) => toggledSet(columns, key));
-  }
-
-  toggleUtilityColumn(key: UtilityStatKey): void {
-    this.activeUtilityColumns.update((columns) => toggledSet(columns, key));
   }
 
   onSort(column: SortColumn): void {

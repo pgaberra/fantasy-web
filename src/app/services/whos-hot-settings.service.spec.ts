@@ -17,7 +17,6 @@ const settings: WhosHotSettings = {
   activeUtilityColumns: new Set<SkaterUtilityStatKey>(['gp']),
   leagueSize: 12,
   rosterSlots: { c: 2, lw: 2, rw: 2, w: 0, f: 0, d: 4, util: 1, bn: 4, g: 2 },
-  minGoalieGames: 30,
   yahooSync: { leagueName: 'HHL', leagueKey: 'nhl.l.1', syncedAt: 't' },
   espnSync: null,
   lastEspnLeagueId: null,
