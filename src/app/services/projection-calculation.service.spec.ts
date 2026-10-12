@@ -373,3 +373,88 @@ describe('ProjectionCalculationService ratio categories', () => {
     });
   });
 });
+
+describe('ProjectionCalculationService with the nought at an empty line', () => {
+  let service: ProjectionCalculationService;
+
+  beforeEach(() => {
+    service = new ProjectionCalculationService();
+  });
+
+  const GOALS_AND_ASSISTS = new Set<ScoringStatKey>(['goals', 'assists']);
+  const skaters = (): SkaterProjection[] => [
+    skater(1, { goals: 4, assists: 2 }),
+    skater(2, { goals: 2, assists: 1 }),
+    skater(3, { goals: 1, assists: 3 }),
+    skater(4, {}),
+  ];
+
+  it('scores a line with nothing in it nought, and every line with something above it', () => {
+    const result = service.computeZScores(skaters(), GOALS_AND_ASSISTS, 180, 32, 'empty');
+
+    expect(result[3]).toBe(0);
+    expect(result.slice(0, 3).every((score) => score > 0)).toBe(true);
+  });
+
+  it("scores a line in proportion to what is in it, so a score a game is the game's own", () => {
+    const result = service.computeZScores(skaters(), GOALS_AND_ASSISTS, 180, 32, 'empty');
+
+    // Skater 1 has twice skater 2's every stat.
+    expect(result[0]).toBeCloseTo(2 * result[1], 10);
+  });
+
+  it("keeps the pool's order and spread: the two differ by one constant per pool", () => {
+    const fromPool = service.computeZScores(skaters(), GOALS_AND_ASSISTS);
+    const fromEmpty = service.computeZScores(skaters(), GOALS_AND_ASSISTS, 180, 32, 'empty');
+
+    const shift = fromEmpty[0] - fromPool[0];
+    expect(shift).toBeGreaterThan(0);
+    fromEmpty.forEach((score, index) => expect(score - fromPool[index]).toBeCloseTo(shift, 10));
+  });
+
+  it('takes away for a count where less is better', () => {
+    const result = service.computeZScores(
+      [goalie(1, { l: 2 }), goalie(2, { l: 1 }), goalie(3, {})],
+      new Set<ScoringStatKey>(['l']),
+      180,
+      32,
+      'empty',
+    );
+
+    expect(result[2]).toBe(0);
+    expect(result[1]).toBeLessThan(0);
+    expect(result[0]).toBeCloseTo(2 * result[1], 10);
+  });
+
+  it("leaves a ratio as it was: nought for no games, below it for a goalie who drags the team's down", () => {
+    const field = [
+      goalieSeason(1, 3, 2.0, 0.93),
+      goalieSeason(2, 3, 3.5, 0.88),
+      goalieSeason(3, 2, 2.8, 0.905),
+      goalie(4, {}, 0),
+    ];
+
+    const fromPool = service.computeZScores(field, GOALIE_RATIOS);
+    const fromEmpty = service.computeZScores(field, GOALIE_RATIOS, 180, 32, 'empty');
+
+    fromEmpty.forEach((score, index) => expect(score).toBeCloseTo(fromPool[index], 10));
+    expect(fromEmpty[3]).toBe(0);
+    expect(fromEmpty[1]).toBeLessThan(0);
+  });
+
+  it('keeps the per-category contributions summing to the ranked total', () => {
+    const totals = service.computeZScores(skaters(), GOALS_AND_ASSISTS, 180, 32, 'empty');
+    const contributions = service.computeZScoreContributions(
+      skaters(),
+      GOALS_AND_ASSISTS,
+      180,
+      32,
+      'empty',
+    );
+
+    contributions.forEach((byCategory, index) => {
+      const sum = Object.values(byCategory).reduce((total, value) => total + value, 0);
+      expect(sum).toBeCloseTo(totals[index], 10);
+    });
+  });
+});

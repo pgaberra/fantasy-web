@@ -1210,6 +1210,28 @@ describe('StreamerPlannerComponent', () => {
           expect(table.nights().map((day) => day.date)).toEqual(['2026-10-13', '2026-10-15']);
         });
 
+        // Measured from the pool's average week, a player benched both nights scored below a
+        // starter with one goal, and a starter with a thin week read as hurting the team.
+        it('scores a category league from an empty week: nought on the bench, every start adding', async () => {
+          settings = {
+            ...SETTINGS,
+            scoringType: 'category',
+            statWeights: {},
+            activeScoringColumns: ['goals', 'assists'],
+          };
+          const fixture = await render();
+          const byName = new Map(
+            fixture.point.componentInstance.roster().map((row) => [row.player.name, row]),
+          );
+
+          expect(byName.get('Mine 16')).toMatchObject({ score: 0, games: 0 });
+          // The third C starts both nights with a goal over them, the first with three.
+          const thin = byName.get('Mine 12')!;
+          expect(thin.games).toBe(2);
+          expect(thin.score).toBeGreaterThan(0);
+          expect(byName.get('Mine 10')!.score).toBeCloseTo(3 * thin.score, 10);
+        });
+
         it('follows the nights counted: with a night unticked, the bench shrinks to the other', async () => {
           const fixture = await render();
           const planner = fixture.point.componentInstance;
