@@ -194,8 +194,8 @@ export class RosterTableComponent {
     return formatToi(row.player.projection.stats.utility.toiPerGame);
   }
 
-  /** Nothing projected in the category. */
+  /** No rate to show (a benched player's), so a dash rather than a figure. A 0.0 is a figure. */
   isNil(stat: LineStat): boolean {
-    return stat.value === NO_RATE || Number(stat.value) === 0;
+    return stat.value === NO_RATE;
   }
 }
