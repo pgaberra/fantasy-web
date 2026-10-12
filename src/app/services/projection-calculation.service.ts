@@ -21,6 +21,18 @@ const DEFAULT_SKATER_POOL_SIZE = 180;
 const DEFAULT_GOALIE_POOL_SIZE = 32;
 const MAX_POOL_ITERATIONS = 10;
 
+/**
+ * Where a z-score's nought sits. `'pool'`: at the pool's average line, so a player below it scores
+ * less than nothing — right for a season board, where the question is whether he is better or
+ * worse than the players a team could take instead. `'empty'`: at a line with nothing in it, so
+ * every game played adds and only what hurts a team takes away (a loss, goals against, a ratio
+ * dragged down) — right for a week, where a player with one start still helps the team he starts
+ * for, and a score a game has to be that game's own. Each category is still divided by the pool's
+ * spread, so within skaters, or within goalies, the order is the same either way: the two differ
+ * by one constant per pool.
+ */
+export type ZScoreOrigin = 'pool' | 'empty';
+
 interface PoolEntry<P extends Projection> {
   projection: P;
   index: number;
@@ -127,6 +139,7 @@ export class ProjectionCalculationService {
     activeScoringColumns: Set<ScoringStatKey>,
     skaterPoolSize: number = DEFAULT_SKATER_POOL_SIZE,
     goaliePoolSize: number = DEFAULT_GOALIE_POOL_SIZE,
+    origin: ZScoreOrigin = 'pool',
   ): number[] {
     const totalsByIndex: number[] = projections.map(() => 0);
     this.scorePools(
@@ -134,6 +147,7 @@ export class ProjectionCalculationService {
       activeScoringColumns,
       skaterPoolSize,
       goaliePoolSize,
+      origin,
       totalsByIndex,
       null,
     );
@@ -151,6 +165,7 @@ export class ProjectionCalculationService {
     activeScoringColumns: Set<ScoringStatKey>,
     skaterPoolSize: number = DEFAULT_SKATER_POOL_SIZE,
     goaliePoolSize: number = DEFAULT_GOALIE_POOL_SIZE,
+    origin: ZScoreOrigin = 'pool',
   ): Record<string, number>[] {
     const contributionsByIndex: Record<string, number>[] = projections.map(() => ({}));
     this.scorePools(
@@ -158,6 +173,7 @@ export class ProjectionCalculationService {
       activeScoringColumns,
       skaterPoolSize,
       goaliePoolSize,
+      origin,
       projections.map(() => 0),
       contributionsByIndex,
     );
@@ -175,6 +191,7 @@ export class ProjectionCalculationService {
     activeScoringColumns: Set<ScoringStatKey>,
     skaterPoolSize: number,
     goaliePoolSize: number,
+    origin: ZScoreOrigin,
     totalsByIndex: number[],
     contributionsByIndex: Record<string, number>[] | null,
   ): void {
@@ -194,6 +211,7 @@ export class ProjectionCalculationService {
       (projection, key) => projection.stats.scoring[key],
       activeScoringColumns,
       skaterPoolSize,
+      origin,
       totalsByIndex,
       contributionsByIndex,
     );
@@ -203,6 +221,7 @@ export class ProjectionCalculationService {
       (projection, key) => projection.stats.scoring[key],
       activeScoringColumns,
       goaliePoolSize,
+      origin,
       totalsByIndex,
       contributionsByIndex,
     );
@@ -214,6 +233,7 @@ export class ProjectionCalculationService {
     valueOf: (projection: P, key: K) => number,
     activeScoringColumns: Set<ScoringStatKey>,
     poolSize: number,
+    origin: ZScoreOrigin,
     totalsByIndex: number[],
     contributionsByIndex: Record<string, number>[] | null,
   ): void {
@@ -239,7 +259,7 @@ export class ProjectionCalculationService {
     });
 
     let poolPositions = entries.map((_entry, position) => position);
-    let zScores = this.zScoresForPool(categories, poolPositions, entries.length);
+    let zScores = this.zScoresForPool(categories, poolPositions, entries.length, origin);
 
     for (let iteration = 0; iteration < MAX_POOL_ITERATIONS; iteration++) {
       const { totals } = zScores;
@@ -251,7 +271,7 @@ export class ProjectionCalculationService {
         break;
       }
       poolPositions = nextPositions;
-      zScores = this.zScoresForPool(categories, poolPositions, entries.length);
+      zScores = this.zScoresForPool(categories, poolPositions, entries.length, origin);
     }
 
     entries.forEach((entry, position) => {
@@ -280,6 +300,7 @@ export class ProjectionCalculationService {
     categories: CategoryValues[],
     poolPositions: number[],
     size: number,
+    origin: ZScoreOrigin,
   ): PoolZScores {
     const totals = new Float64Array(size);
     const byCategory: (Float64Array | null)[] = categories.map(() => null);
@@ -309,9 +330,11 @@ export class ProjectionCalculationService {
       if (stdDev === 0) {
         return;
       }
+      // The spread is the pool's whichever the origin; only where nought sits moves.
+      const centre = origin === 'pool' ? mean : 0;
       const categoryZScores = new Float64Array(size);
       for (let position = 0; position < size; position++) {
-        const zScore = (direction * (values[position] - mean)) / stdDev;
+        const zScore = (direction * (values[position] - centre)) / stdDev;
         categoryZScores[position] = zScore;
         totals[position] += zScore;
       }
