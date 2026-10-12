@@ -461,15 +461,18 @@ describe('FreeAgentsTableComponent', () => {
       expect(table.classes['free-agents-table--marked']).toBe(true);
     });
 
-    it('keeps no room for marks once the games are counted, or where no row has any', () => {
+    // Counted, nothing hangs off a figure, but the table keeps the room: ticking the box once
+    // narrowed every number column under the reader's pointer.
+    it('keeps the room once the games are counted, and none where no row has any', () => {
       const counted = MockRender(FreeAgentsTableComponent, {
-        rows: [liftable, GOALIE],
+        rows: [{ ...liftable, lifted: undefined }, GOALIE],
         scoringType: 'points',
         categories: CATEGORIES,
         dropsCounted: true,
       });
       counted.detectChanges();
-      expect(ngMocks.find(counted, 'table').classes['free-agents-table--marked']).toBeFalsy();
+      expect(ngMocks.find(counted, 'table').classes['free-agents-table--marked']).toBe(true);
+      expect(ngMocks.findAll(counted, '.lift, .drop-games')).toHaveLength(0);
 
       const bare = render('points', CATEGORIES, [SKATER, GOALIE]);
       expect(ngMocks.find(bare, 'table').classes['free-agents-table--marked']).toBeFalsy();

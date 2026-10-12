@@ -110,13 +110,13 @@ export class FreeAgentsTableComponent {
   private readonly list = computed(() => this.listed() ?? this.rows());
 
   /**
-   * Whether any row wears a mark beside a figure, games or a lift: the number columns then keep
-   * room for the marks to hang in, all of them at once, rather than widen one row's column.
+   * Whether any row wears a mark beside a figure, games or a lift, or would once the games were
+   * marked rather than counted: the number columns then keep room for the marks to hang in, all of
+   * them at once, rather than widen one row's column. Counted, the room stays, so the tick box
+   * that counts them never narrows the table under the reader's pointer.
    */
-  readonly marked = computed(
-    () =>
-      !this.dropsCounted() &&
-      this.rows().some((row) => Math.round(row.dropGames ?? 0) > 0 || row.lifted !== undefined),
+  readonly marked = computed(() =>
+    this.rows().some((row) => Math.round(row.dropGames ?? 0) > 0 || row.lifted !== undefined),
   );
 
   /** Percent rostered comes only with the admins' demo list; a league's list has no such column. */
