@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { ScoringType } from '../../models/projection.model';
 import { ScoringStatKey } from '../../models/stat-key.model';
 import { IconComponent } from '../../shared/icon/icon';
@@ -15,7 +15,13 @@ import {
   NO_RATE,
 } from '../../streamer-planner/planner-free-agents';
 import { Swap } from '../drop-candidates';
-import { ScoutRow, toiPerGame } from '../scout-ranking';
+import {
+  SCOUT_RANKED_ORDER,
+  ScoutRow,
+  ScoutSort,
+  ScoutSortKey,
+  toiPerGame,
+} from '../scout-ranking';
 
 /** A player with his line in the league's categories, ready to draw. */
 interface ScoutEntry {
@@ -32,6 +38,8 @@ const MORE_ICE_SECONDS = 60;
  * two columns of its own: the rise since the preseason line, and for a skater the ice time, now and
  * then, since more ice is the commonest reason a player is worth more than he was drafted at.
  * Given the user's team, a third: the player to drop for him and what the swap gains.
+ * The order is the page's to say: a heading asks for it, and the page sorts the whole list before
+ * cutting it into pages.
  */
 @Component({
   selector: 'app-scout-table',
@@ -50,6 +58,10 @@ export class ScoutTableComponent {
   readonly categories = input.required<readonly ScoringStatKey[]>();
   /** Each player's best swap by platform id, or null for no Swap column: no team of the user's. */
   readonly swaps = input<ReadonlyMap<string, Swap | null> | null>(null);
+  /** The order the list is in, which the headings show. */
+  readonly sort = input<ScoutSort>(SCOUT_RANKED_ORDER);
+  /** A heading pressed: the page sorts the whole list by that column, or turns it round. */
+  readonly sortBy = output<ScoutSortKey>();
 
   private readonly lines = computed(() => {
     const categories = this.categories();
@@ -82,6 +94,14 @@ export class ScoutTableComponent {
   readonly scoreHeading = computed(() =>
     this.scoringType() === 'points' ? 'Proj. pts' : 'Z-Score',
   );
+
+  ariaSort(key: ScoutSortKey): 'ascending' | 'descending' | null {
+    const sort = this.sort();
+    if (sort.key !== key) {
+      return null;
+    }
+    return sort.descending ? 'descending' : 'ascending';
+  }
 
   score(row: ScoutRow): string {
     return row.score.toFixed(this.scoringType() === 'points' ? 1 : 2);
