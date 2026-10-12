@@ -62,9 +62,6 @@ export interface DropCandidate {
   readonly needs: readonly LineupPosition[];
 }
 
-/** Drop candidates shown: the two or three a manager weighs before every pickup. */
-export const DROP_CANDIDATES_SHOWN = 3;
-
 /** One lineup seat: the positions that may sit in it, as the planner's lineup builds them. */
 type Seat = ReadonlySet<string>;
 
@@ -209,26 +206,23 @@ export function bestSwap(
 }
 
 /**
- * The user's players most worth dropping, lowest score first, each with the positions a pickup
- * must play for the lineup to stay as full. A player is still listed when only a like-for-like
- * pickup can replace him: he is the one to drop for that pickup. A player moving to injured
- * reserve is not one.
+ * Every player the user could drop, lowest score first, so the whole roster reads against itself,
+ * each with the positions a pickup must play for the lineup to stay as full. A player is still
+ * listed when only a like-for-like pickup can replace him: he is the one to drop for that pickup.
+ * A player moving to injured reserve is not one.
  */
 export function dropCandidates(
   team: readonly TeamRow[],
   seats: readonly Seat[],
   room: TeamRoom = NO_ROOM,
-  shown = DROP_CANDIDATES_SHOWN,
 ): DropCandidate[] {
-  return droppable(team, room)
-    .slice(0, shown)
-    .map((row) => {
-      // A pickup of his own kind: a skater's seat refilled by a goalie is not a swap anyone makes.
-      const own = LINEUP_POSITIONS.filter(
-        (position) => (position === 'G') === (row.player.type === 'goalie'),
-      );
-      const needs = own.filter((position) => keepsLineup(team, row, [position], seats));
-      const anyPickup = needs.length === own.length;
-      return { row, anyPickup, needs: anyPickup ? [] : needs };
-    });
+  return droppable(team, room).map((row) => {
+    // A pickup of his own kind: a skater's seat refilled by a goalie is not a swap anyone makes.
+    const own = LINEUP_POSITIONS.filter(
+      (position) => (position === 'G') === (row.player.type === 'goalie'),
+    );
+    const needs = own.filter((position) => keepsLineup(team, row, [position], seats));
+    const anyPickup = needs.length === own.length;
+    return { row, anyPickup, needs: anyPickup ? [] : needs };
+  });
 }
