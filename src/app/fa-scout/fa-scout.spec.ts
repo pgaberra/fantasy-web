@@ -251,6 +251,32 @@ describe('FaScoutComponent', () => {
     expect(page.rangeText()).toBe('1–21 of 21');
   });
 
+  it('sorts the whole list by a column before paging it', async () => {
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    page.sortBy('rise');
+    page.sortBy('rise');
+    fixture.detectChanges();
+
+    expect(page.sort()).toEqual({ key: 'rise', descending: false });
+    const rises = page.sorted().flatMap((row) => (row.rise === null ? [] : [row.rise]));
+    expect(rises).toEqual([...rises].sort((first, second) => first - second));
+    const table = ngMocks.find(fixture, ScoutTableComponent);
+    expect(ngMocks.input(table, 'rows')).toEqual(page.sorted().slice(0, SCOUT_PAGE_SIZE));
+    expect(ngMocks.input(table, 'sort')).toEqual({ key: 'rise', descending: false });
+  });
+
+  it('falls back to the ranked order when the column sorted by leaves the table', async () => {
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    page.sortBy('toi');
+    page.setKind('goalie');
+
+    expect(page.sort()).toEqual({ key: 'score', descending: true });
+  });
+
   it('says the season is not under way rather than listing nobody', async () => {
     freeAgents.mockReturnValue(of({ inSeason: false, preseasonAvailable: false, players: [] }));
     const fixture = await render();
