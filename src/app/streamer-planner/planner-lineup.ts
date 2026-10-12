@@ -150,8 +150,10 @@ function activePlayers(
  * seat can take more than his own position: dropping a LW whose C/LW teammate can slide over makes
  * room for a C as well, while dropping that C/LW may open only the C. Players eligible at the same
  * positions who play the same night are interchangeable, so each kind is worked out once. A drop
- * who does not play that night, or sits on the bench anyway, opens nothing, and positions already
- * open without a drop are left out: they are the night's own room.
+ * who does not play that night (no game, out, or on a club the schedule does not know), or sits on
+ * the bench anyway, opens nothing, but is listed all the same, so the tip can name him as one who
+ * would not do: "Drop a D, except Hedman". Positions already open without a drop are left out: they
+ * are the night's own room.
  *
  * @param rooms each date's room as the roster stands ({@link nightRooms})
  */
@@ -163,25 +165,36 @@ export function dropRooms(
 ): ReadonlyMap<string, DropRoom> {
   const seats = lineupSeats(slots);
   const active = activePlayers(roster, teams);
+  const playingIds = (date: string) =>
+    new Set(active.filter((player) => player.nights.has(date)).map((player) => player.playerId));
   const opened = new Map<string, DropRoom>();
   for (const [date, room] of rooms) {
-    const playing = active.filter((player) => player.nights.has(date));
+    const plays = playingIds(date);
+    const playing = active.filter((player) => plays.has(player.playerId));
     const kinds = new Map<
       string,
-      { order: number[]; drop: (typeof playing)[number]; names: string[] }
+      { kind: string; order: number[]; drop: (typeof playing)[number] | null; names: string[] }
     >();
-    for (const player of playing) {
+    for (const player of roster) {
       const positions = LINEUP_POSITIONS.filter((position) => player.positions.includes(position));
-      const key = positions.join('/');
-      if (key) {
-        const order = positions.map((position) => LINEUP_POSITIONS.indexOf(position));
-        const kind = kinds.get(key) ?? { order, drop: player, names: [] };
-        kind.names.push(player.name);
-        kinds.set(key, kind);
+      const kind = positions.join('/');
+      if (!kind) {
+        continue;
       }
+      const drop = playing.find((candidate) => candidate.playerId === player.playerId) ?? null;
+      // One entry for the kind's players who play that night, another for those who do not.
+      const key = drop ? kind : `${kind} idle`;
+      const order = positions.map((position) => LINEUP_POSITIONS.indexOf(position));
+      const entry = kinds.get(key) ?? { kind, order, drop, names: [] };
+      entry.names.push(player.name);
+      kinds.set(key, entry);
     }
     const openings: DropOpening[] = [];
-    for (const [key, kind] of [...kinds].sort(([, a], [, b]) => lineupOrder(a.order, b.order))) {
+    for (const kind of [...kinds.values()].sort((a, b) => lineupOrder(a.order, b.order))) {
+      if (!kind.drop) {
+        openings.push({ kind: kind.kind, names: kind.names, opens: [] });
+        continue;
+      }
       const rest = playing
         .filter((player) => player !== kind.drop)
         .map((player) => player.positions);
@@ -189,7 +202,7 @@ export function dropRooms(
       const opens = LINEUP_POSITIONS.filter(
         (position) => !room.fits.has(position) && seated([...rest, [position]], seats) > filled,
       );
-      openings.push({ kind: key, names: kind.names, opens });
+      openings.push({ kind: kind.kind, names: kind.names, opens });
     }
     if (openings.some((opening) => opening.opens.length > 0)) {
       opened.set(date, openings);
@@ -210,8 +223,10 @@ function lineupOrder(a: readonly number[], b: readonly number[]): number {
 
 /**
  * One kind of drop on a night: the positions the dropped player is eligible at ("LW", "C/LW"),
- * the user's players of that kind who play that night, and the positions a pickup would then
- * start at, none if dropping him opens nothing.
+ * the user's players of that kind, and the positions a pickup would then start at, none if
+ * dropping him opens nothing. Those who play that night and those who do not (no game, out, or
+ * on a club the schedule does not know) are kept apart, two entries of one kind, since a drop
+ * among the latter never opens a seat and the tip has to say so by name.
  */
 export interface DropOpening {
   readonly kind: string;
@@ -220,8 +235,8 @@ export interface DropOpening {
 }
 
 /**
- * A night's positions open only through a drop, one entry per kind of the user's players who play
- * that night, those whose drop opens nothing included, so a tip can tell who would not do.
+ * A night's positions open only through a drop, one entry per kind of the user's players, those
+ * whose drop opens nothing included, so a tip can tell who would not do.
  */
 export type DropRoom = readonly DropOpening[];
 
@@ -244,7 +259,7 @@ function dropKinds(room: DropRoom | undefined, position: LineupPosition): string
  * shortest. "A C", not "any forward", when every forward is a C.
  */
 export function dropRoomTip(room: DropRoom, positions: readonly LineupPosition[]): string {
-  const freeing = new Set(dropKinds(room, positions[0]));
+  const freeing = new Set(room.filter((opening) => opening.opens.includes(positions[0])));
   const at = (kind: string) => kind.split('/');
   const skaters = room.filter((opening) => !at(opening.kind).includes('G'));
   const forwards = skaters.filter((opening) => !at(opening.kind).includes('D'));
@@ -257,16 +272,16 @@ export function dropRoomTip(room: DropRoom, positions: readonly LineupPosition[]
       word: position,
       takes: room.filter((opening) => at(opening.kind).includes(position)),
     })),
-  ].filter(({ takes }) => takes.some((opening) => freeing.has(opening.kind)));
+  ].filter(({ takes }) => takes.some((opening) => freeing.has(opening)));
   let best: { misses: number; words: number; text: string } | undefined;
   for (let mask = 1; mask < 1 << terms.length; mask++) {
     const chosen = terms.filter((_, index) => mask & (1 << index));
     const taken = new Set(chosen.flatMap(({ takes }) => takes));
-    if (![...freeing].every((kind) => [...taken].some((opening) => opening.kind === kind))) {
+    if (![...freeing].every((opening) => taken.has(opening))) {
       continue;
     }
     const misses = [...taken]
-      .filter((opening) => !freeing.has(opening.kind))
+      .filter((opening) => !freeing.has(opening))
       .flatMap((opening) => opening.names);
     const named = chosen.filter(({ group }) => !group).map(({ word }) => word);
     const drops = [
