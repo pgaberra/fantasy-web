@@ -307,4 +307,25 @@
   .roster-table .toi-col {
     display: none;
   }
+
+  /* On a phone the player, pinned, took half the screen at the longest name's width and hid the
+     score under its edge once the nights were scrolled in. Capped at a third instead: a smaller
+     crest, and a name that will not fit goes on two lines. The room goes to the numbers. */
+  .roster-table {
+    --player-logo-size: 20px;
+  }
+
+  .player-cell {
+    max-width: 8.5rem;
+  }
+
+  .player-name {
+    overflow-wrap: break-word;
+    white-space: normal;
+  }
+
+  /* The injury tag drops under a name it has no room beside, rather than squeezing it. */
+  .player-name-line {
+    flex-wrap: wrap;
+  }
 }
