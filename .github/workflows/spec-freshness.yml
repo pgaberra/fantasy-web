@@ -29,5 +29,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           bash .github/scripts/check-pinned-spec.sh \
-            pgaberra/fantasy-bff specs/bff-openapi.yaml specs/bff-openapi.yaml \
+            slapstat/fantasy-bff specs/bff-openapi.yaml specs/bff-openapi.yaml \
             'npm run generate:api'

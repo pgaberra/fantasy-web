@@ -40,7 +40,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
         run: |
           bash .github/scripts/check-pinned-spec.sh \
-            pgaberra/fantasy-bff specs/bff-openapi.yaml specs/bff-openapi.yaml \
+            slapstat/fantasy-bff specs/bff-openapi.yaml specs/bff-openapi.yaml \
             'npm run generate:api'
 
       - name: Set up Node
