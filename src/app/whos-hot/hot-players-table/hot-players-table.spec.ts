@@ -245,7 +245,16 @@ describe('HotPlayersTableComponent', () => {
       ['EDM', 'EDM'],
       ['TOR', 'TOR'],
     ]);
-    expect(ngMocks.findAll(fixture, '.player-meta span.player-team')).toEqual([]);
+    // Left of the name, not under it: the crest leads the cell and the identity follows.
+    const cells: HTMLElement[] = Array.from(
+      fixture.nativeElement.querySelectorAll('.player-name-content'),
+    );
+    expect(cells.map((cell) => Array.from(cell.children).map((child) => child.className))).toEqual([
+      ['player-team', 'player-identity'],
+      ['player-team', 'player-identity'],
+      ['player-identity'],
+    ]);
+    expect(ngMocks.findAll(fixture, '.player-meta app-team-logo')).toEqual([]);
   });
 
   it('draws no league controls of its own: scoring, size and stats come from the sync', () => {

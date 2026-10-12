@@ -69,6 +69,16 @@
                   <td class="col-rank">{{ index + 1 }}</td>
                   <td class="col-name player-name">
                     <div class="player-name-content">
+                      <!-- The crest leads the row, as the Streamer Planner's does, so the eye reads
+                           club then name on one line. It is the club's only mention in the row, so
+                           it carries the name. -->
+                      @if (ranked.hot.teamAbbrev) {
+                        <app-team-logo
+                          class="player-team"
+                          [team]="ranked.hot.teamAbbrev"
+                          [alt]="ranked.hot.teamAbbrev"
+                        />
+                      }
                       @if (showHeadshots()) {
                         <app-player-headshot
                           class="player-headshot"
@@ -89,14 +99,6 @@
                         </span>
                         <div class="player-meta">
                           <app-position-chips [positions]="positions(ranked)" />
-                          <!-- The crest is the club's only mention in the row, so it carries the name. -->
-                          @if (ranked.hot.teamAbbrev) {
-                            <app-team-logo
-                              class="player-team"
-                              [team]="ranked.hot.teamAbbrev"
-                              [alt]="ranked.hot.teamAbbrev"
-                            />
-                          }
                           @if (!ranked.qualified) {
                             <span
                               class="below-min-games"
