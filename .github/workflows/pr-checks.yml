@@ -7,6 +7,10 @@ on:
   # master, so two PRs merging close together can't skip testing the second against the first.
   pull_request:
     branches: [master]
+  # The merge queue's run: master plus every PR queued ahead plus this one. A queue needs the
+  # required check to report on the group, or every entry waits out the timeout and is dropped.
+  # A user-owned repo gets no queue, so this never fires until the repo moves to an organization.
+  merge_group:
 
 permissions:
   contents: read
@@ -25,13 +29,15 @@ jobs:
 
       # Passing BASE_SHA is what makes this only blame the branch: a producer merge staled the
       # copy in every open PR at once, and failing all of them blocked work that had nothing to
-      # do with the spec. The script carries the whole argument.
+      # do with the spec. The script carries the whole argument. A queue run has no pull_request
+      # payload, and an empty BASE_SHA is the scheduled check's mode, where any drift fails, so
+      # one bff merge would empty the queue: it gets the group's base instead.
       - name: Verify pinned BFF spec is in sync
         if: github.actor != 'dependabot[bot]'
         env:
           PRODUCER_TOKEN: ${{ secrets.SPEC_READ_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
         run: |
           bash .github/scripts/check-pinned-spec.sh \
             pgaberra/fantasy-bff specs/bff-openapi.yaml specs/bff-openapi.yaml \

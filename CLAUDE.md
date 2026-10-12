@@ -658,7 +658,8 @@ doesn't replace them.
 ## CI / workflow
 
 - `.github/workflows/pr-checks.yml`: Node 22, generates the API client then runs every check
-  listed under [Common commands](#common-commands) on PRs to `master`.
+  listed under [Common commands](#common-commands) on PRs to `master`, and on each merge-queue
+  group (`merge_group`), which fires only once the repo belongs to an organization.
 - **Copy is checked, not merely guided.** `npm run check:copy` reads `COPY-RULES.md` and fails
   on a new terminology, vocabulary or punctuation violation, ratcheted against `.github/copy-baseline.json`.
   It settles only what a script can settle: naming the same thing the same way, the banned
