@@ -57,56 +57,6 @@
   color: var(--color-primary);
 }
 
-.league-controls .btn app-icon {
-  flex: none;
-  margin-right: 0.35rem;
-  vertical-align: -2px;
-}
-
-.league-setup-btn {
-  display: inline-flex;
-  align-items: center;
-}
-
-.segmented {
-  display: inline-flex;
-  padding: 2px;
-  background: var(--color-surface-alt);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-pill);
-}
-
-.segmented button {
-  background: none;
-  border: none;
-  border-radius: var(--radius-pill);
-  padding: 0.3rem 0.9rem;
-  font: inherit;
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition:
-    background var(--transition-fast),
-    color var(--transition-fast);
-}
-
-/* A white pill on a near-white track is a weak signal on its own; the border and the heavier
-   weight are what make the picked option legible at a glance. */
-.segmented button[aria-pressed='true'] {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-control);
-  padding: calc(0.3rem - 1px) calc(0.9rem - 1px);
-  color: var(--color-primary);
-  font-weight: var(--weight-semibold);
-  box-shadow: var(--shadow-sm);
-}
-
-.segmented button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
 /* The stat columns are the point of the table, so the horizontal scroll lives here rather
    than on the page — the page body must never scroll sideways. Sideways only: this used to be
    a viewport-tall scrollbox as well, capped at `100vh - 20rem`, a guess at how much chrome sat
