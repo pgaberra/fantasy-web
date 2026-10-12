@@ -90,27 +90,45 @@ describe('RosterTableComponent', () => {
     const fixture = render();
     const starts = ngMocks.findAll(fixture, 'td.starts-col .starts');
 
-    expect(starts.map((cell) => ngMocks.formatText(cell))).toEqual(['0', '0', '1', '2']);
+    // The player who is out has no starts cell to set off: his whole row is dashes, below.
+    expect(starts.map((cell) => ngMocks.formatText(cell))).toEqual(['0', '1', '2']);
     expect(starts.map((cell) => cell.classes['starts--none'] ?? false)).toEqual([
-      true,
       true,
       false,
       false,
     ]);
     expect(starts.map((cell) => cell.classes['starts--some'] ?? false)).toEqual([
       false,
-      false,
       true,
       false,
     ]);
     expect(
       ngMocks.findAll(fixture, 'td.games-col').map((cell) => ngMocks.formatText(cell)),
-    ).toEqual(['2', '2', '2', '2']);
+    ).toEqual(['2', '—', '2', '2']);
     expect(
       ngMocks
         .findAll(fixture, 'tr.player-row--benched .player-name')
         .map((c) => ngMocks.formatText(c)),
-    ).toEqual(['Benched Every Night', 'Out Injured']);
+    ).toEqual(['Benched Every Night']);
+  });
+
+  it('fades a player who is out and writes a dash in every figure, not a score', () => {
+    const fixture = render();
+    const outRows = ngMocks.findAll(fixture, 'tr.player-row--out');
+    expect(outRows).toHaveLength(1);
+    const line = outRows[0];
+    expect(ngMocks.formatText(ngMocks.find(line, '.player-name'))).toBe('Out Injured');
+    expect(ngMocks.findAll(line, 'td.num').map((cell) => ngMocks.formatText(cell))).toEqual([
+      '—',
+      '—',
+      '—',
+      '—',
+      '—',
+      '—',
+      '—',
+    ]);
+    // The nights keep their marks: each says he has no game.
+    expect(ngMocks.findAll(line, '.night--none')).toHaveLength(2);
   });
 
   it('marks each counted night as a start, a bench or no game, each saying which', () => {

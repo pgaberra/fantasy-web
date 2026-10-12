@@ -117,7 +117,15 @@ export class RosterTableComponent {
     return sort.descending ? 'descending' : 'ascending';
   }
 
+  /**
+   * A player who is out (on injured reserve, hurt or suspended) has no week to score: a dash in
+   * every figure, not the score of an empty line, which in categories reads as the worst of the
+   * roster. The nights keep their no-game dots, which already say he plays none of them.
+   */
   score(row: RosterRow): string {
+    if (row.player.out) {
+      return NOT_HIS;
+    }
     return row.score.toFixed(this.scoreDecimals());
   }
 
@@ -126,6 +134,9 @@ export class RosterTableComponent {
   }
 
   perGame(row: RosterRow): string {
+    if (row.player.out) {
+      return NOT_HIS;
+    }
     if (row.games <= 0) {
       return '';
     }
@@ -137,12 +148,16 @@ export class RosterTableComponent {
   }
 
   games(row: RosterRow): string {
+    if (row.player.out) {
+      return NOT_HIS;
+    }
     return formatGames(row.clubGames);
   }
 
-  /** Games on the nights but no start among them: the whole week on the bench. */
+  /** Games on the nights but no start among them: the whole week on the bench. Not a player who
+   * is out: he sits nowhere, he is missing. */
   benchedAll(row: RosterRow): boolean {
-    return row.games === 0 && row.clubGames > 0;
+    return !row.player.out && row.games === 0 && row.clubGames > 0;
   }
 
   /** Some of his games started, the rest on the bench. */
@@ -179,7 +194,7 @@ export class RosterTableComponent {
 
   /** Ice time a game, for a skater; a goalie's is the whole game or none of it. */
   toi(row: RosterRow): string {
-    if (row.player.projection.type !== 'skater') {
+    if (row.player.out || row.player.projection.type !== 'skater') {
       return NOT_HIS;
     }
     return formatToi(row.player.projection.stats.utility.toiPerGame);

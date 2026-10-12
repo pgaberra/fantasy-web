@@ -173,6 +173,20 @@
   color: var(--color-text-muted);
 }
 
+/* A player who is out: on injured reserve, hurt or suspended, filling no slot this stretch. The
+   whole row steps back, as the Power Rankings fade a player outside the team's count, and every
+   figure is a dash in the dash's own grey. The pinned name fades its contents, not the cell: a
+   translucent pinned cell lets the columns scrolling under it show through. */
+.player-row--out .player-cell,
+.player-row--out td {
+  opacity: 0.55;
+}
+
+.player-row--out td.num {
+  color: var(--color-text-muted);
+  font-weight: normal;
+}
+
 /* --- The nights ------------------------------------------------------------------------------- */
 
 /* A column a counted night, narrow, set off from the counts by a rule down the first. */
