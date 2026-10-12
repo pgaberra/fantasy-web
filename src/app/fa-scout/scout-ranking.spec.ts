@@ -92,19 +92,19 @@ describe('rankScout', () => {
   const rookie = player(skaterLine(77, 39.5), null);
   const goalie = player(goalieLine(50, 20), goalieLine(50, 25));
 
-  const rows = rankScout([...steady, montour, rookie, goalie], 'skater', byValue, fantasyPoints);
+  const rows = rankScout([...steady, montour, rookie, goalie], byValue, fantasyPoints);
 
-  it('ranks the kind asked for alone, on the rest of the season', () => {
-    expect(rows.map((row) => row.line.type)).not.toContain('goalie');
+  it('ranks skaters and goalies in one list, on the rest of the season', () => {
+    expect(rows).toHaveLength(18);
     expect(rows[0].player.playerId).toBe('99');
     expect(rows[0].rank).toBe(1);
     expect(rows[0].score).toBe(60);
   });
 
   it('places each player on the preseason line among the same players', () => {
-    // On the preseason lines Montour's 20 is last of the sixteen that have one.
-    expect(rows[0].preseasonRank).toBe(16);
-    expect(rows[0].rise).toBe(15);
+    // On the preseason lines Montour's 20 is last of the seventeen that have one, the goalie too.
+    expect(rows[0].preseasonRank).toBe(17);
+    expect(rows[0].rise).toBe(16);
     expect(rows[0].rising).toBe(true);
   });
 
@@ -120,11 +120,10 @@ describe('rankScout', () => {
     expect(row?.rising).toBe(false);
   });
 
-  it('ranks the goalies among themselves', () => {
-    const goalies = rankScout([...steady, goalie], 'goalie', byValue, fantasyPoints);
-    expect(goalies.map((row) => [row.player.playerId, row.rank, row.preseasonRank])).toEqual([
-      ['50', 1, 1],
-    ]);
+  it('places a goalie among the skaters by his score', () => {
+    const row = rows.find((candidate) => candidate.player.playerId === '50');
+    // His 20 wins now are below every skater; his 25 in September were above Montour's 20.
+    expect([row?.rank, row?.preseasonRank, row?.rise]).toEqual([18, 16, -2]);
   });
 });
 

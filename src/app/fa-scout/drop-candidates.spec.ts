@@ -53,17 +53,18 @@ function dropped(swap: Swap | null): string | null {
 }
 
 function rows(players: TeamPlayer[]): TeamRow[] {
-  return scoreTeam(players, [], 'skater', rank, scoreOf);
+  return scoreTeam(players, [], rank, scoreOf);
 }
 
 describe('scoreTeam', () => {
-  it("scores the user's players of the kind in one pool with the wire", () => {
+  it("scores every one of the user's players in one pool with the wire", () => {
     const team = [player(1, ['C'], 30), player(2, ['D'], 10), player(3, ['G'], 5)];
-    const scored = scoreTeam(team, [line('skater', 100, 20)], 'skater', rank, scoreOf);
+    const scored = scoreTeam(team, [line('skater', 100, 20)], rank, scoreOf);
 
     expect(scored.map((row) => [row.player.playerId, row.score])).toEqual([
       ['1', 30],
       ['2', 10],
+      ['3', 5],
     ]);
   });
 

@@ -192,7 +192,7 @@ describe('FaScoutComponent', () => {
     expect(freeAgents).toHaveBeenCalledWith('YAHOO', '465.l.9');
   });
 
-  it('lists the skaters best first on the rest of the season, scored by the league', async () => {
+  it('lists skaters and goalies best first on the rest of the season, scored by the league', async () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
@@ -200,7 +200,8 @@ describe('FaScoutComponent', () => {
     expect(first.player.playerId).toBe('99');
     // 12 goals at 3 and 40 assists at 2, the league's own weights.
     expect(first.score).toBe(116);
-    expect(page.ranked().map((row) => row.line.type)).not.toContain('goalie');
+    // The league scores no goalie stat, so the goalie is last.
+    expect(page.ranked().at(-1)?.player.playerId).toBe('50');
   });
 
   it('tags the defenceman who has climbed the wire since the preseason line', async () => {
@@ -223,7 +224,7 @@ describe('FaScoutComponent', () => {
     expect(page.filtered().map((row) => row.player.playerId)).toEqual(['99']);
   });
 
-  it('narrows the skaters to the positions picked', async () => {
+  it('narrows the list to the positions picked', async () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
@@ -232,13 +233,55 @@ describe('FaScoutComponent', () => {
     expect(page.filtered().map((row) => row.player.playerId)).toEqual(['99']);
   });
 
-  it('lists the goalies on their own', async () => {
+  it('lists the goalies on their own under G', async () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
-    page.setKind('goalie');
+    page.togglePosition('G');
 
     expect(page.filtered().map((row) => row.player.playerId)).toEqual(['50']);
+    expect(page.filtered()[0].rank).toBe(22);
+  });
+
+  it('picks the four skater positions with All skaters, and goes back to everyone', async () => {
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    page.toggleAllSkaters();
+    fixture.detectChanges();
+
+    expect(page.allSkaters()).toBe(true);
+    expect(page.filtered()).toHaveLength(21);
+    expect(page.filtered().map((row) => row.line.type)).not.toContain('goalie');
+    expect(ngMocks.formatText(fixture)).toContain('Your skaters on Slapshots');
+
+    page.toggleAllSkaters();
+    expect(page.positions().size).toBe(0);
+    expect(page.filtered()).toHaveLength(22);
+  });
+
+  it('offers the positions as pills, with no Skaters / Goalies switch', async () => {
+    const fixture = await render();
+
+    const pills = ngMocks.findAll(fixture, '.pills .pill').map((pill) => ngMocks.formatText(pill));
+    expect(pills).toEqual(['All', 'All skaters', 'C', 'LW', 'RW', 'D', 'G']);
+    expect(ngMocks.findAll(fixture, '.segmented')).toHaveLength(0);
+  });
+
+  it("lists only the user's goalies against the goalies", async () => {
+    myTeam.mockReturnValue(
+      of({ ...team(), players: [...team().players, teamPlayer(goalie(214), ['G'])] }),
+    );
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    expect(page.candidates()).toHaveLength(12);
+
+    page.togglePosition('G');
+    fixture.detectChanges();
+
+    expect(page.candidates().map((candidate) => candidate.row.player.playerId)).toEqual(['214']);
+    expect(ngMocks.formatText(fixture)).toContain('Your goalies on Slapshots');
   });
 
   it('hands the table a page at a time', async () => {
@@ -246,9 +289,9 @@ describe('FaScoutComponent', () => {
     const page = fixture.point.componentInstance;
 
     const table = ngMocks.find(fixture, ScoutTableComponent);
-    expect(ngMocks.input(table, 'rows')).toHaveLength(SCOUT_PAGE_SIZE - 4);
+    expect(ngMocks.input(table, 'rows')).toHaveLength(SCOUT_PAGE_SIZE - 3);
     expect(page.pageCount()).toBe(1);
-    expect(page.rangeText()).toBe('1–21 of 21');
+    expect(page.rangeText()).toBe('1–22 of 22');
   });
 
   it('says the season is not under way rather than listing nobody', async () => {
@@ -284,7 +327,7 @@ describe('FaScoutComponent', () => {
     expect(myTeam).toHaveBeenCalledWith('YAHOO', '465.l.9');
   });
 
-  it('lists every skater on the team, lowest first, leaving injured reserve out', async () => {
+  it('lists every player on the team, lowest first, leaving injured reserve out', async () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
@@ -295,7 +338,7 @@ describe('FaScoutComponent', () => {
     expect(ngMocks.findAll(fixture, '.drop')).toHaveLength(11);
     expect(page.keptOut().reserve).toBe(1);
     const text = ngMocks.formatText(fixture);
-    expect(text).toContain('Your skaters on Slapshots');
+    expect(text).toContain('Your players on Slapshots');
     expect(text).toContain('1 on injured reserve left out.');
     // Which pickup each drop needs is held back for now.
     expect(text).not.toContain('Any pickup');
@@ -315,7 +358,7 @@ describe('FaScoutComponent', () => {
     const page = fixture.point.componentInstance;
 
     expect(ngMocks.formatText(fixture)).toContain('You have no team in this league');
-    expect(page.ranked()).toHaveLength(21);
+    expect(page.ranked()).toHaveLength(22);
   });
 
   it('keeps the list when the team cannot be read, and offers to try again', async () => {

@@ -2,7 +2,7 @@
   <table class="free-agents-table scout-table">
     <thead>
       <tr>
-        <th scope="col" class="num rank-col" [appTooltip]="rankTip()">#</th>
+        <th scope="col" class="num rank-col" [appTooltip]="rankTip">#</th>
         <th scope="col" class="player-col">Player</th>
         <th
           scope="col"
@@ -34,7 +34,7 @@
         >
           GP
         </th>
-        @if (kind() === 'skater') {
+        @if (anySkater()) {
           <th
             scope="col"
             class="num toi-col"
@@ -120,7 +120,7 @@
             }
           </td>
           <td class="num">{{ games(entry.row) }}</td>
-          @if (kind() === 'skater') {
+          @if (anySkater()) {
             <td class="num toi-col" [class.toi-col--up]="toiUp(entry.row)">
               <span class="toi-now">{{ toiNow(entry.row) }}</span>
               @if (toiThen(entry.row)) {

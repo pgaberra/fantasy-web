@@ -27,7 +27,7 @@ interface ScoutEntry {
 const MORE_ICE_SECONDS = 60;
 
 /**
- * The available skaters, or goalies, best first on the rest of the season, each beside the place
+ * The available players, skaters and goalies in one list, best first on the rest of the season, each beside the place
  * the model's preseason line gave him among the same players. The planner's free-agent table with
  * two columns of its own: the rise since the preseason line, and for a skater the ice time, now and
  * then, since more ice is the commonest reason a player is worth more than he was drafted at.
@@ -56,7 +56,8 @@ export class ScoutTableComponent {
     return this.rows().map((row) => ({ row, stats: lineStats(row, categories) }));
   });
 
-  readonly kind = computed(() => this.rows()[0]?.line.type ?? 'skater');
+  /** Whether any skater is listed: only a skater has ice time to show. */
+  readonly anySkater = computed(() => this.rows().some((row) => row.line.type === 'skater'));
 
   readonly columns = computed<readonly LineColumn[]>(() =>
     lineColumns(
@@ -73,11 +74,8 @@ export class ScoutTableComponent {
     });
   });
 
-  readonly rankTip = computed(() =>
-    this.kind() === 'skater'
-      ? 'His place among every available skater for the rest of the season, whatever the positions shown'
-      : 'His place among every available goalie for the rest of the season',
-  );
+  readonly rankTip =
+    'His place among every available player for the rest of the season, whatever the positions shown';
 
   readonly scoreHeading = computed(() =>
     this.scoringType() === 'points' ? 'Proj. pts' : 'Z-Score',
