@@ -33,7 +33,15 @@ import {
   PLANNER_POSITIONS,
 } from '../streamer-planner/planner-free-agents';
 import { scoreTeam, TeamRoom, teamRoom, TeamRow } from './drop-candidates';
-import { rankScout, ScoutRow } from './scout-ranking';
+import {
+  nextScoutSort,
+  rankScout,
+  SCOUT_RANKED_ORDER,
+  ScoutRow,
+  ScoutSort,
+  ScoutSortKey,
+  sortScout,
+} from './scout-ranking';
 import { ScoutTableComponent } from './scout-table/scout-table';
 
 /** Players to a page: enough to reach well past a league's bench without a second page. */
@@ -356,6 +364,35 @@ export class FaScoutComponent {
     this.risingOnly() ? this.atPositions().filter((row) => row.rising) : this.atPositions(),
   );
 
+  // --- The order of the list --------------------------------------------------------------------
+
+  /** The column the list was last sorted by; it opens ranked, best first on the rest of the season. */
+  private readonly sortPicked = signal<ScoutSort>(SCOUT_RANKED_ORDER);
+
+  /**
+   * The order on screen: the one picked, while its column is still in the table. A category the
+   * league does not score, or ice time with no skater listed, falls back to the ranked order rather
+   * than sorting by blanks.
+   */
+  readonly sort = computed<ScoutSort>(() => {
+    const sort = this.sortPicked();
+    const about: readonly ScoutSortKey[] =
+      this.shown() !== 'goalies'
+        ? ['name', 'score', 'rise', 'games', 'toi']
+        : ['name', 'score', 'rise', 'games'];
+    return about.includes(sort.key) || this.categories().includes(sort.key as ScoringStatKey)
+      ? sort
+      : SCOUT_RANKED_ORDER;
+  });
+
+  /** Sorts the whole list by a column, best first; the same column again turns it round. */
+  sortBy(key: ScoutSortKey): void {
+    this.sortPicked.set(nextScoutSort(this.sort(), key));
+  }
+
+  /** The list in the order asked for, before it is cut into pages. */
+  readonly sorted = computed(() => sortScout(this.filtered(), this.sort()));
+
   readonly emptyText = computed(() => {
     const who =
       this.positions().size === 0
@@ -377,9 +414,11 @@ export class FaScoutComponent {
 
   // --- The pages of the list --------------------------------------------------------------------
 
-  /** Other positions or the rising switch is another list: back to its first page. */
+  /**
+   * Other positions, the rising switch or another order is another list: back to its first page.
+   */
   private readonly page = linkedSignal<unknown, number>({
-    source: () => [this.positions(), this.risingOnly(), this.league()],
+    source: () => [this.positions(), this.risingOnly(), this.league(), this.sort()],
     computation: () => 0,
   });
 
@@ -390,7 +429,7 @@ export class FaScoutComponent {
   readonly currentPage = computed(() => Math.min(this.page(), this.pageCount() - 1));
 
   readonly visible = computed(() =>
-    this.filtered().slice(
+    this.sorted().slice(
       this.currentPage() * SCOUT_PAGE_SIZE,
       (this.currentPage() + 1) * SCOUT_PAGE_SIZE,
     ),

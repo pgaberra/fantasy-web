@@ -294,6 +294,32 @@ describe('FaScoutComponent', () => {
     expect(page.rangeText()).toBe('1–22 of 22');
   });
 
+  it('sorts the whole list by a column before paging it', async () => {
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    page.sortBy('rise');
+    page.sortBy('rise');
+    fixture.detectChanges();
+
+    expect(page.sort()).toEqual({ key: 'rise', descending: false });
+    const rises = page.sorted().flatMap((row) => (row.rise === null ? [] : [row.rise]));
+    expect(rises).toEqual([...rises].sort((first, second) => first - second));
+    const table = ngMocks.find(fixture, ScoutTableComponent);
+    expect(ngMocks.input(table, 'rows')).toEqual(page.sorted().slice(0, SCOUT_PAGE_SIZE));
+    expect(ngMocks.input(table, 'sort')).toEqual({ key: 'rise', descending: false });
+  });
+
+  it('falls back to the ranked order when the column sorted by leaves the table', async () => {
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    page.sortBy('toi');
+    page.togglePosition('G');
+
+    expect(page.sort()).toEqual({ key: 'score', descending: true });
+  });
+
   it('says the season is not under way rather than listing nobody', async () => {
     freeAgents.mockReturnValue(of({ inSeason: false, preseasonAvailable: false, players: [] }));
     const fixture = await render();
@@ -343,7 +369,7 @@ describe('FaScoutComponent', () => {
     const text = ngMocks.formatText(fixture);
     expect(text).toContain('Your players on Slapshots');
     expect(text).not.toContain('left out');
-    // Which pickup each drop needs is held back for now.
+    // No line on which pickup each player could be dropped for.
     expect(text).not.toContain('Any pickup');
     expect(text).not.toContain('Only for a');
   });

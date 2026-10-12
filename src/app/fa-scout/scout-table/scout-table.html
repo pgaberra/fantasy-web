@@ -3,13 +3,26 @@
     <thead>
       <tr>
         <th scope="col" class="num rank-col" [appTooltip]="rankTip">#</th>
-        <th scope="col" class="player-col">Player</th>
-        <th
-          scope="col"
-          class="num"
-          appTooltip="The AI projection for the rest of the season, scored by your league's settings"
-        >
-          {{ scoreHeading() }}
+        <th scope="col" class="player-col" [attr.aria-sort]="ariaSort('name')">
+          <button type="button" class="sort" (click)="sortBy.emit('name')">
+            Player
+            @if (sort().key === 'name') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+          </button>
+        </th>
+        <th scope="col" class="num" [attr.aria-sort]="ariaSort('score')">
+          <button
+            type="button"
+            class="sort"
+            appTooltip="The AI projection for the rest of the season, scored by your league's settings"
+            (click)="sortBy.emit('score')"
+          >
+            @if (sort().key === 'score') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+            {{ scoreHeading() }}
+          </button>
         </th>
         @if (swaps()) {
           <th
@@ -20,27 +33,45 @@
             Swap
           </th>
         }
-        <th
-          scope="col"
-          class="num"
-          appTooltip="Places gained among these players since the preseason projection"
-        >
-          Rise
+        <th scope="col" class="num" [attr.aria-sort]="ariaSort('rise')">
+          <button
+            type="button"
+            class="sort"
+            appTooltip="Places gained among these players since the preseason projection"
+            (click)="sortBy.emit('rise')"
+          >
+            @if (sort().key === 'rise') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+            Rise
+          </button>
         </th>
-        <th
-          scope="col"
-          class="num"
-          appTooltip="Games he is expected to play in the rest of the season"
-        >
-          GP
+        <th scope="col" class="num" [attr.aria-sort]="ariaSort('games')">
+          <button
+            type="button"
+            class="sort"
+            appTooltip="Games he is expected to play in the rest of the season"
+            (click)="sortBy.emit('games')"
+          >
+            @if (sort().key === 'games') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+            GP
+          </button>
         </th>
         @if (anySkater()) {
-          <th
-            scope="col"
-            class="num toi-col"
-            appTooltip="Ice time per game now, and before the season"
-          >
-            TOI
+          <th scope="col" class="num toi-col" [attr.aria-sort]="ariaSort('toi')">
+            <button
+              type="button"
+              class="sort"
+              appTooltip="Ice time per game now, and before the season"
+              (click)="sortBy.emit('toi')"
+            >
+              @if (sort().key === 'toi') {
+                <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+              }
+              TOI
+            </button>
           </th>
         }
         @for (column of columns(); track column.key; let first = $first) {
@@ -48,9 +79,19 @@
             scope="col"
             class="num stat-col"
             [class.stat-col--first]="first"
-            [appTooltip]="column.name"
+            [attr.aria-sort]="ariaSort(column.key)"
           >
-            {{ column.label }}
+            <button
+              type="button"
+              class="sort"
+              [appTooltip]="column.name"
+              (click)="sortBy.emit(column.key)"
+            >
+              @if (sort().key === column.key) {
+                <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+              }
+              {{ column.label }}
+            </button>
           </th>
         }
       </tr>

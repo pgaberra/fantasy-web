@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { Projection, ScoredProjection } from '../models/projection.model';
 import { ScoutPlayer } from '../services/fa-scout.service';
-import { isRising, rankScout, toiPerGame } from './scout-ranking';
+import {
+  isRising,
+  nextScoutSort,
+  rankScout,
+  SCOUT_RANKED_ORDER,
+  sortScout,
+  toiPerGame,
+} from './scout-ranking';
 
 function skaterLine(playerId: number, points: number, games = 70, toi = 1000, ppp = 5): Projection {
   return {
@@ -132,5 +139,52 @@ describe('the role a line reads', () => {
     expect(toiPerGame(skaterLine(1, 10, 70, 1380))).toBe(1380);
     expect(toiPerGame(goalieLine(2, 10))).toBeUndefined();
     expect(toiPerGame(null)).toBeUndefined();
+  });
+});
+
+describe('sorting the scout list', () => {
+  // Ranked 1 to 4 now; on the preseason lines 4 was first, 3 second and 2 third, 1 had none.
+  const rows = rankScout(
+    [
+      player(skaterLine(1, 30), null),
+      player(skaterLine(2, 20), skaterLine(2, 10)),
+      player(skaterLine(3, 10), skaterLine(3, 30)),
+      player(skaterLine(4, 5), skaterLine(4, 40)),
+    ],
+    byValue,
+    fantasyPoints,
+  );
+  const ids = (sorted: readonly { player: { playerId: string } }[]) =>
+    sorted.map((row) => row.player.playerId);
+
+  it('leaves the ranked order as it came', () => {
+    expect(sortScout(rows, SCOUT_RANKED_ORDER)).toBe(rows);
+  });
+
+  it('sorts by the rise, the furthest risen first, a player with no preseason line last', () => {
+    expect(rows.map((row) => row.rise)).toEqual([null, 1, -1, -3]);
+    expect(ids(sortScout(rows, { key: 'rise', descending: true }))).toEqual(['2', '3', '4', '1']);
+  });
+
+  it('keeps a player with no preseason line last when the rise is turned round', () => {
+    expect(ids(sortScout(rows, { key: 'rise', descending: false }))).toEqual(['4', '3', '2', '1']);
+  });
+
+  it('sorts the other columns as the planner does', () => {
+    expect(ids(sortScout(rows, { key: 'score', descending: false }))).toEqual(['4', '3', '2', '1']);
+    expect(ids(sortScout(rows, { key: 'name', descending: true }))).toEqual(['4', '3', '2', '1']);
+  });
+
+  it('opens the rise at the furthest risen, and turns it round on a second press', () => {
+    const rise = nextScoutSort(SCOUT_RANKED_ORDER, 'rise');
+    expect(rise).toEqual({ key: 'rise', descending: true });
+    expect(nextScoutSort(rise, 'rise')).toEqual({ key: 'rise', descending: false });
+  });
+
+  it('opens every other column best first, from the rise too', () => {
+    const rise = { key: 'rise', descending: false } as const;
+    expect(nextScoutSort(rise, 'score')).toEqual({ key: 'score', descending: true });
+    expect(nextScoutSort(rise, 'name')).toEqual({ key: 'name', descending: false });
+    expect(nextScoutSort(rise, 'goals')).toEqual({ key: 'goals', descending: true });
   });
 });

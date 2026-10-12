@@ -651,10 +651,10 @@ export function sortValue(
  * it points, and players level on it keep their ranked order, so a sort is the ranking re-cut
  * rather than reshuffled. The ranked order itself is the list as it came.
  */
-export function sortFreeAgents(
-  rows: readonly RankedFreeAgent[],
+export function sortFreeAgents<T extends RankedFreeAgent>(
+  rows: readonly T[],
   sort: FreeAgentSort,
-): readonly RankedFreeAgent[] {
+): readonly T[] {
   if (isRankedOrder(sort)) {
     return rows;
   }

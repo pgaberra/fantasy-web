@@ -1,5 +1,5 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Projection } from '../../models/projection.model';
 import { Swap } from '../drop-candidates';
 import { ScoutRow } from '../scout-ranking';
@@ -133,6 +133,38 @@ describe('ScoutTableComponent', () => {
 
     const headings = ngMocks.findAll(fixture, 'th.stat-col').map((th) => ngMocks.formatText(th));
     expect(headings).toEqual(['G', 'A']);
+  });
+
+  it('asks the page to sort by a heading pressed', () => {
+    const sortBy = vi.fn();
+    const fixture = MockRender(ScoutTableComponent, {
+      rows: [row(1, 'Brandon Montour', 1, 140, 1050, true)],
+      scoringType: 'points',
+      categories: ['goals', 'assists'],
+      sortBy,
+    });
+
+    const rise = ngMocks
+      .findAll(fixture, 'th button.sort')
+      .find((button) => ngMocks.formatText(button) === 'Rise');
+    rise?.nativeElement.click();
+    ngMocks.find(fixture, 'th.stat-col button.sort').nativeElement.click();
+
+    expect(sortBy.mock.calls).toEqual([['rise'], ['goals']]);
+  });
+
+  it('marks the column the list is sorted by, and which way', () => {
+    const fixture = MockRender(ScoutTableComponent, {
+      rows: [row(1, 'Brandon Montour', 1, 140, 1050, true)],
+      scoringType: 'points',
+      categories: ['goals', 'assists'],
+      sort: { key: 'assists', descending: false },
+    });
+
+    const sorted = ngMocks.findAll(fixture, 'th[aria-sort]');
+    expect(sorted).toHaveLength(1);
+    expect(ngMocks.formatText(sorted[0])).toBe('A');
+    expect(sorted[0].nativeElement.getAttribute('aria-sort')).toBe('ascending');
   });
 
   it("has no Swap column without a team of the user's", () => {
