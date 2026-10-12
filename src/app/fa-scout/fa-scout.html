@@ -16,44 +16,45 @@
           text="The AI projection for the rest of the season, scored with your league's settings. Rise is how many places a player has gained among these players since the projection made before the season, so a player traded into a bigger role or given more ice time climbs the list."
         />
       </h2>
-      <div class="segmented" role="group" aria-label="Players to list">
-        <button type="button" [attr.aria-pressed]="kind() === 'skater'" (click)="setKind('skater')">
-          Skaters
-        </button>
-        <button type="button" [attr.aria-pressed]="kind() === 'goalie'" (click)="setKind('goalie')">
-          Goalies
-        </button>
-      </div>
     </div>
 
     <app-league-field class="league" [(platform)]="platform" [(espnLeague)]="espnLeague" />
 
     @if (league()) {
       <div class="filters">
-        @if (kind() === 'skater') {
-          <div class="pills" role="group" aria-label="Positions to show">
+        <!-- Skaters and goalies are one list, as the planner's is: "All" is everyone, "All skaters"
+             picks the four skater positions in one press, and G is the goalies. -->
+        <div class="pills" role="group" aria-label="Positions to show">
+          <button
+            type="button"
+            class="pill"
+            [class.pill--active]="positions().size === 0"
+            [attr.aria-pressed]="positions().size === 0"
+            (click)="clearPositions()"
+          >
+            All
+          </button>
+          <button
+            type="button"
+            class="pill"
+            [class.pill--active]="allSkaters()"
+            [attr.aria-pressed]="allSkaters()"
+            (click)="toggleAllSkaters()"
+          >
+            All skaters
+          </button>
+          @for (option of positionOptions; track option) {
             <button
               type="button"
               class="pill"
-              [class.pill--active]="positions().size === 0"
-              [attr.aria-pressed]="positions().size === 0"
-              (click)="clearPositions()"
+              [class.pill--active]="positions().has(option)"
+              [attr.aria-pressed]="positions().has(option)"
+              (click)="togglePosition(option)"
             >
-              All
+              {{ option }}
             </button>
-            @for (option of positionOptions; track option) {
-              <button
-                type="button"
-                class="pill"
-                [class.pill--active]="positions().has(option)"
-                [attr.aria-pressed]="positions().has(option)"
-                (click)="togglePosition(option)"
-              >
-                {{ option }}
-              </button>
-            }
-          </div>
-        }
+          }
+        </div>
         <button
           type="button"
           class="pill pill--rising"
@@ -84,7 +85,7 @@
       <section class="drops" aria-labelledby="drops-title">
         <h3 id="drops-title" class="drops-title">
           <app-icon name="user-minus" [size]="16" />
-          {{ kind() === 'skater' ? 'Your skaters' : 'Your goalies' }}
+          Your {{ shown() }}
           @if (teamName(); as name) {
             on {{ name }}
           }
@@ -136,13 +137,7 @@
               </ul>
             }
             @if (roster().length === 0) {
-              <p class="drops-note">
-                {{
-                  kind() === 'skater'
-                    ? 'None of your skaters has a projection.'
-                    : 'None of your goalies has a projection.'
-                }}
-              </p>
+              <p class="drops-note">None of your {{ shown() }} has a projection.</p>
             } @else {
               <ol class="drops-list">
                 @for (row of roster(); track row.player.playerId) {

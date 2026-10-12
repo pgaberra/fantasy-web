@@ -48,6 +48,22 @@ function row(
   };
 }
 
+/** A goalie's row: no ice time, now or before the season. */
+function goalieRow(playerId: number, rank: number): ScoutRow {
+  const line: Projection = {
+    type: 'goalie',
+    playerId,
+    stats: { scoring: { w: 20 } as never, utility: { gp: 40 } },
+  };
+  const skaterRow = row(playerId, 'Joey Daccord', rank, null, null);
+  return {
+    ...skaterRow,
+    player: { ...skaterRow.player, projection: line, positions: ['G'] },
+    line,
+    preseason: null,
+  };
+}
+
 describe('ScoutTableComponent', () => {
   beforeEach(() => MockBuilder(ScoutTableComponent));
 
@@ -77,6 +93,20 @@ describe('ScoutTableComponent', () => {
     expect(ngMocks.formatText(ngMocks.find(toi, '.toi-now'))).toBe('23:00');
     expect(ngMocks.formatText(ngMocks.find(toi, '.per-game'))).toBe('was 17:30');
     expect(toi.nativeElement.classList).toContain('toi-col--up');
+  });
+
+  it('lists a goalie among the skaters with his ice time cell empty', () => {
+    const fixture = render([row(1, 'Brandon Montour', 1, 140, 1050), goalieRow(2, 2)]);
+
+    const toi = ngMocks.findAll(fixture, 'td.toi-col');
+    expect(toi).toHaveLength(2);
+    expect(ngMocks.formatText(toi[1])).toBe('');
+  });
+
+  it('heads no ice time column over goalies alone', () => {
+    const fixture = render([goalieRow(2, 2)]);
+
+    expect(ngMocks.findAll(fixture, 'th.toi-col')).toHaveLength(0);
   });
 
   it('marks a player the model did not project before the season as new, with no rise', () => {

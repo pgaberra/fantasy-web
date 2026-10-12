@@ -2,7 +2,6 @@ import { RosterSlots } from '../api/models/roster-slots';
 import { Projection, ScoredProjection } from '../models/projection.model';
 import { TeamPlayer } from '../services/fa-scout.service';
 import { lineupSeats, seated } from '../streamer-planner/planner-lineup';
-import { ScoutKind } from './scout-ranking';
 
 /** One of the user's own players, scored on the same scale as the wire. */
 export interface TeamRow {
@@ -48,30 +47,28 @@ export type Swap =
 type Seat = ReadonlySet<string>;
 
 /**
- * The user's own players of one kind, scored in one pool with the wire's lines so the scores are
- * comparable: a category league scores a line against the pool it is ranked in.
+ * The user's own players, scored in one pool with the wire's lines so the scores are comparable:
+ * a category league scores a line against the pool it is ranked in.
  *
- * @param wire the available players' rest-of-season lines of every kind; only `kind` is pooled
+ * @param wire the available players' rest-of-season lines
  */
 export function scoreTeam(
   team: readonly TeamPlayer[],
   wire: readonly Projection[],
-  kind: ScoutKind,
   rank: (projections: Projection[]) => ScoredProjection[],
   scoreOf: (entry: ScoredProjection) => number,
 ): TeamRow[] {
-  const own = team.filter((player) => player.type === kind);
-  const lines = own.flatMap((player) => (player.projection ? [player.projection] : []));
+  const lines = team.flatMap((player) => (player.projection ? [player.projection] : []));
   const scores = new Map<number, number>();
   if (lines.length > 0) {
     const ownKeys = new Set(lines.map((line) => line.playerId));
-    for (const entry of rank([...wire.filter((line) => line.type === kind), ...lines])) {
+    for (const entry of rank([...wire, ...lines])) {
       if (ownKeys.has(entry.projection.playerId)) {
         scores.set(entry.projection.playerId, scoreOf(entry));
       }
     }
   }
-  return own.map((player) => ({
+  return team.map((player) => ({
     player,
     score: player.projection ? (scores.get(player.projection.playerId) ?? null) : null,
   }));

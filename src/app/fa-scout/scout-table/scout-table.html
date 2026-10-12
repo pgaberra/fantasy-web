@@ -2,7 +2,7 @@
   <table class="free-agents-table scout-table">
     <thead>
       <tr>
-        <th scope="col" class="num rank-col" [appTooltip]="rankTip()">#</th>
+        <th scope="col" class="num rank-col" [appTooltip]="rankTip">#</th>
         <th scope="col" class="player-col" [attr.aria-sort]="ariaSort('name')">
           <button type="button" class="sort" (click)="sortBy.emit('name')">
             Player
@@ -59,7 +59,7 @@
             GP
           </button>
         </th>
-        @if (kind() === 'skater') {
+        @if (anySkater()) {
           <th scope="col" class="num toi-col" [attr.aria-sort]="ariaSort('toi')">
             <button
               type="button"
@@ -161,7 +161,7 @@
             }
           </td>
           <td class="num">{{ games(entry.row) }}</td>
-          @if (kind() === 'skater') {
+          @if (anySkater()) {
             <td class="num toi-col" [class.toi-col--up]="toiUp(entry.row)">
               <span class="toi-now">{{ toiNow(entry.row) }}</span>
               @if (toiThen(entry.row)) {

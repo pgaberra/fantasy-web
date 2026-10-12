@@ -9,6 +9,7 @@ import {
 } from '../draft-projection/projection-defaults';
 import { DEFAULT_DECIMAL_SETTINGS } from '../draft-projection/projection-settings-section/model';
 import { Projection, ScoredProjection } from '../models/projection.model';
+import { isAllSkaters } from '../models/position.model';
 import { ScoringStatKey } from '../models/stat-key.model';
 import { EspnService } from '../services/espn.service';
 import { FaScoutService, TeamPlayer } from '../services/fa-scout.service';
@@ -25,13 +26,17 @@ import { TeamLogoComponent } from '../shared/team-logo/team-logo';
 import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
 import { LeagueFieldComponent } from '../streamer-planner/league-field/league-field';
-import { PLANNER_POSITIONS, PlannerPositionGroup } from '../streamer-planner/planner-free-agents';
+import {
+  FREE_AGENT_POSITIONS,
+  FreeAgentPosition,
+  filterByPositions,
+  PLANNER_POSITIONS,
+} from '../streamer-planner/planner-free-agents';
 import { scoreTeam, TeamRoom, teamRoom, TeamRow } from './drop-candidates';
 import {
   nextScoutSort,
   rankScout,
   SCOUT_RANKED_ORDER,
-  ScoutKind,
   ScoutRow,
   ScoutSort,
   ScoutSortKey,
@@ -193,18 +198,12 @@ export class FaScoutComponent {
 
   // --- What the list shows ----------------------------------------------------------------------
 
-  readonly kind = signal<ScoutKind>('skater');
+  readonly positionOptions = FREE_AGENT_POSITIONS;
 
-  setKind(kind: ScoutKind): void {
-    this.kind.set(kind);
-  }
+  /** The positions the list is narrowed to, G among them. None is every player. */
+  readonly positions = signal<ReadonlySet<FreeAgentPosition>>(new Set());
 
-  readonly positionOptions = PLANNER_POSITIONS;
-
-  /** The positions the skaters are narrowed to. None is every position. */
-  readonly positions = signal<ReadonlySet<PlannerPositionGroup>>(new Set());
-
-  togglePosition(position: PlannerPositionGroup): void {
+  togglePosition(position: FreeAgentPosition): void {
     this.positions.update((positions) => {
       const next = new Set(positions);
       if (!next.delete(position)) {
@@ -217,6 +216,24 @@ export class FaScoutComponent {
   clearPositions(): void {
     this.positions.set(new Set());
   }
+
+  /** Every skater position picked, and nothing else: what the "All skaters" shortcut shows. */
+  readonly allSkaters = computed(() => isAllSkaters([...this.positions()]));
+
+  /** Picks the four skater positions at once; pressed again, goes back to everyone. */
+  toggleAllSkaters(): void {
+    this.positions.set(this.allSkaters() ? new Set() : new Set(PLANNER_POSITIONS));
+  }
+
+  /** Who the positions picked are: skaters, goalies, or both, as none picked is. */
+  readonly shown = computed<'skaters' | 'goalies' | 'players'>(() => {
+    const positions = this.positions();
+    const goalies = positions.has('G');
+    if (positions.size === 0 || (goalies && positions.size > 1)) {
+      return 'players';
+    }
+    return goalies ? 'goalies' : 'skaters';
+  });
 
   /** Only the players tagged Rising: the ones the page is for, without the rest of the wire. */
   readonly risingOnly = signal(false);
@@ -269,7 +286,7 @@ export class FaScoutComponent {
 
   readonly teamFailure = computed(() => this.teamResource.error());
 
-  /** Every available player of the kind on screen, best first on the rest of the season. */
+  /** Every available player, skaters and goalies, best first on the rest of the season. */
   readonly ranked = computed<readonly ScoutRow[]>(() => {
     const list = this.list();
     if (!list) {
@@ -279,11 +296,11 @@ export class FaScoutComponent {
     const alongside = (this.team() ?? []).flatMap((player) =>
       player.projection ? [player.projection] : [],
     );
-    return rankScout(list.players, this.kind(), rank, scoreOf, alongside);
+    return rankScout(list.players, rank, scoreOf, alongside);
   });
 
-  /** The user's players of the kind on screen, scored in the same pool as the wire. */
-  private readonly teamRows = computed<readonly TeamRow[]>(() => {
+  /** Every one of the user's players, scored in the same pool as the wire. */
+  private readonly scoredTeam = computed<readonly TeamRow[]>(() => {
     const team = this.team();
     const list = this.list();
     if (!team || !list) {
@@ -293,10 +310,24 @@ export class FaScoutComponent {
     return scoreTeam(
       team,
       list.players.map((player) => player.freeAgent.projection),
-      this.kind(),
       rank,
       scoreOf,
     );
+  });
+
+  /**
+   * The user's players of the kind the positions pick: skaters for skater positions, goalies for
+   * G, the whole team for both or none. A goalie is not dropped for a skater, so the drops follow
+   * the wire on screen; within skaters every one stays, since any may be dropped for any.
+   */
+  private readonly teamRows = computed<readonly TeamRow[]>(() => {
+    const shown = this.shown();
+    const rows = this.scoredTeam();
+    if (shown === 'players') {
+      return rows;
+    }
+    const type = shown === 'goalies' ? 'goalie' : 'skater';
+    return rows.filter((row) => row.player.type === type);
   });
 
   /** Room for a pickup with nobody dropped: open roster spots, injured players to move to IR. */
@@ -319,21 +350,19 @@ export class FaScoutComponent {
       .sort((a, b) => (a.score ?? 0) - (b.score ?? 0)),
   );
 
-  /** The user's players of the kind the model has no line for: left out of the list. */
+  /** The user's players on screen the model has no line for: left out of the list. */
   readonly unprojected = computed(() => this.teamRows().filter((row) => row.score === null).length);
 
-  readonly risingCount = computed(() => this.ranked().filter((row) => row.rising).length);
+  /** The players at the positions picked, rising or not. */
+  private readonly atPositions = computed(
+    () => filterByPositions(this.ranked(), this.positions()) as readonly ScoutRow[],
+  );
 
-  readonly filtered = computed<readonly ScoutRow[]>(() => {
-    const positions = this.positions();
-    return this.ranked().filter(
-      (row) =>
-        (!this.risingOnly() || row.rising) &&
-        (this.kind() === 'goalie' ||
-          positions.size === 0 ||
-          row.player.positions.some((position) => positions.has(position as PlannerPositionGroup))),
-    );
-  });
+  readonly risingCount = computed(() => this.atPositions().filter((row) => row.rising).length);
+
+  readonly filtered = computed<readonly ScoutRow[]>(() =>
+    this.risingOnly() ? this.atPositions().filter((row) => row.rising) : this.atPositions(),
+  );
 
   // --- The order of the list --------------------------------------------------------------------
 
@@ -342,13 +371,13 @@ export class FaScoutComponent {
 
   /**
    * The order on screen: the one picked, while its column is still in the table. A category the
-   * league does not score, or ice time on the goalies, falls back to the ranked order rather than
-   * sorting by blanks.
+   * league does not score, or ice time with no skater listed, falls back to the ranked order rather
+   * than sorting by blanks.
    */
   readonly sort = computed<ScoutSort>(() => {
     const sort = this.sortPicked();
     const about: readonly ScoutSortKey[] =
-      this.kind() === 'skater'
+      this.shown() !== 'goalies'
         ? ['name', 'score', 'rise', 'games', 'toi']
         : ['name', 'score', 'rise', 'games'];
     return about.includes(sort.key) || this.categories().includes(sort.key as ScoringStatKey)
@@ -365,14 +394,13 @@ export class FaScoutComponent {
   readonly sorted = computed(() => sortScout(this.filtered(), this.sort()));
 
   readonly emptyText = computed(() => {
-    if (this.risingOnly()) {
-      return this.kind() === 'skater'
-        ? 'No available skater here has risen far enough since the preseason projection.'
-        : 'No available goalie has risen far enough since the preseason projection.';
-    }
-    return this.kind() === 'skater'
-      ? 'No available skater at these positions has a projection.'
-      : 'No available goalie has a projection.';
+    const who =
+      this.positions().size === 0
+        ? 'No available player'
+        : 'No available player at these positions';
+    return this.risingOnly()
+      ? `${who} has risen far enough since the preseason projection.`
+      : `${who} has a projection.`;
   });
 
   readonly noPlayers = computed(
@@ -387,11 +415,10 @@ export class FaScoutComponent {
   // --- The pages of the list --------------------------------------------------------------------
 
   /**
-   * Another kind, other positions, the rising switch or another order is another list: back to
-   * its first page.
+   * Other positions, the rising switch or another order is another list: back to its first page.
    */
   private readonly page = linkedSignal<unknown, number>({
-    source: () => [this.kind(), this.positions(), this.risingOnly(), this.league(), this.sort()],
+    source: () => [this.positions(), this.risingOnly(), this.league(), this.sort()],
     computation: () => 0,
   });
 

@@ -10,9 +10,6 @@ import {
 } from '../streamer-planner/planner-free-agents';
 import { ScoutPlayer } from '../services/fa-scout.service';
 
-/** Skaters or goalies: they fill different roster slots and score different categories. */
-export type ScoutKind = Projection['type'];
-
 /**
  * An available player ranked on the rest of the season, with the place the model's preseason line
  * gave him among the same players. The planner's row, so its table helpers draw it.
@@ -45,7 +42,10 @@ export function isRising(rank: number, preseasonRank: number | null): boolean {
 }
 
 /**
- * The players of one kind on both lines, best first on the rest of the season.
+ * Every available player, skaters and goalies in one list, on both lines, best first on the rest
+ * of the season. One list as the planner's is, so a position filter narrows it without moving
+ * anyone's place: the engine scores a skater against skaters and a goalie against goalies, so the
+ * two are on one scale.
  *
  * <p>Both lines are ranked among the same available players, each on its own: a place is a
  * comparison with the rest of the wire, and the wire is the same players either way. The
@@ -61,24 +61,21 @@ export function isRising(rank: number, preseasonRank: number | null): boolean {
  */
 export function rankScout(
   players: readonly ScoutPlayer[],
-  kind: ScoutKind,
   rank: (projections: Projection[]) => ScoredProjection[],
   scoreOf: (entry: ScoredProjection) => number,
   alongside: readonly Projection[] = [],
 ): ScoutRow[] {
-  const own = players.filter((player) => player.freeAgent.projection.type === kind);
-  const byPlayerId = new Map(own.map((player) => [player.freeAgent.projection.playerId, player]));
+  const byPlayerId = new Map(
+    players.map((player) => [player.freeAgent.projection.playerId, player]),
+  );
 
   const preseasonRanks = new Map<number, number>();
-  rank(own.flatMap((player) => (player.preseason ? [player.preseason] : []))).forEach(
+  rank(players.flatMap((player) => (player.preseason ? [player.preseason] : []))).forEach(
     (entry, index) => preseasonRanks.set(entry.projection.playerId, index + 1),
   );
 
   const rows: ScoutRow[] = [];
-  const pool = [
-    ...own.map((player) => player.freeAgent.projection),
-    ...alongside.filter((line) => line.type === kind),
-  ];
+  const pool = [...players.map((player) => player.freeAgent.projection), ...alongside];
   for (const entry of rank(pool)) {
     const player = byPlayerId.get(entry.projection.playerId);
     if (!player) {
