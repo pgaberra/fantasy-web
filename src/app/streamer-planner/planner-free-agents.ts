@@ -37,15 +37,30 @@ export const WEEK_DECIMALS: Readonly<Record<string, number>> = Object.fromEntrie
   SCORING_STAT_KEYS.map((key) => [key, 2]),
 );
 
-export interface RankedFreeAgent {
-  readonly player: FreeAgent;
-  /** His projection over the nights counted: the one the score was reached from. */
+/**
+ * A player with a line over some games and its score: what the list's columns are drawn from,
+ * whether he is a free agent or one of the user's own.
+ */
+export interface LineRow {
+  readonly player: {
+    readonly name: string;
+    /** His line over the whole stretch, which the ice time a game is read from. */
+    readonly projection: Projection;
+    /** The stats the model gave a number for; a zero in any other is the engine's, not his. */
+    readonly projected: ReadonlySet<string>;
+  };
+  /** His projection over the games counted: the one the score was reached from. */
   readonly line: Projection;
-  /** Fantasy points or a z-score, whichever the league scores by, over the nights counted. */
+  /** Fantasy points or a z-score, whichever the league scores by, over the games counted. */
   readonly score: number;
+  /** His place in the list as it came, which players level on a column keep. */
   readonly rank: number;
-  /** Games he is expected to play on the nights counted; for a goalie, the starts he is given. */
+  /** Games he is expected to play among those counted; for a goalie, the starts he is given. */
   readonly games: number;
+}
+
+export interface RankedFreeAgent extends LineRow {
+  readonly player: FreeAgent;
   /**
    * Games more he would play on the nights counted where the user's lineup has room for him only
    * once one of the user's players is dropped. Each would replace the dropped player's game, so
@@ -508,7 +523,7 @@ function formatLineStat(key: ScoringStatKey, value: number): string {
  * is left out rather than written as the zero the ranking engine was handed in its place.
  */
 export function lineStats(
-  row: RankedFreeAgent,
+  row: LineRow,
   categories: readonly ScoringStatKey[],
 ): readonly LineStat[] {
   const own: readonly string[] =
@@ -615,10 +630,7 @@ export function nextSort(current: FreeAgentSort, key: FreeAgentSortKey): FreeAge
  * category of the other kind, one the model gave him no number in, a rate over no games, a
  * goalie's ice time. Null is what the table leaves blank or writes as a dash.
  */
-export function sortValue(
-  row: RankedFreeAgent,
-  key: Exclude<FreeAgentSortKey, 'name'>,
-): number | null {
+export function sortValue(row: LineRow, key: Exclude<FreeAgentSortKey, 'name'>): number | null {
   switch (key) {
     case 'score':
       return row.score;
@@ -651,7 +663,7 @@ export function sortValue(
  * it points, and players level on it keep their ranked order, so a sort is the ranking re-cut
  * rather than reshuffled. The ranked order itself is the list as it came.
  */
-export function sortFreeAgents<T extends RankedFreeAgent>(
+export function sortFreeAgents<T extends LineRow>(
   rows: readonly T[],
   sort: FreeAgentSort,
 ): readonly T[] {

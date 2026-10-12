@@ -45,9 +45,23 @@ export function lineupSeats(slots: RosterSlots): readonly Seat[] {
  * The most of these players the seats can hold at once, each seated at a position he may play.
  * A player eligible at C and LW is moved to whichever seat leaves room for the others, as a
  * manager would set the lineup, so the answer does not depend on the order he is listed in.
- * Rosters and lineups are a couple of dozen at most, so plain augmenting paths are plenty.
  */
 export function seated(players: readonly (readonly string[])[], seats: readonly Seat[]): number {
+  return seating(players, seats).filter(Boolean).length;
+}
+
+/**
+ * Which of these players get a seat, taken in the order listed: each is seated if a seat can be
+ * found for him, with the players already seated moved about to make one, and never unseated. So
+ * the players listed first are the ones kept when there are more of a kind than seats: listed
+ * best first, the lineup is the best one, as a manager would set it, and the ones left standing
+ * are the ones he would bench. Rosters and lineups are a couple of dozen at most, so plain
+ * augmenting paths are plenty.
+ */
+export function seating(
+  players: readonly (readonly string[])[],
+  seats: readonly Seat[],
+): readonly boolean[] {
   const owner: number[] = seats.map(() => -1);
   const place = (player: number, tried: boolean[]): boolean => {
     for (const [seat, takes] of seats.entries()) {
@@ -62,18 +76,12 @@ export function seated(players: readonly (readonly string[])[], seats: readonly 
     }
     return false;
   };
-  let count = 0;
-  for (const player of players.keys()) {
-    if (
-      place(
-        player,
-        seats.map(() => false),
-      )
-    ) {
-      count++;
-    }
-  }
-  return count;
+  return players.map((_, player) =>
+    place(
+      player,
+      seats.map(() => false),
+    ),
+  );
 }
 
 /** How a night looks from the user's own lineup. */

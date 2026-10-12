@@ -341,7 +341,7 @@
   border-color: var(--color-warning-border);
 }
 
-/* --- The two tables --------------------------------------------------------------------------- */
+/* --- The three tables ------------------------------------------------------------------------- */
 
 /* Free agents or team schedules: the page's own switch, over the one card it shows. */
 .views {
@@ -385,6 +385,27 @@
 .view[aria-pressed='true'] {
   background: var(--color-primary);
   color: var(--color-primary-contrast);
+}
+
+/* A line over or under the roster: the count who sit the whole stretch, in the warning's ink
+   with its mark, and the count the model has no line for, in the muted grey of a footnote. */
+.roster-note {
+  align-items: flex-start;
+  color: var(--color-text-muted);
+  display: flex;
+  font-size: var(--text-sm);
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+}
+
+.roster-note--bench {
+  color: var(--color-warning-text);
+  margin: 0 0 var(--space-3);
+}
+
+.roster-note--bench app-icon {
+  flex: none;
+  margin-top: 0.1rem;
 }
 
 /* Under the list: which places are on screen, the page size, and the way to the other pages. */

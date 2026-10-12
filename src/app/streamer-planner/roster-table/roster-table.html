@@ -1,0 +1,197 @@
+<div class="table-scroll">
+  <table class="roster-table">
+    <thead>
+      <tr>
+        <th scope="col" class="player-col" [attr.aria-sort]="ariaSort('name')">
+          <button type="button" class="sort" (click)="sortBy.emit('name')">
+            Player
+            @if (sort().key === 'name') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+          </button>
+        </th>
+        <th scope="col" class="num" [attr.aria-sort]="ariaSort('score')">
+          <button
+            type="button"
+            class="sort"
+            [appTooltip]="scoreTip()"
+            (click)="sortBy.emit('score')"
+          >
+            @if (sort().key === 'score') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+            {{ scoreHeading() }}
+          </button>
+        </th>
+        <th scope="col" class="num" [attr.aria-sort]="ariaSort('perGame')">
+          <button
+            type="button"
+            class="sort"
+            [appTooltip]="perGameTip()"
+            (click)="sortBy.emit('perGame')"
+          >
+            @if (sort().key === 'perGame') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+            Per gm
+          </button>
+        </th>
+        <!-- The two counts the table is for, side by side: the games he would start in the
+             user's lineup, and the games his club gives him on the nights. -->
+        <th scope="col" class="num starts-col" [attr.aria-sort]="ariaSort('games')">
+          <button
+            type="button"
+            class="sort"
+            appTooltip="Games he would start in your lineup, with your best lineup set each night"
+            (click)="sortBy.emit('games')"
+          >
+            @if (sort().key === 'games') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+            Starts
+          </button>
+        </th>
+        <th scope="col" class="num" [attr.aria-sort]="ariaSort('clubGames')">
+          <button
+            type="button"
+            class="sort"
+            appTooltip="Projected games on the selected game days, started or not"
+            (click)="sortBy.emit('clubGames')"
+          >
+            @if (sort().key === 'clubGames') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+            GP
+          </button>
+        </th>
+        <!-- A mark a night: which games he starts and which he sits, so a 0 of 3 says where. -->
+        @for (day of nights(); track day.date; let first = $first) {
+          <th scope="col" class="night-col" [class.night-col--first]="first">
+            <span class="night-head" [appTooltip]="nightHeading(day)">
+              <span class="night-day">{{ dayName(day) }}</span>
+              <span class="night-date">{{ dayOfMonth(day) }}</span>
+            </span>
+          </th>
+        }
+        @if (hasSkaters()) {
+          <th scope="col" class="num toi-col" [attr.aria-sort]="ariaSort('toi')">
+            <button
+              type="button"
+              class="sort"
+              appTooltip="Ice time per game"
+              (click)="sortBy.emit('toi')"
+            >
+              @if (sort().key === 'toi') {
+                <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+              }
+              TOI
+            </button>
+          </th>
+        }
+        @for (column of columns(); track column.key; let index = $index) {
+          <th
+            scope="col"
+            class="num stat-col"
+            [class.stat-col--start]="groupStarts()[index]"
+            [attr.aria-sort]="ariaSort(column.key)"
+          >
+            <button
+              type="button"
+              class="sort"
+              [appTooltip]="column.name"
+              (click)="sortBy.emit(column.key)"
+            >
+              @if (sort().key === column.key) {
+                <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+              }
+              {{ column.label }}
+            </button>
+          </th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (entry of entries(); track entry.row.player.playerId) {
+        <tr class="player-row" [class.player-row--benched]="benchedAll(entry.row)">
+          <th scope="row" class="player-col">
+            <span class="player-cell">
+              <app-team-logo
+                class="player-logo"
+                [team]="entry.row.player.teamAbbrev"
+                [alt]="entry.row.player.teamAbbrev ?? ''"
+              />
+              <span class="player-identity">
+                <span class="player-name-line">
+                  <span class="player-name">{{ entry.row.player.name }}</span>
+                  <!-- Out is his status, not a position: by the name, in the danger red the FA
+                       scout tags an injured player in. -->
+                  @if (entry.row.player.out) {
+                    <span class="player-out">{{ entry.row.player.injuryStatus ?? 'Out' }}</span>
+                  }
+                </span>
+                <app-position-chips [positions]="entry.row.player.positions" />
+              </span>
+            </span>
+          </th>
+          <td class="num score">{{ score(entry.row) }}</td>
+          <td class="num rate-col">{{ perGame(entry.row) }}</td>
+          <td class="num starts-col">
+            <!-- Fewer starts than games is the finding: set off in the warning's ink, and none
+                 at all in red, since he gives nothing this week whatever his line says. -->
+            <span
+              class="starts"
+              [class.starts--some]="benchedSome(entry.row)"
+              [class.starts--none]="benchedAll(entry.row)"
+              >{{ starts(entry.row) }}</span
+            >
+          </td>
+          <td class="num games-col">{{ games(entry.row) }}</td>
+          @for (night of entry.row.nights; track night.date; let first = $first) {
+            <td class="night-col" [class.night-col--first]="first">
+              <span
+                #markTip="appTooltip"
+                class="night"
+                [class.night--start]="night.status === 'start'"
+                [class.night--bench]="night.status === 'bench'"
+                [class.night--none]="night.status === 'none'"
+                role="img"
+                tabindex="0"
+                [appTooltip]="nightTip(night)"
+                [attr.aria-label]="nightTip(night)"
+                (click)="markTip.toggle()"
+              >
+                @switch (night.status) {
+                  @case ('start') {
+                    <app-icon name="check" [size]="14" />
+                  }
+                  @case ('bench') {
+                    <span aria-hidden="true">BN</span>
+                  }
+                }
+              </span>
+            </td>
+          }
+          @if (hasSkaters()) {
+            <td class="num toi-col" [class.not-his]="entry.row.player.projection.type !== 'skater'">
+              {{ toi(entry.row) }}
+            </td>
+          }
+          @for (cell of entry.cells; track $index) {
+            <td
+              class="num stat-col"
+              [class.stat-col--start]="groupStarts()[$index]"
+              [class.nil]="cell && isNil(cell)"
+              [class.not-his]="entry.notHis[$index]"
+            >
+              @if (entry.notHis[$index]) {
+                <span>{{ notHis }}</span>
+              } @else {
+                {{ cell?.value }}
+              }
+            </td>
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
