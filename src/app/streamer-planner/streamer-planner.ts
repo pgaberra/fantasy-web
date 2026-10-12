@@ -1145,7 +1145,7 @@ export class StreamerPlannerComponent {
   /** The roster's order on screen: the one picked, while its column is still in the table. */
   readonly rosterSort = computed(() => {
     const sort = this.rosterSortPicked();
-    const about = ['name', 'score', 'perGame', 'games', 'clubGames', 'toi'];
+    const about = ['name', 'score', 'games', 'clubGames', 'toi'];
     return about.includes(sort.key) || this.categories().includes(sort.key as ScoringStatKey)
       ? sort
       : LOWEST_FIRST;
@@ -1174,7 +1174,7 @@ export class StreamerPlannerComponent {
    */
   readonly sort = computed(() => {
     const sort = this.sortPicked();
-    const about = ['name', 'score', 'perGame', 'games', 'toi', 'rostered'];
+    const about = ['name', 'score', 'games', 'toi', 'rostered'];
     return about.includes(sort.key) || this.categories().includes(sort.key as ScoringStatKey)
       ? sort
       : RANKED_ORDER;

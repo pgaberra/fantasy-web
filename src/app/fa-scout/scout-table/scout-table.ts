@@ -109,7 +109,7 @@ export class ScoutTableComponent {
     if (row.games <= 0) {
       return '';
     }
-    return `${(row.score / row.games).toFixed(this.scoringType() === 'points' ? 2 : 3)}/gm`;
+    return `${(row.score / row.games).toFixed(this.scoringType() === 'points' ? 2 : 3)}/G`;
   }
 
   games(row: ScoutRow): string {

@@ -111,8 +111,8 @@ export function toiPerGame(line: Projection | null): number | undefined {
 
 // --- Sorting the list ----------------------------------------------------------------------------
 
-/** A column the list can be sorted by: the planner's, without its per-game column, and the rise. */
-export type ScoutSortKey = Exclude<FreeAgentSortKey, 'perGame'> | 'rise';
+/** A column the list can be sorted by: the planner's, and the rise. */
+export type ScoutSortKey = FreeAgentSortKey | 'rise';
 
 export interface ScoutSort {
   readonly key: ScoutSortKey;
@@ -120,7 +120,7 @@ export interface ScoutSort {
 }
 
 /** The list as ranked: best first on the rest of the season, which is what the # column counts. */
-export const SCOUT_RANKED_ORDER: ScoutSort = RANKED_ORDER as ScoutSort;
+export const SCOUT_RANKED_ORDER: ScoutSort = RANKED_ORDER;
 
 /**
  * Sorts by a column, best first, whichever end of the scale that is: the furthest risen first, and
@@ -134,7 +134,7 @@ export function nextScoutSort(current: ScoutSort, key: ScoutSortKey): ScoutSort 
     return { key, descending: true };
   }
   // Another column than the current: the planner reads nothing of the current order but its key.
-  return nextSort(current as FreeAgentSort, key) as ScoutSort;
+  return nextSort(current as FreeAgentSort, key);
 }
 
 /**

@@ -222,7 +222,7 @@
   outline-offset: 1px;
 }
 
-/* A cell of its own in the planner; FA Scout stacks a second figure under it in the same cell. */
+/* The score, with a second figure stacked under it in the same cell: the rate a game. */
 .score {
   color: var(--color-primary);
   font-weight: var(--weight-bold);
@@ -232,15 +232,12 @@ span.score {
   display: block;
 }
 
+/* Plain weight: in the planner it sits inside the bold score cell. */
 .per-game {
   color: var(--color-text-subtle);
   display: block;
   font-size: var(--text-xs);
-}
-
-/* The rate a game as a column: the score's companion, a step quieter but a figure like the rest. */
-.free-agents-table td.rate-col {
-  color: var(--color-text-muted);
+  font-weight: normal;
 }
 
 .free-agents-table td.toi-col,

@@ -112,6 +112,22 @@ describe('RosterTableComponent', () => {
     ).toEqual(['Benched Every Night']);
   });
 
+  it('writes the score a start under the score, and none for a player who starts none', () => {
+    const fixture = render();
+    const scores = ngMocks.findAll(fixture, 'tbody td.score');
+
+    expect(scores.map((cell) => ngMocks.formatText(cell))).toEqual([
+      '0.0',
+      '—',
+      '4.0 4.0/G',
+      '8.0 4.0/G',
+    ]);
+    expect(ngMocks.findAll(fixture, 'td.rate-col')).toHaveLength(0);
+    expect(
+      ngMocks.findAll(fixture, 'thead button.sort').map((button) => ngMocks.formatText(button)),
+    ).not.toContain('Per gm');
+  });
+
   it('fades a player who is out and writes a dash in every figure, not a score', () => {
     const fixture = render();
     const outRows = ngMocks.findAll(fixture, 'tr.player-row--out');
@@ -125,8 +141,8 @@ describe('RosterTableComponent', () => {
       '—',
       '—',
       '—',
-      '—',
     ]);
+    expect(ngMocks.findAll(line, '.per-game')).toHaveLength(0);
     // The nights keep their marks: each says he has no game.
     expect(ngMocks.findAll(line, '.night--none')).toHaveLength(2);
   });
@@ -183,7 +199,7 @@ describe('RosterTableComponent', () => {
     const heading = ngMocks.find(fixture, 'th.starts-col');
     expect(heading.nativeElement.getAttribute('aria-sort')).toBe('descending');
     ngMocks.click(ngMocks.find(heading, 'button'));
-    ngMocks.click(ngMocks.find(ngMocks.findAll(fixture, 'thead th')[4], 'button'));
+    ngMocks.click(ngMocks.find(ngMocks.findAll(fixture, 'thead th')[3], 'button'));
     expect(sorted).toEqual(['games', 'clubGames']);
   });
 });
