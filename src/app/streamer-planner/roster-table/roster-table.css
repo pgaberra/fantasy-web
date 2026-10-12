@@ -134,7 +134,14 @@
   font-weight: var(--weight-bold);
 }
 
-.roster-table td.rate-col,
+/* The rate a start, under the score: quiet, and in plain weight against the bold above it. */
+.per-game {
+  color: var(--color-text-subtle);
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: normal;
+}
+
 .roster-table td.games-col,
 .roster-table td.toi-col {
   color: var(--color-text-muted);

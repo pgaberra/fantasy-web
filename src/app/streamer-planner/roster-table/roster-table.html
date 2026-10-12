@@ -23,19 +23,6 @@
             {{ scoreHeading() }}
           </button>
         </th>
-        <th scope="col" class="num" [attr.aria-sort]="ariaSort('perGame')">
-          <button
-            type="button"
-            class="sort"
-            [appTooltip]="perGameTip()"
-            (click)="sortBy.emit('perGame')"
-          >
-            @if (sort().key === 'perGame') {
-              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
-            }
-            Per gm
-          </button>
-        </th>
         <!-- The two counts the table is for, side by side: the games he would start in the
              user's lineup, and the games his club gives him on the nights. -->
         <th scope="col" class="num starts-col" [attr.aria-sort]="ariaSort('games')">
@@ -140,8 +127,14 @@
               </span>
             </span>
           </th>
-          <td class="num score">{{ score(entry.row) }}</td>
-          <td class="num rate-col">{{ perGame(entry.row) }}</td>
+          <!-- The rate a start in small type under the score, so a three-start week is
+               compared to a four without a column of its own. -->
+          <td class="num score">
+            {{ score(entry.row) }}
+            @if (perGame(entry.row); as rate) {
+              <span class="per-game">{{ rate }}</span>
+            }
+          </td>
           <td class="num starts-col">
             <!-- Fewer starts than games is the finding: set off in the warning's ink, and none
                  at all in red, since he gives nothing this week whatever his line says. A player

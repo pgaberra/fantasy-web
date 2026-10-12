@@ -173,12 +173,8 @@ export class FreeAgentsTableComponent {
 
   readonly scoreTip = computed(() =>
     this.scoringType() === 'points'
-      ? 'Projected points'
-      : "Ranks players based on their relative value across your league's scoring categories.",
-  );
-
-  readonly perGameTip = computed(() =>
-    this.scoringType() === 'points' ? 'Projected points per game' : 'Z-Score per game',
+      ? 'Projected points, and per game under it'
+      : "Ranks players based on their relative value across your league's scoring categories, per game under it.",
   );
 
   ariaSort(key: FreeAgentSortKey): 'ascending' | 'descending' | null {
@@ -224,12 +220,12 @@ export class FreeAgentsTableComponent {
     return this.scoringType() === 'points' ? 1 : 2;
   }
 
-  /** The score per game he plays, the way a streamer compares a three-game week to a four. */
+  /** "3.0/G", the score a game he plays, the way a streamer compares a three-game week to a four. */
   perGame(row: RankedFreeAgent): string {
     if (row.games <= 0) {
       return '';
     }
-    return (row.score / row.games).toFixed(this.scoreDecimals());
+    return `${(row.score / row.games).toFixed(this.scoreDecimals())}/G`;
   }
 
   games(row: RankedFreeAgent): string {

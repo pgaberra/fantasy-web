@@ -186,12 +186,12 @@ describe('FreeAgentsTableComponent', () => {
     expect(ngMocks.findAll(fixture, 'tbody .rank-col .sr-only')).toHaveLength(1);
   });
 
-  it('gives the rate a game a column of its own, beside the score', () => {
+  it('writes the rate a game under the score, in the same cell rather than a column', () => {
     const fixture = render();
 
-    const rates = ngMocks.findAll(fixture, 'tbody td.rate-col');
-    expect(rates.map((cell) => ngMocks.formatText(cell))).toEqual(['3.0', '1.6']);
-    expect(ngMocks.findAll(fixture, 'tbody td.score + td.rate-col').length).toBe(2);
+    const rates = ngMocks.findAll(fixture, 'tbody td.score .per-game');
+    expect(rates.map((cell) => ngMocks.formatText(cell))).toEqual(['3.0/G', '1.6/G']);
+    expect(ngMocks.findAll(fixture, 'td.rate-col')).toHaveLength(0);
   });
 
   it("writes the score the way the league's scoring is written, with the rate a game", () => {
@@ -200,7 +200,7 @@ describe('FreeAgentsTableComponent', () => {
 
     expect(table.scoreHeading()).toBe('Proj. pts');
     expect(table.score(SKATER)).toBe('11.3');
-    expect(table.perGame(SKATER)).toBe('3.0');
+    expect(table.perGame(SKATER)).toBe('3.0/G');
 
     const category = render('category');
     expect(category.point.componentInstance.scoreHeading()).toBe('Z-Score');
@@ -393,7 +393,7 @@ describe('FreeAgentsTableComponent', () => {
       his.length,
     );
     expect(ngMocks.findAll(rows[0], 'td.not-his .figure--drop')).toHaveLength(0);
-    expect(ngMocks.findAll(rows[0], 'td.rate-col .figure--drop')).toHaveLength(0);
+    expect(ngMocks.findAll(rows[0], '.figure--drop .per-game')).toHaveLength(0);
     expect(ngMocks.findAll(rows[0], 'td.toi-col .figure--drop')).toHaveLength(0);
     const games = ngMocks.find(rows[0], '.games-in-drop');
     expect(ngMocks.formatText(games)).toBe('4');
@@ -433,8 +433,16 @@ describe('FreeAgentsTableComponent', () => {
         .map((cell) => ngMocks.formatText(cell));
 
       // His own figures, each with the mark after it: the score, the games, goals and assists.
-      // Not the rate a game, the ice time, or the power-play points the game leaves at 0.8.
-      expect(figures).toEqual(['11.3 +3.8', '3.0', '4 +1', '17:32', '2.1 +0.7', '3.0 +1.0', '0.8']);
+      // Not the rate a game stacked under the score, the ice time, or the power-play points the
+      // game leaves at 0.8.
+      expect(figures).toEqual([
+        '11.3 +3.8' + '3.0/G',
+        '4 +1',
+        '17:32',
+        '2.1 +0.7',
+        '3.0 +1.0',
+        '0.8',
+      ]);
       expect(ngMocks.findAll(row, '.lift').map((mark) => mark.attributes['aria-label'])).toEqual([
         'would add +3.8',
         'would add +0.7',
@@ -508,16 +516,14 @@ describe('FreeAgentsTableComponent', () => {
     expect(text('tbody .stat-col--focus')).toEqual(['0.8']);
   });
 
-  it('names the score and the rate a game by how the league scores', () => {
+  it('names the score and the rate a game under it by how the league scores', () => {
     const points = render('points').point.componentInstance;
-    expect(points.scoreTip()).toBe('Projected points');
-    expect(points.perGameTip()).toBe('Projected points per game');
+    expect(points.scoreTip()).toBe('Projected points, and per game under it');
 
     const categories = render('category').point.componentInstance;
     expect(categories.scoreTip()).toBe(
-      "Ranks players based on their relative value across your league's scoring categories.",
+      "Ranks players based on their relative value across your league's scoring categories, per game under it.",
     );
-    expect(categories.perGameTip()).toBe('Z-Score per game');
   });
 
   it('marks no column while the list is ranked by every category', () => {
@@ -572,7 +578,6 @@ describe('FreeAgentsTableComponent headings', () => {
     expect(buttons.map((button) => ngMocks.formatText(button))).toEqual([
       'Player',
       'Proj. pts',
-      'Per gm',
       'GP',
       'TOI',
       'G',
@@ -581,6 +586,6 @@ describe('FreeAgentsTableComponent headings', () => {
     for (const button of buttons) {
       (button.nativeElement as HTMLButtonElement).click();
     }
-    expect(asked).toEqual(['name', 'score', 'perGame', 'games', 'toi', 'goals', 'blocks']);
+    expect(asked).toEqual(['name', 'score', 'games', 'toi', 'goals', 'blocks']);
   });
 });

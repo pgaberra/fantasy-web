@@ -26,21 +26,6 @@
             {{ scoreHeading() }}
           </button>
         </th>
-        <!-- A column of its own, so a three-game week is compared to a four down one line of
-             figures, and no cell in the row needs a second line. -->
-        <th scope="col" class="num" [attr.aria-sort]="ariaSort('perGame')">
-          <button
-            type="button"
-            class="sort"
-            [appTooltip]="perGameTip()"
-            (click)="sortBy.emit('perGame')"
-          >
-            @if (sort().key === 'perGame') {
-              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
-            }
-            Per gm
-          </button>
-        </th>
         <th scope="col" class="num" [attr.aria-sort]="ariaSort('games')">
           <button
             type="button"
@@ -163,8 +148,12 @@
                 <span class="lift" [attr.aria-label]="'would add ' + more">{{ more }}</span>
               }
             </span>
+            <!-- The rate a game in small type under it, so a three-game week is compared to a
+                 four without a column of its own. -->
+            @if (perGame(entry.row); as rate) {
+              <span class="per-game">{{ rate }}</span>
+            }
           </td>
-          <td class="num rate-col">{{ perGame(entry.row) }}</td>
           <td class="num">
             @if (inDrop(entry.row)) {
               <!-- Counted, they are among his games: the figure is yellow, and the tick box's

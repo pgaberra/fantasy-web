@@ -600,8 +600,7 @@ export function lineColumns(
 // --- Sorting the list ----------------------------------------------------------------------------
 
 /** A column the free agents can be sorted by: one about the player, or a category of his line. */
-export type FreeAgentSortKey =
-  'name' | 'score' | 'perGame' | 'games' | 'toi' | 'rostered' | ScoringStatKey;
+export type FreeAgentSortKey = 'name' | 'score' | 'games' | 'toi' | 'rostered' | ScoringStatKey;
 
 export interface FreeAgentSort {
   readonly key: FreeAgentSortKey;
@@ -624,22 +623,19 @@ export function nextSort(current: FreeAgentSort, key: FreeAgentSortKey): FreeAge
   if (current.key === key) {
     return { key, descending: !current.descending };
   }
-  const firstWay =
-    key === 'score' || key === 'perGame' || key === 'games' || key === 'toi' || key === 'rostered';
+  const firstWay = key === 'score' || key === 'games' || key === 'toi' || key === 'rostered';
   return { key, descending: firstWay || defaultSortDirection(key) === 'desc' };
 }
 
 /**
  * The number a player sorts by in a column, or null where the column says nothing about him: a
- * category of the other kind, one the model gave him no number in, a rate over no games, a
- * goalie's ice time. Null is what the table leaves blank or writes as a dash.
+ * category of the other kind, one the model gave him no number in, a rate stat over no games,
+ * a goalie's ice time. Null is what the table leaves blank or writes as a dash.
  */
 export function sortValue(row: LineRow, key: Exclude<FreeAgentSortKey, 'name'>): number | null {
   switch (key) {
     case 'score':
       return row.score;
-    case 'perGame':
-      return row.games > 0 ? row.score / row.games : null;
     case 'games':
       return row.games;
     case 'toi':

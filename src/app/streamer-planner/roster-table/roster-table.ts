@@ -101,12 +101,8 @@ export class RosterTableComponent {
 
   readonly scoreTip = computed(() =>
     this.scoringType() === 'points'
-      ? 'Projected points over the games he starts in your lineup'
-      : 'Z-Score over the games he starts in your lineup',
-  );
-
-  readonly perGameTip = computed(() =>
-    this.scoringType() === 'points' ? 'Projected points per start' : 'Z-Score per start',
+      ? 'Projected points over the games he starts in your lineup, and per start under it'
+      : 'Z-Score over the games he starts in your lineup, and per start under it',
   );
 
   ariaSort(key: RosterSortKey): 'ascending' | 'descending' | null {
@@ -133,14 +129,12 @@ export class RosterTableComponent {
     return this.scoringType() === 'points' ? 1 : 2;
   }
 
+  /** "0.93/G", the score a start; empty for a player who starts none, or is out. */
   perGame(row: RosterRow): string {
-    if (row.player.out) {
-      return NOT_HIS;
-    }
-    if (row.games <= 0) {
+    if (row.player.out || row.games <= 0) {
       return '';
     }
-    return (row.score / row.games).toFixed(this.scoreDecimals());
+    return `${(row.score / row.games).toFixed(this.scoreDecimals())}/G`;
   }
 
   starts(row: RosterRow): string {
