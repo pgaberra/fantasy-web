@@ -26,15 +26,7 @@ import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
 import { LeagueFieldComponent } from '../streamer-planner/league-field/league-field';
 import { PLANNER_POSITIONS, PlannerPositionGroup } from '../streamer-planner/planner-free-agents';
-import { lineupSeats } from '../streamer-planner/planner-lineup';
-import {
-  DropCandidate,
-  dropCandidates,
-  scoreTeam,
-  TeamRoom,
-  teamRoom,
-  TeamRow,
-} from './drop-candidates';
+import { scoreTeam, TeamRoom, teamRoom, TeamRow } from './drop-candidates';
 import { rankScout, ScoutKind, ScoutRow } from './scout-ranking';
 import { ScoutTableComponent } from './scout-table/scout-table';
 
@@ -298,15 +290,6 @@ export class FaScoutComponent {
     );
   });
 
-  /**
-   * The league's lineup seats. Until its settings say, none: a drop is then judged on score alone,
-   * since a guessed lineup would forbid swaps the league allows.
-   */
-  private readonly seats = computed(() => {
-    const settings = this.settingsResource.hasValue() ? this.settingsResource.value() : null;
-    return settings?.rosterSlots ? lineupSeats(settings.rosterSlots) : [];
-  });
-
   /** Room for a pickup with nobody dropped: open roster spots, injured players to move to IR. */
   readonly room = computed<TeamRoom>(() => {
     const team = this.team();
@@ -317,18 +300,18 @@ export class FaScoutComponent {
     return teamRoom(team, settings?.rosterSlots ?? null, settings?.reserveSlots ?? {});
   });
 
-  readonly candidates = computed<readonly DropCandidate[]>(() =>
-    dropCandidates(this.teamRows(), this.seats(), this.room()),
+  /**
+   * The user's players of the kind, lowest first, so the whole roster reads against itself: those
+   * on injured reserve too, marked by their slot, though dropping them frees no spot.
+   */
+  readonly roster = computed<readonly TeamRow[]>(() =>
+    this.teamRows()
+      .filter((row) => row.score !== null)
+      .sort((a, b) => (a.score ?? 0) - (b.score ?? 0)),
   );
 
-  /** The user's players of the kind left out of the drops: on injured reserve, or not projected. */
-  readonly keptOut = computed(() => {
-    const rows = this.teamRows();
-    return {
-      reserve: rows.filter((row) => row.player.reserve).length,
-      unprojected: rows.filter((row) => !row.player.reserve && row.score === null).length,
-    };
-  });
+  /** The user's players of the kind the model has no line for: left out of the list. */
+  readonly unprojected = computed(() => this.teamRows().filter((row) => row.score === null).length);
 
   readonly risingCount = computed(() => this.ranked().filter((row) => row.rising).length);
 
