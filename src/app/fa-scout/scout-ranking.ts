@@ -1,5 +1,13 @@
 import { Projection, ScoredProjection } from '../models/projection.model';
-import { RankedFreeAgent } from '../streamer-planner/planner-free-agents';
+import { compareStatValues } from '../models/sorting';
+import {
+  FreeAgentSort,
+  FreeAgentSortKey,
+  nextSort,
+  RANKED_ORDER,
+  RankedFreeAgent,
+  sortFreeAgents,
+} from '../streamer-planner/planner-free-agents';
 import { ScoutPlayer } from '../services/fa-scout.service';
 
 /** Skaters or goalies: they fill different roster slots and score different categories. */
@@ -102,4 +110,45 @@ export function toiPerGame(line: Projection | null): number | undefined {
   }
   const toi = line.stats.utility.toiPerGame;
   return toi > 0 ? toi : undefined;
+}
+
+// --- Sorting the list ----------------------------------------------------------------------------
+
+/** A column the list can be sorted by: the planner's, without its per-game column, and the rise. */
+export type ScoutSortKey = Exclude<FreeAgentSortKey, 'perGame'> | 'rise';
+
+export interface ScoutSort {
+  readonly key: ScoutSortKey;
+  readonly descending: boolean;
+}
+
+/** The list as ranked: best first on the rest of the season, which is what the # column counts. */
+export const SCOUT_RANKED_ORDER: ScoutSort = RANKED_ORDER as ScoutSort;
+
+/**
+ * Sorts by a column, best first, whichever end of the scale that is: the furthest risen first, and
+ * every other column as the planner sorts it. The same column again turns the order round.
+ */
+export function nextScoutSort(current: ScoutSort, key: ScoutSortKey): ScoutSort {
+  if (current.key === key) {
+    return { key, descending: !current.descending };
+  }
+  if (key === 'rise') {
+    return { key, descending: true };
+  }
+  // Another column than the current: the planner reads nothing of the current order but its key.
+  return nextSort(current as FreeAgentSort, key) as ScoutSort;
+}
+
+/**
+ * The list in the order asked for. A player the column says nothing about, as a rise without a
+ * preseason line, goes last whichever way it points, and players level on it keep their ranked
+ * order, as in the planner.
+ */
+export function sortScout(rows: readonly ScoutRow[], sort: ScoutSort): readonly ScoutRow[] {
+  if (sort.key !== 'rise') {
+    return sortFreeAgents(rows, { key: sort.key, descending: sort.descending });
+  }
+  const sign = sort.descending ? -1 : 1;
+  return [...rows].sort((a, b) => compareStatValues(a.rise, b.rise, sign) || a.rank - b.rank);
 }

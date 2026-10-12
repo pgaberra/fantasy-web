@@ -187,6 +187,8 @@
           [rows]="visible()"
           [scoringType]="scoringType()"
           [categories]="categories()"
+          [sort]="sort()"
+          (sortBy)="sortBy($event)"
         />
         <div class="list-foot">
           <span class="list-count" aria-live="polite">{{ rangeText() }}</span>
