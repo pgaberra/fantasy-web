@@ -64,18 +64,6 @@
         >
           Rising only ({{ risingCount() }})
         </button>
-        @if (showSwaps()) {
-          <button
-            type="button"
-            class="pill pill--upgrade"
-            [class.pill--active]="upgradesOnly()"
-            [attr.aria-pressed]="upgradesOnly()"
-            appTooltip="Only players who beat the one you would drop for them"
-            (click)="toggleUpgradesOnly()"
-          >
-            Upgrades only ({{ upgradeCount() }})
-          </button>
-        }
       </div>
     }
 
@@ -96,9 +84,12 @@
       <section class="drops" aria-labelledby="drops-title">
         <h3 id="drops-title" class="drops-title">
           <app-icon name="user-minus" [size]="16" />
-          {{ kind() === 'skater' ? 'Skaters' : 'Goalies' }} to drop from {{ teamName() }}
+          {{ kind() === 'skater' ? 'Your skaters' : 'Your goalies' }}
+          @if (teamName(); as name) {
+            on {{ name }}
+          }
           <app-help-tip
-            label="How drop candidates are picked"
+            label="How your players are ranked"
             text="Your players scored the same way as the available ones: the AI projection for the rest of the season, by your league's settings. Every player on your team, the lowest first. Players on injured reserve are left out, since dropping them frees no roster spot."
           />
         </h3>

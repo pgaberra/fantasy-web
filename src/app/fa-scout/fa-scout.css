@@ -118,17 +118,6 @@
   border-color: var(--color-success);
 }
 
-/* Upgrades only: the other question the page answers, in the accent rather than Rising's green. */
-.pill--upgrade:not(.pill--active) {
-  border-color: var(--color-accent);
-  color: var(--color-accent);
-}
-
-.pill--upgrade.pill--active {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-}
-
 /* The user's own players most worth dropping, above the pickups they would make room for. */
 .drops {
   background: var(--color-surface-alt);

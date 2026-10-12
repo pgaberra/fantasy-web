@@ -295,51 +295,18 @@ describe('FaScoutComponent', () => {
     expect(ngMocks.findAll(fixture, '.drop')).toHaveLength(11);
     expect(page.keptOut().reserve).toBe(1);
     const text = ngMocks.formatText(fixture);
-    expect(text).toContain('Skaters to drop from Slapshots');
+    expect(text).toContain('Your skaters on Slapshots');
     expect(text).toContain('1 on injured reserve left out.');
     // Which pickup each drop needs is held back for now.
     expect(text).not.toContain('Any pickup');
     expect(text).not.toContain('Only for a');
   });
 
-  it('pairs each pickup with the player to drop for him and what the swap gains', async () => {
+  it('leaves out the Swap column and the Upgrades only filter for now', async () => {
     const fixture = await render();
-    const page = fixture.point.componentInstance;
 
-    // The risen defenceman (116) replaces the lowest scorer, the C at Util (5), whose seat he can
-    // fill: the same drop as for a forward.
-    const montour = page.swaps().get('99');
-    expect(montour?.kind === 'drop' && montour.drop.player.playerId).toBe('203');
-    expect(montour?.gain).toBe(116 - 5);
-    // A depth C beats the spare C too.
-    const depth = page.swaps().get('1');
-    expect(depth?.kind === 'drop' && depth.drop.player.playerId).toBe('203');
-    // The Swap column is off for now: the swaps only drive "Upgrades only".
-    const table = ngMocks.find(fixture, ScoutTableComponent);
-    expect(ngMocks.input(table, 'swaps')).toBeUndefined();
-  });
-
-  it('narrows to the pickups that beat the player they would replace', async () => {
-    myTeam.mockReturnValue(
-      of({
-        ...team(),
-        // Every player at 100: above any depth forward on the wire (70 at most), below the
-        // risen defenceman (116).
-        players: team().players.map((player) =>
-          teamPlayer(
-            skater(Number(player.playerId), 20, 20),
-            [...player.positions],
-            player.reserve,
-          ),
-        ),
-      }),
-    );
-    const fixture = await render();
-    const page = fixture.point.componentInstance;
-
-    page.toggleUpgradesOnly();
-
-    expect(page.filtered().map((row) => row.player.playerId)).toEqual(['99']);
+    expect(ngMocks.input(ngMocks.find(fixture, ScoutTableComponent), 'swaps')).toBeUndefined();
+    expect(ngMocks.formatText(fixture)).not.toContain('Upgrades only');
   });
 
   it('keeps the list without drops when the user has no team in the league', async () => {
@@ -382,7 +349,6 @@ describe('FaScoutComponent', () => {
 
     // One IR slot is taken by the reserve C, the other is free: Hronek goes there.
     expect(page.room().toReserve.map((move) => move.player.name)).toEqual(['Filip Hronek']);
-    expect(page.swaps().get('99')).toMatchObject({ kind: 'reserve', gain: 116 });
     expect(page.candidates().map((candidate) => candidate.row.player.name)).not.toContain(
       'Filip Hronek',
     );
@@ -401,7 +367,6 @@ describe('FaScoutComponent', () => {
 
     // Eleven roster spots against ten players off reserve.
     expect(page.room().openSpots).toBe(1);
-    expect(page.swaps().get('99')).toEqual({ kind: 'open', gain: 116 });
     expect(ngMocks.formatText(fixture)).toContain(
       '1 open roster spot: pick up without dropping anyone',
     );

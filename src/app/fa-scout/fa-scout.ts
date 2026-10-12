@@ -28,11 +28,9 @@ import { LeagueFieldComponent } from '../streamer-planner/league-field/league-fi
 import { PLANNER_POSITIONS, PlannerPositionGroup } from '../streamer-planner/planner-free-agents';
 import { lineupSeats } from '../streamer-planner/planner-lineup';
 import {
-  bestSwap,
   DropCandidate,
   dropCandidates,
   scoreTeam,
-  Swap,
   TeamRoom,
   teamRoom,
   TeamRow,
@@ -60,8 +58,8 @@ export const SCOUT_PAGE_SIZE = 25;
  *
  * <p>A pickup needs a roster spot. An open one is taken first, then the spot of an injured player
  * who can move to a free injured-reserve slot (`teamRoom`). Otherwise the user's own team, scored
- * in the same pool, gives the player to drop for him and what the team gains (`bestSwap`): the
- * lowest scorer whose loss leaves the lineup as full, judged against the league's lineup slots.
+ * in the same pool as the wire, is listed lowest first beside it: the players a pickup would
+ * replace.
  */
 @Component({
   selector: 'app-fa-scout',
@@ -255,7 +253,7 @@ export class FaScoutComponent {
 
   readonly teamName = computed(() => {
     const team = this.teamResource.hasValue() ? this.teamResource.value() : null;
-    return team?.teamName ?? 'Your team';
+    return team?.teamName ?? null;
   });
 
   readonly teamStatus = computed<'loading' | 'error' | 'not-found' | 'ready'>(() => {
@@ -332,37 +330,6 @@ export class FaScoutComponent {
     };
   });
 
-  /** Each available player's best swap, by his platform id; null when no drop keeps the lineup. */
-  readonly swaps = computed<ReadonlyMap<string, Swap | null>>(() => {
-    const team = this.teamRows();
-    if (team.length === 0) {
-      return new Map();
-    }
-    const seats = this.seats();
-    const room = this.room();
-    return new Map(
-      this.ranked().map((row) => [
-        row.player.playerId,
-        bestSwap({ positions: row.player.positions, score: row.score }, team, seats, room),
-      ]),
-    );
-  });
-
-  readonly showSwaps = computed(() => this.teamStatus() === 'ready' && this.teamRows().length > 0);
-
-  /** Only the pickups that beat a player the team could drop for them. */
-  readonly upgradesOnly = signal(false);
-
-  toggleUpgradesOnly(): void {
-    this.upgradesOnly.update((on) => !on);
-  }
-
-  private isUpgrade(row: ScoutRow): boolean {
-    return (this.swaps().get(row.player.playerId)?.gain ?? 0) > 0;
-  }
-
-  readonly upgradeCount = computed(() => this.ranked().filter((row) => this.isUpgrade(row)).length);
-
   readonly risingCount = computed(() => this.ranked().filter((row) => row.rising).length);
 
   readonly filtered = computed<readonly ScoutRow[]>(() => {
@@ -370,7 +337,6 @@ export class FaScoutComponent {
     return this.ranked().filter(
       (row) =>
         (!this.risingOnly() || row.rising) &&
-        (!this.upgradesOnly() || !this.showSwaps() || this.isUpgrade(row)) &&
         (this.kind() === 'goalie' ||
           positions.size === 0 ||
           row.player.positions.some((position) => positions.has(position as PlannerPositionGroup))),
@@ -378,11 +344,6 @@ export class FaScoutComponent {
   });
 
   readonly emptyText = computed(() => {
-    if (this.upgradesOnly() && this.showSwaps()) {
-      return this.kind() === 'skater'
-        ? 'No available skater here beats a player you could drop for him.'
-        : 'No available goalie beats a goalie you could drop for him.';
-    }
     if (this.risingOnly()) {
       return this.kind() === 'skater'
         ? 'No available skater here has risen far enough since the preseason projection.'
@@ -406,13 +367,7 @@ export class FaScoutComponent {
 
   /** Another kind, other positions or the rising switch is another list: back to its first page. */
   private readonly page = linkedSignal<unknown, number>({
-    source: () => [
-      this.kind(),
-      this.positions(),
-      this.risingOnly(),
-      this.upgradesOnly(),
-      this.league(),
-    ],
+    source: () => [this.kind(), this.positions(), this.risingOnly(), this.league()],
     computation: () => 0,
   });
 
