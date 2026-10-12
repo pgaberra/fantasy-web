@@ -31,12 +31,15 @@ interface WeightGroup {
   imports: [TooltipDirective, StatLabelPipe, StatTooltipPipe],
   templateUrl: './stat-weights-editor.html',
   styleUrl: './stat-weights-editor.css',
+  host: { '[class.side-by-side]': 'sideBySide()' },
 })
 export class StatWeightsEditorComponent {
   readonly statWeights = model.required<Record<ScoringStatKey, number>>();
   readonly activeScoringColumns = input.required<ReadonlySet<ScoringStatKey>>();
   /** The league the weights were imported from, which holds them; null while they are the user's. */
   readonly lockedBy = input<string | null>(null);
+  /** Goalies beside the skaters rather than under them, wherever the editor is given the width. */
+  readonly sideBySide = input(false);
 
   readonly columns = computed(() =>
     SCORING_STAT_KEYS.filter((key) => this.activeScoringColumns().has(key)),

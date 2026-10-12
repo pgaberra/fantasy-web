@@ -306,42 +306,48 @@
         }
       </div>
       <!-- The demo has no league to take its scoring or its players from, so both are set here:
-           the threshold the pool is cut at, and the league the list is ranked by. -->
+           the threshold the pool is cut at, and the league the list is ranked by. On a wide
+           screen the points per stat stand beside the two, not under them. -->
       @if (demo()) {
         <div class="demo-controls">
-          <div class="demo-threshold" role="group" aria-labelledby="planner-rostered-label">
-            <span id="planner-rostered-label" class="group-label"
-              >Max % rostered in Yahoo:
-              <span class="demo-threshold-value">{{ rosteredShown() }}%</span></span
-            >
-            <input
-              class="demo-slider"
-              type="range"
-              min="0"
-              max="100"
-              step="1"
-              [value]="maxRostered()"
-              aria-labelledby="planner-rostered-label"
-              (input)="dragMaxRostered($event)"
-              (change)="setMaxRostered($event)"
-            />
+          <div class="demo-settings">
+            <div class="demo-threshold" role="group" aria-labelledby="planner-rostered-label">
+              <span id="planner-rostered-label" class="group-label"
+                >Max % rostered in Yahoo:
+                <span class="demo-threshold-value">{{ rosteredShown() }}%</span></span
+              >
+              <input
+                class="demo-slider"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                [value]="maxRostered()"
+                aria-labelledby="planner-rostered-label"
+                (input)="dragMaxRostered($event)"
+                (change)="setMaxRostered($event)"
+              />
+            </div>
+            <div class="demo-league" role="group" aria-labelledby="planner-demo-league-label">
+              <span id="planner-demo-league-label" class="group-label">Scoring</span>
+              <app-league-settings-controls
+                [settings]="demoLeague()"
+                [sizing]="false"
+                [importing]="false"
+                (settingsChange)="setDemoLeague($event)"
+              />
+            </div>
           </div>
-          <div class="demo-league" role="group" aria-labelledby="planner-demo-league-label">
-            <span id="planner-demo-league-label" class="group-label">Scoring</span>
-            <app-league-settings-controls
-              [settings]="demoLeague()"
-              [sizing]="false"
-              [importing]="false"
-              (settingsChange)="setDemoLeague($event)"
-            />
-            @if (demoLeague().scoringType === 'points') {
+          @if (demoLeague().scoringType === 'points') {
+            <div class="demo-weights" role="group" aria-label="Points per stat">
               <app-stat-weights-editor
                 [statWeights]="demoLeague().statWeights"
                 [activeScoringColumns]="demoLeague().activeScoringColumns"
+                [sideBySide]="true"
                 (statWeightsChange)="setDemoWeights($event)"
               />
-            }
-          </div>
+            </div>
+          }
         </div>
       }
       <!-- Skaters and goalies are one list, narrowed by any number of positions at once. "All" is
