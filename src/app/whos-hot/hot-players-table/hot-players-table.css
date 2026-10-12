@@ -137,10 +137,11 @@ td.stat-cell {
   flex-shrink: 0;
 }
 
-/* The club's crest, as tall as the position chips beside it: the NHL's drawings carry their own
-   margin, so a smaller box reads as a speck. */
+/* The club's crest, left of the name at the Streamer Planner's size (free-agents-table.css):
+   the NHL's drawings carry their own margin, so a smaller box reads as a speck. The component
+   pins its own width, so a squeezed cell takes the width out of the name and not the crest. */
 .player-team {
-  --team-logo-size: 22px;
+  --team-logo-size: 28px;
 }
 
 /* A stat this player cannot have. Muted so the column reads as "not theirs" at a glance
@@ -223,10 +224,21 @@ tbody tr:hover td.fan-pts-col {
     flex: 1 1 100%;
   }
 
+  /* styles.css caps the name column at 7rem, sized for a name alone. The crest now stands left
+     of the name, so it is handed back what it takes -- its 22px here, and the gap -- rather than
+     cutting "C. McDavid" to "C. McDa…"; the stat columns scroll either way. */
+  .table-wrapper td.col-name {
+    max-width: 8.75rem;
+  }
+
+  .player-team {
+    --team-logo-size: 22px;
+  }
+
   /* The picture and the team stay on a phone here, where the other boards drop them: this is a
      leaderboard of players you are not being asked to recognise by name, so the two things that
-     say who a row is earn their room. They cost only name length -- the column keeps the 9rem
-     cap from #161, so the same stat columns reach the edge and the name truncates sooner.
+     say who a row is earn their room. They cost only name length -- the column is capped, so
+     the same stat columns reach the edge and the name truncates sooner.
      Nothing to declare for the team: this table simply does not take
      .table-wrapper--compact-identity. */
 }
