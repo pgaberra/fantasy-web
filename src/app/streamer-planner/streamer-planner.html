@@ -1,6 +1,17 @@
 <div class="streamer-planner">
   <header class="hero">
     <h1>Streamer Planner</h1>
+    <!-- Admins only: the page without a league, for showing the best streamers anywhere. -->
+    @if (isAdmin()) {
+      <label class="fit-toggle demo-toggle">
+        <input type="checkbox" [checked]="demo()" (change)="toggleDemo()" />
+        Demo mode
+        <app-help-tip
+          label="About demo mode"
+          text="Admins only. No league is synced: the free agents are every player at or under the Yahoo % rostered you set, ranked with default points scoring."
+        />
+      </label>
+    }
   </header>
 
   @if (loadFailure()) {
@@ -20,7 +31,7 @@
          what is on screen. A night is picked by name or by date, and any night can be left out. -->
     <section
       class="card nights"
-      [class.nights--beside]="platform() === 'espn'"
+      [class.nights--beside]="platform() === 'espn' && !demo()"
       aria-label="Game days and league"
     >
       <div class="settings">
@@ -68,7 +79,23 @@
             </div>
           </div>
         </div>
-        <app-league-field class="league" [(platform)]="platform" [(espnLeague)]="espnLeague" />
+        @if (demo()) {
+          <label class="league date-field demo-threshold">
+            <span class="date-label">Max % rostered in Yahoo</span>
+            <input
+              class="field-date demo-input"
+              type="number"
+              inputmode="numeric"
+              min="0"
+              max="100"
+              step="1"
+              [value]="maxRostered()"
+              (change)="setMaxRostered($event)"
+            />
+          </label>
+        } @else {
+          <app-league-field class="league" [(platform)]="platform" [(espnLeague)]="espnLeague" />
+        }
       </div>
 
       @if (loadingSchedule()) {
@@ -358,7 +385,7 @@
           </div>
         </div>
       }
-      @if (!league()) {
+      @if (!league() && !demo()) {
         <!-- No league is no fault: the card says what to do, not what went wrong. -->
         @switch (leaguePrompt()) {
           @case ('checking') {
@@ -408,7 +435,13 @@
       } @else if (loadingFreeAgents()) {
         <app-loading-indicator />
       } @else if (noFreeAgents()) {
-        <p class="empty">No available player in this league has a projection for these nights.</p>
+        <p class="empty">
+          @if (demo()) {
+            No player at or under {{ maxRostered() }}% rostered has a projection for these nights.
+          } @else {
+            No available player in this league has a projection for these nights.
+          }
+        </p>
       } @else if (filtered().length === 0) {
         <p class="empty">{{ emptyText() }}</p>
       } @else {

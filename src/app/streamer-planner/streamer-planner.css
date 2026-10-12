@@ -9,6 +9,14 @@
 
 /* --- Hero ------------------------------------------------------------------------------------- */
 
+.hero {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  justify-content: space-between;
+}
+
 .hero h1 {
   color: var(--color-primary);
   font-size: var(--text-xl);
@@ -196,6 +204,10 @@
 
 .league {
   flex: 0 1 20rem;
+}
+
+.demo-input {
+  width: 5rem;
 }
 
 /* ESPN's league is a form, several times the height of the dates beside it: with the strip under
