@@ -300,7 +300,7 @@ describe('FaScoutComponent', () => {
     const text = ngMocks.formatText(fixture);
     expect(text).toContain('Your skaters on Slapshots');
     expect(text).not.toContain('left out');
-    // Which pickup each drop needs is held back for now.
+    // No line on which pickup each player could be dropped for.
     expect(text).not.toContain('Any pickup');
     expect(text).not.toContain('Only for a');
   });

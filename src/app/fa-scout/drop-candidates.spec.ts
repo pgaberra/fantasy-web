@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Projection, ScoredProjection } from '../models/projection.model';
 import { TeamPlayer } from '../services/fa-scout.service';
 import { lineupSeats } from '../streamer-planner/planner-lineup';
-import { bestSwap, dropCandidates, scoreTeam, Swap, teamRoom, TeamRow } from './drop-candidates';
+import { bestSwap, scoreTeam, Swap, teamRoom, TeamRow } from './drop-candidates';
 
 /** A league starting one C, two D and a G, with a bench. */
 const SEATS = lineupSeats({ c: 1, lw: 0, rw: 0, w: 0, f: 0, d: 2, g: 1, util: 0, bn: 3 });
@@ -140,31 +140,6 @@ describe('bestSwap', () => {
   });
 });
 
-describe('dropCandidates', () => {
-  it('lists every scored player, lowest first, each with the positions a pickup must play', () => {
-    const team = rows([
-      player(1, ['C'], 30),
-      player(2, ['C'], 4),
-      player(3, ['D'], 20),
-      player(4, ['D'], 6),
-      player(8, ['C'], null),
-    ]);
-
-    const candidates = dropCandidates(team, SEATS);
-
-    expect(candidates.map((candidate) => candidate.row.player.playerId)).toEqual([
-      '2',
-      '4',
-      '3',
-      '1',
-    ]);
-    // The spare C goes for anyone; either D only for another D.
-    expect(candidates[0]).toMatchObject({ anyPickup: true, needs: [] });
-    expect(candidates[1]).toMatchObject({ anyPickup: false, needs: ['D'] });
-    expect(candidates[2]).toMatchObject({ anyPickup: false, needs: ['D'] });
-  });
-});
-
 describe('teamRoom', () => {
   /** One C, two D, one G and a bench of two: six roster spots. */
   const SLOTS = { c: 1, lw: 0, rw: 0, w: 0, f: 0, d: 2, g: 1, util: 0, bn: 2 };
@@ -229,7 +204,7 @@ describe('teamRoom', () => {
     ]);
   });
 
-  it('makes room for a pickup with nobody dropped, and keeps the mover off the drop list', () => {
+  it('makes room for a pickup with nobody dropped', () => {
     const hurt = injured(7, 40, ['IR']);
     const team = rows([player(1, ['C'], 30), player(3, ['D'], 20), player(4, ['D'], 15), hurt]);
     const room = teamRoom(
@@ -240,9 +215,6 @@ describe('teamRoom', () => {
 
     const swap = bestSwap({ positions: ['C'], score: 12 }, team, SEATS, { ...room, openSpots: 0 });
     expect(swap).toEqual({ kind: 'reserve', move: { player: hurt, slot: 'IR' }, gain: 12 });
-    expect(
-      dropCandidates(team, SEATS, room).map((candidate) => candidate.row.player.playerId),
-    ).not.toContain('7');
   });
 
   it('takes an open roster spot before anything else', () => {
