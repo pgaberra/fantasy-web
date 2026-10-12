@@ -303,7 +303,7 @@ span.score {
   padding-right: calc(var(--space-3) + 1.75rem);
 }
 
-/* A category he is projected nothing in steps back, so the ones he is picked up for stand out. */
+/* A dash where there is no rate steps back; a 0.0 is a figure and looks like the others. */
 .free-agents-table td.nil {
   color: var(--color-text-subtle);
 }
