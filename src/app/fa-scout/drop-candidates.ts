@@ -1,12 +1,7 @@
 import { RosterSlots } from '../api/models/roster-slots';
 import { Projection, ScoredProjection } from '../models/projection.model';
 import { TeamPlayer } from '../services/fa-scout.service';
-import {
-  LINEUP_POSITIONS,
-  LineupPosition,
-  lineupSeats,
-  seated,
-} from '../streamer-planner/planner-lineup';
+import { lineupSeats, seated } from '../streamer-planner/planner-lineup';
 import { ScoutKind } from './scout-ranking';
 
 /** One of the user's own players, scored on the same scale as the wire. */
@@ -48,19 +43,6 @@ export type Swap =
       /** The pickup's score less the dropped player's: positive is an upgrade. */
       readonly gain: number;
     };
-
-/** One of the user's players as a candidate to drop, and what the lineup needs of his pickup. */
-export interface DropCandidate {
-  readonly row: TeamRow;
-  /** Whether any pickup of his kind keeps the lineup as full: a skater at any position, a goalie. */
-  readonly anyPickup: boolean;
-  /**
-   * The positions a pickup of his kind must play for the lineup to stay as full as it is; empty
-   * when any will do. A team with only as many D as it starts can drop its worst D only for
-   * another D.
-   */
-  readonly needs: readonly LineupPosition[];
-}
 
 /** One lineup seat: the positions that may sit in it, as the planner's lineup builds them. */
 type Seat = ReadonlySet<string>;
@@ -203,26 +185,4 @@ export function bestSwap(
   }
   const drop = droppable(team, room).find((row) => keepsLineup(team, row, pickup.positions, seats));
   return drop ? { kind: 'drop', drop, gain: pickup.score - (drop.score ?? 0) } : null;
-}
-
-/**
- * Every player the user could drop, lowest score first, so the whole roster reads against itself,
- * each with the positions a pickup must play for the lineup to stay as full. A player is still
- * listed when only a like-for-like pickup can replace him: he is the one to drop for that pickup.
- * A player moving to injured reserve is not one.
- */
-export function dropCandidates(
-  team: readonly TeamRow[],
-  seats: readonly Seat[],
-  room: TeamRoom = NO_ROOM,
-): DropCandidate[] {
-  return droppable(team, room).map((row) => {
-    // A pickup of his own kind: a skater's seat refilled by a goalie is not a swap anyone makes.
-    const own = LINEUP_POSITIONS.filter(
-      (position) => (position === 'G') === (row.player.type === 'goalie'),
-    );
-    const needs = own.filter((position) => keepsLineup(team, row, [position], seats));
-    const anyPickup = needs.length === own.length;
-    return { row, anyPickup, needs: anyPickup ? [] : needs };
-  });
 }
