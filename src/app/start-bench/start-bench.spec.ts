@@ -3,6 +3,7 @@ import { of } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Api } from '../api/api';
 import { startBenchMyTeam } from '../api/fn/start-bench/start-bench-my-team';
+import { startBenchRestOfSeason } from '../api/fn/start-bench/start-bench-rest-of-season';
 import { streamerPlannerTeams } from '../api/fn/streamer-planner/streamer-planner-teams';
 import { LeagueProjectionSettingsResponse } from '../api/models/league-projection-settings-response';
 import { PlannerMyTeamResponse } from '../api/models/planner-my-team-response';
@@ -99,6 +100,9 @@ describe('StartBenchComponent', () => {
     myTeam = team();
     invoke.mockReset();
     invoke.mockImplementation((fn: unknown, params?: { start: string }) => {
+      if (fn === startBenchRestOfSeason) {
+        return Promise.resolve({ found: false, players: [] });
+      }
       if (fn === startBenchMyTeam) {
         return Promise.resolve(myTeam);
       }
@@ -217,6 +221,24 @@ describe('StartBenchComponent', () => {
     expect(page.date()).toBe(page.lastDay);
     expect(START_BENCH_DAYS_AHEAD).toBe(30);
     expect(page.lastDay).toBe('2026-11-12');
+  });
+
+  it('activates a centre cleared to come off injured reserve when he is the better start', async () => {
+    const base = team();
+    myTeam = {
+      ...base,
+      players: base.players.map((player) =>
+        player.playerId === '2'
+          ? { ...player, slot: 'IR+', out: true, injuryStatus: 'IR' }
+          : player,
+      ),
+    };
+    const fixture = await render();
+
+    const text = ngMocks.formatText(fixture);
+    expect(text).toContain('Activate Centre 2 from injured reserve first.');
+    expect(text).toContain('Expected back');
+    expect(text).toContain('That takes a roster spot');
   });
 
   it('says so when the league holds no team of the user’s', async () => {

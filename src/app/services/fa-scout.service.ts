@@ -4,6 +4,7 @@ import { Api } from '../api/api';
 import { faScoutFreeAgents } from '../api/fn/fa-scout/fa-scout-free-agents';
 import { faScoutMyTeam } from '../api/fn/fa-scout/fa-scout-my-team';
 import { ScoutLine } from '../api/models/scout-line';
+import { ScoutMyTeamResponse } from '../api/models/scout-my-team-response';
 import { ScoutPlayerResponse } from '../api/models/scout-player-response';
 import { ScoutRosterPlayer } from '../api/models/scout-roster-player';
 import {
@@ -71,13 +72,7 @@ export class FaScoutService {
   private readonly api = inject(Api);
 
   myTeam(platform: LeaguePlatform, leagueId: string): Observable<ScoutTeam> {
-    return from(this.api.invoke(faScoutMyTeam, { platform, leagueId })).pipe(
-      map((answer) => ({
-        found: answer.found,
-        teamName: answer.teamName ?? null,
-        players: answer.players.map(toTeamPlayer),
-      })),
-    );
+    return from(this.api.invoke(faScoutMyTeam, { platform, leagueId })).pipe(map(toScoutTeam));
   }
 
   freeAgents(platform: LeaguePlatform, leagueId: string): Observable<ScoutList> {
@@ -89,6 +84,18 @@ export class FaScoutService {
       })),
     );
   }
+}
+
+/**
+ * The user's team as the BFF sends it with the rest of the season, shaped as the scout reads it:
+ * FA Scout's own-team answer, and Start/Bench's, which is the same read under its own switch.
+ */
+export function toScoutTeam(answer: ScoutMyTeamResponse): ScoutTeam {
+  return {
+    found: answer.found,
+    teamName: answer.teamName ?? null,
+    players: answer.players.map(toTeamPlayer),
+  };
 }
 
 /**

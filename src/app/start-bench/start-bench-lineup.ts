@@ -2,8 +2,17 @@ import { PlannerRosterPlayer } from '../api/models/planner-roster-player';
 import { RosterSlots } from '../api/models/roster-slots';
 import { ScheduledGame } from '../api/models/scheduled-game';
 import { TeamSchedule } from '../api/models/team-schedule';
+import { TeamRow, teamRoom } from '../fa-scout/drop-candidates';
 import { nhlTeamKey } from '../models/nhl-team';
+import { TeamPlayer } from '../services/fa-scout.service';
 import { labelledSeats, LabelledSeat } from '../streamer-planner/planner-lineup';
+
+/**
+ * The chance of dressing at which the model's word that a skater plays tonight outweighs a
+ * platform that still has him out: a player cleared after the platform last looked, as Bedard was
+ * on 2026-10-13, still parked on IR+. Below it he is a game-time call, and the platform stands.
+ */
+export const DRESSES_TONIGHT = 0.5;
 
 /** Slots that hold a player out of the lineup and off the roster count: IR and not-active. */
 const RESERVE_SLOTS = new Set(['IR', 'IR+', 'IR-LT', 'IR-NR', 'NA']);
@@ -31,6 +40,16 @@ export interface StartBenchRow {
   /** The slot the best lineup puts him in, or null for the bench. */
   readonly suggested: string | null;
   readonly change: Change;
+  /**
+   * Started from injured reserve or not-active: he has to be activated first, which takes a
+   * roster spot ({@link makeRoom}).
+   */
+  readonly activate: boolean;
+  /**
+   * The platform has him out, but the model expects him to play tonight: the two disagree, and the
+   * row says so rather than pick one silently.
+   */
+  readonly clearedByModel: boolean;
 }
 
 /** The day's lineup: every player, and what the suggestion changes. */
@@ -42,12 +61,32 @@ export interface StartBenchDay {
   /** The players the suggestion starts who sit out now, and the ones it sits who start now. */
   readonly starts: readonly StartBenchRow[];
   readonly benches: readonly StartBenchRow[];
+  /** The starts that come off injured reserve or not-active, each needing a roster spot. */
+  readonly activations: readonly StartBenchRow[];
   /**
    * What the suggested lineup scores over the one set now, in the league's own score: fantasy
    * points in a points league. Null where a player's line is missing on either side, since the
    * difference would then be a guess.
    */
   readonly gain: number | null;
+}
+
+/**
+ * Whether a player can play tonight: not out on the platform, or out there while the model expects
+ * him to play. A skater counts from {@link DRESSES_TONIGHT}; a goalie's chance is his share of the
+ * crease, nought while he is out, so any share at all says he is back.
+ */
+export function playsTonight(
+  player: PlannerRosterPlayer,
+  expectedGames: number | undefined,
+): boolean {
+  if (!player.out) {
+    return true;
+  }
+  if (expectedGames === undefined) {
+    return false;
+  }
+  return player.type === 'goalie' ? expectedGames > 0 : expectedGames >= DRESSES_TONIGHT;
 }
 
 export function nowStatus(slot: string | null | undefined): NowStatus {
@@ -83,7 +122,12 @@ export function startBenchDay(
     null;
   const candidates = roster
     .map((player, index) => ({ player, index, game: gameOf(player) }))
-    .filter(({ player, game }) => !player.out && player.positions.length > 0 && game !== null)
+    .filter(
+      ({ player, game }) =>
+        playsTonight(player, expected.get(player.playerId)) &&
+        player.positions.length > 0 &&
+        game !== null,
+    )
     .sort((a, b) => {
       const scoreA = scores.get(a.player.playerId);
       const scoreB = scores.get(b.player.playerId);
@@ -115,7 +159,8 @@ export function startBenchDay(
     const game = gameOf(player);
     // A starter with no game, or out, gives nothing where he sits: moving him is no decision, and
     // a start that needs his seat takes it on the platform. Only a player who would play is sat.
-    const plays = game !== null && !player.out;
+    const available = playsTonight(player, expected.get(player.playerId));
+    const plays = game !== null && available;
     let change: Change = null;
     if (now !== 'lineup' && slot !== null) {
       change = 'start';
@@ -131,6 +176,8 @@ export function startBenchDay(
       now,
       suggested: slot,
       change,
+      activate: change === 'start' && now === 'reserve',
+      clearedByModel: player.out && available,
     };
   });
   const starts = rows.filter((row) => row.change === 'start');
@@ -141,7 +188,81 @@ export function startBenchDay(
     playing: candidates.length,
     starts,
     benches,
+    activations: starts.filter((row) => row.activate),
     gain: gain(starts, benches),
+  };
+}
+
+/** How the roster makes a spot for each player activated from injured reserve. */
+export interface Room {
+  /** Spots nobody holds once they are activated. */
+  readonly openSpots: number;
+  /** Injured players to move into the reserve slots the activated leave free, each freeing a spot. */
+  readonly toReserve: readonly TeamPlayer[];
+  /** The players to drop for the rest, the one the team loses least by first. */
+  readonly drops: readonly TeamRow[];
+  /** Spots still short: more activations than the roster can make room for with these. */
+  readonly short: number;
+}
+
+/**
+ * Room for the activations, the cheapest way first: a spot nobody holds, then an injured player
+ * moved into the reserve slot an activated player leaves free, then a drop. The drop is the player
+ * the team loses least by over the rest of the season, as FA Scout ranks a team (`scores`), among
+ * those who neither start tonight in the suggestion nor sit on reserve, so the drop costs nothing
+ * tonight and frees a spot that counts. A player the model has no rest-of-season line for is not
+ * named: there is nothing to say he is the cheapest.
+ *
+ * @param team the user's players with their rest of the season, as `/start-bench/rest-of-season` reads them
+ * @param scores each one's rest of the season scored by the league's settings, by player id
+ * @param reserveSlots the league's injured-reserve slots by code ({@code IR: 2})
+ */
+export function makeRoom(
+  day: StartBenchDay,
+  team: readonly TeamPlayer[],
+  scores: ReadonlyMap<string, number>,
+  slots: RosterSlots,
+  reserveSlots: Readonly<Record<string, number>>,
+): Room {
+  if (day.activations.length === 0) {
+    return { openSpots: 0, toReserve: [], drops: [], short: 0 };
+  }
+  const activated = new Set(day.activations.map((row) => row.player.playerId));
+  // As the roster stands once they are activated: on the bench, holding a spot, their reserve
+  // slots free for someone else.
+  const after = team.map((player) =>
+    activated.has(player.playerId) ? { ...player, slot: 'BN', reserve: false, out: false } : player,
+  );
+  const held = after.filter((player) => !player.reserve).length;
+  const capacity = labelledSeats(slots).length + (slots.bn ?? 0);
+  const openSpots = Math.max(0, capacity - (held - activated.size));
+  let needed = Math.max(0, activated.size - openSpots);
+  const toReserve = teamRoom(after, slots, reserveSlots)
+    .toReserve.slice(0, needed)
+    .map((move) => move.player);
+  needed -= toReserve.length;
+
+  const startingTonight = new Set(
+    day.rows.filter((row) => row.suggested !== null).map((row) => row.player.playerId),
+  );
+  const moved = new Set(toReserve.map((player) => player.playerId));
+  const drops = team
+    .filter(
+      (player) =>
+        !player.reserve &&
+        !activated.has(player.playerId) &&
+        !startingTonight.has(player.playerId) &&
+        !moved.has(player.playerId) &&
+        scores.has(player.playerId),
+    )
+    .map((player) => ({ player, score: scores.get(player.playerId) ?? 0 }))
+    .sort((a, b) => a.score - b.score)
+    .slice(0, needed);
+  return {
+    openSpots: Math.min(openSpots, activated.size),
+    toReserve,
+    drops,
+    short: needed - drops.length,
   };
 }
 
