@@ -435,7 +435,9 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   suggestion starts from IR is **activated**, and `makeRoom` finds him a roster spot the cheapest
   way: an open spot, an injured player moved into the reserve slot he leaves, else a drop — the
   player the team loses least by over the rest of the season as FA Scout ranks it (`scoreTeam` over
-  `GET /start-bench/rest-of-season`), among those not starting tonight (Alexander, 2026-10-13). The league is picked with
+  `GET /start-bench/rest-of-season`), among those not starting tonight (Alexander, 2026-10-13). A goalie's row reads "Confirmed starter" or "Likely starter" where Daily Faceoff's starting
+  goalies page names him (`PlannerOwnLine.nights[].starter`, projection-service #282), else his
+  chance to start. The league is picked with
   the planner's `app-league-field`, as FA Scout does.
 - `services/` — app services (auth, projections, etc.)
 - `interceptors/` — HTTP interceptors: `authInterceptor` attaches the JWT and refreshes

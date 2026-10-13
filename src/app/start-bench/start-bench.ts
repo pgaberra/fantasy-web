@@ -443,8 +443,34 @@ export class StartBenchComponent {
     if (row.player.type !== 'goalie' || !row.game || row.expectedGames === null) {
       return null;
     }
-    return `${Math.round(Math.min(1, row.expectedGames) * 100)}% to start`;
+    const chance = `${Math.round(Math.min(1, row.expectedGames) * 100)}% to start`;
+    switch (this.starters().get(row.player.playerId)) {
+      case 'confirmed':
+        return 'Confirmed starter';
+      case 'likely':
+        return `Likely starter, ${chance}`;
+      default:
+        return chance;
+    }
   }
+
+  /**
+   * The goalies Daily Faceoff's starting goalies page names for the day, and how sure it is: a
+   * confirmed starter's chance is the whole night, and the row says why rather than show a bare
+   * 100%.
+   */
+  private readonly starters = computed(() => {
+    const team = this.team();
+    const date = this.date();
+    const named = new Map<string, 'confirmed' | 'likely'>();
+    for (const line of team?.lines ?? []) {
+      const starter = line.nights?.find((night) => night.date === date)?.starter;
+      if (starter) {
+        named.set(line.playerId, starter);
+      }
+    }
+    return named;
+  });
 
   formatScore(score: number | null): string {
     if (score === null) {

@@ -87,8 +87,15 @@ describe('rosterPlayers', () => {
           clubGames: 3,
           expectedGames: 2.7,
           stats: { goals: 1.2, toiPerGame: 1100 },
+          nights: [],
         },
-        { playerId: '2', clubGames: 3, expectedGames: 2, stats: { w: 1.1, svPct: 0.91 } },
+        {
+          playerId: '2',
+          clubGames: 3,
+          expectedGames: 2,
+          stats: { w: 1.1, svPct: 0.91 },
+          nights: [],
+        },
       ],
     };
     const players = rosterPlayers(team);
