@@ -4,11 +4,14 @@ import { RosterSlots } from '../api/models/roster-slots';
 import { ScheduledGame } from '../api/models/scheduled-game';
 import { TeamSchedule } from '../api/models/team-schedule';
 import { teamsByKey } from '../streamer-planner/planner-free-agents';
+import { TeamPlayer } from '../services/fa-scout.service';
 import {
   assignSeats,
   byLineupNow,
   gameLabel,
+  makeRoom,
   nowStatus,
+  playsTonight,
   startBenchDay,
 } from './start-bench-lineup';
 import { labelledSeats } from '../streamer-planner/planner-lineup';
@@ -78,8 +81,16 @@ function day(
   roster: PlannerRosterPlayer[],
   scores: Record<string, number>,
   slots: RosterSlots = SLOTS,
+  expected: Record<string, number> = {},
 ) {
-  return startBenchDay(roster, slots, TEAMS, DAY, new Map(Object.entries(scores)), new Map());
+  return startBenchDay(
+    roster,
+    slots,
+    TEAMS,
+    DAY,
+    new Map(Object.entries(scores)),
+    new Map(Object.entries(expected)),
+  );
 }
 
 describe('nowStatus', () => {
@@ -222,5 +233,113 @@ describe('gameLabel', () => {
   it('reads the game from the player’s side', () => {
     expect(gameLabel(game(DAY, 'CGY'))).toBe('vs CGY');
     expect(gameLabel(game(DAY, 'MTL', false))).toBe('@ MTL');
+  });
+});
+
+describe('playsTonight', () => {
+  it('takes the model’s word over a platform that still has a player out', () => {
+    const parked = player('1', ['C'], 'IR+', 'EDM', { out: true, injuryStatus: 'IR' });
+    expect(playsTonight(parked, 0.95)).toBe(true);
+    // A game-time call stays the platform’s.
+    expect(playsTonight(parked, 0.3)).toBe(false);
+    expect(playsTonight(parked, undefined)).toBe(false);
+    // A goalie’s chance is his share of the crease, nought while he is out.
+    const goalie = player('2', ['G'], 'IR', 'EDM', { out: true });
+    expect(playsTonight(goalie, 0.2)).toBe(true);
+    expect(playsTonight(goalie, 0)).toBe(false);
+    expect(playsTonight(player('3', ['C'], 'BN'), undefined)).toBe(true);
+  });
+});
+
+/** Two C, one LW, one D, one Util, one G and a four-player bench, as SLOTS says: 10 spots. */
+function rostered(playerId: string, slot: string, extra: Partial<TeamPlayer> = {}): TeamPlayer {
+  return {
+    playerId,
+    name: `Player ${playerId}`,
+    teamAbbrev: 'EDM',
+    type: 'skater',
+    positions: ['C'],
+    slot,
+    reserve: ['IR', 'IR+', 'NA'].includes(slot),
+    reserveEligible: [],
+    out: ['IR', 'IR+', 'NA'].includes(slot),
+    projection: null,
+    ...extra,
+  };
+}
+
+describe('starting a player cleared to come off injured reserve', () => {
+  // Bedard's night: parked on IR+, cleared, and better than a centre in the lineup.
+  const roster = [
+    player('1', ['C'], 'C'),
+    player('2', ['C'], 'C'),
+    player('3', ['C'], 'IR+', 'EDM', { out: true, injuryStatus: 'IR' }),
+    player('4', ['D'], 'BN', 'BOS'),
+    player('5', ['D'], 'BN', 'BOS'),
+  ];
+  const tonight = day(
+    roster,
+    { '1': 5, '2': 1, '3': 4 },
+    { c: 2, lw: 0, rw: 0, w: 0, f: 0, d: 0, util: 0, g: 0, bn: 2 },
+    { '1': 1, '2': 1, '3': 0.95 },
+  );
+
+  it('starts him in place of the weaker centre, to be activated first', () => {
+    const byId = new Map(tonight.rows.map((row) => [row.player.playerId, row]));
+    expect(byId.get('3')?.suggested).toBe('C');
+    expect(byId.get('3')?.change).toBe('start');
+    expect(byId.get('3')?.activate).toBe(true);
+    expect(byId.get('3')?.clearedByModel).toBe(true);
+    expect(byId.get('2')?.change).toBe('bench');
+    expect(tonight.activations.map((row) => row.player.playerId)).toEqual(['3']);
+  });
+
+  const slots: RosterSlots = { c: 2, lw: 0, rw: 0, w: 0, f: 0, d: 0, util: 0, g: 0, bn: 2 };
+  const team = [
+    rostered('1', 'C'),
+    rostered('2', 'C'),
+    rostered('3', 'IR+', { injuryStatus: 'IR' }),
+    rostered('4', 'BN'),
+    rostered('5', 'BN'),
+  ];
+  // Over the rest of the season player 2 is worth most, then 5, then 4.
+  const scores = new Map([
+    ['1', 90],
+    ['2', 70],
+    ['3', 80],
+    ['4', 20],
+    ['5', 30],
+  ]);
+
+  it('drops the player the team loses least by over the rest of the season, never tonight’s starter', () => {
+    const room = makeRoom(tonight, team, scores, slots, { 'IR+': 1 });
+    expect(room.openSpots).toBe(0);
+    expect(room.toReserve).toEqual([]);
+    expect(room.drops.map((row) => row.player.playerId)).toEqual(['4']);
+    expect(room.short).toBe(0);
+  });
+
+  it('drops nobody where the roster has an open spot', () => {
+    const room = makeRoom(tonight, team.slice(0, 4), scores, slots, {});
+    expect(room.openSpots).toBe(1);
+    expect(room.drops).toEqual([]);
+  });
+
+  it('moves an injured player into the reserve slot he leaves before dropping anyone', () => {
+    const hurt = rostered('4', 'BN', {
+      out: true,
+      injuryStatus: 'O',
+      reserveEligible: ['IR', 'IR+'],
+    });
+    const room = makeRoom(tonight, [...team.slice(0, 3), hurt, team[4]], scores, slots, {
+      'IR+': 1,
+    });
+    expect(room.toReserve.map((p) => p.playerId)).toEqual(['4']);
+    expect(room.drops).toEqual([]);
+  });
+
+  it('asks nothing of a night with nobody to activate', () => {
+    const room = makeRoom(day(roster.slice(0, 2), { '1': 1, '2': 1 }), team, scores, slots, {});
+    expect(room).toEqual({ openSpots: 0, toReserve: [], drops: [], short: 0 });
   });
 });

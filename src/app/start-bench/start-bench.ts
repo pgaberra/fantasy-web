@@ -1,9 +1,10 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { from } from 'rxjs';
+import { from, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Api } from '../api/api';
 import { startBenchMyTeam } from '../api/fn/start-bench/start-bench-my-team';
+import { startBenchRestOfSeason } from '../api/fn/start-bench/start-bench-rest-of-season';
 import { streamerPlannerTeams } from '../api/fn/streamer-planner/streamer-planner-teams';
 import {
   DEFAULT_LEAGUE_SIZE,
@@ -11,9 +12,12 @@ import {
   DEFAULT_SCORING_COLUMNS,
   DEFAULT_STAT_WEIGHTS,
 } from '../draft-projection/projection-defaults';
+import { DEFAULT_DECIMAL_SETTINGS } from '../draft-projection/projection-settings-section/model';
 import { ScoredProjection } from '../models/projection.model';
 import { ScoringStatKey } from '../models/stat-key.model';
+import { scoreTeam } from '../fa-scout/drop-candidates';
 import { EspnService } from '../services/espn.service';
+import { toScoutTeam } from '../services/fa-scout.service';
 import { ChosenLeague, LeagueChoiceService } from '../services/league-choice.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { YahooService } from '../services/yahoo.service';
@@ -24,6 +28,7 @@ import { LoadingIndicatorComponent } from '../shared/loading-indicator/loading-i
 import { Platform } from '../shared/platform-tabs/platform-tabs';
 import { PositionChipsComponent } from '../shared/position-chips/position-chips';
 import { TeamLogoComponent } from '../shared/team-logo/team-logo';
+import { TooltipDirective } from '../shared/tooltip/tooltip.directive';
 import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
 import { LeagueFieldComponent } from '../streamer-planner/league-field/league-field';
 import { teamsByKey, WEEK_DECIMALS } from '../streamer-planner/planner-free-agents';
@@ -39,6 +44,8 @@ import {
 import {
   byLineupNow,
   gameLabel,
+  makeRoom,
+  Room,
   StartBenchDay,
   StartBenchRow,
   startBenchDay,
@@ -74,6 +81,7 @@ export const START_BENCH_DAYS_AHEAD = 30;
     LoadingIndicatorComponent,
     PositionChipsComponent,
     TeamLogoComponent,
+    TooltipDirective,
   ],
   templateUrl: './start-bench.html',
   styleUrl: './start-bench.css',
@@ -175,6 +183,21 @@ export class StartBenchComponent {
       params.platform === 'YAHOO'
         ? this.yahoo.leagueProjectionSettings(params.leagueId)
         : this.espn.leagueProjectionSettings(params.leagueId),
+  });
+
+  /**
+   * The roster with the model's rest of the season, read once a league: it names the player to drop
+   * when a healthy one comes off injured reserve. Its failure costs the drop's name, never the page.
+   */
+  private readonly restOfSeasonResource = rxResource({
+    params: () => this.league() ?? undefined,
+    stream: ({ params }) =>
+      from(
+        this.api.invoke(startBenchRestOfSeason, {
+          platform: params.platform,
+          leagueId: params.leagueId,
+        }),
+      ).pipe(map(toScoutTeam)),
   });
 
   /** Every club's games that day: who plays, against whom, home or away. */
@@ -293,6 +316,96 @@ export class StartBenchComponent {
     );
   });
 
+  /**
+   * How the roster makes room for the players the suggestion activates from injured reserve: an
+   * open spot, an injured player moved to the reserve slot they leave, or a drop, the player the
+   * team loses least by over the rest of the season as FA Scout ranks it. Null while the rest of the
+   * season has not landed, or failed: the page then says a spot is needed without naming one.
+   */
+  readonly room = computed<Room | null>(() => {
+    const day = this.day();
+    const team = this.restOfSeasonResource.hasValue() ? this.restOfSeasonResource.value() : null;
+    const settings = this.settingsResource.hasValue() ? this.settingsResource.value() : null;
+    if (!day || day.activations.length === 0 || !team?.found) {
+      return null;
+    }
+    const scoring = this.scoring();
+    const scored = scoreTeam(
+      team.players,
+      [],
+      (projections) =>
+        this.ranking.rankOverall({
+          projections,
+          scoringType: scoring.scoringType,
+          statWeights: scoring.statWeights,
+          activeScoringColumns: scoring.activeScoringColumns,
+          leagueSize: DEFAULT_LEAGUE_SIZE,
+          rosterSlots: DEFAULT_ROSTER_SLOTS,
+          minGoalieGames: 0,
+          decimalSettings: DEFAULT_DECIMAL_SETTINGS,
+        }),
+      (entry) => this.scoreOf(entry),
+    );
+    const scores = new Map(
+      scored.flatMap((row) => (row.score === null ? [] : [[row.player.playerId, row.score]])),
+    ) as ReadonlyMap<string, number>;
+    return makeRoom(
+      day,
+      team.players,
+      scores,
+      settings?.rosterSlots ?? DEFAULT_ROSTER_SLOTS,
+      settings?.reserveSlots ?? {},
+    );
+  });
+
+  /** The players to drop, by id, for their rows to say so. */
+  readonly dropIds = computed(
+    () => new Set((this.room()?.drops ?? []).map((row) => row.player.playerId)),
+  );
+
+  /**
+   * How the roster makes room for the players activated from injured reserve, in a sentence: the
+   * open spot, the injured player to move to IR, the player to drop, or, before the rest of the
+   * season has landed, only that a spot is needed.
+   */
+  readonly roomText = computed(() => {
+    const room = this.room();
+    const count = this.day()?.activations.length ?? 0;
+    if (count === 0) {
+      return '';
+    }
+    if (!room) {
+      return 'That takes a roster spot: drop a player or move an injured one to IR.';
+    }
+    const parts: string[] = [];
+    if (room.openSpots > 0) {
+      const spots = room.openSpots === 1 ? 'an open spot' : `${room.openSpots} open spots`;
+      parts.push(
+        room.openSpots === count
+          ? 'Your roster has an open spot for it.'
+          : `Your roster has ${spots}.`,
+      );
+    }
+    if (room.toReserve.length > 0) {
+      parts.push(`Move ${this.joinNames(room.toReserve.map((p) => p.name))} to IR to make room.`);
+    }
+    if (room.drops.length > 0) {
+      parts.push(
+        `Drop ${this.joinNames(room.drops.map((row) => row.player.name))} to make room: of the players not starting tonight, the one your team loses least by over the rest of the season.`,
+      );
+    }
+    if (room.short > 0) {
+      parts.push('No other player can go without costing you tonight: pick who to drop yourself.');
+    }
+    return parts.join(' ');
+  });
+
+  private joinNames(names: readonly string[]): string {
+    return names.length <= 1
+      ? (names[0] ?? '')
+      : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  }
+
   /** The rows as the lineup reads now: the players starting, slot by slot, then bench, then IR. */
   readonly rows = computed<readonly StartBenchRow[]>(() => byLineupNow(this.day()?.rows ?? []));
 
@@ -353,7 +466,7 @@ export class StartBenchComponent {
     if (row.now === 'reserve') {
       return row.nowSlot ?? 'IR';
     }
-    if (row.player.out) {
+    if (row.player.out && !row.clearedByModel) {
       return 'Out';
     }
     if (!row.game) {

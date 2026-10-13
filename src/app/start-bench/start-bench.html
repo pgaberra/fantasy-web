@@ -100,6 +100,12 @@
                 >.
               </p>
             }
+            @if (day.activations.length > 0) {
+              <p class="activate">
+                Activate <strong>{{ namesText(day.activations) }}</strong> from injured reserve
+                first. {{ roomText() }}
+              </p>
+            }
             @if (gainText(); as gain) {
               <p class="gain">{{ gain }}</p>
             }
@@ -126,7 +132,7 @@
               <tr
                 [class.row--start]="row.change === 'start'"
                 [class.row--bench]="row.change === 'bench'"
-                [class.row--idle]="!row.game || row.player.out"
+                [class.row--idle]="!row.game || (row.player.out && !row.clearedByModel)"
               >
                 <td class="slot">
                   <span class="slot-pill" [class.slot-pill--bench]="row.now !== 'lineup'">{{
@@ -146,6 +152,13 @@
                         <app-position-chips [positions]="row.player.positions" />
                         @if (row.player.injuryStatus) {
                           <span class="tag tag--injury">{{ row.player.injuryStatus }}</span>
+                        }
+                        @if (row.clearedByModel) {
+                          <span
+                            class="tag tag--cleared"
+                            appTooltip="Your league still has him out, but the AI projection expects him to play tonight."
+                            >Expected back</span
+                          >
                         }
                       </span>
                       <!-- On a phone the game column is folded in here, so the suggestion fits. -->
@@ -173,11 +186,18 @@
                   }
                   @if (row.change === 'start') {
                     <span class="move move--start">
-                      <app-icon name="arrow-up" [size]="14" />Start
+                      <app-icon name="arrow-up" [size]="14" />{{
+                        row.activate ? 'Activate' : 'Start'
+                      }}
                     </span>
                   } @else if (row.change === 'bench') {
                     <span class="move move--bench">
                       <app-icon name="arrow-down" [size]="14" />Bench
+                    </span>
+                  }
+                  @if (dropIds().has(row.player.playerId)) {
+                    <span class="move move--drop">
+                      <app-icon name="user-minus" [size]="14" />Drop
                     </span>
                   }
                 </td>

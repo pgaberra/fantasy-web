@@ -308,6 +308,19 @@
   color: var(--color-warning-text);
 }
 
+.move--drop {
+  color: var(--color-danger);
+}
+
+.tag--cleared {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.activate {
+  font-size: var(--text-sm);
+}
+
 /* A phone: the game goes under the name, so the suggestion stays on screen beside the projection. */
 @media (max-width: 40rem) {
   .card {
