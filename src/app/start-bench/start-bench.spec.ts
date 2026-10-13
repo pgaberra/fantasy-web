@@ -48,9 +48,27 @@ function team(): PlannerMyTeamResponse {
     teamName: 'Slapshots',
     players: [centre('1', 'C', 'EDM'), centre('2', 'BN', 'TOR'), centre('3', 'BN', 'BOS')],
     lines: [
-      { playerId: '1', clubGames: 1, expectedGames: 1, stats: { goals: 0.2, assists: 0.3 } },
-      { playerId: '2', clubGames: 1, expectedGames: 1, stats: { goals: 0.5, assists: 0.6 } },
-      { playerId: '3', clubGames: 0, expectedGames: 0, stats: { goals: 0, assists: 0 } },
+      {
+        playerId: '1',
+        clubGames: 1,
+        expectedGames: 1,
+        stats: { goals: 0.2, assists: 0.3 },
+        nights: [],
+      },
+      {
+        playerId: '2',
+        clubGames: 1,
+        expectedGames: 1,
+        stats: { goals: 0.5, assists: 0.6 },
+        nights: [],
+      },
+      {
+        playerId: '3',
+        clubGames: 0,
+        expectedGames: 0,
+        stats: { goals: 0, assists: 0 },
+        nights: [],
+      },
     ],
   };
 }
@@ -239,6 +257,38 @@ describe('StartBenchComponent', () => {
     expect(text).toContain('Activate Centre 2 from injured reserve first.');
     expect(text).toContain('Expected back');
     expect(text).toContain('That takes a roster spot');
+  });
+
+  it('names a goalie his club has confirmed rather than give a bare chance', async () => {
+    const base = team();
+    myTeam = {
+      ...base,
+      players: [
+        ...base.players,
+        {
+          playerId: '9',
+          name: 'Tonight Starter',
+          teamAbbrev: 'EDM',
+          type: 'goalie',
+          positions: ['G'],
+          slot: 'BN',
+          out: false,
+        },
+      ],
+      lines: [
+        ...base.lines,
+        {
+          playerId: '9',
+          clubGames: 1,
+          expectedGames: 1,
+          stats: { w: 0.6 },
+          nights: [{ date: TODAY, share: 1, starter: 'confirmed' }],
+        },
+      ],
+    };
+    const fixture = await render();
+
+    expect(ngMocks.formatText(fixture)).toContain('Confirmed starter');
   });
 
   it('says so when the league holds no team of the user’s', async () => {

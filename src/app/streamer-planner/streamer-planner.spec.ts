@@ -1153,6 +1153,7 @@ describe('StreamerPlannerComponent', () => {
           clubGames: 2,
           expectedGames: 2,
           stats: { goals, assists: 0, toiPerGame: 1000 },
+          nights: [],
         });
 
         beforeEach(() => {
