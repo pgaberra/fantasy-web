@@ -27,15 +27,42 @@ const SLOT_TAKES: Readonly<Record<Exclude<keyof RosterSlots, 'bn'>, readonly Lin
 };
 
 /** One seat in the lineup: the positions that may sit in it. */
-type Seat = ReadonlySet<string>;
+export type Seat = ReadonlySet<string>;
 
 /** Every lineup seat the league has, one per slot it counts. */
 export function lineupSeats(slots: RosterSlots): readonly Seat[] {
-  const seats: Seat[] = [];
+  return labelledSeats(slots).map((seat) => seat.takes);
+}
+
+/** A slot's name as a lineup prints it. */
+const SLOT_LABELS: Readonly<Record<keyof typeof SLOT_TAKES, string>> = {
+  c: 'C',
+  lw: 'LW',
+  rw: 'RW',
+  w: 'W',
+  f: 'F',
+  d: 'D',
+  util: 'Util',
+  g: 'G',
+};
+
+/** A lineup seat with the name of the slot it is: C, Util, G. */
+export interface LabelledSeat {
+  readonly label: string;
+  readonly takes: Seat;
+}
+
+/**
+ * Every lineup seat the league has, each named by its slot, the narrowest slots first (C before
+ * F before Util), so a player seated in the first that takes him sits where a manager would put
+ * him.
+ */
+export function labelledSeats(slots: RosterSlots): readonly LabelledSeat[] {
+  const seats: LabelledSeat[] = [];
   for (const [slot, takes] of Object.entries(SLOT_TAKES)) {
     const count = slots[slot as keyof RosterSlots] ?? 0;
     for (let index = 0; index < count; index++) {
-      seats.push(new Set(takes));
+      seats.push({ label: SLOT_LABELS[slot as keyof typeof SLOT_TAKES], takes: new Set(takes) });
     }
   }
   return seats;

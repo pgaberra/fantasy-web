@@ -3,6 +3,7 @@ import { NgIcon } from '@ng-icons/core';
 import {
   lucideArrowDown,
   lucideArrowLeft,
+  lucideArrowLeftRight,
   lucideArrowRight,
   lucideArrowUp,
   lucideArrowUpToLine,
@@ -13,6 +14,7 @@ import {
   lucideChartNoAxesColumn,
   lucideCheck,
   lucideChevronDown,
+  lucideChevronLeft,
   lucideChevronRight,
   lucideCircle,
   lucideCircleCheck,
@@ -51,6 +53,7 @@ import {
   lucideUndo2,
   lucideUserMinus,
   lucideUserPlus,
+  lucideUsers,
   lucideX,
 } from '@ng-icons/lucide';
 
@@ -66,6 +69,7 @@ const ICONS = {
   'alert-triangle': lucideTriangleAlert,
   'arrow-down': lucideArrowDown,
   'arrow-left': lucideArrowLeft,
+  'arrow-left-right': lucideArrowLeftRight,
   'arrow-right': lucideArrowRight,
   'arrow-up': lucideArrowUp,
   'arrow-up-to-line': lucideArrowUpToLine,
@@ -75,6 +79,7 @@ const ICONS = {
   check: lucideCheck,
   'check-circle': lucideCircleCheck,
   'chevron-down': lucideChevronDown,
+  'chevron-left': lucideChevronLeft,
   'chevron-right': lucideChevronRight,
   circle: lucideCircle,
   'clipboard-list': lucideClipboardList,
@@ -114,6 +119,7 @@ const ICONS = {
   unfollow: lucideBellOff,
   'user-minus': lucideUserMinus,
   'user-plus': lucideUserPlus,
+  users: lucideUsers,
 } satisfies Record<string, string>;
 
 export type IconName = keyof typeof ICONS;

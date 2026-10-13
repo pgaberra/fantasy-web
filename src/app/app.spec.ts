@@ -29,6 +29,7 @@ describe('App', () => {
   const faScout = signal(false);
   const roleChanges = signal(false);
   const draftAnalysis = signal(false);
+  const startBench = signal(false);
 
   beforeEach(() => {
     isLoggedIn.set(true);
@@ -41,6 +42,7 @@ describe('App', () => {
     faScout.set(false);
     roleChanges.set(false);
     draftAnalysis.set(false);
+    startBench.set(false);
     logout.mockClear();
     return (
       MockBuilder(App)
@@ -63,6 +65,7 @@ describe('App', () => {
           faScout,
           roleChanges,
           draftAnalysis,
+          startBench,
         } as never)
         .provide({
           provide: Router,
@@ -183,13 +186,29 @@ describe('App', () => {
     expect(items).toContain('FA Scout');
   });
 
-  it.each(['Draft Analysis', 'FA Scout'])('drops %s where the BFF does not serve it', (label) => {
+  it('offers Start/Bench from the header and the burger where the BFF serves it', () => {
+    startBench.set(true);
     const fixture = render();
 
+    const header = Array.from(
+      fixture.nativeElement.querySelectorAll('.app-nav a') as NodeListOf<HTMLElement>,
+    ).map((link) => link.textContent?.trim());
     const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
 
-    expect(items).not.toContain(label);
+    expect(header).toContain('Start/Bench');
+    expect(items).toContain('Start/Bench');
   });
+
+  it.each(['Draft Analysis', 'FA Scout', 'Start/Bench'])(
+    'drops %s where the BFF does not serve it',
+    (label) => {
+      const fixture = render();
+
+      const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
+
+      expect(items).not.toContain(label);
+    },
+  );
 
   it('leaves out the links the header itself leaves out', () => {
     isAdmin.set(false);

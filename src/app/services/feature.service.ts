@@ -69,6 +69,10 @@ export class FeatureService {
   readonly roleChanges = computed(() =>
     this.features.hasValue() ? this.features.value().roleChanges : false,
   );
+  /** Whether Start/Bench is served here. False until the answer lands, like the others. */
+  readonly startBench = computed(() =>
+    this.features.hasValue() ? this.features.value().startBench : false,
+  );
 
   /**
    * The presets this environment offers: every one of them where the AI projection is served,

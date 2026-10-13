@@ -414,6 +414,23 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   goalies by a segmented control, positions by pills, and a "Rising only" pill; 25 rows a page.
   The table (`scout-table/`) reuses the planner table's stylesheet and line helpers
   (`lineStats`, `lineColumns`): a `ScoutRow` is a `RankedFreeAgent` plus its preseason rank.
+- `start-bench/` — the **Start/Bench** page (`/start-bench`, signed in, served only where the BFF's
+  `startBench` feature says so): the user's lineup for one day and the one the model would set,
+  for the nights more of his players have a game than his lineup has spots. It opens on today's
+  games (`PLANNER_TODAY`, the night as the NHL counts it) and steps a day at a time, or jumps by a
+  date picker, from today to 30 days ahead. `GET /start-bench/my-team?date=` gives the roster **as
+  the platform has it set for that day** (a day ahead shows what the manager set for it), each
+  player with the model's line for that day alone, and `/streamer-planner/teams` that day's
+  games. `start-bench-lineup.ts` (`startBenchDay`) seats the players whose club plays and who are
+  not out, best first by the line scored with the league's settings through
+  `ProjectionRankingService` (z-scores from an empty night in a category league), with a free
+  seat taken before anyone is moved (`assignSeats`) so the better player keeps his own slot; a
+  player level on the model keeps the seat he already has. The table lists the lineup as it
+  stands (slot by slot, then bench, then IR) with each player's game, projection and suggested
+  slot, and marks **Start** / **Bench** where the suggestion differs; a starter with no game or
+  out is never told to sit, since he gives nothing either way. A points league also gets the
+  projected points the moves gain. Nothing is written to the platform. The league is picked with
+  the planner's `app-league-field`, as FA Scout does.
 - `services/` — app services (auth, projections, etc.)
 - `interceptors/` — HTTP interceptors: `authInterceptor` attaches the JWT and refreshes
   once on 401 (all environments). **Only a 401/403 from `/auth/refresh` itself ends the
