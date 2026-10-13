@@ -1,0 +1,191 @@
+<div class="start-bench">
+  <header class="hero">
+    <h1>Start/Bench</h1>
+    <p class="lede">
+      Your lineup for the day's games, and who the AI projection would start when more of your
+      players have a game than your lineup has spots.
+    </p>
+  </header>
+
+  <section class="card" aria-labelledby="lineup-title">
+    <div class="card-head">
+      <h2 id="lineup-title" class="card-title">
+        <app-icon name="users" />Lineup
+        @if (teamName(); as name) {
+          <span class="team-name">{{ name }}</span>
+        }
+        <app-help-tip
+          label="How the suggestion is set"
+          text="Each player's AI projection for this day's game alone, scored with your league's settings. The players whose club plays get a spot best first, each moved to whichever spot leaves room for the others, so the ones left over are the ones to bench. A goalie counts as much as his chance to start. Nothing is changed in your league: set the lineup there."
+        />
+      </h2>
+    </div>
+
+    <div class="controls">
+      <app-league-field class="league" [(platform)]="platform" [(espnLeague)]="espnLeague" />
+
+      <div class="day" role="group" aria-label="Day">
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm day-step"
+          aria-label="Previous day"
+          [disabled]="!canGoBack()"
+          (click)="step(-1)"
+        >
+          <app-icon name="chevron-left" [size]="16" />
+        </button>
+        <label class="day-pick">
+          <span class="day-label">{{ dayLabel() }}</span>
+          <input
+            type="date"
+            class="day-input"
+            aria-label="Pick a day"
+            [min]="today"
+            [max]="lastDay"
+            [value]="date()"
+            (change)="pickDate($any($event.target).value)"
+          />
+        </label>
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm day-step"
+          aria-label="Next day"
+          [disabled]="!canGoForward()"
+          (click)="step(1)"
+        >
+          <app-icon name="chevron-right" [size]="16" />
+        </button>
+        @if (!isToday()) {
+          <button type="button" class="btn btn-secondary btn-sm" (click)="goToToday()">
+            Today
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (!league()) {
+      <p class="prompt">Select a league above to see your lineup.</p>
+    } @else if (failure()) {
+      <app-error-state title="Couldn't load your lineup" [error]="failure()" (retry)="retry()" />
+    } @else if (loading()) {
+      <app-loading-indicator />
+    } @else if (notFound()) {
+      <p class="empty">You have no team in this league, so there is no lineup to set.</p>
+    } @else if (emptyRoster()) {
+      <p class="empty">Your team has no players yet.</p>
+    } @else if (day(); as day) {
+      @if (nobodyPlays()) {
+        <p class="summary">
+          <app-icon name="info" [size]="16" />
+          <span>None of your players has a game on this day.</span>
+        </p>
+      } @else if (changes() === 0) {
+        <p class="summary summary--best">
+          <app-icon name="check-circle" [size]="16" />
+          <span>Your lineup is already the best one for this day.</span>
+        </p>
+      } @else {
+        <div class="summary summary--moves">
+          <app-icon name="arrow-left-right" [size]="16" />
+          <div>
+            @if (day.starts.length > 0) {
+              <p>
+                Start <strong>{{ namesText(day.starts) }}</strong
+                >.
+              </p>
+            }
+            @if (day.benches.length > 0) {
+              <p>
+                Bench <strong>{{ namesText(day.benches) }}</strong
+                >.
+              </p>
+            }
+            @if (gainText(); as gain) {
+              <p class="gain">{{ gain }}</p>
+            }
+          </div>
+        </div>
+      }
+      <p class="note">
+        {{ day.playing }} of your players have a game, for {{ day.spots }} lineup spots.
+      </p>
+
+      <div class="table-wrap">
+        <table class="lineup">
+          <thead>
+            <tr>
+              <th scope="col">Now</th>
+              <th scope="col">Player</th>
+              <th scope="col" class="game-col">Game</th>
+              <th scope="col" class="num">Proj</th>
+              <th scope="col">Suggested</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.player.playerId) {
+              <tr
+                [class.row--start]="row.change === 'start'"
+                [class.row--bench]="row.change === 'bench'"
+                [class.row--idle]="!row.game || row.player.out"
+              >
+                <td class="slot">
+                  <span class="slot-pill" [class.slot-pill--bench]="row.now !== 'lineup'">{{
+                    slotText(row.nowSlot)
+                  }}</span>
+                </td>
+                <td class="player">
+                  <span class="player-cell">
+                    <app-team-logo
+                      class="logo"
+                      [team]="row.player.teamAbbrev"
+                      [alt]="row.player.teamAbbrev ?? ''"
+                    />
+                    <span class="player-text">
+                      <span class="player-line">
+                        <span class="player-name">{{ row.player.name }}</span>
+                        <app-position-chips [positions]="row.player.positions" />
+                        @if (row.player.injuryStatus) {
+                          <span class="tag tag--injury">{{ row.player.injuryStatus }}</span>
+                        }
+                      </span>
+                      <!-- On a phone the game column is folded in here, so the suggestion fits. -->
+                      <span class="player-game">
+                        {{ gameText(row) }}
+                        @if (startChance(row); as chance) {
+                          · {{ chance }}
+                        }
+                      </span>
+                    </span>
+                  </span>
+                </td>
+                <td class="game game-col">
+                  {{ gameText(row) }}
+                  @if (startChance(row); as chance) {
+                    <span class="chance">{{ chance }}</span>
+                  }
+                </td>
+                <td class="num">{{ row.game ? formatScore(row.score) : '' }}</td>
+                <td class="suggested">
+                  @if (row.suggested; as slot) {
+                    <span class="slot-pill">{{ slot }}</span>
+                  } @else if (row.change !== 'bench') {
+                    <span class="slot-pill slot-pill--bench">{{ sitReason(row) }}</span>
+                  }
+                  @if (row.change === 'start') {
+                    <span class="move move--start">
+                      <app-icon name="arrow-up" [size]="14" />Start
+                    </span>
+                  } @else if (row.change === 'bench') {
+                    <span class="move move--bench">
+                      <app-icon name="arrow-down" [size]="14" />Bench
+                    </span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>

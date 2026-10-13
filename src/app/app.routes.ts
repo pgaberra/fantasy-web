@@ -7,6 +7,7 @@ import { authGuard } from './guards/auth.guard';
 import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
 import { draftAnalysisEnabledGuard } from './guards/draft-analysis-enabled.guard';
 import { faScoutEnabledGuard } from './guards/fa-scout-enabled.guard';
+import { startBenchEnabledGuard } from './guards/start-bench-enabled.guard';
 import { roleChangesEnabledGuard } from './guards/role-changes-enabled.guard';
 import { demoRedemptionGuard } from './guards/demo-redemption.guard';
 import { DESCRIPTION, INDEXABLE } from './shared/crawl-tags';
@@ -160,6 +161,12 @@ export const routes: Routes = [
     path: 'fa-scout',
     loadComponent: () => import('./fa-scout/fa-scout').then((m) => m.FaScoutComponent),
     canActivate: [authGuard, faScoutEnabledGuard],
+  },
+  // Served only where the BFF's START_BENCH_ENABLED says so, and signed in like the planner.
+  {
+    path: 'start-bench',
+    loadComponent: () => import('./start-bench/start-bench').then((m) => m.StartBenchComponent),
+    canActivate: [authGuard, startBenchEnabledGuard],
   },
   // Served only where the BFF's ROLE_CHANGES_ENABLED says so, and signed in like Who's Hot.
   {

@@ -1,0 +1,342 @@
+/* Laid out as FA Scout and the streamer planner are, its siblings: the same hero and card, so the
+   pages read as one family. */
+.start-bench {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0 auto;
+  max-width: var(--page-width-wide);
+  padding: var(--space-5) var(--space-4);
+}
+
+.hero h1 {
+  color: var(--color-primary);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  margin: 0;
+}
+
+.lede {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  margin: var(--space-1) 0 0;
+  max-width: 48rem;
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-4) var(--space-5);
+}
+
+.card-head {
+  margin-bottom: var(--space-3);
+}
+
+.card-title {
+  align-items: center;
+  color: var(--color-text);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.card-title app-icon {
+  color: var(--color-primary);
+}
+
+.team-name {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.controls {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+  margin-bottom: var(--space-4);
+}
+
+.league {
+  display: block;
+  flex: 1 1 16rem;
+  max-width: 20rem;
+}
+
+/* The day: a step back, the day itself (which opens the date picker), a step on. */
+.day {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.day-step {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  min-width: 2.25rem;
+}
+
+.day-pick {
+  align-items: center;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+}
+
+.day-label {
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+/* The label says the day; the field is only its calendar button, where the browser allows. */
+.day-input {
+  background: transparent;
+  border: 0;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--text-sm);
+}
+
+.day-input::-webkit-datetime-edit {
+  display: none;
+}
+
+.prompt,
+.empty,
+.note {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  margin: var(--space-2) 0;
+}
+
+.summary {
+  align-items: flex-start;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  padding: var(--space-3);
+}
+
+.summary p {
+  margin: 0;
+}
+
+.summary app-icon {
+  flex: none;
+  margin-top: 0.15em;
+}
+
+.summary--best {
+  background: var(--color-success-surface);
+  border-color: var(--color-success-border);
+}
+
+.summary--best app-icon {
+  color: var(--color-success);
+}
+
+.summary--moves {
+  background: var(--color-warning-surface);
+  border-color: var(--color-warning-border);
+}
+
+.summary--moves app-icon {
+  color: var(--color-warning-text);
+}
+
+.gain {
+  color: var(--color-success);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+/* A roster is a couple of dozen rows: one table, scrolled sideways on a narrow phone. */
+.table-wrap {
+  overflow-x: auto;
+}
+
+.lineup {
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  width: 100%;
+}
+
+.lineup th {
+  border-bottom: 1px solid var(--color-border-strong);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  padding: var(--space-2);
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.lineup td {
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-2);
+  vertical-align: middle;
+}
+
+.lineup .num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* A player with no game, or out, is listed but never in question. */
+.row--idle td {
+  color: var(--color-text-subtle);
+}
+
+.row--start td:first-child {
+  box-shadow: inset 3px 0 0 var(--color-success);
+}
+
+.row--bench td:first-child {
+  box-shadow: inset 3px 0 0 var(--color-warning);
+}
+
+.player-cell {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.player-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.player-line {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+}
+
+.player-game {
+  color: var(--color-text-muted);
+  display: none;
+  font-size: var(--text-xs);
+}
+
+.logo {
+  flex: none;
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+.player-name {
+  font-weight: var(--weight-semibold);
+}
+
+.tag {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  line-height: 1.4;
+  padding: 0 var(--space-2);
+}
+
+.tag--injury {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.game {
+  white-space: nowrap;
+}
+
+.chance {
+  color: var(--color-text-muted);
+  display: block;
+  font-size: var(--text-xs);
+}
+
+.slot,
+.suggested {
+  white-space: nowrap;
+}
+
+.slot-pill {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  display: inline-block;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  min-width: 2.75rem;
+  padding: 0 var(--space-2);
+  text-align: center;
+}
+
+.slot-pill--bench {
+  background: transparent;
+  border-style: dashed;
+  color: var(--color-text-muted);
+}
+
+.move {
+  align-items: center;
+  display: inline-flex;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  gap: 2px;
+  margin-left: var(--space-2);
+}
+
+.move--start {
+  color: var(--color-success);
+}
+
+.move--bench {
+  color: var(--color-warning-text);
+}
+
+/* A phone: the game goes under the name, so the suggestion stays on screen beside the projection. */
+@media (max-width: 40rem) {
+  .card {
+    padding: var(--space-3);
+  }
+
+  .lineup .game-col {
+    display: none;
+  }
+
+  .player-game {
+    display: block;
+  }
+
+  .lineup th,
+  .lineup td {
+    padding: var(--space-2) var(--space-1);
+  }
+
+  .slot-pill {
+    min-width: 2.25rem;
+  }
+
+  .move {
+    display: flex;
+    margin: var(--space-1) 0 0;
+  }
+
+  .league {
+    max-width: none;
+  }
+}
