@@ -91,7 +91,8 @@ export function sinceCaption(answer: ScoutSince | null, since: string | null): S
       };
     case 'NONE':
       return {
-        projection: 'No earlier projection is stored, so the projection has nothing to compare with yet.',
+        projection:
+          'No earlier projection is stored, so the projection has nothing to compare with yet.',
         ice,
       };
   }

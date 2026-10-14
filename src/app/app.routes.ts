@@ -158,8 +158,7 @@ export const routes: Routes = [
   // Served only where the BFF's PLAYER_SCOUT_ENABLED says so, and signed in like the planner.
   {
     path: 'player-scout',
-    loadComponent: () =>
-      import('./player-scout/player-scout').then((m) => m.PlayerScoutComponent),
+    loadComponent: () => import('./player-scout/player-scout').then((m) => m.PlayerScoutComponent),
     canActivate: [authGuard, playerScoutEnabledGuard],
   },
   // The two pages Player Scout replaced: a bookmark or a link to either lands on it.

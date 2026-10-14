@@ -8,9 +8,14 @@ import { swapInto, valueLineup } from './lineup-value';
 const SLOTS: RosterSlots = { c: 2, lw: 1, rw: 0, w: 0, f: 0, d: 1, util: 0, bn: 2, g: 1 };
 
 /** Every club plays the same ten nights, so the lineup is the whole question. */
-const NIGHTS = Array.from({ length: 10 }, (_, index) => `2026-11-${String(index + 1).padStart(2, '0')}`);
+const NIGHTS = Array.from(
+  { length: 10 },
+  (_, index) => `2026-11-${String(index + 1).padStart(2, '0')}`,
+);
 
-function schedule(clubs: Record<string, readonly string[]>): ReadonlyMap<string, readonly string[]> {
+function schedule(
+  clubs: Record<string, readonly string[]>,
+): ReadonlyMap<string, readonly string[]> {
   return new Map(Object.entries(clubs));
 }
 
@@ -50,7 +55,7 @@ describe('valueLineup', () => {
     expect(valuation.total).toBeCloseTo(180);
   });
 
-  it("costs the lineup only what the next man up does not replace", () => {
+  it('costs the lineup only what the next man up does not replace', () => {
     const valuation = valueLineup(centres, SLOTS, schedule({ EDM: NIGHTS }), (id) => scores[id]);
 
     // Without c1, c3 starts in his place: the lineup loses 100 and gains 60.
@@ -70,8 +75,18 @@ describe('valueLineup', () => {
       (id) => ({ d1: 20, g1: 30 })[id] ?? null,
     );
 
-    expect(valuation.byPlayer.get('d1')).toMatchObject({ starts: 4, games: 4, value: 20, marginal: 20 });
-    expect(valuation.byPlayer.get('g1')).toMatchObject({ starts: 6, games: 6, value: 30, marginal: 30 });
+    expect(valuation.byPlayer.get('d1')).toMatchObject({
+      starts: 4,
+      games: 4,
+      value: 20,
+      marginal: 20,
+    });
+    expect(valuation.byPlayer.get('g1')).toMatchObject({
+      starts: 6,
+      games: 6,
+      value: 30,
+      marginal: 30,
+    });
   });
 
   it('lets a player play on the nights another is off, so two clubs share one seat', () => {
@@ -229,7 +244,9 @@ describe('swapInto', () => {
 
     expect(goalieSwap?.kind === 'drop' && goalieSwap.drop.playerId).toBe('g1');
     expect(goalieSwap?.gain).toBeCloseTo(20);
-    expect(skaterSwap?.kind === 'drop' && ['ir', 'np'].includes(skaterSwap.drop.playerId)).toBe(false);
+    expect(skaterSwap?.kind === 'drop' && ['ir', 'np'].includes(skaterSwap.drop.playerId)).toBe(
+      false,
+    );
   });
 
   it('has nobody to drop on a team without his kind', () => {

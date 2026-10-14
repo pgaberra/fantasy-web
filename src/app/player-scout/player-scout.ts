@@ -45,7 +45,12 @@ import {
   sortScout,
 } from './scout-ranking';
 import { ScoutTableComponent } from './scout-table/scout-table';
-import { daysBefore, formatDay, localToday, SincePickerComponent } from './since-picker/since-picker';
+import {
+  daysBefore,
+  formatDay,
+  localToday,
+  SincePickerComponent,
+} from './since-picker/since-picker';
 
 /** Players to a page: enough to reach well past a league's bench without a second page. */
 export const SCOUT_PAGE_SIZE = 25;
@@ -387,7 +392,9 @@ export class PlayerScoutComponent {
   readonly teamFailure = computed(() => this.teamResource.error());
 
   private readonly slots = computed<RosterSlots | null>(
-    () => (this.settingsResource.hasValue() ? this.settingsResource.value() : null)?.rosterSlots ?? null,
+    () =>
+      (this.settingsResource.hasValue() ? this.settingsResource.value() : null)?.rosterSlots ??
+      null,
   );
 
   /** Whether the league's roster slots are known, so the lineup can be weighed at all. */
@@ -443,7 +450,10 @@ export class PlayerScoutComponent {
     const scores = this.ownScores();
     const valuation = this.valuation();
     return team
-      .filter((player) => shown === 'players' || player.type === (shown === 'goalies' ? 'goalie' : 'skater'))
+      .filter(
+        (player) =>
+          shown === 'players' || player.type === (shown === 'goalies' ? 'goalie' : 'skater'),
+      )
       .map((player) => {
         const row = scores.get(player.playerId);
         const value = valuation?.byPlayer.get(player.playerId) ?? null;

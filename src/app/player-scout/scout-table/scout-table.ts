@@ -125,11 +125,10 @@ export class ScoutTableComponent {
   });
 
   /** How many columns the projection group spans: score, rank, games, ice time and the categories. */
-  readonly projectionSpan = computed(
-    () => 3 + (this.anySkater() ? 1 : 0) + this.columns().length,
-  );
+  readonly projectionSpan = computed(() => 3 + (this.anySkater() ? 1 : 0) + this.columns().length);
 
-  readonly rankTip = 'His place among every player in the league the model projects, whoever holds him';
+  readonly rankTip =
+    'His place among every player in the league the model projects, whoever holds him';
 
   readonly scoreHeading = computed(() =>
     this.scoringType() === 'points' ? 'Proj. pts' : 'Z-Score',

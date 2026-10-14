@@ -17,7 +17,9 @@ function usage(
 ): ScoutUsage {
   return {
     recent: { games: 5, toiPerGame: recent.toi, ppShare: recent.share },
-    baseline: baseline ? { games: 70, toiPerGame: baseline.toi, ppShare: baseline.share } : undefined,
+    baseline: baseline
+      ? { games: 70, toiPerGame: baseline.toi, ppShare: baseline.share }
+      : undefined,
     baselineSource: baseline ? 'LAST_SEASON' : undefined,
     ...extra,
   };

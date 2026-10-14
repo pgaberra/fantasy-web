@@ -1,12 +1,7 @@
 import { MockBuilder, MockRender, ngMocks } from 'ng-mocks';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ScoutSince } from '../../api/models/scout-since';
-import {
-  daysBefore,
-  formatDay,
-  sinceCaption,
-  SincePickerComponent,
-} from './since-picker';
+import { daysBefore, formatDay, sinceCaption, SincePickerComponent } from './since-picker';
 
 const TODAY = '2026-10-14';
 

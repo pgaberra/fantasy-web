@@ -72,12 +72,10 @@ export function rankScout(
 
   const thenRanks = new Map<number, number>();
   const thenScores = new Map<number, number>();
-  rank(players.flatMap((player) => (player.then ? [player.then] : []))).forEach(
-    (entry, index) => {
-      thenRanks.set(entry.projection.playerId, index + 1);
-      thenScores.set(entry.projection.playerId, scoreOf(entry));
-    },
-  );
+  rank(players.flatMap((player) => (player.then ? [player.then] : []))).forEach((entry, index) => {
+    thenRanks.set(entry.projection.playerId, index + 1);
+    thenScores.set(entry.projection.playerId, scoreOf(entry));
+  });
 
   const rows: ScoutRow[] = [];
   for (const entry of rank(players.map((player) => player.freeAgent.projection))) {

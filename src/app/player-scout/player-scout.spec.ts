@@ -38,7 +38,10 @@ const SETTINGS: LeagueProjectionSettingsResponse = {
 };
 
 /** Ten nights every club plays: the lineup is the whole question. */
-const NIGHTS = Array.from({ length: 10 }, (_, index) => `2026-11-${String(index + 1).padStart(2, '0')}`);
+const NIGHTS = Array.from(
+  { length: 10 },
+  (_, index) => `2026-11-${String(index + 1).padStart(2, '0')}`,
+);
 
 function skater(playerId: number, goals: number, assists: number, games = 70): Projection {
   return {
@@ -116,7 +119,9 @@ const TEAM_LINES: readonly [Projection, string[], boolean?][] = [
   [skater(201, 40, 50), ['C']],
   [skater(202, 1, 2), ['C']],
   [skater(203, 1, 1), ['C']],
-  ...([204, 205, 206, 212] as const).map((id) => [skater(id, 20, 20), ['LW', 'RW']] as [Projection, string[]]),
+  ...([204, 205, 206, 212] as const).map(
+    (id) => [skater(id, 20, 20), ['LW', 'RW']] as [Projection, string[]],
+  ),
   [skater(207, 10, 20), ['D']],
   [skater(208, 10, 20), ['D']],
   [skater(209, 10, 20), ['D']],
@@ -131,7 +136,10 @@ function team(): ScoutTeamAnswer {
       teamName: 'Slapshots',
       players: TEAM_LINES.map(([line, positions, reserve]) => teamPlayer(line, positions, reserve)),
     },
-    schedule: new Map([['EDM', NIGHTS], ['SEA', NIGHTS]]),
+    schedule: new Map([
+      ['EDM', NIGHTS],
+      ['SEA', NIGHTS],
+    ]),
   };
 }
 
@@ -214,7 +222,11 @@ describe('PlayerScoutComponent', () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
-    expect(players).toHaveBeenCalledWith('YAHOO', '465.l.9', daysBefore(page.today, DEFAULT_SINCE_DAYS));
+    expect(players).toHaveBeenCalledWith(
+      'YAHOO',
+      '465.l.9',
+      daysBefore(page.today, DEFAULT_SINCE_DAYS),
+    );
 
     page.since.set(null);
     await fixture.whenStable();
@@ -234,7 +246,12 @@ describe('PlayerScoutComponent', () => {
     // The league scores no goalie stat, so the goalie scores nothing, with the empty line on IR.
     const goalie = page.ranked().find((row) => row.player.playerId === '50');
     expect(goalie?.score).toBe(0);
-    expect(page.ranked().slice(-2).map((row) => row.score)).toEqual([0, 0]);
+    expect(
+      page
+        .ranked()
+        .slice(-2)
+        .map((row) => row.score),
+    ).toEqual([0, 0]);
   });
 
   it('opens on the available players, the biggest rise in score first', async () => {
@@ -296,7 +313,19 @@ describe('PlayerScoutComponent', () => {
 
     page.clearPositions();
     page.search.set('player 1');
-    expect(ids(page.filtered())).toEqual(['1', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19']);
+    expect(ids(page.filtered())).toEqual([
+      '1',
+      '10',
+      '11',
+      '12',
+      '13',
+      '14',
+      '15',
+      '16',
+      '17',
+      '18',
+      '19',
+    ]);
   });
 
   it('picks the four skater positions with All skaters, and goes back to everyone', async () => {
@@ -434,8 +463,15 @@ describe('PlayerScoutComponent', () => {
     ];
     myTeam.mockReturnValue(
       of({
-        team: { found: true, teamName: 'Slapshots', players: lines.map(([line, positions]) => teamPlayer(line, positions)) },
-        schedule: new Map([['EDM', NIGHTS], ['SEA', NIGHTS]]),
+        team: {
+          found: true,
+          teamName: 'Slapshots',
+          players: lines.map(([line, positions]) => teamPlayer(line, positions)),
+        },
+        schedule: new Map([
+          ['EDM', NIGHTS],
+          ['SEA', NIGHTS],
+        ]),
       }),
     );
     players.mockReturnValue(

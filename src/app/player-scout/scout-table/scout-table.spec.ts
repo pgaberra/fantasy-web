@@ -82,7 +82,11 @@ function goalieRow(playerId: number, rank: number): ScoutRow {
   const skaterRow = row(playerId, 'Joey Daccord', rank);
   return {
     ...skaterRow,
-    scout: { ...skaterRow.scout, type: 'goalie', freeAgent: { ...skaterRow.player, projection: line, positions: ['G'] } },
+    scout: {
+      ...skaterRow.scout,
+      type: 'goalie',
+      freeAgent: { ...skaterRow.player, projection: line, positions: ['G'] },
+    },
     player: { ...skaterRow.player, projection: line, positions: ['G'] },
     line,
     then: null,
@@ -138,7 +142,7 @@ describe('ScoutTableComponent', () => {
     expect(ngMocks.formatText(group)).toContain('vs 7 Oct');
   });
 
-  it('writes each figure with its change underneath, in the stat\'s own precision and sense', () => {
+  it("writes each figure with its change underneath, in the stat's own precision and sense", () => {
     const fixture = render([
       row(1, 'Brandon Montour', 1, { thenRank: 3, thenToi: 1050, thenGoals: 5, thenGames: 74 }),
     ]);
@@ -157,7 +161,9 @@ describe('ScoutTableComponent', () => {
   });
 
   it('greys a change too small to mean anything', () => {
-    const fixture = render([row(1, 'Steady Eddie', 1, { thenRank: 1, thenToi: 1370, thenGoals: 15 })]);
+    const fixture = render([
+      row(1, 'Steady Eddie', 1, { thenRank: 1, thenToi: 1370, thenGoals: 15 }),
+    ]);
 
     const toi = ngMocks.find(fixture, 'td.toi-col .delta');
     expect(ngMocks.formatText(toi)).toBe('+0:10');
@@ -168,14 +174,16 @@ describe('ScoutTableComponent', () => {
   });
 
   it('shows the ice since the day beside the change from before, and where the page lists him', () => {
-    const fixture = render([row(1, 'Brandon Montour', 1, { thenRank: 3, thenToi: 1050, usage: USAGE })]);
+    const fixture = render([
+      row(1, 'Brandon Montour', 1, { thenRank: 3, thenToi: 1050, usage: USAGE }),
+    ]);
 
     const ice = ngMocks.find(fixture, 'td.ice-col');
     expect(ngMocks.formatText(ngMocks.find(ice, '.figure-now'))).toBe('23:00');
     expect(ngMocks.formatText(ngMocks.find(ice, '.delta'))).toBe('+5:30');
-    const share = ngMocks.findAll(fixture, 'td.num').find((cell) =>
-      ngMocks.formatText(cell).startsWith('80%'),
-    );
+    const share = ngMocks
+      .findAll(fixture, 'td.num')
+      .find((cell) => ngMocks.formatText(cell).startsWith('80%'));
     expect(share && ngMocks.formatText(ngMocks.find(share, '.delta'))).toBe('+70 pts');
     const lineup = ngMocks.find(fixture, 'td.lineup-col');
     expect(ngMocks.formatText(ngMocks.find(lineup, '.listed'))).toBe('D1 · PP1');
@@ -218,7 +226,9 @@ describe('ScoutTableComponent', () => {
   });
 
   it('writes a fall as a fall, without a tag', () => {
-    const fixture = render([row(3, 'Steady Eddie', 30, { thenRank: 26, thenToi: 1380, delta: -3 })]);
+    const fixture = render([
+      row(3, 'Steady Eddie', 30, { thenRank: 26, thenToi: 1380, delta: -3 }),
+    ]);
 
     const text = ngMocks.formatText(fixture);
     expect(text).toContain('-4');
@@ -238,7 +248,9 @@ describe('ScoutTableComponent', () => {
       { showOwner: true },
     );
 
-    const tags = ngMocks.findAll(fixture, '.scout-tag--owner').map((tag) => ngMocks.formatText(tag));
+    const tags = ngMocks
+      .findAll(fixture, '.scout-tag--owner')
+      .map((tag) => ngMocks.formatText(tag));
     expect(tags).toEqual(['FA', 'Mine', 'Someone Else']);
     expect(ngMocks.findAll(fixture, '.scout-tag--mine')).toHaveLength(1);
   });
@@ -318,7 +330,14 @@ describe('ScoutTableComponent', () => {
           ['1', { kind: 'drop', drop, gain: 25 }],
           ['2', { kind: 'drop', drop, gain: -4.25 }],
           ['3', null],
-          ['4', { kind: 'reserve', move: { player: { ...drop, name: 'Filip Hronek' }, slot: 'IR' }, gain: 80 }],
+          [
+            '4',
+            {
+              kind: 'reserve',
+              move: { player: { ...drop, name: 'Filip Hronek' }, slot: 'IR' },
+              gain: 80,
+            },
+          ],
           ['5', { kind: 'open', gain: 70 }],
         ]),
       },

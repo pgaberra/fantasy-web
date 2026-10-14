@@ -17,7 +17,12 @@ const ANSWER: PlayerScoutListResponse = {
   season: 2026,
   modelVersion: 'marcel-v118',
   inSeason: true,
-  since: { requested: '2026-10-07', kind: 'SNAPSHOT', resolved: '2026-10-07', earliestSnapshot: '2026-10-01' },
+  since: {
+    requested: '2026-10-07',
+    kind: 'SNAPSHOT',
+    resolved: '2026-10-07',
+    earliestSnapshot: '2026-10-01',
+  },
   players: [
     {
       playerId: '1001',
@@ -188,7 +193,10 @@ describe('PlayerScoutService', () => {
       TestBed.inject(PlayerScoutService).myTeam('YAHOO', '465.l.9'),
     );
 
-    expect(invoke).toHaveBeenCalledWith(playerScoutMyTeam, { platform: 'YAHOO', leagueId: '465.l.9' });
+    expect(invoke).toHaveBeenCalledWith(playerScoutMyTeam, {
+      platform: 'YAHOO',
+      leagueId: '465.l.9',
+    });
     expect(answer.team.teamName).toBe('Slapshots');
     expect(answer.team.players[0].projection?.playerId).toBe(6743);
     // His own line is on whole games too, so a pickup is weighed against him on one footing.

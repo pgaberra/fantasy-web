@@ -183,7 +183,11 @@ export function valueLineup(
 }
 
 /** The team's value with these players over these nights alone. */
-function valueOver(players: readonly Seatable[], dates: Iterable<string>, seats: readonly Seat[]): number {
+function valueOver(
+  players: readonly Seatable[],
+  dates: Iterable<string>,
+  seats: readonly Seat[],
+): number {
   let total = 0;
   for (const date of dates) {
     total += night(players, date, seats).value;
