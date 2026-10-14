@@ -276,6 +276,13 @@
   color: var(--color-warning-text);
 }
 
+/* The yellow run's tip is what says who to drop, and no sentence under the strip says to hover
+   for it: the info glyph after the chips does, in the chips' own yellow. */
+.room-hint {
+  align-self: center;
+  color: var(--color-warning-text);
+}
+
 @media (max-width: 640px) {
   /* Three to a row on a phone, where seven would not hold a date; the week alignment is a
      desktop courtesy, and the days that only served it go with it. */
