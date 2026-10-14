@@ -187,6 +187,8 @@
                         @for (position of run.positions; track position) {
                           <span class="room-chip">{{ position }}</span>
                         }
+                        <!-- The legend no longer says to hover: the glyph does, on the chip. -->
+                        <app-icon class="room-hint" name="info" size="0.85em" />
                       </span>
                     } @else {
                       <span class="day-room day-room--open">
@@ -212,8 +214,7 @@
             @if (hasDropRoom()) {
               <span class="range-legend range-legend--drop"
                 ><span class="legend-swatch" aria-hidden="true"></span>Available only if a player at
-                a specific position is dropped. Hover or tap to see which player positions can free
-                up a spot</span
+                a specific position is dropped</span
               >
             }
           </p>

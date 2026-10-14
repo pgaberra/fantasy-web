@@ -1139,8 +1139,12 @@ describe('StreamerPlannerComponent', () => {
           ngMocks.findAll(fixture, '.range-legend').map((key) => ngMocks.formatText(key)),
         ).toEqual([
           'Available in your roster',
-          'Available only if a player at a specific position is dropped. Hover or tap to see which player positions can free up a spot',
+          'Available only if a player at a specific position is dropped',
         ]);
+        // The legend does not say to hover: each yellow run carries the info glyph that does, and a
+        // green run, which has no tip, carries none.
+        expect(ngMocks.findAll(fixture, '.day-room--drop .room-hint')).toHaveLength(4);
+        expect(ngMocks.findAll(fixture, '.day-room--open .room-hint')).toHaveLength(0);
         // Nothing asks who the user would drop, and the list has no swap to show.
         expect(ngMocks.formatText(fixture)).not.toContain('Droppable players');
         expect(ngMocks.findAll(fixture, '.swap-col')).toHaveLength(0);
