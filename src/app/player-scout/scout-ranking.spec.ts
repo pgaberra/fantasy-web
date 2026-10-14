@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { Projection, ScoredProjection } from '../models/projection.model';
-import { ScoutPlayer } from '../services/fa-scout.service';
+import { ScoutPlayer } from '../services/player-scout.service';
 import {
   isRising,
   nextScoutSort,
   rankScout,
+  SCOUT_MOVERS_ORDER,
   SCOUT_RANKED_ORDER,
   sortScout,
+  statOf,
   toiPerGame,
 } from './scout-ranking';
 
@@ -29,7 +31,11 @@ function goalieLine(playerId: number, wins: number): Projection {
   };
 }
 
-function player(now: Projection, preseason: Projection | null): ScoutPlayer {
+export function player(
+  now: Projection,
+  then: Projection | null,
+  extra: Partial<ScoutPlayer> = {},
+): ScoutPlayer {
   return {
     freeAgent: {
       projection: now,
@@ -41,7 +47,13 @@ function player(now: Projection, preseason: Projection | null): ScoutPlayer {
       expectedGames: now.stats.utility.gp,
       projected: new Set(['points']),
     },
-    preseason,
+    nhlId: 8400000 + now.playerId,
+    type: now.type,
+    owner: null,
+    then,
+    thenProjected: new Set(then ? ['points'] : []),
+    usage: null,
+    ...extra,
   };
 }
 
@@ -63,7 +75,7 @@ function byValue(projections: Projection[]): ScoredProjection[] {
 const fantasyPoints = (entry: ScoredProjection) => entry.score.fantasyPoints;
 
 describe('isRising', () => {
-  it('takes a climb to the top of the wire for a rise', () => {
+  it('takes a climb to the top of the league for a rise', () => {
     expect(isRising(12, 30)).toBe(true);
   });
 
@@ -75,75 +87,112 @@ describe('isRising', () => {
     expect(isRising(100, 115)).toBe(false);
   });
 
-  it('wants his place at least halved', () => {
+  it('wants his place at least halved, and at least five places', () => {
     expect(isRising(20, 39)).toBe(false);
     expect(isRising(20, 40)).toBe(true);
-  });
-
-  it('wants at least five places, however high he is', () => {
     expect(isRising(2, 6)).toBe(false);
     expect(isRising(2, 7)).toBe(true);
   });
 
-  it('says nothing of a player with no preseason line', () => {
+  it('says nothing of a player with no line on the day', () => {
     expect(isRising(1, null)).toBe(false);
   });
 });
 
 describe('rankScout', () => {
-  // Fifteen depth skaters the model liked in September, then one who has taken a top role since.
+  // Fifteen depth skaters the model liked on the day and still does, then one who has taken a top
+  // role since, a rookie it had no line for, and a goalie it has cooled on.
   const steady = Array.from({ length: 15 }, (_, index) =>
     player(skaterLine(index + 1, 40 - index), skaterLine(index + 1, 40 - index)),
   );
-  const montour = player(skaterLine(99, 60, 70, 1380), skaterLine(99, 20, 80, 1050));
+  const montour = player(skaterLine(99, 60, 70, 1380), skaterLine(99, 20, 70, 1050), {
+    owner: { teamName: 'Slapshots', mine: true },
+  });
   const rookie = player(skaterLine(77, 39.5), null);
   const goalie = player(goalieLine(50, 20), goalieLine(50, 25));
 
   const rows = rankScout([...steady, montour, rookie, goalie], byValue, fantasyPoints);
 
-  it('ranks skaters and goalies in one list, on the rest of the season', () => {
+  it('ranks skaters and goalies in one list, on the rest of the season, whoever holds them', () => {
     expect(rows).toHaveLength(18);
     expect(rows[0].player.playerId).toBe('99');
     expect(rows[0].rank).toBe(1);
     expect(rows[0].score).toBe(60);
+    expect(rows[0].scout.owner?.mine).toBe(true);
   });
 
-  it('places each player on the preseason line among the same players', () => {
-    // On the preseason lines Montour's 20 is last of the seventeen that have one, the goalie too.
-    expect(rows[0].preseasonRank).toBe(17);
+  it("places and scores each player on the day's line among the same players", () => {
+    // On the day's lines Montour's 20 is last of the seventeen that have one, the goalie too.
+    expect(rows[0].thenRank).toBe(17);
+    expect(rows[0].thenScore).toBe(20);
+    expect(rows[0].delta).toBe(40);
     expect(rows[0].rise).toBe(16);
     expect(rows[0].rising).toBe(true);
   });
 
-  it('leaves a player the model did not project in September unranked there, not risen', () => {
+  it('leaves a player the model had no line for on the day unranked there, not risen', () => {
     const row = rows.find((candidate) => candidate.player.playerId === '77');
-    expect(row?.preseasonRank).toBeNull();
+    expect(row?.thenRank).toBeNull();
+    expect(row?.thenScore).toBeNull();
+    expect(row?.delta).toBeNull();
     expect(row?.rise).toBeNull();
     expect(row?.rising).toBe(false);
   });
 
-  it('keeps a player who has not moved off the rising list', () => {
+  it('reads a player the model has not moved on as unmoved in score, pushed down in places', () => {
     const row = rows.find((candidate) => candidate.player.playerId === '3');
+    expect(row?.delta).toBe(0);
+    // Montour and the rookie climbed past him: two places lost without the model moving on him.
+    expect(row?.rise).toBe(-2);
     expect(row?.rising).toBe(false);
   });
 
-  it('places a goalie among the skaters by his score', () => {
+  it('places a goalie among the skaters by his score, and reads his fall', () => {
     const row = rows.find((candidate) => candidate.player.playerId === '50');
-    // His 20 wins now are below every skater; his 25 in September were above Montour's 20.
-    expect([row?.rank, row?.preseasonRank, row?.rise]).toEqual([18, 16, -2]);
+    // His 20 wins now are below every skater; his 25 on the day were above Montour's 20.
+    expect([row?.rank, row?.thenRank, row?.rise, row?.delta]).toEqual([18, 16, -2, -5]);
+  });
+
+  it('reads the ice since the day into the row', () => {
+    const [row] = rankScout(
+      [
+        player(skaterLine(1, 30), skaterLine(1, 20), {
+          usage: {
+            recent: { games: 4, toiPerGame: 1080, ppShare: 0.8 },
+            baseline: { games: 6, toiPerGame: 720, ppShare: 0.1 },
+            baselineSource: 'SEASON',
+            listedNow: { seenOn: '2026-10-13', line: 'f2', powerPlayUnit: 1, outOfLineup: false },
+            listedBefore: { seenOn: '2026-10-06', line: 'f4', outOfLineup: false },
+          },
+        }),
+      ],
+      byValue,
+      fantasyPoints,
+    );
+
+    expect(row.usage?.iceChange).toBe(360);
+    expect(row.usage?.powerPlayShareChange).toBeCloseTo(0.7);
+    expect(row.usage?.lineMove).toEqual({ from: 'L4', to: 'L2' });
+    expect(row.usage?.powerPlayMove).toEqual({ from: 'No PP', to: 'PP1' });
   });
 });
 
-describe('the role a line reads', () => {
+describe('what a line reads', () => {
   it('reads a skater ice time a game, and none for a goalie', () => {
     expect(toiPerGame(skaterLine(1, 10, 70, 1380))).toBe(1380);
     expect(toiPerGame(goalieLine(2, 10))).toBeUndefined();
     expect(toiPerGame(null)).toBeUndefined();
   });
+
+  it('reads a stat off a line, and nothing off none', () => {
+    expect(statOf(skaterLine(1, 10, 70, 1380, 7), 'ppp')).toBe(7);
+    expect(statOf(skaterLine(1, 10), 'hits')).toBeNull();
+    expect(statOf(null, 'points')).toBeNull();
+  });
 });
 
 describe('sorting the scout list', () => {
-  // Ranked 1 to 4 now; on the preseason lines 4 was first, 3 second and 2 third, 1 had none.
+  // Ranked 1 to 4 now; on the day's lines 4 was first, 3 second and 2 third, 1 had none.
   const rows = rankScout(
     [
       player(skaterLine(1, 30), null),
@@ -161,13 +210,35 @@ describe('sorting the scout list', () => {
     expect(sortScout(rows, SCOUT_RANKED_ORDER)).toBe(rows);
   });
 
-  it('sorts by the rise, the furthest risen first, a player with no preseason line last', () => {
-    expect(rows.map((row) => row.rise)).toEqual([null, 1, -1, -3]);
-    expect(ids(sortScout(rows, { key: 'rise', descending: true }))).toEqual(['2', '3', '4', '1']);
+  it('sorts by the change in score, the biggest gain first, a player with no then-line last', () => {
+    expect(rows.map((row) => row.delta)).toEqual([null, 10, -20, -35]);
+    expect(ids(sortScout(rows, SCOUT_MOVERS_ORDER))).toEqual(['2', '3', '4', '1']);
+    expect(ids(sortScout(rows, { key: 'delta', descending: false }))).toEqual(['4', '3', '2', '1']);
   });
 
-  it('keeps a player with no preseason line last when the rise is turned round', () => {
+  it('sorts by the rise, the furthest risen first, a player with no then-line last', () => {
+    expect(rows.map((row) => row.rise)).toEqual([null, 1, -1, -3]);
+    expect(ids(sortScout(rows, { key: 'rise', descending: true }))).toEqual(['2', '3', '4', '1']);
     expect(ids(sortScout(rows, { key: 'rise', descending: false }))).toEqual(['4', '3', '2', '1']);
+  });
+
+  it('sorts by the ice since the day, players without any last', () => {
+    const measured = rankScout(
+      [
+        player(skaterLine(1, 30), null),
+        player(skaterLine(2, 20), null, {
+          usage: { recent: { games: 3, toiPerGame: 900 }, baseline: { games: 5, toiPerGame: 600 } },
+        }),
+        player(skaterLine(3, 10), null, {
+          usage: { recent: { games: 3, toiPerGame: 900 }, baseline: { games: 5, toiPerGame: 960 } },
+        }),
+      ],
+      byValue,
+      fantasyPoints,
+    );
+
+    expect(ids(sortScout(measured, { key: 'ice', descending: true }))).toEqual(['2', '3', '1']);
+    expect(ids(sortScout(measured, { key: 'ice', descending: false }))).toEqual(['3', '2', '1']);
   });
 
   it('sorts the other columns as the planner does', () => {
@@ -175,10 +246,12 @@ describe('sorting the scout list', () => {
     expect(ids(sortScout(rows, { key: 'name', descending: true }))).toEqual(['4', '3', '2', '1']);
   });
 
-  it('opens the rise at the furthest risen, and turns it round on a second press', () => {
+  it("opens the scout's own columns at the biggest move, and turns them round on a second press", () => {
     const rise = nextScoutSort(SCOUT_RANKED_ORDER, 'rise');
     expect(rise).toEqual({ key: 'rise', descending: true });
     expect(nextScoutSort(rise, 'rise')).toEqual({ key: 'rise', descending: false });
+    expect(nextScoutSort(rise, 'delta')).toEqual({ key: 'delta', descending: true });
+    expect(nextScoutSort(rise, 'powerPlay')).toEqual({ key: 'powerPlay', descending: true });
   });
 
   it('opens every other column best first, from the rise too', () => {

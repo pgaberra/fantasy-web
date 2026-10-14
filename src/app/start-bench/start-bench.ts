@@ -15,9 +15,9 @@ import {
 import { DEFAULT_DECIMAL_SETTINGS } from '../draft-projection/projection-settings-section/model';
 import { ScoredProjection } from '../models/projection.model';
 import { ScoringStatKey } from '../models/stat-key.model';
-import { scoreTeam } from '../fa-scout/drop-candidates';
+import { scoreTeam } from '../player-scout/drop-candidates';
 import { EspnService } from '../services/espn.service';
-import { toScoutTeam } from '../services/fa-scout.service';
+import { toScoutTeam } from '../services/player-scout.service';
 import { ChosenLeague, LeagueChoiceService } from '../services/league-choice.service';
 import { ProjectionRankingService } from '../services/projection-ranking.service';
 import { YahooService } from '../services/yahoo.service';

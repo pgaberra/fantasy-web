@@ -1,6 +1,6 @@
 import { RosterSlots } from '../api/models/roster-slots';
 import { Projection, ScoredProjection } from '../models/projection.model';
-import { TeamPlayer } from '../services/fa-scout.service';
+import { TeamPlayer } from '../services/player-scout.service';
 import { lineupSeats, seated } from '../streamer-planner/planner-lineup';
 
 /** One of the user's own players, scored on the same scale as the wire. */

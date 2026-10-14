@@ -1,0 +1,291 @@
+<div class="table-scroll">
+  <table class="free-agents-table scout-table">
+    <thead>
+      <!-- Two families of columns, named once above them: what the model thinks, and what the
+           ice has shown. -->
+      <tr class="group-row">
+        <th scope="colgroup" colspan="2" class="group-col group-col--blank"></th>
+        <th scope="colgroup" [attr.colspan]="projectionSpan()" class="group-col group-col--start">
+          <span class="group-name">Projection</span>
+          <span class="group-since">{{ sinceLabel() }}</span>
+        </th>
+        @if (anySkater() && anyUsage()) {
+          <th scope="colgroup" colspan="3" class="group-col group-col--start">
+            <span class="group-name">On the ice</span>
+            <span class="group-since">{{ iceLabel() }}</span>
+          </th>
+        }
+        @if (swaps()) {
+          <th scope="colgroup" class="group-col group-col--start"></th>
+        }
+      </tr>
+      <tr>
+        <th scope="col" class="num rank-col" [appTooltip]="rankTip">#</th>
+        <th scope="col" class="player-col" [attr.aria-sort]="ariaSort('name')">
+          <button type="button" class="sort" (click)="sortBy.emit('name')">
+            Player
+            @if (sort().key === 'name') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+          </button>
+        </th>
+        <th scope="col" class="num score-col stat-col--start" [attr.aria-sort]="ariaSort('score')">
+          <button
+            type="button"
+            class="sort"
+            appTooltip="The AI projection for the rest of the season, scored by your league's settings, and how much it has moved since the day"
+            (click)="sortBy.emit('score')"
+          >
+            @if (sort().key === 'score') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+            {{ scoreHeading() }}
+          </button>
+          <button
+            type="button"
+            class="sort sort--delta"
+            [class.sort--on]="sort().key === 'delta'"
+            appTooltip="Sort by how much the projection has moved since the day"
+            (click)="sortBy.emit('delta')"
+          >
+            @if (sort().key === 'delta') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+            change
+          </button>
+        </th>
+        <th scope="col" class="num" [attr.aria-sort]="ariaSort('rise')">
+          <button
+            type="button"
+            class="sort"
+            appTooltip="Places gained among these players since the day"
+            (click)="sortBy.emit('rise')"
+          >
+            @if (sort().key === 'rise') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+            Rank
+          </button>
+        </th>
+        <th scope="col" class="num" [attr.aria-sort]="ariaSort('games')">
+          <button
+            type="button"
+            class="sort"
+            appTooltip="Games he is expected to play in the rest of the season"
+            (click)="sortBy.emit('games')"
+          >
+            @if (sort().key === 'games') {
+              <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+            }
+            GP
+          </button>
+        </th>
+        @if (anySkater()) {
+          <th scope="col" class="num toi-col" [attr.aria-sort]="ariaSort('toi')">
+            <button
+              type="button"
+              class="sort"
+              appTooltip="Projected ice time a game, and how it has moved since the day"
+              (click)="sortBy.emit('toi')"
+            >
+              @if (sort().key === 'toi') {
+                <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+              }
+              TOI
+            </button>
+          </th>
+        }
+        @for (column of columns(); track column.key) {
+          <th scope="col" class="num stat-col" [attr.aria-sort]="ariaSort(column.key)">
+            <button
+              type="button"
+              class="sort"
+              [appTooltip]="column.name"
+              (click)="sortBy.emit(column.key)"
+            >
+              @if (sort().key === column.key) {
+                <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+              }
+              {{ column.label }}
+            </button>
+          </th>
+        }
+        @if (anySkater() && anyUsage()) {
+          <th scope="col" class="num ice-col stat-col--start" [attr.aria-sort]="ariaSort('ice')">
+            <button
+              type="button"
+              class="sort"
+              appTooltip="Ice time a game over his games since the day, measured, and the change from his games before"
+              (click)="sortBy.emit('ice')"
+            >
+              @if (sort().key === 'ice') {
+                <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+              }
+              Ice
+            </button>
+          </th>
+          <th scope="col" class="num" [attr.aria-sort]="ariaSort('powerPlay')">
+            <button
+              type="button"
+              class="sort"
+              appTooltip="His share of his club's power-play time since the day, measured, and the change from before"
+              (click)="sortBy.emit('powerPlay')"
+            >
+              @if (sort().key === 'powerPlay') {
+                <app-icon [name]="sort().descending ? 'arrow-down' : 'arrow-up'" [size]="14" />
+              }
+              PP share
+            </button>
+          </th>
+          <th
+            scope="col"
+            class="lineup-col"
+            appTooltip="Where Daily Faceoff's lineup page lists him now, and where it listed him on the day"
+          >
+            Lineup
+          </th>
+        }
+        @if (swaps()) {
+          <th
+            scope="col"
+            class="swap-col stat-col--start"
+            appTooltip="The player on your team to drop for him, and what your lineup gains over the rest of the season"
+          >
+            Swap
+          </th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (entry of entries(); track entry.row.player.playerId) {
+        <tr class="player-row">
+          <td class="num rank-col">{{ entry.row.rank }}</td>
+          <th scope="row" class="player-col">
+            <span class="player-cell">
+              <app-team-logo
+                class="player-logo"
+                [team]="entry.row.player.teamAbbrev"
+                [alt]="entry.row.player.teamAbbrev ?? ''"
+              />
+              <span class="player-identity">
+                <span class="player-name-line">
+                  <span class="player-name">{{ entry.row.player.name }}</span>
+                  @if (onWaivers(entry.row)) {
+                    <span
+                      class="player-status"
+                      role="img"
+                      aria-label="On waivers"
+                      tabindex="0"
+                      appTooltip="On waivers"
+                    >
+                      <app-icon name="hourglass" [size]="14" />
+                    </span>
+                  }
+                </span>
+                <span class="player-meta">
+                  <app-position-chips [positions]="entry.row.player.positions" />
+                  @if (showOwner()) {
+                    <span
+                      class="scout-tag scout-tag--owner"
+                      [class.scout-tag--mine]="entry.row.scout.owner?.mine"
+                      >{{ ownerTag(entry.row) }}</span
+                    >
+                  }
+                  @if (entry.row.rising) {
+                    <span class="scout-tag scout-tag--rising">Rising</span>
+                  } @else if (entry.row.then === null) {
+                    <span class="scout-tag" appTooltip="The model had no line for him on the day"
+                      >New</span
+                    >
+                  }
+                </span>
+              </span>
+            </span>
+          </th>
+          <td class="num score-col stat-col--start">
+            <span class="score">{{ score(entry.row) }}</span>
+            @if (deltaScore(entry.row); as delta) {
+              <span class="delta" [class]="'delta delta--' + delta.dir">{{ delta.text }}</span>
+            }
+          </td>
+          <td class="num" [appTooltip]="riseTip(entry.row)">
+            @if (entry.row.thenRank !== null) {
+              <span
+                class="rise"
+                [class.rise--up]="(entry.row.rise ?? 0) > 0"
+                [class.rise--down]="(entry.row.rise ?? 0) < 0"
+                >{{ rise(entry.row) }}</span
+              >
+              <span class="delta delta--note">was {{ entry.row.thenRank }}</span>
+            }
+          </td>
+          <td class="num">
+            <span class="figure-now">{{ games(entry.row) }}</span>
+            @if (deltaGames(entry.row); as delta) {
+              <span class="delta" [class]="'delta delta--' + delta.dir">{{ delta.text }}</span>
+            }
+          </td>
+          @if (anySkater()) {
+            <td class="num toi-col">
+              <span class="figure-now">{{ toiNow(entry.row) }}</span>
+              @if (deltaToi(entry.row); as delta) {
+                <span class="delta" [class]="'delta delta--' + delta.dir">{{ delta.text }}</span>
+              }
+            </td>
+          }
+          @for (cell of entry.cells; track $index) {
+            <td class="num stat-col" [class.nil]="cell.stat && isNil(cell.stat)">
+              <span class="figure-now">{{ cell.stat?.value }}</span>
+              @if (cell.delta; as delta) {
+                <span class="delta" [class]="'delta delta--' + delta.dir">{{ delta.text }}</span>
+              }
+            </td>
+          }
+          @if (anySkater() && anyUsage()) {
+            <td class="num ice-col stat-col--start" [appTooltip]="iceTip(entry.row)">
+              <span class="figure-now">{{ iceNow(entry.row) }}</span>
+              @if (deltaIce(entry.row); as delta) {
+                <span class="delta" [class]="'delta delta--' + delta.dir">{{ delta.text }}</span>
+              }
+            </td>
+            <td class="num" [appTooltip]="iceTip(entry.row)">
+              <span class="figure-now">{{ shareNow(entry.row) }}</span>
+              @if (deltaShare(entry.row); as delta) {
+                <span class="delta" [class]="'delta delta--' + delta.dir">{{ delta.text }}</span>
+              }
+            </td>
+            <td class="lineup-col" [appTooltip]="listedTip(entry.row)">
+              @if (listedNow(entry.row); as now) {
+                <span class="listed" [class]="'listed listed--' + listedDir(entry.row)">
+                  @if (listedDir(entry.row) === 'up') {
+                    <app-icon name="arrow-up" [size]="14" />
+                  } @else if (listedDir(entry.row) === 'down') {
+                    <app-icon name="arrow-down" [size]="14" />
+                  }
+                  {{ now }}
+                </span>
+                @if (listedThen(entry.row); as then) {
+                  <span class="delta delta--note">{{ then }}</span>
+                }
+              }
+            </td>
+          }
+          @if (swaps()) {
+            <td class="swap-col stat-col--start" tabindex="0" [appTooltip]="swapTip(entry.row)">
+              @if (pickable(entry.row)) {
+                @if (swap(entry.row); as swap) {
+                  <span class="swap-gain" [class.swap-gain--up]="swap.gain > 0">{{
+                    gain(swap)
+                  }}</span>
+                  <span class="swap-drop">{{ making(swap) }}</span>
+                } @else {
+                  <span class="swap-none">No one to drop</span>
+                }
+              }
+            </td>
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

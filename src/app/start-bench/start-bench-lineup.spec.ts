@@ -4,7 +4,7 @@ import { RosterSlots } from '../api/models/roster-slots';
 import { ScheduledGame } from '../api/models/scheduled-game';
 import { TeamSchedule } from '../api/models/team-schedule';
 import { teamsByKey } from '../streamer-planner/planner-free-agents';
-import { TeamPlayer } from '../services/fa-scout.service';
+import { TeamPlayer } from '../services/player-scout.service';
 import {
   assignSeats,
   byLineupNow,

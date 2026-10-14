@@ -1,44 +1,67 @@
 import { inject, Injectable } from '@angular/core';
 import { from, map, Observable } from 'rxjs';
 import { Api } from '../api/api';
-import { faScoutFreeAgents } from '../api/fn/fa-scout/fa-scout-free-agents';
-import { faScoutMyTeam } from '../api/fn/fa-scout/fa-scout-my-team';
+import { playerScoutMyTeam } from '../api/fn/player-scout/player-scout-my-team';
+import { playerScoutPlayers } from '../api/fn/player-scout/player-scout-players';
+import { PlayerScoutRow } from '../api/models/player-scout-row';
 import { ScoutLine } from '../api/models/scout-line';
 import { ScoutMyTeamResponse } from '../api/models/scout-my-team-response';
-import { ScoutPlayerResponse } from '../api/models/scout-player-response';
 import { ScoutRosterPlayer } from '../api/models/scout-roster-player';
+import { ScoutSince } from '../api/models/scout-since';
+import { ScoutUsage } from '../api/models/scout-usage';
+import { nhlTeamKey } from '../models/nhl-team';
+import { Projection } from '../models/projection.model';
 import {
   GOALIE_SCORING_STAT_KEYS,
   GOALIE_UTILITY_STAT_KEYS,
   SKATER_SCORING_STAT_KEYS,
   SKATER_UTILITY_STAT_KEYS,
 } from '../models/stat-key.model';
-import { Projection } from '../models/projection.model';
 import { wholeGamesLine } from '../streamer-planner/planner-free-agents';
 import { FreeAgent } from './streamer-planner-free-agents.service';
 import { LeaguePlatform } from './league-choice.service';
 
+export type { ScoutSince, ScoutUsage };
+
+/** The league team holding a player; null for one the league has available. */
+export interface ScoutOwner {
+  readonly teamName: string;
+  readonly mine: boolean;
+}
+
 /**
- * One available player as the FA scout reads him: his rest of the season, shaped as the planner's
- * {@link FreeAgent} so the same table helpers draw it, and the line the model gave him before the
- * season began, or null where it gave him none.
+ * One player in the league as Player Scout reads him: his rest of the season today, shaped as the
+ * planner's {@link FreeAgent} so the same table helpers draw it, the model's line for him as it
+ * stood on the chosen day (already re-spread over the games his club has left, so the two compare
+ * stat by stat), who holds him, and what the ice says since that day.
  */
 export interface ScoutPlayer {
-  /** The rest of the season: `projection` is its line, `expectedGames` its games. */
+  /** Today's rest of the season: `projection` is its line, `expectedGames` its games. */
   readonly freeAgent: FreeAgent;
-  readonly preseason: Projection | null;
+  readonly nhlId: number;
+  readonly type: 'skater' | 'goalie';
+  readonly owner: ScoutOwner | null;
+  /** The slot he sits in on his team, in the platform's spelling; absent for an available player. */
+  readonly slot?: string;
+  readonly injuryStatus?: string;
+  /** His line as it stood on the chosen day, over today's games left; null where the model had none. */
+  readonly then: Projection | null;
+  /** The stats the chosen day's line gave a number for. */
+  readonly thenProjected: ReadonlySet<string>;
+  /** His measured ice since the chosen day; null for a goalie or a skater with no game since. */
+  readonly usage: ScoutUsage | null;
 }
 
 export interface ScoutList {
   /** False before the season's first game and after its last: there is no rest of it to show. */
   readonly inSeason: boolean;
-  /** False when the model's preseason line is not stored, so nobody can read as rising. */
-  readonly preseasonAvailable: boolean;
+  /** Which earlier line the then-lines are, and what answered the day asked for. */
+  readonly since: ScoutSince;
   readonly players: readonly ScoutPlayer[];
 }
 
 /**
- * A player on the user's own team, with the model's rest of the season on the line the available
+ * A player on the user's own team, with the model's rest of the season on the line the league's
  * players carry, so a pickup can be weighed against him.
  */
 export interface TeamPlayer {
@@ -67,20 +90,42 @@ export interface ScoutTeam {
   readonly players: readonly TeamPlayer[];
 }
 
+/** The user's team and every club's remaining nights, keyed by the NHL's spelling of the club. */
+export interface ScoutTeamAnswer {
+  readonly team: ScoutTeam;
+  readonly schedule: ReadonlyMap<string, readonly string[]>;
+}
+
 @Injectable({ providedIn: 'root' })
-export class FaScoutService {
+export class PlayerScoutService {
   private readonly api = inject(Api);
 
-  myTeam(platform: LeaguePlatform, leagueId: string): Observable<ScoutTeam> {
-    return from(this.api.invoke(faScoutMyTeam, { platform, leagueId })).pipe(map(toScoutTeam));
-  }
-
-  freeAgents(platform: LeaguePlatform, leagueId: string): Observable<ScoutList> {
-    return from(this.api.invoke(faScoutFreeAgents, { platform, leagueId })).pipe(
+  /**
+   * Every player in the league the model projects, with its view of him now and on `since`: an
+   * ISO date, or null for the model's preseason line.
+   */
+  players(platform: LeaguePlatform, leagueId: string, since: string | null): Observable<ScoutList> {
+    return from(
+      this.api.invoke(playerScoutPlayers, { platform, leagueId, since: since ?? undefined }),
+    ).pipe(
       map((answer) => ({
         inSeason: answer.inSeason,
-        preseasonAvailable: answer.preseasonAvailable,
+        since: answer.since,
         players: answer.players.map(toScoutPlayer),
+      })),
+    );
+  }
+
+  myTeam(platform: LeaguePlatform, leagueId: string): Observable<ScoutTeamAnswer> {
+    return from(this.api.invoke(playerScoutMyTeam, { platform, leagueId })).pipe(
+      map((answer) => ({
+        team: toScoutTeam(answer),
+        schedule: new Map(
+          answer.schedule.flatMap((club) => {
+            const key = nhlTeamKey(club.team);
+            return key ? [[key, club.dates] as const] : [];
+          }),
+        ),
       })),
     );
   }
@@ -88,7 +133,7 @@ export class FaScoutService {
 
 /**
  * The user's team as the BFF sends it with the rest of the season, shaped as the scout reads it:
- * FA Scout's own-team answer, and Start/Bench's, which is the same read under its own switch.
+ * Player Scout's own-team answer, and Start/Bench's, which is the same read under its own switch.
  */
 export function toScoutTeam(answer: ScoutMyTeamResponse): ScoutTeam {
   return {
@@ -157,22 +202,29 @@ function toTeamPlayer(player: ScoutRosterPlayer): TeamPlayer {
   };
 }
 
-function toScoutPlayer(player: ScoutPlayerResponse): ScoutPlayer {
-  const type = player.type === 'goalie' ? 'goalie' : 'skater';
-  const playerId = rankingKey(player.playerId);
-  const games = Math.round(player.restOfSeason.games);
+function toScoutPlayer(row: PlayerScoutRow): ScoutPlayer {
+  const type = row.type === 'goalie' ? 'goalie' : 'skater';
+  const playerId = rankingKey(row.playerId);
+  const games = Math.round(row.now.games);
   return {
     freeAgent: {
-      playerId: player.playerId,
-      name: player.name,
-      teamAbbrev: player.teamAbbrev,
-      positions: player.positions,
-      availability: player.availability,
-      clubGames: games,
+      playerId: row.playerId,
+      name: row.name,
+      teamAbbrev: row.teamAbbrev,
+      positions: row.positions,
+      availability: row.availability ?? 'UNKNOWN',
+      clubGames: row.gamesRemaining,
       expectedGames: games,
-      projected: new Set(Object.keys(player.restOfSeason.stats)),
-      projection: projectionOf(type, playerId, player.restOfSeason),
+      projected: new Set(Object.keys(row.now.stats)),
+      projection: projectionOf(type, playerId, row.now),
     },
-    preseason: player.preseason ? projectionOf(type, playerId, player.preseason) : null,
+    nhlId: row.nhlId,
+    type,
+    owner: row.owner ? { teamName: row.owner.teamName, mine: row.owner.mine } : null,
+    slot: row.slot,
+    injuryStatus: row.injuryStatus,
+    then: row.then ? projectionOf(type, playerId, row.then) : null,
+    thenProjected: new Set(row.then ? Object.keys(row.then.stats) : []),
+    usage: row.usage ?? null,
   };
 }
