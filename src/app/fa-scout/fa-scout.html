@@ -82,65 +82,115 @@
     } @else if (noPlayers()) {
       <p class="empty">No available player in this league has a projection.</p>
     } @else {
-      <section class="drops" aria-labelledby="drops-title">
-        <h3 id="drops-title" class="drops-title">
-          <app-icon name="user-minus" [size]="16" />
-          Your {{ shown() }}
-          @if (teamName(); as name) {
-            on {{ name }}
-          }
-          <app-help-tip
-            label="How your players are ranked"
-            text="Your players scored the same way as the available ones: the AI projection for the rest of the season, by your league's settings. Every player on your team, the lowest first. Players on injured reserve are marked, since dropping them frees no roster spot."
-          />
-        </h3>
-        @switch (teamStatus()) {
-          @case ('loading') {
-            <p class="drops-note">
-              <app-loading-indicator variant="inline" label="Loading your team" />
-            </p>
-          }
-          @case ('error') {
-            <p class="drops-note">
-              Couldn't load your team in this league, so no drops are suggested.
-              <button type="button" class="btn btn-secondary btn-sm" (click)="retryTeam()">
-                Try again
-              </button>
-            </p>
-          }
-          @case ('not-found') {
-            <p class="drops-note">You have no team in this league, so no drops are suggested.</p>
-          }
-          @case ('ready') {
-            @if (room().openSpots > 0 || room().toReserve.length > 0) {
-              <ul class="room-list">
-                @if (room().openSpots > 0) {
-                  <li class="room">
-                    <app-icon name="check-circle" [size]="14" />
-                    <span
-                      >{{ openSpotsText(room().openSpots) }}: pick up without dropping anyone.</span
-                    >
-                  </li>
-                }
-                @for (move of room().toReserve; track move.player.playerId) {
-                  <li class="room">
-                    <app-icon name="check-circle" [size]="14" />
+      <!-- What a pickup costs, in one line above the list; the roster itself is folded under it,
+           since the page is for the wire and the roster is the follow-up question. -->
+      <section class="room-box" aria-label="Room for a pickup">
+        <div class="room-line">
+          <div class="room-text">
+            @switch (teamStatus()) {
+              @case ('loading') {
+                <p class="room-note">
+                  <app-loading-indicator variant="inline" label="Loading your team" />
+                </p>
+              }
+              @case ('error') {
+                <p class="room-note">
+                  Couldn't load your team in this league, so no drops are suggested.
+                  <button type="button" class="btn btn-secondary btn-sm" (click)="retryTeam()">
+                    Try again
+                  </button>
+                </p>
+              }
+              @case ('not-found') {
+                <p class="room-note">You have no team in this league, so no drops are suggested.</p>
+              }
+              @case ('ready') {
+                @if (room().openSpots > 0 || room().toReserve.length > 0) {
+                  <ul class="room-list">
+                    @if (room().openSpots > 0) {
+                      <li class="room">
+                        <app-icon name="check-circle" [size]="14" />
+                        <span
+                          >{{ openSpotsText(room().openSpots) }}: pick up without dropping
+                          anyone.</span
+                        >
+                      </li>
+                    }
+                    @for (move of room().toReserve; track move.player.playerId) {
+                      <li class="room">
+                        <app-icon name="check-circle" [size]="14" />
+                        <span>
+                          Move <strong>{{ move.player.name }}</strong>
+                          @if (move.player.injuryStatus) {
+                            <span class="drop-tag drop-tag--out">{{
+                              move.player.injuryStatus
+                            }}</span>
+                          }
+                          to {{ move.slot }}: his roster spot then takes a pickup, nobody dropped.
+                        </span>
+                      </li>
+                    }
+                  </ul>
+                } @else {
+                  <p class="room floor">
+                    <app-icon name="user-minus" [size]="14" />
                     <span>
-                      Move <strong>{{ move.player.name }}</strong>
-                      @if (move.player.injuryStatus) {
-                        <span class="drop-tag drop-tag--out">{{ move.player.injuryStatus }}</span>
+                      @if (slotsKnown()) {
+                        Full roster.
                       }
-                      to {{ move.slot }}: his roster spot then takes a pickup, nobody dropped.
+                      @if (floor(); as low) {
+                        Lowest: <strong>{{ low.player.name }}</strong>
+                        <app-position-chips [positions]="low.player.positions" />
+                        <span class="floor-score">{{ formatScore(low.score) }}</span>
+                      } @else {
+                        None of your {{ shown() }} has a projection.
+                      }
                     </span>
-                  </li>
+                  </p>
                 }
-              </ul>
+              }
             }
-            @if (roster().length === 0) {
-              <p class="drops-note">None of your {{ shown() }} has a projection.</p>
+          </div>
+          @if (teamStatus() === 'ready') {
+            <button
+              type="button"
+              class="roster-toggle"
+              aria-controls="scout-roster"
+              [attr.aria-expanded]="rosterOpen()"
+              (click)="toggleRoster()"
+            >
+              Your {{ shown() }} ({{ roster().length }})
+              <app-icon class="chevron" name="chevron-down" [size]="14" />
+            </button>
+          }
+        </div>
+
+        @if (teamStatus() === 'ready' && rosterOpen()) {
+          <div id="scout-roster" class="roster">
+            <p class="roster-caption">
+              @if (teamName(); as name) {
+                {{ name }},
+              }
+              lowest first.
+              @if (!showAllRoster()) {
+                Only the {{ shown() }} a listed pickup outscores.
+              }
+              <app-help-tip
+                label="How your players are ranked"
+                text="Your players scored the same way as the available ones: the AI projection for the rest of the season, by your league's settings. Shown first are those a player in the list would outscore; the rest, and players on injured reserve, whose spot a drop would not free, are behind Show all."
+              />
+            </p>
+            @if (rosterShown().length === 0) {
+              <p class="room-note">
+                @if (roster().length === 0) {
+                  None of your {{ shown() }} has a projection.
+                } @else {
+                  No {{ one() }} in the list outscores anyone you could drop.
+                }
+              </p>
             } @else {
               <ol class="drops-list">
-                @for (row of roster(); track row.player.playerId) {
+                @for (row of rosterShown(); track row.player.playerId) {
                   <li class="drop">
                     <span class="drop-player">
                       <app-team-logo
@@ -162,11 +212,22 @@
                   </li>
                 }
               </ol>
-              @if (unprojected() > 0) {
-                <p class="drops-note">{{ unprojected() }} without a projection left out.</p>
-              }
             }
-          }
+            <p class="roster-foot">
+              @if (rosterHidden() > 0) {
+                <button type="button" class="roster-more" (click)="showAllRoster.set(true)">
+                  Show all {{ roster().length }}
+                </button>
+              } @else if (showAllRoster() && roster().length > beatable().length) {
+                <button type="button" class="roster-more" (click)="showAllRoster.set(false)">
+                  Show fewer
+                </button>
+              }
+              @if (unprojected() > 0) {
+                <span class="room-note">{{ unprojected() }} without a projection left out.</span>
+              }
+            </p>
+          </div>
         }
       </section>
 

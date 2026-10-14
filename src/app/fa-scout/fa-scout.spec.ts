@@ -253,7 +253,7 @@ describe('FaScoutComponent', () => {
     expect(page.allSkaters()).toBe(true);
     expect(page.filtered()).toHaveLength(21);
     expect(page.filtered().map((row) => row.line.type)).not.toContain('goalie');
-    expect(ngMocks.formatText(fixture)).toContain('Your skaters on Slapshots');
+    expect(ngMocks.formatText(ngMocks.find(fixture, '.roster-toggle'))).toBe('Your skaters (12)');
 
     page.toggleAllSkaters();
     expect(page.positions().size).toBe(0);
@@ -281,7 +281,7 @@ describe('FaScoutComponent', () => {
     fixture.detectChanges();
 
     expect(page.roster().map((row) => row.player.playerId)).toEqual(['214']);
-    expect(ngMocks.formatText(fixture)).toContain('Your goalies on Slapshots');
+    expect(ngMocks.formatText(ngMocks.find(fixture, '.roster-toggle'))).toBe('Your goalies (1)');
   });
 
   it('hands the table a page at a time', async () => {
@@ -353,12 +353,58 @@ describe('FaScoutComponent', () => {
     expect(myTeam).toHaveBeenCalledWith('YAHOO', '465.l.9');
   });
 
-  it('lists every player on the team, lowest first, injured reserve marked', async () => {
+  it('opens on the list, with the roster folded under a line naming the floor', async () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
-    const listed = page.roster().map((row) => row.player.playerId);
-    // The C on injured reserve projects nothing, so he leads the list.
+    expect(page.rosterOpen()).toBe(false);
+    expect(ngMocks.findAll(fixture, '.drop')).toHaveLength(0);
+    // The C on injured reserve scores lowest but holds no spot: the floor is the next one up.
+    expect(page.floor()?.player.playerId).toBe('203');
+    const floor = ngMocks.find(fixture, '.floor');
+    expect(ngMocks.formatText(floor)).toContain('Full roster.');
+    expect(ngMocks.formatText(ngMocks.find(floor, 'strong'))).toBe('Mine 203');
+    expect(ngMocks.formatText(ngMocks.find(floor, '.floor-score'))).toBe('5.0');
+    const toggle = ngMocks.find(fixture, '.roster-toggle');
+    expect(ngMocks.formatText(toggle)).toBe('Your players (12)');
+    expect(toggle.attributes['aria-expanded']).toBe('false');
+    expect(ngMocks.findAll(fixture, ScoutTableComponent)).toHaveLength(1);
+  });
+
+  it('unfolds the players a listed pickup outscores, lowest first, and the rest on Show all', async () => {
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    ngMocks.click(ngMocks.find(fixture, '.roster-toggle'));
+    fixture.detectChanges();
+
+    expect(ngMocks.find(fixture, '.roster-toggle').attributes['aria-expanded']).toBe('true');
+    // The best skater on the wire scores 116: every skater under that, off injured reserve.
+    const beatable = page.beatable().map((row) => row.player.playerId);
+    expect(beatable).toEqual([
+      '203',
+      '202',
+      '210',
+      '207',
+      '208',
+      '209',
+      '204',
+      '205',
+      '206',
+      '212',
+    ]);
+    expect(beatable).not.toContain('211');
+    expect(beatable).not.toContain('201');
+    expect(ngMocks.findAll(fixture, '.drop')).toHaveLength(10);
+    const caption = ngMocks.formatText(ngMocks.find(fixture, '.roster-caption'));
+    expect(caption).toContain('Slapshots, lowest first.');
+    expect(caption).toContain('Only the players a listed pickup outscores.');
+    expect(ngMocks.formatText(ngMocks.find(fixture, '.roster-more'))).toBe('Show all 12');
+
+    ngMocks.click(ngMocks.find(fixture, '.roster-more'));
+    fixture.detectChanges();
+
+    const listed = page.rosterShown().map((row) => row.player.playerId);
     expect(listed.slice(0, 4)).toEqual(['211', '203', '202', '210']);
     expect(listed).toHaveLength(12);
     expect(listed.at(-1)).toBe('201');
@@ -366,19 +412,67 @@ describe('FaScoutComponent', () => {
     expect(rows).toHaveLength(12);
     expect(ngMocks.formatText(ngMocks.find(rows[0], '.drop-tag'))).toBe('IR');
     expect(ngMocks.findAll(rows[1], '.drop-tag')).toHaveLength(0);
+    expect(ngMocks.formatText(ngMocks.find(fixture, '.roster-more'))).toBe('Show fewer');
     const text = ngMocks.formatText(fixture);
-    expect(text).toContain('Your players on Slapshots');
     expect(text).not.toContain('left out');
     // No line on which pickup each player could be dropped for.
     expect(text).not.toContain('Any pickup');
     expect(text).not.toContain('Only for a');
   });
 
-  it('leaves out the Swap column and the Upgrades only filter for now', async () => {
+  it('follows the list on screen: a narrowed wire beats fewer of the roster', async () => {
     const fixture = await render();
+    const page = fixture.point.componentInstance;
 
-    expect(ngMocks.input(ngMocks.find(fixture, ScoutTableComponent), 'swaps')).toBeUndefined();
-    expect(ngMocks.formatText(fixture)).not.toContain('Upgrades only');
+    page.togglePosition('G');
+    fixture.detectChanges();
+
+    // The wire's goalie scores nothing in this league, and the user has no goalie.
+    expect(page.beatable()).toEqual([]);
+    expect(ngMocks.formatText(ngMocks.find(fixture, '.floor'))).toContain(
+      'None of your goalies has a projection.',
+    );
+
+    page.clearPositions();
+    page.toggleRisingOnly();
+    page.toggleRoster();
+    fixture.detectChanges();
+
+    // Only the risen defenceman is listed, at 116: the same ten skaters sit under him.
+    expect(page.beatable()).toHaveLength(10);
+    expect(ngMocks.findAll(fixture, '.drop')).toHaveLength(10);
+  });
+
+  it('says so when nobody listed outscores anyone droppable', async () => {
+    freeAgents.mockReturnValue(
+      of({ ...wire(), players: [scoutPlayer(skater(98, 1, 1), skater(98, 1, 1))] }),
+    );
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    page.toggleRoster();
+    fixture.detectChanges();
+
+    expect(page.beatable()).toEqual([]);
+    expect(ngMocks.formatText(fixture)).toContain(
+      'No player in the list outscores anyone you could drop.',
+    );
+    expect(ngMocks.formatText(ngMocks.find(fixture, '.roster-more'))).toBe('Show all 12');
+  });
+
+  it('folds the roster again when another league is picked', async () => {
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    page.toggleRoster();
+    page.showAllRoster.set(true);
+    page.platform.set('espn');
+    page.espnLeague.set({ platform: 'ESPN', leagueId: '77', name: 'Work' });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(page.rosterOpen()).toBe(false);
+    expect(page.showAllRoster()).toBe(false);
   });
 
   it('keeps the list without drops when the user has no team in the league', async () => {
@@ -422,6 +516,7 @@ describe('FaScoutComponent', () => {
     // One IR slot is taken by the reserve C, the other is free: Hronek goes there.
     expect(page.room().toReserve.map((move) => move.player.name)).toEqual(['Filip Hronek']);
     expect(page.roster().map((row) => row.player.name)).toContain('Filip Hronek');
+    expect(ngMocks.findAll(fixture, '.floor')).toHaveLength(0);
     const move = ngMocks.find(fixture, '.room');
     expect(ngMocks.formatText(ngMocks.find(move, 'strong'))).toBe('Filip Hronek');
     expect(ngMocks.formatText(ngMocks.find(move, '.drop-tag'))).toBe('O');
