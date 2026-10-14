@@ -64,8 +64,10 @@ export const SCOUT_PAGE_SIZE = 25;
  *
  * <p>A pickup needs a roster spot. An open one is taken first, then the spot of an injured player
  * who can move to a free injured-reserve slot (`teamRoom`). Otherwise the user's own team, scored
- * in the same pool as the wire, is listed lowest first beside it: the players a pickup would
- * replace.
+ * in the same pool as the wire, says what a pickup costs in one line above the list: his lowest
+ * droppable player, the floor an available player has to clear. The roster itself is folded under
+ * that line, opened on demand, and opens on the players a listed pickup outscores (`beatable`),
+ * since the ones nobody on the wire beats are not the ones anyone drops.
  */
 @Component({
   selector: 'app-fa-scout',
@@ -235,6 +237,9 @@ export class FaScoutComponent {
     return goalies ? 'goalies' : 'skaters';
   });
 
+  /** One of the kind shown: "player", "skater" or "goalie". */
+  readonly one = computed(() => this.shown().slice(0, -1));
+
   /** Only the players tagged Rising: the ones the page is for, without the rest of the wire. */
   readonly risingOnly = signal(false);
 
@@ -352,6 +357,67 @@ export class FaScoutComponent {
 
   /** The user's players on screen the model has no line for: left out of the list. */
   readonly unprojected = computed(() => this.teamRows().filter((row) => row.score === null).length);
+
+  /** Whether the league's roster slots are known, so a full roster can be called full. */
+  readonly slotsKnown = computed(
+    () => !!(this.settingsResource.hasValue() ? this.settingsResource.value() : null)?.rosterSlots,
+  );
+
+  /**
+   * The floor: the user's lowest-scored player of the kind who holds a roster spot. An available
+   * player above him is an upgrade; one below is not. Players on injured reserve hold no spot, so
+   * none of them is the floor however low he scores.
+   */
+  readonly floor = computed<TeamRow | null>(
+    () => this.roster().find((row) => !row.player.reserve) ?? null,
+  );
+
+  /** The best score among the available players on screen, by kind: what a pickup can offer. */
+  private readonly wireTop = computed(() => {
+    const top: Record<'skater' | 'goalie', number | null> = { skater: null, goalie: null };
+    for (const row of this.filtered()) {
+      const kind = row.line.type;
+      top[kind] = Math.max(top[kind] ?? -Infinity, row.score);
+    }
+    return top;
+  });
+
+  /**
+   * The user's players a listed pickup would outscore, lowest first: those off injured reserve
+   * whose score is under the best available player of their kind on screen. The rest of the
+   * roster nobody in the list beats, so nobody drops them for anyone in it.
+   */
+  readonly beatable = computed<readonly TeamRow[]>(() => {
+    const top = this.wireTop();
+    return this.roster().filter((row) => {
+      const best = top[row.player.type];
+      return !row.player.reserve && best !== null && (row.score ?? 0) < best;
+    });
+  });
+
+  /** Whether the roster is unfolded under the room line; folded on every visit and league. */
+  readonly rosterOpen = linkedSignal<unknown, boolean>({
+    source: () => this.league(),
+    computation: () => false,
+  });
+
+  toggleRoster(): void {
+    this.rosterOpen.update((open) => !open);
+  }
+
+  /** Whether the whole roster is shown rather than the beatable players; back to fewer per league. */
+  readonly showAllRoster = linkedSignal<unknown, boolean>({
+    source: () => this.league(),
+    computation: () => false,
+  });
+
+  /** The roster rows on screen: the beatable ones, or every one once Show all is pressed. */
+  readonly rosterShown = computed<readonly TeamRow[]>(() =>
+    this.showAllRoster() ? this.roster() : this.beatable(),
+  );
+
+  /** How many of the roster the fold is hiding. */
+  readonly rosterHidden = computed(() => this.roster().length - this.rosterShown().length);
 
   /** The players at the positions picked, rising or not. */
   private readonly atPositions = computed(
