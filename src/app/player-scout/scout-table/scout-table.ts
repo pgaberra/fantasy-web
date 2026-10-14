@@ -39,6 +39,9 @@ import {
   powerPlayLabel,
 } from '../scout-usage';
 
+/** Which of the two things the table shows: what the model thinks, or what the ice has shown. */
+export type ScoutView = 'projection' | 'ice';
+
 /** A change since the chosen day, as a cell writes it under the figure: "+2.4", and which way. */
 export interface Delta {
   readonly text: string;
@@ -55,12 +58,13 @@ interface ScoutEntry {
 const MORE_ICE_SECONDS = 60;
 
 /**
- * Every player on the page in one list, skaters and goalies, each as the model sees him today
- * beside how it saw him on the chosen day and what the ice has said since. The planner's
- * free-agent table, with every figure wearing its change underneath: the score and the places
- * gained, the games, the ice time, each category the league scores; then the measured ice a
- * game and share of the power play since the day, and where the lineup page lists him; and,
- * given the user's team, the player to drop for him and what the lineup gains. The order is the
+ * Every player on the page in one list, skaters and goalies, in one of two views. The
+ * projection view is the planner's free-agent table: the score, games, ice time and each
+ * category the league scores, and, with a comparison switched on, each figure wearing its change
+ * since the chosen day underneath, the place gained or lost under the rank. The ice view keeps
+ * the rank, the player and the score to sort by, and shows what the ice has measured instead:
+ * ice a game, power-play ice and share of the club's power play over the recent games against
+ * before them, and where Daily Faceoff lists him now and listed him then. The order is the
  * page's to say: a heading asks for it, and the page sorts the whole list before cutting it into
  * pages.
  */
@@ -79,10 +83,16 @@ export class ScoutTableComponent {
   readonly scoringType = input.required<ScoringType>();
   /** The categories the league scores, in the league's order. */
   readonly categories = input.required<readonly ScoringStatKey[]>();
+  readonly view = input<ScoutView>('projection');
+  /** Whether the projection view writes each figure's change since the chosen day. */
+  readonly compare = input<boolean>(false);
+
+  /** The comparison belongs to the projection view: the ice view has its own before-and-after. */
+  readonly comparing = computed(() => this.compare() && this.view() === 'projection');
   /** What the then-lines are, for the group heading: "vs 7 Oct", "vs preseason". */
   readonly sinceLabel = input<string>('vs preseason');
-  /** What the ice is measured since, for its group heading: "since 7 Oct", "this season". */
-  readonly iceLabel = input<string>('since the day');
+  /** What the ice is measured over, for its group heading: "last 5 games", "since 7 Oct". */
+  readonly iceLabel = input<string>('last 5 games');
   /** Whether each row says who holds the player: only a list of more than the wire needs it. */
   readonly showOwner = input<boolean>(false);
   /** Each player's best swap by platform id, or null for no Swap column: no team of the user's. */
@@ -100,9 +110,6 @@ export class ScoutTableComponent {
   /** Whether any skater is listed: only a skater has ice time and a role on the ice to show. */
   readonly anySkater = computed(() => this.rows().some((row) => row.line.type === 'skater'));
 
-  /** Whether any row has measured ice to show. */
-  readonly anyUsage = computed(() => this.rows().some((row) => row.usage !== null));
-
   readonly columns = computed<readonly LineColumn[]>(() =>
     lineColumns(
       this.lines().map((entry) => entry.stats),
@@ -112,23 +119,27 @@ export class ScoutTableComponent {
 
   readonly entries = computed<readonly ScoutEntry[]>(() => {
     const columns = this.columns();
+    const compare = this.comparing();
     return this.lines().map(({ row, stats }) => {
       const byKey = new Map(stats.map((stat) => [stat.key, stat]));
       return {
         row,
         cells: columns.map((column) => {
           const stat = byKey.get(column.key) ?? null;
-          return { stat, delta: stat ? this.deltaStat(row, column.key) : null };
+          return { stat, delta: stat && compare ? this.deltaStat(row, column.key) : null };
         }),
       };
     });
   });
 
-  /** How many columns the projection group spans: score, rank, games, ice time and the categories. */
-  readonly projectionSpan = computed(() => 3 + (this.anySkater() ? 1 : 0) + this.columns().length);
+  /** How many columns the projection group spans: score, games, ice time and the categories. */
+  readonly projectionSpan = computed(() => 2 + (this.anySkater() ? 1 : 0) + this.columns().length);
 
-  readonly rankTip =
-    'His place among every player in the league the model projects, whoever holds him';
+  readonly rankTip = computed(() =>
+    this.comparing()
+      ? 'His place among every player in the league the model projects, whoever holds him, and the places gained or lost since the chosen day'
+      : 'His place among every player in the league the model projects, whoever holds him',
+  );
 
   readonly scoreHeading = computed(() =>
     this.scoringType() === 'points' ? 'Proj. pts' : 'Z-Score',
@@ -150,9 +161,9 @@ export class ScoutTableComponent {
     return row.score.toFixed(this.scoreDigits());
   }
 
-  /** The change in score since the day; null without a then-line. */
+  /** The change in score since the day; null without a then-line or a comparison. */
   deltaScore(row: ScoutRow): Delta | null {
-    return row.delta === null ? null : signed(row.delta, this.scoreDigits());
+    return !this.comparing() || row.delta === null ? null : signed(row.delta, this.scoreDigits());
   }
 
   games(row: ScoutRow): string {
@@ -160,25 +171,28 @@ export class ScoutTableComponent {
   }
 
   deltaGames(row: ScoutRow): Delta | null {
-    if (!row.then) {
+    if (!this.comparing() || !row.then) {
       return null;
     }
     return signed(row.games - Math.round(row.then.stats.utility.gp), 0);
   }
 
-  /** "+19" for places gained, "-4" for places lost, "0" for neither. */
-  rise(row: ScoutRow): string {
-    if (row.rise === null) {
-      return '';
+  /** "+19" for places gained, "-4" for places lost, under the rank; null without a then-line. */
+  rise(row: ScoutRow): Delta | null {
+    if (!this.comparing() || row.rise === null) {
+      return null;
     }
-    return row.rise > 0 ? `+${row.rise}` : `${row.rise}`;
+    return signed(row.rise, 0);
   }
 
   riseTip(row: ScoutRow): string {
-    if (row.thenRank === null) {
-      return 'The model had no line for him on that day';
+    if (!this.comparing()) {
+      return '';
     }
-    return `Ranked ${row.thenRank} of these players on the line of that day, ${row.rank} today`;
+    if (row.thenRank === null) {
+      return 'The model had no line for him on the chosen day';
+    }
+    return `Ranked ${row.thenRank} of these players on the chosen day, ${row.rank} today`;
   }
 
   toiNow(row: ScoutRow): string {
@@ -188,7 +202,7 @@ export class ScoutTableComponent {
   deltaToi(row: ScoutRow): Delta | null {
     const now = toiPerGame(row.line);
     const then = toiPerGame(row.then);
-    if (now === undefined || then === undefined) {
+    if (!this.comparing() || now === undefined || then === undefined) {
       return null;
     }
     const change = now - then;
@@ -214,7 +228,12 @@ export class ScoutTableComponent {
     return LOWER_IS_BETTER_SCORING_STAT_KEYS.has(key) ? flipped(delta) : delta;
   }
 
-  // --- The ice since the day ------------------------------------------------------------------
+  // --- The ice --------------------------------------------------------------------------------
+
+  /** Games in the recent window, for the ice view's games column. */
+  iceGames(row: ScoutRow): string {
+    return row.usage ? String(row.usage.recent.games) : '';
+  }
 
   iceNow(row: ScoutRow): string {
     return row.usage ? formatIce(row.usage.recent.toiPerGame) : '';
@@ -228,8 +247,22 @@ export class ScoutTableComponent {
     return { text: formatIceChange(change), dir: direction(change, MIN_ICE_CHANGE_SECONDS) };
   }
 
+  ppIceNow(row: ScoutRow): string {
+    const seconds = row.usage?.recent.ppToiPerGame;
+    return seconds == null ? '' : formatIce(seconds);
+  }
+
+  deltaPpIce(row: ScoutRow): Delta | null {
+    const change = row.usage?.powerPlayIceChange ?? null;
+    if (change === null) {
+      return null;
+    }
+    return { text: formatIceChange(change), dir: direction(change, MIN_ICE_CHANGE_SECONDS / 2) };
+  }
+
   shareNow(row: ScoutRow): string {
-    return row.usage ? formatShare(row.usage.recent.ppShare) : '';
+    const share = row.usage?.recent.ppShare;
+    return share == null ? '' : formatShare(share);
   }
 
   deltaShare(row: ScoutRow): Delta | null {
@@ -243,20 +276,23 @@ export class ScoutTableComponent {
     };
   }
 
+  /** What the ice figures stand on: the games in each window, for every ice cell's tip. */
   iceTip(row: ScoutRow): string {
     const usage = row.usage;
     if (!usage) {
-      return '';
+      return row.line.type === 'goalie'
+        ? 'A goalie has no ice role to measure'
+        : 'No game of his in the recent stretch';
     }
-    const games = `${usage.recent.games} ${usage.recent.games === 1 ? 'game' : 'games'} since the day`;
+    const games = `${usage.recent.games} recent ${usage.recent.games === 1 ? 'game' : 'games'}`;
     if (!usage.baseline) {
       return `${games}; nothing earlier to compare with`;
     }
     const before =
       usage.baselineSource === 'LAST_SEASON'
         ? `his ${usage.baseline.games} games last season`
-        : `his ${usage.baseline.games} games before it`;
-    return `${games}, against ${before}`;
+        : `his ${usage.baseline.games} earlier games this season`;
+    return `${games} against ${before}`;
   }
 
   /** "L2 · PP1", or "Out", or nothing: where the lineup page lists him now. */
@@ -270,7 +306,7 @@ export class ScoutTableComponent {
     return [line, unit].filter(Boolean).join(' · ');
   }
 
-  /** "was L4 · no PP" when the page listed him elsewhere on the day. */
+  /** "was L4 · No PP" when the page listed him elsewhere before the recent games. */
   listedThen(row: ScoutRow): string {
     const usage = row.usage;
     if (!usage || (!usage.lineMove && !usage.powerPlayMove)) {
@@ -299,8 +335,8 @@ export class ScoutTableComponent {
       .filter((move): move is NonNullable<typeof move> => move !== null)
       .map((move) => `${move.from} to ${move.to}`);
     return moved.length > 0
-      ? `Daily Faceoff lists him ${moved.join(' and ')} since the day`
-      : 'Where Daily Faceoff lists him, unchanged since the day';
+      ? `Daily Faceoff lists him ${moved.join(' and ')} since the recent games began`
+      : 'Where Daily Faceoff lists him, unchanged over the recent games';
   }
 
   // --- The swap ---------------------------------------------------------------------------------

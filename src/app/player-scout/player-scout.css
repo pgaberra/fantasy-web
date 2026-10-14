@@ -1,5 +1,5 @@
-/* Laid out as the streamer planner is, its sibling: the same card, pills and segmented controls,
-   so the pages read as one family. */
+/* Laid out as the streamer planner is, its sibling: the same card, pills, segmented controls and
+   view switch, so the pages read as one family. */
 .player-scout {
   display: flex;
   flex-direction: column;
@@ -55,13 +55,55 @@
   color: var(--color-primary);
 }
 
+/* The two things the table can show, switched as the planner switches its views. */
+.views {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: 3px;
+}
+
+.view {
+  align-items: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  gap: var(--space-2);
+  min-height: 2.25rem;
+  padding: 0 var(--space-4);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.view:hover:not(.view--active) {
+  color: var(--color-primary);
+}
+
+.view:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.view--active {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
 .league {
   display: block;
   max-width: 20rem;
 }
 
-/* The day first, since everything under it is measured from it, then whose players and which
-   of them. */
+/* Whose players first, then which of them, then the view's own control. */
 .controls {
   display: flex;
   flex-direction: column;
@@ -74,6 +116,72 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2) var(--space-4);
+}
+
+.field {
+  align-items: center;
+  color: var(--color-text-muted);
+  display: inline-flex;
+  font-size: var(--text-sm);
+  gap: var(--space-2);
+}
+
+.field-label {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.field select,
+.search {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  padding: var(--space-1) var(--space-2);
+}
+
+.field select:focus-visible,
+.search:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.field select {
+  max-width: 16rem;
+}
+
+.search {
+  margin-left: auto;
+  min-width: 12rem;
+}
+
+/* A tick box, as the planner draws its own. */
+.tick {
+  align-items: center;
+  color: var(--color-text);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--text-sm);
+  gap: var(--space-2);
+}
+
+.tick input {
+  accent-color: var(--color-accent);
+  flex: none;
+  height: 1rem;
+  margin: 0;
+  width: 1rem;
+}
+
+/* The pool already shows the user's players: the tick is ticked and says so by stepping back. */
+.tick--moot {
+  color: var(--color-text-subtle);
+  cursor: default;
 }
 
 .pills {
@@ -115,7 +223,7 @@
   color: var(--color-primary-contrast);
 }
 
-/* One choice of a few: whose players, which way they moved. Drawn as Role Changes drew its own. */
+/* One choice of a few: which way the projection moved, the ice's window. */
 .segmented {
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-pill);
@@ -140,13 +248,18 @@
   border-left: 1px solid var(--color-border-control);
 }
 
-.segmented button:hover:not(.active) {
+.segmented button:hover:not(.active):not(:disabled) {
   background: var(--color-surface-hover);
 }
 
 .segmented button:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: -2px;
+}
+
+.segmented button:disabled {
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
 }
 
 .segmented button.active {
@@ -164,21 +277,47 @@
   background: var(--color-danger);
 }
 
-.search {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-control);
-  border-radius: var(--radius-md);
-  color: var(--color-text);
-  font: inherit;
-  font-size: var(--text-sm);
-  margin-left: auto;
-  min-width: 12rem;
-  padding: var(--space-1) var(--space-2);
+/* The comparison, off by default: a tick, and with it on, the earlier projection to compare with
+   and which way the movers went, set off in a band of their own so the list's figures and the
+   changes under them read as one thing switched on together. */
+.compare {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
 }
 
-.search:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 1px;
+.compare--on {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+}
+
+.tick--compare {
+  font-weight: var(--weight-semibold);
+}
+
+.compare app-since-picker {
+  flex: 1 1 100%;
+}
+
+/* The ice's window: the stretch and, for a stretch of games, how many. */
+.ice-window {
+  align-items: center;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-3);
+}
+
+.ice-caption {
+  color: var(--color-text-muted);
+  flex: 1 1 100%;
+  font-size: var(--text-xs);
 }
 
 /* What a pickup costs, in one line between the filters and the list: the room the roster has, or
@@ -465,9 +604,15 @@
     max-width: none;
   }
 
+  .field,
+  .field select,
   .search {
     margin-left: 0;
     min-width: 0;
     width: 100%;
+  }
+
+  .field select {
+    max-width: none;
   }
 }

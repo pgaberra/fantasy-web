@@ -9,6 +9,7 @@ import {
   DEFAULT_STAT_WEIGHTS,
 } from '../draft-projection/projection-defaults';
 import { DEFAULT_DECIMAL_SETTINGS } from '../draft-projection/projection-settings-section/model';
+import { nhlTeamKey } from '../models/nhl-team';
 import { Projection, ScoredProjection } from '../models/projection.model';
 import { isAllSkaters } from '../models/position.model';
 import { ScoringStatKey } from '../models/stat-key.model';
@@ -38,31 +39,33 @@ import { LineupSwap, LineupValue, swapInto, valueLineup } from './lineup-value';
 import {
   nextScoutSort,
   rankScout,
-  SCOUT_MOVERS_ORDER,
+  SCOUT_RANKED_ORDER,
   ScoutRow,
   ScoutSort,
   ScoutSortKey,
   sortScout,
 } from './scout-ranking';
-import { ScoutTableComponent } from './scout-table/scout-table';
-import {
-  daysBefore,
-  formatDay,
-  localToday,
-  SincePickerComponent,
-} from './since-picker/since-picker';
+import { ScoutTableComponent, ScoutView } from './scout-table/scout-table';
+import { formatDay, localToday, SincePickerComponent } from './since-picker/since-picker';
 
 /** Players to a page: enough to reach well past a league's bench without a second page. */
 export const SCOUT_PAGE_SIZE = 25;
 
-/** The day the page opens on: a week back, the stretch a manager checks on between waiver runs. */
-export const DEFAULT_SINCE_DAYS = 7;
+/** The stretches of games the ice can be read over: a week, a fortnight, a month of hockey. */
+export const RECENT_GAME_OPTIONS = [3, 5, 10] as const;
+export const DEFAULT_RECENT_GAMES = 5;
 
-/** Whose players the list shows: the league's available ones, the user's own, or everyone's. */
-export type ScoutPool = 'available' | 'mine' | 'all';
+/**
+ * Whose players the list shows, as Yahoo's player list offers it: by status, or one league team.
+ * `team:<name>` is that team's roster.
+ */
+export type ScoutPool = 'available' | 'fa' | 'waivers' | 'taken' | 'all' | `team:${string}`;
 
-/** Which way the model has moved on the players shown. */
+/** Which way the model has moved on the players shown, once a comparison is on. */
 export type ScoutMovers = 'all' | 'risers' | 'fallers';
+
+/** The stretch the ice is read over: each club's last N games, or since the comparison's day. */
+export type IceWindow = 'last' | 'since';
 
 /** One of the user's own players as the roster fold-out lists him. */
 export interface RosterEntry {
@@ -80,23 +83,33 @@ export interface RosterEntry {
   readonly weighed: boolean;
 }
 
+/** A league team as the pool offers it. */
+export interface LeagueTeamOption {
+  readonly pool: ScoutPool;
+  readonly name: string;
+  readonly mine: boolean;
+}
+
 /**
- * Player Scout: how the model's view of every player in a league has moved since a chosen day,
- * and what the ice says about why. The FA scout's question (who on the wire is worth keeping) and
- * Role Changes' (whose job at his club just changed) in one page, asked of one day.
+ * Player Scout: every player in a league on the AI projection for the rest of the season, with,
+ * on a switch, how the projection has moved since a chosen day, and, in a view of its own, what
+ * the ice has shown lately. The FA scout's question (who is worth keeping) and Role Changes'
+ * (whose job at his club just changed) on one list.
  *
- * <p>Every player the league holds, available or on a team, is ranked twice by the league's own
- * scoring settings: on the model's rest of the season today, and on its line for him as it
- * stood on the day, re-spread over the games his club has left. The distance between the two,
- * in score and in places, is what the list opens sorted by; beside it, each category's own
- * change, and the ice he has actually had since the day against the ice before it, so the
- * reader sees the why with the what.
+ * <p>The list opens on the available players, best first on today's projection, and nothing
+ * else: a reader who wants the top of the projection gets it with no figure wearing a change. A
+ * comparison is one switch away: against the projection made before the season, or the one of
+ * any day (the model is re-run nightly, so each day is a projection of its own), re-spread over
+ * the games left so the two compare stat by stat; every figure then wears its change, the rank
+ * its places gained. The ice view keeps the rank, the player and the score to sort by, and shows
+ * the measured ice a game, power-play ice and share of the club's power play over each club's
+ * last few games against his games before, with where the lineup page lists him.
  *
- * <p>The league is picked as the planner picks it, and opens on the league last chosen anywhere
- * ({@link LeagueChoiceService}). The user's own team is weighed night by night over the rest of
- * the season ({@link valueLineup}): the player to drop is the one whose going costs the lineup
- * least, which a third centre behind two centre seats makes plain, and each available player's
- * best swap is the one that leaves the lineup worth the most with him in it.
+ * <p>Whose players, as Yahoo's player list offers it: the available ones, free agents or waivers
+ * alone, everyone taken, everyone, or one league team, an NHL club, and a tick to show the user's
+ * own players beside whatever is shown, so a pickup reads against the player he would replace.
+ * The user's own team is weighed night by night over the rest of the season ({@link valueLineup}):
+ * the player to drop is the one whose going costs the lineup least.
  */
 @Component({
   selector: 'app-player-scout',
@@ -157,20 +170,70 @@ export class PlayerScoutComponent {
     { equal: (a, b) => a?.platform === b?.platform && a?.leagueId === b?.leagueId },
   );
 
-  // --- The day ---------------------------------------------------------------------------------
+  // --- The view, the comparison and the ice's window ------------------------------------------
+
+  readonly view = signal<ScoutView>('projection');
+
+  /** Whether the projection view compares with an earlier projection. Off: today's alone. */
+  readonly compare = signal(false);
 
   readonly today = localToday();
 
-  /** The day compared with, as an ISO date, or null for the model's preseason line. */
-  readonly since = signal<string | null>(daysBefore(this.today, DEFAULT_SINCE_DAYS));
+  /** The day compared with, as an ISO date, or null for the model's preseason projection. */
+  readonly since = signal<string | null>(null);
+
+  /** The stretch the ice is read over, and how many games when it is each club's last few. */
+  readonly iceWindowPicked = signal<IceWindow>('last');
+  readonly recentGames = signal<number>(DEFAULT_RECENT_GAMES);
+  readonly recentGameOptions = RECENT_GAME_OPTIONS;
+
+  /** "Since the day" needs a day: without a comparison on a day, the ice is read over last games. */
+  readonly iceWindow = computed<IceWindow>(() =>
+    this.iceWindowPicked() === 'since' && this.compare() && this.since() !== null
+      ? 'since'
+      : 'last',
+  );
+
+  toggleCompare(): void {
+    this.compare.update((on) => !on);
+  }
+
+  onRecentGames(event: Event): void {
+    this.recentGames.set(Number((event.target as HTMLSelectElement).value));
+  }
+
+  /**
+   * What the league is asked for, equal by value: switching the comparison on against the
+   * preseason, or the view, changes nothing the BFF is asked, so the list is not read again.
+   */
+  private readonly query = computed(
+    () => {
+      const league = this.league();
+      if (!league) {
+        return undefined;
+      }
+      return {
+        league,
+        since: this.compare() ? this.since() : null,
+        recentGames: this.iceWindow() === 'last' ? this.recentGames() : null,
+      };
+    },
+    {
+      equal: (a, b) =>
+        a?.league.platform === b?.league.platform &&
+        a?.league.leagueId === b?.league.leagueId &&
+        a?.since === b?.since &&
+        a?.recentGames === b?.recentGames,
+    },
+  );
 
   private readonly scoutResource = rxResource({
-    params: () => {
-      const league = this.league();
-      return league ? { league, since: this.since() } : undefined;
-    },
+    params: () => this.query(),
     stream: ({ params }) =>
-      this.scoutService.players(params.league.platform, params.league.leagueId, params.since),
+      this.scoutService.players(params.league.platform, params.league.leagueId, {
+        since: params.since,
+        recentGames: params.recentGames,
+      }),
   });
 
   private readonly settingsResource = rxResource({
@@ -212,16 +275,27 @@ export class PlayerScoutComponent {
   /** The season has not started, or is over: there is no rest of it to scout. */
   readonly outOfSeason = computed(() => this.list()?.inSeason === false);
 
-  /** What the BFF answered the day with; null until it has. */
-  readonly sinceAnswer = computed<ScoutSince | null>(() => this.list()?.since ?? null);
+  /** What the BFF answered the day with; null until it has, or while no comparison is on. */
+  readonly sinceAnswer = computed<ScoutSince | null>(() =>
+    this.compare() ? (this.list()?.since ?? null) : null,
+  );
 
   /** What the then-lines are, for the table's heading: "vs 7 Oct", "vs preseason". */
   readonly sinceLabel = computed(() => {
     const answer = this.sinceAnswer();
     if (!answer || answer.kind === 'NONE') {
-      return 'no earlier line';
+      return 'no earlier projection';
     }
     return answer.kind === 'SNAPSHOT' ? `vs ${formatDay(answer.resolved)}` : 'vs preseason';
+  });
+
+  /** What the ice is measured over, for the table's heading: "last 5 games", "since 7 Oct". */
+  readonly iceLabel = computed(() => {
+    if (this.iceWindow() === 'since') {
+      return `since ${formatDay(this.since())}`;
+    }
+    const games = this.list()?.recentGames ?? this.recentGames();
+    return `each club's last ${games} games`;
   });
 
   /** The league's own scoring, or the app's defaults until its settings land. */
@@ -245,11 +319,32 @@ export class PlayerScoutComponent {
     ...this.scoring().activeScoringColumns,
   ]);
 
-  // --- What the list shows ----------------------------------------------------------------------
+  // --- Whose players ----------------------------------------------------------------------------
 
   readonly pool = signal<ScoutPool>('available');
+  /** The user's own players beside whatever the pool shows. */
+  readonly showMine = signal(false);
+  /** An NHL club, by the NHL's spelling, or null for every club. */
+  readonly nhlTeam = signal<string | null>(null);
   readonly movers = signal<ScoutMovers>('all');
   readonly search = signal('');
+
+  onPool(event: Event): void {
+    this.pool.set((event.target as HTMLSelectElement).value as ScoutPool);
+  }
+
+  onNhlTeam(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.nhlTeam.set(value || null);
+  }
+
+  toggleShowMine(): void {
+    this.showMine.update((on) => !on);
+  }
+
+  onSearch(event: Event): void {
+    this.search.set((event.target as HTMLInputElement).value);
+  }
 
   readonly positionOptions = FREE_AGENT_POSITIONS;
 
@@ -288,10 +383,6 @@ export class PlayerScoutComponent {
     return goalies ? 'goalies' : 'skaters';
   });
 
-  onSearch(event: Event): void {
-    this.search.set((event.target as HTMLInputElement).value);
-  }
-
   /** Ranks lines by the league's scoring, best first, and the score each is ranked by. */
   private readonly ranker = computed(() => {
     const scoring = this.scoring();
@@ -323,19 +414,68 @@ export class PlayerScoutComponent {
     return rankScout(list.players, rank, scoreOf);
   });
 
-  /** The players whose owner the pool asks for. */
+  /** The league's teams as the pool offers them, the user's own first. */
+  readonly leagueTeams = computed<readonly LeagueTeamOption[]>(() => {
+    const teams = new Map<string, boolean>();
+    for (const row of this.ranked()) {
+      if (row.scout.owner) {
+        teams.set(row.scout.owner.teamName, row.scout.owner.mine);
+      }
+    }
+    return [...teams]
+      .map(([name, mine]) => ({ pool: `team:${name}` as ScoutPool, name, mine }))
+      .sort((a, b) => Number(b.mine) - Number(a.mine) || a.name.localeCompare(b.name));
+  });
+
+  /** The NHL clubs the league's players are on, by the NHL's spelling. */
+  readonly nhlTeams = computed<readonly string[]>(() => {
+    const clubs = new Set<string>();
+    for (const row of this.ranked()) {
+      const key = nhlTeamKey(row.player.teamAbbrev);
+      if (key) {
+        clubs.add(key);
+      }
+    }
+    return [...clubs].sort((a, b) => a.localeCompare(b));
+  });
+
+  /** Whether the pool already shows the user's own players, so the tick has nothing to add. */
+  readonly poolShowsMine = computed(() => {
+    const pool = this.pool();
+    if (pool === 'all' || pool === 'taken') {
+      return true;
+    }
+    const mine = this.leagueTeams().find((team) => team.mine);
+    return mine !== undefined && pool === mine.pool;
+  });
+
+  /** The players whose owner the pool asks for, the user's own beside them on the tick. */
   private readonly inPool = computed<readonly ScoutRow[]>(() => {
     const pool = this.pool();
-    return this.ranked().filter((row) => {
+    const showMine = this.showMine();
+    const nhlTeam = this.nhlTeam();
+    const holds = (row: ScoutRow): boolean => {
+      const owner = row.scout.owner;
       switch (pool) {
         case 'available':
-          return row.scout.owner === null;
-        case 'mine':
-          return row.scout.owner?.mine === true;
+          return owner === null;
+        case 'fa':
+          return owner === null && row.player.availability === 'FREE_AGENT';
+        case 'waivers':
+          return owner === null && row.player.availability === 'WAIVERS';
+        case 'taken':
+          return owner !== null;
         case 'all':
           return true;
+        default:
+          return owner?.teamName === pool.slice('team:'.length);
       }
-    });
+    };
+    return this.ranked().filter(
+      (row) =>
+        (holds(row) || (showMine && row.scout.owner?.mine === true)) &&
+        (nhlTeam === null || nhlTeamKey(row.player.teamAbbrev) === nhlTeam),
+    );
   });
 
   /** The players at the positions picked, movers or not. */
@@ -346,7 +486,7 @@ export class PlayerScoutComponent {
   readonly risingCount = computed(() => this.atPositions().filter((row) => row.rising).length);
 
   readonly filtered = computed<readonly ScoutRow[]>(() => {
-    const movers = this.movers();
+    const movers = this.compare() ? this.movers() : 'all';
     const needle = this.search().trim().toLowerCase();
     return this.atPositions().filter((row) => {
       const delta = row.delta ?? 0;
@@ -501,31 +641,35 @@ export class PlayerScoutComponent {
     return `${entry.value.starts} / ${entry.value.games}`;
   }
 
-  /** What the ice columns are measured since, for the table's heading. */
-  readonly iceLabel = computed(() => {
-    const since = this.since();
-    return since === null ? 'this season' : `since ${formatDay(since)}`;
-  });
-
   // --- The order of the list --------------------------------------------------------------------
 
-  /** The column the list was last sorted by; it opens on the players the model has moved most. */
-  private readonly sortPicked = signal<ScoutSort>(SCOUT_MOVERS_ORDER);
+  /** The column the list was last sorted by; it opens ranked, best first on today's projection. */
+  private readonly sortPicked = signal<ScoutSort>(SCOUT_RANKED_ORDER);
 
   /**
    * The order on screen: the one picked, while its column is still in the table. A category the
-   * league does not score, or ice time with no skater listed, falls back to the movers' order
-   * rather than sorting by blanks.
+   * league does not score, a change with no comparison on, or ice with no skater listed, falls
+   * back to the ranked order rather than sorting by blanks.
    */
   readonly sort = computed<ScoutSort>(() => {
     const sort = this.sortPicked();
-    const about: readonly ScoutSortKey[] =
-      this.shown() !== 'goalies'
-        ? ['name', 'score', 'delta', 'rise', 'games', 'toi', 'ice', 'powerPlay']
-        : ['name', 'score', 'delta', 'rise', 'games'];
-    return about.includes(sort.key) || this.categories().includes(sort.key as ScoringStatKey)
-      ? sort
-      : SCOUT_MOVERS_ORDER;
+    const about: ScoutSortKey[] = ['name', 'score'];
+    if (this.view() === 'projection') {
+      about.push('games');
+      if (this.shown() !== 'goalies') {
+        about.push('toi');
+      }
+      if (this.compare()) {
+        about.push('delta', 'rise');
+      }
+      return about.includes(sort.key) || this.categories().includes(sort.key as ScoringStatKey)
+        ? sort
+        : SCOUT_RANKED_ORDER;
+    }
+    if (this.shown() !== 'goalies') {
+      about.push('ice', 'powerPlay');
+    }
+    return about.includes(sort.key) ? sort : SCOUT_RANKED_ORDER;
   });
 
   /** Sorts the whole list by a column, best first; the same column again turns it round. */
@@ -537,17 +681,22 @@ export class PlayerScoutComponent {
   readonly sorted = computed(() => sortScout(this.filtered(), this.sort()));
 
   readonly emptyText = computed(() => {
-    const who = {
-      available: 'No available player',
-      mine: 'None of your players',
-      all: 'No player',
-    }[this.pool()];
+    const pool = this.pool();
+    const who =
+      {
+        available: 'No available player',
+        fa: 'No free agent',
+        waivers: 'No player on waivers',
+        taken: 'No rostered player',
+        all: 'No player',
+      }[pool as Exclude<ScoutPool, `team:${string}`>] ??
+      `No player on ${pool.slice('team:'.length)}`;
     const where = this.positions().size === 0 ? '' : ' at these positions';
-    switch (this.movers()) {
+    switch (this.compare() ? this.movers() : 'all') {
       case 'risers':
-        return `${who}${where} has risen in the projection since the day.`;
+        return `${who}${where} has risen in the projection since the chosen day.`;
       case 'fallers':
-        return `${who}${where} has fallen in the projection since the day.`;
+        return `${who}${where} has fallen in the projection since the chosen day.`;
       default:
         return this.search().trim()
           ? `${who}${where} matches the search.`
@@ -570,11 +719,15 @@ export class PlayerScoutComponent {
   private readonly page = linkedSignal<unknown, number>({
     source: () => [
       this.pool(),
+      this.showMine(),
+      this.nhlTeam(),
       this.positions(),
       this.movers(),
       this.search(),
       this.league(),
       this.since(),
+      this.compare(),
+      this.view(),
       this.sort(),
     ],
     computation: () => 0,
@@ -607,15 +760,18 @@ export class PlayerScoutComponent {
   // --- The swaps -------------------------------------------------------------------------------
 
   /**
-   * Each available player on the page's best swap into the user's lineup. Only the rows on
-   * screen are weighed, since each is the lineup set night by night for every drop, and only
-   * while the team, its slots and the schedule are all known.
+   * Each available player on the page's best swap into the user's lineup, in the projection
+   * view. Only the rows on screen are weighed, since each is the lineup set night by night for
+   * every drop, and only while the team, its slots and the schedule are all known.
    */
   readonly swaps = computed<ReadonlyMap<string, LineupSwap | null> | null>(() => {
     const team = this.team();
     const slots = this.slots();
     const schedule = this.schedule();
-    if (!team || !slots || schedule.size === 0 || this.pool() === 'mine') {
+    if (this.view() !== 'projection' || !team || !slots || schedule.size === 0) {
+      return null;
+    }
+    if (!this.visible().some((row) => row.scout.owner === null)) {
       return null;
     }
     const room = this.room();

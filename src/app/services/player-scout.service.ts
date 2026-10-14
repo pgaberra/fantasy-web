@@ -57,7 +57,17 @@ export interface ScoutList {
   readonly inSeason: boolean;
   /** Which earlier line the then-lines are, and what answered the day asked for. */
   readonly since: ScoutSince;
+  /** N when the ice was read over each club's last N games; null when since the day. */
+  readonly recentGames: number | null;
   readonly players: readonly ScoutPlayer[];
+}
+
+/** How the page asks for a league's players: the day to compare with, and the ice's window. */
+export interface ScoutQuery {
+  /** The day to compare the projection with, as an ISO date, or null for the preseason line. */
+  readonly since: string | null;
+  /** Read the ice over each club's last N games; null reads it since the day. */
+  readonly recentGames: number | null;
 }
 
 /**
@@ -101,16 +111,22 @@ export class PlayerScoutService {
   private readonly api = inject(Api);
 
   /**
-   * Every player in the league the model projects, with its view of him now and on `since`: an
-   * ISO date, or null for the model's preseason line.
+   * Every player in the league the model projects, with its view of him now and on the query's
+   * day, and his ice over the query's window.
    */
-  players(platform: LeaguePlatform, leagueId: string, since: string | null): Observable<ScoutList> {
+  players(platform: LeaguePlatform, leagueId: string, query: ScoutQuery): Observable<ScoutList> {
     return from(
-      this.api.invoke(playerScoutPlayers, { platform, leagueId, since: since ?? undefined }),
+      this.api.invoke(playerScoutPlayers, {
+        platform,
+        leagueId,
+        since: query.since ?? undefined,
+        recentGames: query.recentGames ?? undefined,
+      }),
     ).pipe(
       map((answer) => ({
         inSeason: answer.inSeason,
         since: answer.since,
+        recentGames: answer.recentGames ?? null,
         players: answer.players.map(toScoutPlayer),
       })),
     );

@@ -2,9 +2,9 @@
   <header class="hero">
     <h1>Player Scout</h1>
     <p class="lede">
-      Who the AI projection has changed its mind about since a day of your choosing, in every stat
-      it scores, and what the ice says about why. Pick a league, a day, and whose players to look
-      at.
+      Every player in your league on the AI projection for the rest of the season. Compare it with
+      the projection of any earlier day to see whose outlook has moved, and switch to the ice to see
+      who is actually playing more.
     </p>
   </header>
 
@@ -14,50 +14,93 @@
         <app-icon name="user-plus" />Players
         <app-help-tip
           label="How these are ranked"
-          text="Every player the league holds, scored with your league's settings on the AI projection for the rest of the season, today and as it stood on the day you pick (re-spread over the games his club has left, so the two compare stat by stat). The change in score is what the list opens sorted by. Beside it, his measured ice a game and share of his club's power play since that day against before it, and where the lineup page lists him. Your own team is weighed night by night over the rest of the season, so the player to drop is the one whose going costs your lineup least."
+          text="Every player the league holds, scored with your league's settings on the AI projection for the rest of the season. With a comparison on, each figure wears its change since the day you pick (the earlier projection re-spread over the games his club has left, so the two compare stat by stat), and the rank its places gained. The ice view shows what the ice has measured instead: ice a game and share of his club's power play over each club's last few games against his games before. Your own team is weighed night by night over the rest of the season, so the player to drop is the one whose going costs your lineup least."
         />
       </h2>
+      <div class="views" role="group" aria-label="What to show">
+        <button
+          type="button"
+          class="view"
+          [class.view--active]="view() === 'projection'"
+          [attr.aria-pressed]="view() === 'projection'"
+          (click)="view.set('projection')"
+        >
+          Projection
+        </button>
+        <button
+          type="button"
+          class="view"
+          [class.view--active]="view() === 'ice'"
+          [attr.aria-pressed]="view() === 'ice'"
+          (click)="view.set('ice')"
+        >
+          On the ice
+        </button>
+      </div>
     </div>
 
     <app-league-field class="league" [(platform)]="platform" [(espnLeague)]="espnLeague" />
 
     @if (league()) {
       <div class="controls">
-        <app-since-picker
-          [since]="since()"
-          [answer]="sinceAnswer()"
-          [today]="today"
-          (sinceChange)="since.set($event)"
-        />
+        <!-- Whose players, as Yahoo's player list asks it: by status or one team, an NHL club,
+             and the user's own beside whatever is shown. -->
         <div class="filters">
-          <div class="segmented" role="group" aria-label="Whose players to show">
-            <button
-              type="button"
-              [class.active]="pool() === 'available'"
-              [attr.aria-pressed]="pool() === 'available'"
-              (click)="pool.set('available')"
-            >
-              Available
-            </button>
-            <button
-              type="button"
-              [class.active]="pool() === 'mine'"
-              [attr.aria-pressed]="pool() === 'mine'"
-              (click)="pool.set('mine')"
-            >
-              My team
-            </button>
-            <button
-              type="button"
-              [class.active]="pool() === 'all'"
-              [attr.aria-pressed]="pool() === 'all'"
-              (click)="pool.set('all')"
-            >
-              Everyone
-            </button>
-          </div>
-          <!-- Skaters and goalies are one list, as the planner's is: "All" is everyone, "All
-               skaters" picks the four skater positions in one press, and G is the goalies. -->
+          <label class="field">
+            <span class="field-label">Show</span>
+            <select aria-label="Whose players to show" [value]="pool()" (change)="onPool($event)">
+              <optgroup label="By status">
+                <option value="available">Available players</option>
+                <option value="fa">Free agents only</option>
+                <option value="waivers">On waivers only</option>
+                <option value="taken">Taken players</option>
+                <option value="all">All players</option>
+              </optgroup>
+              @if (leagueTeams().length > 0) {
+                <optgroup label="By team">
+                  @for (team of leagueTeams(); track team.pool) {
+                    <option [value]="team.pool">
+                      {{ team.mine ? 'My team: ' + team.name : team.name }}
+                    </option>
+                  }
+                </optgroup>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Club</span>
+            <select aria-label="NHL club" [value]="nhlTeam() ?? ''" (change)="onNhlTeam($event)">
+              <option value="">All clubs</option>
+              @for (club of nhlTeams(); track club) {
+                <option [value]="club">{{ club }}</option>
+              }
+            </select>
+          </label>
+          <label
+            class="tick"
+            [class.tick--moot]="poolShowsMine()"
+            appTooltip="Your own players in the same list, so a pickup reads against the player he would replace"
+          >
+            <input
+              type="checkbox"
+              [checked]="showMine() || poolShowsMine()"
+              [disabled]="poolShowsMine() || teamStatus() !== 'ready'"
+              (change)="toggleShowMine()"
+            />
+            Show my team
+          </label>
+          <input
+            class="search"
+            type="search"
+            placeholder="Search players"
+            aria-label="Search players"
+            [value]="search()"
+            (input)="onSearch($event)"
+          />
+        </div>
+        <!-- Skaters and goalies are one list, as the planner's is: "All" is everyone, "All
+             skaters" picks the four skater positions in one press, and G is the goalies. -->
+        <div class="filters">
           <div class="pills" role="group" aria-label="Positions to show">
             <button
               type="button"
@@ -89,45 +132,100 @@
               </button>
             }
           </div>
-          <div class="segmented" role="group" aria-label="Which way the projection moved">
-            <button
-              type="button"
-              [class.active]="movers() === 'all'"
-              [attr.aria-pressed]="movers() === 'all'"
-              (click)="movers.set('all')"
-            >
-              All
-            </button>
-            <button
-              type="button"
-              class="movers--risers"
-              [class.active]="movers() === 'risers'"
-              [attr.aria-pressed]="movers() === 'risers'"
-              appTooltip="Only players the projection makes more of than on the day"
-              (click)="movers.set('risers')"
-            >
-              Risers
-            </button>
-            <button
-              type="button"
-              class="movers--fallers"
-              [class.active]="movers() === 'fallers'"
-              [attr.aria-pressed]="movers() === 'fallers'"
-              appTooltip="Only players the projection makes less of than on the day"
-              (click)="movers.set('fallers')"
-            >
-              Fallers
-            </button>
-          </div>
-          <input
-            class="search"
-            type="search"
-            placeholder="Search players"
-            aria-label="Search players"
-            [value]="search()"
-            (input)="onSearch($event)"
-          />
         </div>
+
+        @if (view() === 'projection') {
+          <!-- The comparison: off, the list is today's projection and nothing else. -->
+          <div class="compare" [class.compare--on]="compare()">
+            <label class="tick tick--compare">
+              <input type="checkbox" [checked]="compare()" (change)="toggleCompare()" />
+              Compare with an earlier projection
+            </label>
+            @if (compare()) {
+              <app-since-picker
+                [since]="since()"
+                [answer]="sinceAnswer()"
+                [today]="today"
+                (sinceChange)="since.set($event)"
+              />
+              <div class="segmented" role="group" aria-label="Which way the projection moved">
+                <button
+                  type="button"
+                  [class.active]="movers() === 'all'"
+                  [attr.aria-pressed]="movers() === 'all'"
+                  (click)="movers.set('all')"
+                >
+                  All
+                </button>
+                <button
+                  type="button"
+                  class="movers--risers"
+                  [class.active]="movers() === 'risers'"
+                  [attr.aria-pressed]="movers() === 'risers'"
+                  appTooltip="Only players the projection makes more of than on the chosen day"
+                  (click)="movers.set('risers')"
+                >
+                  Risers
+                </button>
+                <button
+                  type="button"
+                  class="movers--fallers"
+                  [class.active]="movers() === 'fallers'"
+                  [attr.aria-pressed]="movers() === 'fallers'"
+                  appTooltip="Only players the projection makes less of than on the chosen day"
+                  (click)="movers.set('fallers')"
+                >
+                  Fallers
+                </button>
+              </div>
+            }
+          </div>
+        } @else {
+          <!-- The ice's window: each club's last few games, or since the comparison's day. One
+               game says nothing, so the smallest stretch offered is three. -->
+          <div class="ice-window">
+            <span class="field-label">Over</span>
+            <div class="segmented" role="group" aria-label="The games the ice is read over">
+              <button
+                type="button"
+                [class.active]="iceWindow() === 'last'"
+                [attr.aria-pressed]="iceWindow() === 'last'"
+                (click)="iceWindowPicked.set('last')"
+              >
+                Each club's last
+              </button>
+              <button
+                type="button"
+                [class.active]="iceWindow() === 'since'"
+                [attr.aria-pressed]="iceWindow() === 'since'"
+                [disabled]="!compare() || since() === null"
+                appTooltip="His games since the day the projection is compared with; pick a day under Compare in the projection view"
+                (click)="iceWindowPicked.set('since')"
+              >
+                Since the chosen day
+              </button>
+            </div>
+            @if (iceWindow() === 'last') {
+              <label class="field">
+                <select
+                  aria-label="Recent games"
+                  [value]="recentGames()"
+                  (change)="onRecentGames($event)"
+                >
+                  @for (option of recentGameOptions; track option) {
+                    <option [value]="option" [selected]="option === recentGames()">
+                      {{ option }} games
+                    </option>
+                  }
+                </select>
+              </label>
+            }
+            <span class="ice-caption">
+              Measured ice over {{ iceLabel() }}, against his earlier games this season (or last
+              season while this one is short). Hover a figure for the games it stands on.
+            </span>
+          </div>
+        }
       </div>
     }
 
@@ -264,13 +362,15 @@
                       >
                         Proj.
                       </th>
-                      <th
-                        scope="col"
-                        class="num"
-                        appTooltip="The change in his score since the day"
-                      >
-                        Change
-                      </th>
+                      @if (compare()) {
+                        <th
+                          scope="col"
+                          class="num"
+                          appTooltip="The change in his score since the chosen day"
+                        >
+                          Change
+                        </th>
+                      }
                       @if (slotsKnown()) {
                         <th
                           scope="col"
@@ -314,13 +414,15 @@
                         </td>
                         <td class="num slot">{{ entry.player.slot ?? '' }}</td>
                         <td class="num drop-score">{{ formatScore(entry.score) }}</td>
-                        <td
-                          class="num drop-delta"
-                          [class.drop-delta--up]="(entry.delta ?? 0) > 0"
-                          [class.drop-delta--down]="(entry.delta ?? 0) < 0"
-                        >
-                          {{ formatDelta(entry.delta) }}
-                        </td>
+                        @if (compare()) {
+                          <td
+                            class="num drop-delta"
+                            [class.drop-delta--up]="(entry.delta ?? 0) > 0"
+                            [class.drop-delta--down]="(entry.delta ?? 0) < 0"
+                          >
+                            {{ formatDelta(entry.delta) }}
+                          </td>
+                        }
                         @if (slotsKnown()) {
                           <td class="num">{{ starts(entry) }}</td>
                           <td class="num drop-score">
@@ -354,9 +456,11 @@
           [rows]="visible()"
           [scoringType]="scoringType()"
           [categories]="categories()"
+          [view]="view()"
+          [compare]="compare()"
           [sinceLabel]="sinceLabel()"
           [iceLabel]="iceLabel()"
-          [showOwner]="pool() === 'all'"
+          [showOwner]="pool() === 'all' || pool() === 'taken' || showMine()"
           [swaps]="swaps()"
           [sort]="sort()"
           (sortBy)="sortBy($event)"
