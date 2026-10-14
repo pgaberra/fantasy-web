@@ -170,9 +170,9 @@
                       <span class="day-room day-room--full">{{ roomLabel(room) }}</span>
                     }
                   }
-                  <!-- The open positions in lineup order, whatever opens them, one chip a
-                       position: green where the lineup has room as it stands, yellow where only
-                       a drop opens it, its tip saying who would have to go. A green run has no
+                  <!-- The open positions in lineup order, whatever opens them, one run one
+                       object: green where the lineup has room as it stands, yellow where only a
+                       drop opens it, its tip saying who would have to go. A green run has no
                        tip: its positions are it. -->
                   @for (run of runs; track $index) {
                     @if (run.tip) {
@@ -184,17 +184,24 @@
                         (click)="$event.stopPropagation(); runTip.toggle()"
                         [attr.aria-label]="run.label + ': ' + run.tip"
                       >
-                        @for (position of run.positions; track position) {
-                          <span class="room-chip">{{ position }}</span>
-                        }
-                        <!-- The legend no longer says to hover: the glyph does, on the chip. -->
-                        <app-icon class="room-hint" name="info" size="0.85em" />
+                        <span class="room-chips">
+                          @for (position of run.positions; track position) {
+                            <span class="room-chip">{{ position }}</span>
+                          }
+                        </span>
+                        <!-- The legend no longer says to hover: the stub does, part of the run,
+                             not a glyph floating beside it. -->
+                        <span class="room-hint" aria-hidden="true"
+                          ><app-icon name="info" size="1em"
+                        /></span>
                       </span>
                     } @else {
                       <span class="day-room day-room--open">
-                        @for (position of run.positions; track position) {
-                          <span class="room-chip">{{ position }}</span>
-                        }
+                        <span class="room-chips">
+                          @for (position of run.positions; track position) {
+                            <span class="room-chip">{{ position }}</span>
+                          }
+                        </span>
                       </span>
                     }
                   }

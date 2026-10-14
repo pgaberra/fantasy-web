@@ -237,50 +237,87 @@
   gap: 2px var(--space-1);
 }
 
-/* An open position is a chip, green or yellow, one a position so a run of five wraps chip by
-   chip in a phone's third-width cell instead of as one pill with an empty second line; "Full" is
-   bare muted text, so a night with no seat never looks like one with a seat. */
+/* A run of open positions is one object: a green ticket for the seats the lineup has as it
+   stands, a yellow one for the seats a single drop would open. The positions sit on its surface
+   parted by hairlines, so "C LW" never reads as one position, and a long run wraps inside it on
+   a phone's third-width cell. "Full" is bare muted text, so a night with no seat never looks
+   like one with a seat. */
 .day-room {
   display: inline-flex;
-  flex-wrap: wrap;
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
-  gap: 2px;
-  line-height: 1.3;
+  line-height: 1.4;
 }
 
 .day-room--full {
   color: var(--color-text-subtle);
   font-weight: var(--weight-medium);
+  line-height: 1.3;
+}
+
+.day-room--open,
+.day-room--drop {
+  align-items: stretch;
+  border: 1px solid var(--room-edge);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+/* Each position carries the hairline on its left; the wrapper sits one pixel under the ticket's
+   own edge, so the first hairline of every line, wrapped or not, is clipped beneath it. */
+.room-chips {
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: -1px;
+  min-width: 0;
 }
 
 .room-chip {
-  border: 1px solid;
-  border-radius: var(--radius-sm);
-  line-height: 1.4;
+  border-left: 1px solid var(--room-edge);
   padding: 0 var(--space-1);
 }
 
 /* Room as the lineup stands: the surest seat of the night, so drawn at least as boldly as the
    yellow one a drop opens. */
-.day-room--open .room-chip {
+.day-room--open {
+  --room-edge: var(--color-success-border);
+
   background: var(--color-success-surface);
-  border-color: var(--color-success-border);
   color: var(--color-success);
 }
 
 /* Room only through a drop: yellow, so it never reads as the night's own; its tip says who. */
-.day-room--drop .room-chip {
+.day-room--drop {
+  --room-edge: var(--color-warning-border);
+
   background: var(--color-warning-surface);
-  border-color: var(--color-warning-border);
   color: var(--color-warning-text);
 }
 
-/* The yellow run's tip is what says who to drop, and no sentence under the strip says to hover
-   for it: the info glyph after the chips does, in the chips' own yellow. */
+/* The stub on a yellow ticket: the one place that says the ticket opens a tip, drawn as part of
+   it in the ticket's own deeper tint, spanning every line the positions wrap to. */
 .room-hint {
-  align-self: center;
-  color: var(--color-warning-text);
+  align-items: center;
+  background: var(--room-edge);
+  display: flex;
+  flex: none;
+  padding: 0 3px;
+}
+
+/* Under a pointer the ticket answers before the tip does: the edge and the stub deepen to the
+   warning yellow and the surface warms a step. Hover only: a phone would hold the state after a
+   tap. */
+@media (hover: hover) {
+  .day-room--drop:hover {
+    --room-edge: var(--color-warning);
+
+    background: color-mix(in srgb, var(--color-warning) 18%, var(--color-warning-surface));
+    box-shadow: var(--shadow-sm);
+  }
 }
 
 @media (max-width: 640px) {
