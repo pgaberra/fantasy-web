@@ -403,30 +403,31 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   was handed (`FreeAgent.projected`).
 - `player-scout/` — the **Player Scout** page (`/player-scout`, signed in, served only where the
   BFF's `playerScout` feature says so; `/fa-scout` and `/role-changes`, the two pages it
-  replaced, redirect to it): how the model's view of every player in a league has moved since a
-  chosen day, and what the ice says about why. The league is picked with the planner's own field
-  (`app-league-field`, `YahooLeaguePicker`) and opens on `LeagueChoiceService`'s league. **One
-  day asks both questions** (`since-picker/`: Preseason, 30/14/7/3 days, or any date; the caption
-  under it says which earlier line the BFF answered with, since nothing is kept from before the
-  history began and the preseason line stands in). Every player the league holds, available or
-  rostered, is ranked twice by the league's scoring through `ProjectionRankingService`: on the
-  served rest of the season today and on the line as it stood on the day, which the BFF has
-  already re-spread over the games left, so the two compare stat by stat
-  (`scout-ranking.ts`: `rankScout`; `delta` is the change in score, `rise` the places gained,
-  `isRising` as before). The list opens on the available players, biggest rise in score first
-  (`SCOUT_MOVERS_ORDER`); Available / My team / Everyone, positions, Risers / Fallers and a search
-  narrow it; 25 rows a page. The table (`scout-table/`) reuses the planner table's stylesheet and
-  line helpers and writes every figure with its change underneath (score, rank, games, TOI, each
-  category), then the measured ice a game and PP share since the day against before it
-  (`scout-usage.ts`, the old Role Changes model) and where Daily Faceoff lists him now and then.
-  **The user's own team is weighed night by night over the rest of the season**
-  (`lineup-value.ts`: `valueLineup` seats the roster into the league's slots on every remaining
-  night, best players first, so a player's *lineup cost* is what the team loses without him,
-  which for a third centre behind two centre seats is nought whatever he projects; `swapInto`
-  prices each available player's best swap the same way). The room line names the cheapest
-  drop; the roster folds out under it with starts and lineup cost. `drop-candidates.ts`
-  (`teamRoom`, `scoreTeam`) lives here too and Start/Bench reads it; the roster's types and
-  `toScoutTeam` are in `services/player-scout.service.ts`.
+  replaced, redirect to it): every player in a league on the AI projection for the rest of the
+  season, with how the projection has moved since a chosen day on a switch, and what the ice has
+  shown in a view of its own. The league is picked with the planner's own field
+  (`app-league-field`, `YahooLeaguePicker`) and opens on `LeagueChoiceService`'s league. **Two
+  views** (`ScoutView`, switched like the planner's): *Projection* (score, games, ice time, the
+  league's categories, Swap) and *On the ice* (measured ice a game, PP ice, PP share and the
+  Daily Faceoff listing over each club's last 3/5/10 games, or since the comparison's day,
+  against his games before; `scout-usage.ts`, the old Role Changes model; the BFF's
+  `recentGames`). Both keep the rank, the player and the score to sort by. **The comparison is
+  off by default**: a tick switches it on, against the preseason projection or the one of a day
+  typed into the field (`since-picker/`; the caption says which day the BFF actually answered,
+  since nothing is kept from before the history began). With it on, every figure wears its change
+  underneath and the rank its places gained (`scout-ranking.ts`: `rankScout`; `delta`, `rise`,
+  `isRising`), and Risers / Fallers appear. **Whose players, as Yahoo's player list asks it**: a
+  Show select (Available / Free agents / Waivers / Taken / All, then each league team, the
+  user's own first), a Club select, and a *Show my team* tick that adds the user's own players to
+  any list; positions by pills, a search; 25 rows a page. The table (`scout-table/`) reuses the
+  planner table's stylesheet and line helpers. **The user's own team is weighed night by night
+  over the rest of the season** (`lineup-value.ts`: `valueLineup` seats the roster into the
+  league's slots on every remaining night, best players first, so a player's *lineup cost* is
+  what the team loses without him, which for a third centre behind two centre seats is nought
+  whatever he projects; `swapInto` prices each available player's best swap the same way). The
+  room line names the cheapest drop; the roster folds out under it with starts and lineup cost.
+  `drop-candidates.ts` (`teamRoom`, `scoreTeam`) lives here too and Start/Bench reads it; the
+  roster's types and `toScoutTeam` are in `services/player-scout.service.ts`.
 - `start-bench/` — the **Start/Bench** page (`/start-bench`, signed in, served only where the BFF's
   `startBench` feature says so): the user's lineup for one day and the one the model would set,
   for the nights more of his players have a game than his lineup has spots. It opens on today's

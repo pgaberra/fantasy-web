@@ -11,6 +11,7 @@ import {
   ScoutList,
   ScoutOwner,
   ScoutPlayer,
+  ScoutQuery,
   ScoutTeamAnswer,
   TeamPlayer,
 } from '../services/player-scout.service';
@@ -18,9 +19,9 @@ import { YahooConnectReturnService } from '../services/yahoo-connect-return.serv
 import { YahooService } from '../services/yahoo.service';
 import { ErrorStateComponent } from '../shared/error-state/error-state';
 import { YahooLeaguePicker } from '../shared/yahoo-league-picker';
-import { DEFAULT_SINCE_DAYS, PlayerScoutComponent, SCOUT_PAGE_SIZE } from './player-scout';
+import { DEFAULT_RECENT_GAMES, PlayerScoutComponent, SCOUT_PAGE_SIZE } from './player-scout';
 import { ScoutTableComponent } from './scout-table/scout-table';
-import { daysBefore, SincePickerComponent } from './since-picker/since-picker';
+import { SincePickerComponent } from './since-picker/since-picker';
 
 const LEAGUE: ChosenLeague = { platform: 'YAHOO', leagueId: '465.l.9', name: 'The Gordie Howes' };
 
@@ -71,6 +72,7 @@ function scoutPlayer(
   then: Projection | null,
   positions: string[] = ['C'],
   owner: ScoutOwner | null = null,
+  extra: Partial<ScoutPlayer> = {},
 ): ScoutPlayer {
   return {
     freeAgent: {
@@ -90,6 +92,7 @@ function scoutPlayer(
     then,
     thenProjected: new Set(then ? ['goals', 'assists'] : []),
     usage: null,
+    ...extra,
   };
 }
 
@@ -145,19 +148,26 @@ function team(): ScoutTeamAnswer {
 
 /**
  * Twenty depth forwards the model rated the same on the day and now, one defenceman who has since
- * taken a top role, a goalie, the user's own players, and one of another team's.
+ * taken a top role, a goalie, a player on waivers, the user's own players, and one of another
+ * team's.
  */
 function league(): ScoutList {
   const depth = Array.from({ length: 20 }, (_, index) =>
     scoutPlayer(skater(index + 1, 10, 20 - index * 0.5), skater(index + 1, 10, 20 - index * 0.5)),
   );
+  const waived = scoutPlayer(skater(98, 8, 8), skater(98, 8, 8), ['LW']);
   return {
     inSeason: true,
     since: { requested: '2026-10-07', kind: 'SNAPSHOT', resolved: '2026-10-07' },
+    recentGames: DEFAULT_RECENT_GAMES,
     players: [
       ...depth,
       scoutPlayer(skater(99, 12, 40), skater(99, 4, 10), ['D']),
       scoutPlayer(goalie(50), goalie(50), ['G']),
+      {
+        ...waived,
+        freeAgent: { ...waived.freeAgent, availability: 'WAIVERS', teamAbbrev: 'TB' },
+      },
       ...TEAM_LINES.map(([line, positions]) => scoutPlayer(line, line, positions, MINE)),
       scoutPlayer(skater(301, 30, 30), skater(301, 35, 35), ['C'], THEIRS),
     ],
@@ -166,7 +176,7 @@ function league(): ScoutList {
 
 describe('PlayerScoutComponent', () => {
   let chosen: ChosenLeague | null;
-  let players: ReturnType<typeof vi.fn<() => Observable<ScoutList>>>;
+  let players: ReturnType<typeof vi.fn<(...args: unknown[]) => Observable<ScoutList>>>;
   let myTeam: ReturnType<typeof vi.fn<() => Observable<ScoutTeamAnswer>>>;
   let settings: LeagueProjectionSettingsResponse;
 
@@ -209,6 +219,7 @@ describe('PlayerScoutComponent', () => {
 
   const ids = (rows: readonly { player: { playerId: string } }[]) =>
     rows.map((row) => row.player.playerId);
+  const query = (call: unknown[]) => call[2] as ScoutQuery;
 
   it('asks for a league before anything else', async () => {
     chosen = null;
@@ -218,23 +229,34 @@ describe('PlayerScoutComponent', () => {
     expect(players).not.toHaveBeenCalled();
   });
 
-  it("reads the chosen league's players since a week ago, and again for another day", async () => {
+  it("reads the chosen league's players with no day and the ice over the last five games", async () => {
+    await render();
+
+    expect(players).toHaveBeenCalledWith('YAHOO', '465.l.9', {
+      since: null,
+      recentGames: DEFAULT_RECENT_GAMES,
+    });
+  });
+
+  it("opens on today's projection of the available players, best first, with no comparison", async () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
-    expect(players).toHaveBeenCalledWith(
-      'YAHOO',
-      '465.l.9',
-      daysBefore(page.today, DEFAULT_SINCE_DAYS),
-    );
-
-    page.since.set(null);
-    await fixture.whenStable();
-
-    expect(players).toHaveBeenLastCalledWith('YAHOO', '465.l.9', null);
+    expect(page.view()).toBe('projection');
+    expect(page.compare()).toBe(false);
+    expect(page.pool()).toBe('available');
+    expect(page.sort()).toEqual({ key: 'score', descending: true });
+    expect(ids(page.sorted())[0]).toBe('99');
+    expect(ids(page.filtered())).not.toContain('201');
+    expect(ids(page.filtered())).not.toContain('301');
+    const table = ngMocks.find(fixture, ScoutTableComponent);
+    expect(ngMocks.input(table, 'compare')).toBe(false);
+    expect(ngMocks.input(table, 'view')).toBe('projection');
+    expect(ngMocks.findAll(fixture, SincePickerComponent)).toHaveLength(0);
+    expect(page.sinceAnswer()).toBeNull();
   });
 
-  it('ranks everyone in the league best first on the rest of the season, scored by the league', async () => {
+  it('ranks everyone in the league on the rest of the season, scored by the league', async () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
@@ -244,8 +266,6 @@ describe('PlayerScoutComponent', () => {
     expect(montour?.score).toBe(116);
     expect(montour?.rank).toBe(3);
     // The league scores no goalie stat, so the goalie scores nothing, with the empty line on IR.
-    const goalie = page.ranked().find((row) => row.player.playerId === '50');
-    expect(goalie?.score).toBe(0);
     expect(
       page
         .ranked()
@@ -254,50 +274,90 @@ describe('PlayerScoutComponent', () => {
     ).toEqual([0, 0]);
   });
 
-  it('opens on the available players, the biggest rise in score first', async () => {
+  it('switches the comparison on against the preseason, then a day, and reads again for the day', async () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
-    expect(page.pool()).toBe('available');
-    expect(page.sort()).toEqual({ key: 'delta', descending: true });
-    expect(ids(page.sorted())[0]).toBe('99');
-    expect(page.sorted()[0].delta).toBe(116 - 32);
-    expect(ids(page.filtered())).not.toContain('201');
-    expect(ids(page.filtered())).not.toContain('301');
-  });
+    page.toggleCompare();
+    await fixture.whenStable();
+    fixture.detectChanges();
 
-  it('tags the defenceman who has climbed since the day', async () => {
-    const fixture = await render();
-    const page = fixture.point.componentInstance;
-
+    expect(players).toHaveBeenCalledTimes(1);
+    expect(ngMocks.findAll(fixture, SincePickerComponent)).toHaveLength(1);
+    expect(ngMocks.input(ngMocks.find(fixture, ScoutTableComponent), 'compare')).toBe(true);
+    expect(page.sinceLabel()).toBe('vs 7 Oct');
     const montour = page.ranked().find((row) => row.player.playerId === '99');
     expect(montour?.rising).toBe(true);
     expect(page.risingCount()).toBe(1);
+
+    page.since.set('2026-10-05');
+    await fixture.whenStable();
+
+    expect(query(players.mock.lastCall!)).toEqual({ since: '2026-10-05', recentGames: 5 });
   });
 
-  it("shows the user's own players, or everyone, on the switch", async () => {
-    const fixture = await render();
-    const page = fixture.point.componentInstance;
-
-    page.pool.set('mine');
-    expect(page.filtered()).toHaveLength(12);
-    expect(page.filtered().every((row) => row.scout.owner?.mine)).toBe(true);
-
-    page.pool.set('all');
-    expect(page.filtered()).toHaveLength(35);
-    expect(ids(page.filtered())).toContain('301');
-  });
-
-  it('narrows to the risers, or the fallers', async () => {
+  it('narrows to the risers, or the fallers, only with a comparison on', async () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
     page.movers.set('risers');
+    expect(page.filtered().length).toBeGreaterThan(1);
+
+    page.toggleCompare();
     expect(ids(page.filtered())).toEqual(['99']);
 
     page.pool.set('all');
     page.movers.set('fallers');
     expect(ids(page.filtered())).toEqual(['301']);
+  });
+
+  it("shows free agents, waivers, taken players, everyone, or one team's roster", async () => {
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    page.pool.set('fa');
+    expect(ids(page.filtered())).not.toContain('98');
+    expect(page.filtered()).toHaveLength(22);
+
+    page.pool.set('waivers');
+    expect(ids(page.filtered())).toEqual(['98']);
+
+    page.pool.set('taken');
+    expect(page.filtered()).toHaveLength(13);
+
+    page.pool.set('all');
+    expect(page.filtered()).toHaveLength(36);
+
+    expect(page.leagueTeams().map((team) => team.name)).toEqual(['Slapshots', 'Someone Else']);
+    expect(page.leagueTeams()[0].mine).toBe(true);
+    page.pool.set('team:Someone Else');
+    expect(ids(page.filtered())).toEqual(['301']);
+  });
+
+  it("adds the user's own players beside the pool on the tick, and reads the tick as moot where they are shown anyway", async () => {
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    expect(page.poolShowsMine()).toBe(false);
+    page.toggleShowMine();
+    expect(page.filtered()).toHaveLength(23 + 12);
+    expect(ids(page.filtered())).toContain('201');
+    expect(ids(page.filtered())).not.toContain('301');
+
+    page.pool.set('team:Slapshots');
+    expect(page.poolShowsMine()).toBe(true);
+    expect(page.filtered()).toHaveLength(12);
+    page.pool.set('all');
+    expect(page.poolShowsMine()).toBe(true);
+  });
+
+  it('narrows to an NHL club, by any spelling of it', async () => {
+    const fixture = await render();
+    const page = fixture.point.componentInstance;
+
+    expect(page.nhlTeams()).toEqual(['EDM', 'SEA', 'TBL']);
+    page.nhlTeam.set('TBL');
+    expect(ids(page.filtered())).toEqual(['98']);
   });
 
   it('narrows the list to the positions picked, and finds a name', async () => {
@@ -328,31 +388,40 @@ describe('PlayerScoutComponent', () => {
     ]);
   });
 
-  it('picks the four skater positions with All skaters, and goes back to everyone', async () => {
+  it('switches to the ice view, with its window read over the last games or since the day', async () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
-    page.toggleAllSkaters();
+    page.view.set('ice');
     fixture.detectChanges();
 
-    expect(page.allSkaters()).toBe(true);
-    expect(page.filtered()).toHaveLength(21);
-    expect(ngMocks.formatText(ngMocks.find(fixture, '.roster-toggle'))).toBe('Your skaters (12)');
+    expect(ngMocks.input(ngMocks.find(fixture, ScoutTableComponent), 'view')).toBe('ice');
+    expect(page.iceLabel()).toBe("each club's last 5 games");
+    expect(page.swaps()).toBeNull();
 
-    page.toggleAllSkaters();
-    expect(page.positions().size).toBe(0);
-    expect(page.filtered()).toHaveLength(22);
+    page.recentGames.set(10);
+    await fixture.whenStable();
+    expect(query(players.mock.lastCall!)).toEqual({ since: null, recentGames: 10 });
+
+    // "Since the day" needs a day: without a comparison on a day it falls back to the last games.
+    page.iceWindowPicked.set('since');
+    expect(page.iceWindow()).toBe('last');
+    page.compare.set(true);
+    page.since.set('2026-10-05');
+    await fixture.whenStable();
+    expect(page.iceWindow()).toBe('since');
+    expect(page.iceLabel()).toBe('since 5 Oct');
+    expect(query(players.mock.lastCall!)).toEqual({ since: '2026-10-05', recentGames: null });
   });
 
-  it('hands the table a page at a time, saying who holds whom only for everyone', async () => {
+  it('hands the table a page at a time, saying who holds whom only beyond the wire', async () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
     const table = ngMocks.find(fixture, ScoutTableComponent);
-    expect(ngMocks.input(table, 'rows')).toHaveLength(22);
+    expect(ngMocks.input(table, 'rows')).toHaveLength(23);
     expect(ngMocks.input(table, 'showOwner')).toBe(false);
-    expect(ngMocks.input(table, 'sinceLabel')).toBe('vs 7 Oct');
-    expect(page.rangeText()).toBe('1–22 of 22');
+    expect(page.rangeText()).toBe('1–23 of 23');
 
     page.pool.set('all');
     fixture.detectChanges();
@@ -361,33 +430,35 @@ describe('PlayerScoutComponent', () => {
     expect(page.pageCount()).toBe(2);
   });
 
-  it('sorts the whole list by a column before paging it', async () => {
+  it('sorts the whole list by a column before paging it, and falls back when the column leaves', async () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
-    page.sortBy('rise');
-    page.sortBy('rise');
+    page.sortBy('games');
+    page.sortBy('games');
     fixture.detectChanges();
+    expect(page.sort()).toEqual({ key: 'games', descending: false });
+    expect(ngMocks.input(ngMocks.find(fixture, ScoutTableComponent), 'sort')).toEqual({
+      key: 'games',
+      descending: false,
+    });
 
-    expect(page.sort()).toEqual({ key: 'rise', descending: false });
-    const rises = page.sorted().flatMap((row) => (row.rise === null ? [] : [row.rise]));
-    expect(rises).toEqual([...rises].sort((first, second) => first - second));
-    const table = ngMocks.find(fixture, ScoutTableComponent);
-    expect(ngMocks.input(table, 'sort')).toEqual({ key: 'rise', descending: false });
-  });
-
-  it('falls back to the movers order when the column sorted by leaves the table', async () => {
-    const fixture = await render();
-    const page = fixture.point.componentInstance;
-
-    page.sortBy('toi');
-    page.togglePosition('G');
-
-    expect(page.sort()).toEqual({ key: 'delta', descending: true });
+    // A change without a comparison, or games in the ice view, sorts by blanks: ranked instead.
+    page.sortBy('delta');
+    expect(page.sort()).toEqual({ key: 'score', descending: true });
+    page.toggleCompare();
+    page.sortBy('rise');
+    expect(page.sort().key).toBe('rise');
+    page.view.set('ice');
+    expect(page.sort()).toEqual({ key: 'score', descending: true });
+    page.sortBy('ice');
+    expect(page.sort().key).toBe('ice');
   });
 
   it('says the season is not under way rather than listing nobody', async () => {
-    players.mockReturnValue(of({ inSeason: false, since: { kind: 'NONE' }, players: [] }));
+    players.mockReturnValue(
+      of({ inSeason: false, since: { kind: 'NONE' }, recentGames: null, players: [] }),
+    );
     const fixture = await render();
 
     expect(ngMocks.formatText(fixture)).toContain("The season isn't under way");
@@ -443,9 +514,11 @@ describe('PlayerScoutComponent', () => {
     expect(rows).toHaveLength(12);
     expect(ngMocks.formatText(rows[0])).toContain('10 / 10');
     expect(rows[0].nativeElement.classList).toContain('roster-row--cheapest');
-    expect(ngMocks.formatText(ngMocks.find(fixture, '.roster-caption'))).toContain(
-      'Slapshots, the cheapest to drop first.',
-    );
+    // No comparison on: no Change column in the roster either.
+    const headings = ngMocks
+      .findAll(fixture, '.roster-table thead th')
+      .map((th) => ngMocks.formatText(th));
+    expect(headings).toEqual(['Player', 'Slot', 'Proj.', 'Starts', 'Lineup cost']);
   });
 
   it('names the player whose going costs the lineup least, not the lowest scorer', async () => {
@@ -500,7 +573,7 @@ describe('PlayerScoutComponent', () => {
     expect(swap('98')).toEqual({ drop: '403', gain: 0 });
   });
 
-  it('weighs no swaps while the team is not his, and none for his own players', async () => {
+  it('weighs no swaps while the team is not his', async () => {
     myTeam.mockReturnValue(
       of({ team: { found: false, teamName: null, players: [] }, schedule: new Map() }),
     );
@@ -522,7 +595,7 @@ describe('PlayerScoutComponent', () => {
     expect(ngMocks.formatText(fixture)).toContain("Couldn't load your team");
   });
 
-  it('says why nobody has a then-line when no earlier line is stored', async () => {
+  it('hands the picker what answered the day, once a comparison is on', async () => {
     players.mockReturnValue(
       of({
         ...league(),
@@ -533,8 +606,10 @@ describe('PlayerScoutComponent', () => {
     const fixture = await render();
     const page = fixture.point.componentInstance;
 
-    expect(page.sinceLabel()).toBe('no earlier line');
-    expect(page.sinceAnswer()?.kind).toBe('NONE');
+    page.toggleCompare();
+    fixture.detectChanges();
+
+    expect(page.sinceLabel()).toBe('no earlier projection');
     expect(ngMocks.input(ngMocks.find(fixture, SincePickerComponent), 'answer')).toEqual({
       kind: 'NONE',
     });

@@ -1,20 +1,17 @@
-<div class="since">
-  <span class="since-label" id="since-label">Since</span>
-  <div class="pills" role="group" aria-labelledby="since-label">
-    @for (preset of presets; track preset.label) {
-      <button
-        type="button"
-        class="pill"
-        [class.pill--active]="active() === preset"
-        [attr.aria-pressed]="active() === preset"
-        (click)="pick(preset)"
-      >
-        {{ preset.label }}
-      </button>
-    }
-  </div>
-  <label class="date-field" [class.date-field--active]="since() !== null && active() === null">
-    <span class="date-label">or a day</span>
+<div class="since" role="group" aria-label="The projection to compare with">
+  <button
+    type="button"
+    class="pill"
+    [class.pill--active]="since() === null"
+    [attr.aria-pressed]="since() === null"
+    (click)="pickPreseason()"
+  >
+    Preseason
+  </button>
+  <label class="pill date-field" [class.pill--active]="since() !== null">
+    <span class="date-label">{{
+      since() === null ? 'or the projection of' : 'the projection of'
+    }}</span>
     <input
       class="field-date"
       type="date"
@@ -22,13 +19,11 @@
       [min]="earliest()"
       [max]="latest()"
       [value]="since() ?? ''"
+      (focus)="pickDay()"
       (change)="onDate($event)"
     />
   </label>
 </div>
-<p class="since-caption" aria-live="polite">
-  @if (caption().projection) {
-    <span>{{ caption().projection }}</span>
-  }
-  <span>{{ caption().ice }}</span>
-</p>
+@if (caption()) {
+  <p class="since-caption" aria-live="polite">{{ caption() }}</p>
+}

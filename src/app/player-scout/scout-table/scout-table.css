@@ -1,6 +1,5 @@
-/* The two families of columns, named once above them. The names sit low and quiet: the column
-   headings underneath are what the eye reads, and the group name is there to say what the
-   changes under every figure are measured against. */
+/* A family of columns named once above it, with what its figures are measured against. The name
+   sits low and quiet: the column headings underneath are what the eye reads. */
 .scout-table .group-row th {
   border-bottom: none;
   color: var(--color-text-subtle);
@@ -30,7 +29,7 @@
   margin-left: var(--space-2);
 }
 
-/* The rules between the families run down every row from the group heading. */
+/* The rule down the family runs from its heading through every row. */
 .scout-table .stat-col--start {
   border-left: 1px solid var(--color-border);
   padding-left: var(--space-3);
@@ -40,9 +39,9 @@
   padding-right: var(--space-3);
 }
 
-/* Every figure wears its change underneath, small and coloured by which way it went: green
-   up, red down, and grey for a change too small to mean anything. The figure stays the figure,
-   so a column still reads as one line of numbers. */
+/* With a comparison on, every figure wears its change underneath, small and coloured by which
+   way it went: green up, red down, grey for a change too small to mean anything. The figure
+   stays the figure, so a column still reads as one line of numbers. */
 .figure-now {
   display: block;
 }
@@ -69,13 +68,21 @@
   font-weight: normal;
 }
 
-/* A note under the figure rather than a change of it: "was 31". */
+/* A note under the figure rather than a change of it: "was L4 · No PP". */
 .delta--note {
   font-weight: normal;
 }
 
-/* The score column carries two sort controls: the figure's and its change's, stacked as the cell
-   is, so the heading reads as the cell does. */
+/* The rank wears the places gained or lost underneath, like any other figure, so the two columns
+   that used to say it are one. The rank column is centred for the planner's medals; with a change
+   under it the pair is set right like the other figures. */
+.scout-table--compare .rank-col,
+.scout-table--compare thead th.rank-col {
+  text-align: right;
+}
+
+/* The score column carries two sort controls when there is a change to sort by: the figure's and
+   its change's, stacked as the cell is, so the heading reads as the cell does. */
 .scout-table .score-col .sort {
   display: flex;
 }
@@ -91,8 +98,8 @@
   color: var(--color-primary);
 }
 
-/* A tag beside the positions: what the row is, not another position. Rising is what the page is
-   there to find, so it alone is coloured; who holds him is plain, and the user's own a shade
+/* A tag beside the positions: what the row is, not another position. Rising is what a comparison
+   is there to find, so it alone is coloured; who holds him is plain, and the user's own a shade
    darker. */
 .scout-tag {
   border: 1px solid var(--color-border);
@@ -119,26 +126,13 @@
   color: var(--color-text);
 }
 
-.rise {
-  display: block;
-  font-weight: var(--weight-semibold);
-}
-
-.rise--up {
-  color: var(--color-success);
-}
-
-.rise--down {
-  color: var(--color-danger);
-}
-
 /* The measured ice is what the score is explained by, so it keeps the figure's weight. */
 .scout-table td.ice-col .figure-now {
   color: var(--color-text);
 }
 
 /* Where the lineup page lists him: the listing with an arrow for the way it moved, and where
-   it listed him on the day beneath. */
+   it listed him before beneath. */
 .scout-table .lineup-col {
   text-align: left;
   white-space: nowrap;
@@ -186,8 +180,8 @@
   white-space: nowrap;
 }
 
-/* On a phone the ice time column goes, as in the planner; the measured ice stays, being the
-   point of the page, and the group names shorten to their rules. */
+/* On a phone the projected ice time column goes, as in the planner; the group names shorten to
+   their rules. */
 @container (max-width: 38rem) {
   .group-since {
     display: none;

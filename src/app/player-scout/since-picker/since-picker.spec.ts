@@ -26,52 +26,45 @@ describe('sinceCaption', () => {
     earliestSnapshot: '2026-10-01',
   };
 
-  it("says which day's line answered, and which games the ice is read over", () => {
-    const caption = sinceCaption(kept, '2026-10-07');
-
-    expect(caption.projection).toBe(
-      'Projection: today against the line of 7 Oct, re-spread over the games left.',
+  it("says which day's projection answered", () => {
+    expect(sinceCaption(kept)).toBe(
+      "Today's projection against the one of 7 Oct, re-spread over the games left.",
     );
-    expect(caption.ice).toBe('Ice: his games since 7 Oct against his games before.');
   });
 
   it('says when a nearer day answered than the one asked for', () => {
-    const caption = sinceCaption({ ...kept, resolved: '2026-10-05' }, '2026-10-07');
-
-    expect(caption.projection).toContain('the line of 5 Oct, the nearest day kept before 7 Oct');
-  });
-
-  it('says the preseason line stood in for a day nothing is kept from', () => {
-    const caption = sinceCaption(
-      { requested: '2026-10-07', kind: 'PRESEASON', earliestSnapshot: '2026-10-15' },
-      '2026-10-07',
+    expect(sinceCaption({ ...kept, resolved: '2026-10-05' })).toContain(
+      'the one of 5 Oct, the nearest day kept before 7 Oct',
     );
-
-    expect(caption.projection).toContain('the line from before the season');
-    expect(caption.projection).toContain('day-by-day lines are kept from 15 Oct');
   });
 
-  it('says so when no day-by-day line is kept at all', () => {
-    const caption = sinceCaption({ requested: '2026-10-07', kind: 'PRESEASON' }, '2026-10-07');
+  it('says the preseason projection stood in for a day nothing is kept from', () => {
+    const caption = sinceCaption({
+      requested: '2026-10-07',
+      kind: 'PRESEASON',
+      earliestSnapshot: '2026-10-15',
+    });
 
-    expect(caption.projection).toContain('no day-by-day line is kept yet');
+    expect(caption).toContain('Nothing is kept from before 7 Oct');
+    expect(caption).toContain('day-by-day projections are kept from 15 Oct');
+    expect(caption).toContain('the one made before the season');
   });
 
-  it('reads the preseason as last season on the ice', () => {
-    const caption = sinceCaption({ kind: 'PRESEASON' }, null);
-
-    expect(caption.projection).toBe(
-      'Projection: today against the line made before the season, re-spread over the games left.',
+  it('says so when no day-by-day projection is kept at all', () => {
+    expect(sinceCaption({ requested: '2026-10-07', kind: 'PRESEASON' })).toContain(
+      'no day-by-day projection is kept yet',
     );
-    expect(caption.ice).toBe('Ice: this season so far against last season.');
   });
 
-  it('says when there is nothing to compare with', () => {
-    expect(sinceCaption({ kind: 'NONE' }, null).projection).toContain('nothing to compare with');
+  it('names the preseason plainly when it was asked for', () => {
+    expect(sinceCaption({ kind: 'PRESEASON' })).toBe(
+      "Today's projection against the one made before the season, re-spread over the games left.",
+    );
   });
 
-  it('has only the ice to say until the answer lands', () => {
-    expect(sinceCaption(null, '2026-10-07').projection).toBe('');
+  it('says when there is nothing to compare with, and nothing until the answer lands', () => {
+    expect(sinceCaption({ kind: 'NONE' })).toContain('nothing to compare with');
+    expect(sinceCaption(null)).toBe('');
   });
 });
 
@@ -83,51 +76,43 @@ describe('SincePickerComponent', () => {
     return { fixture, sinceChange };
   }
 
-  it('offers the preseason and a few days back as presses, and marks the one picked', () => {
-    const { fixture } = render('2026-10-07');
+  it('offers the preseason and a day, and marks the one picked', () => {
+    const { fixture } = render(null);
 
     const pills = ngMocks.findAll(fixture, '.pill');
-    expect(pills.map((pill) => ngMocks.formatText(pill))).toEqual([
-      'Preseason',
-      '30 days',
-      '14 days',
-      '7 days',
-      '3 days',
-    ]);
-    expect(pills.map((pill) => pill.attributes['aria-pressed'])).toEqual([
-      'false',
-      'false',
-      'false',
-      'true',
-      'false',
-    ]);
+    expect(pills).toHaveLength(2);
+    expect(ngMocks.formatText(pills[0])).toBe('Preseason');
+    expect(pills[0].attributes['aria-pressed']).toBe('true');
+    expect(pills[1].nativeElement.classList).not.toContain('pill--active');
   });
 
-  it('emits the day a press stands for, and null for the preseason', () => {
-    const { fixture, sinceChange } = render(null);
-    const pills = ngMocks.findAll(fixture, '.pill');
+  it('marks the day as the pick once one is set, and keeps it no later than yesterday', () => {
+    const { fixture } = render('2026-10-02');
 
-    ngMocks.click(pills[2]);
-    ngMocks.click(pills[0]);
-
-    expect(sinceChange.mock.calls).toEqual([['2026-09-30'], [null]]);
+    const field = ngMocks.find(fixture, 'input[type=date]');
+    expect(field.attributes['max']).toBe('2026-10-13');
+    expect(field.nativeElement.value).toBe('2026-10-02');
+    expect(ngMocks.find(fixture, '.date-field').nativeElement.classList).toContain('pill--active');
+    expect(ngMocks.findAll(fixture, 'button.pill')[0].attributes['aria-pressed']).toBe('false');
   });
 
-  it('takes any day from the field, no later than yesterday, and marks the field as the pick', () => {
+  it('emits null for the preseason and the day typed into the field', () => {
     const { fixture, sinceChange } = render('2026-10-02');
     const field = ngMocks.find(fixture, 'input[type=date]');
 
-    expect(field.attributes['max']).toBe('2026-10-13');
-    expect(field.nativeElement.value).toBe('2026-10-02');
-    expect(ngMocks.find(fixture, '.date-field').nativeElement.classList).toContain(
-      'date-field--active',
-    );
-    expect(ngMocks.findAll(fixture, '.pill[aria-pressed=true]')).toHaveLength(0);
-
+    ngMocks.click(ngMocks.find(fixture, 'button.pill'));
     field.nativeElement.value = '2026-10-10';
     field.nativeElement.dispatchEvent(new Event('change'));
 
-    expect(sinceChange).toHaveBeenCalledWith('2026-10-10');
+    expect(sinceChange.mock.calls).toEqual([[null], ['2026-10-10']]);
+  });
+
+  it('hands the field a week back when it is taken up from the preseason', () => {
+    const { fixture, sinceChange } = render(null);
+
+    ngMocks.find(fixture, 'input[type=date]').nativeElement.dispatchEvent(new Event('focus'));
+
+    expect(sinceChange).toHaveBeenCalledWith('2026-10-07');
   });
 
   it('writes the caption under the picker', () => {
@@ -138,7 +123,7 @@ describe('SincePickerComponent', () => {
     });
 
     expect(ngMocks.formatText(ngMocks.find(fixture, '.since-caption'))).toContain(
-      'the line of 7 Oct',
+      'the one of 7 Oct',
     );
   });
 });

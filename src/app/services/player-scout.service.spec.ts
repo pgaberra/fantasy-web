@@ -76,22 +76,26 @@ describe('PlayerScoutService', () => {
     return MockBuilder(PlayerScoutService).mock(Api, { invoke });
   });
 
-  const read = (since: string | null = '2026-10-07') =>
-    firstValueFrom(TestBed.inject(PlayerScoutService).players('YAHOO', '465.l.9', since));
+  const read = (since: string | null = '2026-10-07', recentGames: number | null = null) =>
+    firstValueFrom(
+      TestBed.inject(PlayerScoutService).players('YAHOO', '465.l.9', { since, recentGames }),
+    );
 
-  it("asks the BFF for the league's players since a day, or the preseason for none", async () => {
+  it("asks the BFF for the league's players since a day, or the preseason for none, and the ice's window", async () => {
     await read();
-    await read(null);
+    await read(null, 5);
 
     expect(invoke).toHaveBeenNthCalledWith(1, playerScoutPlayers, {
       platform: 'YAHOO',
       leagueId: '465.l.9',
       since: '2026-10-07',
+      recentGames: undefined,
     });
     expect(invoke).toHaveBeenNthCalledWith(2, playerScoutPlayers, {
       platform: 'YAHOO',
       leagueId: '465.l.9',
       since: undefined,
+      recentGames: 5,
     });
   });
 
@@ -154,6 +158,7 @@ describe('PlayerScoutService', () => {
     expect(list.inSeason).toBe(true);
     expect(list.since.kind).toBe('SNAPSHOT');
     expect(list.since.resolved).toBe('2026-10-07');
+    expect(list.recentGames).toBeNull();
   });
 
   it("reads the user's team with each player's line, and every club's nights by the NHL's spelling", async () => {
