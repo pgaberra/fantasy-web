@@ -1,0 +1,34 @@
+<div class="since">
+  <span class="since-label" id="since-label">Since</span>
+  <div class="pills" role="group" aria-labelledby="since-label">
+    @for (preset of presets; track preset.label) {
+      <button
+        type="button"
+        class="pill"
+        [class.pill--active]="active() === preset"
+        [attr.aria-pressed]="active() === preset"
+        (click)="pick(preset)"
+      >
+        {{ preset.label }}
+      </button>
+    }
+  </div>
+  <label class="date-field" [class.date-field--active]="since() !== null && active() === null">
+    <span class="date-label">or a day</span>
+    <input
+      class="field-date"
+      type="date"
+      aria-label="A day to compare with"
+      [min]="earliest()"
+      [max]="latest()"
+      [value]="since() ?? ''"
+      (change)="onDate($event)"
+    />
+  </label>
+</div>
+<p class="since-caption" aria-live="polite">
+  @if (caption().projection) {
+    <span>{{ caption().projection }}</span>
+  }
+  <span>{{ caption().ice }}</span>
+</p>

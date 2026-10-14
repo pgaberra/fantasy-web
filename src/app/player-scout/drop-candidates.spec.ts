@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Projection, ScoredProjection } from '../models/projection.model';
-import { TeamPlayer } from '../services/fa-scout.service';
+import { TeamPlayer } from '../services/player-scout.service';
 import { lineupSeats } from '../streamer-planner/planner-lineup';
 import { bestSwap, scoreTeam, Swap, teamRoom, TeamRow } from './drop-candidates';
 

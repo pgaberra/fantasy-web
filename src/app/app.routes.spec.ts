@@ -5,6 +5,7 @@ import { routes } from './app.routes';
 import { authGuard } from './guards/auth.guard';
 import { whosHotEnabledGuard } from './guards/whos-hot-enabled.guard';
 import { demoRedemptionGuard } from './guards/demo-redemption.guard';
+import { playerScoutEnabledGuard } from './guards/player-scout-enabled.guard';
 
 describe('routes', () => {
   const routeFor = (path: string): Route => routes.find((route) => route.path === path)!;
@@ -63,6 +64,18 @@ describe('routes', () => {
       );
 
       expect((target as UrlTree).toString()).toEqual('/premium?checkout=success');
+    }
+  });
+
+  it('serves Player Scout signed in and only where the BFF switches it on', () => {
+    expect(routeFor('player-scout').canActivate).toEqual([authGuard, playerScoutEnabledGuard]);
+  });
+
+  it('sends the two pages Player Scout replaced to it', () => {
+    // A bookmark to FA Scout or Role Changes, or a link in an old thread, still lands somewhere.
+    for (const path of ['fa-scout', 'role-changes']) {
+      expect(routeFor(path).redirectTo).toEqual('player-scout');
+      expect(routeFor(path).pathMatch).toEqual('full');
     }
   });
 

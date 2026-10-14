@@ -3,7 +3,7 @@ import { ActivatedRouteSnapshot, Router, RouterStateSnapshot } from '@angular/ro
 import { firstValueFrom, Observable } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 import { Api } from '../api/api';
-import { faScoutEnabledGuard } from './fa-scout-enabled.guard';
+import { playerScoutEnabledGuard } from './player-scout-enabled.guard';
 
 const HOME = { home: true };
 
@@ -17,7 +17,7 @@ function runGuard(invoke: () => Promise<unknown>) {
   return firstValueFrom(
     TestBed.runInInjectionContext(
       () =>
-        faScoutEnabledGuard(
+        playerScoutEnabledGuard(
           {} as ActivatedRouteSnapshot,
           {} as RouterStateSnapshot,
         ) as Observable<unknown>,
@@ -25,13 +25,13 @@ function runGuard(invoke: () => Promise<unknown>) {
   );
 }
 
-describe('faScoutEnabledGuard', () => {
-  it('lets the page open where the BFF serves the scout', async () => {
-    expect(await runGuard(() => Promise.resolve({ faScout: true }))).toBe(true);
+describe('playerScoutEnabledGuard', () => {
+  it('lets the page open where the BFF serves Player Scout', async () => {
+    expect(await runGuard(() => Promise.resolve({ playerScout: true }))).toBe(true);
   });
 
   it('sends a direct hit home where it is off', async () => {
-    expect(await runGuard(() => Promise.resolve({ faScout: false }))).toBe(HOME);
+    expect(await runGuard(() => Promise.resolve({ playerScout: false }))).toBe(HOME);
   });
 
   it('sends home when the features cannot be read', async () => {

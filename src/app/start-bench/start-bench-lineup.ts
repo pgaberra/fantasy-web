@@ -2,9 +2,9 @@ import { PlannerRosterPlayer } from '../api/models/planner-roster-player';
 import { RosterSlots } from '../api/models/roster-slots';
 import { ScheduledGame } from '../api/models/scheduled-game';
 import { TeamSchedule } from '../api/models/team-schedule';
-import { TeamRow, teamRoom } from '../fa-scout/drop-candidates';
+import { TeamRow, teamRoom } from '../player-scout/drop-candidates';
 import { nhlTeamKey } from '../models/nhl-team';
-import { TeamPlayer } from '../services/fa-scout.service';
+import { TeamPlayer } from '../services/player-scout.service';
 import { labelledSeats, LabelledSeat } from '../streamer-planner/planner-lineup';
 
 /**

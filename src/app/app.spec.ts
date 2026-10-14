@@ -26,8 +26,7 @@ describe('App', () => {
   const avatarUrl = signal<string | null>(null);
   const premium = signal(false);
   const loadState = signal<'idle' | 'loading' | 'loaded' | 'error'>('loaded');
-  const faScout = signal(false);
-  const roleChanges = signal(false);
+  const playerScout = signal(false);
   const draftAnalysis = signal(false);
   const startBench = signal(false);
 
@@ -39,8 +38,7 @@ describe('App', () => {
     avatarUrl.set(null);
     premium.set(false);
     loadState.set('loaded');
-    faScout.set(false);
-    roleChanges.set(false);
+    playerScout.set(false);
     draftAnalysis.set(false);
     startBench.set(false);
     logout.mockClear();
@@ -62,8 +60,7 @@ describe('App', () => {
         .mock(AccountService, { username, email, avatarUrl })
         .mock(EntitlementService, { premium, loadState })
         .mock(FeatureService, {
-          faScout,
-          roleChanges,
+          playerScout,
           draftAnalysis,
           startBench,
         } as never)
@@ -149,21 +146,6 @@ describe('App', () => {
     expect(item?.classList).toContain('nav-menu-item--collapsed');
   });
 
-  /** Role Changes is a BFF switch: linked in the header and the burger only where it is on. */
-  it('links Role Changes only where the environment serves it', () => {
-    expect(openNavMenu(render()).map((item) => item.textContent?.trim())).not.toContain(
-      'Role Changes',
-    );
-  });
-
-  it('offers Role Changes where the environment serves it', () => {
-    roleChanges.set(true);
-    const fixture = render();
-
-    expect(fixture.nativeElement.textContent ?? '').toContain('Role Changes');
-    expect(openNavMenu(fixture).map((item) => item.textContent?.trim())).toContain('Role Changes');
-  });
-
   it('offers Draft Analysis where the environment serves it', () => {
     draftAnalysis.set(true);
     const fixture = render();
@@ -173,8 +155,8 @@ describe('App', () => {
     expect(items).toContain('Draft Analysis');
   });
 
-  it('offers the FA scout from the header and the burger where the BFF serves it', () => {
-    faScout.set(true);
+  it('offers Player Scout from the header and the burger where the BFF serves it', () => {
+    playerScout.set(true);
     const fixture = render();
 
     const header = Array.from(
@@ -182,8 +164,8 @@ describe('App', () => {
     ).map((link) => link.textContent?.trim());
     const items = openNavMenu(fixture).map((item) => item.textContent?.trim());
 
-    expect(header).toContain('FA Scout');
-    expect(items).toContain('FA Scout');
+    expect(header).toContain('Player Scout');
+    expect(items).toContain('Player Scout');
   });
 
   it('offers Start/Bench from the header and the burger where the BFF serves it', () => {
@@ -199,7 +181,7 @@ describe('App', () => {
     expect(items).toContain('Start/Bench');
   });
 
-  it.each(['Draft Analysis', 'FA Scout', 'Start/Bench'])(
+  it.each(['Draft Analysis', 'Player Scout', 'Start/Bench'])(
     'drops %s where the BFF does not serve it',
     (label) => {
       const fixture = render();

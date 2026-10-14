@@ -401,19 +401,32 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   dropped by container query where the card is narrow. A
   category the BFF sent no number for is an empty cell, never written as the zero the ranking engine
   was handed (`FreeAgent.projected`).
-- `fa-scout/` — the **FA Scout** page (`/fa-scout`, signed in, served only where the BFF's
-  `faScout` feature says so): the players a league has available who are worth keeping for the
-  rest of the season, the planner's season-long sibling. The league is picked with the planner's
-  own field (`app-league-field`, `YahooLeaguePicker`) and opens on `LeagueChoiceService`'s league. Every
-  available player is ranked twice by the league's scoring through `ProjectionRankingService`:
-  on the model's served rest of the season, which is the list's order, and on its frozen preseason
-  line, among the same players (`scout-ranking.ts`: `rankScout`). The places gained are the
-  **Rise** column, and `isRising` (his place at least halved, and by at least 5 places, a first
-  guess) tags a row Rising; a player with no preseason line is New. For a skater the TOI column
-  shows the ice time now over the preseason one, picked out at a minute or more. Skaters or
-  goalies by a segmented control, positions by pills, and a "Rising only" pill; 25 rows a page.
-  The table (`scout-table/`) reuses the planner table's stylesheet and line helpers
-  (`lineStats`, `lineColumns`): a `ScoutRow` is a `RankedFreeAgent` plus its preseason rank.
+- `player-scout/` — the **Player Scout** page (`/player-scout`, signed in, served only where the
+  BFF's `playerScout` feature says so; `/fa-scout` and `/role-changes`, the two pages it
+  replaced, redirect to it): how the model's view of every player in a league has moved since a
+  chosen day, and what the ice says about why. The league is picked with the planner's own field
+  (`app-league-field`, `YahooLeaguePicker`) and opens on `LeagueChoiceService`'s league. **One
+  day asks both questions** (`since-picker/`: Preseason, 30/14/7/3 days, or any date; the caption
+  under it says which earlier line the BFF answered with, since nothing is kept from before the
+  history began and the preseason line stands in). Every player the league holds, available or
+  rostered, is ranked twice by the league's scoring through `ProjectionRankingService`: on the
+  served rest of the season today and on the line as it stood on the day, which the BFF has
+  already re-spread over the games left, so the two compare stat by stat
+  (`scout-ranking.ts`: `rankScout`; `delta` is the change in score, `rise` the places gained,
+  `isRising` as before). The list opens on the available players, biggest rise in score first
+  (`SCOUT_MOVERS_ORDER`); Available / My team / Everyone, positions, Risers / Fallers and a search
+  narrow it; 25 rows a page. The table (`scout-table/`) reuses the planner table's stylesheet and
+  line helpers and writes every figure with its change underneath (score, rank, games, TOI, each
+  category), then the measured ice a game and PP share since the day against before it
+  (`scout-usage.ts`, the old Role Changes model) and where Daily Faceoff lists him now and then.
+  **The user's own team is weighed night by night over the rest of the season**
+  (`lineup-value.ts`: `valueLineup` seats the roster into the league's slots on every remaining
+  night, best players first, so a player's *lineup cost* is what the team loses without him,
+  which for a third centre behind two centre seats is nought whatever he projects; `swapInto`
+  prices each available player's best swap the same way). The room line names the cheapest
+  drop; the roster folds out under it with starts and lineup cost. `drop-candidates.ts`
+  (`teamRoom`, `scoreTeam`) lives here too and Start/Bench reads it; the roster's types and
+  `toScoutTeam` are in `services/player-scout.service.ts`.
 - `start-bench/` — the **Start/Bench** page (`/start-bench`, signed in, served only where the BFF's
   `startBench` feature says so): the user's lineup for one day and the one the model would set,
   for the nights more of his players have a game than his lineup has spots. It opens on today's
@@ -434,11 +447,11 @@ guard scripts in `.github/scripts/` (`check-build-placeholders.sh`, `check-deplo
   dressing at 50% or more, a goalie with any share of the crease), tagged "Expected back"; one the
   suggestion starts from IR is **activated**, and `makeRoom` finds him a roster spot the cheapest
   way: an open spot, an injured player moved into the reserve slot he leaves, else a drop — the
-  player the team loses least by over the rest of the season as FA Scout ranks it (`scoreTeam` over
+  player the team loses least by over the rest of the season as Player Scout ranks it (`scoreTeam` over
   `GET /start-bench/rest-of-season`), among those not starting tonight (Alexander, 2026-10-13). A goalie's row reads "Confirmed starter" or "Likely starter" where Daily Faceoff's starting
   goalies page names him (`PlannerOwnLine.nights[].starter`, projection-service #282), else his
   chance to start. The league is picked with
-  the planner's `app-league-field`, as FA Scout does.
+  the planner's `app-league-field`, as Player Scout does.
 - `services/` — app services (auth, projections, etc.)
 - `interceptors/` — HTTP interceptors: `authInterceptor` attaches the JWT and refreshes
   once on 401 (all environments). **Only a 401/403 from `/auth/refresh` itself ends the

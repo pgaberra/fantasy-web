@@ -25,14 +25,11 @@
             <a routerLink="/whos-hot" routerLinkActive="active">Who's Hot</a>
           }
           <a routerLink="/streamer-planner" routerLinkActive="active">Streamer Planner</a>
-          @if (features.faScout()) {
-            <a routerLink="/fa-scout" routerLinkActive="active">FA Scout</a>
+          @if (features.playerScout()) {
+            <a routerLink="/player-scout" routerLinkActive="active">Player Scout</a>
           }
           @if (features.startBench()) {
             <a routerLink="/start-bench" routerLinkActive="active">Start/Bench</a>
-          }
-          @if (features.roleChanges()) {
-            <a routerLink="/role-changes" routerLinkActive="active">Role Changes</a>
           }
           <!-- The one link in the header that sells something, and only to an account that has
                not bought it. It used to be an "Account" link to the subscription page, beside an
@@ -131,15 +128,15 @@
     >
       Streamer Planner
     </a>
-    @if (features.faScout()) {
+    @if (features.playerScout()) {
       <a
         class="nav-menu-item nav-menu-item--collapsed"
         cdkMenuItem
-        routerLink="/fa-scout"
+        routerLink="/player-scout"
         routerLinkActive="active"
         ariaCurrentWhenActive="page"
       >
-        FA Scout
+        Player Scout
       </a>
     }
     @if (features.startBench()) {
@@ -151,17 +148,6 @@
         ariaCurrentWhenActive="page"
       >
         Start/Bench
-      </a>
-    }
-    @if (features.roleChanges()) {
-      <a
-        class="nav-menu-item nav-menu-item--collapsed"
-        cdkMenuItem
-        routerLink="/role-changes"
-        routerLinkActive="active"
-        ariaCurrentWhenActive="page"
-      >
-        Role Changes
       </a>
     }
     @if (showsPremiumLink()) {
