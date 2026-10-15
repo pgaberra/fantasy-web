@@ -1,10 +1,6 @@
 <div class="whos-hot">
   <div class="page-header">
     <h1>Who's Hot</h1>
-    <app-help-tip
-      label="What this page shows"
-      text="See which players have performed best over the selected range using your league's scoring settings."
-    />
 
     <!-- Beside the title rather than down in the range bar, because that is what it is: the
          season frames every number on the page, not just the stretch of games picked below it.
@@ -36,10 +32,6 @@
       <div class="league-prompt">
         <app-icon name="link" [size]="48" class="league-prompt-icon" />
         <p class="league-prompt-title">Sync your league</p>
-        <p class="league-prompt-text">
-          Who's Hot ranks players by your league's scoring. Sync your Yahoo or ESPN league to get
-          started.
-        </p>
         <button type="button" class="btn btn-primary" (click)="showSyncDialog.set(true)">
           Sync league
         </button>

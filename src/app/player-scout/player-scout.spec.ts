@@ -285,7 +285,8 @@ describe('PlayerScoutComponent', () => {
 
     expect(players).toHaveBeenCalledTimes(1);
     expect(ngMocks.input(ngMocks.find(fixture, SincePickerComponent), 'on')).toBe(true);
-    expect(page.sinceCaption()).toContain('the one of 7 Oct');
+    // The day asked for answered, so the caption has nothing to add to the label.
+    expect(page.sinceCaption()).toEqual('');
     expect(ngMocks.input(ngMocks.find(fixture, ScoutTableComponent), 'compare')).toBe(true);
     expect(page.sinceLabel()).toBe('vs 7 Oct');
     const montour = page.ranked().find((row) => row.player.playerId === '99');
@@ -463,7 +464,7 @@ describe('PlayerScoutComponent', () => {
     );
     const fixture = await render();
 
-    expect(ngMocks.formatText(fixture)).toContain("The season isn't under way");
+    expect(ngMocks.formatText(fixture)).toContain("The season hasn't started yet.");
     expect(ngMocks.findAll(fixture, ScoutTableComponent)).toHaveLength(0);
   });
 
@@ -612,7 +613,7 @@ describe('PlayerScoutComponent', () => {
     fixture.detectChanges();
 
     expect(page.sinceLabel()).toBe('no earlier projection');
-    expect(page.sinceCaption()).toContain('nothing to compare with');
+    expect(page.sinceCaption()).toEqual('No earlier projection to compare with yet.');
   });
 
   it('switches the comparison on with the day picked, and off with the day kept', async () => {

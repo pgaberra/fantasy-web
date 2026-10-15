@@ -1,6 +1,5 @@
 import { Component, computed, input, model, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { HelpTipComponent } from '../../shared/help-tip/help-tip';
 import { IconComponent } from '../../shared/icon/icon';
 
 /**
@@ -131,7 +130,7 @@ function isLastGames(preset: RangePreset): preset is LastGamesPreset {
  */
 @Component({
   selector: 'app-game-range-selector',
-  imports: [HelpTipComponent, RouterLink, IconComponent],
+  imports: [RouterLink, IconComponent],
   templateUrl: './game-range-selector.html',
   styleUrl: './game-range-selector.css',
 })
