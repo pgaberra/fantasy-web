@@ -75,6 +75,22 @@ describe('LeagueFieldComponent', () => {
     expect(remembered()).toEqual({ platform: 'YAHOO', leagueId: '465.l.2', name: 'Work League' });
   });
 
+  it('lays the label, the tabs and the league on one line only when asked to', async () => {
+    const stacked = await render();
+    expect(stacked.point.nativeElement.classList).not.toContain('league-field--inline');
+
+    const fixture = MockRender(LeagueFieldComponent, {
+      platform: 'yahoo',
+      espnLeague: null,
+      layout: 'inline',
+    });
+    fixture.point.componentInstance.picker.start();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.point.nativeElement.classList).toContain('league-field--inline');
+  });
+
   it('opens on the league last chosen anywhere', async () => {
     remember({ platform: 'YAHOO', leagueId: '465.l.9', name: 'The Gordie Howes' });
     const fixture = await render();
