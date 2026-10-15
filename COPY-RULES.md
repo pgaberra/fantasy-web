@@ -79,6 +79,18 @@ the thing literally rather than dressing it up.
 | --- | --- |
 | em dash (—) | comma, colon, parentheses, or a new sentence |
 
+## Length
+
+The default is no explanatory text at all (see `CLAUDE.md`, *Copy*). What there is stays under
+these caps, counted after collapsing whitespace. A text block is any run of visible text between
+two tags; an interpolation counts as one word. The privacy and terms pages are exempt: legal
+text is written to be complete.
+
+| Where | At most | Instead |
+| --- | --- | --- |
+| tooltip | 60 characters | cut it, or rename the label so it needs none |
+| text block | 120 characters | one short sentence, or cut it |
+
 ## Scope
 
 The check scans Angular templates (`src/app/**/*.html`) only. TypeScript strings are reviewed by

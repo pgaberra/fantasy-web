@@ -609,6 +609,17 @@ to Sentry for months; the browser reported nowhere.
 Performance tracing is off (`tracesSampleRate: 0`) for the same reason the backends keep alerting
 narrow: a stream of spans would bury the faults this exists to surface.
 
+## Copy
+
+**No explanatory text by default.** Add no tooltip, subtitle, helper line, intro or empty-state
+explanation unless the page cannot be used without it. Alexander asks for text when he wants it;
+every unasked one has been rewritten or deleted by hand.
+
+- A label that needs a tooltip is the wrong label: rename it, don't explain it.
+- Never explain what the user can see, or restate a feature's benefit.
+- What text there is: a tooltip at most 60 characters and one sentence; any visible text block
+  at most 120. `check:copy` fails a PR over either (`COPY-RULES.md`, *Length*).
+
 ## Conventions
 
 @.aiassistant/rules/guidelines.md
@@ -707,10 +718,10 @@ doesn't replace them.
   top of everything ahead of it and squash-merges it. Never `gh pr update-branch` it for the
   merge's sake.
 - **Copy is checked, not merely guided.** `npm run check:copy` reads `COPY-RULES.md` and fails
-  on a new terminology, vocabulary or punctuation violation, ratcheted against `.github/copy-baseline.json`.
-  It settles only what a script can settle: naming the same thing the same way, the banned
-  phrases, and the em dash. Tone, rhythm and whether a sentence should exist at all are the `slapstat-copy`
-  skill's job, and no rule in `COPY-RULES.md` tries to reach them.
+  on a new terminology, vocabulary, punctuation or length violation, ratcheted against
+  `.github/copy-baseline.json`. It settles only what a script can settle: naming the same thing
+  the same way, the banned phrases, the em dash, and the length caps. Whether a text should exist
+  at all is [Copy](#copy) below; tone and rhythm are the `slapstat-copy` skill's job.
 - A **spec drift check** runs first: it fetches `fantasy-bff`'s `specs/bff-openapi.yaml`
   from `master` and fails if the pinned `specs/bff-openapi.yaml` differs. Needs a repo
   secret `SPEC_READ_TOKEN` — a fine-grained PAT with read access to `fantasy-bff`.
