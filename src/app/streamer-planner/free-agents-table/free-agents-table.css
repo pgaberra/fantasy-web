@@ -143,6 +143,15 @@
   flex-wrap: nowrap;
 }
 
+/* The positions and the waiver mark are one unit: a tag after them may go to the next line
+   on a phone, the mark never leaves the right of the chips. */
+.player-role {
+  align-items: center;
+  display: inline-flex;
+  flex: none;
+  gap: var(--space-1);
+}
+
 .player-name-line {
   align-items: center;
   display: flex;
@@ -287,8 +296,10 @@ span.score {
     white-space: normal;
   }
 
-  /* The injury tag drops under a name it has no room beside, rather than squeezing it. */
-  .player-name-line {
+  /* The injury tag drops under a name it has no room beside, rather than squeezing it; a
+     tag after the positions goes to a third line sooner than under the next column. */
+  .player-name-line,
+  .player-meta {
     flex-wrap: wrap;
   }
 }
