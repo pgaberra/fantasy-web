@@ -98,10 +98,11 @@
   color: var(--color-primary);
 }
 
-/* A tag beside the positions: what the row is, not another position. Rising is what a comparison
-   is there to find, so it alone is coloured; who holds him is plain, and the user's own team is
-   the one filled pill in the column, the fill the league table's You badge wears, with a figure
-   in front of the name so the mark is not colour alone. */
+/* A tag beside the positions: what the row is, not another position. Only two kinds are filled,
+   and never on the same row: the pickable wear green, "FA" or "Waivers", and the user's own team
+   the fill the league table's You badge wears, with a figure in front of the name so neither mark
+   is colour alone. Rising is what a comparison is there to find, so it is outlined in green.
+   Another team's name is plain text, no chip: who holds him is context, not a thing to find. */
 .scout-tag {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
@@ -121,36 +122,50 @@
   color: var(--color-success);
 }
 
+.scout-tag--free,
 .scout-tag--mine {
   align-items: center;
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-primary-contrast);
   display: inline-flex;
   gap: 0.2rem;
 }
 
+.scout-tag--free app-icon,
 .scout-tag--mine app-icon {
   flex: none;
 }
 
-/* The flex box does not clip its own text, so the name clips itself. */
-.scout-tag-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.scout-tag--free {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: var(--color-primary-contrast);
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+.scout-tag--mine {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
+.scout-tag--held {
+  border-color: transparent;
+  color: var(--color-text-subtle);
+  font-weight: normal;
+  padding-left: 0;
+}
+
+/* On a list that mixes, another team's player steps back a tone, name, crest and figures alike,
+   so the rows the reader can act on are the ones that stand out before anything is read. The
+   muted ink still clears 4.5:1 on the surface; the crest fades, since it carries no figure. */
+.player-row--held .player-name,
+.player-row--held .score,
+.player-row--held .figure-now,
+.player-row--held td.ice-col .figure-now,
+.player-row--held td.num {
+  color: var(--color-text-subtle);
+}
+
+.player-row--held .player-logo {
+  opacity: 0.55;
 }
 
 /* The measured ice is what the score is explained by, so it keeps the figure's weight. */

@@ -390,12 +390,40 @@ export class ScoutTableComponent {
   }
 
   /**
-   * Who holds him, for a list of more than the wire: "FA" or the team's name, the user's own
-   * included. It read "Mine" there once, and "Mine" beside a column of team names looked like
-   * one more team; the template marks the user's own by look instead.
+   * The pill a pickable row wears: "Waivers" always, since a claim changes what the reader does
+   * next; "FA" only on a list that also holds taken players, where it is the mark to scan for.
+   * A taken player wears none.
+   */
+  availabilityTag(row: ScoutRow): string | null {
+    if (!this.pickable(row)) {
+      return null;
+    }
+    if (this.onWaivers(row)) {
+      return 'Waivers';
+    }
+    return this.showOwner() ? 'FA' : null;
+  }
+
+  /**
+   * Who holds him, for a list of more than the wire: the team's name, the user's own included.
+   * It read "Mine" there once, and "Mine" beside a column of team names looked like one more
+   * team; the template marks the user's own by look instead.
    */
   ownerTag(row: ScoutRow): string {
     return row.scout.owner?.teamName ?? 'FA';
+  }
+
+  /** Whether the list has anyone to pick up: only then is another team's player the one to recede. */
+  private readonly anyPickable = computed(() => this.rows().some((row) => this.pickable(row)));
+
+  /**
+   * Whether the row steps back in tone: another team's player on a list that also has players to
+   * pick up. He stays as context, but the rows the reader can act on are the ones that keep full
+   * ink. A list of taken players only, or of the user's own, dims nothing.
+   */
+  dimmed(row: ScoutRow): boolean {
+    const owner = row.scout.owner;
+    return owner !== null && !owner.mine && this.anyPickable();
   }
 
   isNil(stat: LineStat): boolean {
